@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
  
 const ODDS_API_KEY = process.env.ODDS_API_KEY || 'f67774f673842b08fa547e41cf37178c';
-const OWLS_API_KEY = process.env.OWLS_API_KEY || 'owlsinsight_1e9dfc3a29f37d639fb5b641ba7b2a24535d5e06b074713e88b2b1b19516b23b';
+const OWLS_API_KEY = process.env.OWLS_API_KEY || 'owlsinsight_3e409488d45a4a1019da9b52702b407dfbf87c1c5a44484aa00bd5f93da7fec2';
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
  
 app.use(cors({ origin: '*' }));
