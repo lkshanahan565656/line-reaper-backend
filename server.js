@@ -663,8 +663,9 @@ async function generateEsportsPicks() {
     // Try manual prediction first
     const manualKey = `${line.player}|${line.market}`;
     let modelPred = esportsCache.manualPredictions[manualKey];
+    let predSource = 'manual';
  
-    // Auto-predict from stats if no manual
+    // Auto-predict from stats if no manual prediction
     if (!modelPred) {
       const sport = (line.sport || '').toUpperCase();
       const mapCount = parseMapCount(line.market);
@@ -680,7 +681,20 @@ async function generateEsportsPicks() {
       }
  
       if (player) {
-        modelPred = predictKillsFromStats(player, sportKey, mapCount, line.market);
+        const autoPred = predictKillsFromStats(player, sportKey, mapCount, line.market);
+        // SANITY CHECK: reject auto-predictions that are too far from the line
+        // The paid model rarely deviates more than 15% from the line
+        // Anything beyond 20% is almost certainly a bad scrape, not a real edge
+        if (autoPred && line.line) {
+          const pctDiff = Math.abs(autoPred - line.line) / line.line;
+          if (pctDiff <= 0.20) {
+            modelPred = autoPred;
+            predSource = 'auto';
+          } else {
+            // Reject — auto-predictor is generating garbage for this player
+            console.log(`Esports: rejected auto-pred for ${line.player} (line=${line.line}, pred=${autoPred.toFixed(1)}, ${(pctDiff*100).toFixed(0)}% diff)`);
+          }
+        }
       }
     }
  
@@ -750,6 +764,7 @@ async function generateEsportsPicks() {
       edge: parseFloat(result.edge.toFixed(2)),
       confidence: result.confidence,
       varianceK: result.varianceK,
+      predSource,
       manualKey,
     });
   }
