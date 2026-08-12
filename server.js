@@ -550,16 +550,21 @@ function parseMapCount(propText) {
 function predictKillsFromStats(player, sport, mapCount, propType = 'kills') {
   if (!player) return null;
   const s = (sport || '').toUpperCase();
-  let pred = null;
-  // Preferred: the player's actual kills-per-map average over the window —
-  // this IS "where they normally frag", lifetime-rate style.
-  if (player.avgKillsPerMap) pred = player.avgKillsPerMap * mapCount;
-  if (player.kpr) {
-    // 21.5 rounds/map is the empirical CS2 average (stomps included);
-    // the old 24 assumed every map goes 13-11 and overshot ~10%.
-    const rpm = player.roundsPerMap || (s === 'VAL' ? 22 : 21.5);
-    const viaRounds = player.kpr * rpm * mapCount;
-    pred = pred != null ? 0.5 * (pred + viaRounds) : viaRounds;
+  // bo3's schema is undocumented — its "maps" counter can turn out to be a
+  // MATCH counter, which doubles every per-map rate. KPR is the one number
+  // whose units can't be wrong, so it arbitrates:
+  //  · derived rounds/map above 32 is impossible for CS → fall back to 21.5
+  //  · if the per-map path disagrees with the KPR path by >40%, trust KPR
+  const rpmRaw = player.roundsPerMap;
+  const rpm = (rpmRaw && rpmRaw <= 32) ? rpmRaw : (s === 'VAL' ? 22 : 21.5);
+  const viaRounds = player.kpr ? player.kpr * rpm * mapCount : null;
+  let viaMap = player.avgKillsPerMap ? player.avgKillsPerMap * mapCount : null;
+  if (viaMap != null && (viaMap / mapCount) > 32) viaMap = null;   // impossible per-map scale
+  let pred;
+  if (viaMap != null && viaRounds != null) {
+    pred = Math.abs(viaMap - viaRounds) / viaRounds > 0.4 ? viaRounds : 0.5 * (viaMap + viaRounds);
+  } else {
+    pred = viaMap ?? viaRounds;
   }
   if (pred == null) return null;
   if ((propType || '').toLowerCase().includes('headshot')) {
@@ -692,7 +697,7 @@ function bo3FirstObject(x) {
   return typeof x === 'object' ? x : null;
 }
 let bo3LoggedKeys = false;
-const bo3Health = { profiles: 0, lastError: null };
+const bo3Health = { profiles: 0, lastError: null, predsAccepted: 0, predsRejected: 0, lastRejected: null };
 
 async function bo3SearchPlayer(name) {
   const res = await axios.get(`${BO3_BASE}/filters/players`, {
@@ -786,14 +791,49 @@ async function fetchBo3PlayerStats(playerName) {
 // Daily-updated yearly CSV covering every pro league (LCK, LCK CL, LPL, ...).
 // Parsed strictly BY HEADER NAME — OE adds columns and positions shift.
 // Tried in order until one works; the S3 bucket has used both region-url styles.
-function oeCandidateUrls() {
+const OE_HOSTS = [
+  'https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com',
+  'https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com',
+];
+
+function parseS3Keys(xml) {
+  const keys = [];
+  const re = /<Key>([^<]+)<\/Key>/g;
+  let m;
+  while ((m = re.exec(xml || ''))) keys.push(m[1]);
+  return keys;
+}
+
+// The plain yearly filename 404s sometimes (dated snapshots, renames). If the
+// bucket allows public listing, enumerate its keys and pick the right one.
+async function oeDiscoverUrl() {
+  const y = new Date().getFullYear();
+  for (const host of OE_HOSTS) {
+    try {
+      const res = await axios.get(`${host}/?list-type=2&prefix=${y}`, { timeout: 20000 });
+      const keys = parseS3Keys(res.data).filter(k => k.includes('OraclesElixir') && k.endsWith('.csv'));
+      if (!keys.length) continue;
+      const exact = keys.find(k => k === `${y}_LoL_esports_match_data_from_OraclesElixir.csv`);
+      const key = exact || keys.sort().pop();   // latest dated snapshot
+      console.log('OE: bucket listing found', keys.length, 'file(s); using', key);
+      return `${host}/${encodeURIComponent(key)}`;
+    } catch (e) {
+      console.warn('OE: bucket listing failed on', host.slice(8, 40), '—', e.response?.status || e.message);
+    }
+  }
+  return null;
+}
+
+async function oeCandidateUrls() {
   const y = new Date().getFullYear();
   const f = `${y}_LoL_esports_match_data_from_OraclesElixir.csv`;
-  return [
+  const discovered = await oeDiscoverUrl();
+  return [...new Set([
     process.env.OE_URL || null,
-    `https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/${f}`,
-    `https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com/${f}`,
-  ].filter(Boolean);
+    discovered,
+    `${OE_HOSTS[0]}/${f}`,
+    `${OE_HOSTS[1]}/${f}`,
+  ].filter(Boolean))];
 }
 
 const lolStats = { players: {}, teams: {}, games: 0, updated: null, state: 'idle', lastError: null };
@@ -881,7 +921,7 @@ async function refreshLoLStats(windowDays = 120) {
   if (lolStats.state === 'downloading') return;
   lolStats.state = 'downloading';
   const errors = [];
-  for (const url of oeCandidateUrls()) {
+  for (const url of await oeCandidateUrls()) {
     try {
       console.log('OE: downloading', url.slice(0, 90), '...');
       const res = await axios.get(url, { responseType: 'stream', timeout: 180000, maxRedirects: 5 });
@@ -997,7 +1037,7 @@ async function generateEsportsPicks() {
   // Limit fresh stat lookups per cycle so pick generation stays fast;
   // cached players are free and refresh hourly.
   let freshLookups = 0;
-  const MAX_FRESH_LOOKUPS = 15;
+  const MAX_FRESH_LOOKUPS = 25;
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1048,7 +1088,12 @@ async function generateEsportsPicks() {
         if (autoPredAcceptable(autoPred, lineObj.line)) {
           modelPred = autoPred;
           predSource = 'auto';
+          if (sportKey === 'CS') bo3Health.predsAccepted++;
         } else {
+          if (sportKey === 'CS') {
+            bo3Health.predsRejected++;
+            bo3Health.lastRejected = `${lineObj.player} line ${lineObj.line} → pred ${autoPred.toFixed(1)}`;
+          }
           console.log(`Esports: rejected auto-pred for ${lineObj.player} (line=${lineObj.line}, pred=${autoPred.toFixed(1)}, ${(Math.abs(autoPred - lineObj.line) / lineObj.line * 100).toFixed(0)}% diff)`);
         }
       }
@@ -1135,7 +1180,7 @@ async function generateEsportsPicks() {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.2', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.3', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1330,7 +1375,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.3.2',
+  version: '3.3.3',
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
   esports: {
@@ -1340,7 +1385,7 @@ app.get('/api/status', (req, res) => res.json({
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError },
-  bo3: { profiles: bo3Health.profiles, lastError: bo3Health.lastError },
+  bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
@@ -1378,7 +1423,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.3.2 on port ${PORT}`);
+    console.log(`Line Reaper v3.3.3 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
