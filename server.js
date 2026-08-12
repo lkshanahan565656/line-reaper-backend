@@ -692,6 +692,7 @@ function bo3FirstObject(x) {
   return typeof x === 'object' ? x : null;
 }
 let bo3LoggedKeys = false;
+const bo3Health = { profiles: 0, lastError: null };
 
 async function bo3SearchPlayer(name) {
   const res = await axios.get(`${BO3_BASE}/filters/players`, {
@@ -748,35 +749,54 @@ function bo3ExtractProfile(playerName, gen, map, acc) {
 }
 
 async function fetchBo3PlayerStats(playerName) {
+  const key = playerName.toLowerCase();
+  const cached = esportsCache.hltvPlayers[key];
+  if (cached?.failed && (Date.now() - cached.lastUpdate) < 30 * 60000) return null;   // don't re-burn on recent misses
+  if (cached && !cached.failed && (Date.now() - cached.lastUpdate) < 6 * 3600000) return cached;
   try {
-    const key = playerName.toLowerCase();
-    const cached = esportsCache.hltvPlayers[key];
-    if (cached && (Date.now() - cached.lastUpdate) < 6 * 3600000) return cached;
-
     const found = await bo3SearchPlayer(playerName);
-    if (!found?.slug) { console.warn(`bo3 ${playerName}: no search hit`); return cached || null; }
+    if (!found?.slug) {
+      bo3Health.lastError = `no search hit for "${playerName}"`;
+      esportsCache.hltvPlayers[key] = { name: playerName, failed: true, lastUpdate: Date.now() };
+      console.warn(`bo3 ${playerName}: no search hit`);
+      return null;
+    }
     const { gen, map, acc } = await bo3RawStats(found.slug);
     const stats = bo3ExtractProfile(playerName, gen, map, acc);
     if (stats) {
       esportsCache.hltvPlayers[key] = stats;
+      bo3Health.profiles++;
       console.log(`bo3 ${playerName}: KPM=${stats.avgKillsPerMap?.toFixed(1) ?? '—'} KPR=${stats.kpr?.toFixed(2) ?? '—'} HS%=${stats.hsPercent?.toFixed(0) ?? '—'} R=${stats.rating ?? '—'}`);
       return stats;
     }
+    bo3Health.lastError = `fields unrecognized for "${playerName}" — see /api/esports/probe/cs/${playerName}`;
+    esportsCache.hltvPlayers[key] = { name: playerName, failed: true, lastUpdate: Date.now() };
     console.warn(`bo3 ${playerName}: no usable kill fields — inspect /api/esports/probe/cs/${encodeURIComponent(playerName)}`);
-    return cached || null;
+    return null;
   } catch (e) {
-    console.warn(`bo3 ${playerName}:`, e.response?.status || e.message);
-    return esportsCache.hltvPlayers[playerName.toLowerCase()] || null;
+    const s = e.response?.status;
+    bo3Health.lastError = `HTTP ${s || e.message}`;
+    esportsCache.hltvPlayers[key] = { name: playerName, failed: true, lastUpdate: Date.now() };
+    console.warn(`bo3 ${playerName}:`, s || e.message);
+    return null;
   }
 }
 
 // ─── LOL STATS VIA ORACLE'S ELIXIR ────────────────────────────────────────────
 // Daily-updated yearly CSV covering every pro league (LCK, LCK CL, LPL, ...).
 // Parsed strictly BY HEADER NAME — OE adds columns and positions shift.
-const OE_URL = process.env.OE_URL ||
-  `https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/${new Date().getFullYear()}_LoL_esports_match_data_from_OraclesElixir.csv`;
+// Tried in order until one works; the S3 bucket has used both region-url styles.
+function oeCandidateUrls() {
+  const y = new Date().getFullYear();
+  const f = `${y}_LoL_esports_match_data_from_OraclesElixir.csv`;
+  return [
+    process.env.OE_URL || null,
+    `https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/${f}`,
+    `https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com/${f}`,
+  ].filter(Boolean);
+}
 
-const lolStats = { players: {}, teams: {}, games: 0, updated: null };
+const lolStats = { players: {}, teams: {}, games: 0, updated: null, state: 'idle', lastError: null };
 
 function parseCsvLine(line) {
   const out = []; let cur = '', q = false;
@@ -858,37 +878,47 @@ function createOEAggregator(headerCols, sinceMs) {
 }
 
 async function refreshLoLStats(windowDays = 120) {
-  try {
-    console.log('OE: downloading LoL match data (daily)...');
-    const res = await axios.get(OE_URL, { responseType: 'stream', timeout: 180000 });
-    const sinceMs = Date.now() - windowDays * 86400000;
-    let agg = null, carry = '', bytes = 0;
-    await new Promise((resolve, reject) => {
-      res.data.on('data', chunk => {
-        bytes += chunk.length;
-        carry += chunk.toString('utf8');
-        let idx;
-        while ((idx = carry.indexOf('\n')) >= 0) {
-          const line = carry.slice(0, idx).replace(/\r$/, '');
-          carry = carry.slice(idx + 1);
-          if (!agg) agg = createOEAggregator(parseCsvLine(line), sinceMs);
-          else if (line) agg.push(parseCsvLine(line));
-        }
+  if (lolStats.state === 'downloading') return;
+  lolStats.state = 'downloading';
+  const errors = [];
+  for (const url of oeCandidateUrls()) {
+    try {
+      console.log('OE: downloading', url.slice(0, 90), '...');
+      const res = await axios.get(url, { responseType: 'stream', timeout: 180000, maxRedirects: 5 });
+      const sinceMs = Date.now() - windowDays * 86400000;
+      let agg = null, carry = '', bytes = 0;
+      await new Promise((resolve, reject) => {
+        res.data.on('data', chunk => {
+          bytes += chunk.length;
+          carry += chunk.toString('utf8');
+          let idx;
+          while ((idx = carry.indexOf('\n')) >= 0) {
+            const line = carry.slice(0, idx).replace(/\r$/, '');
+            carry = carry.slice(idx + 1);
+            if (!agg) agg = createOEAggregator(parseCsvLine(line), sinceMs);
+            else if (line) agg.push(parseCsvLine(line));
+          }
+        });
+        res.data.on('end', resolve);
+        res.data.on('error', reject);
       });
-      res.data.on('end', resolve);
-      res.data.on('error', reject);
-    });
-    if (carry.trim() && agg) agg.push(parseCsvLine(carry));
-    if (!agg) throw new Error('empty CSV');
-    const out = agg.finish();
-    Object.assign(lolStats, out, { updated: new Date().toISOString() });
-    console.log(`OE: ${(bytes / 1048576).toFixed(1)}MB → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
-    generateEsportsPicks().catch(() => {});
-  } catch (e) {
-    const s = e.response?.status;
-    console.warn('OE download failed:', s || e.message,
-      (s === 403 || s === 404) ? '— yearly CSV URL likely changed; get the current link from oracleselixir.com/tools/downloads and set it as OE_URL env var on Railway' : '');
+      if (carry.trim() && agg) agg.push(parseCsvLine(carry));
+      if (!agg) throw new Error('empty CSV');
+      const out = agg.finish();
+      Object.assign(lolStats, out, { updated: new Date().toISOString(), state: 'ready', lastError: null });
+      console.log(`OE: ${(bytes / 1048576).toFixed(1)}MB → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
+      generateEsportsPicks().catch(() => {});
+      return;
+    } catch (e) {
+      const s = e.response?.status;
+      errors.push(`${url.split('/').pop().slice(0, 40)} → ${s || e.message}`);
+      console.warn('OE attempt failed:', s || e.message);
+    }
   }
+  lolStats.state = 'error';
+  lolStats.lastError = errors.join(' | ');
+  console.warn('OE: all URL candidates failed —', lolStats.lastError,
+    '· If the yearly CSV moved, grab the current link from oracleselixir.com/tools/downloads and set it as an OE_URL env var on Railway. Auto-retrying every 30 min.');
 }
 
 // Lifetime rate blended with kill-share formulation:
@@ -1105,7 +1135,7 @@ async function generateEsportsPicks() {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.1', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.2', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1300,7 +1330,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.3.1',
+  version: '3.3.2',
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
   esports: {
@@ -1309,7 +1339,8 @@ app.get('/api/status', (req, res) => res.json({
     ppEsportsLines: (cache.prizepicks.data||[]).filter(l => isEsports(l.sport)).length,
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
   },
-  lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated },
+  lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError },
+  bo3: { profiles: bo3Health.profiles, lastError: bo3Health.lastError },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
@@ -1340,11 +1371,14 @@ cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
 // LoL stats: Oracle's Elixir updates once per day — no value in more
 cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
+// ...but until the FIRST successful load, retry every 30 min (covers boot
+// failures, timeouts, and transient S3 hiccups without any manual poking)
+cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoLStats().catch(()=>{}); });
 
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.3.1 on port ${PORT}`);
+    console.log(`Line Reaper v3.3.2 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
