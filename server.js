@@ -574,6 +574,32 @@ function predictKillsFromStats(player, sport, mapCount, propType = 'kills') {
   return pred;
 }
 
+// ─── MARKET ANCHORING ─────────────────────────────────────────────────────────
+// Our auto-model knows a player's 90-day averages. It does NOT know tonight's
+// opponent, the roster, the map pool, or whether he's on a stand-in. The book
+// knows all of that, so a raw model number that disagrees with the line by 5
+// kills is almost always OUR error — not a 30% edge. We therefore keep only a
+// FRACTION of the disagreement:
+//
+//     final = line + w * (rawModel - line)
+//
+// w=0.35 by default (override with MODEL_WEIGHT env var). Sample size shrinks
+// it further: a player with 8 tracked maps gets less trust than one with 60.
+// Manual predictions are NEVER shrunk — those come from a real model.
+// Effect: a raw 26.5 → 31.31 (+30% EV) becomes ~28.2 (~+6% EV), which is the
+// range the paid model actually lives in.
+const MODEL_WEIGHT = parseFloat(process.env.MODEL_WEIGHT || '0.35');
+
+function anchorToMarket(rawPred, line, sampleSize) {
+  if (!rawPred || !line) return rawPred;
+  let w = MODEL_WEIGHT;
+  if (sampleSize != null) {
+    // full weight at 40+ tracked maps/games, scaled down below that
+    w *= Math.min(1, Math.max(0.25, sampleSize / 40));
+  }
+  return line + w * (rawPred - line);
+}
+
 // Sanity gate for auto-predictions: beyond 20% off the line is usually a bad
 // scrape — EXCEPT on tiny lines (a 1.5-kill LoL support prop), where a 1-kill
 // difference is a legit 60% deviation. Absolute tolerance covers those.
@@ -836,7 +862,7 @@ async function oeCandidateUrls() {
   ].filter(Boolean))];
 }
 
-const lolStats = { players: {}, teams: {}, games: 0, updated: null, state: 'idle', lastError: null };
+const lolStats = { players: {}, teams: {}, games: 0, updated: null, state: 'idle', lastError: null, source: null };
 
 function parseCsvLine(line) {
   const out = []; let cur = '', q = false;
@@ -917,6 +943,89 @@ function createOEAggregator(headerCols, sinceMs) {
   };
 }
 
+// ─── LOL FALLBACK: LEAGUEPEDIA CARGO API ──────────────────────────────────────
+// Oracle's Elixir publishes one CSV per year at a URL that moves; Leaguepedia
+// is a public JSON API with no key and no moving parts. Rows are per-player,
+// per-game scoreboard lines, so team totals are derived by summing each team's
+// players within a game — which also yields kills-allowed from the opponent.
+const LP_API = 'https://lol.fandom.com/api.php';
+
+async function lpFetchPage(sinceDate, offset, limit = 500) {
+  const params = {
+    action: 'cargoquery', format: 'json', limit: String(limit), offset: String(offset),
+    tables: 'ScoreboardPlayers=SP,ScoreboardGames=SG',
+    join_on: 'SP.GameId=SG.GameId',
+    fields: 'SP.Link=Link,SP.Team=Team,SP.Kills=Kills,SP.Assists=Assists,SP.GameId=GameId,SG.DateTime_UTC=DateTime',
+    where: `SG.DateTime_UTC >= '${sinceDate}'`,
+    order_by: 'SG.DateTime_UTC DESC',
+  };
+  const res = await axios.get(LP_API, { params, timeout: 30000,
+    headers: { 'User-Agent': 'LineReaper/3.5 (personal analytics)', 'Accept': 'application/json' } });
+  if (res.data?.error) throw new Error('Cargo error: ' + JSON.stringify(res.data.error).slice(0, 200));
+  return (res.data?.cargoquery || []).map(r => r.title || r);
+}
+
+// Pure aggregator — same output shape as the OE one, unit-tested offline.
+function aggregateLPRows(rows) {
+  const players = {}, teams = {}, games = {};
+  for (const r of rows) {
+    const name = (r.Link || '').trim();
+    const team = (r.Team || '').trim();
+    const gid = r.GameId || '';
+    const k = parseFloat(r.Kills) || 0;
+    const a = parseFloat(r.Assists) || 0;
+    if (!name || !team || !gid) continue;
+    const key = name.toLowerCase();
+    const P = players[key] || (players[key] = { name, team: '', games: 0, kills: 0, assists: 0, league: 'LP' });
+    P.games++; P.kills += k; P.assists += a; P.team = team;
+    const G = games[gid] || (games[gid] = {});
+    const T = G[team] || (G[team] = { kills: 0, assists: 0 });
+    T.kills += k; T.assists += a;
+  }
+  // team per-game aggregates + kills allowed from the opposing side
+  for (const G of Object.values(games)) {
+    const sides = Object.entries(G);
+    if (sides.length !== 2) continue;
+    for (let i = 0; i < 2; i++) {
+      const [name, own] = sides[i], [, opp] = sides[1 - i];
+      const tk = name.toLowerCase();
+      const T = teams[tk] || (teams[tk] = { name, games: 0, kills: 0, assists: 0, killsAllowed: 0 });
+      T.games++; T.kills += own.kills; T.assists += own.assists; T.killsAllowed += opp.kills;
+    }
+  }
+  for (const p of Object.values(players)) {
+    p.kpg = p.games ? p.kills / p.games : 0;
+    p.apg = p.games ? p.assists / p.games : 0;
+    const T = teams[(p.team || '').toLowerCase()];
+    p.teamKpg = T && T.games ? T.kills / T.games : null;
+    p.teamApg = T && T.games ? T.assists / T.games : null;
+    p.oppKillsAllowedPg = T && T.games ? T.killsAllowed / T.games : null;
+    p.killShare = p.teamKpg ? p.kpg / p.teamKpg : null;
+    p.assistShare = p.teamApg ? p.apg / p.teamApg : null;
+  }
+  for (const t of Object.values(teams)) {
+    t.kpg = t.games ? t.kills / t.games : 0;
+    t.kapg = t.games ? t.killsAllowed / t.games : 0;
+  }
+  return { players, teams, games: Object.keys(games).length };
+}
+
+async function refreshLoLFromLeaguepedia(windowDays = 120) {
+  const since = new Date(Date.now() - windowDays * 86400000).toISOString().slice(0, 10);
+  const rows = [];
+  for (let page = 0; page < 24; page++) {          // up to 12k rows
+    const batch = await lpFetchPage(since, page * 500);
+    rows.push(...batch);
+    if (batch.length < 500) break;
+    await new Promise(r => setTimeout(r, 250));    // be polite to the wiki
+  }
+  if (!rows.length) throw new Error('no rows returned');
+  const out = aggregateLPRows(rows);
+  Object.assign(lolStats, out, { updated: new Date().toISOString(), state: 'ready', lastError: null, source: 'leaguepedia' });
+  console.log(`Leaguepedia: ${rows.length} scoreboard rows → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
+  generateEsportsPicks().catch(() => {});
+}
+
 async function refreshLoLStats(windowDays = 120) {
   if (lolStats.state === 'downloading') return;
   lolStats.state = 'downloading';
@@ -955,10 +1064,16 @@ async function refreshLoLStats(windowDays = 120) {
       console.warn('OE attempt failed:', s || e.message);
     }
   }
-  lolStats.state = 'error';
-  lolStats.lastError = errors.join(' | ');
-  console.warn('OE: all URL candidates failed —', lolStats.lastError,
-    '· If the yearly CSV moved, grab the current link from oracleselixir.com/tools/downloads and set it as an OE_URL env var on Railway. Auto-retrying every 30 min.');
+  console.warn('OE: all URL candidates failed —', errors.join(' | '), '· falling back to Leaguepedia');
+  try {
+    await refreshLoLFromLeaguepedia(windowDays);
+    return;
+  } catch (e2) {
+    lolStats.state = 'error';
+    lolStats.lastError = `OE: ${errors.join(' | ')} · Leaguepedia: ${e2.message}`;
+    console.warn('Leaguepedia fallback also failed:', e2.message,
+      '· inspect /api/esports/probe/lolsource for the raw response. Auto-retrying every 30 min.');
+  }
 }
 
 // Lifetime rate blended with kill-share formulation:
@@ -1054,6 +1169,7 @@ async function generateEsportsPicks() {
     let modelPred = esportsCache.manualPredictions[manualKey];
     if (modelPred == null) modelPred = manualNorm[`${normalizeName(lineObj.player)}|${normalizeMarket(lineObj.market)}`];
     let predSource = modelPred != null ? 'manual' : null;
+    let rawPred = null, sampleSize = null;   // function-scope: the manual path skips the block below
 
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
@@ -1069,6 +1185,7 @@ async function generateEsportsPicks() {
         const mk = (lineObj.market || '').toLowerCase();
         if (mk.includes('fantasy')) autoPred = null;   // FP needs the book's scoring formula — manual for now
         else autoPred = predictLoLStat(lineObj.player, mapCount, mk.includes('assist') ? 'assists' : 'kills');
+        sampleSize = lolStats.players[(lineObj.player || '').toLowerCase()]?.games ?? null;
       } else if (sportKey) {
         let player = null;
         const cacheStore = sportKey === 'VAL' ? esportsCache.vlrPlayers : esportsCache.hltvPlayers;
@@ -1079,8 +1196,13 @@ async function generateEsportsPicks() {
             ? await fetchVLRPlayerStats(lineObj.player)
             : await fetchBo3PlayerStats(lineObj.player);
         }
-        if (player) autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
+        if (player) {
+          autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
+          sampleSize = player.mapsPlayed ?? null;
+        }
       }
+      rawPred = autoPred;
+      autoPred = anchorToMarket(autoPred, lineObj.line, sampleSize);
 
       // SANITY GATE — his rule, kept: big % deviations are usually bad data,
       // with an absolute-diff pass for tiny LoL lines.
@@ -1098,18 +1220,20 @@ async function generateEsportsPicks() {
         }
       }
     }
-    return { modelPred, predSource, manualKey };
+    return { modelPred, predSource, manualKey, rawPred, sampleSize };
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
   // no more fabricated Betr/ParlayPlay/Sleeper numbers with default multipliers.
-  function assemble(base, modelPred, predSource, manualKey, udm, lineSource) {
+  function assemble(base, modelPred, predSource, manualKey, udm, lineSource, g = {}) {
     const lineVal = base.line;
     const pick = {
       sport: base.sport, player: base.player, team: base.team || '', market: base.market,
       ppLine: lineVal, startTime: base.startTime || '', lineSource,
       modelPred: modelPred != null ? parseFloat(modelPred.toFixed(2)) : null,
       predSource: modelPred != null ? predSource : null,
+      rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
+      sampleSize: g.sampleSize ?? null,
       manualKey,
       side: null, prob: null, ev: null,
       ppEv: null, udEv: null, betrEv: null, parlayEv: null, sleeperEv: null,
@@ -1160,16 +1284,16 @@ async function generateEsportsPicks() {
     if (!line.player || line.line == null) continue;
     const udm = udMap[`${normalizeName(line.player)}|${normalizeMarket(line.market)}`] || null;
     if (udm) udm.matched = true;
-    const { modelPred, predSource, manualKey } = await getModelPred(line);
-    picks.push(assemble(line, modelPred, predSource, manualKey, udm, 'pp'));
+    const g = await getModelPred(line);
+    picks.push(assemble(line, g.modelPred, g.predSource, g.manualKey, udm, 'pp', g));
   }
 
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
     const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime };
-    const { modelPred, predSource, manualKey } = await getModelPred(base);
-    picks.push(assemble(base, modelPred, predSource, manualKey, udm, 'ud'));
+    const g = await getModelPred(base);
+    picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
   }
 
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
@@ -1180,7 +1304,7 @@ async function generateEsportsPicks() {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.3', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.5.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1229,6 +1353,17 @@ app.get('/api/esports/player/:sport/:name', async (req, res) => {
   else if (sport.toLowerCase().includes('lol')) stats = lolStats.players[name.toLowerCase()] || null;
   else if (sport.toLowerCase().includes('cs')) stats = await fetchBo3PlayerStats(name);
   res.json(stats || { error: 'Player not found' });
+});
+
+// Raw Leaguepedia inspector — shows exactly what the wiki returns
+app.get('/api/esports/probe/lolsource', async (req, res) => {
+  const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  try {
+    const rows = await lpFetchPage(since, 0, 5);
+    res.json({ ok: true, since, rowsReturned: rows.length, sample: rows.slice(0, 5), parsed: aggregateLPRows(rows) });
+  } catch (e) {
+    res.json({ ok: false, error: e.message, status: e.response?.status, body: String(e.response?.data || '').slice(0, 500) });
+  }
 });
 
 // Raw-source inspector: paste this output in chat if a parse ever misses
@@ -1375,7 +1510,8 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.3.3',
+  version: '3.5.0',
+  modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
   esports: {
@@ -1384,7 +1520,7 @@ app.get('/api/status', (req, res) => res.json({
     ppEsportsLines: (cache.prizepicks.data||[]).filter(l => isEsports(l.sport)).length,
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
   },
-  lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError },
+  lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -1423,7 +1559,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.3.3 on port ${PORT}`);
+    console.log(`Line Reaper v3.5 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1448,7 +1584,8 @@ module.exports = {
   app, cache, esportsCache, lolStats,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
-  getVarianceMultiplier, parseMapCount, inSeasonSports,
+  getVarianceMultiplier, parseMapCount, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
+  aggregateLPRows, refreshLoLFromLeaguepedia,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
