@@ -3,17 +3,17 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cron = require('node-cron');
- 
+
 const app = express();
 const PORT = process.env.PORT || 3001;
- 
+
 const ODDS_API_KEY = process.env.ODDS_API_KEY || 'f67774f673842b08fa547e41cf37178c';
 const OWLS_API_KEY = process.env.OWLS_API_KEY || 'owlsinsight_1e9dfc3a29f37d639fb5b641ba7b2a24535d5e06b074713e88b2b1b19516b23b';
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
- 
+
 app.use(cors({ origin: '*' }));
 app.use(express.json());
- 
+
 // ─── CACHE ────────────────────────────────────────────────────────────────────
 let cache = {
   prizepicks: { data: [], updated: null },
@@ -31,7 +31,7 @@ let cache = {
   ppLeagueLabels: [],       // distinct league labels seen in the PP feed (diagnostics)
   quotaRemaining: null,     // Odds API x-requests-remaining, last seen
 };
- 
+
 // ─── IN-SEASON GATE ───────────────────────────────────────────────────────────
 // Only spend Odds API credits on sports actually in season (month-based).
 function inSeasonSports() {
@@ -44,12 +44,12 @@ function inSeasonSports() {
   s.push('mma_mixed_martial_arts');                        // MMA: year-round
   return s;
 }
- 
+
 function noteQuota(res) {
   const rem = res?.headers?.['x-requests-remaining'];
   if (rem != null) cache.quotaRemaining = parseFloat(rem);
 }
- 
+
 // ─── ODDS API PROP MARKETS ────────────────────────────────────────────────────
 const SPORT_PROP_MARKETS = {
   basketball_nba: [
@@ -68,16 +68,16 @@ const SPORT_PROP_MARKETS = {
     'player_pass_yds','player_pass_tds','player_rush_yds','player_reception_yds','player_receptions',
   ],
 };
- 
+
 const PROP_BOOKS = 'draftkings,fanduel,betmgm,caesars,bet365,pinnacle,novig,bovada,betonlineag,lowvig,betrivers,pointsbetus';
- 
+
 // ─── ODDS API PLAYER PROPS ────────────────────────────────────────────────────
 async function fetchOddsApiProps(sportKey) {
   const markets = SPORT_PROP_MARKETS[sportKey];
   if (!markets) return [];
   // Off-season sports return nothing but still bill — skip them entirely.
   if (!inSeasonSports().includes(sportKey)) return cache.oddsApiProps[sportKey]?.data || [];
- 
+
   try {
     // Get all events (the /events endpoint does not count against the quota)
     const eventsRes = await axios.get(`https://api.the-odds-api.com/v4/sports/${sportKey}/events`, {
@@ -86,7 +86,7 @@ async function fetchOddsApiProps(sportKey) {
     noteQuota(eventsRes);
     const events = eventsRes.data || [];
     if (!events.length) return [];
- 
+
     const allProps = [];
     // Only next 4 events to conserve quota
     for (const event of events.slice(0, 4)) {
@@ -102,16 +102,16 @@ async function fetchOddsApiProps(sportKey) {
           timeout: 12000
         });
         noteQuota(res);
- 
+
         const data = res.data;
         if (!data?.bookmakers?.length) continue;
- 
+
         const gameObj = {
           sport: sportKey, id: event.id,
           home_team: event.home_team, away_team: event.away_team,
           commence_time: event.commence_time, books: [],
         };
- 
+
         for (const bm of data.bookmakers) {
           const bookProps = [];
           for (const market of (bm.markets || [])) {
@@ -127,9 +127,9 @@ async function fetchOddsApiProps(sportKey) {
           }
           if (bookProps.length) gameObj.books.push({ key: bm.key, title: bm.title, props: bookProps });
         }
- 
+
         if (gameObj.books.length) allProps.push(gameObj);
- 
+
         // Batch 2: remaining markets
         if (markets.length > 4) {
           await new Promise(r => setTimeout(r, 300));
@@ -164,7 +164,7 @@ async function fetchOddsApiProps(sportKey) {
       }
       await new Promise(r => setTimeout(r, 400));
     }
- 
+
     cache.oddsApiProps[sportKey] = { data: allProps, updated: new Date().toISOString() };
     const total = allProps.reduce((s, g) => s + g.books.reduce((s2, b) => s2 + b.props.length, 0), 0);
     console.log(`OddsAPI props ${sportKey}: ${allProps.length} games, ${total} props` + (cache.quotaRemaining != null ? ` · quota left: ${cache.quotaRemaining}` : ''));
@@ -174,12 +174,12 @@ async function fetchOddsApiProps(sportKey) {
     return cache.oddsApiProps[sportKey]?.data || [];
   }
 }
- 
+
 // ─── DFS SCRAPERS ─────────────────────────────────────────────────────────────
 // PP gets blocked (403) from datacenter IPs — when that happens, back off to
 // 30-minute retries instead of hammering every 2 min. Esports runs on UD anyway.
 let ppFail = { count: 0, until: 0 };
- 
+
 async function scrapePrizePicks() {
   if (Date.now() < ppFail.until) return;
   try {
@@ -225,7 +225,7 @@ async function scrapePrizePicks() {
     }
   }
 }
- 
+
 // Pure parser so the UD payload handling is testable and survives shape changes.
 // UD has shipped several shapes over time:
 //   - appearance embedded on the line (over_under.appearance_stat.appearance = {...})
@@ -250,24 +250,24 @@ function parseUnderdogPayload(data) {
   if (Array.isArray(data.appearances)) for (const a of data.appearances) {
     appearances[a.id] = { player_id: a.player_id, match_id: a.match_id || a.solo_game_id || null };
   }
- 
+
   const lines = [];
   for (const line of (data.over_under_lines || [])) {
     const ou = line.over_under || {};
     const appStat = ou.appearance_stat || line.appearance_stat || {};
- 
+
     // appearance: embedded object OR id reference into data.appearances
     let appearance = appStat.appearance || null;
     const appearanceId = appStat.appearance_id || line.appearance_id || appearance?.id;
     if (!appearance && appearanceId && appearances[appearanceId]) appearance = appearances[appearanceId];
- 
+
     const playerId = appearance?.player_id || line.player_id;
     const matchId = appearance?.match_id || appearance?.solo_game_id || null;
- 
+
     const player = players[playerId] || {};
     const game = games[matchId] || soloGames[matchId] || {};
     const sport = game.sport || player.sport || '';
- 
+
     // per-side payout multipliers
     let overMult = 1.00, underMult = 1.00;
     if (Array.isArray(line.options)) {
@@ -277,7 +277,7 @@ function parseUnderdogPayload(data) {
         else if (opt.choice === 'lower' || opt.choice_display === 'Lower') underMult = m;
       }
     }
- 
+
     lines.push({
       book: 'underdog',
       sport,
@@ -293,7 +293,7 @@ function parseUnderdogPayload(data) {
   }
   return lines;
 }
- 
+
 async function scrapeUnderdog() {
   try {
     const res = await axios.get('https://api.underdogfantasy.com/beta/v5/over_under_lines', {
@@ -307,7 +307,7 @@ async function scrapeUnderdog() {
     console.log(`UD: ${lines.length} lines (${withMult} boosted/demoted) · sports: ${cache.udSportLabels.slice(0, 12).join(', ') || 'NONE RESOLVED'}`);
   } catch(e) { console.error('UD error:', e.message); }
 }
- 
+
 // ─── OWLS FETCHERS (with dead-key circuit breaker) ────────────────────────────
 // After 3 consecutive auth failures (401/403), Owls fetching disables itself
 // entirely — no more log spam, no wasted CPU/egress on a lapsed key.
@@ -324,7 +324,7 @@ function noteOwlsError(e, label) {
     console.warn(`${label}:`, s, e.message);
   }
 }
- 
+
 async function fetchOwlsProps(sport) {
   if (owlsDisabled()) return cache.owlsProps[sport]?.data || null;
   try {
@@ -335,7 +335,7 @@ async function fetchOwlsProps(sport) {
     return res.data;
   } catch(e) { noteOwlsError(e, `Owls props ${sport}`); return cache.owlsProps[sport]?.data || null; }
 }
- 
+
 async function fetchOwlsOdds(sport) {
   if (owlsDisabled()) return cache.owlsOdds[sport]?.data || null;
   try {
@@ -368,7 +368,7 @@ async function fetchOwlsOdds(sport) {
     return games;
   } catch(e) { noteOwlsError(e, `Owls odds ${sport}`); return cache.owlsOdds[sport]?.data || null; }
 }
- 
+
 async function fetchOwlsSplits(sport) {
   if (owlsDisabled()) return cache.splits[sport]?.data || null;
   try {
@@ -378,7 +378,7 @@ async function fetchOwlsSplits(sport) {
     return res.data;
   } catch(e) { noteOwlsError(e, `Owls splits ${sport}`); return cache.splits[sport]?.data || null; }
 }
- 
+
 // Lazy only — the old 3-minute cron for this was burning ~5,700 credits/DAY
 // (4 sports × 3 markets × every 3 min). The frontend fetches its own odds
 // directly, so nothing needs this on a timer. Kept as an on-request route.
@@ -392,7 +392,7 @@ async function fetchOddsForSport(sport) {
     return res.data;
   } catch(e) { return cache.odds[sport]?.data || []; }
 }
- 
+
 // ─── MERGE HELPER ─────────────────────────────────────────────────────────────
 function mergeProps(owlsData, oddsApiData) {
   const merged = Array.isArray(owlsData) ? [...owlsData] : [];
@@ -407,13 +407,13 @@ function mergeProps(owlsData, oddsApiData) {
   }
   return merged;
 }
- 
+
 // ─── ESPORTS PREDICTION ENGINE ────────────────────────────────────────────────
 // Reverse engineered from a paid model. Average error vs source: 0.38% prob, 0.66% EV
 // Math: prob = NormalCDF(pp_line, mean=model_pred, std=sqrt(model*k))
 // EV: (prob / 0.5622 - 1) * 100  [PrizePicks pays at -128 implied 56.22%]
 // k varies by sport+prop_type (see getVarianceMultiplier)
- 
+
 function _erf(x) {
   const sign = x >= 0 ? 1 : -1;
   x = Math.abs(x);
@@ -425,7 +425,7 @@ function _erf(x) {
 function _normalCDF(x, mean, std) {
   return 0.5 * (1 + _erf((x - mean) / (std * Math.sqrt(2))));
 }
- 
+
 function getVarianceMultiplier(sport, propText) {
   const s = (sport || '').toUpperCase();
   const p = (propText || '').toUpperCase();
@@ -440,7 +440,7 @@ function getVarianceMultiplier(sport, propText) {
   const isGameCombo = /GAME\s*1[\s+]+2[\s+]+3/.test(p);
   const isAssists = p.includes('ASSIST');
   const isFantasy = p.includes('FANTASY');
- 
+
   if (s.includes('COD')) {
     if (isCombo || isGameCombo || isMaps13) return 2.0;
     if (isMap3 || isGame3) return 4.6;
@@ -469,14 +469,14 @@ function getVarianceMultiplier(sport, propText) {
   }
   return 2.5;
 }
- 
+
 // Implied probabilities reverse-engineered from each book at 1.00x mult
 //   MODEL A (PP, UD, Betr): implied=56.22%, multiplier scales bonus payout
 //   MODEL B (ParlayPlay, Sleeper): multiplier IS the decimal payout
 const PP_IMPLIED = 0.5622;
 const UD_IMPLIED = 0.5623;
 const BETR_IMPLIED = 0.5622;
- 
+
 function calcBookEV(prob, book, mult = 1.00) {
   prob = prob > 1 ? prob/100 : prob;  // accept 0-1 or 0-100
   switch ((book || '').toLowerCase()) {
@@ -497,11 +497,11 @@ function calcBookEV(prob, book, mult = 1.00) {
       return (prob / PP_IMPLIED - 1) * 100;
   }
 }
- 
+
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (!ppLine || !modelPred || modelPred <= 0) return null;
   let k = getVarianceMultiplier(sport, propText);
- 
+
   // Adaptive variance for low-volume props (DOTA, LOL kills)
   const s = (sport || '').toUpperCase();
   if (s.includes('DOTA')) {
@@ -514,19 +514,19 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (s.includes('LOL') && modelPred < 5) {
     k = Math.max(k * 0.5, 2.5);
   }
- 
+
   const std = Math.sqrt(modelPred * k);
   let prob;
   if (side === 'UNDER') prob = _normalCDF(ppLine, modelPred, std);
   else prob = 1 - _normalCDF(ppLine, modelPred, std);
- 
+
   return {
     prob: prob * 100,
     confidence: prob > 0.62 ? 'HIGH' : prob > 0.56 ? 'MED' : 'LOW',
     varianceK: k,
   };
 }
- 
+
 function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
   if (!ppLine || !modelPred) return null;
   const side = modelPred < ppLine ? 'UNDER' : modelPred > ppLine ? 'OVER' : null;
@@ -535,10 +535,10 @@ function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
   if (!r) return null;
   return { ...r, side, ppLine, modelPred, ev: calcBookEV(r.prob, 'prizepicks') };
 }
- 
+
 // Prediction layer: convert player stats to expected kills
 const ROUNDS_PER_MAP = { CS: 24, VAL: 22, DOTA: 1, COD: 1, LOL: 1 };
- 
+
 function parseMapCount(propText) {
   if (!propText) return 1;
   const text = propText.toUpperCase();
@@ -546,21 +546,37 @@ function parseMapCount(propText) {
   if (rangeMatch) return parseInt(rangeMatch[2]) - parseInt(rangeMatch[1]) + 1;
   return 1;
 }
- 
+
 function predictKillsFromStats(player, sport, mapCount, propType = 'kills') {
-  if (!player || !player.kpr) return null;
-  const rpm = ROUNDS_PER_MAP[(sport || '').toUpperCase()] || 24;
-  let pred = player.kpr * rpm * mapCount;
+  if (!player) return null;
+  const s = (sport || '').toUpperCase();
+  let pred = null;
+  // Preferred: the player's actual kills-per-map average over the window —
+  // this IS "where they normally frag", lifetime-rate style.
+  if (player.avgKillsPerMap) pred = player.avgKillsPerMap * mapCount;
+  if (player.kpr) {
+    // 21.5 rounds/map is the empirical CS2 average (stomps included);
+    // the old 24 assumed every map goes 13-11 and overshot ~10%.
+    const rpm = player.roundsPerMap || (s === 'VAL' ? 22 : 21.5);
+    const viaRounds = player.kpr * rpm * mapCount;
+    pred = pred != null ? 0.5 * (pred + viaRounds) : viaRounds;
+  }
+  if (pred == null) return null;
   if ((propType || '').toLowerCase().includes('headshot')) {
-    pred = pred * (player.hsPercent / 100 || 0.45);
+    pred = pred * ((player.hsPercent ? player.hsPercent / 100 : null) || 0.45);
   }
-  if (player.rating) {
-    const formFactor = 1 + (player.rating - 1.0) * 0.15;
-    pred *= formFactor;
-  }
+  if (player.rating) pred *= 1 + (player.rating - 1.0) * 0.15;
   return pred;
 }
- 
+
+// Sanity gate for auto-predictions: beyond 20% off the line is usually a bad
+// scrape — EXCEPT on tiny lines (a 1.5-kill LoL support prop), where a 1-kill
+// difference is a legit 60% deviation. Absolute tolerance covers those.
+function autoPredAcceptable(pred, line) {
+  if (!pred || !line) return false;
+  return Math.abs(pred - line) / line <= 0.20 || Math.abs(pred - line) <= 2.0;
+}
+
 // ─── ESPORTS DATA SCRAPERS (HLTV / VLR) ───────────────────────────────────────
 let esportsCache = {
   hltvPlayers: {},
@@ -569,19 +585,19 @@ let esportsCache = {
   picks: [],
   lastUpdated: null,
 };
- 
+
 const HLTV_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
   'Accept-Language': 'en-US,en;q=0.9',
   'Referer': 'https://www.hltv.org/',
 };
- 
+
 async function fetchHLTVPlayerStats(playerName) {
   try {
     const cached = esportsCache.hltvPlayers[playerName.toLowerCase()];
     if (cached && (Date.now() - cached.lastUpdate) < 3600000) return cached;
- 
+
     const searchRes = await axios.get(`https://www.hltv.org/stats/players?search=${encodeURIComponent(playerName)}`, {
       headers: HLTV_HEADERS, timeout: 12000
     });
@@ -589,25 +605,25 @@ async function fetchHLTVPlayerStats(playerName) {
     const linkMatch = searchHtml.match(/href="\/stats\/players\/(\d+)\/[^"]+"/);
     if (!linkMatch) return null;
     const playerId = linkMatch[1];
- 
+
     const res = await axios.get(`https://www.hltv.org/stats/players/${playerId}`, {
       headers: HLTV_HEADERS, timeout: 12000
     });
     const html = res.data;
- 
+
     const stats = { name: playerName, lastUpdate: Date.now() };
     const ratingMatch = html.match(/Rating[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
     const kprMatch = html.match(/Kills\s*\/\s*round[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
     const adrMatch = html.match(/ADR[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
     const hsMatch = html.match(/Headshot\s*%[^<]*<[^>]+>[\s\S]*?>([\d.]+)/);
     const mapsMatch = html.match(/Maps\s*played[^<]*<[^>]+>[\s\S]*?>(\d+)/);
- 
+
     if (ratingMatch) stats.rating = parseFloat(ratingMatch[1]);
     if (kprMatch) stats.kpr = parseFloat(kprMatch[1]);
     if (adrMatch) stats.adr = parseFloat(adrMatch[1]);
     if (hsMatch) stats.hsPercent = parseFloat(hsMatch[1]);
     if (mapsMatch) stats.mapsPlayed = parseInt(mapsMatch[1]);
- 
+
     if (stats.kpr) {
       esportsCache.hltvPlayers[playerName.toLowerCase()] = stats;
       console.log(`HLTV ${playerName}: KPR=${stats.kpr} R=${stats.rating}`);
@@ -619,17 +635,17 @@ async function fetchHLTVPlayerStats(playerName) {
     return esportsCache.hltvPlayers[playerName.toLowerCase()] || null;
   }
 }
- 
+
 async function fetchVLRPlayerStats(playerName) {
   try {
     const cached = esportsCache.vlrPlayers[playerName.toLowerCase()];
     if (cached && (Date.now() - cached.lastUpdate) < 3600000) return cached;
- 
+
     const res = await axios.get(`https://vlrggapi.vercel.app/stats?region=na&timespan=60`, { timeout: 12000 });
     const players = res.data?.data?.segments || [];
     const found = players.find(p => (p.player || '').toLowerCase() === playerName.toLowerCase());
     if (!found) return null;
- 
+
     const stats = {
       name: found.player,
       kpr: parseFloat(found.kills_per_round) || 0,
@@ -646,12 +662,256 @@ async function fetchVLRPlayerStats(playerName) {
     return esportsCache.vlrPlayers[playerName.toLowerCase()] || null;
   }
 }
- 
+
+// ─── CS STATS VIA BO3.GG ──────────────────────────────────────────────────────
+// HLTV blocks datacenter IPs; bo3.gg is the standard server-friendly equivalent.
+// Schema isn't documented, so field extraction probes several plausible names,
+// logs the real keys once, and /api/esports/probe/cs/:name exposes raw payloads.
+const BO3_BASE = 'https://api.bo3.gg/api/v1';
+const BO3_HEADERS = {
+  'authority': 'api.bo3.gg',
+  'origin': 'https://bo3.gg',
+  'referer': 'https://bo3.gg/',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+  'Accept': 'application/json',
+};
+
+function bo3Pick(obj, keys) {
+  if (!obj || typeof obj !== 'object') return null;
+  for (const k of keys) {
+    const v = obj[k];
+    if (v != null && v !== '' && isFinite(parseFloat(v))) return parseFloat(v);
+  }
+  return null;
+}
+function bo3FirstObject(x) {
+  if (!x) return null;
+  if (Array.isArray(x)) return x[0] || null;
+  if (x.data) return bo3FirstObject(x.data);
+  if (x.results) return bo3FirstObject(x.results);
+  return typeof x === 'object' ? x : null;
+}
+let bo3LoggedKeys = false;
+
+async function bo3SearchPlayer(name) {
+  const res = await axios.get(`${BO3_BASE}/filters/players`, {
+    headers: BO3_HEADERS, timeout: 12000,
+    params: { 'page[offset]': '0', 'page[limit]': '4', 'filter[discipline_id][eq]': '1', 'with': 'country', 'search_text': name }
+  });
+  const raw = res.data?.data || res.data?.players || res.data?.results || res.data || [];
+  const arr = Array.isArray(raw) ? raw : [];
+  const exact = arr.find(p => (p.nickname || p.name || p.slug || '').toLowerCase() === name.toLowerCase());
+  const hit = exact || arr[0];
+  if (!hit) return null;
+  return { slug: hit.slug || hit.id, name: hit.nickname || hit.name || name };
+}
+
+async function bo3RawStats(slug) {
+  const today = new Date().toISOString().slice(0, 10);
+  const from = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  const [gen, map, acc] = await Promise.all([
+    axios.get(`${BO3_BASE}/players/${slug}/general_stats`, { headers: BO3_HEADERS, timeout: 12000,
+      params: { 'filter[start_date_to]': today, 'filter[start_date_from]': from } }).then(r => r.data).catch(() => null),
+    axios.get(`${BO3_BASE}/players/${slug}/map_stats`, { headers: BO3_HEADERS, timeout: 12000,
+      params: { 'filter[begin_at_to]': today, 'filter[begin_at_from]': from } }).then(r => r.data).catch(() => null),
+    axios.get(`${BO3_BASE}/players/${slug}/accuracy_stats`, { headers: BO3_HEADERS, timeout: 12000,
+      params: { 'filter[begin_at_to]': today, 'filter[begin_at_from]': from } }).then(r => r.data).catch(() => null),
+  ]);
+  return { gen, map, acc };
+}
+
+function bo3ExtractProfile(playerName, gen, map, acc) {
+  const g = bo3FirstObject(gen), m = bo3FirstObject(map), a = bo3FirstObject(acc);
+  if (!bo3LoggedKeys && (g || m || a)) {
+    bo3LoggedKeys = true;
+    console.log('bo3 schema — general:', g ? Object.keys(g).slice(0, 25).join(',') : 'none',
+      '| map:', m ? Object.keys(m).slice(0, 25).join(',') : 'none',
+      '| accuracy:', a ? Object.keys(a).slice(0, 25).join(',') : 'none');
+  }
+  const kpr = bo3Pick(g, ['kpr', 'kills_per_round', 'avg_kills_per_round', 'killsPerRound']);
+  const kills = bo3Pick(g, ['kills', 'total_kills', 'kills_count', 'kills_sum']);
+  const rounds = bo3Pick(g, ['rounds', 'rounds_count', 'total_rounds', 'round_count']);
+  const mapsPlayed = bo3Pick(g, ['maps', 'maps_count', 'maps_played', 'matches_count'])
+    ?? bo3Pick(m, ['maps_count', 'count', 'total']);
+  const rating = bo3Pick(g, ['rating', 'player_rating', 'hltv_rating', 'rating_avg']);
+  let hsPercent = bo3Pick(a, ['headshot_accuracy', 'hs_accuracy', 'headshots_percentage', 'hs_percent', 'headshot_percent'])
+    ?? bo3Pick(g, ['headshots_percentage', 'hs_percent', 'headshot_percent']);
+
+  const stats = { name: playerName, lastUpdate: Date.now(), source: 'bo3' };
+  if (kpr) stats.kpr = kpr;
+  else if (kills && rounds) stats.kpr = kills / rounds;
+  if (kills && mapsPlayed) stats.avgKillsPerMap = kills / mapsPlayed;
+  if (rounds && mapsPlayed) stats.roundsPerMap = rounds / mapsPlayed;
+  if (rating) stats.rating = rating;
+  if (hsPercent != null) stats.hsPercent = hsPercent > 1 ? hsPercent : hsPercent * 100;
+  return (stats.kpr || stats.avgKillsPerMap) ? stats : null;
+}
+
+async function fetchBo3PlayerStats(playerName) {
+  try {
+    const key = playerName.toLowerCase();
+    const cached = esportsCache.hltvPlayers[key];
+    if (cached && (Date.now() - cached.lastUpdate) < 6 * 3600000) return cached;
+
+    const found = await bo3SearchPlayer(playerName);
+    if (!found?.slug) { console.warn(`bo3 ${playerName}: no search hit`); return cached || null; }
+    const { gen, map, acc } = await bo3RawStats(found.slug);
+    const stats = bo3ExtractProfile(playerName, gen, map, acc);
+    if (stats) {
+      esportsCache.hltvPlayers[key] = stats;
+      console.log(`bo3 ${playerName}: KPM=${stats.avgKillsPerMap?.toFixed(1) ?? '—'} KPR=${stats.kpr?.toFixed(2) ?? '—'} HS%=${stats.hsPercent?.toFixed(0) ?? '—'} R=${stats.rating ?? '—'}`);
+      return stats;
+    }
+    console.warn(`bo3 ${playerName}: no usable kill fields — inspect /api/esports/probe/cs/${encodeURIComponent(playerName)}`);
+    return cached || null;
+  } catch (e) {
+    console.warn(`bo3 ${playerName}:`, e.response?.status || e.message);
+    return esportsCache.hltvPlayers[playerName.toLowerCase()] || null;
+  }
+}
+
+// ─── LOL STATS VIA ORACLE'S ELIXIR ────────────────────────────────────────────
+// Daily-updated yearly CSV covering every pro league (LCK, LCK CL, LPL, ...).
+// Parsed strictly BY HEADER NAME — OE adds columns and positions shift.
+const OE_URL = process.env.OE_URL ||
+  `https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/${new Date().getFullYear()}_LoL_esports_match_data_from_OraclesElixir.csv`;
+
+const lolStats = { players: {}, teams: {}, games: 0, updated: null };
+
+function parseCsvLine(line) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+// Streaming aggregator (pure, unit-tested): fold rows one at a time,
+// pair each game's two team rows to get kills-allowed, derive per-player
+// kills/game + kill share of team, per-team pace.
+function createOEAggregator(headerCols, sinceMs) {
+  const col = {};
+  headerCols.forEach((h, i) => col[String(h).trim().toLowerCase()] = i);
+  const need = ['gameid', 'date', 'position', 'playername', 'teamname', 'kills', 'league'];
+  for (const n of need) if (col[n] == null) throw new Error(`OE csv missing column "${n}" — schema changed; check oracleselixir.com/tools/downloads`);
+  const aCol = col['assists'];   // optional — assists model skips gracefully if OE drops it
+
+  const players = {}, teams = {}, gameTeams = {};
+  let games = 0;
+
+  return {
+    push(cells) {
+      const d = Date.parse(cells[col['date']]);
+      if (!isFinite(d) || d < sinceMs) return;
+      const pos = (cells[col['position']] || '').toLowerCase();
+      const team = cells[col['teamname']] || '';
+      const kills = parseFloat(cells[col['kills']]) || 0;
+      const gid = cells[col['gameid']];
+
+      if (pos === 'team') {
+        const tk = team.toLowerCase();
+        const T = teams[tk] || (teams[tk] = { name: team, games: 0, kills: 0, killsAllowed: 0, assists: 0 });
+        T.games++; T.kills += kills;
+        if (aCol != null) T.assists += parseFloat(cells[aCol]) || 0;
+        const gt = gameTeams[gid] || (gameTeams[gid] = []);
+        gt.push({ team: tk, kills });
+        if (gt.length === 2) {
+          teams[gt[0].team].killsAllowed += gt[1].kills;
+          teams[gt[1].team].killsAllowed += gt[0].kills;
+          games++;
+          delete gameTeams[gid];
+        }
+      } else {
+        const name = (cells[col['playername']] || '').toLowerCase();
+        if (!name) return;
+        const P = players[name] || (players[name] = { name: cells[col['playername']], team: '', games: 0, kills: 0, assists: 0, league: '' });
+        P.games++; P.kills += kills;
+        if (aCol != null) P.assists += parseFloat(cells[aCol]) || 0;
+        P.team = team; P.league = cells[col['league']] || P.league;
+      }
+    },
+    finish() {
+      for (const p of Object.values(players)) {
+        p.kpg = p.games ? p.kills / p.games : 0;
+        p.apg = p.games ? p.assists / p.games : 0;
+        const T = teams[(p.team || '').toLowerCase()];
+        p.teamKpg = T && T.games ? T.kills / T.games : null;
+        p.teamApg = T && T.games ? T.assists / T.games : null;
+        p.oppKillsAllowedPg = T && T.games ? T.killsAllowed / T.games : null;
+        p.killShare = p.teamKpg ? p.kpg / p.teamKpg : null;
+        p.assistShare = p.teamApg ? p.apg / p.teamApg : null;
+      }
+      for (const t of Object.values(teams)) {
+        t.kpg = t.games ? t.kills / t.games : 0;
+        t.kapg = t.games ? t.killsAllowed / t.games : 0;
+      }
+      return { players, teams, games };
+    }
+  };
+}
+
+async function refreshLoLStats(windowDays = 120) {
+  try {
+    console.log('OE: downloading LoL match data (daily)...');
+    const res = await axios.get(OE_URL, { responseType: 'stream', timeout: 180000 });
+    const sinceMs = Date.now() - windowDays * 86400000;
+    let agg = null, carry = '', bytes = 0;
+    await new Promise((resolve, reject) => {
+      res.data.on('data', chunk => {
+        bytes += chunk.length;
+        carry += chunk.toString('utf8');
+        let idx;
+        while ((idx = carry.indexOf('\n')) >= 0) {
+          const line = carry.slice(0, idx).replace(/\r$/, '');
+          carry = carry.slice(idx + 1);
+          if (!agg) agg = createOEAggregator(parseCsvLine(line), sinceMs);
+          else if (line) agg.push(parseCsvLine(line));
+        }
+      });
+      res.data.on('end', resolve);
+      res.data.on('error', reject);
+    });
+    if (carry.trim() && agg) agg.push(parseCsvLine(carry));
+    if (!agg) throw new Error('empty CSV');
+    const out = agg.finish();
+    Object.assign(lolStats, out, { updated: new Date().toISOString() });
+    console.log(`OE: ${(bytes / 1048576).toFixed(1)}MB → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
+    generateEsportsPicks().catch(() => {});
+  } catch (e) {
+    const s = e.response?.status;
+    console.warn('OE download failed:', s || e.message,
+      (s === 403 || s === 404) ? '— yearly CSV URL likely changed; get the current link from oracleselixir.com/tools/downloads and set it as OE_URL env var on Railway' : '');
+  }
+}
+
+// Lifetime rate blended with kill-share formulation:
+//   half player's own kills/game, half (share of team kills × team pace).
+// Identical today, but the share half becomes opponent-aware once lines
+// carry match context (then team pace blends with opponent kills-allowed).
+function predictLoLStat(playerName, mapCount, stat = 'kills') {
+  const p = lolStats.players[(playerName || '').toLowerCase()];
+  if (!p || !p.games || p.games < 4) return null;
+  let perGame, share, teamPg;
+  if (stat === 'assists') { perGame = p.apg; share = p.assistShare; teamPg = p.teamApg; }
+  else { perGame = p.kpg; share = p.killShare; teamPg = p.teamKpg; }
+  if (!perGame) return null;
+  if (share && teamPg) perGame = 0.5 * perGame + 0.5 * (share * teamPg);
+  return perGame * (mapCount || 1);
+}
+function predictLoLKills(playerName, mapCount) { return predictLoLStat(playerName, mapCount, 'kills'); }
+
 // ─── CROSS-BOOK NORMALIZATION ─────────────────────────────────────────────────
 function normalizeName(n) {
   return (n || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
 }
- 
+
 // Handles: "MAPS 1-2 Kills" (PP), "Kills on Maps 1+2" (UD), "Kills Map 1+2" (Betr), "Kills Maps 1 2" (Sleeper)
 function normalizeMarket(m) {
   const s = (m || '').toLowerCase();
@@ -677,21 +937,21 @@ function normalizeMarket(m) {
   let stat = isHS ? 'hs' : isAssists ? 'ast' : isFantasy ? 'fp' : 'k';
   return `${stat}|${mapCount}`;
 }
- 
+
 // ─── ESPORTS PICK GENERATION (UD-primary, PP as bonus) ────────────────────────
 const ES_TOKENS = ['CS','VAL','COD','CALL OF DUTY','DOTA','LOL','LEAGUE','ESPORT','CSGO','COUNTER','OVERWATCH','OW2','HALO','R6','RAINBOW','ROCKET'];
 function isEsports(s) {
   const u = (s || '').toUpperCase();
   return ES_TOKENS.some(k => u.includes(k));
 }
- 
+
 async function generateEsportsPicks() {
   const ppLines = cache.prizepicks.data || [];
   const udLines = cache.underdog.data || [];
- 
+
   const ppEsports = ppLines.filter(l => isEsports(l.sport));
   const udEsports = udLines.filter(l => isEsports(l.sport));
- 
+
   // UD lookup, side-aware multipliers
   const udMap = {};
   for (const l of udEsports) {
@@ -703,12 +963,12 @@ async function generateEsportsPicks() {
     };
   }
   console.log(`Esports: PP=${ppEsports.length} UD=${udEsports.length} udMap=${Object.keys(udMap).length}`);
- 
+
   // Limit fresh stat lookups per cycle so pick generation stays fast;
   // cached players are free and refresh hourly.
   let freshLookups = 0;
   const MAX_FRESH_LOOKUPS = 15;
- 
+
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
   // "Kills on Maps 1+2" on UD. Normalized index makes a manual number stick to
@@ -718,51 +978,54 @@ async function generateEsportsPicks() {
     const i = k.indexOf('|');
     if (i > 0) manualNorm[`${normalizeName(k.slice(0, i))}|${normalizeMarket(k.slice(i + 1))}`] = v;
   }
- 
+
   async function getModelPred(lineObj) {
     const manualKey = `${lineObj.player}|${lineObj.market}`;
     let modelPred = esportsCache.manualPredictions[manualKey];
     if (modelPred == null) modelPred = manualNorm[`${normalizeName(lineObj.player)}|${normalizeMarket(lineObj.market)}`];
     let predSource = modelPred != null ? 'manual' : null;
- 
+
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
       const mapCount = parseMapCount(lineObj.market);
       let sportKey = null;
       if (sportU.includes('VAL')) sportKey = 'VAL';
       else if (sportU.includes('CS') || sportU.includes('COUNTER')) sportKey = 'CS';
- 
-      let player = null;
-      if (sportKey) {
+      else if (sportU.includes('LOL') || sportU.includes('LEAGUE')) sportKey = 'LOL';
+
+      let autoPred = null;
+      if (sportKey === 'LOL') {
+        // Oracle's Elixir aggregates are in memory — no lookup budget needed
+        const mk = (lineObj.market || '').toLowerCase();
+        if (mk.includes('fantasy')) autoPred = null;   // FP needs the book's scoring formula — manual for now
+        else autoPred = predictLoLStat(lineObj.player, mapCount, mk.includes('assist') ? 'assists' : 'kills');
+      } else if (sportKey) {
+        let player = null;
         const cacheStore = sportKey === 'VAL' ? esportsCache.vlrPlayers : esportsCache.hltvPlayers;
         const hasCached = !!cacheStore[(lineObj.player || '').toLowerCase()];
         if (hasCached || freshLookups < MAX_FRESH_LOOKUPS) {
           if (!hasCached) freshLookups++;
           player = sportKey === 'VAL'
             ? await fetchVLRPlayerStats(lineObj.player)
-            : await fetchHLTVPlayerStats(lineObj.player);
+            : await fetchBo3PlayerStats(lineObj.player);
         }
+        if (player) autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
       }
- 
-      if (player) {
-        const autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
-        // SANITY CHECK: reject auto-predictions too far from the line.
-        // The paid model rarely deviates more than 15% from the line —
-        // beyond 20% is almost certainly a bad scrape, not a real edge.
-        if (autoPred && lineObj.line) {
-          const pctDiff = Math.abs(autoPred - lineObj.line) / lineObj.line;
-          if (pctDiff <= 0.20) {
-            modelPred = autoPred;
-            predSource = 'auto';
-          } else {
-            console.log(`Esports: rejected auto-pred for ${lineObj.player} (line=${lineObj.line}, pred=${autoPred.toFixed(1)}, ${(pctDiff*100).toFixed(0)}% diff)`);
-          }
+
+      // SANITY GATE — his rule, kept: big % deviations are usually bad data,
+      // with an absolute-diff pass for tiny LoL lines.
+      if (autoPred && lineObj.line) {
+        if (autoPredAcceptable(autoPred, lineObj.line)) {
+          modelPred = autoPred;
+          predSource = 'auto';
+        } else {
+          console.log(`Esports: rejected auto-pred for ${lineObj.player} (line=${lineObj.line}, pred=${autoPred.toFixed(1)}, ${(Math.abs(autoPred - lineObj.line) / lineObj.line * 100).toFixed(0)}% diff)`);
         }
       }
     }
     return { modelPred, predSource, manualKey };
   }
- 
+
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
   // no more fabricated Betr/ParlayPlay/Sleeper numbers with default multipliers.
   function assemble(base, modelPred, predSource, manualKey, udm, lineSource) {
@@ -779,19 +1042,19 @@ async function generateEsportsPicks() {
       bestBook: null, bestEv: null, edge: null, confidence: null, varianceK: null,
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
- 
+
     const side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
     if (!side) return pick;
     const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market);
     if (!r) return pick;
- 
+
     pick.side = side;
     pick.prob = parseFloat(r.prob.toFixed(2));
     pick.confidence = r.confidence;
     pick.varianceK = r.varianceK;
- 
+
     if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
- 
+
     if (udm) {
       const udSideMult = side === 'OVER' ? (udm.overMultiplier || 1.00) : (udm.underMultiplier || 1.00);
       // UD's line can differ from PP's — price UD against ITS OWN line
@@ -803,7 +1066,7 @@ async function generateEsportsPicks() {
       pick.udEv = parseFloat(calcBookEV(udProb, 'underdog', udSideMult).toFixed(2));
       pick.udMultiplier = udSideMult;
     }
- 
+
     const books = [['PP', pick.ppEv], ['UD', pick.udEv]].filter(b => b[1] != null);
     if (books.length) {
       const best = books.reduce((a, b) => (b[1] > a[1] ? b : a));
@@ -814,9 +1077,9 @@ async function generateEsportsPicks() {
     }
     return pick;
   }
- 
+
   const picks = [];
- 
+
   // PP lines first (when PP is alive) — cross-matched to UD
   for (const line of ppEsports) {
     if (!line.player || line.line == null) continue;
@@ -825,7 +1088,7 @@ async function generateEsportsPicks() {
     const { modelPred, predSource, manualKey } = await getModelPred(line);
     picks.push(assemble(line, modelPred, predSource, manualKey, udm, 'pp'));
   }
- 
+
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
@@ -833,17 +1096,17 @@ async function generateEsportsPicks() {
     const { modelPred, predSource, manualKey } = await getModelPred(base);
     picks.push(assemble(base, modelPred, predSource, manualKey, udm, 'ud'));
   }
- 
+
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
- 
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.2.0', updated: new Date().toISOString() }));
- 
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.3.1', updated: new Date().toISOString() }));
+
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
@@ -856,12 +1119,12 @@ app.get('/api/esports/picks', async (req, res) => {
   picks = picks.filter(p => p.ev == null || p.ev >= minEV);
   res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated });
 });
- 
+
 app.post('/api/esports/refresh', async (req, res) => {
   await generateEsportsPicks();
   res.json({ ok: true, count: esportsCache.picks.length });
 });
- 
+
 app.post('/api/esports/predict', (req, res) => {
   const { ppLine, modelPred, sport, propText, side } = req.body;
   if (!ppLine || !modelPred) return res.status(400).json({ error: 'ppLine and modelPred required' });
@@ -870,7 +1133,7 @@ app.post('/api/esports/predict', (req, res) => {
     : predictEsportsSide(ppLine, modelPred, sport, propText);
   res.json(result);
 });
- 
+
 app.post('/api/esports/manual', (req, res) => {
   const { player, market, modelPred } = req.body;
   if (!player || !market) return res.status(400).json({ error: 'player and market required' });
@@ -879,51 +1142,70 @@ app.post('/api/esports/manual', (req, res) => {
   else esportsCache.manualPredictions[key] = parseFloat(modelPred);
   res.json({ ok: true, key, value: esportsCache.manualPredictions[key] });
 });
- 
+
 app.get('/api/esports/manual', (req, res) => {
   res.json(esportsCache.manualPredictions);
 });
- 
+
 app.get('/api/esports/player/:sport/:name', async (req, res) => {
   const { sport, name } = req.params;
   let stats = null;
   if (sport.toLowerCase().includes('val')) stats = await fetchVLRPlayerStats(name);
-  else if (sport.toLowerCase().includes('cs')) stats = await fetchHLTVPlayerStats(name);
+  else if (sport.toLowerCase().includes('lol')) stats = lolStats.players[name.toLowerCase()] || null;
+  else if (sport.toLowerCase().includes('cs')) stats = await fetchBo3PlayerStats(name);
   res.json(stats || { error: 'Player not found' });
 });
- 
+
+// Raw-source inspector: paste this output in chat if a parse ever misses
+app.get('/api/esports/probe/:sport/:name', async (req, res) => {
+  const { sport, name } = req.params;
+  const s = sport.toLowerCase();
+  try {
+    if (s.includes('lol')) {
+      return res.json({ source: 'oracles-elixir', updated: lolStats.updated,
+        player: lolStats.players[name.toLowerCase()] || null,
+        prediction12: predictLoLKills(name, 2) });
+    }
+    if (s.includes('val')) return res.json({ source: 'vlr', player: await fetchVLRPlayerStats(name) });
+    const found = await bo3SearchPlayer(name);
+    if (!found?.slug) return res.json({ source: 'bo3', error: 'no search hit for that name' });
+    const raw = await bo3RawStats(found.slug);
+    res.json({ source: 'bo3', found, raw, parsed: bo3ExtractProfile(name, raw.gen, raw.map, raw.acc) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/prizepicks', (req, res) => {
   const sport = req.query.sport;
   let data = cache.prizepicks.data || [];
   if (sport) data = data.filter(l => l.sport.toLowerCase() === sport.toLowerCase());
   res.json({ data, updated: cache.prizepicks.updated, count: data.length });
 });
- 
+
 app.get('/api/underdog', (req, res) => {
   const sport = req.query.sport;
   let data = cache.underdog.data || [];
   if (sport) data = data.filter(l => (l.sport||'').toLowerCase() === sport.toLowerCase());
   res.json({ data, updated: cache.underdog.updated, count: data.length });
 });
- 
+
 app.get('/api/sleeper', (req, res) => res.json({ data: cache.sleeper.data || [] }));
- 
+
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
 app.get('/api/props/:sport', async (req, res) => {
   const sport = req.params.sport;
   const oddsApiMap = { nba:'basketball_nba', mlb:'baseball_mlb', nhl:'icehockey_nhl', nfl:'americanfootball_nfl', mma:'mma_mixed_martial_arts', basketball_nba:'basketball_nba', baseball_mlb:'baseball_mlb', icehockey_nhl:'icehockey_nhl', americanfootball_nfl:'americanfootball_nfl' };
   const oddsKey = oddsApiMap[sport] || sport;
- 
+
   let owls = cache.owlsProps[sport]?.data;
   const owlsFresh = cache.owlsProps[sport]?.updated && (Date.now()-new Date(cache.owlsProps[sport].updated).getTime()) < 300000;
   if (!owlsFresh) owls = await fetchOwlsProps(sport);
- 
+
   let oddsApi = cache.oddsApiProps[oddsKey]?.data;
   const oddsApiFresh = cache.oddsApiProps[oddsKey]?.updated && (Date.now()-new Date(cache.oddsApiProps[oddsKey].updated).getTime()) < 600000;
   if (!oddsApiFresh) oddsApi = await fetchOddsApiProps(oddsKey);
- 
+
   let merged = mergeProps(owls, oddsApi);
- 
+
   // FALLBACK: if nothing from Owls or Odds API, build from PP/UD data
   if (!merged.length) {
     const sportUpper = sport.toUpperCase();
@@ -937,7 +1219,7 @@ app.get('/api/props/:sport', async (req, res) => {
     const udLines = (cache.underdog.data || []).filter(l =>
       l.sport && (l.sport.toLowerCase().includes(sport.toLowerCase()) || l.sport.toUpperCase() === sportUpper)
     );
- 
+
     if (ppLines.length || udLines.length) {
       const playerMap = {};
       for (const l of ppLines) {
@@ -949,29 +1231,29 @@ app.get('/api/props/:sport', async (req, res) => {
         if (!playerMap[key]) playerMap[key] = { player: l.player, team: l.team, market: l.market, pp: null, ud: l.line };
         else playerMap[key].ud = l.line;
       }
- 
+
       const ppProps = [], udProps = [];
       for (const p of Object.values(playerMap)) {
         if (p.pp != null) ppProps.push({ player: p.player, market: p.market, line: p.pp, overPrice: -110, underPrice: -110 });
         if (p.ud != null) udProps.push({ player: p.player, market: p.market, line: p.ud, overPrice: -110, underPrice: -110 });
       }
- 
+
       const books = [];
       if (ppProps.length) books.push({ key: 'prizepicks', title: 'PrizePicks', props: ppProps });
       if (udProps.length) books.push({ key: 'underdog', title: 'Underdog', props: udProps });
- 
+
       if (books.length) {
         merged = [{ sport, id: `dfs_${sport}`, home_team: `${sportUpper} Players`, away_team: 'DFS Lines', commence_time: new Date().toISOString(), books }];
         console.log(`Props ${sport}: using DFS fallback — PP:${ppProps.length} UD:${udProps.length}`);
       }
     }
   }
- 
+
   const total = merged.reduce((s,g)=>s+g.books.reduce((s2,b)=>s2+b.props.length,0),0);
   console.log(`Props ${sport}: ${merged.length} games, ${total} props`);
   res.json(merged);
 });
- 
+
 app.get('/api/props', async (req, res) => {
   const sports = ['nba','mlb','nhl','nfl'];
   const oddsMap = { nba:'basketball_nba', mlb:'baseball_mlb', nhl:'icehockey_nhl', nfl:'americanfootball_nfl' };
@@ -981,22 +1263,22 @@ app.get('/api/props', async (req, res) => {
   }
   res.json(result);
 });
- 
+
 app.get('/api/owls-odds/:sport', async (req, res) => {
   const sport = req.params.sport;
   const c = cache.owlsOdds[sport];
   if (c?.updated && (Date.now()-new Date(c.updated).getTime()) < 30000) return res.json(c.data);
   res.json(await fetchOwlsOdds(sport) || []);
 });
- 
+
 app.get('/api/sharp-moves', (req, res) => {
   res.json({ moves: cache.sharpMoves.slice(0, parseInt(req.query.limit)||100), count: cache.sharpMoves.length, updated: new Date().toISOString() });
 });
 app.delete('/api/sharp-moves', (req, res) => { cache.sharpMoves = []; res.json({ ok: true }); });
- 
+
 app.get('/api/splits/:sport', async (req, res) => res.json(await fetchOwlsSplits(req.params.sport) || {}));
 app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport(req.params.sport)));
- 
+
 // Regex path: works on both Express 4 and Express 5 (string '*' wildcards break on v5)
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   if (owlsDisabled()) return res.status(503).json({ error: 'Owls disabled — API key is dead (repeated 403s). Set OWLS_API_KEY and restart.' });
@@ -1006,7 +1288,7 @@ app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
     res.json(r.data);
   } catch(e) { noteOwlsError(e, `Owls proxy ${path}`); res.status(e.response?.status||500).json({ error: e.message }); }
 });
- 
+
 app.post('/api/history/record', (req, res) => {
   const { player, market, line, book, odds, timestamp } = req.body;
   const key = `${player}|${market}`;
@@ -1016,8 +1298,9 @@ app.post('/api/history/record', (req, res) => {
   res.json({ ok: true });
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
- 
+
 app.get('/api/status', (req, res) => res.json({
+  version: '3.3.1',
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
   esports: {
@@ -1026,38 +1309,42 @@ app.get('/api/status', (req, res) => res.json({
     ppEsportsLines: (cache.prizepicks.data||[]).filter(l => isEsports(l.sport)).length,
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
   },
+  lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
 }));
- 
+
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
 // PP/UD scrapes (PP self-backs-off when blocked)
 cron.schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
- 
+
 // Owls — fully skipped once the breaker trips
 cron.schedule('*/30 * * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsOdds(s); });
 cron.schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
- 
+
 // Odds API props — 30-min staggered, in-season only (the guard inside skips off-season sports)
 cron.schedule('0,30 * * * *', () => fetchOddsApiProps('basketball_nba'));
 cron.schedule('3,33 * * * *', () => fetchOddsApiProps('baseball_mlb'));
 cron.schedule('6,36 * * * *', () => fetchOddsApiProps('icehockey_nhl'));
 cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
- 
+
 // REMOVED: the */3 fetchOddsForSport cron. It cost 4 sports x 3 markets every
 // 3 minutes = ~5,700 Odds API credits per DAY, and nothing consumed it — the
 // frontend fetches its own odds. /api/odds/:sport still works on demand.
- 
+
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
 cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
- 
+
+// LoL stats: Oracle's Elixir updates once per day — no value in more
+cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
+
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.2 on port ${PORT}`);
+    console.log(`Line Reaper v3.3.1 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1072,13 +1359,17 @@ if (require.main === module) {
     }
     // Generate esports picks once UD is loaded
     setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
+    // LoL dataset download (~1 min for the yearly CSV); regenerates picks when done
+    setTimeout(() => refreshLoLStats().catch(()=>{}), 8000);
     console.log('Startup complete');
   });
 }
- 
+
 module.exports = {
-  app, cache, esportsCache,
+  app, cache, esportsCache, lolStats,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, inSeasonSports,
+  parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
+  predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
