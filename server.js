@@ -642,6 +642,8 @@ function lineIsPlausible(line, mapCount, sport, market) {
   if (s.includes('LOL') || s.includes('LEAGUE')) {
     return m.includes('assist') ? perMap <= 30 : perMap <= 16;
   }
+  if (s.includes('DOTA')) return m.includes('assist') ? perMap <= 40 : perMap <= 22;
+  if (s.includes('COD')) return perMap <= 45;
   return true;
 }
 
@@ -712,30 +714,144 @@ async function fetchHLTVPlayerStats(playerName) {
   }
 }
 
-async function fetchVLRPlayerStats(playerName) {
-  try {
-    const cached = esportsCache.vlrPlayers[playerName.toLowerCase()];
-    if (cached && (Date.now() - cached.lastUpdate) < 3600000) return cached;
+// ─── VALORANT VIA VLR.GG MIRROR ───────────────────────────────────────────────
+// Was: one region (NA) + exact name match, which is why VAL never populated —
+// most pros aren't NA and DFS books spell names with different casing/tags.
+// Now: every region pulled once into a normalized table, refreshed hourly.
+const VLR_REGIONS = ['na', 'eu', 'ap', 'sa', 'jp', 'oce', 'mn'];
+const vlrTable = { players: {}, updated: null, regions: {}, lastError: null };
 
-    const res = await axios.get(`https://vlrggapi.vercel.app/stats?region=na&timespan=60`, { timeout: 12000 });
-    const players = res.data?.data?.segments || [];
-    const found = players.find(p => (p.player || '').toLowerCase() === playerName.toLowerCase());
-    if (!found) return null;
+function vlrNum(v) {
+  if (v == null) return null;
+  const n = parseFloat(String(v).replace('%', '').trim());
+  return isFinite(n) ? n : null;
+}
 
-    const stats = {
-      name: found.player,
-      kpr: parseFloat(found.kills_per_round) || 0,
-      adr: parseFloat(found.average_damage_per_round) || 0,
-      hsPercent: parseFloat(found.headshot_percentage) || 0,
-      rating: parseFloat(found.rating) || 0,
-      lastUpdate: Date.now(),
+// Normalized key so "TenZ", "tenz", and "SEN TenZ" all resolve
+const vlrKey = n => (n || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function vlrIngestSegments(segments, region) {
+  let added = 0;
+  for (const s of (segments || [])) {
+    const name = s.player || s.name;
+    if (!name) continue;
+    const kpr = vlrNum(s.kills_per_round ?? s.kpr);
+    const hs = vlrNum(s.headshot_percentage ?? s.hs_percent);
+    const rating = vlrNum(s.rating);
+    const acs = vlrNum(s.average_combat_score ?? s.acs);
+    const rounds = vlrNum(s.rounds_played ?? s.rounds);
+    if (kpr == null && acs == null) continue;
+    const key = vlrKey(name);
+    const prev = vlrTable.players[key];
+    // keep the entry with the larger sample when a player appears in 2 regions
+    if (prev && (prev.rounds || 0) >= (rounds || 0)) continue;
+    vlrTable.players[key] = {
+      name, region, kpr, hsPercent: hs, rating, acs, rounds,
+      roundsPerMap: 22, source: 'vlr', lastUpdate: Date.now(),
     };
-    esportsCache.vlrPlayers[playerName.toLowerCase()] = stats;
-    console.log(`VLR ${playerName}: KPR=${stats.kpr} R=${stats.rating}`);
+    added++;
+  }
+  vlrTable.regions[region] = added;
+  return added;
+}
+
+async function refreshVLRTable(timespan = 60) {
+  let total = 0;
+  const errs = [];
+  for (const region of VLR_REGIONS) {
+    try {
+      const res = await axios.get('https://vlrggapi.vercel.app/stats', {
+        params: { region, timespan }, timeout: 20000,
+        headers: { 'User-Agent': 'LineReaper/3.7', 'Accept': 'application/json' },
+      });
+      const segs = res.data?.data?.segments || res.data?.segments || [];
+      total += vlrIngestSegments(segs, region);
+      await new Promise(r => setTimeout(r, 200));
+    } catch (e) {
+      errs.push(`${region}:${e.response?.status || e.message}`);
+    }
+  }
+  vlrTable.updated = new Date().toISOString();
+  vlrTable.lastError = errs.length ? errs.join(', ') : null;
+  console.log(`VLR: ${Object.keys(vlrTable.players).length} players across ${Object.keys(vlrTable.regions).length} regions${errs.length ? ' (errors: ' + errs.join(', ') + ')' : ''}`);
+  return total;
+}
+
+async function fetchVLRPlayerStats(playerName) {
+  if (!vlrTable.updated || (Date.now() - Date.parse(vlrTable.updated)) > 3600000) {
+    await refreshVLRTable().catch(() => {});
+  }
+  const key = vlrKey(playerName);
+  let hit = vlrTable.players[key];
+  if (!hit) {
+    // DFS books sometimes prefix the org ("SEN TenZ") — try the last token
+    const tail = vlrKey((playerName || '').split(/\s+/).pop());
+    hit = vlrTable.players[tail];
+  }
+  if (!hit) return null;
+  // shape it like the CS profile so predictKillsFromStats works unchanged
+  return {
+    name: hit.name, kpr: hit.kpr, hsPercent: hit.hsPercent, rating: hit.rating,
+    roundsPerMap: hit.roundsPerMap, mapsPlayed: hit.rounds ? Math.round(hit.rounds / 22) : null,
+    lastUpdate: hit.lastUpdate, source: 'vlr',
+  };
+}
+
+// ─── DOTA 2 VIA OPENDOTA ──────────────────────────────────────────────────────
+// Free public API, no key. Pro player directory → recent match kills.
+// Two calls per player, cached 12h, so the per-cycle lookup budget still applies.
+const dotaCache = { proPlayers: null, proFetched: 0, players: {}, lastError: null };
+
+async function dotaLoadProPlayers() {
+  if (dotaCache.proPlayers && (Date.now() - dotaCache.proFetched) < 24 * 3600000) return dotaCache.proPlayers;
+  const res = await axios.get('https://api.opendota.com/api/proPlayers', { timeout: 25000 });
+  const arr = Array.isArray(res.data) ? res.data : [];
+  const byName = {};
+  for (const p of arr) {
+    for (const n of [p.name, p.personaname]) {
+      if (!n) continue;
+      const k = vlrKey(n);
+      if (k && !byName[k]) byName[k] = p.account_id;
+    }
+  }
+  dotaCache.proPlayers = byName;
+  dotaCache.proFetched = Date.now();
+  console.log(`OpenDota: ${Object.keys(byName).length} pro player names indexed`);
+  return byName;
+}
+
+async function fetchDotaPlayerStats(playerName) {
+  const key = vlrKey(playerName);
+  const cached = dotaCache.players[key];
+  if (cached && (Date.now() - cached.lastUpdate) < 12 * 3600000) return cached.failed ? null : cached;
+  try {
+    const dir = await dotaLoadProPlayers();
+    const accountId = dir[key] || dir[vlrKey((playerName || '').split(/\s+/).pop())];
+    if (!accountId) {
+      dotaCache.players[key] = { failed: true, lastUpdate: Date.now() };
+      return null;
+    }
+    const res = await axios.get(`https://api.opendota.com/api/players/${accountId}/matches`, {
+      params: { limit: 40, significant: 1 }, timeout: 20000,
+    });
+    const ms = (Array.isArray(res.data) ? res.data : []).filter(m => m && isFinite(m.kills));
+    if (ms.length < 5) {
+      dotaCache.players[key] = { failed: true, lastUpdate: Date.now() };
+      return null;
+    }
+    const kills = ms.reduce((s, m) => s + m.kills, 0) / ms.length;
+    const assists = ms.reduce((s, m) => s + (m.assists || 0), 0) / ms.length;
+    const stats = {
+      name: playerName, accountId, avgKillsPerMap: kills, avgAssistsPerMap: assists,
+      mapsPlayed: ms.length, lastUpdate: Date.now(), source: 'opendota',
+    };
+    dotaCache.players[key] = stats;
+    console.log(`OpenDota ${playerName}: ${kills.toFixed(1)} kills/game over ${ms.length} matches`);
     return stats;
   } catch (e) {
-    console.warn(`VLR ${playerName}:`, e.response?.status || e.message);
-    return esportsCache.vlrPlayers[playerName.toLowerCase()] || null;
+    dotaCache.lastError = `${playerName}: ${e.response?.status || e.message}`;
+    dotaCache.players[key] = { failed: true, lastUpdate: Date.now() };
+    return null;
   }
 }
 
@@ -1215,6 +1331,7 @@ async function generateEsportsPicks() {
       if (sportU.includes('VAL')) sportKey = 'VAL';
       else if (sportU.includes('CS') || sportU.includes('COUNTER')) sportKey = 'CS';
       else if (sportU.includes('LOL') || sportU.includes('LEAGUE')) sportKey = 'LOL';
+      else if (sportU.includes('DOTA')) sportKey = 'DOTA';
 
       let autoPred = null;
       if (sportKey === 'LOL') {
@@ -1223,15 +1340,31 @@ async function generateEsportsPicks() {
         if (mk.includes('fantasy')) autoPred = null;   // FP needs the book's scoring formula — manual for now
         else autoPred = predictLoLStat(lineObj.player, mapCount, mk.includes('assist') ? 'assists' : 'kills');
         sampleSize = lolStats.players[(lineObj.player || '').toLowerCase()]?.games ?? null;
-      } else if (sportKey) {
-        let player = null;
-        const cacheStore = sportKey === 'VAL' ? esportsCache.vlrPlayers : esportsCache.hltvPlayers;
-        const hasCached = !!cacheStore[(lineObj.player || '').toLowerCase()];
+      } else if (sportKey === 'VAL') {
+        // VLR table is loaded in bulk and cached — no per-player budget needed
+        const player = await fetchVLRPlayerStats(lineObj.player);
+        if (player) {
+          autoPred = predictKillsFromStats(player, 'VAL', mapCount, lineObj.market);
+          sampleSize = player.mapsPlayed ?? null;
+        }
+      } else if (sportKey === 'DOTA') {
+        const hasCached = !!dotaCache.players[vlrKey(lineObj.player)];
         if (hasCached || freshLookups < MAX_FRESH_LOOKUPS) {
           if (!hasCached) freshLookups++;
-          player = sportKey === 'VAL'
-            ? await fetchVLRPlayerStats(lineObj.player)
-            : await fetchBo3PlayerStats(lineObj.player);
+          const player = await fetchDotaPlayerStats(lineObj.player);
+          if (player) {
+            const mk = (lineObj.market || '').toLowerCase();
+            const per = mk.includes('assist') ? player.avgAssistsPerMap : player.avgKillsPerMap;
+            if (per) autoPred = per * mapCount;
+            sampleSize = player.mapsPlayed ?? null;
+          }
+        }
+      } else if (sportKey) {
+        let player = null;
+        const hasCached = !!esportsCache.hltvPlayers[(lineObj.player || '').toLowerCase()];
+        if (hasCached || freshLookups < MAX_FRESH_LOOKUPS) {
+          if (!hasCached) freshLookups++;
+          player = await fetchBo3PlayerStats(lineObj.player);
         }
         if (player) {
           autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
@@ -1347,7 +1480,7 @@ async function generateEsportsPicks() {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.6.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.7.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1425,6 +1558,34 @@ app.get('/api/esports/probe/udmarkets', (req, res) => {
   }).sort((a, b) => b.count - a.count);
   res.json({ totalEsportsLines: rows.length, markets: out });
 });
+
+// Per-sport source inspectors
+// NOTE: two explicit routes instead of an optional ":name?" param — Express 5
+// removed optional-param syntax and throws at startup on it.
+async function valProbe(req, res) {
+  if (!vlrTable.updated) await refreshVLRTable().catch(() => {});
+  const name = req.params.name;
+  res.json({
+    source: 'vlr.gg mirror', players: Object.keys(vlrTable.players).length,
+    regions: vlrTable.regions, updated: vlrTable.updated, lastError: vlrTable.lastError,
+    lookup: name ? await fetchVLRPlayerStats(name) : null,
+    sample: Object.values(vlrTable.players).slice(0, 5),
+  });
+}
+app.get('/api/esports/probe/val', valProbe);
+app.get('/api/esports/probe/val/:name', valProbe);
+
+async function dotaProbe(req, res) {
+  try {
+    const dir = await dotaLoadProPlayers();
+    res.json({
+      source: 'opendota', indexedNames: Object.keys(dir).length, lastError: dotaCache.lastError,
+      lookup: req.params.name ? await fetchDotaPlayerStats(req.params.name) : null,
+    });
+  } catch (e) { res.json({ error: e.message, status: e.response?.status }); }
+}
+app.get('/api/esports/probe/dota', dotaProbe);
+app.get('/api/esports/probe/dota/:name', dotaProbe);
 
 // Raw Leaguepedia inspector — shows exactly what the wiki returns
 app.get('/api/esports/probe/lolsource', async (req, res) => {
@@ -1581,7 +1742,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.6.0',
+  version: '3.7.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1593,6 +1754,8 @@ app.get('/api/status', (req, res) => res.json({
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   implausibleLines: esportsCache.implausible || [],
+  valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
+  dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -1622,6 +1785,9 @@ cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
 cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
+// Valorant table refresh (cheap, 7 regions)
+cron.schedule('20 * * * *', () => refreshVLRTable().catch(()=>{}));
+
 // LoL stats: Oracle's Elixir updates once per day — no value in more
 cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
 // ...but until the FIRST successful load, retry every 30 min (covers boot
@@ -1631,7 +1797,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.6 on port ${PORT}`);
+    console.log(`Line Reaper v3.7 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1646,8 +1812,11 @@ if (require.main === module) {
     }
     // Generate esports picks once UD is loaded
     setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
-    // LoL dataset download (~1 min for the yearly CSV); regenerates picks when done
+    // LoL dataset download (~1 min); regenerates picks when done
     setTimeout(() => refreshLoLStats().catch(()=>{}), 8000);
+    // Valorant table (all regions) + Dota pro directory
+    setTimeout(() => refreshVLRTable().catch(()=>{}), 12000);
+    setTimeout(() => dotaLoadProPlayers().catch(()=>{}), 16000);
     console.log('Startup complete');
   });
 }
@@ -1659,5 +1828,6 @@ module.exports = {
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
+  vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
