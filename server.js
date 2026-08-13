@@ -490,7 +490,10 @@ const BETR_IMPLIED = 0.5622;
 // is badly wrong — and on a single leg it is almost always us. Those get no
 // EV and a flag instead of a fantasy edge.
 const UD_DECIMAL_THRESHOLD = 1.35;
-const MAX_PROB_DISAGREEMENT = 0.15;
+// Was 0.15 — two legs at a 14-point gap still slipped through and compounded
+// into an "+88% EV" 2-leg slip. On a single prop, a 10-point disagreement with
+// a live market is already a strong sign the error is ours.
+const MAX_PROB_DISAGREEMENT = 0.10;
 
 function udPricing(prob, mult) {
   const p = prob > 1 ? prob / 100 : prob;
@@ -1578,8 +1581,17 @@ function relabelMarket(market, maps) {
 function describePlayer(p) {
   if (!p) return null;
   const bits = [];
-  if (p.avgKillsPerMap) bits.push(`${p.avgKillsPerMap.toFixed(1)} k/map`);
-  else if (p.kpr) bits.push(`${(p.kpr * (p.roundsPerMap || 21.5)).toFixed(1)} k/map`);
+  // Mirror predictKillsFromStats' arbitration so the displayed rate matches the
+  // one used for the projection. bo3's "maps" counter is sometimes a MATCH
+  // counter, which inflates avgKillsPerMap — KPR is the reliable number.
+  const rpm = (p.roundsPerMap && p.roundsPerMap <= 32) ? p.roundsPerMap : 21.5;
+  const viaRounds = p.kpr ? p.kpr * rpm : null;
+  let viaMap = p.avgKillsPerMap && p.avgKillsPerMap <= 32 ? p.avgKillsPerMap : null;
+  let eff = null;
+  if (viaMap != null && viaRounds != null) {
+    eff = Math.abs(viaMap - viaRounds) / viaRounds > 0.4 ? viaRounds : 0.5 * (viaMap + viaRounds);
+  } else eff = viaMap ?? viaRounds;
+  if (eff) bits.push(`${eff.toFixed(1)} k/map`);
   if (p.kpr) bits.push(`${p.kpr.toFixed(2)} KPR`);
   if (p.hsPercent) bits.push(`${p.hsPercent.toFixed(0)}% HS`);
   if (p.rating) bits.push(`${p.rating.toFixed(2)} rating`);
@@ -1630,7 +1642,7 @@ async function warmCsProfiles(batch = 12) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.1', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.2', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1892,7 +1904,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.9.1',
+  version: '3.9.2',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1954,7 +1966,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.9.1 on port ${PORT}`);
+    console.log(`Line Reaper v3.9.2 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
