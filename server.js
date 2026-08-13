@@ -477,6 +477,32 @@ const PP_IMPLIED = 0.5622;
 const UD_IMPLIED = 0.5623;
 const BETR_IMPLIED = 0.5622;
 
+// ─── UNDERDOG PRICING: TWO REGIMES ────────────────────────────────────────────
+// UD's payout_multiplier means different things at different scales:
+//   0.80-1.35  → a BOOST/DISCOUNT on standard pick'em pricing (-128, 56.23%)
+//                EV = prob x mult / 0.5623 - 1
+//   >1.35      → a DECIMAL PAYOUT in its own right (4.38x implies ~23%)
+//                EV = prob x mult - 1
+// Treating the second kind as the first is what produced +339% "edges".
+//
+// Then a reality check: every payout implies a probability. If our model
+// disagrees with the book's implied number by more than 15 points, one of us
+// is badly wrong — and on a single leg it is almost always us. Those get no
+// EV and a flag instead of a fantasy edge.
+const UD_DECIMAL_THRESHOLD = 1.35;
+const MAX_PROB_DISAGREEMENT = 0.15;
+
+function udPricing(prob, mult) {
+  const p = prob > 1 ? prob / 100 : prob;
+  const m = parseFloat(mult) || 1.00;
+  const decimal = m > UD_DECIMAL_THRESHOLD;
+  const implied = decimal ? 1 / m : UD_IMPLIED / m;
+  const ev = decimal ? (p * m - 1) * 100 : (p * m / UD_IMPLIED - 1) * 100;
+  const gap = p - implied;
+  const flag = Math.abs(gap) > MAX_PROB_DISAGREEMENT ? 'price-mismatch' : null;
+  return { ev: flag ? null : ev, implied: implied * 100, regime: decimal ? 'decimal' : 'boost', flag, gap: gap * 100 };
+}
+
 function calcBookEV(prob, book, mult = 1.00) {
   prob = prob > 1 ? prob/100 : prob;  // accept 0-1 or 0-100
   switch ((book || '').toLowerCase()) {
@@ -485,7 +511,7 @@ function calcBookEV(prob, book, mult = 1.00) {
       return (prob / PP_IMPLIED - 1) * 100;
     case 'underdog':
     case 'ud':
-      return (prob * mult / UD_IMPLIED - 1) * 100;
+      return udPricing(prob, mult).ev;   // null when book price and model disagree wildly
     case 'betr':
       return (prob * mult / BETR_IMPLIED - 1) * 100;
     case 'parlayplay':
@@ -1321,6 +1347,7 @@ async function generateEsportsPicks() {
   const MAX_FRESH_LOOKUPS = 40;
   const implausibleLines = [];
   const spanCounts = { inferred: 0 };
+  let priceMismatches = 0;
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1450,7 +1477,8 @@ async function generateEsportsPicks() {
       side: null, prob: null, ev: null,
       ppEv: null, udEv: null, betrEv: null, parlayEv: null, sleeperEv: null,
       udMultiplier: null, sleeperMultiplier: null, udLine: udm ? udm.line : null,
-      bestBook: null, bestEv: null, edge: null, confidence: null, varianceK: null,
+      udRegime: null, udImplied: null, udFlag: null,
+      bestBook: null, bestEv: null, bookEdge: null, confidence: null, varianceK: null,
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
 
@@ -1477,8 +1505,13 @@ async function generateEsportsPicks() {
         const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market);
         if (r2) udProb = r2.prob;
       }
-      pick.udEv = parseFloat(calcBookEV(udProb, 'underdog', udSideMult).toFixed(2));
+      const udP = udPricing(udProb, udSideMult);
+      pick.udEv = udP.ev != null ? parseFloat(udP.ev.toFixed(2)) : null;
       pick.udMultiplier = udSideMult;
+      pick.udRegime = udP.regime;
+      pick.udImplied = parseFloat(udP.implied.toFixed(1));
+      pick.udFlag = udP.flag;
+      if (udP.flag) priceMismatches++;
     }
 
     const books = [['PP', pick.ppEv], ['UD', pick.udEv]].filter(b => b[1] != null);
@@ -1487,7 +1520,9 @@ async function generateEsportsPicks() {
       pick.bestBook = best[0];
       pick.bestEv = best[1];
       pick.ev = pick.ppEv != null ? pick.ppEv : pick.udEv;
-      pick.edge = parseFloat((best[1] - (pick.ppEv ?? best[1])).toFixed(2));
+      // book-vs-book EV gap — under its own name so it can't clobber pick.edge,
+      // which is our projection's distance from the line
+      pick.bookEdge = parseFloat((best[1] - (pick.ppEv ?? best[1])).toFixed(2));
     }
     return pick;
   }
@@ -1516,6 +1551,8 @@ async function generateEsportsPicks() {
     console.warn(`Esports: ${implausibleLines.length} lines skipped as implausible (market string may be parsed wrong) e.g. ${implausibleLines[0]}`);
   } else esportsCache.implausible = [];
   esportsCache.spanInferred = spanCounts.inferred;
+  esportsCache.priceMismatches = priceMismatches;
+  if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
@@ -1581,7 +1618,7 @@ async function warmCsProfiles(batch = 12) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.8.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1843,7 +1880,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.8.0',
+  version: '3.9.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1856,6 +1893,7 @@ app.get('/api/status', (req, res) => res.json({
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   implausibleLines: esportsCache.implausible || [],
   spanInferredCount: esportsCache.spanInferred || 0,
+  priceMismatchCount: esportsCache.priceMismatches || 0,
   warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
@@ -1904,7 +1942,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.8 on port ${PORT}`);
+    console.log(`Line Reaper v3.9 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1938,6 +1976,6 @@ module.exports = {
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
-  inferMapSpan, describePlayer,
+  inferMapSpan, describePlayer, udPricing,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
