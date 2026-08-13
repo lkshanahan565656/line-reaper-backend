@@ -626,6 +626,24 @@ function anchorToMarket(rawPred, line, sampleSize) {
   return line + w * (rawPred - line);
 }
 
+// Underdog labels some 3-map props "Kills on Maps 1+2". The string lies, but
+// the numbers don't: divide the line by the player's own per-map rate and you
+// get ~3.0 for those, ~1.6 for real 2-map lines. So when a line implies a
+// LONGER span than the label claims, trust the arithmetic.
+//
+// Upward-only on purpose. A line that looks too SHORT is usually a genuine
+// OVER edge, and rescaling it down would erase exactly the edges we want.
+// Requires a clear gap (>=0.55 maps) so ordinary disagreement never triggers it.
+function inferMapSpan(line, rawPred, parsedMaps) {
+  if (!line || !rawPred || !parsedMaps) return null;
+  const perMap = rawPred / parsedMaps;
+  if (perMap <= 0) return null;
+  const ratio = line / perMap;
+  if (ratio - parsedMaps < 0.55) return null;
+  const inferred = Math.min(3, Math.round(ratio));
+  return inferred > parsedMaps ? inferred : null;
+}
+
 // A line implies a per-map rate. If that rate is impossible for the sport, the
 // market string was parsed wrong (or the feed is bad) — refuse to model it
 // rather than print a fake 30% edge. CS/VAL tops out around 20 kills a map for
@@ -1302,6 +1320,7 @@ async function generateEsportsPicks() {
   let freshLookups = 0;
   const MAX_FRESH_LOOKUPS = 40;
   const implausibleLines = [];
+  const spanCounts = { inferred: 0 };
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1318,7 +1337,7 @@ async function generateEsportsPicks() {
     let modelPred = esportsCache.manualPredictions[manualKey];
     if (modelPred == null) modelPred = manualNorm[`${normalizeName(lineObj.player)}|${normalizeMarket(lineObj.market)}`];
     let predSource = modelPred != null ? 'manual' : null;
-    let rawPred = null, sampleSize = null;   // function-scope: the manual path skips the block below
+    let rawPred = null, sampleSize = null, spanInferred = null, statLine = null;
 
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
@@ -1339,13 +1358,16 @@ async function generateEsportsPicks() {
         const mk = (lineObj.market || '').toLowerCase();
         if (mk.includes('fantasy')) autoPred = null;   // FP needs the book's scoring formula — manual for now
         else autoPred = predictLoLStat(lineObj.player, mapCount, mk.includes('assist') ? 'assists' : 'kills');
-        sampleSize = lolStats.players[(lineObj.player || '').toLowerCase()]?.games ?? null;
+        const lp = lolStats.players[(lineObj.player || '').toLowerCase()];
+        sampleSize = lp?.games ?? null;
+        if (lp) statLine = `${lp.kpg.toFixed(1)} k/game · ${lp.apg.toFixed(1)} a/game · ${(lp.killShare != null ? (lp.killShare * 100).toFixed(0) + '% of team kills · ' : '')}${lp.games} games`;
       } else if (sportKey === 'VAL') {
         // VLR table is loaded in bulk and cached — no per-player budget needed
         const player = await fetchVLRPlayerStats(lineObj.player);
         if (player) {
           autoPred = predictKillsFromStats(player, 'VAL', mapCount, lineObj.market);
           sampleSize = player.mapsPlayed ?? null;
+          statLine = describePlayer(player);
         }
       } else if (sportKey === 'DOTA') {
         const hasCached = !!dotaCache.players[vlrKey(lineObj.player)];
@@ -1357,6 +1379,7 @@ async function generateEsportsPicks() {
             const per = mk.includes('assist') ? player.avgAssistsPerMap : player.avgKillsPerMap;
             if (per) autoPred = per * mapCount;
             sampleSize = player.mapsPlayed ?? null;
+            statLine = `${player.avgKillsPerMap.toFixed(1)} k/game · ${player.avgAssistsPerMap.toFixed(1)} a/game · ${player.mapsPlayed} matches`;
           }
         }
       } else if (sportKey) {
@@ -1369,9 +1392,24 @@ async function generateEsportsPicks() {
         if (player) {
           autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
           sampleSize = player.mapsPlayed ?? null;
+          statLine = describePlayer(player);
         }
       }
       rawPred = autoPred;
+
+      // The label may understate the map span — rescale from the player's own
+      // per-map rate before pricing, and record that we did.
+      if (autoPred && sportKey !== 'LOL') {
+        const inferred = inferMapSpan(lineObj.line, autoPred, mapCount);
+        if (inferred) {
+          const perMap = autoPred / mapCount;
+          autoPred = perMap * inferred;
+          rawPred = autoPred;
+          spanInferred = inferred;
+          spanCounts.inferred++;
+        }
+      }
+
       // Never auto-model a line whose implied per-map rate is impossible
       autoPred = plausible ? anchorToMarket(autoPred, lineObj.line, sampleSize) : null;
 
@@ -1391,7 +1429,7 @@ async function generateEsportsPicks() {
         }
       }
     }
-    return { modelPred, predSource, manualKey, rawPred, sampleSize };
+    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine };
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
@@ -1405,6 +1443,9 @@ async function generateEsportsPicks() {
       predSource: modelPred != null ? predSource : null,
       rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
       sampleSize: g.sampleSize ?? null,
+      spanInferred: g.spanInferred ?? null,
+      statLine: g.statLine ?? null,
+      edge: null, edgePct: null,
       manualKey,
       side: null, prob: null, ev: null,
       ppEv: null, udEv: null, betrEv: null, parlayEv: null, sleeperEv: null,
@@ -1420,6 +1461,9 @@ async function generateEsportsPicks() {
 
     pick.side = side;
     pick.prob = parseFloat(r.prob.toFixed(2));
+    // How far our number sits from the book's, in stat units and percent
+    pick.edge = parseFloat((modelPred - lineVal).toFixed(2));
+    pick.edgePct = parseFloat(((modelPred - lineVal) / lineVal * 100).toFixed(1));
     pick.confidence = r.confidence;
     pick.varianceK = r.varianceK;
 
@@ -1471,12 +1515,27 @@ async function generateEsportsPicks() {
     esportsCache.implausible = implausibleLines.slice(0, 20);
     console.warn(`Esports: ${implausibleLines.length} lines skipped as implausible (market string may be parsed wrong) e.g. ${implausibleLines[0]}`);
   } else esportsCache.implausible = [];
+  esportsCache.spanInferred = spanCounts.inferred;
+  if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
+}
+
+// One-line "why this number" summary shown under each pick.
+function describePlayer(p) {
+  if (!p) return null;
+  const bits = [];
+  if (p.avgKillsPerMap) bits.push(`${p.avgKillsPerMap.toFixed(1)} k/map`);
+  else if (p.kpr) bits.push(`${(p.kpr * (p.roundsPerMap || 21.5)).toFixed(1)} k/map`);
+  if (p.kpr) bits.push(`${p.kpr.toFixed(2)} KPR`);
+  if (p.hsPercent) bits.push(`${p.hsPercent.toFixed(0)}% HS`);
+  if (p.rating) bits.push(`${p.rating.toFixed(2)} rating`);
+  if (p.mapsPlayed) bits.push(`${p.mapsPlayed} maps`);
+  return bits.join(' · ') || null;
 }
 
 // ─── CS PROFILE WARMER ────────────────────────────────────────────────────────
@@ -1522,7 +1581,7 @@ async function warmCsProfiles(batch = 12) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.7.1', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.8.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1784,7 +1843,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.7.1',
+  version: '3.8.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1796,6 +1855,7 @@ app.get('/api/status', (req, res) => res.json({
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   implausibleLines: esportsCache.implausible || [],
+  spanInferredCount: esportsCache.spanInferred || 0,
   warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
@@ -1844,7 +1904,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.7.1 on port ${PORT}`);
+    console.log(`Line Reaper v3.8 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1878,5 +1938,6 @@ module.exports = {
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
+  inferMapSpan, describePlayer,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
