@@ -1471,6 +1471,7 @@ async function generateEsportsPicks() {
       rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
       sampleSize: g.sampleSize ?? null,
       spanInferred: g.spanInferred ?? null,
+      displayMarket: g.spanInferred ? relabelMarket(base.market, g.spanInferred) : base.market,
       statLine: g.statLine ?? null,
       edge: null, edgePct: null,
       manualKey,
@@ -1562,6 +1563,17 @@ async function generateEsportsPicks() {
   return picks;
 }
 
+// If a book labels a 3-map prop "Kills on Maps 1+2", rewrite the label to what
+// the line actually covers. Clearer than showing the wrong name plus an asterisk.
+function relabelMarket(market, maps) {
+  if (!market || !maps) return market;
+  const span = maps === 1 ? '1' : `1+${Array.from({ length: maps - 1 }, (_, i) => i + 2).join('+')}`;
+  if (/maps?\s*[\d\s+\-–]+/i.test(market)) {
+    return market.replace(/maps?\s*[\d\s+\-–]+/i, maps === 1 ? 'Map 1' : `Maps ${span}`);
+  }
+  return `${market} (Maps ${span})`;
+}
+
 // One-line "why this number" summary shown under each pick.
 function describePlayer(p) {
   if (!p) return null;
@@ -1618,7 +1630,7 @@ async function warmCsProfiles(batch = 12) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.1', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1880,7 +1892,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.9.0',
+  version: '3.9.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1942,7 +1954,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.9 on port ${PORT}`);
+    console.log(`Line Reaper v3.9.1 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1976,6 +1988,6 @@ module.exports = {
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
-  inferMapSpan, describePlayer, udPricing,
+  inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
