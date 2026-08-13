@@ -539,13 +539,39 @@ function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
 // Prediction layer: convert player stats to expected kills
 const ROUNDS_PER_MAP = { CS: 24, VAL: 22, DOTA: 1, COD: 1, LOL: 1 };
 
-function parseMapCount(propText) {
-  if (!propText) return 1;
-  const text = propText.toUpperCase();
-  const rangeMatch = text.match(/MAPS?\s*(\d)\s*[-–+]\s*(\d)/);
-  if (rangeMatch) return parseInt(rangeMatch[2]) - parseInt(rangeMatch[1]) + 1;
-  return 1;
+// ONE parser for map spans, used by both the predictor and the cross-book key.
+// Formats seen in the wild:
+//   "Kills on Maps 1+2"    → maps 1,2      (2 maps)
+//   "Kills on Maps 1+2+3"  → maps 1,2,3    (3 maps)  ← was silently read as 2
+//   "MAPS 1-2 Kills"       → range 1..2    (2 maps)
+//   "Kills on Maps 1-3"    → range 1..3    (3 maps)
+//   "Kills on Map 1"       → map 1         (1 map)
+//   "GAME 1+2+3 Kills"     → COD games     (3 maps)
+// Returns { count, label } — label is the canonical span for cross-book keys.
+function parseMapSpan(propText) {
+  // "Maps 1 2" (Sleeper) → treat the space as a plus
+  const t = (propText || '').toUpperCase().replace(/(\d)\s+(\d)/g, '$1+$2');
+  const m = t.match(/(?:MAPS?|GAMES?)\s*([\d\s+\-–]+)/);
+  if (!m) return { count: 1, label: '1' };
+  const body = m[1].replace(/\s+/g, '');
+
+  // Sum form: 1+2, 1+2+3 — count the terms
+  if (body.includes('+')) {
+    const nums = body.split('+').map(n => parseInt(n)).filter(n => isFinite(n));
+    if (nums.length >= 2) return { count: nums.length, label: `${Math.min(...nums)}-${Math.max(...nums)}` };
+  }
+  // Range form: 1-2, 1-3 — inclusive span
+  const r = body.match(/^(\d)[-–](\d)/);
+  if (r) {
+    const a = parseInt(r[1]), b = parseInt(r[2]);
+    if (isFinite(a) && isFinite(b) && b >= a) return { count: b - a + 1, label: `${a}-${b}` };
+  }
+  const single = body.match(/^(\d)/);
+  if (single) return { count: 1, label: single[1] };
+  return { count: 1, label: '1' };
 }
+
+function parseMapCount(propText) { return parseMapSpan(propText).count; }
 
 function predictKillsFromStats(player, sport, mapCount, propType = 'kills') {
   if (!player) return null;
@@ -598,6 +624,25 @@ function anchorToMarket(rawPred, line, sampleSize) {
     w *= Math.min(1, Math.max(0.25, sampleSize / 40));
   }
   return line + w * (rawPred - line);
+}
+
+// A line implies a per-map rate. If that rate is impossible for the sport, the
+// market string was parsed wrong (or the feed is bad) — refuse to model it
+// rather than print a fake 30% edge. CS/VAL tops out around 20 kills a map for
+// a superstar; anything past 24 means our map span is off.
+function lineIsPlausible(line, mapCount, sport, market) {
+  if (!line || !mapCount) return true;
+  const s = (sport || '').toUpperCase(), m = (market || '').toLowerCase();
+  const perMap = line / mapCount;
+  if (m.includes('fantasy')) return true;                 // different scale entirely
+  if (s.includes('CS') || s.includes('VAL')) {
+    const cap = m.includes('headshot') ? (mapCount > 1 ? 12 : 15) : (mapCount > 1 ? 20 : 24);
+    return perMap <= cap;
+  }
+  if (s.includes('LOL') || s.includes('LEAGUE')) {
+    return m.includes('assist') ? perMap <= 30 : perMap <= 16;
+  }
+  return true;
 }
 
 // Sanity gate for auto-predictions: beyond 20% off the line is usually a bad
@@ -1104,21 +1149,8 @@ function normalizeMarket(m) {
   const isHS       = s.includes('headshot') || s.includes('hs');
   const isAssists  = s.includes('assist');
   const isFantasy  = s.includes('fantasy');
-  let mapCount = '1';
-  if (/(?:map|maps?)\s*1\s*[-+]\s*2\s*[-+]\s*3/.test(s) || /1[-+]2[-+]3/.test(s)) {
-    mapCount = '1-3';
-  } else if (/maps?\s*1[-+]?\s*[-+]\s*2/.test(s) || /maps?\s*1\s+2/.test(s)) {
-    mapCount = '1-2';
-  } else {
-    const m1 = s.match(/(?:map|maps?)\s*(\d)\b/);
-    if (m1) mapCount = m1[1];
-  }
-  const g = s.match(/game\s*(\d)\s*[+]?\s*(\d)?\s*[+]?\s*(\d)?/);
-  if (g && !s.includes('map')) {
-    if (g[3]) mapCount = '1-3';
-    else if (g[2]) mapCount = `${g[1]}-${g[2]}`;
-    else mapCount = g[1];
-  }
+  // "Kills Maps 1 2" (Sleeper) uses spaces — normalize to the + form first
+  let mapCount = parseMapSpan(s.replace(/(\d)\s+(\d)/g, '$1+$2')).label;
   let stat = isHS ? 'hs' : isAssists ? 'ast' : isFantasy ? 'fp' : 'k';
   return `${stat}|${mapCount}`;
 }
@@ -1153,6 +1185,7 @@ async function generateEsportsPicks() {
   // cached players are free and refresh hourly.
   let freshLookups = 0;
   const MAX_FRESH_LOOKUPS = 25;
+  const implausibleLines = [];
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1174,6 +1207,10 @@ async function generateEsportsPicks() {
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
       const mapCount = parseMapCount(lineObj.market);
+      const plausible = lineIsPlausible(lineObj.line, mapCount, sportU, lineObj.market);
+      if (!plausible) {
+        implausibleLines.push(`${lineObj.player} · ${lineObj.market} · line ${lineObj.line} / ${mapCount} maps`);
+      }
       let sportKey = null;
       if (sportU.includes('VAL')) sportKey = 'VAL';
       else if (sportU.includes('CS') || sportU.includes('COUNTER')) sportKey = 'CS';
@@ -1202,7 +1239,8 @@ async function generateEsportsPicks() {
         }
       }
       rawPred = autoPred;
-      autoPred = anchorToMarket(autoPred, lineObj.line, sampleSize);
+      // Never auto-model a line whose implied per-map rate is impossible
+      autoPred = plausible ? anchorToMarket(autoPred, lineObj.line, sampleSize) : null;
 
       // SANITY GATE — his rule, kept: big % deviations are usually bad data,
       // with an absolute-diff pass for tiny LoL lines.
@@ -1296,6 +1334,11 @@ async function generateEsportsPicks() {
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
   }
 
+  if (implausibleLines.length) {
+    esportsCache.implausible = implausibleLines.slice(0, 20);
+    console.warn(`Esports: ${implausibleLines.length} lines skipped as implausible (market string may be parsed wrong) e.g. ${implausibleLines[0]}`);
+  } else esportsCache.implausible = [];
+
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
@@ -1304,7 +1347,7 @@ async function generateEsportsPicks() {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.5.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.6.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1353,6 +1396,34 @@ app.get('/api/esports/player/:sport/:name', async (req, res) => {
   else if (sport.toLowerCase().includes('lol')) stats = lolStats.players[name.toLowerCase()] || null;
   else if (sport.toLowerCase().includes('cs')) stats = await fetchBo3PlayerStats(name);
   res.json(stats || { error: 'Player not found' });
+});
+
+// What does Underdog ACTUALLY call each esports market, and what lines come
+// with it? Distinct market strings with line ranges + how we parse each one.
+app.get('/api/esports/probe/udmarkets', (req, res) => {
+  const rows = (cache.underdog.data || []).filter(l => isEsports(l.sport));
+  const byMarket = {};
+  for (const l of rows) {
+    const k = `${l.sport} :: ${l.market}`;
+    const B = byMarket[k] || (byMarket[k] = { sport: l.sport, market: l.market, count: 0, lines: [], samplePlayers: [] });
+    B.count++;
+    if (l.line != null) B.lines.push(l.line);
+    if (B.samplePlayers.length < 3) B.samplePlayers.push(`${l.player} ${l.line}`);
+  }
+  const out = Object.values(byMarket).map(B => {
+    const ls = B.lines.slice().sort((a, b) => a - b);
+    const span = parseMapSpan(B.market);
+    const med = ls.length ? ls[Math.floor(ls.length / 2)] : null;
+    return {
+      sport: B.sport, market: B.market, count: B.count,
+      lineMin: ls[0] ?? null, lineMedian: med, lineMax: ls[ls.length - 1] ?? null,
+      parsedMaps: span.count, parsedLabel: span.label,
+      impliedPerMap: med != null ? +(med / span.count).toFixed(2) : null,
+      plausible: lineIsPlausible(med, span.count, B.sport, B.market),
+      samplePlayers: B.samplePlayers,
+    };
+  }).sort((a, b) => b.count - a.count);
+  res.json({ totalEsportsLines: rows.length, markets: out });
 });
 
 // Raw Leaguepedia inspector — shows exactly what the wiki returns
@@ -1510,7 +1581,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.5.0',
+  version: '3.6.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1521,6 +1592,7 @@ app.get('/api/status', (req, res) => res.json({
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
+  implausibleLines: esportsCache.implausible || [],
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -1559,7 +1631,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.5 on port ${PORT}`);
+    console.log(`Line Reaper v3.6 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1584,7 +1656,7 @@ module.exports = {
   app, cache, esportsCache, lolStats,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
-  getVarianceMultiplier, parseMapCount, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
+  getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
