@@ -1300,7 +1300,7 @@ async function generateEsportsPicks() {
   // Limit fresh stat lookups per cycle so pick generation stays fast;
   // cached players are free and refresh hourly.
   let freshLookups = 0;
-  const MAX_FRESH_LOOKUPS = 25;
+  const MAX_FRESH_LOOKUPS = 40;
   const implausibleLines = [];
 
   // Manual predictions are stored under the exact 'player|market' string the user
@@ -1479,8 +1479,50 @@ async function generateEsportsPicks() {
   return picks;
 }
 
+// ─── CS PROFILE WARMER ────────────────────────────────────────────────────────
+// A pick only gets an EV once its player has a stats profile. Pick generation
+// fetches at most MAX_FRESH_LOOKUPS new players per cycle (to stay fast), and
+// the whole cache is lost on redeploy — which is why the board can show 700
+// lines but only ~50 priced. This warmer walks the board in the background and
+// fills the gaps a few players at a time until coverage is complete.
+const warmer = { running: false, done: 0, misses: 0, lastRun: null, queueSize: 0 };
+
+async function warmCsProfiles(batch = 12) {
+  if (warmer.running) return;
+  warmer.running = true;
+  try {
+    const seen = new Set();
+    const queue = [];
+    for (const l of (cache.underdog.data || [])) {
+      if (!isEsports(l.sport)) continue;
+      const s = (l.sport || '').toUpperCase();
+      if (!(s.includes('CS') || s.includes('COUNTER'))) continue;   // bo3 covers CS
+      const k = (l.player || '').toLowerCase();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      const c = esportsCache.hltvPlayers[k];
+      const fresh = c && !c.failed && (Date.now() - c.lastUpdate) < 6 * 3600000;
+      const recentMiss = c && c.failed && (Date.now() - c.lastUpdate) < 30 * 60000;
+      if (!fresh && !recentMiss) queue.push(l.player);
+    }
+    warmer.queueSize = queue.length;
+    let filled = 0;
+    for (const name of queue.slice(0, batch)) {
+      const got = await fetchBo3PlayerStats(name);
+      got ? warmer.done++ : warmer.misses++;
+      if (got) filled++;
+      await new Promise(r => setTimeout(r, 400));   // gentle on bo3
+    }
+    warmer.lastRun = new Date().toISOString();
+    if (filled) {
+      console.log(`Warmer: +${filled} CS profiles (${queue.length - batch > 0 ? queue.length - batch : 0} still queued)`);
+      generateEsportsPicks().catch(() => {});
+    }
+  } finally { warmer.running = false; }
+}
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.7.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.7.1', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1742,7 +1784,7 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.7.0',
+  version: '3.7.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1754,6 +1796,7 @@ app.get('/api/status', (req, res) => res.json({
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   implausibleLines: esportsCache.implausible || [],
+  warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
@@ -1785,6 +1828,10 @@ cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
 cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
+// Profile warmer: every minute, fill a few more players' stats until the whole
+// board is priced. Self-limiting — it stops when the queue empties.
+cron.schedule('* * * * *', () => warmCsProfiles().catch(()=>{}));
+
 // Valorant table refresh (cheap, 7 regions)
 cron.schedule('20 * * * *', () => refreshVLRTable().catch(()=>{}));
 
@@ -1797,7 +1844,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.7 on port ${PORT}`);
+    console.log(`Line Reaper v3.7.1 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1817,6 +1864,8 @@ if (require.main === module) {
     // Valorant table (all regions) + Dota pro directory
     setTimeout(() => refreshVLRTable().catch(()=>{}), 12000);
     setTimeout(() => dotaLoadProPlayers().catch(()=>{}), 16000);
+    // start filling CS profiles right away after a redeploy wipes the cache
+    setTimeout(() => warmCsProfiles(20).catch(()=>{}), 20000);
     console.log('Startup complete');
   });
 }
@@ -1828,6 +1877,6 @@ module.exports = {
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
-  vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache,
+  vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
 };
