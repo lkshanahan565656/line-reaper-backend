@@ -258,7 +258,34 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
 }
 const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
 
+// ── live edges ──
+// Rows that newly cleared minEv since the last screen (new to the board, or
+// improved from below). A cooldown per row stops a price that flickers around
+// the threshold from alerting every refresh.
+const rowKey = r => `${r.group}|${r.side}|${r.book}`;
+function diffEv(prev, next, { minEv = 3, now = Date.now(), seen = new Map(), cooldownMs = 30 * 60000 } = {}) {
+  const before = new Map((prev || []).map(r => [rowKey(r), r]));
+  const out = [];
+  for (const r of next || []) {
+    if (r.ev < minEv) continue;
+    const old = before.get(rowKey(r));
+    if (old && old.ev >= minEv) continue;
+    const k = rowKey(r), last = seen.get(k);
+    if (last != null && now - last < cooldownMs) continue;
+    seen.set(k, now);
+    out.push({ ...r, kind: 'ev', at: new Date(now).toISOString(), previousEv: old?.ev ?? null });
+  }
+  for (const [k, t] of seen) if (now - t > 24 * 3600000) seen.delete(k);
+  return out;
+}
+
+function describeEv(r) {
+  const what = r.player ? `${r.player} ${r.side} ${r.point} ${r.market}` : `${r.event} ${r.market === 'h2h' ? 'ML' : r.market} ${r.side}`;
+  const price = r.dfs ? (r.multiplier && r.multiplier !== 1 ? `${r.multiplier}x` : 'pick') : (r.price > 0 ? `+${r.price}` : r.price);
+  return `💰 +${r.ev.toFixed(1)}% ${what} @ ${r.book} ${price} (fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice}${r.source === 'consensus' ? ', consensus' : ''})`;
+}
+
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, screen, SHARP_WEIGHTS, DFS_BOOKS,
+  quotesFromGames, fairForGroup, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
 };

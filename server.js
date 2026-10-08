@@ -384,6 +384,7 @@ async function fetchOwlsOdds(sport) {
       if (cache.sharpMoves.length > 500) cache.sharpMoves = cache.sharpMoves.slice(0, 500);
     }
     cache.owlsOdds[sport] = { data: games, updated: new Date().toISOString() };
+    ingestSharp(sport, games);
     return games;
   } catch(e) { noteOwlsError(e, `Owls odds ${sport}`); return cache.owlsOdds[sport]?.data || null; }
 }
@@ -556,6 +557,41 @@ const { createAlerter } = require('./alerts');
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
+const exchanges = require('./exchanges');
+const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
+
+// Sharp money: every odds poll is diffed per book. Steam (3+ books move the
+// same way within minutes), sharp leads (Pinnacle/Circa/exchanges move while
+// soft books sit still) and reverse line moves against public betting.
+const sharpTracker = createSharpTracker();
+const SHORT_SPORT = { basketball_nba: 'nba', baseball_mlb: 'mlb', icehockey_nhl: 'nhl', americanfootball_nfl: 'nfl', mma_mixed_martial_arts: 'mma', basketball_ncaab: 'ncaab', americanfootball_ncaaf: 'ncaaf' };
+const sharpListeners = new Set();
+function ingestSharp(sport, games) {
+  if (!Array.isArray(games) || !games.length) return [];
+  let fresh;
+  try { fresh = sharpTracker.ingest(SHORT_SPORT[sport] || sport, games); } catch (e) { console.warn('Sharp tracker:', e.message); return []; }
+  const loud = fresh.filter(e => e.kind !== 'move');
+  if (loud.length) for (const fn of sharpListeners) { try { fn(loud); } catch { /* keep going */ } }
+  const ping = loud.filter(e => e.kind === 'steam' || e.kind === 'sharp_lead');
+  if (ping.length && process.env.ALERT_WEBHOOK_URL && process.env.SHARP_WEBHOOK !== 'off') {
+    axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: ping.slice(0, 10).map(e => '⚡ ' + describeSharp(e)).join('\n') }, { timeout: 10000 })
+      .catch(e => console.warn('Sharp alerts: webhook failed:', e.message));
+  }
+  return fresh;
+}
+// Owls splits arrive per game; reshape to { 'Away @ Home': { market: { side: {...} } } }.
+// Field names are guessed from the splits route's use in the app, so unknown shapes yield nothing.
+function splitsMap() {
+  const out = {};
+  for (const c of Object.values(cache.splits || {})) {
+    for (const g of Array.isArray(c?.data) ? c.data : []) {
+      if (!g?.home_team || !g?.away_team) continue;
+      const m = g.splits || g.markets || g.betting_splits;
+      if (m && typeof m === 'object') out[`${g.away_team} @ ${g.home_team}`] = m;
+    }
+  }
+  return out;
+}
 
 // ─── ACCOUNTS + BILLING ───────────────────────────────────────────────────────
 // AUTH_SECRET signs login tokens. Without it, a random one is used and every
@@ -1822,9 +1858,27 @@ function requireAdmin(req, res, next) {
 // so it spends no extra Odds API credits.
 const EV_SPORTS = { nba: 'basketball_nba', mlb: 'baseball_mlb', nhl: 'icehockey_nhl', nfl: 'americanfootball_nfl', mma: 'mma_mixed_martial_arts' };
 let evCache = { at: 0, rows: [], feeds: [] };
+// Kalshi and Polymarket prices, refreshed every minute and attached to the
+// matching games as two more books (prices include Kalshi's taker fee).
+const exchangeState = { rows: [], errors: [], updated: null };
+async function refreshExchanges() {
+  const [k, p] = await Promise.all([
+    exchanges.fetchKalshi(axios, { seriesTickers: (process.env.KALSHI_SERIES || '').split(',').filter(Boolean).length ? process.env.KALSHI_SERIES.split(',') : undefined }),
+    exchanges.fetchPolymarket(axios, { tags: (process.env.POLYMARKET_TAGS || '').split(',').filter(Boolean).length ? process.env.POLYMARKET_TAGS.split(',') : undefined }),
+  ]);
+  exchangeState.rows = [...k.rows, ...p.rows];
+  exchangeState.errors = [...k.errors, ...p.errors];
+  exchangeState.updated = new Date().toISOString();
+}
+const EXCHANGE_OPTS = { polymarketFeeRate: parseFloat(process.env.POLYMARKET_FEE_RATE) || 0, kalshiFeeRate: process.env.KALSHI_FEE_RATE != null ? parseFloat(process.env.KALSHI_FEE_RATE) : 0.07 };
 function evFeeds() {
   const feeds = [];
-  const add = (sport, label, c) => { if (Array.isArray(c?.data) && c.data.length) feeds.push({ sport, label, games: c.data, updated: c.updated || null }); };
+  const add = (sport, label, c) => {
+    if (!Array.isArray(c?.data) || !c.data.length) return;
+    // game-line feeds get the exchange books attached
+    const games = /odds$/.test(label) && exchangeState.rows.length ? exchanges.attachExchanges(c.data, exchangeState.rows, EXCHANGE_OPTS) : c.data;
+    feeds.push({ sport, label, games, updated: c.updated || null });
+  };
   for (const [s, key] of Object.entries(EV_SPORTS)) {
     add(s, 'owls-odds', cache.owlsOdds[s]);
     add(s, 'owls-props', cache.owlsProps[s]);
@@ -1833,12 +1887,35 @@ function evFeeds() {
   }
   return feeds;
 }
-function runEvScreen() {
-  if (Date.now() - evCache.at < 60000) return evCache;
+// Re-scored right after every odds poll (see the crons), so the board is
+// never older than the newest odds. New edges stream to the app and webhook.
+const EV_ALERT_MIN = process.env.EV_ALERT_MIN != null ? parseFloat(process.env.EV_ALERT_MIN) : 3;
+const evListeners = new Set();
+const evSeen = new Map();
+let evRecent = [];
+function runEvScreen(force = false) {
+  if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
   const dfsLines = [...(cache.prizepicks.data || []), ...(cache.underdog.data || [])].filter(l => !isEsports(l.sport));
   const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power' });
+  const prev = evCache.at ? evCache.rows : null;
   evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
+  // the first screen after a restart only primes the diff
+  if (prev) {
+    const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen });
+    if (fresh.length) {
+      evRecent = [...fresh, ...evRecent].slice(0, 200);
+      for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
+      if (process.env.ALERT_WEBHOOK_URL) {
+        const lines = fresh.slice(0, 10).map(evScreen.describeEv);
+        if (fresh.length > 10) lines.push(`…and ${fresh.length - 10} more`);
+        axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: lines.join('\n') }, { timeout: 10000 })
+          .catch(e => console.warn('EV alerts: webhook failed:', e.message));
+      }
+    }
+  } else {
+    for (const r of rows) if (r.ev >= EV_ALERT_MIN) evSeen.set(evScreen.rowKey(r), Date.now());
+  }
   return evCache;
 }
 function redactEv(rows) {
@@ -1846,7 +1923,7 @@ function redactEv(rows) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.15.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.16.0', updated: new Date().toISOString() }));
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
@@ -1909,6 +1986,33 @@ app.get('/api/ev', (req, res) => {
   out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
   const pro = hasPro(req);
   res.json({ rows: pro ? out : redactEv(out), count: total, pro, updated: new Date(at).toISOString(), feeds });
+});
+// New edges as they appear: event "ev" carries an array of rows.
+// ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
+// still stale) are the actionable part, so they're Pro.
+app.get('/api/sharp', (req, res) => {
+  const kind = req.query.kind ? String(req.query.kind).split(',') : undefined;
+  const events = sharpTracker.events({ sport: req.query.sport, kind, limit: Math.min(parseInt(req.query.limit) || 100, 500) })
+    .map(e => ({ ...e, text: describeSharp(e) }));
+  const pro = hasPro(req);
+  const stale = pro ? sharpTracker.stale().filter(l => !req.query.sport || l.sport === req.query.sport).map(e => ({ ...e, text: describeSharp(e) })) : [];
+  let rlm = [];
+  try { rlm = reverseLineMoves(sharpTracker.events({ limit: 500 }), splitsMap()).map(e => ({ ...e, text: describeSharp(e) })); } catch { /* splits shape unknown */ }
+  res.json({ events, stale, rlm, pro, lockedLeads: pro ? 0 : sharpTracker.stale().length, state: sharpTracker.state() });
+});
+app.get('/api/exchanges', (req, res) => res.json({ markets: exchanges.toMarketsList(exchangeState.rows), updated: exchangeState.updated, errors: exchangeState.errors }));
+app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
+app.get('/api/ev/stream', requirePro, (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders?.();
+  res.write(`event: hello\ndata: ${JSON.stringify({ at: evCache.at, rows: evCache.rows.length })}\n\n`);
+  const send = rows => res.write(`event: ev\ndata: ${JSON.stringify(rows)}\n\n`);
+  const sendSharp = evs => res.write(`event: sharp\ndata: ${JSON.stringify(evs.map(e => ({ ...e, text: describeSharp(e) })))}\n\n`);
+  sharpListeners.add(sendSharp);
+  // a heartbeat with the board time lets the page refresh even when nothing new crossed the line
+  const ping = setInterval(() => res.write(`event: tick\ndata: ${JSON.stringify({ at: evCache.at })}\n\n`), 25000);
+  evListeners.add(send);
+  req.on('close', () => { clearInterval(ping); evListeners.delete(send); sharpListeners.delete(sendSharp); });
 });
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
@@ -2152,10 +2256,61 @@ app.delete('/api/sharp-moves', (req, res) => { cache.sharpMoves = []; res.json({
 app.get('/api/splits/:sport', async (req, res) => res.json(await fetchOwlsSplits(req.params.sport) || {}));
 app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport(req.params.sport)));
 
+// The app's Odds API calls come through here so the key stays on the server,
+// and every viewer shares one cached response instead of each spending credits.
+// ?markets=h2h,spreads&regions=us&includeLinks=true
+const ODDS_FEED_TTL_MS = parseInt(process.env.ODDS_FEED_TTL_MS) || 120000;
+const FEED_MARKETS = new Set(['h2h', 'spreads', 'totals', 'outrights']);
+const FEED_REGIONS = new Set(['us', 'us2', 'us_ex', 'uk', 'eu', 'au']);
+const oddsFeedCache = new Map();
+const oddsFeedInflight = new Map();
+app.get('/api/odds-feed/:sport', async (req, res) => {
+  const sport = String(req.params.sport);
+  if (!/^[a-z0-9_]+$/.test(sport)) return res.status(400).json({ error: 'Bad sport key' });
+  if (!ODDS_API_KEY) return res.status(503).json({ error: 'ODDS_API_KEY is not set on the server' });
+  const pick = (v, allowed, dflt) => { const xs = String(v || dflt).split(',').filter(x => allowed.has(x)); return xs.length ? xs.sort().join(',') : dflt; };
+  const markets = pick(req.query.markets, FEED_MARKETS, 'h2h,spreads');
+  const regions = pick(req.query.regions, FEED_REGIONS, 'us');
+  const includeLinks = req.query.includeLinks === 'true';
+  const key = `${sport}|${markets}|${regions}|${includeLinks}`;
+  res.set('Access-Control-Expose-Headers', 'x-requests-remaining, x-cache');
+  const hit = oddsFeedCache.get(key);
+  if (hit && Date.now() - hit.at < ODDS_FEED_TTL_MS) {
+    if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
+    res.set('x-cache', 'hit');
+    return res.json(hit.data);
+  }
+  try {
+    // concurrent viewers wait on the same request
+    if (!oddsFeedInflight.has(key)) {
+      oddsFeedInflight.set(key, axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
+        params: { apiKey: ODDS_API_KEY, regions, markets, oddsFormat: 'american', ...(includeLinks ? { includeLinks: true } : {}) }, timeout: 12000,
+      }).finally(() => oddsFeedInflight.delete(key)));
+    }
+    const r = await oddsFeedInflight.get(key);
+    noteQuota(r);
+    oddsFeedCache.set(key, { at: Date.now(), data: r.data });
+    // the screener and sharp tracker read game lines from here too
+    if (/h2h/.test(markets)) cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
+    ingestSharp(sport, r.data);
+    if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
+    res.set('x-cache', 'miss');
+    res.json(r.data);
+  } catch (e) {
+    const status = e.response?.status || 502;
+    if (hit) { res.set('x-cache', 'stale'); return res.json(hit.data); }   // better old odds than none
+    res.status(status).json({ error: status === 429 ? 'Odds API quota used up' : status === 401 ? 'Odds API key rejected' : `Odds API error ${status}` });
+  }
+});
+
 // Regex path: works on both Express 4 and Express 5 (string '*' wildcards break on v5)
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   if (owlsDisabled()) return res.status(503).json({ error: 'Owls disabled — API key is dead (repeated 403s). Set OWLS_API_KEY and restart.' });
   const path = req.params[0], query = new URLSearchParams(req.query).toString();
+  // odds and props are already polled on a timer: serve those from cache
+  const m = !query && /^(\w+)\/(odds|props)$/.exec(path);
+  const hit = m && (m[2] === 'odds' ? cache.owlsOdds : cache.owlsProps)[m[1]];
+  if (hit?.data && Date.now() - new Date(hit.updated).getTime() < (m[2] === 'odds' ? 30000 : 300000)) return res.json(hit.data);
   try {
     const r = await axios.get(`https://api.owlsinsight.com/api/v1/${path}${query?'?'+query:''}`, { headers: OWLS_HEADERS, timeout: 10000 });
     res.json(r.data);
@@ -2288,7 +2443,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.15.0',
+  version: '3.16.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2307,6 +2462,8 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  sharp: sharpTracker.state(),
+  exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
@@ -2340,7 +2497,11 @@ cron.schedule('*/5 * * * *', async () => {
 cron.schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
 
 // Owls — fully skipped once the breaker trips
-cron.schedule('*/30 * * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsOdds(s); });
+cron.schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
+cron.schedule('*/30 * * * * *', async () => {
+  if (!owlsDisabled()) await Promise.all(['nba','mlb','nhl','nfl','mma'].map(s => fetchOwlsOdds(s)));
+  try { runEvScreen(true); } catch (e) { console.warn('EV screen failed:', e.message); }
+});
 cron.schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
 
 // Odds API props — 30-min staggered, in-season only (the guard inside skips off-season sports)
@@ -2372,7 +2533,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.15.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.16.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2401,7 +2562,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing,
+  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
