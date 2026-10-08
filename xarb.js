@@ -1,0 +1,813 @@
+// ─── EXCHANGE ARBS ────────────────────────────────────────────────────────────
+// Kalshi and Polymarket both list $1 contracts: pay the ask (plus a fee) and
+// collect $1 if the contract wins. When every way a question can end can be
+// bought for less than $1 in total, the difference is locked in whatever
+// happens. Three kinds are found:
+//
+//   1. cross-exchange: the same yes/no question on both exchanges. YES on one
+//      plus NO on the other always pays $1. Sports games are matched by their
+//      two teams (exchanges.teamMatches), the same game number (doubleheaders)
+//      and start times within 4h (Kalshi's start is estimated from its expected
+//      expiration), nearest game only. Everything else is matched by title:
+//      the same words (Jaccard ≥ 0.6 once filler words go), exactly the same
+//      numbers, dates and direction words ("above", "below", "not"), the same
+//      subject (outcome label, and every name-like capitalised word on one side
+//      found on the other, in the same order), close dates within 3 days, and
+//      one-to-one: each market pairs only with its own unique best match. Two
+//      titles can still resolve differently, so those carry a "check both
+//      rules" flag.
+//   2. underround: an event where exactly one outcome wins (Kalshi
+//      `mutually_exclusive`, Polymarket `negRisk`). YES on every outcome pays
+//      $1, so YES asks summing under $1 is an arb, but only if the listed
+//      outcomes cover every result. That's only taken as shown when there's a
+//      catch-all outcome ("Other", "Someone else", "Tie"), open-ended range
+//      buckets at both ends, or a no-tie game; otherwise the arb is listed with
+//      exhaustive: false and a warning, and never alerted. Every outcome needs
+//      a live quote, or the set isn't complete.
+//   3. exchange vs sportsbook: the exchange h2h books exchanges.attachExchanges
+//      puts on Odds API games (fees already in the price) against the best
+//      sportsbook price on the other side: 1/decA + 1/decB < 1. A Polymarket
+//      book is only used when this scan saw a real bid and ask on that market
+//      (attachExchanges falls back to mids, which can't be traded).
+//
+// Size: the exchanges' `liquidity` figures are totals over every price level,
+// not what sits at the quoted ask, so no executable size is claimed
+// (maxContracts / maxStake are null): check the order books before sizing up.
+//
+// Every leg of an exchange arb buys the same number of contracts, so it pays
+// the same whichever way it lands. Costs include fees: Kalshi's taker fee on
+// the real contract count (rounded up to the cent per order), Polymarket's fee
+// rate (default 0). profit % = (payout − cost) / cost.
+//
+// Parsers and matchers are pure. The fetchers take an axios-style `http` so
+// all of it can be tested without the network.
+
+const { kalshiFee, teamMatches, kalshiLeague } = require('./exchanges');
+const { americanToDecimal } = require('./ev');
+
+const KALSHI_EVENTS_URL = 'https://api.elections.kalshi.com/trade-api/v2/events';
+const POLYMARKET_EVENTS_URL = 'https://gamma-api.polymarket.com/events';
+const EXCHANGE_BOOKS = new Set(['kalshi', 'polymarket']);
+const RULES_WARNING = 'check both rules: resolution wording can differ';
+const COVER_WARNING = 'check the listed outcomes cover every result';
+const NOT_EXHAUSTIVE_WARNING = 'not proven exhaustive: no catch-all outcome, so if an unlisted result wins every leg loses';
+const DAY = 86400e3;
+
+const DEFAULTS = {
+  minPct: 0.5, kalshiFeeRate: 0.07, polymarketFeeRate: 0, bankroll: 100,
+  sportsWindowMs: 4 * 3600e3, titleWindowMs: 3 * DAY, minSimilarity: 0.6,
+};
+// undefined in opts keeps the default
+function withDefaults(opts = {}) {
+  const o = { ...DEFAULTS };
+  for (const [k, v] of Object.entries(opts || {})) if (v !== undefined) o[k] = v;
+  o.now = typeof o.now === 'function' ? o.now() : o.now ?? Date.now();
+  return o;
+}
+
+function optsFromEnv(env = process.env) {
+  const f = k => (env[k] == null || env[k] === '' || !Number.isFinite(parseFloat(env[k])) ? undefined : parseFloat(env[k]));
+  return { minPct: f('XARB_MIN_PCT'), polymarketFeeRate: f('POLYMARKET_FEE_RATE'), kalshiFeeRate: f('KALSHI_FEE_RATE') };
+}
+
+// ── small helpers ──
+const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
+const r2 = x => round(x, 2);
+const sum = xs => xs.reduce((a, b) => a + b, 0);
+// a real quote is strictly between $0 and $1
+const quote = v => { const x = num(v); return x != null && x > 0 && x < 1 ? round(x, 6) : null; };
+const ms = s => { const t = s ? Date.parse(s) : NaN; return Number.isFinite(t) ? t : null; };
+const clip = (s, n = 500) => (s ? String(s).slice(0, n) : null);
+const jsonList = v => {
+  if (Array.isArray(v)) return v;
+  try { const x = JSON.parse(v); return Array.isArray(x) ? x : null; } catch { return null; }
+};
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, ' ').trim();
+const push = (map, key, v) => { if (!map.has(key)) map.set(key, []); map.get(key).push(v); };
+const later = (...ts) => ts.filter(Boolean).sort((a, b) => (ms(b) ?? 0) - (ms(a) ?? 0))[0] || null;
+
+// ── categories ──
+// Labels are tried in order (the exchange's own category first, then tags),
+// and the first one that names a category wins.
+const CATEGORIES = [
+  ['sports', /sport|world cup|\b(nba|nfl|mlb|nhl|wnba|ncaa|mls|ufc|mma|f1|epl)\b|soccer|football|basketball|baseball|hockey|tennis|golf|boxing|racing|cricket|esports/],
+  ['crypto', /crypto|bitcoin|ethereum|solana|\b(btc|eth|xrp|doge)\b/],
+  ['econ', /econ|financ|\bfed\b|interest rate|inflation|\bcpi\b|\bgdp\b|jobs|recession|stock|compan|business|commodit/],
+  ['politics', /politic|election|world|government|geopolit|congress|senate|president|trump/],
+  ['culture', /entertain|culture|pop|music|movie|film|award|oscar|grammy|celebr|social|mention|\btv\b/],
+];
+function normalizeCategory(...labels) {
+  for (const l of labels.flat()) {
+    const text = String((l && typeof l === 'object' ? l.label || l.slug : l) || '').toLowerCase();
+    if (!text) continue;
+    for (const [key, re] of CATEGORIES) if (re.test(text)) return key;
+  }
+  return 'other';
+}
+
+// "nba-nyk-bos-2026-10-08", tag slug "nba" → 'nba'
+const LEAGUES = { nba: 'nba', nfl: 'nfl', mlb: 'mlb', nhl: 'nhl', wnba: 'wnba', ncaaf: 'ncaaf', cfb: 'ncaaf', ncaab: 'ncaab', cbb: 'ncaab', mls: 'mls' };
+function polymarketLeague(ev, m) {
+  const cands = [ev?.seriesSlug, ...(ev?.series || []).map(s => s?.slug), ...(ev?.tags || []).map(t => t?.slug || t?.label), ev?.slug, m?.slug];
+  for (const c of cands) {
+    const first = String(c || '').toLowerCase().split(/[-_\s]/)[0];
+    if (LEAGUES[first]) return LEAGUES[first];
+  }
+  return null;
+}
+
+// ── Kalshi ──
+// Newer responses carry `yes_ask_dollars: "0.5600"`, older ones integer cents.
+function kalshiPrice(m, field) {
+  const d = num(m?.[`${field}_dollars`]);
+  if (d != null) return quote(d);
+  const c = num(m?.[field]);
+  return c == null ? null : quote(c / 100);
+}
+// liquidity: dollars of resting offers (`liquidity` is in cents)
+function kalshiLiquidity(m) {
+  const d = num(m.liquidity_dollars);
+  if (d != null) return d;
+  const c = num(m.liquidity);
+  return c == null ? null : c / 100;
+}
+
+const KALSHI_LIVE = new Set(['open', 'active']);
+const KALSHI_DONE = new Set(['settled', 'determined', 'finalized']);
+const DRAW_RE = /^(tie|draw)$/i;
+const NOT_TEAM_RE = /\d|spread|total|\bover\b|\bunder\b|points?\b|wins? by|^(yes|no)$/i;
+
+// "New York K at Boston Winner?" → ['New York K', 'Boston']
+function titleTeams(title) {
+  const parts = String(title || '').replace(/\s*(winner|to win)\??\s*$/i, '').split(/\s+(?:at|vs\.?|v\.?|@)\s+/i);
+  return parts.length === 2 && parts.every(p => p.trim()) ? parts.map(s => s.trim()) : null;
+}
+
+// Doubleheaders: "KXMLBGAME-26OCT08NYYBOSG2", "mlb-nyy-bos-2026-10-08-game-2",
+// "Yankees vs. Red Sox (Game 2)" → 2. null when nothing says.
+function gameNumber(...texts) {
+  for (const t of texts) {
+    const s = String(t || '');
+    const m = s.match(/[-\s(]game[-\s]?(\d)\b/i) || s.match(/^KX[A-Z0-9]*GAME-\w*?[A-Z]G(\d)$/i);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+// One row per unresolved market. Untradable ones (paused, not yet open) stay
+// in with no quote, so an underround can tell its outcome set is incomplete.
+function parseKalshiBinaries(payload) {
+  const events = Array.isArray(payload) ? payload : payload?.events || payload?.data || [];
+  const out = [];
+  for (const ev of events) {
+    if (!ev || !Array.isArray(ev.markets)) continue;
+    const result = m => String(m.result || '').toLowerCase();
+    const resolved = m => KALSHI_DONE.has(String(m.status || '').toLowerCase()) || ['yes', 'no'].includes(result(m));
+    const markets = ev.markets.filter(m => m && m.ticker);
+    const live = markets.filter(m => !resolved(m));
+    const decided = markets.some(m => result(m) === 'yes');
+    const league = kalshiLeague(ev.series_ticker, ev.event_ticker, ...live.map(m => m.ticker));
+    const category = league ? 'sports' : normalizeCategory(ev.category);
+    // a game: two team contracts (and maybe a tie), named in yes_sub_title
+    const labels = live.map(m => String(m.yes_sub_title || '').trim()).filter(Boolean);
+    const hasDraw = labels.some(l => DRAW_RE.test(l));
+    const sides = [...new Set(labels.filter(l => !DRAW_RE.test(l)))];
+    // only head-to-head events ("X at Y", ...GAME tickers): an MVP race with two names left is not a game
+    const gameLike = /GAME|MATCH/i.test(`${ev.series_ticker || ''} ${ev.event_ticker || ''}`) || titleTeams(ev.title) != null;
+    let teams = null;
+    if (category === 'sports' && gameLike && ev.mutually_exclusive !== false) {
+      teams = sides.length === 2 ? sides : sides.length === 1 ? titleTeams(ev.title || live[0]?.title) : null;
+      if (teams && teams.some(t => NOT_TEAM_RE.test(t))) teams = null;
+    }
+    for (const m of live) {
+      const tradable = KALSHI_LIVE.has(String(m.status || '').toLowerCase());
+      const label = String(m.yes_sub_title || m.subtitle || '').trim();
+      let kind = 'yesno', noLabel = null;
+      const i = teams && label ? teams.findIndex(t => norm(t) === norm(label)) : -1;
+      if (i >= 0) { kind = 'teams'; noLabel = teams[1 - i]; }
+      out.push({
+        exchange: 'kalshi', id: m.ticker, eventKey: `kalshi:${ev.event_ticker || m.event_ticker}`, eventTitle: ev.title || '',
+        title: m.title || ev.title || '', outcomeLabel: label, noLabel, kind,
+        yesAsk: tradable ? kalshiPrice(m, 'yes_ask') : null, noAsk: tradable ? kalshiPrice(m, 'no_ask') : null,
+        closeTime: m.expected_expiration_time || m.close_time || null, startTime: null,
+        expectedExpiration: m.expected_expiration_time || null, gameNo: kind === 'teams' ? gameNumber(ev.event_ticker, ev.title, m.title) : null,
+        url: `https://kalshi.com/markets/${String(ev.event_ticker || m.event_ticker || '').toLowerCase()}`,
+        category, league, liquidity: kalshiLiquidity(m), volume: num(m.volume),
+        mutuallyExclusive: ev.mutually_exclusive === true, hasDraw, tradable, eventDecided: decided, eventComplete: true,
+        rules: clip(m.rules_primary),
+      });
+    }
+  }
+  return out;
+}
+
+// ── Polymarket ──
+// bestAsk/bestBid quote the FIRST outcome. Buying the second outcome is
+// selling the first, so its ask is 1 − bestBid. Mids (outcomePrices) are not
+// tradable prices and are never used here.
+const NOT_TEAMS = new Set(['yes', 'no', 'over', 'under', 'draw', 'tie', 'up', 'down', 'odd', 'even']);
+const isMoneyline = m => (m.sportsMarketType == null || m.sportsMarketType === 'moneyline')
+  && !(m.sportsMarketType == null && /spread|\(\s*[+-]?\d|o\/u|total/i.test(m.question || ''));
+function yesWon(m) {
+  const outs = (jsonList(m.outcomes) || []).map(o => String(o).trim().toLowerCase());
+  const px = jsonList(m.outcomePrices) || [];
+  const yi = outs.indexOf('yes');
+  return yi >= 0 && num(px[yi]) >= 0.99;
+}
+
+function parsePolymarketBinaries(payload) {
+  const events = Array.isArray(payload) ? payload : payload?.events || payload?.data || [];
+  const out = [];
+  for (const ev of events) {
+    if (!ev || !Array.isArray(ev.markets)) continue;
+    const markets = ev.markets.filter(Boolean);
+    const negRisk = ev.negRisk === true || ev.enableNegRisk === true || markets.some(m => m.negRisk === true);
+    const decided = markets.some(m => m.closed === true && yesWon(m));
+    const tags = (ev.tags || []).map(t => t?.label || t?.slug);
+    const open = markets.filter(m => m.closed !== true);
+    const rows = [];
+    for (const m of open) {
+      const names = (jsonList(m.outcomes) || []).map(o => String(o).trim());
+      if (names.length !== 2) continue;
+      const lower = names.map(s => s.toLowerCase());
+      const tradable = m.active !== false && m.acceptingOrders !== false && m.archived !== true;
+      const ask0 = tradable ? quote(m.bestAsk) : null;
+      const bid0 = tradable ? quote(m.bestBid) : null;
+      const ask1 = bid0 == null ? null : round(1 - bid0, 6);
+      let kind, yesAsk, noAsk, outcomeLabel, noLabel = null;
+      const yi = lower.indexOf('yes');
+      if (yi >= 0 && lower.includes('no')) {
+        kind = 'yesno';
+        [yesAsk, noAsk] = yi === 0 ? [ask0, ask1] : [ask1, ask0];
+        outcomeLabel = String(m.groupItemTitle || '').trim() || 'Yes';
+      } else if (!lower.some(o => NOT_TEAMS.has(o)) && isMoneyline(m)) {
+        kind = 'teams';
+        [outcomeLabel, noLabel] = names;
+        [yesAsk, noAsk] = [ask0, ask1];
+      } else continue;
+      const league = polymarketLeague(ev, m);
+      const sportsHint = m.sportsMarketType != null || m.gameStartTime != null ? 'sports' : null;
+      rows.push({
+        exchange: 'polymarket', id: String(m.id), eventKey: `polymarket:${ev.id ?? ev.slug}`, eventTitle: ev.title || '',
+        title: m.question || ev.title || '', outcomeLabel, noLabel, kind, yesAsk, noAsk,
+        closeTime: m.endDate || ev.endDate || null, startTime: m.gameStartTime || null,
+        gameNo: kind === 'teams' ? gameNumber(ev.slug, m.slug, ev.title, m.question) : null,
+        url: `https://polymarket.com/event/${ev.slug || m.slug || ''}`,
+        category: league ? 'sports' : normalizeCategory(ev.category, m.category, ...tags, sportsHint),
+        league, liquidity: num(m.liquidityClob) ?? num(m.liquidityNum) ?? num(m.liquidity), volume: num(m.volume),
+        mutuallyExclusive: negRisk && kind === 'yesno', hasDraw: false, tradable, eventDecided: decided,
+        eventComplete: true, conditionId: m.conditionId || null, rules: clip(m.description || ev.description),
+      });
+    }
+    // an open market we couldn't read leaves the outcome set incomplete
+    const complete = rows.length === open.length && (!negRisk || rows.every(r => r.kind === 'yesno'));
+    for (const r of rows) { r.eventComplete = complete; out.push(r); }
+  }
+  return out;
+}
+
+// ── title matching ──
+// A title becomes: content words (for Jaccard), plus a signature that must be
+// identical on both sides: its numbers, months and direction words.
+const STOPWORDS = new Set(('a an the will be is are was were been being of in on at to for by before and or with from as '
+  + 'this that these those it its his her their there who whom what which when where how does do did has have had than '
+  + 'then into any vs versus market price').split(' '));
+const POLARITY = {
+  above: 'gt', over: 'gt', exceed: 'gt', exceeds: 'gt', exceeding: 'gt', greater: 'gt', more: 'gt', gt: 'gt',
+  below: 'lt', under: 'lt', less: 'lt', fewer: 'lt', lt: 'lt', gte: 'gte', lte: 'lte',
+  higher: 'up', increase: 'up', increases: 'up', rise: 'up', rises: 'up', raise: 'up', raises: 'up', hike: 'up', hikes: 'up', up: 'up',
+  lower: 'down', decrease: 'down', decreases: 'down', cut: 'down', cuts: 'down', fall: 'down', falls: 'down',
+  drop: 'down', drops: 'down', decline: 'down', declines: 'down', reduce: 'down', down: 'down',
+  hold: 'hold', unchanged: 'hold', pause: 'hold', not: 'not', no: 'not', never: 'not', without: 'not',
+  after: 'after', following: 'after', between: 'between', exactly: 'exactly',
+};
+const PHRASES = [
+  [/\bu\.s\.(?:a\.)?/g, 'us'],
+  [/n't\b/g, ' not'],
+  [/(\d)\s*\+/g, '$1 gte '],
+  [/\bat least\b|\bor (?:more|higher|above|greater|over)\b|≥/g, ' gte '],
+  [/\bat most\b|\bor (?:less|fewer|lower|below|under)\b|≤/g, ' lte '],
+  [/\b(?:more|greater|higher) than\b|>/g, ' gt '],
+  [/\b(?:less|fewer|lower) than\b|</g, ' lt '],
+  [/\bno change\b|\bstay the same\b/g, ' hold '],
+];
+const MONTHS = {
+  jan: 'jan', january: 'jan', feb: 'feb', february: 'feb', mar: 'mar', march: 'mar', apr: 'apr', april: 'apr', may: 'may',
+  jun: 'jun', june: 'jun', jul: 'jul', july: 'jul', aug: 'aug', august: 'aug', sep: 'sep', sept: 'sep', september: 'sep',
+  oct: 'oct', october: 'oct', nov: 'nov', november: 'nov', dec: 'dec', december: 'dec',
+};
+const NUM_RE = /(\d[\d,]*)(?:\.(\d+))?(?:(st|nd|rd|th)\b|\s*(thousand|million|billion|trillion)\b|(k|m|bn|b|t)\b)?/g;
+const MULT = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9, t: 1e12, trillion: 1e12 };
+const stem = w => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
+
+function titleKey(text) {
+  let s = String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  for (const [re, to] of PHRASES) s = s.replace(re, to);
+  const nums = new Set(), years = new Set();
+  // "$100,000" → 100000, "3.00%" → 3, "100k" → 100000, "1st" → 1; numbers leave a '#' marker
+  s = s.replace(NUM_RE, (m, int, frac, ord, word, unit) => {
+    const v = Number(`${int.replace(/,/g, '')}${frac ? `.${frac}` : ''}`) * (MULT[word || unit] || 1);
+    if (!Number.isFinite(v)) return ' ';
+    const plain = !frac && !ord && !word && !unit && !int.replace(/,$/, '').includes(',');
+    if (plain && v >= 1900 && v <= 2100) years.add(String(v)); else nums.add(String(Number(v.toPrecision(12))));
+    return ' # ';
+  });
+  const toks = s.split(/[^a-z0-9#]+/).filter(Boolean);
+  const words = new Set(), months = new Set(), polarity = new Set();
+  toks.forEach((t, i) => {
+    if (t === '#') return;
+    // "may" is a month only next to a number ("May 5", "5 May")
+    if (MONTHS[t] && (t !== 'may' || toks[i - 1] === '#' || toks[i + 1] === '#')) return void months.add(MONTHS[t]);
+    if (POLARITY[t]) return void polarity.add(POLARITY[t]);
+    if (t.length < 2 || STOPWORDS.has(t)) return;
+    words.add(stem(t));
+  });
+  const sorted = set => [...set].sort().join(',');
+  return { words, nums, years, months, polarity, sig: `${sorted(nums)}|${sorted(months)}|${sorted(polarity)}` };
+}
+
+// Jaccard of the content words, or null when a number, month, direction or
+// year differs. A year only counts when both titles state one (the close-date
+// check already pins the year).
+function titleSimilarity(a, b) {
+  const x = typeof a === 'string' ? titleKey(a) : a, y = typeof b === 'string' ? titleKey(b) : b;
+  if (x.sig !== y.sig) return null;
+  if (x.years.size && y.years.size && [...x.years].sort().join() !== [...y.years].sort().join()) return null;
+  if (!x.words.size || !y.words.size) return null;
+  let inter = 0;
+  for (const w of x.words) if (y.words.has(w)) inter++;
+  return inter / (x.words.size + y.words.size - inter);
+}
+
+// The question a row asks: its title, plus the outcome label when the title
+// doesn't already say it ("Fed rate after Dec meeting?" + "Above 3.75%").
+function proposition(r) {
+  const t = r.title || r.eventTitle || '';
+  const l = r.outcomeLabel && !/^yes$/i.test(r.outcomeLabel) ? r.outcomeLabel : '';
+  return l && !norm(t).includes(norm(l)) ? `${t} ${l}` : t;
+}
+
+// ── subjects ──
+// Jaccard alone pairs "Will the Yankees win the World Series?" with the Mets
+// one, "Donald Trump" with "Donald Trump Jr." and "Israel strike Iran" with
+// "Iran strike Israel". So the subject has to agree too: the outcome labels
+// (when both have one) word for word, every name-like word (capitalised, not a
+// filler word) on either side present on the other, and the names both sides
+// share in the same order. Capitals only mean something in a sentence-case
+// title; a Title Case one contributes no names of its own.
+const isYes = l => /^yes$/i.test(l || '');
+const ALIASES = { democratic: 'democrat', dem: 'democrat', gop: 'republican' };
+const LABEL_FILLER = new Set(['party']);
+const subjectWord = t => { const w = stem(t.toLowerCase()); return ALIASES[w] || w; };
+const isFiller = t => { const l = t.toLowerCase(); return l.length < 2 || STOPWORDS.has(l) || !!MONTHS[l] || !!POLARITY[l] || !/^[a-z]/i.test(t); };
+function subjectTokens(text) {
+  return String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\b(?:[A-Za-z]\.){2,}/g, m => m.replace(/\./g, ''))   // J.D. → JD, U.S. → US
+    .split(/[^A-Za-z0-9]+|(?<=\d)(?=[A-Za-z])|(?<=[A-Za-z])(?=\d)/).filter(Boolean);
+}
+function subjectKey(r) {
+  const toks = subjectTokens(proposition(r));
+  const content = toks.filter(t => !isFiller(t));
+  const sentence = content.some(t => /^[a-z]/.test(t));
+  const names = [];
+  if (sentence) for (const t of content) if (/^[A-Z]/.test(t) && !names.includes(subjectWord(t))) names.push(subjectWord(t));
+  const raw = r.outcomeLabel && !isYes(r.outcomeLabel) ? subjectTokens(r.outcomeLabel).filter(t => !isFiller(t)).map(subjectWord).filter(w => !LABEL_FILLER.has(w)) : [];
+  return { all: new Set(toks.map(subjectWord)), names, label: raw.length ? new Set(raw) : null };
+}
+function sameSubject(a, b) {
+  if (a.label && b.label && (a.label.size !== b.label.size || [...a.label].some(w => !b.label.has(w)))) return false;
+  for (const w of a.label || []) if (!b.all.has(w)) return false;
+  for (const w of b.label || []) if (!a.all.has(w)) return false;
+  if (a.names.some(w => !b.all.has(w)) || b.names.some(w => !a.all.has(w))) return false;
+  // the shared names, outside the labels, in the same order
+  const bn = new Set(b.names), an = new Set(a.names), inLabel = w => a.label?.has(w) || b.label?.has(w);
+  const x = a.names.filter(w => bn.has(w) && !inLabel(w)), y = b.names.filter(w => an.has(w) && !inLabel(w));
+  return x.join(' ') === y.join(' ');
+}
+
+// ── team matching ──
+// Kalshi says "Boston", Polymarket says "Celtics": neither is a full name, so
+// both are resolved against full team names (the league's, plus any Odds API
+// games passed in) and match when they land on the same team.
+const TEAM_NAMES = {
+  nba: 'Atlanta Hawks|Boston Celtics|Brooklyn Nets|Charlotte Hornets|Chicago Bulls|Cleveland Cavaliers|Dallas Mavericks|Denver Nuggets|'
+    + 'Detroit Pistons|Golden State Warriors|Houston Rockets|Indiana Pacers|Los Angeles Clippers|Los Angeles Lakers|Memphis Grizzlies|'
+    + 'Miami Heat|Milwaukee Bucks|Minnesota Timberwolves|New Orleans Pelicans|New York Knicks|Oklahoma City Thunder|Orlando Magic|'
+    + 'Philadelphia 76ers|Phoenix Suns|Portland Trail Blazers|Sacramento Kings|San Antonio Spurs|Toronto Raptors|Utah Jazz|Washington Wizards',
+  nfl: 'Arizona Cardinals|Atlanta Falcons|Baltimore Ravens|Buffalo Bills|Carolina Panthers|Chicago Bears|Cincinnati Bengals|Cleveland Browns|'
+    + 'Dallas Cowboys|Denver Broncos|Detroit Lions|Green Bay Packers|Houston Texans|Indianapolis Colts|Jacksonville Jaguars|Kansas City Chiefs|'
+    + 'Las Vegas Raiders|Los Angeles Chargers|Los Angeles Rams|Miami Dolphins|Minnesota Vikings|New England Patriots|New Orleans Saints|'
+    + 'New York Giants|New York Jets|Philadelphia Eagles|Pittsburgh Steelers|San Francisco 49ers|Seattle Seahawks|Tampa Bay Buccaneers|'
+    + 'Tennessee Titans|Washington Commanders',
+  mlb: 'Arizona Diamondbacks|Atlanta Braves|Baltimore Orioles|Boston Red Sox|Chicago Cubs|Chicago White Sox|Cincinnati Reds|Cleveland Guardians|'
+    + 'Colorado Rockies|Detroit Tigers|Houston Astros|Kansas City Royals|Los Angeles Angels|Los Angeles Dodgers|Miami Marlins|Milwaukee Brewers|'
+    + 'Minnesota Twins|New York Mets|New York Yankees|Athletics|Philadelphia Phillies|Pittsburgh Pirates|San Diego Padres|San Francisco Giants|'
+    + 'Seattle Mariners|St. Louis Cardinals|Tampa Bay Rays|Texas Rangers|Toronto Blue Jays|Washington Nationals',
+  nhl: 'Anaheim Ducks|Boston Bruins|Buffalo Sabres|Calgary Flames|Carolina Hurricanes|Chicago Blackhawks|Colorado Avalanche|Columbus Blue Jackets|'
+    + 'Dallas Stars|Detroit Red Wings|Edmonton Oilers|Florida Panthers|Los Angeles Kings|Minnesota Wild|Montreal Canadiens|Nashville Predators|'
+    + 'New Jersey Devils|New York Islanders|New York Rangers|Ottawa Senators|Philadelphia Flyers|Pittsburgh Penguins|San Jose Sharks|'
+    + 'Seattle Kraken|St Louis Blues|Tampa Bay Lightning|Toronto Maple Leafs|Utah Mammoth|Vancouver Canucks|Vegas Golden Knights|'
+    + 'Washington Capitals|Winnipeg Jets',
+};
+
+function teamContext(games = []) {
+  const byLeague = new Map(Object.entries(TEAM_NAMES).map(([k, v]) => [k, new Set(v.split('|'))]));
+  const loose = new Set();
+  for (const g of games || []) {
+    const lg = String(g?.sport_key || '').match(/_(nba|nfl|mlb|nhl|wnba|ncaaf|ncaab|mls)$/)?.[1];
+    if (lg && !byLeague.has(lg)) byLeague.set(lg, new Set());
+    for (const n of [g?.home_team, g?.away_team]) if (n) (lg ? byLeague.get(lg) : loose).add(n);
+  }
+  const all = [...new Set([...[...byLeague.values()].flatMap(s => [...s]), ...loose])];
+  const names = new Map();
+  const namesFor = league => {
+    if (!league || !byLeague.has(league)) return all;
+    if (!names.has(league)) names.set(league, [...new Set([...byLeague.get(league), ...loose])]);
+    return names.get(league);
+  };
+  const cache = new Map();
+  const resolve = (label, league) => {
+    const key = `${league || '*'}|${label}`;
+    if (!cache.has(key)) cache.set(key, new Set(namesFor(league).filter(full => teamMatches(label, full)).map(norm)));
+    return cache.get(key);
+  };
+  function same(a, b, league = null) {
+    const x = norm(a), y = norm(b);
+    if (!x || !y) return false;
+    if (x === y || teamMatches(a, b) || teamMatches(b, a)) return true;
+    const ys = resolve(b, league);
+    for (const n of resolve(a, league)) if (ys.has(n)) return true;
+    return false;
+  }
+  return { same };
+}
+
+// [a1, a2] vs [b1, b2] → 'same' (a1 is b1), 'flipped' (a1 is b2), or null
+// when either side is missing or it fits both ways round.
+function pairSides(a, b, same) {
+  const direct = same(a[0], b[0]) && same(a[1], b[1]);
+  const swap = same(a[0], b[1]) && same(a[1], b[0]);
+  return direct === swap ? null : direct ? 'same' : 'flipped';
+}
+
+// Kalshi row × Polymarket row pairs that ask the same question. `same` says
+// whether YES on one is YES on the other (false: YES on Kalshi is the
+// Polymarket NO side, e.g. Kalshi "Boston" vs Polymarket "Knicks" first).
+// Kalshi doesn't give a start time: its expected expiration is about 3h after
+// the start, so that's the estimate (else its close time as is).
+const KALSHI_GAME_HOURS = 3;
+const kalshiGameMs = k => (ms(k.startTime) ?? (ms(k.expectedExpiration) != null ? ms(k.expectedExpiration) - KALSHI_GAME_HOURS * 3600e3 : ms(k.closeTime)));
+
+// edges → the ones where each side is the other's unique best (higher score
+// wins: similarity, or minus the time gap). A tie for best means no match.
+// Several edges between the same two keys (a Kalshi game's two team markets)
+// all stay.
+function mutualBest(edges, keyA, keyB) {
+  const bestBy = (keyOf, otherOf) => {
+    const m = new Map();
+    for (const e of edges) {
+      const k = keyOf(e), cur = m.get(k);
+      if (!cur || e.score > cur.score) m.set(k, { score: e.score, other: otherOf(e), tie: false });
+      else if (e.score === cur.score && otherOf(e) !== cur.other) cur.tie = true;
+    }
+    return m;
+  };
+  const ba = bestBy(keyA, keyB), bb = bestBy(keyB, keyA);
+  return edges.filter(e => {
+    const x = ba.get(keyA(e)), y = bb.get(keyB(e));
+    return !x.tie && !y.tie && x.other === keyB(e) && y.other === keyA(e) && x.score === e.score && y.score === e.score;
+  });
+}
+
+function matchMarkets(kalshiRows, polyRows, opts = {}) {
+  const o = withDefaults(opts);
+  const teams = teamContext(o.games);
+  const out = [];
+
+  // sports games: both teams line up, the same game number when both say,
+  // start times within 4h, and only the nearest game on each side
+  const pm = (polyRows || []).filter(r => r.kind === 'teams' && ms(r.startTime || r.closeTime) != null)
+    .map(r => ({ r, t: ms(r.startTime || r.closeTime) })).sort((a, b) => a.t - b.t);
+  const games = [];
+  for (const k of kalshiRows || []) {
+    if (k.kind !== 'teams' || k.hasDraw || !k.noLabel) continue;
+    const t = kalshiGameMs(k);
+    if (t == null) continue;
+    let lo = 0, hi = pm.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (pm[mid].t < t - o.sportsWindowMs) lo = mid + 1; else hi = mid; }
+    for (let i = lo; i < pm.length && pm[i].t <= t + o.sportsWindowMs; i++) {
+      const p = pm[i].r;
+      if (k.league && p.league && k.league !== p.league) continue;
+      if (k.gameNo != null && p.gameNo != null && k.gameNo !== p.gameNo) continue;
+      const league = k.league || p.league;
+      const pol = pairSides([k.outcomeLabel, k.noLabel], [p.outcomeLabel, p.noLabel], (a, b) => teams.same(a, b, league));
+      if (pol) games.push({ m: { kalshi: k, polymarket: p, same: pol === 'same', by: 'teams' }, score: -Math.abs(pm[i].t - t) });
+    }
+  }
+  // a Kalshi game is one event with a market per team: pick per event
+  for (const e of mutualBest(games, e => e.m.kalshi.eventKey, e => e.m.polymarket.id)) out.push(e.m);
+
+  // everything else: identical numbers/dates/directions, similar words, the
+  // same subject, close dates within 3 days, each side's unique best match.
+  // Bucketed by signature and close day, so each Kalshi market only meets a
+  // handful of candidates.
+  const index = new Map();
+  for (const p of polyRows || []) {
+    const t = ms(p.closeTime);
+    if (p.kind !== 'yesno' || t == null) continue;
+    const key = titleKey(proposition(p));
+    if (key.words.size) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
+  }
+  const span = Math.ceil(o.titleWindowMs / DAY);
+  const titled = [];
+  for (const k of kalshiRows || []) {
+    const t = ms(k.closeTime);
+    if (k.kind !== 'yesno' || t == null) continue;
+    const key = titleKey(proposition(k));
+    if (!key.words.size) continue;
+    let subject = null;
+    const day = Math.floor(t / DAY);
+    for (let d = day - span; d <= day + span; d++) {
+      for (const c of index.get(`${key.sig}|${d}`) || []) {
+        if (Math.abs(c.t - t) > o.titleWindowMs) continue;
+        const sim = titleSimilarity(key, c.key);
+        if (sim == null || sim < o.minSimilarity) continue;
+        subject ||= subjectKey(k);
+        c.subject ||= subjectKey(c.r);
+        if (!sameSubject(subject, c.subject)) continue;
+        titled.push({ m: { kalshi: k, polymarket: c.r, same: true, by: 'title', similarity: round(sim, 2) }, score: sim });
+      }
+    }
+  }
+  for (const e of mutualBest(titled, e => e.m.kalshi.id, e => e.m.polymarket.id)) out.push(e.m);
+  return out;
+}
+
+// ── pricing ──
+// Cost of n contracts on one leg, fee included. Kalshi's fee is per order,
+// on the whole count, rounded up to the cent.
+function legCost(l, n, o) {
+  const base = l.price * n;
+  const fee = l.venue === 'kalshi' ? kalshiFee(l.price, n, o.kalshiFeeRate) : base * (o.polymarketFeeRate || 0);
+  return { base, fee, total: base + fee };
+}
+const setCost = (legs, n, o) => sum(legs.map(l => legCost(l, n, o).total));
+// the most contracts per leg the budget buys (cost only grows with n)
+function maxSets(legs, budget, o) {
+  let lo = 0, hi = Math.max(0, Math.floor(budget / sum(legs.map(l => l.price)) + 1e-9));
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (setCost(legs, mid, o) <= budget + 1e-9) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+
+// Stakes for a bankroll, split so every outcome pays the same. Exchange arbs:
+// the same whole number of contracts on every leg. Sportsbook arbs: stake on
+// each leg ∝ 1/decimal.
+function stakeArb(arb, bankroll, opts = {}) {
+  const o = withDefaults({ ...arb?.fees, ...opts });   // the fee rates the arb was found with, unless overridden
+  const B = Number(bankroll);
+  if (!arb || !(B > 0)) return null;
+  if (arb.type === 'book') {
+    const inv = arb.legs.map(l => 1 / l.decimal), S = sum(inv);
+    const legs = arb.legs.map((l, i) => {
+      const stake = r2(B * inv[i] / S);
+      return { venue: l.venue, pick: l.pick, decimal: l.decimal, stake, payout: r2(stake * l.decimal) };
+    });
+    const cost = r2(sum(legs.map(l => l.stake))), payout = Math.min(...legs.map(l => l.payout));
+    return { bankroll: B, legs, cost, payout, profit: r2(payout - cost), profitPct: r2(((payout - cost) / cost) * 100), capped: false };
+  }
+  let n = maxSets(arb.legs, B, o);
+  const capped = arb.maxContracts != null && n > arb.maxContracts;
+  if (capped) n = arb.maxContracts;
+  const legs = arb.legs.map(l => {
+    const c = legCost(l, n, o);
+    return { venue: l.venue, marketId: l.marketId, side: l.side, pick: l.pick, price: l.price, contracts: n, stake: r2(c.total), fee: r2(c.fee) };
+  });
+  const cost = setCost(arb.legs, n, o);
+  return { bankroll: B, contracts: n, legs, cost: r2(cost), payout: n, profit: r2(n - cost), profitPct: cost > 0 ? r2(((n - cost) / cost) * 100) : 0, capped };
+}
+
+const arbId = (type, legs) => `${type}:${legs.map(l => `${l.venue}:${l.marketId ?? ''}:${l.side || l.pick}`).join('+')}`;
+
+function leg(r, side) {
+  const label = r.outcomeLabel && !isYes(r.outcomeLabel) ? r.outcomeLabel : '';
+  return {
+    venue: r.exchange, marketId: r.id, side,
+    pick: side === 'yes' ? label || 'YES' : r.noLabel || (label ? `NO ${label}` : 'NO'),
+    price: side === 'yes' ? r.yesAsk : r.noAsk,
+    title: r.title, url: r.url, liquidity: r.liquidity, closeTime: r.closeTime, rules: r.rules || null,
+  };
+}
+
+// Price a set of contract legs at the reference bankroll; null unless it profits.
+function contractArb(fields, legs, o) {
+  if (legs.some(l => l.price == null) || sum(legs.map(l => l.price)) >= 1) return null;   // fees only add
+  const n = Math.max(1, maxSets(legs, o.bankroll, o));
+  const cost = setCost(legs, n, o);
+  if (!(cost < n)) return null;
+  // depth at the ask is unknown: the exchanges' liquidity figures are totals
+  // over the whole book, so they say nothing about size at this price
+  const arb = {
+    id: arbId(fields.type, legs), ...fields, legs,
+    totalCost: round(cost / n, 4), profitPct: r2(((n - cost) / cost) * 100),
+    maxContracts: null, maxStake: null, exhaustive: fields.exhaustive ?? true,
+    warnings: [...(fields.warnings || [])], fees: { kalshiFeeRate: o.kalshiFeeRate, polymarketFeeRate: o.polymarketFeeRate },
+    at: new Date(o.now).toISOString(),
+  };
+  arb.stakes = stakeArb(arb, o.bankroll, o);
+  return arb;
+}
+
+const expired = (r, now) => { const t = ms(r.closeTime); return t != null && t <= now; };
+
+// 1. YES on one exchange + the opposite side on the other, both directions
+function crossArbs(match, o) {
+  const { kalshi: k, polymarket: p, same } = match;
+  if (!k.tradable || !p.tradable || expired(k, o.now) || expired(p, o.now)) return [];
+  const fields = {
+    type: 'cross', category: k.category !== 'other' ? k.category : p.category,
+    title: match.by === 'teams' ? k.eventTitle || k.title : k.title, closeTime: later(k.closeTime, p.closeTime),
+    match: { by: match.by, ...(match.similarity != null ? { similarity: match.similarity } : {}) },
+    warnings: match.by === 'title' ? [RULES_WARNING] : [],
+  };
+  return [
+    [leg(k, 'yes'), leg(p, same ? 'no' : 'yes')],
+    [leg(k, 'no'), leg(p, same ? 'yes' : 'no')],
+  ].map(legs => contractArb(fields, legs, o)).filter(Boolean);
+}
+
+function findCrossArbs(kalshiRows, polyRows, opts = {}) {
+  const o = withDefaults(opts);
+  // a game shows up once per Kalshi team market; keep its best direction
+  const best = new Map();
+  for (const m of matchMarkets(kalshiRows, polyRows, o)) {
+    const key = m.by === 'teams' ? `${m.kalshi.eventKey}|${m.polymarket.id}` : `${m.kalshi.id}|${m.polymarket.id}`;
+    for (const a of crossArbs(m, o)) if (!best.has(key) || best.get(key).profitPct < a.profitPct) best.set(key, a);
+  }
+  return [...best.values()];
+}
+
+// 2. YES on every outcome of a one-winner event
+// "Mutually exclusive" says at most one wins, not that one of them must. The
+// set is taken as covering every result only when it visibly does: a
+// catch-all outcome, range buckets open at both ends, or a game whose sport
+// can't tie.
+const CATCH_ALL_RE = /\b(other|others|another|any other|field|someone else|somebody else|anyone else|none|no one|nobody|neither|not listed|tie|draw)\b/i;
+const OPEN_HIGH_RE = /\bor (?:more|higher|above|greater|over)\b|\+\s*$|^\s*(?:above|over|more than|greater than|at least|>|≥)/i;
+const OPEN_LOW_RE = /\bor (?:less|lower|below|under|fewer)\b|^\s*(?:below|under|less than|fewer than|at most|<|≤)/i;
+const NO_TIE_LEAGUES = new Set(['nba', 'wnba', 'ncaab', 'mlb', 'nhl']);
+function exhaustiveSet(g) {
+  const labels = g.map(r => (r.outcomeLabel && !isYes(r.outcomeLabel) ? r.outcomeLabel : r.title || ''));
+  if (labels.some(l => CATCH_ALL_RE.test(l))) return true;
+  if (labels.some(l => OPEN_HIGH_RE.test(l)) && labels.some(l => OPEN_LOW_RE.test(l))) return true;
+  return g.length === 2 && g.every(r => r.kind === 'teams' && !r.hasDraw) && NO_TIE_LEAGUES.has(g[0].league);
+}
+function findUnderrounds(rows, opts = {}) {
+  const o = withDefaults(opts);
+  const groups = new Map();
+  for (const r of rows || []) if (r.mutuallyExclusive) push(groups, r.eventKey, r);
+  const out = [];
+  for (const g of groups.values()) {
+    if (g.length < 2 || g.some(r => !r.tradable || r.yesAsk == null || r.eventDecided || r.eventComplete === false || expired(r, o.now))) continue;
+    const exhaustive = exhaustiveSet(g);
+    const arb = contractArb({
+      type: 'multi', category: g[0].category, title: g[0].eventTitle || g[0].title, exchange: g[0].exchange,
+      eventKey: g[0].eventKey, outcomes: g.length, closeTime: later(...g.map(r => r.closeTime)),
+      exhaustive, warnings: [exhaustive ? COVER_WARNING : NOT_EXHAUSTIVE_WARNING],
+    }, g.map(r => leg(r, 'yes')), o);
+    if (arb) out.push(arb);
+  }
+  return out;
+}
+
+// 3. exchange price on one side of a game, best sportsbook on the other
+function bookLeg(b, outcome, d) {
+  return { venue: b.key, venueTitle: b.title || b.key, pick: outcome.name, american: num(outcome.price), decimal: round(d, 6), url: outcome.link || b.link || null };
+}
+// polymarketRows (this scan's parsePolymarketBinaries rows), when given:
+// a Polymarket book only counts if its market showed a real bid and ask here.
+function polymarketBacked(rows) {
+  if (!rows) return () => true;
+  const byUrl = new Map();
+  for (const r of rows) if (r.kind === 'teams') push(byUrl, r.url, r);
+  return url => { const rs = byUrl.get(url); return !!rs && rs.every(r => r.yesAsk != null && r.noAsk != null); };
+}
+function findBookArbs(games, opts = {}) {
+  const o = withDefaults(opts);
+  const backed = polymarketBacked(o.polymarketRows);
+  const out = [];
+  for (const g of games || []) {
+    const t0 = ms(g?.commence_time);
+    if (t0 != null && t0 <= o.now) continue;
+    const h2h = (g.bookmakers || []).map(b => ({ b, outs: (b.markets || []).find(m => m.key === 'h2h')?.outcomes }))
+      .filter(x => x.b && Array.isArray(x.outs) && x.outs.length === 2);
+    const books = h2h.filter(x => !EXCHANGE_BOOKS.has(x.b.key));
+    for (const e of h2h.filter(x => EXCHANGE_BOOKS.has(x.b.key))) {
+      if (e.b.key === 'polymarket' && !e.outs.every(x => backed(x.link || e.b.link))) continue;
+      for (const mine of e.outs) {
+        const dA = americanToDecimal(mine.price);
+        const other = e.outs.find(x => x !== mine)?.name;
+        if (!dA || !other) continue;
+        let best = null;
+        for (const s of books) {
+          const q = s.outs.find(x => x.name === other);
+          const d = q && americanToDecimal(q.price);
+          if (d && (!best || d > best.d)) best = { b: s.b, q, d };
+        }
+        if (!best) continue;
+        const S = 1 / dA + 1 / best.d;
+        if (!(S < 1)) continue;
+        const legs = [bookLeg(e.b, mine, dA), bookLeg(best.b, best.q, best.d)];
+        const arb = {
+          id: arbId('book', legs.map(l => ({ ...l, marketId: g.id }))), type: 'book', category: 'sports', sport: g.sport_key || null,
+          gameId: g.id ?? null, title: `${g.away_team} @ ${g.home_team}`, closeTime: g.commence_time || null, legs,
+          totalCost: round(S, 4), profitPct: r2(((1 - S) / S) * 100), maxContracts: null, maxStake: null, exhaustive: true, warnings: [],
+          at: new Date(o.now).toISOString(),
+        };
+        arb.stakes = stakeArb(arb, o.bankroll, o);
+        out.push(arb);
+      }
+    }
+  }
+  return out;
+}
+
+// All three kinds over parsed rows (+ Odds API games), at least minPct, best first.
+function findArbs({ kalshi = [], polymarket = [], games = [] } = {}, opts = {}) {
+  const o = withDefaults({ ...opts, games });
+  return [
+    ...findCrossArbs(kalshi, polymarket, o),
+    ...findUnderrounds([...kalshi, ...polymarket], o),
+    ...findBookArbs(games, { ...o, polymarketRows: polymarket }),
+  ].filter(a => a.profitPct >= o.minPct).sort((a, b) => b.profitPct - a.profitPct);
+}
+
+// ── fetching ──
+// Pages until the exchange runs out or maxPages; a failed page keeps what
+// came before. onPage(events) takes each page as it lands (parse it and let
+// the raw JSON go) instead of holding every page; events then stays empty and
+// `count` says how many there were. truncated: the page cap cut the list short.
+async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = null } = {}) {
+  const events = [], errors = [];
+  let cursor = null, pages = 0, count = 0, truncated = false;
+  try {
+    while (pages < maxPages) {
+      const params = { status: 'open', with_nested_markets: true, limit };
+      if (cursor) params.cursor = cursor;
+      const res = await http.get(KALSHI_EVENTS_URL, { params, timeout: 15000 });
+      const page = res?.data?.events || [];
+      if (onPage) onPage(page); else events.push(...page);
+      count += page.length;
+      pages++;
+      cursor = res?.data?.cursor || null;
+      if (!cursor || !page.length) break;
+      truncated = pages >= maxPages;
+    }
+  } catch (e) { errors.push({ exchange: 'kalshi', key: `events page ${pages + 1}`, message: e?.message || String(e) }); }
+  return { events, errors, pages, count, truncated };
+}
+
+// busiest first (24h volume), so a page cap drops the quiet events, not a random slice
+async function fetchPolymarketEvents(http, { maxPages = 15, limit = 200, onPage = null } = {}) {
+  const events = [], errors = [];
+  let pages = 0, count = 0, truncated = false;
+  try {
+    while (pages < maxPages) {
+      const res = await http.get(POLYMARKET_EVENTS_URL, { params: { active: true, closed: false, order: 'volume24hr', ascending: false, limit, offset: pages * limit }, timeout: 15000 });
+      const d = res?.data;
+      const page = Array.isArray(d) ? d : d?.events || d?.data || [];
+      if (onPage) onPage(page); else events.push(...page);
+      count += page.length;
+      pages++;
+      if (page.length < limit) break;
+      truncated = pages >= maxPages;
+    }
+  } catch (e) { errors.push({ exchange: 'polymarket', key: `events page ${pages + 1}`, message: e?.message || String(e) }); }
+  return { events, errors, pages, count, truncated };
+}
+
+// One full scan: fetch both exchanges, parse, find every arb.
+async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPages, ...opts } = {}) {
+  const o = withDefaults(opts);
+  const kalshi = [], polymarket = [];
+  const [k, p] = await Promise.all([
+    fetchKalshiEvents(http, { maxPages: kalshiMaxPages, onPage: page => kalshi.push(...parseKalshiBinaries(page)) }),
+    fetchPolymarketEvents(http, { maxPages: polymarketMaxPages, onPage: page => polymarket.push(...parsePolymarketBinaries(page)) }),
+  ]);
+  const arbs = findArbs({ kalshi, polymarket, games }, o);
+  return {
+    arbs, errors: [...k.errors, ...p.errors], updated: new Date(o.now).toISOString(),
+    counts: { kalshiEvents: k.count, polymarketEvents: p.count, kalshiMarkets: kalshi.length, polymarketMarkets: polymarket.length, arbs: arbs.length,
+      kalshiTruncated: k.truncated, polymarketTruncated: p.truncated },
+  };
+}
+
+module.exports = {
+  parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
+  findCrossArbs, findUnderrounds, findBookArbs, findArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, NOT_EXHAUSTIVE_WARNING, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL,
+};

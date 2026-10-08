@@ -1916,9 +1916,10 @@ let evCache = { at: 0, rows: [], feeds: [] };
 // matching games as two more books (prices include Kalshi's taker fee).
 const exchangeState = { rows: [], errors: [], updated: null };
 async function refreshExchanges() {
+  // through the polite per-host queue (createPoliteHttp, below)
   const [k, p] = await Promise.all([
-    exchanges.fetchKalshi(axios, { seriesTickers: (process.env.KALSHI_SERIES || '').split(',').filter(Boolean).length ? process.env.KALSHI_SERIES.split(',') : undefined }),
-    exchanges.fetchPolymarket(axios, { tags: (process.env.POLYMARKET_TAGS || '').split(',').filter(Boolean).length ? process.env.POLYMARKET_TAGS.split(',') : undefined }),
+    exchanges.fetchKalshi(upstream, { seriesTickers: (process.env.KALSHI_SERIES || '').split(',').filter(Boolean).length ? process.env.KALSHI_SERIES.split(',') : undefined }),
+    exchanges.fetchPolymarket(upstream, { tags: (process.env.POLYMARKET_TAGS || '').split(',').filter(Boolean).length ? process.env.POLYMARKET_TAGS.split(',') : undefined }),
   ]);
   exchangeState.rows = [...k.rows, ...p.rows];
   exchangeState.errors = [...k.errors, ...p.errors];
@@ -1979,6 +1980,317 @@ function redactEv(rows) {
     source: r.source, sharpBooks: r.sharpBooks, locked: true }));
 }
 
+// ─── SHARP TAIL ───────────────────────────────────────────────────────────────
+// Following the money on the exchanges, all from free keyless public APIs:
+//   tail.js       which Polymarket wallets have a provable edge; their new bets
+//                 become signals sized in units at the price you can get now
+//   tailtrack.js  every sized signal, graded when its market resolves
+//   whales.js     big prints: Kalshi flow (anonymous) and Polymarket trades
+//                 tagged with the wallet's grade
+//   xarb.js       arbs across Kalshi, Polymarket and the sportsbooks
+// New signals, whales and arbs go out on /api/ev/stream as `tail`, `whale` and
+// `xarb` events. Sized A-grade and consensus signals, and arbs of
+// XARB_ALERT_MIN % or more, also go to ALERT_WEBHOOK_URL.
+const tail = require('./tail');
+const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv } = require('./tailtrack');
+const whales = require('./whales');
+const xarb = require('./xarb');
+const { createFileStore: createDocFileStore } = require('./evtrack');
+
+// Kalshi, Polymarket's data API and Gamma are free, so be polite: one queue
+// per host that starts at most one request every UPSTREAM_GAP_MS (default
+// 1s). Identical GETs that are in flight or were answered in the last few
+// seconds share one response (the tail engine and the whale watcher both read
+// the same recent-trades page every 30s).
+function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const nextAt = new Map();   // host → when the next request may start
+  const shared = new Map();   // url + params → { promise, doneAt }
+  const stats = { requests: 0, shared: 0, failed: 0, byHost: {} };
+  const keyOf = (url, params) => `${url}?${JSON.stringify(Object.entries(params || {})
+    .filter(([, v]) => v !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))}`;
+  const hostOf = url => { try { return new URL(url).host; } catch { return ''; } };
+  return {
+    get(url, cfg = {}) {
+      const t = now();
+      for (const [k, v] of shared) if (v.doneAt != null && t - v.doneAt > shareMs) shared.delete(k);
+      const key = keyOf(url, cfg.params);
+      const hit = shared.get(key);
+      if (hit) { stats.shared++; return hit.promise; }
+      const host = hostOf(url);
+      const start = Math.max(t, nextAt.get(host) ?? 0);
+      nextAt.set(host, start + gapMs);
+      const entry = { doneAt: null };
+      entry.promise = (async () => {
+        if (start > t) await sleep(start - t);
+        stats.requests++;
+        stats.byHost[host] = (stats.byHost[host] || 0) + 1;
+        return get(url, cfg);
+      })();
+      entry.promise.then(() => { entry.doneAt = now(); }, () => { stats.failed++; if (shared.get(key) === entry) shared.delete(key); });
+      shared.set(key, entry);
+      return entry.promise;
+    },
+    // backlogMs: how long a request to that host made now would wait
+    stats() {
+      const t = now();
+      return { gapMs, ...stats, byHost: { ...stats.byHost }, backlogMs: Object.fromEntries([...nextAt].map(([h, at]) => [h, Math.max(0, Math.round(at - t))])) };
+    },
+  };
+}
+const UPSTREAM_GAP_MS = Number.isFinite(parseFloat(process.env.UPSTREAM_GAP_MS)) ? Math.max(0, parseFloat(process.env.UPSTREAM_GAP_MS)) : 1000;
+// axios.get is looked up on every call, so tests can stub it after this file loads
+const upstream = createPoliteHttp((url, cfg) => axios.get(url, cfg), { gapMs: UPSTREAM_GAP_MS });
+
+// Scores survive restarts (scoring every candidate again takes hours of
+// polite requests): Postgres table tail_traders with DATABASE_URL, otherwise
+// the TAIL_TRADERS_FILE JSON file.
+function createTraderStoreFromEnv(env = process.env) {
+  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(__dirname, 'data', 'tail-traders.json'));
+  const { Pool } = require('pg');
+  const pool = new Pool({
+    connectionString: env.DATABASE_URL,
+    ssl: /localhost|127\.0\.0\.1|\.railway\.internal/.test(env.DATABASE_URL) ? false : { rejectUnauthorized: false },
+  });
+  return {
+    kind: 'postgres',
+    async init() { await pool.query('CREATE TABLE IF NOT EXISTS tail_traders (id TEXT PRIMARY KEY, doc JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())'); },
+    async all() { return (await pool.query('SELECT doc FROM tail_traders')).rows.map(r => r.doc); },
+    async put(tr) {
+      await pool.query(`INSERT INTO tail_traders (id, doc, updated_at) VALUES ($1, $2, now())
+        ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`, [tr.id || tr.wallet, tr]);
+    },
+  };
+}
+
+// Thresholds come from TAIL_* (see .env.example), e.g. TAIL_MIN_TRADE, TAIL_A_MIN_Z.
+const tailEngine = tail.createTailEngine({ http: upstream, store: createTraderStoreFromEnv(), opts: tail.optionsFromEnv() });
+const tailTracker = createTailTracker({ store: createTailStoreFromEnv(), http: upstream });
+tailTracker.ready().catch(e => console.error('Tail tracker: store failed to initialise:', e.message));
+
+const XARB_OPTS = xarb.optsFromEnv();
+const XARB_ALERT_MIN = Number.isFinite(parseFloat(process.env.XARB_ALERT_MIN)) ? parseFloat(process.env.XARB_ALERT_MIN) : 1;
+const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is news again
+const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false }, kalshiTitles: new Map() };
+const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
+
+const whaleWatcher = whales.createWhaleWatcher({
+  http: upstream, opts: whales.optionsFromEnv(),
+  // a wallet tail.js has scored: its grade in that market's category
+  gradeOf: (wallet, trade) => {
+    const tr = tailEngine.trader(wallet);
+    return tr ? { grade: tail.gradeFor(tr, tail.classify(trade), tailEngine.settings()).grade, name: tr.name } : null;
+  },
+  // Kalshi trades carry only a ticker; the arb scan knows every open market's title
+  kalshiInfo: ticker => xarbState.kalshiTitles.get(ticker) || null,
+});
+
+// /api/ev/stream subscribers: fn(eventType, data)
+const liveListeners = new Set();
+function broadcast(type, data) {
+  for (const fn of liveListeners) { try { fn(type, data); } catch { /* keep going */ } }
+}
+// One Discord-style post of up to 10 lines. TAIL_WEBHOOK=off stops these.
+function postAlert(lines, what) {
+  if (!lines.length || !process.env.ALERT_WEBHOOK_URL || process.env.TAIL_WEBHOOK === 'off') return null;
+  const out = lines.slice(0, 10);
+  if (lines.length > 10) out.push(`…and ${lines.length - 10} more`);
+  return axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: out.join('\n').slice(0, 1900) }, { timeout: 10000 })
+    .catch(e => console.warn(`${what}: webhook failed:`, e.message));
+}
+const cents = p => (p == null ? '—' : `${Math.round(p * 1000) / 10}¢`);
+const dollars = x => `$${Math.round(x || 0).toLocaleString('en-US')}`;
+const shortWallet = w => (w ? `${w.slice(0, 6)}…${w.slice(-4)}` : '?');
+// <url> stops Discord unfurling a preview card under every line
+function describeTail(s) {
+  const who = `${s.grade}-grade ${s.name || shortWallet(s.wallet)}`;
+  const where = `${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})`;
+  const link = s.url ? ` <${s.url}>` : '';
+  if (s.type === 'exit') return `🚪 ${who} sold ${where}${link}`;
+  const size = s.units > 0 ? `tail ${s.units}u at ${cents(s.currentPrice)}` : `0u: ${s.reason}`;
+  return `🐋 ${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
+}
+const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
+function describeArb(a) {
+  const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
+  const note = a.exhaustive === false ? ' · NOT PROVEN EXHAUSTIVE' : '';
+  return `♻️ Arb +${a.profitPct}%${note}: ${a.title} · ${legs}${a.warnings?.length ? ` · ⚠ ${a.warnings.join('; ')}` : ''}`;
+}
+
+// Each cron job's last run and error, for /api/status.
+const tailJobs = {};
+async function runTailJob(name, fn) {
+  const j = tailJobs[name] ||= { lastRun: null, ms: null, error: null };
+  const t0 = Date.now();
+  try { const out = await fn(); j.error = null; return out; }
+  catch (e) { j.error = e?.message || String(e); console.warn(`Tail ${name}:`, j.error); return null; }
+  finally { j.lastRun = new Date().toISOString(); j.ms = Date.now() - t0; }
+}
+
+// New trades → signals. Sized ones are logged for the track record. The
+// first poll after a restart re-reads the last hour, so then only what the
+// tracker hadn't logged before counts as news. "First" is read before the
+// await: a slow first poll overlapped by the next tick (which returns [] as
+// busy) is still the first one when it lands. A top-up adds to a position
+// already pinged, so it isn't pinged again.
+let tailPolled = false;
+async function pollTail() {
+  const primed = tailPolled;
+  const signals = await tailEngine.pollTrades();
+  const fresh = [], ping = [];
+  for (const s of signals) {
+    let logged = false;
+    try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
+    if (logged || primed) fresh.push(s);
+    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus)) ping.push(s);
+  }
+  tailPolled = true;
+  if (fresh.length) broadcast('tail', fresh);
+  postAlert(ping.map(describeTail), 'Tail alerts');
+  return fresh;
+}
+
+async function pollWhales() {
+  const fresh = await whaleWatcher.poll();
+  if (fresh.length) broadcast('whale', fresh);
+  return fresh;
+}
+
+// The Owls and Odds API feeds can both carry a game: one book arb per game and legs.
+function dedupeArbs(arbs) {
+  const out = new Map();
+  for (const a of arbs) {
+    const key = a.type === 'book' ? `book|${a.title}|${a.legs.map(l => `${l.venue}:${l.pick}`).join('+')}` : a.id;
+    if (!out.has(key) || out.get(key).profitPct < a.profitPct) out.set(key, a);
+  }
+  return [...out.values()].sort((a, b) => b.profitPct - a.profitPct);
+}
+
+// One scan: every open Kalshi and Polymarket event, plus the game lines the
+// backend already holds (sportsbooks, with the exchange books attached).
+async function scanXarbs() {
+  if (xarbState.running) return [];
+  xarbState.running = true;
+  const t0 = Date.now();
+  try {
+    // each page parsed as it lands; the raw JSON isn't kept
+    const kalshi = [], polymarket = [];
+    const [k, p] = await Promise.all([
+      xarb.fetchKalshiEvents(upstream, { onPage: page => kalshi.push(...xarb.parseKalshiBinaries(page)) }),
+      xarb.fetchPolymarketEvents(upstream, { onPage: page => polymarket.push(...xarb.parsePolymarketBinaries(page)) }),
+    ]);
+    let games = [];
+    try { games = evFeeds().filter(f => /odds$/.test(f.label)).flatMap(f => f.games); }
+    catch (e) { console.warn('Exchange arbs: game feeds:', e.message); }
+    const now = Date.now();
+    const arbs = dedupeArbs(xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now }));
+    if (kalshi.length) {
+      xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
+        title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title,
+        eventTicker: r.eventKey.replace(/^kalshi:/, ''), url: r.url,
+      }]));
+    }
+    Object.assign(xarbState, {
+      arbs, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
+      counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
+        polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length },
+    });
+    const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
+    for (const a of arbs) xarbSeen.set(a.id, now);
+    for (const [id, at] of xarbSeen) if (now - at > 86400e3) xarbSeen.delete(id);
+    // An exchange's first scan with data only primes: a restart, or that
+    // exchange coming back after being down at startup, isn't news. So an arb
+    // with a leg on an exchange that wasn't primed before this scan is quiet.
+    const before = { ...xarbState.primed };
+    if (kalshi.length) xarbState.primed.kalshi = true;
+    if (polymarket.length) xarbState.primed.polymarket = true;
+    const news = fresh.filter(a => (a.legs || []).every(l => !(l.venue in before) || before[l.venue]));
+    if (news.length) {
+      broadcast('xarb', news);
+      // an outcome set not proven exhaustive can lose every leg: listed, never alerted
+      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && a.exhaustive !== false).map(describeArb), 'Exchange arbs');
+    }
+    return news;
+  } finally { xarbState.running = false; }
+}
+
+// Free users get the shape of it, not who to follow: wallets become a keyed
+// hash (not reversible from Polymarket's public leaderboard), and names and
+// dollar totals (which would find the wallet on that leaderboard) are dropped.
+// So is anything a dollar total can be worked back from (edge with roi gives
+// risked and P&L), and anything that fingerprints the trade itself: Polymarket
+// lists every trade of a market with its wallet, so market + exact size +
+// exact time finds the wallet. Free rows get the market and side, a price to
+// the cent, a time to the quarter hour and a size range.
+const TAIL_FREE_DELAY_MS = 30 * 60e3;
+const FREE_TIME_MS = 15 * 60e3;
+const maskId = v => (v ? `x${require('crypto').createHmac('sha256', AUTH_SECRET).update(String(v)).digest('hex').slice(0, 12)}` : null);
+const maskWallet = w => (w ? `${String(w).slice(0, 4)}••••` : null);
+const quarterHour = v => { const t = v ? Date.parse(v) : NaN; return Number.isFinite(t) ? new Date(Math.floor(t / FREE_TIME_MS) * FREE_TIME_MS).toISOString() : v ?? null; };
+const toCent = v => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) / 100 : v ?? null);
+const SIZE_STEPS = [500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1e6];
+const kUsd = x => (x >= 1e6 ? `$${x / 1e6}M` : x >= 1000 ? `$${x / 1000}k` : `$${x}`);
+function sizeRange(x) {
+  if (!(x > 0)) return null;
+  const i = SIZE_STEPS.findIndex(v => x < v);
+  if (i === 0) return `under ${kUsd(SIZE_STEPS[0])}`;
+  if (i < 0) return `${kUsd(SIZE_STEPS[SIZE_STEPS.length - 1])}+`;
+  return `${kUsd(SIZE_STEPS[i - 1])}–${kUsd(SIZE_STEPS[i])}`;
+}
+// "only $45,123 risked (need $50,000)" names the wallet's total; the bar is public
+const freeText = t => String(t).replace(/only \$[\d,.]+ risked/g, 'not enough risked');
+const freeReasons = list => (Array.isArray(list) ? list.map(freeText) : list);
+const round2 = v => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) / 100 : v ?? null);
+const TRADER_PRIVATE = ['pnl', 'risked', 'openValue', 'lastAt', 'sources', 'truncated', 'edge', 'openPnl', 'openRisked', 'forwardPnl', 'selectedAt'];
+function maskStats(s) {
+  const out = { ...s };
+  for (const k of TRADER_PRIVATE) delete out[k];
+  for (const k of ['roi', 'resolvedRoi', 'recentRoi', 'forwardRoi']) if (k in out) out[k] = round2(out[k]);
+  for (const k of ['reasons', 'whyNotA']) if (k in out) out[k] = freeReasons(out[k]);
+  return out;
+}
+function maskTrader(tr) {
+  const categories = {};
+  for (const [c, s] of Object.entries(tr.categories || {})) categories[c] = maskStats(s);
+  return { ...maskStats(tr), id: maskId(tr.wallet), wallet: maskWallet(tr.wallet), name: null, url: null, categories, locked: true };
+}
+// signals and tracked records: their ids carry the wallet (and tx hash) too
+function maskSignal(s) {
+  const { conditionId, asset, theirSize, txHash, edge, prob, kelly, slippage, ...rest } = s;
+  return {
+    ...rest, id: maskId(s.id), wallet: maskWallet(s.wallet), name: null, consensus: (s.consensus || []).map(maskWallet),
+    ...(s.parentId ? { parentId: maskId(s.parentId) } : {}), ...(Array.isArray(s.topUps) ? { topUps: s.topUps.map(maskId) } : {}),
+    theirPrice: toCent(s.theirPrice), ...('entry' in s ? { entry: toCent(s.entry) } : {}),
+    theirNotional: null, sizeRange: sizeRange(s.theirNotional),
+    at: quarterHour(s.at), ...('seenAt' in s ? { seenAt: quarterHour(s.seenAt) } : {}), ...('recordedAt' in s ? { recordedAt: quarterHour(s.recordedAt) } : {}),
+    locked: true,
+  };
+}
+// A recent Polymarket whale might be a graded wallet's live bet, so its grade
+// waits; and a print that is (or might be) graded is coarsened like a signal.
+// Ungraded old prints only lose the wallet: there's nobody to find.
+function maskWhale(e, t = Date.now()) {
+  if (!e || e.exchange !== 'polymarket') return e;
+  const recent = t - Date.parse(e.at) < TAIL_FREE_DELAY_MS;
+  const out = { ...e, id: maskId(e.id), wallet: maskWallet(e.wallet), name: null, txHash: null,
+    ...(recent ? { grade: null, graded: false, known: false, tag: 'whale', gradeLocked: true } : {}) };
+  if (!recent && !e.graded) return out;
+  const sig = n => (n > 0 ? Number(n.toPrecision(2)) : n ?? null);
+  return { ...out, conditionId: null, asset: null, contracts: null, price: toCent(e.price), notional: sig(e.notional), sizeRange: sizeRange(e.notional), at: quarterHour(e.at) };
+}
+// /api/whales and /api/status state for free users: no graded count (it would
+// say which locked prints are graded) and no error text
+function publicWhaleState(st) {
+  const { errors, ...rest } = st;
+  return { ...rest, lastHour: { whales: st.lastHour?.whales ?? 0, usd: st.lastHour?.usd ?? 0 } };
+}
+// the engine's errors name wallets and markets, and the last signal time says
+// when a live (locked) signal fired
+function publicTailState(st) {
+  const { errors, lastSignalAt, signals, ...rest } = st;
+  return rest;
+}
+const publicJobs = jobs => Object.fromEntries(Object.entries(jobs).map(([k, j]) => [k, { lastRun: j.lastRun, ms: j.ms, failed: !!j.error }]));
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 // The app itself. Served from here it talks to this same server, so one
 // deploy ships both and there's no backend URL to keep in sync.
@@ -2001,7 +2313,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.19.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.20.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2100,10 +2412,119 @@ app.get('/api/ev/stream', requirePro, (req, res) => {
   const send = rows => res.write(`event: ev\ndata: ${JSON.stringify(rows)}\n\n`);
   const sendSharp = evs => res.write(`event: sharp\ndata: ${JSON.stringify(evs.map(e => ({ ...e, text: describeSharp(e) })))}\n\n`);
   sharpListeners.add(sendSharp);
+  // sharp tail: `tail` (signals), `whale` (big prints) and `xarb` (new arbs), each an array
+  const sendLive = (type, data) => res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
+  liveListeners.add(sendLive);
   // a heartbeat with the board time lets the page refresh even when nothing new crossed the line
   const ping = setInterval(() => res.write(`event: tick\ndata: ${JSON.stringify({ at: evCache.at })}\n\n`), 25000);
   evListeners.add(send);
-  req.on('close', () => { clearInterval(ping); evListeners.delete(send); sharpListeners.delete(sendSharp); });
+  req.on('close', () => { clearInterval(ping); evListeners.delete(send); sharpListeners.delete(sendSharp); liveListeners.delete(sendLive); });
+});
+
+// ── SHARP TAIL ────────────────────────────────────────────────────────────────
+// Scored wallets, best first. ?category=politics&grade=A|B|graded&limit=100.
+// Free: the leaderboard with wallets masked.
+app.get('/api/tail/traders', (req, res) => {
+  const pro = hasPro(req);
+  const category = tail.CATEGORIES.includes(req.query.category) ? req.query.category : null;
+  const g = String(req.query.grade || '').toUpperCase();
+  const grade = ['A', 'B', 'GRADED'].includes(g) ? g : null;
+  const list = tailEngine.traders({ category, grade, limit: Math.min(parseInt(req.query.limit) || 100, 500) });
+  const st = tailEngine.state();
+  res.json({
+    traders: pro ? list : list.map(maskTrader), pro, category, grade,
+    state: { candidates: st.candidates, scored: st.scored, pending: st.pending, graded: st.graded, lastScoreAt: st.lastScoreAt },
+  });
+});
+// One wallet's full score, its recent signals and their record (Pro: a
+// wallet's grade is what's being sold).
+app.get('/api/tail/trader/:wallet', requirePro, async (req, res) => {
+  const tr = tailEngine.trader(req.params.wallet);
+  if (!tr) return res.status(404).json({ error: 'That wallet has not been scored yet' });
+  const signals = tailEngine.signals({ limit: 500 }).filter(s => s.wallet === tr.wallet).slice(0, 50);
+  let record = [];
+  try { record = (await tailTracker.list({ limit: 5000 })).filter(r => r.wallet === tr.wallet).slice(0, 50); } catch { /* store down */ }
+  res.json({ trader: tr, signals, record });
+});
+// Newest first. ?type=entry|exit&since=<iso>&limit=100. Pro: live. Free: only
+// signals at least 30 minutes old, wallets masked; `locked` counts the rest.
+app.get('/api/tail/signals', (req, res) => {
+  const pro = hasPro(req);
+  const type = ['entry', 'exit'].includes(req.query.type) ? req.query.type : null;
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  let list = tailEngine.signals({ limit: 500, type, since: req.query.since || null });
+  let locked = 0;
+  if (!pro) {
+    const cut = Date.now() - TAIL_FREE_DELAY_MS;
+    const old = list.filter(s => Date.parse(s.seenAt || s.at) <= cut);
+    locked = list.length - old.length;
+    list = old.map(maskSignal);
+  }
+  res.json({ signals: list.slice(0, limit), pro, delayMinutes: pro ? 0 : TAIL_FREE_DELAY_MS / 60e3, locked, updated: tailEngine.state().lastPollAt });
+});
+// The signals' own track record: free, since it's the pitch. Open ones are
+// live tails, so free users only see the settled list.
+// ?days=30&grade=A&category=politics&status=open|settled&limit=50
+app.get('/api/tail/record', async (req, res) => {
+  try {
+    const pro = hasPro(req);
+    const q = req.query;
+    const grade = ['A', 'B'].includes(String(q.grade || '').toUpperCase()) ? String(q.grade).toUpperCase() : undefined;
+    const category = tail.CATEGORIES.includes(q.category) ? q.category : undefined;
+    const sinceDays = parseFloat(q.days) || undefined;
+    const summary = await tailTracker.summary({ sinceDays, grade, category });
+    const status = pro ? (['open', 'settled'].includes(q.status) ? q.status : undefined) : 'settled';
+    const cut = sinceDays ? Date.now() - sinceDays * 86400e3 : 0;
+    const list = (await tailTracker.list({ status, limit: 5000 }))
+      .filter(r => (!grade || r.grade === grade) && (!category || r.category === category) && Date.parse(r.recordedAt) >= cut)
+      .slice(0, Math.min(parseInt(q.limit) || 50, 500));
+    res.json({ ...summary, signals: pro ? list : list.map(maskSignal), pro });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Whale prints (newest first) and per-market flow over the last hour.
+// ?exchange=kalshi|polymarket&graded=1|0&minUsd=10000&since=<iso>&limit=100.
+// Free: wallets masked, and graded tags only once they're 30 minutes old.
+app.get('/api/whales', (req, res) => {
+  const pro = hasPro(req);
+  const q = req.query;
+  const exchange = ['kalshi', 'polymarket'].includes(q.exchange) ? q.exchange : null;
+  const graded = pro && q.graded != null && q.graded !== '' ? /^(1|true|yes)$/i.test(q.graded) : null;
+  const minUsd = parseFloat(q.minUsd);
+  const t = Date.now();
+  const events = whaleWatcher.events({ limit: Math.min(parseInt(q.limit) || 100, 500), exchange, graded, minUsd: Number.isFinite(minUsd) ? minUsd : null, since: q.since || null });
+  const flow = whaleWatcher.flow({ exchange, limit: Math.min(parseInt(q.flowLimit) || 50, 200) });
+  res.json({
+    events: pro ? events : events.map(e => maskWhale(e, t)),
+    flow: pro ? flow : flow.map(f => ({ ...f, largest: maskWhale(f.largest, t) })),
+    pro, minUsd: whaleWatcher.settings().minUsd, windowMs: whaleWatcher.settings().windowMs, state: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
+  });
+});
+// Exchange arbs, best first. ?type=cross|multi|book&category=sports&minPct=1&bankroll=250
+// (re-splits the stakes for that amount, fees included). Free: count and profit % only.
+app.get('/api/xarbs', (req, res) => {
+  const pro = hasPro(req);
+  const q = req.query;
+  const minPct = parseFloat(q.minPct);
+  let arbs = xarbState.arbs.filter(a => (!q.type || a.type === q.type) && (!q.category || a.category === q.category) && (!Number.isFinite(minPct) || a.profitPct >= minPct));
+  const base = { count: arbs.length, updated: xarbState.updated, pro };
+  if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
+  const bankroll = Math.min(parseFloat(q.bankroll), 1e7);
+  if (bankroll > 0) arbs = arbs.map(a => ({ ...a, stakes: xarb.stakeArb(a, bankroll) || a.stakes }));
+  res.json({
+    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), bankroll: bankroll > 0 ? bankroll : xarb.DEFAULTS.bankroll,
+    minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
+  });
+});
+// The thresholds in force (defaults overridden by env), so the app can show them.
+app.get('/api/tail/settings', (req, res) => {
+  const w = whaleWatcher.settings();
+  res.json({
+    tail: tailEngine.settings(),
+    whales: { minUsd: w.minUsd, windowMs: w.windowMs },
+    xarb: { minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, alertMinPct: XARB_ALERT_MIN,
+      kalshiFeeRate: XARB_OPTS.kalshiFeeRate ?? xarb.DEFAULTS.kalshiFeeRate, polymarketFeeRate: XARB_OPTS.polymarketFeeRate ?? xarb.DEFAULTS.polymarketFeeRate },
+    freeDelayMinutes: TAIL_FREE_DELAY_MS / 60e3,
+  });
 });
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
@@ -2565,8 +2986,8 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
   res.json({ locked, ...(await tracker.gradeDue({ limit: 100 })) });
 });
 
-app.get('/api/status', (req, res) => res.json({
-  version: '3.19.0',
+app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
+  version: '3.20.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2588,6 +3009,12 @@ app.get('/api/status', (req, res) => res.json({
   sharp: sharpTracker.state(),
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
+  // free: counts and timestamps only (see publicTailState)
+  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs) },
+  whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
+  xarb: { arbs: xarbState.arbs.length, updated: xarbState.updated, durationMs: xarbState.durationMs, running: xarbState.running, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5) },
+  upstream: upstream.stats(),
+  live: { listeners: liveListeners.size, webhook: !!process.env.ALERT_WEBHOOK_URL && process.env.TAIL_WEBHOOK !== 'off' },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
@@ -2598,7 +3025,7 @@ app.get('/api/status', (req, res) => res.json({
   oddsApiBudget: oddsBudget.state(),
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
-}));
+}); });
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
 // Team ratings for match context, every 6 hours.
@@ -2657,10 +3084,24 @@ cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
 // failures, timeouts, and transient S3 hiccups without any manual poking)
 cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoLStats().catch(()=>{}); });
 
+// Sharp tail, whale flow and exchange arbs. The seconds offsets keep them off
+// the jobs above (which start on :00, :15 and :30), and every request they
+// make waits its turn in the polite per-host queue (UPSTREAM_GAP_MS).
+// Big trades on both exchanges every 30s: one shared read of Polymarket's trades page.
+cron.schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWhales), runTailJob('signals', pollTail)]));
+// A few wallets scored a minute (3+ requests each)
+cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
+// Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
+cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+// Grade tracked signals whose markets resolved, every 10 minutes
+cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', () => tailTracker.check()));
+// New leaderboard wallets to score, every 6 hours (and once at startup)
+cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
+
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.19.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.20.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2685,6 +3126,8 @@ if (require.main === module) {
     // team ratings for match context, then rebuild picks with them
     setTimeout(() => refreshMatchFeeds()
       .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
+    // sharp tail: leaderboard wallets to score (the crons take it from there)
+    setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
   });
 }
@@ -2699,4 +3142,6 @@ module.exports = {
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
+  tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
+  pollTail, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
 };
