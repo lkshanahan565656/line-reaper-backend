@@ -190,7 +190,9 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
 // games: arrays in Odds API / Owls shape (see quotesFromGames)
 // dfsLines: [{book, sport, player, market, line, startTime, overMultiplier, underMultiplier}]
 // dfsEv(prob, book, mult) → EV % for one DFS leg (the server's calcBookEV)
-function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25 } = {}) {
+// fairs (optional Map) is filled with `${group}|${side}` → fair prob % for every
+// market priced, +EV or not, so a tracker can follow a price to the close.
+function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null } = {}) {
   const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
   const groups = new Map();
   for (const q of quotes) {
@@ -204,6 +206,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   for (const [group, qs] of groups) {
     const f = fairForGroup(qs, { method });
     if (!f) continue;
+    if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
     const head = qs[0];
     if (head.player) propFair.set(`${canonName(head.player)}|${head.market}|${head.point}`, { f, head });
 

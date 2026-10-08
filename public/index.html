@@ -704,6 +704,7 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
     <button class="sport-chip" data-evkind="game" onclick="evSet('kind','game')">GAME LINES</button>
     <button class="sport-chip" data-evkind="props" onclick="evSet('kind','props')">PLAYER PROPS</button>
     <button class="sport-chip" data-evkind="dfs" onclick="evSet('kind','dfs')">DFS (PP/UD)</button>
+    <button class="sport-chip" data-evkind="record" onclick="evSet('kind','record')" style="border-color:#10b98155">📈 TRACK RECORD</button>
     <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;margin-left:6px">MIN EV</span>
     <input id="evMin" type="number" step="0.5" value="1" style="width:64px;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('minEv', parseFloat(this.value) || 0)">
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center"><input type="checkbox" id="evSharpOnly" onchange="evSet('sharpOnly', this.checked)"> sharp-backed only</label>
@@ -3563,9 +3564,59 @@ function evFiltered() {
     (!evState.search || `${r.event} ${r.player || ''} ${r.book || ''} ${r.side || ''}`.toLowerCase().includes(evState.search)));
 }
 
+// Closing-line value of everything the screener has flagged.
+async function renderEvRecord(el) {
+  if (!el.innerText.includes('BETS GRADED')) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading track record...</div></div>`;
+  let s, bets;
+  try {
+    [s, bets] = await Promise.all([
+      fetch(`${BACKEND_URL}/api/ev/record${evState.sport !== 'all' ? '?sport=' + encodeURIComponent(evState.sport) : ''}`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/api/ev/record/bets?status=closed&limit=50`).then(r => r.json()),
+    ]);
+  } catch { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div></div>`; return; }
+  if (evState.kind !== 'record') return;
+  const o = s.overall || { n: 0 };
+  const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+  const tile = (v, label, color = '#f1f5f9') => `<div style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;color:${color}">${v}</div><div style="font-size:10px;letter-spacing:1.5px;color:#64748b;margin-top:4px">${label}</div></div>`;
+  const table = (title, groups, name = k => k) => {
+    const rows = Object.entries(groups || {});
+    if (!rows.length) return '';
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
+      <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">${title}</div>
+      ${rows.map(([k, v]) => `<div style="display:flex;gap:10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
+        <span style="flex:1;color:#e2e8f0;font-family:inherit">${escAttr(name(k))}</span><span style="color:#64748b">${v.n} bets</span>
+        <span style="min-width:80px;text-align:right;color:${v.avgClv > 0 ? '#10b981' : '#f87171'}">CLV ${pct(v.avgClv)}</span>
+        <span style="min-width:70px;text-align:right;color:#94a3b8">${v.beatClosePct}% beat</span></div>`).join('')}</div>`;
+  };
+  el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${tile(o.n || 0, 'BETS GRADED')}
+      ${tile(pct(o.avgClv), 'AVG CLOSING-LINE VALUE', o.avgClv > 0 ? '#10b981' : o.avgClv < 0 ? '#f87171' : '#f1f5f9')}
+      ${tile(o.beatClosePct != null ? o.beatClosePct + '%' : '—', 'BEAT THE CLOSE')}
+      ${tile(pct(o.avgEvAtFlag), 'AVG EV WHEN FLAGGED')}
+      ${tile(s.open || 0, 'WAITING FOR CLOSE', '#94a3b8')}
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px">Every price flagged at the tracking threshold is logged at its first price and graded against the sharp fair price just before the game starts. Positive CLV over a large sample is the standard proof an edge is real.</div>
+    ${o.n ? '' : `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">NO GRADED BETS YET</div><div class="empty-sub">Bets grade at game start. The first numbers show up after tonight's games begin.</div></div>`}
+    ${table('BY BOOK', s.byBook, evBookName)}${table('BY SPORT', s.bySport, k => k.toUpperCase())}${table('BY MARKET', s.byMarket, k => EV_MARKET[k] || k)}${table('BY FAIR-PRICE SOURCE', s.bySource)}
+    ${(bets.bets || []).length ? `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
+      <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">RECENTLY GRADED</div>
+      ${bets.bets.map(b => `<div style="display:flex;gap:10px;flex-wrap:wrap;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px">
+        <span style="flex:1;min-width:200px;color:#e2e8f0">${escAttr(b.player ? `${b.player} ${b.side} ${b.point} ${EV_MARKET[b.market] || b.market}` : `${b.event} · ${b.side}`)}</span>
+        <span style="color:#94a3b8">${escAttr(evBookName(b.book))} ${fmtAm(b.price)}</span>
+        <span style="font-family:'JetBrains Mono',monospace;color:#64748b">flagged ${pct(b.evAtFlag)}</span>
+        <span style="font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;color:${b.clv > 0 ? '#10b981' : '#f87171'}">CLV ${pct(b.clv)}</span></div>`).join('')}</div>` : ''}`;
+}
+
 function renderEv() {
   const el = document.getElementById('evContent');
   if (!el) return;
+  if (evState.kind === 'record') {
+    document.querySelectorAll('[data-evkind]').forEach(b => b.classList.toggle('active', b.dataset.evkind === 'record'));
+    document.getElementById('evBookRow').innerHTML = '';
+    renderEvRecord(el);
+    return;
+  }
   const sports = [...new Set(evState.rows.map(r => r.sport).filter(Boolean))].sort();
   document.getElementById('evSportRow').innerHTML = ['all', ...sports].map(s =>
     `<button class="sport-chip ${evState.sport === s ? 'active' : ''}" onclick="evSet('sport','${escAttr(s)}')">${s === 'all' ? 'ALL' : escAttr(s.toUpperCase())} ${s === 'all' ? evState.rows.length : evState.rows.filter(r => r.sport === s).length}</button>`).join('');

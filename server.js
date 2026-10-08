@@ -560,6 +560,9 @@ const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./aut
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
 const exchanges = require('./exchanges');
+const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
+// Every flagged +EV price is logged and graded on closing-line value.
+const evTracker = createEvTracker({ store: createEvStoreFromEnv(), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -1899,9 +1902,11 @@ function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
   const dfsLines = [...(cache.prizepicks.data || []), ...(cache.underdog.data || [])].filter(l => !isEsports(l.sport));
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power' });
+  const fairs = new Map();
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs });
   const prev = evCache.at ? evCache.rows : null;
   evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
+  evTracker.recordBoard(rows, fairs).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen });
@@ -2025,6 +2030,16 @@ app.get('/api/sharp', (req, res) => {
   res.json({ events, stale, rlm, pro, lockedLeads: pro ? 0 : sharpTracker.stale().length, state: sharpTracker.state() });
 });
 app.get('/api/exchanges', (req, res) => res.json({ markets: exchanges.toMarketsList(exchangeState.rows), updated: exchangeState.updated, errors: exchangeState.errors }));
+// The screener's own record: free to see, since it's the sales pitch.
+app.get('/api/ev/record', async (req, res) => {
+  const q = req.query;
+  res.json(await evTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined }));
+});
+app.get('/api/ev/record/bets', async (req, res) => {
+  // open bets are today's live edges, so only closed ones are free
+  const status = hasPro(req) ? req.query.status : 'closed';
+  res.json({ bets: await evTracker.list({ status, limit: Math.min(parseInt(req.query.limit) || 100, 500) }) });
+});
 app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
 app.get('/api/ev/stream', requirePro, (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
@@ -2586,7 +2601,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, sharpTracker, ingestSharp,
+  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
