@@ -7,8 +7,12 @@ const cron = require('node-cron');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const ODDS_API_KEY = process.env.ODDS_API_KEY || 'f67774f673842b08fa547e41cf37178c';
-const OWLS_API_KEY = process.env.OWLS_API_KEY || 'owlsinsight_1e9dfc3a29f37d639fb5b641ba7b2a24535d5e06b074713e88b2b1b19516b23b';
+// Keys come from the environment only (Railway variables / local .env).
+// Never commit a fallback key: anything in source ships to every buyer.
+const ODDS_API_KEY = process.env.ODDS_API_KEY || '';
+const OWLS_API_KEY = process.env.OWLS_API_KEY || '';
+if (!ODDS_API_KEY) console.warn('ODDS_API_KEY is not set: Odds API props and odds are disabled.');
+if (!OWLS_API_KEY) console.warn('OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.');
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
 
 app.use(cors({ origin: '*' }));
@@ -1562,6 +1566,7 @@ async function generateEsportsPicks() {
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
+  tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
@@ -1641,8 +1646,37 @@ async function warmCsProfiles(batch = 12) {
   } finally { warmer.running = false; }
 }
 
+// ─── PICK TRACKER ─────────────────────────────────────────────────────────────
+// Every signaled pick is recorded, frozen at kickoff, and graded from results.
+// Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
+// a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
+const { createTracker, createStoreFromEnv } = require('./tracker');
+const { createLoLGrader, createDotaGrader } = require('./graders');
+
+async function dotaAccountId(playerName) {
+  const dir = await dotaLoadProPlayers();
+  return dir[vlrKey(playerName)] || dir[vlrKey((playerName || '').split(/\s+/).pop())] || null;
+}
+
+const tracker = createTracker({
+  store: createStoreFromEnv(),
+  graders: { LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId) },
+  normalizeName, normalizeMarket, parseMapSpan,
+});
+tracker.ready().then(
+  () => console.log('Tracker: store ready'),
+  e => console.error('Tracker: store failed to initialise:', e.message));
+
+// Writes (manual grading) need TRACKER_ADMIN_TOKEN, sent as the x-admin-token header.
+function requireAdmin(req, res, next) {
+  const want = process.env.TRACKER_ADMIN_TOKEN;
+  if (!want) return res.status(503).json({ error: 'Set TRACKER_ADMIN_TOKEN on the server to enable manual grading.' });
+  if (req.get('x-admin-token') !== want) return res.status(401).json({ error: 'Bad or missing admin token' });
+  next();
+}
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.9.2', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.10.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1903,8 +1937,37 @@ app.post('/api/history/record', (req, res) => {
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
+// ── TRACK RECORD ──────────────────────────────────────────────────────────────
+app.get('/api/tracker/summary', async (req, res) => {
+  try {
+    const minEv = req.query.minEV != null ? parseFloat(req.query.minEV) : undefined;
+    res.json(await tracker.summary({ sport: req.query.sport, since: req.query.since, minEv }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/tracker/picks', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+    res.json({ picks: await tracker.list({ status: req.query.status, sport: req.query.sport, limit }) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// body: { id, result }  or  { id, void: true, note }
+app.post('/api/tracker/grade', requireAdmin, async (req, res) => {
+  try {
+    const row = await tracker.manualGrade(req.body.id, req.body);
+    if (!row) return res.status(404).json({ error: 'No tracked pick with that id' });
+    res.json({ ok: true, pick: row });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.post('/api/tracker/run', requireAdmin, async (req, res) => {
+  const locked = await tracker.lockStarted();
+  res.json({ locked, ...(await tracker.gradeDue({ limit: 100 })) });
+});
+
 app.get('/api/status', (req, res) => res.json({
-  version: '3.9.2',
+  version: '3.10.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1922,6 +1985,7 @@ app.get('/api/status', (req, res) => res.json({
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
+  tracker: trackerHealth,
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
@@ -1930,6 +1994,20 @@ app.get('/api/status', (req, res) => res.json({
 }));
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
+// Tracker: freeze started picks, then look for results (one sweep at a time).
+const trackerHealth = { lastRun: null, last: null, error: null };
+let trackerRunning = false;
+cron.schedule('*/5 * * * *', async () => {
+  if (trackerRunning) return;
+  trackerRunning = true;
+  try {
+    const locked = await tracker.lockStarted();
+    trackerHealth.last = { locked, ...(await tracker.gradeDue()) };
+    trackerHealth.lastRun = new Date().toISOString();
+    trackerHealth.error = null;
+  } catch (e) { trackerHealth.error = e.message; }
+  finally { trackerRunning = false; }
+});
 // PP/UD scrapes (PP self-backs-off when blocked)
 cron.schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
 
@@ -1966,7 +2044,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.9.2 on port ${PORT}`);
+    console.log(`Line Reaper v3.10.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -1993,7 +2071,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats,
+  app, cache, esportsCache, lolStats, tracker,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
