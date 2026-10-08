@@ -1427,6 +1427,37 @@ function normalizeMarket(m) {
 const ratingsState = { elo: {}, meta: {} };
 const oddsBook = createOddsBook();
 
+// ── EXTRA DATA FEEDS (feeds.js) ──
+// PandaScore: CS2/CoD/Valorant ratings, best-of schedule, CS2/VAL/CoD grading.
+// Pinnacle guest API: sharp esports match prices for context (check its terms
+// before charging for a product built on it).
+const { createPandaScoreClient, fetchPinnacleEsports, loadMatchPrices } = require('./feeds');
+const panda = process.env.PANDASCORE_TOKEN ? createPandaScoreClient(axios, process.env.PANDASCORE_TOKEN) : null;
+const feedState = {
+  pandascore: { enabled: !!panda, schedules: {}, updated: null, errors: {} },
+  pinnacle: { enabled: !!process.env.PINNACLE_GUEST_KEY, matches: 0, loaded: 0, updated: null, error: null },
+};
+
+async function refreshMatchFeeds() {
+  if (panda) {
+    for (const sport of ['CS', 'VAL', 'COD', 'LOL', 'DOTA']) {
+      try { feedState.pandascore.schedules[sport] = await panda.upcoming(sport); delete feedState.pandascore.errors[sport]; }
+      catch (e) { feedState.pandascore.errors[sport] = `${e.response?.status || ''} ${e.message}`.trim(); }
+    }
+    feedState.pandascore.updated = new Date().toISOString();
+  }
+  if (feedState.pinnacle.enabled) {
+    try {
+      const prices = await fetchPinnacleEsports(axios, process.env.PINNACLE_GUEST_KEY);
+      feedState.pinnacle.matches = prices.length;
+      feedState.pinnacle.loaded = loadMatchPrices(oddsBook, prices, feedState.pandascore.schedules);
+      feedState.pinnacle.updated = new Date().toISOString();
+      feedState.pinnacle.error = null;
+    } catch (e) { feedState.pinnacle.error = `${e.response?.status || ''} ${e.message}`.trim(); }
+  }
+}
+const ratingsOpts = { panda };
+
 function spanToMapList(label, count) {
   const m = String(label || '').match(/^(\d+)(?:-(\d+))?$/);
   if (m) {
@@ -1818,7 +1849,10 @@ async function dotaAccountId(playerName) {
 
 const tracker = createTracker({
   store: createStoreFromEnv(),
-  graders: { LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId) },
+  graders: {
+    LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId),
+    ...(panda ? { CS: panda.grader('CS'), VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
+  },
   normalizeName, normalizeMarket, parseMapSpan,
 });
 tracker.ready().then(
@@ -1955,7 +1989,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.17.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.18.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2466,6 +2500,11 @@ app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.get('/api/esports/match-odds', (req, res) => res.json({ matches: oddsBook.list() }));
+app.get('/api/feeds', (req, res) => res.json({
+  pandascore: { enabled: feedState.pandascore.enabled, updated: feedState.pandascore.updated, errors: feedState.pandascore.errors,
+    upcoming: Object.fromEntries(Object.entries(feedState.pandascore.schedules).map(([k, v]) => [k, v.length])) },
+  pinnacle: feedState.pinnacle,
+}));
 app.get('/api/esports/context', (req, res) => res.json({
   ratings: ratingsState.meta,
   picksWithContext: esportsCache.contextCounts || {},
@@ -2507,7 +2546,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.17.0',
+  version: '3.18.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2531,6 +2570,7 @@ app.get('/api/status', (req, res) => res.json({
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
+  feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -2541,7 +2581,7 @@ app.get('/api/status', (req, res) => res.json({
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
 // Team ratings for match context, every 6 hours.
-cron.schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState).catch(() => {}));
+cron.schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
 // Tracker: freeze started picks, then look for results (one sweep at a time).
 const trackerHealth = { lastRun: null, last: null, error: null };
@@ -2579,6 +2619,8 @@ cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 // frontend fetches its own odds. /api/odds/:sport still works on demand.
 
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
+// Esports match prices and schedules a minute before picks rebuild.
+cron.schedule('4-59/5 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
 cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
 // Profile warmer: every minute, fill a few more players' stats until the whole
@@ -2597,7 +2639,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.17.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.18.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2620,13 +2662,14 @@ if (require.main === module) {
     // start filling CS profiles right away after a redeploy wipes the cache
     setTimeout(() => warmCsProfiles(20).catch(()=>{}), 20000);
     // team ratings for match context, then rebuild picks with them
-    setTimeout(() => refreshRatings(axios, ratingsState).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
+    setTimeout(() => refreshMatchFeeds()
+      .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
     console.log('Startup complete');
   });
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, cache, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
