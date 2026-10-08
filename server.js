@@ -555,6 +555,7 @@ const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createBilling, verifyWebhook } = require('./billing');
+const evScreen = require('./ev');
 
 // ─── ACCOUNTS + BILLING ───────────────────────────────────────────────────────
 // AUTH_SECRET signs login tokens. Without it, a random one is used and every
@@ -1815,8 +1816,37 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ─── +EV SCREENER ─────────────────────────────────────────────────────────────
+// Scores every cached sportsbook price against devigged sharp prices. Runs on
+// odds the backend already pulls (Owls every 30s, Odds API props every 30 min),
+// so it spends no extra Odds API credits.
+const EV_SPORTS = { nba: 'basketball_nba', mlb: 'baseball_mlb', nhl: 'icehockey_nhl', nfl: 'americanfootball_nfl', mma: 'mma_mixed_martial_arts' };
+let evCache = { at: 0, rows: [], feeds: [] };
+function evFeeds() {
+  const feeds = [];
+  const add = (sport, label, c) => { if (Array.isArray(c?.data) && c.data.length) feeds.push({ sport, label, games: c.data, updated: c.updated || null }); };
+  for (const [s, key] of Object.entries(EV_SPORTS)) {
+    add(s, 'owls-odds', cache.owlsOdds[s]);
+    add(s, 'owls-props', cache.owlsProps[s]);
+    add(s, 'oddsapi-odds', cache.odds[key] || cache.odds[s]);
+    add(s, 'oddsapi-props', cache.oddsApiProps[key]);
+  }
+  return feeds;
+}
+function runEvScreen() {
+  if (Date.now() - evCache.at < 60000) return evCache;
+  const feeds = evFeeds();
+  const dfsLines = [...(cache.prizepicks.data || []), ...(cache.underdog.data || [])].filter(l => !isEsports(l.sport));
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power' });
+  evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
+  return evCache;
+}
+function redactEv(rows) {
+  return rows.map(r => ({ ...r, side: null, book: null, price: null, multiplier: null, ev: null, kelly: null, fairProb: null, fairPrice: null, locked: true }));
+}
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.14.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.15.0', updated: new Date().toISOString() }));
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
@@ -1858,6 +1888,27 @@ app.post('/api/admin/comp', requireAdmin, async (req, res) => {
   user.comp = req.body?.comp !== false;
   await auth.store.put(user);
   res.json({ ok: true, user: publicUser(user) });
+});
+
+// ── +EV SCREENER ──────────────────────────────────────────────────────────────
+// ?sport=nba&minEv=2&book=draftkings&market=points&props=1&dfs=1&source=sharp&limit=200
+app.get('/api/ev', (req, res) => {
+  const { rows, feeds, at } = runEvScreen();
+  const q = req.query;
+  const minEv = parseFloat(q.minEv);
+  const books = q.book ? String(q.book).toLowerCase().split(',') : null;
+  let out = rows.filter(r =>
+    (!q.sport || r.sport === q.sport) &&
+    (!Number.isFinite(minEv) || r.ev >= minEv) &&
+    (!books || books.includes(r.book)) &&
+    (!q.market || r.market === q.market) &&
+    (q.props == null || (q.props === '1') === !!r.player) &&
+    (q.dfs == null || (q.dfs === '1') === !!r.dfs) &&
+    (!q.source || r.source === q.source));
+  const total = out.length;
+  out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
+  const pro = hasPro(req);
+  res.json({ rows: pro ? out : redactEv(out), count: total, pro, updated: new Date(at).toISOString(), feeds });
 });
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
@@ -2237,7 +2288,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.14.0',
+  version: '3.15.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2256,6 +2307,7 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
@@ -2320,7 +2372,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.14.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.15.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
