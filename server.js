@@ -540,6 +540,16 @@ const {
 const { refreshRatings } = require('./ratings');
 const { propProb } = require('./dist');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
+const { createAlerter } = require('./alerts');
+
+// New edges and line moves, pushed to the app (server-sent events) and, when
+// ALERT_WEBHOOK_URL is set, to a Discord-compatible webhook.
+const alerter = createAlerter({
+  minEv: process.env.ALERT_MIN_EV != null ? parseFloat(process.env.ALERT_MIN_EV) : undefined,
+  send: process.env.ALERT_WEBHOOK_URL
+    ? body => axios.post(process.env.ALERT_WEBHOOK_URL, body, { timeout: 10000 })
+    : null,
+});
 
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (!ppLine || !modelPred || modelPred <= 0) return null;
@@ -1645,6 +1655,7 @@ async function generateEsportsPicks() {
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
+  alerter.onBoard(picks).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
@@ -1754,7 +1765,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.12.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.13.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -2015,6 +2026,22 @@ app.post('/api/history/record', (req, res) => {
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
+// ── ALERTS ────────────────────────────────────────────────────────────────────
+app.get('/api/esports/alerts', (req, res) => {
+  res.json({ alerts: alerter.recent(Math.min(parseInt(req.query.limit) || 50, 200)) });
+});
+
+// Server-sent events: one `alert` event per edge / move / gone.
+app.get('/api/esports/stream', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders?.();
+  res.write(`retry: 10000\n\n`);
+  const off = alerter.subscribe(e => res.write(`event: alert\ndata: ${JSON.stringify(e)}\n\n`));
+  // proxies drop idle connections; a comment line every 25s keeps it open
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { off(); clearInterval(ping); });
+});
+
 // ── SLIP PRICING ──────────────────────────────────────────────────────────────
 // Legs from the same series share whether the last map is played, so pricing
 // them as independent overstates the entry. These endpoints price the real
@@ -2115,7 +2142,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.12.0',
+  version: '3.13.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2134,6 +2161,7 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -2196,7 +2224,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.12.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.13.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2225,7 +2253,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook,
+  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
