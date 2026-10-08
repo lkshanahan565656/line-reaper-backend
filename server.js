@@ -63,9 +63,19 @@ function inSeasonSports() {
   return s;
 }
 
+// Low-usage mode for small Odds API plans (see quota.js).
+const { createCreditBudget, oddsCost } = require('./quota');
+const oddsBudget = createCreditBudget({
+  setting: process.env.ODDS_API_BUDGET || '', resetDay: parseInt(process.env.ODDS_API_RESET_DAY) || 1,
+});
+// Player props cost a credit per market per game, far more than a small plan
+// has, so low-usage mode skips them unless ODDS_API_PROPS=on.
+const propsAllowed = () => !oddsBudget.active() || /^(1|on|true|yes)$/i.test(process.env.ODDS_API_PROPS || '');
+
 function noteQuota(res) {
   const rem = res?.headers?.['x-requests-remaining'];
   if (rem != null) cache.quotaRemaining = parseFloat(rem);
+  if (res?.headers) oddsBudget.noteHeaders(res.headers);
 }
 
 // ─── ODDS API PROP MARKETS ────────────────────────────────────────────────────
@@ -102,6 +112,7 @@ async function fetchOddsApiProps(sportKey) {
       params: { apiKey: ODDS_API_KEY }, timeout: 10000
     });
     noteQuota(eventsRes);
+    if (!propsAllowed()) return cache.oddsApiProps[sportKey]?.data || [];
     const events = eventsRes.data || [];
     if (!events.length) return [];
 
@@ -405,6 +416,7 @@ async function fetchOwlsSplits(sport) {
 // (4 sports × 3 markets × every 3 min). The frontend fetches its own odds
 // directly, so nothing needs this on a timer. Kept as an on-request route.
 async function fetchOddsForSport(sport) {
+  if (!oddsBudget.take(oddsCost('h2h,spreads,totals', 'us')).ok) return cache.odds[sport]?.data || [];
   try {
     const res = await axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
       params: { apiKey: ODDS_API_KEY, regions: 'us', markets: 'h2h,spreads,totals', oddsFormat: 'american' }, timeout: 10000
@@ -1989,7 +2001,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.18.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.19.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2357,7 +2369,8 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
   // or the arb scan's wider one), so query variations can't fan out into new
   // billed calls. Markets the caller didn't ask for are trimmed from the reply.
   const wanted = new Set(String(req.query.markets || 'h2h,spreads').split(',').filter(x => FEED_MARKETS.has(x)));
-  const wide = /us2|us_ex/.test(String(req.query.regions || '')) || wanted.has('totals');
+  // Low-usage mode fetches only the main US books: the wide pull costs 3× the credits.
+  const wide = !oddsBudget.active() && (/us2|us_ex/.test(String(req.query.regions || '')) || wanted.has('totals'));
   const markets = 'h2h,spreads,totals';
   const regions = wide ? 'us,us2,us_ex' : 'us';
   const includeLinks = wide;
@@ -2373,6 +2386,13 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
   try {
     // concurrent viewers wait on the same request
     if (!oddsFeedInflight.has(key)) {
+      const budget = oddsBudget.take(oddsCost(markets, regions));
+      if (!budget.ok) {
+        const mins = Math.ceil(budget.waitMs / 60000);
+        res.set('x-cache', 'budget');
+        if (hit) return res.json(trim(hit.data));
+        return res.status(503).json({ error: `Saving Odds API credits: next refresh in about ${mins} min`, lowUsage: true, retryInMs: budget.waitMs });
+      }
       oddsFeedInflight.set(key, axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
         params: { apiKey: ODDS_API_KEY, regions, markets, oddsFormat: 'american', ...(includeLinks ? { includeLinks: true } : {}) }, timeout: 12000,
       }).finally(() => oddsFeedInflight.delete(key)));
@@ -2546,7 +2566,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.18.0',
+  version: '3.19.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2575,6 +2595,7 @@ app.get('/api/status', (req, res) => res.json({
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
+  oddsApiBudget: oddsBudget.state(),
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
 }));
@@ -2639,7 +2660,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.18.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.19.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2669,7 +2690,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
