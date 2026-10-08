@@ -16,7 +16,19 @@ if (!OWLS_API_KEY) console.warn('OWLS_API_KEY is not set: Owls feeds will fail a
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
 
 app.use(cors({ origin: '*' }));
+
+// Stripe signs the raw bytes, so this one route must see the body before
+// express.json parses it. Registered first for that reason.
+app.post('/api/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  let event;
+  try { event = verifyWebhook(req.body, req.get('stripe-signature'), process.env.STRIPE_WEBHOOK_SECRET); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+  try { res.json({ received: true, result: await billing.handleEvent(event) }); }
+  catch (e) { console.error('Billing webhook failed:', e.message); res.status(500).json({ error: 'handler failed' }); }
+});
+
 app.use(express.json());
+app.use((req, res, next) => auth.attach()(req, res, next));
 
 // ─── CACHE ────────────────────────────────────────────────────────────────────
 let cache = {
@@ -541,6 +553,21 @@ const { refreshRatings } = require('./ratings');
 const { propProb } = require('./dist');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
+const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
+const { createBilling, verifyWebhook } = require('./billing');
+
+// ─── ACCOUNTS + BILLING ───────────────────────────────────────────────────────
+// AUTH_SECRET signs login tokens. Without it, a random one is used and every
+// restart logs everyone out, which is fine locally and wrong in production.
+const AUTH_SECRET = process.env.AUTH_SECRET || require('crypto').randomBytes(32).toString('hex');
+if (!process.env.AUTH_SECRET) console.warn('AUTH_SECRET is not set: logins will not survive a restart.');
+const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET });
+const billing = createBilling({
+  http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
+  store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
+});
+// PAYWALL=on turns the gates on. Off by default so a deploy never locks you out.
+const PAYWALL = /^(1|on|true|yes)$/i.test(process.env.PAYWALL || '');
 
 // New edges and line moves, pushed to the app (server-sent events) and, when
 // ALERT_WEBHOOK_URL is set, to a Discord-compatible webhook.
@@ -1756,6 +1783,30 @@ tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
 
+// Paid features. With the paywall off, everyone is treated as a subscriber.
+// The admin token always counts, so the owner never needs a subscription.
+function hasPro(req) {
+  if (!PAYWALL) return true;
+  const admin = process.env.TRACKER_ADMIN_TOKEN;
+  if (admin && req.get('x-admin-token') === admin) return true;
+  return isPro(req.user);
+}
+function requirePro(req, res, next) {
+  if (hasPro(req)) return next();
+  res.status(req.user ? 402 : 401).json({
+    error: req.user ? 'This needs a Line Reaper Pro subscription' : 'Log in to use this',
+    upgrade: !!req.user,
+  });
+}
+// Free users still see the board, with the actual picks on +EV lines hidden,
+// so they can see how much they're missing.
+function redactForFree(picks) {
+  return picks.map(p => (p.bestEv != null && p.bestEv > 0)
+    ? { ...p, side: null, prob: null, modelPred: null, rawPred: null, edge: null, edgePct: null,
+        ppEv: null, udEv: null, bestEv: null, ev: null, pricing: null, statLine: null, context: null, locked: true }
+    : p);
+}
+
 // Writes (manual grading) need TRACKER_ADMIN_TOKEN, sent as the x-admin-token header.
 function requireAdmin(req, res, next) {
   const want = process.env.TRACKER_ADMIN_TOKEN;
@@ -1765,7 +1816,49 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.13.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.14.0', updated: new Date().toISOString() }));
+
+// ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
+const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
+
+app.post('/api/auth/signup', async (req, res) => {
+  try { res.status(201).json(await auth.signup(req.body?.email, req.body?.password)); }
+  catch (e) { sendErr(res, e); }
+});
+app.post('/api/auth/login', async (req, res) => {
+  try { res.json(await auth.login(req.body?.email, req.body?.password)); }
+  catch (e) { sendErr(res, e); }
+});
+app.get('/api/auth/me', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+  res.json({ user: publicUser(req.user), paywall: PAYWALL, billing: billing.configured() });
+});
+// where Stripe should send people back to: the page they came from
+function returnUrl(req, fallback = '/') {
+  const u = req.body?.returnUrl || req.get('referer') || fallback;
+  return /^https?:\/\//.test(u) ? u : fallback;
+}
+app.post('/api/billing/checkout', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  try {
+    const back = returnUrl(req, `${req.protocol}://${req.get('host')}/`);
+    const sep = back.includes('?') ? '&' : '?';
+    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back }));
+  } catch (e) { console.error('Checkout failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
+});
+app.post('/api/billing/portal', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  try { res.json(await billing.portal(req.user, { returnUrl: returnUrl(req, `${req.protocol}://${req.get('host')}/`) })); }
+  catch (e) { console.error('Portal failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
+});
+// Give an account Pro without paying (you, testers, friends). body: { email, comp: true|false }
+app.post('/api/admin/comp', requireAdmin, async (req, res) => {
+  const user = await auth.store.byEmail(String(req.body?.email || '').trim().toLowerCase());
+  if (!user) return res.status(404).json({ error: 'No account with that email' });
+  user.comp = req.body?.comp !== false;
+  await auth.store.put(user);
+  res.json({ ok: true, user: publicUser(user) });
+});
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1777,7 +1870,9 @@ app.get('/api/esports/picks', async (req, res) => {
   let picks = esportsCache.picks || [];
   if (sport) picks = picks.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
   picks = picks.filter(p => p.ev == null || p.ev >= minEV);
-  res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated });
+  const pro = hasPro(req);
+  if (!pro) picks = redactForFree(picks);
+  res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated, pro, locked: pro ? 0 : picks.filter(p => p.locked).length });
 });
 
 app.post('/api/esports/refresh', async (req, res) => {
@@ -2027,12 +2122,12 @@ app.post('/api/history/record', (req, res) => {
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 // ── ALERTS ────────────────────────────────────────────────────────────────────
-app.get('/api/esports/alerts', (req, res) => {
+app.get('/api/esports/alerts', requirePro, (req, res) => {
   res.json({ alerts: alerter.recent(Math.min(parseInt(req.query.limit) || 50, 200)) });
 });
 
 // Server-sent events: one `alert` event per edge / move / gone.
-app.get('/api/esports/stream', (req, res) => {
+app.get('/api/esports/stream', requirePro, (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders?.();
   res.write(`retry: 10000\n\n`);
@@ -2064,7 +2159,7 @@ function legsFromBoard(input) {
   });
 }
 
-app.post('/api/esports/slip', (req, res) => {
+app.post('/api/esports/slip', requirePro, (req, res) => {
   const legs = legsFromBoard(req.body?.legs);
   const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
   if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
@@ -2072,7 +2167,7 @@ app.post('/api/esports/slip', (req, res) => {
   res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS) });
 });
 
-app.get('/api/esports/best-slips', (req, res) => {
+app.get('/api/esports/best-slips', requirePro, (req, res) => {
   const minEV = parseFloat(req.query.minEV);
   const maxLegs = Math.min(parseInt(req.query.maxLegs) || 5, 6);
   const sport = req.query.sport;
@@ -2142,7 +2237,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.13.0',
+  version: '3.14.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2161,6 +2256,7 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
@@ -2224,7 +2320,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.13.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.14.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2253,7 +2349,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter,
+  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
