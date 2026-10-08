@@ -146,18 +146,26 @@ function mixtureProb(line, side, scenarios, meanPerMap, k, normalCDF) {
 }
 
 // ── team names ──
+// "academy" is NOT stripped: T1 Academy is a different team from T1.
 function teamKey(n) {
   return (n || '').toLowerCase()
-    .replace(/\b(team|esports?|gaming|club|academy)\b/g, '')
+    .replace(/\b(team|esports?|gaming|club)\b/g, '')
     .replace(/[^a-z0-9]/g, '');
 }
+
+// Suffixes that mark an academy / second roster (Fnatic Rising, MOUZ NXT,
+// Gen.G Global Academy, NAVI Junior, T1 Academy, ...).
+const SECOND_TEAM_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)/;
 
 function teamsMatch(a, b) {
   const x = teamKey(a), y = teamKey(b);
   if (!x || !y) return false;
   if (x === y) return true;
-  if (x.length >= 3 && y.length >= 3 && (x.startsWith(y) || y.startsWith(x))) return true;
-  return false;
+  if (x.length < 3 || y.length < 3) return false;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  if (!long.startsWith(short)) return false;
+  // "FaZe" ↔ "FaZe Clan" is fine; "MOUZ" ↔ "MOUZ NXT" is not.
+  return !SECOND_TEAM_RE.test(long.slice(short.length));
 }
 
 // "Vitality vs NAVI", "VIT @ NAVI", "G2 - FaZe" → ['Vitality', 'NAVI']

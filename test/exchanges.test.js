@@ -62,7 +62,7 @@ test('kalshi parsing: dollar strings win over cents, non-open and unlabeled mark
   assert.equal(rows.length, 2);
   assert.deepEqual(
     { ...rows[0] },
-    { exchange: 'kalshi', id: 'A', eventId: 'KXNBAGAME-26OCT08NYKBOS', title: 't', team: 'Boston', yesAsk: 0.56, noAsk: 0.46,
+    { exchange: 'kalshi', id: 'A', eventId: 'KXNBAGAME-26OCT08NYKBOS', title: 't', league: 'nba', team: 'Boston', yesAsk: 0.56, noAsk: 0.46,
       yesBid: 0.54, noBid: 0.44, start: 'e', volume: 10, url: 'https://kalshi.com/markets/kxnbagame-26oct08nykbos' },
   );
   assert.equal(rows[1].yesAsk, 0.44);
@@ -211,4 +211,49 @@ test('fetch wrappers: one failing request does not sink the rest', async () => {
   calls.length = 0;
   await X.fetchKalshi(http);
   assert.deepEqual(calls.map(c => c.params.series_ticker), ['KXNBAGAME', 'KXNFLGAME', 'KXMLBGAME', 'KXNHLGAME', 'KXNCAAFGAME']);
+});
+
+test('rows carry their league: kalshi from the ticker, polymarket from the tag', () => {
+  assert.equal(X.kalshiLeague('KXNHLGAME-26OCT08TORBOS'), 'nhl');
+  assert.equal(X.kalshiLeague('KXNCAAFGAME-X'), 'ncaaf');
+  assert.equal(X.kalshiLeague('KXWNBAGAME-X'), 'wnba');
+  assert.equal(X.kalshiLeague('WEIRD', 'KXMLBGAME'), 'mlb', 'falls back to the fetched series');
+  assert.equal(X.kalshiLeague('WEIRD'), null);
+  assert.equal(X.parseKalshiMarkets({ markets: [kalshiMarket('Boston', '0.5', '0.5', { ticker: 'Z', event_ticker: 'Z' })] }, 'KXNFLGAME')[0].league, 'nfl');
+  assert.equal(X.parsePolymarketEvents(polyEvent(), 'NHL')[0].league, 'nhl');
+  assert.equal(X.parsePolymarketEvents(polyEvent())[0].league, null);
+});
+
+test('an NHL Kalshi market in the same cities never attaches to the NBA game', () => {
+  const nhl = (team, yes, no) => kalshiMarket(team, yes, no, {
+    ticker: `KXNHLGAME-26OCT08TORBOS-${team.slice(0, 3).toUpperCase()}`, event_ticker: 'KXNHLGAME-26OCT08TORBOS',
+    title: 'Toronto at Boston Winner?',
+  });
+  const rows = kalshiRows([nhl('Boston', '0.3000', '0.7200'), nhl('Toronto', '0.7000', '0.3200')]);
+  assert.equal(rows[0].league, 'nhl');
+  const nbaGame = game({ home_team: 'Boston Celtics', away_team: 'Toronto Raptors' });
+  const [g] = X.attachExchanges([nbaGame], rows, { now: NOW, league: 'nba' });
+  assert.equal(book(g, 'kalshi'), undefined);
+  // the same rows do attach to the NHL game
+  const [h] = X.attachExchanges([game({ home_team: 'Boston Bruins', away_team: 'Toronto Maple Leafs' })], rows, { now: NOW, league: 'nhl' });
+  assert.ok(book(h, 'kalshi'));
+  // polymarket rows fetched under another tag are skipped too
+  const pm = X.parsePolymarketEvents(polyEvent(), 'nhl');
+  assert.equal(book(X.attachExchanges([game()], pm, { now: NOW, league: 'nba' })[0], 'polymarket'), undefined);
+  assert.ok(book(X.attachExchanges([game()], X.parsePolymarketEvents(polyEvent(), 'nba'), { now: NOW, league: 'nba' })[0], 'polymarket'));
+});
+
+test('several matching events: the closest start time wins', () => {
+  const far = kalshiRows([
+    kalshiMarket('Boston', '0.6000', '0.4200', { event_ticker: 'KXNBAGAME-FAR', expected_expiration_time: '2026-10-08T14:00:00Z' }),
+    kalshiMarket('New York K', '0.4000', '0.6200', { event_ticker: 'KXNBAGAME-FAR', ticker: 'F2', expected_expiration_time: '2026-10-08T14:00:00Z' }),
+  ]);
+  const near = kalshiRows([
+    kalshiMarket('Boston', '0.7000', '0.3200', { expected_expiration_time: '2026-10-08T23:30:00Z' }),
+    kalshiMarket('New York K', '0.3000', '0.7200', { expected_expiration_time: '2026-10-08T23:30:00Z' }),
+  ]);
+  const [g] = X.attachExchanges([game()], [...far, ...near], { now: NOW });
+  const ks = g.bookmakers.filter(b => b.key === 'kalshi');
+  assert.equal(ks.length, 1);
+  assert.equal(priceOf(ks[0], 'Boston Celtics'), X.effectiveAmerican(0.7, 0.02));
 });

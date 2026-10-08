@@ -3557,7 +3557,7 @@ function evConnect() {
 function evFiltered() {
   return evState.rows.filter(r =>
     (evState.sport === 'all' || r.sport === evState.sport) &&
-    (evState.kind === 'all' || (evState.kind === 'dfs' ? r.dfs : evState.kind === 'props' ? (r.player && !r.dfs) : !r.player)) &&
+    (evState.kind === 'all' || (evState.kind === 'dfs' ? r.dfs : evState.kind === 'props' ? ((r.player || r.prop) && !r.dfs) : !(r.player || r.prop))) &&
     (r.locked || r.ev >= evState.minEv) &&
     (!evState.sharpOnly || r.source === 'sharp') &&
     (r.locked || !evState.books.size || evState.books.has(r.book)) &&
@@ -3869,6 +3869,18 @@ async function renderTrackRecord(el) {
   }
 }
 
+// Writes that change everyone's board need the server's admin token.
+function adminToken() {
+  let token = null;
+  try { token = localStorage.getItem('lr_admin_token'); } catch {}
+  if (!token) {
+    token = prompt('Admin token (TRACKER_ADMIN_TOKEN on the server):');
+    if (!token) return null;
+    try { localStorage.setItem('lr_admin_token', token); } catch {}
+  }
+  return token;
+}
+
 async function trGrade(encId, isVoid = false) {
   const id = decodeURIComponent(encId);
   let token = localStorage.getItem('lr_admin_token');
@@ -4141,18 +4153,20 @@ async function esSaveAllModels() {
   if (!entries.length) { showToast('Type some model numbers first', 'danger'); return; }
   const btn = document.getElementById('esSaveAllBtn');
   if (btn) { btn.disabled = true; btn.textContent = `SAVING ${entries.length}...`; }
+  const token = adminToken();
+  if (!token) { if (btn) { btn.disabled = false; btn.textContent = '💾 SAVE ALL'; } return; }
   let ok = 0;
   for (const [key, v] of entries) {
     const cut = key.indexOf('|');
     try {
       const r = await fetch(`${BACKEND_URL}/api/esports/manual`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
         body: JSON.stringify({ player: key.slice(0, cut), market: key.slice(cut + 1), modelPred: v })
       });
       if (r.ok) ok++;
     } catch (e) {}
   }
-  try { await fetch(`${BACKEND_URL}/api/esports/refresh`, { method: 'POST' }); } catch (e) {}
+  try { await fetch(`${BACKEND_URL}/api/esports/refresh`, { method: 'POST', headers: { 'x-admin-token': token } }); } catch (e) {}
   esportsState.entryDraft = {};
   esportsState.entryCarried = new Set();
   if (btn) btn.disabled = false;
@@ -4491,13 +4505,16 @@ async function promptManualPred(player, market) {
     if (current.trim() !== '') alert('Invalid number');
     return;
   }
+  const token = adminToken();
+  if (!token) return;
   try {
-    await fetch(`${BACKEND_URL}/api/esports/manual`, {
+    const r = await fetch(`${BACKEND_URL}/api/esports/manual`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json', 'x-admin-token': token},
       body: JSON.stringify({ player, market, modelPred: num })
     });
-    await fetch(`${BACKEND_URL}/api/esports/refresh`, { method: 'POST' });
+    if (r.status === 401) { try { localStorage.removeItem('lr_admin_token'); } catch {} alert('Wrong admin token.'); return; }
+    await fetch(`${BACKEND_URL}/api/esports/refresh`, { method: 'POST', headers: { 'x-admin-token': token } });
     await loadEsports();
   } catch(e) { alert('Error saving: ' + e.message); }
 }

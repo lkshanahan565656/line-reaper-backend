@@ -1845,7 +1845,10 @@ function requirePro(req, res, next) {
 function redactForFree(picks) {
   return picks.map(p => (p.bestEv != null && p.bestEv > 0)
     ? { ...p, side: null, prob: null, modelPred: null, rawPred: null, edge: null, edgePct: null,
-        ppEv: null, udEv: null, bestEv: null, ev: null, pricing: null, statLine: null, context: null, locked: true }
+        ppEv: null, udEv: null, bestEv: null, ev: null, pricing: null, statLine: null, context: null,
+        // these give the side or the size of the edge away too
+        udMultiplier: null, udImplied: null, udRegime: null, udFlag: null, confidence: null, bestBook: null,
+        bookEdge: null, pushProb: null, model: null, overMultiplier: null, underMultiplier: null, locked: true }
     : p);
 }
 
@@ -1881,7 +1884,7 @@ function evFeeds() {
   const add = (sport, label, c) => {
     if (!Array.isArray(c?.data) || !c.data.length) return;
     // game-line feeds get the exchange books attached
-    const games = /odds$/.test(label) && exchangeState.rows.length ? exchanges.attachExchanges(c.data, exchangeState.rows, EXCHANGE_OPTS) : c.data;
+    const games = /odds$/.test(label) && exchangeState.rows.length ? exchanges.attachExchanges(c.data, exchangeState.rows, { ...EXCHANGE_OPTS, league: sport }) : c.data;
     feeds.push({ sport, label, games, updated: c.updated || null });
   };
   for (const [s, key] of Object.entries(EV_SPORTS)) {
@@ -1926,7 +1929,8 @@ function runEvScreen(force = false) {
   return evCache;
 }
 function redactEv(rows) {
-  return rows.map(r => ({ ...r, side: null, book: null, price: null, multiplier: null, ev: null, kelly: null, fairProb: null, fairPrice: null, locked: true }));
+  return rows.map(r => ({ sport: r.sport, event: r.event, start: r.start, market: r.market, dfs: !!r.dfs, prop: !!r.player,
+    source: r.source, sharpBooks: r.sharpBooks, locked: true }));
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
@@ -2000,8 +2004,10 @@ app.post('/api/admin/comp', requireAdmin, async (req, res) => {
 // ?sport=nba&minEv=2&book=draftkings&market=points&props=1&dfs=1&source=sharp&limit=200
 app.get('/api/ev', (req, res) => {
   const { rows, feeds, at } = runEvScreen();
-  const q = req.query;
-  const minEv = parseFloat(q.minEv);
+  const pro = hasPro(req);
+  // free users can't filter by anything a locked row hides (book, EV, market, side)
+  const q = pro ? req.query : { sport: req.query.sport, props: req.query.props, dfs: req.query.dfs, limit: req.query.limit };
+  const minEv = pro ? parseFloat(q.minEv) : 1;
   const books = q.book ? String(q.book).toLowerCase().split(',') : null;
   let out = rows.filter(r =>
     (!q.sport || r.sport === q.sport) &&
@@ -2013,7 +2019,6 @@ app.get('/api/ev', (req, res) => {
     (!q.source || r.source === q.source));
   const total = out.length;
   out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
-  const pro = hasPro(req);
   res.json({ rows: pro ? out : redactEv(out), count: total, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
@@ -2021,9 +2026,10 @@ app.get('/api/ev', (req, res) => {
 // still stale) are the actionable part, so they're Pro.
 app.get('/api/sharp', (req, res) => {
   const kind = req.query.kind ? String(req.query.kind).split(',') : undefined;
-  const events = sharpTracker.events({ sport: req.query.sport, kind, limit: Math.min(parseInt(req.query.limit) || 100, 500) })
-    .map(e => ({ ...e, text: describeSharp(e) }));
   const pro = hasPro(req);
+  const events = sharpTracker.events({ sport: req.query.sport, kind, limit: Math.min(parseInt(req.query.limit) || 100, 500) })
+    .filter(e => pro || e.kind !== 'sharp_lead')
+    .map(e => ({ ...e, text: describeSharp(e) }));
   const stale = pro ? sharpTracker.stale().filter(l => !req.query.sport || l.sport === req.query.sport).map(e => ({ ...e, text: describeSharp(e) })) : [];
   let rlm = [];
   try { rlm = reverseLineMoves(sharpTracker.events({ limit: 500 }), splitsMap()).map(e => ({ ...e, text: describeSharp(e) })); } catch { /* splits shape unknown */ }
@@ -2059,17 +2065,23 @@ app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
   if (!fresh) await generateEsportsPicks();
-  const minEV = parseFloat(req.query.minEV) || -100;
+  const pro = hasPro(req);
+  // an EV filter would let a free user find each locked pick's EV by bisection
+  const minEV = pro ? (parseFloat(req.query.minEV) || -100) : -100;
   const sport = req.query.sport;
   let picks = esportsCache.picks || [];
   if (sport) picks = picks.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
   picks = picks.filter(p => p.ev == null || p.ev >= minEV);
-  const pro = hasPro(req);
   if (!pro) picks = redactForFree(picks);
   res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated, pro, locked: pro ? 0 : picks.filter(p => p.locked).length });
 });
 
+let lastManualRefresh = 0;
 app.post('/api/esports/refresh', async (req, res) => {
+  // anyone can ask, but only the admin can force more than one rebuild a minute
+  const admin = process.env.TRACKER_ADMIN_TOKEN && req.get('x-admin-token') === process.env.TRACKER_ADMIN_TOKEN;
+  if (!admin && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
+  lastManualRefresh = Date.now();
   await generateEsportsPicks();
   res.json({ ok: true, count: esportsCache.picks.length });
 });
@@ -2083,7 +2095,8 @@ app.post('/api/esports/predict', (req, res) => {
   res.json(result);
 });
 
-app.post('/api/esports/manual', (req, res) => {
+// Manual model numbers change everyone's board and the public track record.
+app.post('/api/esports/manual', requireAdmin, (req, res) => {
   const { player, market, modelPred } = req.body;
   if (!player || !market) return res.status(400).json({ error: 'player and market required' });
   const key = `${player}|${market}`;
@@ -2300,24 +2313,28 @@ app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport
 // ?markets=h2h,spreads&regions=us&includeLinks=true
 const ODDS_FEED_TTL_MS = parseInt(process.env.ODDS_FEED_TTL_MS) || 120000;
 const FEED_MARKETS = new Set(['h2h', 'spreads', 'totals', 'outrights']);
-const FEED_REGIONS = new Set(['us', 'us2', 'us_ex', 'uk', 'eu', 'au']);
 const oddsFeedCache = new Map();
 const oddsFeedInflight = new Map();
 app.get('/api/odds-feed/:sport', async (req, res) => {
   const sport = String(req.params.sport);
   if (!/^[a-z0-9_]+$/.test(sport)) return res.status(400).json({ error: 'Bad sport key' });
   if (!ODDS_API_KEY) return res.status(503).json({ error: 'ODDS_API_KEY is not set on the server' });
-  const pick = (v, allowed, dflt) => { const xs = String(v || dflt).split(',').filter(x => allowed.has(x)); return xs.length ? xs.sort().join(',') : dflt; };
-  const markets = pick(req.query.markets, FEED_MARKETS, 'h2h,spreads');
-  const regions = pick(req.query.regions, FEED_REGIONS, 'us');
-  const includeLinks = req.query.includeLinks === 'true';
-  const key = `${sport}|${markets}|${regions}|${includeLinks}`;
+  // Every request maps to one of two upstream fetches per sport (the main view,
+  // or the arb scan's wider one), so query variations can't fan out into new
+  // billed calls. Markets the caller didn't ask for are trimmed from the reply.
+  const wanted = new Set(String(req.query.markets || 'h2h,spreads').split(',').filter(x => FEED_MARKETS.has(x)));
+  const wide = /us2|us_ex/.test(String(req.query.regions || '')) || wanted.has('totals');
+  const markets = 'h2h,spreads,totals';
+  const regions = wide ? 'us,us2,us_ex' : 'us';
+  const includeLinks = wide;
+  const key = `${sport}|${regions}`;
+  const trim = data => (Array.isArray(data) ? data.map(g => ({ ...g, bookmakers: (g.bookmakers || []).map(b => ({ ...b, markets: (b.markets || []).filter(m => wanted.has(m.key)) })) })) : data);
   res.set('Access-Control-Expose-Headers', 'x-requests-remaining, x-cache');
   const hit = oddsFeedCache.get(key);
   if (hit && Date.now() - hit.at < ODDS_FEED_TTL_MS) {
     if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
     res.set('x-cache', 'hit');
-    return res.json(hit.data);
+    return res.json(trim(hit.data));
   }
   try {
     // concurrent viewers wait on the same request
@@ -2330,14 +2347,14 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
     noteQuota(r);
     oddsFeedCache.set(key, { at: Date.now(), data: r.data });
     // the screener and sharp tracker read game lines from here too
-    if (/h2h/.test(markets)) cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
+    if (!wide) cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
     ingestSharp(sport, r.data);
     if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
     res.set('x-cache', 'miss');
-    res.json(r.data);
+    res.json(trim(r.data));
   } catch (e) {
     const status = e.response?.status || 502;
-    if (hit) { res.set('x-cache', 'stale'); return res.json(hit.data); }   // better old odds than none
+    if (hit) { res.set('x-cache', 'stale'); return res.json(trim(hit.data)); }   // better old odds than none
     res.status(status).json({ error: status === 429 ? 'Odds API quota used up' : status === 401 ? 'Odds API key rejected' : `Odds API error ${status}` });
   }
 });
@@ -2346,6 +2363,8 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   if (owlsDisabled()) return res.status(503).json({ error: 'Owls disabled — API key is dead (repeated 403s). Set OWLS_API_KEY and restart.' });
   const path = req.params[0], query = new URLSearchParams(req.query).toString();
+  // only the read endpoints the app uses, so the server key can't be pointed elsewhere
+  if (!/^(nba|mlb|nhl|nfl|mma|ncaab|ncaaf|wnba|soccer)\/(odds|props|splits|scores)$/.test(path)) return res.status(404).json({ error: 'Not a proxied Owls path' });
   // odds and props are already polled on a timer: serve those from cache
   const m = !query && /^(\w+)\/(odds|props)$/.exec(path);
   const hit = m && (m[2] === 'odds' ? cache.owlsOdds : cache.owlsProps)[m[1]];
@@ -2353,7 +2372,8 @@ app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   try {
     const r = await axios.get(`https://api.owlsinsight.com/api/v1/${path}${query?'?'+query:''}`, { headers: OWLS_HEADERS, timeout: 10000 });
     res.json(r.data);
-  } catch(e) { noteOwlsError(e, `Owls proxy ${path}`); res.status(e.response?.status||500).json({ error: e.message }); }
+  // not noteOwlsError: a visitor's bad request must not trip the dead-key breaker
+  } catch(e) { res.status(e.response?.status||502).json({ error: `Owls error ${e.response?.status || ''}`.trim() }); }
 });
 
 app.post('/api/history/record', (req, res) => {
@@ -2463,7 +2483,12 @@ app.get('/api/tracker/summary', async (req, res) => {
 app.get('/api/tracker/picks', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
-    res.json({ picks: await tracker.list({ status: req.query.status, sport: req.query.sport, limit }) });
+    let picks = await tracker.list({ status: req.query.status, sport: req.query.sport, limit });
+    // picks that haven't been graded are today's board: Pro only
+    if (!hasPro(req)) picks = picks.map(p => (p.status === 'open' || p.status === 'locked')
+      ? { ...p, signalSide: null, signalLine: null, signalEv: null, signalProb: null, closeSide: null, closeLine: null, closeEv: null, closeProb: null, modelPred: null, rawPred: null, locked: true }
+      : p);
+    res.json({ picks });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

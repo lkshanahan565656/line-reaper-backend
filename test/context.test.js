@@ -180,3 +180,36 @@ test('result rows parse into map-level games', () => {
   assert.ok(noTs[0].t > noTs[1].t, 'newest first in, newest-highest t out');
   assert.deepEqual(valGamesFromRows([{ team1: 'A', team2: 'B', score1: '9', score2: '9' }]), [], 'nonsense scores dropped');
 });
+
+test('academy / second rosters never match the main team (both directions)', () => {
+  const pairs = [['T1', 'T1 Academy'], ['Fnatic', 'Fnatic Rising'], ['MOUZ', 'MOUZ NXT'], ['MOUZ', 'MOUZNXT'],
+    ['Gen.G', 'Gen.G Global Academy'], ['NAVI', 'NAVI Junior'], ['Heroic', 'Heroic Academy'], ['Liquid', 'Team Liquid Youth'],
+    ['Astralis', 'Astralis II'], ['Falcons', 'Falcons 2'], ['Vitality', 'Vitality Next']];
+  for (const [a, b] of pairs) {
+    assert.ok(!C.teamsMatch(a, b), `${a} vs ${b}`);
+    assert.ok(!C.teamsMatch(b, a), `${b} vs ${a}`);
+  }
+  // legit variants still match
+  assert.ok(C.teamsMatch('FaZe', 'FaZe Clan'));
+  assert.ok(C.teamsMatch('Hanwha Life Esports', 'Hanwha Life'));
+  assert.ok(C.teamsMatch('T1 Academy', 't1 academy'));
+  assert.ok(C.teamsMatch('Vitality', 'Team Vitality'));
+  assert.equal(C.opponentFrom('MOUZ', 'MOUZ NXT vs Sashi'), null);
+});
+
+test('odds for an academy match are not applied to the main team; Elo keeps them apart', () => {
+  const book = C.createOddsBook();
+  book.set({ sport: 'CS2', teamA: 'MOUZ NXT', teamB: 'Sashi', pA: 0.7, bestOf: 3 });
+  assert.equal(book.lookup('CS2', 'MOUZ', 'Sashi'), null);
+  assert.equal(book.lookup('CS2', 'MOUZ'), null);
+  assert.ok(book.lookup('CS2', 'MOUZ NXT', 'Sashi'));
+  book.set({ sport: 'CS2', teamA: 'MOUZ', teamB: 'Sashi', pA: 0.9, bestOf: 3 });
+  assert.equal(book.list().length, 2, 'main-team odds do not overwrite the academy row');
+
+  const games = [];
+  for (let i = 0; i < 10; i++) games.push({ a: 'Fnatic Rising', b: 'Other', aWon: true, t: i });
+  const elo = C.buildElo(games);
+  assert.equal(elo.rating('Fnatic'), null);
+  assert.equal(elo.games('Fnatic'), 0);
+  assert.equal(elo.games('Fnatic Rising'), 10);
+});

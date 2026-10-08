@@ -50,12 +50,24 @@ function kalshiPrice(m, field) {
   return c == null ? null : c / 100;
 }
 
-function parseKalshiMarkets(payload) {
+// "KXNHLGAME-25OCT08BOSTOR-BOS" → 'nhl'. Rows carry their league so a
+// Bruins–Leafs market can't attach to a Celtics–Raptors game.
+const KALSHI_LEAGUE_RE = /KX(NCAAF|NCAAB|WNBA|NBA|NFL|MLB|NHL|MLS)/i;
+function kalshiLeague(...tickers) {
+  for (const t of tickers) {
+    const m = String(t || '').match(KALSHI_LEAGUE_RE);
+    if (m) return m[1].toLowerCase();
+  }
+  return null;
+}
+
+function parseKalshiMarkets(payload, seriesTicker = null) {
   const out = [];
   for (const m of payload?.markets || []) {
     if (!['open', 'active'].includes(String(m.status || '').toLowerCase()) || !m.yes_sub_title) continue;
     out.push({
       exchange: 'kalshi', id: m.ticker, eventId: m.event_ticker, title: m.title || '',
+      league: kalshiLeague(m.series_ticker, m.event_ticker, m.ticker, seriesTicker),
       team: m.yes_sub_title,
       yesAsk: kalshiPrice(m, 'yes_ask'), noAsk: kalshiPrice(m, 'no_ask'),
       yesBid: kalshiPrice(m, 'yes_bid'), noBid: kalshiPrice(m, 'no_bid'),
@@ -74,7 +86,9 @@ const jsonList = v => {
 };
 const NOT_TEAMS = new Set(['yes', 'no', 'over', 'under', 'draw', 'tie']);
 
-function parsePolymarketEvents(payload) {
+// tagSlug: the tag the events were fetched with ('nba', 'nhl', ...) → row.league
+function parsePolymarketEvents(payload, tagSlug = null) {
+  const league = tagSlug ? String(tagSlug).toLowerCase() : null;
   const events = Array.isArray(payload) ? payload : payload?.events || payload?.data || [];
   const out = [];
   for (const ev of events) {
@@ -90,7 +104,7 @@ function parsePolymarketEvents(payload) {
       const ask0 = num(m.bestAsk), bid0 = num(m.bestBid);
       const asks = [ask0 ?? mids[0] ?? null, bid0 != null ? round(1 - bid0, 6) : mids[1] ?? null];
       outcomes.forEach((team, i) => out.push({
-        exchange: 'polymarket', id: `${m.id}:${i}`, eventId: ev.id, title: ev.title || '',
+        exchange: 'polymarket', id: `${m.id}:${i}`, eventId: ev.id, title: ev.title || '', league,
         team, yesAsk: asks[i], start: m.gameStartTime || ev.startDate || null,
         volume: num(m.volume), url: `https://polymarket.com/event/${ev.slug}`,
       }));
@@ -244,20 +258,25 @@ function priceFor(rows, name, owner, opts) {
 
 const TITLES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
 
-function attachExchanges(games, exchangeRows, { now = Date.now(), maxStartGapMs = 12 * 3600e3, kalshiFeeRate = 0.07, polymarketFeeRate = 0 } = {}) {
+// league: the feed's league ('nba', 'nhl', ...). Rows tagged with a different
+// league are skipped; untagged rows are still considered.
+function attachExchanges(games, exchangeRows, { now = Date.now(), maxStartGapMs = 12 * 3600e3, kalshiFeeRate = 0.07, polymarketFeeRate = 0, league = null } = {}) {
   const opts = { kalshiFeeRate, polymarketFeeRate };
-  const pairs = pairsOf(exchangeRows);
+  const want = league ? String(league).toLowerCase() : null;
+  const pairs = pairsOf(exchangeRows).filter(rows => !want || !rows[0].league || rows[0].league === want);
   return (games || []).map(g => {
     const out = { ...g, bookmakers: [...(g.bookmakers || [])] };
     const t0 = g.commence_time ? Date.parse(g.commence_time) : NaN;
     if (Number.isFinite(t0) && t0 <= now) return out;
-    const done = new Set();
+    // per exchange, the matching event whose start is closest to the game's
+    const best = new Map();
     for (const rows of pairs) {
       const ex = rows[0].exchange;
-      if (done.has(ex)) continue;
       const start = rows.find(r => r.start)?.start;
       const t1 = start ? Date.parse(start) : NaN;
-      if (Number.isFinite(t0) && Number.isFinite(t1) && Math.abs(t1 - t0) > maxStartGapMs) continue;
+      const gap = Number.isFinite(t0) && Number.isFinite(t1) ? Math.abs(t1 - t0) : Infinity;
+      if (gap !== Infinity && gap > maxStartGapMs) continue;
+      if (best.has(ex) && best.get(ex).gap <= gap) continue;
       const teams = [...new Set(rows.map(r => r.team))];
       const labels = teams.length === 2 ? teams : titleTeams(rows[0].title);
       const map = labels && assign(labels, g.home_team, g.away_team);
@@ -275,9 +294,9 @@ function attachExchanges(games, exchangeRows, { now = Date.now(), maxStartGapMs 
         return px && { name, price: px.price, link: px.link };
       });
       if (outcomes.some(o => !o)) continue;
-      out.bookmakers.push({ key: ex, title: TITLES[ex] || ex, markets: [{ key: 'h2h', outcomes }] });
-      done.add(ex);
+      best.set(ex, { gap, bookmaker: { key: ex, title: TITLES[ex] || ex, markets: [{ key: 'h2h', outcomes }] } });
     }
+    for (const { bookmaker } of best.values()) out.bookmakers.push(bookmaker);
     return out;
   });
 }
@@ -296,21 +315,21 @@ async function collect(exchange, keys, load) {
 function fetchKalshi(http, { seriesTickers = KALSHI_SERIES } = {}) {
   return collect('kalshi', seriesTickers, async series_ticker => {
     const res = await http.get(KALSHI_URL, { params: { status: 'open', series_ticker, limit: 200 }, timeout: 10000 });
-    return parseKalshiMarkets(res.data);
+    return parseKalshiMarkets(res.data, series_ticker);
   });
 }
 
 function fetchPolymarket(http, { tags = POLYMARKET_TAGS } = {}) {
   return collect('polymarket', tags, async tag_slug => {
     const res = await http.get(POLYMARKET_URL, { params: { tag_slug, closed: false, limit: 100 }, timeout: 10000 });
-    return parsePolymarketEvents(res.data);
+    return parsePolymarketEvents(res.data, tag_slug);
   });
 }
 
 const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
 
 module.exports = {
-  kalshiFee, effectiveAmerican, parseKalshiMarkets, parsePolymarketEvents, teamMatches,
+  kalshiFee, effectiveAmerican, parseKalshiMarkets, kalshiLeague, parsePolymarketEvents, teamMatches,
   attachExchanges, toMarketsList, fetchKalshi, fetchPolymarket,
   KALSHI_SERIES, POLYMARKET_TAGS,
 };

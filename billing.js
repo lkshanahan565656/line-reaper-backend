@@ -97,6 +97,17 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
       case 'customer.subscription.deleted': {
         const user = await store.byCustomer(obj.customer);
         if (!user) { log.warn?.(`Billing: no user for customer ${obj.customer}`); return { ignored: 'unknown customer' }; }
+        // Stripe doesn't guarantee delivery order and retries late; never let an
+        // older event (e.g. an 'active' update) overwrite a newer one (a deletion).
+        const created = Number(event.created);
+        if (isFinite(created) && created > 0 && user.lastEventAt != null) {
+          const stale = created < user.lastEventAt
+            // same second: a deletion of this subscription wins over an update
+            || (created === user.lastEventAt && event.type !== 'customer.subscription.deleted'
+                && user.planStatus === 'canceled' && user.subscriptionId === obj.id);
+          if (stale) return { ignored: 'stale event', user: user.id };
+        }
+        if (isFinite(created) && created > 0) user.lastEventAt = created;
         user.plan = event.type === 'customer.subscription.deleted' ? 'free' : 'pro';
         user.planStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : obj.status;
         user.subscriptionId = obj.id;
