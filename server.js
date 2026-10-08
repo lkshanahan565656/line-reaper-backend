@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1923,7 +1925,29 @@ function redactEv(rows) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.16.0', updated: new Date().toISOString() }));
+// The app itself. Served from here it talks to this same server, so one
+// deploy ships both and there's no backend URL to keep in sync.
+const APP_FILE = path.join(__dirname, 'public', 'index.html');
+let appHtml = null;
+function loadApp() {
+  if (appHtml) return appHtml;
+  try {
+    appHtml = fs.readFileSync(APP_FILE, 'utf8')
+      .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;');
+  } catch { appHtml = null; }
+  return appHtml;
+}
+app.get('/app', (req, res) => {
+  const html = loadApp();
+  if (!html) return res.status(404).send('App not bundled with this deploy');
+  res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+// Browsers opening the bare URL get the app; API clients (and the app's own
+// health check, which sends Accept: */*) still get the JSON status.
+app.get('/', (req, res) => {
+  if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
+  res.json({ status: 'Line Reaper backend running', version: '3.17.0', updated: new Date().toISOString() });
+});
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
@@ -2443,7 +2467,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.16.0',
+  version: '3.17.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2533,7 +2557,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.16.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.17.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
