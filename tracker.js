@@ -212,6 +212,7 @@ function createTracker({
           signalEv: p.bestEv, signalProb: p.prob, signalDecimal: legDecimal(book, p),
           modelPred: p.modelPred, rawPred: p.rawPred ?? null, predSource: p.predSource,
           confidence: p.confidence, sampleSize: p.sampleSize ?? null,
+          context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
@@ -374,6 +375,7 @@ function createTracker({
       byConfidence: groupBy(r => r.confidence || 'n/a'),
       byEv: groupBy(r => evBucket(r.signalEv)),
       bySource: groupBy(r => r.predSource || 'n/a'),
+      byContext: groupBy(r => r.context || 'none'),
       counts: {
         open: rows.filter(r => r.status === 'open').length,
         locked: rows.filter(r => r.status === 'locked').length,

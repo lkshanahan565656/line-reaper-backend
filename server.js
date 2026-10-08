@@ -209,7 +209,8 @@ async function scrapePrizePicks() {
         const player = players[proj.relationships?.new_player?.data?.id] || {};
         const sport = leagues[proj.relationships?.league?.data?.id] || attr.league || '';
         if (!attr.line_score) continue;
-        allLines.push({ book: 'prizepicks', sport, player: player.name || attr.description || '', team: player.team || '', market: attr.stat_type || '', line: parseFloat(attr.line_score), startTime: attr.start_time || '' });
+        allLines.push({ book: 'prizepicks', sport, player: player.name || attr.description || '', team: player.team || '', market: attr.stat_type || '', line: parseFloat(attr.line_score), startTime: attr.start_time || '',
+          matchTitle: player.name ? (attr.description || '') : '', gameId: attr.game_id || null });
       }
     }
     if (allLines.length > 0) {
@@ -246,10 +247,10 @@ function parseUnderdogPayload(data) {
     };
   }
   if (Array.isArray(data.games)) for (const g of data.games) {
-    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '' };
+    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
   }
   if (Array.isArray(data.solo_games)) for (const g of data.solo_games) {
-    soloGames[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '' };
+    soloGames[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
   }
   if (Array.isArray(data.appearances)) for (const a of data.appearances) {
     appearances[a.id] = { player_id: a.player_id, match_id: a.match_id || a.solo_game_id || null };
@@ -290,6 +291,8 @@ function parseUnderdogPayload(data) {
       market: appStat.display_stat || ou.title || '',
       line: parseFloat(line.stat_value || 0),
       startTime: game.startTime || '',
+      matchTitle: game.title || '',
+      gameId: matchId,
       overMultiplier: overMult,
       underMultiplier: underMult,
       multiplier: Math.max(overMult, underMult),
@@ -531,6 +534,11 @@ function calcBookEV(prob, book, mult = 1.00) {
   }
 }
 
+const {
+  matchContext, describeContext, mixtureProb, opponentFrom, createOddsBook, teamsMatch,
+} = require('./context');
+const { refreshRatings } = require('./ratings');
+
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (!ppLine || !modelPred || modelPred <= 0) return null;
   let k = getVarianceMultiplier(sport, propText);
@@ -550,7 +558,10 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 
   const std = Math.sqrt(modelPred * k);
   let prob;
-  if (side === 'UNDER') prob = _normalCDF(ppLine, modelPred, std);
+  const sc = opts.context?.scenarios;
+  if (sc && sc.length > 1 && opts.context.expMaps > 0) {
+    prob = mixtureProb(ppLine, side, sc, modelPred / opts.context.expMaps, k, _normalCDF);
+  } else if (side === 'UNDER') prob = _normalCDF(ppLine, modelPred, std);
   else prob = 1 - _normalCDF(ppLine, modelPred, std);
 
   return {
@@ -1322,6 +1333,20 @@ function normalizeMarket(m) {
   return `${stat}|${mapCount}`;
 }
 
+// ─── MATCH CONTEXT STATE ──────────────────────────────────────────────────────
+// Elo per sport from recent results (refreshed every 6h) + odds entered by hand.
+const ratingsState = { elo: {}, meta: {} };
+const oddsBook = createOddsBook();
+
+function spanToMapList(label, count) {
+  const m = String(label || '').match(/^(\d+)(?:-(\d+))?$/);
+  if (m) {
+    const a = parseInt(m[1]), b = m[2] ? parseInt(m[2]) : a;
+    if (b - a + 1 === count) return Array.from({ length: count }, (_, i) => a + i);
+  }
+  return Array.from({ length: count || 1 }, (_, i) => i + 1);
+}
+
 // ─── ESPORTS PICK GENERATION (UD-primary, PP as bonus) ────────────────────────
 const ES_TOKENS = ['CS','VAL','COD','CALL OF DUTY','DOTA','LOL','LEAGUE','ESPORT','CSGO','COUNTER','OVERWATCH','OW2','HALO','R6','RAINBOW','ROCKET'];
 function isEsports(s) {
@@ -1343,6 +1368,7 @@ async function generateEsportsPicks() {
     udMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = {
       line: l.line, overMultiplier: l.overMultiplier || 1.00, underMultiplier: l.underMultiplier || 1.00,
       market: l.market, sport: l.sport, player: l.player, team: l.team || '', startTime: l.startTime || '',
+      matchTitle: l.matchTitle || '',
       matched: false,
     };
   }
@@ -1355,6 +1381,7 @@ async function generateEsportsPicks() {
   const implausibleLines = [];
   const spanCounts = { inferred: 0 };
   let priceMismatches = 0;
+  const contextCounts = {};
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1371,7 +1398,7 @@ async function generateEsportsPicks() {
     let modelPred = esportsCache.manualPredictions[manualKey];
     if (modelPred == null) modelPred = manualNorm[`${normalizeName(lineObj.player)}|${normalizeMarket(lineObj.market)}`];
     let predSource = modelPred != null ? 'manual' : null;
-    let rawPred = null, sampleSize = null, spanInferred = null, statLine = null;
+    let rawPred = null, sampleSize = null, spanInferred = null, statLine = null, context = null;
 
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
@@ -1444,6 +1471,23 @@ async function generateEsportsPicks() {
         }
       }
 
+      // MATCH CONTEXT — scale per-map rate by the matchup and price the span
+      // by how many maps are actually likely to be played.
+      if (autoPred && plausible) {
+        const spanMaps = spanInferred ? spanInferred : mapCount;
+        const label = spanInferred ? `1-${spanInferred}` : parseMapSpan(lineObj.market).label;
+        const maps = spanToMapList(label, spanMaps);
+        const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
+          || (lineObj.matchTitle && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
+        context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps }, { oddsBook, elo: ratingsState.elo });
+        if (context) {
+          const perMap = autoPred / spanMaps;
+          autoPred = perMap * context.factor * context.expMaps;
+          rawPred = autoPred;
+          contextCounts[context.source] = (contextCounts[context.source] || 0) + 1;
+        } else contextCounts.none = (contextCounts.none || 0) + 1;
+      }
+
       // Never auto-model a line whose implied per-map rate is impossible
       autoPred = plausible ? anchorToMarket(autoPred, lineObj.line, sampleSize) : null;
 
@@ -1463,7 +1507,9 @@ async function generateEsportsPicks() {
         }
       }
     }
-    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine };
+    if (predSource !== 'auto') context = null;   // manual numbers are the user's own model
+    if (context) statLine = [statLine, describeContext(context)].filter(Boolean).join(' · ');
+    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context };
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
@@ -1480,6 +1526,11 @@ async function generateEsportsPicks() {
       spanInferred: g.spanInferred ?? null,
       displayMarket: g.spanInferred ? relabelMarket(base.market, g.spanInferred) : base.market,
       statLine: g.statLine ?? null,
+      context: g.context ? {
+        source: g.context.source, opponent: g.context.opponent, pMap: +g.context.pMap.toFixed(3),
+        pLastMap: +g.context.pLastMap.toFixed(3), expMaps: +g.context.expMaps.toFixed(2),
+        factor: +g.context.factor.toFixed(3), bestOf: g.context.bestOf,
+      } : null,
       edge: null, edgePct: null,
       manualKey,
       side: null, prob: null, ev: null,
@@ -1490,9 +1541,15 @@ async function generateEsportsPicks() {
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
 
-    const side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
+    const ctxOpts = { context: g.context || null };
+    let side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
+    if (g.context?.scenarios?.length > 1) {
+      // a 2-or-3-map mixture isn't symmetric: pick the side with the better probability
+      const over = calcEsportsEV(lineVal, modelPred, 'OVER', base.sport, base.market, ctxOpts);
+      if (over) side = over.prob >= 50 ? 'OVER' : 'UNDER';
+    }
     if (!side) return pick;
-    const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market);
+    const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market, ctxOpts);
     if (!r) return pick;
 
     pick.side = side;
@@ -1510,7 +1567,7 @@ async function generateEsportsPicks() {
       // UD's line can differ from PP's — price UD against ITS OWN line
       let udProb = r.prob;
       if (udm.line != null && udm.line !== lineVal) {
-        const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market);
+        const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market, ctxOpts);
         if (r2) udProb = r2.prob;
       }
       const udP = udPricing(udProb, udSideMult);
@@ -1549,7 +1606,7 @@ async function generateEsportsPicks() {
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
-    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime };
+    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle };
     const g = await getModelPred(base);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
   }
@@ -1559,6 +1616,7 @@ async function generateEsportsPicks() {
     console.warn(`Esports: ${implausibleLines.length} lines skipped as implausible (market string may be parsed wrong) e.g. ${implausibleLines[0]}`);
   } else esportsCache.implausible = [];
   esportsCache.spanInferred = spanCounts.inferred;
+  esportsCache.contextCounts = contextCounts;
   esportsCache.priceMismatches = priceMismatches;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
@@ -1676,7 +1734,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.10.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.11.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1937,6 +1995,25 @@ app.post('/api/history/record', (req, res) => {
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
+// ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
+// Enter a match price (e.g. from Pinnacle) so CS2/Valorant picks get context.
+// body: { sport, teamA, teamB, priceA, priceB, bestOf? }  American or decimal prices
+//    or { sport, teamA, teamB, pA, bestOf? }               series win prob for teamA
+// add perMap: true when the price is for a single map rather than the series.
+app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
+  try {
+    const row = oddsBook.set(req.body || {});
+    generateEsportsPicks().catch(() => {});
+    res.json({ ok: true, match: row });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/esports/match-odds', (req, res) => res.json({ matches: oddsBook.list() }));
+app.get('/api/esports/context', (req, res) => res.json({
+  ratings: ratingsState.meta,
+  picksWithContext: esportsCache.contextCounts || {},
+  manualMatches: oddsBook.list().length,
+}));
+
 // ── TRACK RECORD ──────────────────────────────────────────────────────────────
 app.get('/api/tracker/summary', async (req, res) => {
   try {
@@ -1967,7 +2044,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.10.0',
+  version: '3.11.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1986,6 +2063,7 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
@@ -1994,6 +2072,9 @@ app.get('/api/status', (req, res) => res.json({
 }));
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
+// Team ratings for match context, every 6 hours.
+cron.schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState).catch(() => {}));
+
 // Tracker: freeze started picks, then look for results (one sweep at a time).
 const trackerHealth = { lastRun: null, last: null, error: null };
 let trackerRunning = false;
@@ -2044,7 +2125,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.10.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.11.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2066,12 +2147,14 @@ if (require.main === module) {
     setTimeout(() => dotaLoadProPlayers().catch(()=>{}), 16000);
     // start filling CS profiles right away after a redeploy wipes the cache
     setTimeout(() => warmCsProfiles(20).catch(()=>{}), 20000);
+    // team ratings for match context, then rebuild picks with them
+    setTimeout(() => refreshRatings(axios, ratingsState).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
     console.log('Startup complete');
   });
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker,
+  app, cache, esportsCache, lolStats, tracker, ratingsState, oddsBook,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
