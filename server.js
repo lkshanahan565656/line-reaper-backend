@@ -538,6 +538,8 @@ const {
   matchContext, describeContext, mixtureProb, opponentFrom, createOddsBook, teamsMatch,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
+const { propProb } = require('./dist');
+const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (!ppLine || !modelPred || modelPred <= 0) return null;
@@ -556,18 +558,26 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
     k = Math.max(k * 0.5, 2.5);
   }
 
-  const std = Math.sqrt(modelPred * k);
-  let prob;
+  // Counts are priced as counts (negative binomial); fantasy points and any
+  // case the count model can't represent fall back to the normal curve.
   const sc = opts.context?.scenarios;
-  if (sc && sc.length > 1 && opts.context.expMaps > 0) {
-    prob = mixtureProb(ppLine, side, sc, modelPred / opts.context.expMaps, k, _normalCDF);
-  } else if (side === 'UNDER') prob = _normalCDF(ppLine, modelPred, std);
-  else prob = 1 - _normalCDF(ppLine, modelPred, std);
+  const scenarios = (sc && sc.length && opts.context.expMaps > 0) ? sc : [{ maps: 1, weight: 1 }];
+  const meanPerMap = scenarios.length > 1 || opts.context?.expMaps
+    ? modelPred / opts.context.expMaps
+    : modelPred;
+  const stat = /fantasy/i.test(propText || '') ? 'fantasy'
+    : /assist/i.test(propText || '') ? 'assists'
+    : /headshot/i.test(propText || '') ? 'headshots' : 'kills';
+  const r = propProb(ppLine, side, { meanPerMap, k, stat, scenarios });
+  const prob = r.effective;
 
   return {
     prob: prob * 100,
     confidence: prob > 0.62 ? 'HIGH' : prob > 0.56 ? 'MED' : 'LOW',
     varianceK: k,
+    model: r.model,
+    pushProb: r.push > 0 ? +(r.push * 100).toFixed(2) : 0,
+    meanPerMap, scenarios, stat,
   };
 }
 
@@ -1369,6 +1379,7 @@ async function generateEsportsPicks() {
       line: l.line, overMultiplier: l.overMultiplier || 1.00, underMultiplier: l.underMultiplier || 1.00,
       market: l.market, sport: l.sport, player: l.player, team: l.team || '', startTime: l.startTime || '',
       matchTitle: l.matchTitle || '',
+      gameId: l.gameId || null,
       matched: false,
     };
   }
@@ -1538,6 +1549,8 @@ async function generateEsportsPicks() {
       udMultiplier: null, sleeperMultiplier: null, udLine: udm ? udm.line : null,
       udRegime: null, udImplied: null, udFlag: null,
       bestBook: null, bestEv: null, bookEdge: null, confidence: null, varianceK: null,
+      model: null, pushProb: 0, gameId: base.gameId ?? null,
+      pricing: null,
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
 
@@ -1559,6 +1572,13 @@ async function generateEsportsPicks() {
     pick.edgePct = parseFloat(((modelPred - lineVal) / lineVal * 100).toFixed(1));
     pick.confidence = r.confidence;
     pick.varianceK = r.varianceK;
+    pick.model = r.model;
+    pick.pushProb = r.pushProb;
+    // everything a slip needs to re-price this leg inside a shared scenario
+    pick.pricing = {
+      line: lineVal, side, meanPerMap: r.meanPerMap, k: r.varianceK, stat: r.stat,
+      scenarios: r.scenarios.map(x => ({ maps: x.maps, weight: +x.weight.toFixed(4) })),
+    };
 
     if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
 
@@ -1606,7 +1626,7 @@ async function generateEsportsPicks() {
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
-    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle };
+    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId };
     const g = await getModelPred(base);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
   }
@@ -1734,7 +1754,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.11.0', updated: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.12.0', updated: new Date().toISOString() }));
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
@@ -1995,6 +2015,57 @@ app.post('/api/history/record', (req, res) => {
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
+// ── SLIP PRICING ──────────────────────────────────────────────────────────────
+// Legs from the same series share whether the last map is played, so pricing
+// them as independent overstates the entry. These endpoints price the real
+// thing. body: { legs: [{ player, market }] } referencing the current board,
+// or full leg objects.
+function legsFromBoard(input) {
+  const board = esportsCache.picks || [];
+  return (input || []).map(spec => {
+    if (spec.pricing || spec.prob != null) return spec;
+    const hit = board.find(p =>
+      normalizeName(p.player) === normalizeName(spec.player) &&
+      (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market)));
+    if (!hit || hit.prob == null) return null;
+    return {
+      player: hit.player, team: hit.team, gameId: hit.gameId, stat: hit.pricing?.stat,
+      side: hit.side, line: hit.pricing?.line, prob: hit.prob / 100,
+      meanPerMap: hit.pricing?.meanPerMap, k: hit.pricing?.k, scenarios: hit.pricing?.scenarios,
+      ev: hit.bestEv,
+    };
+  });
+}
+
+app.post('/api/esports/slip', (req, res) => {
+  const legs = legsFromBoard(req.body?.legs);
+  const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
+  if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
+  if (legs.length < 2) return res.status(400).json({ error: 'A slip needs at least 2 legs' });
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS) });
+});
+
+app.get('/api/esports/best-slips', (req, res) => {
+  const minEV = parseFloat(req.query.minEV);
+  const maxLegs = Math.min(parseInt(req.query.maxLegs) || 5, 6);
+  const sport = req.query.sport;
+  let pool = (esportsCache.picks || []).filter(p => p.pricing && p.bestEv != null);
+  if (sport) pool = pool.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
+  pool = pool.filter(p => p.bestEv >= (isFinite(minEV) ? minEV : 0))
+    .slice(0, 40)
+    .map(p => ({
+      player: p.player, team: p.team, gameId: p.gameId, sport: p.sport, market: p.displayMarket,
+      side: p.side, line: p.pricing.line, prob: p.prob / 100, ev: p.bestEv,
+      meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
+    }));
+  if (pool.length < 2) return res.json({ slips: [], pool: pool.length });
+  const slips = bestSlips(pool, { maxLegs }).map(s => ({
+    ...s,
+    picks: s.picks.map(p => ({ player: p.player, sport: p.sport, market: p.market, side: p.side, line: p.line, prob: +(p.prob * 100).toFixed(1), ev: p.ev })),
+  }));
+  res.json({ slips, pool: pool.length });
+});
+
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
 // Enter a match price (e.g. from Pinnacle) so CS2/Valorant picks get context.
 // body: { sport, teamA, teamB, priceA, priceB, bestOf? }  American or decimal prices
@@ -2044,7 +2115,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => res.json({
-  version: '3.11.0',
+  version: '3.12.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -2125,7 +2196,7 @@ cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoL
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.11.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.12.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
