@@ -866,7 +866,9 @@ test('pollTrades: signals, dedup across polls, consensus boost, SELL exits, new 
   assert.equal(s2.length, 1);
   assert.deepEqual(s2[0].consensus, [W(2), W(1)]);
   assert.equal(s2[0].isConsensus, true);
-  assert.equal(s2[0].units, units(true));
+  assert.equal(s2[0].target, units(true), 'consensus sizes it up...');
+  assert.deepEqual([s2[0].eventKey, s2[0].eventUnits, s2[0].units], ['ohio-senate', units(false), round2(3 - units(false))],
+    '...but followers already have W1\'s units on this event: 3u in all');
 
   // W1 sells out: an exit, and its vote no longer counts
   w.trades = [rawTrade(W(1), { side: 'SELL', price: 0.47, size: 2000, transactionHash: '0xsell', timestamp: Math.floor(t / 1000) }), ...w.trades];
@@ -887,6 +889,65 @@ test('pollTrades: signals, dedup across polls, consensus boost, SELL exits, new 
   const st = eng.state();
   assert.equal(st.signals, 4);
   assert.equal(st.lastPollAt, new Date(t).toISOString());
+});
+
+test('pollTrades: sharps on both sides of one market are not tailed twice; a hedge is not a pick; one game takes 3u at most', async () => {
+  const w = world();
+  for (const i of [1, 2, 3]) w.closed[W(i)] = politicsElite(W(i));
+  w.markets['0xm1'] = gammaMarket();
+  w.markets['0xm2'] = gammaMarket({ conditionId: '0xm2', question: 'Will X win the Ohio Senate election by 10+?', clobTokenIds: '["tok2-yes","tok2-no"]' });
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0 }, log: {} });
+  for (const i of [1, 2, 3]) eng.addCandidate(W(i));
+  await eng.scoreBatch(5);
+  const told = [];
+  const route = s => { told.push([s.wallet, s.asset, s.units]); return s.units; };
+  const at = () => Math.floor((t - 30e3) / 1000);
+
+  w.trades = [rawTrade(W(1), { timestamp: at() })];
+  const [a] = await eng.pollTrades({ route });
+  assert.ok(a.units > 0 && a.blocked === null && a.against.length === 0);
+
+  // W2 takes the other side an hour later: split one against one, nothing staked
+  t += 3600e3;
+  w.trades = [rawTrade(W(2), { asset: 'tok-no', outcome: 'No', outcomeIndex: 1, price: 0.58, transactionHash: '0xno', timestamp: at() })];
+  w.markets['0xm1'] = gammaMarket({ bestAsk: '0.42', outcomePrices: '["0.41","0.59"]' });
+  const [b] = await eng.pollTrades({ route });
+  assert.deepEqual([b.blocked, b.units, b.against], ['split', 0, [W(1)]]);
+  assert.match(b.reason, /graded sharps split: 1 on the other side/);
+
+  // a third sharp joins W1's side: two against one, so it's a pick again (inside what's left of the cap)
+  t += 600e3;
+  w.trades = [rawTrade(W(3), { transactionHash: '0xthird', timestamp: at() })];
+  const [c] = await eng.pollTrades({ route });
+  assert.deepEqual([c.blocked, c.against, c.isConsensus], [null, [W(2)], true]);
+  assert.equal(c.eventUnits, a.units);
+  assert.equal(c.units, Math.round(Math.min(c.target, 3 - a.units) * 100) / 100);
+
+  // W1 buys the other side of its own bet: a hedge
+  t += 600e3;
+  w.trades = [rawTrade(W(1), { asset: 'tok-no', outcome: 'No', outcomeIndex: 1, price: 0.58, transactionHash: '0xhedge', timestamp: at() })];
+  const [d] = await eng.pollTrades({ route });
+  assert.equal(d.blocked, 'split');
+  assert.match(d.reason, /hedge/);
+
+  // another market on the same race: the event is full
+  t += 600e3;
+  w.trades = [rawTrade(W(2), { conditionId: '0xm2', asset: 'tok2-yes', title: 'Will X win the Ohio Senate election by 10+?', transactionHash: '0xm2buy', timestamp: at() })];
+  const [e] = await eng.pollTrades({ route });
+  assert.equal(e.eventKey, 'ohio-senate');
+  assert.equal(e.eventUnits, 3);
+  assert.deepEqual([e.units, e.eventRoom], [0, 0]);
+  assert.match(e.reason, /already 3u on this event \(max 3u\)/);
+  assert.equal(Math.round(told.reduce((x, r) => x + r[2], 0) * 100) / 100, 3, 'followers were told 3u in all');
+
+  // a day later the cap has room again
+  t += 25 * 3600e3;
+  w.trades = [rawTrade(W(2), { conditionId: '0xm2', asset: 'tok2-yes', title: 'Will X win the Ohio Senate election by 10+?', transactionHash: '0xm2later', timestamp: at() })];
+  const [f] = await eng.pollTrades({ route });
+  assert.ok(f.units > 0 && f.eventUnits === 0);
+  // TAIL_MAX_EVENT_UNITS=0 turns the cap off
+  assert.equal(T.optionsFromEnv({ TAIL_MAX_EVENT_UNITS: '0' }).maxEventUnits, 0);
 });
 
 test('pollTrades: stale trades count for consensus but signal nothing; graded wallets\' own maker trades are read', async () => {
