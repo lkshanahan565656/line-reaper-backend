@@ -125,6 +125,8 @@ const DEFAULTS = {
   quoteTtlMs: 20e3,
   gammaStaleMs: 3600e3,          // a Gamma price not updated for this long is no price (the order book is the live one)
   maxSignals: 500,
+  holdingsMax: 50,               // open positions kept per graded wallet, for the Sharp Board
+  boardMinCost: 100,             // $ in a position before it counts on the Sharp Board
   clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
   clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
   clvWindowDays: 7,              // price history read up to the close...
@@ -931,6 +933,29 @@ function gradeStats(s, opts = {}, now = Date.now()) {
 // samples (clvOf), or nothing when not measured. A category with clvMinN
 // samples of its own is graded on them, otherwise on the wallet's. opts may
 // carry `now`.
+// A graded wallet's live positions, biggest first: what the Sharp Board adds
+// up. Settled or all-but-settled ones (priced 2¢ or less, 98¢ or more) are
+// left out: there's nothing left to tail.
+function holdingsOf(rows, { max = DEFAULTS.holdingsMax, minCost = 1 } = {}) {
+  return (rows || [])
+    .filter(r => r && r.conditionId && r.asset != null && r.size > 0 && !r.redeemable
+      && !(r.curPrice != null && (r.curPrice <= 0.02 || r.curPrice >= 0.98)))
+    .map(r => {
+      // what is still held: shares now × average price (a position's total
+      // cost also counts shares already sold)
+      const cost = r.price != null ? r.size * r.price : r.totalBought > 0 && r.cost != null ? r.cost * (r.size / r.totalBought) : null;
+      return {
+        conditionId: r.conditionId, asset: String(r.asset), outcome: r.outcome ?? null, outcomeIndex: r.outcomeIndex ?? null,
+        title: r.title || '', slug: r.slug || '', eventSlug: r.eventSlug || '', category: r.category || 'other',
+        size: round(r.size, 4), price: r.price != null ? round(r.price, 6) : cost != null ? round(cost / r.size, 6) : null,
+        cost: cost != null ? round(cost, 2) : null, curPrice: r.curPrice ?? null, endDate: r.endDate ?? null, enteredAt: r.enteredAt ?? null,
+      };
+    })
+    .filter(h => h.cost != null && h.cost >= minCost)
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, max);
+}
+
 function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null } = {}, { now = Date.now(), ...opts } = {}) {
   const o = resolveOptions(opts);
   const since = toMs(selectedAt);
@@ -970,6 +995,8 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
     reasons: g.reasons, failed: g.failed, whyNotA: g.whyNotA, failedA: g.failedA,
     ...presentStats(overall), categories,
     openPositions: stillOpen.length, openValue: round(stillOpen.reduce((a, r) => a + (r.currentValue || 0), 0), 2),
+    // only a wallet worth tailing keeps its book (the Sharp Board reads it)
+    ...(g.grade || Object.values(categories).some(c => c.grade) ? { holdings: holdingsOf(stillOpen, { max: o.holdingsMax }) } : {}),
     ...(Array.isArray(clv) ? { clvSamples: samples } : {}),
     selectedAt: iso(since), scoredAt: iso(now), rulesVersion: RULES_VERSION,
   };
@@ -1505,6 +1532,94 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     }
   }
 
+  // A graded wallet's trade after it was scored moves its book: a buy adds to
+  // (or opens) the position, a sell takes from it. Trades from before the
+  // score are already in the positions it was scored on.
+  function noteHolding(trader, tr) {
+    if (!Array.isArray(trader.holdings) || !tr.asset || !(tr.size > 0)) return;
+    const scored = toMs(trader.scoredAt);
+    if (scored != null && tr.at != null && tr.at <= scored) return;
+    const i = trader.holdings.findIndex(h => h.asset === String(tr.asset));
+    const h = i >= 0 ? trader.holdings[i] : null;
+    if (tr.side === 'BUY') {
+      if (h) {
+        h.size = round(h.size + tr.size, 4);
+        h.cost = round((h.cost || 0) + tr.notional, 2);
+        h.price = round(h.cost / h.size, 6);
+        h.curPrice = tr.price;
+      } else {
+        trader.holdings.push({
+          conditionId: tr.conditionId, asset: String(tr.asset), outcome: tr.outcome ?? null, outcomeIndex: tr.outcomeIndex ?? null,
+          title: tr.title || '', slug: tr.slug || '', eventSlug: tr.eventSlug || '', category: classify(tr),
+          size: round(tr.size, 4), price: tr.price, cost: round(tr.notional, 2), curPrice: tr.price, endDate: null, enteredAt: tr.at ?? now(),
+        });
+        if (trader.holdings.length > o.holdingsMax) trader.holdings.sort((a, b) => b.cost - a.cost).length = o.holdingsMax;
+      }
+    } else if (tr.side === 'SELL' && h) {
+      const left = h.size - tr.size;
+      if (left <= EPS) trader.holdings.splice(i, 1);
+      else { h.cost = round(h.cost * (left / h.size), 2); h.size = round(left, 4); h.curPrice = tr.price; }
+    }
+  }
+
+  // Where the graded wallets are positioned right now, market by market: the
+  // side with the most sharp weight (A counts twice), what they paid, what
+  // it costs now, and how much sharp money sits on the other side.
+  // → [{ conditionId, title, category, wallets, lead: { outcome, asset, wallets, A, B, cost, avgEntry, price, belowEntry, list }, against, agreement }]
+  function sharpBoard({ category = null, limit = 50, minCost = o.boardMinCost, minWallets = 1 } = {}) {
+    const t = now();
+    const markets = new Map();
+    for (const tr of traders.values()) {
+      if (tr.marketMaker || !Array.isArray(tr.holdings) || !tr.holdings.length) continue;
+      for (const h of tr.holdings) {
+        if (!(h.cost >= minCost - EPS) || !h.conditionId) continue;
+        const cat = h.category || 'other';
+        if (category && cat !== category) continue;
+        const g = gradeFor(tr, cat, o);
+        if (!g.grade) continue;
+        const q = quotes.get(h.conditionId);
+        const market = q && t - q.at < 10 * 60e3 ? q.market : null;
+        if (market && (market.closed || resolutionOf(market) != null)) continue;
+        let m = markets.get(h.conditionId);
+        if (!m) markets.set(h.conditionId, m = { conditionId: h.conditionId, title: h.title, slug: h.slug, eventSlug: h.eventSlug, category: cat, endDate: h.endDate, sides: new Map(), market });
+        let side = m.sides.get(h.asset);
+        if (!side) m.sides.set(h.asset, side = { outcome: h.outcome, outcomeIndex: h.outcomeIndex, asset: h.asset, list: [], cost: 0, size: 0, weight: 0, price: null, priceSeen: null });
+        side.list.push({ wallet: tr.wallet, name: tr.name || null, grade: g.grade, edge: g.edge ?? null, cost: h.cost, avgPrice: h.price });
+        side.cost += h.cost;
+        side.size += h.size;
+        side.weight += g.grade === 'A' ? 2 : 1;
+        if (h.curPrice != null) side.price = h.curPrice;
+      }
+    }
+    const rows = [];
+    for (const m of markets.values()) {
+      const sides = [...m.sides.values()].sort((a, b) => (b.weight - a.weight) || (b.cost - a.cost));
+      const lead = sides[0];
+      const wallets = new Set(sides.flatMap(x => x.list.map(w => w.wallet))).size;
+      if (lead.list.length < minWallets) continue;
+      const live = m.market ? liveAsk(m.market, null, lead, { now: t, opts: o }).price : null;
+      const price = inUnit(live) ? live : lead.price;
+      const avgEntry = lead.size > 0 ? round(lead.cost / lead.size, 4) : null;
+      const total = sides.reduce((a, x) => a + x.cost, 0);
+      const others = sides.slice(1);
+      rows.push({
+        conditionId: m.conditionId, title: m.title, slug: m.slug, eventSlug: m.eventSlug, category: m.category, endDate: m.endDate, wallets,
+        lead: {
+          outcome: lead.outcome, outcomeIndex: lead.outcomeIndex, asset: lead.asset, wallets: lead.list.length,
+          A: lead.list.filter(w => w.grade === 'A').length, B: lead.list.filter(w => w.grade === 'B').length,
+          cost: round(lead.cost, 2), avgEntry, price: price ?? null, priceSource: inUnit(live) ? 'gamma' : 'positions',
+          belowEntry: price != null && avgEntry != null && price <= avgEntry + EPS,
+          list: lead.list.sort((a, b) => b.cost - a.cost),
+        },
+        against: { wallets: others.reduce((a, x) => a + x.list.length, 0), cost: round(others.reduce((a, x) => a + x.cost, 0), 2) },
+        agreement: total > 0 ? round(lead.cost / total, 4) : null,
+        score: round(lead.weight - others.reduce((a, x) => a + x.weight, 0), 2),
+      });
+    }
+    rows.sort((a, b) => (b.score - a.score) || (b.lead.wallets - a.lead.wallets) || (b.lead.cost - a.lead.cost));
+    return rows.slice(0, Math.max(0, limit));
+  }
+
   // the token's live book, cached like the market; null when it can't be read
   async function bookFor(asset) {
     if (asset == null) return null;
@@ -1615,6 +1730,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      noteHolding(trader, tr);
       if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
       const age = tr.at == null ? 0 : t - tr.at;
       const held = `${tr.wallet}|${tr.asset}`;
@@ -1685,7 +1801,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   return {
-    refreshCandidates, scoreBatch, pollTrades, ingest, traders: listTraders, trader: w => traders.get(lower(w)) || null,
+    refreshCandidates, scoreBatch, pollTrades, ingest, sharpBoard, traders: listTraders, trader: w => traders.get(lower(w)) || null,
     signals, state, settings: () => o, addCandidate, ready: () => loaded,
   };
 }
@@ -1695,7 +1811,7 @@ module.exports = {
   resolveOptions, optionsFromEnv, classify,
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
-  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, parseBook, fetchBook, liveAsk, CLOB_API,
+  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, gradeFor, trueProb, sizeAt, tradeSignal,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,

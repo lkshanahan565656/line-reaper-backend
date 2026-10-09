@@ -923,6 +923,68 @@ test('ingest: live-feed trades signal at once, share the poll\'s dedup, and skip
   assert.deepEqual(await eng.ingest(null), []);
 });
 
+// one live v2 position
+const openPos = (wallet, { cond = '0xboard', idx = 0, shares, p, cur = p, title = 'Will Smith win the Ohio Senate election?', sold = 0 } = {}) => ({
+  proxy_wallet: wallet, token_id: `${cond}-t${idx}`, condition_id: cond, current_size: shares, total_size: shares + sold, avg_price: String(p),
+  total_cost_usdc: String((shares + sold) * p), current_price: cur, status: 'OPEN', title, slug: 'ohio-m', event_slug: 'ohio-senate',
+  outcome: idx ? 'No' : 'Yes', outcome_index: idx, end_date: '2026-11-04T00:00:00Z', first_entry_at: new Date(NOW - 5 * DAY).toISOString(),
+});
+
+test('holdingsOf: what is still held, biggest first; settled and nearly settled ones are left out', () => {
+  const rows = T.parseOpenPositions([
+    openPos(W(1), { shares: 5000, p: 0.4, sold: 5000 }),            // half sold: $2,000 still in
+    openPos(W(1), { cond: '0xb', shares: 100, p: 0.5 }),
+    openPos(W(1), { cond: '0xc', shares: 1000, p: 0.9, cur: 0.99 }),   // all but won
+    openPos(W(1), { cond: '0xd', shares: 0, p: 0.5 }),
+  ]);
+  const h = T.holdingsOf(rows);
+  assert.deepEqual(h.map(x => [x.conditionId, x.cost, x.price, x.size]), [['0xboard', 2000, 0.4, 5000], ['0xb', 50, 0.5, 100]]);
+  assert.equal(h[0].category, 'politics');
+  assert.equal(T.holdingsOf(rows, { max: 1 }).length, 1);
+});
+
+test('the Sharp Board: graded wallets\' positions by market, the side with the most sharp weight first, kept live by their trades', async () => {
+  const w = world();
+  for (const i of [1, 2, 3]) w.closed[W(i)] = politicsElite(W(i));
+  w.open[W(1)] = [openPos(W(1), { shares: 5000, p: 0.4, cur: 0.38 }), openPos(W(1), { cond: '0xsmall', shares: 100, p: 0.5 })];
+  w.open[W(2)] = [openPos(W(2), { shares: 2500, p: 0.4, cur: 0.38 })];
+  w.open[W(3)] = [openPos(W(3), { idx: 1, shares: 1000, p: 0.6, cur: 0.62 })];
+  w.closed[W(9)] = sportsBad(W(9));
+  w.open[W(9)] = [openPos(W(9), { shares: 90000, p: 0.4 })];   // not graded: doesn't count
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0 }, log: {} });
+  for (const i of [1, 2, 3, 9]) eng.addCandidate(W(i));
+  await eng.scoreBatch(4);
+  assert.equal(eng.trader(W(1)).grade, 'A');
+  assert.equal(eng.trader(W(9)).holdings, undefined, 'an ungraded wallet keeps no book');
+
+  const [row, ...rest] = eng.sharpBoard();
+  assert.equal(rest.length, 0, 'a $50 position is under the $100 floor');
+  assert.equal(row.conditionId, '0xboard');
+  assert.equal(row.category, 'politics');
+  assert.equal(row.wallets, 3);
+  assert.deepEqual([row.lead.outcome, row.lead.wallets, row.lead.A, row.lead.B, row.lead.cost, row.lead.avgEntry, row.lead.price, row.lead.belowEntry],
+    ['Yes', 2, 2, 0, 3000, 0.4, 0.38, true]);
+  assert.deepEqual(row.lead.list.map(x => [x.wallet, x.cost]), [[W(1), 2000], [W(2), 1000]], 'biggest first');
+  assert.deepEqual(row.against, { wallets: 1, cost: 600 });
+  assert.equal(row.agreement, Math.round((3000 / 3600) * 1e4) / 1e4);
+  assert.deepEqual(eng.sharpBoard({ category: 'sports' }), []);
+  assert.deepEqual(eng.sharpBoard({ minWallets: 3 }), []);
+
+  // a trade from before the score is already in it; later ones move the book
+  await eng.ingest(T.parseTrades([rawTrade(W(2), { conditionId: '0xboard', asset: '0xboard-t0', side: 'SELL', size: 2500, price: 0.38, transactionHash: '0xold' })]));
+  assert.equal(eng.sharpBoard()[0].lead.wallets, 2);
+  t += 60e3;
+  await eng.ingest(T.parseTrades([rawTrade(W(2), { conditionId: '0xboard', asset: '0xboard-t0', side: 'SELL', size: 2500, price: 0.38, transactionHash: '0xout', timestamp: Math.floor(t / 1000) })]));
+  const after = eng.sharpBoard()[0];
+  assert.deepEqual([after.lead.outcome, after.lead.wallets, after.lead.cost], ['Yes', 1, 2000], 'W2 sold out');
+  await eng.ingest(T.parseTrades([rawTrade(W(3), { conditionId: '0xboard', asset: '0xboard-t1', outcome: 'No', outcomeIndex: 1, size: 5000, price: 0.62, transactionHash: '0xmore', timestamp: Math.floor(t / 1000) })]));
+  const flipped = eng.sharpBoard()[0];
+  assert.deepEqual([flipped.lead.outcome, flipped.lead.cost, flipped.against.wallets], ['No', 3700, 1], 'W3 doubled down: No leads on money, both A');
+  await eng.ingest(T.parseTrades([rawTrade(W(1), { conditionId: '0xnew', asset: '0xnew-t0', title: 'Will Jones win the Iowa Senate election?', size: 1000, price: 0.3, transactionHash: '0xnew', timestamp: Math.floor(t / 1000) })]));
+  assert.ok(eng.sharpBoard().some(r => r.conditionId === '0xnew' && r.lead.cost === 300), 'a new position shows up at once');
+});
+
 test('traders() filters by grade and category; scores persist in a store', async () => {
   const w = world();
   w.closed[W(1)] = [...politicsElite(W(1)), ...sportsBad(W(1))];   // A in politics only

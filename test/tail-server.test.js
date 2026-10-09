@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.23.2');
+  assert.equal(body.version, '3.24.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.23.2');
-  assert.equal((await get('/')).body.version, '3.23.2');
+  assert.equal(require('../package.json').version, '3.24.0');
+  assert.equal((await get('/')).body.version, '3.24.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -922,7 +922,8 @@ test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing,
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   assert.match(html, /showTab\('tail',this\)">🐋 SHARP TAIL</);
   assert.match(html, /id="page-tail"/);
-  for (const v of ['signals', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  for (const v of ['signals', 'board', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  assert.match(html, /\/api\/tail\/board\?limit=100/);
   assert.match(html, /addEventListener\(type, m => \{ try \{ tailOnLive\(type/);
   assert.match(html, /localStorage\.setItem\('lr_tail'/);
   // the same sizing for everyone: no bankroll input, no units turned into dollars, no ?bankroll= re-split
@@ -964,4 +965,47 @@ test('the live feed: a trade the socket pushes is a signal at once, logged and b
   assert.equal(body.tail.stream.running, false, 'the socket only opens when the server is started for real');
   assert.equal(body.tail.stream.connects, 0);
   assert.ok(body.tail.lastStreamAt);
+});
+
+test('the Sharp Board: Pro sees the wallets on each side, free the top rows with wallets masked', async () => {
+  const pro = (await get('/api/tail/board', PRO)).body;
+  const row = pro.rows.find(r => r.title === 'Will Smith win the Ohio Senate election?' && r.lead.list.some(w => w.wallet === W1) && r.lead.cost >= 6000);
+  assert.ok(row, 'the A wallet\'s live $6,000 buy is a position on the board');
+  assert.equal(row.lead.outcome, 'Yes');
+  assert.equal(row.lead.A, 1);
+  assert.ok(Array.isArray(row.venues));
+  assert.equal(pro.pro, true);
+  assert.equal(pro.locked, 0);
+  const free = (await get('/api/tail/board')).body;
+  assert.ok(free.rows.length <= 3);
+  assert.equal(free.locked, Math.max(0, pro.rows.length - 3));
+  for (const r of free.rows) {
+    assert.equal(r.locked, true);
+    assert.equal(r.conditionId, null);
+    for (const w of r.lead.list) { assert.match(w.wallet, /^0x1a••••$/); assert.equal(w.cost, null); }
+  }
+  assert.deepEqual((await get('/api/tail/board?category=crypto', PRO)).body.rows, []);
+  assert.ok((await get('/api/tail/board?category=sports', PRO)).body.rows.every(r => r.category === 'sports'));
+  // the traders list doesn't carry every graded wallet's whole book
+  const tr = (await get('/api/tail/traders', PRO)).body.traders.find(t => t.wallet === W1);
+  assert.equal(tr.holdings, undefined);
+});
+
+test('the webhook: a sized B entry pings too; an unsized one does not', async () => {
+  const base = S.tailEngine.signals({ type: 'entry' })[0];
+  assert.ok(base);
+  const real = S.tailEngine.ingest;
+  let next = [];
+  S.tailEngine.ingest = async () => next;
+  try {
+    posts.length = 0;
+    next = [{ ...base, id: 'b-sized', grade: 'B', units: 0.8, target: 0.8, parentId: null, topUp: false, isConsensus: false, venue: null, venues: [] }];
+    await S.streamTail([]);
+    assert.equal(posts.length, 1);
+    assert.match(posts[0].body.content, /B-grade/);
+    posts.length = 0;
+    next = [{ ...base, id: 'b-zero', grade: 'B', units: 0, target: 0, parentId: null, topUp: false, isConsensus: false, venue: null, venues: [] }];
+    await S.streamTail([]);
+    assert.equal(posts.length, 0, '0u: on the feed, not pinged');
+  } finally { S.tailEngine.ingest = real; }
 });

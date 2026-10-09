@@ -2286,6 +2286,9 @@ function routeTail(s) {
   tailRouting.lastAt = new Date().toISOString();
   return tailUnits(s);
 }
+// The webhook gets every new A entry and consensus, and B entries that are
+// sized somewhere (TAIL_PING_B=off: A and consensus only).
+const TAIL_PING_B = !/^(off|0|false|no)$/i.test(String(process.env.TAIL_PING_B || '').trim());
 async function pollTail() {
   const primed = tailPolled;
   const fresh = await publishTail(await tailEngine.pollTrades({ route: routeTail }), primed);
@@ -2303,7 +2306,7 @@ async function publishTail(signals, primed) {
     let logged = false;
     try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
     if (logged || primed) fresh.push(s);
-    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus)) ping.push(s);
+    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0))) ping.push(s);
   }
   if (fresh.length) broadcast('tail', fresh);
   // the webhook can reach other people: Polymarket wallets only with that
@@ -2501,7 +2504,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.23.2', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.24.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2647,11 +2650,41 @@ app.get('/api/tail/traders', (req, res) => {
   const list = lic.polymarket ? tailEngine.traders({ category, grade, limit: Math.min(parseInt(req.query.limit) || 100, 500) }) : [];
   const st = tailEngine.state();
   res.json(regionSafe({
-    traders: pro ? list : list.map(maskTrader), pro, category, grade,
+    traders: pro ? list.map(({ holdings, ...t }) => t) : list.map(maskTrader), pro, category, grade,
     state: { candidates: st.candidates, scored: st.scored, pending: st.pending, graded: st.graded, lastScoreAt: st.lastScoreAt },
     ...withheldBody(withheldOf(lic, ['polymarket'])),
   }));
 });
+// The Sharp Board: markets where graded wallets hold a position now, the side
+// with the most sharp weight first, with where a US bettor can take that side.
+// Pro: wallets and venue prices. Free: the top rows, wallets masked, the rest
+// counted as locked. ?category=politics&limit=50
+const BOARD_FREE_ROWS = 3;
+function boardVenues(row, lic, now = Date.now()) {
+  let quotes = [];
+  try {
+    quotes = xarb.venueQuotes({ type: 'entry', conditionId: row.conditionId, asset: row.lead.asset, outcome: row.lead.outcome, outcomeIndex: row.lead.outcomeIndex, market: row.title },
+      xarbState.venues, { ...XARB_OPTS, now });
+  } catch (e) { console.warn('Board venues:', e.message); }
+  return quotes.filter(v => lic.kalshi || v.key !== 'kalshi').sort((a, b) => a.cost - b.cost)
+    .map(v => ({ key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, american: v.american ?? null, pick: v.pick || null, url: v.url || null, warning: v.warning || null }));
+}
+app.get('/api/tail/board', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const category = tail.CATEGORIES.includes(req.query.category) ? req.query.category : null;
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const rows = lic.polymarket ? tailEngine.sharpBoard({ category, limit }) : [];
+  const now = Date.now();
+  const full = rows.map(r => ({ ...r, venues: boardVenues(r, lic, now) }));
+  const mask = r => ({ ...r, conditionId: null, lead: { ...r.lead, asset: null, list: r.lead.list.map(w => ({ grade: w.grade, wallet: maskWallet(w.wallet), name: null, cost: null })) }, locked: true });
+  const st = tailEngine.state();
+  res.json(regionSafe({
+    rows: pro ? full : full.slice(0, BOARD_FREE_ROWS).map(mask), locked: pro ? 0 : Math.max(0, full.length - BOARD_FREE_ROWS), pro, category,
+    graded: st.graded, scored: st.scored, pending: st.pending, updated: new Date(now).toISOString(),
+    ...withheldBody(withheldOf(lic, ['polymarket'])),
+  }));
+});
+
 // One wallet's full score, its recent signals and their record (Pro: a
 // wallet's grade is what's being sold).
 app.get('/api/tail/trader/:wallet', requirePro, async (req, res) => {
@@ -3219,7 +3252,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.23.2',
+  version: '3.24.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3336,7 +3369,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.23.2 on port ${PORT}`);
+    console.log(`Line Reaper v3.24.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
