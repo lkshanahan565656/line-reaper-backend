@@ -176,23 +176,46 @@ function createTracker({
   if (!store) throw new Error('createTracker: store required');
   let ready = store.init();
 
+  // One tracked row per player/market/match. Keyed on the book's game id when
+  // there is one, else on the UTC day, so a rescheduled start doesn't spawn a
+  // second row. (Older rows used the exact start time; they still match by day.)
+  function pickBase(p) {
+    return `${sportKey(p.sport)}|${normalizeName(p.player)}|${normalizeMarket(p.market)}`;
+  }
+  function utcDay(startTime) {
+    const ms = startTime ? new Date(startTime).getTime() : NaN;
+    return isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : 'nostart';
+  }
   function pickId(p) {
-    const start = p.startTime ? new Date(p.startTime).toISOString() : 'nostart';
-    return `${sportKey(p.sport)}|${normalizeName(p.player)}|${normalizeMarket(p.market)}|${start}`;
+    if (p.gameId != null && p.gameId !== '') return `${pickBase(p)}|g:${p.gameId}`;
+    return `${pickBase(p)}|d:${utcDay(p.startTime)}`;
+  }
+  // Existing row for this pick: same game id, or (when either side has no game
+  // id) same base on the same UTC day.
+  function findExisting(rows, p) {
+    const base = pickBase(p), hasGid = p.gameId != null && p.gameId !== '';
+    const day = utcDay(p.startTime);
+    let byDay = null;
+    for (const r of rows) {
+      if (pickBase(r) !== base) continue;
+      const rGid = r.gameId != null && r.gameId !== '';
+      if (hasGid && rGid) { if (String(r.gameId) === String(p.gameId)) return r; continue; }
+      if (!byDay && utcDay(r.startTime) === day) byDay = r;
+    }
+    return byDay;
   }
 
   // Called after every board refresh with the full pick list.
   async function recordBoard(picks) {
     await ready;
-    const existing = new Map((await store.all()).map(p => [p.id, p]));
+    const existing = await store.all();
     const t = now();
     let created = 0, updated = 0;
     for (const p of picks || []) {
       if (!p || !p.player || !p.startTime) continue;
       const startMs = new Date(p.startTime).getTime();
       if (!isFinite(startMs) || startMs <= t) continue;          // started: frozen
-      const id = pickId(p);
-      const row = existing.get(id);
+      const row = findExisting(existing, p);
       const line = p.ppLine ?? p.udLine;
       const qualifies = p.side && p.bestEv != null && p.bestEv >= minEv && line != null;
 
@@ -201,8 +224,8 @@ function createTracker({
         const span = parseMapSpan(p.displayMarket || p.market);
         const book = p.bestBook || (p.lineSource === 'ud' ? 'UD' : 'PP');
         const signalLine = book === 'UD' && p.udLine != null ? p.udLine : line;
-        await store.put({
-          id, status: 'open',
+        const fresh = {
+          id: pickId(p), status: 'open', gameId: p.gameId ?? null,
           sport: sportKey(p.sport), player: p.player, team: p.team || '',
           market: p.market, displayMarket: p.displayMarket || p.market,
           stat: statKind(p.market), maps: spanToMaps(span.label),
@@ -212,15 +235,20 @@ function createTracker({
           signalEv: p.bestEv, signalProb: p.prob, signalDecimal: legDecimal(book, p),
           modelPred: p.modelPred, rawPred: p.rawPred ?? null, predSource: p.predSource,
           confidence: p.confidence, sampleSize: p.sampleSize ?? null,
+          context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
-        });
+        };
+        await store.put(fresh);
+        existing.push(fresh);
         created++;
       } else if (row.status === 'open') {
         const closeLine = row.signalBook === 'UD' && p.udLine != null ? p.udLine : line;
         if (closeLine == null) continue;
         Object.assign(row, {
+          startTime: new Date(startMs).toISOString(),   // follow reschedules
+          ...(row.gameId == null && p.gameId != null ? { gameId: p.gameId } : {}),
           closeLine, closeSide: p.side || row.closeSide, closeEv: p.bestEv ?? row.closeEv,
           closeAt: new Date(t).toISOString(),
           clv: lineClv(row.signalSide, row.signalLine, closeLine),
@@ -263,10 +291,20 @@ function createTracker({
   async function gradeDue({ limit = 25 } = {}) {
     await ready;
     const t = now();
+    // Rows we can't grade only need a slot once they're due to move to review,
+    // so they don't starve the sports that do have a grader.
+    let parked = 0;
     const due = (await store.all())
-      .filter(r => r.status === 'locked' && t - new Date(r.startTime).getTime() >= gradeAfterMs)
+      .filter(r => {
+        if (r.status !== 'locked') return false;
+        const age = t - new Date(r.startTime).getTime();
+        if (age < gradeAfterMs) return false;
+        if ((graders[r.sport] && r.stat !== 'fantasy') || age >= giveUpAfterMs) return true;
+        parked++;
+        return false;
+      })
       .slice(0, limit);
-    const out = { graded: 0, review: 0, waiting: 0, errors: 0 };
+    const out = { graded: 0, review: 0, waiting: parked, errors: 0 };
     for (const row of due) {
       const grader = graders[row.sport];
       const age = t - new Date(row.startTime).getTime();
@@ -374,6 +412,7 @@ function createTracker({
       byConfidence: groupBy(r => r.confidence || 'n/a'),
       byEv: groupBy(r => evBucket(r.signalEv)),
       bySource: groupBy(r => r.predSource || 'n/a'),
+      byContext: groupBy(r => r.context || 'none'),
       counts: {
         open: rows.filter(r => r.status === 'open').length,
         locked: rows.filter(r => r.status === 'locked').length,

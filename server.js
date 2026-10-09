@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,7 +18,19 @@ if (!OWLS_API_KEY) console.warn('OWLS_API_KEY is not set: Owls feeds will fail a
 const OWLS_HEADERS = { 'X-API-Key': OWLS_API_KEY };
 
 app.use(cors({ origin: '*' }));
+
+// Stripe signs the raw bytes, so this one route must see the body before
+// express.json parses it. Registered first for that reason.
+app.post('/api/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  let event;
+  try { event = verifyWebhook(req.body, req.get('stripe-signature'), process.env.STRIPE_WEBHOOK_SECRET); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+  try { res.json({ received: true, result: await billing.handleEvent(event) }); }
+  catch (e) { console.error('Billing webhook failed:', e.message); res.status(500).json({ error: 'handler failed' }); }
+});
+
 app.use(express.json());
+app.use((req, res, next) => auth.attach()(req, res, next));
 
 // ─── CACHE ────────────────────────────────────────────────────────────────────
 let cache = {
@@ -49,9 +63,19 @@ function inSeasonSports() {
   return s;
 }
 
+// Low-usage mode for small Odds API plans (see quota.js).
+const { createCreditBudget, oddsCost } = require('./quota');
+const oddsBudget = createCreditBudget({
+  setting: process.env.ODDS_API_BUDGET || '', resetDay: parseInt(process.env.ODDS_API_RESET_DAY) || 1,
+});
+// Player props cost a credit per market per game, far more than a small plan
+// has, so low-usage mode skips them unless ODDS_API_PROPS=on.
+const propsAllowed = () => !oddsBudget.active() || /^(1|on|true|yes)$/i.test(process.env.ODDS_API_PROPS || '');
+
 function noteQuota(res) {
   const rem = res?.headers?.['x-requests-remaining'];
   if (rem != null) cache.quotaRemaining = parseFloat(rem);
+  if (res?.headers) oddsBudget.noteHeaders(res.headers);
 }
 
 // ─── ODDS API PROP MARKETS ────────────────────────────────────────────────────
@@ -88,6 +112,7 @@ async function fetchOddsApiProps(sportKey) {
       params: { apiKey: ODDS_API_KEY }, timeout: 10000
     });
     noteQuota(eventsRes);
+    if (!propsAllowed()) return cache.oddsApiProps[sportKey]?.data || [];
     const events = eventsRes.data || [];
     if (!events.length) return [];
 
@@ -209,7 +234,8 @@ async function scrapePrizePicks() {
         const player = players[proj.relationships?.new_player?.data?.id] || {};
         const sport = leagues[proj.relationships?.league?.data?.id] || attr.league || '';
         if (!attr.line_score) continue;
-        allLines.push({ book: 'prizepicks', sport, player: player.name || attr.description || '', team: player.team || '', market: attr.stat_type || '', line: parseFloat(attr.line_score), startTime: attr.start_time || '' });
+        allLines.push({ book: 'prizepicks', sport, player: player.name || attr.description || '', team: player.team || '', market: attr.stat_type || '', line: parseFloat(attr.line_score), startTime: attr.start_time || '',
+          matchTitle: player.name ? (attr.description || '') : '', gameId: attr.game_id || null });
       }
     }
     if (allLines.length > 0) {
@@ -246,10 +272,10 @@ function parseUnderdogPayload(data) {
     };
   }
   if (Array.isArray(data.games)) for (const g of data.games) {
-    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '' };
+    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
   }
   if (Array.isArray(data.solo_games)) for (const g of data.solo_games) {
-    soloGames[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '' };
+    soloGames[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
   }
   if (Array.isArray(data.appearances)) for (const a of data.appearances) {
     appearances[a.id] = { player_id: a.player_id, match_id: a.match_id || a.solo_game_id || null };
@@ -290,6 +316,8 @@ function parseUnderdogPayload(data) {
       market: appStat.display_stat || ou.title || '',
       line: parseFloat(line.stat_value || 0),
       startTime: game.startTime || '',
+      matchTitle: game.title || '',
+      gameId: matchId,
       overMultiplier: overMult,
       underMultiplier: underMult,
       multiplier: Math.max(overMult, underMult),
@@ -369,6 +397,7 @@ async function fetchOwlsOdds(sport) {
       if (cache.sharpMoves.length > 500) cache.sharpMoves = cache.sharpMoves.slice(0, 500);
     }
     cache.owlsOdds[sport] = { data: games, updated: new Date().toISOString() };
+    ingestSharp(sport, games);
     return games;
   } catch(e) { noteOwlsError(e, `Owls odds ${sport}`); return cache.owlsOdds[sport]?.data || null; }
 }
@@ -387,6 +416,7 @@ async function fetchOwlsSplits(sport) {
 // (4 sports × 3 markets × every 3 min). The frontend fetches its own odds
 // directly, so nothing needs this on a timer. Kept as an on-request route.
 async function fetchOddsForSport(sport) {
+  if (!oddsBudget.take(oddsCost('h2h,spreads,totals', 'us')).ok) return cache.odds[sport]?.data || [];
   try {
     const res = await axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
       params: { apiKey: ODDS_API_KEY, regions: 'us', markets: 'h2h,spreads,totals', oddsFormat: 'american' }, timeout: 10000
@@ -531,6 +561,77 @@ function calcBookEV(prob, book, mult = 1.00) {
   }
 }
 
+const {
+  matchContext, describeContext, mixtureProb, opponentFrom, createOddsBook, teamsMatch,
+} = require('./context');
+const { refreshRatings } = require('./ratings');
+const { propProb } = require('./dist');
+const { priceAll, bestSlips, PAYOUTS } = require('./slip');
+const { createAlerter } = require('./alerts');
+const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
+const { createBilling, verifyWebhook } = require('./billing');
+const evScreen = require('./ev');
+const exchanges = require('./exchanges');
+const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
+// Every flagged +EV price is logged and graded on closing-line value.
+const evTracker = createEvTracker({ store: createEvStoreFromEnv(), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
+
+// Sharp money: every odds poll is diffed per book. Steam (3+ books move the
+// same way within minutes), sharp leads (Pinnacle/Circa/exchanges move while
+// soft books sit still) and reverse line moves against public betting.
+const sharpTracker = createSharpTracker();
+const SHORT_SPORT = { basketball_nba: 'nba', baseball_mlb: 'mlb', icehockey_nhl: 'nhl', americanfootball_nfl: 'nfl', mma_mixed_martial_arts: 'mma', basketball_ncaab: 'ncaab', americanfootball_ncaaf: 'ncaaf' };
+const sharpListeners = new Set();
+function ingestSharp(sport, games) {
+  if (!Array.isArray(games) || !games.length) return [];
+  let fresh;
+  try { fresh = sharpTracker.ingest(SHORT_SPORT[sport] || sport, games); } catch (e) { console.warn('Sharp tracker:', e.message); return []; }
+  const loud = fresh.filter(e => e.kind !== 'move');
+  if (loud.length) for (const fn of sharpListeners) { try { fn(loud); } catch { /* keep going */ } }
+  const ping = loud.filter(e => e.kind === 'steam' || e.kind === 'sharp_lead');
+  if (ping.length && process.env.ALERT_WEBHOOK_URL && process.env.SHARP_WEBHOOK !== 'off') {
+    axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: ping.slice(0, 10).map(e => '⚡ ' + describeSharp(e)).join('\n') }, { timeout: 10000 })
+      .catch(e => console.warn('Sharp alerts: webhook failed:', e.message));
+  }
+  return fresh;
+}
+// Owls splits arrive per game; reshape to { 'Away @ Home': { market: { side: {...} } } }.
+// Field names are guessed from the splits route's use in the app, so unknown shapes yield nothing.
+function splitsMap() {
+  const out = {};
+  for (const c of Object.values(cache.splits || {})) {
+    for (const g of Array.isArray(c?.data) ? c.data : []) {
+      if (!g?.home_team || !g?.away_team) continue;
+      const m = g.splits || g.markets || g.betting_splits;
+      if (m && typeof m === 'object') out[`${g.away_team} @ ${g.home_team}`] = m;
+    }
+  }
+  return out;
+}
+
+// ─── ACCOUNTS + BILLING ───────────────────────────────────────────────────────
+// AUTH_SECRET signs login tokens. Without it, a random one is used and every
+// restart logs everyone out, which is fine locally and wrong in production.
+const AUTH_SECRET = process.env.AUTH_SECRET || require('crypto').randomBytes(32).toString('hex');
+if (!process.env.AUTH_SECRET) console.warn('AUTH_SECRET is not set: logins will not survive a restart.');
+const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET });
+const billing = createBilling({
+  http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
+  store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
+});
+// PAYWALL=on turns the gates on. Off by default so a deploy never locks you out.
+const PAYWALL = /^(1|on|true|yes)$/i.test(process.env.PAYWALL || '');
+
+// New edges and line moves, pushed to the app (server-sent events) and, when
+// ALERT_WEBHOOK_URL is set, to a Discord-compatible webhook.
+const alerter = createAlerter({
+  minEv: process.env.ALERT_MIN_EV != null ? parseFloat(process.env.ALERT_MIN_EV) : undefined,
+  send: process.env.ALERT_WEBHOOK_URL
+    ? body => axios.post(process.env.ALERT_WEBHOOK_URL, body, { timeout: 10000 })
+    : null,
+});
+
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   if (!ppLine || !modelPred || modelPred <= 0) return null;
   let k = getVarianceMultiplier(sport, propText);
@@ -548,15 +649,26 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
     k = Math.max(k * 0.5, 2.5);
   }
 
-  const std = Math.sqrt(modelPred * k);
-  let prob;
-  if (side === 'UNDER') prob = _normalCDF(ppLine, modelPred, std);
-  else prob = 1 - _normalCDF(ppLine, modelPred, std);
+  // Counts are priced as counts (negative binomial); fantasy points and any
+  // case the count model can't represent fall back to the normal curve.
+  const sc = opts.context?.scenarios;
+  const scenarios = (sc && sc.length && opts.context.expMaps > 0) ? sc : [{ maps: 1, weight: 1 }];
+  const meanPerMap = scenarios.length > 1 || opts.context?.expMaps
+    ? modelPred / opts.context.expMaps
+    : modelPred;
+  const stat = /fantasy/i.test(propText || '') ? 'fantasy'
+    : /assist/i.test(propText || '') ? 'assists'
+    : /headshot/i.test(propText || '') ? 'headshots' : 'kills';
+  const r = propProb(ppLine, side, { meanPerMap, k, stat, scenarios });
+  const prob = r.effective;
 
   return {
     prob: prob * 100,
     confidence: prob > 0.62 ? 'HIGH' : prob > 0.56 ? 'MED' : 'LOW',
     varianceK: k,
+    model: r.model,
+    pushProb: r.push > 0 ? +(r.push * 100).toFixed(2) : 0,
+    meanPerMap, scenarios, stat,
   };
 }
 
@@ -1322,6 +1434,51 @@ function normalizeMarket(m) {
   return `${stat}|${mapCount}`;
 }
 
+// ─── MATCH CONTEXT STATE ──────────────────────────────────────────────────────
+// Elo per sport from recent results (refreshed every 6h) + odds entered by hand.
+const ratingsState = { elo: {}, meta: {} };
+const oddsBook = createOddsBook();
+
+// ── EXTRA DATA FEEDS (feeds.js) ──
+// PandaScore: CS2/CoD/Valorant ratings, best-of schedule, CS2/VAL/CoD grading.
+// Pinnacle guest API: sharp esports match prices for context (check its terms
+// before charging for a product built on it).
+const { createPandaScoreClient, fetchPinnacleEsports, loadMatchPrices } = require('./feeds');
+const panda = process.env.PANDASCORE_TOKEN ? createPandaScoreClient(axios, process.env.PANDASCORE_TOKEN) : null;
+const feedState = {
+  pandascore: { enabled: !!panda, schedules: {}, updated: null, errors: {} },
+  pinnacle: { enabled: !!process.env.PINNACLE_GUEST_KEY, matches: 0, loaded: 0, updated: null, error: null },
+};
+
+async function refreshMatchFeeds() {
+  if (panda) {
+    for (const sport of ['CS', 'VAL', 'COD', 'LOL', 'DOTA']) {
+      try { feedState.pandascore.schedules[sport] = await panda.upcoming(sport); delete feedState.pandascore.errors[sport]; }
+      catch (e) { feedState.pandascore.errors[sport] = `${e.response?.status || ''} ${e.message}`.trim(); }
+    }
+    feedState.pandascore.updated = new Date().toISOString();
+  }
+  if (feedState.pinnacle.enabled) {
+    try {
+      const prices = await fetchPinnacleEsports(axios, process.env.PINNACLE_GUEST_KEY);
+      feedState.pinnacle.matches = prices.length;
+      feedState.pinnacle.loaded = loadMatchPrices(oddsBook, prices, feedState.pandascore.schedules);
+      feedState.pinnacle.updated = new Date().toISOString();
+      feedState.pinnacle.error = null;
+    } catch (e) { feedState.pinnacle.error = `${e.response?.status || ''} ${e.message}`.trim(); }
+  }
+}
+const ratingsOpts = { panda };
+
+function spanToMapList(label, count) {
+  const m = String(label || '').match(/^(\d+)(?:-(\d+))?$/);
+  if (m) {
+    const a = parseInt(m[1]), b = m[2] ? parseInt(m[2]) : a;
+    if (b - a + 1 === count) return Array.from({ length: count }, (_, i) => a + i);
+  }
+  return Array.from({ length: count || 1 }, (_, i) => i + 1);
+}
+
 // ─── ESPORTS PICK GENERATION (UD-primary, PP as bonus) ────────────────────────
 const ES_TOKENS = ['CS','VAL','COD','CALL OF DUTY','DOTA','LOL','LEAGUE','ESPORT','CSGO','COUNTER','OVERWATCH','OW2','HALO','R6','RAINBOW','ROCKET'];
 function isEsports(s) {
@@ -1343,6 +1500,8 @@ async function generateEsportsPicks() {
     udMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = {
       line: l.line, overMultiplier: l.overMultiplier || 1.00, underMultiplier: l.underMultiplier || 1.00,
       market: l.market, sport: l.sport, player: l.player, team: l.team || '', startTime: l.startTime || '',
+      matchTitle: l.matchTitle || '',
+      gameId: l.gameId || null,
       matched: false,
     };
   }
@@ -1355,6 +1514,7 @@ async function generateEsportsPicks() {
   const implausibleLines = [];
   const spanCounts = { inferred: 0 };
   let priceMismatches = 0;
+  const contextCounts = {};
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1371,7 +1531,7 @@ async function generateEsportsPicks() {
     let modelPred = esportsCache.manualPredictions[manualKey];
     if (modelPred == null) modelPred = manualNorm[`${normalizeName(lineObj.player)}|${normalizeMarket(lineObj.market)}`];
     let predSource = modelPred != null ? 'manual' : null;
-    let rawPred = null, sampleSize = null, spanInferred = null, statLine = null;
+    let rawPred = null, sampleSize = null, spanInferred = null, statLine = null, context = null;
 
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
@@ -1444,6 +1604,23 @@ async function generateEsportsPicks() {
         }
       }
 
+      // MATCH CONTEXT — scale per-map rate by the matchup and price the span
+      // by how many maps are actually likely to be played.
+      if (autoPred && plausible) {
+        const spanMaps = spanInferred ? spanInferred : mapCount;
+        const label = spanInferred ? `1-${spanInferred}` : parseMapSpan(lineObj.market).label;
+        const maps = spanToMapList(label, spanMaps);
+        const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
+          || (lineObj.matchTitle && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
+        context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps }, { oddsBook, elo: ratingsState.elo });
+        if (context) {
+          const perMap = autoPred / spanMaps;
+          autoPred = perMap * context.factor * context.expMaps;
+          rawPred = autoPred;
+          contextCounts[context.source] = (contextCounts[context.source] || 0) + 1;
+        } else contextCounts.none = (contextCounts.none || 0) + 1;
+      }
+
       // Never auto-model a line whose implied per-map rate is impossible
       autoPred = plausible ? anchorToMarket(autoPred, lineObj.line, sampleSize) : null;
 
@@ -1463,7 +1640,9 @@ async function generateEsportsPicks() {
         }
       }
     }
-    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine };
+    if (predSource !== 'auto') context = null;   // manual numbers are the user's own model
+    if (context) statLine = [statLine, describeContext(context)].filter(Boolean).join(' · ');
+    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context };
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
@@ -1480,6 +1659,11 @@ async function generateEsportsPicks() {
       spanInferred: g.spanInferred ?? null,
       displayMarket: g.spanInferred ? relabelMarket(base.market, g.spanInferred) : base.market,
       statLine: g.statLine ?? null,
+      context: g.context ? {
+        source: g.context.source, opponent: g.context.opponent, pMap: +g.context.pMap.toFixed(3),
+        pLastMap: +g.context.pLastMap.toFixed(3), expMaps: +g.context.expMaps.toFixed(2),
+        factor: +g.context.factor.toFixed(3), bestOf: g.context.bestOf,
+      } : null,
       edge: null, edgePct: null,
       manualKey,
       side: null, prob: null, ev: null,
@@ -1487,12 +1671,20 @@ async function generateEsportsPicks() {
       udMultiplier: null, sleeperMultiplier: null, udLine: udm ? udm.line : null,
       udRegime: null, udImplied: null, udFlag: null,
       bestBook: null, bestEv: null, bookEdge: null, confidence: null, varianceK: null,
+      model: null, pushProb: 0, gameId: base.gameId ?? null,
+      pricing: null,
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
 
-    const side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
+    const ctxOpts = { context: g.context || null };
+    let side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
+    if (g.context?.scenarios?.length > 1) {
+      // a 2-or-3-map mixture isn't symmetric: pick the side with the better probability
+      const over = calcEsportsEV(lineVal, modelPred, 'OVER', base.sport, base.market, ctxOpts);
+      if (over) side = over.prob >= 50 ? 'OVER' : 'UNDER';
+    }
     if (!side) return pick;
-    const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market);
+    const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market, ctxOpts);
     if (!r) return pick;
 
     pick.side = side;
@@ -1502,6 +1694,13 @@ async function generateEsportsPicks() {
     pick.edgePct = parseFloat(((modelPred - lineVal) / lineVal * 100).toFixed(1));
     pick.confidence = r.confidence;
     pick.varianceK = r.varianceK;
+    pick.model = r.model;
+    pick.pushProb = r.pushProb;
+    // everything a slip needs to re-price this leg inside a shared scenario
+    pick.pricing = {
+      line: lineVal, side, meanPerMap: r.meanPerMap, k: r.varianceK, stat: r.stat,
+      scenarios: r.scenarios.map(x => ({ maps: x.maps, weight: +x.weight.toFixed(4) })),
+    };
 
     if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
 
@@ -1510,7 +1709,7 @@ async function generateEsportsPicks() {
       // UD's line can differ from PP's — price UD against ITS OWN line
       let udProb = r.prob;
       if (udm.line != null && udm.line !== lineVal) {
-        const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market);
+        const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market, ctxOpts);
         if (r2) udProb = r2.prob;
       }
       const udP = udPricing(udProb, udSideMult);
@@ -1549,7 +1748,7 @@ async function generateEsportsPicks() {
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
-    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime };
+    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId };
     const g = await getModelPred(base);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
   }
@@ -1559,6 +1758,7 @@ async function generateEsportsPicks() {
     console.warn(`Esports: ${implausibleLines.length} lines skipped as implausible (market string may be parsed wrong) e.g. ${implausibleLines[0]}`);
   } else esportsCache.implausible = [];
   esportsCache.spanInferred = spanCounts.inferred;
+  esportsCache.contextCounts = contextCounts;
   esportsCache.priceMismatches = priceMismatches;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
@@ -1567,6 +1767,7 @@ async function generateEsportsPicks() {
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
+  alerter.onBoard(picks).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
@@ -1660,12 +1861,71 @@ async function dotaAccountId(playerName) {
 
 const tracker = createTracker({
   store: createStoreFromEnv(),
-  graders: { LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId) },
+  graders: {
+    LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId),
+    ...(panda ? { CS: panda.grader('CS'), VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
+  },
   normalizeName, normalizeMarket, parseMapSpan,
 });
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
+
+// Paid features. With the paywall off, everyone is treated as a subscriber.
+// The admin token always counts, so the owner never needs a subscription.
+function isAdmin(req) {
+  const admin = process.env.TRACKER_ADMIN_TOKEN;
+  return !!admin && req.get('x-admin-token') === admin;
+}
+function hasPro(req) {
+  if (!PAYWALL) return true;
+  if (isAdmin(req)) return true;
+  return isPro(req.user);
+}
+
+// Data licences. Polymarket's terms give a personal licence and Kalshi's data
+// terms are personal and non-commercial, so showing either to other people
+// needs the owner's written permission, flagged with POLYMARKET_DISPLAY_OK /
+// KALSHI_DISPLAY_OK (default off). With the paywall on (other people using
+// it) a source whose flag is off is shown to the admin only, and everyone
+// else gets a short note instead. The paywall off is the owner using it
+// himself: everything shows. Flags are read per request, so a test (or a
+// redeploy with new env) needs no restart.
+const LICENCE_NOTE = 'waiting on data permission';
+const envOn = k => /^(1|on|true|yes)$/i.test(String(process.env[k] || '').trim());
+function licenceFor({ paywall = PAYWALL, admin = false } = {}) {
+  const open = !paywall || admin;
+  return { polymarket: open || envOn('POLYMARKET_DISPLAY_OK'), kalshi: open || envOn('KALSHI_DISPLAY_OK') };
+}
+const licenceOf = req => licenceFor({ paywall: PAYWALL, admin: isAdmin(req) });
+// what /api/status and /api/tail/settings report: the flags, what the public
+// gets, and what this viewer gets
+function licenceState(req) {
+  const pub = licenceFor({ paywall: PAYWALL, admin: false }), you = licenceOf(req);
+  const show = ok => (ok ? 'shown' : 'admin only');
+  return {
+    paywall: PAYWALL, polymarketDisplayOk: envOn('POLYMARKET_DISPLAY_OK'), kalshiDisplayOk: envOn('KALSHI_DISPLAY_OK'),
+    polymarket: show(pub.polymarket), kalshi: show(pub.kalshi), viewer: you, note: pub.polymarket && pub.kalshi ? null : LICENCE_NOTE,
+  };
+}
+function requirePro(req, res, next) {
+  if (hasPro(req)) return next();
+  res.status(req.user ? 402 : 401).json({
+    error: req.user ? 'This needs a Line Reaper Pro subscription' : 'Log in to use this',
+    upgrade: !!req.user,
+  });
+}
+// Free users still see the board, with the actual picks on +EV lines hidden,
+// so they can see how much they're missing.
+function redactForFree(picks) {
+  return picks.map(p => (p.bestEv != null && p.bestEv > 0)
+    ? { ...p, side: null, prob: null, modelPred: null, rawPred: null, edge: null, edgePct: null,
+        ppEv: null, udEv: null, bestEv: null, ev: null, pricing: null, statLine: null, context: null,
+        // these give the side or the size of the edge away too
+        udMultiplier: null, udImplied: null, udRegime: null, udFlag: null, confidence: null, bestBook: null,
+        bookEdge: null, pushProb: null, model: null, overMultiplier: null, underMultiplier: null, locked: true }
+    : p);
+}
 
 // Writes (manual grading) need TRACKER_ADMIN_TOKEN, sent as the x-admin-token header.
 function requireAdmin(req, res, next) {
@@ -1675,23 +1935,827 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ─── +EV SCREENER ─────────────────────────────────────────────────────────────
+// Scores every cached sportsbook price against devigged sharp prices. Runs on
+// odds the backend already pulls (Owls every 30s, Odds API props every 30 min),
+// so it spends no extra Odds API credits.
+const EV_SPORTS = { nba: 'basketball_nba', mlb: 'baseball_mlb', nhl: 'icehockey_nhl', nfl: 'americanfootball_nfl', mma: 'mma_mixed_martial_arts' };
+let evCache = { at: 0, rows: [], feeds: [] };
+// Kalshi and Polymarket prices, refreshed every minute and attached to the
+// matching games as two more books (prices include Kalshi's taker fee).
+const exchangeState = { rows: [], errors: [], updated: null };
+async function refreshExchanges() {
+  // through the polite per-host queue (createPoliteHttp, below)
+  const [k, p] = await Promise.all([
+    exchanges.fetchKalshi(upstream, { seriesTickers: (process.env.KALSHI_SERIES || '').split(',').filter(Boolean).length ? process.env.KALSHI_SERIES.split(',') : undefined }),
+    exchanges.fetchPolymarket(upstream, { tags: (process.env.POLYMARKET_TAGS || '').split(',').filter(Boolean).length ? process.env.POLYMARKET_TAGS.split(',') : undefined }),
+  ]);
+  exchangeState.rows = [...k.rows, ...p.rows];
+  exchangeState.errors = [...k.errors, ...p.errors];
+  exchangeState.updated = new Date().toISOString();
+}
+const EXCHANGE_OPTS = { polymarketFeeRate: parseFloat(process.env.POLYMARKET_FEE_RATE) || 0, kalshiFeeRate: process.env.KALSHI_FEE_RATE != null ? parseFloat(process.env.KALSHI_FEE_RATE) : 0.07 };
+function evFeeds() {
+  const feeds = [];
+  const add = (sport, label, c) => {
+    if (!Array.isArray(c?.data) || !c.data.length) return;
+    // game-line feeds get the exchange books attached
+    const games = /odds$/.test(label) && exchangeState.rows.length ? exchanges.attachExchanges(c.data, exchangeState.rows, { ...EXCHANGE_OPTS, league: sport }) : c.data;
+    feeds.push({ sport, label, games, updated: c.updated || null });
+  };
+  for (const [s, key] of Object.entries(EV_SPORTS)) {
+    add(s, 'owls-odds', cache.owlsOdds[s]);
+    add(s, 'owls-props', cache.owlsProps[s]);
+    add(s, 'oddsapi-odds', cache.odds[key] || cache.odds[s]);
+    add(s, 'oddsapi-props', cache.oddsApiProps[key]);
+  }
+  return feeds;
+}
+// Re-scored right after every odds poll (see the crons), so the board is
+// never older than the newest odds. New edges stream to the app and webhook.
+const EV_ALERT_MIN = process.env.EV_ALERT_MIN != null ? parseFloat(process.env.EV_ALERT_MIN) : 3;
+const evListeners = new Set();
+const evSeen = new Map();
+let evRecent = [];
+function runEvScreen(force = false) {
+  if (!force && Date.now() - evCache.at < 30000) return evCache;
+  const feeds = evFeeds();
+  const dfsLines = [...(cache.prizepicks.data || []), ...(cache.underdog.data || [])].filter(l => !isEsports(l.sport));
+  const fairs = new Map();
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs });
+  const prev = evCache.at ? evCache.rows : null;
+  evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
+  evTracker.recordBoard(rows, fairs).catch(e => console.warn('EV tracker:', e.message));
+  // the first screen after a restart only primes the diff
+  if (prev) {
+    const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen });
+    if (fresh.length) {
+      evRecent = [...fresh, ...evRecent].slice(0, 200);
+      for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
+      // the webhook can reach other people: it gets what the public may see
+      const posted = fresh.filter(evRowOk(webhookLicence()));
+      if (process.env.ALERT_WEBHOOK_URL && posted.length) {
+        const lines = posted.slice(0, 10).map(evScreen.describeEv);
+        if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
+        axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: lines.join('\n') }, { timeout: 10000 })
+          .catch(e => console.warn('EV alerts: webhook failed:', e.message));
+      }
+    }
+  } else {
+    for (const r of rows) if (r.ev >= EV_ALERT_MIN) evSeen.set(evScreen.rowKey(r), Date.now());
+  }
+  return evCache;
+}
+function redactEv(rows) {
+  return rows.map(r => ({ sport: r.sport, event: r.event, start: r.start, market: r.market, dfs: !!r.dfs, prop: !!r.player,
+    source: r.source, sharpBooks: r.sharpBooks, locked: true }));
+}
+// +EV rows a viewer may see: a Kalshi book needs the Kalshi licence; a
+// Polymarket book needs its licence and never shows in US mode
+const evRowOk = lic => r => (r?.book !== 'kalshi' || lic.kalshi) && (r?.book !== 'polymarket' || (lic.polymarket && TAIL_REGION !== 'us'));
+// a webhook post can reach other people, so it gets the public's licences
+const webhookLicence = () => licenceFor({ paywall: PAYWALL, admin: false });
+
+// ─── SHARP TAIL ───────────────────────────────────────────────────────────────
+// Following the money on the exchanges, all from free keyless public APIs:
+//   tail.js       which Polymarket wallets have a provable edge; their new bets
+//                 become signals sized in units at the price you can get now
+//   tailtrack.js  every sized signal, graded when its market resolves
+//   whales.js     big prints: Kalshi flow (anonymous) and Polymarket trades
+//                 tagged with the wallet's grade
+//   xarb.js       arbs across Kalshi, Polymarket and the sportsbooks
+// New signals, whales and arbs go out on /api/ev/stream as `tail`, `whale` and
+// `xarb` events. Sized A-grade and consensus signals, and arbs of
+// XARB_ALERT_MIN % or more, also go to ALERT_WEBHOOK_URL.
+//
+// TAIL_REGION=us (the default): US persons can't trade on Polymarket
+// International, so arbs only use Kalshi and US sportsbooks, every signal is
+// routed to the best US venue for the same proposition (Kalshi, or the team's
+// moneyline at a US book), and nothing links to polymarket.com. intl keeps
+// round 1's venues. Sizing is the same for everyone: units (1u = 1% of
+// bankroll), never dollars from anyone's bankroll.
+const tail = require('./tail');
+const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv } = require('./tailtrack');
+const whales = require('./whales');
+const xarb = require('./xarb');
+const { createFileStore: createDocFileStore } = require('./evtrack');
+
+// Kalshi, Polymarket's data API and Gamma are free, so be polite: one queue
+// per host that starts at most one request every UPSTREAM_GAP_MS (default
+// 1s). Identical GETs that are in flight or were answered in the last few
+// seconds share one response (the tail engine and the whale watcher both read
+// the same recent-trades page every 30s).
+function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+  const nextAt = new Map();   // host → when the next request may start
+  const shared = new Map();   // url + params → { promise, doneAt }
+  const stats = { requests: 0, shared: 0, failed: 0, byHost: {} };
+  const keyOf = (url, params) => `${url}?${JSON.stringify(Object.entries(params || {})
+    .filter(([, v]) => v !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))}`;
+  const hostOf = url => { try { return new URL(url).host; } catch { return ''; } };
+  return {
+    get(url, cfg = {}) {
+      const t = now();
+      for (const [k, v] of shared) if (v.doneAt != null && t - v.doneAt > shareMs) shared.delete(k);
+      const key = keyOf(url, cfg.params);
+      const hit = shared.get(key);
+      if (hit) { stats.shared++; return hit.promise; }
+      const host = hostOf(url);
+      const start = Math.max(t, nextAt.get(host) ?? 0);
+      nextAt.set(host, start + gapMs);
+      const entry = { doneAt: null };
+      entry.promise = (async () => {
+        if (start > t) await sleep(start - t);
+        stats.requests++;
+        stats.byHost[host] = (stats.byHost[host] || 0) + 1;
+        return get(url, cfg);
+      })();
+      entry.promise.then(() => { entry.doneAt = now(); }, () => { stats.failed++; if (shared.get(key) === entry) shared.delete(key); });
+      shared.set(key, entry);
+      return entry.promise;
+    },
+    // backlogMs: how long a request to that host made now would wait
+    stats() {
+      const t = now();
+      return { gapMs, ...stats, byHost: { ...stats.byHost }, backlogMs: Object.fromEntries([...nextAt].map(([h, at]) => [h, Math.max(0, Math.round(at - t))])) };
+    },
+  };
+}
+const UPSTREAM_GAP_MS = Number.isFinite(parseFloat(process.env.UPSTREAM_GAP_MS)) ? Math.max(0, parseFloat(process.env.UPSTREAM_GAP_MS)) : 1000;
+// axios.get is looked up on every call, so tests can stub it after this file loads
+const upstream = createPoliteHttp((url, cfg) => axios.get(url, cfg), { gapMs: UPSTREAM_GAP_MS });
+
+// Scores survive restarts (scoring every candidate again takes hours of
+// polite requests): Postgres table tail_traders with DATABASE_URL, otherwise
+// the TAIL_TRADERS_FILE JSON file.
+function createTraderStoreFromEnv(env = process.env) {
+  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(__dirname, 'data', 'tail-traders.json'));
+  const { Pool } = require('pg');
+  const pool = new Pool({
+    connectionString: env.DATABASE_URL,
+    ssl: /localhost|127\.0\.0\.1|\.railway\.internal/.test(env.DATABASE_URL) ? false : { rejectUnauthorized: false },
+  });
+  return {
+    kind: 'postgres',
+    async init() { await pool.query('CREATE TABLE IF NOT EXISTS tail_traders (id TEXT PRIMARY KEY, doc JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())'); },
+    async all() { return (await pool.query('SELECT doc FROM tail_traders')).rows.map(r => r.doc); },
+    async put(tr) {
+      await pool.query(`INSERT INTO tail_traders (id, doc, updated_at) VALUES ($1, $2, now())
+        ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`, [tr.id || tr.wallet, tr]);
+    },
+  };
+}
+
+// Thresholds come from TAIL_* (see .env.example), e.g. TAIL_MIN_TRADE, TAIL_A_MIN_Z.
+const tailEngine = tail.createTailEngine({ http: upstream, store: createTraderStoreFromEnv(), opts: tail.optionsFromEnv() });
+const tailTracker = createTailTracker({ store: createTailStoreFromEnv(), http: upstream });
+tailTracker.ready().catch(e => console.error('Tail tracker: store failed to initialise:', e.message));
+
+const TAIL_REGION = xarb.regionFromEnv();   // 'us' | 'intl'
+const XARB_OPTS = xarb.optsFromEnv();          // carries the region too
+const XARB_ALERT_MIN = Number.isFinite(parseFloat(process.env.XARB_ALERT_MIN)) ? parseFloat(process.env.XARB_ALERT_MIN) : 1;
+const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is news again
+const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false }, kalshiTitles: new Map(),
+  venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
+const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
+
+const whaleWatcher = whales.createWhaleWatcher({
+  http: upstream, opts: whales.optionsFromEnv(),
+  // a wallet tail.js has scored: its grade in that market's category
+  gradeOf: (wallet, trade) => {
+    const tr = tailEngine.trader(wallet);
+    return tr ? { grade: tail.gradeFor(tr, tail.classify(trade), tailEngine.settings()).grade, name: tr.name } : null;
+  },
+  // Kalshi trades carry only a ticker; the arb scan knows every open market's title
+  kalshiInfo: ticker => xarbState.kalshiTitles.get(ticker) || null,
+});
+
+// /api/ev/stream subscribers: fn(eventType, data)
+const liveListeners = new Set();
+function broadcast(type, data) {
+  for (const fn of liveListeners) { try { fn(type, data); } catch { /* keep going */ } }
+}
+// One Discord-style post of up to 10 lines. TAIL_WEBHOOK=off stops these.
+function postAlert(lines, what) {
+  if (!lines.length || !process.env.ALERT_WEBHOOK_URL || process.env.TAIL_WEBHOOK === 'off') return null;
+  const out = lines.slice(0, 10);
+  if (lines.length > 10) out.push(`…and ${lines.length - 10} more`);
+  return axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: out.join('\n').slice(0, 1900) }, { timeout: 10000 })
+    .catch(e => console.warn(`${what}: webhook failed:`, e.message));
+}
+const cents = p => (p == null ? '—' : `${Math.round(p * 1000) / 10}¢`);
+const dollars = x => `$${Math.round(x || 0).toLocaleString('en-US')}`;
+const shortWallet = w => (w ? `${w.slice(0, 6)}…${w.slice(-4)}` : '?');
+const american = a => (a == null ? '—' : a > 0 ? `+${a}` : String(a));
+
+// ── US mode: no polymarket.com links ──
+// Any string that is a polymarket.com URL becomes null, however deep. Only
+// links: the data API and image hosts aren't pages anyone is sent to.
+const PM_LINK = /^https?:\/\/(?:www\.)?polymarket\.com(?:[/?#]|$)/i;
+function stripPolymarketLinks(x) {
+  if (typeof x === 'string') return PM_LINK.test(x) ? null : x;
+  if (Array.isArray(x)) return x.map(stripPolymarketLinks);
+  if (!x || typeof x !== 'object') return x;
+  const out = {};
+  for (const [k, v] of Object.entries(x)) out[k] = stripPolymarketLinks(v);
+  return out;
+}
+const regionSafe = x => (TAIL_REGION === 'us' ? stripPolymarketLinks(x) : x);
+
+// ── where to tail ──
+// Each new entry signal gets every venue quote for the same proposition
+// (xarb.venueQuotes over the last arb scan), each sized with tail.sizeAt at
+// that venue's price and fee, and the one with the most units as `venue`
+// (ties: cheaper). No venue in US mode: venue null, "watch only". A top-up
+// only adds what the venue's size is above the units already signalled.
+const NO_VENUE = TAIL_REGION === 'us' ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
+const r2u = x => Math.round(x * 100) / 100;
+function sizeQuote(s, v) {
+  const q = Number(s.q ?? s.prob);
+  let z = null;
+  if (typeof tail.sizeAt === 'function' && q > 0 && q < 1) {
+    try {
+      z = tail.sizeAt({ q, price: v.price, feePerContract: v.fee || 0, grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, opts: tailEngine.settings() });
+    } catch (e) { console.warn('Tail venue sizing:', e.message); }
+  }
+  let units = Number.isFinite(z?.units) ? z.units : 0;
+  // a top-up adds only what this venue's size is above what was already
+  // signalled (the engine remembers that from the venue it was sent to)
+  const before = Number(s.priorUnits) > 0 ? Number(s.priorUnits) : 0;
+  if (before > 0) units = Math.max(0, r2u(units - before));
+  return { ...v, units, kelly: z?.kelly ?? null, maxPrice: z?.maxPrice ?? null };
+}
+const venueView = v => (v ? { key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, ...(v.american != null ? { american: v.american } : {}),
+  units: v.units, kelly: v.kelly, maxPrice: v.maxPrice, pick: v.pick ?? null, ...(v.side ? { side: v.side } : {}), url: v.url || null,
+  ...(v.warning ? { warning: v.warning } : {}) } : null);
+// the routing of recent signals by id, in case the engine hands back copies
+const routedSignals = new Map();
+function routeSignal(s, { index = xarbState.venues, now = Date.now() } = {}) {
+  if (!s || s.type !== 'entry') return s;
+  let quotes = [];
+  try { quotes = xarb.venueQuotes(s, index, { ...XARB_OPTS, now }); } catch (e) { console.warn('Tail venues:', e.message); }
+  const venues = quotes.map(v => sizeQuote(s, v));
+  venues.sort((a, b) => (b.units - a.units) || (a.cost - b.cost) || (a.price - b.price));
+  s.venues = venues.map(venueView);
+  s.venue = venueView(xarb.pickVenue(venues));
+  if (s.id) {
+    routedSignals.delete(s.id);
+    routedSignals.set(s.id, { venue: s.venue, venues: s.venues });
+    while (routedSignals.size > 2000) routedSignals.delete(routedSignals.keys().next().value);
+  }
+  return s;
+}
+// A viewer without the Kalshi licence gets the best venue that isn't Kalshi.
+function venueFor(sig, lic) {
+  const s = sig && !('venue' in sig) && routedSignals.has(sig.id) ? { ...sig, ...routedSignals.get(sig.id) } : sig;
+  if (s?.type !== 'entry' || lic.kalshi || !Array.isArray(s.venues) || !s.venues.some(v => v.key === 'kalshi')) return s;
+  const venues = s.venues.filter(v => v.key !== 'kalshi');
+  return { ...s, venues, venue: xarb.pickVenue(venues), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
+}
+// "Tail at Kalshi 55¢ · 1.25u · don't pay above 58¢" (a book's price in American odds too)
+function venueLine(s) {
+  const v = s.venue;
+  if (!v) return NO_VENUE;
+  const book = v.american != null;
+  const max = v.maxPrice == null ? '—' : book ? `${cents(v.maxPrice)} (${american(evScreen.probToAmerican(v.maxPrice))})` : cents(v.maxPrice);
+  return `Tail at ${v.name} ${book ? american(v.american) : cents(v.price)} · ${v.units}u · don't pay above ${max}`;
+}
+// <url> stops Discord unfurling a preview card under every line. US mode
+// links the venue, never polymarket.com.
+function describeTail(s) {
+  const who = `${s.grade}-grade ${s.name || shortWallet(s.wallet)}`;
+  const where = `${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})`;
+  const url = TAIL_REGION === 'us' ? (s.venue?.url && !PM_LINK.test(s.venue.url) ? s.venue.url : null) : s.url;
+  const link = url ? ` <${url}>` : '';
+  if (s.type === 'exit') return `🚪 ${who} sold ${where}${link}`;
+  const size = s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
+  return `🐋 ${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
+}
+const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
+function describeArb(a) {
+  const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
+  const note = a.exhaustive === false ? ' · NOT PROVEN EXHAUSTIVE' : '';
+  return `♻️ Arb +${a.profitPct}%${note}: ${a.title} · ${legs}${a.warnings?.length ? ` · ⚠ ${a.warnings.join('; ')}` : ''}`;
+}
+
+// Each cron job's last run and error, for /api/status.
+const tailJobs = {};
+async function runTailJob(name, fn) {
+  const j = tailJobs[name] ||= { lastRun: null, ms: null, error: null };
+  const t0 = Date.now();
+  try { const out = await fn(); j.error = null; return out; }
+  catch (e) { j.error = e?.message || String(e); console.warn(`Tail ${name}:`, j.error); return null; }
+  finally { j.lastRun = new Date().toISOString(); j.ms = Date.now() - t0; }
+}
+
+// New trades → signals. Sized ones are logged for the track record. The
+// first poll after a restart re-reads the last hour, so then only what the
+// tracker hadn't logged before counts as news. "First" is read before the
+// await: a slow first poll overlapped by the next tick (which returns [] as
+// busy) is still the first one when it lands. A top-up adds to a position
+// already pinged, so it isn't pinged again.
+let tailPolled = false;
+const tailRouting = { routed: 0, withVenue: 0, lastAt: null };
+// What a routed entry told followers to add: the venue's units, or with no
+// venue the Polymarket size the track record logs it at.
+const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+async function pollTail() {
+  const primed = tailPolled;
+  // where to tail, as each entry is made (so the next buy by the same wallet
+  // tops up what that venue was told) and before it's logged (the record
+  // grades it at that venue's price)
+  const signals = await tailEngine.pollTrades({
+    route: s => {
+      routeSignal(s);
+      tailRouting.routed++;
+      if (s.venue) tailRouting.withVenue++;
+      tailRouting.lastAt = new Date().toISOString();
+      return tailUnits(s);
+    },
+  });
+  const fresh = [], ping = [];
+  for (const s of signals) {
+    let logged = false;
+    try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
+    if (logged || primed) fresh.push(s);
+    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus)) ping.push(s);
+  }
+  tailPolled = true;
+  if (fresh.length) broadcast('tail', fresh);
+  // the webhook can reach other people: Polymarket wallets only with that
+  // licence, Kalshi venues only with Kalshi's
+  const lic = webhookLicence();
+  if (lic.polymarket) postAlert(ping.map(s => describeTail(venueFor(s, lic))), 'Tail alerts');
+  return fresh;
+}
+
+async function pollWhales() {
+  const fresh = await whaleWatcher.poll();
+  if (fresh.length) broadcast('whale', fresh);
+  return fresh;
+}
+
+// The Owls and Odds API feeds can both carry a game: one book arb per game and legs.
+function dedupeArbs(arbs) {
+  const out = new Map();
+  for (const a of arbs) {
+    const key = a.type === 'book' ? `book|${a.title}|${a.legs.map(l => `${l.venue}:${l.pick}`).join('+')}` : a.id;
+    if (!out.has(key) || out.get(key).profitPct < a.profitPct) out.set(key, a);
+  }
+  return [...out.values()].sort((a, b) => b.profitPct - a.profitPct);
+}
+
+// One scan: every open Kalshi and Polymarket event, plus the game lines the
+// backend already holds (sportsbooks, with the exchange books attached).
+async function scanXarbs() {
+  if (xarbState.running) return [];
+  xarbState.running = true;
+  const t0 = Date.now();
+  try {
+    // each page parsed as it lands; the raw JSON isn't kept
+    const kalshi = [], polymarket = [];
+    const [k, p] = await Promise.all([
+      xarb.fetchKalshiEvents(upstream, { onPage: page => kalshi.push(...xarb.parseKalshiBinaries(page)) }),
+      xarb.fetchPolymarketEvents(upstream, { onPage: page => polymarket.push(...xarb.parsePolymarketBinaries(page)) }),
+    ]);
+    let games = [];
+    try { games = evFeeds().filter(f => /odds$/.test(f.label)).flatMap(f => f.games); }
+    catch (e) { console.warn('Exchange arbs: game feeds:', e.message); }
+    const now = Date.now();
+    // matched once: the cross-exchange arbs (intl) and signal routing both use it
+    const matches = xarb.matchMarkets(kalshi, polymarket, { ...XARB_OPTS, now, games });
+    const arbs = dedupeArbs(xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now, matches }));
+    if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
+    if (kalshi.length) {
+      xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
+        title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title,
+        eventTicker: r.eventKey.replace(/^kalshi:/, ''), url: r.url,
+      }]));
+    }
+    Object.assign(xarbState, {
+      arbs, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
+      counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
+        polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length },
+    });
+    const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
+    for (const a of arbs) xarbSeen.set(a.id, now);
+    for (const [id, at] of xarbSeen) if (now - at > 86400e3) xarbSeen.delete(id);
+    // An exchange's first scan with data only primes: a restart, or that
+    // exchange coming back after being down at startup, isn't news. So an arb
+    // with a leg on an exchange that wasn't primed before this scan is quiet.
+    const before = { ...xarbState.primed };
+    if (kalshi.length) xarbState.primed.kalshi = true;
+    if (polymarket.length) xarbState.primed.polymarket = true;
+    const news = fresh.filter(a => (a.legs || []).every(l => !(l.venue in before) || before[l.venue]));
+    if (news.length) {
+      broadcast('xarb', news);
+      // an outcome set not proven exhaustive can lose every leg: listed, never
+      // alerted; and the webhook only gets legs the public may see
+      const ok = arbOk(webhookLicence());
+      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && a.exhaustive !== false && ok(a)).map(describeArb), 'Exchange arbs');
+    }
+    return news;
+  } finally { xarbState.running = false; }
+}
+
+// Free users get the shape of it, not who to follow: wallets become a keyed
+// hash (not reversible from Polymarket's public leaderboard), and names and
+// dollar totals (which would find the wallet on that leaderboard) are dropped.
+// So is anything a dollar total can be worked back from (edge with roi gives
+// risked and P&L), and anything that fingerprints the trade itself: Polymarket
+// lists every trade of a market with its wallet, so market + exact size +
+// exact time finds the wallet. Free rows get the market and side, a price to
+// the cent, a time to the quarter hour and a size range.
+const TAIL_FREE_DELAY_MS = 30 * 60e3;
+const FREE_TIME_MS = 15 * 60e3;
+const maskId = v => (v ? `x${require('crypto').createHmac('sha256', AUTH_SECRET).update(String(v)).digest('hex').slice(0, 12)}` : null);
+const maskWallet = w => (w ? `${String(w).slice(0, 4)}••••` : null);
+const quarterHour = v => { const t = v ? Date.parse(v) : NaN; return Number.isFinite(t) ? new Date(Math.floor(t / FREE_TIME_MS) * FREE_TIME_MS).toISOString() : v ?? null; };
+const toCent = v => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) / 100 : v ?? null);
+const SIZE_STEPS = [500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1e6];
+const kUsd = x => (x >= 1e6 ? `$${x / 1e6}M` : x >= 1000 ? `$${x / 1000}k` : `$${x}`);
+function sizeRange(x) {
+  if (!(x > 0)) return null;
+  const i = SIZE_STEPS.findIndex(v => x < v);
+  if (i === 0) return `under ${kUsd(SIZE_STEPS[0])}`;
+  if (i < 0) return `${kUsd(SIZE_STEPS[SIZE_STEPS.length - 1])}+`;
+  return `${kUsd(SIZE_STEPS[i - 1])}–${kUsd(SIZE_STEPS[i])}`;
+}
+// "only $45,123 risked (need $50,000)" names the wallet's total; the bar is public
+const freeText = t => String(t).replace(/only \$[\d,.]+ risked/g, 'not enough risked');
+const freeReasons = list => (Array.isArray(list) ? list.map(freeText) : list);
+const round2 = v => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) / 100 : v ?? null);
+const TRADER_PRIVATE = ['pnl', 'risked', 'openValue', 'lastAt', 'sources', 'truncated', 'edge', 'openPnl', 'openRisked', 'forwardPnl', 'selectedAt'];
+function maskStats(s) {
+  const out = { ...s };
+  for (const k of TRADER_PRIVATE) delete out[k];
+  for (const k of ['roi', 'resolvedRoi', 'recentRoi', 'forwardRoi']) if (k in out) out[k] = round2(out[k]);
+  for (const k of ['reasons', 'whyNotA']) if (k in out) out[k] = freeReasons(out[k]);
+  return out;
+}
+function maskTrader(tr) {
+  const categories = {};
+  for (const [c, s] of Object.entries(tr.categories || {})) categories[c] = maskStats(s);
+  return { ...maskStats(tr), id: maskId(tr.wallet), wallet: maskWallet(tr.wallet), name: null, url: null, categories, locked: true };
+}
+// signals and tracked records: their ids carry the wallet (and tx hash) too.
+// q (our probability) gives the edge back like prob does, and so does a
+// venue's Kelly with its price; the venue line itself (units, max price) stays.
+const maskVenue = v => { if (!v || typeof v !== 'object') return v; const { kelly, ...rest } = v; return rest; };
+function maskSignal(s) {
+  const { conditionId, asset, theirSize, txHash, edge, prob, q, kelly, slippage, ...rest } = s;
+  return {
+    ...rest, id: maskId(s.id), wallet: maskWallet(s.wallet), name: null, consensus: (s.consensus || []).map(maskWallet),
+    ...('venue' in s ? { venue: maskVenue(s.venue) } : {}), ...(Array.isArray(s.venues) ? { venues: s.venues.map(maskVenue) } : {}),
+    ...(s.parentId ? { parentId: maskId(s.parentId) } : {}), ...(Array.isArray(s.topUps) ? { topUps: s.topUps.map(maskId) } : {}),
+    theirPrice: toCent(s.theirPrice), ...('entry' in s ? { entry: toCent(s.entry) } : {}),
+    theirNotional: null, sizeRange: sizeRange(s.theirNotional),
+    at: quarterHour(s.at), ...('seenAt' in s ? { seenAt: quarterHour(s.seenAt) } : {}), ...('recordedAt' in s ? { recordedAt: quarterHour(s.recordedAt) } : {}),
+    locked: true,
+  };
+}
+// A recent Polymarket whale might be a graded wallet's live bet, so its grade
+// waits; and a print that is (or might be) graded is coarsened like a signal.
+// Ungraded old prints only lose the wallet: there's nobody to find.
+function maskWhale(e, t = Date.now()) {
+  if (!e || e.exchange !== 'polymarket') return e;
+  const recent = t - Date.parse(e.at) < TAIL_FREE_DELAY_MS;
+  const out = { ...e, id: maskId(e.id), wallet: maskWallet(e.wallet), name: null, txHash: null,
+    ...(recent ? { grade: null, graded: false, known: false, tag: 'whale', gradeLocked: true } : {}) };
+  if (!recent && !e.graded) return out;
+  const sig = n => (n > 0 ? Number(n.toPrecision(2)) : n ?? null);
+  return { ...out, conditionId: null, asset: null, contracts: null, price: toCent(e.price), notional: sig(e.notional), sizeRange: sizeRange(e.notional), at: quarterHour(e.at) };
+}
+// ── what a viewer may see under the data licences ──
+// An arb with a leg on an exchange whose licence is off is withheld whole
+// (its other legs alone aren't an arb).
+const arbOk = lic => a => (a.legs || []).every(l => (l.venue !== 'kalshi' || lic.kalshi) && (l.venue !== 'polymarket' || lic.polymarket));
+const whaleOk = lic => e => !e || (e.exchange === 'kalshi' ? lic.kalshi : e.exchange === 'polymarket' ? lic.polymarket : true);
+const withheldOf = (lic, sources) => sources.filter(x => !lic[x]);
+// live events for one stream listener
+function liveFor(type, data, lic) {
+  if (!Array.isArray(data)) return [];
+  const out = type === 'tail' ? (lic.polymarket ? data.map(s => venueFor(s, lic)) : [])
+    : type === 'whale' ? data.filter(whaleOk(lic))
+    : type === 'xarb' ? data.filter(arbOk(lic)) : data;
+  return regionSafe(out);
+}
+
+// /api/whales and /api/status state for free users: no graded count (it would
+// say which locked prints are graded) and no error text
+function publicWhaleState(st) {
+  const { errors, ...rest } = st;
+  return { ...rest, lastHour: { whales: st.lastHour?.whales ?? 0, usd: st.lastHour?.usd ?? 0 } };
+}
+// the engine's errors name wallets and markets, and the last signal time says
+// when a live (locked) signal fired
+function publicTailState(st) {
+  const { errors, lastSignalAt, signals, ...rest } = st;
+  return rest;
+}
+const publicJobs = jobs => Object.fromEntries(Object.entries(jobs).map(([k, j]) => [k, { lastRun: j.lastRun, ms: j.ms, failed: !!j.error }]));
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'Line Reaper backend running', version: '3.10.0', updated: new Date().toISOString() }));
+// The app itself. Served from here it talks to this same server, so one
+// deploy ships both and there's no backend URL to keep in sync.
+const APP_FILE = path.join(__dirname, 'public', 'index.html');
+let appHtml = null;
+function loadApp() {
+  if (appHtml) return appHtml;
+  try {
+    appHtml = fs.readFileSync(APP_FILE, 'utf8')
+      .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;');
+  } catch { appHtml = null; }
+  return appHtml;
+}
+app.get('/app', (req, res) => {
+  const html = loadApp();
+  if (!html) return res.status(404).send('App not bundled with this deploy');
+  res.set('Cache-Control', 'no-cache').type('html').send(html);
+});
+// Browsers opening the bare URL get the app; API clients (and the app's own
+// health check, which sends Accept: */*) still get the JSON status.
+app.get('/', (req, res) => {
+  if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
+  res.json({ status: 'Line Reaper backend running', version: '3.21.0', updated: new Date().toISOString() });
+});
+
+// ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
+const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
+
+app.post('/api/auth/signup', async (req, res) => {
+  try { res.status(201).json(await auth.signup(req.body?.email, req.body?.password)); }
+  catch (e) { sendErr(res, e); }
+});
+app.post('/api/auth/login', async (req, res) => {
+  try { res.json(await auth.login(req.body?.email, req.body?.password)); }
+  catch (e) { sendErr(res, e); }
+});
+app.get('/api/auth/me', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+  res.json({ user: publicUser(req.user), paywall: PAYWALL, billing: billing.configured() });
+});
+// where Stripe should send people back to: the page they came from
+function returnUrl(req, fallback = '/') {
+  const u = req.body?.returnUrl || req.get('referer') || fallback;
+  return /^https?:\/\//.test(u) ? u : fallback;
+}
+app.post('/api/billing/checkout', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  try {
+    const back = returnUrl(req, `${req.protocol}://${req.get('host')}/`);
+    const sep = back.includes('?') ? '&' : '?';
+    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back }));
+  } catch (e) { console.error('Checkout failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
+});
+app.post('/api/billing/portal', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  try { res.json(await billing.portal(req.user, { returnUrl: returnUrl(req, `${req.protocol}://${req.get('host')}/`) })); }
+  catch (e) { console.error('Portal failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
+});
+// Give an account Pro without paying (you, testers, friends). body: { email, comp: true|false }
+app.post('/api/admin/comp', requireAdmin, async (req, res) => {
+  const user = await auth.store.byEmail(String(req.body?.email || '').trim().toLowerCase());
+  if (!user) return res.status(404).json({ error: 'No account with that email' });
+  user.comp = req.body?.comp !== false;
+  await auth.store.put(user);
+  res.json({ ok: true, user: publicUser(user) });
+});
+
+// ── +EV SCREENER ──────────────────────────────────────────────────────────────
+// ?sport=nba&minEv=2&book=draftkings&market=points&props=1&dfs=1&source=sharp&limit=200
+app.get('/api/ev', (req, res) => {
+  const { rows: all, feeds, at } = runEvScreen();
+  const rows = all.filter(evRowOk(licenceOf(req)));
+  const pro = hasPro(req);
+  // free users can't filter by anything a locked row hides (book, EV, market, side)
+  const q = pro ? req.query : { sport: req.query.sport, props: req.query.props, dfs: req.query.dfs, limit: req.query.limit };
+  const minEv = pro ? parseFloat(q.minEv) : 1;
+  const books = q.book ? String(q.book).toLowerCase().split(',') : null;
+  let out = rows.filter(r =>
+    (!q.sport || r.sport === q.sport) &&
+    (!Number.isFinite(minEv) || r.ev >= minEv) &&
+    (!books || books.includes(r.book)) &&
+    (!q.market || r.market === q.market) &&
+    (q.props == null || (q.props === '1') === !!r.player) &&
+    (q.dfs == null || (q.dfs === '1') === !!r.dfs) &&
+    (!q.source || r.source === q.source));
+  const total = out.length;
+  out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
+  res.json({ rows: pro ? out : redactEv(out), count: total, pro, updated: new Date(at).toISOString(), feeds });
+});
+// New edges as they appear: event "ev" carries an array of rows.
+// ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
+// still stale) are the actionable part, so they're Pro.
+app.get('/api/sharp', (req, res) => {
+  const kind = req.query.kind ? String(req.query.kind).split(',') : undefined;
+  const pro = hasPro(req);
+  const events = sharpTracker.events({ sport: req.query.sport, kind, limit: Math.min(parseInt(req.query.limit) || 100, 500) })
+    .filter(e => pro || e.kind !== 'sharp_lead')
+    .map(e => ({ ...e, text: describeSharp(e) }));
+  const stale = pro ? sharpTracker.stale().filter(l => !req.query.sport || l.sport === req.query.sport).map(e => ({ ...e, text: describeSharp(e) })) : [];
+  let rlm = [];
+  try { rlm = reverseLineMoves(sharpTracker.events({ limit: 500 }), splitsMap()).map(e => ({ ...e, text: describeSharp(e) })); } catch { /* splits shape unknown */ }
+  res.json({ events, stale, rlm, pro, lockedLeads: pro ? 0 : sharpTracker.stale().length, state: sharpTracker.state() });
+});
+// Kalshi and Polymarket prices: each only with its data licence, and
+// Polymarket's never in US mode (a US person can't trade there)
+app.get('/api/exchanges', (req, res) => {
+  const lic = licenceOf(req);
+  const ok = r => (r.exchange === 'kalshi' ? lic.kalshi : r.exchange === 'polymarket' ? lic.polymarket && TAIL_REGION !== 'us' : true);
+  const withheld = ['kalshi', 'polymarket'].filter(x => !lic[x]);
+  res.json({ markets: exchanges.toMarketsList(exchangeState.rows.filter(ok)), updated: exchangeState.updated, errors: exchangeState.errors,
+    region: TAIL_REGION, ...(withheld.length ? { withheld, note: LICENCE_NOTE } : {}) });
+});
+// The screener's own record: free to see, since it's the sales pitch.
+app.get('/api/ev/record', async (req, res) => {
+  const q = req.query;
+  const out = await evTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
+  // an exchange's own line in the by-book table needs its licence
+  const ok = evRowOk(licenceOf(req));
+  if (out?.byBook) out.byBook = Object.fromEntries(Object.entries(out.byBook).filter(([book]) => ok({ book })));
+  res.json(out);
+});
+app.get('/api/ev/record/bets', async (req, res) => {
+  // open bets are today's live edges, so only closed ones are free
+  const status = hasPro(req) ? req.query.status : 'closed';
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const bets = (await evTracker.list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
+  res.json({ bets });
+});
+app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
+app.get('/api/ev/stream', requirePro, (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders?.();
+  // what this viewer may see (data licences), fixed for the connection
+  const lic = licenceOf(req), evOk = evRowOk(lic);
+  res.write(`event: hello\ndata: ${JSON.stringify({ at: evCache.at, rows: evCache.rows.length })}\n\n`);
+  const send = rows => { const mine = rows.filter(evOk); if (mine.length) res.write(`event: ev\ndata: ${JSON.stringify(mine)}\n\n`); };
+  const sendSharp = evs => res.write(`event: sharp\ndata: ${JSON.stringify(evs.map(e => ({ ...e, text: describeSharp(e) })))}\n\n`);
+  sharpListeners.add(sendSharp);
+  // sharp tail: `tail` (signals), `whale` (big prints) and `xarb` (new arbs),
+  // each an array, cut to this viewer's licences (and no polymarket.com links in US mode)
+  const sendLive = (type, data) => {
+    const mine = liveFor(type, data, lic);
+    if (mine.length) res.write(`event: ${type}\ndata: ${JSON.stringify(mine)}\n\n`);
+  };
+  liveListeners.add(sendLive);
+  // a heartbeat with the board time lets the page refresh even when nothing new crossed the line
+  const ping = setInterval(() => res.write(`event: tick\ndata: ${JSON.stringify({ at: evCache.at })}\n\n`), 25000);
+  evListeners.add(send);
+  req.on('close', () => { clearInterval(ping); evListeners.delete(send); sharpListeners.delete(sendSharp); liveListeners.delete(sendLive); });
+});
+
+// ── SHARP TAIL ────────────────────────────────────────────────────────────────
+// Every route here also answers to the data licences (licenceOf): with the
+// paywall on, a source whose *_DISPLAY_OK flag is off is withheld from
+// everyone but the admin, with `withheld: [source]` and a short `note`. In US
+// mode no response links to polymarket.com (regionSafe).
+const withheldBody = list => (list.length ? { withheld: list, note: LICENCE_NOTE } : {});
+
+// Scored wallets, best first. ?category=politics&grade=A|B|graded&limit=100.
+// Free: the leaderboard with wallets masked.
+app.get('/api/tail/traders', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const category = tail.CATEGORIES.includes(req.query.category) ? req.query.category : null;
+  const g = String(req.query.grade || '').toUpperCase();
+  const grade = ['A', 'B', 'GRADED'].includes(g) ? g : null;
+  const list = lic.polymarket ? tailEngine.traders({ category, grade, limit: Math.min(parseInt(req.query.limit) || 100, 500) }) : [];
+  const st = tailEngine.state();
+  res.json(regionSafe({
+    traders: pro ? list : list.map(maskTrader), pro, category, grade,
+    state: { candidates: st.candidates, scored: st.scored, pending: st.pending, graded: st.graded, lastScoreAt: st.lastScoreAt },
+    ...withheldBody(withheldOf(lic, ['polymarket'])),
+  }));
+});
+// One wallet's full score, its recent signals and their record (Pro: a
+// wallet's grade is what's being sold).
+app.get('/api/tail/trader/:wallet', requirePro, async (req, res) => {
+  const lic = licenceOf(req);
+  if (!lic.polymarket) return res.status(403).json({ error: `Polymarket wallets: ${LICENCE_NOTE}`, ...withheldBody(['polymarket']) });
+  const tr = tailEngine.trader(req.params.wallet);
+  if (!tr) return res.status(404).json({ error: 'That wallet has not been scored yet' });
+  const signals = tailEngine.signals({ limit: 500 }).filter(s => s.wallet === tr.wallet).slice(0, 50).map(s => venueFor(s, lic));
+  let record = [];
+  try { record = (await tailTracker.list({ limit: 5000 })).filter(r => r.wallet === tr.wallet).slice(0, 50); } catch { /* store down */ }
+  res.json(regionSafe({ trader: tr, signals, record }));
+});
+// Newest first. ?type=entry|exit&since=<iso>&limit=100. Pro: live. Free: only
+// signals at least 30 minutes old, wallets masked; `locked` counts the rest.
+// Each entry carries `venue` (where to tail it: the most units, or null) and
+// every `venues` quote.
+app.get('/api/tail/signals', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const type = ['entry', 'exit'].includes(req.query.type) ? req.query.type : null;
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  let list = lic.polymarket ? tailEngine.signals({ limit: 500, type, since: req.query.since || null }).map(s => venueFor(s, lic)) : [];
+  let locked = 0;
+  if (!pro) {
+    const cut = Date.now() - TAIL_FREE_DELAY_MS;
+    const old = list.filter(s => Date.parse(s.seenAt || s.at) <= cut);
+    locked = list.length - old.length;
+    list = old.map(maskSignal);
+  }
+  res.json(regionSafe({ signals: list.slice(0, limit), pro, delayMinutes: pro ? 0 : TAIL_FREE_DELAY_MS / 60e3, locked, updated: tailEngine.state().lastPollAt,
+    region: TAIL_REGION, ...withheldBody(withheldOf(lic, ['polymarket'])) }));
+});
+// The signals' own track record: free, since it's the pitch. Open ones are
+// live tails, so free users only see the settled list. The rows are
+// Polymarket wallets' bets, so they need that licence; the totals don't.
+// ?days=30&grade=A&category=politics&status=open|settled&limit=50
+app.get('/api/tail/record', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const q = req.query;
+    const grade = ['A', 'B'].includes(String(q.grade || '').toUpperCase()) ? String(q.grade).toUpperCase() : undefined;
+    const category = tail.CATEGORIES.includes(q.category) ? q.category : undefined;
+    const sinceDays = parseFloat(q.days) || undefined;
+    const summary = await tailTracker.summary({ sinceDays, grade, category });
+    const status = pro ? (['open', 'settled'].includes(q.status) ? q.status : undefined) : 'settled';
+    const cut = sinceDays ? Date.now() - sinceDays * 86400e3 : 0;
+    const list = !lic.polymarket ? [] : (await tailTracker.list({ status, limit: 5000 }))
+      .filter(r => (!grade || r.grade === grade) && (!category || r.category === category) && Date.parse(r.recordedAt) >= cut)
+      .slice(0, Math.min(parseInt(q.limit) || 50, 500));
+    res.json(regionSafe({ ...summary, signals: pro ? list : list.map(maskSignal), pro, ...withheldBody(withheldOf(lic, ['polymarket'])) }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Whale prints (newest first) and per-market flow over the last hour.
+// ?exchange=kalshi|polymarket&graded=1|0&minUsd=10000&since=<iso>&limit=100.
+// Free: wallets masked, and graded tags only once they're 30 minutes old.
+// Each exchange's prints need its licence.
+app.get('/api/whales', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const q = req.query;
+  const exchange = ['kalshi', 'polymarket'].includes(q.exchange) ? q.exchange : null;
+  const graded = pro && q.graded != null && q.graded !== '' ? /^(1|true|yes)$/i.test(q.graded) : null;
+  const minUsd = parseFloat(q.minUsd);
+  const t = Date.now();
+  const limit = Math.min(parseInt(q.limit) || 100, 500);
+  const shown = whaleOk(lic);
+  // the feed is cut to this viewer's exchanges before the limit, so a withheld one doesn't eat it
+  const only = exchange || (lic.kalshi === lic.polymarket ? null : lic.kalshi ? 'kalshi' : 'polymarket');
+  const events = lic.kalshi || lic.polymarket ? whaleWatcher.events({ limit, exchange: only, graded, minUsd: Number.isFinite(minUsd) ? minUsd : null, since: q.since || null }).filter(shown) : [];
+  const flow = whaleWatcher.flow({ exchange, limit: Math.min(parseInt(q.flowLimit) || 50, 200) }).filter(f => shown(f));
+  res.json(regionSafe({
+    events: pro ? events : events.map(e => maskWhale(e, t)),
+    flow: pro ? flow : flow.map(f => ({ ...f, largest: maskWhale(f.largest, t) })),
+    pro, minUsd: whaleWatcher.settings().minUsd, windowMs: whaleWatcher.settings().windowMs, state: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
+    ...withheldBody(withheldOf(lic, ['kalshi', 'polymarket'])),
+  }));
+});
+// Exchange arbs, best first. ?type=cross|multi|book&category=sports&minPct=1.
+// Stakes are the same for everyone: each leg's `pct` of the total (and the
+// $100 reference split in `stakes`). US mode only has Kalshi and US
+// sportsbook legs. Free: count and profit % only.
+app.get('/api/xarbs', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const q = req.query;
+  const minPct = parseFloat(q.minPct);
+  const arbs = xarbState.arbs.filter(arbOk(lic))
+    .filter(a => (!q.type || a.type === q.type) && (!q.category || a.category === q.category) && (!Number.isFinite(minPct) || a.profitPct >= minPct));
+  const base = { count: arbs.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
+  res.json(regionSafe({
+    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)),
+    minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
+  }));
+});
+// The thresholds in force (defaults overridden by env), so the app can show
+// them, plus the region and the data-licence gates.
+app.get('/api/tail/settings', (req, res) => {
+  const w = whaleWatcher.settings();
+  res.json({
+    tail: tailEngine.settings(),
+    whales: { minUsd: w.minUsd, windowMs: w.windowMs },
+    xarb: { minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, alertMinPct: XARB_ALERT_MIN,
+      kalshiFeeRate: XARB_OPTS.kalshiFeeRate ?? xarb.DEFAULTS.kalshiFeeRate, polymarketFeeRate: XARB_OPTS.polymarketFeeRate ?? xarb.DEFAULTS.polymarketFeeRate,
+      polymarketFees: 'per market: shares × rate × p(1 − p), sports 5%' },
+    freeDelayMinutes: TAIL_FREE_DELAY_MS / 60e3,
+    region: TAIL_REGION, licence: licenceState(req),
+  });
+});
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
   if (!fresh) await generateEsportsPicks();
-  const minEV = parseFloat(req.query.minEV) || -100;
+  const pro = hasPro(req);
+  // an EV filter would let a free user find each locked pick's EV by bisection
+  const minEV = pro ? (parseFloat(req.query.minEV) || -100) : -100;
   const sport = req.query.sport;
   let picks = esportsCache.picks || [];
   if (sport) picks = picks.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
   picks = picks.filter(p => p.ev == null || p.ev >= minEV);
-  res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated });
+  if (!pro) picks = redactForFree(picks);
+  res.json({ picks, count: picks.length, updated: esportsCache.lastUpdated, pro, locked: pro ? 0 : picks.filter(p => p.locked).length });
 });
 
+let lastManualRefresh = 0;
 app.post('/api/esports/refresh', async (req, res) => {
+  // anyone can ask, but only the admin can force more than one rebuild a minute
+  const admin = process.env.TRACKER_ADMIN_TOKEN && req.get('x-admin-token') === process.env.TRACKER_ADMIN_TOKEN;
+  if (!admin && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
+  lastManualRefresh = Date.now();
   await generateEsportsPicks();
   res.json({ ok: true, count: esportsCache.picks.length });
 });
@@ -1705,7 +2769,8 @@ app.post('/api/esports/predict', (req, res) => {
   res.json(result);
 });
 
-app.post('/api/esports/manual', (req, res) => {
+// Manual model numbers change everyone's board and the public track record.
+app.post('/api/esports/manual', requireAdmin, (req, res) => {
   const { player, market, modelPred } = req.body;
   if (!player || !market) return res.status(400).json({ error: 'player and market required' });
   const key = `${player}|${market}`;
@@ -1917,14 +2982,80 @@ app.delete('/api/sharp-moves', (req, res) => { cache.sharpMoves = []; res.json({
 app.get('/api/splits/:sport', async (req, res) => res.json(await fetchOwlsSplits(req.params.sport) || {}));
 app.get('/api/odds/:sport', async (req, res) => res.json(await fetchOddsForSport(req.params.sport)));
 
+// The app's Odds API calls come through here so the key stays on the server,
+// and every viewer shares one cached response instead of each spending credits.
+// ?markets=h2h,spreads&regions=us&includeLinks=true
+const ODDS_FEED_TTL_MS = parseInt(process.env.ODDS_FEED_TTL_MS) || 120000;
+const FEED_MARKETS = new Set(['h2h', 'spreads', 'totals', 'outrights']);
+const oddsFeedCache = new Map();
+const oddsFeedInflight = new Map();
+app.get('/api/odds-feed/:sport', async (req, res) => {
+  const sport = String(req.params.sport);
+  if (!/^[a-z0-9_]+$/.test(sport)) return res.status(400).json({ error: 'Bad sport key' });
+  if (!ODDS_API_KEY) return res.status(503).json({ error: 'ODDS_API_KEY is not set on the server' });
+  // Every request maps to one of two upstream fetches per sport (the main view,
+  // or the arb scan's wider one), so query variations can't fan out into new
+  // billed calls. Markets the caller didn't ask for are trimmed from the reply.
+  const wanted = new Set(String(req.query.markets || 'h2h,spreads').split(',').filter(x => FEED_MARKETS.has(x)));
+  // Low-usage mode fetches only the main US books: the wide pull costs 3× the credits.
+  const wide = !oddsBudget.active() && (/us2|us_ex/.test(String(req.query.regions || '')) || wanted.has('totals'));
+  const markets = 'h2h,spreads,totals';
+  const regions = wide ? 'us,us2,us_ex' : 'us';
+  const includeLinks = wide;
+  const key = `${sport}|${regions}`;
+  const trim = data => (Array.isArray(data) ? data.map(g => ({ ...g, bookmakers: (g.bookmakers || []).map(b => ({ ...b, markets: (b.markets || []).filter(m => wanted.has(m.key)) })) })) : data);
+  res.set('Access-Control-Expose-Headers', 'x-requests-remaining, x-cache');
+  const hit = oddsFeedCache.get(key);
+  if (hit && Date.now() - hit.at < ODDS_FEED_TTL_MS) {
+    if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
+    res.set('x-cache', 'hit');
+    return res.json(trim(hit.data));
+  }
+  try {
+    // concurrent viewers wait on the same request
+    if (!oddsFeedInflight.has(key)) {
+      const budget = oddsBudget.take(oddsCost(markets, regions));
+      if (!budget.ok) {
+        const mins = Math.ceil(budget.waitMs / 60000);
+        res.set('x-cache', 'budget');
+        if (hit) return res.json(trim(hit.data));
+        return res.status(503).json({ error: `Saving Odds API credits: next refresh in about ${mins} min`, lowUsage: true, retryInMs: budget.waitMs });
+      }
+      oddsFeedInflight.set(key, axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
+        params: { apiKey: ODDS_API_KEY, regions, markets, oddsFormat: 'american', ...(includeLinks ? { includeLinks: true } : {}) }, timeout: 12000,
+      }).finally(() => oddsFeedInflight.delete(key)));
+    }
+    const r = await oddsFeedInflight.get(key);
+    noteQuota(r);
+    oddsFeedCache.set(key, { at: Date.now(), data: r.data });
+    // the screener and sharp tracker read game lines from here too
+    if (!wide) cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
+    ingestSharp(sport, r.data);
+    if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
+    res.set('x-cache', 'miss');
+    res.json(trim(r.data));
+  } catch (e) {
+    const status = e.response?.status || 502;
+    if (hit) { res.set('x-cache', 'stale'); return res.json(trim(hit.data)); }   // better old odds than none
+    res.status(status).json({ error: status === 429 ? 'Odds API quota used up' : status === 401 ? 'Odds API key rejected' : `Odds API error ${status}` });
+  }
+});
+
 // Regex path: works on both Express 4 and Express 5 (string '*' wildcards break on v5)
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   if (owlsDisabled()) return res.status(503).json({ error: 'Owls disabled — API key is dead (repeated 403s). Set OWLS_API_KEY and restart.' });
   const path = req.params[0], query = new URLSearchParams(req.query).toString();
+  // only the read endpoints the app uses, so the server key can't be pointed elsewhere
+  if (!/^(nba|mlb|nhl|nfl|mma|ncaab|ncaaf|wnba|soccer)\/(odds|props|splits|scores)$/.test(path)) return res.status(404).json({ error: 'Not a proxied Owls path' });
+  // odds and props are already polled on a timer: serve those from cache
+  const m = !query && /^(\w+)\/(odds|props)$/.exec(path);
+  const hit = m && (m[2] === 'odds' ? cache.owlsOdds : cache.owlsProps)[m[1]];
+  if (hit?.data && Date.now() - new Date(hit.updated).getTime() < (m[2] === 'odds' ? 30000 : 300000)) return res.json(hit.data);
   try {
     const r = await axios.get(`https://api.owlsinsight.com/api/v1/${path}${query?'?'+query:''}`, { headers: OWLS_HEADERS, timeout: 10000 });
     res.json(r.data);
-  } catch(e) { noteOwlsError(e, `Owls proxy ${path}`); res.status(e.response?.status||500).json({ error: e.message }); }
+  // not noteOwlsError: a visitor's bad request must not trip the dead-key breaker
+  } catch(e) { res.status(e.response?.status||502).json({ error: `Owls error ${e.response?.status || ''}`.trim() }); }
 });
 
 app.post('/api/history/record', (req, res) => {
@@ -1937,6 +3068,97 @@ app.post('/api/history/record', (req, res) => {
 });
 app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
+// ── ALERTS ────────────────────────────────────────────────────────────────────
+app.get('/api/esports/alerts', requirePro, (req, res) => {
+  res.json({ alerts: alerter.recent(Math.min(parseInt(req.query.limit) || 50, 200)) });
+});
+
+// Server-sent events: one `alert` event per edge / move / gone.
+app.get('/api/esports/stream', requirePro, (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders?.();
+  res.write(`retry: 10000\n\n`);
+  const off = alerter.subscribe(e => res.write(`event: alert\ndata: ${JSON.stringify(e)}\n\n`));
+  // proxies drop idle connections; a comment line every 25s keeps it open
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { off(); clearInterval(ping); });
+});
+
+// ── SLIP PRICING ──────────────────────────────────────────────────────────────
+// Legs from the same series share whether the last map is played, so pricing
+// them as independent overstates the entry. These endpoints price the real
+// thing. body: { legs: [{ player, market }] } referencing the current board,
+// or full leg objects.
+function legsFromBoard(input) {
+  const board = esportsCache.picks || [];
+  return (input || []).map(spec => {
+    if (spec.pricing || spec.prob != null) return spec;
+    const hit = board.find(p =>
+      normalizeName(p.player) === normalizeName(spec.player) &&
+      (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market)));
+    if (!hit || hit.prob == null) return null;
+    return {
+      player: hit.player, team: hit.team, gameId: hit.gameId, stat: hit.pricing?.stat,
+      side: hit.side, line: hit.pricing?.line, prob: hit.prob / 100,
+      meanPerMap: hit.pricing?.meanPerMap, k: hit.pricing?.k, scenarios: hit.pricing?.scenarios,
+      ev: hit.bestEv,
+    };
+  });
+}
+
+app.post('/api/esports/slip', requirePro, (req, res) => {
+  const legs = legsFromBoard(req.body?.legs);
+  const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
+  if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
+  if (legs.length < 2) return res.status(400).json({ error: 'A slip needs at least 2 legs' });
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS) });
+});
+
+app.get('/api/esports/best-slips', requirePro, (req, res) => {
+  const minEV = parseFloat(req.query.minEV);
+  const maxLegs = Math.min(parseInt(req.query.maxLegs) || 5, 6);
+  const sport = req.query.sport;
+  let pool = (esportsCache.picks || []).filter(p => p.pricing && p.bestEv != null);
+  if (sport) pool = pool.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
+  pool = pool.filter(p => p.bestEv >= (isFinite(minEV) ? minEV : 0))
+    .slice(0, 40)
+    .map(p => ({
+      player: p.player, team: p.team, gameId: p.gameId, sport: p.sport, market: p.displayMarket,
+      side: p.side, line: p.pricing.line, prob: p.prob / 100, ev: p.bestEv,
+      meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
+    }));
+  if (pool.length < 2) return res.json({ slips: [], pool: pool.length });
+  const slips = bestSlips(pool, { maxLegs }).map(s => ({
+    ...s,
+    picks: s.picks.map(p => ({ player: p.player, sport: p.sport, market: p.market, side: p.side, line: p.line, prob: +(p.prob * 100).toFixed(1), ev: p.ev })),
+  }));
+  res.json({ slips, pool: pool.length });
+});
+
+// ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
+// Enter a match price (e.g. from Pinnacle) so CS2/Valorant picks get context.
+// body: { sport, teamA, teamB, priceA, priceB, bestOf? }  American or decimal prices
+//    or { sport, teamA, teamB, pA, bestOf? }               series win prob for teamA
+// add perMap: true when the price is for a single map rather than the series.
+app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
+  try {
+    const row = oddsBook.set(req.body || {});
+    generateEsportsPicks().catch(() => {});
+    res.json({ ok: true, match: row });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/esports/match-odds', (req, res) => res.json({ matches: oddsBook.list() }));
+app.get('/api/feeds', (req, res) => res.json({
+  pandascore: { enabled: feedState.pandascore.enabled, updated: feedState.pandascore.updated, errors: feedState.pandascore.errors,
+    upcoming: Object.fromEntries(Object.entries(feedState.pandascore.schedules).map(([k, v]) => [k, v.length])) },
+  pinnacle: feedState.pinnacle,
+}));
+app.get('/api/esports/context', (req, res) => res.json({
+  ratings: ratingsState.meta,
+  picksWithContext: esportsCache.contextCounts || {},
+  manualMatches: oddsBook.list().length,
+}));
+
 // ── TRACK RECORD ──────────────────────────────────────────────────────────────
 app.get('/api/tracker/summary', async (req, res) => {
   try {
@@ -1948,7 +3170,12 @@ app.get('/api/tracker/summary', async (req, res) => {
 app.get('/api/tracker/picks', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
-    res.json({ picks: await tracker.list({ status: req.query.status, sport: req.query.sport, limit }) });
+    let picks = await tracker.list({ status: req.query.status, sport: req.query.sport, limit });
+    // picks that haven't been graded are today's board: Pro only
+    if (!hasPro(req)) picks = picks.map(p => (p.status === 'open' || p.status === 'locked')
+      ? { ...p, signalSide: null, signalLine: null, signalEv: null, signalProb: null, closeSide: null, closeLine: null, closeEv: null, closeProb: null, modelPred: null, rawPred: null, locked: true }
+      : p);
+    res.json({ picks });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -1966,8 +3193,8 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
   res.json({ locked, ...(await tracker.gradeDue({ limit: 100 })) });
 });
 
-app.get('/api/status', (req, res) => res.json({
-  version: '3.10.0',
+app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
+  version: '3.21.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
@@ -1986,14 +3213,34 @@ app.get('/api/status', (req, res) => res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  sharp: sharpTracker.state(),
+  exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
+  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
+  // free: counts and timestamps only (see publicTailState)
+  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting },
+  whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
+  xarb: { arbs: xarbState.arbs.length, updated: xarbState.updated, durationMs: xarbState.durationMs, running: xarbState.running, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
+    venueMarkets: xarbState.venues?.size ?? 0 },
+  region: TAIL_REGION,
+  licence: licenceState(req),
+  upstream: upstream.stats(),
+  live: { listeners: liveListeners.size, webhook: !!process.env.ALERT_WEBHOOK_URL && process.env.TAIL_WEBHOOK !== 'off' },
+  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
+  alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
+  feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
+  matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
+  oddsApiBudget: oddsBudget.state(),
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
-}));
+}); });
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
+// Team ratings for match context, every 6 hours.
+cron.schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
+
 // Tracker: freeze started picks, then look for results (one sweep at a time).
 const trackerHealth = { lastRun: null, last: null, error: null };
 let trackerRunning = false;
@@ -2012,7 +3259,11 @@ cron.schedule('*/5 * * * *', async () => {
 cron.schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
 
 // Owls — fully skipped once the breaker trips
-cron.schedule('*/30 * * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsOdds(s); });
+cron.schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
+cron.schedule('*/30 * * * * *', async () => {
+  if (!owlsDisabled()) await Promise.all(['nba','mlb','nhl','nfl','mma'].map(s => fetchOwlsOdds(s)));
+  try { runEvScreen(true); } catch (e) { console.warn('EV screen failed:', e.message); }
+});
 cron.schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
 
 // Odds API props — 30-min staggered, in-season only (the guard inside skips off-season sports)
@@ -2026,6 +3277,8 @@ cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 // frontend fetches its own odds. /api/odds/:sport still works on demand.
 
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
+// Esports match prices and schedules a minute before picks rebuild.
+cron.schedule('4-59/5 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
 cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
 // Profile warmer: every minute, fill a few more players' stats until the whole
@@ -2041,10 +3294,24 @@ cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
 // failures, timeouts, and transient S3 hiccups without any manual poking)
 cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoLStats().catch(()=>{}); });
 
+// Sharp tail, whale flow and exchange arbs. The seconds offsets keep them off
+// the jobs above (which start on :00, :15 and :30), and every request they
+// make waits its turn in the polite per-host queue (UPSTREAM_GAP_MS).
+// Big trades on both exchanges every 30s: one shared read of Polymarket's trades page.
+cron.schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWhales), runTailJob('signals', pollTail)]));
+// A few wallets scored a minute (3+ requests each)
+cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
+// Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
+cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+// Grade tracked signals whose markets resolved, every 10 minutes
+cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', () => tailTracker.check()));
+// New leaderboard wallets to score, every 6 hours (and once at startup)
+cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
+
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.10.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.21.0 on port ${PORT}`);
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -2066,12 +3333,17 @@ if (require.main === module) {
     setTimeout(() => dotaLoadProPlayers().catch(()=>{}), 16000);
     // start filling CS profiles right away after a redeploy wipes the cache
     setTimeout(() => warmCsProfiles(20).catch(()=>{}), 20000);
+    // team ratings for match context, then rebuild picks with them
+    setTimeout(() => refreshMatchFeeds()
+      .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
+    // sharp tail: leaderboard wallets to score (the crons take it from there)
+    setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
   });
 }
 
 module.exports = {
-  app, cache, esportsCache, lolStats, tracker,
+  app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
@@ -2080,4 +3352,7 @@ module.exports = {
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
+  tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
+  pollTail, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
+  routeSignal, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };
