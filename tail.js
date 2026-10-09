@@ -647,6 +647,9 @@ function parsePriceHistory(payload, { strict = false } = {}) {
   }
   const byT = new Map();
   for (const x of rows) {
+    // a settled market's last point is its resolution (resolution_seconds 0,
+    // price 0 or 1), not a price anyone traded at
+    if (x && !Array.isArray(x) && Number(x.resolution_seconds) === 0 && x.resolution_seconds !== null && x.resolution_seconds !== '') continue;
     const t = toMs(Array.isArray(x) ? x[0] : pick(x?.t, x?.timestamp, x?.ts, x?.time));
     const p = num(Array.isArray(x) ? x[1] : pick(x?.p, x?.price, x?.value));
     if (t != null && p != null && p >= 0 && p <= 1) byT.set(t, p);
@@ -1134,12 +1137,22 @@ async function fetchLeaderboard(http, { categories = LEADERBOARD_CATEGORIES, per
 
 // One wallet's positions of one status, newest first: sorted by time, since
 // CLOSED otherwise sorts by realized P&L and a capped list would keep only
-// the biggest winners. Settled lists ask for archived positions too: a loss
-// on an archived market is still a loss. → { rows (raw), truncated }
+// the biggest winners. Unclaimed lists ask for archived positions too: a
+// loss on an archived market is still a loss. (CLOSED with include_archived
+// is a 400 from the live API, so it's only sent where it's accepted, and a
+// 400 is retried without it.) → { rows (raw), truncated }
+const ARCHIVED_OK = new Set(['REDEEMABLE', 'REDEEMABLE_LOST']);
 async function fetchPositions(http, wallet, { status = 'OPEN', pageSize = 500, maxPages = 1 } = {}) {
   const params = { user: wallet, status, limit: Math.max(1, Math.min(pageSize, PAGE_MAX)), sort_by: 'TIMESTAMP', sort_direction: 'DESC' };
-  if (status !== 'OPEN') params.include_archived = true;
-  const r = await fetchPaged(http, `${DATA_API}/v2/positions`, params, { what: `${lower(status)} positions`, maxPages });
+  if (ARCHIVED_OK.has(status)) params.include_archived = true;
+  const what = `${lower(status)} positions`;
+  let r;
+  try { r = await fetchPaged(http, `${DATA_API}/v2/positions`, params, { what, maxPages }); }
+  catch (e) {
+    if (e?.response?.status !== 400 || !params.include_archived) throw e;
+    const { include_archived, ...plain } = params;
+    r = await fetchPaged(http, `${DATA_API}/v2/positions`, plain, { what, maxPages });
+  }
   // each row says which list it came from, whether or not the API does
   return { rows: r.rows.map(x => (x && typeof x === 'object' && x.status == null ? { ...x, status } : x)), truncated: r.truncated };
 }

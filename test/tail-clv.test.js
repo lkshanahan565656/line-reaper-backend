@@ -26,6 +26,10 @@ test('price history: every point shape and wrapper parses; junk dropped; oldest 
   }
   const junk = [{ t: t0, p: 1.5 }, { t: null, p: 0.4 }, { p: 0.4 }, 'x', null, [t0], { t: t0 + 600, p: 0.5 }, { t: t0 + 600, p: 0.5 }, { t: t0 + 900, p: 0 }];
   assert.deepEqual(T.parsePriceHistory(junk).points, [{ t: (t0 + 600) * 1000, p: 0.5 }, { t: (t0 + 900) * 1000, p: 0 }], 'a settled 0 is a price');
+  // the live v2 shape: the last point of a settled market is its resolution, not a trade
+  const live = { data: [{ timestamp: t0, price: 0.41, resolution_seconds: 300 }, { timestamp: t0 + 300, price: 0.42, resolution_seconds: 300 }, { timestamp: t0 + 600, price: 0, resolution_seconds: 0 }],
+    pagination: { limit: 1000, offset: 0, has_more: false, next_cursor: null } };
+  assert.deepEqual(T.parsePriceHistory(live), { points: want, truncated: false });
   assert.equal(T.parsePriceHistory({ data: want, pagination: { has_more: true, next_cursor: 'abc' } }).truncated, true);
   assert.equal(T.parsePriceHistory({ data: { history: want, pagination: { has_more: true, next_cursor: 'abc' } } }).truncated, true);
   assert.deepEqual(T.parsePriceHistory({ data: null }), { points: [], truncated: false });

@@ -208,6 +208,9 @@ async function fetchOddsApiProps(sportKey) {
 // PP gets blocked (403) from datacenter IPs — when that happens, back off to
 // 30-minute retries instead of hammering every 2 min. Esports runs on UD anyway.
 let ppFail = { count: 0, until: 0 };
+// the last failure of each DFS scrape, for /api/status (cleared on success)
+const dfsError = { prizepicks: null, underdog: null };
+const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
 async function scrapePrizePicks() {
   if (Date.now() < ppFail.until) return;
@@ -241,11 +244,13 @@ async function scrapePrizePicks() {
     if (allLines.length > 0) {
       cache.prizepicks = { data: allLines, updated: new Date().toISOString() };
       ppFail = { count: 0, until: 0 };
+      dfsError.prizepicks = null;
       cache.ppLeagueLabels = [...new Set(allLines.map(l => l.sport))].slice(0, 20);
       console.log(`PP: ${allLines.length} lines · leagues: ${cache.ppLeagueLabels.slice(0, 12).join(', ')}`);
     }
   } catch(e) {
     const s = e.response?.status;
+    noteDfsError('prizepicks', e);
     ppFail.count++;
     if ((s === 403 || s === 429) && ppFail.count >= 3) {
       ppFail.until = Date.now() + 30 * 60 * 1000;
@@ -334,10 +339,11 @@ async function scrapeUnderdog() {
     });
     const lines = parseUnderdogPayload(res.data || {});
     cache.underdog = { data: lines, updated: new Date().toISOString() };
+    dfsError.underdog = null;
     cache.udSportLabels = [...new Set(lines.map(l => l.sport).filter(Boolean))].slice(0, 25);
     const withMult = lines.filter(l => l.multiplier !== 1.00).length;
     console.log(`UD: ${lines.length} lines (${withMult} boosted/demoted) · sports: ${cache.udSportLabels.slice(0, 12).join(', ') || 'NONE RESOLVED'}`);
-  } catch(e) { console.error('UD error:', e.message); }
+  } catch(e) { noteDfsError('underdog', e); console.error('UD error:', e.message, e.response?.status); }
 }
 
 // ─── OWLS FETCHERS (with dead-key circuit breaker) ────────────────────────────
@@ -3196,8 +3202,8 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   version: '3.21.0',
   modelWeight: MODEL_WEIGHT,
-  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until },
-  underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels },
+  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
+  underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   esports: {
     picks: esportsCache.picks.length,
     updated: esportsCache.lastUpdated,

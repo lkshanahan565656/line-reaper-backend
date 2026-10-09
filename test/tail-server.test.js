@@ -179,7 +179,8 @@ test('candidates from the v2 leaderboard, then a scoring batch grades the wallet
   assert.equal(tr.categories.politics.grade, 'A');
   // every settled status was read, newest first (CLOSED would otherwise keep only the biggest winners)
   const pos = calls.filter(c => c.url.endsWith('/v2/positions'));
-  for (const status of ['CLOSED', 'REDEEMABLE', 'REDEEMABLE_LOST']) assert.ok(pos.some(c => c.params.status === status && c.params.sort_by === 'TIMESTAMP' && c.params.include_archived === true), `${status}, archived included`);
+  for (const status of ['CLOSED', 'REDEEMABLE', 'REDEEMABLE_LOST']) assert.ok(pos.some(c => c.params.status === status && c.params.sort_by === 'TIMESTAMP'), status);
+  assert.ok(pos.every(c => (c.params.status === 'CLOSED' || c.params.status === 'OPEN') !== (c.params.include_archived === true)), 'archived only on the unclaimed lists (CLOSED with it is a 400)');
   assert.ok(calls.some(c => c.url.endsWith('/v2/prices-history')), 'closing lines measured');
   assert.ok(!calls.some(c => /data-api\.polymarket\.com\/(?!v2\/)/.test(c.url)), 'v1 is retired: every data-API call is v2');
   // scores survive a restart

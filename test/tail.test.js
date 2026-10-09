@@ -658,8 +658,9 @@ test('v2 lists follow next_cursor to the end or the page cap (truncated); settle
     [['CLOSED', undefined], ['CLOSED', 'c2'], ['CLOSED', 'c4'], ['REDEEMABLE', undefined], ['REDEEMABLE_LOST', undefined]]);
   assert.deepEqual(http.calls[0], {
     url: 'https://data-api.polymarket.com/v2/positions', timeout: 10000,
-    params: { user: W(1), status: 'CLOSED', limit: 2, sort_by: 'TIMESTAMP', sort_direction: 'DESC', include_archived: true },
-  }, 'newest first: CLOSED would otherwise sort by realized P&L and keep only the winners');
+    params: { user: W(1), status: 'CLOSED', limit: 2, sort_by: 'TIMESTAMP', sort_direction: 'DESC' },
+  }, 'newest first: CLOSED would otherwise sort by realized P&L and keep only the winners; no include_archived (a 400 on CLOSED)');
+  assert.deepEqual(http.calls.filter(c => c.params.include_archived).map(c => c.params.status), ['REDEEMABLE', 'REDEEMABLE_LOST'], 'archived unclaimed positions count');
   assert.equal(T.scoreWallet({ wallet: W(1), closed: full.rows }, { now: NOW }).n, 7);
 
   http.calls.length = 0;
@@ -669,6 +670,17 @@ test('v2 lists follow next_cursor to the end or the page cap (truncated); settle
   assert.equal(http.calls.filter(c => c.params.status === 'CLOSED').length, 2);
   assert.equal((await T.fetchSettledPositions(http, W(1), { pageSize: 5000 })).rows.length, 7);
   assert.equal(http.calls.at(-1).params.limit, 1000, 'never more than the API serves');
+
+  // the API turning include_archived down (400) costs a retry, not the wallet
+  const picky = recorder((url, p) => {
+    if (p.include_archived) throw Object.assign(new Error('Request failed with status code 400'), { response: { status: 400 } });
+    return page(all.filter(r => r.status === p.status), p);
+  });
+  assert.equal((await T.fetchSettledPositions(picky, W(1))).rows.length, 7);
+  assert.deepEqual(picky.calls.map(c => [c.params.status, !!c.params.include_archived]),
+    [['CLOSED', false], ['REDEEMABLE', true], ['REDEEMABLE', false], ['REDEEMABLE_LOST', true], ['REDEEMABLE_LOST', false]]);
+  const down = recorder(() => { throw Object.assign(new Error('Request failed with status code 500'), { response: { status: 500 } }); });
+  await assert.rejects(T.fetchSettledPositions(down, W(1)), /500/, 'other failures still fail');
 
   http.calls.length = 0;
   const open = await T.fetchOpenPositions(http, W(1));
