@@ -65,17 +65,22 @@ function inSeasonSports() {
 
 // Low-usage mode for small Odds API plans (see quota.js).
 const { createCreditBudget, oddsCost } = require('./quota');
-const oddsBudget = createCreditBudget({
-  setting: process.env.ODDS_API_BUDGET || '', resetDay: parseInt(process.env.ODDS_API_RESET_DAY) || 1,
-});
+// Plans up to this many credits a month (the 20K and 100K plans) are paced:
+// props and game odds each get a share, spread evenly until the reset.
+const ODDS_PACE_MAX = parseInt(process.env.ODDS_API_PACE_MAX) || 200000;
+const PROPS_SHARE = (() => { const x = parseFloat(process.env.ODDS_API_PROPS_SHARE); return x > 0 && x < 1 ? x : x >= 1 && x < 100 ? x / 100 : 0.6; })();
+const budgetOpts = { setting: process.env.ODDS_API_BUDGET || '', resetDay: parseInt(process.env.ODDS_API_RESET_DAY) || 1, paceMax: ODDS_PACE_MAX };
 // Player props cost a credit per market per game, far more than a small plan
 // has, so low-usage mode skips them unless ODDS_API_PROPS=on.
 const propsAllowed = () => !oddsBudget.active() || /^(1|on|true|yes)$/i.test(process.env.ODDS_API_PROPS || '');
+// game odds get what props don't use
+const oddsBudget = createCreditBudget({ ...budgetOpts, share: () => (propsAllowed() && propsBudget.paced() ? 1 - PROPS_SHARE : 1) });
+const propsBudget = createCreditBudget({ ...budgetOpts, share: PROPS_SHARE });
 
 function noteQuota(res) {
   const rem = res?.headers?.['x-requests-remaining'];
   if (rem != null) cache.quotaRemaining = parseFloat(rem);
-  if (res?.headers) oddsBudget.noteHeaders(res.headers);
+  if (res?.headers) { oddsBudget.noteHeaders(res.headers); propsBudget.noteHeaders(res.headers); }
 }
 
 // ─── ODDS API PROP MARKETS ────────────────────────────────────────────────────
@@ -100,6 +105,7 @@ const SPORT_PROP_MARKETS = {
 const PROP_BOOKS = 'draftkings,fanduel,betmgm,caesars,bet365,pinnacle,novig,bovada,betonlineag,lowvig,betrivers,pointsbetus';
 
 // ─── ODDS API PLAYER PROPS ────────────────────────────────────────────────────
+const propsTouched = {};   // sport → when its props were last pulled (or it had no games)
 async function fetchOddsApiProps(sportKey) {
   const markets = SPORT_PROP_MARKETS[sportKey];
   if (!markets) return [];
@@ -114,11 +120,16 @@ async function fetchOddsApiProps(sportKey) {
     noteQuota(eventsRes);
     if (!propsAllowed()) return cache.oddsApiProps[sportKey]?.data || [];
     const events = eventsRes.data || [];
-    if (!events.length) return [];
+    if (!events.length) { propsTouched[sportKey] = Date.now(); return []; }
 
+    // Only next 4 events to conserve quota. A paced plan pays for the whole
+    // pull up front (an upper bound: games without a market cost less), or
+    // keeps the cached props until enough credits have accrued.
+    const next = events.slice(0, 4);
+    if (!propsBudget.take(next.length * markets.length).ok) return cache.oddsApiProps[sportKey]?.data || [];
+    propsTouched[sportKey] = Date.now();
     const allProps = [];
-    // Only next 4 events to conserve quota
-    for (const event of events.slice(0, 4)) {
+    for (const event of next) {
       try {
         // Batch 1: first 4 markets
         const res = await axios.get(
@@ -202,6 +213,21 @@ async function fetchOddsApiProps(sportKey) {
     console.warn(`OddsAPI props ${sportKey}:`, e.response?.status, e.message);
     return cache.oddsApiProps[sportKey]?.data || [];
   }
+}
+
+// Every 5 minutes: the in-season sport whose props are oldest. Unpaced, each
+// sport every 30 minutes as before; on a paced plan the budget decides when,
+// and the stalest sport gets the credits as they accrue, so sports take turns.
+const PROPS_EVERY_MS = 30 * 60e3;
+async function refreshOddsApiProps(now = Date.now()) {
+  if (!ODDS_API_KEY || !propsAllowed()) return null;
+  const season = inSeasonSports();
+  const due = Object.keys(SPORT_PROP_MARKETS).filter(s => season.includes(s))
+    .filter(s => propsBudget.paced() || now - (propsTouched[s] || 0) >= PROPS_EVERY_MS)
+    .sort((a, b) => (propsTouched[a] || 0) - (propsTouched[b] || 0));
+  if (!due.length) return null;
+  await fetchOddsApiProps(due[0]);
+  return due[0];
 }
 
 // ─── DFS SCRAPERS ─────────────────────────────────────────────────────────────
@@ -3233,6 +3259,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
   oddsApiBudget: oddsBudget.state(),
+  oddsApiPropsBudget: propsBudget.state(),
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
 }); });
@@ -3267,10 +3294,7 @@ cron.schedule('*/30 * * * * *', async () => {
 cron.schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
 
 // Odds API props — 30-min staggered, in-season only (the guard inside skips off-season sports)
-cron.schedule('0,30 * * * *', () => fetchOddsApiProps('basketball_nba'));
-cron.schedule('3,33 * * * *', () => fetchOddsApiProps('baseball_mlb'));
-cron.schedule('6,36 * * * *', () => fetchOddsApiProps('icehockey_nhl'));
-cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
+cron.schedule('*/5 * * * *', () => refreshOddsApiProps().catch(e => console.warn('OddsAPI props:', e.message)));
 
 // REMOVED: the */3 fetchOddsForSport cron. It cost 4 sports x 3 markets every
 // 3 minutes = ~5,700 Odds API credits per DAY, and nothing consumed it — the
@@ -3343,7 +3367,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, cache, oddsBudget, propsBudget, refreshOddsApiProps, inSeasonSports, SPORT_PROP_MARKETS, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

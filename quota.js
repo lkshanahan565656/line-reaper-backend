@@ -9,6 +9,11 @@
 // On when ODDS_API_BUDGET is a number (credits per month), or automatically
 // when the Odds API reports a plan of 1,000 credits or fewer. ODDS_API_BUDGET=off
 // turns it off whatever the plan.
+//
+// Paced (a bigger plan, up to paceMax credits, e.g. the 20K and 100K plans):
+// the same even spreading, without the low-usage cuts. Several budgets can
+// split one plan: each gets `share` (a number or a function) of the credits
+// left, and every one reads the same account-wide headers.
 
 function msUntilReset(now, resetDay = 1) {
   const d = new Date(now);
@@ -18,13 +23,15 @@ function msUntilReset(now, resetDay = 1) {
   return Math.max(3600000, Date.UTC(y, m, Math.min(resetDay, days)) - now);
 }
 
-function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = () => Date.now() } = {}) {
+function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = () => Date.now(), share = 1, paceMax = 0 } = {}) {
   const off = /^off$/i.test(setting);
   const fixed = parseInt(setting) > 0 ? parseInt(setting) : null;
-  let remaining = null, used = 0, nextAt = 0, autoFree = false, blocked = 0, last = null;
+  let remaining = null, used = 0, nextAt = 0, autoFree = false, small = false, blocked = 0, last = null;
 
   const plan = () => fixed ?? (remaining != null ? remaining + used : null);
   const active = () => !off && (fixed != null || autoFree);
+  const paced = () => !off && (active() || small);
+  const part = () => { const x = Number(typeof share === 'function' ? share() : share); return x > 0 ? Math.min(1, x) : 0; };
   const left = () => (remaining != null ? remaining : fixed != null ? Math.max(0, fixed - used) : Infinity);
 
   // read x-requests-remaining / x-requests-used from any Odds API reply
@@ -32,23 +39,26 @@ function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = 
     const rem = parseFloat(h['x-requests-remaining']), u = parseFloat(h['x-requests-used']);
     if (isFinite(rem)) remaining = rem;
     if (isFinite(u)) used = u;
-    const was = active();
-    if (isFinite(rem) && isFinite(u)) autoFree = rem + u <= 1000;
+    const was = paced();
+    if (isFinite(rem) && isFinite(u)) {
+      autoFree = rem + u <= 1000;
+      small = paceMax > 0 && rem + u <= paceMax;
+    }
     // the call that revealed a small plan still counts toward the pacing
-    if (!was && active() && last) { const r = rate(); nextAt = last.at + (r > 0 ? last.cost / r : 0); }
+    if (!was && paced() && last) { const r = rate(); nextAt = last.at + (r > 0 ? last.cost / r : 0); }
   }
 
+  // this budget's credits left after the reserve
+  const spendable = () => Math.max(0, left() - (plan() || 0) * reserve) * part();
   // credits/ms we can spend and still last until the reset
   function rate() {
-    const spendable = left() - (plan() || 0) * reserve;
-    return Math.max(0, spendable) / msUntilReset(now(), resetDay);
+    return spendable() / msUntilReset(now(), resetDay);
   }
 
   // May we make a call costing `cost` credits now? { ok, waitMs }
   function check(cost) {
-    if (!active()) return { ok: true, waitMs: 0 };
-    const spendable = left() - (plan() || 0) * reserve;
-    if (spendable < cost) return { ok: false, waitMs: msUntilReset(now(), resetDay) };
+    if (!paced()) return { ok: true, waitMs: 0 };
+    if (spendable() < cost) return { ok: false, waitMs: msUntilReset(now(), resetDay) };
     const t = now();
     return t >= nextAt ? { ok: true, waitMs: 0 } : { ok: false, waitMs: nextAt - t };
   }
@@ -56,7 +66,7 @@ function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = 
   function spend(cost) {
     if (fixed != null && remaining == null) used += cost;
     last = { at: now(), cost };
-    if (!active()) return;
+    if (!paced()) return;
     const r = rate();
     nextAt = now() + (r > 0 ? cost / r : msUntilReset(now(), resetDay));
   }
@@ -69,17 +79,18 @@ function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = 
   }
 
   function state() {
-    const r = active() ? rate() : null;
+    const r = paced() ? rate() : null;
     return {
-      lowUsage: active(), reason: off ? 'off' : fixed != null ? 'ODDS_API_BUDGET' : autoFree ? 'free plan detected' : null,
+      lowUsage: active(), paced: paced(), share: part(),
+      reason: off ? 'off' : fixed != null ? 'ODDS_API_BUDGET' : autoFree ? 'free plan detected' : small ? `plan of ${plan()} credits: paced` : null,
       plan: plan(), remaining: remaining ?? (fixed != null ? left() : null), used,
       creditsPerDay: r != null ? Math.round(r * 86400000 * 10) / 10 : null,
-      nextCallIn: active() ? Math.max(0, Math.round((nextAt - now()) / 1000)) : 0,
+      nextCallIn: paced() ? Math.max(0, Math.round((nextAt - now()) / 1000)) : 0,
       skippedCalls: blocked,
     };
   }
 
-  return { noteHeaders, check, spend, take, state, active };
+  return { noteHeaders, check, spend, take, state, active, paced };
 }
 
 // Credits one Odds API odds call costs: markets × regions.
