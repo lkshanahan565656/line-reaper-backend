@@ -146,18 +146,26 @@ function mixtureProb(line, side, scenarios, meanPerMap, k, normalCDF) {
 }
 
 // ── team names ──
+// "academy" is NOT stripped: T1 Academy is a different team from T1.
 function teamKey(n) {
   return (n || '').toLowerCase()
-    .replace(/\b(team|esports?|gaming|club|academy)\b/g, '')
+    .replace(/\b(team|esports?|gaming|club)\b/g, '')
     .replace(/[^a-z0-9]/g, '');
 }
+
+// Suffixes that mark an academy / second roster (Fnatic Rising, MOUZ NXT,
+// Gen.G Global Academy, NAVI Junior, T1 Academy, ...).
+const SECOND_TEAM_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)/;
 
 function teamsMatch(a, b) {
   const x = teamKey(a), y = teamKey(b);
   if (!x || !y) return false;
   if (x === y) return true;
-  if (x.length >= 3 && y.length >= 3 && (x.startsWith(y) || y.startsWith(x))) return true;
-  return false;
+  if (x.length < 3 || y.length < 3) return false;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  if (!long.startsWith(short)) return false;
+  // "FaZe" ↔ "FaZe Clan" is fine; "MOUZ" ↔ "MOUZ NXT" is not.
+  return !SECOND_TEAM_RE.test(long.slice(short.length));
 }
 
 // "Vitality vs NAVI", "VIT @ NAVI", "G2 - FaZe" → ['Vitality', 'NAVI']
@@ -254,10 +262,13 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
       const row = {
         sport: sportKey(entry.sport), teamA: entry.teamA, teamB: entry.teamB, bestOf,
         pSeriesA: pSeries, pMapA: seriesToMapProb(pSeries, bestOf), at: now(),
+        source: entry.source || 'manual', start: entry.start || null,
         // prices quoted on a single map (Bo1 or a map line) are already map probs
         ...(entry.perMap ? { pMapA: pSeries } : {}),
       };
       const i = rows.findIndex(r => r.sport === row.sport && teamsMatch(r.teamA, row.teamA) && teamsMatch(r.teamB, row.teamB));
+      // a fresh price someone entered by hand outranks one from a feed
+      if (i >= 0 && rows[i].source === 'manual' && row.source !== 'manual' && now() - rows[i].at <= ttlMs) return rows[i];
       if (i >= 0) rows[i] = row; else rows.push(row);
       return row;
     },
@@ -266,8 +277,8 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
       const s = sportKey(sport), t = now();
       for (const r of rows) {
         if (r.sport !== s || t - r.at > ttlMs) continue;
-        if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf };
-        if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf };
+        if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf, source: r.source };
+        if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source };
       }
       return null;
     },
@@ -282,7 +293,7 @@ function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
   const s = sportKey(sport);
   let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
   const fed = oddsBook?.lookup(s, team, opponent);
-  if (fed) { pMap = fed.pMap; source = 'odds'; bestOf = fed.bestOf || bestOf; }
+  if (fed) { pMap = fed.pMap; source = fed.source === 'manual' || !fed.source ? 'odds' : fed.source; bestOf = fed.bestOf || bestOf; }
   const ratings = elo[s];
   if (ratings) pTypical = ratings.typical(team);
   if (pMap == null && ratings && opponent) {

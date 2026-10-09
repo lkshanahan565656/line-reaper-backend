@@ -115,3 +115,11 @@ test('live edges: new or newly +EV rows fire once, with a cooldown', () => {
   assert.equal(E.diffEv([], [row(2)], { now: NOW }).length, 0, 'below threshold');
   assert.match(E.describeEv(row(4)), /\+4\.0% Knicks @ Celtics ML Knicks @ draftkings \+150 \(fair \+140\)/);
 });
+
+test('screen reports the fair price of every market through `fairs`', () => {
+  const fairs = new Map();
+  E.screen({ now: NOW, fairs, feeds: [{ games: [game([h2h('pinnacle', -150, 130), h2h('fanduel', -170, 110)])] }] });
+  const vals = [...fairs.values()];
+  assert.equal(vals.length, 2, 'both sides, though nothing is +EV');
+  assert.ok(Math.abs(vals[0] + vals[1] - 100) < 0.02);
+});

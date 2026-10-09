@@ -132,12 +132,21 @@ function publicUser(u) {
   };
 }
 
-// Active, trialing, or paid through the end of a cancelled period.
+// Comped; active / trialing / past_due (Stripe still retrying) within the
+// period; or cancelled at period end and still inside the paid period.
+// Anything else (incomplete, incomplete_expired, unpaid, paused, ...) is not Pro.
+const PAID_STATUSES = new Set(['active', 'trialing', 'past_due']);
+const RENEWAL_GRACE_MS = 3 * 86400000;
 function isPro(u, now = Date.now()) {
   if (!u) return false;
   if (u.comp) return true;                                    // comped by the owner
-  if (u.planStatus === 'active' || u.planStatus === 'trialing') return true;
-  return !!(u.currentPeriodEnd && new Date(u.currentPeriodEnd).getTime() > now && u.planStatus !== 'unpaid');
+  const end = u.currentPeriodEnd ? new Date(u.currentPeriodEnd).getTime() : null;
+  const inPeriod = end != null && isFinite(end) && end > now;
+  // a paying sub gets 3 days past its period end, so a late renewal webhook
+  // doesn't lock out someone who has paid
+  if (PAID_STATUSES.has(u.planStatus)) return end == null || !isFinite(end) || end + RENEWAL_GRACE_MS > now;
+  if (u.planStatus === 'canceled') return inPeriod;
+  return false;
 }
 
 function createAuth({ store, secret, now = () => Date.now() }) {

@@ -180,3 +180,54 @@ test('subscription webhooks drive the plan', async () => {
   assert.deepEqual(r, { linked: other.user.id });
   assert.equal((await store.byCustomer('cus_new')).email, 'c@d.co');
 });
+
+test('a late older subscription event cannot resurrect a deleted subscription', async () => {
+  const store = A.createMemoryUserStore();
+  const auth = A.createAuth({ store, secret: SECRET });
+  const { user } = await auth.signup('late@b.co', 'longenough');
+  const u = await store.get(user.id);
+  u.stripeCustomerId = 'cus_late';
+  await store.put(u);
+  const billing = createBilling({ http: fakeStripe(), secretKey: 'sk', priceId: 'p', store, log: { warn() {} } });
+  const end = Math.floor(Date.now() / 1000) + 30 * 86400;
+  const sub = status => ({ id: 'sub_L', customer: 'cus_late', status, current_period_end: end });
+
+  await billing.handleEvent({ type: 'customer.subscription.created', created: 1000, data: { object: sub('active') } });
+  await billing.handleEvent({ type: 'customer.subscription.deleted', created: 1200, data: { object: sub('canceled') } });
+  // retried/late update from before the deletion
+  const r = await billing.handleEvent({ type: 'customer.subscription.updated', created: 1100, data: { object: sub('active') } });
+  assert.equal(r.ignored, 'stale event');
+  let now = await store.get(user.id);
+  assert.equal(now.plan, 'free');
+  assert.equal(now.lastEventAt, 1200);
+  assert.ok(!A.isPro(now));
+  // same-second update for the deleted subscription also loses
+  await billing.handleEvent({ type: 'customer.subscription.updated', created: 1200, data: { object: sub('active') } });
+  assert.ok(!A.isPro(await store.get(user.id)));
+  // a genuinely newer subscription still applies
+  await billing.handleEvent({ type: 'customer.subscription.created', created: 1300, data: { object: { ...sub('active'), id: 'sub_M' } } });
+  now = await store.get(user.id);
+  assert.ok(A.isPro(now));
+  assert.equal(now.lastEventAt, 1300);
+});
+
+test('isPro rejects non-paying statuses even inside the period', () => {
+  const now = Date.parse('2026-10-08T00:00:00Z');
+  const future = new Date(now + 86400000).toISOString(), past = new Date(now - 4 * 86400000).toISOString();
+  for (const s of ['incomplete', 'incomplete_expired', 'paused', 'unpaid', 'weird']) {
+    assert.ok(!A.isPro({ planStatus: s, currentPeriodEnd: future }, now), s);
+  }
+  assert.ok(A.isPro({ planStatus: 'active', currentPeriodEnd: future }, now));
+  assert.ok(!A.isPro({ planStatus: 'active', currentPeriodEnd: past }, now), 'lapsed past the renewal grace');
+  assert.ok(!A.isPro({ planStatus: 'past_due', currentPeriodEnd: past }, now));
+  assert.ok(!A.isPro({ planStatus: 'canceled' }, now));
+  assert.ok(A.isPro({ planStatus: 'trialing' }, now));
+});
+
+test('a paying subscription keeps Pro for 3 days past its period end (late renewal webhook)', () => {
+  const now = Date.parse('2026-10-08T00:00:00Z');
+  const ago = d => new Date(now - d * 86400000).toISOString();
+  assert.ok(A.isPro({ planStatus: 'active', currentPeriodEnd: ago(1) }, now));
+  assert.ok(!A.isPro({ planStatus: 'active', currentPeriodEnd: ago(4) }, now));
+  assert.ok(!A.isPro({ planStatus: 'canceled', currentPeriodEnd: ago(1) }, now), 'cancelled gets no grace');
+});
