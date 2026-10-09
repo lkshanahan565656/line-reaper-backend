@@ -3593,7 +3593,7 @@ function evConnect() {
   evSource.onopen = () => { evLive = true; renderEv(); if (tailActive) renderTail(); };
   evSource.onerror = () => { evLive = false; };
   // the Sharp Tail tab rides the same stream
-  for (const type of ['tail', 'whale', 'xarb']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
+  for (const type of ['tail', 'whale', 'xarb', 'board']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
   const refreshIfNewer = at => { if (evActive && at && (!evState.updated || at > Date.parse(evState.updated))) loadEv(); };
   evSource.addEventListener('tick', m => { try { refreshIfNewer(JSON.parse(m.data).at); } catch {} });
   evSource.addEventListener('ev', m => {
@@ -3727,11 +3727,11 @@ function renderEv() {
 // as sized signals, whale flow on Kalshi + Polymarket, exchange arbs and the
 // signals' own track record. Live over the same /api/ev/stream as the +EV
 // board (`tail`, `whale` and `xarb` events); polling is the fallback.
-const TAIL_VIEWS = [['signals', 'SIGNALS'], ['traders', 'TRADERS'], ['whales', 'WHALE FLOW'], ['arbs', 'EXCHANGE ARBS'], ['record', '📈 TRACK RECORD']];
+const TAIL_VIEWS = [['signals', 'SIGNALS'], ['board', '🎯 SHARP BOARD'], ['traders', 'TRADERS'], ['whales', 'WHALE FLOW'], ['arbs', 'EXCHANGE ARBS'], ['record', '📈 TRACK RECORD']];
 const TAIL_CATS = ['sports', 'politics', 'crypto', 'econ', 'culture', 'other'];
 // No bankroll here: units are the same for everyone and never turned into dollars.
 const tailState = { view: 'signals', category: 'all', grade: 'graded', exchange: 'all', sizedOnly: false,
-  signals: [], locked: 0, delay: 0, traders: [], traderState: null, whales: null, arbs: null, record: null, settings: null, pro: false, updated: null, error: null,
+  signals: [], locked: 0, delay: 0, traders: [], traderState: null, board: null, whales: null, arbs: null, record: null, settings: null, pro: false, updated: null, error: null,
   withheld: {} };
 let tailActive = false, tailTimer = null, tailSoonTimer = null;
 try {
@@ -3781,7 +3781,7 @@ function tailVenueLine(s) {
   const v = s.venue;
   if (!v) return tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
-  return `Tail at ${v.name} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
+  return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
@@ -3808,6 +3808,8 @@ function tailRenderControls() {
     html = lbl('MARKET') + ['all', ...TAIL_CATS].map(c => chip('category', c, c.toUpperCase(), tailState.category === c)).join('')
       + '<span style="width:10px"></span>' + lbl('GRADE')
       + [['graded', 'A + B'], ['A', 'A ONLY'], ['B', 'B ONLY'], ['all', 'ALL SCORED']].map(([g, l]) => chip('grade', g, l, tailState.grade === g)).join('');
+  } else if (tailState.view === 'board') {
+    html = lbl('MARKET') + ['all', ...TAIL_CATS].map(c => chip('category', c, c.toUpperCase(), tailState.category === c)).join('');
   } else if (tailState.view === 'whales') {
     html = [['all', 'BOTH'], ['kalshi', 'KALSHI'], ['polymarket', 'POLYMARKET']].map(([x, l]) => chip('exchange', x, l, tailState.exchange === x)).join('');
   }
@@ -3827,7 +3829,7 @@ async function loadTail() {
   tailRenderControls();
   const el = document.getElementById('tailContent');
   const v = tailState.view;
-  const have = { signals: tailState.signals.length, traders: tailState.traders.length, whales: tailState.whales, arbs: tailState.arbs, record: tailState.record }[v];
+  const have = { signals: tailState.signals.length, board: tailState.board, traders: tailState.traders.length, whales: tailState.whales, arbs: tailState.arbs, record: tailState.record }[v];
   if (!have) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try {
     if (!tailState.settings) tailState.settings = await tailGet('/api/tail/settings').catch(e => { if (e.old) throw e; return null; });
@@ -3835,6 +3837,9 @@ async function loadTail() {
     if (v === 'signals') {
       d = await tailGet('/api/tail/signals?limit=300');
       Object.assign(tailState, { signals: d.signals || [], locked: d.locked || 0, delay: d.delayMinutes || 0, updated: d.updated });
+    } else if (v === 'board') {
+      d = await tailGet(`/api/tail/board?limit=100${tailState.category !== 'all' ? '&category=' + tailState.category : ''}`);
+      tailState.board = d;
     } else if (v === 'traders') {
       const q = new URLSearchParams({ limit: '200' });
       if (tailState.category !== 'all') q.set('category', tailState.category);
@@ -3874,9 +3879,18 @@ function tailOnLive(type, data) {
   if (type === 'tail') {
     const known = new Set(tailState.signals.map(s => s.id));
     tailState.signals = [...data.filter(s => !known.has(s.id)).reverse(), ...tailState.signals].slice(0, 300);
-    const top = data.filter(s => s.type === 'entry' && tailUnitsOf(s) > 0).sort((a, b) => tailUnitsOf(b) - tailUnitsOf(a))[0];
-    if (top) showToast(`🐋 ${top.grade} ${top.name || tailShort(top.wallet)} bought ${top.outcome || ''} · ${top.market} · ${tailVenueLine(top)}`);
+    const sized = data.filter(s => s.type === 'entry' && tailUnitsOf(s) > 0).sort((a, b) => tailUnitsOf(b) - tailUnitsOf(a));
+    const line = s => `${s.grade} ${s.name || tailShort(s.wallet)} bought ${s.outcome || ''} · ${s.market} · ${tailVenueLine(s)}`;
+    if (sized[0]) showToast(`🐋 ${line(sized[0])}`);
+    // with the tab in the background: a desktop alert per sized entry (a few at most)
+    if (tailNotifyOn()) for (const s of sized.slice(0, 3)) { try { new Notification('🐋 Sharp Tail', { body: line(s), tag: `tail|${s.id}` }); } catch { /* a nicety */ } }
     if (tailActive && tailState.view === 'signals') renderTail();
+  } else if (type === 'board') {
+    // second chances: a side the sharps hold is back at or under what they paid
+    const line = a => `${a.wallets} sharp${a.wallets === 1 ? '' : 's'} hold ${a.outcome || '?'} on ${a.title} at ${tailC(a.avgEntry)} avg; it's ${tailC(a.price)} now${a.venues?.[0] ? ` · ${a.venues[0].name} ${tailVenuePrice(a.venues[0])}` : ''}`;
+    if (data[0]) showToast(`🎯 Second chance: ${line(data[0])}`);
+    if (tailNotifyOn()) for (const a of data.slice(0, 3)) { try { new Notification('🎯 Second chance', { body: line(a), tag: `board|${a.conditionId}|${a.asset}` }); } catch { /* a nicety */ } }
+    tailSoon('board');
   } else if (type === 'whale') {
     tailSoon('whales');
   } else if (type === 'xarb') {
@@ -3887,12 +3901,27 @@ function tailOnLive(type, data) {
   }
 }
 
+function tailNotifyOn() {
+  try { return localStorage.getItem('lr_tail_notify') === '1' && 'Notification' in window && Notification.permission === 'granted'; } catch { return false; }
+}
+async function tailToggleNotify() {
+  try {
+    if (localStorage.getItem('lr_tail_notify') === '1') { localStorage.setItem('lr_tail_notify', '0'); renderTail(); return; }
+    if (!('Notification' in window)) { showToast('This browser has no desktop notifications', 'danger'); return; }
+    const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Notifications are blocked for this site', 'danger'); return; }
+    localStorage.setItem('lr_tail_notify', '1');
+    showToast('✓ You get a desktop alert when a sharp bets');
+  } catch { showToast('Could not turn on notifications', 'danger'); }
+  renderTail();
+}
+
 function renderTail() {
   const el = document.getElementById('tailContent');
   if (!el) return;
   tailRenderControls();
   const v = tailState.view;
-  el.innerHTML = v === 'signals' ? tailSignalsHTML() : v === 'traders' ? tailTradersHTML() : v === 'whales' ? tailWhalesHTML() : v === 'arbs' ? tailArbsHTML() : tailRecordHTML();
+  el.innerHTML = v === 'signals' ? tailSignalsHTML() : v === 'board' ? tailBoardHTML() : v === 'traders' ? tailTradersHTML() : v === 'whales' ? tailWhalesHTML() : v === 'arbs' ? tailArbsHTML() : tailRecordHTML();
 }
 
 function tailSignalsHTML() {
@@ -3903,6 +3932,7 @@ function tailSignalsHTML() {
     `<span style="color:#f1f5f9;font-weight:700">${list.length} SIGNALS</span>`,
     `<span>${all.filter(s => tailUnitsOf(s) > 0).length} SIZED</span>`,
     tailState.updated ? `<span>POLLED ${tailAgo(tailState.updated)} AGO</span>` : '',
+    `<button class="sport-chip" style="font-size:10px;padding:3px 10px" onclick="tailToggleNotify()" title="A desktop alert the moment a graded sharp bets, while this tab is open">${tailNotifyOn() ? '🔕 ALERTS OFF' : '🔔 ALERT ME'}</button>`,
   ]);
   const note = tailWithheld('signals');
   if (!list.length && note) return note + strip;
@@ -3916,13 +3946,14 @@ function tailSignalsHTML() {
     const left = exit ? `<b style="color:#f87171">EXIT</b><div class="tail-stat"><div class="k">THEY SOLD</div></div>`
       : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${routed && v ? escAttr(v.name) : ''}</div>`
       : routed && !v ? `<b style="color:#64748b">WATCH</b><div style="font-size:10px;color:#94a3b8;line-height:1.3">no venue yet</div>`
-      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
+      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v && !s.blocked ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
+      + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (s.topUp ? `<span class="tail-tag" title="This wallet already bought this outcome; the units only top you up to the new size (${s.target ?? '—'}u in total)">TOP-UP</span>` : '')
       + (s.via === 'stream' ? `<span class="tail-tag cons" title="Caught from Polymarket's live trade feed${s.lagMs != null ? `, ${Math.max(1, Math.round(s.lagMs / 1000))}s after the fill` : ''}">⚡ LIVE${s.lagMs != null && s.lagMs < 60e3 ? ` ${Math.max(1, Math.round(s.lagMs / 1000))}S` : ''}</span>` : '');
     return `<div class="tail-card ${exit ? 'exit' : sized ? 'sized' : 'muted'}">
@@ -3948,7 +3979,48 @@ function tailThresholds() {
   const line = g => { const x = o.grades[g]; return `${tailGrade(g)} ${x.minN}+ resolved bets · ${x.minEvents}+ events · ${tailUsd(x.minRisked)}+ risked · ROI ${tailPct(x.minRoi, 0)}+ · z ${x.minZ}+ · ≤${Math.round(x.maxConcentration * 100)}% of profit from one event (or one day's markets) · a bet in the last ${x.activeDays} days${x.minRecentRoi != null ? ` · 30-day ROI above ${tailPct(x.minRecentRoi, 0)}` : ''} · cap ${x.capUnits}u`; };
   return `<div class="tail-box"><div class="tail-box-head">HOW WALLETS ARE GRADED</div>
     <div class="tail-row" style="color:#cbd5e1">${line('A')}</div><div class="tail-row" style="color:#cbd5e1">${line('B')}</div>
-    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded. Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
+    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded.${o.maxInPlay != null ? ` Wallets that bought over ${Math.round(o.maxInPlay * 100)}% of their sampled game bets after the start are live bettors and aren't graded in sports.` : ''} Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
+}
+
+// Where the graded sharps are positioned now: one card a market, the side
+// with the most sharp weight, what they paid, the price now and where to take it.
+function tailBoardHTML() {
+  const d = tailState.board || {};
+  const rows = d.rows || [];
+  const locked = d.locked || 0;
+  const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Pro shows every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
+  const strip = tailStrip([
+    `<span style="color:#f1f5f9;font-weight:700">${rows.length + locked} MARKETS</span>`,
+    d.graded ? `<span>${d.graded.anyCategory ?? 0} GRADED SHARPS</span>` : '',
+    d.pending ? `<span>${d.pending} WALLETS STILL GRADING</span>` : '',
+  ]);
+  const note = tailWithheld('board');
+  if (!rows.length) return note + banner + strip + tailEmpty('NO SHARP POSITIONS YET', d.pending
+    ? 'Wallets are still being graded. A market shows up here as soon as a graded sharp holds a $100+ position in it.'
+    : 'None of the graded sharps hold an open $100+ position right now.');
+  return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.map(r => {
+    const L = r.lead, v = (r.venues || [])[0];
+    const mix = [L.A ? `${L.A}A` : '', L.B ? `${L.B}B` : ''].filter(Boolean).join(' · ');
+    const take = v ? tailLink(v.url, escAttr(v.buy ? `Take it at ${v.name}: ${v.buy} ${tailVenuePrice(v)}` : `Take ${L.outcome || 'it'} at ${v.name} ${tailVenuePrice(v)}`))
+      + (v.warning ? ` <span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span>` : '')
+      + ((r.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${r.venues.slice(1, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)}`).join(' · ')}</div>` : '')
+      : (tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only');
+    const against = r.against?.wallets ? `<span style="color:#f87171">${r.against.wallets} sharp${r.against.wallets === 1 ? '' : 's'}${r.against.cost != null && !r.locked ? ` (${tailUsd(r.against.cost)})` : ''} on the other side</span>` : '<span style="color:#10b981">no sharp on the other side</span>';
+    const who = (L.list || []).slice(0, 6).map(w => `<span class="tail-tag">${tailGrade(w.grade)} ${tailWho({ ...w, locked: r.locked })}${w.cost != null ? ` ${tailUsd(w.cost)}` : ''}${w.avgPrice != null ? ` @ ${tailC(w.avgPrice)}` : ''}</span>`).join(' ');
+    return `<div class="tail-card sized">
+      <div class="tail-units"><b>${L.wallets}</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${L.wallets === 1 ? 'SHARP' : 'SHARPS'}${mix ? ` · ${mix}` : ''}</div></div>
+      <div style="flex:1;min-width:220px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tail-tag">${escAttr(r.category || '')}</span>${L.belowEntry ? '<span class="tail-tag cons" title="The price now is at or below what the sharps paid on average">✓ AT OR BELOW THEIR ENTRY</span>' : ''}</div>
+        <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-top:4px">${escAttr(r.title || '')}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">ON <b style="color:#e2e8f0">${escAttr(L.outcome || '?')}</b>${L.cost != null && !r.locked ? ` · ${tailUsd(L.cost)} in` : ''} · ${against}</div>
+        <div class="tail-venue ${v ? '' : 'none'}">${take}</div>
+        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${who}</div>
+      </div>
+      <div class="tail-stat" title="What the sharps paid on average"><div class="k">THEIR AVG</div><div class="v">${tailC(L.avgEntry)}</div></div>
+      <div class="tail-stat" title="Polymarket's price for this side now"><div class="k">${tailUS() ? 'PM NOW' : 'NOW'}</div><div class="v" style="color:#f1f5f9">${tailC(L.price)}</div></div>
+      <div class="tail-stat" title="Share of the sharp money in this market that is on this side"><div class="k">AGREE</div><div class="v">${r.agreement == null ? '—' : Math.round(r.agreement * 100) + '%'}</div></div>
+    </div>`;
+  }).join('') + '</div>';
 }
 
 function tailTradersHTML() {
@@ -3989,6 +4061,8 @@ function tailTradersHTML() {
       ${stat('EDGE', s.edge == null && t.locked ? '🔒' : tailPct(s.edge), 'Shrunk edge used for sizing')}
       ${stat('30D ROI', tailPct(s.recentRoi), `Last 30 days (${s.recentN || 0} bets)`)}
       ${stat('TOP BET', s.concentration == null ? '—' : Math.round(s.concentration * 100) + '%', s.concentrationBy === 'day' ? 'Share of all winnings from one day\'s markets in one category' : 'Share of all winnings from the single best event')}
+      ${stat('CLV', s.clvN ? `<span style="color:${s.clv > 0 ? '#10b981' : '#f87171'}">${tailPct(s.clv)}</span> <span style="color:#64748b">(${s.clvN})</span>` : '—', 'Average closing-line value on recent pregame bets (how many measured): beating the close is the part of a record luck can\'t fake')}
+      ${s.inPlayShare != null ? stat('LIVE', Math.round(s.inPlayShare * 100) + '%', 'Share of sampled game bets first bought after the start. Over half and the wallet isn\'t graded in sports: live prices move faster than a follower') : ''}
     </div>`;
   }).join('') + `</div>` + tailThresholds();
 }
