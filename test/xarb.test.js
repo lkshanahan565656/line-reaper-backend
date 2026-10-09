@@ -123,7 +123,11 @@ test('kalshi: a lone game market finds its opponent in the title; a tie market m
 
 test('polymarket: second outcome / NO ask is 1 − bestBid, never the mid', () => {
   const [game, ...rest] = pRows(pmGame());
-  assert.equal(rest.length, 0, 'spread and total markets are skipped');
+  // the spread and total are lines: YES is the side that must win by more than the line, and Over
+  assert.deepEqual(rest.map(r => [r.kind, r.line, r.lineTeam ?? null, r.outcomeLabel, r.noLabel, r.yesAsk, r.noAsk, r.gameSlug]), [
+    ['spread', 5.5, 'Celtics', 'Celtics', 'Knicks', 0.5, 0.52, 'nba-nyk-bos-2026-10-08'],
+    ['total', 221.5, null, 'Over', 'Under', 0.51, 0.5, 'nba-nyk-bos-2026-10-08'],
+  ]);
   assert.equal(game.exchange, 'polymarket');
   assert.equal(game.id, '555');
   assert.equal(game.eventKey, 'polymarket:9001');
@@ -867,7 +871,7 @@ test('scanExchanges: fetch, parse and find in one call', async () => {
   const r = await A.scanExchanges(http, opts());
   assert.equal(r.arbs.length, 1);
   assert.equal(r.arbs[0].type, 'cross');
-  assert.deepEqual(r.counts, { kalshiEvents: 1, polymarketEvents: 1, kalshiMarkets: 2, polymarketMarkets: 1, arbs: 1, kalshiTruncated: false, polymarketTruncated: false });
+  assert.deepEqual(r.counts, { kalshiEvents: 1, polymarketEvents: 1, kalshiMarkets: 2, polymarketMarkets: 3, arbs: 1, kalshiTruncated: false, polymarketTruncated: false });
   assert.deepEqual(r.errors, []);
   assert.equal(r.updated, new Date(NOW).toISOString());
 
@@ -987,7 +991,7 @@ test('kalshi game sweep: every GAME/MATCH series, least recently read first, qui
   let failLol = false, t = NOW;
   const http = {
     async get(url, o) {
-      if (url === A.KALSHI_SERIES_URL) return { data: { series: ['KXBUNDESLIGAGAME', 'KXATPMATCH', 'KXLOLGAME', 'KXNBAMVP', 'KXBUNDESLIGAGAME'].map(ticker => ({ ticker })) } };
+      if (url === A.KALSHI_SERIES_URL) return { data: { series: ['KXBUNDESLIGAGAME', 'KXATPMATCH', 'KXLOLGAME', 'KXNBAMVP', 'KXBUNDESLIGAGAME', 'KXBUNDESLIGATOTAL', 'KXFEDTOTAL'].map(ticker => ({ ticker })) } };
       const s = o.params.series_ticker;
       reads.push(s);
       if (s === 'KXLOLGAME' && failLol) throw new Error('429');
@@ -996,7 +1000,7 @@ test('kalshi game sweep: every GAME/MATCH series, least recently read first, qui
   };
   const sweep = A.createKalshiGameSweep({ http, perScan: 3, quietSlots: 1, seeds: ['KXNBAGAME'], now: () => t });
   const first = await sweep.step();
-  assert.equal(sweep.stats().series, 4, 'GAME/MATCH series from Kalshi plus the built-in ones, once each; MVP races are not games');
+  assert.equal(sweep.stats().series, 5, 'GAME/MATCH series and their TOTAL siblings, plus the built-in ones, once each; MVP races and a TOTAL with no game are not');
   assert.equal(reads.length, 3);
   assert.equal(new Set(first.map(r => r.eventKey)).size, reads.filter(s => events[s]).length);
   t += 60e3;
@@ -1036,4 +1040,84 @@ test('polymarket events: 100 a page (Gamma\'s cap), so the scan reads past the f
   assert.deepEqual(offsets, [[0, 100], [100, 100], [200, 100]]);
   assert.equal(r.count, 237);
   assert.equal(r.truncated, false);
+});
+
+// ── a paired game's totals and spreads ──
+const kLines = (series, title, rows, o = {}) => ({
+  event_ticker: `${series}-${o.tail || '26OCT09BVBSVW'}`, series_ticker: series, title, category: 'Sports', mutually_exclusive: false,
+  markets: rows.map(([code, label, strike, yes, no]) => ({
+    ticker: `${series}-${o.tail || '26OCT09BVBSVW'}-${code}`, event_ticker: `${series}-${o.tail || '26OCT09BVBSVW'}`, title: `${label}?`,
+    yes_sub_title: label, no_sub_title: label, floor_strike: strike, strike_type: 'greater', status: 'active',
+    yes_ask_dollars: yes, no_ask_dollars: no, close_time: '2026-10-11T18:30:00Z', expected_expiration_time: o.exp || '2026-10-09T22:30:00Z',
+  })),
+});
+const dortmundTotals = () => kLines('KXBUNDESLIGATOTAL', 'Dortmund vs Bremen: Total Goals',
+  [['2', 'Over 1.5 goals scored', 1.5, '0.8800', '0.1400'], ['3', 'Over 2.5 goals scored', 2.5, '0.7000', '0.3100'], ['4', 'Over 3.5 goals scored', 3.5, '0.4900', '0.5200']]);
+const dortmundSpreads = () => kLines('KXBUNDESLIGASPREAD', 'Dortmund vs Bremen: Spread',
+  [['BVB2', 'Dortmund wins by more than 1.5 goals', 1.5, '0.5000', '0.5100'], ['SVW2', 'Bremen wins by more than 1.5 goals', 1.5, '0.0400', '0.9700']]);
+const H = 'BV Borussia 09 Dortmund', W2 = 'SV Werder Bremen';
+const pmMore = () => ({
+  id: '1083682', slug: 'bun-dor-wer-2026-10-09-more-markets', title: `${H} vs. ${W2} - More Markets`, negRisk: false,
+  markets: [
+    [`Spread: ${H} (-1.5)`, [H, W2], 'spreads', -1.5, 0.52, 0.5, 's1'],
+    [`Spread: ${W2} (-1.5)`, [W2, H], 'spreads', -1.5, 0.05, 0.04, 's2'],
+    [`${H} vs. ${W2}: O/U 2.5`, ['Over', 'Under'], 'totals', 2.5, 0.71, 0.69, 't2'],
+    [`${H} vs. ${W2}: O/U 3.5`, ['Over', 'Under'], 'totals', 3.5, 0.5, 0.48, 't3'],
+    [`${H} vs. ${W2}: ${H} O/U 1.5`, ['Over', 'Under'], 'totals', 1.5, 0.6, 0.58, 'tt'],
+    [`${H} vs. ${W2}: O/U 3`, ['Over', 'Under'], 'totals', 3, 0.4, 0.38, 'tw'],
+  ].map(([question, outs, type, line, ask, bid, k]) => ({
+    id: `1083682${k}`, question, conditionId: `0x1083682${k}`, outcomes: JSON.stringify(outs), clobTokenIds: `["1083682${k}a","1083682${k}b"]`,
+    sportsMarketType: type, line, bestAsk: ask, bestBid: bid, active: true, closed: false, gameStartTime: '2026-10-09 18:30:00+00', endDate: '2026-10-09T18:30:00Z',
+  })),
+});
+
+test('lines: Kalshi totals and spreads carry the game\'s key; Polymarket\'s carry its slug; team totals and whole lines are left out', () => {
+  const ks = kRows(dortmundBremen(), dortmundTotals(), dortmundSpreads());
+  assert.ok(ks.every(r => r.gameKey === 'KXBUNDESLIGA|26OCT09BVBSVW'), 'one game across GAME, TOTAL and SPREAD');
+  assert.deepEqual(ks.filter(r => r.kind === 'total').map(r => r.line), [1.5, 2.5, 3.5]);
+  assert.deepEqual(ks.filter(r => r.kind === 'spread').map(r => [r.lineTeam, r.line]), [['Dortmund', 1.5], ['Bremen', 1.5]]);
+  const ps = pRows(pmSoccer(), pmMore());
+  assert.ok(ps.every(r => r.gameSlug === 'bun-dor-wer-2026-10-09'), 'the more-markets event is the same game');
+  const lines = ps.filter(r => r.line != null);
+  assert.deepEqual(lines.map(r => [r.kind, r.line, r.lineTeam ?? null, r.outcomeLabel]), [
+    ['spread', 1.5, H, H], ['spread', 1.5, W2, W2], ['total', 2.5, null, 'Over'], ['total', 3.5, null, 'Over'],
+  ], 'a team total and a whole line (it can push) are not game lines');
+  // a "+" line: the other side is the one that must win by more
+  const [plus] = pRows({ id: 'p', slug: 'x-y-z-2026-10-09', title: 'A vs. B', markets: [{ id: 'p1', question: 'Spread: A (+1.5)', outcomes: '["A","B"]', sportsMarketType: 'spreads', bestAsk: 0.6, bestBid: 0.58, active: true, closed: false }] });
+  assert.deepEqual([plus.lineTeam, plus.outcomeLabel, plus.noLabel, plus.yesAsk, plus.noAsk], ['B', 'B', 'A', 0.42, 0.6]);
+});
+
+test('lines: a paired game\'s totals and spreads pair line by line, and tail to the same Kalshi side', () => {
+  const ks = kRows(dortmundBremen(), dortmundTotals(), dortmundSpreads()), ps = pRows(pmSoccer(), pmMore());
+  const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
+  assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.polymarket.title]), [
+    ['Over 2.5 goals scored', `${H} vs. ${W2}: O/U 2.5`],
+    ['Over 3.5 goals scored', `${H} vs. ${W2}: O/U 3.5`],
+    ['Dortmund wins by more than 1.5 goals', `Spread: ${H} (-1.5)`],
+    ['Bremen wins by more than 1.5 goals', `Spread: ${W2} (-1.5)`],
+  ]);
+  // no paired game, no lines
+  assert.deepEqual(A.matchMarkets(kRows(dortmundTotals(), dortmundSpreads()), ps, opts()).filter(x => x.by === 'line'), []);
+  // another game's lines don't ride on this pairing
+  const other = kLines('KXBUNDESLIGATOTAL', 'Augsburg vs Bayern: Total Goals', [['3', 'Over 2.5 goals scored', 2.5, '0.6', '0.41']], { tail: '26OCT10FCABMU' });
+  assert.ok(!A.matchMarkets(kRows(dortmundBremen(), other), ps, opts()).some(x => x.by === 'line'));
+
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps }, opts());
+  const q = s => A.venueQuotes(s, idx, opts({ region: 'us' })).map(v => [v.marketId, v.side, v.price]);
+  // Under 2.5 is NO on Kalshi's Over 2.5, and the quote says so
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682t2', outcome: 'Under', outcomeIndex: 1 }), [['KXBUNDESLIGATOTAL-26OCT09BVBSVW-3', 'no', 0.31]]);
+  assert.equal(A.venueQuotes({ type: 'entry', conditionId: '0x1083682t2', outcome: 'Under', outcomeIndex: 1 }, idx, opts({ region: 'us' }))[0].buy, 'NO Over 2.5 goals scored');
+  // Bremen +1.5 (the other side of Dortmund -1.5) is NO on "Dortmund wins by more than 1.5"
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682s1', outcome: W2, outcomeIndex: 1 }), [['KXBUNDESLIGASPREAD-26OCT09BVBSVW-BVB2', 'no', 0.51]]);
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682s2', outcome: W2, outcomeIndex: 0 }), [['KXBUNDESLIGASPREAD-26OCT09BVBSVW-SVW2', 'yes', 0.04]]);
+});
+
+test('lines: US games pair spreads and totals in the same event, the team found through the game pairing', () => {
+  const nbaLines = [
+    kLines('KXNBASPREAD', 'New York K at Boston: Spread', [['BOS5', 'Boston wins by more than 5.5 points', 5.5, '0.4800', '0.5400']], { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }),
+    kLines('KXNBATOTAL', 'New York K at Boston: Total Points', [['221', 'Over 221.5 points scored', 221.5, '0.5200', '0.5000']], { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }),
+  ];
+  const ks = kRows(kalshiGame(), ...nbaLines), ps = pRows(pmGame());
+  const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
+  assert.deepEqual(m.map(x => [x.kalshi.id, x.polymarket.id]), [['KXNBASPREAD-26OCT08NYKBOS-BOS5', '556'], ['KXNBATOTAL-26OCT08NYKBOS-221', '557']]);
 });

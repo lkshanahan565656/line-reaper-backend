@@ -3781,7 +3781,7 @@ function tailVenueLine(s) {
   const v = s.venue;
   if (!v) return tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
-  return `Tail at ${v.name} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
+  return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
@@ -4001,7 +4001,7 @@ function tailBoardHTML() {
   return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.map(r => {
     const L = r.lead, v = (r.venues || [])[0];
     const mix = [L.A ? `${L.A}A` : '', L.B ? `${L.B}B` : ''].filter(Boolean).join(' · ');
-    const take = v ? tailLink(v.url, escAttr(`Take ${L.outcome || 'it'} at ${v.name} ${tailVenuePrice(v)}`))
+    const take = v ? tailLink(v.url, escAttr(v.buy ? `Take it at ${v.name}: ${v.buy} ${tailVenuePrice(v)}` : `Take ${L.outcome || 'it'} at ${v.name} ${tailVenuePrice(v)}`))
       + (v.warning ? ` <span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span>` : '')
       + ((r.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${r.venues.slice(1, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)}`).join(' · ')}</div>` : '')
       : (tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only');

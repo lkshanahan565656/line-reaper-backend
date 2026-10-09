@@ -2136,8 +2136,8 @@ const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationM
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
 // every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
-// the capped open-events list misses can still be tailed (XARB_GAME_SERIES_PER_SCAN, default 30; 0 = off)
-const KALSHI_GAME_SWEEP_PER_SCAN = Number.isFinite(parseInt(process.env.XARB_GAME_SERIES_PER_SCAN)) ? parseInt(process.env.XARB_GAME_SERIES_PER_SCAN) : 30;
+// the capped open-events list misses can still be tailed (XARB_GAME_SERIES_PER_SCAN, default 40; 0 = off)
+const KALSHI_GAME_SWEEP_PER_SCAN = Number.isFinite(parseInt(process.env.XARB_GAME_SERIES_PER_SCAN)) ? parseInt(process.env.XARB_GAME_SERIES_PER_SCAN) : 40;
 const kalshiGameSweep = KALSHI_GAME_SWEEP_PER_SCAN > 0 ? xarb.createKalshiGameSweep({ http: upstream, perScan: KALSHI_GAME_SWEEP_PER_SCAN }) : null;
 
 const whaleWatcher = whales.createWhaleWatcher({
@@ -2210,7 +2210,7 @@ function sizeQuote(s, v) {
   return { ...v, units, kelly: z?.kelly ?? null, maxPrice: z?.maxPrice ?? null };
 }
 const venueView = v => (v ? { key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, ...(v.american != null ? { american: v.american } : {}),
-  units: v.units, kelly: v.kelly, maxPrice: v.maxPrice, pick: v.pick ?? null, ...(v.side ? { side: v.side } : {}), url: v.url || null,
+  units: v.units, kelly: v.kelly, maxPrice: v.maxPrice, pick: v.pick ?? null, ...(v.buy ? { buy: v.buy } : {}), ...(v.side ? { side: v.side } : {}), url: v.url || null,
   ...(v.warning ? { warning: v.warning } : {}) } : null);
 // the routing of recent signals by id, in case the engine hands back copies
 const routedSignals = new Map();
@@ -2236,13 +2236,14 @@ function venueFor(sig, lic) {
   const venues = s.venues.filter(v => v.key !== 'kalshi');
   return { ...s, venues, venue: xarb.pickVenue(venues), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
 }
-// "Tail at Kalshi 55¢ · 1.25u · don't pay above 58¢" (a book's price in American odds too)
+// "Tail at Kalshi: NO New York K 55¢ · 1.25u · don't pay above 58¢" (a book's price in American odds too).
+// What to buy is spelled out: on Kalshi the same bet can be YES on one market or NO on another.
 function venueLine(s) {
   const v = s.venue;
   if (!v) return NO_VENUE;
   const book = v.american != null;
   const max = v.maxPrice == null ? '—' : book ? `${cents(v.maxPrice)} (${american(evScreen.probToAmerican(v.maxPrice))})` : cents(v.maxPrice);
-  return `Tail at ${v.name} ${book ? american(v.american) : cents(v.price)} · ${v.units}u · don't pay above ${max}`;
+  return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${book ? american(v.american) : cents(v.price)} · ${v.units}u · don't pay above ${max}`;
 }
 // <url> stops Discord unfurling a preview card under every line. US mode
 // links the venue, never polymarket.com.
@@ -2357,7 +2358,7 @@ async function watchBoard() {
 function describeBoardAlert(a) {
   const mix = [a.A ? `${a.A}A` : '', a.B ? `${a.B}B` : ''].filter(Boolean).join(' ');
   const v = (a.venues || [])[0];
-  const where = v ? ` · ${v.name} ${v.american != null ? american(v.american) : cents(v.price)}` : ` · ${NO_VENUE}`;
+  const where = v ? ` · ${v.name}${v.buy ? `: ${v.buy}` : ''} ${v.american != null ? american(v.american) : cents(v.price)}` : ` · ${NO_VENUE}`;
   const url = v?.url && !(TAIL_REGION === 'us' && PM_LINK.test(v.url)) ? ` <${v.url}>` : '';
   return `🎯 Second chance: ${a.wallets} sharp${a.wallets === 1 ? '' : 's'} (${mix}) hold ${a.outcome || '?'} on "${a.title}" at ${cents(a.avgEntry)} avg; it's ${cents(a.price)} now${where}${url}`;
 }
@@ -2559,7 +2560,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.27.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.28.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2722,7 +2723,7 @@ function boardVenues(row, lic, now = Date.now()) {
       xarbState.venues, { ...XARB_OPTS, now });
   } catch (e) { console.warn('Board venues:', e.message); }
   return quotes.filter(v => lic.kalshi || v.key !== 'kalshi').sort((a, b) => a.cost - b.cost)
-    .map(v => ({ key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, american: v.american ?? null, pick: v.pick || null, url: v.url || null, warning: v.warning || null }));
+    .map(v => ({ key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, american: v.american ?? null, pick: v.pick || null, buy: v.buy || null, url: v.url || null, warning: v.warning || null }));
 }
 app.get('/api/tail/board', (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
@@ -3307,7 +3308,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.27.0',
+  version: '3.28.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3425,7 +3426,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.27.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.28.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
