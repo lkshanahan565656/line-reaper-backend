@@ -3979,7 +3979,7 @@ function tailThresholds() {
   const line = g => { const x = o.grades[g]; return `${tailGrade(g)} ${x.minN}+ resolved bets · ${x.minEvents}+ events · ${tailUsd(x.minRisked)}+ risked · ROI ${tailPct(x.minRoi, 0)}+ · z ${x.minZ}+ · ≤${Math.round(x.maxConcentration * 100)}% of profit from one event (or one day's markets) · a bet in the last ${x.activeDays} days${x.minRecentRoi != null ? ` · 30-day ROI above ${tailPct(x.minRecentRoi, 0)}` : ''} · cap ${x.capUnits}u`; };
   return `<div class="tail-box"><div class="tail-box-head">HOW WALLETS ARE GRADED</div>
     <div class="tail-row" style="color:#cbd5e1">${line('A')}</div><div class="tail-row" style="color:#cbd5e1">${line('B')}</div>
-    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded. Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
+    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded.${o.maxInPlay != null ? ` Wallets that bought over ${Math.round(o.maxInPlay * 100)}% of their sampled game bets after the start are live bettors and aren't graded in sports.` : ''} Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
 }
 
 // Where the graded sharps are positioned now: one card a market, the side
@@ -4061,6 +4061,8 @@ function tailTradersHTML() {
       ${stat('EDGE', s.edge == null && t.locked ? '🔒' : tailPct(s.edge), 'Shrunk edge used for sizing')}
       ${stat('30D ROI', tailPct(s.recentRoi), `Last 30 days (${s.recentN || 0} bets)`)}
       ${stat('TOP BET', s.concentration == null ? '—' : Math.round(s.concentration * 100) + '%', s.concentrationBy === 'day' ? 'Share of all winnings from one day\'s markets in one category' : 'Share of all winnings from the single best event')}
+      ${stat('CLV', s.clvN ? `<span style="color:${s.clv > 0 ? '#10b981' : '#f87171'}">${tailPct(s.clv)}</span> <span style="color:#64748b">(${s.clvN})</span>` : '—', 'Average closing-line value on recent pregame bets (how many measured): beating the close is the part of a record luck can\'t fake')}
+      ${s.inPlayShare != null ? stat('LIVE', Math.round(s.inPlayShare * 100) + '%', 'Share of sampled game bets first bought after the start. Over half and the wallet isn\'t graded in sports: live prices move faster than a follower') : ''}
     </div>`;
   }).join('') + `</div>` + tailThresholds();
 }
