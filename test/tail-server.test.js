@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.24.0');
+  assert.equal(body.version, '3.25.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.24.0');
-  assert.equal((await get('/')).body.version, '3.24.0');
+  assert.equal(require('../package.json').version, '3.25.0');
+  assert.equal((await get('/')).body.version, '3.25.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1008,4 +1008,28 @@ test('the webhook: a sized B entry pings too; an unsized one does not', async ()
     await S.streamTail([]);
     assert.equal(posts.length, 0, '0u: on the feed, not pinged');
   } finally { S.tailEngine.ingest = real; }
+});
+
+test('second chances on the live board: priced from the book, broadcast and pinged once', async () => {
+  const realBook = S.tailEngine.book;
+  let ask = 0.99;
+  S.tailEngine.book = async () => ({ ask });
+  const heard = [];
+  const fn = (type, data) => { if (type === 'board') heard.push(...data); };
+  S.liveListeners.add(fn);
+  try {
+    assert.deepEqual(await S.watchBoard(), [], 'nothing is under its entry at 99¢');
+    const board = (await get('/api/tail/board', PRO)).body.rows;
+    assert.ok(board.length && board.every(r => r.lead.price === 0.99 && r.lead.priceSource === 'book'), 'the board shows the book price too');
+    posts.length = 0;
+    ask = 0.39;
+    const out = await S.watchBoard();
+    const live = out.find(a => a.title === 'Will Smith win the Ohio Senate election?' && a.avgEntry === 0.4);
+    assert.ok(live, 'W1 holds Yes at 40¢; it is 39¢ now');
+    assert.equal(live.price, 0.39);
+    assert.ok(Array.isArray(live.venues));
+    assert.ok(heard.some(a => a.id === live.id), 'broadcast');
+    assert.ok(posts.some(p => /🎯 Second chance: 1 sharp \(1A\) hold Yes on "Will Smith win the Ohio Senate election\?" at 40¢ avg; it's 39¢ now/.test(p.body.content)));
+    assert.deepEqual(await S.watchBoard(), [], 'still under: no repeat');
+  } finally { S.tailEngine.book = realBook; S.liveListeners.delete(fn); }
 });

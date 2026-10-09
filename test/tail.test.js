@@ -985,6 +985,35 @@ test('the Sharp Board: graded wallets\' positions by market, the side with the m
   assert.ok(eng.sharpBoard().some(r => r.conditionId === '0xnew' && r.lead.cost === 300), 'a new position shows up at once');
 });
 
+test('second chances: one alert when a held side gets back to the sharps\' entry, not every scan; book prices only', () => {
+  const row = (o = {}, lead = {}) => ({ conditionId: '0xb', title: 'Will Smith win?', category: 'politics', against: { wallets: 0, cost: 0 }, agreement: 1, ...o,
+    lead: { asset: 't0', outcome: 'Yes', wallets: 2, A: 1, B: 1, cost: 3000, avgEntry: 0.4, price: 0.42, priceSource: 'book', belowEntry: false, list: [], ...lead } });
+  const below = (lead = {}, o = {}) => row(o, { price: 0.39, belowEntry: true, ...lead });
+  let st = new Map(), r;
+  r = T.boardAlerts([below()], st, { now: NOW, prime: true });
+  assert.deepEqual(r.alerts, [], 'the first scan only learns');
+  st = r.state;
+  r = T.boardAlerts([below()], st, { now: NOW + 60e3 });
+  assert.deepEqual(r.alerts, [], 'already there when we started: not news');
+  r = T.boardAlerts([row()], r.state, { now: NOW + 120e3 });
+  r = T.boardAlerts([below()], r.state, { now: NOW + 180e3 });
+  assert.equal(r.alerts.length, 1, 'back under their entry');
+  assert.deepEqual([r.alerts[0].type, r.alerts[0].outcome, r.alerts[0].avgEntry, r.alerts[0].price, r.alerts[0].wallets], ['entry-price', 'Yes', 0.4, 0.39, 2]);
+  r = T.boardAlerts([below()], r.state, { now: NOW + 240e3 });
+  assert.deepEqual(r.alerts, [], 'still there: no repeat');
+  r = T.boardAlerts([row()], r.state, { now: NOW + 300e3 });
+  r = T.boardAlerts([below()], r.state, { now: NOW + 360e3 });
+  assert.deepEqual(r.alerts, [], 'bounced inside the cooldown: quiet');
+  r = T.boardAlerts([], r.state, { now: NOW + 400e3 });
+  assert.ok(r.state.has('0xb|t0'), 'off the board, the cooldown is kept');
+  r = T.boardAlerts([below()], r.state, { now: NOW + 7 * 3600e3 });
+  assert.equal(r.alerts.length, 1, 'after the cooldown it can fire again');
+  const fresh = new Map([['0xb|t0', { below: false, alertedAt: null }]]);
+  assert.deepEqual(T.boardAlerts([below({ priceSource: 'gamma' })], fresh, { now: NOW }).alerts, [], 'a Gamma price can be weeks old: no alert on it');
+  assert.deepEqual(T.boardAlerts([below({ wallets: 1, A: 0, B: 1 })], fresh, { now: NOW }).alerts, [], 'one B sharp is not enough');
+  assert.equal(T.boardAlerts([below({ wallets: 1, A: 1, B: 0 })], fresh, { now: NOW }).alerts.length, 1, 'one A is');
+});
+
 test('traders() filters by grade and category; scores persist in a store', async () => {
   const w = world();
   w.closed[W(1)] = [...politicsElite(W(1)), ...sportsBad(W(1))];   // A in politics only

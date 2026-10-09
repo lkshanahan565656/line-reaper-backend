@@ -3593,7 +3593,7 @@ function evConnect() {
   evSource.onopen = () => { evLive = true; renderEv(); if (tailActive) renderTail(); };
   evSource.onerror = () => { evLive = false; };
   // the Sharp Tail tab rides the same stream
-  for (const type of ['tail', 'whale', 'xarb']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
+  for (const type of ['tail', 'whale', 'xarb', 'board']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
   const refreshIfNewer = at => { if (evActive && at && (!evState.updated || at > Date.parse(evState.updated))) loadEv(); };
   evSource.addEventListener('tick', m => { try { refreshIfNewer(JSON.parse(m.data).at); } catch {} });
   evSource.addEventListener('ev', m => {
@@ -3885,6 +3885,12 @@ function tailOnLive(type, data) {
     // with the tab in the background: a desktop alert per sized entry (a few at most)
     if (tailNotifyOn()) for (const s of sized.slice(0, 3)) { try { new Notification('🐋 Sharp Tail', { body: line(s), tag: `tail|${s.id}` }); } catch { /* a nicety */ } }
     if (tailActive && tailState.view === 'signals') renderTail();
+  } else if (type === 'board') {
+    // second chances: a side the sharps hold is back at or under what they paid
+    const line = a => `${a.wallets} sharp${a.wallets === 1 ? '' : 's'} hold ${a.outcome || '?'} on ${a.title} at ${tailC(a.avgEntry)} avg; it's ${tailC(a.price)} now${a.venues?.[0] ? ` · ${a.venues[0].name} ${tailVenuePrice(a.venues[0])}` : ''}`;
+    if (data[0]) showToast(`🎯 Second chance: ${line(data[0])}`);
+    if (tailNotifyOn()) for (const a of data.slice(0, 3)) { try { new Notification('🎯 Second chance', { body: line(a), tag: `board|${a.conditionId}|${a.asset}` }); } catch { /* a nicety */ } }
+    tailSoon('board');
   } else if (type === 'whale') {
     tailSoon('whales');
   } else if (type === 'xarb') {

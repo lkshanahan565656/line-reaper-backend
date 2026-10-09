@@ -1309,6 +1309,37 @@ function summaryOf(tr) {
   return out;
 }
 
+// Second chances, from Sharp Board rows: a side graded sharps still hold
+// whose live order-book price is back at or under what they paid on average.
+// One alert when it gets there (not one a scan), and again for that side only
+// after cooldownMs. Two or more sharps, or an A, before it's worth a ping. The
+// first scan after a start only learns where things are (prime).
+// state: Map key → { below, alertedAt }. → { alerts, state }
+function boardAlerts(rows, state = new Map(), { now = Date.now(), cooldownMs = 6 * 3600e3, minWallets = 2, prime = false } = {}) {
+  const alerts = [], next = new Map();
+  for (const r of rows || []) {
+    const L = r?.lead;
+    if (!L?.asset || !r.conditionId) continue;
+    const key = `${r.conditionId}|${L.asset}`;
+    const prev = state.get(key);
+    const below = !!L.belowEntry && L.priceSource === 'book';
+    const rec = { below, alertedAt: prev?.alertedAt ?? null };
+    const worthy = L.wallets >= minWallets || L.A > 0;
+    if (below && worthy && !prime && !prev?.below && (rec.alertedAt == null || now - rec.alertedAt >= cooldownMs)) {
+      rec.alertedAt = now;
+      alerts.push({
+        type: 'entry-price', id: `${key}|${now}`, at: new Date(now).toISOString(), conditionId: r.conditionId, title: r.title, slug: r.slug, eventSlug: r.eventSlug,
+        category: r.category, outcome: L.outcome, outcomeIndex: L.outcomeIndex, asset: L.asset, wallets: L.wallets, A: L.A, B: L.B, cost: L.cost,
+        avgEntry: L.avgEntry, price: L.price, against: r.against, agreement: r.agreement, list: L.list,
+      });
+    }
+    next.set(key, rec);
+  }
+  // a side that dropped off the board keeps its cooldown
+  for (const [k, v] of state) if (!next.has(k) && v.alertedAt != null && now - v.alertedAt < cooldownMs) next.set(k, { below: false, alertedAt: v.alertedAt });
+  return { alerts, state: next };
+}
+
 function createTailEngine({ http, store = null, now = () => Date.now(), opts = {}, log = console } = {}) {
   const o = resolveOptions(opts);
   const candidates = new Map();   // wallet → { wallet, name, pnl, vol, sources, fromTrade, addedAt, selectedAt, scoredAt, failedAt }
@@ -1566,7 +1597,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // side with the most sharp weight (A counts twice), what they paid, what
   // it costs now, and how much sharp money sits on the other side.
   // → [{ conditionId, title, category, wallets, lead: { outcome, asset, wallets, A, B, cost, avgEntry, price, belowEntry, list }, against, agreement }]
-  function sharpBoard({ category = null, limit = 50, minCost = o.boardMinCost, minWallets = 1 } = {}) {
+  // livePrice(asset): a fresh order-book ask for that token, when the caller has one
+  function sharpBoard({ category = null, limit = 50, minCost = o.boardMinCost, minWallets = 1, livePrice = null } = {}) {
     const t = now();
     const markets = new Map();
     for (const tr of traders.values()) {
@@ -1597,7 +1629,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       const lead = sides[0];
       const wallets = new Set(sides.flatMap(x => x.list.map(w => w.wallet))).size;
       if (lead.list.length < minWallets) continue;
-      const live = m.market ? liveAsk(m.market, null, lead, { now: t, opts: o }).price : null;
+      const booked = typeof livePrice === 'function' ? inUnit(Number(livePrice(lead.asset))) : null;
+      const live = booked ?? (m.market ? liveAsk(m.market, null, lead, { now: t, opts: o }).price : null);
       const price = inUnit(live) ? live : lead.price;
       const avgEntry = lead.size > 0 ? round(lead.cost / lead.size, 4) : null;
       const total = sides.reduce((a, x) => a + x.cost, 0);
@@ -1607,7 +1640,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         lead: {
           outcome: lead.outcome, outcomeIndex: lead.outcomeIndex, asset: lead.asset, wallets: lead.list.length,
           A: lead.list.filter(w => w.grade === 'A').length, B: lead.list.filter(w => w.grade === 'B').length,
-          cost: round(lead.cost, 2), avgEntry, price: price ?? null, priceSource: inUnit(live) ? 'gamma' : 'positions',
+          cost: round(lead.cost, 2), avgEntry, price: price ?? null, priceSource: booked != null ? 'book' : inUnit(live) ? 'gamma' : 'positions',
           belowEntry: price != null && avgEntry != null && price <= avgEntry + EPS,
           list: lead.list.sort((a, b) => b.cost - a.cost),
         },
@@ -1801,7 +1834,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   return {
-    refreshCandidates, scoreBatch, pollTrades, ingest, sharpBoard, traders: listTraders, trader: w => traders.get(lower(w)) || null,
+    refreshCandidates, scoreBatch, pollTrades, ingest, sharpBoard, book: bookFor, traders: listTraders, trader: w => traders.get(lower(w)) || null,
     signals, state, settings: () => o, addCandidate, ready: () => loaded,
   };
 }
@@ -1811,7 +1844,7 @@ module.exports = {
   resolveOptions, optionsFromEnv, classify,
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
-  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, parseBook, fetchBook, liveAsk, CLOB_API,
+  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, gradeFor, trueProb, sizeAt, tradeSignal,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,

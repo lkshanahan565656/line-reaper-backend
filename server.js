@@ -2316,6 +2316,42 @@ async function publishTail(signals, primed) {
   return fresh;
 }
 
+// Every 2 minutes: the top of the Sharp Board priced from the live order
+// book, and a "second chance" alert when a side the sharps hold is back at or
+// under their average entry (tail.boardAlerts). The prices also feed
+// /api/tail/board for a few minutes.
+const boardPrices = new Map();   // token → { ask, at }
+const BOARD_PRICE_TTL_MS = 5 * 60e3;
+let boardWatch = new Map(), boardPrimed = false;
+const boardLivePrice = asset => { const p = boardPrices.get(String(asset)); return p && Date.now() - p.at < BOARD_PRICE_TTL_MS ? p.ask : null; };
+async function watchBoard() {
+  const top = tailEngine.sharpBoard({ limit: 40 });
+  for (const r of top) {
+    const b = await tailEngine.book(r.lead.asset);
+    if (b?.ask != null) boardPrices.set(String(r.lead.asset), { ask: b.ask, at: Date.now() });
+  }
+  for (const [k, p] of boardPrices) if (Date.now() - p.at > BOARD_PRICE_TTL_MS * 3) boardPrices.delete(k);
+  const rows = tailEngine.sharpBoard({ limit: 40, livePrice: boardLivePrice });
+  const { alerts, state } = tail.boardAlerts(rows, boardWatch, { now: Date.now(), prime: !boardPrimed });
+  boardWatch = state;
+  boardPrimed = true;
+  if (!alerts.length) return [];
+  const all = { polymarket: true, kalshi: true };
+  const out = alerts.map(a => ({ ...a, venues: boardVenues({ conditionId: a.conditionId, title: a.title, lead: { asset: a.asset, outcome: a.outcome, outcomeIndex: a.outcomeIndex } }, all) }));
+  broadcast('board', out);
+  const lic = webhookLicence();
+  if (lic.polymarket) postAlert(out.map(a => describeBoardAlert(lic.kalshi ? a : { ...a, venues: a.venues.filter(v => v.key !== 'kalshi') })), 'Board alerts');
+  return out;
+}
+// "🎯 Second chance: 3 sharps (2A 1B) hold Yes on "…" at 41¢ avg; it's 39¢ now · Kalshi 40¢ <url>"
+function describeBoardAlert(a) {
+  const mix = [a.A ? `${a.A}A` : '', a.B ? `${a.B}B` : ''].filter(Boolean).join(' ');
+  const v = (a.venues || [])[0];
+  const where = v ? ` · ${v.name} ${v.american != null ? american(v.american) : cents(v.price)}` : ` · ${NO_VENUE}`;
+  const url = v?.url && !(TAIL_REGION === 'us' && PM_LINK.test(v.url)) ? ` <${v.url}>` : '';
+  return `🎯 Second chance: ${a.wallets} sharp${a.wallets === 1 ? '' : 's'} (${mix}) hold ${a.outcome || '?'} on "${a.title}" at ${cents(a.avgEntry)} avg; it's ${cents(a.price)} now${where}${url}`;
+}
+
 async function pollWhales() {
   const fresh = await whaleWatcher.poll();
   if (fresh.length) broadcast('whale', fresh);
@@ -2464,7 +2500,9 @@ function liveFor(type, data, lic) {
   if (!Array.isArray(data)) return [];
   const out = type === 'tail' ? (lic.polymarket ? data.map(s => venueFor(s, lic)) : [])
     : type === 'whale' ? data.filter(whaleOk(lic))
-    : type === 'xarb' ? data.filter(arbOk(lic)) : data;
+    : type === 'xarb' ? data.filter(arbOk(lic))
+    : type === 'board' ? (lic.polymarket ? data.map(a => ({ ...a, venues: (a.venues || []).filter(v => lic.kalshi || v.key !== 'kalshi') })) : [])
+    : data;
   return regionSafe(out);
 }
 
@@ -2504,7 +2542,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.24.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.25.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2673,7 +2711,7 @@ app.get('/api/tail/board', (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
   const category = tail.CATEGORIES.includes(req.query.category) ? req.query.category : null;
   const limit = Math.min(parseInt(req.query.limit) || 50, 200);
-  const rows = lic.polymarket ? tailEngine.sharpBoard({ category, limit }) : [];
+  const rows = lic.polymarket ? tailEngine.sharpBoard({ category, limit, livePrice: boardLivePrice }) : [];
   const now = Date.now();
   const full = rows.map(r => ({ ...r, venues: boardVenues(r, lic, now) }));
   const mask = r => ({ ...r, conditionId: null, lead: { ...r.lead, asset: null, list: r.lead.list.map(w => ({ grade: w.grade, wallet: maskWallet(w.wallet), name: null, cost: null })) }, locked: true });
@@ -3252,7 +3290,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.24.0',
+  version: '3.25.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3361,6 +3399,7 @@ cron.schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWha
 cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
 // Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
 cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+cron.schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 // Grade tracked signals whose markets resolved, every 10 minutes
 cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', () => tailTracker.check()));
 // New leaderboard wallets to score, every 6 hours (and once at startup)
@@ -3369,7 +3408,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.24.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.25.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
@@ -3412,6 +3451,6 @@ module.exports = {
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
   tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
-  pollTail, streamTail, tailStream, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
+  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };
