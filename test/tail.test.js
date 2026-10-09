@@ -11,6 +11,9 @@ const near = (a, b, eps = 1e-6, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg
 // one settled position, data API v2 /v2/positions shape (numbers partly as
 // strings). CLOSED by default; REDEEMABLE / REDEEMABLE_LOST were never claimed,
 // so all their P&L is still unrealized. fee: entry fees, part of what it cost.
+// As the live API has it: avg_price carries the fees, total_pnl is net of
+// them, and a claimed position's entry cost is 0, so its total_cost_usdc is
+// the fees alone.
 let seq = 0;
 function closed({ wallet = W(1), p = 0.5, stake = 1000, fee = 0, won, status = 'CLOSED', title = 'Will Smith win the Ohio Senate election?', eventSlug = 'ohio-senate', cond, idx = 0, at = NOW - DAY } = {}) {
   const shares = stake / p;
@@ -18,8 +21,8 @@ function closed({ wallet = W(1), p = 0.5, stake = 1000, fee = 0, won, status = '
   const pnl = (won ? shares - stake : -stake) - fee;
   const claimed = status === 'CLOSED';
   return {
-    proxy_wallet: wallet, token_id: `${cond}-t${idx}`, condition_id: cond, avg_price: String(p), total_size: shares, current_size: claimed ? 0 : shares,
-    entry_cost_usdc: stake, entry_fees_usdc: fee, total_cost_usdc: String(stake + fee),
+    proxy_wallet: wallet, token_id: `${cond}-t${idx}`, condition_id: cond, avg_price: String((stake + fee) / shares), total_size: shares, current_size: claimed ? 0 : shares,
+    entry_cost_usdc: claimed ? 0 : stake, entry_fees_usdc: fee, total_cost_usdc: String(claimed ? fee : stake + fee),
     realized_pnl: claimed ? pnl : 0, unrealized_pnl: claimed ? 0 : pnl, total_pnl: pnl, current_price: won ? 1 : 0, status,
     redeemable: !claimed, title, slug: `${eventSlug}-m`, event_slug: eventSlug, outcome: idx ? 'No' : 'Yes', outcome_index: idx,
     end_date: new Date(at).toISOString(), first_entry_at: new Date(at - 2 * DAY).toISOString(),
@@ -71,7 +74,7 @@ test('category classifier: keywords, slugs, tags', () => {
 test('parsers are tolerant: v2 snake_case and v1 camelCase, wrapped arrays, numbers as strings, missing fields', () => {
   const at = Date.parse('2025-10-08T12:00:00Z');
   const rows = T.parseClosedPositions({ data: [
-    { proxy_wallet: '0xABC', token_id: 7, condition_id: '0xc', avg_price: '0.25', total_size: '400', total_cost_usdc: '101', entry_fees_usdc: '1',
+    { proxy_wallet: '0xABC', token_id: 7, condition_id: '0xc', avg_price: '0.2525', total_size: '400', total_cost_usdc: '1', entry_fees_usdc: '1',
       realized_pnl: '299', total_pnl: '299', current_price: '1', status: 'CLOSED', title: 'Bitcoin above 100k?', event_slug: 'btc',
       last_event_at: '2025-10-08T12:00:00Z', first_entry_at: 1759500000 },
     { avgPrice: '0.6', totalBought: 100, curPrice: null, realizedPnl: -60, title: 'Lakers vs. Celtics', timestamp: 1759924800000 },   // v1: closed
@@ -85,7 +88,7 @@ test('parsers are tolerant: v2 snake_case and v1 camelCase, wrapped arrays, numb
   assert.equal(rows.length, 3);
   assert.deepEqual(rows[0], {
     wallet: '0xabc', conditionId: '0xc', asset: '7', outcome: null, outcomeIndex: null, title: 'Bitcoin above 100k?', slug: '', eventSlug: 'btc',
-    status: 'CLOSED', price: 0.25, risked: 101, pnl: 299, fees: 1, won: true, at, endAt: null, enteredAt: 1759500000000, activeAt: at,
+    status: 'CLOSED', price: 0.2525, risked: 101, pnl: 299, fees: 1, won: true, at, endAt: null, enteredAt: 1759500000000, activeAt: at,
     category: 'crypto', source: 'closed',
   });
   assert.equal(rows[1].at, 1759924800000, 'unix ms');
@@ -99,11 +102,11 @@ test('parsers are tolerant: v2 snake_case and v1 camelCase, wrapped arrays, numb
   assert.deepEqual(T.parseOpenPositions('garbage'), []);
 
   const open = T.parseOpenPositions({ data: [{ proxy_wallet: '0xAB', token_id: '55', condition_id: '0xo', current_size: '300', avg_price: '0.4', total_size: 300,
-    entry_cost_usdc: 120, entry_fees_usdc: '2.5', current_price: '0.45', current_value: 135, unrealized_pnl: '12.5', realized_pnl: 0, total_pnl: 12.5,
+    entry_cost_usdc: 117.5, entry_fees_usdc: '2.5', current_price: '0.45', current_value: 135, unrealized_pnl: '15', realized_pnl: 0, total_pnl: 15,
     status: 'OPEN', end_date: '2026-11-04', event_slug: 'x-race', last_event_at: '2026-10-07T00:00:00Z', first_entry_at: '2026-10-01T00:00:00Z' }] });
   assert.deepEqual([open[0].asset, open[0].size, open[0].price, open[0].cost, open[0].cashPnl, open[0].totalPnl, open[0].eventSlug, open[0].activeAt],
-    ['55', 300, 0.4, 122.5, 12.5, 12.5, 'x-race', Date.parse('2026-10-07T00:00:00Z')]);
-  assert.deepEqual(T.markOpen(open[0]), { risked: 122.5, pnl: 12.5 }, 'fees are dollars in');
+    ['55', 300, 0.4, 120, 15, 15, 'x-race', Date.parse('2026-10-07T00:00:00Z')]);
+  assert.deepEqual(T.markOpen(open[0]), { risked: 120, pnl: 15 }, 'avg price × shares: the fees are in the average');
 
   const lb = T.parseLeaderboard({ data: [
     { rank: '1', user_id: '0xAA', user_name: 'Oracle', pnl: '1234.5', volume: '99', x_username: 'orc', verified: true, profile_image: 'o.png' },
@@ -420,17 +423,29 @@ test('v2: never-claimed losers (REDEEMABLE_LOST) and winners (REDEEMABLE) count;
   // a token listed twice (under two statuses, or on two pages while the list moved) counts once
   assert.equal(T.scoreWallet({ wallet: W(30), closed: [...rows, { ...rows[0] }, { ...rows[3], status: 'CLOSED' }] }, { now: NOW }).n, 7);
 
-  // dollars risked: total_cost_usdc (fees in), else entry cost + entry fees, else avg price × size
+  // dollars risked: avg price (fees in) × shares bought; a closed row's total_cost_usdc is only its fees
   const feeRow = closed({ wallet: W(30), won: true, stake: 1000, fee: 12.5, cond: '0xfee' });
+  assert.equal(Number(feeRow.total_cost_usdc), 12.5, 'the fixture is shaped like the live API');
   const [withFee] = T.parseClosedPositions([feeRow]);
-  assert.deepEqual([withFee.risked, withFee.pnl, withFee.fees], [1012.5, 987.5, 12.5]);
-  const noTotal = { ...feeRow };
-  delete noTotal.total_cost_usdc;
-  assert.equal(T.parseClosedPositions([noTotal])[0].risked, 1012.5);
-  delete noTotal.entry_cost_usdc;
-  assert.equal(T.parseClosedPositions([noTotal])[0].risked, 1000, 'avg price × size');
+  assert.deepEqual([round4(withFee.risked), withFee.pnl, withFee.fees], [1012.5, 987.5, 12.5]);
+  const noShares = { ...feeRow, entry_cost_usdc: 1000, total_cost_usdc: '1012.5' };
+  delete noShares.total_size;
+  assert.equal(T.parseClosedPositions([noShares])[0].risked, 1012.5, 'no share count: the stated cost');
   const fs = T.scoreWallet({ wallet: W(30), closed: [feeRow] }, { now: NOW });
   assert.equal(fs.roi, round4(987.5 / 1012.5), 'ROI after fees');
+
+  // a live row (a LoL handicap bet, 2026-10-07): fills of $1,230.36 at 68¢ plus
+  // $8.31 of fees on 1,820.46 shares. Its total_cost_usdc is the fees alone;
+  // read as the stake it made a 47% win look like 7,000%.
+  const live = {
+    proxy_wallet: W(30), token_id: '207279', condition_id: '0x83b5', current_size: 0, avg_price: 0.6804, entry_cost_usdc: 0, entry_fees_usdc: 8.30842,
+    total_cost_usdc: 8.30842, current_price: 1, current_value: 0, total_size: 1820.4562, realized_pnl: 581.7941, unrealized_pnl: 0, total_pnl: 581.7941,
+    percent_realized_pnl: 46.9695, status: 'CLOSED', title: 'Game Handicap: CPD (-1.5) vs Fuego (+1.5)', slug: 'lol-cpd-fue-2026-10-06-game-handicap-away-1pt5',
+    event_slug: 'lol-cpd-fue-2026-10-06', outcome: 'Cupid Esports', outcome_index: 0, end_date: '2026-10-07', last_event_at: 1791340091, first_entry_at: 1791247547,
+  };
+  const [lr] = T.parseClosedPositions([live], { now: NOW });
+  assert.equal(Math.round(lr.risked * 100) / 100, 1238.64);
+  assert.equal(Math.round((lr.pnl / lr.risked) * 1e4) / 100, 46.97, "the API's own percent_realized_pnl");
 
   // an unclaimed loser is dated by its market's end, unless that end is still to come (it resolved early)
   const early = { ...closed({ wallet: W(30), won: false, status: 'REDEEMABLE_LOST', at: NOW + 30 * DAY }), first_entry_at: new Date(NOW - 5 * DAY).toISOString() };
@@ -923,6 +938,97 @@ test('ingest: live-feed trades signal at once, share the poll\'s dedup, and skip
   assert.deepEqual(await eng.ingest(null), []);
 });
 
+// one live v2 position
+const openPos = (wallet, { cond = '0xboard', idx = 0, shares, p, cur = p, title = 'Will Smith win the Ohio Senate election?', sold = 0 } = {}) => ({
+  proxy_wallet: wallet, token_id: `${cond}-t${idx}`, condition_id: cond, current_size: shares, total_size: shares + sold, avg_price: String(p),
+  total_cost_usdc: String((shares + sold) * p), current_price: cur, status: 'OPEN', title, slug: 'ohio-m', event_slug: 'ohio-senate',
+  outcome: idx ? 'No' : 'Yes', outcome_index: idx, end_date: '2026-11-04T00:00:00Z', first_entry_at: new Date(NOW - 5 * DAY).toISOString(),
+});
+
+test('holdingsOf: what is still held, biggest first; settled and nearly settled ones are left out', () => {
+  const rows = T.parseOpenPositions([
+    openPos(W(1), { shares: 5000, p: 0.4, sold: 5000 }),            // half sold: $2,000 still in
+    openPos(W(1), { cond: '0xb', shares: 100, p: 0.5 }),
+    openPos(W(1), { cond: '0xc', shares: 1000, p: 0.9, cur: 0.99 }),   // all but won
+    openPos(W(1), { cond: '0xd', shares: 0, p: 0.5 }),
+  ]);
+  const h = T.holdingsOf(rows);
+  assert.deepEqual(h.map(x => [x.conditionId, x.cost, x.price, x.size]), [['0xboard', 2000, 0.4, 5000], ['0xb', 50, 0.5, 100]]);
+  assert.equal(h[0].category, 'politics');
+  assert.equal(T.holdingsOf(rows, { max: 1 }).length, 1);
+});
+
+test('the Sharp Board: graded wallets\' positions by market, the side with the most sharp weight first, kept live by their trades', async () => {
+  const w = world();
+  for (const i of [1, 2, 3]) w.closed[W(i)] = politicsElite(W(i));
+  w.open[W(1)] = [openPos(W(1), { shares: 5000, p: 0.4, cur: 0.38 }), openPos(W(1), { cond: '0xsmall', shares: 100, p: 0.5 })];
+  w.open[W(2)] = [openPos(W(2), { shares: 2500, p: 0.4, cur: 0.38 })];
+  w.open[W(3)] = [openPos(W(3), { idx: 1, shares: 1000, p: 0.6, cur: 0.62 })];
+  w.closed[W(9)] = sportsBad(W(9));
+  w.open[W(9)] = [openPos(W(9), { shares: 90000, p: 0.4 })];   // not graded: doesn't count
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0 }, log: {} });
+  for (const i of [1, 2, 3, 9]) eng.addCandidate(W(i));
+  await eng.scoreBatch(4);
+  assert.equal(eng.trader(W(1)).grade, 'A');
+  assert.equal(eng.trader(W(9)).holdings, undefined, 'an ungraded wallet keeps no book');
+
+  const [row, ...rest] = eng.sharpBoard();
+  assert.equal(rest.length, 0, 'a $50 position is under the $100 floor');
+  assert.equal(row.conditionId, '0xboard');
+  assert.equal(row.category, 'politics');
+  assert.equal(row.wallets, 3);
+  assert.deepEqual([row.lead.outcome, row.lead.wallets, row.lead.A, row.lead.B, row.lead.cost, row.lead.avgEntry, row.lead.price, row.lead.belowEntry],
+    ['Yes', 2, 2, 0, 3000, 0.4, 0.38, true]);
+  assert.deepEqual(row.lead.list.map(x => [x.wallet, x.cost]), [[W(1), 2000], [W(2), 1000]], 'biggest first');
+  assert.deepEqual(row.against, { wallets: 1, cost: 600 });
+  assert.equal(row.agreement, Math.round((3000 / 3600) * 1e4) / 1e4);
+  assert.deepEqual(eng.sharpBoard({ category: 'sports' }), []);
+  assert.deepEqual(eng.sharpBoard({ minWallets: 3 }), []);
+
+  // a trade from before the score is already in it; later ones move the book
+  await eng.ingest(T.parseTrades([rawTrade(W(2), { conditionId: '0xboard', asset: '0xboard-t0', side: 'SELL', size: 2500, price: 0.38, transactionHash: '0xold' })]));
+  assert.equal(eng.sharpBoard()[0].lead.wallets, 2);
+  t += 60e3;
+  await eng.ingest(T.parseTrades([rawTrade(W(2), { conditionId: '0xboard', asset: '0xboard-t0', side: 'SELL', size: 2500, price: 0.38, transactionHash: '0xout', timestamp: Math.floor(t / 1000) })]));
+  const after = eng.sharpBoard()[0];
+  assert.deepEqual([after.lead.outcome, after.lead.wallets, after.lead.cost], ['Yes', 1, 2000], 'W2 sold out');
+  await eng.ingest(T.parseTrades([rawTrade(W(3), { conditionId: '0xboard', asset: '0xboard-t1', outcome: 'No', outcomeIndex: 1, size: 5000, price: 0.62, transactionHash: '0xmore', timestamp: Math.floor(t / 1000) })]));
+  const flipped = eng.sharpBoard()[0];
+  assert.deepEqual([flipped.lead.outcome, flipped.lead.cost, flipped.against.wallets], ['No', 3700, 1], 'W3 doubled down: No leads on money, both A');
+  await eng.ingest(T.parseTrades([rawTrade(W(1), { conditionId: '0xnew', asset: '0xnew-t0', title: 'Will Jones win the Iowa Senate election?', size: 1000, price: 0.3, transactionHash: '0xnew', timestamp: Math.floor(t / 1000) })]));
+  assert.ok(eng.sharpBoard().some(r => r.conditionId === '0xnew' && r.lead.cost === 300), 'a new position shows up at once');
+});
+
+test('second chances: one alert when a held side gets back to the sharps\' entry, not every scan; book prices only', () => {
+  const row = (o = {}, lead = {}) => ({ conditionId: '0xb', title: 'Will Smith win?', category: 'politics', against: { wallets: 0, cost: 0 }, agreement: 1, ...o,
+    lead: { asset: 't0', outcome: 'Yes', wallets: 2, A: 1, B: 1, cost: 3000, avgEntry: 0.4, price: 0.42, priceSource: 'book', belowEntry: false, list: [], ...lead } });
+  const below = (lead = {}, o = {}) => row(o, { price: 0.39, belowEntry: true, ...lead });
+  let st = new Map(), r;
+  r = T.boardAlerts([below()], st, { now: NOW, prime: true });
+  assert.deepEqual(r.alerts, [], 'the first scan only learns');
+  st = r.state;
+  r = T.boardAlerts([below()], st, { now: NOW + 60e3 });
+  assert.deepEqual(r.alerts, [], 'already there when we started: not news');
+  r = T.boardAlerts([row()], r.state, { now: NOW + 120e3 });
+  r = T.boardAlerts([below()], r.state, { now: NOW + 180e3 });
+  assert.equal(r.alerts.length, 1, 'back under their entry');
+  assert.deepEqual([r.alerts[0].type, r.alerts[0].outcome, r.alerts[0].avgEntry, r.alerts[0].price, r.alerts[0].wallets], ['entry-price', 'Yes', 0.4, 0.39, 2]);
+  r = T.boardAlerts([below()], r.state, { now: NOW + 240e3 });
+  assert.deepEqual(r.alerts, [], 'still there: no repeat');
+  r = T.boardAlerts([row()], r.state, { now: NOW + 300e3 });
+  r = T.boardAlerts([below()], r.state, { now: NOW + 360e3 });
+  assert.deepEqual(r.alerts, [], 'bounced inside the cooldown: quiet');
+  r = T.boardAlerts([], r.state, { now: NOW + 400e3 });
+  assert.ok(r.state.has('0xb|t0'), 'off the board, the cooldown is kept');
+  r = T.boardAlerts([below()], r.state, { now: NOW + 7 * 3600e3 });
+  assert.equal(r.alerts.length, 1, 'after the cooldown it can fire again');
+  const fresh = new Map([['0xb|t0', { below: false, alertedAt: null }]]);
+  assert.deepEqual(T.boardAlerts([below({ priceSource: 'gamma' })], fresh, { now: NOW }).alerts, [], 'a Gamma price can be weeks old: no alert on it');
+  assert.deepEqual(T.boardAlerts([below({ wallets: 1, A: 0, B: 1 })], fresh, { now: NOW }).alerts, [], 'one B sharp is not enough');
+  assert.equal(T.boardAlerts([below({ wallets: 1, A: 1, B: 0 })], fresh, { now: NOW }).alerts.length, 1, 'one A is');
+});
+
 test('traders() filters by grade and category; scores persist in a store', async () => {
   const w = world();
   w.closed[W(1)] = [...politicsElite(W(1)), ...sportsBad(W(1))];   // A in politics only
@@ -952,21 +1058,30 @@ test('traders() filters by grade and category; scores persist in a store', async
   assert.equal((await reborn.scoreBatch()).scored, 0, 'loaded scores are fresh');
   assert.equal(w.http.calls.length, 0);
 
-  // a score from round 1's rules: at most B until it's rescored, and due now
+  // a score from before the stake fix (round 1 or 2): not graded until it's rescored, and due now
   const old = { ...(await store.all()).find(d => d.wallet === W(2)) };
   delete old.rulesVersion;
   old.categories = { politics: { ...old.categories.politics, grade: 'A' } };
   const oldStore = createMemoryStore();
   await oldStore.init();
   await oldStore.put(old);
+  await oldStore.put({ ...old, wallet: W(4), id: W(4), rulesVersion: 2 });
   const later = T.createTailEngine({ http: w.http, store: oldStore, now: () => NOW + 60e3, log: {} });
   await later.ready();
-  const capped = later.trader(W(2));
-  assert.deepEqual([capped.grade, capped.categories.politics.grade, capped.staleRules], ['B', 'B', true]);
-  assert.match(capped.whyNotA[0], /older rules/);
-  assert.equal((await later.scoreBatch()).scored, 1, 'rescored straight away');
+  for (const wallet of [W(2), W(4)]) {
+    const hidden = later.trader(wallet);
+    assert.deepEqual([hidden.grade, hidden.tailable, hidden.categories.politics.grade, hidden.staleRules], [null, false, null, true]);
+    assert.match(hidden.reasons[0], /stake fix/);
+  }
+  assert.equal(later.traders({ grade: 'graded' }).length, 0, 'none listed as graded');
+  assert.equal((await later.scoreBatch()).scored >= 1, true, 'rescored straight away');
   assert.equal(later.trader(W(2)).grade, 'A', 'and graded by the current rules');
   assert.equal(later.trader(W(2)).rulesVersion, T.RULES_VERSION);
+
+  // a score from after the stake fix but other rules: A capped at B until the rescore
+  const cap = T.capStale({ ...later.trader(W(2)), rulesVersion: T.RULES_VERSION + 0.5 });
+  assert.deepEqual([cap.grade, cap.tailable], ['B', true]);
+  assert.match(cap.whyNotA[0], /older rules/);
 });
 
 test('engine: closing lines only for wallets that pass B without them; one price-history call a token, shared and cached; Gamma looked up once', async () => {
@@ -1057,6 +1172,55 @@ test('engine: a game\'s closing line is its last price before the start Gamma gi
   const call = historyCalls(w.http)[0].params;
   const row = rows.find(r => r.token_id === call.token_id);
   assert.equal(call.end, Math.ceil((Date.parse(row.end_date) - 3 * 3600e3) / 1000), 'the window ends at tip-off');
+});
+
+test('engine: a live bettor (most sampled game bets bought after tip-off) is not graded, however good its record', async () => {
+  const w = world();
+  // 120 NBA bets at 50¢, 80 won, every one first bought 10 minutes after tip-off
+  const rows = Array.from({ length: 120 }, (_, i) => {
+    const r = closed({ wallet: W(41), won: i % 3 !== 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-l-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3 });
+    const tip = Date.parse(r.end_date) - 3 * 3600e3;
+    return { ...r, first_entry_at: new Date(tip + 10 * 60e3).toISOString() };
+  });
+  w.closed[W(41)] = rows;
+  for (const r of rows) w.markets[r.condition_id] = { conditionId: r.condition_id, question: r.title, gameStartTime: new Date(Date.parse(r.end_date) - 3 * 3600e3).toISOString() };
+  const eng = T.createTailEngine({ http: w.http, now: () => NOW, log: {} });
+  eng.addCandidate(W(41));
+  await eng.scoreBatch(1);
+  const tr = eng.trader(W(41));
+  assert.deepEqual([tr.inPlayGames, tr.inPlayShare, tr.clvN], [25, 1, 0], 'no closing line for a live bet');
+  assert.equal(tr.grade, null);
+  assert.deepEqual(tr.failed, ['inPlay']);
+  assert.match(tr.reasons[0], /live bettor: 100% of 25 sampled game bets came after the start/);
+  assert.equal(tr.categories.sports.grade, null);
+
+  // the same record bought before tip-off, beating a 53¢ close: A
+  const pre = rows.map(r => ({ ...r, proxy_wallet: W(42), first_entry_at: new Date(Date.parse(r.end_date) - 2 * DAY).toISOString() }));
+  w.closed[W(42)] = pre;
+  eng.addCandidate(W(42));
+  await eng.scoreBatch(1);
+  const ok = eng.trader(W(42));
+  assert.deepEqual([ok.grade, ok.inPlayShare, ok.clvN], ['A', 0, 25]);
+});
+
+test('scoreWallet: the in-play share only judges sports, and needs 8 sampled games', () => {
+  const both = [...politicsElite(W(43)), ...Array.from({ length: 120 }, (_, i) => closed({
+    wallet: W(43), won: i % 3 !== 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-x-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3,
+  }))];
+  const live = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 8 } }, { now: NOW });
+  assert.equal(live.grade, null, 'overall: its record is mostly live sports');
+  assert.equal(live.categories.sports.grade, null);
+  assert.deepEqual(live.categories.sports.failed, ['inPlay']);
+  assert.equal(live.categories.politics.grade, 'B', 'its politics bets still grade');
+  assert.equal(T.gradeFor(live, 'politics').grade, 'B');
+  assert.equal(T.gradeFor(live, 'sports').grade, null);
+  const few = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 7, inPlay: 7 } }, { now: NOW });
+  assert.deepEqual([few.inPlayShare, few.grade], [null, 'B'], '7 games: too few to judge');
+  const half = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 5 } }, { now: NOW });
+  assert.deepEqual([half.inPlayShare, half.grade], [0.5, 'B'], 'half is allowed');
+  const env = T.optionsFromEnv({ TAIL_MAX_IN_PLAY: '80' });
+  assert.equal(env.maxInPlay, 0.8);
+  assert.equal(T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 8 } }, { now: NOW, ...env }).grade, 'B', 'TAIL_MAX_IN_PLAY=80');
 });
 
 // ── review fixes ──

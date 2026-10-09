@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.23.2');
+  assert.equal(body.version, '3.29.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.23.2');
-  assert.equal((await get('/')).body.version, '3.23.2');
+  assert.equal(require('../package.json').version, '3.29.0');
+  assert.equal((await get('/')).body.version, '3.29.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -657,7 +657,7 @@ test('where to tail: a sports signal goes to the venue with the most units (a US
   // the webhook leads with the same line; no polymarket.com
   const text = posts.map(p => p.body.content).join('\n');
   assert.ok(text.includes(S.venueLine(s)), `${text} has ${S.venueLine(s)}`);
-  assert.match(S.venueLine(s), /^Tail at DraftKings -170 · \d+(\.\d+)?u · don't pay above \d+¢ \(-\d+\)$/);
+  assert.match(S.venueLine(s), /^Tail at DraftKings: Boston Celtics -170 · \d+(\.\d+)?u · don't pay above \d+¢ \(-\d+\)$/);
   assert.doesNotMatch(text, /polymarket\.com/);
 
   // the app's API: the same venue, no polymarket.com
@@ -678,7 +678,7 @@ test('where to tail: Kalshi when the books are worse; nothing matched is "watch 
   assert.equal(routed.venue.key, 'kalshi');
   assert.equal(routed.venue.price, 0.63);
   assert.ok(routed.venue.units > routed.venues.find(v => v.key === 'draftkings').units);
-  assert.match(S.venueLine(routed), /^Tail at Kalshi 63¢ · \d+(\.\d+)?u · don't pay above \d+¢$/);
+  assert.match(S.venueLine(routed), /^Tail at Kalshi: (YES Boston|NO New York K) 63¢ · \d+(\.\d+)?u · don't pay above \d+¢$/);
   assert.equal(routed.venue.url, 'https://kalshi.com/markets/kxnbagame-26oct10nykbos');
   // a top-up adds only what the venue's size is above the units already signalled
   const top = S.routeSignal({ ...s, id: 'top', topUp: true, parentId: s.id, priorUnits: 0.5, venue: undefined, venues: undefined });
@@ -692,6 +692,11 @@ test('where to tail: Kalshi when the books are worse; nothing matched is "watch 
   assert.equal(lone.venue, null);
   assert.deepEqual(lone.venues, []);
   assert.equal(S.venueLine(lone), 'No US venue found yet: watch only');
+  // in-play and near-certain bets aren't tails at any venue
+  for (const blocked of ['in-play', 'near-certain']) {
+    const b = S.routeSignal({ ...s, id: `b-${blocked}`, topUp: false, blocked, venue: undefined, venues: undefined });
+    assert.ok(b.venues.length > 0 && b.venues.every(v => v.units === 0), blocked);
+  }
   // exits aren't routed
   assert.equal(S.routeSignal({ type: 'exit', id: 'x' }).venue, undefined);
   // put the -170 book back for the gate tests
@@ -922,7 +927,8 @@ test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing,
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   assert.match(html, /showTab\('tail',this\)">🐋 SHARP TAIL</);
   assert.match(html, /id="page-tail"/);
-  for (const v of ['signals', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  for (const v of ['signals', 'board', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  assert.match(html, /\/api\/tail\/board\?limit=100/);
   assert.match(html, /addEventListener\(type, m => \{ try \{ tailOnLive\(type/);
   assert.match(html, /localStorage\.setItem\('lr_tail'/);
   // the same sizing for everyone: no bankroll input, no units turned into dollars, no ?bankroll= re-split
@@ -932,7 +938,7 @@ test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing,
   assert.doesNotMatch(html, /tailDollarsOfUnits|tailState\.bankroll|tailState\.arbStake|\/api\/xarbs\?bankroll|'\?bankroll='/);
   assert.match(tab, /Information only, not a sportsbook\. Same alert for everyone\. 21\+\. Gambling problem\? Call 1-800-GAMBLER\./);
   // where to tail, and the US-mode link rule
-  assert.match(html, /Tail at \$\{v\.name\} \$\{tailVenuePrice\(v\)\} · \$\{v\.units\}u · don't pay above \$\{max\}/);
+  assert.match(html, /Tail at \$\{v\.name\}\$\{v\.buy \? `: \$\{v\.buy\}` : ''\} \$\{tailVenuePrice\(v\)\} · \$\{v\.units\}u · don't pay above \$\{max\}/);
   assert.match(html, /No US venue found yet: watch only/);
   assert.match(html, /tailUS\(\) && TAIL_PM_LINK\.test\(u\)/);
   assert.match(html, /x\.locked \|\| tailUS\(\) \|\|/, 'no Polymarket profile links in US mode');
@@ -964,4 +970,71 @@ test('the live feed: a trade the socket pushes is a signal at once, logged and b
   assert.equal(body.tail.stream.running, false, 'the socket only opens when the server is started for real');
   assert.equal(body.tail.stream.connects, 0);
   assert.ok(body.tail.lastStreamAt);
+});
+
+test('the Sharp Board: Pro sees the wallets on each side, free the top rows with wallets masked', async () => {
+  const pro = (await get('/api/tail/board', PRO)).body;
+  const row = pro.rows.find(r => r.title === 'Will Smith win the Ohio Senate election?' && r.lead.list.some(w => w.wallet === W1) && r.lead.cost >= 6000);
+  assert.ok(row, 'the A wallet\'s live $6,000 buy is a position on the board');
+  assert.equal(row.lead.outcome, 'Yes');
+  assert.equal(row.lead.A, 1);
+  assert.ok(Array.isArray(row.venues));
+  assert.equal(pro.pro, true);
+  assert.equal(pro.locked, 0);
+  const free = (await get('/api/tail/board')).body;
+  assert.ok(free.rows.length <= 3);
+  assert.equal(free.locked, Math.max(0, pro.rows.length - 3));
+  for (const r of free.rows) {
+    assert.equal(r.locked, true);
+    assert.equal(r.conditionId, null);
+    for (const w of r.lead.list) { assert.match(w.wallet, /^0x1a••••$/); assert.equal(w.cost, null); }
+  }
+  assert.deepEqual((await get('/api/tail/board?category=crypto', PRO)).body.rows, []);
+  assert.ok((await get('/api/tail/board?category=sports', PRO)).body.rows.every(r => r.category === 'sports'));
+  // the traders list doesn't carry every graded wallet's whole book
+  const tr = (await get('/api/tail/traders', PRO)).body.traders.find(t => t.wallet === W1);
+  assert.equal(tr.holdings, undefined);
+});
+
+test('the webhook: a sized B entry pings too; an unsized one does not', async () => {
+  const base = S.tailEngine.signals({ type: 'entry' })[0];
+  assert.ok(base);
+  const real = S.tailEngine.ingest;
+  let next = [];
+  S.tailEngine.ingest = async () => next;
+  try {
+    posts.length = 0;
+    next = [{ ...base, id: 'b-sized', grade: 'B', units: 0.8, target: 0.8, parentId: null, topUp: false, isConsensus: false, venue: null, venues: [] }];
+    await S.streamTail([]);
+    assert.equal(posts.length, 1);
+    assert.match(posts[0].body.content, /B-grade/);
+    posts.length = 0;
+    next = [{ ...base, id: 'b-zero', grade: 'B', units: 0, target: 0, parentId: null, topUp: false, isConsensus: false, venue: null, venues: [] }];
+    await S.streamTail([]);
+    assert.equal(posts.length, 0, '0u: on the feed, not pinged');
+  } finally { S.tailEngine.ingest = real; }
+});
+
+test('second chances on the live board: priced from the book, broadcast and pinged once', async () => {
+  const realBook = S.tailEngine.book;
+  let ask = 0.99;
+  S.tailEngine.book = async () => ({ ask });
+  const heard = [];
+  const fn = (type, data) => { if (type === 'board') heard.push(...data); };
+  S.liveListeners.add(fn);
+  try {
+    assert.deepEqual(await S.watchBoard(), [], 'nothing is under its entry at 99¢');
+    const board = (await get('/api/tail/board', PRO)).body.rows;
+    assert.ok(board.length && board.every(r => r.lead.price === 0.99 && r.lead.priceSource === 'book'), 'the board shows the book price too');
+    posts.length = 0;
+    ask = 0.39;
+    const out = await S.watchBoard();
+    const live = out.find(a => a.title === 'Will Smith win the Ohio Senate election?' && a.avgEntry === 0.4);
+    assert.ok(live, 'W1 holds Yes at 40¢; it is 39¢ now');
+    assert.equal(live.price, 0.39);
+    assert.ok(Array.isArray(live.venues));
+    assert.ok(heard.some(a => a.id === live.id), 'broadcast');
+    assert.ok(posts.some(p => /🎯 Second chance: 1 sharp \(1A\) hold Yes on "Will Smith win the Ohio Senate election\?" at 40¢ avg; it's 39¢ now/.test(p.body.content)));
+    assert.deepEqual(await S.watchBoard(), [], 'still under: no repeat');
+  } finally { S.tailEngine.book = realBook; S.liveListeners.delete(fn); }
 });
