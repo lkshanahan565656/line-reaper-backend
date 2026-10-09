@@ -1556,12 +1556,20 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // route(signal) → units, when given, sizes each entry where followers bet
   // (another venue's price) as it's made; those units are what later buys by
   // the same wallet top up. Without it, the size at Polymarket's ask.
+  // The poll and the live stream hand trades to one lane, so a trade is
+  // judged once and consensus sees them in order.
+  let lane = Promise.resolve();
+  function serial(fn) {
+    const run = lane.then(fn);
+    lane = run.catch(() => {});
+    return run;
+  }
+
   async function pollTrades({ route = null } = {}) {
     await loaded;
     if (busy.poll) return [];
     busy.poll = true;
     try {
-      const t = now();
       const trades = [];
       try { trades.push(...await fetchRecentTrades(http, { minCash: o.minTrade })); }
       catch (e) { warn(`recent trades: ${e?.message || e}`); }
@@ -1569,55 +1577,75 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         try { trades.push(...await fetchWalletTrades(http, w, { limit: 50 })); }
         catch (e) { warn(`trades ${w}: ${e?.message || e}`); }
       }
-      trades.sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
-
-      const out = [];
-      for (const tr of trades) {
-        if (seen.has(tr.key)) continue;
-        seen.set(tr.key, tr.at ?? t);
-        const trader = traders.get(tr.wallet);
-        if (!trader) {
-          if (tr.notional >= o.minTrade - EPS) sighted(tr);
-          continue;
-        }
-        if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
-        const age = tr.at == null ? 0 : t - tr.at;
-        const held = `${tr.wallet}|${tr.asset}`;
-        let consensus = [];
-        if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
-          const list = buys.get(tr.asset) || [];
-          consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs).map(b => b.wallet))];
-          list.push({ wallet: tr.wallet, at: tr.at ?? t });
-          buys.set(tr.asset, list);
-        } else if (tr.side === 'SELL') {
-          // selling out withdraws that wallet's vote, and ends our tail of it
-          if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
-          tailed.delete(held);
-        }
-        if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
-        const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
-        const book = tr.side === 'BUY' && market && !market.closed ? await bookFor(tr.asset) : null;
-        const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
-        const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, prior, now: t, opts: o });
-        if (!signal) continue;
-        out.push(signal);
-        // scaling in over several orders is one position: later buys top it up
-        if (signal.type === 'entry' && typeof route === 'function') {
-          let added = 0;
-          try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
-          noteTailed(signal, added);
-        } else if (signal.type === 'entry' && signal.target > 0) {
-          tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
-        }
-      }
-      if (out.length) {
-        feed = [...out.slice().reverse(), ...feed].slice(0, o.maxSignals);
-        health.lastSignalAt = iso(t);
-      }
-      prune(t);
-      health.lastPollAt = iso(t);
-      return out;
+      return await serial(() => judge(trades, { route, source: 'poll' }));
     } finally { busy.poll = false; }
+  }
+
+  // Trades pushed by the live feed (parsed like the poll's): signals within
+  // seconds of the fill. Every trade on the exchange arrives here, so only
+  // graded or known wallets and trades big enough to queue a wallet count.
+  async function ingest(trades, { route = null } = {}) {
+    await loaded;
+    const keep = (trades || []).filter(tr => tr && (traders.has(tr.wallet) || tr.notional >= o.minTrade - EPS));
+    health.streamed = (health.streamed || 0) + keep.length;
+    if (!keep.length) return [];
+    return serial(() => judge(keep, { route, source: 'stream' }));
+  }
+
+  async function judge(trades, { route = null, source = 'poll' } = {}) {
+    const t = now();
+    trades = [...trades].sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+
+    const out = [];
+    for (const tr of trades) {
+      if (seen.has(tr.key)) continue;
+      if (!traders.has(tr.wallet) && !(tr.notional >= o.minTrade - EPS)) continue;
+      seen.set(tr.key, tr.at ?? t);
+      const trader = traders.get(tr.wallet);
+      if (!trader) {
+        if (tr.notional >= o.minTrade - EPS) sighted(tr);
+        continue;
+      }
+      if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
+      const age = tr.at == null ? 0 : t - tr.at;
+      const held = `${tr.wallet}|${tr.asset}`;
+      let consensus = [];
+      if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
+        const list = buys.get(tr.asset) || [];
+        consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs).map(b => b.wallet))];
+        list.push({ wallet: tr.wallet, at: tr.at ?? t });
+        buys.set(tr.asset, list);
+      } else if (tr.side === 'SELL') {
+        // selling out withdraws that wallet's vote, and ends our tail of it
+        if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
+        tailed.delete(held);
+      }
+      if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
+      const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
+      const book = tr.side === 'BUY' && market && !market.closed ? await bookFor(tr.asset) : null;
+      const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
+      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, prior, now: t, opts: o });
+      if (!signal) continue;
+      signal.via = source;
+      if (tr.at != null) signal.lagMs = Math.max(0, t - tr.at);
+      out.push(signal);
+      // scaling in over several orders is one position: later buys top it up
+      if (signal.type === 'entry' && typeof route === 'function') {
+        let added = 0;
+        try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+        noteTailed(signal, added);
+      } else if (signal.type === 'entry' && signal.target > 0) {
+        tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
+      }
+    }
+    if (out.length) {
+      feed = [...out.slice().reverse(), ...feed].slice(0, o.maxSignals);
+      health.lastSignalAt = iso(t);
+    }
+    prune(t);
+    if (source === 'poll') health.lastPollAt = iso(t);
+    else health.lastStreamAt = iso(t);
+    return out;
   }
 
   // category: grade within that category; grade: 'A' | 'B' | 'graded' (either)
@@ -1648,7 +1676,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   return {
-    refreshCandidates, scoreBatch, pollTrades, traders: listTraders, trader: w => traders.get(lower(w)) || null,
+    refreshCandidates, scoreBatch, pollTrades, ingest, traders: listTraders, trader: w => traders.get(lower(w)) || null,
     signals, state, settings: () => o, addCandidate, ready: () => loaded,
   };
 }
