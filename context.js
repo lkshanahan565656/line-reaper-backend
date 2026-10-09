@@ -262,10 +262,13 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
       const row = {
         sport: sportKey(entry.sport), teamA: entry.teamA, teamB: entry.teamB, bestOf,
         pSeriesA: pSeries, pMapA: seriesToMapProb(pSeries, bestOf), at: now(),
+        source: entry.source || 'manual', start: entry.start || null,
         // prices quoted on a single map (Bo1 or a map line) are already map probs
         ...(entry.perMap ? { pMapA: pSeries } : {}),
       };
       const i = rows.findIndex(r => r.sport === row.sport && teamsMatch(r.teamA, row.teamA) && teamsMatch(r.teamB, row.teamB));
+      // a fresh price someone entered by hand outranks one from a feed
+      if (i >= 0 && rows[i].source === 'manual' && row.source !== 'manual' && now() - rows[i].at <= ttlMs) return rows[i];
       if (i >= 0) rows[i] = row; else rows.push(row);
       return row;
     },
@@ -274,8 +277,8 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
       const s = sportKey(sport), t = now();
       for (const r of rows) {
         if (r.sport !== s || t - r.at > ttlMs) continue;
-        if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf };
-        if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf };
+        if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf, source: r.source };
+        if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source };
       }
       return null;
     },
@@ -290,7 +293,7 @@ function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
   const s = sportKey(sport);
   let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
   const fed = oddsBook?.lookup(s, team, opponent);
-  if (fed) { pMap = fed.pMap; source = 'odds'; bestOf = fed.bestOf || bestOf; }
+  if (fed) { pMap = fed.pMap; source = fed.source === 'manual' || !fed.source ? 'odds' : fed.source; bestOf = fed.bestOf || bestOf; }
   const ratings = elo[s];
   if (ratings) pTypical = ratings.typical(team);
   if (pMap == null && ratings && opponent) {

@@ -58,8 +58,14 @@ async function fetchValGames(http, pages = 5) {
 }
 
 // Refresh every sport we can; one failing source never blocks the others.
-async function refreshRatings(http, state, log = console) {
+// With a PandaScore client, CS2 and CoD get ratings too (no free feed covers
+// them) and Valorant uses its timestamped results instead of vlrggapi's.
+async function refreshRatings(http, state, log = console, { panda = null } = {}) {
   const jobs = { LOL: () => fetchLoLGames(http), DOTA: () => fetchDotaGames(http), VAL: () => fetchValGames(http) };
+  if (panda) {
+    const since = new Date(Date.now() - 180 * 86400000).toISOString();
+    for (const sport of ['CS', 'VAL', 'COD']) jobs[sport] = () => panda.games(sport, { pages: 10, since });
+  }
   for (const [sport, job] of Object.entries(jobs)) {
     try {
       const games = await job();
