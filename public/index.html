@@ -3593,7 +3593,7 @@ function evConnect() {
   evSource.onopen = () => { evLive = true; renderEv(); if (tailActive) renderTail(); };
   evSource.onerror = () => { evLive = false; };
   // the Sharp Tail tab rides the same stream
-  for (const type of ['tail', 'whale', 'xarb']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
+  for (const type of ['tail', 'whale', 'xarb', 'board']) evSource.addEventListener(type, m => { try { tailOnLive(type, JSON.parse(m.data)); } catch {} });
   const refreshIfNewer = at => { if (evActive && at && (!evState.updated || at > Date.parse(evState.updated))) loadEv(); };
   evSource.addEventListener('tick', m => { try { refreshIfNewer(JSON.parse(m.data).at); } catch {} });
   evSource.addEventListener('ev', m => {
@@ -3781,7 +3781,7 @@ function tailVenueLine(s) {
   const v = s.venue;
   if (!v) return tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
-  return `Tail at ${v.name} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
+  return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
@@ -3885,6 +3885,12 @@ function tailOnLive(type, data) {
     // with the tab in the background: a desktop alert per sized entry (a few at most)
     if (tailNotifyOn()) for (const s of sized.slice(0, 3)) { try { new Notification('🐋 Sharp Tail', { body: line(s), tag: `tail|${s.id}` }); } catch { /* a nicety */ } }
     if (tailActive && tailState.view === 'signals') renderTail();
+  } else if (type === 'board') {
+    // second chances: a side the sharps hold is back at or under what they paid
+    const line = a => `${a.wallets} sharp${a.wallets === 1 ? '' : 's'} hold ${a.outcome || '?'} on ${a.title} at ${tailC(a.avgEntry)} avg; it's ${tailC(a.price)} now${a.venues?.[0] ? ` · ${a.venues[0].name} ${tailVenuePrice(a.venues[0])}` : ''}`;
+    if (data[0]) showToast(`🎯 Second chance: ${line(data[0])}`);
+    if (tailNotifyOn()) for (const a of data.slice(0, 3)) { try { new Notification('🎯 Second chance', { body: line(a), tag: `board|${a.conditionId}|${a.asset}` }); } catch { /* a nicety */ } }
+    tailSoon('board');
   } else if (type === 'whale') {
     tailSoon('whales');
   } else if (type === 'xarb') {
@@ -3940,13 +3946,14 @@ function tailSignalsHTML() {
     const left = exit ? `<b style="color:#f87171">EXIT</b><div class="tail-stat"><div class="k">THEY SOLD</div></div>`
       : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${routed && v ? escAttr(v.name) : ''}</div>`
       : routed && !v ? `<b style="color:#64748b">WATCH</b><div style="font-size:10px;color:#94a3b8;line-height:1.3">no venue yet</div>`
-      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
+      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v && !s.blocked ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
+      + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (s.topUp ? `<span class="tail-tag" title="This wallet already bought this outcome; the units only top you up to the new size (${s.target ?? '—'}u in total)">TOP-UP</span>` : '')
       + (s.via === 'stream' ? `<span class="tail-tag cons" title="Caught from Polymarket's live trade feed${s.lagMs != null ? `, ${Math.max(1, Math.round(s.lagMs / 1000))}s after the fill` : ''}">⚡ LIVE${s.lagMs != null && s.lagMs < 60e3 ? ` ${Math.max(1, Math.round(s.lagMs / 1000))}S` : ''}</span>` : '');
     return `<div class="tail-card ${exit ? 'exit' : sized ? 'sized' : 'muted'}">
@@ -3972,7 +3979,7 @@ function tailThresholds() {
   const line = g => { const x = o.grades[g]; return `${tailGrade(g)} ${x.minN}+ resolved bets · ${x.minEvents}+ events · ${tailUsd(x.minRisked)}+ risked · ROI ${tailPct(x.minRoi, 0)}+ · z ${x.minZ}+ · ≤${Math.round(x.maxConcentration * 100)}% of profit from one event (or one day's markets) · a bet in the last ${x.activeDays} days${x.minRecentRoi != null ? ` · 30-day ROI above ${tailPct(x.minRecentRoi, 0)}` : ''} · cap ${x.capUnits}u`; };
   return `<div class="tail-box"><div class="tail-box-head">HOW WALLETS ARE GRADED</div>
     <div class="tail-row" style="color:#cbd5e1">${line('A')}</div><div class="tail-row" style="color:#cbd5e1">${line('B')}</div>
-    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded. Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
+    <div class="tail-row" style="color:#64748b">ROI and edge count open bets at today's prices, so selling winners and sitting on losers doesn't help. z = profit ÷ the spread pure luck would give at those prices, with every bet on one event counted as one bet. Once a wallet is picked, its bets after that have to stay in profit. Wallets holding both sides in more than ${Math.round(o.maxTwoSided * 100)}% of markets are market makers and never graded.${o.maxInPlay != null ? ` Wallets that bought over ${Math.round(o.maxInPlay * 100)}% of their sampled game bets after the start are live bettors and aren't graded in sports.` : ''} Edge for sizing is shrunk toward zero with ${tailUsd(o.priorRisk)} of no-edge betting, then halved.</div></div>`;
 }
 
 // Where the graded sharps are positioned now: one card a market, the side
@@ -3994,7 +4001,7 @@ function tailBoardHTML() {
   return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.map(r => {
     const L = r.lead, v = (r.venues || [])[0];
     const mix = [L.A ? `${L.A}A` : '', L.B ? `${L.B}B` : ''].filter(Boolean).join(' · ');
-    const take = v ? tailLink(v.url, escAttr(`Take ${L.outcome || 'it'} at ${v.name} ${tailVenuePrice(v)}`))
+    const take = v ? tailLink(v.url, escAttr(v.buy ? `Take it at ${v.name}: ${v.buy} ${tailVenuePrice(v)}` : `Take ${L.outcome || 'it'} at ${v.name} ${tailVenuePrice(v)}`))
       + (v.warning ? ` <span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span>` : '')
       + ((r.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${r.venues.slice(1, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)}`).join(' · ')}</div>` : '')
       : (tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only');
@@ -4054,6 +4061,8 @@ function tailTradersHTML() {
       ${stat('EDGE', s.edge == null && t.locked ? '🔒' : tailPct(s.edge), 'Shrunk edge used for sizing')}
       ${stat('30D ROI', tailPct(s.recentRoi), `Last 30 days (${s.recentN || 0} bets)`)}
       ${stat('TOP BET', s.concentration == null ? '—' : Math.round(s.concentration * 100) + '%', s.concentrationBy === 'day' ? 'Share of all winnings from one day\'s markets in one category' : 'Share of all winnings from the single best event')}
+      ${stat('CLV', s.clvN ? `<span style="color:${s.clv > 0 ? '#10b981' : '#f87171'}">${tailPct(s.clv)}</span> <span style="color:#64748b">(${s.clvN})</span>` : '—', 'Average closing-line value on recent pregame bets (how many measured): beating the close is the part of a record luck can\'t fake')}
+      ${s.inPlayShare != null ? stat('LIVE', Math.round(s.inPlayShare * 100) + '%', 'Share of sampled game bets first bought after the start. Over half and the wallet isn\'t graded in sports: live prices move faster than a follower') : ''}
     </div>`;
   }).join('') + `</div>` + tailThresholds();
 }
