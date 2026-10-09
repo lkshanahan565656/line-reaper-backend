@@ -91,6 +91,11 @@ test('polymarket parsing: JSON-string outcomes, second ask = 1 − bestBid', () 
     assert.deepEqual(X.parsePolymarketEvents(polyEvent(m)), [], JSON.stringify(m));
   }
   assert.equal(X.parsePolymarketEvents(polyEvent({ sportsMarketType: undefined })).length, 2, 'no market type: still a moneyline');
+
+  const now = Date.parse('2026-10-09T15:00:00Z');
+  assert.deepEqual(X.parsePolymarketEvents(polyEvent({ updatedAt: '2026-09-16T00:00:00Z' }), null, now), [], 'a Gamma price weeks old is no price');
+  assert.equal(X.parsePolymarketEvents(polyEvent({ updatedAt: '2026-10-09T14:50:00Z' }), null, now).length, 2, 'fresh: kept');
+  assert.equal(X.parsePolymarketEvents(polyEvent({ updatedAt: 'garbage' }), null, now).length, 2, 'unreadable stamp: kept');
 });
 
 test('team matching: nicknames, cities, abbreviations', () => {

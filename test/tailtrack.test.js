@@ -25,11 +25,17 @@ const gamma = (o = {}) => ({
 });
 const lakers = (o = {}) => gamma({ conditionId: '0xm2', question: 'Lakers vs. Celtics', outcomes: '["Lakers","Celtics"]', clobTokenIds: '["tok-lal","tok-bos"]', ...o });
 
-function fakeGamma(markets) {
-  const calls = [];
+// Gamma markets by condition id; CLOB books by token (none: the book call fails)
+function fakeGamma(markets, books = {}) {
+  const calls = [], bookCalls = [];
   return {
-    calls,
+    calls, bookCalls,
     async get(url, { params }) {
+      if (url.endsWith('/book')) {
+        bookCalls.push(params.token_id);
+        if (!books[params.token_id]) throw new Error('no book');
+        return { data: books[params.token_id] };
+      }
       calls.push(params.condition_ids);
       const m = markets[params.condition_ids];
       if (m instanceof Error) throw m;
@@ -226,6 +232,36 @@ test('a top-up joins its first bet as one record at the price that pays the same
   // a top-up whose first bet isn't open stands alone
   assert.equal(await tr.record(signal({ id: 'orphan', parentId: 'gone', topUp: true, units: 0.3 })), true);
   assert.equal((await tr.list()).length, 2);
+});
+
+test('the running close is the token\'s book midpoint; a stale Gamma price is ignored', async () => {
+  let t = NOW;
+  const stale = new Date(NOW - 30 * 86400e3).toISOString();
+  const markets = { '0xm1': gamma({ updatedAt: stale }) };   // Gamma still says 0.48, a month old
+  const books = { 'tok-yes': { asks: [{ price: '0.60', size: '100' }, { price: '0.58', size: '50' }], bids: [{ price: '0.55', size: '10' }, { price: '0.56', size: '20' }] } };
+  const http = fakeGamma(markets, books);
+  const tr = createTailTracker({ http, now: () => t });
+  await tr.recordAll([signal(), signal(NO_SIDE)]);
+  t += 600e3;
+  await tr.check();
+  const by = Object.fromEntries((await tr.list()).map(r => [r.asset, r]));
+  assert.equal(by['tok-yes'].closePrice, 0.57, 'midpoint of the best bid 0.56 and best ask 0.58');
+  assert.equal(by['tok-no'].closePrice, null, 'no book and a stale Gamma: no close yet');
+  assert.deepEqual(http.bookCalls.sort(), ['tok-no', 'tok-yes'], 'one book a held token');
+  // a 5¢ / 95¢ book has no price: the close stays where it was
+  books['tok-yes'] = { asks: [{ price: '0.95', size: '10' }], bids: [{ price: '0.05', size: '10' }] };
+  t += 600e3;
+  await tr.check();
+  assert.equal((await tr.list()).find(r => r.asset === 'tok-yes').closePrice, 0.57, 'spread over 10¢: midpoint ignored');
+  books['tok-yes'] = { asks: [{ price: '0.58', size: '50' }], bids: [{ price: '0.56', size: '20' }] };
+  // settled markets need no book
+  markets['0xm1'] = gamma({ closed: true, outcomePrices: '["1","0"]' });
+  http.bookCalls.length = 0;
+  t += 600e3;
+  assert.equal((await tr.check()).settled, 2);
+  assert.deepEqual(http.bookCalls, []);
+  const yes = (await tr.list()).find(r => r.asset === 'tok-yes');
+  assert.equal(yes.clv, Math.round((0.57 / 0.42 - 1) * 1e4) / 1e4);
 });
 
 // ── venues and fees ──

@@ -738,7 +738,7 @@ const flatHistory = (p, price) => {
   return { data: { history: points } };
 };
 function world() {
-  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
+  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, books: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
   w.http = recorder((url, p) => {
     if (url.endsWith('/v2/leaderboard')) return page(w.leaderboard, p);
     if (p.user && w.fail.has(p.user)) throw new Error('timeout');
@@ -753,6 +753,7 @@ function world() {
       return typeof h === 'function' ? h(p) : h ?? flatHistory(p, w.closeFor(p.token_id));
     }
     if (url.endsWith('/markets')) return w.markets[p.condition_ids] ? [w.markets[p.condition_ids]] : [];
+    if (url.endsWith('/book')) { if (w.books[p.token_id]) return w.books[p.token_id]; throw new Error('no book'); }
     throw new Error(`unexpected ${url}`);
   });
   return w;
@@ -834,7 +835,8 @@ test('pollTrades: signals, dedup across polls, consensus boost, SELL exits, new 
   const edge = (40000 / 140000) * 0.5, q = T.trueProb(0.4, edge, 0.5);   // its bets were all at 50¢
   const units = cons => round2(Math.min(Math.min(25 * (q - 0.42) / 0.58, 2) * (cons ? 1.5 : 1), 3));
   assert.equal(s1[0].theirNotional, 800, 'fills merged');
-  assert.equal(s1[0].currentPrice, 0.42);
+  assert.deepEqual([s1[0].currentPrice, s1[0].priceSource], [0.42, 'gamma'], 'no book to read: a fresh Gamma price');
+  assert.ok(w.http.calls.some(c => c.url === 'https://clob.polymarket.com/book' && c.params.token_id === 'tok-yes'), 'the bought token\'s book was asked for');
   assert.equal(s1[0].prob, round4(q));
   assert.equal(s1[0].units, units(false));
   assert.equal(s1[0].isConsensus, false);
@@ -1215,6 +1217,20 @@ test('scaling into one position over several orders tops the tail up; it is not 
   t += 60e3;
   w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xw2', timestamp: Math.floor((t - 5e3) / 1000) })];
   assert.equal((await eng.pollTrades({ route: () => 0 }))[0].topUp, false);
+});
+
+test('scoreBatch keeps scoring until its time box runs out, then leaves the rest for the next run', async () => {
+  const w = world();
+  for (const i of [1, 2, 3, 4]) w.closed[W(i)] = sportsBad(W(i));
+  let t = NOW;
+  const slow = { calls: w.http.calls, get: async (url, cfg) => { t += 4e3; return w.http.get(url, cfg); } };   // 4s a request
+  const eng = T.createTailEngine({ http: slow, now: () => t, log: {} });
+  for (const i of [1, 2, 3, 4]) eng.addCandidate(W(i));
+  const r = await eng.scoreBatch();
+  assert.ok(r.scored >= 1 && r.scored < 4, `scored ${r.scored}: stopped at the time box, not at 3 or all`);
+  assert.equal(r.pending, 4 - r.scored);
+  t += 60e3;
+  assert.equal((await eng.scoreBatch()).scored + r.scored <= 4, true);
 });
 
 test('memory: untailable scores shrink to a summary and only leaderboard ones are stored; the oldest are evicted past the cap', async () => {

@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.21.0');
+  assert.equal(body.version, '3.22.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.21.0');
-  assert.equal((await get('/')).body.version, '3.21.0');
+  assert.equal(require('../package.json').version, '3.22.0');
+  assert.equal((await get('/')).body.version, '3.22.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -900,6 +900,15 @@ test('polite http: one request per gap per host, identical GETs share a response
   t += 1000;
   assert.equal((await http.get('https://c.example/')).data.url, 'https://c.example/');
   assert.equal(http.stats().failed, 1);
+
+  // a gap per host: Polymarket's data API a quarter second, anyone else a second
+  const slept2 = [];
+  const fast = S.createPoliteHttp(async url => ({ data: url }), {
+    gapMs: host => (host === 'data-api.polymarket.com' ? 250 : 1000), now: () => t, sleep: async ms => { slept2.push(ms); },
+  });
+  await Promise.all([1, 2, 3].map(i => fast.get(`https://data-api.polymarket.com/v2/trades?n=${i}`)).concat([1, 2].map(i => fast.get(`https://x.example/${i}`))));
+  assert.deepEqual(slept2.sort((a, b) => a - b), [250, 500, 1000]);
+  assert.deepEqual(fast.stats().gapMs, { 'data-api.polymarket.com': 250, 'x.example': 1000 });
 });
 
 test('US mode strips polymarket.com links however deep, and nothing else', () => {

@@ -58,7 +58,7 @@
 // Parsers and matchers are pure. The fetchers take an axios-style `http` so
 // all of it can be tested without the network.
 
-const { kalshiFee, teamMatches, kalshiLeague } = require('./exchanges');
+const { kalshiFee, teamMatches, kalshiLeague, gammaStale } = require('./exchanges');
 const { americanToDecimal } = require('./ev');
 
 const KALSHI_EVENTS_URL = 'https://api.elections.kalshi.com/trade-api/v2/events';
@@ -259,7 +259,9 @@ function yesWon(m) {
   return yi >= 0 && num(px[yi]) >= 0.99;
 }
 
-function parsePolymarketBinaries(payload) {
+// A market whose Gamma record is over an hour old has stale prices (see
+// exchanges.gammaStale): no legs from it.
+function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
   const events = Array.isArray(payload) ? payload : payload?.events || payload?.data || [];
   const out = [];
   for (const ev of events) {
@@ -274,7 +276,7 @@ function parsePolymarketBinaries(payload) {
       const names = (jsonList(m.outcomes) || []).map(o => String(o).trim());
       if (names.length !== 2) continue;
       const lower = names.map(s => s.toLowerCase());
-      const tradable = m.active !== false && m.acceptingOrders !== false && m.archived !== true;
+      const tradable = m.active !== false && m.acceptingOrders !== false && m.archived !== true && !gammaStale(m, now);
       const ask0 = tradable ? quote(m.bestAsk) : null;
       const bid0 = tradable ? quote(m.bestBid) : null;
       const ask1 = bid0 == null ? null : round(1 - bid0, 6);

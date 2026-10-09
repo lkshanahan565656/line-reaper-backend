@@ -87,13 +87,19 @@ const jsonList = v => {
 const NOT_TEAMS = new Set(['yes', 'no', 'over', 'under', 'draw', 'tie']);
 
 // tagSlug: the tag the events were fetched with ('nba', 'nhl', ...) → row.league
-function parsePolymarketEvents(payload, tagSlug = null) {
+// Gamma's prices for a market can sit weeks behind its order book (seen live
+// on a market Gamma last updated a month before): a market Gamma hasn't
+// touched for this long has no price worth showing.
+const GAMMA_STALE_MS = 3600e3;
+const gammaStale = (m, now) => { const u = Date.parse(m?.updatedAt); return Number.isFinite(u) && now - u > GAMMA_STALE_MS; };
+
+function parsePolymarketEvents(payload, tagSlug = null, now = Date.now()) {
   const league = tagSlug ? String(tagSlug).toLowerCase() : null;
   const events = Array.isArray(payload) ? payload : payload?.events || payload?.data || [];
   const out = [];
   for (const ev of events) {
     for (const m of ev.markets || []) {
-      if (m.active === false || m.closed === true) continue;
+      if (m.active === false || m.closed === true || gammaStale(m, now)) continue;
       if (m.sportsMarketType != null && m.sportsMarketType !== 'moneyline') continue;
       const outcomes = jsonList(m.outcomes);
       if (!outcomes || outcomes.length !== 2 || outcomes.some(o => NOT_TEAMS.has(String(o).trim().toLowerCase()))) continue;
@@ -328,7 +334,7 @@ function fetchPolymarket(http, { tags = POLYMARKET_TAGS } = {}) {
 
 const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
 
-module.exports = {
+module.exports = { gammaStale, GAMMA_STALE_MS,
   kalshiFee, effectiveAmerican, parseKalshiMarkets, kalshiLeague, parsePolymarketEvents, teamMatches,
   attachExchanges, toMarketsList, fetchKalshi, fetchPolymarket,
   KALSHI_SERIES, POLYMARKET_TAGS,
