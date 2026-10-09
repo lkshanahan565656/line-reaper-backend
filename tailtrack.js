@@ -32,7 +32,7 @@
 
 const path = require('path');
 const { createMemoryStore, createFileStore } = require('./evtrack');
-const { fetchMarket, resolutionOf, priceOf, outcomeIndexOf, toMs } = require('./tail');
+const { fetchMarket, fetchBook, resolutionOf, priceOf, outcomeIndexOf, toMs } = require('./tail');
 
 function createPgStore(connectionString) {
   const { Pool } = require('pg');   // only required when DATABASE_URL is set
@@ -134,16 +134,22 @@ function settle(rec, market, t = Date.now()) {
   return true;
 }
 
-// Pure: while the market trades, before its event, its last price is the
-// running close. → true when it changed.
+// Pure: while the market trades, before its event, its price is the running
+// close: `live` (the token's book midpoint) when given, else Gamma's last
+// price unless Gamma is over an hour stale. → true when it changed.
+// Like Polymarket's own display, a midpoint only counts while the spread is
+// 10¢ or less (a 5¢ / 95¢ book says nothing about the price).
 const OUTCOME_KNOWN = px => px >= 0.97 || px <= 0.03;
 const JUMP = 0.2;
-function observe(rec, market, t = Date.now()) {
+const GAMMA_STALE_MS = 3600e3;
+const MAX_SPREAD = 0.1;
+const midOf = book => (book && book.spread != null && book.spread <= MAX_SPREAD + 1e-9 ? book.mid : null);
+function observe(rec, market, t = Date.now(), live = null) {
   if (!market || market.closed || !market.active || market.acceptingOrders === false || rec.closeFrozen) return false;
   const start = toMs(market.gameStartTime), end = toMs(market.endDate);
   if (start != null && t >= start) return false;
   if (end != null && t >= end) return false;
-  const px = priceOf(market, rec);
+  const px = inUnit(num(live)) ? num(live) : market.updatedAt != null && t - market.updatedAt > GAMMA_STALE_MS ? null : priceOf(market, rec);
   if (px == null || px === rec.closePrice) return false;
   if (OUTCOME_KNOWN(px) && Math.abs(px - (rec.closePrice ?? clvBase(rec) ?? rec.entry)) >= JUMP) {
     rec.closeFrozen = true;
@@ -244,10 +250,17 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
         catch (e) { errors.push({ conditionId: cid, message: e?.message || String(e) }); continue; }
         finally { checkedAt.set(cid, now()); }
         if (!market) continue;
+        // still trading: each held token's book midpoint is its running close
+        const mids = new Map();
+        if (!market.closed && resolutionOf(market) == null) {
+          for (const asset of new Set(byMarket.get(cid).map(r => r.asset).filter(a => a != null))) {
+            try { mids.set(String(asset), midOf(await fetchBook(http, asset))); } catch { /* Gamma's price, if fresh */ }
+          }
+        }
         const t = now();
         for (const rec of byMarket.get(cid)) {
           if (settle(rec, market, t)) { open.delete(rec.id); settled++; writes.push(store.put(rec)); }
-          else if (observe(rec, market, t)) writes.push(store.put(rec));
+          else if (observe(rec, market, t, mids.get(String(rec.asset)) ?? null)) writes.push(store.put(rec));
         }
       }
       await Promise.all(writes).catch(e => log.warn?.(`Tail tracker: ${e.message}`));

@@ -3908,8 +3908,8 @@ function tailSignalsHTML() {
   if (!list.length && note) return note + strip;
   if (!list.length && !tailState.pro && tailState.locked) return banner + strip + tailEmpty('NOTHING 30 MINUTES OLD YET', 'On the free plan each signal shows up here 30 minutes after it fires.');
   if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
-    ? 'A signal fires when a graded wallet makes a $500+ bet. The backend checks Polymarket every 30 seconds.'
-    : 'Signals show up here when graded wallets bet. The backend checks Polymarket every 30 seconds.');
+    ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
+    : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
   return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
     const routed = tailHasVenue(s), v = s.venue;
@@ -3923,7 +3923,8 @@ function tailSignalsHTML() {
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
-      + (s.topUp ? `<span class="tail-tag" title="This wallet already bought this outcome; the units only top you up to the new size (${s.target ?? '—'}u in total)">TOP-UP</span>` : '');
+      + (s.topUp ? `<span class="tail-tag" title="This wallet already bought this outcome; the units only top you up to the new size (${s.target ?? '—'}u in total)">TOP-UP</span>` : '')
+      + (s.via === 'stream' ? `<span class="tail-tag cons" title="Caught from Polymarket's live trade feed${s.lagMs != null ? `, ${Math.max(1, Math.round(s.lagMs / 1000))}s after the fill` : ''}">⚡ LIVE${s.lagMs != null && s.lagMs < 60e3 ? ` ${Math.max(1, Math.round(s.lagMs / 1000))}S` : ''}</span>` : '');
     return `<div class="tail-card ${exit ? 'exit' : sized ? 'sized' : 'muted'}">
       <div class="tail-units">${left}</div>
       <div style="flex:1;min-width:220px">

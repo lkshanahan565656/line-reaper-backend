@@ -77,6 +77,7 @@
 
 const DATA_API = 'https://data-api.polymarket.com';
 const GAMMA_API = 'https://gamma-api.polymarket.com';
+const CLOB_API = 'https://clob.polymarket.com';
 // v2 takes these lowercase; source keys stay upper case ("POLITICS:WEEK")
 const LEADERBOARD_CATEGORIES = ['OVERALL', 'POLITICS', 'SPORTS', 'ESPORTS', 'CRYPTO', 'CULTURE', 'ECONOMICS', 'TECH', 'FINANCE'];
 const LEADERBOARD_PERIODS = ['DAY', 'WEEK', 'MONTH', 'ALL'];
@@ -108,7 +109,8 @@ const DEFAULTS = {
   consensusMult: 1.5,
   maxUnits: 3,
   forwardMinN: 30,               // bets resolved since the wallet was picked before they count
-  batchSize: 3,                  // wallets scored per scoreBatch call
+  batchSize: 30,                 // wallets scored per scoreBatch call, at most...
+  scoreBudgetMs: 40e3,           // ...and no new wallet started after this long (the job runs every minute)
   rescoreMs: 12 * 3600e3,
   retryMs: 30 * 60e3,            // after a failed fetch
   tradeCandidateMin: 5000,       // $ for one trade to queue an unknown wallet (or 2 trades over minTrade)
@@ -120,6 +122,7 @@ const DEFAULTS = {
   walletTradeLimit: 500,
   watchPerPoll: 2,               // graded wallets whose own trades each poll also reads
   quoteTtlMs: 20e3,
+  gammaStaleMs: 3600e3,          // a Gamma price not updated for this long is no price (the order book is the live one)
   maxSignals: 500,
   clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
   clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
@@ -565,7 +568,7 @@ function parseGammaMarket(m) {
     active: m.active !== false && m.active !== 'false', closed: bool(m.closed), resolution: m.umaResolutionStatus || null,
     acceptingOrders: m.acceptingOrders == null ? null : bool(m.acceptingOrders),
     negRisk: bool(m.negRisk), volume: num(m.volume), liquidity: num(m.liquidity),
-    fee: parseFeeSchedule(m),
+    fee: parseFeeSchedule(m), updatedAt: toMs(m.updatedAt),
   };
 }
 const parseGammaMarkets = payload => rowsOf(payload).map(parseGammaMarket).filter(Boolean);
@@ -596,6 +599,38 @@ function askFor(market, ref) {
   if (i === 1 && market.outcomes.length <= 2) return inUnit(market.bestBid) == null ? null : round(1 - market.bestBid, 6);
   return null;
 }
+// ── the live order book ──
+// Gamma's bestAsk / lastTradePrice can lag the market by weeks (seen live:
+// Gamma 35¢, book 59.6¢), so prices to act on come from the CLOB book of the
+// token itself. → { ask, bid, mid, spread, askSize, bidSize, at } or null
+function parseBook(payload) {
+  if (!payload || typeof payload !== 'object' || (!Array.isArray(payload.asks) && !Array.isArray(payload.bids))) return null;
+  const levels = list => (Array.isArray(list) ? list : [])
+    .map(l => ({ p: num(Array.isArray(l) ? l[0] : l?.price), s: num(Array.isArray(l) ? l[1] : l?.size) }))
+    .filter(l => l.p > 0 && l.p < 1 && l.s > 0);
+  const asks = levels(payload.asks).sort((a, b) => a.p - b.p), bids = levels(payload.bids).sort((a, b) => b.p - a.p);
+  const ask = asks[0]?.p ?? null, bid = bids[0]?.p ?? null;
+  return {
+    ask, bid, mid: ask != null && bid != null ? round((ask + bid) / 2, 6) : null,
+    spread: ask != null && bid != null ? round(ask - bid, 6) : null,
+    askSize: asks[0]?.s ?? null, bidSize: bids[0]?.s ?? null, at: toMs(payload.timestamp),
+  };
+}
+async function fetchBook(http, tokenId) {
+  const res = await http.get(`${CLOB_API}/book`, { params: { token_id: String(tokenId) }, timeout: TIMEOUT });
+  return parseBook(res?.data);
+}
+// The price to buy that outcome now: the book's ask when there is a book;
+// without one, Gamma's, unless Gamma hasn't been updated for gammaStaleMs.
+// → { price, source: 'book' | 'gamma' } (price null when there's none)
+function liveAsk(market, book, ref, { now = Date.now(), opts = {} } = {}) {
+  if (book) return { price: inUnit(book.ask), source: 'book' };
+  if (!market) return { price: null, source: null };
+  const o = resolveOptions(opts);
+  if (market.updatedAt != null && now - market.updatedAt > o.gammaStaleMs) return { price: null, source: 'gamma' };
+  return { price: askFor(market, ref), source: 'gamma' };
+}
+
 // last traded price of that outcome (lastTradePrice quotes the first outcome)
 function priceOf(market, ref) {
   const i = outcomeIndexOf(market, ref);
@@ -1021,13 +1056,14 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
 }
 
 // trade: a parsed trade; trader: a scoreWallet result; market: a parsed gamma
-// market (null when the lookup failed); consensus: other graded wallets that
+// market (null when the lookup failed); book: the bought token's parsed CLOB
+// book (null when it couldn't be read: then Gamma's price, if fresh); consensus: other graded wallets that
 // bought the same outcome inside the window; prior: { id, units } when we
 // already tailed this wallet into this outcome (then only the top-up up to
 // the new size is staked). → { signal, skip }. The signal carries q (our
 // probability of the outcome bought) and is sized with sizeAt at Polymarket's
 // ask plus its taker fee, so the same q sizes it at any other venue.
-function tradeSignal({ trade, trader, market = null, consensus = [], prior = null, now = Date.now(), opts = {} } = {}) {
+function tradeSignal({ trade, trader, market = null, book = null, consensus = [], prior = null, now = Date.now(), opts = {} } = {}) {
   const o = resolveOptions(opts);
   const skip = reason => ({ signal: null, skip: reason });
   if (!trade || !trader) return skip('not graded');
@@ -1053,7 +1089,8 @@ function tradeSignal({ trade, trader, market = null, consensus = [], prior = nul
     if (end != null && end - now < o.minCloseMs) return skip(`market resolves within ${Math.round(o.minCloseMs / 60e3)} min`);
   }
 
-  const p = trade.price, c = market ? askFor(market, trade) : null;
+  const live = liveAsk(market, book, trade, { now, opts: o });
+  const p = trade.price, c = live.price;
   const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
   const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const wallets = [...new Set([trader.wallet, ...(consensus || []).map(lower).filter(Boolean)])];
@@ -1075,7 +1112,7 @@ function tradeSignal({ trade, trader, market = null, consensus = [], prior = nul
   }
   return {
     signal: {
-      ...base, type: 'entry', currentPrice: c, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
+      ...base, type: 'entry', currentPrice: c, priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
       q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
       kelly: round(kelly, 4), units, target, cap: sized.cap,
       parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0, priorUnits: before,
@@ -1254,6 +1291,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   const buys = new Map();         // asset → [{ wallet, at }] of graded buys, for consensus
   const tailed = new Map();       // wallet|asset → { id, units, at }: the size followers were already told
   const quotes = new Map();       // conditionId → { at, market }
+  const books = new Map();        // token → { at, book }
   const closes = new Map();       // token → its closing line { price, at, cut, rule }, or null when it has none
   const lookups = new Map();      // conditionId → parsed Gamma market (or null) for CLV: game start, close time
   let feed = [];                  // signals, newest first
@@ -1431,8 +1469,10 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     if (busy.score) return { busy: true, scored: 0, wallets: [], pending: pendingCount() };
     busy.score = true;
     try {
-      const wallets = [];
+      const wallets = [], t0 = now();
+      let tried = 0;
       for (const c of queue().slice(0, Math.max(0, n))) {
+        if (tried++ && now() - t0 > o.scoreBudgetMs) break;
         try { await scoreOne(c); wallets.push(c.wallet); }
         catch (e) { c.failedAt = now(); warn(`score ${c.wallet}: ${e?.message || e}`); }
       }
@@ -1454,6 +1494,19 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       warn(`market ${conditionId}: ${e?.message || e}`);
       return null;
     }
+  }
+
+  // the token's live book, cached like the market; null when it can't be read
+  async function bookFor(asset) {
+    if (asset == null) return null;
+    const t = now();
+    const hit = books.get(String(asset));
+    if (hit && t - hit.at < o.quoteTtlMs) return hit.book;
+    let book = null;
+    try { book = await fetchBook(http, asset); }
+    catch (e) { warn(`book ${asset}: ${e?.message || e}`); }
+    books.set(String(asset), { at: t, book });
+    return book;
   }
 
   function watched(k) {
@@ -1486,6 +1539,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     }
     for (const [k, v] of tailed) if (t - v.at > o.consensusWindowMs) tailed.delete(k);
     for (const [cid, q] of quotes) if (t - q.at > o.quoteTtlMs) quotes.delete(cid);
+    for (const [k, b] of books) if (t - b.at > o.quoteTtlMs) books.delete(k);
   }
 
   // What followers were told for an entry: the units before it plus what it
@@ -1502,12 +1556,20 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // route(signal) → units, when given, sizes each entry where followers bet
   // (another venue's price) as it's made; those units are what later buys by
   // the same wallet top up. Without it, the size at Polymarket's ask.
+  // The poll and the live stream hand trades to one lane, so a trade is
+  // judged once and consensus sees them in order.
+  let lane = Promise.resolve();
+  function serial(fn) {
+    const run = lane.then(fn);
+    lane = run.catch(() => {});
+    return run;
+  }
+
   async function pollTrades({ route = null } = {}) {
     await loaded;
     if (busy.poll) return [];
     busy.poll = true;
     try {
-      const t = now();
       const trades = [];
       try { trades.push(...await fetchRecentTrades(http, { minCash: o.minTrade })); }
       catch (e) { warn(`recent trades: ${e?.message || e}`); }
@@ -1515,54 +1577,75 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         try { trades.push(...await fetchWalletTrades(http, w, { limit: 50 })); }
         catch (e) { warn(`trades ${w}: ${e?.message || e}`); }
       }
-      trades.sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
-
-      const out = [];
-      for (const tr of trades) {
-        if (seen.has(tr.key)) continue;
-        seen.set(tr.key, tr.at ?? t);
-        const trader = traders.get(tr.wallet);
-        if (!trader) {
-          if (tr.notional >= o.minTrade - EPS) sighted(tr);
-          continue;
-        }
-        if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
-        const age = tr.at == null ? 0 : t - tr.at;
-        const held = `${tr.wallet}|${tr.asset}`;
-        let consensus = [];
-        if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
-          const list = buys.get(tr.asset) || [];
-          consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs).map(b => b.wallet))];
-          list.push({ wallet: tr.wallet, at: tr.at ?? t });
-          buys.set(tr.asset, list);
-        } else if (tr.side === 'SELL') {
-          // selling out withdraws that wallet's vote, and ends our tail of it
-          if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
-          tailed.delete(held);
-        }
-        if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
-        const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
-        const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
-        const { signal } = tradeSignal({ trade: tr, trader, market, consensus, prior, now: t, opts: o });
-        if (!signal) continue;
-        out.push(signal);
-        // scaling in over several orders is one position: later buys top it up
-        if (signal.type === 'entry' && typeof route === 'function') {
-          let added = 0;
-          try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
-          noteTailed(signal, added);
-        } else if (signal.type === 'entry' && signal.target > 0) {
-          tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
-        }
-      }
-      if (out.length) {
-        feed = [...out.slice().reverse(), ...feed].slice(0, o.maxSignals);
-        health.lastSignalAt = iso(t);
-      }
-      prune(t);
-      health.lastPollAt = iso(t);
-      return out;
+      return await serial(() => judge(trades, { route, source: 'poll' }));
     } finally { busy.poll = false; }
+  }
+
+  // Trades pushed by the live feed (parsed like the poll's): signals within
+  // seconds of the fill. Every trade on the exchange arrives here, so only
+  // graded or known wallets and trades big enough to queue a wallet count.
+  async function ingest(trades, { route = null } = {}) {
+    await loaded;
+    const keep = (trades || []).filter(tr => tr && (traders.has(tr.wallet) || tr.notional >= o.minTrade - EPS));
+    health.streamed = (health.streamed || 0) + keep.length;
+    if (!keep.length) return [];
+    return serial(() => judge(keep, { route, source: 'stream' }));
+  }
+
+  async function judge(trades, { route = null, source = 'poll' } = {}) {
+    const t = now();
+    trades = [...trades].sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+
+    const out = [];
+    for (const tr of trades) {
+      if (seen.has(tr.key)) continue;
+      if (!traders.has(tr.wallet) && !(tr.notional >= o.minTrade - EPS)) continue;
+      seen.set(tr.key, tr.at ?? t);
+      const trader = traders.get(tr.wallet);
+      if (!trader) {
+        if (tr.notional >= o.minTrade - EPS) sighted(tr);
+        continue;
+      }
+      if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
+      const age = tr.at == null ? 0 : t - tr.at;
+      const held = `${tr.wallet}|${tr.asset}`;
+      let consensus = [];
+      if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
+        const list = buys.get(tr.asset) || [];
+        consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs).map(b => b.wallet))];
+        list.push({ wallet: tr.wallet, at: tr.at ?? t });
+        buys.set(tr.asset, list);
+      } else if (tr.side === 'SELL') {
+        // selling out withdraws that wallet's vote, and ends our tail of it
+        if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
+        tailed.delete(held);
+      }
+      if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
+      const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
+      const book = tr.side === 'BUY' && market && !market.closed ? await bookFor(tr.asset) : null;
+      const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
+      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, prior, now: t, opts: o });
+      if (!signal) continue;
+      signal.via = source;
+      if (tr.at != null) signal.lagMs = Math.max(0, t - tr.at);
+      out.push(signal);
+      // scaling in over several orders is one position: later buys top it up
+      if (signal.type === 'entry' && typeof route === 'function') {
+        let added = 0;
+        try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+        noteTailed(signal, added);
+      } else if (signal.type === 'entry' && signal.target > 0) {
+        tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
+      }
+    }
+    if (out.length) {
+      feed = [...out.slice().reverse(), ...feed].slice(0, o.maxSignals);
+      health.lastSignalAt = iso(t);
+    }
+    prune(t);
+    if (source === 'poll') health.lastPollAt = iso(t);
+    else health.lastStreamAt = iso(t);
+    return out;
   }
 
   // category: grade within that category; grade: 'A' | 'B' | 'graded' (either)
@@ -1593,7 +1676,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   return {
-    refreshCandidates, scoreBatch, pollTrades, traders: listTraders, trader: w => traders.get(lower(w)) || null,
+    refreshCandidates, scoreBatch, pollTrades, ingest, traders: listTraders, trader: w => traders.get(lower(w)) || null,
     signals, state, settings: () => o, addCandidate, ready: () => loaded,
   };
 }
@@ -1603,7 +1686,7 @@ module.exports = {
   resolveOptions, optionsFromEnv, classify,
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
-  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen,
+  outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, gradeFor, trueProb, sizeAt, tradeSignal,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
