@@ -2088,11 +2088,12 @@ function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, now = () => Date.
     },
   };
 }
-// Polymarket allows 200 to 300 requests per 10 seconds per endpoint and
-// Kalshi 20 reads a second, so 4 to 5 a second stays far under both and
-// scores wallets four times faster than one a second. Anyone else: one a
-// second. UPSTREAM_GAP_MS sets one gap for every host.
-const HOST_GAP_MS = { 'data-api.polymarket.com': 250, 'gamma-api.polymarket.com': 250, 'clob.polymarket.com': 200, 'api.elections.kalshi.com': 250 };
+// Polymarket allows 150 to 300 requests per 10 seconds per endpoint and
+// Kalshi 20 reads a second. Grading wallets reads Polymarket's data API
+// hardest, so it gets about 7 a second (70 per 10 s, under half the
+// strictest limit); Gamma, the order book and Kalshi 4 to 5. Anyone else: one
+// a second. UPSTREAM_GAP_MS sets one gap for every host.
+const HOST_GAP_MS = { 'data-api.polymarket.com': 150, 'gamma-api.polymarket.com': 250, 'clob.polymarket.com': 200, 'api.elections.kalshi.com': 250 };
 const UPSTREAM_GAP_MS = Number.isFinite(parseFloat(process.env.UPSTREAM_GAP_MS)) ? Math.max(0, parseFloat(process.env.UPSTREAM_GAP_MS)) : null;
 const upstreamGap = UPSTREAM_GAP_MS != null ? UPSTREAM_GAP_MS : host => HOST_GAP_MS[host] ?? 1000;
 // axios.get is looked up on every call, so tests can stub it after this file loads
@@ -2500,7 +2501,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.23.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.23.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3218,7 +3219,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.23.0',
+  version: '3.23.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3335,7 +3336,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.23.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.23.1 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
