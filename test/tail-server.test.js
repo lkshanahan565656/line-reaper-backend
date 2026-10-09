@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.22.0');
+  assert.equal(body.version, '3.23.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.22.0');
-  assert.equal((await get('/')).body.version, '3.22.0');
+  assert.equal(require('../package.json').version, '3.23.0');
+  assert.equal((await get('/')).body.version, '3.23.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -940,4 +940,25 @@ test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing,
   const blocks = [...html.matchAll(/<script(\b[^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/src=/.test(m[1]));
   assert.ok(blocks.length >= 1);
   for (const [, , code] of blocks) assert.doesNotThrow(() => new Function(code));
+});
+
+test('the live feed: a trade the socket pushes is a signal at once, logged and broadcast like a polled one', async () => {
+  const LIVE = '0xc0ffee0000000000000000000000000000000000000000000000000000000077';
+  fx.markets = [gammaMarket({ id: '507777', cond: LIVE, asset: '7777001' })];
+  const pushed = () => tail.parseTrades([trade({ size: 15000, price: 0.4, tx: '0xlive', agoMs: 3e3, asset: '7777001', cond: LIVE })]);
+  const heard = [];
+  const fn = (type, data) => { if (type === 'tail') heard.push(...data); };
+  S.liveListeners.add(fn);
+  try {
+    const out = await S.streamTail(pushed());
+    assert.deepEqual(out.map(s => [s.wallet, s.via, s.type]), [[W1, 'stream', 'entry']]);
+    assert.ok(out[0].lagMs >= 3e3 && out[0].lagMs < 30e3, String(out[0].lagMs));
+    assert.deepEqual(heard.map(s => s.id), [out[0].id], 'broadcast');
+    assert.ok((await S.tailTracker.list()).some(r => r.id === out[0].id), 'in the track record');
+    assert.deepEqual(await S.streamTail(pushed()), [], 'the same trade again: once');
+  } finally { S.liveListeners.delete(fn); }
+  const { body } = await get('/api/status');
+  assert.equal(body.tail.stream.running, false, 'the socket only opens when the server is started for real');
+  assert.equal(body.tail.stream.connects, 0);
+  assert.ok(body.tail.lastStreamAt);
 });

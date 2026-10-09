@@ -2044,6 +2044,7 @@ const tail = require('./tail');
 const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv } = require('./tailtrack');
 const whales = require('./whales');
 const xarb = require('./xarb');
+const { createTradeStream } = require('./tailstream');
 const { createFileStore: createDocFileStore } = require('./evtrack');
 
 // Kalshi, Polymarket's data API and Gamma are free, so be polite: one queue
@@ -2120,6 +2121,9 @@ function createTraderStoreFromEnv(env = process.env) {
 
 // Thresholds come from TAIL_* (see .env.example), e.g. TAIL_MIN_TRADE, TAIL_A_MIN_Z.
 const tailEngine = tail.createTailEngine({ http: upstream, store: createTraderStoreFromEnv(), opts: tail.optionsFromEnv() });
+// TAIL_STREAM=off: poll only
+const tailStream = createTradeStream({ onTrades: trades => runTailJob('stream', () => streamTail(trades)) });
+const tailStreamOn = !/^(off|0|false|no)$/i.test(String(process.env.TAIL_STREAM || '').trim());
 const tailTracker = createTailTracker({ store: createTailStoreFromEnv(), http: upstream });
 tailTracker.ready().catch(e => console.error('Tail tracker: store failed to initialise:', e.message));
 
@@ -2271,20 +2275,28 @@ const tailRouting = { routed: 0, withVenue: 0, lastAt: null };
 // What a routed entry told followers to add: the venue's units, or with no
 // venue the Polymarket size the track record logs it at.
 const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+// where to tail, as each entry is made (so the next buy by the same wallet
+// tops up what that venue was told) and before it's logged (the record
+// grades it at that venue's price)
+function routeTail(s) {
+  routeSignal(s);
+  tailRouting.routed++;
+  if (s.venue) tailRouting.withVenue++;
+  tailRouting.lastAt = new Date().toISOString();
+  return tailUnits(s);
+}
 async function pollTail() {
   const primed = tailPolled;
-  // where to tail, as each entry is made (so the next buy by the same wallet
-  // tops up what that venue was told) and before it's logged (the record
-  // grades it at that venue's price)
-  const signals = await tailEngine.pollTrades({
-    route: s => {
-      routeSignal(s);
-      tailRouting.routed++;
-      if (s.venue) tailRouting.withVenue++;
-      tailRouting.lastAt = new Date().toISOString();
-      return tailUnits(s);
-    },
-  });
+  const fresh = await publishTail(await tailEngine.pollTrades({ route: routeTail }), primed);
+  tailPolled = true;
+  return fresh;
+}
+// Trades pushed by Polymarket's live feed: the same signals as the poll, out
+// within seconds of the fill.
+async function streamTail(trades) {
+  return publishTail(await tailEngine.ingest(trades, { route: routeTail }), tailPolled);
+}
+async function publishTail(signals, primed) {
   const fresh = [], ping = [];
   for (const s of signals) {
     let logged = false;
@@ -2292,7 +2304,6 @@ async function pollTail() {
     if (logged || primed) fresh.push(s);
     if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus)) ping.push(s);
   }
-  tailPolled = true;
   if (fresh.length) broadcast('tail', fresh);
   // the webhook can reach other people: Polymarket wallets only with that
   // licence, Kalshi venues only with Kalshi's
@@ -2489,7 +2500,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.22.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.23.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3207,7 +3218,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.22.0',
+  version: '3.23.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3230,7 +3241,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
   // free: counts and timestamps only (see publicTailState)
-  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting },
+  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats() } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
   xarb: { arbs: xarbState.arbs.length, updated: xarbState.updated, durationMs: xarbState.durationMs, running: xarbState.running, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
     venueMarkets: xarbState.venues?.size ?? 0 },
@@ -3324,7 +3335,8 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.22.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.23.0 on port ${PORT}`);
+    if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
@@ -3366,6 +3378,6 @@ module.exports = {
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
   tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
-  pollTail, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
+  pollTail, streamTail, tailStream, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };

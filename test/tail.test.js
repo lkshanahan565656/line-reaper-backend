@@ -895,6 +895,34 @@ test('pollTrades: stale trades count for consensus but signal nothing; graded wa
   assert.deepEqual(userCalls.slice(-2).map(c => c.params), [{ user: W(1), limit: 50, taker_only: false }, { user: W(2), limit: 50, taker_only: false }], 'round robin');
 });
 
+test('ingest: live-feed trades signal at once, share the poll\'s dedup, and skip small trades by unknown wallets', async () => {
+  const w = world();
+  w.closed[W(1)] = politicsElite(W(1));
+  w.markets['0xm1'] = gammaMarket();
+  const t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0 }, log: {} });
+  eng.addCandidate(W(1));
+  await eng.scoreBatch(1);
+  const live = T.parseTrades([rawTrade(W(1), { timestamp: Math.floor((t - 2e3) / 1000) }), rawTrade(W(80), { size: 50, transactionHash: '0xsmall' }),
+    rawTrade(W(81), { size: 15000, transactionHash: '0xwhale' })]);
+  const routed = [];
+  const out = await eng.ingest(live, { route: s => { routed.push(s.id); return s.units; } });
+  assert.deepEqual(out.map(s => [s.wallet, s.via, s.lagMs]), [[W(1), 'stream', 2000]], 'seconds after the fill');
+  assert.deepEqual(routed, [out[0].id]);
+  assert.equal(eng.state().candidates, 2, 'the $6,000 stranger is queued');
+  assert.equal(eng.state().seenTrades, 2, 'a $20 trade by a stranger is not even remembered');
+  assert.equal(eng.state().lastStreamAt, new Date(t).toISOString());
+  // the next poll reads the same trade: not a second signal
+  w.trades = [rawTrade(W(1), { timestamp: Math.floor((t - 2e3) / 1000) })];
+  assert.deepEqual(await eng.pollTrades(), []);
+  // a poll and a stream batch at once judge one after the other
+  w.trades = [rawTrade(W(1), { transactionHash: '0xboth' })];
+  const [a, b2] = await Promise.all([eng.pollTrades(), eng.ingest(T.parseTrades([rawTrade(W(1), { transactionHash: '0xboth' })]))]);
+  assert.equal(a.length + b2.length, 1, 'one signal for one trade');
+  assert.deepEqual(await eng.ingest([]), []);
+  assert.deepEqual(await eng.ingest(null), []);
+});
+
 test('traders() filters by grade and category; scores persist in a store', async () => {
   const w = world();
   w.closed[W(1)] = [...politicsElite(W(1)), ...sportsBad(W(1))];   // A in politics only
