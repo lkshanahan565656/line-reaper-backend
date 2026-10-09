@@ -11,8 +11,9 @@
 // Scoring one wallet from its settled positions: status CLOSED, plus
 // REDEEMABLE (won, never claimed) and REDEEMABLE_LOST (lost, never claimed:
 // the hidden losers a record leaves out if it only reads closed ones):
-//   risked   total_cost_usdc (fees in), else entry cost + entry fees, else
-//            avg price × size; pnl = total_pnl (else realized_pnl)
+//   risked   avg price × shares bought (v2's avg_price has the fees in;
+//            a closed row's total_cost_usdc is only the fees), else the
+//            stated cost; pnl = total_pnl (else realized_pnl), net of fees
 //   ROI      (Σpnl + open P&L) / (Σrisked + open risked). Positions still
 //            open are marked to market, so selling the winners early and
 //            sitting on the losers doesn't look like skill.
@@ -40,6 +41,10 @@
 //            (share of bets that beat the close). Only measured for wallets
 //            that already pass B without it, so hopeless ones cost nothing;
 //            each token's close and each market lookup is cached.
+//   in-play  of those sampled bets on games with a known start, the share
+//            first bought after it. Over half (of 8+) is a live bettor: its
+//            edge is speed a follower doesn't have, so it isn't graded (in
+//            sports; its other categories still can be).
 //   grades   A (elite) / B (sharp) from sample, distinct events, money risked,
 //            ROI, z, concentration, two-sided share and recent activity; A
 //            also needs 15+ measured CLV bets averaging +2%, B +0.5% once 15
@@ -144,6 +149,8 @@ const DEFAULTS = {
   clvPointLimit: 1000,           // ...so the window shrinks to fit this many points
   clvMaxGapMs: 24 * 3600e3,      // a game's last price must be this close to its start
   clvCacheMax: 50000,            // tokens' closes and markets kept in memory
+  maxInPlay: 0.5,                // over this share of sampled game bets placed after the start = a live bettor (TAIL_MAX_IN_PLAY)...
+  inPlayMinGames: 8,             // ...once at least this many sampled bets were on games with a known start
   grades: {
     A: { label: 'elite', minN: 100, minEvents: 30, minRisked: 50000, minRoi: 0.08, minZ: 3, maxConcentration: 0.35, activeDays: 30, minRecentRoi: -0.10, minClv: 0.02, requireClv: 1, capUnits: 2 },
     B: { label: 'sharp', minN: 50, minEvents: 15, minRisked: 20000, minRoi: 0.04, minZ: 2, maxConcentration: 0.4, activeDays: 45, minRecentRoi: null, minClv: 0.005, requireClv: 0, capUnits: 1 },
@@ -162,7 +169,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice']);
+const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -842,7 +849,7 @@ function topShare(values) {
 // Raw (unrounded) stats of a list of resolved positions; grading uses these.
 // open: positions still open (marked to market into ROI and edge, not the
 // luck test); since: when the wallet was picked (ms), for the forward record.
-function walletStats(positions, { holdings = positions, open = [], since = null, now = Date.now(), clvSamples = null, opts = {} } = {}) {
+function walletStats(positions, { holdings = positions, open = [], since = null, now = Date.now(), clvSamples = null, play = null, opts = {} } = {}) {
   const o = resolveOptions(opts);
   const clv = clvStats(clvSamples);
   const cut = now - o.recentDays * DAY;
@@ -890,7 +897,16 @@ function walletStats(positions, { holdings = positions, open = [], since = null,
     forwardN: since == null ? null : fN, forwardPnl: since == null ? null : fPnl, forwardRoi: fRisk > 0 ? fPnl / fRisk : null,
     edge: (allPnl / (allRisked + o.priorRisk)) * o.regression,
     clv: clv.avg, clvN: clv.n, clvHitRate: clv.hitRate,
+    ...inPlayOf(play, o),
   };
+}
+
+// Of the sampled bets on games with a known start, the share whose first fill
+// came after it. A wallet that mostly bets live wins on speed a follower
+// doesn't have, and its pregame bets have no record of their own.
+function inPlayOf(play, o) {
+  const games = num(play?.games) > 0 ? num(play.games) : 0, live = num(play?.inPlay) > 0 ? num(play.inPlay) : 0;
+  return { inPlayGames: games, inPlayShare: games >= o.inPlayMinGames ? live / games : null };
 }
 
 function presentStats(s) {
@@ -903,6 +919,7 @@ function presentStats(s) {
     recentN: s.recentN, recentRoi: round(s.recentRoi, 4),
     forwardN: s.forwardN ?? null, forwardRoi: round(s.forwardRoi, 4), edge: round(s.edge, 6),
     clv: round(s.clv, 4), clvN: s.clvN ?? 0, clvHitRate: round(s.clvHitRate, 4),
+    inPlayShare: round(s.inPlayShare, 4), inPlayGames: s.inPlayGames ?? 0,
   };
 }
 
@@ -919,6 +936,9 @@ function checkTier(s, g, o, now) {
   if (!(s.concentration != null && s.concentration <= g.maxConcentration + EPS)) {
     const from = s.concentrationBy === 'day' ? "one day's markets" : 'one event';
     fail('concentration', s.concentration == null ? 'no winning bets' : `${vs(s.concentration, g.maxConcentration, 0, 100)}% of profit from ${from} (max ${pct(g.maxConcentration, 0)})`);
+  }
+  if (s.inPlayShare != null && s.inPlayShare > o.maxInPlay + EPS) {
+    fail('inPlay', `live bettor: ${vs(s.inPlayShare, o.maxInPlay, 0, 100)}% of ${s.inPlayGames} sampled game bets came after the start (max ${pct(o.maxInPlay, 0)})`);
   }
   if (s.twoSided > o.maxTwoSided + EPS) fail('twoSided', `market maker: held both sides in ${vs(s.twoSided, o.maxTwoSided, 0, 100)}% of markets (max ${pct(o.maxTwoSided, 0)})`);
   // out of sample: the leaderboards that found it also pick out the lucky
@@ -984,7 +1004,7 @@ function holdingsOf(rows, { max = DEFAULTS.holdingsMax, minCost = 1 } = {}) {
     .slice(0, max);
 }
 
-function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null } = {}, { now = Date.now(), ...opts } = {}) {
+function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null, play = null } = {}, { now = Date.now(), ...opts } = {}) {
   const o = resolveOptions(opts);
   const since = toMs(selectedAt);
   const { closedRows, openRows, resolved, stillOpen } = resolvedPositions(closed, open, now);
@@ -997,7 +1017,7 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
   let lastAt = null;
   for (const x of [...closedRows, ...openRows]) if (x.activeAt != null && x.activeAt <= now) lastAt = Math.max(lastAt ?? 0, x.activeAt);
   for (const x of tradeRows) if (x.at != null && x.at <= now) lastAt = Math.max(lastAt ?? 0, x.at);
-  const overall = { ...walletStats(resolved, { holdings, open: stillOpen, since, now, clvSamples: samples, opts: o }) };
+  const overall = { ...walletStats(resolved, { holdings, open: stillOpen, since, now, clvSamples: samples, play, opts: o }) };
   overall.lastAt = lastAt;
   const g = gradeStats(overall, o, now);
 
@@ -1009,7 +1029,7 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
     const clvScope = own.length >= o.clvMinN ? 'category' : 'wallet';
     const cs = walletStats(list, {
       holdings: holdings.filter(h => h.category === cat), open: stillOpen.filter(r => r.category === cat), since, now,
-      clvSamples: clvScope === 'category' ? own : samples, opts: o,
+      clvSamples: clvScope === 'category' ? own : samples, play: cat === 'sports' ? play : null, opts: o,
     });
     // a market maker is out everywhere; being active anywhere counts as active
     const cg = gradeStats({ ...cs, twoSided: Math.max(cs.twoSided, overall.twoSided), activeAt: lastAt }, o, now);
@@ -1026,6 +1046,7 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
     // only a wallet worth tailing keeps its book (the Sharp Board reads it)
     ...(g.grade || Object.values(categories).some(c => c.grade) ? { holdings: holdingsOf(stillOpen, { max: o.holdingsMax }) } : {}),
     ...(Array.isArray(clv) ? { clvSamples: samples } : {}),
+    ...(play ? { play: { games: num(play.games) || 0, inPlay: num(play.inPlay) || 0 } } : {}),
     selectedAt: iso(since), scoredAt: iso(now), rulesVersion: RULES_VERSION,
   };
 }
@@ -1501,8 +1522,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     return remember(lookups, conditionId, await fetchMarket(http, conditionId), o.clvCacheMax);
   }
 
-  // One position's closing line: its token's close, cached, from one price
-  // history call. Throws when a lookup fails (tried again next time).
+  // One position's token's close (→ { price, at, cut, rule } | null), cached,
+  // from one price history call. Throws when a lookup fails (tried again next time).
   async function closeFor(p, t) {
     let close = closes.get(p.asset);
     if (close === undefined) {
@@ -1517,19 +1538,27 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       }
       remember(closes, p.asset, close, o.clvCacheMax);
     }
-    return clvOf(p, close);
+    return close;
   }
 
-  // closing-line samples for a wallet's most recent settled bets
+  // closing-line samples for a wallet's most recent settled bets, and how
+  // many of the game bets among them were placed after the start
   async function measureClv(resolved, t) {
     const picks = clvCandidates(resolved, o.clvSample);
-    const samples = [], errors = [];
+    const samples = [], errors = [], play = { games: 0, inPlay: 0 };
     for (const p of picks) {
-      try { const x = await closeFor(p, t); if (x) samples.push(x); }
-      catch (e) { errors.push(e?.message || String(e)); }
+      try {
+        const close = await closeFor(p, t);
+        if (close?.rule === 'game' && p.enteredAt != null) {
+          play.games++;
+          if (p.enteredAt >= close.cut) play.inPlay++;
+        }
+        const x = clvOf(p, close);
+        if (x) samples.push(x);
+      } catch (e) { errors.push(e?.message || String(e)); }
     }
     health.lastClvAt = iso(now());
-    return { samples, errors, tried: picks.length };
+    return { samples, errors, tried: picks.length, play };
   }
 
   async function scoreOne(c) {
@@ -1548,7 +1577,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     if (isGraded(score)) {
       const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved, t);
       if (m.errors.length) warn(`clv ${c.wallet}: ${m.errors.length} of ${m.tried} lookups failed (${m.errors[0]})`);
-      score = scoreWallet({ ...input, clv: m.samples }, { ...o, now: t });
+      score = scoreWallet({ ...input, clv: m.samples, play: m.play }, { ...o, now: t });
     }
     score = { ...score, truncated: settled.truncated || open.truncated, sources: [...c.sources] };
     const keep = nearGraded(score, o);

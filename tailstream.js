@@ -29,7 +29,7 @@ function defaultWebSocket() {
 function createTradeStream({
   onTrades, url = LIVE_DATA_WS, WebSocketImpl = defaultWebSocket(), now = () => Date.now(),
   setTimer = setTimeout, clearTimer = clearTimeout, log = console,
-  flushMs = 1500, pingMs = 5000, silentMs = 60e3, minBackoffMs = 1000, maxBackoffMs = 60e3,
+  flushMs = 1500, pingMs = 5000, silentMs = 15e3, minBackoffMs = 1000, maxBackoffMs = 60e3,
 } = {}) {
   let ws = null, running = false, backoff = minBackoffMs;
   let pingTimer = null, flushTimer = null, retryTimer = null, watchTimer = null;
@@ -71,7 +71,8 @@ function createTradeStream({
   }
 
   // no message for silentMs on a feed that carries every trade on the
-  // exchange means the socket is dead even if it never said so
+  // exchange (about 40 a second live) means the socket is dead even if it
+  // never said so; the live socket went quiet like that 7 times in 70 minutes
   function watch() {
     watchTimer = setTimer(() => {
       watchTimer = null;

@@ -1174,6 +1174,55 @@ test('engine: a game\'s closing line is its last price before the start Gamma gi
   assert.equal(call.end, Math.ceil((Date.parse(row.end_date) - 3 * 3600e3) / 1000), 'the window ends at tip-off');
 });
 
+test('engine: a live bettor (most sampled game bets bought after tip-off) is not graded, however good its record', async () => {
+  const w = world();
+  // 120 NBA bets at 50¢, 80 won, every one first bought 10 minutes after tip-off
+  const rows = Array.from({ length: 120 }, (_, i) => {
+    const r = closed({ wallet: W(41), won: i % 3 !== 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-l-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3 });
+    const tip = Date.parse(r.end_date) - 3 * 3600e3;
+    return { ...r, first_entry_at: new Date(tip + 10 * 60e3).toISOString() };
+  });
+  w.closed[W(41)] = rows;
+  for (const r of rows) w.markets[r.condition_id] = { conditionId: r.condition_id, question: r.title, gameStartTime: new Date(Date.parse(r.end_date) - 3 * 3600e3).toISOString() };
+  const eng = T.createTailEngine({ http: w.http, now: () => NOW, log: {} });
+  eng.addCandidate(W(41));
+  await eng.scoreBatch(1);
+  const tr = eng.trader(W(41));
+  assert.deepEqual([tr.inPlayGames, tr.inPlayShare, tr.clvN], [25, 1, 0], 'no closing line for a live bet');
+  assert.equal(tr.grade, null);
+  assert.deepEqual(tr.failed, ['inPlay']);
+  assert.match(tr.reasons[0], /live bettor: 100% of 25 sampled game bets came after the start/);
+  assert.equal(tr.categories.sports.grade, null);
+
+  // the same record bought before tip-off, beating a 53¢ close: A
+  const pre = rows.map(r => ({ ...r, proxy_wallet: W(42), first_entry_at: new Date(Date.parse(r.end_date) - 2 * DAY).toISOString() }));
+  w.closed[W(42)] = pre;
+  eng.addCandidate(W(42));
+  await eng.scoreBatch(1);
+  const ok = eng.trader(W(42));
+  assert.deepEqual([ok.grade, ok.inPlayShare, ok.clvN], ['A', 0, 25]);
+});
+
+test('scoreWallet: the in-play share only judges sports, and needs 8 sampled games', () => {
+  const both = [...politicsElite(W(43)), ...Array.from({ length: 120 }, (_, i) => closed({
+    wallet: W(43), won: i % 3 !== 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-x-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3,
+  }))];
+  const live = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 8 } }, { now: NOW });
+  assert.equal(live.grade, null, 'overall: its record is mostly live sports');
+  assert.equal(live.categories.sports.grade, null);
+  assert.deepEqual(live.categories.sports.failed, ['inPlay']);
+  assert.equal(live.categories.politics.grade, 'B', 'its politics bets still grade');
+  assert.equal(T.gradeFor(live, 'politics').grade, 'B');
+  assert.equal(T.gradeFor(live, 'sports').grade, null);
+  const few = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 7, inPlay: 7 } }, { now: NOW });
+  assert.deepEqual([few.inPlayShare, few.grade], [null, 'B'], '7 games: too few to judge');
+  const half = T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 5 } }, { now: NOW });
+  assert.deepEqual([half.inPlayShare, half.grade], [0.5, 'B'], 'half is allowed');
+  const env = T.optionsFromEnv({ TAIL_MAX_IN_PLAY: '80' });
+  assert.equal(env.maxInPlay, 0.8);
+  assert.equal(T.scoreWallet({ wallet: W(43), closed: both, play: { games: 10, inPlay: 8 } }, { now: NOW, ...env }).grade, 'B', 'TAIL_MAX_IN_PLAY=80');
+});
+
 // ── review fixes ──
 test('open positions count at today\'s price: selling the winners and holding the losers is not an edge', () => {
   // 260 winners sold at 60¢ (+$200 each on $1k at 50¢) are closed; 260 losers still open at 30¢ (−$400 each)
