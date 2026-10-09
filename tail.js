@@ -76,6 +76,10 @@
 //   TAIL_MAX_ENTRY_PRICE change these.
 //   A wallet buying more of what it already bought tops the tail up to the new
 //   size; it isn't a second full-size bet.
+//   Graded wallets on the other side of the same market (as many as on this
+//   side, or this wallet itself: a hedge) → 0u everywhere (`blocked` 'split').
+//   One game or event takes at most 3u across all its markets and wallets in
+//   24h (TAIL_MAX_EVENT_UNITS): its winner, spread and total move together.
 //
 // ROI, edge, Kelly and shares are fractions (0.08 = 8%); prices are dollars
 // per share (0–1). Times on returned objects are ISO strings.
@@ -123,6 +127,7 @@ const DEFAULTS = {
   consensusWindowMs: 24 * 3600e3, // ...within this window
   consensusMult: 1.5,
   maxUnits: 3,
+  maxEventUnits: 3,              // units told across one game or event in consensusWindowMs, whoever bought (TAIL_MAX_EVENT_UNITS, 0 = no cap)
   forwardMinN: 30,               // bets resolved since the wallet was picked before they count
   batchSize: 60,                 // wallets scored per scoreBatch call, at most...
   scoreBudgetMs: 40e3,           // ...and no new wallet started after this long (the job runs every minute)
@@ -1143,10 +1148,12 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
 // book (null when it couldn't be read: then Gamma's price, if fresh); consensus: other graded wallets that
 // bought the same outcome inside the window; prior: { id, units } when we
 // already tailed this wallet into this outcome (then only the top-up up to
-// the new size is staked). → { signal, skip }. The signal carries q (our
+// the new size is staked); against: graded wallets (this one included) that
+// bought another outcome of the same market inside the window; event:
+// { key, units } told across this game or event so far. → { signal, skip }. The signal carries q (our
 // probability of the outcome bought) and is sized with sizeAt at Polymarket's
 // ask plus its taker fee, so the same q sizes it at any other venue.
-function tradeSignal({ trade, trader, market = null, book = null, consensus = [], prior = null, now = Date.now(), opts = {} } = {}) {
+function tradeSignal({ trade, trader, market = null, book = null, consensus = [], against = [], prior = null, event = null, now = Date.now(), opts = {} } = {}) {
   const o = resolveOptions(opts);
   const skip = reason => ({ signal: null, skip: reason });
   if (!trade || !trader) return skip('not graded');
@@ -1178,17 +1185,24 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   // to win: not a tail at any venue (blocked), whatever the edge says
   const started = toMs(market?.gameStartTime);
   const inPlay = started != null && (trade.at ?? now) >= started;
-  const blocked = inPlay && !o.sizeInPlay ? 'in-play' : p >= o.maxEntryPrice - EPS ? 'near-certain' : null;
-  const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
-  const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const wallets = [...new Set([trader.wallet, ...(consensus || []).map(lower).filter(Boolean)])];
   const isConsensus = wallets.length >= o.consensusMin;
+  // graded money on the other side of this market, as much as on this one:
+  // following both sides pays the spread twice for no edge
+  const opposed = [...new Set((against || []).map(lower).filter(Boolean))];
+  const split = opposed.length > 0 && opposed.length >= wallets.length;
+  const blocked = inPlay && !o.sizeInPlay ? 'in-play' : p >= o.maxEntryPrice - EPS ? 'near-certain' : split ? 'split' : null;
+  const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
+  const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const fee = c == null ? null : polymarketFee(c, market?.fee);
   const sized = sizeAt({ q, price: c, feePerContract: fee ?? 0, grade: tier.grade, consensus: wallets.length, opts: o });
   let units = 0, reason = null, target = 0;
   const kelly = c == null ? null : sized.kelly;
   if (blocked === 'in-play') reason = 'in-play bet: live prices move faster than anyone can follow';
-  else if (blocked || (c ?? 0) >= o.maxEntryPrice - EPS) reason = `at ${Math.round(o.maxEntryPrice * 100)}¢+ there's little to win and everything to lose`;
+  else if (blocked === 'split') {
+    reason = opposed.includes(lower(trader.wallet)) ? 'it also bought the other side: a hedge, not a pick'
+      : `graded sharps split: ${opposed.length} on the other side of this market`;
+  } else if (blocked || (c ?? 0) >= o.maxEntryPrice - EPS) reason = `at ${Math.round(o.maxEntryPrice * 100)}¢+ there's little to win and everything to lose`;
   else if (c == null) reason = 'no live price: check it before following';
   else if (c - p > o.chaseMax + EPS || !(kelly > EPS)) reason = "price ran, don't chase";
   else {
@@ -1200,6 +1214,14 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
     units = round(Math.max(0, target - before), 2);
     if (!(units > 0)) reason = `already tailed at ${before}u`;
   }
+  // one game's markets move together (its winner, spread, total): what's
+  // told across them is capped, whichever wallets bought
+  const told = num(event?.units) > 0 ? num(event.units) : 0;
+  const room = o.maxEventUnits > 0 ? round(Math.max(0, o.maxEventUnits - told), 2) : null;
+  if (room != null && units > room + EPS) {
+    units = room;
+    if (!(units > 0)) reason = `already ${round(told, 2)}u on this ${category === 'sports' ? 'game' : 'event'} (max ${o.maxEventUnits}u)`;
+  }
   return {
     signal: {
       ...base, type: 'entry', currentPrice: c, priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
@@ -1207,7 +1229,8 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
       q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
       kelly: round(kelly, 4), units, target, cap: sized.cap,
       parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0, priorUnits: before,
-      consensus: wallets, isConsensus, reason,
+      eventKey: event?.key ?? null, eventUnits: round(told, 2), eventRoom: room,
+      consensus: wallets, isConsensus, against: opposed, reason,
     },
     skip: null,
   };
@@ -1411,6 +1434,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   const sightings = new Map();    // unknown wallet → big trades seen; enough of them queue it
   const seen = new Map();         // trade key → trade time (ms)
   const buys = new Map();         // asset → [{ wallet, at }] of graded buys, for consensus
+  const marketBuys = new Map();   // conditionId → [{ wallet, asset, at }] of graded buys, for splits
+  const eventTold = new Map();    // game or event → [{ units, at }] told to followers, for the per-game cap
   const tailed = new Map();       // wallet|asset → { id, units, at }: the size followers were already told
   const quotes = new Map();       // conditionId → { at, market }
   const books = new Map();        // token → { at, book }
@@ -1766,8 +1791,30 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       if (keep.length) buys.set(asset, keep); else buys.delete(asset);
     }
     for (const [k, v] of tailed) if (t - v.at > o.consensusWindowMs) tailed.delete(k);
+    for (const m of [marketBuys, eventTold]) {
+      for (const [k, list] of m) {
+        const keep = list.filter(b => t - b.at <= o.consensusWindowMs);
+        if (keep.length) m.set(k, keep); else m.delete(k);
+      }
+    }
     for (const [cid, q] of quotes) if (t - q.at > o.quoteTtlMs) quotes.delete(cid);
     for (const [k, b] of books) if (t - b.at > o.quoteTtlMs) books.delete(k);
+  }
+
+  // A game's markets share one key: its event (a soccer game's spreads and
+  // totals sit in "<slug>-more-markets"), else the market.
+  const eventKeyOf = tr => String(tr.eventSlug || tr.conditionId || tr.slug || tr.asset || '').replace(/-more-markets$/, '') || null;
+  function eventUnits(key, t) {
+    let units = 0;
+    for (const x of eventTold.get(key) || []) if (t - x.at <= o.consensusWindowMs) units += x.units;
+    return round(units, 2);
+  }
+  function noteEvent(signal, added) {
+    const key = signal?.eventKey, u = num(added);
+    if (!key || !(u > 0)) return;
+    const list = eventTold.get(key) || [];
+    list.push({ units: u, at: toMs(signal.at) ?? now() });
+    eventTold.set(key, list);
   }
 
   // What followers were told for an entry: the units before it plus what it
@@ -1838,22 +1885,32 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
       const age = tr.at == null ? 0 : t - tr.at;
       const held = `${tr.wallet}|${tr.asset}`;
-      let consensus = [];
+      let consensus = [], against = [];
+      const inWindow = b => Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs;
       if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
         const list = buys.get(tr.asset) || [];
-        consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs).map(b => b.wallet))];
+        consensus = [...new Set(list.filter(b => b.wallet !== tr.wallet && inWindow(b)).map(b => b.wallet))];
         list.push({ wallet: tr.wallet, at: tr.at ?? t });
         buys.set(tr.asset, list);
+        if (tr.conditionId) {
+          const mlist = marketBuys.get(tr.conditionId) || [];
+          against = [...new Set(mlist.filter(b => b.asset !== tr.asset && inWindow(b)).map(b => b.wallet))];
+          mlist.push({ wallet: tr.wallet, asset: tr.asset, at: tr.at ?? t });
+          marketBuys.set(tr.conditionId, mlist);
+        }
       } else if (tr.side === 'SELL') {
         // selling out withdraws that wallet's vote, and ends our tail of it
         if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
+        if (marketBuys.has(tr.conditionId)) marketBuys.set(tr.conditionId, marketBuys.get(tr.conditionId).filter(b => !(b.wallet === tr.wallet && b.asset === tr.asset)));
         tailed.delete(held);
       }
       if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
       const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
       const book = tr.side === 'BUY' && market && !market.closed ? await bookFor(tr.asset) : null;
       const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
-      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, prior, now: t, opts: o });
+      const ek = eventKeyOf(tr);
+      const event = tr.side === 'BUY' && ek ? { key: ek, units: eventUnits(ek, t) } : null;
+      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, against, prior, event, now: t, opts: o });
       if (!signal) continue;
       signal.via = source;
       if (tr.at != null) signal.lagMs = Math.max(0, t - tr.at);
@@ -1863,8 +1920,10 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         let added = 0;
         try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
         noteTailed(signal, added);
+        noteEvent(signal, added);
       } else if (signal.type === 'entry' && signal.target > 0) {
         tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
+        noteEvent(signal, signal.units);
       }
     }
     if (out.length) {
