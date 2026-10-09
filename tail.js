@@ -109,8 +109,9 @@ const DEFAULTS = {
   consensusMult: 1.5,
   maxUnits: 3,
   forwardMinN: 30,               // bets resolved since the wallet was picked before they count
-  batchSize: 30,                 // wallets scored per scoreBatch call, at most...
+  batchSize: 60,                 // wallets scored per scoreBatch call, at most...
   scoreBudgetMs: 40e3,           // ...and no new wallet started after this long (the job runs every minute)
+  scoreConcurrency: 4,           // wallets scored at once (each waits on its own requests; the polite queue paces the hosts)
   rescoreMs: 12 * 3600e3,
   retryMs: 30 * 60e3,            // after a failed fetch
   tradeCandidateMin: 5000,       // $ for one trade to queue an unknown wallet (or 2 trades over minTrade)
@@ -1432,9 +1433,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   async function scoreOne(c) {
-    const settled = await fetchSettledPositions(http, c.wallet, { pageSize: o.closedPageSize, maxPages: o.closedMaxPages });
-    const open = await fetchOpenPositions(http, c.wallet, { maxPages: o.openMaxPages });
-    const trades = await fetchWalletTrades(http, c.wallet, { limit: o.walletTradeLimit });
+    const [settled, open, trades] = await Promise.all([
+      fetchSettledPositions(http, c.wallet, { pageSize: o.closedPageSize, maxPages: o.closedMaxPages }),
+      fetchOpenPositions(http, c.wallet, { maxPages: o.openMaxPages }),
+      fetchWalletTrades(http, c.wallet, { limit: o.walletTradeLimit }),
+    ]);
     const t = now();
     const input = { wallet: c.wallet, name: c.name, closed: settled.rows, open: open.rows, trades, selectedAt: c.selectedAt };
     let score = scoreWallet(input, { ...o, now: t });
@@ -1469,13 +1472,19 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     if (busy.score) return { busy: true, scored: 0, wallets: [], pending: pendingCount() };
     busy.score = true;
     try {
-      const wallets = [], t0 = now();
-      let tried = 0;
-      for (const c of queue().slice(0, Math.max(0, n))) {
-        if (tried++ && now() - t0 > o.scoreBudgetMs) break;
-        try { await scoreOne(c); wallets.push(c.wallet); }
-        catch (e) { c.failedAt = now(); warn(`score ${c.wallet}: ${e?.message || e}`); }
-      }
+      const done = [], t0 = now(), list = queue().slice(0, Math.max(0, n));
+      let next = 0;
+      // a few wallets at once: each spends most of its time waiting on replies
+      const worker = async () => {
+        while (next < list.length) {
+          if (next && now() - t0 > o.scoreBudgetMs) return;
+          const i = next++, c = list[i];
+          try { await scoreOne(c); done[i] = c.wallet; }
+          catch (e) { c.failedAt = now(); warn(`score ${c.wallet}: ${e?.message || e}`); }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.max(1, Math.min(Math.round(o.scoreConcurrency) || 1, list.length)) }, worker));
+      const wallets = done.filter(Boolean);   // in queue order
       health.lastScoreAt = iso(now());
       return { scored: wallets.length, wallets, pending: queue().length };
     } finally { busy.score = false; }

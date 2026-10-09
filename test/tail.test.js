@@ -1249,16 +1249,22 @@ test('scaling into one position over several orders tops the tail up; it is not 
 
 test('scoreBatch keeps scoring until its time box runs out, then leaves the rest for the next run', async () => {
   const w = world();
-  for (const i of [1, 2, 3, 4]) w.closed[W(i)] = sportsBad(W(i));
+  const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  for (const i of ids) w.closed[W(i)] = sportsBad(W(i));
   let t = NOW;
   const slow = { calls: w.http.calls, get: async (url, cfg) => { t += 4e3; return w.http.get(url, cfg); } };   // 4s a request
   const eng = T.createTailEngine({ http: slow, now: () => t, log: {} });
-  for (const i of [1, 2, 3, 4]) eng.addCandidate(W(i));
+  for (const i of ids) eng.addCandidate(W(i));
   const r = await eng.scoreBatch();
-  assert.ok(r.scored >= 1 && r.scored < 4, `scored ${r.scored}: stopped at the time box, not at 3 or all`);
-  assert.equal(r.pending, 4 - r.scored);
+  assert.equal(r.scored, 4, 'four at once, then the time box stops new ones');
+  assert.deepEqual(r.wallets, ids.slice(0, 4).map(W), 'reported in queue order');
+  assert.equal(r.pending, ids.length - 4);
   t += 60e3;
-  assert.equal((await eng.scoreBatch()).scored + r.scored <= 4, true);
+  assert.equal((await eng.scoreBatch()).scored, 4);
+  // one at a time when asked
+  const one = T.createTailEngine({ http: slow, now: () => t, opts: { scoreConcurrency: 1 }, log: {} });
+  for (const i of ids) one.addCandidate(W(i));
+  assert.equal((await one.scoreBatch()).scored, 3, '20-second wallets start until 40 seconds have passed');
 });
 
 test('memory: untailable scores shrink to a summary and only leaderboard ones are stored; the oldest are evicted past the cap', async () => {
