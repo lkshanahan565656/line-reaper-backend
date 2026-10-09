@@ -172,3 +172,58 @@ test('Dota matches → series split on a long gap', () => {
   assert.deepEqual(dotaMapsFromMatches(matches, T0, 'kills'), { maps: { 1: 8, 2: 3 }, complete: true });
   assert.equal(dotaMapsFromMatches([], T0, 'kills'), null);
 });
+
+test('gradeDue skips ungradable rows until give-up so graded sports are not starved', async () => {
+  const clock = { t: T0 };
+  const calls = [];
+  const tr = makeTracker(clock, { LOL: async row => { calls.push(row.player); return { maps: { 1: 5, 2: 6 }, complete: true }; } });
+  const csPicks = Array.from({ length: 30 }, (_, i) => boardPick({ player: `cs${i}` }));
+  await tr.recordBoard([...csPicks, boardPick({ sport: 'LOL', player: 'Faker', market: 'MAPS 1-2 Kills' })]);
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  const out = await tr.gradeDue({ limit: 25 });
+  assert.deepEqual(calls, ['Faker']);
+  assert.equal(out.graded, 1);
+  assert.equal(out.waiting, 30, 'ungradable rows are counted as waiting without taking a slot');
+  // once past the give-up window the CS rows still move to review
+  clock.t = T0 + 80 * HOUR;
+  const later = await tr.gradeDue({ limit: 100 });
+  assert.equal(later.review, 30);
+});
+
+test('a rescheduled match updates the existing row instead of adding a second', async () => {
+  const clock = { t: T0 };
+  const tr = makeTracker(clock);
+  // no game id: same UTC day
+  await tr.recordBoard([boardPick()]);
+  await tr.recordBoard([boardPick({ startTime: new Date(T0 + 6 * HOUR).toISOString() })]);
+  let rows = await tr.list();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].startTime, new Date(T0 + 6 * HOUR).toISOString());
+  // with a game id: moved to the next day, still one row
+  await tr.recordBoard([boardPick({ player: 'm0NESY', gameId: 'g42' })]);
+  await tr.recordBoard([boardPick({ player: 'm0NESY', gameId: 'g42', startTime: new Date(T0 + 30 * HOUR).toISOString() })]);
+  rows = (await tr.list()).filter(r => r.player === 'm0NESY');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].startTime, new Date(T0 + 30 * HOUR).toISOString());
+  // a different game id is a different match
+  await tr.recordBoard([boardPick({ player: 'm0NESY', gameId: 'g43', startTime: new Date(T0 + 9 * HOUR).toISOString() })]);
+  assert.equal((await tr.list()).filter(r => r.player === 'm0NESY').length, 2);
+});
+
+test('rows stored under the old exact-start id still match', async () => {
+  const clock = { t: T0 };
+  const start = new Date(T0 + 4 * HOUR).toISOString();
+  const legacy = {
+    id: `CS|zywoo|maps 1-2 kills|${start}`, status: 'open', sport: 'CS', player: 'ZywOo', market: 'MAPS 1-2 Kills',
+    stat: 'kills', maps: [1, 2], startTime: start, signalSide: 'OVER', signalLine: 38.5, signalBook: 'PP',
+    signalDecimal: 1 / PP_IMPLIED, closeLine: 38.5, signalAt: new Date(T0).toISOString(), closeAt: new Date(T0).toISOString(),
+  };
+  const tr = makeTracker(clock, {}, createMemoryStore([legacy]));
+  const r = await tr.recordBoard([boardPick({ ppLine: 39.5, gameId: 'g1' })]);
+  assert.deepEqual(r, { created: 0, updated: 1 });
+  const rows = await tr.list();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].id, legacy.id);
+  assert.equal(rows[0].closeLine, 39.5);
+});
