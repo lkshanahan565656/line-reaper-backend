@@ -194,3 +194,43 @@ test('a signal is priced at the token\'s book; a stale Gamma price is no price',
   const empty = sig({ trade: { price: 0.40 }, market: { bestAsk: '0.41' }, book: T.parseBook({ asks: [], bids: [{ price: '0.39', size: '9' }] }) });
   assert.equal(empty.currentPrice, null, 'a book with no asks: nothing to buy, whatever Gamma says');
 });
+
+test('tradeSignal: in-play and near-certain buys are not tails at any venue', () => {
+  const started = { gameStartTime: new Date(NOW - 30 * 60e3).toISOString() };
+  const live = sig({ market: started });
+  assert.deepEqual([live.inPlay, live.blocked, live.units], [true, 'in-play', 0]);
+  assert.match(live.reason, /^in-play bet/);
+  assert.equal(live.gameStartTime, started.gameStartTime);
+  assert.ok(live.q > 0, 'q stays so the record can still see it');
+  // a bet before the start is a pregame bet
+  const pre = sig({ market: { gameStartTime: new Date(NOW + 30 * 60e3).toISOString() } });
+  assert.deepEqual([pre.inPlay, pre.blocked], [false, null]);
+  assert.ok(pre.units > 0);
+  // TAIL_SIZE_IN_PLAY=1 sizes them again
+  assert.ok(sig({ market: started, opts: { sizeInPlay: 1 } }).units > 0);
+  assert.equal(T.optionsFromEnv({ TAIL_SIZE_IN_PLAY: '1' }).sizeInPlay, 1);
+
+  // 95¢+: a few cents to win, everything to lose
+  const sure = sig({ trade: { price: 0.96 }, market: { bestAsk: '0.965', bestBid: '0.96' }, trader: { edge: 0.5 } });
+  assert.deepEqual([sure.blocked, sure.units], ['near-certain', 0]);
+  assert.match(sure.reason, /95¢\+/);
+  // our price at the line (theirs under it) is 0u here but not blocked: another venue may be cheaper
+  const ran = sig({ trade: { price: 0.94 }, market: { bestAsk: '0.95', bestBid: '0.94' }, trader: { edge: 0.5 } });
+  assert.deepEqual([ran.blocked, ran.units], [null, 0]);
+  assert.equal(T.optionsFromEnv({ TAIL_MAX_ENTRY_PRICE: '97' }).maxEntryPrice, 0.97);
+  assert.ok(sig({ trade: { price: 0.96 }, market: { bestAsk: '0.965', bestBid: '0.96' }, trader: { edge: 0.5 }, opts: { maxEntryPrice: 0.99 } }).units > 0);
+});
+
+test('classify: Polymarket game markets are sports even with no league or team keyword', () => {
+  for (const t of [
+    { title: 'Will Croatia win on 2026-10-09?', eventSlug: 'fif-cro-isl-2026-10-09' },
+    { title: 'Will FC Nordsjælland win on 2026-10-09?' },
+    { title: 'Will Croatia vs. Iceland end in a draw?' },
+    { title: 'Spread: Iceland (-1.5)' },
+    { title: 'Croatia vs. Iceland: Croatia O/U 0.5' },
+    { title: 'Dota 2: 1win vs PARIVISION - Game 2 Winner' },
+    { title: 'Something', slug: 'bun-dor-wer-2026-10-09-dor' },
+  ]) assert.equal(T.classify(t), 'sports', t.title);
+  assert.equal(T.classify({ title: 'Ethereum price on October 9?', slug: 'eth-price-on-2026-10-09' }), 'crypto', 'keywords still win');
+  assert.equal(T.classify({ title: 'Will it rain in London on October 9?', slug: 'london-rain-october-9' }), 'other');
+});

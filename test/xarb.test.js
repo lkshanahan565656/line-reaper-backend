@@ -111,7 +111,9 @@ test('kalshi: a lone game market finds its opponent in the title; a tie market m
     markets: ['Arsenal', 'Chelsea', 'Tie'].map(t => kMarket({ ticker: `KXEPLGAME-26OCT10ARSCHE-${t.slice(0, 3).toUpperCase()}`, event_ticker: 'KXEPLGAME-26OCT10ARSCHE', yes_sub_title: t })),
   });
   assert.ok(soccer.every(r => r.hasDraw));
-  assert.equal(soccer.find(r => r.outcomeLabel === 'Arsenal').noLabel, 'Chelsea');
+  assert.equal(soccer.find(r => r.outcomeLabel === 'Arsenal').noLabel, null, 'with a tie possible, NO Arsenal is not Chelsea winning');
+  assert.deepEqual(soccer.map(r => r.game3.pick), [0, 1, 'draw']);
+  assert.deepEqual(soccer[0].game3.teams, ['Arsenal', 'Chelsea']);
   const mvp = kRows({ event_ticker: 'KXNBAMVP-26', series_ticker: 'KXNBAMVP', title: 'NBA MVP 2025-26', category: 'Sports', mutually_exclusive: true,
     markets: ['Nikola Jokic', 'Shai Gilgeous-Alexander'].map((n, i) => kMarket({ ticker: `KXNBAMVP-26-${i}`, event_ticker: 'KXNBAMVP-26', title: `Will ${n} win MVP?`, yes_sub_title: n })) });
   assert.ok(mvp.every(r => r.kind === 'yesno'), 'two names left in an MVP race is not a game');
@@ -121,7 +123,11 @@ test('kalshi: a lone game market finds its opponent in the title; a tie market m
 
 test('polymarket: second outcome / NO ask is 1 − bestBid, never the mid', () => {
   const [game, ...rest] = pRows(pmGame());
-  assert.equal(rest.length, 0, 'spread and total markets are skipped');
+  // the spread and total are lines: YES is the side that must win by more than the line, and Over
+  assert.deepEqual(rest.map(r => [r.kind, r.line, r.lineTeam ?? null, r.outcomeLabel, r.noLabel, r.yesAsk, r.noAsk, r.gameSlug]), [
+    ['spread', 5.5, 'Celtics', 'Celtics', 'Knicks', 0.5, 0.52, 'nba-nyk-bos-2026-10-08'],
+    ['total', 221.5, null, 'Over', 'Under', 0.51, 0.5, 'nba-nyk-bos-2026-10-08'],
+  ]);
   assert.equal(game.exchange, 'polymarket');
   assert.equal(game.id, '555');
   assert.equal(game.eventKey, 'polymarket:9001');
@@ -865,11 +871,253 @@ test('scanExchanges: fetch, parse and find in one call', async () => {
   const r = await A.scanExchanges(http, opts());
   assert.equal(r.arbs.length, 1);
   assert.equal(r.arbs[0].type, 'cross');
-  assert.deepEqual(r.counts, { kalshiEvents: 1, polymarketEvents: 1, kalshiMarkets: 2, polymarketMarkets: 1, arbs: 1, kalshiTruncated: false, polymarketTruncated: false });
+  assert.deepEqual(r.counts, { kalshiEvents: 1, polymarketEvents: 1, kalshiMarkets: 2, polymarketMarkets: 3, arbs: 1, kalshiTruncated: false, polymarketTruncated: false });
   assert.deepEqual(r.errors, []);
   assert.equal(r.updated, new Date(NOW).toISOString());
 
   const down = await A.scanExchanges({ async get() { throw new Error('ECONNREFUSED'); } }, opts());
   assert.deepEqual(down.arbs, []);
   assert.equal(down.errors.length, 2);
+});
+
+// ── US venues beyond the built-in leagues: soccer, tennis, esports ──
+const kEvent = (eventTicker, title, labels, o = {}) => ({
+  event_ticker: eventTicker, series_ticker: eventTicker.split('-')[0], title, category: 'Sports', mutually_exclusive: true,
+  markets: labels.map(([label, yes, no, m = {}]) => ({
+    ticker: `${eventTicker}-${label.replace(/[^A-Z]/gi, '').slice(0, 3).toUpperCase()}`, event_ticker: eventTicker, title: `${label} wins`,
+    yes_sub_title: label, no_sub_title: label, status: 'active', yes_ask_dollars: yes, no_ask_dollars: no,
+    close_time: '2026-10-11T18:30:00Z', expected_expiration_time: o.exp || '2026-10-09T21:30:00Z', ...m,
+  })),
+});
+const dortmundBremen = (o = {}) => kEvent('KXBUNDESLIGAGAME-26OCT09BVBSVW', 'Dortmund vs Bremen',
+  [['Dortmund', '0.7300', '0.2800'], ['Bremen', '0.1100', '0.9000'], ['Tie', '0.1700', '0.8400']], o);
+// Polymarket's soccer event: one YES/NO market per team and one for the draw
+const pmSoccer = ({ id = '1083681', slug = 'bun-dor-wer-2026-10-09', home = 'BV Borussia 09 Dortmund', away = 'SV Werder Bremen', start = '2026-10-09 18:30:00+00' } = {}) => ({
+  id, slug, title: `${home} vs. ${away}`, negRisk: true, endDate: '2026-10-09T18:30:00Z',
+  tags: [{ label: 'Sports', slug: 'sports' }, { label: 'Soccer', slug: 'soccer' }, { label: 'Bundesliga', slug: 'bundesliga' }],
+  markets: [
+    [`Will ${home} win on 2026-10-09?`, home, 0.74, 0.72, 'h'],
+    [`Will ${home} vs. ${away} end in a draw?`, `Draw (${home} vs. ${away})`, 0.17, 0.16, 'd'],
+    [`Will ${away} win on 2026-10-09?`, away, 0.12, 0.11, 'a'],
+  ].map(([question, groupItemTitle, ask, bid, k]) => ({
+    id: `${id}${k}`, question, groupItemTitle, conditionId: `0x${id}${k}`, slug: `${slug}-${k}`, outcomes: '["Yes","No"]',
+    clobTokenIds: `["${id}${k}y","${id}${k}n"]`, bestAsk: ask, bestBid: bid, active: true, closed: false, negRisk: true,
+    sportsMarketType: 'moneyline', gameStartTime: start, endDate: '2026-10-09T18:30:00Z',
+  })),
+});
+
+test('kalshi tickers: the date (and a start time, when there is one) in US Eastern time', () => {
+  assert.deepEqual(A.kalshiTickerTime('KXLOLGAME-26OCT091200KOIATLN'), { day: Date.parse('2026-10-09T04:00:00Z'), start: Date.parse('2026-10-09T16:00:00Z') });
+  assert.deepEqual(A.kalshiTickerTime('KXATPMATCH-26OCT05BELMUL'), { day: Date.parse('2026-10-05T04:00:00Z'), start: null });
+  assert.deepEqual(A.kalshiTickerTime('KXBUNDESLIGAGAME-26OCT09BVBSVW').start, null, 'team codes are not a time');
+  assert.equal(A.kalshiTickerTime('KXCS2GAME-26DEC201430FALSPI').start, Date.parse('2026-12-20T19:30:00Z'), 'EST in winter');
+  assert.equal(A.kalshiTickerTime('KXHOFGAME-26OCT101899HOF').start, null, '18:99 is not a time');
+  assert.equal(A.kalshiTickerTime('KXFED-26DEC'), null);
+  assert.equal(A.kalshiTickerTime(null), null);
+  const [row] = kRows(kEvent('KXLOLGAME-26OCT091200KOIATLN', 'Movistar KOI Fénix vs. TLN Pirates', [['Movistar KOI Fénix', '0.55', '0.46'], ['TLN Pirates', '0.49', '0.52']]));
+  assert.equal(row.startTime, '2026-10-09T16:00:00.000Z');
+  assert.equal(row.kind, 'teams');
+});
+
+test('team names: club letters, numbers and initials aside, the same club or player', () => {
+  const yes = [['Dortmund', 'BV Borussia 09 Dortmund'], ['Bremen', 'SV Werder Bremen'], ['C. Alcaraz', 'Carlos Alcaraz'], ['Alcaraz', 'Carlos Alcaraz'],
+    ['Man Utd', 'Manchester United'], ['Bayern Munich', 'FC Bayern München'], ['Mainz', 'Mainz 05'], ['Spirit', 'Team Spirit'], ['Movistar KOI Fénix', 'Movistar KOI Fenix']];
+  for (const [a, b] of yes) assert.ok(A.nameMatch(a, b), `${a} = ${b}`);
+  const no = [['Sebastian Baez', 'Sebastian Korda'], ['Manchester United', 'Manchester City'], ['New York Rangers', 'New York Islanders'],
+    ['Real Madrid', 'Real Sociedad'], ['Chicago White Sox', 'Boston Red Sox'], ['Team Liquid', 'Team Spirit'], ['FC', 'FC Porto'], ['', 'Arsenal']];
+  for (const [a, b] of no) assert.ok(!A.nameMatch(a, b), `${a} ≠ ${b}`);
+  // digits are team names, lines are not
+  const g2 = kRows(kEvent('KXLOLGAME-26OCT101100G2VIT', 'G2 Esports vs. Team Vitality', [['G2 Esports', '0.6', '0.41'], ['Team Vitality', '0.41', '0.6']]));
+  assert.ok(g2.every(r => r.kind === 'teams'));
+  const total = kRows(kEvent('KXEPLGAME-26OCT10ARSCHE', 'Arsenal vs Chelsea', [['Over 2.5', '0.5', '0.5'], ['Under 2.5', '0.5', '0.5']]));
+  assert.ok(total.every(r => r.kind === 'yesno'));
+});
+
+test('soccer: Kalshi team and tie markets pair with Polymarket win and draw markets, outcome by outcome', () => {
+  const ks = kRows(dortmundBremen()), ps = pRows(pmSoccer());
+  assert.deepEqual(ps.map(r => r.game3.pick), [0, 'draw', 1]);
+  const m = A.matchMarkets(ks, ps, opts());
+  assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.polymarket.outcomeLabel, x.same, x.by]), [
+    ['Dortmund', 'BV Borussia 09 Dortmund', true, 'teams3'],
+    ['Bremen', 'SV Werder Bremen', true, 'teams3'],
+    ['Tie', 'Draw (BV Borussia 09 Dortmund vs. SV Werder Bremen)', true, 'teams3'],
+  ]);
+  // home and away the other way round: still team to team
+  const flipped = A.matchMarkets(ks, pRows(pmSoccer({ home: 'SV Werder Bremen', away: 'BV Borussia 09 Dortmund' })), opts());
+  assert.deepEqual(flipped.map(x => [x.kalshi.outcomeLabel, x.polymarket.outcomeLabel]),
+    [['Dortmund', 'BV Borussia 09 Dortmund'], ['Bremen', 'SV Werder Bremen'], ['Tie', 'Draw (SV Werder Bremen vs. BV Borussia 09 Dortmund)']]);
+  // another fixture, or the same two clubs a week later, is not this game
+  assert.deepEqual(A.matchMarkets(ks, pRows(pmSoccer({ away: 'FC Bayern München' })), opts()), []);
+  assert.deepEqual(A.matchMarkets(ks, pRows(pmSoccer({ start: '2026-10-16 18:30:00+00' })), opts()), []);
+  // the title matcher leaves these to the game matcher
+  assert.ok(!m.some(x => x.by === 'title'));
+
+  // where to tail: NO on "Dortmund win" is NO on Dortmund at Kalshi, not YES on Bremen
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps }, opts());
+  const sig = (k, outcome, outcomeIndex) => ({ type: 'entry', conditionId: `0x1083681${k}`, asset: `1083681${k}${outcome === 'Yes' ? 'y' : 'n'}`, outcome, outcomeIndex });
+  const q = s => A.venueQuotes(s, idx, opts({ region: 'us' })).map(v => [v.key, v.marketId, v.side, v.pick, v.price]);
+  assert.deepEqual(q(sig('h', 'No', 1)), [['kalshi', 'KXBUNDESLIGAGAME-26OCT09BVBSVW-DOR', 'no', 'NO Dortmund', 0.28]]);
+  assert.deepEqual(q(sig('d', 'Yes', 0)), [['kalshi', 'KXBUNDESLIGAGAME-26OCT09BVBSVW-TIE', 'yes', 'Tie', 0.17]]);
+  assert.deepEqual(q(sig('a', 'Yes', 0)), [['kalshi', 'KXBUNDESLIGAGAME-26OCT09BVBSVW-BRE', 'yes', 'Bremen', 0.11]]);
+  // and the pair is a cross-exchange arb candidate like any other match (intl)
+  assert.ok(A.findCrossArbs(ks, ps, opts()).every(a => a.title === 'Dortmund vs Bremen'));
+});
+
+test('tennis and esports: players and teams by name, on the ticker date when Kalshi expects to settle a day out', () => {
+  // Kalshi expects Bellucci–Muller (Oct 5) to settle at 05:00 the next morning
+  const ks = kRows(kEvent('KXATPMATCH-26OCT05BELMUL', 'Bellucci vs Muller', [['Mattia Bellucci', '0.6700', '0.3400'], ['Alexandre Muller', '0.3400', '0.6700']], { exp: '2026-10-06T05:00:00Z' }));
+  const pTennis = start => pRows({ id: 't1', slug: 'atp-bellucci-muller-2026-10-05', title: 'Shanghai Rolex Masters: Mattia Bellucci vs Alexandre Muller',
+    markets: [{ id: 't10', question: 'Shanghai Rolex Masters: Mattia Bellucci vs Alexandre Muller', outcomes: '["Alexandre Muller","Mattia Bellucci"]',
+      bestAsk: 0.35, bestBid: 0.34, active: true, closed: false, sportsMarketType: 'moneyline', gameStartTime: start, endDate: start, conditionId: '0xt10' }] });
+  const m = A.matchMarkets(ks, pTennis('2026-10-05 10:00:00+00'), opts());
+  assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.same]), [['Mattia Bellucci', false], ['Alexandre Muller', true]]);
+  assert.deepEqual(A.matchMarkets(ks, pTennis('2026-10-08 10:00:00+00'), opts()), [], 'three days later is another match');
+
+  // a series winner on Kalshi pairs with Polymarket's match winner, never a map winner
+  const lol = kRows(kEvent('KXLOLGAME-26OCT091200KOIATLN', 'Movistar KOI Fénix vs. TLN Pirates', [['Movistar KOI Fénix', '0.5500', '0.4600'], ['TLN Pirates', '0.4900', '0.5200']], { exp: '2026-10-09T20:00:00Z' }));
+  const market = (id, question, smt) => ({ id, question, outcomes: '["Movistar KOI Fénix","TLN Pirates"]', bestAsk: 0.56, bestBid: 0.54, active: true, closed: false,
+    sportsMarketType: smt, gameStartTime: '2026-10-09 16:00:00+00', endDate: '2026-10-09T16:00:00Z', conditionId: `0x${id}` });
+  const pLol = pRows({ id: 'l1', slug: 'lol-koi-tln-2026-10-09', title: 'LoL: Movistar KOI Fénix vs TLN Pirates (BO5) - EMEA Masters Playoffs',
+    markets: [market('l1g1', 'LoL: Movistar KOI Fénix vs TLN Pirates - Game 1 Winner', 'child_moneyline'), market('l1m', 'LoL: Movistar KOI Fénix vs TLN Pirates (BO5) - EMEA Masters Playoffs', 'moneyline')] });
+  assert.deepEqual([...new Set(A.matchMarkets(lol, pLol, opts()).map(x => x.polymarket.id))], ['l1m']);
+});
+
+test('kalshi game sweep: every GAME/MATCH series, least recently read first, quiet ones still checked', async () => {
+  const reads = [];
+  const events = {
+    KXBUNDESLIGAGAME: [dortmundBremen()],
+    KXATPMATCH: [kEvent('KXATPMATCH-26OCT05BELMUL', 'Bellucci vs Muller', [['Mattia Bellucci', '0.67', '0.34'], ['Alexandre Muller', '0.34', '0.67']])],
+  };
+  let failLol = false, t = NOW;
+  const http = {
+    async get(url, o) {
+      if (url === A.KALSHI_SERIES_URL) return { data: { series: ['KXBUNDESLIGAGAME', 'KXATPMATCH', 'KXLOLGAME', 'KXNBAMVP', 'KXBUNDESLIGAGAME', 'KXBUNDESLIGATOTAL', 'KXFEDTOTAL'].map(ticker => ({ ticker })) } };
+      const s = o.params.series_ticker;
+      reads.push(s);
+      if (s === 'KXLOLGAME' && failLol) throw new Error('429');
+      return { data: { events: events[s] || [], cursor: '' } };
+    },
+  };
+  const sweep = A.createKalshiGameSweep({ http, perScan: 3, quietSlots: 1, seeds: ['KXNBAGAME'], now: () => t });
+  const first = await sweep.step();
+  assert.equal(sweep.stats().series, 5, 'GAME/MATCH series and their TOTAL siblings, plus the built-in ones, once each; MVP races and a TOTAL with no game are not');
+  assert.equal(reads.length, 3);
+  assert.equal(new Set(first.map(r => r.eventKey)).size, reads.filter(s => events[s]).length);
+  t += 60e3;
+  reads.length = 0;
+  const second = await sweep.step();
+  assert.equal(reads.length, 3);
+  assert.equal(sweep.stats().withGames, 2);
+  assert.equal(second.length, 5, 'both games: 3 Bundesliga rows and 2 tennis rows');
+  // series with games are re-read first; one slot still goes to a quiet series
+  t += 60e3;
+  reads.length = 0;
+  await sweep.step();
+  assert.equal(reads.filter(s => events[s]).length, 2);
+  assert.equal(reads.filter(s => !events[s]).length, 1);
+  // a failed read keeps a series' last rows until they are 30 min old
+  events.KXLOLGAME = [kEvent('KXLOLGAME-26OCT091200KOIATLN', 'Movistar KOI Fénix vs. TLN Pirates', [['Movistar KOI Fénix', '0.55', '0.46'], ['TLN Pirates', '0.49', '0.52']])];
+  for (let i = 0; i < 3; i++) { t += 60e3; await sweep.step(); }
+  assert.ok((await sweep.step()).some(r => r.id.startsWith('KXLOLGAME')));
+  failLol = true;
+  t += 60e3;
+  assert.ok((await sweep.step()).some(r => r.id.startsWith('KXLOLGAME')), 'kept through a failed read');
+  t += 31 * 60e3;
+  assert.ok(!(await sweep.step()).some(r => r.id.startsWith('KXLOLGAME')), 'dropped once stale');
+  assert.match(sweep.stats().lastError, /KXLOLGAME: 429/);
+
+  // no series list: the built-in one
+  const offline = A.createKalshiGameSweep({ http: { async get(url) { if (url === A.KALSHI_SERIES_URL) throw new Error('down'); return { data: { events: [] } }; } }, now: () => NOW });
+  await offline.step();
+  assert.equal(offline.stats().series, A.SEED_GAME_SERIES.length);
+  assert.equal(offline.stats().listed, 'built-in');
+});
+
+test('polymarket events: 100 a page (Gamma\'s cap), so the scan reads past the first 100', async () => {
+  const offsets = [];
+  const http = { async get(url, o) { offsets.push([o.params.offset, o.params.limit]); const n = o.params.offset < 200 ? 100 : 37; return { data: Array.from({ length: n }, (_, i) => pmField(`${o.params.offset + i}`, 's', 'T', [['X', 0.5, 0.4]])) }; } };
+  const r = await A.fetchPolymarketEvents(http);
+  assert.deepEqual(offsets, [[0, 100], [100, 100], [200, 100]]);
+  assert.equal(r.count, 237);
+  assert.equal(r.truncated, false);
+});
+
+// ── a paired game's totals and spreads ──
+const kLines = (series, title, rows, o = {}) => ({
+  event_ticker: `${series}-${o.tail || '26OCT09BVBSVW'}`, series_ticker: series, title, category: 'Sports', mutually_exclusive: false,
+  markets: rows.map(([code, label, strike, yes, no]) => ({
+    ticker: `${series}-${o.tail || '26OCT09BVBSVW'}-${code}`, event_ticker: `${series}-${o.tail || '26OCT09BVBSVW'}`, title: `${label}?`,
+    yes_sub_title: label, no_sub_title: label, floor_strike: strike, strike_type: 'greater', status: 'active',
+    yes_ask_dollars: yes, no_ask_dollars: no, close_time: '2026-10-11T18:30:00Z', expected_expiration_time: o.exp || '2026-10-09T22:30:00Z',
+  })),
+});
+const dortmundTotals = () => kLines('KXBUNDESLIGATOTAL', 'Dortmund vs Bremen: Total Goals',
+  [['2', 'Over 1.5 goals scored', 1.5, '0.8800', '0.1400'], ['3', 'Over 2.5 goals scored', 2.5, '0.7000', '0.3100'], ['4', 'Over 3.5 goals scored', 3.5, '0.4900', '0.5200']]);
+const dortmundSpreads = () => kLines('KXBUNDESLIGASPREAD', 'Dortmund vs Bremen: Spread',
+  [['BVB2', 'Dortmund wins by more than 1.5 goals', 1.5, '0.5000', '0.5100'], ['SVW2', 'Bremen wins by more than 1.5 goals', 1.5, '0.0400', '0.9700']]);
+const H = 'BV Borussia 09 Dortmund', W2 = 'SV Werder Bremen';
+const pmMore = () => ({
+  id: '1083682', slug: 'bun-dor-wer-2026-10-09-more-markets', title: `${H} vs. ${W2} - More Markets`, negRisk: false,
+  markets: [
+    [`Spread: ${H} (-1.5)`, [H, W2], 'spreads', -1.5, 0.52, 0.5, 's1'],
+    [`Spread: ${W2} (-1.5)`, [W2, H], 'spreads', -1.5, 0.05, 0.04, 's2'],
+    [`${H} vs. ${W2}: O/U 2.5`, ['Over', 'Under'], 'totals', 2.5, 0.71, 0.69, 't2'],
+    [`${H} vs. ${W2}: O/U 3.5`, ['Over', 'Under'], 'totals', 3.5, 0.5, 0.48, 't3'],
+    [`${H} vs. ${W2}: ${H} O/U 1.5`, ['Over', 'Under'], 'totals', 1.5, 0.6, 0.58, 'tt'],
+    [`${H} vs. ${W2}: O/U 3`, ['Over', 'Under'], 'totals', 3, 0.4, 0.38, 'tw'],
+  ].map(([question, outs, type, line, ask, bid, k]) => ({
+    id: `1083682${k}`, question, conditionId: `0x1083682${k}`, outcomes: JSON.stringify(outs), clobTokenIds: `["1083682${k}a","1083682${k}b"]`,
+    sportsMarketType: type, line, bestAsk: ask, bestBid: bid, active: true, closed: false, gameStartTime: '2026-10-09 18:30:00+00', endDate: '2026-10-09T18:30:00Z',
+  })),
+});
+
+test('lines: Kalshi totals and spreads carry the game\'s key; Polymarket\'s carry its slug; team totals and whole lines are left out', () => {
+  const ks = kRows(dortmundBremen(), dortmundTotals(), dortmundSpreads());
+  assert.ok(ks.every(r => r.gameKey === 'KXBUNDESLIGA|26OCT09BVBSVW'), 'one game across GAME, TOTAL and SPREAD');
+  assert.deepEqual(ks.filter(r => r.kind === 'total').map(r => r.line), [1.5, 2.5, 3.5]);
+  assert.deepEqual(ks.filter(r => r.kind === 'spread').map(r => [r.lineTeam, r.line]), [['Dortmund', 1.5], ['Bremen', 1.5]]);
+  const ps = pRows(pmSoccer(), pmMore());
+  assert.ok(ps.every(r => r.gameSlug === 'bun-dor-wer-2026-10-09'), 'the more-markets event is the same game');
+  const lines = ps.filter(r => r.line != null);
+  assert.deepEqual(lines.map(r => [r.kind, r.line, r.lineTeam ?? null, r.outcomeLabel]), [
+    ['spread', 1.5, H, H], ['spread', 1.5, W2, W2], ['total', 2.5, null, 'Over'], ['total', 3.5, null, 'Over'],
+  ], 'a team total and a whole line (it can push) are not game lines');
+  // a "+" line: the other side is the one that must win by more
+  const [plus] = pRows({ id: 'p', slug: 'x-y-z-2026-10-09', title: 'A vs. B', markets: [{ id: 'p1', question: 'Spread: A (+1.5)', outcomes: '["A","B"]', sportsMarketType: 'spreads', bestAsk: 0.6, bestBid: 0.58, active: true, closed: false }] });
+  assert.deepEqual([plus.lineTeam, plus.outcomeLabel, plus.noLabel, plus.yesAsk, plus.noAsk], ['B', 'B', 'A', 0.42, 0.6]);
+});
+
+test('lines: a paired game\'s totals and spreads pair line by line, and tail to the same Kalshi side', () => {
+  const ks = kRows(dortmundBremen(), dortmundTotals(), dortmundSpreads()), ps = pRows(pmSoccer(), pmMore());
+  const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
+  assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.polymarket.title]), [
+    ['Over 2.5 goals scored', `${H} vs. ${W2}: O/U 2.5`],
+    ['Over 3.5 goals scored', `${H} vs. ${W2}: O/U 3.5`],
+    ['Dortmund wins by more than 1.5 goals', `Spread: ${H} (-1.5)`],
+    ['Bremen wins by more than 1.5 goals', `Spread: ${W2} (-1.5)`],
+  ]);
+  // no paired game, no lines
+  assert.deepEqual(A.matchMarkets(kRows(dortmundTotals(), dortmundSpreads()), ps, opts()).filter(x => x.by === 'line'), []);
+  // another game's lines don't ride on this pairing
+  const other = kLines('KXBUNDESLIGATOTAL', 'Augsburg vs Bayern: Total Goals', [['3', 'Over 2.5 goals scored', 2.5, '0.6', '0.41']], { tail: '26OCT10FCABMU' });
+  assert.ok(!A.matchMarkets(kRows(dortmundBremen(), other), ps, opts()).some(x => x.by === 'line'));
+
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps }, opts());
+  const q = s => A.venueQuotes(s, idx, opts({ region: 'us' })).map(v => [v.marketId, v.side, v.price]);
+  // Under 2.5 is NO on Kalshi's Over 2.5, and the quote says so
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682t2', outcome: 'Under', outcomeIndex: 1 }), [['KXBUNDESLIGATOTAL-26OCT09BVBSVW-3', 'no', 0.31]]);
+  assert.equal(A.venueQuotes({ type: 'entry', conditionId: '0x1083682t2', outcome: 'Under', outcomeIndex: 1 }, idx, opts({ region: 'us' }))[0].buy, 'NO Over 2.5 goals scored');
+  // Bremen +1.5 (the other side of Dortmund -1.5) is NO on "Dortmund wins by more than 1.5"
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682s1', outcome: W2, outcomeIndex: 1 }), [['KXBUNDESLIGASPREAD-26OCT09BVBSVW-BVB2', 'no', 0.51]]);
+  assert.deepEqual(q({ type: 'entry', conditionId: '0x1083682s2', outcome: W2, outcomeIndex: 0 }), [['KXBUNDESLIGASPREAD-26OCT09BVBSVW-SVW2', 'yes', 0.04]]);
+});
+
+test('lines: US games pair spreads and totals in the same event, the team found through the game pairing', () => {
+  const nbaLines = [
+    kLines('KXNBASPREAD', 'New York K at Boston: Spread', [['BOS5', 'Boston wins by more than 5.5 points', 5.5, '0.4800', '0.5400']], { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }),
+    kLines('KXNBATOTAL', 'New York K at Boston: Total Points', [['221', 'Over 221.5 points scored', 221.5, '0.5200', '0.5000']], { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }),
+  ];
+  const ks = kRows(kalshiGame(), ...nbaLines), ps = pRows(pmGame());
+  const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
+  assert.deepEqual(m.map(x => [x.kalshi.id, x.polymarket.id]), [['KXNBASPREAD-26OCT08NYKBOS-BOS5', '556'], ['KXNBATOTAL-26OCT08NYKBOS-221', '557']]);
 });

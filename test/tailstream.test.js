@@ -98,8 +98,10 @@ test('stream: reconnects with backoff after a close, and after a silent minute',
   const s = h.sockets[2];
   s.onopen();
   h.msg(s, trade());
-  await h.advance(60e3);
-  assert.equal(s.closed, true, 'no messages for a minute: dropped');
+  await h.advance(14e3);
+  assert.equal(s.closed, false, 'quiet for 14 s: still up');
+  await h.advance(4e3);
+  assert.equal(s.closed, true, 'no messages for 15 s: dropped');
   assert.match(h.stream.stats().lastError, /no messages/);
   await h.advance(1000);
   assert.equal(h.sockets.length, 4, 'and back after 1 s: the working feed reset the backoff');
