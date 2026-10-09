@@ -104,3 +104,22 @@ test('props from both feeds merge, and DFS legs are scored at the same line', ()
   assert.ok(Math.abs(ppOver.ev - (fair / 0.5622 - 1) * 100) < 0.01);
   assert.equal(ppOver.dfs, true);
 });
+
+test('live edges: new or newly +EV rows fire once, with a cooldown', () => {
+  const row = (ev, book = 'draftkings') => ({ group: 'g|h2h', side: 'Knicks', book, ev, event: 'Knicks @ Celtics', market: 'h2h', price: 150, fairPrice: 140, source: 'sharp' });
+  const seen = new Map();
+  assert.equal(E.diffEv([], [row(4)], { seen, now: NOW }).length, 1, 'new edge');
+  assert.equal(E.diffEv([row(4)], [row(5)], { seen, now: NOW }).length, 0, 'already alerting');
+  assert.equal(E.diffEv([row(1)], [row(4)], { seen, now: NOW + 60000 }).length, 0, 'cooldown');
+  assert.equal(E.diffEv([row(1)], [row(4)], { seen, now: NOW + 31 * 60000 }).length, 1, 'after cooldown');
+  assert.equal(E.diffEv([], [row(2)], { now: NOW }).length, 0, 'below threshold');
+  assert.match(E.describeEv(row(4)), /\+4\.0% Knicks @ Celtics ML Knicks @ draftkings \+150 \(fair \+140\)/);
+});
+
+test('screen reports the fair price of every market through `fairs`', () => {
+  const fairs = new Map();
+  E.screen({ now: NOW, fairs, feeds: [{ games: [game([h2h('pinnacle', -150, 130), h2h('fanduel', -170, 110)])] }] });
+  const vals = [...fairs.values()];
+  assert.equal(vals.length, 2, 'both sides, though nothing is +EV');
+  assert.ok(Math.abs(vals[0] + vals[1] - 100) < 0.02);
+});
