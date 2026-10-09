@@ -2135,6 +2135,10 @@ const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is
 const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
+// every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
+// the capped open-events list misses can still be tailed (XARB_GAME_SERIES_PER_SCAN, default 30; 0 = off)
+const KALSHI_GAME_SWEEP_PER_SCAN = Number.isFinite(parseInt(process.env.XARB_GAME_SERIES_PER_SCAN)) ? parseInt(process.env.XARB_GAME_SERIES_PER_SCAN) : 30;
+const kalshiGameSweep = KALSHI_GAME_SWEEP_PER_SCAN > 0 ? xarb.createKalshiGameSweep({ http: upstream, perScan: KALSHI_GAME_SWEEP_PER_SCAN }) : null;
 
 const whaleWatcher = whales.createWhaleWatcher({
   http: upstream, opts: whales.optionsFromEnv(),
@@ -2272,7 +2276,7 @@ async function runTailJob(name, fn) {
 // busy) is still the first one when it lands. A top-up adds to a position
 // already pinged, so it isn't pinged again.
 let tailPolled = false;
-const tailRouting = { routed: 0, withVenue: 0, lastAt: null };
+const tailRouting = { routed: 0, withVenue: 0, lastAt: null, byCategory: {} };
 // What a routed entry told followers to add: the venue's units, or with no
 // venue the Polymarket size the track record logs it at.
 const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
@@ -2283,6 +2287,9 @@ function routeTail(s) {
   routeSignal(s);
   tailRouting.routed++;
   if (s.venue) tailRouting.withVenue++;
+  const c = tailRouting.byCategory[s.category || 'other'] ||= { routed: 0, withVenue: 0 };
+  c.routed++;
+  if (s.venue) c.withVenue++;
   tailRouting.lastAt = new Date().toISOString();
   return tailUnits(s);
 }
@@ -2358,6 +2365,7 @@ async function pollWhales() {
   return fresh;
 }
 
+const countBy = (list, keyOf) => { const out = {}; for (const x of list) { const k = keyOf(x); out[k] = (out[k] || 0) + 1; } return out; };
 // The Owls and Odds API feeds can both carry a game: one book arb per game and legs.
 function dedupeArbs(arbs) {
   const out = new Map();
@@ -2377,10 +2385,15 @@ async function scanXarbs() {
   try {
     // each page parsed as it lands; the raw JSON isn't kept
     const kalshi = [], polymarket = [];
-    const [k, p] = await Promise.all([
+    const [k, p, swept] = await Promise.all([
       xarb.fetchKalshiEvents(upstream, { onPage: page => kalshi.push(...xarb.parseKalshiBinaries(page)) }),
       xarb.fetchPolymarketEvents(upstream, { onPage: page => polymarket.push(...xarb.parsePolymarketBinaries(page)) }),
+      kalshiGameSweep ? kalshiGameSweep.step().catch(e => { console.warn('Kalshi game sweep:', e.message); return []; }) : [],
     ]);
+    // the sweep's games the main list missed (the main list's copy is fresher)
+    const listed = new Set(kalshi.map(r => r.id));
+    let sweptIn = 0;
+    for (const r of swept) if (!listed.has(r.id)) { kalshi.push(r); sweptIn++; }
     let games = [];
     try { games = evFeeds().filter(f => /odds$/.test(f.label)).flatMap(f => f.games); }
     catch (e) { console.warn('Exchange arbs: game feeds:', e.message); }
@@ -2398,7 +2411,8 @@ async function scanXarbs() {
     Object.assign(xarbState, {
       arbs, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
-        polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length },
+        polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
+        kalshiSwept: sweptIn, matches: matches.length, matchesBy: countBy(matches, m => m.by) },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
     for (const a of arbs) xarbSeen.set(a.id, now);
@@ -2542,7 +2556,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.25.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.26.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3290,7 +3304,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.25.0',
+  version: '3.26.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3316,7 +3330,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats() } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
   xarb: { arbs: xarbState.arbs.length, updated: xarbState.updated, durationMs: xarbState.durationMs, running: xarbState.running, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
-    venueMarkets: xarbState.venues?.size ?? 0 },
+    venueMarkets: xarbState.venues?.size ?? 0, gameSweep: kalshiGameSweep ? kalshiGameSweep.stats() : null },
   region: TAIL_REGION,
   licence: licenceState(req),
   upstream: upstream.stats(),
@@ -3408,7 +3422,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.25.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.26.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
