@@ -91,9 +91,13 @@ const CATEGORIES = ['sports', 'politics', 'crypto', 'econ', 'culture', 'other'];
 const DAY = 86400e3;
 const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
 
-// Bumped when the grading rules change. Scores from older rules (round 1: no
-// closing-line value, no unclaimed losers) are capped at B and rescored first.
-const RULES_VERSION = 2;
+// Bumped when the grading rules change. Scores from older rules are rescored
+// first. Until then, round 2's are capped at B (no closing-line value, no
+// unclaimed losers) and anything older than round 3 is not graded at all:
+// those counted only the fees as the stake on closed bets that paid fees, so
+// their ROI and luck test can be many times too high.
+const RULES_VERSION = 3;
+const STAKE_FIX_VERSION = 3;
 
 const DEFAULTS = {
   priorRisk: 20000,              // $ of zero-edge betting mixed into the edge estimate
@@ -347,7 +351,19 @@ const SPORTS_TITLE_RE = /\bwin on \d{4}-\d{2}-\d{2}\b|\bend in a draw\b|^spread:
 const SPORTS_SLUG_RE = /(?:^|\s)[a-z0-9]{2,6}-[a-z0-9]{2,6}-[a-z0-9]{2,6}-\d{4}-\d{2}-\d{2}(?:-|\s|$)/i;
 
 // ── parsing: data API ──
-// Dollars into a position, fees included (v2), or null when the row doesn't say.
+// Dollars into a position, fees included. The live v2 avg_price already
+// carries the fees (one wallet's fills of $1,230.36 plus $8.31 of fees on
+// 1,820.46 shares read avg_price 0.6804) and total_pnl is net of them, so
+// shares bought × avg_price is the stake. total_cost_usdc is only what is
+// still held plus fees: on a closed position it is the fees alone, which
+// once made a $22,372 bet read as $145 risked. It's the fallback for rows
+// with no share count.
+function stakeOf(r) {
+  const price = num(pick(r.avg_price, r.avgPrice)), shares = num(pick(r.total_size, r.totalBought, r.totalSize));
+  if (price > 0 && price < 1 && shares > 0) return price * shares;
+  return costOf(r);
+}
+// What the row says it cost (still-held cost plus fees on v2), or null.
 function costOf(r) {
   const total = num(pick(r.total_cost_usdc, r.totalCostUsdc));
   if (total > 0) return total;
@@ -381,8 +397,7 @@ function parseClosedPositions(payload, { now = Date.now() } = {}) {
     const price = num(pick(r.avg_price, r.avgPrice)), shares = num(pick(r.total_size, r.totalBought, r.totalSize));
     const cur = num(pick(r.current_price, r.curPrice));
     if (!(price > 0 && price < 1)) continue;
-    const cost = costOf(r);
-    const risked = cost ?? (shares > 0 ? price * shares : null);
+    const risked = stakeOf(r);
     if (!(risked > 0)) continue;
     const realized = num(pick(r.realized_pnl, r.realizedPnl));
     let pnl = num(pick(r.total_pnl, r.totalPnl));
@@ -420,7 +435,7 @@ function parseOpenPositions(payload) {
     out.push({
       ...ref, status,
       size: num(pick(r.current_size, r.size)), price: num(pick(r.avg_price, r.avgPrice)), curPrice: num(pick(r.current_price, r.curPrice)),
-      totalBought: num(pick(r.total_size, r.totalBought)), cost: costOf(r),
+      totalBought: num(pick(r.total_size, r.totalBought)), cost: costOf(r), stake: stakeOf(r),
       initialValue: num(r.initialValue), currentValue: num(pick(r.current_value, r.currentValue)),
       cashPnl: num(pick(r.unrealized_pnl, r.cashPnl)), realizedPnl: num(pick(r.realized_pnl, r.realizedPnl)), totalPnl: num(pick(r.total_pnl, r.totalPnl)),
       redeemable: bool(r.redeemable) || (status != null && UNCLAIMED.has(status)), endDate: pick(r.end_date, r.endDate),
@@ -450,7 +465,7 @@ function resolvedFromOpen(openRows, now = Date.now()) {
     out.push({
       wallet: r.wallet, conditionId: r.conditionId, asset: r.asset, outcome: r.outcome, outcomeIndex: r.outcomeIndex,
       title: r.title, slug: r.slug, eventSlug: r.eventSlug, status: settle ? 'REDEEMABLE' : 'REDEEMABLE_LOST',
-      price: r.price, risked: r.cost > 0 ? r.cost : r.price * shares, pnl, fees: 0, won: settle === 1,
+      price: r.price, risked: r.stake > 0 ? r.stake : r.price * shares, pnl, fees: 0, won: settle === 1,
       at: end != null && end <= now ? end : null, endAt: end, enteredAt: r.enteredAt ?? null, activeAt: r.enteredAt ?? null,
       category: r.category, source: 'open',
     });
@@ -463,7 +478,7 @@ function resolvedFromOpen(openRows, now = Date.now()) {
 // unrealized rest). null if unpriced.
 function markOpen(r) {
   const shares = r.totalBought ?? r.size;
-  const risked = r.cost > 0 ? r.cost : r.price > 0 && shares > 0 ? r.price * shares : r.initialValue;
+  const risked = r.stake > 0 ? r.stake : r.price > 0 && shares > 0 ? r.price * shares : r.cost > 0 ? r.cost : r.initialValue;
   if (!(risked > 0)) return null;
   if (r.totalPnl != null) return { risked, pnl: r.totalPnl };
   const unreal = r.cashPnl
@@ -1015,16 +1030,22 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
   };
 }
 
-// A stored score from older rules, until it's rescored: at most B (it has no
-// closing-line value), overall and per category.
+// A stored score from older rules, until it's rescored, overall and per
+// category: no grade if it predates the stake fix, else at most B (it has no
+// closing-line value).
 const STALE_NOTE = 'scored by older rules: rescoring';
+const STAKE_NOTE = 'scored before the stake fix: rescoring';
 function capStale(tr, opts = {}) {
   if (!tr || tr.rulesVersion === RULES_VERSION) return tr;
   const o = resolveOptions(opts);
-  const cap = x => (x?.grade === 'A' ? { ...x, grade: 'B', label: o.grades.B.label, whyNotA: [STALE_NOTE, ...(x.whyNotA || [])] } : x);
+  const before = !(tr.rulesVersion >= STAKE_FIX_VERSION);
+  const cap = x => (!x?.grade ? x
+    : before ? { ...x, grade: null, label: null, reasons: [STAKE_NOTE, ...(x.reasons || [])], failed: ['stale', ...(x.failed || [])] }
+      : x.grade === 'A' ? { ...x, grade: 'B', label: o.grades.B.label, whyNotA: [STALE_NOTE, ...(x.whyNotA || [])] } : x);
   const categories = {};
   for (const [cat, c] of Object.entries(tr.categories || {})) categories[cat] = cap(c);
-  return { ...cap(tr), categories, staleRules: true };
+  const top = cap(tr);
+  return { ...top, tailable: !!top.grade, categories, staleRules: true };
 }
 
 // The grade and edge that apply to a trade in `category`: the category's own
