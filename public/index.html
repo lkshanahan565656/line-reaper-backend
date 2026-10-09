@@ -3946,13 +3946,14 @@ function tailSignalsHTML() {
     const left = exit ? `<b style="color:#f87171">EXIT</b><div class="tail-stat"><div class="k">THEY SOLD</div></div>`
       : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${routed && v ? escAttr(v.name) : ''}</div>`
       : routed && !v ? `<b style="color:#64748b">WATCH</b><div style="font-size:10px;color:#94a3b8;line-height:1.3">no venue yet</div>`
-      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
+      : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v && !s.blocked ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">⚠ ${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
+      + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (s.topUp ? `<span class="tail-tag" title="This wallet already bought this outcome; the units only top you up to the new size (${s.target ?? '—'}u in total)">TOP-UP</span>` : '')
       + (s.via === 'stream' ? `<span class="tail-tag cons" title="Caught from Polymarket's live trade feed${s.lagMs != null ? `, ${Math.max(1, Math.round(s.lagMs / 1000))}s after the fill` : ''}">⚡ LIVE${s.lagMs != null && s.lagMs < 60e3 ? ` ${Math.max(1, Math.round(s.lagMs / 1000))}S` : ''}</span>` : '');
     return `<div class="tail-card ${exit ? 'exit' : sized ? 'sized' : 'muted'}">

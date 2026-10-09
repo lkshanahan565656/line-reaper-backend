@@ -65,6 +65,10 @@
 //         market's feeSchedule (sports 0.05, most others none)
 //   units sizeAt(q, c, f) at OUR price, not theirs
 //   c more than 3¢ above p, or Kelly ≤ 0 → 0u: the price ran, don't chase.
+//   Bought after the game started (Gamma gameStartTime), or at 95¢+ → 0u at
+//   every venue (`blocked`): live prices move faster than an alert, and a
+//   95¢ favourite has 5¢ to win and 95 to lose. TAIL_SIZE_IN_PLAY=1 and
+//   TAIL_MAX_ENTRY_PRICE change these.
 //   A wallet buying more of what it already bought tops the tail up to the new
 //   size; it isn't a second full-size bet.
 //
@@ -101,6 +105,8 @@ const DEFAULTS = {
   minCloseMs: 15 * 60e3,         // skip markets resolving sooner than this
   maxTradeAgeMs: 60 * 60e3,      // older trades are history, not signals
   chaseMax: 0.03,                // current price more than this above their fill → 0u
+  maxEntryPrice: 0.95,           // buys at this or more (theirs or ours) → 0u: a few cents to win, everything to lose (TAIL_MAX_ENTRY_PRICE)
+  sizeInPlay: 0,                 // 1: also size bets placed after the game started (TAIL_SIZE_IN_PLAY); live prices move faster than a follow
   kellyFraction: 0.25,
   bankrollUnits: 100,            // 1 unit = 1% of bankroll
   maxProb: 0.99,
@@ -152,7 +158,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv']);
+const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -330,8 +336,15 @@ function classify(input) {
     const cat = scoreText(s);
     if (cat) return cat;
   }
+  // no keyword: Polymarket's game markets still have a shape. "Will Croatia
+  // win on 2026-10-09?", "... end in a draw?", "Spread: Iceland (-1.5)",
+  // "Croatia vs. Iceland: O/U 2.5", "Game 2 Winner", and game slugs like
+  // "bun-dor-wer-2026-10-09" (league-team-team-date)
+  if (SPORTS_TITLE_RE.test(sources[1]) || SPORTS_SLUG_RE.test(sources[2])) return 'sports';
   return 'other';
 }
+const SPORTS_TITLE_RE = /\bwin on \d{4}-\d{2}-\d{2}\b|\bend in a draw\b|^spread:|\bo\/u \d|\b(?:game|map) \d+ winner\b|\bboth teams to score\b/i;
+const SPORTS_SLUG_RE = /(?:^|\s)[a-z0-9]{2,6}-[a-z0-9]{2,6}-[a-z0-9]{2,6}-\d{4}-\d{2}-\d{2}(?:-|\s|$)/i;
 
 // ── parsing: data API ──
 // Dollars into a position, fees included (v2), or null when the row doesn't say.
@@ -1119,6 +1132,11 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
 
   const live = liveAsk(market, book, trade, { now, opts: o });
   const p = trade.price, c = live.price;
+  // bought after the game started (in-play), or at a price with little left
+  // to win: not a tail at any venue (blocked), whatever the edge says
+  const started = toMs(market?.gameStartTime);
+  const inPlay = started != null && (trade.at ?? now) >= started;
+  const blocked = inPlay && !o.sizeInPlay ? 'in-play' : p >= o.maxEntryPrice - EPS ? 'near-certain' : null;
   const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
   const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const wallets = [...new Set([trader.wallet, ...(consensus || []).map(lower).filter(Boolean)])];
@@ -1127,7 +1145,9 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   const sized = sizeAt({ q, price: c, feePerContract: fee ?? 0, grade: tier.grade, consensus: wallets.length, opts: o });
   let units = 0, reason = null, target = 0;
   const kelly = c == null ? null : sized.kelly;
-  if (c == null) reason = 'no live price: check it before following';
+  if (blocked === 'in-play') reason = 'in-play bet: live prices move faster than anyone can follow';
+  else if (blocked || (c ?? 0) >= o.maxEntryPrice - EPS) reason = `at ${Math.round(o.maxEntryPrice * 100)}¢+ there's little to win and everything to lose`;
+  else if (c == null) reason = 'no live price: check it before following';
   else if (c - p > o.chaseMax + EPS || !(kelly > EPS)) reason = "price ran, don't chase";
   else {
     units = target = sized.units;
@@ -1141,6 +1161,7 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   return {
     signal: {
       ...base, type: 'entry', currentPrice: c, priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
+      inPlay, gameStartTime: started == null ? null : iso(started), blocked,
       q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
       kelly: round(kelly, 4), units, target, cap: sized.cap,
       parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0, priorUnits: before,
