@@ -2,11 +2,16 @@
 // Big money moving on the exchanges, as it happens.
 //
 // Kalshi trades are anonymous, so Kalshi gives FLOW: which side the big orders
-// are hitting, not who placed them. Each trade row is one fill: `count`
-// contracts, the YES and NO prices (integer cents in older responses,
-// "0.5600" `_dollars` strings in newer ones; the dollar field wins) and
-// `taker_side`, the side the aggressive order bought. The money behind a fill
-// is what the taker paid:
+// are hitting, not who placed them. Each trade row is one fill: `count_fp`
+// contracts ("100.00"; the older integer `count` when that's all there is),
+// the YES and NO prices (integer cents in older responses, "0.5600"
+// `_dollars` strings in newer ones; the dollar field wins) and the side the
+// aggressive order bought: `taker_side` (deprecated, still sent) or the newer
+// `taker_outcome_side` + `taker_book_side` (the outcome the taker's order was
+// for, and bid = it bought that outcome, ask = it sold it, which is buying the
+// other one). `is_block_trade` marks a negotiated block, not an order hitting
+// the book: those are flagged and never summed into a sweep. The money behind
+// a fill is what the taker paid:
 //
 //   notional = count × price of the taker side          (dollars)
 //
@@ -18,8 +23,10 @@
 // WHALE_MIN_USD ($5,000) or more is a whale event. Polls overlap a little so
 // late trades aren't missed, and trade_id keeps a fill from counting twice.
 //
-// Polymarket trades settle on-chain, so every big trade has a wallet. Fills of
-// one order share a transaction hash and are summed the same way. Each whale
+// Polymarket trades settle on-chain, so every big trade has a wallet. They're
+// read from the v2 data API (`{ data, pagination }`, snake_case fields,
+// cursor paging; v1 field names are still understood). Fills of one order
+// share a transaction hash and are summed the same way. Each whale
 // is tagged with the wallet's grade from a lookup the caller passes in
 // (tail.js scores wallets): "graded whale" when the wallet is a graded sharp,
 // "unknown whale" otherwise.
@@ -35,7 +42,7 @@
 // (seen trade ids, recent prints, the whale feed) so a cron can drive it.
 
 const KALSHI_TRADES_URL = 'https://api.elections.kalshi.com/trade-api/v2/markets/trades';
-const POLYMARKET_TRADES_URL = 'https://data-api.polymarket.com/trades';
+const POLYMARKET_TRADES_URL = 'https://data-api.polymarket.com/v2/trades';
 const HOUR = 3600e3;
 const TIMEOUT = 10000;
 const EPS = 1e-6;   // $5,000.00 computed as 4999.9999999 is still a whale
@@ -127,14 +134,27 @@ function kalshiMeta(ticker, info = null) {
   return { title: m?.title || ticker, eventTicker, url: m?.url || `https://kalshi.com/markets/${eventTicker.toLowerCase()}` };
 }
 
+// The side the taker's money backs. The old field wins when both are sent
+// (its meaning is settled); selling an outcome is buying the other one.
+const YES_NO = new Set(['yes', 'no']);
+function kalshiTakerSide(t) {
+  const old = lower(t.taker_side ?? t.takerSide);
+  if (YES_NO.has(old)) return old;
+  const outcome = lower(t.taker_outcome_side ?? t.takerOutcomeSide);
+  if (!YES_NO.has(outcome)) return null;
+  const book = lower(t.taker_book_side ?? t.takerBookSide);
+  return book === 'ask' || book === 'sell' ? (outcome === 'yes' ? 'no' : 'yes') : outcome;
+}
+const truthy = v => v === true || /^(true|1|yes)$/i.test(String(v ?? ''));
+
 // One row per fill, deduped by trade_id. → { id, ticker, side, price (taker
-// side), yesPrice, contracts, notional, at (ms), time (as sent, for grouping) }
+// side), yesPrice, contracts, notional, block, at (ms), time (as sent, for grouping) }
 function parseKalshiTrades(payload) {
   const out = [], ids = new Set();
   for (const t of rowsOf(payload, ['trades', 'data'])) {
     if (!t || typeof t !== 'object') continue;
-    const side = lower(t.taker_side ?? t.takerSide);
-    if (side !== 'yes' && side !== 'no') continue;
+    const side = kalshiTakerSide(t);
+    if (!side) continue;
     let yes = kalshiPrice(t, 'yes_price'), no = kalshiPrice(t, 'no_price');
     if (yes == null && no != null) yes = 1 - no;
     if (no == null && yes != null) no = 1 - yes;
@@ -149,7 +169,7 @@ function parseKalshiTrades(payload) {
     ids.add(id);
     out.push({
       id, ticker: String(ticker), side, price: round(price, 6), yesPrice: round(yes, 6), contracts,
-      notional: contracts * price, at, time: time == null ? null : String(time),
+      notional: contracts * price, block: truthy(t.is_block_trade ?? t.isBlockTrade), at, time: time == null ? null : String(time),
     });
   }
   return out;
@@ -157,10 +177,10 @@ function parseKalshiTrades(payload) {
 
 // Fills of one sweep share ticker, taker side and created_time to the
 // microsecond. A time with no fraction of a second (or no time) is too coarse
-// to group on, so that fill stands alone.
+// to group on, so that fill stands alone, and so does a block trade.
 const SUB_SECOND = /\.\d*[1-9]/;
 const kalshiPrintKey = (f, groupFills = true) =>
-  (groupFills && f.time != null && SUB_SECOND.test(f.time) ? `kalshi|${f.ticker}|${f.side}|${f.time}` : `kalshi|${f.ticker}|${f.side}|id:${f.id}`);
+  (groupFills && !f.block && f.time != null && SUB_SECOND.test(f.time) ? `kalshi|${f.ticker}|${f.side}|${f.time}` : `kalshi|${f.ticker}|${f.side}|id:${f.id}`);
 
 // ids: false skips copying the trade ids (the watcher keeps them only for whales)
 function kalshiPrintOf(key, fills, { ids = true } = {}) {
@@ -171,7 +191,7 @@ function kalshiPrintOf(key, fills, { ids = true } = {}) {
   const ats = fills.map(f => f.at).filter(a => a != null);
   return {
     key, exchange: 'kalshi', market: f0.ticker, ticker: f0.ticker, side: f0.side, dir: f0.side,
-    contracts, notional, price, yesPrice: up ? price : 1 - price,
+    contracts, notional, price, yesPrice: up ? price : 1 - price, block: fills.some(f => f.block),
     // a YES sweep walks the price up, a NO sweep walks it down
     yesStart: up ? Math.min(...ys) : Math.max(...ys), yesEnd: up ? Math.max(...ys) : Math.min(...ys),
     at: ats.length ? Math.min(...ats) : null, nFills: fills.length, ...(ids ? { tradeIds: fills.map(f => f.id) } : {}),
@@ -195,7 +215,7 @@ function kalshiWhaleEvent(print, { kalshiInfo = null } = {}) {
     id: print.key, exchange: 'kalshi', ticker: print.ticker, eventTicker: meta.eventTicker, title: meta.title,
     side: print.side, price: round(print.price, 4), yesPrice: round(print.yesPrice, 4),
     contracts: round(print.contracts, 2), notional: r2(print.notional), fills: print.nFills ?? print.tradeIds?.length ?? 1, tradeIds: [...(print.tradeIds || [])],
-    at: iso(print.at), url: meta.url,
+    block: !!print.block, ...(print.block ? { tag: 'block trade' } : {}), at: iso(print.at), url: meta.url,
   };
 }
 
@@ -207,7 +227,7 @@ function kalshiWhales(fills, { minUsd = DEFAULTS.minUsd, groupFills = DEFAULTS.g
 
 // ── Polymarket ──
 function outcomeIndexOf(r) {
-  const i = num(r.outcomeIndex);
+  const i = num(r.outcome_index ?? r.outcomeIndex);
   if (i === 0 || i === 1) return i;
   const label = lower(r.outcome);
   return label === 'yes' ? 0 : label === 'no' ? 1 : i;
@@ -215,18 +235,24 @@ function outcomeIndexOf(r) {
 
 // Data-API trades → one row per order (fills with the same transaction, token,
 // wallet and side are summed, price averaged). `dir` is 'yes' when the money
-// backs the first outcome, `yesPrice` is the first outcome's price.
+// backs the first outcome, `yesPrice` is the first outcome's price. v2 rows
+// are snake_case (proxy_wallet, token_id, condition_id, event_slug,
+// outcome_index, transaction_hash); v1 camelCase still parses.
+const first = (...vs) => vs.find(v => v != null && v !== '') ?? null;
 function parsePolymarketTrades(payload) {
   const byKey = new Map();
   for (const r of rowsOf(payload, ['data', 'trades'])) {
     if (!r || typeof r !== 'object') continue;
-    const wallet = lower(r.proxyWallet ?? r.wallet ?? r.user);
+    const wallet = lower(first(r.proxy_wallet, r.proxyWallet, r.wallet, r.user));
     const side = String(r.side || '').trim().toUpperCase();
     const size = num(r.size), price = num(r.price);
-    const asset = r.asset != null && r.asset !== '' ? String(r.asset) : null;
+    const token = first(r.token_id, r.asset, r.tokenId);
+    const asset = token == null ? null : String(token);
     if (!wallet || !asset || (side !== 'BUY' && side !== 'SELL') || !(size > 0) || !(price > 0 && price < 1)) continue;
     const at = toMs(r.timestamp ?? r.at);
-    const txHash = r.transactionHash || r.txHash || null;
+    const txHash = first(r.transaction_hash, r.transactionHash, r.txHash);
+    const conditionId = first(r.condition_id, r.conditionId);
+    const eventSlug = first(r.event_slug, r.eventSlug) || '';
     const key = `polymarket|${txHash ? `${txHash}:${asset}:${wallet}:${side}` : `${wallet}:${asset}:${at}:${side}:${size}:${price}`}`;
     const prev = byKey.get(key);
     if (prev) {
@@ -238,10 +264,10 @@ function parsePolymarketTrades(payload) {
     }
     const idx = outcomeIndexOf(r);
     byKey.set(key, {
-      key, exchange: 'polymarket', market: r.conditionId || asset, wallet, name: r.name || r.pseudonym || null,
-      side, asset, conditionId: r.conditionId || null, outcome: r.outcome ?? null, outcomeIndex: idx,
+      key, exchange: 'polymarket', market: conditionId || asset, wallet, name: r.name || r.pseudonym || null,
+      side, asset, conditionId, outcome: r.outcome ?? null, outcomeIndex: idx,
       price, contracts: size, notional: size * price, at, fills: 1,
-      title: r.title || '', slug: r.slug || '', eventSlug: r.eventSlug || '', txHash,
+      title: r.title || '', slug: r.slug || '', eventSlug, txHash,
     });
   }
   return [...byKey.values()].map(t => {
@@ -366,23 +392,28 @@ async function fetchKalshiTrades(http, { sinceMs = null, ticker = null, limit = 
   return { trades: parseKalshiTrades(raw), pages, truncated: !!cursor || errors.length > 0, errors };
 }
 
-// Recent large taker trades, newest first; offset paging up to maxPages.
-// → { trades (parsed, fills merged), pages, errors }
+// Recent large taker trades, newest first, from /v2/trades. filter_type
+// defaults to TOKENS there, so CASH is always sent for a dollar filter. Pages
+// follow pagination.next_cursor up to maxPages. → { trades (parsed, fills
+// merged), pages, truncated, errors }
+const polymarketTradeParams = (limit, minCash) => ({ limit, taker_only: true, filter_type: 'CASH', filter_amount: minCash });
 async function fetchPolymarketTrades(http, { limit = DEFAULTS.polymarketLimit, minCash = DEFAULTS.polymarketMinCash, maxPages = DEFAULTS.polymarketMaxPages } = {}) {
   const raw = [], errors = [];
-  let pages = 0;
+  let pages = 0, cursor = null;
   try {
     while (pages < maxPages) {
-      const params = { limit, takerOnly: true, filterType: 'CASH', filterAmount: minCash };
-      if (pages) params.offset = pages * limit;
+      const params = polymarketTradeParams(limit, minCash);
+      if (cursor) params.cursor = cursor;
       const res = await http.get(POLYMARKET_TRADES_URL, { params, timeout: TIMEOUT });
       const page = rowsOf(res?.data, ['data', 'trades']);
       raw.push(...page);
       pages++;
-      if (page.length < limit) break;
+      const pg = res?.data?.pagination;
+      cursor = pg && pg.has_more !== false ? pg.next_cursor || null : null;
+      if (!cursor || !page.length) { cursor = null; break; }
     }
   } catch (e) { errors.push({ exchange: 'polymarket', key: `trades page ${pages + 1}`, message: errText(e) }); }
-  return { trades: parsePolymarketTrades(raw), pages, errors };
+  return { trades: parsePolymarketTrades(raw), pages, truncated: !!cursor || errors.length > 0, errors };
 }
 
 // ── watcher ──
@@ -578,8 +609,8 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
 }
 
 module.exports = {
-  DEFAULTS, KALSHI_TRADES_URL, POLYMARKET_TRADES_URL, resolveOptions, optionsFromEnv,
-  parseKalshiTrades, kalshiPrints, kalshiWhaleEvent, kalshiWhales, kalshiEventTicker,
+  DEFAULTS, KALSHI_TRADES_URL, POLYMARKET_TRADES_URL, resolveOptions, optionsFromEnv, polymarketTradeParams,
+  parseKalshiTrades, kalshiTakerSide, kalshiPrints, kalshiWhaleEvent, kalshiWhales, kalshiEventTicker,
   parsePolymarketTrades, gradeInfo, polymarketWhaleEvent, polymarketWhales,
   aggregateFlow, fetchKalshiTrades, fetchPolymarketTrades, createWhaleWatcher, toMs,
 };

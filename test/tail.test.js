@@ -8,23 +8,33 @@ const DAY = 86400e3;
 const W = n => `0x${String(n).padStart(40, '0')}`;
 const near = (a, b, eps = 1e-6, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg || ''} ${a} ≈ ${b}`);
 
-// one resolved position, data-API closed-positions shape (numbers partly as strings)
+// one settled position, data API v2 /v2/positions shape (numbers partly as
+// strings). CLOSED by default; REDEEMABLE / REDEEMABLE_LOST were never claimed,
+// so all their P&L is still unrealized. fee: entry fees, part of what it cost.
 let seq = 0;
-function closed({ wallet = W(1), p = 0.5, stake = 1000, won, title = 'Will Smith win the Ohio Senate election?', eventSlug = 'ohio-senate', cond, idx = 0, at = NOW - DAY } = {}) {
+function closed({ wallet = W(1), p = 0.5, stake = 1000, fee = 0, won, status = 'CLOSED', title = 'Will Smith win the Ohio Senate election?', eventSlug = 'ohio-senate', cond, idx = 0, at = NOW - DAY } = {}) {
   const shares = stake / p;
   cond = cond || `0xcond${++seq}`;
+  const pnl = (won ? shares - stake : -stake) - fee;
+  const claimed = status === 'CLOSED';
   return {
-    proxyWallet: wallet, asset: `${cond}-t${idx}`, conditionId: cond, avgPrice: String(p), totalBought: shares,
-    realizedPnl: won ? shares - stake : -stake, curPrice: won ? 1 : 0, title, slug: `${eventSlug}-m`, eventSlug,
-    outcome: idx ? 'No' : 'Yes', outcomeIndex: idx, endDate: new Date(at).toISOString(), timestamp: Math.floor(at / 1000),
+    proxy_wallet: wallet, token_id: `${cond}-t${idx}`, condition_id: cond, avg_price: String(p), total_size: shares, current_size: claimed ? 0 : shares,
+    entry_cost_usdc: stake, entry_fees_usdc: fee, total_cost_usdc: String(stake + fee),
+    realized_pnl: claimed ? pnl : 0, unrealized_pnl: claimed ? 0 : pnl, total_pnl: pnl, current_price: won ? 1 : 0, status,
+    redeemable: !claimed, title, slug: `${eventSlug}-m`, event_slug: eventSlug, outcome: idx ? 'No' : 'Yes', outcome_index: idx,
+    end_date: new Date(at).toISOString(), first_entry_at: new Date(at - 2 * DAY).toISOString(),
+    last_event_at: claimed ? Math.floor(at / 1000) : new Date(at - 2 * DAY).toISOString(),
   };
 }
 const STATES = ['Ohio', 'Texas', 'Iowa', 'Maine'];
-// 120 bets at 50¢ on 120 races, 80 won: ROI 33%, z 3.65, last bet an hour ago
+// 120 bets at 50¢ on 120 races, 80 won (claimed) and 40 lost (never claimed:
+// REDEEMABLE_LOST): ROI 33%, z 3.65, last claimed a day and an hour ago
 const politicsElite = (wallet = W(1)) => Array.from({ length: 120 }, (_, i) => closed({
-  wallet, won: i % 3 !== 0, title: `Will candidate ${i} win the ${STATES[i % 4]} Senate election?`,
+  wallet, won: i % 3 !== 0, status: i % 3 !== 0 ? 'CLOSED' : 'REDEEMABLE_LOST', title: `Will candidate ${i} win the ${STATES[i % 4]} Senate election?`,
   eventSlug: `senate-race-${i}`, at: NOW - (i % 100) * DAY - 3600e3,
 }));
+// measured closing lines: n bets that beat the close by `clv` (25: enough to count)
+const clvs = (n = 25, clv = 0.05, category = 'politics') => Array.from({ length: n }, (_, i) => ({ asset: `clv-${category}-${i}`, category, risked: 1000, clv }));
 // 60 NBA bets at 50¢, 20 won
 const sportsBad = (wallet = W(1)) => Array.from({ length: 60 }, (_, i) => closed({
   wallet, won: i % 3 === 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-lal-bos-2026-09-${i}`, at: NOW - (i % 50) * DAY - 7200e3,
@@ -58,42 +68,64 @@ test('category classifier: keywords, slugs, tags', () => {
   assert.ok(T.CATEGORIES.includes(T.classify('anything')));
 });
 
-test('parsers are tolerant: wrapped arrays, numbers as strings, missing fields', () => {
+test('parsers are tolerant: v2 snake_case and v1 camelCase, wrapped arrays, numbers as strings, missing fields', () => {
+  const at = Date.parse('2025-10-08T12:00:00Z');
   const rows = T.parseClosedPositions({ data: [
-    { proxyWallet: '0xABC', asset: 7, conditionId: '0xc', avgPrice: '0.25', totalBought: '400', realizedPnl: '300', curPrice: '1', title: 'Bitcoin above 100k?', eventSlug: 'btc', timestamp: '1759924800' },
-    { avgPrice: '0.6', totalBought: 100, curPrice: null, realizedPnl: -60, title: 'Lakers vs. Celtics', timestamp: 1759924800000 },
-    { avgPrice: '0.5', totalBought: 100, curPrice: 0 },          // no realizedPnl: (cur − p) × shares
-    { avgPrice: '0', totalBought: 100, realizedPnl: 5 },         // no price
-    { avgPrice: '0.5', totalBought: 'n/a', realizedPnl: 5 },     // no shares
-    { avgPrice: '0.5', totalBought: 10 },                        // nothing to score
-  ] });
+    { proxy_wallet: '0xABC', token_id: 7, condition_id: '0xc', avg_price: '0.25', total_size: '400', total_cost_usdc: '101', entry_fees_usdc: '1',
+      realized_pnl: '299', total_pnl: '299', current_price: '1', status: 'CLOSED', title: 'Bitcoin above 100k?', event_slug: 'btc',
+      last_event_at: '2025-10-08T12:00:00Z', first_entry_at: 1759500000 },
+    { avgPrice: '0.6', totalBought: 100, curPrice: null, realizedPnl: -60, title: 'Lakers vs. Celtics', timestamp: 1759924800000 },   // v1: closed
+    { avgPrice: '0.5', totalBought: 100, curPrice: 0 },          // no P&L given: (cur − p) × shares
+    { avg_price: '0', total_size: 100, total_pnl: 5 },           // no price
+    { avg_price: '0.5', total_size: 'n/a', total_pnl: 5 },       // no shares, no cost
+    { avg_price: '0.5', total_size: 10 },                        // nothing to score
+    { avg_price: '0.5', total_size: 10, total_pnl: 1, status: 'OPEN' },   // not settled
+    null, 'junk',
+  ], pagination: { limit: 500, offset: 0, has_more: false, next_cursor: null } });
   assert.equal(rows.length, 3);
-  assert.deepEqual({ ...rows[0], at: null }, {
+  assert.deepEqual(rows[0], {
     wallet: '0xabc', conditionId: '0xc', asset: '7', outcome: null, outcomeIndex: null, title: 'Bitcoin above 100k?', slug: '', eventSlug: 'btc',
-    price: 0.25, risked: 100, pnl: 300, won: true, at: null, endAt: null, category: 'crypto', source: 'closed',
+    status: 'CLOSED', price: 0.25, risked: 101, pnl: 299, fees: 1, won: true, at, endAt: null, enteredAt: 1759500000000, activeAt: at,
+    category: 'crypto', source: 'closed',
   });
-  assert.equal(rows[0].at, 1759924800000, 'unix seconds');
   assert.equal(rows[1].at, 1759924800000, 'unix ms');
-  assert.equal(rows[1].won, false, 'no curPrice: won = pnl > 0');
+  assert.equal(rows[1].status, 'CLOSED', 'a v1 closed-positions row');
+  assert.equal(rows[1].risked, 60, 'no cost given: avg price × size');
+  assert.equal(rows[1].won, false, 'no current price: won = pnl > 0');
   assert.equal(rows[1].category, 'sports');
   assert.equal(rows[2].pnl, -50);
   assert.deepEqual(T.parseClosedPositions(null), []);
+  assert.deepEqual(T.parseClosedPositions({ data: null }), []);
   assert.deepEqual(T.parseOpenPositions('garbage'), []);
 
-  const lb = T.parseLeaderboard({ data: [{ rank: '1', wallet: '0xAA', amount: '1234.5', name: 'old' }, { proxyWallet: '0xbb', userName: 'new', pnl: 10, vol: '99', verifiedBadge: true }, { userName: 'no wallet' }] });
-  assert.deepEqual(lb.map(r => [r.wallet, r.name, r.pnl, r.vol, r.rank, r.verified]), [['0xaa', 'old', 1234.5, null, 1, false], ['0xbb', 'new', 10, 99, null, true]]);
+  const open = T.parseOpenPositions({ data: [{ proxy_wallet: '0xAB', token_id: '55', condition_id: '0xo', current_size: '300', avg_price: '0.4', total_size: 300,
+    entry_cost_usdc: 120, entry_fees_usdc: '2.5', current_price: '0.45', current_value: 135, unrealized_pnl: '12.5', realized_pnl: 0, total_pnl: 12.5,
+    status: 'OPEN', end_date: '2026-11-04', event_slug: 'x-race', last_event_at: '2026-10-07T00:00:00Z', first_entry_at: '2026-10-01T00:00:00Z' }] });
+  assert.deepEqual([open[0].asset, open[0].size, open[0].price, open[0].cost, open[0].cashPnl, open[0].totalPnl, open[0].eventSlug, open[0].activeAt],
+    ['55', 300, 0.4, 122.5, 12.5, 12.5, 'x-race', Date.parse('2026-10-07T00:00:00Z')]);
+  assert.deepEqual(T.markOpen(open[0]), { risked: 122.5, pnl: 12.5 }, 'fees are dollars in');
+
+  const lb = T.parseLeaderboard({ data: [
+    { rank: '1', user_id: '0xAA', user_name: 'Oracle', pnl: '1234.5', volume: '99', x_username: 'orc', verified: true, profile_image: 'o.png' },
+    { rank: '2', wallet: '0xBB', amount: '10', name: 'old' },                         // v1 names still read
+    { proxyWallet: '0xcc', userName: 'mid', vol: 5, verifiedBadge: true },
+    { user_name: 'no wallet' },
+  ], pagination: { has_more: false } });
+  assert.deepEqual(lb.map(r => [r.wallet, r.name, r.pnl, r.vol, r.rank, r.verified, r.xUsername]),
+    [['0xaa', 'Oracle', 1234.5, 99, 1, true, 'orc'], ['0xbb', 'old', 10, null, 2, false, null], ['0xcc', 'mid', null, 5, null, true, null]]);
   assert.equal(T.parseLeaderboard([{ proxyWallet: '0xcc', pseudonym: 'Shy-Owl' }])[0].name, 'Shy-Owl');
 });
 
 test('trades: fills of one order merge, timestamps in s or ms, junk dropped, parse is idempotent', () => {
   const raw = [
-    { proxyWallet: '0xA', side: 'buy', asset: 'tok', conditionId: '0xc', size: '1000', price: '0.40', timestamp: 1759924800, transactionHash: '0xt', pseudonym: 'Owl' },
-    { proxyWallet: '0xA', side: 'BUY', asset: 'tok', conditionId: '0xc', size: 500, price: 0.43, timestamp: 1759924800, transactionHash: '0xt' },
-    { proxyWallet: '0xA', side: 'BUY', asset: 'tok', size: 0, price: 0.4, transactionHash: '0xz' },
-    { proxyWallet: '0xA', side: 'BUY', asset: 'tok', size: 10, price: 1.2, transactionHash: '0xy' },
-    { side: 'BUY', asset: 'tok', size: 10, price: 0.5 },
+    { proxy_wallet: '0xA', side: 'buy', token_id: 'tok', condition_id: '0xc', size: '1000', price: '0.40', timestamp: 1759924800, transaction_hash: '0xt', pseudonym: 'Owl',
+      event_slug: 'x-race', outcome: 'Yes', outcome_index: 0, title: 'Will X win?', slug: 'will-x-win', bio: '', profile_image: '' },
+    { proxyWallet: '0xA', side: 'BUY', asset: 'tok', conditionId: '0xc', size: 500, price: 0.43, timestamp: 1759924800, transactionHash: '0xt' },   // v1 fill of the same order
+    { proxy_wallet: '0xA', side: 'BUY', token_id: 'tok', size: 0, price: 0.4, transaction_hash: '0xz' },
+    { proxy_wallet: '0xA', side: 'BUY', token_id: 'tok', size: 10, price: 1.2, transaction_hash: '0xy' },
+    { side: 'BUY', token_id: 'tok', size: 10, price: 0.5 },
   ];
-  const [t, ...rest] = T.parseTrades({ data: raw });
+  const [t, ...rest] = T.parseTrades({ data: raw, pagination: { has_more: false } });
   assert.equal(rest.length, 0);
   assert.equal(t.key, '0xt:tok:0xa');
   assert.equal(t.size, 1500);
@@ -102,6 +134,7 @@ test('trades: fills of one order merge, timestamps in s or ms, junk dropped, par
   assert.equal(t.at, 1759924800000);
   assert.equal(t.side, 'BUY');
   assert.equal(t.name, 'Owl');
+  assert.deepEqual([t.conditionId, t.eventSlug, t.outcomeIndex, t.txHash], ['0xc', 'x-race', 0, '0xt']);
   assert.deepEqual(T.parseTrades([t]), [t], 'parsed trades parse to themselves');
 });
 
@@ -159,8 +192,8 @@ test('luck test and shrunk edge: exact numbers', () => {
 function round2(x) { return Math.round(x * 100) / 100; }
 
 // stats exactly on every A threshold
-const aStats = (o = {}) => ({ n: 100, events: 30, risked: 50000, roi: 0.08, z: 3, concentration: 0.35, twoSided: 0.3, lastAt: NOW - 30 * DAY, recentRoi: -0.0999, ...o });
-const bStats = (o = {}) => ({ n: 50, events: 15, risked: 20000, roi: 0.04, z: 2, concentration: 0.4, twoSided: 0.3, lastAt: NOW - 45 * DAY, recentRoi: -0.5, ...o });
+const aStats = (o = {}) => ({ n: 100, events: 30, risked: 50000, roi: 0.08, z: 3, concentration: 0.35, twoSided: 0.3, lastAt: NOW - 30 * DAY, recentRoi: -0.0999, clvN: 15, clv: 0.02, ...o });
+const bStats = (o = {}) => ({ n: 50, events: 15, risked: 20000, roi: 0.04, z: 2, concentration: 0.4, twoSided: 0.3, lastAt: NOW - 45 * DAY, recentRoi: -0.5, clvN: 15, clv: 0.005, ...o });
 
 test('grade A boundaries: each threshold met exactly passes, a hair past it drops to B', () => {
   const a = T.gradeStats(aStats(), {}, NOW);
@@ -178,6 +211,8 @@ test('grade A boundaries: each threshold met exactly passes, a hair past it drop
     ['concentration', { concentration: 0.350001 }, { concentration: 0.38 }, '38% of profit from one event (max 35%)'],
     ['active', { lastAt: NOW - 30 * DAY - 1 }, { lastAt: NOW - 31 * DAY }, 'inactive 31 days (need a bet in the last 30)'],
     ['recentRoi', { recentRoi: -0.1 }, { recentRoi: -0.25 }, 'last 30 days ROI -25% (must be above -10%)'],
+    ['clv', { clv: 0.0199999 }, { clv: 0.012 }, 'closing-line value +1.2% over 15 bets (need +2%)'],
+    ['clv', { clvN: 14 }, { clvN: 0, clv: null }, 'closing-line value not measured yet'],
   ];
   for (const [code, hair, clear, text] of misses) {
     for (const o of [hair, clear]) {
@@ -198,6 +233,11 @@ test('grade A boundaries: each threshold met exactly passes, a hair past it drop
   assert.equal(T.gradeStats(aStats({ recentRoi: -0.1 + 1e-6 }), {}, NOW).grade, 'A', 'just above -10% is fine');
   assert.equal(T.gradeStats(aStats({ recentRoi: null }), {}, NOW).grade, 'A', 'no recent bets is not a slump');
   assert.equal(T.gradeStats(aStats({ roi: 4000 / 50000 }), {}, NOW).grade, 'A', 'float ROI on the line');
+  // without 15 measured closing lines a wallet is at most B, however good the rest
+  const unmeasured = T.gradeStats(aStats({ clvN: undefined, clv: undefined, roi: 0.4, z: 9 }), {}, NOW);
+  assert.deepEqual([unmeasured.grade, unmeasured.whyNotA], ['B', ['closing-line value not measured yet']]);
+  assert.deepEqual(T.gradeStats(aStats({ clvN: 40, clv: 0.031 }), {}, NOW).grade, 'A');
+  assert.deepEqual(T.gradeStats(aStats({ clv: 0.0199 }), {}, NOW).whyNotA, ['closing-line value +1.99% over 15 bets (need +2%)']);
 });
 
 test('grade B boundaries: met exactly passes, a hair past fails with the reason', () => {
@@ -213,6 +253,7 @@ test('grade B boundaries: met exactly passes, a hair past fails with the reason'
     ['concentration', { concentration: 0.400001 }, { concentration: 0.62 }, '62% of profit from one event (max 40%)'],
     ['active', { lastAt: NOW - 45 * DAY - 1 }, { lastAt: NOW - 52 * DAY }, 'inactive 52 days (need a bet in the last 45)'],
     ['twoSided', { twoSided: 0.300001 }, { twoSided: 0.45 }, 'market maker: held both sides in 45% of markets (max 30%)'],
+    ['clv', { clv: 0.0049999 }, { clv: -0.008, clvN: 22 }, 'closing-line value -0.8% over 22 bets (need +0.5%)'],
   ];
   for (const [code, hair, clear, text] of misses) {
     for (const o of [hair, clear]) {
@@ -227,14 +268,23 @@ test('grade B boundaries: met exactly passes, a hair past fails with the reason'
   assert.equal(T.gradeStats(aStats({ twoSided: 0.31 }), {}, NOW).grade, null, 'market makers are out at every tier');
   assert.deepEqual(T.gradeStats(bStats({ lastAt: null }), {}, NOW).reasons, ['no dated bets']);
   assert.deepEqual(T.gradeStats(bStats({ z: null }), {}, NOW).failed, ['z']);
+  // B needs no closing line, and a bad one only counts once 15 are measured
+  assert.equal(T.gradeStats(bStats({ clvN: 0, clv: null }), {}, NOW).grade, 'B');
+  assert.equal(T.gradeStats(bStats({ clvN: 14, clv: -0.3 }), {}, NOW).grade, 'B');
+  assert.equal(T.gradeStats(bStats({ clvN: 15, clv: -0.3 }), {}, NOW).grade, null);
 });
 
 test('every threshold is an option; env vars map onto them', () => {
   assert.equal(T.gradeStats(aStats(), { grades: { A: { minZ: 3.5 } } }, NOW).grade, 'B');
   assert.equal(T.gradeStats(aStats({ z: 2.5 }), { grades: { A: { minZ: 2.5 } } }, NOW).grade, 'A');
   assert.equal(T.gradeStats(bStats({ twoSided: 0.31 }), { maxTwoSided: 0.35 }, NOW).grade, 'B');
-  const env = { TAIL_A_MIN_Z: '2.5', TAIL_MIN_TRADE: '1000', TAIL_B_MIN_ROI: '5', TAIL_A_MIN_RECENT_ROI: '-15', TAIL_PRIOR_RISK: 'lots', TAIL_MAX_TWO_SIDED: '0.25', TAIL_B_CAP_UNITS: '' };
-  assert.deepEqual(T.optionsFromEnv(env), { grades: { A: { minZ: 2.5, minRecentRoi: -0.15 }, B: { minRoi: 0.05 } }, minTrade: 1000, maxTwoSided: 0.25 });
+  const env = { TAIL_A_MIN_Z: '2.5', TAIL_MIN_TRADE: '1000', TAIL_B_MIN_ROI: '5', TAIL_A_MIN_RECENT_ROI: '-15', TAIL_PRIOR_RISK: 'lots', TAIL_MAX_TWO_SIDED: '0.25', TAIL_B_CAP_UNITS: '',
+    TAIL_CLV_SAMPLE: '40', TAIL_CLV_MIN_N: '20', TAIL_A_MIN_CLV: '3', TAIL_B_MIN_CLV: '0.01' };
+  assert.deepEqual(T.optionsFromEnv(env), {
+    grades: { A: { minZ: 2.5, minRecentRoi: -0.15, minClv: 0.03 }, B: { minRoi: 0.05, minClv: 0.01 } }, minTrade: 1000, maxTwoSided: 0.25, clvSample: 40, clvMinN: 20,
+  });
+  assert.equal(T.resolveOptions({}).clvSample, 25, 'TAIL_CLV_SAMPLE defaults to 25');
+  assert.equal(T.gradeStats(aStats({ clvN: 19 }), { clvMinN: 20 }, NOW).grade, 'B', 'clvMinN (TAIL_CLV_MIN_N)');
   const o = T.resolveOptions(T.optionsFromEnv(env));
   assert.equal(o.grades.A.minZ, 2.5);
   assert.equal(o.grades.A.minN, 100, 'untouched thresholds keep their defaults');
@@ -244,7 +294,7 @@ test('every threshold is an option; env vars map onto them', () => {
 });
 
 test('an elite politics wallet grades A, with stats and a category breakdown', () => {
-  const s = T.scoreWallet({ wallet: W(1).toUpperCase().replace('0X', '0x'), name: 'Oracle', closed: politicsElite() }, { now: NOW });
+  const s = T.scoreWallet({ wallet: W(1).toUpperCase().replace('0X', '0x'), name: 'Oracle', closed: politicsElite(), clv: clvs(25, 0.05) }, { now: NOW });
   assert.equal(s.wallet, W(1), 'wallets are lower-cased');
   assert.equal(s.grade, 'A');
   assert.equal(s.label, 'elite');
@@ -266,9 +316,20 @@ test('an elite politics wallet grades A, with stats and a category breakdown', (
   assert.equal(s.recentN, 50, 'bets from the last 30 days');
   near(s.edge, (40000 / 140000) * 0.5);
   assert.equal(s.url, `https://polymarket.com/profile/${W(1)}`);
+  assert.deepEqual([s.clv, s.clvN, s.clvHitRate], [0.05, 25, 1]);
+  assert.equal(s.clvSamples.length, 25);
   assert.deepEqual(Object.keys(s.categories), ['politics']);
   assert.equal(s.categories.politics.grade, 'A');
   assert.equal(s.categories.politics.n, 120);
+  assert.deepEqual([s.categories.politics.clvN, s.categories.politics.clvScope], [25, 'category']);
+  // the same record with no closing lines measured: B, and why not A
+  const unmeasured = T.scoreWallet({ wallet: W(1), closed: politicsElite() }, { now: NOW });
+  assert.equal(unmeasured.grade, 'B');
+  assert.deepEqual(unmeasured.whyNotA, ['closing-line value not measured yet']);
+  assert.deepEqual(unmeasured.failedA, ['clv']);
+  assert.equal(unmeasured.categories.politics.grade, 'B');
+  assert.equal(unmeasured.clvSamples, undefined);
+  assert.equal(unmeasured.clvN, 0);
 });
 
 test('a lucky one-hit wallet: great ROI and z, but one bet is the profit → not tailable', () => {
@@ -320,7 +381,7 @@ test('two-sided evidence comes from closed, open and traded positions; mixed ids
   assert.equal(s.lastAt, new Date(NOW).toISOString(), 'trades count as activity');
 });
 
-test('resolved positions never redeemed still count, so hidden losers show up', () => {
+test('v1 open rows that resolved but were never redeemed still count, so hidden losers show up', () => {
   const wins = [closed({ wallet: W(7), won: true, cond: '0xw1' }), closed({ wallet: W(7), won: true, cond: '0xw2' })];
   const open = [
     { proxyWallet: W(7), conditionId: '0xl1', asset: 'l1', outcomeIndex: 0, size: '2000', avgPrice: '0.5', totalBought: '2000', initialValue: 1000, currentValue: 0, cashPnl: '-1000', realizedPnl: 0, curPrice: 0, redeemable: true, title: 'Will Smith win?', endDate: '2026-10-01' },
@@ -335,7 +396,46 @@ test('resolved positions never redeemed still count, so hidden losers show up', 
   assert.equal(s.openPositions, 1);
   assert.equal(s.openValue, 35);
   const r = T.resolvedFromOpen(T.parseOpenPositions(open));
-  assert.deepEqual(r.map(x => [x.asset, x.risked, x.pnl, x.won]), [['l1', 1000, -1000, false], ['l2', 1000, -1000, false], [wins[0].asset, 1000, 1000, true]]);
+  assert.deepEqual(r.map(x => [x.asset, x.risked, x.pnl, x.won]), [['l1', 1000, -1000, false], ['l2', 1000, -1000, false], [wins[0].token_id, 1000, 1000, true]]);
+});
+
+test('v2: never-claimed losers (REDEEMABLE_LOST) and winners (REDEEMABLE) count; fees are dollars risked', () => {
+  // three claimed winners (+$1,000 each), three losers nobody claimed, one winner nobody claimed
+  const rows = [
+    ...[1, 2, 3].map(i => closed({ wallet: W(30), won: true, cond: `0xcw${i}` })),
+    ...[1, 2, 3].map(i => closed({ wallet: W(30), won: false, status: 'REDEEMABLE_LOST', cond: `0xcl${i}` })),
+    closed({ wallet: W(30), won: true, status: 'REDEEMABLE', cond: '0xcr' }),
+  ];
+  const s = T.scoreWallet({ wallet: W(30), closed: rows }, { now: NOW });
+  assert.deepEqual([s.n, s.pnl, s.risked, s.winRate], [7, 1000, 7000, round4(4 / 7)], 'the hidden losers are in');
+  const claimedOnly = T.scoreWallet({ wallet: W(30), closed: rows.filter(r => r.status === 'CLOSED') }, { now: NOW });
+  assert.deepEqual([claimedOnly.n, claimedOnly.roi], [3, 1], 'what a closed-only read would have claimed');
+  const parsed = T.parseClosedPositions(rows, { now: NOW });
+  assert.deepEqual(parsed.map(p => p.source), ['closed', 'closed', 'closed', 'lost', 'lost', 'lost', 'redeemable']);
+  assert.deepEqual(parsed.map(p => p.won), [true, true, true, false, false, false, true]);
+  // with no total P&L, an unclaimed loser is worth $0 a share (its realized P&L is 0: it never sold), an unclaimed winner $1
+  const strip = r => { const x = { ...r }; delete x.total_pnl; delete x.unrealized_pnl; return x; };
+  assert.equal(T.parseClosedPositions([strip(rows[3])])[0].pnl, -1000, 'not break-even');
+  assert.equal(T.parseClosedPositions([strip(rows[6])])[0].pnl, 1000);
+  // a token listed twice (under two statuses, or on two pages while the list moved) counts once
+  assert.equal(T.scoreWallet({ wallet: W(30), closed: [...rows, { ...rows[0] }, { ...rows[3], status: 'CLOSED' }] }, { now: NOW }).n, 7);
+
+  // dollars risked: total_cost_usdc (fees in), else entry cost + entry fees, else avg price × size
+  const feeRow = closed({ wallet: W(30), won: true, stake: 1000, fee: 12.5, cond: '0xfee' });
+  const [withFee] = T.parseClosedPositions([feeRow]);
+  assert.deepEqual([withFee.risked, withFee.pnl, withFee.fees], [1012.5, 987.5, 12.5]);
+  const noTotal = { ...feeRow };
+  delete noTotal.total_cost_usdc;
+  assert.equal(T.parseClosedPositions([noTotal])[0].risked, 1012.5);
+  delete noTotal.entry_cost_usdc;
+  assert.equal(T.parseClosedPositions([noTotal])[0].risked, 1000, 'avg price × size');
+  const fs = T.scoreWallet({ wallet: W(30), closed: [feeRow] }, { now: NOW });
+  assert.equal(fs.roi, round4(987.5 / 1012.5), 'ROI after fees');
+
+  // an unclaimed loser is dated by its market's end, unless that end is still to come (it resolved early)
+  const early = { ...closed({ wallet: W(30), won: false, status: 'REDEEMABLE_LOST', at: NOW + 30 * DAY }), first_entry_at: new Date(NOW - 5 * DAY).toISOString() };
+  const [e] = T.parseClosedPositions([early], { now: NOW });
+  assert.deepEqual([e.at, e.endAt, e.activeAt], [null, NOW + 30 * DAY, NOW - 5 * DAY], 'its own move was the entry');
 });
 
 test('recent form is the last 30 days only', () => {
@@ -350,7 +450,7 @@ test('recent form is the last 30 days only', () => {
 });
 
 test('elite in politics, bad in sports: graded per category, sports trades are not tailed', () => {
-  const s = T.scoreWallet({ wallet: W(1), closed: [...politicsElite(), ...sportsBad()] }, { now: NOW });
+  const s = T.scoreWallet({ wallet: W(1), closed: [...politicsElite(), ...sportsBad()], clv: clvs(25, 0.05) }, { now: NOW });
   assert.equal(s.categories.politics.grade, 'A');
   assert.equal(s.categories.sports.grade, null);
   assert.equal(s.categories.sports.pnl, -20000);
@@ -503,15 +603,21 @@ function recorder(handler) {
   const calls = [];
   return { calls, async get(url, opts = {}) { calls.push({ url, ...opts }); return { data: await handler(url, opts.params || {}) }; } };
 }
+// a v2 list page: { data, pagination } with an opaque cursor (here the offset)
+function page(rows, p) {
+  const off = p.cursor ? Number(String(p.cursor).slice(1)) : 0, lim = Number(p.limit || 100);
+  const more = off + lim < rows.length;
+  return { data: rows.slice(off, off + lim), pagination: { limit: lim, offset: off, has_more: more, next_cursor: more ? `c${off + lim}` : null } };
+}
 
-test('leaderboard: every category × period, deduped by wallet, one failure does not sink the rest', async () => {
+test('leaderboard (v2): every category × period, lowercase params, deduped by wallet, one failure does not sink the rest', async () => {
   const http = recorder((url, p) => {
-    if (p.category === 'SPORTS' && p.timePeriod === 'ALL') throw new Error('429');
-    if (p.category === 'POLITICS') return [{ rank: 1, proxyWallet: '0xAA', userName: 'Oracle', pnl: p.timePeriod === 'ALL' ? 90000 : 5000, vol: 1e6 }];
-    return { data: [{ rank: 3, wallet: '0xaa', amount: 1000 }, { rank: 4, wallet: '0xbb', name: 'Jock', amount: 700 }] };
+    if (p.category === 'sports' && p.time_period === 'all') throw new Error('429');
+    if (p.category === 'politics') return { data: [{ rank: 1, user_id: '0xAA', user_name: 'Oracle', pnl: p.time_period === 'all' ? 90000 : 5000, volume: 1e6 }], pagination: { limit: 50, offset: 0, has_more: false, next_cursor: null } };
+    return { data: [{ rank: 3, user_id: '0xaa', pnl: 1000 }, { rank: 4, user_id: '0xbb', user_name: 'Jock', pnl: 700 }] };
   });
   const { rows, errors } = await T.fetchLeaderboard(http, { categories: ['POLITICS', 'SPORTS'], periods: ['WEEK', 'ALL'] });
-  assert.deepEqual(http.calls[0], { url: 'https://data-api.polymarket.com/v1/leaderboard', params: { category: 'POLITICS', timePeriod: 'WEEK', orderBy: 'PNL', limit: 50 }, timeout: 10000 });
+  assert.deepEqual(http.calls[0], { url: 'https://data-api.polymarket.com/v2/leaderboard', params: { category: 'politics', time_period: 'week', sort_by: 'PNL', limit: 50 }, timeout: 10000 });
   assert.equal(http.calls.length, 4);
   assert.deepEqual(errors, [{ key: 'SPORTS:ALL', message: '429' }]);
   assert.equal(rows.length, 2);
@@ -523,35 +629,57 @@ test('leaderboard: every category × period, deduped by wallet, one failure does
   http.calls.length = 0;
   await T.fetchLeaderboard(http);
   assert.equal(http.calls.length, T.LEADERBOARD_CATEGORIES.length * T.LEADERBOARD_PERIODS.length);
+  assert.ok(http.calls.some(c => c.params.category === 'esports'), 'esports has its own board');
+  assert.ok(http.calls.every(c => c.url.includes('/v2/')), 'v1 is retired');
 });
 
-test('closed positions page until a short page or the cap; open positions, trades, markets', async () => {
-  const all = Array.from({ length: 5 }, (_, i) => closed({ wallet: W(1), won: true, cond: `0xp${i}` }));
+test('v2 lists follow next_cursor to the end or the page cap (truncated); settled = CLOSED + REDEEMABLE + REDEEMABLE_LOST', async () => {
+  const all = [
+    ...Array.from({ length: 5 }, (_, i) => closed({ wallet: W(1), won: true, cond: `0xp${i}`, at: NOW - i * DAY })),
+    closed({ wallet: W(1), won: true, status: 'REDEEMABLE', cond: '0xpr' }),
+    closed({ wallet: W(1), won: false, status: 'REDEEMABLE_LOST', cond: '0xpl' }),
+  ];
   const http = recorder((url, p) => {
-    if (url.endsWith('/closed-positions')) return all.slice(p.offset, p.offset + p.limit);
-    if (url.endsWith('/positions')) return [{ conditionId: '0xo', asset: 'o', size: 1 }];
-    if (url.endsWith('/trades')) return [{ proxyWallet: '0xA', side: 'BUY', asset: 't', size: 2000, price: 0.5, timestamp: NOW / 1000, transactionHash: '0x9' }];
+    if (url.endsWith('/v2/positions')) {
+      if (p.status === 'OPEN') return page([{ condition_id: '0xo', token_id: 'o', current_size: 1, avg_price: 0.5 }], p);
+      // the API's rows may leave out their status: the list they came from says it
+      return page(all.filter(r => r.status === p.status).map(({ status, ...r }) => r), p);
+    }
+    if (url.endsWith('/v2/trades')) return { data: [{ proxy_wallet: '0xA', side: 'BUY', token_id: 't', size: 2000, price: 0.5, timestamp: NOW / 1000, transaction_hash: '0x9' }], pagination: { has_more: false } };
     if (url.endsWith('/markets')) return [{ conditionId: 'other' }, { conditionId: p.condition_ids, question: 'Q', outcomes: '["Yes","No"]' }];
     throw new Error(url);
   });
-  const full = await T.fetchClosedPositions(http, W(1), { pageSize: 2, maxPages: 5 });
-  assert.equal(full.rows.length, 5);
+  const full = await T.fetchSettledPositions(http, W(1), { pageSize: 2, maxPages: 5 });
+  assert.equal(full.rows.length, 7);
   assert.equal(full.truncated, false);
-  assert.deepEqual(http.calls.map(c => c.params.offset), [0, 2, 4]);
-  assert.deepEqual(http.calls[0].params, { user: W(1), limit: 2, offset: 0, sortBy: 'TIMESTAMP', sortDirection: 'DESC' });
-  assert.equal(http.calls[0].url, 'https://data-api.polymarket.com/closed-positions');
-  const capped = await T.fetchClosedPositions(http, W(1), { pageSize: 2, maxPages: 2 });
-  assert.equal(capped.rows.length, 4);
-  assert.equal(capped.truncated, true);
+  assert.deepEqual(full.counts, { CLOSED: 5, REDEEMABLE: 1, REDEEMABLE_LOST: 1 });
+  assert.deepEqual(full.rows.map(r => r.status), ['CLOSED', 'CLOSED', 'CLOSED', 'CLOSED', 'CLOSED', 'REDEEMABLE', 'REDEEMABLE_LOST']);
+  assert.deepEqual(http.calls.map(c => [c.params.status, c.params.cursor]),
+    [['CLOSED', undefined], ['CLOSED', 'c2'], ['CLOSED', 'c4'], ['REDEEMABLE', undefined], ['REDEEMABLE_LOST', undefined]]);
+  assert.deepEqual(http.calls[0], {
+    url: 'https://data-api.polymarket.com/v2/positions', timeout: 10000,
+    params: { user: W(1), status: 'CLOSED', limit: 2, sort_by: 'TIMESTAMP', sort_direction: 'DESC', include_archived: true },
+  }, 'newest first: CLOSED would otherwise sort by realized P&L and keep only the winners');
+  assert.equal(T.scoreWallet({ wallet: W(1), closed: full.rows }, { now: NOW }).n, 7);
 
   http.calls.length = 0;
-  assert.equal((await T.fetchOpenPositions(http, W(1))).length, 1);
-  assert.deepEqual(http.calls[0], { url: 'https://data-api.polymarket.com/positions', params: { user: W(1), limit: 500, sizeThreshold: 1 }, timeout: 10000 });
+  const capped = await T.fetchSettledPositions(http, W(1), { pageSize: 2, maxPages: 2 });
+  assert.equal(capped.truncated, true, 'pages were left');
+  assert.equal(capped.counts.CLOSED, 4);
+  assert.equal(http.calls.filter(c => c.params.status === 'CLOSED').length, 2);
+  assert.equal((await T.fetchSettledPositions(http, W(1), { pageSize: 5000 })).rows.length, 7);
+  assert.equal(http.calls.at(-1).params.limit, 1000, 'never more than the API serves');
+
+  http.calls.length = 0;
+  const open = await T.fetchOpenPositions(http, W(1));
+  assert.deepEqual([open.rows.length, open.truncated], [1, false]);
+  assert.deepEqual(http.calls[0].params, { user: W(1), status: 'OPEN', limit: 500, sort_by: 'TIMESTAMP', sort_direction: 'DESC' });
   const big = await T.fetchRecentTrades(http);
   assert.equal(big[0].notional, 1000);
-  assert.deepEqual(http.calls[1].params, { limit: 500, takerOnly: true, filterType: 'CASH', filterAmount: 500 });
+  assert.deepEqual(http.calls[1], { url: 'https://data-api.polymarket.com/v2/trades', params: { limit: 500, taker_only: true, filter_type: 'CASH', filter_amount: 500 }, timeout: 10000 },
+    'CASH always (the default is TOKENS)');
   await T.fetchWalletTrades(http, W(1));
-  assert.deepEqual(http.calls[2].params, { user: W(1), limit: 500, takerOnly: false });
+  assert.deepEqual(http.calls[2].params, { user: W(1), limit: 500, taker_only: false });
   const m = await T.fetchMarket(http, '0xm');
   assert.equal(m.conditionId, '0xm');
   assert.equal((await T.fetchMarket({ async get() { return { data: [{ conditionId: '0xABC' }] }; } }, '0xabc')).conditionId, '0xABC', 'hex case does not matter');
@@ -559,22 +687,67 @@ test('closed positions page until a short page or the cap; open positions, trade
   assert.deepEqual(http.calls[3], { url: 'https://gamma-api.polymarket.com/markets', params: { condition_ids: '0xm' }, timeout: 10000 });
 });
 
+test('fetchPaged: has_more false or a null cursor ends it, a stuck cursor is truncated, { data: null } is an empty page', async () => {
+  const run = async (pages, maxPages = 5) => {
+    const http = recorder((url, p) => pages[p.cursor || 'start']);
+    return { ...(await T.fetchPaged(http, 'https://data-api.polymarket.com/v2/x', { user: 'u' }, { maxPages })), calls: http.calls.map(c => c.params.cursor ?? null) };
+  };
+  assert.deepEqual(await run({ start: { data: [1, 2], pagination: { has_more: true, next_cursor: 'b' } }, b: { data: [3], pagination: { has_more: false, next_cursor: 'zzz' } } }),
+    { rows: [1, 2, 3], truncated: false, pages: 2, calls: [null, 'b'] });
+  assert.deepEqual(await run({ start: { data: [1], pagination: { has_more: true, next_cursor: 'a' } }, a: { data: [2], pagination: { has_more: true, next_cursor: 'a' } } }),
+    { rows: [1, 2], truncated: true, pages: 2, calls: [null, 'a'] }, 'the same cursor again: stop, and say so');
+  assert.deepEqual(await run({ start: { data: null } }), { rows: [], truncated: false, pages: 1, calls: [null] });
+  assert.deepEqual(await run({ start: { data: [1], pagination: { has_more: true, next_cursor: 'n' } }, n: { data: [], pagination: { has_more: true, next_cursor: 'm' } } }),
+    { rows: [1], truncated: false, pages: 2, calls: [null, 'n'] }, 'an empty page ends it');
+  const capped = await run({ start: { data: [1], pagination: { has_more: true, next_cursor: 'n' } } }, 1);
+  assert.deepEqual([capped.rows, capped.truncated], [[1], true]);
+  await assert.rejects(T.fetchPaged(recorder(() => ({ error: 'rate limited' })), 'u', {}, { what: 'stuff' }), /stuff: unexpected response/);
+});
+
+test('a capped settled list cuts the others to the same stretch of time, so capped winners never sit beside every loser ever', async () => {
+  // six claimed winners 1-6 days ago; losers nobody claimed 2, 5 and 8 days ago
+  const won = [1, 2, 3, 4, 5, 6].map(d => closed({ wallet: W(2), won: true, cond: `0xw${d}`, at: NOW - d * DAY }));
+  const lost = [2, 5, 8].map(d => closed({ wallet: W(2), won: false, status: 'REDEEMABLE_LOST', cond: `0xl${d}`, at: NOW - d * DAY }));
+  const http = recorder((url, p) => page([...won, ...lost].filter(r => r.status === p.status), p));
+  const r = await T.fetchSettledPositions(http, W(2), { pageSize: 2, maxPages: 2 });
+  assert.equal(r.truncated, true);
+  // the closed list reached back to 4 days ago (its last_event_at); unclaimed rows sort by their entry (2 days before)
+  assert.deepEqual(r.counts, { CLOSED: 4, REDEEMABLE: 0, REDEEMABLE_LOST: 1 });
+  assert.deepEqual(r.rows.filter(x => x.status === 'REDEEMABLE_LOST').map(x => x.condition_id), ['0xl2']);
+  const whole = await T.fetchSettledPositions(http, W(2), { pageSize: 10 });
+  assert.deepEqual([whole.truncated, whole.rows.length], [false, 9], 'nothing capped, nothing cut');
+});
+
 // ── engine ──
+// a 5-minute price series over the requested window, at one price
+const flatHistory = (p, price) => {
+  const points = [];
+  for (let t = p.start; t < p.end && points.length < 1000; t += 300) points.push({ t, p: price });
+  return { data: { history: points } };
+};
 function world() {
-  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, fail: new Set() };
+  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
   w.http = recorder((url, p) => {
-    if (url.endsWith('/v1/leaderboard')) return w.leaderboard;
+    if (url.endsWith('/v2/leaderboard')) return page(w.leaderboard, p);
     if (p.user && w.fail.has(p.user)) throw new Error('timeout');
-    if (url.endsWith('/closed-positions')) return (w.closed[p.user] || []).slice(p.offset, p.offset + p.limit);
-    if (url.endsWith('/positions')) return w.open[p.user] || [];
-    if (url.endsWith('/trades')) return p.user ? w.walletTrades[p.user] || [] : w.trades;
+    if (url.endsWith('/v2/positions')) {
+      if (p.status === 'OPEN') return page(w.open[p.user] || [], p);
+      return page((w.closed[p.user] || []).filter(r => (r.status || 'CLOSED') === p.status), p);
+    }
+    if (url.endsWith('/v2/trades')) return page(p.user ? w.walletTrades[p.user] || [] : w.trades, p);
+    if (url.endsWith('/v2/prices-history')) {
+      const h = w.history[p.token_id];
+      if (h instanceof Error) throw h;
+      return typeof h === 'function' ? h(p) : h ?? flatHistory(p, w.closeFor(p.token_id));
+    }
     if (url.endsWith('/markets')) return w.markets[p.condition_ids] ? [w.markets[p.condition_ids]] : [];
     throw new Error(`unexpected ${url}`);
   });
   return w;
 }
-// each wallet's first closed-positions page (its 120 bets come in pages of 50)
-const scoredUsers = http => http.calls.filter(c => c.url.endsWith('/closed-positions') && !c.params.offset).map(c => c.params.user);
+// each wallet's first settled read (its CLOSED list, first page)
+const scoredUsers = http => http.calls.filter(c => c.url.endsWith('/v2/positions') && c.params.status === 'CLOSED' && !c.params.cursor).map(c => c.params.user);
+const historyCalls = http => http.calls.filter(c => c.url.endsWith('/v2/prices-history'));
 const gammaMarket = (o = {}) => ({
   conditionId: '0xm1', question: 'Will X win the Ohio Senate election?', outcomes: '["Yes","No"]', outcomePrices: '["0.415","0.585"]',
   clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.41', bestAsk: '0.42', lastTradePrice: '0.42', endDate: '2026-11-04T00:00:00Z',
@@ -599,7 +772,8 @@ test('scoreBatch is rate-limited: a few wallets per call, never overlapping, sta
   assert.deepEqual(first.wallets, [W(5), W(4)], 'biggest leaderboard PnL first');
   assert.deepEqual(scoredUsers(w.http), [W(5), W(4)], 'only those two wallets were fetched');
   assert.equal(first.pending, 3);
-  assert.equal(w.http.calls.filter(c => c.params.user === W(5)).length, 5, '3 pages of closed + open + trades per wallet');
+  assert.equal(w.http.calls.filter(c => c.params.user === W(5)).length, 5, 'CLOSED, REDEEMABLE, REDEEMABLE_LOST, open and trades per wallet');
+  assert.equal(historyCalls(w.http).length, 2 * 25, 'and 25 closing lines for each of the two (both pass B without them)');
 
   const [a, b] = await Promise.all([eng.scoreBatch(), eng.scoreBatch()]);
   assert.equal(a.scored, 2);
@@ -680,7 +854,7 @@ test('pollTrades: signals, dedup across polls, consensus boost, SELL exits, new 
   assert.equal(eng.signals()[0].wallet, W(2), 'newest first');
   assert.equal(eng.signals({ type: 'exit' }).length, 1);
   assert.equal(eng.signals({ limit: 2 }).length, 2);
-  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 2, 'one lookup per market per 20 s: at NOW and at +2h');
+  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets') && c.params.condition_ids === '0xm1').length, 2, 'one lookup per market per 20 s: at NOW and at +2h');
   const st = eng.state();
   assert.equal(st.signals, 4);
   assert.equal(st.lastPollAt, new Date(t).toISOString());
@@ -704,12 +878,14 @@ test('pollTrades: stale trades count for consensus but signal nothing; graded wa
   const again = await eng.pollTrades();
   assert.deepEqual(again.map(s => [s.wallet, s.isConsensus]), [[W(2), true]], 'W2 found via its own trades, and W1\'s earlier buy backs it');
   const userCalls = w.http.calls.filter(c => c.url.endsWith('/trades') && c.params.user);
-  assert.deepEqual(userCalls.slice(-2).map(c => c.params), [{ user: W(1), limit: 50, takerOnly: false }, { user: W(2), limit: 50, takerOnly: false }], 'round robin');
+  assert.deepEqual(userCalls.slice(-2).map(c => c.params), [{ user: W(1), limit: 50, taker_only: false }, { user: W(2), limit: 50, taker_only: false }], 'round robin');
 });
 
 test('traders() filters by grade and category; scores persist in a store', async () => {
   const w = world();
   w.closed[W(1)] = [...politicsElite(W(1)), ...sportsBad(W(1))];   // A in politics only
+  // Gamma has the games' start times, so their closing lines are measured too
+  for (const r of w.closed[W(1)].filter(x => /Lakers/.test(x.title))) w.markets[r.condition_id] = { conditionId: r.condition_id, question: r.title, gameStartTime: r.end_date };
   w.closed[W(2)] = politicsElite(W(2));                            // A overall
   w.closed[W(3)] = sportsBad(W(3));                                // nothing
   const store = createMemoryStore();
@@ -733,6 +909,112 @@ test('traders() filters by grade and category; scores persist in a store', async
   w.http.calls.length = 0;
   assert.equal((await reborn.scoreBatch()).scored, 0, 'loaded scores are fresh');
   assert.equal(w.http.calls.length, 0);
+
+  // a score from round 1's rules: at most B until it's rescored, and due now
+  const old = { ...(await store.all()).find(d => d.wallet === W(2)) };
+  delete old.rulesVersion;
+  old.categories = { politics: { ...old.categories.politics, grade: 'A' } };
+  const oldStore = createMemoryStore();
+  await oldStore.init();
+  await oldStore.put(old);
+  const later = T.createTailEngine({ http: w.http, store: oldStore, now: () => NOW + 60e3, log: {} });
+  await later.ready();
+  const capped = later.trader(W(2));
+  assert.deepEqual([capped.grade, capped.categories.politics.grade, capped.staleRules], ['B', 'B', true]);
+  assert.match(capped.whyNotA[0], /older rules/);
+  assert.equal((await later.scoreBatch()).scored, 1, 'rescored straight away');
+  assert.equal(later.trader(W(2)).grade, 'A', 'and graded by the current rules');
+  assert.equal(later.trader(W(2)).rulesVersion, T.RULES_VERSION);
+});
+
+test('engine: closing lines only for wallets that pass B without them; one price-history call a token, shared and cached; Gamma looked up once', async () => {
+  const w = world();
+  w.closed[W(1)] = politicsElite(W(1));
+  w.closed[W(2)] = w.closed[W(1)].map(r => ({ ...r, proxy_wallet: W(2) }));   // the same bets as W1 (a copy-trader)
+  w.closed[W(3)] = sportsBad(W(3));                                           // hopeless
+  const store = createMemoryStore();
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, store, now: () => t, log: {} });
+  for (const i of [1, 2, 3]) eng.addCandidate(W(i));
+
+  await eng.scoreBatch(1);
+  const calls = historyCalls(w.http);
+  assert.equal(calls.length, 25, 'TAIL_CLV_SAMPLE: the 25 most recent settled bets');
+  assert.equal(new Set(calls.map(c => c.params.token_id)).size, 25);
+  const newest = T.clvCandidates(T.resolvedPositions(w.closed[W(1)], [], NOW).resolved, 25);
+  assert.deepEqual(calls.map(c => c.params.token_id).sort(), newest.map(p => p.asset).sort());
+  // a politics market with no Gamma record closes at its end date: 5-minute buckets up to it
+  const first = calls[0].params, pos = newest.find(p => p.asset === first.token_id);
+  assert.deepEqual(Object.keys(first).sort(), ['bucket_seconds', 'end', 'limit', 'start', 'token_id']);
+  assert.deepEqual([first.bucket_seconds, first.limit, first.end, first.end - first.start], [300, 1000, Math.ceil(pos.endAt / 1000), 300000]);
+  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 25, 'one Gamma lookup a market (game start, close time)');
+  const a = eng.trader(W(1));
+  assert.deepEqual([a.grade, a.clvN, a.clv, a.clvHitRate], ['A', 25, 0.06, 1], 'closes at 53¢ on 50¢ bets: +6%');
+  assert.equal(a.clvSamples.length, 25);
+
+  await eng.scoreBatch(2);
+  assert.equal(historyCalls(w.http).length, 25, 'W2\'s tokens are W1\'s (cached), and W3 is not worth a request');
+  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 25);
+  assert.deepEqual([eng.trader(W(2)).grade, eng.trader(W(2)).clvN], ['A', 25]);
+  assert.deepEqual([eng.trader(W(3)).grade, eng.trader(W(3)).clvN], [null, 0]);
+  assert.equal(eng.state().clvCached, 25);
+
+  // rescoring later costs nothing more
+  t += 12 * 3600e3;
+  assert.equal((await eng.scoreBatch(3)).scored, 3);
+  assert.equal(historyCalls(w.http).length, 25);
+
+  // a restart starts from the stored closes, not from scratch
+  const reborn = T.createTailEngine({ http: w.http, store, now: () => t + 13 * 3600e3, log: {} });
+  await reborn.ready();
+  assert.equal(reborn.state().clvCached, 25);
+  await reborn.scoreBatch(3);
+  assert.equal(historyCalls(w.http).length, 25);
+  assert.equal(reborn.trader(W(1)).grade, 'A');
+
+  // a failed price read leaves that bet out, isn't remembered, and is tried again next time
+  w.closed[W(4)] = politicsElite(W(4));
+  const flaky = w.closed[W(4)][0].token_id;   // its most recent bet
+  w.history[flaky] = new Error('502');
+  eng.addCandidate(W(4));
+  t += 60e3;
+  await eng.scoreBatch(1);
+  assert.equal(eng.trader(W(4)).clvN, 24);
+  assert.match(eng.state().errors.at(-1).message, /^clv 0x…: 1 of 25 lookups failed \(502\)$/);
+  delete w.history[flaky];
+  t += 12 * 3600e3;
+  const before = historyCalls(w.http).length;
+  await eng.scoreBatch(4);
+  assert.deepEqual(historyCalls(w.http).slice(before).map(c => c.params.token_id), [flaky], 'only the one that failed');
+  assert.equal(eng.trader(W(4)).clvN, 25);
+});
+
+test('engine: a game\'s closing line is its last price before the start Gamma gives, not an in-play one', async () => {
+  const w = world();
+  // 120 NBA bets at 50¢, 80 won; Gamma knows every game's tip-off
+  const rows = Array.from({ length: 120 }, (_, i) => closed({
+    wallet: W(40), won: i % 3 !== 0, title: `Lakers vs. Celtics (game ${i})`, eventSlug: `nba-g-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3,
+  }));
+  w.closed[W(40)] = rows;
+  for (const r of rows) w.markets[r.condition_id] = { conditionId: r.condition_id, question: r.title, gameStartTime: new Date(Date.parse(r.end_date) - 3 * 3600e3).toISOString() };
+  // 48¢ before tip-off, 90¢ once the game is on
+  w.closeFor = null;
+  for (const r of rows) {
+    const tip = Date.parse(r.end_date) - 3 * 3600e3;
+    w.history[r.token_id] = p => ({ data: [{ t: p.start, p: 0.45 }, { t: Math.floor(tip / 1000) - 600, p: 0.48 }, { t: Math.floor(tip / 1000) + 600, p: 0.9 }] });
+  }
+  const eng = T.createTailEngine({ http: w.http, now: () => NOW, log: {} });
+  eng.addCandidate(W(40));
+  await eng.scoreBatch(1);
+  const tr = eng.trader(W(40));
+  assert.equal(tr.clvN, 25);
+  near(tr.clv, -0.04, 1e-9, 'bought at 50¢, closed at 48¢');
+  assert.ok(tr.clvSamples.every(x => x.rule === 'game' && x.close === 0.48));
+  assert.equal(tr.grade, null, 'it keeps paying more than the close: not tailable, whatever its profit');
+  assert.deepEqual(tr.failed, ['clv']);
+  const call = historyCalls(w.http)[0].params;
+  const row = rows.find(r => r.token_id === call.token_id);
+  assert.equal(call.end, Math.ceil((Date.parse(row.end_date) - 3 * 3600e3) / 1000), 'the window ends at tip-off');
 });
 
 // ── review fixes ──
@@ -740,16 +1022,17 @@ test('open positions count at today\'s price: selling the winners and holding th
   // 260 winners sold at 60¢ (+$200 each on $1k at 50¢) are closed; 260 losers still open at 30¢ (−$400 each)
   const wins = Array.from({ length: 260 }, (_, i) => ({
     ...closed({ wallet: W(20), p: 0.5, stake: 1000, won: true, eventSlug: `race-${i}`, at: NOW - (i % 25) * DAY - 3600e3 }),
-    realizedPnl: 400, curPrice: 0.6,
+    realized_pnl: 400, total_pnl: 400, current_price: 0.6,
   }));
+  // v2 open rows (status OPEN)
   const open = Array.from({ length: 260 }, (_, i) => ({
-    proxyWallet: W(20), conditionId: `0xopen${i}`, asset: `open-${i}`, outcomeIndex: 0, outcome: 'Yes', size: 2000, avgPrice: 0.5,
-    totalBought: 2000, initialValue: 1000, currentValue: 600, cashPnl: -400, realizedPnl: 0, curPrice: 0.3, redeemable: false,
-    title: `Will candidate ${i} win in 2028?`, eventSlug: `race-2028-${i}`, endDate: '2028-11-07T00:00:00Z',
+    proxy_wallet: W(20), condition_id: `0xopen${i}`, token_id: `open-${i}`, outcome_index: 0, outcome: 'Yes', current_size: '2000', avg_price: '0.5',
+    total_size: 2000, total_cost_usdc: '1000', current_value: 600, unrealized_pnl: -400, realized_pnl: 0, total_pnl: '-400', current_price: 0.3,
+    status: 'OPEN', redeemable: false, title: `Will candidate ${i} win in 2028?`, event_slug: `race-2028-${i}`, end_date: '2028-11-07T00:00:00Z',
   }));
-  const closedOnly = T.scoreWallet({ wallet: W(20), closed: wins }, { now: NOW });
+  const closedOnly = T.scoreWallet({ wallet: W(20), closed: wins, clv: clvs() }, { now: NOW });
   assert.equal(closedOnly.grade, 'A', 'on the closed book alone it looks elite');
-  const s = T.scoreWallet({ wallet: W(20), closed: wins, open }, { now: NOW });
+  const s = T.scoreWallet({ wallet: W(20), closed: wins, open, clv: clvs() }, { now: NOW });
   assert.equal(s.openN, 260);
   assert.equal(s.openPnl, -104000);
   assert.equal(s.openRisked, 260000);
@@ -784,11 +1067,11 @@ test('forward record: once 30 bets resolve after the wallet was picked, losing m
   const picked = NOW - 20 * DAY;
   const old = Array.from({ length: 120 }, (_, i) => closed({ wallet: W(22), won: i % 3 !== 0, eventSlug: `old-${i}`, at: picked - (i % 90) * DAY - 3600e3 }));
   const after = n => Array.from({ length: n }, (_, i) => closed({ wallet: W(22), p: 0.5, stake: 300, won: i % 3 === 0, eventSlug: `new-${i}`, at: picked + (i % 19) * DAY + 3600e3 }));
-  const few = T.scoreWallet({ wallet: W(22), closed: [...old, ...after(29)], selectedAt: new Date(picked).toISOString() }, { now: NOW });
+  const few = T.scoreWallet({ wallet: W(22), closed: [...old, ...after(29)], selectedAt: new Date(picked).toISOString(), clv: clvs() }, { now: NOW });
   assert.equal(few.forwardN, 29);
   assert.ok(few.forwardRoi < 0);
   assert.equal(few.grade, 'A', 'too few forward bets to judge');
-  const s = T.scoreWallet({ wallet: W(22), closed: [...old, ...after(30)], selectedAt: picked }, { now: NOW });
+  const s = T.scoreWallet({ wallet: W(22), closed: [...old, ...after(30)], selectedAt: picked, clv: clvs() }, { now: NOW });
   assert.equal(s.forwardN, 30);
   assert.equal(s.grade, null);
   assert.deepEqual(s.failed, ['forward']);
@@ -835,27 +1118,6 @@ test('env units: percent keys read 1 as 1%, the chase limit 1 as 1¢, factors 1 
   assert.deepEqual(T.optionsFromEnv({ TAIL_CHASE_MAX: '1', TAIL_B_MIN_ROI: '1', TAIL_A_MIN_RECENT_ROI: '-1', TAIL_REGRESSION: '1', TAIL_KELLY_FRACTION: '25', TAIL_A_MAX_CONCENTRATION: '0.5' }),
     { grades: { A: { minRecentRoi: -0.01, maxConcentration: 0.5 }, B: { minRoi: 0.01 } }, chaseMax: 0.01, regression: 1, kellyFraction: 0.25 });
   assert.equal(T.optionsFromEnv({ TAIL_CHASE_MAX: '0.03' }).chaseMax, 0.03);
-});
-
-test('closed positions: asks for 50 a page and pages by what came back, so a clamped page size is not the end', async () => {
-  const all = Array.from({ length: 140 }, (_, i) => closed({ wallet: W(25), won: true, cond: `0xcl${i}` }));
-  const http = recorder((url, p) => all.slice(p.offset, p.offset + Math.min(p.limit, 50)));   // the API's own cap
-  const r = await T.fetchClosedPositions(http, W(25), { pageSize: 500, maxPages: 10 });
-  assert.equal(r.rows.length, 140);
-  assert.equal(r.truncated, false);
-  assert.deepEqual(http.calls.map(c => [c.params.limit, c.params.offset]), [[50, 0], [50, 50], [50, 100]]);
-  const capped = await T.fetchClosedPositions(recorder((url, p) => all.slice(p.offset, p.offset + 50)), W(25), { maxPages: 2 });
-  assert.deepEqual([capped.rows.length, capped.truncated], [100, true]);
-  // a tighter cap than we know of (20): the short first page is checked, then paged at its size
-  const tight = recorder((url, p) => all.slice(p.offset, p.offset + Math.min(p.limit, 20)));
-  const t20 = await T.fetchClosedPositions(tight, W(25), { maxPages: 10 });
-  assert.deepEqual([t20.rows.length, t20.truncated], [140, false]);
-  assert.deepEqual(tight.calls.map(c => c.params.offset), [0, 20, 40, 60, 80, 100, 120, 140]);
-  // a small wallet: one extra (empty) page to be sure
-  const few = all.slice(0, 7);
-  const small = recorder((url, p) => few.slice(p.offset, p.offset + p.limit));
-  assert.equal((await T.fetchClosedPositions(small, W(25))).rows.length, 7);
-  assert.deepEqual(small.calls.map(c => c.params.offset), [0, 7]);
 });
 
 test('a 200 that is not a list is a failed fetch: the last good score stays', async () => {
@@ -910,6 +1172,37 @@ test('scaling into one position over several orders tops the tail up; it is not 
   t += 60e3;
   w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xback', timestamp: Math.floor((t - 5e3) / 1000) })];
   assert.equal((await eng.pollTrades())[0].topUp, false);
+
+  // routed: a top-up counts what the venue was told, even when Polymarket's own size was 0u
+  const told = [];
+  const route = s => { told.push(s); return s.topUp ? 0.5 : 1.75; };
+  const sellOut = async tag => {
+    t += 60e3;
+    w.trades = [rawTrade(W(1), { side: 'SELL', price: 0.45, size: 12000, transactionHash: `0xout-${tag}`, timestamp: Math.floor((t - 5e3) / 1000) })];
+    await eng.pollTrades({ route });
+  };
+  await sellOut('v');
+  t += 60e3;
+  w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xv1', timestamp: Math.floor((t - 5e3) / 1000) })];
+  const [v1] = await eng.pollTrades({ route });
+  assert.deepEqual([v1.topUp, v1.priorUnits], [false, 0]);
+  t += 60e3;
+  w.trades = [
+    rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xv2', timestamp: Math.floor((t - 8e3) / 1000) }),
+    rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xv3', timestamp: Math.floor((t - 5e3) / 1000) }),
+  ];
+  const [v2, v3] = await eng.pollTrades({ route });
+  assert.deepEqual([v2.topUp, v2.parentId, v2.priorUnits], [true, v1.id, 1.75], 'the venue\'s 1.75u, not Polymarket\'s target');
+  assert.deepEqual([v3.parentId, v3.priorUnits], [v1.id, 2.25], 'routed in the same poll: it sees the first top-up');
+  assert.equal(told.length, 3);
+  // a venue that was told nothing, with nothing before: the next buy is fresh
+  await sellOut('w');
+  t += 60e3;
+  w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xw1', timestamp: Math.floor((t - 5e3) / 1000) })];
+  await eng.pollTrades({ route: () => 0 });
+  t += 60e3;
+  w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xw2', timestamp: Math.floor((t - 5e3) / 1000) })];
+  assert.equal((await eng.pollTrades({ route: () => 0 }))[0].topUp, false);
 });
 
 test('memory: untailable scores shrink to a summary and only leaderboard ones are stored; the oldest are evicted past the cap', async () => {

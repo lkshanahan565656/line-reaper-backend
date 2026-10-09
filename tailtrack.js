@@ -1,25 +1,30 @@
 // ─── SHARP TAIL TRACK RECORD ──────────────────────────────────────────────────
 // Proof that tailing works. Every tail signal sized above 0 units is logged
-// once, at the price a follower could actually get when it fired (the
-// signal's currentPrice, not the sharp's own fill). Each check looks the
-// market up on Gamma by conditionId:
+// once, at the price a follower could actually get when it fired, not the
+// sharp's own fill: the venue the signal recommended (signal.venue: its
+// price and units) or, without one, Polymarket's ask (currentPrice) and the
+// signal's units. The follower also pays that venue's taker fee a contract
+// (venue.fee when the signal says; Kalshi 0.07 × p(1 − p); Polymarket the
+// signal's own fee; sportsbooks none, their margin is in the price), so a bet
+// costs entry + fee. Each check looks the market up on Gamma by conditionId:
 //
 //   still open   remember its last traded price for our outcome: the last one
 //                seen before the event (a game's start, the market's scheduled
 //                end, orders stopping) is the close. A jump to 97¢+ or 3¢- is
 //                the outcome getting out, not a closing line: the close freezes
 //                there, and a record with no close before it has no CLV.
-//   resolved     win  → profit = units × (1 / entry − 1)
+//   resolved     win  → profit = units × (1 / cost − 1), cost = entry + fee
 //                loss → profit = −units
 //                50/50 → void, profit 0
-//                CLV  = closing price / entry − 1 (beat the close when > 0)
+//                CLV  = closing price / entry − 1 (beat the close when > 0;
+//                prices against prices, before fees)
 //
 // A top-up (the sharp buying more of the same thing) joins its first bet as
-// one record: the units add up, and the entry becomes the single price with
-// the same payout (units / Σ(units_i / entry_i)).
+// one record: the units add up, and the entry (and the cost) becomes the
+// single price with the same payout (units / Σ(units_i / entry_i)).
 //
 // summary() reports n, wins, losses, units won, ROI (units won / units staked)
-// overall and split by grade, by category and consensus vs single-wallet.
+// overall and split by grade, by category, consensus vs single-wallet and venue.
 // ROI and CLV are fractions (0.05 = 5%); profit is in units.
 //
 // Store pattern as evtrack.js: memory for tests, a JSON file locally
@@ -64,22 +69,52 @@ function createStoreFromEnv(env = process.env) {
 
 const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
+const r6 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e6) / 1e6);
 const iso = ms => new Date(ms).toISOString();
+const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+const inUnit = x => x > 0 && x < 1;
 
-// signal → stored record (null when it isn't a sized entry)
+// Taker fee a contract at the recommended venue, when the venue doesn't say.
+const KALSHI_FEE_RATE = 0.07;
+function venueFee(venue, s) {
+  const given = num(venue?.fee ?? venue?.feePerContract);
+  if (given != null) return Math.max(0, given);
+  const name = String(venue?.name || venue?.venue || '').toLowerCase();
+  const p = num(venue?.price);
+  if (/kalshi/.test(name) && inUnit(p)) return KALSHI_FEE_RATE * p * (1 - p);
+  if (/polymarket/.test(name)) return Math.max(0, num(s?.fee) ?? 0);
+  return 0;
+}
+
+// signal → stored record (null when it isn't a sized entry). With a venue,
+// the follower's bet is that venue's price and units; without one, the
+// Polymarket ask, the signal's units and its fee.
 function toRecord(s, t = Date.now()) {
-  if (!s || s.type !== 'entry' || !(s.units > 0) || !s.id || !(s.currentPrice > 0 && s.currentPrice < 1)) return null;
+  if (!s || s.type !== 'entry' || !s.id) return null;
+  const v = s.venue && typeof s.venue === 'object' && inUnit(num(s.venue.price)) ? s.venue : null;
+  const entry = v ? num(v.price) : num(s.currentPrice);
+  const units = v && num(v.units) != null ? num(v.units) : num(s.units);
+  if (!(units > 0) || !inUnit(entry)) return null;
+  const fee = v ? venueFee(v, s) : Math.max(0, num(s.fee) ?? 0);
+  if (!(entry + fee < 1)) return null;
   const consensus = Array.isArray(s.consensus) ? s.consensus : [];
   return {
     id: s.id, status: 'open', result: null, recordedAt: iso(t), at: s.at || iso(t),
     wallet: s.wallet, name: s.name || null, grade: s.grade, scope: s.scope || null, category: s.category || 'other',
     market: s.market || '', eventSlug: s.eventSlug || null, conditionId: s.conditionId, asset: s.asset ?? null,
     outcome: s.outcome ?? null, outcomeIndex: s.outcomeIndex ?? null, url: s.url || null,
-    theirPrice: s.theirPrice, entry: s.currentPrice, units: s.units, edge: s.edge ?? null, kelly: s.kelly ?? null,
+    theirPrice: s.theirPrice, venue: v ? String(v.name || v.venue || 'venue') : null, polyPrice: s.currentPrice ?? null,
+    entry, fee: r6(fee), cost: r6(entry + fee), units, edge: s.edge ?? null, kelly: s.kelly ?? null, q: s.q ?? s.prob ?? null,
     consensus, isConsensus: s.isConsensus ?? consensus.length >= 2,
     closePrice: null, closeAt: null, closeFrozen: false, profit: null, clv: null, settledAt: null,
   };
 }
+// what a contract cost all in (records from before fees: the entry)
+const costOf = rec => (rec.cost > 0 ? rec.cost : rec.entry + (rec.fee || 0));
+// CLV compares Polymarket's close with Polymarket's price when the signal
+// went out, not with another venue's entry. Records without a venue entered
+// at that price; a venue record with no Polymarket ask has no CLV.
+const clvBase = rec => (inUnit(num(rec.polyPrice)) ? num(rec.polyPrice) : rec.venue ? null : rec.entry);
 
 // Pure: settle a record against its (parsed) market. → true when it changed.
 function settle(rec, market, t = Date.now()) {
@@ -91,9 +126,10 @@ function settle(rec, market, t = Date.now()) {
     const idx = outcomeIndexOf(market, rec);
     if (idx == null) return false;
     const won = idx === res.winner;
-    Object.assign(rec, { status: 'settled', result: won ? 'win' : 'loss', profit: r4(won ? rec.units * (1 / rec.entry - 1) : -rec.units) });
+    Object.assign(rec, { status: 'settled', result: won ? 'win' : 'loss', profit: r4(won ? rec.units * (1 / costOf(rec) - 1) : -rec.units) });
   }
-  rec.clv = rec.closePrice != null ? r4(rec.closePrice / rec.entry - 1) : null;
+  const base = clvBase(rec);
+  rec.clv = rec.closePrice != null && base > 0 ? r4(rec.closePrice / base - 1) : null;
   rec.settledAt = iso(t);
   return true;
 }
@@ -109,7 +145,7 @@ function observe(rec, market, t = Date.now()) {
   if (end != null && t >= end) return false;
   const px = priceOf(market, rec);
   if (px == null || px === rec.closePrice) return false;
-  if (OUTCOME_KNOWN(px) && Math.abs(px - (rec.closePrice ?? rec.entry)) >= JUMP) {
+  if (OUTCOME_KNOWN(px) && Math.abs(px - (rec.closePrice ?? clvBase(rec) ?? rec.entry)) >= JUMP) {
     rec.closeFrozen = true;
     return true;
   }
@@ -121,10 +157,21 @@ function observe(rec, market, t = Date.now()) {
 // Pure: a top-up record into its first bet. → the parent, changed
 function merge(parent, add) {
   const units = parent.units + add.units;
+  const cost = units / (parent.units / costOf(parent) + add.units / costOf(add));
   parent.entry = r4(units / (parent.units / parent.entry + add.units / add.entry));
+  const pp = num(parent.polyPrice), ap = num(add.polyPrice);
+  if (inUnit(pp) && inUnit(ap)) parent.polyPrice = r4(units / (parent.units / pp + add.units / ap));
+  parent.cost = r6(cost);
+  parent.fee = r6(Math.max(0, cost - parent.entry));
   parent.units = Math.round(units * 100) / 100;
   parent.topUps = [...(parent.topUps || []), add.id];
   return parent;
+}
+
+function groupBy(list, key) {
+  const g = {};
+  for (const r of list) (g[key(r)] ||= []).push(r);
+  return g;
 }
 
 function stats(list) {
@@ -227,6 +274,7 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
     return {
       open: all.length - done.length, overall: stats(done), byGrade: by('grade'), byCategory: by('category'),
       byConsensus: { consensus: stats(done.filter(r => r.isConsensus)), single: stats(done.filter(r => !r.isConsensus)) },
+      byVenue: Object.fromEntries(Object.entries(groupBy(done, r => r.venue || 'Polymarket')).map(([k, v]) => [k, stats(v)])),
       lastCheck,
     };
   }

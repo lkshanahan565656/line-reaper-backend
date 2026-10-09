@@ -36,8 +36,24 @@
 //
 // Every leg of an exchange arb buys the same number of contracts, so it pays
 // the same whichever way it lands. Costs include fees: Kalshi's taker fee on
-// the real contract count (rounded up to the cent per order), Polymarket's fee
-// rate (default 0). profit % = (payout − cost) / cost.
+// the real contract count (rounded up to the cent per order), and Polymarket's
+// taker fee from each market's own schedule: shares × rate × (p(1 − p))^e
+// (Gamma `feeSchedule: { rate, exponent }`, sports 0.05, most other markets
+// free; makers pay nothing, and every leg here takes). profit % = (payout −
+// cost) / cost. Stakes are also given as each leg's share of the total, which
+// is the same for everyone whatever they put in.
+//
+// US mode (region 'us', the default): a US person can't trade on Polymarket
+// International, so only legs on Kalshi and US sportsbooks count. Kalshi vs
+// Polymarket and Polymarket-only arbs are dropped, and so are offshore books.
+// region 'intl' keeps every venue.
+//
+// Where to tail (venueIndex / venueQuotes / pickVenue): a sharp's Polymarket
+// bet is the same proposition as a Kalshi side the matcher pairs with that
+// market (a team's YES, or NO on its opponent; YES/NO on a title match), and,
+// for a two-team game, that team's moneyline at every sportsbook in the odds
+// feeds (implied price 1/decimal, no fee). Each quote carries its all-in cost
+// per contract; the caller sizes them and pickVenue takes the most units.
 //
 // Parsers and matchers are pure. The fetchers take an axios-style `http` so
 // all of it can be tested without the network.
@@ -54,7 +70,7 @@ const NOT_EXHAUSTIVE_WARNING = 'not proven exhaustive: no catch-all outcome, so 
 const DAY = 86400e3;
 
 const DEFAULTS = {
-  minPct: 0.5, kalshiFeeRate: 0.07, polymarketFeeRate: 0, bankroll: 100,
+  minPct: 0.5, kalshiFeeRate: 0.07, polymarketFeeRate: 0, bankroll: 100, region: 'us',
   sportsWindowMs: 4 * 3600e3, titleWindowMs: 3 * DAY, minSimilarity: 0.6,
 };
 // undefined in opts keeps the default
@@ -65,9 +81,11 @@ function withDefaults(opts = {}) {
   return o;
 }
 
+// TAIL_REGION=intl restores every venue; anything else (or nothing) is US mode
+const regionFromEnv = (env = process.env) => (/^intl$/i.test(String(env.TAIL_REGION || '').trim()) ? 'intl' : 'us');
 function optsFromEnv(env = process.env) {
   const f = k => (env[k] == null || env[k] === '' || !Number.isFinite(parseFloat(env[k])) ? undefined : parseFloat(env[k]));
-  return { minPct: f('XARB_MIN_PCT'), polymarketFeeRate: f('POLYMARKET_FEE_RATE'), kalshiFeeRate: f('KALSHI_FEE_RATE') };
+  return { minPct: f('XARB_MIN_PCT'), polymarketFeeRate: f('POLYMARKET_FEE_RATE'), kalshiFeeRate: f('KALSHI_FEE_RATE'), region: regionFromEnv(env) };
 }
 
 // ── small helpers ──
@@ -204,6 +222,30 @@ function parseKalshiBinaries(payload) {
 }
 
 // ── Polymarket ──
+// Taker fee schedule of a Gamma market: `feeSchedule` (an object, or the same
+// as a JSON string) with `rate` and `exponent`. A sports market
+// (`feeType: "sports_fees_v2"`) that comes without its schedule is taken at
+// the published 0.05 rather than free, so a fee can't make up a fake arb.
+// Anything else with no schedule pays nothing. → { rate, exponent } | null
+const SPORTS_FEE_RATE = 0.05;
+function polymarketFeeSchedule(m) {
+  let sched = m?.feeSchedule ?? m?.fee_schedule ?? null;
+  if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = null; } }
+  const rate = num(sched?.rate);
+  const type = m?.feeType ?? m?.fee_type ?? null;
+  if (rate != null && rate >= 0) {
+    const e = num(sched.exponent);
+    return rate > 0 ? { rate, exponent: e != null && e > 0 ? e : 1, type } : null;
+  }
+  return /sports_fees/i.test(type || '') ? { rate: SPORTS_FEE_RATE, exponent: 1, type } : null;
+}
+// dollars of taker fee on `shares` bought at `price`
+function polymarketFee(price, shares, sched) {
+  const p = num(price), n = num(shares);
+  if (!sched || !(p > 0 && p < 1) || !(n > 0)) return 0;
+  return n * sched.rate * (p * (1 - p)) ** (sched.exponent || 1);
+}
+
 // bestAsk/bestBid quote the FIRST outcome. Buying the second outcome is
 // selling the first, so its ask is 1 − bestBid. Mids (outcomePrices) are not
 // tradable prices and are never used here.
@@ -236,10 +278,11 @@ function parsePolymarketBinaries(payload) {
       const ask0 = tradable ? quote(m.bestAsk) : null;
       const bid0 = tradable ? quote(m.bestBid) : null;
       const ask1 = bid0 == null ? null : round(1 - bid0, 6);
-      let kind, yesAsk, noAsk, outcomeLabel, noLabel = null;
+      let kind, yesAsk, noAsk, outcomeLabel, noLabel = null, yesIndex = 0;
       const yi = lower.indexOf('yes');
       if (yi >= 0 && lower.includes('no')) {
         kind = 'yesno';
+        yesIndex = yi;
         [yesAsk, noAsk] = yi === 0 ? [ask0, ask1] : [ask1, ask0];
         outcomeLabel = String(m.groupItemTitle || '').trim() || 'Yes';
       } else if (!lower.some(o => NOT_TEAMS.has(o)) && isMoneyline(m)) {
@@ -259,6 +302,7 @@ function parsePolymarketBinaries(payload) {
         league, liquidity: num(m.liquidityClob) ?? num(m.liquidityNum) ?? num(m.liquidity), volume: num(m.volume),
         mutuallyExclusive: negRisk && kind === 'yesno', hasDraw: false, tradable, eventDecided: decided,
         eventComplete: true, conditionId: m.conditionId || null, rules: clip(m.description || ev.description),
+        yesIndex, tokenIds: (jsonList(m.clobTokenIds) || []).map(String), feeSchedule: polymarketFeeSchedule(m),
       });
     }
     // an open market we couldn't read leaves the outcome set incomplete
@@ -547,10 +591,13 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
 
 // ── pricing ──
 // Cost of n contracts on one leg, fee included. Kalshi's fee is per order,
-// on the whole count, rounded up to the cent.
+// on the whole count, rounded up to the cent. A Polymarket leg pays its
+// market's schedule, or the flat POLYMARKET_FEE_RATE (default 0) on markets
+// without one.
 function legCost(l, n, o) {
   const base = l.price * n;
-  const fee = l.venue === 'kalshi' ? kalshiFee(l.price, n, o.kalshiFeeRate) : base * (o.polymarketFeeRate || 0);
+  const fee = l.venue === 'kalshi' ? kalshiFee(l.price, n, o.kalshiFeeRate)
+    : l.feeSchedule ? polymarketFee(l.price, n, l.feeSchedule) : base * (o.polymarketFeeRate || 0);
   return { base, fee, total: base + fee };
 }
 const setCost = (legs, n, o) => sum(legs.map(l => legCost(l, n, o).total));
@@ -566,7 +613,10 @@ function maxSets(legs, budget, o) {
 
 // Stakes for a bankroll, split so every outcome pays the same. Exchange arbs:
 // the same whole number of contracts on every leg. Sportsbook arbs: stake on
-// each leg ∝ 1/decimal.
+// each leg ∝ 1/decimal. Each leg's `pct` is its share of the total stake, the
+// same split whatever the total (what the app shows, so nobody's bankroll
+// goes into it).
+const pctOf = (part, whole) => (whole > 0 ? round((part / whole) * 100, 1) : null);
 function stakeArb(arb, bankroll, opts = {}) {
   const o = withDefaults({ ...arb?.fees, ...opts });   // the fee rates the arb was found with, unless overridden
   const B = Number(bankroll);
@@ -575,7 +625,7 @@ function stakeArb(arb, bankroll, opts = {}) {
     const inv = arb.legs.map(l => 1 / l.decimal), S = sum(inv);
     const legs = arb.legs.map((l, i) => {
       const stake = r2(B * inv[i] / S);
-      return { venue: l.venue, pick: l.pick, decimal: l.decimal, stake, payout: r2(stake * l.decimal) };
+      return { venue: l.venue, pick: l.pick, decimal: l.decimal, stake, payout: r2(stake * l.decimal), pct: pctOf(inv[i], S) };
     });
     const cost = r2(sum(legs.map(l => l.stake))), payout = Math.min(...legs.map(l => l.payout));
     return { bankroll: B, legs, cost, payout, profit: r2(payout - cost), profitPct: r2(((payout - cost) / cost) * 100), capped: false };
@@ -583,11 +633,11 @@ function stakeArb(arb, bankroll, opts = {}) {
   let n = maxSets(arb.legs, B, o);
   const capped = arb.maxContracts != null && n > arb.maxContracts;
   if (capped) n = arb.maxContracts;
+  const cost = setCost(arb.legs, n, o);
   const legs = arb.legs.map(l => {
     const c = legCost(l, n, o);
-    return { venue: l.venue, marketId: l.marketId, side: l.side, pick: l.pick, price: l.price, contracts: n, stake: r2(c.total), fee: r2(c.fee) };
+    return { venue: l.venue, marketId: l.marketId, side: l.side, pick: l.pick, price: l.price, contracts: n, stake: r2(c.total), fee: r2(c.fee), pct: pctOf(c.total, cost) };
   });
-  const cost = setCost(arb.legs, n, o);
   return { bankroll: B, contracts: n, legs, cost: r2(cost), payout: n, profit: r2(n - cost), profitPct: cost > 0 ? r2(((n - cost) / cost) * 100) : 0, capped };
 }
 
@@ -600,6 +650,7 @@ function leg(r, side) {
     pick: side === 'yes' ? label || 'YES' : r.noLabel || (label ? `NO ${label}` : 'NO'),
     price: side === 'yes' ? r.yesAsk : r.noAsk,
     title: r.title, url: r.url, liquidity: r.liquidity, closeTime: r.closeTime, rules: r.rules || null,
+    ...(r.exchange === 'polymarket' ? { feeSchedule: r.feeSchedule || null } : {}),
   };
 }
 
@@ -640,11 +691,12 @@ function crossArbs(match, o) {
   ].map(legs => contractArb(fields, legs, o)).filter(Boolean);
 }
 
+// opts.matches: matchMarkets output already computed for these rows
 function findCrossArbs(kalshiRows, polyRows, opts = {}) {
   const o = withDefaults(opts);
   // a game shows up once per Kalshi team market; keep its best direction
   const best = new Map();
-  for (const m of matchMarkets(kalshiRows, polyRows, o)) {
+  for (const m of o.matches || matchMarkets(kalshiRows, polyRows, o)) {
     const key = m.by === 'teams' ? `${m.kalshi.eventKey}|${m.polymarket.id}` : `${m.kalshi.id}|${m.polymarket.id}`;
     for (const a of crossArbs(m, o)) if (!best.has(key) || best.get(key).profitPct < a.profitPct) best.set(key, a);
   }
@@ -684,6 +736,20 @@ function findUnderrounds(rows, opts = {}) {
   return out;
 }
 
+// ── US venues ──
+// Polymarket International is closed to US persons, and offshore / non-US
+// books that turn up in the odds feeds aren't US sportsbooks either. Kalshi,
+// Novig, ProphetX and the state-licensed books are.
+const NOT_US_BOOKS = new Set(['polymarket', 'pinnacle', 'ps3838', 'bovada', 'betonlineag', 'betonline', 'lowvig', 'mybookieag', 'betus',
+  'everygame', 'gtbets', 'intertops', 'betanysports', 'matchbook', 'smarkets', 'marathonbet', 'onexbet', 'nordicbet', 'coolbet', 'betsson',
+  'sport888', 'williamhill', 'unibet', 'unibet_eu', 'unibet_uk', 'unibet_se', 'unibet_nl', 'unibet_it', 'unibet_fr', 'betclic', 'betway',
+  'paddypower', 'skybet', 'ladbrokes', 'ladbrokes_uk', 'ladbrokes_au', 'coral', 'livescorebet', 'livescorebet_eu', 'virginbet', 'boylesports',
+  'casumo', 'leovegas', 'leovegas_se', 'betvictor', 'grosvenor', 'tipico_de', 'sportsbet', 'tab', 'neds', 'pointsbetau', 'unibet_au', 'betr_au',
+  'playup', 'topsport', 'suprabets', 'winamax_fr', 'winamax_de', 'parionssport_fr', 'pmu_fr', 'codere_it']);
+const isUsVenue = key => { const k = String(key || '').toLowerCase(); return !!k && !NOT_US_BOOKS.has(k) && !k.startsWith('betfair'); };
+// every leg can be placed from the US
+const usPlaceable = arb => (arb?.legs || []).length > 0 && arb.legs.every(l => isUsVenue(l.venue));
+
 // 3. exchange price on one side of a game, best sportsbook on the other
 function bookLeg(b, outcome, d) {
   return { venue: b.key, venueTitle: b.title || b.key, pick: outcome.name, american: num(outcome.price), decimal: round(d, 6), url: outcome.link || b.link || null };
@@ -696,15 +762,17 @@ function polymarketBacked(rows) {
   for (const r of rows) if (r.kind === 'teams') push(byUrl, r.url, r);
   return url => { const rs = byUrl.get(url); return !!rs && rs.every(r => r.yesAsk != null && r.noAsk != null); };
 }
+// US mode: only the Kalshi book and US sportsbooks
 function findBookArbs(games, opts = {}) {
   const o = withDefaults(opts);
+  const us = o.region === 'us';
   const backed = polymarketBacked(o.polymarketRows);
   const out = [];
   for (const g of games || []) {
     const t0 = ms(g?.commence_time);
     if (t0 != null && t0 <= o.now) continue;
     const h2h = (g.bookmakers || []).map(b => ({ b, outs: (b.markets || []).find(m => m.key === 'h2h')?.outcomes }))
-      .filter(x => x.b && Array.isArray(x.outs) && x.outs.length === 2);
+      .filter(x => x.b && Array.isArray(x.outs) && x.outs.length === 2 && (!us || isUsVenue(x.b.key)));
     const books = h2h.filter(x => !EXCHANGE_BOOKS.has(x.b.key));
     for (const e of h2h.filter(x => EXCHANGE_BOOKS.has(x.b.key))) {
       if (e.b.key === 'polymarket' && !e.outs.every(x => backed(x.link || e.b.link))) continue;
@@ -736,14 +804,132 @@ function findBookArbs(games, opts = {}) {
   return out;
 }
 
-// All three kinds over parsed rows (+ Odds API games), at least minPct, best first.
+// All three kinds over parsed rows (+ Odds API games), at least minPct, best
+// first. US mode: no Kalshi-vs-Polymarket or Polymarket-only arbs, and every
+// leg on a venue a US person can use.
 function findArbs({ kalshi = [], polymarket = [], games = [] } = {}, opts = {}) {
   const o = withDefaults({ ...opts, games });
+  const us = o.region === 'us';
   return [
-    ...findCrossArbs(kalshi, polymarket, o),
-    ...findUnderrounds([...kalshi, ...polymarket], o),
+    ...(us ? [] : findCrossArbs(kalshi, polymarket, o)),
+    ...findUnderrounds(us ? kalshi : [...kalshi, ...polymarket], o),
     ...findBookArbs(games, { ...o, polymarketRows: polymarket }),
-  ].filter(a => a.profitPct >= o.minPct).sort((a, b) => b.profitPct - a.profitPct);
+  ].filter(a => a.profitPct >= o.minPct && (!us || usPlaceable(a))).sort((a, b) => b.profitPct - a.profitPct);
+}
+
+// ── where to tail ──
+// The arb scan's rows, indexed so a tail signal (a Polymarket bet, known by
+// its conditionId or token) can find the same proposition elsewhere.
+// matches: matchMarkets(kalshi, polymarket) from the same scan; games: Odds
+// API-shaped game lines (any exchange books on them are ignored here).
+const KALSHI_FEE_LOT = 100;   // per-contract Kalshi fee quoted on a 100-contract order (the fee rounds up per order)
+const BOOK_SAME_GAME_MS = 30 * 60e3;   // two feeds' copies of one game start within this of each other
+function venueIndex({ kalshi = [], polymarket = [], matches = null, games = [] } = {}, opts = {}) {
+  const o = withDefaults({ ...opts, games });
+  const byCondition = new Map(), byToken = new Map();
+  for (const r of polymarket || []) {
+    const entry = { row: r, matches: [] };
+    if (r.conditionId) byCondition.set(String(r.conditionId).toLowerCase(), entry);
+    for (const t of r.tokenIds || []) byToken.set(t, entry);
+  }
+  for (const m of matches || matchMarkets(kalshi, polymarket, o)) {
+    const e = m.polymarket?.conditionId ? byCondition.get(String(m.polymarket.conditionId).toLowerCase()) : null;
+    if (e) e.matches.push(m);
+  }
+  return { byCondition, byToken, games: games || [], teams: teamContext(games), size: byCondition.size };
+}
+
+// Did the bet back the row's YES side? (outcome index first, then the label)
+function boughtYesOf(row, s) {
+  const i = num(s?.outcomeIndex);
+  if (i === 0 || i === 1) return i === (row.yesIndex ?? 0);
+  const l = norm(s?.outcome);
+  if (!l) return null;
+  if (row.kind === 'yesno') return l === 'yes' ? true : l === 'no' ? false : null;
+  return l === norm(row.outcomeLabel) ? true : l === norm(row.noLabel) ? false : null;
+}
+const gameLeague = g => String(g?.sport_key || '').match(/_(nba|nfl|mlb|nhl|wnba|ncaaf|ncaab|mls)$/)?.[1] || null;
+
+// signal → venue quotes for the outcome the sharp bought: [{ key, name, price,
+// fee (per contract), cost, american?, url, pick, ... }]. Kalshi from the
+// matched markets, sportsbooks for a two-team game, and Polymarket itself
+// (its own ask) outside US mode. Nothing found → [].
+function venueQuotes(signal, index, opts = {}) {
+  const o = withDefaults(opts);
+  const us = o.region === 'us';
+  if (!signal) return [];
+  const entry = (signal.conditionId && index?.byCondition?.get(String(signal.conditionId).toLowerCase()))
+    || (signal.asset != null && index?.byToken?.get(String(signal.asset))) || null;
+  const row = entry?.row || null;
+  const yes = row ? boughtYesOf(row, signal) : null;
+  const out = [];
+  const add = q => { if (q.price > 0 && q.price < 1) out.push({ ...q, price: round(q.price, 6), fee: round(q.fee || 0, 6), cost: round(q.price + (q.fee || 0), 6) }); };
+
+  if (row && yes != null) {
+    // Kalshi: the matched side asking the same question
+    for (const m of entry.matches) {
+      const k = m.kalshi;
+      if (!k?.tradable || expired(k, o.now)) continue;
+      const side = yes === m.same ? 'yes' : 'no';
+      const price = side === 'yes' ? k.yesAsk : k.noAsk;
+      if (price == null) continue;
+      add({
+        key: 'kalshi', name: 'Kalshi', price, fee: kalshiFee(price, KALSHI_FEE_LOT, o.kalshiFeeRate) / KALSHI_FEE_LOT,
+        marketId: k.id, side, pick: leg(k, side).pick, title: k.title, url: k.url, match: m.by,
+        ...(m.by === 'title' ? { warning: RULES_WARNING } : {}),
+      });
+    }
+    // sportsbooks: that team's moneyline in the same game
+    const t0 = ms(row.startTime || row.closeTime);
+    if (row.kind === 'teams' && t0 != null && row.noLabel) {
+      const team = yes ? row.outcomeLabel : row.noLabel;
+      const found = [];
+      for (const g of index?.games || []) {
+        const tg = ms(g?.commence_time);
+        if (tg == null || tg <= o.now || Math.abs(tg - t0) > o.sportsWindowMs) continue;
+        const lg = gameLeague(g);
+        if (row.league && lg && row.league !== lg) continue;
+        const pol = pairSides([row.outcomeLabel, row.noLabel], [g.home_team, g.away_team], (a, b) => index.teams.same(a, b, row.league || lg));
+        if (pol) found.push({ g, tg, name: (pol === 'same') === yes ? g.home_team : g.away_team });
+      }
+      const nearest = found.reduce((a, b) => (!a || Math.abs(b.tg - t0) < Math.abs(a.tg - t0) ? b : a), null);
+      const best = new Map();   // book → its best price for the team
+      for (const f of found) {
+        if (Math.abs(f.tg - nearest.tg) > BOOK_SAME_GAME_MS) continue;   // a doubleheader's other game
+        for (const b of f.g.bookmakers || []) {
+          if (!b?.key || EXCHANGE_BOOKS.has(b.key) || (us && !isUsVenue(b.key))) continue;
+          const outs = (b.markets || []).find(m => m.key === 'h2h')?.outcomes;
+          if (!Array.isArray(outs) || outs.length !== 2) continue;   // a three-way line isn't the same bet
+          const q = outs.find(x => x.name === f.name);
+          const d = q && americanToDecimal(q.price);
+          if (d && d > 1 && (!best.has(b.key) || d > best.get(b.key).d)) best.set(b.key, { b, q, d });
+        }
+      }
+      for (const { b, q, d } of best.values()) {
+        add({ key: b.key, name: b.title || b.key, price: 1 / d, fee: 0, american: num(q.price), decimal: round(d, 6), pick: q.name, url: q.link || b.link || null, book: true });
+      }
+    }
+  }
+  // Polymarket's own price, never in US mode
+  if (!us) {
+    const own = quote(signal.currentPrice);
+    const price = own ?? (row && yes != null ? (yes ? row.yesAsk : row.noAsk) : null);
+    if (price != null) {
+      // the signal's own fee came from that market's schedule at that price
+      const fee = own != null && Number.isFinite(signal.fee) ? signal.fee
+        : row?.feeSchedule ? polymarketFee(price, 1, row.feeSchedule) : price * (o.polymarketFeeRate || 0);
+      add({ key: 'polymarket', name: 'Polymarket', price, fee, pick: signal.outcome ?? null, url: signal.url || row?.url || null });
+    }
+  }
+  return out;
+}
+
+// sized quotes ({ units, cost, price }) → the one with the most units; ties
+// go to the cheaper all-in cost, then the lower price. null when none.
+function pickVenue(quotes) {
+  const list = (quotes || []).filter(q => q && Number.isFinite(q.price));
+  if (!list.length) return null;
+  return [...list].sort((a, b) => ((b.units || 0) - (a.units || 0)) || ((a.cost ?? a.price) - (b.cost ?? b.price)) || (a.price - b.price))[0];
 }
 
 // ── fetching ──
@@ -809,5 +995,6 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
   findCrossArbs, findUnderrounds, findBookArbs, findArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
-  optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, NOT_EXHAUSTIVE_WARNING, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL,
+  polymarketFeeSchedule, polymarketFee, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
+  optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, NOT_EXHAUSTIVE_WARNING, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
 };

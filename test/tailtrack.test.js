@@ -57,13 +57,15 @@ test('records sized entries once; exits, 0u and unpriced signals are not bets', 
 });
 
 test('a real signal from tail.tradeSignal records as is', async () => {
-  const trade = T.parseTrades([{ proxyWallet: W(9), side: 'BUY', asset: 'tok-yes', conditionId: '0xm1', size: 2000, price: 0.4, timestamp: (NOW - 60e3) / 1000, title: 'Will X win the Ohio Senate election?', eventSlug: 'ohio-senate', outcomeIndex: 0, transactionHash: '0xreal' }])[0];
+  const trade = T.parseTrades({ data: [{ proxy_wallet: W(9), side: 'BUY', token_id: 'tok-yes', condition_id: '0xm1', size: 2000, price: 0.4, timestamp: (NOW - 60e3) / 1000,
+    title: 'Will X win the Ohio Senate election?', event_slug: 'ohio-senate', outcome_index: 0, transaction_hash: '0xreal' }], pagination: { has_more: false } })[0];
   const { signal: s } = T.tradeSignal({ trade, trader: { wallet: W(9), grade: 'A', edge: 0.1, categories: {} }, market: T.parseGammaMarket(gamma({ bestAsk: '0.41' })), now: NOW });
   const rec = toRecord(s, NOW);
   assert.equal(rec.entry, 0.41);
   assert.equal(rec.units, s.units);
   assert.equal(rec.category, 'politics');
   assert.equal(rec.isConsensus, false);
+  assert.deepEqual([rec.fee, rec.cost, rec.q, rec.venue], [0, 0.41, s.q, null], 'no fee on a politics market');
 });
 
 test('follows the last price while open, then grades wins, losses and ROI', async () => {
@@ -224,4 +226,92 @@ test('a top-up joins its first bet as one record at the price that pays the same
   // a top-up whose first bet isn't open stands alone
   assert.equal(await tr.record(signal({ id: 'orphan', parentId: 'gone', topUp: true, units: 0.3 })), true);
   assert.equal((await tr.list()).length, 2);
+});
+
+// ── venues and fees ──
+const r4 = x => Math.round(x * 1e4) / 1e4;
+const r6 = x => Math.round(x * 1e6) / 1e6;
+
+test('a follower is graded at the venue the signal recommended, its fee included; without one at the Polymarket ask', async () => {
+  const kalshi = signal({ id: 'k', venue: { name: 'Kalshi', price: 0.44, units: 1.2, maxPrice: 0.45, url: 'https://kalshi.com/markets/x' } });
+  const kalshiFee = signal({ id: 'kf', venue: { name: 'Kalshi', price: 0.44, fee: 0.02, units: 1, maxPrice: 0.45 } });
+  const book = signal({ id: 'dk', venue: { name: 'DraftKings', price: 0.4545, american: 120, units: 1.5, maxPrice: 0.45 } });
+  const poly = signal({ id: 'pm', fee: 0.0125, units: 0.8 });   // a Polymarket sports market's taker fee
+  const watch = signal({ id: 'watch', venue: { name: 'Kalshi', price: 0.47, units: 0, maxPrice: 0.45 } });
+  const noVenue = signal({ id: 'nv', venue: null });
+
+  const rec = s => toRecord(s, NOW);
+  assert.deepEqual(['venue', 'entry', 'fee', 'cost', 'units', 'polyPrice', 'theirPrice'].map(k => rec(kalshi)[k]),
+    ['Kalshi', 0.44, r6(0.07 * 0.44 * 0.56), r6(0.44 + 0.07 * 0.44 * 0.56), 1.2, 0.42, 0.4], 'Kalshi: 7% × p(1 − p) a contract');
+  assert.deepEqual([rec(kalshiFee).fee, rec(kalshiFee).cost], [0.02, 0.46], 'the venue\'s own fee when it gives one');
+  assert.deepEqual([rec(book).venue, rec(book).fee, rec(book).cost, rec(book).units], ['DraftKings', 0, 0.4545, 1.5], 'a sportsbook\'s margin is in its price');
+  assert.deepEqual([rec(poly).venue, rec(poly).entry, rec(poly).fee, rec(poly).cost], [null, 0.42, 0.0125, 0.4325]);
+  assert.equal(rec(watch), null, '0u at the venue: watch only, not a bet');
+  assert.deepEqual([rec(noVenue).entry, rec(noVenue).units, rec(noVenue).cost], [0.42, 1.6, 0.42], 'no US venue: the Polymarket ask');
+  assert.equal(rec(signal({ id: 'bad', venue: { name: 'Kalshi', price: 1.2, units: 1 } })).entry, 0.42, 'a venue with no real price is ignored');
+  assert.equal(rec(signal({ id: 'nope', currentPrice: null, venue: { name: 'Kalshi', price: 0.44, units: 1 } })).entry, 0.44, 'a venue price is enough');
+  assert.equal(rec(signal({ id: 'dear', venue: { name: 'Kalshi', price: 0.99, fee: 0.02, units: 1 } })), null, 'costs $1 or more');
+
+  let t = NOW;
+  const markets = { '0xm1': gamma() };
+  const tr = createTailTracker({ http: fakeGamma(markets), now: () => t });
+  assert.equal(await tr.recordAll([kalshi, kalshiFee, book, poly, watch, noVenue]), 5);
+  t += 600e3;
+  await tr.check();   // last price 0.48: the running close
+  markets['0xm1'] = gamma({ closed: true, outcomePrices: '["1","0"]' });
+  t += 600e3;
+  assert.equal((await tr.check()).settled, 5);
+  const by = Object.fromEntries((await tr.list()).map(r => [r.id, r]));
+  const cost = 0.44 + 0.07 * 0.44 * 0.56;
+  assert.equal(by.k.profit, r4(1.2 * (1 / r6(cost) - 1)), 'units × (1 / (price + fee) − 1)');
+  assert.ok(by.k.profit < r4(1.2 * (1 / 0.44 - 1)), 'less than the fee-free payout');
+  assert.equal(by.k.clv, r4(0.48 / 0.42 - 1), "CLV: Polymarket's close against Polymarket's price at the signal, not the Kalshi entry");
+  assert.equal(by.dk.clv, by.k.clv, 'the same for a sportsbook entry');
+  assert.equal(by.nv.clv, r4(0.48 / 0.42 - 1));
+  assert.equal(by.kf.profit, r4(1 / 0.46 - 1));
+  assert.equal(by.dk.profit, r4(1.5 * (1 / 0.4545 - 1)));
+  assert.equal(by.pm.profit, r4(0.8 * (1 / 0.4325 - 1)));
+  assert.equal(by.nv.profit, r4(1.6 * (1 / 0.42 - 1)));
+
+  const s = await tr.summary();
+  assert.deepEqual(Object.keys(s.byVenue).sort(), ['DraftKings', 'Kalshi', 'Polymarket']);
+  assert.deepEqual([s.byVenue.Kalshi.n, s.byVenue.Kalshi.staked, s.byVenue.Polymarket.n], [2, 2.2, 2]);
+  assert.equal(s.overall.units, Math.round((by.k.profit + by.kf.profit + by.dk.profit + by.pm.profit + by.nv.profit) * 100) / 100);
+
+  // and a loss is the stake, fee or not
+  const loser = createTailTracker({ http: fakeGamma({ '0xm1': gamma({ closed: true, outcomePrices: '["0","1"]' }) }), now: () => NOW });
+  await loser.record(kalshi);
+  await loser.check();
+  assert.equal((await loser.list())[0].profit, -1.2);
+});
+
+test('a real sports signal from tail.tradeSignal records its Polymarket fee; a top-up merges the all-in cost', async () => {
+  const trade = T.parseTrades([{ proxy_wallet: W(9), side: 'BUY', token_id: 'tok-lal', condition_id: '0xm2', size: 3000, price: 0.44, timestamp: (NOW - 60e3) / 1000,
+    title: 'Lakers vs. Celtics', event_slug: 'nba-lal-bos-2026-10-08', outcome: 'Lakers', outcome_index: 0, transaction_hash: '0xsport' }])[0];
+  const market = T.parseGammaMarket(lakers({ bestAsk: '0.45', bestBid: '0.44', feeType: 'sports_fees_v2', feeSchedule: { rate: 0.05, exponent: 1 } }));
+  const { signal: s } = T.tradeSignal({ trade, trader: { wallet: W(9), grade: 'A', edge: 0.1, avgEntry: 0.45, categories: {} }, market, now: NOW });
+  assert.ok(s.units > 0);
+  const rec = toRecord(s, NOW);
+  assert.deepEqual([rec.entry, rec.fee, rec.cost, rec.q], [0.45, r6(0.05 * 0.45 * 0.55), r6(0.45 + 0.05 * 0.45 * 0.55), s.q]);
+
+  const tr = createTailTracker({ http: fakeGamma({ '0xm1': gamma({ closed: true, outcomePrices: '["1","0"]' }) }), now: () => NOW });
+  await tr.record(signal({ id: 'p1', units: 0.6, currentPrice: 0.4, fee: 0.012 }));
+  await tr.record(signal({ id: 'p2', parentId: 'p1', topUp: true, units: 0.4, venue: { name: 'Kalshi', price: 0.5, fee: 0.02, units: 0.4 } }));
+  const [r] = await tr.list();
+  assert.equal(r.units, 1);
+  assert.equal(r.entry, r4(1 / (0.6 / 0.4 + 0.4 / 0.5)));
+  assert.equal(r.cost, r6(1 / (0.6 / 0.412 + 0.4 / 0.52)), 'the single all-in price with the same payout');
+  await tr.check();
+  const [done] = await tr.list();
+  // 0.6u at 41.2¢ all in wins 0.6 × (1/0.412 − 1); 0.4u at 52¢ wins 0.4 × (1/0.52 − 1)
+  assert.ok(Math.abs(done.profit - (0.6 * (1 / 0.412 - 1) + 0.4 * (1 / 0.52 - 1))) < 0.001, String(done.profit));
+});
+
+test('records from before fees and venues still settle at their entry', () => {
+  const old = toRecord(signal(), NOW);
+  delete old.fee;
+  delete old.cost;
+  delete old.venue;
+  assert.equal(settle(old, T.parseGammaMarket(gamma({ closed: true, outcomePrices: '["1","0"]' })), NOW), true);
+  assert.equal(old.profit, r4(1.6 * (1 / 0.42 - 1)));
 });

@@ -3,9 +3,16 @@
 // every wallet has a public history. This module decides which wallets have a
 // real, provable edge and turns their new bets into sized "tail" signals.
 //
-// Scoring one wallet from its resolved positions (closed ones, plus open ones
-// that resolved but were never redeemed, so hidden losers still count):
-//   risked   avgPrice × totalBought (dollars in); pnl = realizedPnl
+// Data comes from Polymarket's data API v2 (v1 is retired 2026-10-24): every
+// response is { data, pagination: { has_more, next_cursor } }, fields are
+// snake_case, and lists page by passing next_cursor back as `cursor` (up to a
+// page cap; hitting it sets `truncated`). Parsers still read v1 camelCase.
+//
+// Scoring one wallet from its settled positions: status CLOSED, plus
+// REDEEMABLE (won, never claimed) and REDEEMABLE_LOST (lost, never claimed:
+// the hidden losers a record leaves out if it only reads closed ones):
+//   risked   total_cost_usdc (fees in), else entry cost + entry fees, else
+//            avg price × size; pnl = total_pnl (else realized_pnl)
 //   ROI      (Σpnl + open P&L) / (Σrisked + open risked). Positions still
 //            open are marked to market, so selling the winners early and
 //            sitting on the losers doesn't look like skill.
@@ -24,18 +31,39 @@
 //            the lucky too). Once there are 30, losing money there ungrades it.
 //   edge     shrunk: P&L / (risked + $20k of zero-edge prior) × 0.5, so a
 //            small sample can't claim a big edge and past ROI is discounted.
+//   CLV      closing-line value, the part of a record luck can't fake. For
+//            up to 25 of the most recent settled bets: (close − entry) / entry
+//            on the token held, where the close is the last price before the
+//            game started (Gamma gameStartTime) or, for other markets, the
+//            last one before the price first reached 97¢+ or 3¢- (the outcome
+//            getting out) or the market ended. Stake-weighted, with a hit rate
+//            (share of bets that beat the close). Only measured for wallets
+//            that already pass B without it, so hopeless ones cost nothing;
+//            each token's close and each market lookup is cached.
 //   grades   A (elite) / B (sharp) from sample, distinct events, money risked,
-//            ROI, z, concentration, two-sided share and recent activity. Also
-//            per category: elections skill says nothing about the NBA.
+//            ROI, z, concentration, two-sided share and recent activity; A
+//            also needs 15+ measured CLV bets averaging +2%, B +0.5% once 15
+//            are measured. Fewer than 15: at most B. Also per category:
+//            elections skill says nothing about the NBA.
 //
-// Sizing a tail when a graded wallet BUYs at p and we can buy now at c:
-//   q     our estimate of the true probability: the edge is an ROI at the
-//         wallet's average price, carried to p as a shift in the odds (a 95¢
-//         favourite can't return more than 5%), at most 0.99
-//   Kelly = (q − c) / (1 − c)           at OUR price, not theirs
+// Sizing at any venue (sizeAt), for a probability q at price c with a fee f
+// per contract:
+//   cost  = c + f;  Kelly = (q − cost) / (1 − cost)
 //   units = ¼ Kelly × 100 (1u = 1% of bankroll), capped 2u (A) / 1u (B),
 //           × 1.5 (so up to 3u for A, 1.5u for B) when 2+ graded wallets
-//           bought that side within 24h.
+//           bought that side within 24h. Kelly ≤ 0 → 0u.
+//   maxPrice  the highest price, to the cent, with Kelly still above 0 once
+//           the fee is paid (c + f < q), the fee taken as fixed.
+// Units are the same for everyone: nothing here knows anyone's bankroll.
+//
+// A tail when a graded wallet BUYs at p and we can buy now at c on Polymarket:
+//   q     our estimate of the true probability: the edge is an ROI at the
+//         wallet's average price, carried to p as a shift in the odds (a 95¢
+//         favourite can't return more than 5%), at most 0.99. It goes on the
+//         signal so the same bet can be sized at other venues.
+//   f     Polymarket's taker fee: rate × (c(1 − c))^exponent a share from the
+//         market's feeSchedule (sports 0.05, most others none)
+//   units sizeAt(q, c, f) at OUR price, not theirs
 //   c more than 3¢ above p, or Kelly ≤ 0 → 0u: the price ran, don't chase.
 //   A wallet buying more of what it already bought tops the tail up to the new
 //   size; it isn't a second full-size bet.
@@ -49,11 +77,18 @@
 
 const DATA_API = 'https://data-api.polymarket.com';
 const GAMMA_API = 'https://gamma-api.polymarket.com';
-const LEADERBOARD_CATEGORIES = ['OVERALL', 'POLITICS', 'SPORTS', 'CRYPTO', 'CULTURE', 'ECONOMICS', 'TECH', 'FINANCE'];
+// v2 takes these lowercase; source keys stay upper case ("POLITICS:WEEK")
+const LEADERBOARD_CATEGORIES = ['OVERALL', 'POLITICS', 'SPORTS', 'ESPORTS', 'CRYPTO', 'CULTURE', 'ECONOMICS', 'TECH', 'FINANCE'];
 const LEADERBOARD_PERIODS = ['DAY', 'WEEK', 'MONTH', 'ALL'];
+const SETTLED_STATUSES = ['CLOSED', 'REDEEMABLE', 'REDEEMABLE_LOST'];
+const PAGE_MAX = 1000;   // the v2 lists' largest page
 const CATEGORIES = ['sports', 'politics', 'crypto', 'econ', 'culture', 'other'];
 const DAY = 86400e3;
 const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
+
+// Bumped when the grading rules change. Scores from older rules (round 1: no
+// closing-line value, no unclaimed losers) are capped at B and rescored first.
+const RULES_VERSION = 2;
 
 const DEFAULTS = {
   priorRisk: 20000,              // $ of zero-edge betting mixed into the edge estimate
@@ -79,15 +114,23 @@ const DEFAULTS = {
   tradeCandidateMin: 5000,       // $ for one trade to queue an unknown wallet (or 2 trades over minTrade)
   maxCandidates: 50000,          // memory caps: trade-sourced wallets stop being queued...
   maxTraders: 20000,             // ...and the oldest untailable scores are forgotten
-  closedPageSize: 50,            // the data API's largest closed-positions page
-  closedMaxPages: 10,
+  closedPageSize: 500,           // settled positions a page (v2 allows up to 1000)...
+  closedMaxPages: 4,             // ...and pages per status (CLOSED, REDEEMABLE, REDEEMABLE_LOST)
+  openMaxPages: 2,               // open positions, 500 a page
   walletTradeLimit: 500,
   watchPerPoll: 2,               // graded wallets whose own trades each poll also reads
   quoteTtlMs: 20e3,
   maxSignals: 500,
+  clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
+  clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
+  clvWindowDays: 7,              // price history read up to the close...
+  clvBucketSeconds: 300,         // ...in 5-minute buckets, one call a token...
+  clvPointLimit: 1000,           // ...so the window shrinks to fit this many points
+  clvMaxGapMs: 24 * 3600e3,      // a game's last price must be this close to its start
+  clvCacheMax: 50000,            // tokens' closes and markets kept in memory
   grades: {
-    A: { label: 'elite', minN: 100, minEvents: 30, minRisked: 50000, minRoi: 0.08, minZ: 3, maxConcentration: 0.35, activeDays: 30, minRecentRoi: -0.10, capUnits: 2 },
-    B: { label: 'sharp', minN: 50, minEvents: 15, minRisked: 20000, minRoi: 0.04, minZ: 2, maxConcentration: 0.4, activeDays: 45, minRecentRoi: null, capUnits: 1 },
+    A: { label: 'elite', minN: 100, minEvents: 30, minRisked: 50000, minRoi: 0.08, minZ: 3, maxConcentration: 0.35, activeDays: 30, minRecentRoi: -0.10, minClv: 0.02, requireClv: 1, capUnits: 2 },
+    B: { label: 'sharp', minN: 50, minEvents: 15, minRisked: 20000, minRoi: 0.04, minZ: 2, maxConcentration: 0.4, activeDays: 45, minRecentRoi: null, minClv: 0.005, requireClv: 0, capUnits: 1 },
   },
 };
 const GRADES = ['A', 'B'];
@@ -100,9 +143,10 @@ function resolveOptions(opts = {}) {
 
 // TAIL_PRIOR_RISK, TAIL_MIN_TRADE, TAIL_A_MIN_Z, TAIL_B_MAX_CONCENTRATION, ...:
 // every numeric default, snake-cased. Percent keys take 8 or 0.08 (so 1 is
-// 1%), TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
+// 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
+// TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax']);
+const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -140,8 +184,12 @@ const jsonList = v => {
   if (Array.isArray(v)) return v;
   try { const x = JSON.parse(v); return Array.isArray(x) ? x : null; } catch { return null; }
 };
-// arrays come bare or wrapped, depending on the endpoint and its age
+// first value that is there (v2 snake_case names first, then v1 camelCase)
+const pick = (...vs) => { for (const v of vs) if (v != null && v !== '') return v; return null; };
+// arrays come bare or wrapped, depending on the endpoint and its age; v2's
+// `{ data: null }` is an empty list
 const ROW_KEYS = ['data', 'positions', 'trades', 'leaderboard', 'markets', 'results'];
+const emptyData = payload => payload != null && typeof payload === 'object' && !Array.isArray(payload) && 'data' in payload && payload.data == null;
 function rowsOf(payload) {
   if (Array.isArray(payload)) return payload;
   for (const k of ROW_KEYS) if (Array.isArray(payload?.[k])) return payload[k];
@@ -152,8 +200,15 @@ function rowsOf(payload) {
 function rowsOrThrow(payload, what) {
   if (Array.isArray(payload)) return payload;
   for (const k of ROW_KEYS) if (Array.isArray(payload?.[k])) return payload[k];
+  if (emptyData(payload)) return [];
   throw new Error(`${what}: unexpected response (${payload === null ? 'null' : typeof payload})`);
 }
+// v2 paging: the cursor for the next page, or null when this was the last
+const nextCursor = payload => {
+  const pg = payload?.pagination;
+  if (!pg || typeof pg !== 'object' || pg.has_more === false || pg.has_more === 'false') return null;
+  return pg.next_cursor != null && pg.next_cursor !== '' ? String(pg.next_cursor) : null;
+};
 // wallets and condition ids out of messages anyone can read (/api/status)
 const maskIds = s => String(s).replace(/0x[0-9a-f]{8,}/gi, '0x…');
 // unix seconds, unix ms or an ISO string → ms
@@ -263,7 +318,7 @@ function classify(input) {
   const sources = [
     [input.category, ev?.category, tagText(input.tags), tagText(ev?.tags)].filter(Boolean).join(' | '),
     [input.title, input.question, ev?.title].filter(Boolean).join(' | '),
-    [input.eventSlug, input.slug, ev?.slug].filter(Boolean).join(' '),
+    [input.eventSlug ?? input.event_slug, input.slug, ev?.slug].filter(Boolean).join(' '),
   ];
   for (const s of sources) {
     const cat = scoreText(s);
@@ -273,19 +328,63 @@ function classify(input) {
 }
 
 // ── parsing: data API ──
-function parseClosedPositions(payload) {
+// Dollars into a position, fees included (v2), or null when the row doesn't say.
+function costOf(r) {
+  const total = num(pick(r.total_cost_usdc, r.totalCostUsdc));
+  if (total > 0) return total;
+  const entry = num(pick(r.entry_cost_usdc, r.entryCostUsdc));
+  if (entry > 0) return entry + Math.max(0, num(pick(r.entry_fees_usdc, r.entryFeesUsdc)) ?? 0);
+  return null;
+}
+// what every position and trade row says about its market, either naming style
+function marketRef(r) {
+  const asset = pick(r.token_id, r.asset, r.tokenId);
+  return {
+    wallet: lower(pick(r.proxy_wallet, r.proxyWallet, r.wallet)) || null, conditionId: pick(r.condition_id, r.conditionId),
+    asset: asset == null ? null : String(asset), outcome: r.outcome ?? null, outcomeIndex: num(pick(r.outcome_index, r.outcomeIndex)),
+    title: r.title || '', slug: r.slug || '', eventSlug: pick(r.event_slug, r.eventSlug) || '',
+  };
+}
+const latest = (...ts) => { let m = null; for (const t of ts) if (t != null) m = Math.max(m ?? t, t); return m; };
+
+// Settled positions: v2 rows of status CLOSED, REDEEMABLE or REDEEMABLE_LOST
+// (v1 closed-positions rows read as CLOSED). A never-claimed one has no close
+// time of its own: it is dated by its market's end, unless that end is still
+// to come (it resolved early), and then it has no date. activeAt is the
+// wallet's own last move on it (a close, its first entry), never a market date.
+const UNCLAIMED = new Set(['REDEEMABLE', 'REDEEMABLE_LOST']);
+function parseClosedPositions(payload, { now = Date.now() } = {}) {
   const out = [];
   for (const r of rowsOf(payload)) {
-    const price = num(r.avgPrice), shares = num(r.totalBought), cur = num(r.curPrice);
-    if (!(price > 0 && price < 1) || !(shares > 0)) continue;
-    const pnl = num(r.realizedPnl) ?? (cur != null ? shares * (cur - price) : null);
+    if (!r || typeof r !== 'object') continue;
+    const status = String(r.status || 'CLOSED').trim().toUpperCase();
+    if (!SETTLED_STATUSES.includes(status)) continue;
+    const price = num(pick(r.avg_price, r.avgPrice)), shares = num(pick(r.total_size, r.totalBought, r.totalSize));
+    const cur = num(pick(r.current_price, r.curPrice));
+    if (!(price > 0 && price < 1)) continue;
+    const cost = costOf(r);
+    const risked = cost ?? (shares > 0 ? price * shares : null);
+    if (!(risked > 0)) continue;
+    const realized = num(pick(r.realized_pnl, r.realizedPnl));
+    let pnl = num(pick(r.total_pnl, r.totalPnl));
+    if (pnl == null && UNCLAIMED.has(status)) {
+      // still held at settlement: worth $1 (won), $0 (lost) or what it settled at
+      const held = num(pick(r.current_size, r.size)) ?? shares;
+      const value = cur != null && cur >= 0 && cur <= 1 ? cur : status === 'REDEEMABLE' ? 1 : 0;
+      if (held != null) pnl = (realized ?? 0) + held * ((status === 'REDEEMABLE_LOST' ? 0 : value) - price);
+    }
+    if (pnl == null) pnl = realized ?? (cur != null && shares > 0 ? shares * (cur - price) : null);
     if (pnl == null) continue;
+    const end = toMs(pick(r.end_date, r.endDate));
+    const unclaimed = UNCLAIMED.has(status);
+    const at = unclaimed ? (end != null && end <= now ? end : null) : toMs(pick(r.last_event_at, r.lastEventAt, r.timestamp)) ?? end;
+    const enteredAt = toMs(pick(r.first_entry_at, r.firstEntryAt));
+    const fees = num(pick(r.entry_fees_usdc, r.entryFeesUsdc));
     out.push({
-      wallet: lower(r.proxyWallet) || null, conditionId: r.conditionId || null, asset: r.asset != null ? String(r.asset) : null,
-      outcome: r.outcome ?? null, outcomeIndex: num(r.outcomeIndex),
-      title: r.title || '', slug: r.slug || '', eventSlug: r.eventSlug || '',
-      price, risked: price * shares, pnl, won: cur != null ? cur >= 0.99 : pnl > 0,
-      at: toMs(r.timestamp) ?? toMs(r.endDate), endAt: toMs(r.endDate), category: classify(r), source: 'closed',
+      ...marketRef(r), status, price, risked, pnl, fees: fees > 0 ? fees : 0,
+      won: status === 'REDEEMABLE_LOST' ? false : cur != null ? cur >= 0.99 : status === 'REDEEMABLE' || pnl > 0,
+      at, endAt: end, enteredAt, activeAt: latest(unclaimed ? null : at, enteredAt),
+      category: classify(r), source: status === 'REDEEMABLE' ? 'redeemable' : status === 'REDEEMABLE_LOST' ? 'lost' : 'closed',
     });
   }
   return out;
@@ -294,14 +393,19 @@ function parseClosedPositions(payload) {
 function parseOpenPositions(payload) {
   const out = [];
   for (const r of rowsOf(payload)) {
-    if (!r?.conditionId && r?.asset == null) continue;
+    if (!r || typeof r !== 'object') continue;
+    const ref = marketRef(r);
+    if (!ref.conditionId && ref.asset == null) continue;
+    const status = r.status != null ? String(r.status).trim().toUpperCase() : null;
+    const enteredAt = toMs(pick(r.first_entry_at, r.firstEntryAt));
     out.push({
-      wallet: lower(r.proxyWallet) || null, conditionId: r.conditionId || null, asset: r.asset != null ? String(r.asset) : null,
-      outcome: r.outcome ?? null, outcomeIndex: num(r.outcomeIndex),
-      title: r.title || '', slug: r.slug || '', eventSlug: r.eventSlug || '',
-      size: num(r.size), price: num(r.avgPrice), curPrice: num(r.curPrice), totalBought: num(r.totalBought),
-      initialValue: num(r.initialValue), currentValue: num(r.currentValue), cashPnl: num(r.cashPnl), realizedPnl: num(r.realizedPnl),
-      redeemable: bool(r.redeemable), endDate: r.endDate || null, category: classify(r),
+      ...ref, status,
+      size: num(pick(r.current_size, r.size)), price: num(pick(r.avg_price, r.avgPrice)), curPrice: num(pick(r.current_price, r.curPrice)),
+      totalBought: num(pick(r.total_size, r.totalBought)), cost: costOf(r),
+      initialValue: num(r.initialValue), currentValue: num(pick(r.current_value, r.currentValue)),
+      cashPnl: num(pick(r.unrealized_pnl, r.cashPnl)), realizedPnl: num(pick(r.realized_pnl, r.realizedPnl)), totalPnl: num(pick(r.total_pnl, r.totalPnl)),
+      redeemable: bool(r.redeemable) || (status != null && UNCLAIMED.has(status)), endDate: pick(r.end_date, r.endDate),
+      enteredAt, activeAt: latest(toMs(pick(r.last_event_at, r.lastEventAt)), enteredAt), category: classify(r),
     });
   }
   return out;
@@ -309,8 +413,10 @@ function parseOpenPositions(payload) {
 
 // Open positions in markets that already resolved (redeemable at $1 or $0).
 // Losers are rarely redeemed, so without these a wallet's record only grows.
-// Their time is the market's scheduled end, which can be in the future for a
-// market that resolved early: then it has no time (it isn't recent form).
+// (v2 lists them under REDEEMABLE / REDEEMABLE_LOST; this catches any that an
+// open read still carries.) Their time is the market's scheduled end, which
+// can be in the future for a market that resolved early: then it has no time
+// (it isn't recent form).
 const settledOpen = r => r.redeemable && r.curPrice != null && (r.curPrice >= 0.99 || r.curPrice <= 0.01);
 function resolvedFromOpen(openRows, now = Date.now()) {
   const out = [];
@@ -320,29 +426,50 @@ function resolvedFromOpen(openRows, now = Date.now()) {
     const shares = r.totalBought ?? r.size;
     if (!(r.price > 0 && r.price < 1) || !(shares > 0) || !(r.size >= 0)) continue;
     const settle = cur >= 0.99 ? 1 : 0;
-    const pnl = (r.cashPnl ?? r.size * (settle - r.price)) + (r.realizedPnl ?? 0);
+    const pnl = r.totalPnl ?? (r.cashPnl ?? r.size * (settle - r.price)) + (r.realizedPnl ?? 0);
     const end = toMs(r.endDate);
     out.push({
       wallet: r.wallet, conditionId: r.conditionId, asset: r.asset, outcome: r.outcome, outcomeIndex: r.outcomeIndex,
-      title: r.title, slug: r.slug, eventSlug: r.eventSlug,
-      price: r.price, risked: r.price * shares, pnl, won: settle === 1,
-      at: end != null && end <= now ? end : null, endAt: end, category: r.category, source: 'open',
+      title: r.title, slug: r.slug, eventSlug: r.eventSlug, status: settle ? 'REDEEMABLE' : 'REDEEMABLE_LOST',
+      price: r.price, risked: r.cost > 0 ? r.cost : r.price * shares, pnl, fees: 0, won: settle === 1,
+      at: end != null && end <= now ? end : null, endAt: end, enteredAt: r.enteredAt ?? null, activeAt: r.enteredAt ?? null,
+      category: r.category, source: 'open',
     });
   }
   return out;
 }
 
-// A position still open, at today's price: the dollars in, and the profit so
-// far (any part already sold plus the unrealized rest). null if unpriced.
+// A position still open, at today's price: the dollars in (fees included when
+// the row says), and the profit so far (any part already sold plus the
+// unrealized rest). null if unpriced.
 function markOpen(r) {
   const shares = r.totalBought ?? r.size;
-  const risked = r.price > 0 && shares > 0 ? r.price * shares : r.initialValue;
+  const risked = r.cost > 0 ? r.cost : r.price > 0 && shares > 0 ? r.price * shares : r.initialValue;
   if (!(risked > 0)) return null;
+  if (r.totalPnl != null) return { risked, pnl: r.totalPnl };
   const unreal = r.cashPnl
     ?? (r.currentValue != null && r.initialValue != null ? r.currentValue - r.initialValue
       : r.curPrice != null && r.size != null && r.price != null ? r.size * (r.curPrice - r.price) : null);
   if (unreal == null) return null;
   return { risked, pnl: unreal + (r.realizedPnl ?? 0) };
+}
+
+// Settled and still-open positions out of raw rows: the same token listed
+// twice (under two statuses, or on two pages as the list moved) counts once.
+function resolvedPositions(closed = [], open = [], now = Date.now()) {
+  const seenKeys = new Set();
+  const closedRows = parseClosedPositions(closed, { now }).filter(p => {
+    if (!p.asset) return true;
+    const k = `${p.asset}|${p.enteredAt ?? ''}`;
+    if (seenKeys.has(k)) return false;
+    seenKeys.add(k);
+    return true;
+  });
+  const openRows = parseOpenPositions(open);
+  const settledAssets = new Set(closedRows.map(p => p.asset).filter(Boolean));
+  const fromOpen = resolvedFromOpen(openRows, now).filter(p => !p.asset || !settledAssets.has(p.asset));
+  const stillOpen = openRows.filter(r => !settledOpen(r) && !(r.asset && settledAssets.has(r.asset)));
+  return { closedRows, openRows, resolved: [...closedRows, ...fromOpen], stillOpen };
 }
 
 // Trades come back one row per fill; fills of one order share a transaction
@@ -352,13 +479,14 @@ const tradeKey = (txHash, asset, wallet) => `${txHash}:${asset}:${wallet}`;
 function parseTrades(payload) {
   const byKey = new Map();
   for (const r of rowsOf(payload)) {
-    const wallet = lower(r.proxyWallet ?? r.wallet);
+    if (!r || typeof r !== 'object') continue;
+    const ref = marketRef(r);
+    const { wallet, asset } = ref;
     const side = String(r.side || '').toUpperCase();
     const size = num(r.size), price = num(r.price);
-    const asset = r.asset != null ? String(r.asset) : null;
     if (!wallet || !asset || !(size > 0) || !(price > 0 && price < 1)) continue;
     const at = toMs(r.timestamp ?? r.at);
-    const txHash = r.transactionHash || r.txHash || null;
+    const txHash = pick(r.transaction_hash, r.transactionHash, r.txHash);
     const key = txHash ? tradeKey(txHash, asset, wallet) : `${wallet}:${asset}:${at}:${side}:${size}:${price}`;
     const prev = byKey.get(key);
     if (prev) {
@@ -370,43 +498,74 @@ function parseTrades(payload) {
       continue;
     }
     byKey.set(key, {
-      key, wallet, side, asset, conditionId: r.conditionId || null, size, price, notional: size * price, at,
-      title: r.title || '', slug: r.slug || '', eventSlug: r.eventSlug || '', outcome: r.outcome ?? null, outcomeIndex: num(r.outcomeIndex),
+      key, wallet, side, asset, conditionId: ref.conditionId, size, price, notional: size * price, at,
+      title: ref.title, slug: ref.slug, eventSlug: ref.eventSlug, outcome: ref.outcome, outcomeIndex: ref.outcomeIndex,
       name: r.name || r.pseudonym || null, txHash,
     });
   }
   return [...byKey.values()];
 }
 
+// v2 rows: rank, user_id (the wallet), pnl, volume, user_name, x_username, verified
 function parseLeaderboard(payload, source = null) {
   const out = [];
   for (const r of rowsOf(payload)) {
-    const wallet = lower(r.proxyWallet || r.wallet || r.address || r.user);
+    if (!r || typeof r !== 'object') continue;
+    const wallet = lower(pick(r.user_id, r.proxy_wallet, r.proxyWallet, r.wallet, r.address, r.user));
     if (!wallet) continue;
     out.push({
-      wallet, name: r.userName || r.username || r.name || r.pseudonym || null,
-      pnl: num(r.pnl ?? r.amount), vol: num(r.vol ?? r.volume), rank: num(r.rank),
-      xUsername: r.xUsername || null, verified: bool(r.verifiedBadge), profileImage: r.profileImage || null, source,
+      wallet, name: pick(r.user_name, r.userName, r.username, r.name, r.pseudonym),
+      pnl: num(r.pnl ?? r.amount), vol: num(pick(r.volume, r.vol)), rank: num(r.rank),
+      xUsername: pick(r.x_username, r.xUsername), verified: bool(r.verified) || bool(r.verifiedBadge),
+      profileImage: pick(r.profile_image, r.profileImage), source,
     });
   }
   return out;
 }
 
 // ── parsing: gamma markets ──
+// Taker fee schedule: `feeSchedule` (an object, or the same as a JSON string)
+// with `rate` and `exponent`. A sports market (`feeType: "sports_fees_v2"`)
+// that comes without one is taken at the published 0.05 (as xarb.js does), so
+// a missing field never makes a bet look cheaper. A rate over 1 is a percent.
+// → { rate, exponent, type } | null (no fee)
+const SPORTS_FEE_RATE = 0.05;
+function parseFeeSchedule(m) {
+  let sched = m?.feeSchedule ?? m?.fee_schedule ?? null;
+  if (typeof sched === 'string') { try { sched = JSON.parse(sched); } catch { sched = null; } }
+  const type = m?.feeType ?? m?.fee_type ?? null;
+  let rate = num(sched?.rate);
+  if (rate != null && rate >= 0) {
+    if (rate > 1) rate /= 100;
+    const e = num(sched.exponent);
+    return rate > 0 ? { rate, exponent: e != null && e > 0 ? e : 1, type } : null;
+  }
+  return /sports_fees/i.test(type || '') ? { rate: SPORTS_FEE_RATE, exponent: 1, type } : null;
+}
+// Polymarket's taker fee a share bought at `price`: rate × (p(1 − p))^exponent
+function polymarketFee(price, schedule) {
+  const p = num(price), rate = num(schedule?.rate);
+  if (!(p > 0 && p < 1) || !(rate > 0)) return 0;
+  const e = num(schedule.exponent);
+  return rate * (p * (1 - p)) ** (e != null && e > 0 ? e : 1);
+}
+
 function parseGammaMarket(m) {
   if (!m || typeof m !== 'object') return null;
   const ev = Array.isArray(m.events) ? m.events[0] : null;
   return {
-    id: m.id != null ? String(m.id) : null, conditionId: m.conditionId || null, question: m.question || '',
+    id: m.id != null ? String(m.id) : null, conditionId: m.conditionId || m.condition_id || null, question: m.question || '',
     slug: m.slug || '', eventSlug: ev?.slug || m.eventSlug || '', eventTitle: ev?.title || '',
     category: m.category || ev?.category || null, tags: m.tags || ev?.tags || null,
     outcomes: jsonList(m.outcomes) || [], prices: (jsonList(m.outcomePrices) || []).map(num),
     tokens: (jsonList(m.clobTokenIds) || []).map(String),
     bestBid: num(m.bestBid), bestAsk: num(m.bestAsk), lastTradePrice: num(m.lastTradePrice),
-    endDate: m.endDate || m.endDateIso || null, gameStartTime: m.gameStartTime || null,
+    endDate: m.endDate || m.endDateIso || null, gameStartTime: m.gameStartTime || m.game_start_time || null,
+    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null,
     active: m.active !== false && m.active !== 'false', closed: bool(m.closed), resolution: m.umaResolutionStatus || null,
     acceptingOrders: m.acceptingOrders == null ? null : bool(m.acceptingOrders),
     negRisk: bool(m.negRisk), volume: num(m.volume), liquidity: num(m.liquidity),
+    fee: parseFeeSchedule(m),
   };
 }
 const parseGammaMarkets = payload => rowsOf(payload).map(parseGammaMarket).filter(Boolean);
@@ -463,6 +622,125 @@ function resolutionOf(market) {
   return null;
 }
 
+// ── closing-line value ──
+// Price history comes in several shapes (unconfirmed for v2): the points as
+// { t, p }, { timestamp, price }, { ts, price } or [t, p], bare or under
+// `history` / `data` / `data.history`. → { points: [{ t (ms), p }] oldest
+// first, truncated (more pages left) }. strict: a payload with no list in it
+// throws (a failed fetch, not "no prices").
+const HISTORY_KEYS = ['history', 'points', 'prices', 'data'];
+function historyRows(payload, depth = 0) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object' || depth > 2) return null;
+  for (const k of HISTORY_KEYS) {
+    const v = payload[k];
+    if (Array.isArray(v)) return v;
+    if (v && typeof v === 'object') { const inner = historyRows(v, depth + 1); if (inner) return inner; }
+  }
+  return emptyData(payload) ? [] : null;
+}
+function parsePriceHistory(payload, { strict = false } = {}) {
+  const rows = historyRows(payload);
+  if (!rows) {
+    if (strict) throw new Error(`prices history: unexpected response (${payload === null ? 'null' : typeof payload})`);
+    return { points: [], truncated: false };
+  }
+  const byT = new Map();
+  for (const x of rows) {
+    const t = toMs(Array.isArray(x) ? x[0] : pick(x?.t, x?.timestamp, x?.ts, x?.time));
+    const p = num(Array.isArray(x) ? x[1] : pick(x?.p, x?.price, x?.value));
+    if (t != null && p != null && p >= 0 && p <= 1) byT.set(t, p);
+  }
+  const points = [...byT].map(([t, p]) => ({ t, p })).sort((a, b) => a.t - b.t);
+  return { points, truncated: nextCursor(payload) != null || nextCursor(payload?.data) != null || payload?.pagination?.has_more === true };
+}
+
+// When a settled market's closing line was, for the token held. A game
+// (Gamma gameStartTime) closes at its start. Anything else closes when the
+// outcome got out (freeze) or at its end: the earliest of the market's close
+// time, its end date and now. A game whose start we can't get (no market, or
+// a head-to-head with no start time) has no close: its in-play prices aren't
+// one. → { start, end, rule: 'game' | 'freeze' } | null. The window is the
+// market's own (one cached close a token, whoever held it), at most
+// clvWindowDays and at most clvPointLimit buckets long.
+const GAME_TITLE = /\s(vs\.?|v\.?|@)\s/i;
+function clvWindow(pos, market = null, { now = Date.now(), opts = {} } = {}) {
+  const o = resolveOptions(opts);
+  if (!pos?.asset) return null;
+  const game = toMs(market?.gameStartTime);
+  let end, rule;
+  if (game != null) { end = game; rule = 'game'; }
+  else if (pos.category === 'sports' && (!market || GAME_TITLE.test(` ${market.question || pos.title || ''} `) || market.sportsMarketType)) return null;
+  else {
+    end = Math.min(now, ...[market?.closedAt, pos.endAt ?? toMs(market?.endDate)].filter(Number.isFinite));
+    rule = 'freeze';
+  }
+  if (!(end <= now)) return null;
+  const span = Math.min(o.clvWindowDays * DAY, o.clvPointLimit * o.clvBucketSeconds * 1000);
+  return { start: end - span, end, rule };
+}
+
+// The closing price inside a window's points (strictly before `closeAt`):
+// the last one, or with `freeze` the last one before the price first reached
+// 97¢+ or 3¢- (if a cut-off series never gets there, its close is unknown). A
+// game's last price must be within maxGapMs of the start. → { price, at, cut }
+// | null, `cut` being when the line stopped counting (a bet placed after it
+// has no closing line).
+const OUTCOME_OUT = p => p >= 0.97 || p <= 0.03;
+function closingPrice(points, { closeAt = null, freeze = false, truncated = false, maxGapMs = null } = {}) {
+  const list = (points || []).filter(x => Number.isFinite(x?.t) && Number.isFinite(x?.p) && (closeAt == null || x.t < closeAt)).sort((a, b) => a.t - b.t);
+  let last = null, cut = closeAt;
+  if (freeze) {
+    let frozeAt = null;
+    for (const x of list) { if (OUTCOME_OUT(x.p)) { frozeAt = x.t; break; } last = x; }
+    if (frozeAt == null && truncated) return null;
+    if (frozeAt != null) cut = frozeAt;
+  } else last = list.at(-1) || null;
+  if (!last) return null;
+  if (maxGapMs != null && closeAt != null && closeAt - last.t > maxGapMs) return null;
+  return { price: last.p, at: last.t, cut: cut ?? last.t };
+}
+
+// One position's CLV against its token's close: (close − entry) / entry. null
+// when it was bought after the line stopped counting (in play, or after the
+// outcome got out).
+function clvOf(pos, close) {
+  if (!pos || !close || !(pos.price > 0 && pos.price < 1) || !Number.isFinite(close.price)) return null;
+  if (pos.enteredAt != null && close.cut != null && pos.enteredAt >= close.cut) return null;
+  return {
+    asset: pos.asset, conditionId: pos.conditionId || null, category: pos.category || 'other', title: pos.title || '',
+    risked: round(pos.risked, 2), entry: round(pos.price, 6), close: close.price, closeAt: iso(close.at), cutAt: iso(close.cut),
+    rule: close.rule || null, clv: (close.price - pos.price) / pos.price,
+  };
+}
+
+// stake-weighted average CLV, the share that beat the close, and how many
+function clvStats(samples) {
+  const list = (samples || []).filter(x => Number.isFinite(x?.clv));
+  if (!list.length) return { n: 0, avg: null, hitRate: null };
+  let w = 0, sum = 0;
+  for (const x of list) { const r = num(x.risked) > 0 ? num(x.risked) : 0; w += r; sum += r * x.clv; }
+  return {
+    n: list.length, avg: w > 0 ? sum / w : list.reduce((a, x) => a + x.clv, 0) / list.length,
+    hitRate: list.filter(x => x.clv > 0).length / list.length,
+  };
+}
+
+// the k most recent settled positions with a token and a price, one per token
+function clvCandidates(resolved, k = DEFAULTS.clvSample) {
+  const when = p => p.at ?? p.endAt ?? p.enteredAt ?? 0;
+  const seenAssets = new Set(), out = [];
+  // ties broken by token, so the same record always samples the same bets
+  const byTime = (a, b) => (when(b) - when(a)) || (a.asset < b.asset ? -1 : a.asset > b.asset ? 1 : 0);
+  for (const p of [...(resolved || [])].filter(p => p?.asset && p.price > 0 && p.price < 1).sort(byTime)) {
+    if (out.length >= k) break;
+    if (seenAssets.has(p.asset)) continue;
+    seenAssets.add(p.asset);
+    out.push(p);
+  }
+  return out;
+}
+
 // ── scoring ──
 // Market identity of a holding by each id it carries; a market is two-sided
 // when any one id shows two different outcomes (ids are never mixed).
@@ -495,8 +773,9 @@ function topShare(values) {
 // Raw (unrounded) stats of a list of resolved positions; grading uses these.
 // open: positions still open (marked to market into ROI and edge, not the
 // luck test); since: when the wallet was picked (ms), for the forward record.
-function walletStats(positions, { holdings = positions, open = [], since = null, now = Date.now(), opts = {} } = {}) {
+function walletStats(positions, { holdings = positions, open = [], since = null, now = Date.now(), clvSamples = null, opts = {} } = {}) {
   const o = resolveOptions(opts);
+  const clv = clvStats(clvSamples);
   const cut = now - o.recentDays * DAY;
   let risked = 0, pnl = 0, wins = 0, entrySum = 0, lastAt = null;
   let rRisk = 0, rPnl = 0, rN = 0, fRisk = 0, fPnl = 0, fN = 0;
@@ -541,6 +820,7 @@ function walletStats(positions, { holdings = positions, open = [], since = null,
     recentN: rN, recentRoi: rRisk > 0 ? rPnl / rRisk : null,
     forwardN: since == null ? null : fN, forwardPnl: since == null ? null : fPnl, forwardRoi: fRisk > 0 ? fPnl / fRisk : null,
     edge: (allPnl / (allRisked + o.priorRisk)) * o.regression,
+    clv: clv.avg, clvN: clv.n, clvHitRate: clv.hitRate,
   };
 }
 
@@ -553,6 +833,7 @@ function presentStats(s) {
     twoSided: round(s.twoSided, 4), markets: s.markets, activeDays: s.activeDays, lastAt: iso(s.lastAt),
     recentN: s.recentN, recentRoi: round(s.recentRoi, 4),
     forwardN: s.forwardN ?? null, forwardRoi: round(s.forwardRoi, 4), edge: round(s.edge, 6),
+    clv: round(s.clv, 4), clvN: s.clvN ?? 0, clvHitRate: round(s.clvHitRate, 4),
   };
 }
 
@@ -581,8 +862,16 @@ function checkTier(s, g, o, now) {
   if (g.minRecentRoi != null && s.recentRoi != null && s.recentRoi <= g.minRecentRoi + EPS) {
     fail('recentRoi', `last ${o.recentDays} days ROI ${pct(s.recentRoi)} (must be above ${pct(g.minRecentRoi)})`);
   }
+  // closing-line value: needed for A; once measured on enough bets it can sink B too
+  const clvN = s.clvN ?? 0;
+  if (clvN === 0 || clvN < o.clvMinN) {
+    if (g.requireClv) fail('clv', 'closing-line value not measured yet');
+  } else if (g.minClv != null && !(s.clv != null && s.clv >= g.minClv - EPS)) {
+    fail('clv', `closing-line value ${signedPct(s.clv ?? 0, g.minClv)} over ${clvN} bets (need ${signedPct(g.minClv, g.minClv)})`);
+  }
   return f;
 }
+const signedPct = (x, limit) => { const v = vs(x, limit, 1, 100); return `${v > 0 ? '+' : ''}${v}%`; };
 
 function gradeStats(s, opts = {}, now = Date.now()) {
   const o = resolveOptions(opts);
@@ -596,26 +885,27 @@ function gradeStats(s, opts = {}, now = Date.now()) {
   };
 }
 
-// closed / open: raw data-API rows; trades: raw or parsed (they add activity
-// times and two-sided evidence); selectedAt: when the wallet became a
-// candidate (bets resolved after it are its forward record). opts may carry `now`.
-function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null } = {}, { now = Date.now(), ...opts } = {}) {
+// closed: raw settled rows (v2 CLOSED, REDEEMABLE, REDEEMABLE_LOST; v1 closed);
+// open: raw open rows; trades: raw or parsed (they add activity times and
+// two-sided evidence); selectedAt: when the wallet became a candidate (bets
+// resolved after it are its forward record); clv: measured closing-line
+// samples (clvOf), or nothing when not measured. A category with clvMinN
+// samples of its own is graded on them, otherwise on the wallet's. opts may
+// carry `now`.
+function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null } = {}, { now = Date.now(), ...opts } = {}) {
   const o = resolveOptions(opts);
   const since = toMs(selectedAt);
-  const closedRows = parseClosedPositions(closed);
-  const openRows = parseOpenPositions(open);
-  const closedAssets = new Set(closedRows.map(p => p.asset).filter(Boolean));
-  const fromOpen = resolvedFromOpen(openRows, now).filter(p => !p.asset || !closedAssets.has(p.asset));
-  const resolved = [...closedRows, ...fromOpen];
-  const stillOpen = openRows.filter(r => !settledOpen(r));
+  const { closedRows, openRows, resolved, stillOpen } = resolvedPositions(closed, open, now);
   const tradeRows = parseTrades(trades);
   const buys = tradeRows.filter(t => t.side === 'BUY').map(t => ({ ...t, category: classify(t) }));
   const holdings = [...resolved, ...openRows, ...buys];
+  const samples = Array.isArray(clv) ? clv.filter(x => Number.isFinite(x?.clv)) : [];
 
-  // activity is the wallet's own trades and closes, not a market's end date
+  // activity is the wallet's own trades, closes and entries, not a market's end date
   let lastAt = null;
-  for (const x of [...closedRows, ...tradeRows]) if (x.at != null && x.at <= now) lastAt = Math.max(lastAt ?? 0, x.at);
-  const overall = { ...walletStats(resolved, { holdings, open: stillOpen, since, now, opts: o }) };
+  for (const x of [...closedRows, ...openRows]) if (x.activeAt != null && x.activeAt <= now) lastAt = Math.max(lastAt ?? 0, x.activeAt);
+  for (const x of tradeRows) if (x.at != null && x.at <= now) lastAt = Math.max(lastAt ?? 0, x.at);
+  const overall = { ...walletStats(resolved, { holdings, open: stillOpen, since, now, clvSamples: samples, opts: o }) };
   overall.lastAt = lastAt;
   const g = gradeStats(overall, o, now);
 
@@ -623,10 +913,15 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
   for (const cat of CATEGORIES) {
     const list = resolved.filter(p => p.category === cat);
     if (!list.length) continue;
-    const cs = walletStats(list, { holdings: holdings.filter(h => h.category === cat), open: stillOpen.filter(r => r.category === cat), since, now, opts: o });
+    const own = samples.filter(x => x.category === cat);
+    const clvScope = own.length >= o.clvMinN ? 'category' : 'wallet';
+    const cs = walletStats(list, {
+      holdings: holdings.filter(h => h.category === cat), open: stillOpen.filter(r => r.category === cat), since, now,
+      clvSamples: clvScope === 'category' ? own : samples, opts: o,
+    });
     // a market maker is out everywhere; being active anywhere counts as active
     const cg = gradeStats({ ...cs, twoSided: Math.max(cs.twoSided, overall.twoSided), activeAt: lastAt }, o, now);
-    categories[cat] = { ...presentStats(cs), grade: cg.grade, label: cg.label, reasons: cg.reasons, failed: cg.failed, whyNotA: cg.whyNotA, failedA: cg.failedA };
+    categories[cat] = { ...presentStats(cs), clvScope, grade: cg.grade, label: cg.label, reasons: cg.reasons, failed: cg.failed, whyNotA: cg.whyNotA, failedA: cg.failedA };
   }
 
   const w = lower(wallet);
@@ -636,8 +931,21 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
     reasons: g.reasons, failed: g.failed, whyNotA: g.whyNotA, failedA: g.failedA,
     ...presentStats(overall), categories,
     openPositions: stillOpen.length, openValue: round(stillOpen.reduce((a, r) => a + (r.currentValue || 0), 0), 2),
-    selectedAt: iso(since), scoredAt: iso(now),
+    ...(Array.isArray(clv) ? { clvSamples: samples } : {}),
+    selectedAt: iso(since), scoredAt: iso(now), rulesVersion: RULES_VERSION,
   };
+}
+
+// A stored score from older rules, until it's rescored: at most B (it has no
+// closing-line value), overall and per category.
+const STALE_NOTE = 'scored by older rules: rescoring';
+function capStale(tr, opts = {}) {
+  if (!tr || tr.rulesVersion === RULES_VERSION) return tr;
+  const o = resolveOptions(opts);
+  const cap = x => (x?.grade === 'A' ? { ...x, grade: 'B', label: o.grades.B.label, whyNotA: [STALE_NOTE, ...(x.whyNotA || [])] } : x);
+  const categories = {};
+  for (const [cat, c] of Object.entries(tr.categories || {})) categories[cat] = cap(c);
+  return { ...cap(tr), categories, staleRules: true };
 }
 
 // The grade and edge that apply to a trade in `category`: the category's own
@@ -678,24 +986,57 @@ function trueProb(p, edge, pivot = 0.5) {
   return odds / (1 + odds);
 }
 
+// Units for a bet on an outcome we put at probability q, bought at `price`
+// with a fee of feePerContract a contract, from a wallet of `grade`, with
+// `consensus` graded wallets (a count, or their list) on the same side.
+// The same at every venue and for everyone. → { kelly, units, maxPrice, cost,
+// cap }: kelly null when there is no price to buy at; maxPrice the highest
+// price (to the cent) still worth paying with that fee, null when none is.
+function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} } = {}) {
+  const o = resolveOptions(opts);
+  const prob = num(q), p = num(price);
+  const fee = Math.max(0, num(feePerContract) ?? 0);
+  const tier = o.grades[String(grade || '').toUpperCase()] || null;
+  const voters = Array.isArray(consensus) ? new Set(consensus.map(lower).filter(Boolean)).size : num(consensus) ?? 1;
+  const isConsensus = voters >= o.consensusMin;
+  const base = tier ? tier.capUnits : 0;
+  const cap = isConsensus ? Math.min(base * o.consensusMult, o.maxUnits) : base;
+  const ok = prob > 0 && prob < 1;
+  // Kelly > 0 ⇔ price + fee < q: the last whole cent under q − fee
+  const top = ok ? (Math.ceil((prob - fee) * 100 - 1e-7) - 1) / 100 : null;
+  const maxPrice = top != null && top >= 0.01 ? Math.min(round(top, 2), 0.99) : null;
+  if (!ok || !(p > 0 && p < 1) || !(p + fee < 1)) return { kelly: null, units: 0, maxPrice, cost: p > 0 ? p + fee : null, cap };
+  const cost = p + fee;
+  const kelly = (prob - cost) / (1 - cost);
+  let units = 0;
+  if (kelly > EPS && tier) {
+    units = Math.min(Math.max(o.kellyFraction * kelly * o.bankrollUnits, 0), base);
+    if (isConsensus) units = Math.min(units * o.consensusMult, o.maxUnits);
+    units = round(units, 2);
+  }
+  return { kelly, units, maxPrice, cost, cap };
+}
+
 // trade: a parsed trade; trader: a scoreWallet result; market: a parsed gamma
 // market (null when the lookup failed); consensus: other graded wallets that
 // bought the same outcome inside the window; prior: { id, units } when we
 // already tailed this wallet into this outcome (then only the top-up up to
-// the new size is staked). → { signal, skip }
+// the new size is staked). → { signal, skip }. The signal carries q (our
+// probability of the outcome bought) and is sized with sizeAt at Polymarket's
+// ask plus its taker fee, so the same q sizes it at any other venue.
 function tradeSignal({ trade, trader, market = null, consensus = [], prior = null, now = Date.now(), opts = {} } = {}) {
   const o = resolveOptions(opts);
   const skip = reason => ({ signal: null, skip: reason });
   if (!trade || !trader) return skip('not graded');
   const category = classify(trade);
-  const pick = gradeFor(trader, category, o);
-  if (!pick.grade) return skip(pick.skip);
+  const tier = gradeFor(trader, category, o);
+  if (!tier.grade) return skip(tier.skip);
   if (!(trade.notional >= o.minTrade - EPS)) return skip(`under ${money(o.minTrade)}`);
   if (trade.at != null && now - trade.at > o.maxTradeAgeMs) return skip('stale trade');
 
   const eventSlug = trade.eventSlug || market?.eventSlug || trade.slug || null;
   const base = {
-    id: trade.key, wallet: trader.wallet, name: trader.name || trade.name || null, grade: pick.grade, scope: pick.scope, category,
+    id: trade.key, wallet: trader.wallet, name: trader.name || trade.name || null, grade: tier.grade, scope: tier.scope, category,
     market: trade.title || market?.question || '', eventSlug, conditionId: trade.conditionId, asset: trade.asset,
     outcome: trade.outcome, outcomeIndex: trade.outcomeIndex,
     theirPrice: trade.price, theirSize: round(trade.size, 4), theirNotional: round(trade.notional, 2),
@@ -710,22 +1051,19 @@ function tradeSignal({ trade, trader, market = null, consensus = [], prior = nul
   }
 
   const p = trade.price, c = market ? askFor(market, trade) : null;
-  const scoped = pick.scope === 'category' ? trader.categories?.[category] : trader;
-  const q = Math.min(o.maxProb, trueProb(p, pick.edge, num(scoped?.avgEntry) ?? 0.5));
+  const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
+  const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const wallets = [...new Set([trader.wallet, ...(consensus || []).map(lower).filter(Boolean)])];
   const isConsensus = wallets.length >= o.consensusMin;
-  const cap = o.grades[pick.grade].capUnits;
-  let units = 0, kelly = null, reason = null, target = 0;
+  const fee = c == null ? null : polymarketFee(c, market?.fee);
+  const sized = sizeAt({ q, price: c, feePerContract: fee ?? 0, grade: tier.grade, consensus: wallets.length, opts: o });
+  let units = 0, reason = null, target = 0;
+  const kelly = c == null ? null : sized.kelly;
   if (c == null) reason = 'no live price: check it before following';
+  else if (c - p > o.chaseMax + EPS || !(kelly > EPS)) reason = "price ran, don't chase";
   else {
-    kelly = (q - c) / (1 - c);
-    if (c - p > o.chaseMax + EPS || kelly <= EPS) reason = "price ran, don't chase";
-    else {
-      units = Math.min(Math.max(o.kellyFraction * kelly * o.bankrollUnits, 0), cap);
-      if (isConsensus) units = Math.min(units * o.consensusMult, o.maxUnits);
-      units = target = round(units, 2);
-      if (!(units > 0)) reason = 'edge too small to size';
-    }
+    units = target = sized.units;
+    if (!(units > 0)) reason = 'edge too small to size';
   }
   const before = num(prior?.units) > 0 ? num(prior.units) : 0;
   if (before > 0 && target > 0) {
@@ -734,9 +1072,10 @@ function tradeSignal({ trade, trader, market = null, consensus = [], prior = nul
   }
   return {
     signal: {
-      ...base, type: 'entry', currentPrice: c, slippage: c == null ? null : round(c - p, 4), edge: round(pick.edge, 4),
-      prob: round(q, 4), kelly: round(kelly, 4), units, target, cap: isConsensus ? Math.min(cap * o.consensusMult, o.maxUnits) : cap,
-      parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0,
+      ...base, type: 'entry', currentPrice: c, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
+      q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
+      kelly: round(kelly, 4), units, target, cap: sized.cap,
+      parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0, priorUnits: before,
       consensus: wallets, isConsensus, reason,
     },
     skip: null,
@@ -744,16 +1083,39 @@ function tradeSignal({ trade, trader, market = null, consensus = [], prior = nul
 }
 
 // ── fetching ──
+// Everything from the data API is v2. Polymarket throttles per IP (v2 800 per
+// 10s, trades 300, positions 200, prices history 200); the server's polite
+// queue keeps us far under that.
 const TIMEOUT = 10000;
+
+// One v2 list: follows pagination.next_cursor (sent back as `cursor`) until
+// it runs out, a page comes back empty, or maxPages. A cursor that doesn't
+// move ends it too. → { rows (raw), truncated (pages were left), pages }
+async function fetchPaged(http, url, params, { what = 'list', maxPages = 1 } = {}) {
+  const rows = [];
+  let cursor = null;
+  for (let page = 0; page < Math.max(1, maxPages); page++) {
+    const res = await http.get(url, { params: cursor ? { ...params, cursor } : params, timeout: TIMEOUT });
+    const got = rowsOrThrow(res?.data, what);
+    rows.push(...got);
+    const next = nextCursor(res?.data);
+    if (!next || !got.length) return { rows, truncated: false, pages: page + 1 };
+    if (next === cursor) return { rows, truncated: true, pages: page + 1 };
+    cursor = next;
+  }
+  return { rows, truncated: true, pages: Math.max(1, maxPages) };
+}
 
 // categories × periods, deduped by wallet; one failing call doesn't sink the rest
 async function fetchLeaderboard(http, { categories = LEADERBOARD_CATEGORIES, periods = LEADERBOARD_PERIODS, limit = 50 } = {}) {
   const byWallet = new Map(), errors = [];
   for (const category of categories) {
     for (const timePeriod of periods) {
-      const key = `${category}:${timePeriod}`;
+      const key = `${String(category).toUpperCase()}:${String(timePeriod).toUpperCase()}`;
       try {
-        const res = await http.get(`${DATA_API}/v1/leaderboard`, { params: { category, timePeriod, orderBy: 'PNL', limit }, timeout: TIMEOUT });
+        const res = await http.get(`${DATA_API}/v2/leaderboard`, {
+          params: { category: lower(category), time_period: lower(timePeriod), sort_by: 'PNL', limit: Math.min(limit, PAGE_MAX) }, timeout: TIMEOUT,
+        });
         for (const r of parseLeaderboard(rowsOrThrow(res.data, 'leaderboard'), key)) {
           const prev = byWallet.get(r.wallet);
           if (!prev) { byWallet.set(r.wallet, { ...r, sources: [key], source: undefined }); continue; }
@@ -770,46 +1132,71 @@ async function fetchLeaderboard(http, { categories = LEADERBOARD_CATEGORIES, per
   return { rows, errors };
 }
 
-// Newest first (sorted by time, so a capped history is the recent one rather
-// than the biggest winners). The endpoint serves at most 50 rows a page, so
-// that's the most asked for; the offset moves by what actually came back,
-// and only an empty or short page ends it. → { rows (raw), truncated }
-const CLOSED_PAGE_MAX = 50;
-async function fetchClosedPositions(http, wallet, { pageSize = DEFAULTS.closedPageSize, maxPages = DEFAULTS.closedMaxPages } = {}) {
-  const rows = [];
-  const limit = Math.max(1, Math.min(pageSize, CLOSED_PAGE_MAX));
-  let size = limit;
-  for (let page = 0; page < maxPages; page++) {
-    const res = await http.get(`${DATA_API}/closed-positions`, {
-      params: { user: wallet, limit, offset: rows.length, sortBy: 'TIMESTAMP', sortDirection: 'DESC' }, timeout: TIMEOUT,
-    });
-    const got = rowsOrThrow(res.data, 'closed positions');
-    rows.push(...got);
-    if (!got.length) return { rows, truncated: false };
-    // a short first page may be the API's own (smaller) cap: one more page tells
-    if (page === 0 && got.length < limit) size = got.length;
-    else if (got.length < size) return { rows, truncated: false };
+// One wallet's positions of one status, newest first: sorted by time, since
+// CLOSED otherwise sorts by realized P&L and a capped list would keep only
+// the biggest winners. Settled lists ask for archived positions too: a loss
+// on an archived market is still a loss. → { rows (raw), truncated }
+async function fetchPositions(http, wallet, { status = 'OPEN', pageSize = 500, maxPages = 1 } = {}) {
+  const params = { user: wallet, status, limit: Math.max(1, Math.min(pageSize, PAGE_MAX)), sort_by: 'TIMESTAMP', sort_direction: 'DESC' };
+  if (status !== 'OPEN') params.include_archived = true;
+  const r = await fetchPaged(http, `${DATA_API}/v2/positions`, params, { what: `${lower(status)} positions`, maxPages });
+  // each row says which list it came from, whether or not the API does
+  return { rows: r.rows.map(x => (x && typeof x === 'object' && x.status == null ? { ...x, status } : x)), truncated: r.truncated };
+}
+
+// A wallet's settled record: CLOSED, REDEEMABLE and REDEEMABLE_LOST. When a
+// list hits its page cap the others are cut to the same stretch of time, so
+// a capped list of winners never sits beside a full history of losers.
+// → { rows (raw, each with its status), truncated, counts: { status: n } }
+const sortTime = r => toMs(pick(r?.last_event_at, r?.lastEventAt, r?.timestamp, r?.first_entry_at, r?.firstEntryAt, r?.end_date, r?.endDate));
+async function fetchSettledPositions(http, wallet, { pageSize = DEFAULTS.closedPageSize, maxPages = DEFAULTS.closedMaxPages, statuses = SETTLED_STATUSES } = {}) {
+  const lists = [];
+  for (const status of statuses) lists.push({ status, ...await fetchPositions(http, wallet, { status, pageSize, maxPages }) });
+  let cut = null;
+  for (const l of lists) {
+    if (!l.truncated) continue;
+    const times = l.rows.map(sortTime).filter(t => t != null);
+    if (times.length) cut = Math.max(cut ?? -Infinity, Math.min(...times));
   }
-  return { rows, truncated: true };
+  const keep = r => cut == null || sortTime(r) == null || sortTime(r) >= cut;
+  const rows = [], counts = {};
+  for (const l of lists) {
+    const kept = l.rows.filter(keep);
+    counts[l.status] = kept.length;
+    rows.push(...kept);
+  }
+  return { rows, truncated: lists.some(l => l.truncated), counts };
+}
+// round-1 name
+const fetchClosedPositions = fetchSettledPositions;
+
+async function fetchOpenPositions(http, wallet, { pageSize = 500, maxPages = DEFAULTS.openMaxPages } = {}) {
+  return fetchPositions(http, wallet, { status: 'OPEN', pageSize, maxPages });
 }
 
-async function fetchOpenPositions(http, wallet, { limit = 500 } = {}) {
-  const res = await http.get(`${DATA_API}/positions`, { params: { user: wallet, limit, sizeThreshold: 1 }, timeout: TIMEOUT });
-  return rowsOrThrow(res.data, 'positions');
-}
-
-// global recent big trades (taker side) → parsed
+// Global recent big trades (taker side) → parsed. The bare global feed only
+// covers this month and last, and filter_type defaults to TOKENS, so CASH is
+// always sent. Same request as whales.js, so the server's queue shares it.
 async function fetchRecentTrades(http, { limit = 500, minCash = DEFAULTS.minTrade } = {}) {
-  const res = await http.get(`${DATA_API}/trades`, {
-    params: { limit, takerOnly: true, filterType: 'CASH', filterAmount: minCash }, timeout: TIMEOUT,
+  const res = await http.get(`${DATA_API}/v2/trades`, {
+    params: { limit: Math.min(limit, PAGE_MAX), taker_only: true, filter_type: 'CASH', filter_amount: minCash }, timeout: TIMEOUT,
   });
   return parseTrades(rowsOrThrow(res.data, 'trades'));
 }
 
 // one wallet's trades, maker fills included → parsed
 async function fetchWalletTrades(http, wallet, { limit = DEFAULTS.walletTradeLimit } = {}) {
-  const res = await http.get(`${DATA_API}/trades`, { params: { user: wallet, limit, takerOnly: false }, timeout: TIMEOUT });
+  const res = await http.get(`${DATA_API}/v2/trades`, { params: { user: wallet, limit: Math.min(limit, PAGE_MAX), taker_only: false }, timeout: TIMEOUT });
   return parseTrades(rowsOrThrow(res.data, 'trades'));
+}
+
+// one token's prices between start and end (ms), one call → parsePriceHistory
+async function fetchPriceHistory(http, tokenId, { start = null, end = null, bucketSeconds = DEFAULTS.clvBucketSeconds, limit = DEFAULTS.clvPointLimit } = {}) {
+  const params = { token_id: String(tokenId), bucket_seconds: Math.max(60, Math.min(86400, Math.round(bucketSeconds))), limit };
+  if (start != null) params.start = Math.floor(start / 1000);
+  if (end != null) params.end = Math.ceil(end / 1000);
+  const res = await http.get(`${DATA_API}/v2/prices-history`, { params, timeout: TIMEOUT });
+  return parsePriceHistory(res?.data, { strict: true });
 }
 
 async function fetchMarket(http, conditionId) {
@@ -821,6 +1208,13 @@ async function fetchMarket(http, conditionId) {
 
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
+// a Map used as a bounded cache: the oldest entry goes first
+function remember(map, key, value, max = Infinity) {
+  map.delete(key);
+  map.set(key, value);
+  while (map.size > max) map.delete(map.keys().next().value);
+  return value;
+}
 const isGraded = tr => !!tr?.grade || Object.values(tr?.categories || {}).some(c => c.grade);
 const fromLeaderboard = c => (c?.sources || []).some(s => s !== 'trade');
 // Scores that matter: graded somewhere, or a real profitable sample that may
@@ -829,7 +1223,7 @@ const fromLeaderboard = c => (c?.sources || []).some(s => s !== 'trade');
 const nearGraded = (tr, o) => isGraded(tr) || (tr?.n >= o.grades.B.minN && tr?.roi > 0 && !tr?.marketMaker);
 const SUMMARY_KEYS = ['id', 'wallet', 'name', 'url', 'grade', 'label', 'tailable', 'marketMaker', 'reasons', 'failed', 'n', 'events',
   'risked', 'pnl', 'roi', 'z', 'winRate', 'avgEntry', 'concentration', 'twoSided', 'activeDays', 'lastAt', 'recentN', 'recentRoi', 'edge',
-  'selectedAt', 'scoredAt', 'sources', 'truncated'];
+  'clv', 'clvN', 'clvHitRate', 'selectedAt', 'scoredAt', 'rulesVersion', 'sources', 'truncated'];
 function summaryOf(tr) {
   const out = { compact: true, whyNotA: [], failedA: [], categories: {} };
   for (const k of SUMMARY_KEYS) if (tr[k] !== undefined) out[k] = tr[k];
@@ -847,10 +1241,12 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   const buys = new Map();         // asset → [{ wallet, at }] of graded buys, for consensus
   const tailed = new Map();       // wallet|asset → { id, units, at }: the size followers were already told
   const quotes = new Map();       // conditionId → { at, market }
+  const closes = new Map();       // token → its closing line { price, at, cut, rule }, or null when it has none
+  const lookups = new Map();      // conditionId → parsed Gamma market (or null) for CLV: game start, close time
   let feed = [];                  // signals, newest first
   let watchIdx = 0;
   const busy = { refresh: false, score: false, poll: false };
-  const health = { lastRefreshAt: null, lastScoreAt: null, lastPollAt: null, lastSignalAt: null, errors: [] };
+  const health = { lastRefreshAt: null, lastScoreAt: null, lastPollAt: null, lastSignalAt: null, lastClvAt: null, clvRequests: 0, errors: [] };
   // the log gets the whole message; state() (public) gets it without ids
   const warn = msg => { health.errors.push({ at: iso(now()), message: maskIds(msg) }); health.errors = health.errors.slice(-20); log?.warn?.(`Tail: ${msg}`); };
 
@@ -880,9 +1276,15 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     await store.init();
     for (const tr of await store.all()) {
       if (!tr?.wallet) continue;
-      traders.set(tr.wallet, tr);
+      const stale = tr.rulesVersion !== RULES_VERSION;
+      traders.set(tr.wallet, capStale(tr, o));
       persisted.add(tr.wallet);
-      const scoredAt = Date.parse(tr.scoredAt) || null;
+      // closes measured before the restart don't cost a request again
+      for (const x of tr.clvSamples || []) {
+        if (x?.asset && Number.isFinite(x.close)) remember(closes, x.asset, { price: x.close, at: toMs(x.closeAt), cut: toMs(x.cutAt), rule: x.rule || null }, o.clvCacheMax);
+      }
+      // older rules: due now
+      const scoredAt = stale ? 0 : Date.parse(tr.scoredAt) || null;
       addCandidate(tr.wallet, { name: tr.name, sources: tr.sources, scoredAt, selectedAt: toMs(tr.selectedAt) ?? scoredAt });
     }
   })().catch(e => warn(`store load failed: ${e.message}`));
@@ -939,18 +1341,62 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     }
   }
 
+  // A market's game start and close time, for closing lines. Settled markets
+  // don't change, so one lookup each (a failed one isn't remembered).
+  async function lookup(conditionId) {
+    if (lookups.has(conditionId)) return lookups.get(conditionId);
+    health.clvRequests++;
+    return remember(lookups, conditionId, await fetchMarket(http, conditionId), o.clvCacheMax);
+  }
+
+  // One position's closing line: its token's close, cached, from one price
+  // history call. Throws when a lookup fails (tried again next time).
+  async function closeFor(p, t) {
+    let close = closes.get(p.asset);
+    if (close === undefined) {
+      const market = p.conditionId ? await lookup(p.conditionId) : null;
+      const win = clvWindow(p, market, { now: t, opts: o });
+      close = null;
+      if (win) {
+        health.clvRequests++;
+        const h = await fetchPriceHistory(http, p.asset, { start: win.start, end: win.end, bucketSeconds: o.clvBucketSeconds, limit: o.clvPointLimit });
+        const c = closingPrice(h.points, { closeAt: win.end, freeze: win.rule === 'freeze', truncated: h.truncated, maxGapMs: win.rule === 'game' ? o.clvMaxGapMs : null });
+        if (c) close = { ...c, rule: win.rule };
+      }
+      remember(closes, p.asset, close, o.clvCacheMax);
+    }
+    return clvOf(p, close);
+  }
+
+  // closing-line samples for a wallet's most recent settled bets
+  async function measureClv(resolved, t) {
+    const picks = clvCandidates(resolved, o.clvSample);
+    const samples = [], errors = [];
+    for (const p of picks) {
+      try { const x = await closeFor(p, t); if (x) samples.push(x); }
+      catch (e) { errors.push(e?.message || String(e)); }
+    }
+    health.lastClvAt = iso(now());
+    return { samples, errors, tried: picks.length };
+  }
+
   async function scoreOne(c) {
-    const { rows: closed, truncated } = await fetchClosedPositions(http, c.wallet, { pageSize: o.closedPageSize, maxPages: o.closedMaxPages });
-    const open = await fetchOpenPositions(http, c.wallet);
+    const settled = await fetchSettledPositions(http, c.wallet, { pageSize: o.closedPageSize, maxPages: o.closedMaxPages });
+    const open = await fetchOpenPositions(http, c.wallet, { maxPages: o.openMaxPages });
     const trades = await fetchWalletTrades(http, c.wallet, { limit: o.walletTradeLimit });
     const t = now();
-    const score = {
-      ...scoreWallet({ wallet: c.wallet, name: c.name, closed, open, trades, selectedAt: c.selectedAt }, { ...o, now: t }),
-      truncated, sources: [...c.sources],
-    };
+    const input = { wallet: c.wallet, name: c.name, closed: settled.rows, open: open.rows, trades, selectedAt: c.selectedAt };
+    let score = scoreWallet(input, { ...o, now: t });
     // a history doesn't shrink: far fewer bets than last time is a bad read
     const prev = traders.get(c.wallet);
     if (prev?.n >= 20 && score.n < prev.n / 2) throw new Error(`only ${score.n} resolved bets came back (had ${prev.n}), kept the last score`);
+    // closing lines cost a request a bet: only for wallets good enough without them
+    if (isGraded(score)) {
+      const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved, t);
+      if (m.errors.length) warn(`clv ${c.wallet}: ${m.errors.length} of ${m.tried} lookups failed (${m.errors[0]})`);
+      score = scoreWallet({ ...input, clv: m.samples }, { ...o, now: t });
+    }
+    score = { ...score, truncated: settled.truncated || open.truncated, sources: [...c.sources] };
     const keep = nearGraded(score, o);
     traders.set(c.wallet, keep ? score : summaryOf(score));
     c.scoredAt = t;
@@ -965,7 +1411,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     return score;
   }
 
-  // A few wallets per call (each costs 3+ requests) so a cron spreads the work.
+  // A few wallets per call (each costs 5+ requests, up to 2 × clvSample more
+  // the first time a graded one is scored) so a cron spreads the work.
   async function scoreBatch(n = o.batchSize) {
     await loaded;
     if (busy.score) return { busy: true, scored: 0, wallets: [], pending: pendingCount() };
@@ -1028,8 +1475,21 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     for (const [cid, q] of quotes) if (t - q.at > o.quoteTtlMs) quotes.delete(cid);
   }
 
-  // → the new signals (entries and exits) since the last poll, oldest first
-  async function pollTrades() {
+  // What followers were told for an entry: the units before it plus what it
+  // added. Nothing at all: forgotten, so the next buy is a fresh signal.
+  function noteTailed(signal, added = 0) {
+    if (signal?.type !== 'entry' || !signal.wallet || signal.asset == null) return;
+    const held = `${signal.wallet}|${signal.asset}`;
+    const units = round((num(signal.priorUnits) > 0 ? num(signal.priorUnits) : 0) + Math.max(0, num(added) ?? 0), 2);
+    if (units > 0) tailed.set(held, { id: signal.parentId ?? signal.id, units, at: toMs(signal.at) ?? now() });
+    else tailed.delete(held);
+  }
+
+  // → the new signals (entries and exits) since the last poll, oldest first.
+  // route(signal) → units, when given, sizes each entry where followers bet
+  // (another venue's price) as it's made; those units are what later buys by
+  // the same wallet top up. Without it, the size at Polymarket's ask.
+  async function pollTrades({ route = null } = {}) {
     await loaded;
     if (busy.poll) return [];
     busy.poll = true;
@@ -1074,7 +1534,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (!signal) continue;
         out.push(signal);
         // scaling in over several orders is one position: later buys top it up
-        if (signal.type === 'entry' && signal.target > 0) {
+        if (signal.type === 'entry' && typeof route === 'function') {
+          let added = 0;
+          try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+          noteTailed(signal, added);
+        } else if (signal.type === 'entry' && signal.target > 0) {
           tailed.set(held, { id: prior?.id ?? signal.id, units: Math.max(prior?.units ?? 0, signal.target), at: tr.at ?? t });
         }
       }
@@ -1111,7 +1575,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       candidates: candidates.size, scored: list.length, pending: pendingCount(),
       graded: { A: list.filter(t => t.grade === 'A').length, B: list.filter(t => t.grade === 'B').length, anyCategory: list.filter(isGraded).length },
       marketMakers: list.filter(t => t.marketMaker).length, signals: feed.length,
-      seenTrades: seen.size, ...health, errors: health.errors.slice(-5),
+      seenTrades: seen.size, clvCached: closes.size, ...health, errors: health.errors.slice(-5),
     };
   }
 
@@ -1122,11 +1586,14 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
 }
 
 module.exports = {
-  DEFAULTS, CATEGORIES, LEADERBOARD_CATEGORIES, LEADERBOARD_PERIODS, DATA_API, GAMMA_API,
+  DEFAULTS, CATEGORIES, LEADERBOARD_CATEGORIES, LEADERBOARD_PERIODS, SETTLED_STATUSES, DATA_API, GAMMA_API,
   resolveOptions, optionsFromEnv, classify,
-  parseClosedPositions, parseOpenPositions, resolvedFromOpen, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
+  parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
+  parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen,
-  twoSidedShare, walletStats, gradeStats, scoreWallet, gradeFor, trueProb, tradeSignal,
-  fetchLeaderboard, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades, fetchMarket,
+  clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
+  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, gradeFor, trueProb, sizeAt, tradeSignal,
+  fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
+  fetchPriceHistory, fetchMarket,
   createTailEngine, toMs, maskIds,
 };

@@ -35,6 +35,17 @@ function pt(o = {}) {
   };
 }
 
+// the same trade as /v2/trades sends it: snake_case, token_id for asset
+function pt2(o = {}) {
+  const v1 = pt();
+  return {
+    proxy_wallet: v1.proxyWallet, side: v1.side, token_id: v1.asset, condition_id: v1.conditionId, size: v1.size, price: v1.price,
+    timestamp: v1.timestamp, title: v1.title, slug: v1.slug, icon: 'https://polymarket-upload.s3.amazonaws.com/nba.png', event_slug: v1.eventSlug,
+    outcome: v1.outcome, outcome_index: v1.outcomeIndex, name: '', pseudonym: v1.pseudonym, bio: '', profile_image: '', profile_image_optimized: '',
+    transaction_hash: v1.transactionHash, ...o,
+  };
+}
+
 function fakeHttp(route) {
   const calls = [];
   return {
@@ -133,7 +144,7 @@ test('kalshi prints: the fills of one sweep sum into one print; whales are print
   assert.deepEqual(whales[1], {
     id: sweep.key, exchange: 'kalshi', ticker: KNICKS, eventTicker: 'KXNBAGAME-26OCT08NYKBOS', title: 'New York K at Boston Winner?',
     side: 'yes', price: 0.61, yesPrice: 0.61, contracts: 10000, notional: 6100, fills: 3, tradeIds: ['s1', 's2', 's3'],
-    at: '2026-10-08T11:55:00.482Z', url: 'https://kalshi.com/markets/kxnbagame-26oct08nykbos',
+    block: false, at: '2026-10-08T11:55:00.482Z', url: 'https://kalshi.com/markets/kxnbagame-26oct08nykbos',
   });
   assert.equal(whales[0].title, FED, 'no title known: the ticker');
   assert.equal(whales[0].side, 'yes');
@@ -151,6 +162,47 @@ test('kalshi prints: the fills of one sweep sum into one print; whales are print
   assert.equal(W.kalshiPrints(kfills([kt({ id: 'u1', time: '2026-10-11T20:15:07.000Z' }), kt({ id: 'u2', time: '2026-10-11T20:15:07.000Z' })])).length, 2, 'a .000 fraction is a whole second too');
   assert.equal(W.kalshiEventTicker('KXHIGHNY-26OCT08-B65.5'), 'KXHIGHNY-26OCT08');
   assert.equal(W.kalshiEventTicker('ODDTICKER'), 'ODDTICKER');
+});
+
+test('kalshi trades: the newer taker_outcome_side / taker_book_side and count_fp, block trades flagged', () => {
+  const base = { ticker: KNICKS, yes_price_dollars: '0.6000', no_price_dollars: '0.4000', created_time: '2026-10-08T11:57:00.250001Z' };
+  const rows = W.parseKalshiTrades({ trades: [
+    { ...base, trade_id: 'n1', count_fp: '10000.00', taker_outcome_side: 'yes', taker_book_side: 'bid', is_block_trade: false },
+    { ...base, trade_id: 'n2', count_fp: '10000.00', taker_outcome_side: 'yes', taker_book_side: 'ask' },   // sold YES = bought NO
+    { ...base, trade_id: 'n3', count_fp: '250.50', taker_outcome_side: 'NO' },                             // no book side: bought it
+    { ...base, trade_id: 'n4', count: 9, count_fp: '12.00', taker_side: 'no', taker_outcome_side: 'yes', taker_book_side: 'bid' },
+    { ...base, trade_id: 'n5', count_fp: '20000.00', taker_outcome_side: 'no', taker_book_side: 'bid', is_block_trade: true },
+    { ...base, trade_id: 'n6', count_fp: '1.00', taker_outcome_side: 'maybe' },
+  ], cursor: '' });
+  assert.deepEqual(rows.map(r => r.id), ['n1', 'n2', 'n3', 'n4', 'n5'], 'no readable taker side: skipped');
+  const [buyYes, sellYes, noOnly, both, block] = rows;
+  assert.equal(buyYes.side, 'yes');
+  assert.equal(buyYes.contracts, 10000, 'count_fp');
+  near(buyYes.notional, 6000);
+  assert.equal(buyYes.block, false);
+  assert.equal(sellYes.side, 'no', 'a taker selling YES is NO money');
+  near(sellYes.notional, 4000, 1e-6, '10,000 × the 40¢ NO price');
+  assert.equal(noOnly.side, 'no');
+  assert.equal(noOnly.contracts, 250.5);
+  assert.equal(both.side, 'no', 'the deprecated taker_side still wins when both are sent');
+  assert.equal(both.contracts, 12, 'count_fp over count');
+  assert.equal(block.block, true);
+  assert.equal(W.kalshiTakerSide({ takerOutcomeSide: 'yes', takerBookSide: 'sell' }), 'no', 'camelCase too');
+  assert.equal(W.kalshiTakerSide({}), null);
+
+  // a block shares the sweep's time, ticker and side but is its own print, flagged
+  const sweep = kfills([
+    { ...base, trade_id: 's1', count_fp: '6000.00', taker_outcome_side: 'no', taker_book_side: 'bid' },
+    { ...base, trade_id: 's2', count_fp: '6000.00', taker_outcome_side: 'no', taker_book_side: 'bid' },
+    { ...base, trade_id: 'b1', count_fp: '20000.00', taker_outcome_side: 'no', taker_book_side: 'bid', is_block_trade: 'true' },
+  ]);
+  const prints = W.kalshiPrints(sweep);
+  assert.deepEqual(prints.map(p => [p.tradeIds.join('+'), p.block]), [['s1+s2', false], ['b1', true]]);
+  const whales = W.kalshiWhales(sweep);
+  assert.equal(whales.length, 1, 'the $4,800 sweep is not a whale; the $8,000 block is');
+  assert.equal(whales[0].block, true);
+  assert.equal(whales[0].tag, 'block trade');
+  assert.equal(whales[0].notional, 8000);
 });
 
 // ── Polymarket parsing and tagging ──
@@ -189,6 +241,25 @@ test('polymarket trades: fills of one order merge, direction is relative to the 
   assert.equal(m.at, sec(NOW - 2 * MIN) * 1000);
   assert.deepEqual(W.parsePolymarketTrades(null), []);
   assert.equal(W.parsePolymarketTrades([pt()]).length, 1, 'bare array');
+});
+
+test('polymarket trades: v2 snake_case rows parse the same as v1', () => {
+  const v1 = W.parsePolymarketTrades([pt({ transactionHash: '0xsame' })]);
+  const v2 = W.parsePolymarketTrades({ data: [pt2({ transaction_hash: '0xsame' })], pagination: { has_more: false, next_cursor: null } });
+  assert.equal(v2.length, 1);
+  assert.deepEqual(v2, v1);
+  const [t] = v2;
+  assert.equal(t.wallet, '0x5a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b');
+  assert.equal(t.asset, pt().asset, 'token_id is the asset');
+  assert.equal(t.conditionId, pt().conditionId);
+  assert.equal(t.eventSlug, 'nba-nyk-bos-2026-10-08');
+  assert.equal(t.outcomeIndex, 0);
+  assert.equal(t.dir, 'yes');
+  // two fills of one order, v2 field names
+  const merged = W.parsePolymarketTrades({ data: [pt2({ transaction_hash: '0xfeed', size: '1000' }), pt2({ transaction_hash: '0xfeed', size: '3000', price: '0.6' })] });
+  assert.equal(merged.length, 1);
+  near(merged[0].notional, 2300);
+  assert.equal(W.parsePolymarketTrades({ data: [pt2({ outcome_index: '1', outcome: 'Celtics' })] })[0].dir, 'no');
 });
 
 test('polymarket whales: tagged "graded whale" or "unknown whale" from the lookup', () => {
@@ -371,19 +442,32 @@ test('kalshi fetch: page cap, empty pages and failures', async () => {
   assert.deepEqual((await W.fetchKalshiTrades(junk)).trades, []);
 });
 
-test('polymarket fetch: large taker trades, offset paging, failures', async () => {
-  const http = fakeHttp((url, params) => (params.offset ? [pt({ size: 100 })] : Array.from({ length: 3 }, () => pt())));
+test('polymarket fetch: v2 large taker trades (CASH filter), cursor paging, failures', async () => {
+  // v2 wraps every page: { data, pagination: { limit, offset, has_more, next_cursor } }
+  const http = fakeHttp((url, params) => (params.cursor === 'c2'
+    ? { data: [pt2({ size: '100' })], pagination: { limit: 3, offset: 3, has_more: false, next_cursor: null } }
+    : { data: Array.from({ length: 3 }, () => pt2()), pagination: { limit: 3, offset: 0, has_more: true, next_cursor: 'c2' } }));
   const r = await W.fetchPolymarketTrades(http, { limit: 3, maxPages: 3 });
-  assert.equal(http.calls[0].url, 'https://data-api.polymarket.com/trades');
-  assert.deepEqual(http.calls[0].params, { limit: 3, takerOnly: true, filterType: 'CASH', filterAmount: 500 });
-  assert.equal(http.calls[1].params.offset, 3);
-  assert.equal(http.calls.length, 2, 'a short page ends it');
+  assert.equal(http.calls[0].url, 'https://data-api.polymarket.com/v2/trades');
+  assert.deepEqual(http.calls[0].params, { limit: 3, taker_only: true, filter_type: 'CASH', filter_amount: 500 }, 'CASH: the default TOKENS filter would count shares');
+  assert.equal(http.calls[1].params.cursor, 'c2', 'next_cursor goes back as cursor');
+  assert.equal(http.calls.length, 2, 'has_more false ends it');
   assert.equal(r.trades.length, 4);
   assert.equal(r.pages, 2);
+  assert.equal(r.truncated, false);
+
+  const capped = fakeHttp(() => ({ data: [pt2()], pagination: { has_more: true, next_cursor: 'more' } }));
+  const c = await W.fetchPolymarketTrades(capped, { maxPages: 1 });
+  assert.equal(capped.calls.length, 1);
+  assert.equal(c.truncated, true, 'the page cap cut it short');
 
   const one = fakeHttp(() => ({ data: [pt()] }));
-  assert.equal((await W.fetchPolymarketTrades(one, { minCash: 5000 })).trades.length, 1, 'wrapped payload');
-  assert.equal(one.calls[0].params.filterAmount, 5000);
+  assert.equal((await W.fetchPolymarketTrades(one, { minCash: 5000 })).trades.length, 1, 'v1 rows in a wrapper still parse');
+  assert.equal(one.calls[0].params.filter_amount, 5000);
+  const bare = fakeHttp(() => [pt2()]);
+  assert.equal((await W.fetchPolymarketTrades(bare)).trades.length, 1, 'a bare array too');
+  const empty = fakeHttp(() => ({ data: null }));
+  assert.deepEqual((await W.fetchPolymarketTrades(empty)).trades, [], 'data: null');
 
   const down = fakeHttp(() => new Error('timeout of 10000ms exceeded'));
   const d = await W.fetchPolymarketTrades(down);
@@ -502,7 +586,7 @@ test('watcher: Polymarket whales graded through an async lookup, deduped across 
   const first = await w.pollPolymarket();
   assert.deepEqual(first.map(e => [e.wallet.slice(-2), e.tag, e.grade]), [['aa', 'graded whale', 'A'], ['8b', 'unknown whale', null], ['bb', 'unknown whale', null]]);
   assert.equal(first[0].name, 'Domer');
-  assert.deepEqual(http.calls[0].params, { limit: 500, takerOnly: true, filterType: 'CASH', filterAmount: 500 });
+  assert.deepEqual(http.calls[0].params, { limit: 500, taker_only: true, filter_type: 'CASH', filter_amount: 500 });
   assert.equal(asked.length, 3, 'the $500 trade is never looked up');
   assert.match(w.state().errors[0].message, /grade lookup 0x…: db down/);
 

@@ -1,22 +1,27 @@
-// Boots server.js with axios stubbed (no network): the Sharp Tail crons'
-// work, every /api/tail, /api/whales and /api/xarbs endpoint, the free-user
-// masking, the live stream events and the webhook posts.
+// Boots server.js with axios stubbed (no network, Polymarket's data API in its
+// v2 shapes): the Sharp Tail crons' work, every /api/tail, /api/whales and
+// /api/xarbs endpoint, the free-user masking, US mode, the data-licence gates,
+// where-to-tail routing, the live stream events and the webhook posts.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-tail-server-'));
 const ADMIN_TOKEN = 'test-admin-token';
 const WEBHOOK = 'https://discord.example/api/webhooks/1/test';
+for (const k of ['DATABASE_URL', 'TAIL_WEBHOOK', 'ODDS_API_KEY', 'OWLS_API_KEY', 'WHALE_MIN_USD', 'XARB_MIN_PCT', 'XARB_ALERT_MIN', 'POLYMARKET_DISPLAY_OK', 'KALSHI_DISPLAY_OK']) delete process.env[k];
+for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.env[k];
 Object.assign(process.env, {
   PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
   TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'),
+  // the round-1 tests below run with both data licences granted; the gates have their own tests
+  POLYMARKET_DISPLAY_OK: 'on', KALSHI_DISPLAY_OK: 'on',
 });
-for (const k of ['DATABASE_URL', 'TAIL_WEBHOOK', 'ODDS_API_KEY', 'OWLS_API_KEY', 'WHALE_MIN_USD', 'XARB_MIN_PCT', 'XARB_ALERT_MIN']) delete process.env[k];
-for (const k of Object.keys(process.env)) if (/^TAIL_(?!TRACK_FILE|TRADERS_FILE)/.test(k)) delete process.env[k];
+// TAIL_REGION is unset: US mode, the default
 
 // A clock the test can move forward: everything in the server reads Date.now.
 const realNow = Date.now;
@@ -25,6 +30,7 @@ Date.now = () => realNow() + skew;
 const tick = ms => { skew += ms; };
 const DAY = 86400e3;
 const iso = ms => new Date(ms).toISOString();
+const sec = ms => Math.floor(ms / 1000);
 
 // ── fake upstream ──
 const W1 = '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b';   // the A-grade politics wallet
@@ -32,27 +38,44 @@ const W9 = '0x9999999999999999999999999999999999999999';   // an unknown whale
 const COND = '0xc0ffee0000000000000000000000000000000000000000000000000000000001';
 const COND2 = '0xc0ffee0000000000000000000000000000000000000000000000000000000002';   // a second market W1 bets
 const TEXAS = { asset: '7124001', cond: COND2, title: 'Will Jones win the Texas Senate election?', slug: 'texas-senate-jones', eventSlug: 'texas-senate-2026' };
-const fx = { closed: [], trades: [], markets: [], kalshiEvents: [], kalshiTrades: [] };
+const fx = { closed: [], trades: [], markets: [], kalshiEvents: [], kalshiTrades: [], pmEvents: [] };
 const calls = [], posts = [];
 
-// 120 resolved politics bets at 50¢, 80 won, each its own race: ROI 33%, z 3.65
+// v2 wraps every list: { data, pagination }
+const page = data => ({ data, pagination: { limit: 500, offset: 0, has_more: false, next_cursor: null } });
+
+// 120 settled politics bets at 50¢, 80 won, each its own race: ROI 33%, z 3.65.
+// v2 /positions rows: some winners still unclaimed (REDEEMABLE), some losers
+// never claimed (REDEEMABLE_LOST: the hidden losers that must count).
 function eliteHistory(wallet, now) {
   return Array.from({ length: 120 }, (_, i) => {
-    const won = i % 3 !== 0, at = now - (i % 100) * DAY - 3600e3, cond = `0xcond${i}`;
+    const won = i % 3 !== 0, end = now - (i % 100) * DAY - 3600e3, cond = `0xcond${i}`;
     return {
-      proxyWallet: wallet, asset: `${cond}-yes`, conditionId: cond, avgPrice: '0.5', totalBought: 2000,
-      realizedPnl: won ? 1000 : -1000, curPrice: won ? 1 : 0, title: `Will candidate ${i} win the ${['Ohio', 'Texas', 'Iowa', 'Maine'][i % 4]} Senate election?`,
-      slug: `senate-race-${i}-m${i}`, eventSlug: `senate-race-${i}`, outcome: 'Yes', outcomeIndex: 0,
-      endDate: iso(at), timestamp: Math.floor(at / 1000),
+      proxy_wallet: wallet, token_id: `${cond}-yes`, condition_id: cond, current_size: 0, avg_price: '0.5', total_size: 2000,
+      entry_cost_usdc: 1000, entry_fees_usdc: 0, total_cost_usdc: 1000, current_price: won ? 1 : 0, current_value: 0,
+      realized_pnl: won ? 1000 : -1000, unrealized_pnl: 0, total_pnl: won ? 1000 : -1000, percent_pnl: won ? 100 : -100,
+      status: won ? (i % 2 ? 'CLOSED' : 'REDEEMABLE') : (i % 2 ? 'CLOSED' : 'REDEEMABLE_LOST'), redeemable: !(i % 2), mergeable: false,
+      negative_risk: false, archived: false, title: `Will candidate ${i} win the ${['Ohio', 'Texas', 'Iowa', 'Maine'][i % 4]} Senate election?`,
+      slug: `senate-race-${i}-m${i}`, icon: '', event_id: `ev${i}`, event_slug: `senate-race-${i}`, outcome: 'Yes', outcome_index: 0,
+      opposite_outcome: 'No', opposite_token_id: `${cond}-no`, end_date: iso(end), last_event_at: iso(end), first_entry_at: iso(end - 3 * DAY),
+      name: 'ElectionEdge', profile_image: '', verified: false,
     };
   });
 }
+// Each settled market's price history: 56¢ for its last day, then the outcome
+// gets out (97¢+ / 3¢-), so the closing line is 56¢ against a 50¢ entry: +12% CLV.
+function priceHistory(tokenId) {
+  const pos = fx.closed.find(r => r.token_id === tokenId);
+  if (!pos) return { data: [] };
+  const end = Date.parse(pos.end_date), won = pos.current_price === 1;
+  return page([{ t: sec(end - 2 * DAY), p: 0.52 }, { t: sec(end - DAY), p: 0.56 }, { t: sec(end - 3600e3), p: won ? 0.99 : 0.01 }]);
+}
 function trade({ wallet = W1, side = 'BUY', size, price, tx, agoMs = 60e3, name = 'ElectionEdge', asset = '7123001', cond = COND,
-  title = 'Will Smith win the Ohio Senate election?', slug = 'ohio-senate-smith', eventSlug = 'ohio-senate-2026' }) {
+  title = 'Will Smith win the Ohio Senate election?', slug = 'ohio-senate-smith', eventSlug = 'ohio-senate-2026', outcome = 'Yes', outcomeIndex = 0 }) {
   return {
-    proxyWallet: wallet, side, asset, conditionId: cond, size: String(size), price: String(price),
-    timestamp: Math.floor((Date.now() - agoMs) / 1000), title, slug,
-    eventSlug, outcome: 'Yes', outcomeIndex: 0, name, pseudonym: 'Brisk-Owl', transactionHash: tx,
+    proxy_wallet: wallet, side, token_id: asset, condition_id: cond, size: String(size), price: String(price),
+    timestamp: sec(Date.now() - agoMs), title, slug, icon: '', event_slug: eventSlug, outcome, outcome_index: outcomeIndex,
+    name, pseudonym: 'Brisk-Owl', bio: '', profile_image: '', profile_image_optimized: '', transaction_hash: tx,
   };
 }
 function gammaMarket({ closed = false, prices = ['0.405', '0.595'], bestAsk = '0.41', bestBid = '0.40', id = '501234', cond = COND, asset = '7123001',
@@ -79,13 +102,13 @@ function kalshiEvent(ticker, title, asks) {
 }
 
 const ROUTES = {
-  'https://data-api.polymarket.com/v1/leaderboard': p => (p.category === 'OVERALL' && p.timePeriod === 'ALL'
-    ? [{ rank: '1', proxyWallet: W1, userName: 'ElectionEdge', vol: 1200000, pnl: 40000, verifiedBadge: false }] : []),
-  'https://data-api.polymarket.com/closed-positions': p => (p.user === W1 && !p.offset ? fx.closed : []),
-  'https://data-api.polymarket.com/positions': () => [],
-  'https://data-api.polymarket.com/trades': p => (p.user ? [] : fx.trades),
+  'https://data-api.polymarket.com/v2/leaderboard': p => page(p.category === 'overall' && p.time_period === 'all'
+    ? [{ rank: 1, user_id: W1, user_name: 'ElectionEdge', volume: 1200000, pnl: 40000, profile_image: '', x_username: '', verified: false }] : []),
+  'https://data-api.polymarket.com/v2/positions': p => page(p.user === W1 ? fx.closed.filter(r => r.status === p.status) : []),
+  'https://data-api.polymarket.com/v2/trades': p => page(p.user ? [] : fx.trades),
+  'https://data-api.polymarket.com/v2/prices-history': p => priceHistory(p.token_id),
   'https://gamma-api.polymarket.com/markets': p => fx.markets.filter(m => m.conditionId === p.condition_ids),
-  'https://gamma-api.polymarket.com/events': () => [],
+  'https://gamma-api.polymarket.com/events': () => fx.pmEvents,
   'https://api.elections.kalshi.com/trade-api/v2/events': () => ({ events: fx.kalshiEvents, cursor: '' }),
   'https://api.elections.kalshi.com/trade-api/v2/markets/trades': () => ({ trades: fx.kalshiTrades, cursor: '' }),
 };
@@ -99,6 +122,7 @@ axios.get = async (url, cfg = {}) => {
 axios.post = async (url, body) => { posts.push({ url, body }); return { status: 204, data: '' }; };
 
 const S = require('../server');
+const tail = require('../tail');
 const cron = require('node-cron');
 for (const t of cron.getTasks().values()) t.stop();   // the test drives the jobs itself
 
@@ -122,9 +146,14 @@ const get = async (p, headers = {}) => {
   const r = await fetch(base + p, { headers });
   return { status: r.status, body: await r.json() };
 };
+const post = async (p, body, headers = {}) => {
+  const r = await fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+  return { status: r.status, body: await r.json() };
+};
 const hasNoIdentity = (body, ...secrets) => { const text = JSON.stringify(body); for (const s of secrets) assert.ok(!text.includes(s), `leaks ${s}`); };
+const noPolymarketLinks = (body, what) => assert.ok(!/https?:\/\/(www\.)?polymarket\.com/.test(JSON.stringify(body)), `${what} links to polymarket.com`);
 
-test('settings: the active thresholds, public', async () => {
+test('settings: the active thresholds, the region and the licence gates, public', async () => {
   const { status, body } = await get('/api/tail/settings');
   assert.equal(status, 200);
   assert.equal(body.tail.minTrade, 500);
@@ -134,18 +163,25 @@ test('settings: the active thresholds, public', async () => {
   assert.equal(body.xarb.minPct, 0.5);
   assert.equal(body.xarb.alertMinPct, 1);
   assert.equal(body.freeDelayMinutes, 30);
+  assert.equal(body.region, 'us', 'US mode is the default');
+  assert.deepEqual(body.licence, { paywall: true, polymarketDisplayOk: true, kalshiDisplayOk: true, polymarket: 'shown', kalshi: 'shown', viewer: { polymarket: true, kalshi: true }, note: null });
 });
 
-test('candidates from the leaderboard, then a scoring batch grades the wallet A', async () => {
+test('candidates from the v2 leaderboard, then a scoring batch grades the wallet A, closing-line value included', async () => {
   fx.closed = eliteHistory(W1, Date.now());
   const r = await S.runTailJob('candidates', () => S.tailEngine.refreshCandidates());
   assert.equal(r.total, 1);
-  assert.equal(calls.filter(c => c.url.endsWith('/v1/leaderboard')).length, 32, '8 categories × 4 periods');
+  assert.equal(calls.filter(c => c.url.endsWith('/v2/leaderboard')).length, tail.LEADERBOARD_CATEGORIES.length * tail.LEADERBOARD_PERIODS.length, 'categories × periods');
   const b = await S.runTailJob('score', () => S.tailEngine.scoreBatch());
   assert.deepEqual(b.wallets, [W1]);
   const tr = S.tailEngine.trader(W1);
-  assert.equal(tr.grade, 'A');
+  assert.equal(tr.grade, 'A', JSON.stringify(tr.reasons || tr.whyNotA));
   assert.equal(tr.categories.politics.grade, 'A');
+  // every settled status was read, newest first (CLOSED would otherwise keep only the biggest winners)
+  const pos = calls.filter(c => c.url.endsWith('/v2/positions'));
+  for (const status of ['CLOSED', 'REDEEMABLE', 'REDEEMABLE_LOST']) assert.ok(pos.some(c => c.params.status === status && c.params.sort_by === 'TIMESTAMP' && c.params.include_archived === true), `${status}, archived included`);
+  assert.ok(calls.some(c => c.url.endsWith('/v2/prices-history')), 'closing lines measured');
+  assert.ok(!calls.some(c => /data-api\.polymarket\.com\/(?!v2\/)/.test(c.url)), 'v1 is retired: every data-API call is v2');
   // scores survive a restart
   const saved = JSON.parse(fs.readFileSync(process.env.TAIL_TRADERS_FILE, 'utf8'));
   assert.equal(saved[0].wallet, W1);
@@ -159,6 +195,8 @@ test('traders: Pro sees wallets; free sees the leaderboard with wallets masked',
   assert.equal(pro.body.traders[0].wallet, W1);
   assert.equal(pro.body.traders[0].name, 'ElectionEdge');
   assert.equal(pro.body.state.graded.A, 1);
+  assert.equal(pro.body.withheld, undefined);
+  noPolymarketLinks(pro.body, 'traders');
   assert.equal((await get('/api/tail/traders?category=sports', PRO)).body.traders.length, 0, 'no sports record');
   assert.equal((await get('/api/tail/traders?category=politics&grade=A', PRO)).body.traders.length, 1);
 
@@ -198,7 +236,7 @@ test('trader detail is Pro only', async () => {
   assert.equal((await get('/api/tail/trader/0xdeadbeef', PRO)).status, 404);
 });
 
-test('exchange arb scan: the first scan primes, Pro sees legs and stakes, free sees count and profit % only', async () => {
+test('exchange arb scan: the first scan primes, Pro sees legs and the % split, free sees count and profit % only', async () => {
   fx.kalshiEvents = [kalshiEvent('KXFEDCHAIR-26', 'Who will Trump nominate as Fed Chair?', [['Kevin Warsh', '0.2800'], ['Kevin Hassett', '0.2800'], ['Christopher Waller', '0.2900'], ['Someone else', '0.0400']])];
   const fresh = await S.runTailJob('xarb', S.scanXarbs);
   assert.deepEqual(fresh, [], 'a restart is not news');
@@ -207,17 +245,23 @@ test('exchange arb scan: the first scan primes, Pro sees legs and stakes, free s
 
   const pro = await get('/api/xarbs', PRO);
   assert.equal(pro.body.count, 1);
+  assert.equal(pro.body.region, 'us');
   const a = pro.body.arbs[0];
   assert.equal(a.type, 'multi');
   assert.equal(a.legs.length, 4);
   assert.ok(a.profitPct > 1, `profit ${a.profitPct}%`);
   assert.equal(a.exhaustive, true, '"Someone else" covers every other name');
   assert.equal(a.maxStake, null, 'no executable size claimed');
-  assert.equal(a.stakes.bankroll, 100);
   assert.ok(a.warnings.length, 'carries the coverage warning');
+  // the same split for everyone: each leg's % of the total
+  const pcts = a.stakes.legs.map(l => l.pct);
+  assert.ok(pcts.every(x => x > 0));
+  assert.ok(Math.abs(pcts.reduce((x, y) => x + y, 0) - 100) < 0.3, String(pcts));
+  assert.equal(a.stakes.bankroll, 100, 'the $100 reference');
+  // no re-split from anyone's bankroll
   const big = await get('/api/xarbs?bankroll=1000', PRO);
-  assert.equal(big.body.arbs[0].stakes.bankroll, 1000);
-  assert.ok(big.body.arbs[0].stakes.contracts > a.stakes.contracts * 9);
+  assert.deepEqual(big.body.arbs[0].stakes, a.stakes, '?bankroll= is ignored');
+  assert.equal(big.body.bankroll, undefined);
   assert.equal((await get('/api/xarbs?minPct=50', PRO)).body.count, 0);
 
   const free = await get('/api/xarbs');
@@ -226,7 +270,7 @@ test('exchange arb scan: the first scan primes, Pro sees legs and stakes, free s
   assert.equal(free.body.counts, undefined);
 });
 
-test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it too, from one shared read', async () => {
+test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it too, from one shared v2 read', async () => {
   fx.markets = [gammaMarket()];
   fx.trades = [
     trade({ size: 15000, price: 0.40, tx: '0xtx1' }),                                  // $6,000 by W1
@@ -236,7 +280,9 @@ test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it 
   const before = S.upstream.stats();
   const [whalesOut, signals] = await Promise.all([S.runTailJob('whales', S.pollWhales), S.runTailJob('signals', S.pollTail)]);
   const after = S.upstream.stats();
-  assert.equal(calls.filter(c => c.url === 'https://data-api.polymarket.com/trades' && !c.params.user).length, 1, 'the trades page was read once');
+  const reads = calls.filter(c => c.url === 'https://data-api.polymarket.com/v2/trades' && !c.params.user);
+  assert.equal(reads.length, 1, 'the trades page was read once');
+  assert.deepEqual({ ...reads[0].params }, { limit: 500, taker_only: true, filter_type: 'CASH', filter_amount: 500 });
   assert.ok(after.shared > before.shared);
 
   assert.equal(signals.length, 1);
@@ -248,7 +294,10 @@ test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it 
   assert.equal(s.currentPrice, 0.41);
   assert.equal(s.units, 2, 'quarter Kelly hits the 2u cap for A');
   assert.equal(s.theirNotional, 6000);
-  assert.equal(s.url, 'https://polymarket.com/event/ohio-senate-2026');
+  assert.ok(s.q > 0.41 && s.q < 1, 'q: our probability of the outcome bought');
+  // no Kalshi market asks this, and it isn't a game: nowhere a US person can tail it
+  assert.equal(s.venue, null);
+  assert.deepEqual(s.venues, []);
 
   assert.equal(whalesOut.length, 3);
   const graded = whalesOut.find(e => e.wallet === W1);
@@ -259,18 +308,22 @@ test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it 
   assert.equal(k.notional, 6000);
   assert.match(k.title, /Fed Chair/, 'titled from the arb scan');
 
-  // the A-grade signal went to the webhook
+  // the A-grade signal went to the webhook, with the venue line and no polymarket.com link
   assert.equal(posts.length, 1);
   assert.equal(posts[0].url, WEBHOOK);
-  assert.match(posts[0].body.content, /A-grade ElectionEdge bought Yes on "Will Smith win the Ohio Senate election\?" at 40¢ \(\$6,000\) · tail 2u at 41¢/);
-  assert.match(posts[0].body.content, /<https:\/\/polymarket\.com\/event\/ohio-senate-2026>/);
+  assert.match(posts[0].body.content, /A-grade ElectionEdge bought Yes on "Will Smith win the Ohio Senate election\?" at 40¢ \(\$6,000\) · No US venue found yet: watch only$/);
+  assert.doesNotMatch(posts[0].body.content, /polymarket\.com/);
 });
 
-test('signals: Pro live; free only 30+ minutes late, wallets masked', async () => {
+test('signals: Pro live; free only 30+ minutes late, wallets masked; no polymarket.com links in US mode', async () => {
   const pro = await get('/api/tail/signals', PRO);
   assert.equal(pro.body.signals.length, 1);
   assert.equal(pro.body.signals[0].wallet, W1);
   assert.equal(pro.body.locked, 0);
+  assert.equal(pro.body.region, 'us');
+  assert.equal(pro.body.signals[0].url, null, 'the market title and the US venue instead');
+  assert.equal(pro.body.signals[0].market, 'Will Smith win the Ohio Senate election?');
+  noPolymarketLinks(pro.body, 'signals');
 
   const free = await get('/api/tail/signals');
   assert.equal(free.body.pro, false);
@@ -295,22 +348,34 @@ test('signals: Pro live; free only 30+ minutes late, wallets masked', async () =
   assert.equal(s.conditionId, undefined);
   assert.equal(Date.parse(s.at) % (15 * 60e3), 0);
   assert.equal(s.edge, undefined, 'edge with roi gives back the dollar totals');
+  assert.equal(s.q, undefined, 'and so does q');
+  assert.equal(s.prob, undefined);
   assert.equal(pro.body.signals[0].theirNotional, 6000, 'Pro keeps it all');
   assert.equal((await get('/api/tail/signals?type=exit', PRO)).body.signals.length, 0);
 });
 
-test('whales: Pro sees wallets and grades; free gets them masked, grades only once 30 minutes old', async () => {
-  fx.kalshiTrades = [];
+test('whales: Pro sees wallets and grades; free gets them masked; Kalshi block trades and the newer fields', async () => {
+  // a 30,000-contract block: the taker SOLD YES at 30¢ (taker_book_side ask), so it's NO money at 70¢
+  fx.kalshiTrades = [{ trade_id: 'k-blk', ticker: 'KXFEDCHAIR-26-KEV0', count_fp: '30000.00', yes_price_dollars: '0.3000', no_price_dollars: '0.7000',
+    taker_outcome_side: 'yes', taker_book_side: 'ask', is_block_trade: true, created_time: iso(Date.now() - 20e3) }];
   fx.trades = [trade({ wallet: W9, size: 30000, price: 0.5, tx: '0xtx10', name: 'Quiet-Fox', agoMs: 20e3 })];
   tick(6e3);   // past the shared-response window
   await S.runTailJob('whales', S.pollWhales);
   const pro = await get('/api/whales', PRO);
-  assert.ok(pro.body.events.length >= 4);
+  assert.ok(pro.body.events.length >= 5);
   assert.ok(pro.body.events.some(e => e.wallet === W1 && e.grade === 'A'));
   assert.ok(pro.body.flow.length >= 1);
   assert.equal(pro.body.minUsd, 5000);
-  assert.equal((await get('/api/whales?exchange=kalshi', PRO)).body.events.length, 1);
+  const kalshi = (await get('/api/whales?exchange=kalshi', PRO)).body.events;
+  assert.equal(kalshi.length, 2);
+  const blk = kalshi.find(e => e.block);
+  assert.ok(blk, 'the block trade is flagged');
+  assert.equal(blk.side, 'no');
+  assert.equal(blk.notional, 21000);
+  assert.equal(blk.contracts, 30000, 'count_fp');
+  assert.equal(blk.tag, 'block trade');
   assert.ok((await get('/api/whales?graded=1', PRO)).body.events.every(e => e.graded));
+  noPolymarketLinks(pro.body, 'whales');
 
   const free = await get('/api/whales');
   hasNoIdentity(free.body, W1, W9, 'ElectionEdge', 'Quiet-Fox', '0xtx1');
@@ -390,6 +455,8 @@ test('live stream carries tail, whale and xarb events; new arbs of 1%+ hit the w
   assert.ok(t.data.every(s => s.wallet === W1));
   const tx2 = t.data.find(s => s.id === `0xtx2:${TEXAS.asset}:${W1}`), tx3 = t.data.find(s => s.id === '0xtx3:7123001:' + W1);
   assert.equal(tx2.units, 2);
+  assert.equal(tx2.url, null, 'no polymarket.com link on the stream in US mode');
+  assert.ok('venue' in tx2, 'routed before it went out');
   assert.equal(tx3.topUp, true, 'same wallet, same outcome: a top-up, not a fresh 2u');
   assert.equal(tx3.parentId, '0xtx1:7123001:' + W1);
   assert.equal(tx3.units, 0);
@@ -435,6 +502,7 @@ test('track record: logged at the follower price, graded when the market resolve
   assert.equal(done.body.signals.length, 2);
   assert.ok(done.body.signals.every(s => s.result === 'win' && s.locked));
   hasNoIdentity(done.body, W1, 'ElectionEdge', '0xtx1', '0xtx2', COND, COND2, TEXAS.asset);
+  noPolymarketLinks(done.body, 'record');
   // no trade fingerprint for free: a price to the cent, a quarter-hour time, a size range
   for (const r of done.body.signals) {
     assert.equal(r.theirPrice, 0.4);
@@ -446,17 +514,22 @@ test('track record: logged at the follower price, graded when the market resolve
   assert.equal((await get('/api/tail/record?grade=B', PRO)).body.signals.length, 0);
 });
 
-test('status reports tail, whales, exchange arbs and the upstream queue', async () => {
+test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.20.0');
+  assert.equal(body.version, '3.21.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
   assert.equal(body.tail.jobs.signals.failed, false);
   assert.equal(body.tail.record.open, 0);
-  assert.ok(body.whales.events >= 5);
+  assert.ok(body.tail.routing.routed >= 2);
+  assert.ok(body.whales.events >= 6);
   assert.equal(body.xarb.arbs, 3);
   assert.equal(body.xarb.counts.kalshiEvents, 3);
+  assert.equal(body.region, 'us');
+  assert.equal(body.licence.paywall, true);
+  assert.equal(body.licence.polymarket, 'shown');
+  assert.equal(body.licence.kalshi, 'shown');
   // free: counts and times, nothing that names a wallet or dates a locked signal
   assert.equal(body.tail.errors, undefined);
   assert.equal(body.tail.lastSignalAt, undefined);
@@ -469,33 +542,326 @@ test('status reports tail, whales, exchange arbs and the upstream queue', async 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.20.0');
-  assert.equal((await get('/')).body.version, '3.20.0');
+  assert.equal(require('../package.json').version, '3.21.0');
+  assert.equal((await get('/')).body.version, '3.21.0');
 });
 
-test('exchange arbs: an exchange down at startup primes on its first good scan; its standing arbs are not news', async () => {
-  const route = ROUTES['https://gamma-api.polymarket.com/events'];
+test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
   const pmEvent = (id, title, names) => ({
     id, slug: `pm-${id}`, title, negRisk: true, endDate: iso(Date.now() + 60 * DAY), tags: [{ label: 'Politics' }],
-    markets: names.map(([n, ask], i) => ({ id: `${id}${i}`, question: `Will ${n} win?`, groupItemTitle: n, outcomes: '["Yes","No"]',
-      bestAsk: ask, bestBid: ask - 0.01, active: true, closed: false, negRisk: true, endDate: iso(Date.now() + 60 * DAY) })),
+    markets: names.map(([n, ask], i) => ({ id: `${id}${i}`, question: `Will ${n} win?`, groupItemTitle: n, outcomes: '["Yes","No"]', conditionId: `0xpm${id}${i}`,
+      clobTokenIds: JSON.stringify([`${id}${i}1`, `${id}${i}2`]), bestAsk: ask, bestBid: ask - 0.01, active: true, closed: false, negRisk: true, endDate: iso(Date.now() + 60 * DAY) })),
   });
-  const standing = pmEvent('881', 'Next Mayor of Springfield', [['Alice Moe', 0.4], ['Bart Barney', 0.4], ['Other', 0.1]]);
-  ROUTES['https://gamma-api.polymarket.com/events'] = () => [standing];
+  // a Polymarket underround: an arb in intl mode, nothing a US person can place
+  fx.pmEvents = [pmEvent('881', 'Next Mayor of Springfield', [['Alice Moe', 0.4], ['Bart Barney', 0.4], ['Other', 0.1]])];
   tick(6e3);
   posts.length = 0;
+  const first = await S.runTailJob('xarb', S.scanXarbs);
+  assert.deepEqual(first, []);
+  assert.ok(!S.xarbState.arbs.some(a => a.title === 'Next Mayor of Springfield'), 'not listed in US mode');
+  assert.ok(S.xarbState.arbs.every(a => a.legs.every(l => l.venue !== 'polymarket')), 'no Polymarket leg anywhere');
+  assert.equal(S.xarbState.primed.polymarket, true);
+  assert.equal(S.xarbState.venues.size, 3, 'its markets are indexed for routing signals');
+  assert.equal(posts.length, 0);
+  const listed = await get('/api/xarbs', PRO);
+  assert.ok(listed.body.arbs.every(a => a.legs.every(l => l.venue === 'kalshi')));
+  noPolymarketLinks(listed.body, 'arbs');
+
+  fx.kalshiEvents.push(kalshiEvent('KXNEXTGOV-26', 'Next Governor of Shelbyville?', [['Carl Lenny', '0.4500'], ['Someone else', '0.4500']]));
+  tick(6e3);
+  const next = await S.runTailJob('xarb', S.scanXarbs);
+  assert.deepEqual(next.map(a => a.title), ['Next Governor of Shelbyville?'], 'a new Kalshi one is');
+  assert.match(posts.map(p => p.body.content).join('\n'), /Shelbyville/);
+  fx.kalshiEvents.pop();
+});
+
+// ── where to tail ──
+const NBA_COND = '0xnba0000000000000000000000000000000000000000000000000000000000c1';
+const nba = () => {
+  const start = Date.now() + 2 * DAY;
+  const kalshiMarket = (ticker, label, yes, no) => ({
+    ticker, event_ticker: 'KXNBAGAME-26OCT10NYKBOS', title: 'New York K at Boston Winner?', yes_sub_title: label, status: 'active',
+    yes_ask_dollars: yes, no_ask_dollars: no, yes_bid_dollars: (Number(yes) - 0.02).toFixed(4), no_bid_dollars: (Number(no) - 0.02).toFixed(4),
+    close_time: iso(start + 14 * DAY), expected_expiration_time: iso(start + 3 * 3600e3), volume: 52000, liquidity_dollars: '25000.00',
+    rules_primary: 'If Boston wins the New York K vs Boston professional basketball game, then the market resolves to Yes.',
+  });
+  const market = {
+    id: '555', question: 'Knicks vs. Celtics', conditionId: NBA_COND, slug: 'nba-nyk-bos-2026-10-10', outcomes: '["Knicks","Celtics"]',
+    outcomePrices: '["0.395","0.605"]', clobTokenIds: '["8801","8802"]', bestBid: 0.39, bestAsk: 0.4, lastTradePrice: 0.4, active: true, closed: false,
+    acceptingOrders: true, gameStartTime: iso(start), sportsMarketType: 'moneyline', endDate: iso(start + 3 * 3600e3), volume: '180000', liquidity: '42000',
+    feeType: 'sports_fees_v2', feeSchedule: { rate: 0.05, exponent: 1, takerOnly: true, rebateRate: 0.25 },
+    events: [{ id: '9001', slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', category: 'Sports' }],
+  };
+  return {
+    start,
+    kalshi: {
+      event_ticker: 'KXNBAGAME-26OCT10NYKBOS', series_ticker: 'KXNBAGAME', title: 'New York K at Boston', category: 'Sports', mutually_exclusive: true,
+      // Celtics: Boston YES 63¢ = New York K NO 63¢
+      markets: [kalshiMarket('KXNBAGAME-26OCT10NYKBOS-BOS', 'Boston', '0.6300', '0.3900'), kalshiMarket('KXNBAGAME-26OCT10NYKBOS-NYK', 'New York K', '0.3900', '0.6300')],
+    },
+    pmEvent: { id: '9001', slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', negRisk: false, endDate: market.endDate,
+      tags: [{ label: 'Sports', slug: 'sports' }, { label: 'NBA', slug: 'nba' }], markets: [market] },
+    market,
+    game: celtics => ({
+      id: 'g-nba-1', sport_key: 'basketball_nba', commence_time: iso(start), home_team: 'Boston Celtics', away_team: 'New York Knicks',
+      bookmakers: [
+        { key: 'draftkings', title: 'DraftKings', markets: [{ key: 'h2h', outcomes: [{ name: 'Boston Celtics', price: celtics }, { name: 'New York Knicks', price: 145 }] }] },
+        // better, but offshore: never a venue in US mode
+        { key: 'pinnacle', title: 'Pinnacle', markets: [{ key: 'h2h', outcomes: [{ name: 'Boston Celtics', price: -120 }, { name: 'New York Knicks', price: 110 }] }] },
+      ],
+    }),
+  };
+};
+const kalshiFee63 = Math.ceil(0.07 * 100 * 0.63 * 0.37 * 100 - 1e-9) / 100 / 100;   // per contract, 100-lot
+
+test('where to tail: a sports signal goes to the venue with the most units (a US sportsbook here), Kalshi listed too', async () => {
+  const g = nba();
+  fx.kalshiEvents.push(g.kalshi);
+  fx.pmEvents = [g.pmEvent];
+  fx.markets = [g.market];
+  S.cache.odds.basketball_nba = { data: [g.game(-170)], updated: iso(Date.now()) };
+  tick(6e3);
+  await S.runTailJob('xarb', S.scanXarbs);
+  const idx = S.xarbState.venues;
+  assert.equal(idx.byCondition.get(NBA_COND.toLowerCase()).matches.length, 2, 'both Kalshi team markets match the Polymarket game');
+
+  posts.length = 0;
+  fx.trades = [trade({ size: 10000, price: 0.6, tx: '0xtxnba', asset: '8802', cond: NBA_COND, title: 'Knicks vs. Celtics', slug: 'nba-nyk-bos-2026-10-10',
+    eventSlug: 'nba-nyk-bos-2026-10-10', outcome: 'Celtics', outcomeIndex: 1, agoMs: 5e3 })];
+  const [s] = await S.runTailJob('signals', S.pollTail);
+  assert.ok(s, 'a signal');
+  assert.equal(s.category, 'sports');
+  assert.ok(s.units > 0, 'sized at Polymarket too');
+
+  // every quote: Kalshi Boston YES and New York K NO (63¢ + fee), DraftKings -170; no Pinnacle, no Polymarket
+  assert.deepEqual(s.venues.map(v => v.key).sort(), ['draftkings', 'kalshi', 'kalshi']);
+  const k = s.venues.find(v => v.key === 'kalshi');
+  assert.equal(k.price, 0.63);
+  assert.ok(Math.abs(k.fee - kalshiFee63) < 1e-9, `fee ${k.fee}`);
+  assert.equal(k.url, 'https://kalshi.com/markets/kxnbagame-26oct10nykbos');
+  const dk = s.venues.find(v => v.key === 'draftkings');
+  assert.equal(dk.american, -170);
+  assert.ok(Math.abs(dk.price - 170 / 270) < 1e-6, 'implied 1/decimal, no fee');
+  assert.equal(dk.fee, 0);
+  // each sized with tail.sizeAt at its own price and fee, from the signal's q
+  for (const v of s.venues) {
+    const z = tail.sizeAt({ q: s.q, price: v.price, feePerContract: v.fee, grade: s.grade, consensus: s.consensus, opts: S.tailEngine.settings() });
+    assert.equal(v.units, z.units, v.key);
+    assert.equal(v.maxPrice, z.maxPrice, v.key);
+  }
+  assert.ok(dk.units >= k.units && dk.units > 0);
+  assert.equal(s.venue.key, 'draftkings', 'more units (or as many, cheaper)');
+  assert.equal(s.venue.name, 'DraftKings');
+
+  // the webhook leads with the same line; no polymarket.com
+  const text = posts.map(p => p.body.content).join('\n');
+  assert.ok(text.includes(S.venueLine(s)), `${text} has ${S.venueLine(s)}`);
+  assert.match(S.venueLine(s), /^Tail at DraftKings -170 · \d+(\.\d+)?u · don't pay above \d+¢ \(-\d+\)$/);
+  assert.doesNotMatch(text, /polymarket\.com/);
+
+  // the app's API: the same venue, no polymarket.com
+  const api = (await get('/api/tail/signals', PRO)).body.signals.find(x => x.id === s.id);
+  assert.equal(api.venue.key, 'draftkings');
+  assert.equal(api.venues.length, 3);
+  noPolymarketLinks(api, 'a routed signal');
+});
+
+test('where to tail: Kalshi when the books are worse; nothing matched is "watch only"', async () => {
+  const g = nba();
+  // the book moves to -250 (71.4¢): Kalshi's 63¢ + 1.6¢ fee now gives more
+  S.cache.odds.basketball_nba = { data: [g.game(-250)], updated: iso(Date.now()) };
+  tick(6e3);
+  await S.runTailJob('xarb', S.scanXarbs);
+  const [s] = S.tailEngine.signals({ limit: 50 }).filter(x => x.conditionId === NBA_COND);
+  const routed = S.routeSignal({ ...s, topUp: false, venue: undefined, venues: undefined });
+  assert.equal(routed.venue.key, 'kalshi');
+  assert.equal(routed.venue.price, 0.63);
+  assert.ok(routed.venue.units > routed.venues.find(v => v.key === 'draftkings').units);
+  assert.match(S.venueLine(routed), /^Tail at Kalshi 63¢ · \d+(\.\d+)?u · don't pay above \d+¢$/);
+  assert.equal(routed.venue.url, 'https://kalshi.com/markets/kxnbagame-26oct10nykbos');
+  // a top-up adds only what the venue's size is above the units already signalled
+  const top = S.routeSignal({ ...s, id: 'top', topUp: true, parentId: s.id, priorUnits: 0.5, venue: undefined, venues: undefined });
+  assert.equal(top.venue.key, 'kalshi');
+  assert.equal(top.venue.units, Math.max(0, Math.round((routed.venue.units - 0.5) * 100) / 100));
+  const full = S.routeSignal({ ...s, id: 'full', topUp: true, parentId: s.id, priorUnits: 9, venue: undefined, venues: undefined });
+  assert.ok(full.venues.every(v => v.units === 0), 'already at size everywhere: nothing more');
+
+  // a market neither Kalshi nor a book lists
+  const lone = S.routeSignal({ ...s, id: 'lone', conditionId: '0xnothing', asset: 'nothing', venue: undefined, venues: undefined });
+  assert.equal(lone.venue, null);
+  assert.deepEqual(lone.venues, []);
+  assert.equal(S.venueLine(lone), 'No US venue found yet: watch only');
+  // exits aren't routed
+  assert.equal(S.routeSignal({ type: 'exit', id: 'x' }).venue, undefined);
+  // put the -170 book back for the gate tests
+  S.cache.odds.basketball_nba = { data: [g.game(-170)], updated: iso(Date.now()) };
+});
+
+// ── data licences ──
+let payingToken = null;
+async function payingUser() {
+  if (!payingToken) {
+    const r = await post('/api/auth/signup', { email: 'subscriber@example.com', password: 'correct horse battery' });
+    assert.equal(r.status, 201);
+    assert.equal((await post('/api/admin/comp', { email: 'subscriber@example.com', comp: true }, PRO)).status, 200);
+    payingToken = r.body.token;
+  }
+  return { authorization: `Bearer ${payingToken}` };
+}
+const grantBoth = () => { process.env.POLYMARKET_DISPLAY_OK = 'on'; process.env.KALSHI_DISPLAY_OK = 'on'; };
+
+test('licence gates, PAYWALL on and both flags off: the admin sees everything, paying and free users get the note', async () => {
+  const PAYING = await payingUser();
+  assert.equal((await get('/api/tail/traders', PAYING)).body.pro, true, 'a paying (comped) account');
+  process.env.POLYMARKET_DISPLAY_OK = 'off';
+  process.env.KALSHI_DISPLAY_OK = '';
   try {
-    const first = await S.runTailJob('xarb', S.scanXarbs);
-    assert.ok(S.xarbState.arbs.some(a => a.title === 'Next Mayor of Springfield'), 'listed');
-    assert.deepEqual(first, [], "Polymarket's first scan with data: what's standing is not news");
-    assert.equal(posts.length, 0);
-    const added = pmEvent('882', 'Next Governor of Shelbyville', [['Carl Lenny', 0.45], ['Field', 0.45]]);
-    ROUTES['https://gamma-api.polymarket.com/events'] = () => [standing, added];
+    // admin: everything
+    assert.equal((await get('/api/tail/traders', PRO)).body.traders.length, 1);
+    const adminSignals = (await get('/api/tail/signals', PRO)).body.signals;
+    assert.ok(adminSignals.length >= 3);
+    assert.ok(adminSignals.find(x => x.conditionId === NBA_COND).venues.some(v => v.key === 'kalshi'));
+    const adminWhales = (await get('/api/whales', PRO)).body.events;
+    assert.ok(adminWhales.some(e => e.exchange === 'kalshi') && adminWhales.some(e => e.exchange === 'polymarket'));
+    assert.ok((await get('/api/xarbs', PRO)).body.count >= 3);
+    assert.ok((await get('/api/tail/record', PRO)).body.signals.length >= 2);
+    assert.equal((await get('/api/tail/settings', PRO)).body.licence.viewer.kalshi, true);
+
+    for (const [who, h] of [['paying', PAYING], ['free', {}]]) {
+      const tr = (await get('/api/tail/traders', h)).body;
+      assert.deepEqual(tr.traders, [], `${who}: no Polymarket wallets`);
+      assert.deepEqual(tr.withheld, ['polymarket']);
+      assert.equal(tr.note, 'waiting on data permission');
+      const sg = (await get('/api/tail/signals', h)).body;
+      assert.deepEqual(sg.signals, [], `${who}: no signals`);
+      assert.equal(sg.locked, 0, 'not even a count of live ones');
+      assert.deepEqual(sg.withheld, ['polymarket']);
+      const wh = (await get('/api/whales', h)).body;
+      assert.deepEqual(wh.events, [], `${who}: no whale prints from either source`);
+      assert.deepEqual(wh.flow, []);
+      assert.deepEqual(wh.withheld, ['kalshi', 'polymarket']);
+      const xa = (await get('/api/xarbs', h)).body;
+      assert.equal(xa.count, 0, `${who}: every US arb has a Kalshi leg`);
+      assert.deepEqual(xa.arbs, []);
+      assert.deepEqual(xa.withheld, ['kalshi']);
+      const rec = (await get('/api/tail/record', h)).body;
+      assert.deepEqual(rec.signals, [], `${who}: no record rows`);
+      assert.equal(rec.overall.wins, 2, 'the totals stay');
+      assert.deepEqual((await get('/api/exchanges', h)).body.withheld, ['kalshi', 'polymarket']);
+    }
+    assert.equal((await get(`/api/tail/trader/${W1}`, PAYING)).status, 403);
+    assert.equal((await get(`/api/tail/trader/${W1}`, PRO)).status, 200);
+    const st = (await get('/api/tail/settings', PAYING)).body.licence;
+    assert.deepEqual(st, { paywall: true, polymarketDisplayOk: false, kalshiDisplayOk: false, polymarket: 'admin only', kalshi: 'admin only', viewer: { polymarket: false, kalshi: false }, note: 'waiting on data permission' });
+    assert.equal((await get('/api/status')).body.licence.polymarket, 'admin only');
+
+    // Polymarket allowed, Kalshi not: signals show, routed away from Kalshi; Kalshi whales and arbs stay hidden
+    process.env.POLYMARKET_DISPLAY_OK = 'on';
+    const sg = (await get('/api/tail/signals', PAYING)).body;
+    const nbaSig = sg.signals.find(x => x.conditionId === NBA_COND);
+    assert.ok(nbaSig);
+    assert.ok(nbaSig.venues.length > 0 && nbaSig.venues.every(v => v.key !== 'kalshi'), 'no Kalshi prices');
+    assert.equal(nbaSig.venue.key, 'draftkings', 'the best venue that is left');
+    assert.match(nbaSig.venueNote, /Kalshi prices: waiting on data permission/);
+    const wh = (await get('/api/whales', PAYING)).body;
+    assert.ok(wh.events.length > 0 && wh.events.every(e => e.exchange === 'polymarket'));
+    assert.deepEqual(wh.withheld, ['kalshi']);
+    assert.equal((await get('/api/xarbs', PAYING)).body.count, 0);
+    assert.equal((await get('/api/tail/traders', PAYING)).body.traders.length, 1);
+
+    // both on: the paying user sees it all
+    process.env.KALSHI_DISPLAY_OK = 'yes';
+    assert.ok((await get('/api/xarbs', PAYING)).body.count >= 3);
+    assert.equal((await get('/api/whales', PAYING)).body.withheld, undefined);
+    assert.ok((await get('/api/tail/signals', PAYING)).body.signals.find(x => x.conditionId === NBA_COND).venues.some(v => v.key === 'kalshi'));
+  } finally { grantBoth(); }
+});
+
+test('licence gates on the live stream and the webhook: a paying listener gets only what its licences allow', async () => {
+  const PAYING = await payingUser();
+  process.env.POLYMARKET_DISPLAY_OK = 'off';
+  process.env.KALSHI_DISPLAY_OK = 'off';
+  const ac = new AbortController();
+  try {
+    const res = await fetch(`${base}/api/ev/stream?token=${encodeURIComponent(PAYING.authorization.slice(7))}`, { signal: ac.signal });
+    assert.equal(res.status, 200);
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    const got = [];
+    const pump = (async () => { try { for (;;) { const { value, done } = await reader.read(); if (done) return; got.push(dec.decode(value, { stream: true })); } } catch { /* aborted */ } })();
+    for (let t0 = realNow(); !got.join('').includes('event: hello') && realNow() - t0 < 3000;) await new Promise(r => setTimeout(r, 10));
+    const sig = S.tailEngine.signals({ limit: 5 })[0];
+    S.liveListeners.forEach(fn => fn('tail', [sig]));
+    S.liveListeners.forEach(fn => fn('whale', [{ exchange: 'kalshi', id: 'k', notional: 9000, at: iso(Date.now()) }]));
+    S.liveListeners.forEach(fn => fn('xarb', S.xarbState.arbs.slice(0, 1)));
+    // +EV board rows: a Kalshi book is withheld, a sportsbook isn't
+    S.evListeners.forEach(fn => fn([{ book: 'kalshi', ev: 5, event: 'A @ B' }, { book: 'draftkings', ev: 4, event: 'A @ B' }, { book: 'polymarket', ev: 6, event: 'A @ B' }]));
+    await new Promise(r => setTimeout(r, 50));
+    ac.abort();
+    await pump;
+    const text = got.join('');
+    assert.doesNotMatch(text, /event: (tail|whale|xarb)/, 'nothing from either source');
+    const ev = JSON.parse(/event: ev\ndata: (.*)\n/.exec(text)[1]);
+    assert.deepEqual(ev.map(r => r.book), ['draftkings'], 'no Kalshi book, and never a Polymarket book in US mode');
+  } finally {
+    ac.abort();
+    grantBoth();
+  }
+  // the webhook follows the public licences: nothing of a withheld source is posted
+  process.env.POLYMARKET_DISPLAY_OK = 'off';
+  try {
+    posts.length = 0;
+    fx.trades = [trade({ size: 15000, price: 0.40, tx: '0xtxgate', agoMs: 5e3, asset: '7125001', cond: '0xgate', title: 'Will Lee win the Iowa Senate election?', slug: 'iowa-senate-lee', eventSlug: 'iowa-senate-2026' })];
+    fx.markets = [gammaMarket({ cond: '0xgate', asset: '7125001', id: '501999', question: 'Will Lee win the Iowa Senate election?', slug: 'iowa-senate-lee', eventSlug: 'iowa-senate-2026' })];
     tick(6e3);
-    const next = await S.runTailJob('xarb', S.scanXarbs);
-    assert.deepEqual(next.map(a => a.title), ['Next Governor of Shelbyville'], 'a new one after that is');
-    assert.match(posts.map(p => p.body.content).join('\n'), /Shelbyville/);
-  } finally { ROUTES['https://gamma-api.polymarket.com/events'] = route; }
+    const out = await S.runTailJob('signals', S.pollTail);
+    assert.equal(out.length, 1, 'the signal still fires (the admin sees it)');
+    assert.deepEqual(posts, [], 'but no Polymarket wallet goes to the webhook');
+  } finally { grantBoth(); }
+
+  // licenceFor: PAYWALL off shows everything whatever the flags; the admin always sees everything
+  process.env.POLYMARKET_DISPLAY_OK = 'off';
+  process.env.KALSHI_DISPLAY_OK = 'off';
+  try {
+    assert.deepEqual(S.licenceFor({ paywall: false, admin: false }), { polymarket: true, kalshi: true });
+    assert.deepEqual(S.licenceFor({ paywall: true, admin: true }), { polymarket: true, kalshi: true });
+    assert.deepEqual(S.licenceFor({ paywall: true, admin: false }), { polymarket: false, kalshi: false });
+    process.env.KALSHI_DISPLAY_OK = '1';
+    assert.deepEqual(S.licenceFor({ paywall: true, admin: false }), { polymarket: false, kalshi: true });
+  } finally { grantBoth(); }
+});
+
+test('licence gates with PAYWALL off (the owner on his own): everything shows to anyone, flags off or not', () => {
+  // a second server process: PAYWALL is read once at startup
+  const root = path.join(__dirname, '..');
+  const script = `
+    const axios = require('axios');
+    axios.get = async url => { throw new Error('offline: ' + url); };
+    axios.post = async () => ({ status: 204 });
+    const S = require(${JSON.stringify(path.join(root, 'server.js'))});
+    const whales = require(${JSON.stringify(path.join(root, 'whales.js'))});
+    for (const t of require('node-cron').getTasks().values()) t.stop();
+    S.whaleWatcher.ingestKalshi(whales.parseKalshiTrades({ trades: [{ trade_id: 'k1', ticker: 'KXFED-26DEC-H0', count_fp: '20000.00', yes_price_dollars: '0.4000', no_price_dollars: '0.6000', taker_side: 'yes', created_time: new Date(Date.now() - 5000).toISOString() }] }));
+    S.xarbState.arbs = [{ id: 'multi:kalshi:a+b', type: 'multi', title: 'Fed', profitPct: 2, legs: [{ venue: 'kalshi', pick: 'A', price: 0.4 }, { venue: 'kalshi', pick: 'B', price: 0.5 }], stakes: { bankroll: 100, legs: [] } }];
+    const srv = S.app.listen(0, '127.0.0.1', async () => {
+      const u = 'http://127.0.0.1:' + srv.address().port;
+      const j = async p => (await fetch(u + p)).json();
+      const out = { settings: await j('/api/tail/settings'), whales: await j('/api/whales'), xarbs: await j('/api/xarbs'), traders: await j('/api/tail/traders'), status: await j('/api/status') };
+      process.stdout.write('\\n@@' + JSON.stringify(out) + '\\n');
+      process.exit(0);
+    });`;
+  const env = { ...process.env, PAYWALL: 'off', POLYMARKET_DISPLAY_OK: 'off', KALSHI_DISPLAY_OK: 'off', TRACKER_FILE: path.join(DIR, 'b-picks.json'), USERS_FILE: path.join(DIR, 'b-users.json'),
+    EV_TRACK_FILE: path.join(DIR, 'b-ev.json'), TAIL_TRACK_FILE: path.join(DIR, 'b-tail.json'), TAIL_TRADERS_FILE: path.join(DIR, 'b-traders.json'), ALERT_WEBHOOK_URL: '' };
+  const raw = execFileSync(process.execPath, ['-e', script], { env, cwd: root, timeout: 30000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+  const out = JSON.parse(raw.split('\n').find(l => l.startsWith('@@')).slice(2));
+  assert.deepEqual(out.settings.licence, { paywall: false, polymarketDisplayOk: false, kalshiDisplayOk: false, polymarket: 'shown', kalshi: 'shown', viewer: { polymarket: true, kalshi: true }, note: null });
+  assert.equal(out.whales.pro, true, 'no paywall: everyone gets everything');
+  assert.equal(out.whales.events.length, 1);
+  assert.equal(out.whales.events[0].exchange, 'kalshi');
+  assert.equal(out.whales.withheld, undefined);
+  assert.equal(out.xarbs.count, 1);
+  assert.equal(out.xarbs.arbs[0].legs.length, 2, 'the legs, not just the count');
+  assert.equal(out.traders.withheld, undefined);
+  assert.equal(out.status.licence.paywall, false);
 });
 
 test('polite http: one request per gap per host, identical GETs share a response, failures are not kept', async () => {
@@ -535,13 +901,32 @@ test('polite http: one request per gap per host, identical GETs share a response
   assert.equal(http.stats().failed, 1);
 });
 
-test('the bundled app has the SHARP TAIL tab and its scripts parse', () => {
+test('US mode strips polymarket.com links however deep, and nothing else', () => {
+  const x = S.stripPolymarketLinks({ url: 'https://polymarket.com/event/a', a: [{ link: 'https://www.polymarket.com/profile/0x1' }], k: 'https://kalshi.com/markets/x',
+    api: 'https://data-api.polymarket.com/v2/trades', text: 'see https://polymarket.com', n: 3, nil: null });
+  assert.deepEqual(x, { url: null, a: [{ link: null }], k: 'https://kalshi.com/markets/x', api: 'https://data-api.polymarket.com/v2/trades', text: 'see https://polymarket.com', n: 3, nil: null });
+  assert.equal(S.TAIL_REGION, 'us');
+});
+
+test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing, the footer, and its scripts parse', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   assert.match(html, /showTab\('tail',this\)">🐋 SHARP TAIL</);
   assert.match(html, /id="page-tail"/);
   for (const v of ['signals', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
   assert.match(html, /addEventListener\(type, m => \{ try \{ tailOnLive\(type/);
   assert.match(html, /localStorage\.setItem\('lr_tail'/);
+  // the same sizing for everyone: no bankroll input, no units turned into dollars, no ?bankroll= re-split
+  const tab = html.slice(html.indexOf('<div class="page" id="page-tail">'), html.indexOf('<!-- ESPORTS PAGE -->'));
+  assert.ok(tab.length > 500);
+  assert.doesNotMatch(tab, /tailBankroll|tailArbStake|BANKROLL \$/);
+  assert.doesNotMatch(html, /tailDollarsOfUnits|tailState\.bankroll|tailState\.arbStake|\/api\/xarbs\?bankroll|'\?bankroll='/);
+  assert.match(tab, /Information only, not a sportsbook\. Same alert for everyone\. 21\+\. Gambling problem\? Call 1-800-GAMBLER\./);
+  // where to tail, and the US-mode link rule
+  assert.match(html, /Tail at \$\{v\.name\} \$\{tailVenuePrice\(v\)\} · \$\{v\.units\}u · don't pay above \$\{max\}/);
+  assert.match(html, /No US venue found yet: watch only/);
+  assert.match(html, /tailUS\(\) && TAIL_PM_LINK\.test\(u\)/);
+  assert.match(html, /x\.locked \|\| tailUS\(\) \|\|/, 'no Polymarket profile links in US mode');
+  assert.match(html, /waiting on data permission/);
   const blocks = [...html.matchAll(/<script(\b[^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/src=/.test(m[1]));
   assert.ok(blocks.length >= 1);
   for (const [, , code] of blocks) assert.doesNotThrow(() => new Function(code));

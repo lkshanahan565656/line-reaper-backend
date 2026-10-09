@@ -61,7 +61,8 @@ const pmField = (id, slug, title, cands, extra = {}) => ({
 
 const kRows = (...events) => A.parseKalshiBinaries({ events, cursor: '' });
 const pRows = (...events) => A.parsePolymarketBinaries(events);
-const opts = (o = {}) => ({ now: NOW, ...o });
+// the round-1 tests run with every venue (intl); US mode has its own tests below
+const opts = (o = {}) => ({ now: NOW, region: 'intl', ...o });
 
 // ── parsing ──
 test('kalshi events: one row per open market, dollars or cents, games know both teams', () => {
@@ -575,6 +576,197 @@ test('stakes split so every outcome pays the same', () => {
   assert.ok(bs.profitPct > 6 && bs.profitPct < 6.5);
 });
 
+test('stakes: each leg as a % of the total, the same split whatever the amount', () => {
+  const [a] = A.findCrossArbs(kRows(kalshiGame()), pRows(pmGame()), opts());
+  const pcts = a.stakes.legs.map(l => l.pct);
+  assert.deepEqual(pcts, [58.7, 41.3], '58.44 and 41.20 of 99.64');
+  assert.ok(Math.abs(pcts[0] + pcts[1] - 100) < 0.2);
+  const big = A.stakeArb(a, 5000, opts());
+  assert.ok(big.legs.every((l, i) => Math.abs(l.pct - pcts[i]) <= 0.15), 'about the same split at $5,000 (whole contracts)');
+  const games = X.attachExchanges([oddsGame([bookH2h('draftkings', -200, 170)])], X.parseKalshiMarkets({ markets: kalshiGame().markets }), { now: NOW });
+  const [b] = A.findBookArbs(games, opts());
+  // 1/1.7519 : 1/2.70 of 0.9412
+  assert.deepEqual(b.stakes.legs.map(l => l.pct), [60.6, 39.4]);
+  assert.deepEqual(A.stakeArb(b, 12345).legs.map(l => l.pct), [60.6, 39.4], 'a book split is exact at any size');
+});
+
+// ── Polymarket taker fees ──
+test('polymarket fee schedule: parsed from Gamma, shares × rate × p(1 − p), sports 5%, others free', () => {
+  const sched = { rate: 0.05, exponent: 1, takerOnly: true, rebateRate: 0.2 };
+  assert.deepEqual(A.polymarketFeeSchedule({ feeType: 'sports_fees_v2', feeSchedule: sched }), { rate: 0.05, exponent: 1, type: 'sports_fees_v2' });
+  assert.deepEqual(A.polymarketFeeSchedule({ feeSchedule: JSON.stringify({ rate: '0.04', exponent: '2' }) }), { rate: 0.04, exponent: 2, type: null }, 'a JSON string, numbers as strings');
+  assert.deepEqual(A.polymarketFeeSchedule({ feeType: 'sports_fees_v2' }), { rate: 0.05, exponent: 1, type: 'sports_fees_v2' }, 'a sports market without its schedule is not taken as free');
+  assert.equal(A.polymarketFeeSchedule({}), null, 'no schedule (geopolitics, world events): no fee');
+  assert.equal(A.polymarketFeeSchedule({ feeSchedule: { rate: 0 } }), null);
+  assert.equal(A.polymarketFeeSchedule({ feeSchedule: 'not json' }), null);
+  // 1,000 shares at 40¢: 1000 × 0.05 × 0.4 × 0.6 = $12
+  assert.ok(Math.abs(A.polymarketFee(0.4, 1000, { rate: 0.05, exponent: 1 }) - 12) < 1e-9);
+  assert.ok(Math.abs(A.polymarketFee(0.4, 1000, { rate: 0.05, exponent: 2 }) - 1000 * 0.05 * 0.24 ** 2) < 1e-9, 'exponent e: (p(1 − p))^e');
+  assert.equal(A.polymarketFee(0.4, 1000, null), 0);
+  assert.equal(A.polymarketFee(1, 1000, { rate: 0.05, exponent: 1 }), 0);
+
+  const [row] = pRows(pmGame({ feeType: 'sports_fees_v2', feeSchedule: sched }));
+  assert.deepEqual(row.feeSchedule, { rate: 0.05, exponent: 1, type: 'sports_fees_v2' });
+  assert.equal(row.yesIndex, 0);
+  assert.deepEqual(row.tokenIds, ['111', '222']);
+  assert.equal(pRows(pmGame())[0].feeSchedule, null);
+});
+
+test('polymarket fee in arbs: each Polymarket leg pays its market\'s taker fee', () => {
+  // free: Kalshi Boston 0.55 + Polymarket Knicks 0.40, +3.37% (see above)
+  const sports = { feeType: 'sports_fees_v2', feeSchedule: { rate: 0.05, exponent: 1, takerOnly: true } };
+  const [a] = A.findCrossArbs(kRows(kalshiGame()), pRows(pmGame(sports)), opts());
+  assert.ok(a, 'still an arb after the fee');
+  const pm = a.stakes.legs.find(l => l.venue === 'polymarket');
+  // 102 contracts: 0.55 × 102 + 1.77 Kalshi fee = 57.87; 0.40 × 102 = 40.80 + 102 × 0.05 × 0.24 = 1.224 fee
+  assert.equal(a.stakes.contracts, 102);
+  assert.equal(pm.fee, 1.22);
+  assert.equal(pm.stake, 42.02);
+  assert.equal(a.stakes.cost, 99.89);
+  assert.equal(a.profitPct, 2.11, 'down from 3.37% with no fee');
+  assert.deepEqual(a.legs[1].feeSchedule, { rate: 0.05, exponent: 1, type: 'sports_fees_v2' }, 'the leg carries its schedule so a restake charges it too');
+  assert.equal(A.stakeArb(a, 1000).legs[1].fee, Math.round(A.stakeArb(a, 1000).contracts * 0.05 * 0.24 * 100) / 100);
+  // a thinner gap: 0.57 + 0.41 = 0.98 is an arb with no Polymarket fee and a loss with it
+  const ks = kRows(kalshiGame({ yes_ask_dollars: '0.5700' }));
+  assert.equal(A.findCrossArbs(ks, pRows(pmGame({ bestAsk: 0.41, bestBid: 0.4 })), opts({ kalshiFeeRate: 0 })).length, 1);
+  assert.deepEqual(A.findCrossArbs(ks, pRows(pmGame({ bestAsk: 0.41, bestBid: 0.4, ...sports })), opts({ kalshiFeeRate: 0 })).filter(x => x.legs[0].side === 'yes'), []);
+
+  // underround: every leg pays 0.05 × p(1 − p) a share. Σ asks 0.97 (+3.09% free) plus
+  // 0.05 × (0.16 + 0.1875 + 0.1875 + 0.1971) = 3.7¢ of fees a set is a loss
+  const cands = [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['D', 0.27, 0.26]];
+  const cup = extra => pRows(pmField('4402', 'cup', 'Cup winner', cands.map(c => [...c, extra]), { tags: [{ label: 'Sports' }] }));
+  assert.equal(A.findUnderrounds(cup({}), opts())[0].profitPct, 3.09);
+  assert.deepEqual(A.findUnderrounds(cup(sports), opts({ minPct: 0 })), [], 'the sports fee eats the 3%');
+  // a lighter schedule leaves some: rate 0.01 → 0.73¢ a set
+  const [u] = A.findUnderrounds(cup({ feeSchedule: { rate: 0.01, exponent: 1 } }), opts());
+  const perSet = 0.97 + 0.01 * (0.2 * 0.8 + 0.25 * 0.75 * 2 + 0.27 * 0.73);
+  assert.ok(Math.abs(u.totalCost - perSet) < 0.001, `${u.totalCost} vs ${perSet}`);
+  assert.ok(u.profitPct > 2.2 && u.profitPct < 2.4, String(u.profitPct));
+});
+
+// ── US mode ──
+test('US mode: only Kalshi and US sportsbook legs; Kalshi-vs-Polymarket and Polymarket-only arbs hidden', () => {
+  const { ks, ps } = politics();
+  const kalshi = [...ks, ...kRows(kalshiGame(), kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Hike', 23, 79]]))];
+  const oscars = pmField('4401', 'oscars', 'Oscars 2027: Best Picture Winner', [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['D', 0.27, 0.26]], { tags: [{ label: 'Culture' }] });
+  const polymarket = [...ps, ...pRows(pmGame(), oscars)];
+  const kalshiBooks = X.parseKalshiMarkets({ markets: kalshiGame().markets });
+  const games = X.attachExchanges([oddsGame([bookH2h('draftkings', -200, 170), bookH2h('pinnacle', -200, 180), bookH2h('bovada', -200, 175)])], kalshiBooks, { now: NOW });
+  const pmBook = X.attachExchanges([oddsGame([bookH2h('draftkings', -140, 120)])], X.parsePolymarketEvents([pmGame()], 'nba'), { now: NOW });
+
+  const intl = A.findArbs({ kalshi, polymarket, games: [...games, ...pmBook] }, opts());
+  assert.deepEqual([...new Set(intl.map(a => a.type))].sort(), ['book', 'cross', 'multi']);
+  assert.ok(intl.some(a => a.legs.some(l => l.venue === 'polymarket')));
+  assert.ok(intl.some(a => a.type === 'book' && a.legs[1].venue === 'pinnacle'), 'intl: the best book anywhere');
+
+  const us = A.findArbs({ kalshi, polymarket, games: [...games, ...pmBook] }, opts({ region: 'us' }));
+  assert.ok(us.length >= 2);
+  assert.ok(us.every(a => a.legs.every(l => l.venue !== 'polymarket')), 'never a Polymarket leg');
+  assert.ok(!us.some(a => a.type === 'cross'), 'no Kalshi vs Polymarket');
+  assert.ok(!us.some(a => a.exchange === 'polymarket'), 'no Polymarket underround');
+  assert.ok(us.some(a => a.type === 'multi' && a.exchange === 'kalshi'), 'a Kalshi underround stays');
+  const book = us.find(a => a.type === 'book');
+  assert.deepEqual(book.legs.map(l => [l.venue, l.american]), [['kalshi', -133], ['draftkings', 170]], 'offshore books (Pinnacle, Bovada) are skipped, DraftKings is used');
+  assert.ok(us.every(A.usPlaceable));
+  assert.equal(JSON.stringify(us).includes('polymarket.com'), false, 'nothing links to polymarket.com');
+  // the default region is US
+  assert.deepEqual(A.findArbs({ kalshi, polymarket, games }, { now: NOW }).map(a => a.id), A.findArbs({ kalshi, polymarket, games }, opts({ region: 'us' })).map(a => a.id));
+
+  assert.equal(A.isUsVenue('kalshi'), true);
+  assert.equal(A.isUsVenue('novig'), true);
+  assert.equal(A.isUsVenue('prophetx'), true);
+  assert.equal(A.isUsVenue('fanduel'), true);
+  for (const k of ['polymarket', 'pinnacle', 'betfair_ex_uk', 'bovada', 'betonlineag', '']) assert.equal(A.isUsVenue(k), false, k);
+  assert.equal(A.usPlaceable({ legs: [] }), false);
+  assert.equal(A.regionFromEnv({}), 'us');
+  assert.equal(A.regionFromEnv({ TAIL_REGION: 'INTL' }), 'intl');
+  assert.equal(A.regionFromEnv({ TAIL_REGION: 'eu' }), 'us', 'anything but intl is US mode');
+});
+
+// ── where to tail ──
+const celticsBuy = (o = {}) => ({ type: 'entry', conditionId: '0xABC', asset: '222', outcome: 'Celtics', outcomeIndex: 1, market: 'Knicks vs. Celtics',
+  currentPrice: 0.61, url: 'https://polymarket.com/event/nba-nyk-bos-2026-10-08', ...o });
+function sportsIndex({ books = [bookH2h('draftkings', -200, 170), bookH2h('fanduel', -190, 160), bookH2h('pinnacle', -165, 150)], pm = {}, k = [] } = {}) {
+  const kalshi = kRows(kalshiGame(...k)), polymarket = pRows(pmGame(pm));
+  const games = X.attachExchanges([oddsGame(books)], X.parseKalshiMarkets({ markets: kalshiGame(...k).markets }), { now: NOW });
+  return A.venueIndex({ kalshi, polymarket, matches: A.matchMarkets(kalshi, polymarket, opts()), games }, opts());
+}
+
+test('where to tail: a Polymarket team bet → the same team on Kalshi (YES, or NO on the opponent) and at US sportsbooks', () => {
+  const idx = sportsIndex();
+  assert.equal(idx.size, 1);
+  const us = A.venueQuotes(celticsBuy(), idx, opts({ region: 'us' }));
+  const kalshiFee = Math.ceil(0.07 * 100 * 0.55 * 0.45 * 100 - 1e-9) / 100 / 100;   // per contract on a 100-lot
+  assert.deepEqual(us.filter(q => q.key === 'kalshi').map(q => [q.marketId, q.side, q.pick, q.price, q.fee]), [
+    ['KXNBAGAME-26OCT08NYKBOS-BOS', 'yes', 'Boston', 0.55, kalshiFee],
+    ['KXNBAGAME-26OCT08NYKBOS-NYK', 'no', 'Boston', 0.55, kalshiFee],
+  ], 'Celtics win = Boston YES = New York K NO');
+  const books = us.filter(q => q.book);
+  assert.deepEqual(books.map(q => [q.key, q.american, q.pick]), [['draftkings', -200, 'Boston Celtics'], ['fanduel', -190, 'Boston Celtics']], 'no Pinnacle in US mode; the attached exchange books are not sportsbooks');
+  assert.ok(Math.abs(books[1].price - 190 / 290) < 1e-6, 'implied price 1/decimal');
+  assert.equal(books[1].fee, 0);
+  assert.ok(!us.some(q => q.key === 'polymarket'), 'never Polymarket in US mode');
+  assert.ok(us.every(q => !String(q.url || '').includes('polymarket.com')));
+  assert.equal(us[0].url, 'https://kalshi.com/markets/kxnbagame-26oct08nykbos');
+
+  // the other side: Knicks → New York K YES / Boston NO at 0.47, books' Knicks price
+  const knicks = A.venueQuotes(celticsBuy({ outcome: 'Knicks', outcomeIndex: 0, currentPrice: 0.4, asset: '111' }), idx, opts({ region: 'us' }));
+  assert.deepEqual(knicks.filter(q => q.key === 'kalshi').map(q => [q.side, q.pick, q.price]), [['no', 'New York K', 0.47], ['yes', 'New York K', 0.47]]);
+  assert.deepEqual(knicks.filter(q => q.book).map(q => [q.key, q.american]), [['draftkings', 170], ['fanduel', 160]]);
+  // matched by token when the conditionId is missing, by outcome label when the index is
+  assert.equal(A.venueQuotes(celticsBuy({ conditionId: null }), idx, opts()).filter(q => q.key === 'kalshi').length, 2);
+  assert.deepEqual(A.venueQuotes(celticsBuy({ outcomeIndex: null }), idx, opts()).filter(q => q.key === 'kalshi').map(q => q.side), ['yes', 'no']);
+
+  // intl: every book, and Polymarket itself at its ask with its fee
+  const intl = A.venueQuotes(celticsBuy(), sportsIndex({ pm: { feeType: 'sports_fees_v2', feeSchedule: { rate: 0.05, exponent: 1 } } }), opts());
+  assert.ok(intl.some(q => q.key === 'pinnacle'));
+  const pm = intl.find(q => q.key === 'polymarket');
+  assert.equal(pm.price, 0.61);
+  assert.ok(Math.abs(pm.fee - 0.05 * 0.61 * 0.39) < 1e-6);
+  assert.ok(Math.abs(pm.cost - (0.61 + 0.05 * 0.61 * 0.39)) < 1e-6);
+  // the signal's own fee (from the market's Gamma schedule) wins over a scan row without one
+  const own = A.venueQuotes(celticsBuy({ fee: 0.0119 }), idx, opts()).find(q => q.key === 'polymarket');
+  assert.deepEqual([own.price, own.fee], [0.61, 0.0119]);
+
+  // nothing matched: no quotes (the server shows "watch only")
+  assert.deepEqual(A.venueQuotes(celticsBuy({ conditionId: '0xnope', asset: 'x' }), idx, opts({ region: 'us' })), []);
+  assert.deepEqual(A.venueQuotes(celticsBuy(), A.venueIndex({}, opts()), opts({ region: 'us' })), []);
+  assert.deepEqual(A.venueQuotes(null, idx, opts()), []);
+  // a game that already started, or a Kalshi market that stopped trading, is not a venue
+  assert.deepEqual(A.venueQuotes(celticsBuy(), idx, opts({ region: 'us', now: Date.parse(START) + 60e3 })).filter(q => q.book), []);
+  const paused = sportsIndex({ k: [{ status: 'paused' }, { status: 'paused' }] });
+  assert.deepEqual(A.venueQuotes(celticsBuy(), paused, opts({ region: 'us' })).filter(q => q.key === 'kalshi'), []);
+  // a three-way line (soccer with a draw) is not the same bet as a two-way moneyline
+  const threeWay = sportsIndex({ books: [{ key: 'draftkings', title: 'DraftKings', markets: [{ key: 'h2h', outcomes: [{ name: 'Boston Celtics', price: -200 }, { name: 'New York Knicks', price: 170 }, { name: 'Draw', price: 900 }] }] }] });
+  assert.deepEqual(A.venueQuotes(celticsBuy(), threeWay, opts({ region: 'us' })).filter(q => q.book), []);
+});
+
+test('where to tail: a title-matched market maps YES to YES and NO to NO', () => {
+  const { ks, ps } = politics();
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps }, opts());
+  const newsom = ps.find(r => r.outcomeLabel === 'Gavin Newsom');
+  const yes = A.venueQuotes({ type: 'entry', conditionId: newsom.conditionId, outcome: 'Yes', outcomeIndex: 0 }, idx, opts({ region: 'us' }));
+  assert.equal(yes.length, 1);
+  assert.deepEqual([yes[0].key, yes[0].side, yes[0].pick, yes[0].price, yes[0].match], ['kalshi', 'yes', 'Gavin Newsom', 0.3, 'title']);
+  assert.equal(yes[0].warning, A.RULES_WARNING, 'a title match carries the rules warning');
+  const no = A.venueQuotes({ type: 'entry', conditionId: newsom.conditionId, outcome: 'No', outcomeIndex: 1 }, idx, opts({ region: 'us' }));
+  assert.deepEqual(no.map(q => [q.side, q.pick, q.price]), [['no', 'NO Gavin Newsom', 0.72]]);
+  assert.equal(A.venueQuotes({ conditionId: newsom.conditionId, outcome: 'No' }, idx, opts({ region: 'us' }))[0].side, 'no', 'label when no index');
+  // a candidate Kalshi doesn't list (the "Other" market) has nothing to match
+  const other = ps.find(r => r.outcomeLabel === 'Other');
+  assert.deepEqual(A.venueQuotes({ conditionId: other.conditionId, outcome: 'Yes', outcomeIndex: 0 }, idx, opts({ region: 'us' })), []);
+});
+
+test('pickVenue: most units, then the cheaper all-in cost, then the lower price', () => {
+  const q = (key, units, price, fee = 0) => ({ key, units, price, fee, cost: price + fee });
+  assert.equal(A.pickVenue([q('kalshi', 1.2, 0.55, 0.0174), q('draftkings', 1.5, 0.6667), q('fanduel', 1.5, 0.6552)]).key, 'fanduel', 'tie on units: lower price');
+  assert.equal(A.pickVenue([q('kalshi', 2, 0.55, 0.0174), q('fanduel', 1.5, 0.5)]).key, 'kalshi', 'more units wins');
+  assert.equal(A.pickVenue([q('a', 1, 0.5, 0.02), q('b', 1, 0.51, 0)]).key, 'b', 'all-in 0.51 beats 0.52');
+  assert.equal(A.pickVenue([q('a', 0, 0.7), q('b', 0, 0.65)]).key, 'b', 'all 0u: the cheapest');
+  assert.equal(A.pickVenue([]), null);
+  assert.equal(A.pickVenue(null), null);
+});
+
 // ── filters and the full scan ──
 test('minimum profit: XARB_MIN_PCT, default 0.5%', () => {
   // Σ 0.997: 100 contracts for $99.70, +0.30%
@@ -583,9 +775,10 @@ test('minimum profit: XARB_MIN_PCT, default 0.5%', () => {
   assert.equal(A.findUnderrounds(rows, opts())[0].profitPct, 0.3);
   assert.deepEqual(A.findArbs({ polymarket: rows }, opts()), [], 'below the default 0.5%');
   assert.equal(A.findArbs({ polymarket: rows }, opts({ minPct: 0.25 })).length, 1);
-  assert.deepEqual(A.optsFromEnv({ XARB_MIN_PCT: '0.25', POLYMARKET_FEE_RATE: '0.01' }), { minPct: 0.25, polymarketFeeRate: 0.01, kalshiFeeRate: undefined });
-  assert.equal(A.findArbs({ polymarket: rows }, opts(A.optsFromEnv({ XARB_MIN_PCT: '0.25' }))).length, 1);
-  assert.equal(A.findArbs({ polymarket: rows }, opts(A.optsFromEnv({}))).length, 0, 'unset env keeps the default');
+  assert.deepEqual(A.optsFromEnv({ XARB_MIN_PCT: '0.25', POLYMARKET_FEE_RATE: '0.01' }), { minPct: 0.25, polymarketFeeRate: 0.01, kalshiFeeRate: undefined, region: 'us' });
+  assert.equal(A.findArbs({ polymarket: rows }, opts(A.optsFromEnv({ XARB_MIN_PCT: '0.25', TAIL_REGION: 'intl' }))).length, 1);
+  assert.equal(A.findArbs({ polymarket: rows }, opts(A.optsFromEnv({ TAIL_REGION: 'intl' }))).length, 0, 'unset env keeps the default');
+  assert.equal(A.findArbs({ polymarket: rows }, opts(A.optsFromEnv({ XARB_MIN_PCT: '0.25' }))).length, 0, 'US mode (the default): a Polymarket-only arb is hidden');
 });
 
 test('findArbs: all three kinds, best first, markets past their close skipped', () => {
