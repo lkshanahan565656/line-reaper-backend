@@ -109,7 +109,7 @@ const trade = (o = {}) => T.parseTrades([{
   title: 'Will X win the Ohio Senate election?', slug: 'will-x-win', event_slug: 'ohio-senate', outcome: 'Yes', outcome_index: 0,
   name: 'sharpie', transaction_hash: '0xtx1', ...o,
 }])[0];
-const sig = (o = {}) => T.tradeSignal({ trade: trade(o.trade), trader: trader(o.trader), market: o.market === null ? null : market(o.market), consensus: o.consensus, prior: o.prior, now: NOW, opts: o.opts }).signal;
+const sig = (o = {}) => T.tradeSignal({ trade: trade(o.trade), trader: trader(o.trader), market: o.market === null ? null : market(o.market), book: o.book ?? null, consensus: o.consensus, prior: o.prior, now: NOW, opts: o.opts }).signal;
 const resize = s => T.sizeAt({ q: s.q, price: s.currentPrice, feePerContract: s.fee ?? 0, grade: s.grade, consensus: s.consensus });
 const SPORTS = {
   trade: { title: 'Lakers vs. Celtics', event_slug: 'nba-lal-bos-2026-10-08', price: 0.44, size: 3000 },
@@ -169,4 +169,28 @@ test('tradeSignal: q is there even when it signals 0u, so another venue can stil
   // exits carry no sizing
   const exit = sig({ trade: { side: 'SELL' } });
   assert.deepEqual([exit.type, exit.q, exit.units], ['exit', undefined, undefined]);
+});
+
+// ── live prices: the order book, not Gamma ──
+test('parseBook: the CLOB lists asks high to low and bids low to high; the best of each is picked', () => {
+  const b = T.parseBook({ asks: [{ price: '0.62', size: '10' }, { price: '0.596', size: '2055' }], bids: [{ price: '0.55', size: '5' }, { price: '0.59', size: '232.27' }], timestamp: '1791558388424' });
+  assert.deepEqual([b.ask, b.askSize, b.bid, b.bidSize, b.mid, b.at], [0.596, 2055, 0.59, 232.27, 0.593, 1791558388424]);
+  assert.deepEqual(T.parseBook({ asks: [], bids: [{ price: '0.4', size: '1' }] }), { ask: null, bid: 0.4, mid: null, spread: null, askSize: null, bidSize: 1, at: null });
+  for (const junk of [null, [], {}, { error: 'not found' }, 'x']) assert.equal(T.parseBook(junk), null);
+  assert.equal(T.parseBook({ asks: [{ price: '1', size: '5' }, { price: '0.5', size: '0' }] }).ask, null, 'no real level');
+});
+
+test('a signal is priced at the token\'s book; a stale Gamma price is no price', () => {
+  // seen live: Gamma said 35.4¢ (last updated weeks earlier) while the book's ask was 59.6¢
+  const staleGamma = { bestAsk: '0.354', bestBid: '0.349', updatedAt: new Date(NOW - 23 * 86400e3).toISOString() };
+  const book = T.parseBook({ asks: [{ price: '0.596', size: '2055' }], bids: [{ price: '0.59', size: '232' }] });
+  const live = sig({ trade: { price: 0.58 }, market: staleGamma, book });
+  assert.deepEqual([live.currentPrice, live.priceSource, live.slippage], [0.596, 'book', 0.016]);
+  const blind = sig({ trade: { price: 0.58 }, market: staleGamma });
+  assert.deepEqual([blind.currentPrice, blind.priceSource, blind.units], [null, 'gamma', 0], 'no book and a stale Gamma: not sized');
+  assert.match(blind.reason, /no live price/);
+  const fresh = sig({ trade: { price: 0.40 }, market: { bestAsk: '0.41', updatedAt: new Date(NOW - 60e3).toISOString() } });
+  assert.deepEqual([fresh.currentPrice, fresh.priceSource], [0.41, 'gamma'], 'a fresh Gamma price still serves when the book can\'t be read');
+  const empty = sig({ trade: { price: 0.40 }, market: { bestAsk: '0.41' }, book: T.parseBook({ asks: [], bids: [{ price: '0.39', size: '9' }] }) });
+  assert.equal(empty.currentPrice, null, 'a book with no asks: nothing to buy, whatever Gamma says');
 });

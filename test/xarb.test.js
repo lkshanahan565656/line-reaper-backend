@@ -148,6 +148,11 @@ test('polymarket: second outcome / NO ask is 1 − bestBid, never the mid', () =
   assert.equal(yn({ acceptingOrders: false })[0].tradable, false);
   assert.deepEqual(yn({ closed: true }), []);
   assert.deepEqual(yn({ outcomes: 'not json' }), []);
+  const now = Date.parse('2026-10-09T15:00:00Z');
+  const ev = { id: '77', slug: 'fed-dec', title: 'Fed in December', markets: [{ id: '770', question: 'Fed cut in December?', outcomes: '["Yes","No"]', bestAsk: 0.38, bestBid: 0.36, active: true, endDate: '2026-12-10T00:00:00Z' }] };
+  const at = updatedAt => A.parsePolymarketBinaries([{ ...ev, markets: [{ ...ev.markets[0], updatedAt }] }], { now })[0].tradable;
+  assert.equal(at('2026-09-16T00:00:00Z'), false, 'Gamma price weeks old: no arb legs from it');
+  assert.equal(at('2026-10-09T14:30:00Z'), true);
   assert.deepEqual(A.parsePolymarketBinaries({ data: [] }), []);
   assert.deepEqual(A.parsePolymarketBinaries(undefined), []);
 });

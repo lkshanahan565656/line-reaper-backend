@@ -658,8 +658,9 @@ test('v2 lists follow next_cursor to the end or the page cap (truncated); settle
     [['CLOSED', undefined], ['CLOSED', 'c2'], ['CLOSED', 'c4'], ['REDEEMABLE', undefined], ['REDEEMABLE_LOST', undefined]]);
   assert.deepEqual(http.calls[0], {
     url: 'https://data-api.polymarket.com/v2/positions', timeout: 10000,
-    params: { user: W(1), status: 'CLOSED', limit: 2, sort_by: 'TIMESTAMP', sort_direction: 'DESC', include_archived: true },
-  }, 'newest first: CLOSED would otherwise sort by realized P&L and keep only the winners');
+    params: { user: W(1), status: 'CLOSED', limit: 2, sort_by: 'TIMESTAMP', sort_direction: 'DESC' },
+  }, 'newest first: CLOSED would otherwise sort by realized P&L and keep only the winners; no include_archived (a 400 on CLOSED)');
+  assert.deepEqual(http.calls.filter(c => c.params.include_archived).map(c => c.params.status), ['REDEEMABLE', 'REDEEMABLE_LOST'], 'archived unclaimed positions count');
   assert.equal(T.scoreWallet({ wallet: W(1), closed: full.rows }, { now: NOW }).n, 7);
 
   http.calls.length = 0;
@@ -669,6 +670,17 @@ test('v2 lists follow next_cursor to the end or the page cap (truncated); settle
   assert.equal(http.calls.filter(c => c.params.status === 'CLOSED').length, 2);
   assert.equal((await T.fetchSettledPositions(http, W(1), { pageSize: 5000 })).rows.length, 7);
   assert.equal(http.calls.at(-1).params.limit, 1000, 'never more than the API serves');
+
+  // the API turning include_archived down (400) costs a retry, not the wallet
+  const picky = recorder((url, p) => {
+    if (p.include_archived) throw Object.assign(new Error('Request failed with status code 400'), { response: { status: 400 } });
+    return page(all.filter(r => r.status === p.status), p);
+  });
+  assert.equal((await T.fetchSettledPositions(picky, W(1))).rows.length, 7);
+  assert.deepEqual(picky.calls.map(c => [c.params.status, !!c.params.include_archived]),
+    [['CLOSED', false], ['REDEEMABLE', true], ['REDEEMABLE', false], ['REDEEMABLE_LOST', true], ['REDEEMABLE_LOST', false]]);
+  const down = recorder(() => { throw Object.assign(new Error('Request failed with status code 500'), { response: { status: 500 } }); });
+  await assert.rejects(T.fetchSettledPositions(down, W(1)), /500/, 'other failures still fail');
 
   http.calls.length = 0;
   const open = await T.fetchOpenPositions(http, W(1));
@@ -726,7 +738,7 @@ const flatHistory = (p, price) => {
   return { data: { history: points } };
 };
 function world() {
-  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
+  const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, books: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
   w.http = recorder((url, p) => {
     if (url.endsWith('/v2/leaderboard')) return page(w.leaderboard, p);
     if (p.user && w.fail.has(p.user)) throw new Error('timeout');
@@ -741,6 +753,7 @@ function world() {
       return typeof h === 'function' ? h(p) : h ?? flatHistory(p, w.closeFor(p.token_id));
     }
     if (url.endsWith('/markets')) return w.markets[p.condition_ids] ? [w.markets[p.condition_ids]] : [];
+    if (url.endsWith('/book')) { if (w.books[p.token_id]) return w.books[p.token_id]; throw new Error('no book'); }
     throw new Error(`unexpected ${url}`);
   });
   return w;
@@ -822,7 +835,8 @@ test('pollTrades: signals, dedup across polls, consensus boost, SELL exits, new 
   const edge = (40000 / 140000) * 0.5, q = T.trueProb(0.4, edge, 0.5);   // its bets were all at 50¢
   const units = cons => round2(Math.min(Math.min(25 * (q - 0.42) / 0.58, 2) * (cons ? 1.5 : 1), 3));
   assert.equal(s1[0].theirNotional, 800, 'fills merged');
-  assert.equal(s1[0].currentPrice, 0.42);
+  assert.deepEqual([s1[0].currentPrice, s1[0].priceSource], [0.42, 'gamma'], 'no book to read: a fresh Gamma price');
+  assert.ok(w.http.calls.some(c => c.url === 'https://clob.polymarket.com/book' && c.params.token_id === 'tok-yes'), 'the bought token\'s book was asked for');
   assert.equal(s1[0].prob, round4(q));
   assert.equal(s1[0].units, units(false));
   assert.equal(s1[0].isConsensus, false);
@@ -879,6 +893,34 @@ test('pollTrades: stale trades count for consensus but signal nothing; graded wa
   assert.deepEqual(again.map(s => [s.wallet, s.isConsensus]), [[W(2), true]], 'W2 found via its own trades, and W1\'s earlier buy backs it');
   const userCalls = w.http.calls.filter(c => c.url.endsWith('/trades') && c.params.user);
   assert.deepEqual(userCalls.slice(-2).map(c => c.params), [{ user: W(1), limit: 50, taker_only: false }, { user: W(2), limit: 50, taker_only: false }], 'round robin');
+});
+
+test('ingest: live-feed trades signal at once, share the poll\'s dedup, and skip small trades by unknown wallets', async () => {
+  const w = world();
+  w.closed[W(1)] = politicsElite(W(1));
+  w.markets['0xm1'] = gammaMarket();
+  const t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0 }, log: {} });
+  eng.addCandidate(W(1));
+  await eng.scoreBatch(1);
+  const live = T.parseTrades([rawTrade(W(1), { timestamp: Math.floor((t - 2e3) / 1000) }), rawTrade(W(80), { size: 50, transactionHash: '0xsmall' }),
+    rawTrade(W(81), { size: 15000, transactionHash: '0xwhale' })]);
+  const routed = [];
+  const out = await eng.ingest(live, { route: s => { routed.push(s.id); return s.units; } });
+  assert.deepEqual(out.map(s => [s.wallet, s.via, s.lagMs]), [[W(1), 'stream', 2000]], 'seconds after the fill');
+  assert.deepEqual(routed, [out[0].id]);
+  assert.equal(eng.state().candidates, 2, 'the $6,000 stranger is queued');
+  assert.equal(eng.state().seenTrades, 2, 'a $20 trade by a stranger is not even remembered');
+  assert.equal(eng.state().lastStreamAt, new Date(t).toISOString());
+  // the next poll reads the same trade: not a second signal
+  w.trades = [rawTrade(W(1), { timestamp: Math.floor((t - 2e3) / 1000) })];
+  assert.deepEqual(await eng.pollTrades(), []);
+  // a poll and a stream batch at once judge one after the other
+  w.trades = [rawTrade(W(1), { transactionHash: '0xboth' })];
+  const [a, b2] = await Promise.all([eng.pollTrades(), eng.ingest(T.parseTrades([rawTrade(W(1), { transactionHash: '0xboth' })]))]);
+  assert.equal(a.length + b2.length, 1, 'one signal for one trade');
+  assert.deepEqual(await eng.ingest([]), []);
+  assert.deepEqual(await eng.ingest(null), []);
 });
 
 test('traders() filters by grade and category; scores persist in a store', async () => {
@@ -1203,6 +1245,20 @@ test('scaling into one position over several orders tops the tail up; it is not 
   t += 60e3;
   w.trades = [rawTrade(W(1), { price: 0.4, size: 3000, transactionHash: '0xw2', timestamp: Math.floor((t - 5e3) / 1000) })];
   assert.equal((await eng.pollTrades({ route: () => 0 }))[0].topUp, false);
+});
+
+test('scoreBatch keeps scoring until its time box runs out, then leaves the rest for the next run', async () => {
+  const w = world();
+  for (const i of [1, 2, 3, 4]) w.closed[W(i)] = sportsBad(W(i));
+  let t = NOW;
+  const slow = { calls: w.http.calls, get: async (url, cfg) => { t += 4e3; return w.http.get(url, cfg); } };   // 4s a request
+  const eng = T.createTailEngine({ http: slow, now: () => t, log: {} });
+  for (const i of [1, 2, 3, 4]) eng.addCandidate(W(i));
+  const r = await eng.scoreBatch();
+  assert.ok(r.scored >= 1 && r.scored < 4, `scored ${r.scored}: stopped at the time box, not at 3 or all`);
+  assert.equal(r.pending, 4 - r.scored);
+  t += 60e3;
+  assert.equal((await eng.scoreBatch()).scored + r.scored <= 4, true);
 });
 
 test('memory: untailable scores shrink to a summary and only leaderboard ones are stored; the oldest are evicted past the cap', async () => {
