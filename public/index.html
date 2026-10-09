@@ -3874,8 +3874,11 @@ function tailOnLive(type, data) {
   if (type === 'tail') {
     const known = new Set(tailState.signals.map(s => s.id));
     tailState.signals = [...data.filter(s => !known.has(s.id)).reverse(), ...tailState.signals].slice(0, 300);
-    const top = data.filter(s => s.type === 'entry' && tailUnitsOf(s) > 0).sort((a, b) => tailUnitsOf(b) - tailUnitsOf(a))[0];
-    if (top) showToast(`🐋 ${top.grade} ${top.name || tailShort(top.wallet)} bought ${top.outcome || ''} · ${top.market} · ${tailVenueLine(top)}`);
+    const sized = data.filter(s => s.type === 'entry' && tailUnitsOf(s) > 0).sort((a, b) => tailUnitsOf(b) - tailUnitsOf(a));
+    const line = s => `${s.grade} ${s.name || tailShort(s.wallet)} bought ${s.outcome || ''} · ${s.market} · ${tailVenueLine(s)}`;
+    if (sized[0]) showToast(`🐋 ${line(sized[0])}`);
+    // with the tab in the background: a desktop alert per sized entry (a few at most)
+    if (tailNotifyOn()) for (const s of sized.slice(0, 3)) { try { new Notification('🐋 Sharp Tail', { body: line(s), tag: `tail|${s.id}` }); } catch { /* a nicety */ } }
     if (tailActive && tailState.view === 'signals') renderTail();
   } else if (type === 'whale') {
     tailSoon('whales');
@@ -3885,6 +3888,21 @@ function tailOnLive(type, data) {
     if (best && best.profitPct >= 1) showToast(`♻️ Exchange arb +${best.profitPct}%: ${best.title}`);
     tailSoon('arbs');
   }
+}
+
+function tailNotifyOn() {
+  try { return localStorage.getItem('lr_tail_notify') === '1' && 'Notification' in window && Notification.permission === 'granted'; } catch { return false; }
+}
+async function tailToggleNotify() {
+  try {
+    if (localStorage.getItem('lr_tail_notify') === '1') { localStorage.setItem('lr_tail_notify', '0'); renderTail(); return; }
+    if (!('Notification' in window)) { showToast('This browser has no desktop notifications', 'danger'); return; }
+    const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Notifications are blocked for this site', 'danger'); return; }
+    localStorage.setItem('lr_tail_notify', '1');
+    showToast('✓ You get a desktop alert when a sharp bets');
+  } catch { showToast('Could not turn on notifications', 'danger'); }
+  renderTail();
 }
 
 function renderTail() {
@@ -3903,6 +3921,7 @@ function tailSignalsHTML() {
     `<span style="color:#f1f5f9;font-weight:700">${list.length} SIGNALS</span>`,
     `<span>${all.filter(s => tailUnitsOf(s) > 0).length} SIZED</span>`,
     tailState.updated ? `<span>POLLED ${tailAgo(tailState.updated)} AGO</span>` : '',
+    `<button class="sport-chip" style="font-size:10px;padding:3px 10px" onclick="tailToggleNotify()" title="A desktop alert the moment a graded sharp bets, while this tab is open">${tailNotifyOn() ? '🔕 ALERTS OFF' : '🔔 ALERT ME'}</button>`,
   ]);
   const note = tailWithheld('signals');
   if (!list.length && note) return note + strip;
