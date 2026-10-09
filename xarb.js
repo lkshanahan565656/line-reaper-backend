@@ -13,7 +13,11 @@
 //      start can be anywhere on the Kalshi ticker's date. Games that can end
 //      level (soccer) pair Kalshi's team and tie markets with Polymarket's
 //      "Will A win on <date>?" and "end in a draw?" markets, outcome by
-//      outcome (by: 'teams3'). Everything else is matched by title:
+//      outcome (by: 'teams3'). Once a game pairs, its totals and spreads do
+//      too (by: 'line'): Kalshi's TOTAL/SPREAD events share the game's ticker
+//      tail, Polymarket's sit in the game's event or its "-more-markets" one;
+//      the same half line, and for a spread the same team. Everything else is
+//      matched by title:
 //      the same words (Jaccard ≥ 0.6 once filler words go), exactly the same
 //      numbers, dates and direction words ("above", "below", "not"), the same
 //      subject (outcome label, and every name-like capitalised word on one side
@@ -203,6 +207,26 @@ function gameNumber(...texts) {
   return null;
 }
 
+// A game's events share one ticker tail across series: KXBUNDESLIGAGAME-,
+// KXBUNDESLIGATOTAL- and KXBUNDESLIGASPREAD-26OCT09BVBSVW are the same game.
+// → 'KXBUNDESLIGA|26OCT09BVBSVW' | null
+const GAME_SUFFIX_RE = /(GAME|MATCH|TOTAL|SPREAD)$/i;
+const LINE_SERIES_RE = /(TOTAL|SPREAD)$/i;
+function kalshiGameKey(series, eventTicker) {
+  const sr = String(series || '').toUpperCase(), et = String(eventTicker || '').toUpperCase();
+  if (!GAME_SUFFIX_RE.test(sr) || !et.startsWith(`${sr}-`)) return null;
+  return `${sr.replace(GAME_SUFFIX_RE, '')}|${et.slice(sr.length + 1)}`;
+}
+// Half lines only: a whole one can push, and the two exchanges needn't settle a push alike.
+const halfLine = x => Number.isFinite(x) && x > 0 && Math.abs((x * 2) % 2 - 1) < 1e-9;
+function kalshiLine(series, m, label) {
+  const strike = num(m.floor_strike) ?? num(String(label).match(/(?:over|more than)\s+(\d+(?:\.\d+)?)/i)?.[1]);
+  if (!halfLine(strike) || (m.strike_type && m.strike_type !== 'greater')) return null;
+  if (series === 'TOTAL') return /^over\b/i.test(label) ? { kind: 'total', line: strike } : null;
+  const team = String(label).match(/^(.+?)\s+wins?\s+by\b/i)?.[1]?.trim();
+  return team ? { kind: 'spread', line: strike, team } : null;
+}
+
 // One row per unresolved market. Untradable ones (paused, not yet open) stay
 // in with no quote, so an underround can tell its outcome set is incomplete.
 function parseKalshiBinaries(payload) {
@@ -229,6 +253,8 @@ function parseKalshiBinaries(payload) {
       if (teams && teams.some(t => NOT_TEAM_RE.test(t))) teams = null;
     }
     const when = kalshiTickerTime(ev.event_ticker || live[0]?.event_ticker);
+    const gameKey = category === 'sports' ? kalshiGameKey(ev.series_ticker, ev.event_ticker || live[0]?.event_ticker) : null;
+    const lineSeries = gameKey && LINE_SERIES_RE.exec(String(ev.series_ticker || ''))?.[1]?.toUpperCase();
     for (const m of live) {
       const tradable = KALSHI_LIVE.has(String(m.status || '').toLowerCase());
       const label = String(m.yes_sub_title || m.subtitle || '').trim();
@@ -237,10 +263,14 @@ function parseKalshiBinaries(payload) {
       // with a tie possible, NO on a team is not the other team winning
       if (i >= 0) { kind = 'teams'; noLabel = hasDraw ? null : teams[1 - i]; }
       if (teams && hasDraw && (i >= 0 || DRAW_RE.test(label))) game3 = { teams, pick: i >= 0 ? i : 'draw' };
+      // a total ("Over 2.5 goals scored") or spread ("Dortmund wins by more than 1.5 goals") of a game
+      const line = lineSeries && kind === 'yesno' ? kalshiLine(lineSeries, m, label) : null;
+      if (line) kind = line.kind;
       const game = kind === 'teams' || game3 != null;
       out.push({
         exchange: 'kalshi', id: m.ticker, eventKey: `kalshi:${ev.event_ticker || m.event_ticker}`, eventTitle: ev.title || '',
         title: m.title || ev.title || '', outcomeLabel: label, noLabel, kind, ...(game3 ? { game3 } : {}),
+        ...(gameKey ? { gameKey } : {}), ...(line ? { line: line.line, ...(line.team ? { lineTeam: line.team } : {}) } : {}),
         yesAsk: tradable ? kalshiPrice(m, 'yes_ask') : null, noAsk: tradable ? kalshiPrice(m, 'no_ask') : null,
         closeTime: m.expected_expiration_time || m.close_time || null,
         startTime: game && when?.start != null ? new Date(when.start).toISOString() : null, gameDay: game && when ? when.day : null,
@@ -308,6 +338,34 @@ function game3Of(m, teams) {
   return i >= 0 ? { teams, pick: i } : null;
 }
 
+// A game's total or spread, half lines only: "A vs. B: O/U 2.5" (not a
+// team's "A vs. B: A O/U 0.5", nor a half's), "Spread: A (-1.5)". A spread's
+// YES side is the one that has to win by more than the line. Spreads and
+// totals of a soccer game sit in a separate "<slug>-more-markets" event; the
+// row's gameSlug drops that tail so both point at the same game.
+// → { kind: 'total' | 'spread', line, yesIndex, team? } | null
+const POLY_TOTAL_RE = /(?:^|:\s*)o\/u\s+(\d+(?:\.\d+)?)\s*$/i;
+const POLY_SPREAD_RE = /^spread:\s*(.+?)\s*\(([+-]\d+(?:\.\d+)?)\)\s*$/i;
+function polymarketLine(m, names) {
+  const q = String(m.question || '').trim(), type = m.sportsMarketType ?? null;
+  const lower = names.map(x => x.toLowerCase());
+  if (type === 'totals' || (type == null && POLY_TOTAL_RE.test(q))) {
+    const t = q.match(POLY_TOTAL_RE), over = lower.indexOf('over');
+    if (!t || over < 0 || !lower.includes('under')) return null;
+    const line = Math.abs(num(m.line) ?? Number(t[1]));
+    return halfLine(line) ? { kind: 'total', line, yesIndex: over } : null;
+  }
+  if (type === 'spreads' || (type == null && POLY_SPREAD_RE.test(q))) {
+    const sp = q.match(POLY_SPREAD_RE);
+    if (!sp) return null;
+    const signed = num(m.line) ?? Number(sp[2]), i = names.findIndex(n => norm(n) === norm(sp[1]));
+    if (i < 0 || !halfLine(Math.abs(signed))) return null;
+    const yesIndex = signed < 0 ? i : 1 - i;
+    return { kind: 'spread', line: Math.abs(signed), yesIndex, team: names[yesIndex] };
+  }
+  return null;
+}
+
 // A market whose Gamma record is over an hour old has stale prices (see
 // exchanges.gammaStale): no legs from it.
 function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
@@ -331,7 +389,7 @@ function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
       const ask0 = tradable ? quote(m.bestAsk) : null;
       const bid0 = tradable ? quote(m.bestBid) : null;
       const ask1 = bid0 == null ? null : round(1 - bid0, 6);
-      let kind, yesAsk, noAsk, outcomeLabel, noLabel = null, yesIndex = 0;
+      let kind, yesAsk, noAsk, outcomeLabel, noLabel = null, yesIndex = 0, line = null;
       const yi = lower.indexOf('yes');
       if (yi >= 0 && lower.includes('no')) {
         kind = 'yesno';
@@ -342,6 +400,12 @@ function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
         kind = 'teams';
         [outcomeLabel, noLabel] = names;
         [yesAsk, noAsk] = [ask0, ask1];
+      } else if ((line = polymarketLine(m, names))) {
+        // YES is Over, or the side that has to win by more than the line
+        kind = line.kind;
+        yesIndex = line.yesIndex;
+        [outcomeLabel, noLabel] = [names[yesIndex], names[1 - yesIndex]];
+        [yesAsk, noAsk] = yesIndex === 0 ? [ask0, ask1] : [ask1, ask0];
       } else continue;
       const league = polymarketLeague(ev, m);
       const sportsHint = m.sportsMarketType != null || m.gameStartTime != null ? 'sports' : null;
@@ -349,6 +413,8 @@ function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
       rows.push({
         exchange: 'polymarket', id: String(m.id), eventKey: `polymarket:${ev.id ?? ev.slug}`, eventTitle: ev.title || '',
         title: m.question || ev.title || '', outcomeLabel, noLabel, kind, ...(game3 ? { game3 } : {}), yesAsk, noAsk,
+        ...(line ? { line: line.line, ...(line.team ? { lineTeam: line.team } : {}) } : {}),
+        gameSlug: String(ev.slug || '').replace(/-more-markets$/, '') || null,
         closeTime: m.endDate || ev.endDate || null, startTime: m.gameStartTime || null,
         gameNo: kind === 'teams' ? gameNumber(ev.slug, m.slug, ev.title, m.question) : null,
         url: `https://polymarket.com/event/${ev.slug || m.slug || ''}`,
@@ -604,6 +670,23 @@ function firstAtOrAfter(list, t) {
   return lo;
 }
 
+// A game match → both sides' game keys and teams, in the same order:
+// { kGame, pGame, kTeams: [a, b], pTeams: [a', b'] } | null
+function gamePair(m) {
+  const k = m.kalshi, p = m.polymarket;
+  if (!k?.gameKey || !p?.gameSlug) return null;
+  if (m.by === 'teams') {
+    const kTeams = [k.outcomeLabel, k.noLabel], pTeams = m.same ? [p.outcomeLabel, p.noLabel] : [p.noLabel, p.outcomeLabel];
+    return { kGame: k.gameKey, pGame: p.gameSlug, kTeams, pTeams };
+  }
+  if (m.by === 'teams3' && typeof k.game3?.pick === 'number' && typeof p.game3?.pick === 'number') {
+    // this pair's picks say which way round the two team lists go
+    const flip = k.game3.pick !== p.game3.pick;
+    return { kGame: k.gameKey, pGame: p.gameSlug, kTeams: k.game3.teams, pTeams: flip ? [...p.game3.teams].reverse() : p.game3.teams };
+  }
+  return null;
+}
+
 // edges → the ones where each side is the other's unique best (higher score
 // wins: similarity, or minus the time gap). A tie for best means no match.
 // Several edges between the same two keys (a Kalshi game's two team markets)
@@ -677,6 +760,33 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
       const pick = k.game3.pick, want = pick === 'draw' ? 'draw' : e.pol === 'same' ? pick : 1 - pick;
       const p = e.ps.find(r => r.game3.pick === want);
       if (p) out.push({ kalshi: k, polymarket: p, same: true, by: 'teams3' });
+    }
+  }
+
+  // a paired game's totals and spreads: Kalshi's lines (found by the game's
+  // ticker tail) against Polymarket's (by the game's slug), the same number,
+  // and for a spread the same team (YES Over is YES Over; YES "Dortmund wins
+  // by more than 1.5" is Polymarket's Dortmund (-1.5))
+  const kLines = new Map(), pLines = new Map();
+  for (const k of kalshiRows || []) if ((k.kind === 'total' || k.kind === 'spread') && k.gameKey) push(kLines, k.gameKey, k);
+  for (const p of polyRows || []) if ((p.kind === 'total' || p.kind === 'spread') && p.gameSlug) push(pLines, p.gameSlug, p);
+  if (kLines.size && pLines.size) {
+    const seen = new Set();
+    for (const g of out.map(gamePair).filter(Boolean)) {
+      const key = `${g.kGame}|${g.pGame}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const ps = pLines.get(g.pGame) || [];
+      for (const k of kLines.get(g.kGame) || []) {
+        let p;
+        if (k.kind === 'total') p = ps.find(r => r.kind === 'total' && r.line === k.line);
+        else {
+          const i = g.kTeams.findIndex(t => norm(t) === norm(k.lineTeam) || nameMatch(t, k.lineTeam));
+          const team = i >= 0 && g.kTeams.filter(t => norm(t) === norm(k.lineTeam) || nameMatch(t, k.lineTeam)).length === 1 ? g.pTeams[i] : null;
+          p = team && ps.find(r => r.kind === 'spread' && r.line === k.line && (norm(r.lineTeam) === norm(team) || nameMatch(r.lineTeam, team)));
+        }
+        if (p) out.push({ kalshi: k, polymarket: p, same: true, by: 'line' });
+      }
     }
   }
 
@@ -1002,7 +1112,7 @@ function venueQuotes(signal, index, opts = {}) {
       if (price == null) continue;
       add({
         key: 'kalshi', name: 'Kalshi', price, fee: kalshiFee(price, KALSHI_FEE_LOT, o.kalshiFeeRate) / KALSHI_FEE_LOT,
-        marketId: k.id, side, pick: leg(k, side).pick, title: k.title, url: k.url, match: m.by,
+        marketId: k.id, side, pick: leg(k, side).pick, buy: `${side.toUpperCase()} ${k.outcomeLabel || k.title}`, title: k.title, url: k.url, match: m.by,
         ...(m.by === 'title' ? { warning: RULES_WARNING } : {}),
       });
     }
@@ -1033,7 +1143,7 @@ function venueQuotes(signal, index, opts = {}) {
         }
       }
       for (const { b, q, d } of best.values()) {
-        add({ key: b.key, name: b.title || b.key, price: 1 / d, fee: 0, american: num(q.price), decimal: round(d, 6), pick: q.name, url: q.link || b.link || null, book: true });
+        add({ key: b.key, name: b.title || b.key, price: 1 / d, fee: 0, american: num(q.price), decimal: round(d, 6), pick: q.name, buy: q.name, url: q.link || b.link || null, book: true });
       }
     }
   }
@@ -1111,8 +1221,9 @@ async function fetchPolymarketEvents(http, { maxPages = 15, limit = GAMMA_PAGE_M
 // ── Kalshi game listings ──
 // Kalshi's open-events list runs to tens of thousands and the scan's page cap
 // cuts it, so a game can be missing from it. So every sports series whose
-// ticker ends in GAME or MATCH (KXEPLGAME, KXATPMATCH, KXLOLGAME, ...) is
-// also read on its own, perScan series a scan, least recently read first:
+// ticker ends in GAME or MATCH (KXEPLGAME, KXATPMATCH, KXLOLGAME, ...), and
+// its TOTAL and SPREAD siblings, is also read on its own, perScan series a
+// scan, least recently read first:
 // series with open games take most of the slots, and a few go to the quiet
 // ones so a new game there turns up too. The series list is Kalshi's Sports
 // category (refreshed every 6h; a failed read retries in 10 min), plus a
@@ -1121,13 +1232,16 @@ const KALSHI_SERIES_URL = 'https://api.elections.kalshi.com/trade-api/v2/series'
 const GAME_SERIES_RE = /(GAME|MATCH)$/i;
 const SEED_GAME_SERIES = ['KXNFLGAME', 'KXNBAGAME', 'KXMLBGAME', 'KXNHLGAME', 'KXWNBAGAME', 'KXNCAAFGAME', 'KXNCAAMBGAME', 'KXMLSGAME',
   'KXEPLGAME', 'KXLALIGAGAME', 'KXSERIEAGAME', 'KXBUNDESLIGAGAME', 'KXLIGUE1GAME', 'KXUCLGAME', 'KXATPMATCH', 'KXWTAMATCH', 'KXLOLGAME', 'KXCS2GAME'];
+// the game series, plus each one's TOTAL and SPREAD siblings (KXBUNDESLIGAGAME → KXBUNDESLIGATOTAL, KXBUNDESLIGASPREAD)
 async function fetchKalshiGameSeries(http) {
   const res = await http.get(KALSHI_SERIES_URL, { params: { category: 'Sports' }, timeout: 20000 });
   const list = res?.data?.series;
   if (!Array.isArray(list)) throw new Error('no series in the response');
-  return [...new Set(list.map(x => String(x?.ticker || '')).filter(t => GAME_SERIES_RE.test(t)))];
+  const tickers = [...new Set(list.map(x => String(x?.ticker || '').toUpperCase()).filter(Boolean))];
+  const roots = new Set(tickers.filter(t => GAME_SERIES_RE.test(t)).map(t => t.replace(GAME_SERIES_RE, '')));
+  return tickers.filter(t => GAME_SERIES_RE.test(t) || (LINE_SERIES_RE.test(t) && roots.has(t.replace(LINE_SERIES_RE, ''))));
 }
-function createKalshiGameSweep({ http, perScan = 30, quietSlots = 5, refreshMs = 6 * 3600e3, retryMs = 10 * 60e3, keepMs = 30 * 60e3,
+function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs = 6 * 3600e3, retryMs = 10 * 60e3, keepMs = 30 * 60e3,
   seeds = SEED_GAME_SERIES, now = () => Date.now() } = {}) {
   let series = [...seeds], nextList = 0;
   const cache = new Map();      // series → { rows, at }: its open games' rows
