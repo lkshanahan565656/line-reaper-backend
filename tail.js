@@ -1460,6 +1460,17 @@ async function fetchMarket(http, conditionId, { closed = false } = {}) {
   return null;
 }
 
+// a token id → its market (some live-feed rows carry only the token)
+async function fetchMarketByToken(http, tokenId) {
+  for (const c of [false, true]) {
+    const params = c ? { clob_token_ids: tokenId, closed: true } : { clob_token_ids: tokenId };
+    const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
+    const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => x.tokens.includes(String(tokenId)));
+    if (m) return m;
+  }
+  return null;
+}
+
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
 // a Map used as a bounded cache: the oldest entry goes first
@@ -1738,6 +1749,23 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     } finally { busy.score = false; }
   }
 
+  const tokenMarkets = new Map();   // token id → condition id (a token never changes market)
+  async function marketForToken(asset) {
+    const id = String(asset);
+    if (tokenMarkets.has(id)) return quote(tokenMarkets.get(id));
+    try {
+      const market = await fetchMarketByToken(http, id);
+      if (!market?.conditionId) return null;
+      tokenMarkets.set(id, market.conditionId);
+      if (tokenMarkets.size > 5000) tokenMarkets.delete(tokenMarkets.keys().next().value);
+      quotes.set(market.conditionId, { at: now(), market });
+      return market;
+    } catch (e) {
+      warn(`token ${id.slice(0, 12)}…: ${e?.message || e}`);
+      return null;
+    }
+  }
+
   async function quote(conditionId) {
     if (!conditionId) return null;
     const t = now();
@@ -1759,8 +1787,19 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // Some feed rows don't say which market they're in (no title or slug): an
   // exit then read 'Exit: sold … of ""' filed under other. The name comes from
   // what the wallet holds there, else from Gamma.
+  // A live-feed row can carry only the token id (no condition id either): the
+  // market then comes from the token, so the alert has a name and a price.
   async function nameTrade(trader, tr) {
     const h = (trader.holdings || []).find(x => x.asset === String(tr.asset));
+    if (!tr.conditionId && h?.conditionId) tr.conditionId = h.conditionId;
+    if (!tr.conditionId && tr.asset) {
+      const m = await marketForToken(tr.asset);
+      if (m?.conditionId) {
+        const i = m.tokens.indexOf(String(tr.asset));
+        tr.conditionId = m.conditionId;
+        if (i >= 0) { tr.outcomeIndex = i; if (!tr.outcome) tr.outcome = m.outcomes[i] ?? null; }
+      }
+    }
     const m = h?.title ? null : await quote(tr.conditionId);
     const src = h?.title ? { title: h.title, slug: h.slug, eventSlug: h.eventSlug, outcome: h.outcome }
       : m ? { title: m.question, slug: m.slug, eventSlug: m.eventSlug, outcome: m.outcomes?.[tr.outcomeIndex] ?? null } : null;
@@ -1987,7 +2026,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
-      if (!(tr.title || tr.slug || tr.eventSlug) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
+      if ((!(tr.title || tr.slug || tr.eventSlug) || !tr.conditionId) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
       // what a sale came out of, read before it's taken off (a trade from
       // before the wallet was scored is already in its positions)
       const scored = toMs(trader.scoredAt);
@@ -2097,6 +2136,6 @@ module.exports = {
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
-  fetchPriceHistory, fetchMarket,
+  fetchPriceHistory, fetchMarket, fetchMarketByToken,
   createTailEngine, toMs, maskIds, failText,
 };

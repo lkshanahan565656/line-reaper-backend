@@ -782,6 +782,11 @@ function world() {
       return typeof h === 'function' ? h(p) : h ?? flatHistory(p, w.closeFor(p.token_id));
     }
     // like Gamma: a closed market only when asked for closed ones, an open one only when not
+    if (url.endsWith('/markets') && p.clob_token_ids) {
+      w.tokenAsks = (w.tokenAsks || 0) + 1;
+      const m = Object.values(w.markets).find(x => JSON.parse(x.clobTokenIds || '[]').includes(p.clob_token_ids));
+      return m && isClosed(m) === !!p.closed ? [m] : [];
+    }
     if (url.endsWith('/markets')) { const m = w.markets[p.condition_ids]; return m && isClosed(m) === !!p.closed ? [m] : []; }
     if (url.endsWith('/book')) { if (w.books[p.token_id]) return w.books[p.token_id]; throw new Error('no book'); }
     throw new Error(`unexpected ${url}`);
@@ -1706,6 +1711,28 @@ test('exits: a trim keeps the tail open; selling most of it ends it, and says wh
   const bare = T.tradeSignal({ trade: { ...T.parseTrades([rawTrade(W(1), { side: 'SELL', size: 2000, price: 0.5, timestamp: Math.floor(NOW / 1000) })])[0] },
     trader: eng.trader(W(1)), now: NOW });
   assert.deepEqual([bare.signal.full, bare.signal.soldShare, bare.signal.tailed], [true, null, null]);
+});
+
+test('a live-feed row with only a token id: the market, outcome and price come from the token, looked up once', async () => {
+  const w = world();
+  w.closed[W(1)] = politicsElite(W(1));
+  w.markets['0xm1'] = gammaMarket();   // Yes 0.41 bid: No asks 0.59
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0, priorRisk: 200000 }, log: {} });
+  eng.addCandidate(W(1));
+  await eng.scoreBatch(1);
+  const bare = { conditionId: '', title: '', slug: '', eventSlug: '', outcome: '', outcomeIndex: 0, asset: 'tok-no' };
+  const judge = async (o, tag) => {
+    t += 60e3;
+    return (await eng.ingest(T.parseTrades([rawTrade(W(1), { transactionHash: `0x${tag}`, timestamp: Math.floor((t - 2e3) / 1000), ...bare, ...o })])))[0];
+  };
+  const s = await judge({ price: 0.58, size: 5000 }, 'bare');
+  assert.deepEqual([s.type, s.market, s.conditionId, s.outcome, s.outcomeIndex, s.eventSlug, s.category], ['entry', 'Will X win the Ohio Senate election?', '0xm1', 'No', 1, 'ohio-senate', 'politics']);
+  assert.equal(s.currentPrice, 0.59, 'priced off the No side of the book');
+  assert.notEqual(s.reason, 'no live price: check it before following');
+  const again = await judge({ price: 0.58, size: 3000 }, 'bare2');
+  assert.equal(again.market, 'Will X win the Ohio Senate election?');
+  assert.equal(w.tokenAsks, 1, 'a token never changes market: asked once');
 });
 
 test('a Go zero time ("0001-01-01T00:00:00Z") is no time: the closing-line window starts after 1970', () => {
