@@ -1,0 +1,12 @@
+Sat Oct 10 21:18:35 UTC 2026
+{"version":"3.45.0","record":{"open":0,"lastCheck":"2026-10-10T21:17:21.423Z"},"jobs":{"board":{"lastRun":"2026-10-10T21:18:06.731Z","ms":0,"error":null},"stream":{"lastRun":"2026-10-10T21:18:34.296Z","ms":1,"error":null},"whales":{"lastRun":"2026-10-10T21:18:11.752Z","ms":13,"error":null},"signals":{"lastRun":"2026-10-10T21:18:11.752Z","ms":13,"error":null},"score":{"lastRun":"2026-10-10T21:17:27.145Z","ms":61283,"error":null},"candidates":{"lastRun":"2026-10-10T21:14:57.606Z","ms":25000,"error":null},"xarb":{"lastRun":"2026-10-10T21:17:51.719Z","ms":0,"error":null},"record":{"lastRun":"2026-10-10T21:17:21.423Z","ms":1,"error":null}},"eventLoop":{"p50Ms":20,"p99Ms":67,"maxMs":2569},"live":{"listeners":0,"webhook":false,"webhookKinds":[],"webhookStats":{"sent":0,"failed":0,"lastError":null,"lastAt":null}}}
+      1 class="tab active" onclick="showTab('tail',this)
+      1 class="tab" onclick="showTab('arb',this)
+      1 class="tab" onclick="showTab('betlog',this)
+      1 class="tab" onclick="showTab('clv',this)
+      1 class="tab" onclick="showTab('esports',this)
+      1 class="tab" onclick="showTab('ev',this)
+      1 class="tab" onclick="showTab('lines',this)
+      1 class="tab" onclick="showTab('props',this)
+      1 class="tab" onclick="showTab('sharp',this)
+      1 class="tab" onclick="showTab('shop',this)
