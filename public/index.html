@@ -3892,6 +3892,11 @@ function tailOnLive(type, data) {
     if (tailNotifyOn()) for (const a of data.slice(0, 3)) { try { new Notification('🎯 Second chance', { body: line(a), tag: `board|${a.conditionId}|${a.asset}` }); } catch { /* a nicety */ } }
     tailSoon('board');
   } else if (type === 'whale') {
+    // a fresh wallet's buy: new money on one side, the radar's alert
+    const fresh = data.filter(e => e.fresh && e.side === 'BUY');
+    const line = e => `${e.fresh.ageDays < 1 ? 'Day-old' : e.fresh.ageDays + '-day-old'} wallet put ${tailUsd(e.notional)} on ${e.outcome || '?'} at ${tailC(e.price)} · ${e.title}${e.venue ? ` · ${e.venue.name} ${tailVenuePrice(e.venue)}` : ''}`;
+    if (fresh[0]) showToast(`🆕 ${line(fresh[0])}`);
+    if (tailNotifyOn()) for (const e of fresh.slice(0, 3)) { try { new Notification('🆕 Fresh wallet', { body: line(e), tag: `fresh|${e.id}` }); } catch { /* a nicety */ } }
     tailSoon('whales');
   } else if (type === 'xarb') {
     // a set not proven to cover every result can lose every leg: no toast

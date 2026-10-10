@@ -2608,7 +2608,7 @@ const withheldOf = (lic, sources) => sources.filter(x => !lic[x]);
 function liveFor(type, data, lic) {
   if (!Array.isArray(data)) return [];
   const out = type === 'tail' ? (lic.polymarket ? data.map(s => venueFor(s, lic)) : [])
-    : type === 'whale' ? data.filter(whaleOk(lic))
+    : type === 'whale' ? data.filter(whaleOk(lic)).map(kalshiVenuesOk(lic))
     : type === 'xarb' ? data.filter(arbOk(lic))
     : type === 'board' ? (lic.polymarket ? data.map(a => ({ ...a, venues: (a.venues || []).filter(v => lic.kalshi || v.key !== 'kalshi') })) : [])
     : data;
