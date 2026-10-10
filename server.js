@@ -2285,9 +2285,20 @@ function describeTail(s) {
   const where = `${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})`;
   const url = TAIL_REGION === 'us' ? (s.venue?.url && !PM_LINK.test(s.venue.url) ? s.venue.url : null) : s.url;
   const link = url ? ` <${url}>` : '';
-  if (s.type === 'exit') return `🚪 ${who} sold ${where}${link}`;
+  if (s.type === 'exit') return describeExit(s, who);
   const size = s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
   return `🐋 ${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
+}
+// "🚪 Exit: A-grade X sold 80% of Yes on "…" at 62¢ ($4,000), bought at 41¢ · we tailed it 1.2u at Kalshi: YES … <url>"
+// The venue is where the entry was sent, so followers know where to sell.
+function describeExit(s, who) {
+  const share = s.soldShare != null && s.soldShare < 0.995 ? `${Math.round(s.soldShare * 100)}% of ` : '';
+  const paid = s.boughtAt != null ? `, bought at ${cents(s.boughtAt)}` : '';
+  let v = s.tailed?.id ? routedSignals.get(s.tailed.id)?.venue : null;
+  if (v?.key === 'kalshi' && !webhookLicence().kalshi) v = null;
+  const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}` : ''}` : '';
+  const url = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : (v?.url || s.url);
+  return `🚪 Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
 function describeArb(a) {
@@ -2345,15 +2356,19 @@ async function streamTail(trades) {
   return publishTail(await tailEngine.ingest(trades, { route: routeTail }), tailPolled);
 }
 // A first entry: every A and consensus, B when sized somewhere. A blocked buy
-// (in-play, near-certain, split) is nothing to act on.
-const tailPings = s => !s.parentId && !s.blocked && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0));
+// (in-play, near-certain, split) is nothing to act on. An exit pings only when
+// followers are in it: the wallet sold most of a position we tailed.
+const tailPings = s => (s.type === 'exit' ? !!s.tailed && s.full !== false
+  : !s.parentId && !s.blocked && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0)));
 async function publishTail(signals, primed) {
   const fresh = [], ping = [];
   for (const s of signals) {
     let logged = false;
     try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
     if (logged || primed) fresh.push(s);
-    if (logged && tailPings(s)) ping.push(s);
+    // exits aren't logged; once primed, a tailed one is news (the engine
+    // only knows what it tailed since it started, so nothing repeats)
+    if ((logged || (s.type === 'exit' && primed)) && tailPings(s)) ping.push(s);
   }
   if (fresh.length) broadcast('tail', fresh);
   // the webhook can reach other people: Polymarket wallets only with that
@@ -2581,6 +2596,8 @@ function maskSignal(s) {
     ...('venue' in s ? { venue: maskVenue(s.venue) } : {}), ...(Array.isArray(s.venues) ? { venues: s.venues.map(maskVenue) } : {}),
     ...(s.parentId ? { parentId: maskId(s.parentId) } : {}), ...(Array.isArray(s.topUps) ? { topUps: s.topUps.map(maskId) } : {}),
     theirPrice: toCent(s.theirPrice), ...('entry' in s ? { entry: toCent(s.entry) } : {}),
+    ...('boughtAt' in s ? { boughtAt: toCent(s.boughtAt) } : {}), ...(s.soldShare != null ? { soldShare: Math.round(s.soldShare * 10) / 10 } : {}),
+    ...(s.tailed ? { tailed: { id: maskId(s.tailed.id), units: s.tailed.units } } : {}),
     theirNotional: null, sizeRange: sizeRange(s.theirNotional),
     at: quarterHour(s.at), ...('seenAt' in s ? { seenAt: quarterHour(s.seenAt) } : {}), ...('recordedAt' in s ? { recordedAt: quarterHour(s.recordedAt) } : {}),
     locked: true,
@@ -2651,7 +2668,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.36.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.37.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3410,7 +3427,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.36.0',
+  version: '3.37.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3528,7 +3545,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.36.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.37.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms

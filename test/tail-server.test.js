@@ -518,7 +518,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.36.0');
+  assert.equal(body.version, '3.37.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -544,8 +544,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.36.0');
-  assert.equal((await get('/')).body.version, '3.36.0');
+  assert.equal(require('../package.json').version, '3.37.0');
+  assert.equal((await get('/')).body.version, '3.37.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1144,4 +1144,36 @@ test('fresh wallets: not followable when the game has started, the price is near
   const ok = await read([texasMarket()]);
   assert.equal(ok.units, 1);
   assert.match(S.describeFresh({ ...base, fresh: { markets: 2, ageDays: 3.5 } }), /first trade 3\.5 days ago, 2 markets/);
+});
+
+test('the webhook: an exit pings only when we tailed it and most of it went, naming where followers bet', async () => {
+  const entry = S.tailEngine.signals({ type: 'entry' })[0];
+  assert.ok(entry);
+  // the entry was sent to Kalshi: that's where followers sell
+  const routed = S.routeSignal({ ...entry, id: 'exit-test-entry', venue: undefined, venues: undefined }, {
+    index: { byCondition: new Map(), byToken: new Map(), games: [] } });
+  assert.equal(routed.venue, null, 'no venue in an empty index');
+  const real = S.tailEngine.ingest;
+  let next = [];
+  S.tailEngine.ingest = async () => next;
+  const exit = o => ({ ...entry, id: `exit-${o.tag}`, type: 'exit', units: undefined, venue: undefined, venues: undefined, parentId: null, blocked: null,
+    theirPrice: 0.62, theirNotional: 4000, boughtAt: 0.41, ...o });
+  try {
+    posts.length = 0;
+    next = [exit({ tag: 'untailed', soldShare: 1, full: true, tailed: null })];
+    await S.streamTail([]);
+    assert.equal(posts.length, 0, 'nobody followed it: on the feed, not pinged');
+    next = [exit({ tag: 'trim', soldShare: 0.2, full: false, tailed: { id: 'exit-test-entry', units: 1.2 } })];
+    await S.streamTail([]);
+    assert.equal(posts.length, 0, 'a trim');
+    next = [exit({ tag: 'out', soldShare: 0.8, full: true, tailed: { id: 'exit-test-entry', units: 1.2 } })];
+    await S.streamTail([]);
+    assert.equal(posts.length, 1);
+    assert.match(posts[0].body.content, /^🚪 Exit: A-grade ElectionEdge sold 80% of Yes on ".+" at 62¢ \(\$4,000\), bought at 41¢ · we tailed it 1\.2u$/);
+  } finally { S.tailEngine.ingest = real; }
+
+  // free users get the exit coarsened
+  const m = S.maskSignal(exit({ tag: 'mask', soldShare: 0.8182, full: true, boughtAt: 0.4137, tailed: { id: 'exit-test-entry', units: 1.2 } }));
+  assert.deepEqual([m.soldShare, m.boughtAt, m.tailed.units], [0.8, 0.41, 1.2]);
+  assert.match(m.tailed.id, /^x[0-9a-f]{12}$/);
 });

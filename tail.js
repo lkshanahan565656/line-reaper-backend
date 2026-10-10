@@ -169,6 +169,7 @@ const DEFAULTS = {
   clvPointLimit: 1000,           // ...so the window shrinks to fit this many points
   clvMaxGapMs: 24 * 3600e3,      // a game's last price must be this close to its start
   clvCacheMax: 50000,            // tokens' closes and markets kept in memory
+  exitShare: 0.5,                // a sale of this share of the position or more is an exit: it ends our tail and the wallet's consensus vote; less is a trim (TAIL_EXIT_SHARE)
   maxInPlay: 0.5,                // over this share of sampled game bets placed after the start = a live bettor (TAIL_MAX_IN_PLAY)...
   inPlayMinGames: 8,             // ...once at least this many sampled bets were on games with a known start
   roundTripEntry: 0.05,          // a closed position bought at this or less (TAIL_ROUND_TRIP_ENTRY)...
@@ -193,7 +194,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
+const PERCENT_KEYS = new Set(['exitShare', 'maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -1210,6 +1211,10 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
   return { kelly, units, maxPrice, cost, cap };
 }
 
+// a sale's share of the position it came out of (0–1), or null when the
+// position isn't known
+const soldShare = (trade, holding) => (num(holding?.size) > 0 && trade?.size > 0 ? round(Math.min(1, trade.size / num(holding.size)), 4) : null);
+
 // trade: a parsed trade; trader: a scoreWallet result; market: a parsed gamma
 // market (null when the lookup failed); book: the bought token's parsed CLOB
 // book (null when it couldn't be read: then Gamma's price, if fresh); consensus: other graded wallets that
@@ -1217,10 +1222,14 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
 // already tailed this wallet into this outcome (then only the top-up up to
 // the new size is staked); against: graded wallets (this one included) that
 // bought another outcome of the same market inside the window; event:
-// { key, units } told across this game or event so far. → { signal, skip }. The signal carries q (our
+// { key, units } told across this game or event so far; holding: for a sale,
+// what the wallet held of that outcome just before it ({ size, price }, null
+// when unknown). An exit says how much of the position went (soldShare; full
+// at exitShare or more, or when unknown), what they paid (boughtAt) and, from
+// prior, whether we tailed it (tailed: { id, units }). → { signal, skip }. The signal carries q (our
 // probability of the outcome bought) and is sized with sizeAt at Polymarket's
 // ask plus its taker fee, so the same q sizes it at any other venue.
-function tradeSignal({ trade, trader, market = null, book = null, consensus = [], against = [], prior = null, event = null, now = Date.now(), opts = {} } = {}) {
+function tradeSignal({ trade, trader, market = null, book = null, consensus = [], against = [], prior = null, event = null, holding = null, now = Date.now(), opts = {} } = {}) {
   const o = resolveOptions(opts);
   const skip = reason => ({ signal: null, skip: reason });
   if (!trade || !trader) return skip('not graded');
@@ -1238,7 +1247,11 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
     theirPrice: trade.price, theirSize: round(trade.size, 4), theirNotional: round(trade.notional, 2),
     at: iso(trade.at ?? now), seenAt: iso(now), url: eventUrl(eventSlug),
   };
-  if (trade.side === 'SELL') return { signal: { ...base, type: 'exit' }, skip: null };
+  if (trade.side === 'SELL') {
+    const share = soldShare(trade, holding);
+    return { signal: { ...base, type: 'exit', soldShare: share, full: share == null || share >= o.exitShare - EPS,
+      boughtAt: num(holding?.price) ?? null, tailed: prior?.units > 0 ? { id: prior.id ?? null, units: prior.units } : null }, skip: null };
+  }
   if (trade.side !== 'BUY') return skip('unknown side');
   if (market) {
     if (market.closed || !market.active) return skip('market closed');
@@ -1961,10 +1974,17 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      // what a sale came out of, read before it's taken off (a trade from
+      // before the wallet was scored is already in its positions)
+      const scored = toMs(trader.scoredAt);
+      const h0 = tr.side === 'SELL' && Array.isArray(trader.holdings) && !(scored != null && tr.at != null && tr.at <= scored)
+        ? trader.holdings.find(h => h.asset === String(tr.asset)) : null;
+      const holding = h0 ? { size: h0.size, price: h0.price } : null;
       noteHolding(trader, tr);
       if (!gradeFor(trader, classify(tr), o).grade || !(tr.notional >= o.minTrade - EPS)) continue;
       const age = tr.at == null ? 0 : t - tr.at;
       const held = `${tr.wallet}|${tr.asset}`;
+      let wasTailed = null;
       let consensus = [], against = [];
       const inWindow = b => Math.abs((tr.at ?? t) - b.at) <= o.consensusWindowMs;
       if (tr.side === 'BUY' && age <= o.consensusWindowMs) {
@@ -1979,18 +1999,23 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
           marketBuys.set(tr.conditionId, mlist);
         }
       } else if (tr.side === 'SELL') {
-        // selling out withdraws that wallet's vote, and ends our tail of it
-        if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
-        if (marketBuys.has(tr.conditionId)) marketBuys.set(tr.conditionId, marketBuys.get(tr.conditionId).filter(b => !(b.wallet === tr.wallet && b.asset === tr.asset)));
-        tailed.delete(held);
+        // selling out withdraws that wallet's vote, and ends our tail of it;
+        // trimming a position does neither
+        wasTailed = tailed.get(held) || null;
+        const share = soldShare(tr, holding);
+        if (share == null || share >= o.exitShare - EPS) {
+          if (buys.has(tr.asset)) buys.set(tr.asset, buys.get(tr.asset).filter(b => b.wallet !== tr.wallet));
+          if (marketBuys.has(tr.conditionId)) marketBuys.set(tr.conditionId, marketBuys.get(tr.conditionId).filter(b => !(b.wallet === tr.wallet && b.asset === tr.asset)));
+          tailed.delete(held);
+        }
       }
       if (age > o.maxTradeAgeMs) continue;   // history: counts for consensus, no signal
       const market = tr.side === 'BUY' ? await quote(tr.conditionId) : null;
       const book = tr.side === 'BUY' && market && !market.closed ? await bookFor(tr.asset) : null;
-      const prior = tr.side === 'BUY' ? tailed.get(held) || null : null;
+      const prior = tr.side === 'BUY' ? tailed.get(held) || null : wasTailed;
       const ek = eventKeyOf(tr);
       const event = tr.side === 'BUY' && ek ? { key: ek, units: eventUnits(ek, t) } : null;
-      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, against, prior, event, now: t, opts: o });
+      const { signal } = tradeSignal({ trade: tr, trader, market, book, consensus, against, prior, event, holding, now: t, opts: o });
       if (!signal) continue;
       signal.via = source;
       if (tr.at != null) signal.lagMs = Math.max(0, t - tr.at);
@@ -2056,7 +2081,7 @@ module.exports = {
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
-  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal,
+  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
   fetchPriceHistory, fetchMarket,
   createTailEngine, toMs, maskIds, failText,
