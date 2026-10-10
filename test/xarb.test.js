@@ -414,7 +414,7 @@ test('the Kalshi fee turns a thin 1% gap into a loss', () => {
 
 // ── underrounds ──
 test('kalshi underround: YES on every outcome of a mutually exclusive event, net of fees', () => {
-  const cands = [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Hike', 23, 79]];
+  const cands = [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Other', 23, 79]];
   const ev = kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', cands);
   const [a] = A.findUnderrounds(kRows(ev), opts());
   assert.ok(a);
@@ -422,16 +422,16 @@ test('kalshi underround: YES on every outcome of a mutually exclusive event, net
   assert.equal(a.exchange, 'kalshi');
   assert.equal(a.outcomes, 4);
   assert.equal(a.category, 'econ');
-  assert.deepEqual(a.legs.map(l => [l.side, l.pick, l.price]), [['yes', 'Cut 25bps', 0.3], ['yes', 'Hold', 0.3], ['yes', 'Cut >25bps', 0.1], ['yes', 'Hike', 0.23]]);
-  assert.equal(a.exhaustive, false, 'no catch-all outcome: mutually exclusive, not proven exhaustive');
-  assert.deepEqual(a.warnings, [A.NOT_EXHAUSTIVE_WARNING]);
+  assert.deepEqual(a.legs.map(l => [l.side, l.pick, l.price]), [['yes', 'Cut 25bps', 0.3], ['yes', 'Hold', 0.3], ['yes', 'Cut >25bps', 0.1], ['yes', 'Other', 0.23]]);
+  assert.equal(a.proof, 'other', '"Other" covers every other move');
+  assert.deepEqual(a.warnings, [A.COVER_WARNING]);
   // $100 → 102 of each: 94.86 + fees 1.50 + 1.50 + 0.65 + 1.27 = 99.78
   assert.equal(a.stakes.contracts, 102);
   assert.equal(a.stakes.cost, 99.78);
   assert.equal(a.profitPct, 2.22);
 
   // one outcome with no ask: the set isn't complete, no arb
-  const noQuote = kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [...cands.slice(0, 3), ['Hike', 0, 100]]);
+  const noQuote = kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [...cands.slice(0, 3), ['Other', 0, 100]]);
   assert.deepEqual(A.findUnderrounds(kRows(noQuote), opts()), []);
   const paused = kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [...cands.slice(0, 3), ['Hike', 23, 79, { status: 'paused' }]]);
   assert.deepEqual(A.findUnderrounds(kRows(paused), opts()), []);
@@ -446,7 +446,7 @@ test('kalshi underround: YES on every outcome of a mutually exclusive event, net
 });
 
 test('polymarket underround: YES on every candidate of a negRisk event', () => {
-  const cands = [['One Battle After Another', 0.2, 0.19], ['Hamnet', 0.25, 0.24], ['Sinners', 0.25, 0.24], ['Marty Supreme', 0.27, 0.26]];
+  const cands = [['One Battle After Another', 0.2, 0.19], ['Hamnet', 0.25, 0.24], ['Sinners', 0.25, 0.24], ['Other', 0.27, 0.26]];
   const ev = pmField('4401', 'oscars-2027-best-picture-winner', 'Oscars 2027: Best Picture Winner', [
     ...cands, ['Wicked: For Good', 0.01, 0.001, { closed: true, outcomePrices: '["0","1"]' }],
   ], { tags: [{ label: 'Culture' }, { label: 'Awards' }] });
@@ -461,7 +461,7 @@ test('polymarket underround: YES on every candidate of a negRisk event', () => {
   assert.equal(a.profitPct, 3.09);
   assert.equal(A.findUnderrounds(pRows(ev), opts({ polymarketFeeRate: 0.05 })).length, 0, '5% fee kills a 3% edge');
 
-  const missing = pmField('4401', 'oscars', 'Oscars', [...cands.slice(0, 3), ['Marty Supreme', null, 0.26]]);
+  const missing = pmField('4401', 'oscars', 'Oscars', [...cands.slice(0, 3), ['Other', null, 0.26]]);
   assert.deepEqual(A.findUnderrounds(pRows(missing), opts()), [], 'every outcome needs an ask');
   const notNeg = pmField('4401', 'oscars', 'Oscars', cands, { negRisk: false });
   notNeg.markets.forEach(m => { m.negRisk = false; });
@@ -470,42 +470,90 @@ test('polymarket underround: YES on every candidate of a negRisk event', () => {
   assert.deepEqual(A.findUnderrounds(pRows(won), opts()), [], 'an outcome already resolved YES: event is over');
 });
 
-test('underrounds: only a visibly complete outcome set is exhaustive; the rest are listed, flagged, never "risk-free"', () => {
+test('underrounds: only a set that visibly covers every result is listed, and how it does decides the warning', () => {
   // 12 names, asks sum to 0.85: the missing 15% is "someone else", not free money
   const names = ['Pietro Parolin', 'Luis Antonio Tagle', 'Matteo Zuppi', 'Peter Erdo', 'Pierbattista Pizzaballa', 'Robert Sarah',
     'Fridolin Ambongo', 'Jean-Marc Aveline', 'Mario Grech', 'Anders Arborelius', 'Juan Jose Omella', 'Wim Eijk'];
   const asks = [16, 14, 10, 8, 7, 6, 6, 5, 4, 3, 3, 3];
   const pope = cands => kalshiField('KXNEXTPOPE-35', 'Who will be the next Pope?', 'World', cands);
   const field = names.map((n, i) => [n, asks[i], 100 - asks[i] + 2]);
-  const [open] = A.findUnderrounds(kRows(pope(field)), opts());
-  assert.ok(open, 'still listed');
-  assert.ok(open.profitPct > 10);
-  assert.equal(open.exhaustive, false);
-  assert.deepEqual(open.warnings, [A.NOT_EXHAUSTIVE_WARNING]);
+  assert.deepEqual(A.findUnderrounds(kRows(pope(field)), opts()), [], 'no catch-all: not an arb, not listed');
   // a catch-all market closes the set (and here kills the arb)
   assert.deepEqual(A.findUnderrounds(kRows(pope([...field, ['Someone else', 15, 87]])), opts()), []);
-  const [covered] = A.findUnderrounds(kRows(pope([...field.slice(0, 11), ['Someone else', 3, 99]])), opts());
-  assert.equal(covered.exhaustive, true);
-  assert.deepEqual(covered.warnings, [A.COVER_WARNING]);
+  assert.deepEqual(A.findUnderrounds(kRows(pope([...field.slice(0, 11), ['Someone else', 3, 99]])), opts()), [], '85¢ with "Someone else" at 3¢: over the cap');
+  const [covered] = A.findUnderrounds(kRows(pope([['Parolin', 30, 72], ['Tagle', 30, 72], ['Zuppi', 20, 82], ['Someone else', 12, 90]])), opts());
+  assert.deepEqual([covered.proof, covered.exhaustive, covered.warnings], ['other', true, [A.COVER_WARNING]]);
+  assert.ok(covered.profitPct > 3 && covered.profitPct < A.MAX_OTHER_PCT, String(covered.profitPct));
+  // "Other" doesn't cover "nobody by the deadline": 64¢ for a set is that result priced in, not 48% free
+  const ai = kalshiField('KXLLM1550-26', 'Which AI will be the first to hit 1550 on Text Arena?', 'Science and Technology',
+    [['Gemini', 14, 88], ['ChatGPT', 7, 95], ['Claude', 36, 66], ['Grok', 2, 99], ['Other', 5, 97]]);
+  assert.deepEqual(A.findUnderrounds(kRows(ai), opts()), [], `past ${A.MAX_OTHER_PCT}% an "Other" set isn't listed`);
+  // a "none of these" outcome is the nothing-happens result, so no cap
+  const none = kalshiField('KXCEOX-26', 'Who will be the next CEO of X?', 'Companies', [['Nikita Bier', 30, 72], ['Linda Yaccarino', 10, 92], ['No new CEO before 2027', 0, 100], ['None before 2027', 40, 62]]);
+  assert.equal(A.findUnderrounds(kRows(none), opts()).length, 0, 'an outcome with no ask: incomplete');
+  const none2 = kalshiField('KXCEOX-26', 'Who will be the next CEO of X?', 'Companies', [['Nikita Bier', 30, 72], ['Linda Yaccarino', 10, 92], ['None before 2027', 40, 62]]);
+  assert.equal(A.findUnderrounds(kRows(none2), opts())[0].proof, 'none');
+  // a film called "One Battle After Another" isn't a catch-all
+  const film = pmField('4401', 'oscars', 'Oscars', [['One Battle After Another', 0.2, 0.19], ['Hamnet', 0.25, 0.24], ['Sinners', 0.25, 0.24]]);
+  assert.deepEqual(A.findUnderrounds(pRows(film), opts()), []);
 
-  // range buckets open at both ends cover every number
+  // range buckets open at both ends cover every number, ages included
   const temps = kalshiField('KXHIGHNY-26OCT08', 'Highest temperature in NYC on Oct 8, 2026?', 'Climate and Weather',
     [['65° or below', 15, 87], ['66° to 67°', 20, 82], ['68° to 69°', 20, 82], ['70° or above', 20, 82]]);
-  assert.equal(A.findUnderrounds(kRows(temps), opts())[0].exhaustive, true);
+  assert.deepEqual(A.findUnderrounds(kRows(temps), opts()).map(a => [a.proof, a.warnings]), [['range', [A.COVER_WARNING]]]);
+  const ages = kalshiField('KXNFLMVPAGE-27', 'Age of Pro Football MVP Winner', 'Sports',
+    [['25 years old or younger', 10, 92], ['26-29 years old', 33, 69], ['30-33 years old', 48, 54], ['34 years old or older', 3, 99]].map(([l, y, n], i) => [l, y, n, { ticker: `KXNFLMVPAGE-27-${i}` }]));
+  assert.equal(A.findUnderrounds(kRows(ages), opts())[0].proof, 'range');
   const closedTop = kalshiField('KXHIGHNY-26OCT08', 'Highest temperature in NYC on Oct 8, 2026?', 'Climate and Weather',
     [['66° to 67°', 25, 77], ['68° to 69°', 25, 77], ['70° or above', 25, 77]]);
-  assert.equal(A.findUnderrounds(kRows(closedTop), opts())[0].exhaustive, false, 'nothing below 66°');
+  assert.deepEqual(A.findUnderrounds(kRows(closedTop), opts()), [], 'nothing below 66°');
 
-  // a basketball game can't tie; football without a tie market could
+  // a basketball game can't tie: nothing to check; football without a tie market could
   const nba = kalshiGame({ yes_ask_dollars: '0.5000' }, { yes_ask_dollars: '0.4500' });
-  assert.equal(A.findUnderrounds(kRows(nba), opts())[0].exhaustive, true);
+  assert.deepEqual(A.findUnderrounds(kRows(nba), opts()).map(a => [a.proof, a.warnings]), [['game', []]]);
   const nfl = { ...nba, event_ticker: 'KXNFLGAME-26OCT11KCBUF', series_ticker: 'KXNFLGAME', markets: nba.markets.map(m => ({ ...m, ticker: m.ticker.replace('NBA', 'NFL'), event_ticker: 'KXNFLGAME-26OCT11KCBUF' })) };
-  assert.equal(A.findUnderrounds(kRows(nfl), opts())[0].exhaustive, false);
+  assert.deepEqual(A.findUnderrounds(kRows(nfl), opts()), []);
   // Polymarket: a negRisk field with an "Other" market
   const pmOpen = pmField('77', 'next-pope', 'Next Pope', [['Parolin', 0.4, 0.39], ['Tagle', 0.4, 0.39]]);
-  assert.equal(A.findUnderrounds(pRows(pmOpen), opts())[0].exhaustive, false);
+  assert.deepEqual(A.findUnderrounds(pRows(pmOpen), opts()), []);
   const pmOther = pmField('77', 'next-pope', 'Next Pope', [['Parolin', 0.4, 0.39], ['Tagle', 0.4, 0.39], ['Other', 0.15, 0.14]]);
-  assert.equal(A.findUnderrounds(pRows(pmOther), opts())[0].exhaustive, true);
+  assert.equal(A.findUnderrounds(pRows(pmOther), opts())[0].proof, 'other');
+});
+
+// ── watchlist ──
+test('watchlist: pairs and proven sets just short of an arb, closest first, one per question', () => {
+  // 0.58 + 0.41 = 0.99, but Kalshi's fee makes it cost more than the $1 it pays
+  const ks = kRows(kalshiGame({ yes_ask_dollars: '0.5800', no_ask_dollars: '0.4400' }, { yes_ask_dollars: '0.4400', no_ask_dollars: '0.5800' }));
+  const ps = pRows(pmGame({ bestAsk: 0.41, bestBid: 0.4 }));
+  const matches = A.matchMarkets(ks, ps, opts());
+  assert.deepEqual(A.findCrossArbs(ks, ps, opts({ matches })), []);
+  const near = A.findNearArbs({ matches, rows: [...ks, ...ps] }, opts());
+  assert.equal(near.length, 1, 'one per game: its closer direction');
+  const [n] = near;
+  assert.deepEqual([n.type, n.title], ['cross', 'New York K at Boston']);
+  assert.deepEqual(n.legs.map(l => [l.venue, l.price]), [['kalshi', 0.58], ['polymarket', 0.41]]);
+  assert.ok(n.totalCost > 1 && n.totalCost < 1.01, String(n.totalCost));
+  assert.ok(n.profitPct < 0 && n.profitPct > -1, String(n.profitPct));
+  assert.ok(Math.abs(n.stakes.legs.reduce((a, l) => a + l.pct, 0) - 100) < 0.2, 'the split, as for an arb');
+  // a real arb isn't on the watchlist; one clearing under minPct is
+  const free = A.findNearArbs({ matches, rows: [...ks, ...ps] }, opts({ kalshiFeeRate: 0 }));
+  assert.deepEqual(free.map(a => [a.type, a.totalCost]), [['multi', 1.02]], "the +1.01% pair is an arb, so it's not here; Kalshi's own two sides at $1.02 are");
+  assert.deepEqual(A.findNearArbs({ matches, rows: [...ks, ...ps] }, opts({ kalshiFeeRate: 0, minPct: 2 })).map(a => a.type), ['cross', 'multi'], 'under minPct: watched, closest first');
+  // more than nearPct away, or a Polymarket International leg in US mode: not watched
+  assert.deepEqual(A.findNearArbs({ matches, rows: [...ks, ...ps] }, opts({ nearPct: 0.1 })), []);
+  assert.deepEqual(A.findNearArbs({ matches, rows: [...ks, ...ps] }, opts({ region: 'us' })), []);
+  // an all-but-decided line pays a cent on the dollar: not watched
+  const decided = kRows(kalshiGame({ yes_ask_dollars: '0.9800', no_ask_dollars: '0.0300' }, { yes_ask_dollars: '0.0300', no_ask_dollars: '0.9800' }));
+  const dm = A.matchMarkets(decided, pRows(pmGame({ bestAsk: 0.03, bestBid: 0.02 })), opts());
+  assert.ok(dm.length, 'the game still pairs');
+  assert.deepEqual(A.findNearArbs({ matches: dm, rows: decided }, opts()), []);
+  // outcome sets: only ones that cover every result
+  const fed = [['Hold', 50, 52], ['Cut 25bps', 30, 72]];
+  const open = kRows(kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [...fed, ['Hike', 17, 85]]));
+  assert.deepEqual(A.findNearArbs({ rows: open }, opts()), [], 'no catch-all: not watched');
+  const [set] = A.findNearArbs({ rows: kRows(kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [...fed, ['Other', 17, 85]])) }, opts({ region: 'us' }));
+  assert.deepEqual([set.type, set.proof, set.warnings], ['multi', 'other', [A.COVER_WARNING]]);
+  assert.ok(set.profitPct < 0 && set.profitPct > -3, String(set.profitPct));
 });
 
 // ── exchange vs sportsbook ──
@@ -644,7 +692,7 @@ test('polymarket fee in arbs: each Polymarket leg pays its market\'s taker fee',
 
   // underround: every leg pays 0.05 × p(1 − p) a share. Σ asks 0.97 (+3.09% free) plus
   // 0.05 × (0.16 + 0.1875 + 0.1875 + 0.1971) = 3.7¢ of fees a set is a loss
-  const cands = [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['D', 0.27, 0.26]];
+  const cands = [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['Other', 0.27, 0.26]];
   const cup = extra => pRows(pmField('4402', 'cup', 'Cup winner', cands.map(c => [...c, extra]), { tags: [{ label: 'Sports' }] }));
   assert.equal(A.findUnderrounds(cup({}), opts())[0].profitPct, 3.09);
   assert.deepEqual(A.findUnderrounds(cup(sports), opts({ minPct: 0 })), [], 'the sports fee eats the 3%');
@@ -658,8 +706,8 @@ test('polymarket fee in arbs: each Polymarket leg pays its market\'s taker fee',
 // ── US mode ──
 test('US mode: only Kalshi and US sportsbook legs; Kalshi-vs-Polymarket and Polymarket-only arbs hidden', () => {
   const { ks, ps } = politics();
-  const kalshi = [...ks, ...kRows(kalshiGame(), kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Hike', 23, 79]]))];
-  const oscars = pmField('4401', 'oscars', 'Oscars 2027: Best Picture Winner', [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['D', 0.27, 0.26]], { tags: [{ label: 'Culture' }] });
+  const kalshi = [...ks, ...kRows(kalshiGame(), kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Other', 23, 79]]))];
+  const oscars = pmField('4401', 'oscars', 'Oscars 2027: Best Picture Winner', [['A', 0.2, 0.19], ['B', 0.25, 0.24], ['C', 0.25, 0.24], ['Other', 0.27, 0.26]], { tags: [{ label: 'Culture' }] });
   const polymarket = [...ps, ...pRows(pmGame(), oscars)];
   const kalshiBooks = X.parseKalshiMarkets({ markets: kalshiGame().markets });
   const games = X.attachExchanges([oddsGame([bookH2h('draftkings', -200, 170), bookH2h('pinnacle', -200, 180), bookH2h('bovada', -200, 175)])], kalshiBooks, { now: NOW });
@@ -781,7 +829,7 @@ test('pickVenue: most units, then the cheaper all-in cost, then the lower price'
 // ── filters and the full scan ──
 test('minimum profit: XARB_MIN_PCT, default 0.5%', () => {
   // Σ 0.997: 100 contracts for $99.70, +0.30%
-  const ev = pmField('5501', 'thin', 'Thin', [['A', 0.497, 0.49], ['B', 0.5, 0.49]]);
+  const ev = pmField('5501', 'thin', 'Thin', [['A', 0.497, 0.49], ['Other', 0.5, 0.49]]);
   const rows = pRows(ev);
   assert.equal(A.findUnderrounds(rows, opts())[0].profitPct, 0.3);
   assert.deepEqual(A.findArbs({ polymarket: rows }, opts()), [], 'below the default 0.5%');
@@ -794,7 +842,7 @@ test('minimum profit: XARB_MIN_PCT, default 0.5%', () => {
 
 test('findArbs: all three kinds, best first, markets past their close skipped', () => {
   const { ks, ps } = politics();
-  const kalshi = [...ks, ...kRows(kalshiGame(), kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Hike', 23, 79]]))];
+  const kalshi = [...ks, ...kRows(kalshiGame(), kalshiField('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', 'Economics', [['Cut 25bps', 30, 72], ['Hold', 30, 72], ['Cut >25bps', 10, 92], ['Other', 23, 79]]))];
   const polymarket = [...ps, ...pRows(pmGame())];
   const games = X.attachExchanges([oddsGame([bookH2h('draftkings', -200, 170)])], X.parseKalshiMarkets({ markets: kalshiGame().markets }), { now: NOW });
   const arbs = A.findArbs({ kalshi, polymarket, games }, opts());
@@ -915,6 +963,31 @@ test('college games: Kalshi "Ohio St." pairs with Polymarket "Ohio State", and n
   const m = A.matchMarkets(ks, pm('Maryland vs. Ohio State', '["Maryland","Ohio State"]'), opts()).filter(x => x.by === 'teams');
   assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.same]), [['Maryland', true], ['Ohio St.', false]]);
   assert.deepEqual(A.matchMarkets(ks, pm('Maryland vs. Ohio', '["Maryland","Ohio"]'), opts()).filter(x => x.by === 'teams'), [], 'Ohio is another school');
+});
+
+test('football: Kalshi\'s placeholder times still pair, a night kick-off or a TBD Saturday game on a Friday ticker', () => {
+  const cfb = (slug, start, title, outcomes) => pRows({ ...pmGame({ question: title, outcomes, conditionId: `0x${slug}`, slug, gameStartTime: start, endDate: start }),
+    id: slug, slug, title, tags: [{ label: 'Sports', slug: 'sports' }, { label: 'College Football', slug: 'cfb' }], endDate: start });
+  // LSU at Kentucky kicks off 23:00 UTC; Kalshi says it expires at 20:00
+  const night = kRows(kEvent('KXNCAAFGAME-26OCT10LSUUK', 'LSU vs Kentucky', [['LSU', '0.6000', '0.4100'], ['Kentucky', '0.4100', '0.6000']], { exp: '2026-10-10T20:00:00Z' }));
+  const lsu = cfb('cfb-lsu-uk-2026-10-10', '2026-10-10T23:00:00Z', 'LSU vs. Kentucky', '["LSU","Kentucky"]');
+  assert.equal(A.matchMarkets(night, lsu, opts()).filter(x => x.by === 'teams').length, 2);
+  // Hawai'i's home game starts 02:30 UTC the next day
+  const late = kRows(kEvent('KXNCAAFGAME-26OCT10HAWASU', "Hawai'i vs Arizona St.", [["Hawai'i", '0.3000', '0.7100'], ['Arizona St.', '0.7100', '0.3000']], { exp: '2026-10-10T20:00:00Z' }));
+  assert.equal(A.matchMarkets(late, cfb('cfb-hawaii-arzst-2026-10-10', '2026-10-11T02:30:00Z', "Hawai'i vs. Arizona State", '["Hawai\'i","Arizona State"]'), opts()).filter(x => x.by === 'teams').length, 2);
+  // next week: Kalshi's ticker says Friday 26OCT16, Polymarket Saturday noon
+  const tbd = kRows(kEvent('KXNCAAFGAME-26OCT16MSSTLSU', 'Mississippi St. vs LSU', [['Mississippi St.', '0.2000', '0.8100'], ['LSU', '0.8100', '0.2000']], { exp: '2026-10-17T03:00:00Z' }));
+  const sat = cfb('cfb-mspst-lsu-2026-10-17', '2026-10-17T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]');
+  assert.equal(A.matchMarkets(tbd, sat, opts()).filter(x => x.by === 'teams').length, 2);
+  // Louisiana and Louisiana Tech fit each other loosely; spelled the same, they pair the right way round
+  const la = kRows(kEvent('KXNCAAFGAME-26OCT10ULLLT', 'Louisiana vs Louisiana Tech', [['Louisiana', '0.4000', '0.6100'], ['Louisiana Tech', '0.6100', '0.4000']], { exp: '2026-10-10T20:00:00Z' }));
+  const laPm = cfb('cfb-loulaf-loutch-2026-10-10', '2026-10-10T23:30:00Z', 'Louisiana vs. Louisiana Tech', '["Louisiana Tech","Louisiana"]');
+  assert.deepEqual(A.matchMarkets(la, laPm, opts()).filter(x => x.by === 'teams').map(x => [x.kalshi.outcomeLabel, x.polymarket.outcomeLabel, x.same]),
+    [['Louisiana', 'Louisiana Tech', false], ['Louisiana Tech', 'Louisiana Tech', true]]);
+  // a week out is another game; and the NBA keeps its 4h
+  assert.equal(A.matchMarkets(tbd, cfb('cfb-mspst-lsu-2026-10-24', '2026-10-24T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]'), opts()).length, 0);
+  const nba = kRows(kalshiGame({ expected_expiration_time: '2026-10-08T20:00:00Z' }, { expected_expiration_time: '2026-10-08T20:00:00Z' }));
+  assert.equal(A.matchMarkets(nba, pRows(pmGame()), opts()).filter(x => x.by === 'teams').length, 0, 'an NBA game 6h from its estimate is not this one');
 });
 
 test('kalshi tickers: the date (and a start time, when there is one) in US Eastern time', () => {
@@ -1137,4 +1210,175 @@ test('lines: US games pair spreads and totals in the same event, the team found 
   const ks = kRows(kalshiGame(), ...nbaLines), ps = pRows(pmGame());
   const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
   assert.deepEqual(m.map(x => [x.kalshi.id, x.polymarket.id]), [['KXNBASPREAD-26OCT08NYKBOS-BOS5', '556'], ['KXNBATOTAL-26OCT08NYKBOS-221', '557']]);
+});
+
+// Polymarket US's league lists (pmus.arbRowsOf), shaped like the live gateway
+const PMUS = require('../pmus');
+const usd = v => ({ value: v, currency: 'USD' });
+const usMarket = (slug, type, sides, bid, ask, o = {}) => ({ slug, question: slug, sportsMarketType: type, active: true, closed: false,
+  status: 'MARKET_STATUS_OPEN', bestBidQuote: usd(bid), bestAskQuote: usd(ask), feeCoefficient: 0.0695, marketSides: sides, ...o });
+const usTeam = (name, long) => ({ long, description: name, team: { name } });
+const usNba = ({ bid = '0.5200', ask = '0.6000' } = {}) => PMUS.arbRowsOf({
+  id: 7, slug: 'nba-nyk-bos-2026-10-08', title: 'NY Knicks vs. BOS Celtics', startTime: START, endDate: '2026-10-09T02:00:00Z', active: true, closed: false,
+  teams: [{ name: 'New York Knicks' }, { name: 'Boston Celtics' }],
+  markets: [
+    usMarket('aec-nba-nyk-bos-2026-10-08', 'basketball_team_full_game_winner', [usTeam('New York Knicks', true), usTeam('Boston Celtics', false)], bid, ask),
+    usMarket('tsc-nba-nyk-bos-2026-10-08-221pt5', 'basketball_team_full_game_total', [{ long: true, description: 'Over' }, { long: false, description: 'Under' }],
+      '0.4400', '0.4500', { line: 221.5 }),
+  ],
+}, { league: 'nba' });
+const usSoccer = (prices = [['0.7700', '0.7800'], ['0.1500', '0.1600'], ['0.0900', '0.1000']]) => PMUS.arbRowsOf({
+  id: 8, slug: 'bun-dor-wer-2026-10-09', title: 'Dortmund vs. Bremen', startTime: '2026-10-09T18:30:00Z', active: true, closed: false,
+  teams: [{ name: H }, { name: W2 }],
+  markets: [[H, 'h'], [null, 'd'], [W2, 'a']].map(([team, k], i) => usMarket(`bun-dor-wer-2026-10-09-${k}`, 'soccer_team_full_time_winner',
+    [{ long: true, description: team || 'Draw', ...(team ? { team: { name: team } } : {}) }, { long: false, description: 'No' }], ...prices[i])),
+}, { league: 'bun' });
+
+test('Polymarket US: its listed games pair with Kalshi\'s like Polymarket\'s do; both US venues; capped by the book\'s depth', () => {
+  const kalshi = kRows(kalshiGame(), kLines('KXNBATOTAL', 'New York K at Boston: Total Points', [['221', 'Over 221.5 points scored', 221.5, '0.5200', '0.5000']],
+    { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }));
+  const us = usNba();
+  const matches = A.matchMarkets(kalshi, us, opts());
+  assert.deepEqual(matches.map(m => [m.by, m.kalshi.id, m.polymarket.id]), [
+    ['teams', 'KXNBAGAME-26OCT08NYKBOS-BOS', 'aec-nba-nyk-bos-2026-10-08'], ['teams', 'KXNBAGAME-26OCT08NYKBOS-NYK', 'aec-nba-nyk-bos-2026-10-08'],
+    ['line', 'KXNBATOTAL-26OCT08NYKBOS-221', 'tsc-nba-nyk-bos-2026-10-08-221pt5']]);
+  const arbs = A.findUsArbs(kalshi, us, opts({ region: 'us', matches }));
+  assert.equal(arbs.length, 2, 'the game once (its best direction) and the total');
+  const game = arbs.find(a => a.legs[1].marketId === 'aec-nba-nyk-bos-2026-10-08');
+  assert.deepEqual(game.legs.map(l => [l.venue, l.side, l.pick, l.price]), [['kalshi', 'no', 'New York K', 0.47], ['polymarketus', 'no', 'Boston Celtics', 0.48]],
+    'NO on Boston at Kalshi is the Knicks; the Celtics sell into the Knicks\' 52¢ bid');
+  // 0.47 + 0.48, plus Kalshi's fee and 0.0695 × 0.48 × 0.52 on Polymarket US
+  assert.ok(game.profitPct > 1 && game.profitPct < 2, String(game.profitPct));
+  assert.ok(Math.abs(game.stakes.legs[1].fee - Math.round(game.stakes.contracts * 0.0695 * 0.48 * 0.52 * 100) / 100) <= 0.01);
+  const total = arbs.find(a => a !== game);
+  assert.deepEqual(total.legs.map(l => [l.venue, l.side, l.price]), [['kalshi', 'no', 0.5], ['polymarketus', 'yes', 0.45]], 'Under at Kalshi, Over here');
+  assert.ok(arbs.every(a => A.usPlaceable(a) && a.maxContracts === null && /postponed or canceled/.test(a.warnings.join(' '))));
+
+  // on the live book 40 contracts sit at the Knicks' bid: no more than that
+  const live = [PMUS.repriceRow(us[0], { bid: 0.52, ask: 0.6, bidSize: 40, askSize: 10, open: true }), us[1]];
+  const relink = rows => matches.map(m => ({ ...m, polymarket: rows.find(r => r.id === m.polymarket.id) }));
+  const deep = A.findUsArbs(kalshi, live, opts({ region: 'us', matches: relink(live) })).find(a => a.legs[1].marketId === us[0].id);
+  assert.deepEqual([deep.legs[1].depth, deep.maxContracts, deep.stakes.contracts, deep.stakes.capped], [40, 40, 40, true]);
+  const thin = [PMUS.repriceRow(us[0], { bid: 0.52, ask: 0.6, bidSize: 0.5, open: true }), us[1]];
+  assert.equal(A.findUsArbs(kalshi, thin, opts({ matches: relink(thin) })).length, 1, 'not one whole contract: only the total is left');
+  // a gap the fees eat
+  const close = usNba({ bid: '0.5000' });
+  assert.equal(A.findUsArbs(kalshi, close, opts({ matches: A.matchMarkets(kalshi, close, opts()) })).length, 1);
+});
+
+test('Polymarket US soccer: its three result markets pair with Kalshi\'s team and tie markets, and are an underround on their own', () => {
+  const kalshi = kRows(dortmundBremen()), us = usSoccer();
+  const matches = A.matchMarkets(kalshi, us, opts());
+  assert.deepEqual(matches.map(m => [m.by, m.kalshi.outcomeLabel, m.polymarket.outcomeLabel]),
+    [['teams3', 'Dortmund', H], ['teams3', 'Bremen', W2], ['teams3', 'Tie', 'Draw']]);
+  const found = A.findUsArbs(kalshi, us, opts({ region: 'us', matches }));
+  assert.equal(found.length, 1);
+  const [a] = found;
+  assert.deepEqual(a.legs.map(l => [l.venue, l.side, l.price]), [['kalshi', 'yes', 0.73], ['polymarketus', 'no', 0.23]], 'Dortmund at Kalshi, not Dortmund here');
+  // 44¢ + 24¢ + 22¢ for every result, 0.0695 × p × (1 − p) on each
+  const cheap = usSoccer([['0.4300', '0.4400'], ['0.2300', '0.2400'], ['0.2100', '0.2200']]);
+  const [u] = A.findUsArbs([], cheap, opts({ region: 'us' }));
+  const cost = 0.9 + 0.0695 * (0.44 * 0.56 + 0.24 * 0.76 + 0.22 * 0.78);
+  assert.deepEqual([u.type, u.exchange, u.outcomes, u.exhaustive], ['multi', 'polymarketus', 3, true]);
+  assert.ok(Math.abs(u.profitPct - ((1 - cost) / cost) * 100) < 0.05, String(u.profitPct));
+  assert.equal(A.findUsArbs([], cheap.slice(0, 2), opts()).length, 0, 'a set missing an outcome is not complete');
+});
+
+// ── US races ──
+// Kalshi's race events (SENATETX-26) and Polymarket's (texas-senate-election-winner), shaped like the live APIs
+const kRace = (ticker, title, markets, o = {}) => ({
+  event_ticker: ticker, series_ticker: ticker.split('-')[0], title, sub_title: 'In 2026', category: 'Elections', mutually_exclusive: true,
+  markets: markets.map(([code, q, label, yes, no]) => ({ ticker: `${ticker}-${code}`, event_ticker: ticker, title: q, yes_sub_title: label, no_sub_title: label,
+    status: 'active', yes_ask_dollars: yes, no_ask_dollars: no, close_time: '2027-11-03T15:00:00Z', expected_expiration_time: '2027-01-04T15:00:00Z', ...o })),
+});
+const pmRace = (slug, title, markets) => ({
+  id: slug, slug, title, negRisk: true, endDate: '2026-11-04T04:59:00Z', tags: [{ label: 'Politics', slug: 'politics' }, { label: 'Elections', slug: 'elections' }],
+  markets: markets.map(([id, q, label, ask, bid]) => ({ id, question: q, groupItemTitle: label, conditionId: `0x${id}`, slug: `${slug}-${id}`, outcomes: '["Yes","No"]',
+    clobTokenIds: `["${id}y","${id}n"]`, bestAsk: ask, bestBid: bid, active: true, closed: false, negRisk: true, endDate: '2026-11-04T04:59:00Z' })),
+});
+const texasK = (ticker = 'SENATETX-26') => kRace(ticker, 'Texas Senate winner?', [
+  ['R', 'Will Republicans win the Senate race in Texas?', 'Ken Paxton', '0.4300', '0.5800'], ['D', 'Will Democratics win the Senate race in Texas?', 'James Talarico', '0.5800', '0.4300']]);
+const texasP = () => pmRace('texas-senate-election-winner', 'Texas Senate Election Winner', [
+  ['tx1', 'Will the Democrats win the Texas Senate race in 2026?', 'James Talarico (D)', 0.63, 0.62], ['tx2', 'Will the Republicans win the Texas Senate race in 2026?', 'Ken Paxton (R)', 0.38, 0.37],
+  ['tx3', 'Will Person A win the Texas Senate race in 2026?', 'Person A', null, null]]);
+
+test('races: a state\'s Senate, governor or House race pairs by office, place, party and year, however each side words it', () => {
+  const key = (exchange, title, eventKey = null, closeTime = '2026-11-04T04:59:00Z') => A.raceKey({ exchange, title, eventKey, closeTime })?.key ?? null;
+  assert.equal(key('polymarket', 'Will the Democrats win the Texas Senate race in 2026?'), 'senate|texas|D|');
+  assert.equal(key('kalshi', 'Will Democratics win the Senate race in Texas?', 'kalshi:SENATETX-26'), 'senate|texas|D|');
+  assert.equal(key('kalshi', 'Will the Democratic party win the governorship in Minnesota', 'kalshi:GOVPARTYMN-26'), 'governor|minnesota|D|');
+  assert.equal(key('polymarket', 'Will the Republicans win the Minnesota governor race in 2026?'), 'governor|minnesota|R|');
+  assert.equal(key('polymarket', 'Will the Republican Party win the SC-01 House seat?'), 'house|SC-1|R|');
+  assert.equal(key('kalshi', 'Will a Republican win the House race for SC-1?', 'kalshi:HOUSESC1-26'), 'house|SC-1|R|');
+  assert.equal(key('polymarket', 'Will the Democrats win the West Virginia Senate race in 2026?'), 'senate|west virginia|D|', 'not Virginia');
+  assert.equal(key('kalshi', 'Will Democrats win the Arkansas Senate race?', 'kalshi:SENATEAR-26'), 'senate|arkansas|D|', 'not Kansas');
+  assert.equal(key('polymarket', 'Will the Democrats win the Florida Senate special election in 2026?'), 'senate|florida|D|special');
+  for (const t of ['Will Dan Sullivan win the Alaska Senate race in 2026?', 'Will the Democratic Party control the Senate after the 2026 Midterm elections?',
+    'Margin of victory in the first round of the Texas Senate Republican primary?', 'Will Ken Paxton win the Texas Republican Senate nomination?',
+    'Will the Democrats win the Pennsylvania state senate?', 'Will Democrats and Republicans win the Texas Senate race?',
+    'Will the Democratic Party candidate win the 2026 Ohio gubernatorial election by 0%-3%?', 'Will the Republican Party candidate win the 2026 Wyoming gubernatorial election by 50% or more?',
+    'Will the Republicans win the Iowa governor race by 5 points?', 'Will Republicans win Latino voters in the Texas Senate election?']) assert.equal(key('polymarket', t), null, t);
+  assert.equal(key('polymarket', 'Will the Democratic Party candidate win the 2026 Oklahoma gubernatorial election?'), 'governor|oklahoma|D|', 'the plain winner question still counts');
+  assert.equal(A.raceKey({ exchange: 'kalshi', title: 'Will Democratics win the Senate race in Illinois?', eventKey: 'kalshi:SENATEIL-28' }).year, 2028);
+
+  const ks = kRows(texasK(), texasK('SENATETX-28'));
+  const ps = pRows(texasP());
+  const m = A.matchMarkets(ks, ps, opts());
+  assert.deepEqual(m.map(x => [x.by, x.kalshi.id, x.polymarket.id, x.same]),
+    [['race', 'SENATETX-26-R', 'tx2', true], ['race', 'SENATETX-26-D', 'tx1', true]], 'the 2026 race only; Person A has no party');
+  // a Democrats signal tails at Kalshi's Democratic YES, a Republicans NO at its Republican NO
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps, matches: m }, opts({ region: 'us' }));
+  const [d] = A.venueQuotes({ type: 'entry', conditionId: '0xtx1', outcome: 'Yes', outcomeIndex: 0 }, idx, opts({ region: 'us' }));
+  assert.deepEqual([d.key, d.marketId, d.side, d.price], ['kalshi', 'SENATETX-26-D', 'yes', 0.58]);
+  const [r] = A.venueQuotes({ type: 'entry', conditionId: '0xtx2', outcome: 'No', outcomeIndex: 1 }, idx, opts({ region: 'us' }));
+  assert.deepEqual([r.marketId, r.side, r.price], ['SENATETX-26-R', 'no', 0.58]);
+  assert.equal(d.warning, undefined, 'the same question: no rules warning');
+  // a Kalshi ticker with the inauguration year pairs with the election year's race, unless Kalshi lists that year too
+  const ks27 = kRows(texasK('SENATETX-27'));
+  assert.deepEqual(A.matchMarkets(ks27, ps, opts()).map(x => x.kalshi.id), ['SENATETX-27-R', 'SENATETX-27-D']);
+  assert.deepEqual(A.matchMarkets(kRows(texasK('SENATETX-27'), texasK()), ps, opts()).map(x => x.kalshi.id), ['SENATETX-26-R', 'SENATETX-26-D']);
+  // the title match never sees them, so no second pairing
+  assert.equal(A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'title').length, 0);
+});
+
+test('kalshi tail sweep: reads on from where the scan stopped, keeps everything but sports, and goes round again', async () => {
+  const pages = {
+    c30: { events: [texasK(), kEvent('KXMLBRBI-26OCT11LADMIL', 'LAD vs MIL: RBIs', [['Ohtani', '0.4', '0.6']])], cursor: 'c31' },
+    c31: { events: [kRace('GOVPARTYMN-26', 'Minnesota Governor winner?', [['D', 'Will the Democratic party win the governorship in Minnesota', 'Amy Klobuchar', '0.9500', '0.0600']])], cursor: '' },
+  };
+  pages.c30.events[1].category = 'Sports';
+  const asked = [];
+  let t = NOW;
+  const http = { async get(url, o) { asked.push(o.params.cursor); return { data: JSON.parse(JSON.stringify(pages[o.params.cursor] || { events: [], cursor: '' })) }; } };
+  const sweep = A.createKalshiTailSweep({ http, perScan: 1, now: () => t });
+  const first = await sweep.step('c30');
+  assert.deepEqual(asked, ['c30']);
+  assert.deepEqual(first.map(r => r.id), ['SENATETX-26-R', 'SENATETX-26-D'], 'the RBI prop is sports: left to the game sweep');
+  t += 60e3;
+  const second = await sweep.step('c30x');
+  assert.deepEqual(asked, ['c30', 'c31'], 'its own place in the list, not the scan\'s');
+  assert.equal(second.length, 3);
+  assert.equal(sweep.stats().cycles, 1, 'the end of the list');
+  t += 60e3;
+  await sweep.step('c30');
+  assert.deepEqual(asked.slice(-1), ['c30'], 'round again from the scan\'s stopping point');
+  t += 31 * 60e3;
+  pages.c30 = { events: [], cursor: 'c31' };
+  pages.c31 = { events: [], cursor: '' };
+  assert.equal((await sweep.step('c30')).length, 0, 'gone after 30 minutes unseen');
+  assert.equal((await A.createKalshiTailSweep({ http }).step(null)).length, 0, 'no stopping point (the scan read the whole list): nothing to do');
+});
+
+test('kalshi game series: fights (UFC, boxing, MMA) are games too', async () => {
+  const http = { async get() { return { data: { series: ['KXUFCFIGHT', 'KXBOXINGFIGHT', 'KXUFCROUNDS', 'KXNBAGAME', 'KXUFCTITLE'].map(ticker => ({ ticker })) } }; } };
+  assert.deepEqual(await A.fetchKalshiGameSeries(http), ['KXUFCFIGHT', 'KXBOXINGFIGHT', 'KXNBAGAME']);
+  // a UFC bout: the two fighters, priced like a game
+  const rows = kRows({ event_ticker: 'KXUFCFIGHT-26OCT10HERCAM', series_ticker: 'KXUFCFIGHT', title: 'Fight Night: Herbert vs Camilo', category: 'Sports', mutually_exclusive: true,
+    markets: [['HER', 'Jai Herbert', '0.3800', '0.6300'], ['CAM', 'Matheus Camilo', '0.6300', '0.3800']].map(([c, l, y, n]) => ({ ticker: `KXUFCFIGHT-26OCT10HERCAM-${c}`, event_ticker: 'KXUFCFIGHT-26OCT10HERCAM',
+      title: `${l} wins`, yes_sub_title: l, no_sub_title: l, status: 'active', yes_ask_dollars: y, no_ask_dollars: n, close_time: '2026-10-25T00:00:00Z', expected_expiration_time: '2026-10-11T05:00:00Z' })) });
+  assert.deepEqual(rows.map(r => [r.kind, r.outcomeLabel, r.noLabel]), [['teams', 'Jai Herbert', 'Matheus Camilo'], ['teams', 'Matheus Camilo', 'Jai Herbert']]);
+  const pm = pRows({ ...pmGame({ question: 'UFC Fight Night: Jai Herbert vs. Matheus Camilo (Lightweight, Main Card)', outcomes: '["Jai Herbert","Matheus Camilo"]', conditionId: '0xufc',
+    slug: 'ufc-jai2-mat36-2026-10-10', gameStartTime: '2026-10-11 01:00:00+00', endDate: '2026-10-11T01:00:00Z' }), id: '9200', slug: 'ufc-jai2-mat36-2026-10-10',
+    title: 'UFC Fight Night: Jai Herbert vs. Matheus Camilo', tags: [{ label: 'Sports', slug: 'sports' }, { label: 'UFC', slug: 'ufc' }], endDate: '2026-10-11T01:00:00Z' });
+  assert.equal(A.matchMarkets(rows, pm, opts({ now: Date.parse('2026-10-10T12:00:00Z') })).filter(x => x.by === 'teams').length, 2);
 });

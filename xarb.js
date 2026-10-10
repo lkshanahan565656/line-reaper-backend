@@ -2,7 +2,7 @@
 // Kalshi and Polymarket both list $1 contracts: pay the ask (plus a fee) and
 // collect $1 if the contract wins. When every way a question can end can be
 // bought for less than $1 in total, the difference is locked in whatever
-// happens. Three kinds are found:
+// happens. Four kinds are found:
 //
 //   1. cross-exchange: the same yes/no question on both exchanges. YES on one
 //      plus NO on the other always pays $1. Sports games are matched by their
@@ -28,16 +28,22 @@
 //   2. underround: an event where exactly one outcome wins (Kalshi
 //      `mutually_exclusive`, Polymarket `negRisk`). YES on every outcome pays
 //      $1, so YES asks summing under $1 is an arb, but only if the listed
-//      outcomes cover every result. That's only taken as shown when there's a
-//      catch-all outcome ("Other", "Someone else", "Tie"), open-ended range
-//      buckets at both ends, or a no-tie game; otherwise the arb is listed with
-//      exhaustive: false and a warning, and never alerted. Every outcome needs
-//      a live quote, or the set isn't complete.
+//      outcomes cover every result: a game (no tie possible, or the draw
+//      listed), a "none of these" outcome, range buckets open at both ends, or
+//      an "Other" outcome (capped, see findUnderrounds). A set with none of
+//      those isn't listed at all. Every outcome needs a live quote, or the set
+//      isn't complete.
 //   3. exchange vs sportsbook: the exchange h2h books exchanges.attachExchanges
 //      puts on Odds API games (fees already in the price) against the best
 //      sportsbook price on the other side: 1/decA + 1/decB < 1. A Polymarket
 //      book is only used when this scan saw a real bid and ask on that market
 //      (attachExchanges falls back to mids, which can't be traded).
+//   4. Kalshi vs Polymarket US: pmus.js reads Polymarket US's games league by
+//      league as rows in the same shape as Polymarket's (team, total and
+//      spread markets, soccer's three result markets), and they pair with
+//      Kalshi's the same way (1.) does; its soccer result sets are
+//      underrounds (2.) on their own. Both are US venues, so these count in
+//      US mode (findUsArbs).
 //
 // Size: the exchanges' `liquidity` figures are totals over every price level,
 // not what sits at the quoted ask, so no executable size is claimed
@@ -75,12 +81,11 @@ const POLYMARKET_EVENTS_URL = 'https://gamma-api.polymarket.com/events';
 const EXCHANGE_BOOKS = new Set(['kalshi', 'polymarket']);
 const RULES_WARNING = 'check both rules: resolution wording can differ';
 const COVER_WARNING = 'check the listed outcomes cover every result';
-const NOT_EXHAUSTIVE_WARNING = 'not proven exhaustive: no catch-all outcome, so if an unlisted result wins every leg loses';
 const DAY = 86400e3;
 
 const DEFAULTS = {
   minPct: 0.5, kalshiFeeRate: 0.07, polymarketFeeRate: 0, bankroll: 100, region: 'us',
-  sportsWindowMs: 4 * 3600e3, titleWindowMs: 3 * DAY, minSimilarity: 0.6,
+  sportsWindowMs: 4 * 3600e3, titleWindowMs: 3 * DAY, minSimilarity: 0.6, nearPct: 3, nearMax: 25,
 };
 // undefined in opts keeps the default
 function withDefaults(opts = {}) {
@@ -609,11 +614,18 @@ function teamContext(games = []) {
 }
 
 // [a1, a2] vs [b1, b2] → 'same' (a1 is b1), 'flipped' (a1 is b2), or null
-// when either side is missing or it fits both ways round.
+// when either side is missing or it fits both ways round. Both ways round,
+// the way with more names spelled the same wins: "Louisiana" and
+// "Louisiana Tech" each fit the other loosely, but only one way exactly.
 function pairSides(a, b, same) {
   const direct = same(a[0], b[0]) && same(a[1], b[1]);
   const swap = same(a[0], b[1]) && same(a[1], b[0]);
-  return direct === swap ? null : direct ? 'same' : 'flipped';
+  if (direct && swap) {
+    const exact = (x, y) => (norm(x) && norm(x) === norm(y) ? 1 : 0);
+    const d = exact(a[0], b[0]) + exact(a[1], b[1]), s = exact(a[0], b[1]) + exact(a[1], b[0]);
+    return d === s ? null : d > s ? 'same' : 'flipped';
+  }
+  return direct ? 'same' : swap ? 'flipped' : null;
 }
 
 // Clubs, players and esports teams outside the built-in leagues: Kalshi says
@@ -670,13 +682,21 @@ const kalshiGameMs = k => (ms(k.startTime) ?? (ms(k.expectedExpiration) != null 
 // (the ticker's, else the estimate). Outside the built-in leagues (tennis,
 // soccer, esports) Kalshi's expected expiration can be a day out, so anywhere
 // on the ticker's date counts too (Eastern midnight − 6h to + 30h, for time
-// zones). → { t, lo, hi } | null
+// zones). Football's is often a placeholder: 20:00 UTC on the ticker's date
+// for a night kick-off, or a Friday ticker at 23:00 Eastern for a Saturday
+// game whose time isn't set. The same two football teams never meet twice in
+// a few days, so there the ticker's date and the two days after count.
+// → { t, lo, hi } | null
 const DAY_SLOP_MS = 6 * 3600e3;
+const FOOTBALL = new Set(['nfl', 'ncaaf']);
 function kalshiWindow(k, o) {
   const t = kalshiGameMs(k);
   if (t == null) return null;
   let lo = t - o.sportsWindowMs, hi = t + o.sportsWindowMs;
-  if (!k.league && k.gameDay != null) { lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + DAY + DAY_SLOP_MS); }
+  if (k.gameDay != null && (!k.league || FOOTBALL.has(k.league))) {
+    const days = k.league ? 3 : 1;
+    lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + days * DAY + DAY_SLOP_MS);
+  }
   return { t, lo, hi };
 }
 // index of the first { t } at or after `t` in a list sorted by t
@@ -722,6 +742,51 @@ function mutualBest(edges, keyA, keyB) {
     const x = ba.get(keyA(e)), y = bb.get(keyB(e));
     return !x.tie && !y.tie && x.other === keyB(e) && y.other === keyA(e) && x.score === e.score && y.score === e.score;
   });
+}
+
+// ── US races ──
+// Who wins a state's Senate or governor race, or a House district, by party.
+// Polymarket asks "Will the Democrats win the Texas Senate race in 2026?" and
+// "Will the Republican Party win the SC-01 House seat?"; Kalshi "Will
+// Democratics win the Senate race in Texas?" (SENATETX-26), "Will the
+// Democratic party win the governorship in Minnesota" and "Will Democratic
+// win the House race for CA-45?". The words come in a different order (the
+// title match refuses that), so these pair on office, place, party and year.
+// Primaries, margins, turnout, vote shares and combos are other questions.
+const US_STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut', 'delaware', 'florida', 'georgia',
+  'hawaii', 'idaho', 'illinois', 'indiana', 'iowa', 'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+  'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire', 'new jersey', 'new mexico', 'new york',
+  'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+  'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming'];
+const STATE_RES = US_STATES.map(n => [n, new RegExp(`\\b${n}\\b`)]);
+const NOT_A_RACE_RE = /\b(primary|primaries|nominee|nomination|nominated|runoff|margin|turnout|percent|share|by more than|combo|popular vote|lieutenant|state senate|state house|house of delegates|control|majority|seats|endorse|debate|poll|drop out|run for|recount|called|calls|voters?|county|counties)\b/;
+// → { key: 'senate|texas|D|' , year } | null
+function raceKey(r) {
+  const raw = String(r?.title || '');
+  const t = norm(raw);
+  if (!/\bwin\b/.test(t) || NOT_A_RACE_RE.test(t) || /\band\b.*\bwin\b.*\band\b/.test(t)) return null;
+  // a margin bucket ("win ... by 0%-3%?", "by 12% or more", "by 5+ points") isn't the race
+  if (/%|\bby\s+(over\s+|at least\s+|more than\s+)?\d|\bor (more|less|fewer)\b|\bpoints?\b/i.test(raw)) return null;
+  const party = /\b(democrats?|democratics?|dems?)\b/.test(t) ? 'D' : /\b(republicans?|gop)\b/.test(t) ? 'R' : null;
+  if (!party || (/\b(democrats?|democratics?)\b/.test(t) && /\brepublicans?\b/.test(t))) return null;
+  let office = null, place = null;
+  const district = /\b([A-Z]{2})-(\d{1,2})\b/.exec(raw);
+  if (/\bhouse\b/.test(t) && district) { office = 'house'; place = `${district[1]}-${Number(district[2])}`; }
+  else {
+    office = /\bsenate\b/.test(t) ? 'senate' : /\b(governor|governorship|gubernatorial)\b/.test(t) ? 'governor' : null;
+    // the longest state name in the title ("West Virginia", not "Virginia")
+    const found = STATE_RES.filter(([, re]) => re.test(t)).map(([n]) => n).sort((a, b) => b.length - a.length);
+    place = found.find(n => !found.some(m => m !== n && m.includes(n))) || null;
+    if (found.filter(n => !found.some(m => m !== n && m.includes(n))).length !== 1) place = null;
+  }
+  if (!office || !place) return null;
+  // the year: Kalshi's event ticker says it (SENATETX-26), else the title,
+  // else the close (Polymarket's races close the morning after election day)
+  const tick = r.exchange === 'kalshi' ? /-(\d{2})(?:$|-)/.exec(String(r.eventKey || '').replace(/^kalshi:/, '')) : null;
+  const said = /\b(20\d{2})\b/.exec(raw);
+  const year = tick ? 2000 + Number(tick[1]) : said ? Number(said[1]) : r.exchange !== 'kalshi' && ms(r.closeTime) != null ? new Date(ms(r.closeTime)).getUTCFullYear() : null;
+  if (year == null) return null;
+  return { key: `${office}|${place}|${party}|${/\bspecial\b/.test(t) ? 'special' : ''}`, year };
 }
 
 function matchMarkets(kalshiRows, polyRows, opts = {}) {
@@ -806,6 +871,32 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
     }
   }
 
+  // US races: office, place, party and year (raceKey)
+  const races = new Map(), raced = new Set();
+  for (const p of polyRows || []) {
+    if (p.kind !== 'yesno' || p.game3) continue;
+    const rk = raceKey(p);
+    if (rk) push(races, `${rk.key}|${rk.year}`, p);
+  }
+  if (races.size) {
+    const kRaced = [];
+    for (const k of kalshiRows || []) {
+      if (k.kind !== 'yesno' || k.game3) continue;
+      const rk = raceKey(k);
+      if (rk) kRaced.push([k, rk]);
+    }
+    const kYears = new Set(kRaced.map(([, rk]) => `${rk.key}|${rk.year}`));
+    for (const [k, rk] of kRaced) {
+      // some Kalshi tickers carry the inauguration year (GOVPARTYKS-27 is the
+      // 2026 election): the year before counts when Kalshi lists no race then
+      const ps = races.get(`${rk.key}|${rk.year}`) || (!kYears.has(`${rk.key}|${rk.year - 1}`) && races.get(`${rk.key}|${rk.year - 1}`)) || [];
+      for (const p of ps) {
+        out.push({ kalshi: k, polymarket: p, same: true, by: 'race' });
+        raced.add(k.id); raced.add(p.id);
+      }
+    }
+  }
+
   // everything else: identical numbers/dates/directions, similar words, the
   // same subject, close dates within 3 days, each side's unique best match.
   // Bucketed by signature and close day, so each Kalshi market only meets a
@@ -813,7 +904,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   const index = new Map();
   for (const p of polyRows || []) {
     const t = ms(p.closeTime);
-    if (p.kind !== 'yesno' || p.game3 || t == null) continue;
+    if (p.kind !== 'yesno' || p.game3 || t == null || raced.has(p.id)) continue;
     const key = titleKey(proposition(p));
     if (key.words.size) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
   }
@@ -821,7 +912,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   const titled = [];
   for (const k of kalshiRows || []) {
     const t = ms(k.closeTime);
-    if (k.kind !== 'yesno' || k.game3 || t == null) continue;
+    if (k.kind !== 'yesno' || k.game3 || t == null || raced.has(k.id)) continue;
     const key = titleKey(proposition(k));
     if (!key.words.size) continue;
     let subject = null;
@@ -903,22 +994,27 @@ function leg(r, side) {
     pick: side === 'yes' ? label || 'YES' : r.noLabel || (label ? `NO ${label}` : 'NO'),
     price: side === 'yes' ? r.yesAsk : r.noAsk,
     title: r.title, url: r.url, liquidity: r.liquidity, closeTime: r.closeTime, rules: r.rules || null,
-    ...(r.exchange === 'polymarket' ? { feeSchedule: r.feeSchedule || null } : {}),
+    ...(r.exchange !== 'kalshi' ? { feeSchedule: r.feeSchedule || null } : {}),
+    ...((side === 'yes' ? r.yesDepth : r.noDepth) != null ? { depth: side === 'yes' ? r.yesDepth : r.noDepth } : {}),
   };
 }
 
 // Price a set of contract legs at the reference bankroll; null unless it profits.
 function contractArb(fields, legs, o) {
   if (legs.some(l => l.price == null) || sum(legs.map(l => l.price)) >= 1) return null;   // fees only add
-  const n = Math.max(1, maxSets(legs, o.bankroll, o));
+  // depth at the ask is mostly unknown: the exchanges' liquidity figures are
+  // totals over the whole book, so they say nothing about size at this price.
+  // A leg priced off a read order book (Polymarket US) knows its own.
+  const depths = legs.map(l => l.depth).filter(d => d != null && d >= 0);
+  const maxContracts = depths.length ? Math.floor(Math.min(...depths)) : null;
+  if (maxContracts === 0) return null;
+  const n = Math.max(1, Math.min(maxSets(legs, o.bankroll, o), maxContracts ?? Infinity));
   const cost = setCost(legs, n, o);
   if (!(cost < n)) return null;
-  // depth at the ask is unknown: the exchanges' liquidity figures are totals
-  // over the whole book, so they say nothing about size at this price
   const arb = {
     id: arbId(fields.type, legs), ...fields, legs,
     totalCost: round(cost / n, 4), profitPct: r2(((n - cost) / cost) * 100),
-    maxContracts: null, maxStake: null, exhaustive: fields.exhaustive ?? true,
+    maxContracts, maxStake: null, exhaustive: fields.exhaustive ?? true,
     warnings: [...(fields.warnings || [])], fees: { kalshiFeeRate: o.kalshiFeeRate, polymarketFeeRate: o.polymarketFeeRate },
     at: new Date(o.now).toISOString(),
   };
@@ -929,20 +1025,22 @@ function contractArb(fields, legs, o) {
 const expired = (r, now) => { const t = ms(r.closeTime); return t != null && t <= now; };
 
 // 1. YES on one exchange + the opposite side on the other, both directions
-function crossArbs(match, o) {
+// → [fields, legs] for each direction
+function crossSets(match, o) {
   const { kalshi: k, polymarket: p, same } = match;
   if (!k.tradable || !p.tradable || expired(k, o.now) || expired(p, o.now)) return [];
   const fields = {
     type: 'cross', category: k.category !== 'other' ? k.category : p.category,
     title: match.by !== 'title' ? k.eventTitle || k.title : k.title, closeTime: later(k.closeTime, p.closeTime),
     match: { by: match.by, ...(match.similarity != null ? { similarity: match.similarity } : {}) },
-    warnings: match.by === 'title' ? [RULES_WARNING] : [],
+    warnings: [...(match.by === 'title' ? [RULES_WARNING] : []), ...(p.warnings || [])],
   };
   return [
-    [leg(k, 'yes'), leg(p, same ? 'no' : 'yes')],
-    [leg(k, 'no'), leg(p, same ? 'yes' : 'no')],
-  ].map(legs => contractArb(fields, legs, o)).filter(Boolean);
+    [fields, [leg(k, 'yes'), leg(p, same ? 'no' : 'yes')]],
+    [fields, [leg(k, 'no'), leg(p, same ? 'yes' : 'no')]],
+  ];
 }
+const crossArbs = (match, o) => crossSets(match, o).map(([fields, legs]) => contractArb(fields, legs, o)).filter(Boolean);
 
 // opts.matches: matchMarkets output already computed for these rows
 function findCrossArbs(kalshiRows, polyRows, opts = {}) {
@@ -957,36 +1055,100 @@ function findCrossArbs(kalshiRows, polyRows, opts = {}) {
 }
 
 // 2. YES on every outcome of a one-winner event
-// "Mutually exclusive" says at most one wins, not that one of them must. The
-// set is taken as covering every result only when it visibly does: a
-// catch-all outcome, range buckets open at both ends, or a game whose sport
-// can't tie.
-const CATCH_ALL_RE = /\b(other|others|another|any other|field|someone else|somebody else|anyone else|none|no one|nobody|neither|not listed|tie|draw)\b/i;
-const OPEN_HIGH_RE = /\bor (?:more|higher|above|greater|over)\b|\+\s*$|^\s*(?:above|over|more than|greater than|at least|>|≥)/i;
-const OPEN_LOW_RE = /\bor (?:less|lower|below|under|fewer)\b|^\s*(?:below|under|less than|fewer than|at most|<|≤)/i;
+// "Mutually exclusive" says at most one wins, not that one of them must. A set
+// is only an arb when it visibly covers every result, and the proof decides
+// how sure that is:
+//   game   both teams of a game that can't tie, or both teams and the draw
+//   none   a "none of these" / "no one" outcome: the nothing-happens result
+//   range  number buckets open at both ends ("65° or below" … "70° or above")
+//   other  an "Other" / "Someone else" outcome: covers other names, but not
+//          "nobody by the deadline", so it carries a check-the-rules warning,
+//          and past MAX_OTHER_PCT the gap is that unlisted result, not money
+//          (market makers close a real 10% gap on one exchange in seconds)
+// Anything else (12 Pope candidates summing to 85¢) isn't an arb: the missing
+// 15¢ is the field, and if it wins every leg loses. Those aren't listed.
+// the label leads with it: "One Battle After Another" is a film, not a catch-all
+const NONE_RE = /^\s*(?:none|no one|nobody|neither|not listed|no winner)\b/i;
+const OTHER_RE = /^\s*(?:others?|another|any other|anyone else|anybody else|(?:the )?field|someone else|somebody else|tie|draw)\b/i;
+const OPEN_HIGH_RE = /\bor (?:more|higher|above|greater|over|older|later)\b|\+\s*$|^\s*(?:above|over|more than|greater than|at least|>|≥)/i;
+const OPEN_LOW_RE = /\bor (?:less|lower|below|under|fewer|younger|earlier)\b|^\s*(?:below|under|less than|fewer than|at most|<|≤)/i;
 const NO_TIE_LEAGUES = new Set(['nba', 'wnba', 'ncaab', 'mlb', 'nhl']);
-function exhaustiveSet(g) {
+const MAX_OTHER_PCT = 10;
+// a game that can end level is both teams and the draw, or it's missing one
+// (and its draw would pass for a catch-all)
+const game3Whole = g => !g.some(r => r.game3) || (g.length === 3 && g.every(r => r.game3) && new Set(g.map(r => r.game3.pick)).size === 3);
+function exhaustiveProof(g) {
+  if (g.length === 3 && g.every(r => r.game3) && game3Whole(g)) return 'game';
+  if (g.length === 2 && g.every(r => r.kind === 'teams' && !r.hasDraw) && NO_TIE_LEAGUES.has(g[0].league)) return 'game';
   const labels = g.map(r => (r.outcomeLabel && !isYes(r.outcomeLabel) ? r.outcomeLabel : r.title || ''));
-  if (labels.some(l => CATCH_ALL_RE.test(l))) return true;
-  if (labels.some(l => OPEN_HIGH_RE.test(l)) && labels.some(l => OPEN_LOW_RE.test(l))) return true;
-  return g.length === 2 && g.every(r => r.kind === 'teams' && !r.hasDraw) && NO_TIE_LEAGUES.has(g[0].league);
+  if (labels.some(l => NONE_RE.test(l))) return 'none';
+  if (labels.some(l => OPEN_HIGH_RE.test(l)) && labels.some(l => OPEN_LOW_RE.test(l))) return 'range';
+  if (labels.some(l => OTHER_RE.test(l))) return 'other';
+  return null;
 }
-function findUnderrounds(rows, opts = {}) {
-  const o = withDefaults(opts);
+// → [fields, legs] for each complete, quoted outcome set with a proof
+function underroundSets(rows, o) {
   const groups = new Map();
   for (const r of rows || []) if (r.mutuallyExclusive) push(groups, r.eventKey, r);
   const out = [];
   for (const g of groups.values()) {
-    if (g.length < 2 || g.some(r => !r.tradable || r.yesAsk == null || r.eventDecided || r.eventComplete === false || expired(r, o.now))) continue;
-    const exhaustive = exhaustiveSet(g);
-    const arb = contractArb({
+    if (g.length < 2 || !game3Whole(g) || g.some(r => !r.tradable || r.yesAsk == null || r.eventDecided || r.eventComplete === false || expired(r, o.now))) continue;
+    const proof = exhaustiveProof(g);
+    if (!proof) continue;
+    out.push([{
       type: 'multi', category: g[0].category, title: g[0].eventTitle || g[0].title, exchange: g[0].exchange,
       eventKey: g[0].eventKey, outcomes: g.length, closeTime: later(...g.map(r => r.closeTime)),
-      exhaustive, warnings: [exhaustive ? COVER_WARNING : NOT_EXHAUSTIVE_WARNING],
-    }, g.map(r => leg(r, 'yes')), o);
-    if (arb) out.push(arb);
+      proof, exhaustive: true, warnings: proof === 'game' ? [] : [COVER_WARNING],
+    }, g.map(r => leg(r, 'yes'))]);
   }
   return out;
+}
+function findUnderrounds(rows, opts = {}) {
+  const o = withDefaults(opts);
+  return underroundSets(rows, o).map(([fields, legs]) => contractArb(fields, legs, o))
+    .filter(a => a && !(a.proof === 'other' && a.profitPct > MAX_OTHER_PCT));
+}
+
+// 4. Kalshi vs Polymarket US (pmus.arbRowsOf rows), plus Polymarket US's own
+// result sets; at least minPct, best first. opts.matches as findCrossArbs.
+function findUsArbs(kalshiRows, usRows, opts = {}) {
+  const o = withDefaults(opts);
+  return [...findCrossArbs(kalshiRows, usRows, o), ...findUnderrounds(usRows, o)]
+    .filter(a => a.profitPct >= o.minPct).sort((a, b) => b.profitPct - a.profitPct);
+}
+
+// ── closest to an arb ──
+// The watchlist for when nothing is free: cross-venue pairs and proven outcome
+// sets whose legs cost a little more than the $1 they pay (down to -nearPct),
+// or clear less than minPct. Closest first, one per question, all-in at
+// NEAR_LOT contracts at the scan's snapshot asks, fees included. A line that's
+// all but decided (a leg at 2¢ or less, or 98¢ or more) isn't watched: it pays
+// a cent or two on a dollar. One that crosses still has to come through the
+// arb scan (and its live re-price).
+const NEAR_LOT = 100;
+function nearSet(fields, legs, o) {
+  if (legs.some(l => !(l.price > 0.02 && l.price < 0.98))) return null;
+  const total = setCost(legs, NEAR_LOT, o), cost = total / NEAR_LOT;
+  return {
+    id: arbId(fields.type, legs), ...fields, legs, totalCost: round(cost, 4), profitPct: r2(((1 - cost) / cost) * 100),
+    stakes: { legs: legs.map(l => ({ pct: pctOf(legCost(l, NEAR_LOT, o).total, total) })) },
+  };
+}
+// matches: matchMarkets pairs (Kalshi vs either Polymarket); rows: every
+// venue's rows, for the outcome sets
+function findNearArbs({ matches = [], rows = [] } = {}, opts = {}) {
+  const o = withDefaults(opts);
+  const best = new Map();
+  const sets = [
+    ...matches.flatMap(m => crossSets(m, o).map(([f, l]) => [f, l, m.by === 'teams' ? `${m.kalshi.eventKey}|${m.polymarket.id}` : `${m.kalshi.id}|${m.polymarket.id}`])),
+    ...underroundSets(rows, o).map(([f, l]) => [f, l, f.eventKey]),
+  ];
+  for (const [fields, legs, key] of sets) {
+    const a = nearSet(fields, legs, o);
+    if (!a || a.profitPct >= o.minPct || a.profitPct < -o.nearPct || (o.region === 'us' && !usPlaceable(a))) continue;
+    if (!best.has(key) || best.get(key).profitPct < a.profitPct) best.set(key, a);
+  }
+  return [...best.values()].sort((a, b) => b.profitPct - a.profitPct).slice(0, o.nearMax);
 }
 
 // ── US venues ──
@@ -1189,9 +1351,11 @@ function pickVenue(quotes) {
 // came before. onPage(events) takes each page as it lands (parse it and let
 // the raw JSON go) instead of holding every page; events then stays empty and
 // `count` says how many there were. truncated: the page cap cut the list short.
-async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = null, seriesTicker = null } = {}) {
+// startCursor: carry on from where an earlier read stopped; the result's
+// cursor is where this one stopped (null at the end of the list)
+async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = null, seriesTicker = null, startCursor = null } = {}) {
   const events = [], errors = [];
-  let cursor = null, pages = 0, count = 0, truncated = false;
+  let cursor = startCursor || null, pages = 0, count = 0, truncated = false;
   try {
     while (pages < maxPages) {
       const params = { status: 'open', with_nested_markets: true, limit };
@@ -1207,7 +1371,7 @@ async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = nu
       truncated = pages >= maxPages;
     }
   } catch (e) { errors.push({ exchange: 'kalshi', key: `events page ${pages + 1}`, message: e?.message || String(e) }); }
-  return { events, errors, pages, count, truncated };
+  return { events, errors, pages, count, truncated, cursor };
 }
 
 // busiest first (24h volume), so a page cap drops the quiet events, not a
@@ -1244,7 +1408,7 @@ async function fetchPolymarketEvents(http, { maxPages = 15, limit = GAMMA_PAGE_M
 // category (refreshed every 6h; a failed read retries in 10 min), plus a
 // built-in list.
 const KALSHI_SERIES_URL = 'https://api.elections.kalshi.com/trade-api/v2/series';
-const GAME_SERIES_RE = /(GAME|MATCH)$/i;
+const GAME_SERIES_RE = /(GAME|MATCH|FIGHT)$/i;   // FIGHT: UFC, boxing and MMA bouts
 const SEED_GAME_SERIES = ['KXNFLGAME', 'KXNBAGAME', 'KXMLBGAME', 'KXNHLGAME', 'KXWNBAGAME', 'KXNCAAFGAME', 'KXNCAAMBGAME', 'KXMLSGAME',
   'KXEPLGAME', 'KXLALIGAGAME', 'KXSERIEAGAME', 'KXBUNDESLIGAGAME', 'KXLIGUE1GAME', 'KXUCLGAME', 'KXATPMATCH', 'KXWTAMATCH', 'KXLOLGAME', 'KXCS2GAME'];
 // the game series, plus each one's TOTAL and SPREAD siblings (KXBUNDESLIGAGAME → KXBUNDESLIGATOTAL, KXBUNDESLIGASPREAD)
@@ -1300,6 +1464,44 @@ function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs =
   return { step, stats: () => ({ ...stats, withGames: cache.size }) };
 }
 
+// Kalshi's open-events list runs longest-dated first and the scan reads its
+// first 6,000 events (30 pages), so everything settling sooner (this month's
+// politics, economics and culture markets, and plenty of 2026 races) falls
+// off the end. This reads on from where the scan stopped, perScan pages a
+// scan, to the end of the list and round again, keeping the events worth
+// pairing (anything but sports: the game sweep has the games) for keepMs.
+// step(startCursor): startCursor is where this scan's main read stopped.
+function createKalshiTailSweep({ http, perScan = 6, keepMs = 30 * 60e3, maxEvents = 20000, now = () => Date.now(),
+  keep = ev => ev?.category !== 'Sports' } = {}) {
+  const cache = new Map();   // event ticker → { rows, at }
+  let cursor = null;
+  const stats = { cycles: 0, pages: 0, events: 0, rows: 0, failed: 0, lastError: null, position: 0 };
+  async function step(startCursor) {
+    const t = now();
+    if (!cursor) { cursor = startCursor || null; stats.position = 0; }
+    if (cursor) {
+      const r = await fetchKalshiEvents(http, { maxPages: perScan, startCursor: cursor, onPage: page => {
+        for (const ev of page) {
+          if (!keep(ev)) continue;
+          const rows = parseKalshiBinaries({ events: [ev], cursor: '' });
+          if (rows.length) { cache.delete(ev.event_ticker); cache.set(ev.event_ticker, { rows, at: t }); }
+        }
+      } });
+      stats.pages += r.pages;
+      stats.position += r.pages;
+      if (r.errors.length) { stats.failed++; stats.lastError = r.errors[0].message; }
+      else if (!r.cursor) { stats.cycles++; cursor = null; }   // the end of the list: round again from the scan's stopping point
+      else cursor = r.cursor;
+    }
+    while (cache.size > maxEvents) cache.delete(cache.keys().next().value);
+    const out = [];
+    for (const [k, c] of cache) { if (t - c.at > keepMs) cache.delete(k); else out.push(...c.rows); }
+    Object.assign(stats, { events: cache.size, rows: out.length });
+    return out;
+  }
+  return { step, stats: () => ({ ...stats }) };
+}
+
 // One full scan: fetch both exchanges, parse, find every arb.
 async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPages, ...opts } = {}) {
   const o = withDefaults(opts);
@@ -1318,8 +1520,8 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findBookArbs, findArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
-  fetchKalshiGameSeries, createKalshiGameSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
-  polymarketFeeSchedule, polymarketFee, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
-  optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, NOT_EXHAUSTIVE_WARNING, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  fetchKalshiGameSeries, createKalshiGameSweep, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
+  polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
+  optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
 };
