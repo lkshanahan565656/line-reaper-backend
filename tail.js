@@ -28,6 +28,9 @@
 //            One longshot or one lucky night can make a great ROI and z alone.
 //   two-sided  share of markets where the wallet held BOTH outcomes. Market
 //            makers and hedgers earn the spread, not predictions (> 30% out).
+//   round trips  closed positions bought at 5¢ or less and out near $1 a day
+//            before their market ended: split/merge, not bets. Left out of
+//            the record; over 10% of settled positions = a market maker.
 //   forward  bets resolved after the wallet was picked (leaderboards surface
 //            the lucky too). Once there are 30, losing money there ungrades it.
 //   edge     shrunk: P&L / (risked + $20k of zero-edge prior) × 0.5, so a
@@ -110,9 +113,11 @@ const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
 // first. Until then, round 2's are capped at B (no closing-line value, no
 // unclaimed losers) and anything older than round 3 is not graded at all:
 // those counted only the fees as the stake on closed bets that paid fees, so
-// their ROI and luck test can be many times too high.
-const RULES_VERSION = 3;
+// their ROI and luck test can be many times too high. Round 3's aren't graded
+// either: they counted split/merge round trips as near-certain winners.
+const RULES_VERSION = 4;
 const STAKE_FIX_VERSION = 3;
+const ROUND_TRIP_VERSION = 4;
 
 const DEFAULTS = {
   priorRisk: 20000,              // $ of zero-edge betting mixed into the edge estimate
@@ -165,6 +170,10 @@ const DEFAULTS = {
   clvCacheMax: 50000,            // tokens' closes and markets kept in memory
   maxInPlay: 0.5,                // over this share of sampled game bets placed after the start = a live bettor (TAIL_MAX_IN_PLAY)...
   inPlayMinGames: 8,             // ...once at least this many sampled bets were on games with a known start
+  roundTripEntry: 0.05,          // a closed position bought at this or less (TAIL_ROUND_TRIP_ENTRY)...
+  roundTripExit: 0.95,           // ...and out at this or more a day before its market's end date is a split/merge round trip, not a bet (TAIL_ROUND_TRIP_EXIT)
+  maxRoundTrips: 0.1,            // over this share of settled positions as round trips = a market maker (TAIL_MAX_ROUND_TRIPS)...
+  roundTripMinN: 5,              // ...once there are at least this many
   grades: {
     A: { label: 'elite', minN: 100, minEvents: 30, minRisked: 50000, minRoi: 0.08, minZ: 3, maxConcentration: 0.35, activeDays: 30, minRecentRoi: -0.10, minClv: 0.02, requireClv: 1, capUnits: 2 },
     B: { label: 'sharp', minN: 50, minEvents: 15, minRisked: 20000, minRoi: 0.04, minZ: 2, maxConcentration: 0.4, activeDays: 45, minRecentRoi: null, minClv: 0.005, requireClv: 0, capUnits: 1 },
@@ -183,7 +192,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate']);
+const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -437,6 +446,8 @@ function parseClosedPositions(payload, { now = Date.now() } = {}) {
     const fees = num(pick(r.entry_fees_usdc, r.entryFeesUsdc));
     out.push({
       ...marketRef(r), status, price, risked, pnl, fees: fees > 0 ? fees : 0,
+      // what it came out at per share (sold, merged or paid out)
+      exit: shares > 0 ? round((pnl + risked) / shares, 6) : null,
       won: status === 'REDEEMABLE_LOST' ? false : cur != null ? cur >= 0.99 : status === 'REDEEMABLE' || pnl > 0,
       at, endAt: end, enteredAt, activeAt: latest(unclaimed ? null : at, enteredAt),
       category: classify(r), source: status === 'REDEEMABLE' ? 'redeemable' : status === 'REDEEMABLE_LOST' ? 'lost' : 'closed',
@@ -925,6 +936,15 @@ function inPlayOf(play, o) {
   return { inPlayGames: games, inPlayShare: games >= o.inPlayMinGames ? live / games : null };
 }
 
+// A split/merge round trip, not a bet: bought for a few cents and out near $1
+// a day or more before its market's end date. Splitting $1 into YES + NO and
+// selling one side, then merging back, books the cheap side as a sure winner
+// that never resolved (v2 lists it CLOSED at ~95× its stake), so a market
+// maker doing this all day looks like a 30-z sharp.
+const isRoundTrip = (p, o) => p?.status === 'CLOSED' && p.price <= o.roundTripEntry + EPS && p.exit >= o.roundTripExit - EPS
+  && p.at != null && p.endAt != null && p.at < p.endAt - DAY;
+const roundTripper = (s, o) => s.roundTrips >= o.roundTripMinN && s.roundTripShare > o.maxRoundTrips + EPS;
+
 function presentStats(s) {
   return {
     n: s.n, events: s.events, risked: round(s.risked, 2), pnl: round(s.pnl, 2), roi: round(s.roi, 4),
@@ -936,6 +956,7 @@ function presentStats(s) {
     forwardN: s.forwardN ?? null, forwardRoi: round(s.forwardRoi, 4), edge: round(s.edge, 6),
     clv: round(s.clv, 4), clvN: s.clvN ?? 0, clvHitRate: round(s.clvHitRate, 4),
     inPlayShare: round(s.inPlayShare, 4), inPlayGames: s.inPlayGames ?? 0,
+    ...(s.roundTrips != null ? { roundTrips: s.roundTrips, roundTripShare: round(s.roundTripShare, 4) } : {}),
   };
 }
 
@@ -957,6 +978,9 @@ function checkTier(s, g, o, now) {
     fail('inPlay', `live bettor: ${vs(s.inPlayShare, o.maxInPlay, 0, 100)}% of ${s.inPlayGames} sampled game bets came after the start (max ${pct(o.maxInPlay, 0)})`);
   }
   if (s.twoSided > o.maxTwoSided + EPS) fail('twoSided', `market maker: held both sides in ${vs(s.twoSided, o.maxTwoSided, 0, 100)}% of markets (max ${pct(o.maxTwoSided, 0)})`);
+  if (roundTripper(s, o)) {
+    fail('roundTrips', `market maker: ${s.roundTrips} settled positions (${vs(s.roundTripShare, o.maxRoundTrips, 0, 100)}%) were split/merge round trips, bought at ${Math.round(o.roundTripEntry * 100)}¢ or less and out near $1 before the market ended (max ${pct(o.maxRoundTrips, 0)})`);
+  }
   // out of sample: the leaderboards that found it also pick out the lucky
   if (s.forwardN != null && s.forwardN >= o.forwardMinN && !(s.forwardPnl > 0)) {
     fail('forward', `lost money since it was picked: ROI ${pct(s.forwardRoi || 0)} over ${s.forwardN} bets`);
@@ -995,7 +1019,7 @@ function gradeStats(s, opts = {}, now = Date.now()) {
   if (!grade && byClose(s, failB, o)) { grade = 'B'; via = 'clv'; }
   const notTailable = grade ? [] : failB;
   return {
-    grade, via, label: grade ? o.grades[grade].label : null, marketMaker: s.twoSided > o.maxTwoSided + EPS,
+    grade, via, label: grade ? o.grades[grade].label : null, marketMaker: s.twoSided > o.maxTwoSided + EPS || roundTripper(s, o),
     // sized on the closing lines' edge when they're what earned the grade
     edge: via === 'clv' ? Math.max(s.edge ?? 0, s.clvEdge ?? 0) : s.edge,
     reasons: notTailable.map(x => x.text), failed: notTailable.map(x => x.code),
@@ -1036,10 +1060,13 @@ function holdingsOf(rows, { max = DEFAULTS.holdingsMax, minCost = 1 } = {}) {
 function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [], selectedAt = null, clv = null, play = null } = {}, { now = Date.now(), ...opts } = {}) {
   const o = resolveOptions(opts);
   const since = toMs(selectedAt);
-  const { closedRows, openRows, resolved, stillOpen } = resolvedPositions(closed, open, now);
+  const { closedRows, openRows, resolved: settled, stillOpen } = resolvedPositions(closed, open, now);
+  // round trips aren't bets: out of the record, but counted (and still held both sides)
+  const trips = settled.filter(p => isRoundTrip(p, o));
+  const resolved = trips.length ? settled.filter(p => !isRoundTrip(p, o)) : settled;
   const tradeRows = parseTrades(trades);
   const buys = tradeRows.filter(t => t.side === 'BUY').map(t => ({ ...t, category: classify(t) }));
-  const holdings = [...resolved, ...openRows, ...buys];
+  const holdings = [...settled, ...openRows, ...buys];
   const samples = Array.isArray(clv) ? clv.filter(x => Number.isFinite(x?.clv)) : [];
 
   // activity is the wallet's own trades, closes and entries, not a market's end date
@@ -1048,6 +1075,8 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
   for (const x of tradeRows) if (x.at != null && x.at <= now) lastAt = Math.max(lastAt ?? 0, x.at);
   const overall = { ...walletStats(resolved, { holdings, open: stillOpen, since, now, clvSamples: samples, play, opts: o }) };
   overall.lastAt = lastAt;
+  overall.roundTrips = trips.length;
+  overall.roundTripShare = settled.length ? trips.length / settled.length : 0;
   const g = gradeStats(overall, o, now);
   overall.edge = g.edge;
 
@@ -1062,7 +1091,7 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
       clvSamples: clvScope === 'category' ? own : samples, play: cat === 'sports' ? play : null, opts: o,
     });
     // a market maker is out everywhere; being active anywhere counts as active
-    const cg = gradeStats({ ...cs, twoSided: Math.max(cs.twoSided, overall.twoSided), activeAt: lastAt }, o, now);
+    const cg = gradeStats({ ...cs, twoSided: Math.max(cs.twoSided, overall.twoSided), roundTrips: overall.roundTrips, roundTripShare: overall.roundTripShare, activeAt: lastAt }, o, now);
     cs.edge = cg.edge;
     categories[cat] = { ...presentStats(cs), clvScope, grade: cg.grade, via: cg.via, label: cg.label, reasons: cg.reasons, failed: cg.failed, whyNotA: cg.whyNotA, failedA: cg.failedA };
   }
@@ -1087,12 +1116,14 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
 // closing-line value).
 const STALE_NOTE = 'scored by older rules: rescoring';
 const STAKE_NOTE = 'scored before the stake fix: rescoring';
+const TRIP_NOTE = 'scored before round trips were left out: rescoring';
 function capStale(tr, opts = {}) {
   if (!tr || tr.rulesVersion === RULES_VERSION) return tr;
   const o = resolveOptions(opts);
-  const before = !(tr.rulesVersion >= STAKE_FIX_VERSION);
+  const before = !(tr.rulesVersion >= ROUND_TRIP_VERSION);
+  const note = tr.rulesVersion >= STAKE_FIX_VERSION ? TRIP_NOTE : STAKE_NOTE;
   const cap = x => (!x?.grade ? x
-    : before ? { ...x, grade: null, label: null, reasons: [STAKE_NOTE, ...(x.reasons || [])], failed: ['stale', ...(x.failed || [])] }
+    : before ? { ...x, grade: null, label: null, reasons: [note, ...(x.reasons || [])], failed: ['stale', ...(x.failed || [])] }
       : x.grade === 'A' ? { ...x, grade: 'B', label: o.grades.B.label, whyNotA: [STALE_NOTE, ...(x.whyNotA || [])] } : x);
   const categories = {};
   for (const [cat, c] of Object.entries(tr.categories || {})) categories[cat] = cap(c);
@@ -1629,7 +1660,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     // closing lines cost a request a bet: only for wallets good enough without
     // them, or that they could grade (in profit, failing only luck or ROI)
     if (isGraded(score) || closeWorthy(score)) {
-      const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved, t);
+      const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved.filter(p => !isRoundTrip(p, o)), t);
       if (m.errors.length) warn(`clv ${c.wallet}: ${m.errors.length} of ${m.tried} lookups failed (${m.errors[0]})`);
       score = scoreWallet({ ...input, clv: m.samples, play: m.play }, { ...o, now: t });
     }
@@ -2005,7 +2036,7 @@ module.exports = {
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
-  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, gradeFor, trueProb, sizeAt, tradeSignal,
+  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
   fetchPriceHistory, fetchMarket,
   createTailEngine, toMs, maskIds,
