@@ -3884,6 +3884,11 @@ function tailOnLive(type, data) {
     if (sized[0]) showToast(`🐋 ${line(sized[0])}`);
     // with the tab in the background: a desktop alert per sized entry (a few at most)
     if (tailNotifyOn()) for (const s of sized.slice(0, 3)) { try { new Notification('🐋 Sharp Tail', { body: line(s), tag: `tail|${s.id}` }); } catch { /* a nicety */ } }
+    // a wallet we tailed getting out: the cue to sell where you bet it
+    const outs = data.filter(s => s.type === 'exit' && s.tailed && s.full !== false);
+    const exitLine = s => `${s.grade} ${s.name || tailShort(s.wallet)} sold ${s.soldShare != null && s.soldShare < 0.995 ? Math.round(s.soldShare * 100) + '% of ' : ''}${s.outcome || ''} at ${tailC(s.theirPrice)} · ${s.market} · you tailed ${s.tailed.units}u`;
+    if (outs[0] && !sized[0]) showToast(`🚪 ${exitLine(outs[0])}`);
+    if (tailNotifyOn()) for (const s of outs.slice(0, 3)) { try { new Notification('🚪 Sharp Tail exit', { body: exitLine(s), tag: `exit|${s.id}` }); } catch { /* a nicety */ } }
     if (tailActive && tailState.view === 'signals') renderTail();
   } else if (type === 'board') {
     // second chances: a side the sharps hold is back at or under what they paid
