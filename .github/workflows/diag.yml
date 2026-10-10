@@ -15,7 +15,7 @@ jobs:
           node-version: 20
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
-          { date -u; curl -sS -m 40 "$U/api/status" | jq -c '{version, record: .tail.record, jobs: .tail.jobs, eventLoop, live}'; curl -sS -m 40 "$U/app" | grep -o 'data-tab="[a-z-]*"\|id="page-[a-z-]*" class="[^"]*"\|arbMode[A-Za-z]*' | sort | uniq -c | head -40; } > diag-out.txt 2>&1 || true
+          { date -u; curl -sS -m 40 "$U/api/status" | jq -c '{version, record: .tail.record, jobs: .tail.jobs, eventLoop, live}'; curl -sS -m 40 "$U/app" | grep -o 'class="tab[ a-z]*" onclick="showTab([^)]*)' | sort | uniq -c | head -40; } > diag-out.txt 2>&1 || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
