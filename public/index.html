@@ -568,6 +568,67 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .tail-tag.cons { color:#a78bfa; border-color:rgba(139,92,246,.45); background:rgba(139,92,246,.08); }
 .tail-tag.warn { color:#fbbf24; border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.06); text-transform:none; letter-spacing:.3px; }
 .tail-box { background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-top:12px; }
+.tab-sep { flex:0 0 1px; align-self:center; height:16px; background:var(--border2); margin:0 6px; }
+.clv-info details.how { margin-top:6px; }
+.clv-info details.how summary { cursor:pointer; color:#7dd3fc; font-size:12px; list-style:none; }
+.clv-info details.how summary::-webkit-details-marker { display:none; }
+.clv-info details.how summary::after { content:' ▾'; }
+.clv-info details.how[open] summary { margin-bottom:6px; }
+.arb-modes { display:flex; gap:6px; margin:0 0 12px; flex-wrap:wrap; }
+/* exchange arbs */
+.xa-sum { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-bottom:12px; }
+.xa-stat { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+.xa-num { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:800; color:var(--text); }
+.xa-lbl { font-size:10px; letter-spacing:1.5px; color:#64748b; margin-top:4px; }
+.xa-blurb { grid-column:1 / -1; font-size:12px; color:#94a3b8; line-height:1.5; }
+.xa-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.xa-stake { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
+.xa-stake input { width:90px; background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
+.xa-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.xa-sec { margin-bottom:18px; }
+.xa-sec-head { font-size:11px; font-weight:800; letter-spacing:1.5px; color:#e2e8f0; margin-bottom:8px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+.xa-sec-head span { font-weight:500; letter-spacing:.3px; color:#64748b; font-size:12px; }
+.xa-empty { font-size:13px; color:#94a3b8; background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px; line-height:1.5; }
+.xa-card { background:var(--card); border:1px solid rgba(16,185,129,.35); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+.xa-card.check { border-color:rgba(245,158,11,.4); }
+.xa-head { display:flex; gap:12px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border); }
+.xa-pct { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:800; color:var(--green); white-space:nowrap; }
+.xa-title { font-size:14px; font-weight:700; color:#f1f5f9; min-width:0; }
+.xa-meta { font-size:11px; font-weight:500; color:#94a3b8; margin-top:2px; }
+.xa-warn { font-size:12px; color:#fbbf24; background:rgba(245,158,11,.06); border-bottom:1px solid var(--border); padding:8px 14px; }
+.xa-leg { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.04); }
+.xa-step { flex:0 0 20px; height:20px; border-radius:50%; background:var(--card2); color:#94a3b8; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.xa-venue { flex:0 0 96px; font-weight:800; color:#e2e8f0; font-size:13px; }
+.xa-what { flex:1; min-width:0; color:#cbd5e1; font-size:13px; }
+.xa-sub { display:block; color:#64748b; font-size:11px; margin-top:2px; }
+.xa-sub.warn { color:#d97706; }
+.xa-amt { font-family:'JetBrains Mono',monospace; color:#f1f5f9; font-size:14px; font-weight:700; white-space:nowrap; }
+.xa-foot { background:rgba(0,0,0,.25); padding:10px 14px; font-size:13px; color:#cbd5e1; line-height:1.5; }
+.xa-pos { color:var(--green); font-family:'JetBrains Mono',monospace; }
+.xa-near { background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.xa-nrow { display:flex; gap:12px; align-items:center; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.04); }
+.xa-nrow:last-child { border-bottom:0; }
+.xa-ntitle { flex:1; min-width:0; font-size:13px; color:#e2e8f0; font-weight:600; }
+.xa-ncost { font-family:'JetBrains Mono',monospace; font-size:14px; color:#f1f5f9; text-align:right; white-space:nowrap; }
+.xa-ncost span { display:block; font-size:10px; color:#64748b; letter-spacing:1px; }
+.xa-ngap { font-family:'JetBrains Mono',monospace; font-size:13px; color:#94a3b8; min-width:58px; text-align:right; }
+.xa-ngap.pos { color:var(--green); }
+.xa-more { display:block; width:100%; background:none; border:0; border-top:1px solid var(--border); color:#94a3b8; font:inherit; font-size:12px; padding:9px; cursor:pointer; }
+.xa-more:hover { color:var(--text); }
+.xa-how { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:12px; color:#94a3b8; line-height:1.6; }
+.xa-how summary { cursor:pointer; color:#cbd5e1; font-weight:600; }
+.xa-how p { margin-top:8px; }
+@media (max-width: 640px) {
+  .xa-sum { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+  .xa-stat { padding:10px; }
+  .xa-num { font-size:18px; }
+  .xa-lbl { font-size:9px; letter-spacing:1px; }
+  .xa-leg { flex-wrap:wrap; }
+  .xa-venue { flex-basis:auto; }
+  .xa-what { flex-basis:100%; order:3; padding-left:30px; }
+  .xa-amt { margin-left:auto; }
+  .xa-pct { font-size:18px; }
+}
 .tail-box-head { padding:8px 14px; font-size:10px; letter-spacing:1.5px; color:#94a3b8; font-weight:700; border-bottom:1px solid var(--border); }
 .tail-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:7px 14px; border-top:1px solid rgba(255,255,255,.04); font-size:12px; }
 .tail-cats { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
@@ -598,14 +659,15 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
     </div>
   </div>
   <div class="tab-row">
-    <button class="tab active" onclick="showTab('lines',this)">LINES</button>
+    <button class="tab active" onclick="showTab('tail',this)">🐋 SHARP TAIL</button>
+    <button class="tab" onclick="showTab('arb',this)">♻️ ARBS</button>
+    <button class="tab" onclick="showTab('esports',this)">ESPORTS 🎮</button>
+    <span class="tab-sep" title="Sportsbook tools: these need an odds feed"></span>
+    <button class="tab" onclick="showTab('lines',this)">LINES</button>
     <button class="tab" onclick="showTab('shop',this)">LINE SHOP</button>
     <button class="tab" onclick="showTab('props',this)">PROPS</button>
     <button class="tab" onclick="showTab('ev',this)">+EV</button>
-    <button class="tab" onclick="showTab('tail',this)">🐋 SHARP TAIL</button>
-    <button class="tab" onclick="showTab('esports',this)">ESPORTS 🎮</button>
     <button class="tab" onclick="showTab('sharp',this)">SHARP FEED</button>
-    <button class="tab" onclick="showTab('arb',this)">ARB SCAN</button>
     <button class="tab" onclick="showTab('betlog',this)">BET LOG</button>
     <button class="tab" onclick="showTab('clv',this)">CLV</button>
   </div>
@@ -619,7 +681,7 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 </div>
 
 <!-- LINES PAGE -->
-<div class="page active" id="page-lines">
+<div class="page" id="page-lines">
   <div id="keyBanner" class="key-banner" style="display:none">
     <strong>🔑 Connect your free Odds API key to start.</strong><br>
     Get one free at <a href="https://the-odds-api.com" target="_blank">the-odds-api.com</a> (500 req/month free — enough for daily use).<br>
@@ -679,6 +741,12 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 
 <!-- ARB PAGE -->
 <div class="page" id="page-arb">
+  <div class="arb-modes">
+    <button class="sport-chip active" id="arbModeEx" onclick="arbMode('exchanges')">EXCHANGES</button>
+    <button class="sport-chip" id="arbModeBook" onclick="arbMode('books')">SPORTSBOOKS</button>
+  </div>
+  <div id="arbExchanges"><div id="xarbContent"></div></div>
+  <div id="arbBooks" style="display:none">
   <div class="clv-info" style="border-left:3px solid var(--purple)">
     <strong style="color:#e8e8e8">ARB LAB</strong> — scans sportsbooks, sweeps books, and the regulated exchanges (Kalshi · Polymarket · Novig · ProphetX · BetOpenly) for two-sided prices that guarantee profit. Enter a total stake on any hit and it splits it for equal profit either way.<br>
     <span style="color:#94a3b8;font-size:11px">TX MODE keeps only arbs where <strong style="color:#34d399">both</strong> legs are playable from Texas / non-betting states. Exchange commissions (ProphetX ≈3% of net wins, Kalshi per-contract fees) are <strong>not</strong> in the margin — pad thin edges accordingly.</span>
@@ -692,6 +760,7 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
   </div>
 
   <div id="arbContent"><div class="empty-wrap"><div class="empty-big">READY</div><div class="empty-sub">Tap ⚡ DEEP SCAN to pull all three US regions — or load the Lines tab for a passive scan of standard books</div></div></div>
+  </div>
 </div>
 
 <!-- BET LOG PAGE -->
@@ -790,10 +859,11 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 </div>
 
 <!-- SHARP TAIL PAGE -->
-<div class="page" id="page-tail">
+<div class="page active" id="page-tail">
   <div class="clv-info" style="border-left:3px solid #38bdf8">
-    <strong style="color:#e8e8e8">🐋 SHARP TAIL</strong> — Polymarket bets settle on-chain, so every wallet has a public record. The backend grades wallets on hundreds of resolved bets (sample, ROI, a luck test, no single lucky longshot, no market making) and turns each new bet by an <b style="color:#f59e0b">A</b> (elite) or <b style="color:#38bdf8">B</b> (sharp) wallet into a sized signal.<br>
-    <span style="color:#94a3b8;font-size:11px">Units are the same for everyone: 1u = 1% of a bankroll, quarter Kelly at the price you can get <i>now</i> at the venue shown, capped at 2u (A) / 1u (B), ×1.5 when 2+ graded wallets agree (max 3u for A, 1.5u for B). Each signal names where to tail it (Kalshi or a US sportsbook, whichever gives the most units after fees) and the most worth paying. A wallet buying more of a bet it already made only tops you up to that size. Kalshi trades are anonymous, so Kalshi shows up as whale flow only.</span>
+    <strong style="color:#e8e8e8">🐋 SHARP TAIL</strong> follows the Polymarket wallets with the best records and tells you the moment one bets: what, how much, and where you can get it (Kalshi or a US sportsbook).
+    <details class="how"><summary>How it works</summary>Polymarket bets settle on-chain, so every wallet has a public record. The backend grades wallets on hundreds of resolved bets (sample, ROI, a luck test, no single lucky longshot, no market making) and turns each new bet by an <b style="color:#f59e0b">A</b> (elite) or <b style="color:#38bdf8">B</b> (sharp) wallet into a sized signal.<br>
+    <span style="color:#94a3b8;font-size:11px">Units are the same for everyone: 1u = 1% of a bankroll, quarter Kelly at the price you can get <i>now</i> at the venue shown, capped at 2u (A) / 1u (B), ×1.5 when 2+ graded wallets agree (max 3u for A, 1.5u for B). Each signal names where to tail it (Kalshi or a US sportsbook, whichever gives the most units after fees) and the most worth paying. A wallet buying more of a bet it already made only tops you up to that size. Kalshi trades are anonymous, so Kalshi shows up as whale flow only.</span></details>
   </div>
   <div style="display:flex;margin:12px 0;flex-wrap:wrap;gap:6px;align-items:center" id="tailViewRow"></div>
   <div id="tailFilterRow" style="display:flex;margin:0 0 12px;flex-wrap:wrap;gap:6px;align-items:center"></div>
@@ -912,7 +982,7 @@ const BOOK_MAP = {
   tipico_us:'Tipico', bet_us:'BetUS', betsson:'Betsson', unibet:'Unibet',
   marathonbet:'Marathon', betway:'Betway', nordicbet:'NordicBet',
   coolbet:'CoolBet', casumo:'Casumo', mobilbet:'Mobilbet',
-  kalshi:'Kalshi', polymarket:'Polymarket', novig:'Novig',
+  kalshi:'Kalshi', polymarket:'Polymarket', polymarketus:'Polymarket US', novig:'Novig',
   prophetx:'ProphetX', betopenly:'BetOpenly'
 };
 function bookLabel(key, short=false) {
@@ -991,6 +1061,7 @@ function setPropsTab(sport, el) {
 }
 
 function showTab(name, el) {
+  try { localStorage.setItem('lr_tab', name); } catch {}
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -1004,7 +1075,7 @@ function showTab(name, el) {
   if (evActive) loadEv();
   tailActive = name === 'tail';
   if (tailActive) loadTail(); else clearTimeout(tailTimer);
-  if (name === 'arb') renderArbTool();
+  if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
 }
 
 // ─── API KEY ──────────────────────────────────────────────────────────────────
@@ -3566,11 +3637,11 @@ function renderEv() {
 // as sized signals, whale flow on Kalshi + Polymarket, exchange arbs and the
 // signals' own track record. Live over the same /api/ev/stream as the +EV
 // board (`tail`, `whale` and `xarb` events); polling is the fallback.
-const TAIL_VIEWS = [['signals', 'SIGNALS'], ['board', '🎯 SHARP BOARD'], ['traders', 'TRADERS'], ['whales', 'WHALE FLOW'], ['arbs', 'EXCHANGE ARBS'], ['record', '📈 TRACK RECORD']];
+const TAIL_VIEWS = [['signals', 'SIGNALS'], ['board', '🎯 SHARP BOARD'], ['traders', 'TRADERS'], ['whales', 'WHALE FLOW'], ['record', '📈 TRACK RECORD']];
 const TAIL_CATS = ['sports', 'politics', 'crypto', 'econ', 'culture', 'other'];
 // No bankroll here: units are the same for everyone and never turned into dollars.
 const tailState = { view: 'signals', category: 'all', grade: 'graded', exchange: 'all', sizedOnly: false,
-  signals: [], locked: 0, delay: 0, traders: [], traderState: null, board: null, whales: null, arbs: null, record: null, settings: null, pro: false, updated: null, error: null,
+  signals: [], locked: 0, delay: 0, traders: [], traderState: null, board: null, whales: null, record: null, settings: null, pro: false, updated: null, error: null,
   withheld: {} };
 let tailActive = false, tailTimer = null, tailSoonTimer = null;
 try {
@@ -3668,7 +3739,7 @@ async function loadTail() {
   tailRenderControls();
   const el = document.getElementById('tailContent');
   const v = tailState.view;
-  const have = { signals: tailState.signals.length, board: tailState.board, traders: tailState.traders.length, whales: tailState.whales, arbs: tailState.arbs, record: tailState.record }[v];
+  const have = { signals: tailState.signals.length, board: tailState.board, traders: tailState.traders.length, whales: tailState.whales, record: tailState.record }[v];
   if (!have) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try {
     if (!tailState.settings) tailState.settings = await tailGet('/api/tail/settings').catch(e => { if (e.old) throw e; return null; });
@@ -3688,9 +3759,6 @@ async function loadTail() {
     } else if (v === 'whales') {
       d = await tailGet(`/api/whales?limit=150${tailState.exchange !== 'all' ? '&exchange=' + tailState.exchange : ''}`);
       tailState.whales = d;
-    } else if (v === 'arbs') {
-      d = await tailGet('/api/xarbs');
-      tailState.arbs = d;
     } else {
       d = await tailGet('/api/tail/record?limit=60');
       tailState.record = d;
@@ -3743,10 +3811,9 @@ function tailOnLive(type, data) {
     if (tailNotifyOn()) for (const e of fresh.slice(0, 3)) { try { new Notification('🆕 Fresh wallet', { body: line(e), tag: `fresh|${e.id}` }); } catch { /* a nicety */ } }
     tailSoon('whales');
   } else if (type === 'xarb') {
-    // a set not proven to cover every result can lose every leg: no toast
-    const best = data.filter(a => a.exhaustive !== false).sort((a, b) => b.profitPct - a.profitPct)[0];
+    const best = [...data].sort((a, b) => b.profitPct - a.profitPct)[0];
     if (best && best.profitPct >= 1) showToast(`♻️ Exchange arb +${best.profitPct}%: ${best.title}`);
-    tailSoon('arbs');
+    xarbSoon();
   }
 }
 
@@ -3770,7 +3837,7 @@ function renderTail() {
   if (!el) return;
   tailRenderControls();
   const v = tailState.view;
-  el.innerHTML = v === 'signals' ? tailSignalsHTML() : v === 'board' ? tailBoardHTML() : v === 'traders' ? tailTradersHTML() : v === 'whales' ? tailWhalesHTML() : v === 'arbs' ? tailArbsHTML() : tailRecordHTML();
+  el.innerHTML = v === 'signals' ? tailSignalsHTML() : v === 'board' ? tailBoardHTML() : v === 'traders' ? tailTradersHTML() : v === 'whales' ? tailWhalesHTML() : tailRecordHTML();
 }
 
 function tailSignalsHTML() {
@@ -3967,53 +4034,147 @@ function tailWhalesHTML() {
     + (evRows ? `<div class="tail-box"><div class="tail-box-head">EVERY WHALE PRINT</div>${evRows}</div>` : '');
 }
 
-const TAIL_ARB_TYPES = { cross: 'CROSS-EXCHANGE', multi: 'BUY EVERY OUTCOME', book: 'EXCHANGE VS BOOK' };
-const TAIL_VENUES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
-function tailArbsHTML() {
-  const d = tailState.arbs || {};
-  const arbs = d.arbs || [];
-  const strip = tailStrip([
-    `<span style="color:#f1f5f9;font-weight:700">${d.count || 0} ARBS</span>`,
-    d.counts ? `<span>${(d.counts.kalshiMarkets || 0).toLocaleString()} KALSHI · ${(d.counts.polymarketMarkets || 0).toLocaleString()} POLYMARKET MARKETS</span>` : '',
-    d.updated ? `<span>SCANNED ${tailAgo(d.updated)} AGO</span>` : '',
-  ]);
+// ─── EXCHANGE ARBS (the ARBS tab's default view) ──────────────────────────────
+// /api/xarbs: the arbs the backend finds on the exchanges (and sportsbooks,
+// when there's an odds feed), fees in, plus `near`, the watchlist of pairs and
+// sets just short of one. Arbs with nothing to check come first, then the ones
+// whose rules need a look, then the watchlist. Every amount is for the stake
+// box: each leg's share of the total is the same at any stake.
+const TAIL_VENUES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
+const XARB_KINDS = { cross: 'Same question on two exchanges', multi: 'Every outcome of one question', book: 'Exchange vs sportsbook' };
+const XARB_WARNINGS = {
+  'check the listed outcomes cover every result': 'Check these outcomes cover every way it can end. If something unlisted wins, every bet loses.',
+  'check both rules: resolution wording can differ': 'Matched by title: check both markets settle on the same thing.',
+};
+const xarbWarning = w => XARB_WARNINGS[w] || w;
+const xarbUsd = x => `$${(Math.round(x * 100) / 100).toFixed(2)}`;
+const xarbUi = { data: null, error: null, category: 'all', timer: null, allNear: false };
+const XARB_NEAR_SHOWN = 8;
+let arbModeNow = 'exchanges';
+try { if (localStorage.getItem('lr_arb_mode') === 'books') arbModeNow = 'books'; } catch {}
+
+function arbMode(m) {
+  arbModeNow = m;
+  try { localStorage.setItem('lr_arb_mode', m); } catch {}
+  arbShow();
+}
+function arbShow() {
+  document.getElementById('arbModeEx').classList.toggle('active', arbModeNow === 'exchanges');
+  document.getElementById('arbModeBook').classList.toggle('active', arbModeNow === 'books');
+  document.getElementById('arbExchanges').style.display = arbModeNow === 'exchanges' ? '' : 'none';
+  document.getElementById('arbBooks').style.display = arbModeNow === 'books' ? '' : 'none';
+  clearTimeout(xarbUi.timer);
+  if (arbModeNow === 'exchanges') loadXarbs(); else renderArbTool();
+}
+const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
+async function loadXarbs() {
+  clearTimeout(xarbUi.timer);
+  const el = document.getElementById('xarbContent');
+  if (!xarbUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try {
+    const d = await tailGet('/api/xarbs');
+    xarbUi.data = d;
+    xarbUi.error = null;
+    tailState.withheld.arbs = { list: Array.isArray(d.withheld) ? d.withheld : [], note: d.note || null };
+  } catch (e) { xarbUi.error = e.old ? 'Exchange arbs need backend v3.20 or later.' : e.message; }
+  renderXarbs();
+  if (xarbShowing()) xarbUi.timer = setTimeout(loadXarbs, 30000);
+}
+// a new arb pushed over the live stream
+function xarbSoon() {
+  if (!xarbShowing()) return;
+  clearTimeout(xarbUi.timer);
+  xarbUi.timer = setTimeout(loadXarbs, 1500);
+}
+function xarbSet(k, v) { xarbUi[k] = v; renderXarbs(); }
+// a new stake only rewrites the amounts, so the box keeps its focus
+function xarbRestake(v) {
+  const n = parseFloat(v);
+  if (!(n > 0)) return;
+  arbState.stake = n;
+  try { localStorage.setItem('lr_arb_stake', String(n)); } catch {}
+  const set = (sel, f) => document.querySelectorAll(`#xarbContent ${sel}`).forEach(e => { e.textContent = xarbUsd(f(e.dataset)); });
+  set('[data-pct]', d => n * Number(d.pct) / 100);
+  set('[data-stake]', () => n);
+  set('[data-ret]', d => n * (1 + Number(d.ret) / 100));
+  set('[data-gain]', d => n * Number(d.gain) / 100);
+}
+
+const xarbVenue = l => escAttr(l.venueTitle || TAIL_VENUES[l.venue] || l.venue);
+const xarbPrice = l => (l.price != null ? tailC(l.price) : fmtAm(l.american));
+const xarbWhen = t => { const x = new Date(t); return Number.isFinite(x.getTime()) ? x.toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''; };
+function xarbCard(a) {
+  const S = arbState.stake, st = a.stakes || {};
+  const legs = (a.legs || []).map((l, i) => {
+    const pct = st.legs?.[i]?.pct;
+    const what = `${l.price != null ? 'Buy' : 'Bet'} <b>${escAttr(l.pick || '')}</b> at ${xarbPrice(l)}`;
+    const subs = [l.title && a.type === 'cross' ? escAttr(l.title) : '', l.depth != null ? `${Math.floor(l.depth).toLocaleString()} on offer at this price` : ''].filter(Boolean);
+    return `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
+      <span class="xa-what">${tailLink(l.url, what)}${subs.map(x => `<span class="xa-sub">${x}</span>`).join('')}</span>
+      <span class="xa-amt"${pct != null ? ` data-pct="${pct}"` : ''}>${pct != null ? xarbUsd(S * pct / 100) : '—'}</span></div>`;
+  }).join('');
+  const warn = (a.warnings || []).map(w => `<div class="xa-warn">⚠ ${escAttr(xarbWarning(w))}</div>`).join('');
+  const meta = [XARB_KINDS[a.type] || escAttr(a.type), escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
+  return `<div class="xa-card${warn ? ' check' : ''}">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+    ${warn}${legs}
+    <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${a.maxContracts != null ? ` At most ${a.maxContracts.toLocaleString()} contracts are on offer at these prices.` : ''}</div>
+  </div>`;
+}
+function xarbNearRow(a) {
+  const legs = (a.legs || []).map(l => tailLink(l.url, `${xarbVenue(l)} ${escAttr(l.pick || '')} ${xarbPrice(l)}`)).join(' + ');
+  const short = a.profitPct < 0;
+  return `<div class="xa-nrow">
+    <div class="xa-ntitle">${escAttr(a.title || '')}<div class="xa-sub">${legs}</div></div>
+    <div class="xa-ncost" title="What one of each bet costs, fees in, for every $1 the set pays">${a.totalCost != null ? '$' + a.totalCost.toFixed(3) : '—'}<span>per $1</span></div>
+    <div class="xa-ngap${short ? '' : ' pos'}" title="${short ? 'How far it is from paying anything' : 'An arb, but under the minimum worth listing'}">${short ? '' : '+'}${a.profitPct}%</div>
+  </div>`;
+}
+function renderXarbs() {
+  const el = document.getElementById('xarbContent');
+  if (!el) return;
+  const d = xarbUi.data;
+  if (!d) { if (xarbUi.error) el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(xarbUi.error)); return; }
+  const c = d.counts || {};
+  const us = (d.region || tailState.settings?.region || 'us') !== 'intl';
+  const venues = us ? 'Kalshi and Polymarket US' : 'Kalshi, Polymarket and Polymarket US';
+  const markets = (c.kalshiMarkets || 0) + (c.polymarketUs?.rows || 0) + (us ? 0 : c.polymarketMarkets || 0);
+  const stat = (n, label, color) => `<div class="xa-stat"><div class="xa-num"${color ? ` style="color:${color}"` : ''}>${n}</div><div class="xa-lbl">${label}</div></div>`;
+  const summary = `<div class="xa-sum">
+    ${stat(d.count || 0, d.count === 1 ? 'ARB RIGHT NOW' : 'ARBS RIGHT NOW', d.count ? 'var(--green)' : '')}
+    ${stat(d.nearCount ?? (d.near || []).length, 'CLOSE TO ONE')}
+    ${stat(d.updated ? tailAgo(d.updated) : '—', 'SINCE THE LAST SCAN')}
+    <div class="xa-blurb">An arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on ${venues}${markets ? ` (${markets.toLocaleString()} right now)` : ''} is checked once a minute, fees included.</div>
+  </div>`;
   const note = tailWithheld('arbs');
-  const where = tailUS() ? 'Kalshi and US sportsbooks only (US mode)' : 'Kalshi, Polymarket and the sportsbooks';
-  if (!tailState.pro) {
-    const pcts = arbs.slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    return note + tailLockBanner(`<b>${d.count || 0} exchange arbs right now${pcts ? ': ' + pcts : ''}.</b> <span style="color:#cbd5e1">Pro shows the legs, the prices and how to split the stake.</span>`, 'Exchange arbs') + strip
-      + (arbs.length ? '' : tailEmpty('NO ARBS RIGHT NOW', `The backend scans every open market once a minute: ${where}.`));
+  if (!d.pro) {
+    const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    return;
   }
-  if (!arbs.length) return note + strip + tailEmpty('NO ARBS RIGHT NOW', `Every open market is scanned once a minute, fees included: ${where}. Arbs of ${d.minPct ?? 0.5}% or more show up here.`);
-  const when = t => { if (!t) return ''; const x = new Date(t); return x.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + x.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
-  return note + strip + arbs.map(a => {
-    const st = a.stakes || {};
-    const legs = (a.legs || []).map((l, i) => {
-      const sl = st.legs?.[i] || {};
-      const venue = escAttr(l.venueTitle || TAIL_VENUES[l.venue] || l.venue);
-      const price = l.price != null ? tailC(l.price) : fmtAm(l.american);
-      return `<div class="arb-leg">
-        <span style="font-weight:800;color:#e2e8f0;min-width:90px">${venue}</span>
-        <span style="flex:1;min-width:160px;color:#cbd5e1">${tailLink(l.url, `<b>${escAttr(l.pick || '')}</b>`)}${l.title && a.type === 'cross' ? ` <span style="color:#64748b;font-size:11px">· ${escAttr(l.title)}</span>` : ''}</span>
-        <span style="font-family:'JetBrains Mono',monospace;color:#f1f5f9;min-width:60px;text-align:right">${price}</span>
-        <span style="font-family:'JetBrains Mono',monospace;color:#10b981;min-width:130px;text-align:right" title="This leg's share of the total stake, fees included: the same split whatever the total">${sl.pct != null ? `${sl.pct.toFixed(1)}% of stake` : ''}</span>
-      </div>`;
-    }).join('');
-    const warn = (a.exhaustive === false ? `<span class="tail-tag warn" title="No catch-all outcome is listed: if something unlisted wins, every leg loses. Not risk-free.">NOT PROVEN EXHAUSTIVE</span> ` : '')
-      + (a.warnings || []).map(w => `<span class="tail-tag warn">⚠ ${escAttr(w)}</span>`).join(' ');
-    return `<div class="arb-card">
-      <div class="arb-head">
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="arb-margin">+${a.profitPct}%</span>
-          <div><div style="font-size:14px;font-weight:700;color:#f1f5f9">${escAttr(a.title || '')}</div>
-          <div style="font-size:10px;letter-spacing:1px;color:#94a3b8;margin-top:2px">${TAIL_ARB_TYPES[a.type] || escAttr(a.type)} · ${escAttr((a.category || '').toUpperCase())}${a.closeTime ? ' · CLOSES ' + escAttr(when(a.closeTime).toUpperCase()) : ''}</div></div></div>
-        <div>${warn}</div>
-      </div>
-      ${legs}
-      <div class="arb-calc" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1;display:flex;gap:16px;flex-wrap:wrap">
-        <span>SPLIT ${(st.legs || []).map(l => l.pct != null ? l.pct.toFixed(1) + '%' : '—').join(' / ')}</span><span style="color:#10b981">PROFIT +${a.profitPct}% OF THE TOTAL</span>
-      </div>
-    </div>`;
-  }).join('') + `<div style="font-size:11px;color:#64748b;margin-top:8px">${tailUS() ? 'US mode: Kalshi and US sportsbooks only. ' : ''}Prices include Kalshi's taker fee and each Polymarket market's own taker fee. Split the total by the percentages shown so every outcome pays the same. Size is not checked: the ask may only hold a few contracts, so look at each order book before going big. Exchange prices move fast: check each leg is still there before you place the second.</div>`;
+  const all = [...(d.arbs || []), ...(d.near || [])];
+  const cats = [...new Set(all.map(a => a.category || 'other'))];
+  if (xarbUi.category !== 'all' && !cats.includes(xarbUi.category)) xarbUi.category = 'all';
+  const inCat = a => xarbUi.category === 'all' || (a.category || 'other') === xarbUi.category;
+  const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat);
+  const ready = arbs.filter(a => !(a.warnings || []).length), check = arbs.filter(a => (a.warnings || []).length);
+  const chip = k => `<button class="sport-chip ${xarbUi.category === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('category','${escAttr(k)}')">${escAttr(k.toUpperCase())}</button>`;
+  const controls = `<div class="xa-controls">
+    <label class="xa-stake">YOUR STAKE $<input type="number" min="1" step="1" inputmode="decimal" value="${arbState.stake}" oninput="xarbRestake(this.value)"></label>
+    ${cats.length > 1 ? `<div class="xa-chips">${['all', ...cats].map(chip).join('')}</div>` : ''}
+  </div>`;
+  const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
+  el.innerHTML = note + summary + controls
+    + sec('READY TO PLACE', ready.length ? `${ready.length} · just check each price is still there` : 'none right now',
+      ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">Nothing that needs no checking right now. Real arbs are rare and close within minutes: when one opens it shows here first.</div>')
+    + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
+    + sec('CLOSEST TO AN ARB', near.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
+      near.length ? `<div class="xa-near">${near.slice(0, xarbUi.allNear ? near.length : XARB_NEAR_SHOWN).map(xarbNearRow).join('')}${near.length > XARB_NEAR_SHOWN
+        ? `<button class="xa-more" onclick="xarbSet('allNear',${!xarbUi.allNear})">${xarbUi.allNear ? 'Show fewer' : `Show all ${near.length}`}</button>` : ''}</div>` : '')
+    + `<details class="xa-how"><summary>How to place an arb</summary>
+      <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
+      <p>Prices move fast. Check each one is still there before you place the next, and look at the order book before going big: the price shown may only hold a few contracts.</p>
+      <p>The watchlist shows pairs that cost a little more than $1 for every $1 they pay. When one drops under $1 it moves up to the arbs. Game markets settle a postponed or canceled game by each exchange's own rules, so read both before betting one.</p></details>`;
 }
 
 function tailRecordHTML() {
@@ -4917,6 +5078,13 @@ document.querySelectorAll('.sport-row .sport-chip').forEach(c => {
 loadData();
 checkBackend();
 startSharpPolling();    // REST polling — always works regardless of WS
+// open on the last tab used; the first time, Sharp Tail (it needs no odds key)
+(() => {
+  let name = 'tail';
+  try { name = localStorage.getItem('lr_tab') || 'tail'; } catch {}
+  const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${name}',this)`);
+  if (btn) showTab(name, btn); else showTab('tail', document.querySelector('.tab'));
+})();
 // Odds auto-refresh: every 10 min, only while the tab is visible — protects the free 500/mo quota
 setInterval(() => { if (apiKey && !document.hidden && netFails.size < 2) loadData(); }, 600000);
 setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 120000);
