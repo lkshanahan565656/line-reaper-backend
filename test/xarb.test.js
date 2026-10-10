@@ -917,6 +917,26 @@ test('college games: Kalshi "Ohio St." pairs with Polymarket "Ohio State", and n
   assert.deepEqual(A.matchMarkets(ks, pm('Maryland vs. Ohio', '["Maryland","Ohio"]'), opts()).filter(x => x.by === 'teams'), [], 'Ohio is another school');
 });
 
+test('football: Kalshi\'s placeholder times still pair, a night kick-off or a TBD Saturday game on a Friday ticker', () => {
+  const cfb = (slug, start, title, outcomes) => pRows({ ...pmGame({ question: title, outcomes, conditionId: `0x${slug}`, slug, gameStartTime: start, endDate: start }),
+    id: slug, slug, title, tags: [{ label: 'Sports', slug: 'sports' }, { label: 'College Football', slug: 'cfb' }], endDate: start });
+  // LSU at Kentucky kicks off 23:00 UTC; Kalshi says it expires at 20:00
+  const night = kRows(kEvent('KXNCAAFGAME-26OCT10LSUUK', 'LSU vs Kentucky', [['LSU', '0.6000', '0.4100'], ['Kentucky', '0.4100', '0.6000']], { exp: '2026-10-10T20:00:00Z' }));
+  const lsu = cfb('cfb-lsu-uk-2026-10-10', '2026-10-10T23:00:00Z', 'LSU vs. Kentucky', '["LSU","Kentucky"]');
+  assert.equal(A.matchMarkets(night, lsu, opts()).filter(x => x.by === 'teams').length, 2);
+  // Hawai'i's home game starts 02:30 UTC the next day
+  const late = kRows(kEvent('KXNCAAFGAME-26OCT10HAWASU', "Hawai'i vs Arizona St.", [["Hawai'i", '0.3000', '0.7100'], ['Arizona St.', '0.7100', '0.3000']], { exp: '2026-10-10T20:00:00Z' }));
+  assert.equal(A.matchMarkets(late, cfb('cfb-hawaii-arzst-2026-10-10', '2026-10-11T02:30:00Z', "Hawai'i vs. Arizona State", '["Hawai\'i","Arizona State"]'), opts()).filter(x => x.by === 'teams').length, 2);
+  // next week: Kalshi's ticker says Friday 26OCT16, Polymarket Saturday noon
+  const tbd = kRows(kEvent('KXNCAAFGAME-26OCT16MSSTLSU', 'Mississippi St. vs LSU', [['Mississippi St.', '0.2000', '0.8100'], ['LSU', '0.8100', '0.2000']], { exp: '2026-10-17T03:00:00Z' }));
+  const sat = cfb('cfb-mspst-lsu-2026-10-17', '2026-10-17T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]');
+  assert.equal(A.matchMarkets(tbd, sat, opts()).filter(x => x.by === 'teams').length, 2);
+  // a week out is another game; and the NBA keeps its 4h
+  assert.equal(A.matchMarkets(tbd, cfb('cfb-mspst-lsu-2026-10-24', '2026-10-24T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]'), opts()).length, 0);
+  const nba = kRows(kalshiGame({ expected_expiration_time: '2026-10-08T20:00:00Z' }, { expected_expiration_time: '2026-10-08T20:00:00Z' }));
+  assert.equal(A.matchMarkets(nba, pRows(pmGame()), opts()).filter(x => x.by === 'teams').length, 0, 'an NBA game 6h from its estimate is not this one');
+});
+
 test('kalshi tickers: the date (and a start time, when there is one) in US Eastern time', () => {
   assert.deepEqual(A.kalshiTickerTime('KXLOLGAME-26OCT091200KOIATLN'), { day: Date.parse('2026-10-09T04:00:00Z'), start: Date.parse('2026-10-09T16:00:00Z') });
   assert.deepEqual(A.kalshiTickerTime('KXATPMATCH-26OCT05BELMUL'), { day: Date.parse('2026-10-05T04:00:00Z'), start: null });
