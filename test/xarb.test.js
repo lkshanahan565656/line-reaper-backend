@@ -1242,7 +1242,10 @@ test('races: a state\'s Senate, governor or House race pairs by office, place, p
   assert.equal(key('polymarket', 'Will the Democrats win the Florida Senate special election in 2026?'), 'senate|florida|D|special');
   for (const t of ['Will Dan Sullivan win the Alaska Senate race in 2026?', 'Will the Democratic Party control the Senate after the 2026 Midterm elections?',
     'Margin of victory in the first round of the Texas Senate Republican primary?', 'Will Ken Paxton win the Texas Republican Senate nomination?',
-    'Will the Democrats win the Pennsylvania state senate?', 'Will Democrats and Republicans win the Texas Senate race?']) assert.equal(key('polymarket', t), null, t);
+    'Will the Democrats win the Pennsylvania state senate?', 'Will Democrats and Republicans win the Texas Senate race?',
+    'Will the Democratic Party candidate win the 2026 Ohio gubernatorial election by 0%-3%?', 'Will the Republican Party candidate win the 2026 Wyoming gubernatorial election by 50% or more?',
+    'Will the Republicans win the Iowa governor race by 5 points?', 'Will Republicans win Latino voters in the Texas Senate election?']) assert.equal(key('polymarket', t), null, t);
+  assert.equal(key('polymarket', 'Will the Democratic Party candidate win the 2026 Oklahoma gubernatorial election?'), 'governor|oklahoma|D|', 'the plain winner question still counts');
   assert.equal(A.raceKey({ exchange: 'kalshi', title: 'Will Democratics win the Senate race in Illinois?', eventKey: 'kalshi:SENATEIL-28' }).year, 2028);
 
   const ks = kRows(texasK(), texasK('SENATETX-28'));
@@ -1257,6 +1260,10 @@ test('races: a state\'s Senate, governor or House race pairs by office, place, p
   const [r] = A.venueQuotes({ type: 'entry', conditionId: '0xtx2', outcome: 'No', outcomeIndex: 1 }, idx, opts({ region: 'us' }));
   assert.deepEqual([r.marketId, r.side, r.price], ['SENATETX-26-R', 'no', 0.58]);
   assert.equal(d.warning, undefined, 'the same question: no rules warning');
+  // a Kalshi ticker with the inauguration year pairs with the election year's race, unless Kalshi lists that year too
+  const ks27 = kRows(texasK('SENATETX-27'));
+  assert.deepEqual(A.matchMarkets(ks27, ps, opts()).map(x => x.kalshi.id), ['SENATETX-27-R', 'SENATETX-27-D']);
+  assert.deepEqual(A.matchMarkets(kRows(texasK('SENATETX-27'), texasK()), ps, opts()).map(x => x.kalshi.id), ['SENATETX-26-R', 'SENATETX-26-D']);
   // the title match never sees them, so no second pairing
   assert.equal(A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'title').length, 0);
 });

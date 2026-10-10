@@ -745,12 +745,14 @@ const US_STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'co
   'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
   'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming'];
 const STATE_RES = US_STATES.map(n => [n, new RegExp(`\\b${n}\\b`)]);
-const NOT_A_RACE_RE = /\b(primary|primaries|nominee|nomination|nominated|runoff|margin|turnout|percent|share|by more than|combo|popular vote|lieutenant|state senate|state house|house of delegates|control|majority|seats|endorse|debate|poll|drop out|run for|recount|called|calls)\b/;
+const NOT_A_RACE_RE = /\b(primary|primaries|nominee|nomination|nominated|runoff|margin|turnout|percent|share|by more than|combo|popular vote|lieutenant|state senate|state house|house of delegates|control|majority|seats|endorse|debate|poll|drop out|run for|recount|called|calls|voters?|county|counties)\b/;
 // → { key: 'senate|texas|D|' , year } | null
 function raceKey(r) {
   const raw = String(r?.title || '');
   const t = norm(raw);
   if (!/\bwin\b/.test(t) || NOT_A_RACE_RE.test(t) || /\band\b.*\bwin\b.*\band\b/.test(t)) return null;
+  // a margin bucket ("win ... by 0%-3%?", "by 12% or more", "by 5+ points") isn't the race
+  if (/%|\bby\s+(over\s+|at least\s+|more than\s+)?\d|\bor (more|less|fewer)\b|\bpoints?\b/i.test(raw)) return null;
   const party = /\b(democrats?|democratics?|dems?)\b/.test(t) ? 'D' : /\b(republicans?|gop)\b/.test(t) ? 'R' : null;
   if (!party || (/\b(democrats?|democratics?)\b/.test(t) && /\brepublicans?\b/.test(t))) return null;
   let office = null, place = null;
@@ -863,10 +865,18 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
     if (rk) push(races, `${rk.key}|${rk.year}`, p);
   }
   if (races.size) {
+    const kRaced = [];
     for (const k of kalshiRows || []) {
       if (k.kind !== 'yesno' || k.game3) continue;
       const rk = raceKey(k);
-      for (const p of (rk && races.get(`${rk.key}|${rk.year}`)) || []) {
+      if (rk) kRaced.push([k, rk]);
+    }
+    const kYears = new Set(kRaced.map(([, rk]) => `${rk.key}|${rk.year}`));
+    for (const [k, rk] of kRaced) {
+      // some Kalshi tickers carry the inauguration year (GOVPARTYKS-27 is the
+      // 2026 election): the year before counts when Kalshi lists no race then
+      const ps = races.get(`${rk.key}|${rk.year}`) || (!kYears.has(`${rk.key}|${rk.year - 1}`) && races.get(`${rk.key}|${rk.year - 1}`)) || [];
+      for (const p of ps) {
         out.push({ kalshi: k, polymarket: p, same: true, by: 'race' });
         raced.add(k.id); raced.add(p.id);
       }
