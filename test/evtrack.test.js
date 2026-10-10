@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('fs'), os = require('os'), path = require('path');
+const os = require('os'), path = require('path');
 const { createEvTracker, createFileStore } = require('../evtrack');
 
 const T0 = Date.parse('2026-10-08T12:00:00Z');
