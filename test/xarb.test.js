@@ -931,6 +931,11 @@ test('football: Kalshi\'s placeholder times still pair, a night kick-off or a TB
   const tbd = kRows(kEvent('KXNCAAFGAME-26OCT16MSSTLSU', 'Mississippi St. vs LSU', [['Mississippi St.', '0.2000', '0.8100'], ['LSU', '0.8100', '0.2000']], { exp: '2026-10-17T03:00:00Z' }));
   const sat = cfb('cfb-mspst-lsu-2026-10-17', '2026-10-17T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]');
   assert.equal(A.matchMarkets(tbd, sat, opts()).filter(x => x.by === 'teams').length, 2);
+  // Louisiana and Louisiana Tech fit each other loosely; spelled the same, they pair the right way round
+  const la = kRows(kEvent('KXNCAAFGAME-26OCT10ULLLT', 'Louisiana vs Louisiana Tech', [['Louisiana', '0.4000', '0.6100'], ['Louisiana Tech', '0.6100', '0.4000']], { exp: '2026-10-10T20:00:00Z' }));
+  const laPm = cfb('cfb-loulaf-loutch-2026-10-10', '2026-10-10T23:30:00Z', 'Louisiana vs. Louisiana Tech', '["Louisiana Tech","Louisiana"]');
+  assert.deepEqual(A.matchMarkets(la, laPm, opts()).filter(x => x.by === 'teams').map(x => [x.kalshi.outcomeLabel, x.polymarket.outcomeLabel, x.same]),
+    [['Louisiana', 'Louisiana Tech', false], ['Louisiana Tech', 'Louisiana Tech', true]]);
   // a week out is another game; and the NBA keeps its 4h
   assert.equal(A.matchMarkets(tbd, cfb('cfb-mspst-lsu-2026-10-24', '2026-10-24T16:00:00Z', 'Mississippi State vs. LSU', '["Mississippi State","LSU"]'), opts()).length, 0);
   const nba = kRows(kalshiGame({ expected_expiration_time: '2026-10-08T20:00:00Z' }, { expected_expiration_time: '2026-10-08T20:00:00Z' }));
