@@ -2097,7 +2097,12 @@ const TAIL_REGION = xarb.regionFromEnv();   // 'us' | 'intl'
 const XARB_OPTS = xarb.optsFromEnv();          // carries the region too
 const XARB_ALERT_MIN = Number.isFinite(parseFloat(process.env.XARB_ALERT_MIN)) ? parseFloat(process.env.XARB_ALERT_MIN) : 1;
 const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is news again
-const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false }, kalshiTitles: new Map(),
+// Kalshi vs Polymarket US arbs: the Polymarket US leagues read each scan
+// (XARB_PMUS_LEAGUES; off = none) and at most this many of its live books
+// read to confirm what clears (XARB_PMUS_BOOKS_PER_SCAN)
+const XARB_PMUS_LEAGUES = pmus.arbLeaguesFromEnv();
+const XARB_PMUS_BOOKS = Number.isFinite(parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) : 40;
+const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
 // every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
@@ -2238,7 +2243,7 @@ function describeExit(s, who) {
   const url = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : (v?.url || s.url);
   return `🚪 Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
-const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
+const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
 function describeArb(a) {
   const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
   const note = a.exhaustive === false ? ' · NOT PROVEN EXHAUSTIVE' : '';
@@ -2429,6 +2434,30 @@ function dedupeArbs(arbs) {
   return [...out.values()].sort((a, b) => b.profitPct - a.profitPct);
 }
 
+// Kalshi vs Polymarket US (xarb.findUsArbs): every game the Polymarket US
+// leagues list, paired with this scan's Kalshi rows the way Polymarket's are,
+// plus Polymarket US's own soccer result sets. What clears on the listed
+// prices is re-priced on the live books (which also say how many contracts
+// sit at that price) before it counts (a result set missing a book is no set:
+// xarb.findUnderrounds). → { arbs, rows, games, matches, screened }
+async function polymarketUsArbs(kalshi, now) {
+  const none = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0 };
+  if (!polymarketUs || !XARB_PMUS_LEAGUES.length) return none;
+  const rows = await polymarketUs.arbRows({ leagues: XARB_PMUS_LEAGUES });
+  if (!rows.length) return none;
+  const o = { ...XARB_OPTS, now };
+  const matches = xarb.matchMarkets(kalshi, rows, o);
+  const screened = xarb.findUsArbs(kalshi, rows, { ...o, matches });
+  const counts = { rows: rows.length, games: new Set(rows.map(r => r.eventKey)).size, matches: matches.length, screened: screened.length };
+  if (!screened.length || XARB_PMUS_BOOKS <= 0) return { ...none, ...counts };
+  const ids = new Set(screened.flatMap(a => a.legs.filter(l => l.venue === 'polymarketus').map(l => l.marketId)));
+  const live = await polymarketUs.reprice(rows.filter(r => ids.has(r.id)), { maxBooks: XARB_PMUS_BOOKS });
+  const liveRows = [...live.values()].filter(Boolean);
+  const byId = new Map(liveRows.map(r => [r.id, r]));
+  const liveMatches = matches.filter(m => byId.has(m.polymarket.id)).map(m => ({ ...m, polymarket: byId.get(m.polymarket.id) }));
+  return { ...counts, arbs: xarb.findUsArbs(kalshi, liveRows, { ...o, matches: liveMatches }) };
+}
+
 // One scan: every open Kalshi and Polymarket event, plus the game lines the
 // backend already holds (sportsbooks, with the exchange books attached).
 async function scanXarbs() {
@@ -2453,7 +2482,9 @@ async function scanXarbs() {
     const now = Date.now();
     // matched once: the cross-exchange arbs (intl) and signal routing both use it
     const matches = xarb.matchMarkets(kalshi, polymarket, { ...XARB_OPTS, now, games });
-    const arbs = dedupeArbs(xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now, matches }));
+    let us = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0 };
+    try { us = await polymarketUsArbs(kalshi, now); } catch (e) { console.warn('Exchange arbs: Polymarket US:', e.message); }
+    const arbs = dedupeArbs([...xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now, matches }), ...us.arbs]);
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
     if (kalshi.length) {
       xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
@@ -2465,7 +2496,8 @@ async function scanXarbs() {
       arbs, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
-        kalshiSwept: sweptIn, matches: matches.length, matchesBy: countBy(matches, m => m.by) },
+        kalshiSwept: sweptIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
+        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length } },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
     for (const a of arbs) xarbSeen.set(a.id, now);
@@ -2476,6 +2508,7 @@ async function scanXarbs() {
     const before = { ...xarbState.primed };
     if (kalshi.length) xarbState.primed.kalshi = true;
     if (polymarket.length) xarbState.primed.polymarket = true;
+    if (us.rows) xarbState.primed.polymarketus = true;
     const news = fresh.filter(a => (a.legs || []).every(l => !(l.venue in before) || before[l.venue]));
     if (news.length) {
       broadcast('xarb', news);

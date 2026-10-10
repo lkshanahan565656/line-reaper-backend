@@ -15,7 +15,7 @@ const WEBHOOK = 'https://discord.example/api/webhooks/1/test';
 for (const k of ['DATABASE_URL', 'TAIL_WEBHOOK', 'ODDS_API_KEY', 'OWLS_API_KEY', 'WHALE_MIN_USD', 'XARB_MIN_PCT', 'XARB_ALERT_MIN', 'POLYMARKET_DISPLAY_OK', 'KALSHI_DISPLAY_OK']) delete process.env[k];
 for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.env[k];
 Object.assign(process.env, {
-  PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0',
+  PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0', XARB_PMUS_LEAGUES: 'nba',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
   TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'),
   // the round-1 tests below run with both data licences granted; the gates have their own tests
@@ -115,6 +115,7 @@ const ROUTES = {
   // Polymarket US: one NBA game (only when a test sets it)
   'https://gateway.polymarket.us/v1/events/slug/nba-nyk-bos-2026-10-10': () => { if (!fx.pmus) throw Object.assign(new Error('Request failed with status code 404'), { response: { status: 404 } }); return fx.pmus.event; },
   'https://gateway.polymarket.us/v1/markets/aec-nba-nyk-bos-2026-10-10/book': () => fx.pmus.book,
+  'https://gateway.polymarket.us/v2/leagues/nba/events': () => ({ events: fx.pmus?.listed ? [fx.pmus.listed] : [] }),
 };
 const axios = require('axios');
 axios.get = async (url, cfg = {}) => {
@@ -1216,4 +1217,61 @@ test('where to tail: Polymarket US, the same game market, when it gives the most
   assert.ok(st.polymarketUs.quoted >= 1);
   assert.ok(st.routing.byVenue.polymarketus >= 1);
   fx.pmus = null;
+});
+
+test('exchange arbs: Kalshi against the games Polymarket US lists, re-priced on its live book before it counts', async () => {
+  const usd = v => ({ value: v, currency: 'USD' });
+  const g = nba();
+  const savedK = fx.kalshiEvents, savedP = fx.pmEvents;
+  fx.kalshiEvents = [...fx.kalshiEvents.filter(e => e.event_ticker !== g.kalshi.event_ticker), g.kalshi];
+  fx.pmEvents = [g.pmEvent];
+  // the Celtics are Polymarket US's long side; Kalshi sells the Knicks at 39¢
+  const event = (bid, ask) => ({ slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', startTime: new Date(g.start).toISOString(), active: true, closed: false,
+    teams: [{ name: 'New York Knicks' }, { name: 'Boston Celtics' }], markets: [{
+    slug: 'aec-nba-nyk-bos-2026-10-10', question: 'Who will win Knicks vs Celtics?', sportsMarketType: 'basketball_team_full_game_winner', active: true, closed: false,
+    status: 'MARKET_STATUS_OPEN', bestBidQuote: usd(bid), bestAskQuote: usd(ask),
+    marketSides: [{ description: 'Celtics', long: true, team: { name: 'Boston Celtics', abbreviation: 'bos', ordering: 'home' } },
+      { description: 'Knicks', long: false, team: { name: 'New York Knicks', abbreviation: 'nyk', ordering: 'away' } }] }] });
+  const book = (bid, ask, qty) => ({ marketData: { bids: [{ px: usd(bid), qty: '500' }], offers: [{ px: usd(ask), qty }], state: 'MARKET_STATE_OPEN' } });
+  const usArbs = () => S.xarbState.arbs.filter(a => a.legs.some(l => l.venue === 'polymarketus'));
+  try {
+    // no gap yet (39¢ + 62¢): the league's list is read, which primes Polymarket US
+    fx.pmus = { listed: event('0.6000', '0.6200'), book: book('0.6000', '0.6200', '300') };
+    tick(61e3);
+    posts.length = 0;
+    await S.runTailJob('xarb', S.scanXarbs);
+    assert.equal(usArbs().length, 0);
+    assert.equal(S.xarbState.primed.polymarketus, true);
+    assert.deepEqual(S.xarbState.counts.polymarketUs, { rows: 1, games: 1, matches: 2, screened: 0, arbs: 0 }, 'both Kalshi team markets pair with it');
+
+    // the Celtics drop to 55¢ on the list; the book has 300 at 56¢
+    fx.pmus = { listed: event('0.5300', '0.5500'), book: book('0.5400', '0.5600', '300') };
+    tick(61e3);
+    const news = await S.runTailJob('xarb', S.scanXarbs);
+    const [a] = usArbs();
+    assert.ok(a, 'listed');
+    assert.equal(a.type, 'cross');
+    assert.deepEqual(a.legs.map(l => [l.venue, l.price]), [['kalshi', 0.39], ['polymarketus', 0.56]], 'the live 56¢, not the 55¢ listed');
+    assert.equal(a.legs[1].pick, 'Boston Celtics');
+    assert.equal(a.legs[1].url, 'https://polymarket.us/sports/nba/nba-nyk-bos-2026-10-10');
+    assert.equal(a.maxContracts, 300, 'what the book holds at 56¢');
+    const cost = 0.39 + 0.56 + 0.07 * 0.39 * 0.61 + 0.0695 * 0.56 * 0.44;   // Kalshi's fee rounds up per order: close enough
+    assert.ok(Math.abs(a.profitPct - Math.round((1 - cost) / cost * 1e4) / 100) < 0.2, `${a.profitPct}`);
+    assert.match(a.warnings.join(' '), /postponed or canceled/);
+    assert.ok(news.some(x => x.id === a.id), 'news');
+    const text = posts.map(p => p.body.content).join('\n');
+    assert.match(text, /♻️ Arb \+\d+(\.\d+)?%: New York K at Boston · Kalshi New York K 39¢ \+ Polymarket US Boston Celtics 56¢/);
+    // the app lists it for Pro, with no polymarket.com anywhere
+    const listed = (await get('/api/xarbs', PRO)).body;
+    const row = listed.arbs.find(x => x.id === a.id);
+    assert.ok(row && row.legs[1].depth === 300);
+    noPolymarketLinks(listed, 'arbs');
+
+    // the book empties out at that price: gone
+    fx.pmus = { listed: event('0.5300', '0.5500'), book: book('0.6000', '0.6200', '300') };
+    tick(61e3);
+    await S.runTailJob('xarb', S.scanXarbs);
+    assert.equal(usArbs().length, 0, 'the list said yes, the book said no');
+    assert.equal(S.xarbState.counts.polymarketUs.screened, 1);
+  } finally { fx.pmus = null; fx.kalshiEvents = savedK; fx.pmEvents = savedP; }
 });
