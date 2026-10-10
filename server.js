@@ -561,6 +561,8 @@ const { refreshRatings } = require('./ratings');
 const { propProb } = require('./dist');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
+// ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
+const webhook = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
@@ -583,9 +585,8 @@ function ingestSharp(sport, games) {
   const loud = fresh.filter(e => e.kind !== 'move');
   if (loud.length) for (const fn of sharpListeners) { try { fn(loud); } catch { /* keep going */ } }
   const ping = loud.filter(e => e.kind === 'steam' || e.kind === 'sharp_lead');
-  if (ping.length && process.env.ALERT_WEBHOOK_URL && process.env.SHARP_WEBHOOK !== 'off') {
-    axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: ping.slice(0, 10).map(e => '⚡ ' + describeSharp(e)).join('\n') }, { timeout: 10000 })
-      .catch(e => console.warn('Sharp alerts: webhook failed:', e.message));
+  if (ping.length && webhook.enabled && process.env.SHARP_WEBHOOK !== 'off') {
+    webhook.send(ping.slice(0, 10).map(e => '⚡ ' + describeSharp(e)).join('\n'), 'Sharp alerts');
   }
   return fresh;
 }
@@ -617,12 +618,10 @@ const billing = createBilling({
 const PAYWALL = /^(1|on|true|yes)$/i.test(process.env.PAYWALL || '');
 
 // New edges and line moves, pushed to the app (server-sent events) and, when
-// ALERT_WEBHOOK_URL is set, to a Discord-compatible webhook.
+// ALERT_WEBHOOK_URL is set, to the webhook.
 const alerter = createAlerter({
   minEv: process.env.ALERT_MIN_EV != null ? parseFloat(process.env.ALERT_MIN_EV) : undefined,
-  send: process.env.ALERT_WEBHOOK_URL
-    ? body => axios.post(process.env.ALERT_WEBHOOK_URL, body, { timeout: 10000 })
-    : null,
+  send: webhook.enabled ? body => webhook.send(body.content, 'Alerts') : null,
 });
 
 function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
@@ -1933,11 +1932,10 @@ function runEvScreen(force = false) {
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
       const posted = fresh.filter(evRowOk(webhookLicence()));
-      if (process.env.ALERT_WEBHOOK_URL && posted.length) {
+      if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
-        axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: lines.join('\n') }, { timeout: 10000 })
-          .catch(e => console.warn('EV alerts: webhook failed:', e.message));
+        webhook.send(lines.join('\n'), 'EV alerts');
       }
     }
   } else {
@@ -2132,13 +2130,12 @@ const liveListeners = new Set();
 function broadcast(type, data) {
   for (const fn of liveListeners) { try { fn(type, data); } catch { /* keep going */ } }
 }
-// One Discord-style post of up to 10 lines. TAIL_WEBHOOK=off stops these.
+// One post of up to 10 lines. TAIL_WEBHOOK=off stops these.
 function postAlert(lines, what) {
-  if (!lines.length || !process.env.ALERT_WEBHOOK_URL || process.env.TAIL_WEBHOOK === 'off') return null;
+  if (!lines.length || !webhook.enabled || process.env.TAIL_WEBHOOK === 'off') return null;
   const out = lines.slice(0, 10);
   if (lines.length > 10) out.push(`…and ${lines.length - 10} more`);
-  return axios.post(process.env.ALERT_WEBHOOK_URL, { username: 'Line Reaper', content: out.join('\n').slice(0, 1900) }, { timeout: 10000 })
-    .catch(e => console.warn(`${what}: webhook failed:`, e.message));
+  return webhook.send(out.join('\n'), what);
 }
 const cents = p => (p == null ? '—' : `${Math.round(p * 1000) / 10}¢`);
 const dollars = x => `$${Math.round(x || 0).toLocaleString('en-US')}`;
@@ -3442,9 +3439,9 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   region: TAIL_REGION,
   licence: licenceState(req),
   upstream: upstream.stats(),
-  live: { listeners: liveListeners.size, webhook: !!process.env.ALERT_WEBHOOK_URL && process.env.TAIL_WEBHOOK !== 'off' },
+  live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
-  alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
+  alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
@@ -3531,6 +3528,10 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 if (require.main === module) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.45.0 on port ${PORT}`);
+    // one line per deploy, so a new webhook (or phone) knows it's wired up
+    if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
+      webhook.send(`✅ Line Reaper v3.45.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+    }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
