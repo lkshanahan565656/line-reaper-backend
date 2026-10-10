@@ -1,0 +1,24 @@
+name: diag
+on:
+  push:
+    branches: [diag-esports]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: node diag/esports.js > diag-out.txt 2>&1 || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esports-out
+          git add -f diag-out.txt
+          git commit -m "diag output"
+          git push -f origin diag-esports-out
