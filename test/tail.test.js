@@ -1651,3 +1651,13 @@ test('engine: closing lines are measured for a wallet they could grade, not for 
   assert.equal(eng.trader(W(53)).grade, null);
   assert.equal(eng.traders({ grade: 'B' }).length, 1);
 });
+
+test('failText: a failed request names its host, path and the API reason, never the query', () => {
+  const e = Object.assign(new Error('Request failed with status code 400'), {
+    config: { url: 'https://gamma-api.polymarket.com/markets?condition_ids=0xabc' }, response: { status: 400, data: { error: 'invalid condition id' } },
+  });
+  assert.equal(T.failText(e), 'Request failed with status code 400 from gamma-api.polymarket.com/markets: invalid condition id');
+  assert.equal(T.failText(new Error('timeout')), 'timeout');
+  assert.equal(T.failText(Object.assign(new Error('x'), { config: { url: 'https://data-api.polymarket.com/v2/prices-history' }, response: { data: 'bad bucket' } })),
+    'x from data-api.polymarket.com/v2/prices-history: bad bucket');
+});

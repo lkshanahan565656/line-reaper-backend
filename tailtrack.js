@@ -29,12 +29,15 @@
 //
 // Store pattern as evtrack.js: memory for tests, a JSON file locally
 // (TAIL_TRACK_FILE), Postgres table tail_signals when DATABASE_URL is set.
+// The fresh-wallet radar keeps its own record the same way (FRESH_TRACK_FILE,
+// table fresh_signals).
 
 const path = require('path');
 const { createMemoryStore, createFileStore } = require('./evtrack');
 const { fetchMarket, fetchBook, resolutionOf, priceOf, outcomeIndexOf, toMs } = require('./tail');
 
-function createPgStore(connectionString) {
+function createPgStore(connectionString, table = 'tail_signals') {
+  if (!/^[a-z_]+$/.test(table)) throw new Error(`bad table name ${table}`);
   const { Pool } = require('pg');   // only required when DATABASE_URL is set
   const pool = new Pool({
     connectionString,
@@ -44,28 +47,29 @@ function createPgStore(connectionString) {
   return {
     kind: 'postgres',
     async init() {
-      await pool.query(`CREATE TABLE IF NOT EXISTS tail_signals (
+      await pool.query(`CREATE TABLE IF NOT EXISTS ${table} (
         id TEXT PRIMARY KEY, doc JSONB NOT NULL, status TEXT NOT NULL,
         signal_at TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`);
-      await pool.query('CREATE INDEX IF NOT EXISTS tail_signals_status ON tail_signals (status)');
-      for (const { doc } of (await pool.query('SELECT doc FROM tail_signals')).rows) rows.set(doc.id, doc);
+      await pool.query(`CREATE INDEX IF NOT EXISTS ${table}_status ON ${table} (status)`);
+      for (const { doc } of (await pool.query(`SELECT doc FROM ${table}`)).rows) rows.set(doc.id, doc);
     },
     async all() { return [...rows.values()]; },
     async put(b) {
       rows.set(b.id, b);
       await pool.query(
-        `INSERT INTO tail_signals (id, doc, status, signal_at, updated_at) VALUES ($1, $2, $3, $4, now())
+        `INSERT INTO ${table} (id, doc, status, signal_at, updated_at) VALUES ($1, $2, $3, $4, now())
          ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, status = EXCLUDED.status, signal_at = EXCLUDED.signal_at, updated_at = now()`,
         [b.id, b, b.status, b.at || null]);
     },
   };
 }
 
-function createStoreFromEnv(env = process.env) {
-  if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL);
-  return createFileStore(env.TAIL_TRACK_FILE || path.join(__dirname, 'data', 'tail-signals.json'));
+function createStoreFromEnv(env = process.env, { table = 'tail_signals', fileVar = 'TAIL_TRACK_FILE', file = 'tail-signals.json' } = {}) {
+  if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL, table);
+  return createFileStore(env[fileVar] || path.join(__dirname, 'data', file));
 }
+const createFreshStoreFromEnv = (env = process.env) => createStoreFromEnv(env, { table: 'fresh_signals', fileVar: 'FRESH_TRACK_FILE', file: 'fresh-signals.json' });
 
 const r2 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
@@ -301,4 +305,4 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
   return { record, recordAll, check, summary, list, ready: () => loaded, store, state: () => ({ open: open.size, lastCheck }) };
 }
 
-module.exports = { createTailTracker, createStoreFromEnv, createPgStore, toRecord, settle, observe, merge, stats };
+module.exports = { createTailTracker, createStoreFromEnv, createFreshStoreFromEnv, createPgStore, toRecord, settle, observe, merge, stats };

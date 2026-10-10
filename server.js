@@ -2041,7 +2041,7 @@ const webhookLicence = () => licenceFor({ paywall: PAYWALL, admin: false });
 // round 1's venues. Sizing is the same for everyone: units (1u = 1% of
 // bankroll), never dollars from anyone's bankroll.
 const tail = require('./tail');
-const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv } = require('./tailtrack');
+const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv, createFreshStoreFromEnv } = require('./tailtrack');
 const whales = require('./whales');
 const xarb = require('./xarb');
 const { createTradeStream } = require('./tailstream');
@@ -2153,6 +2153,9 @@ const tailStream = createTradeStream({ onTrades: trades => runTailJob('stream', 
 const tailStreamOn = !/^(off|0|false|no)$/i.test(String(process.env.TAIL_STREAM || '').trim());
 const tailTracker = createTailTracker({ store: createTailStoreFromEnv(), http: upstream });
 tailTracker.ready().catch(e => console.error('Tail tracker: store failed to initialise:', e.message));
+// the fresh-wallet radar's own record: its alerts as flat 1u bets
+const freshTracker = createTailTracker({ store: createFreshStoreFromEnv(), http: upstream });
+freshTracker.ready().catch(e => console.error('Fresh tracker: store failed to initialise:', e.message));
 
 const TAIL_REGION = xarb.regionFromEnv();   // 'us' | 'intl'
 const XARB_OPTS = xarb.optsFromEnv();          // carries the region too
@@ -2175,6 +2178,8 @@ const whaleWatcher = whales.createWhaleWatcher({
   },
   // Kalshi trades carry only a ticker; the arb scan knows every open market's title
   kalshiInfo: ticker => xarbState.kalshiTitles.get(ticker) || null,
+  // the fresh-wallet radar: one read of an ungraded whale's trade history
+  walletHistory: wallet => whales.fetchWalletHistory(upstream, wallet),
 });
 
 // /api/ev/stream subscribers: fn(eventType, data)
@@ -2396,8 +2401,63 @@ function describeBoardAlert(a) {
 
 async function pollWhales() {
   const fresh = await whaleWatcher.poll();
+  for (const e of fresh.filter(x => x.fresh)) {
+    try { await publishFresh(e); } catch (err) { console.warn('Fresh wallets:', err.message); }
+  }
   if (fresh.length) broadcast('whale', fresh);
   return fresh;
+}
+
+// ── fresh-wallet radar ──
+// A fresh wallet's buy (whales.js tags it) gets every venue asking the same
+// question (xarb.venueQuotes; US mode: Kalshi and US books only), cheapest all
+// in first, as e.venues and e.venue. One still open, not near-certain, not
+// resolving within minutes and not bought after its game started is logged
+// in the radar's own record as a flat 1u at what a follower could pay then
+// (the cheapest venue, else Polymarket's ask plus its taker fee) and pinged.
+// → the record's signal, or null when it isn't followable.
+const FRESH_UNITS = 1;
+async function freshSignal(e, { now = Date.now() } = {}) {
+  let quotes = [];
+  try { quotes = xarb.venueQuotes(e, xarbState.venues, { ...XARB_OPTS, now }); } catch (err) { console.warn('Fresh venues:', err.message); }
+  quotes.sort((a, b) => (a.cost - b.cost) || (a.price - b.price));
+  e.venues = quotes.map(v => venueView({ ...v, units: FRESH_UNITS }));
+  e.venue = e.venues[0] || null;
+  const o = tailEngine.settings();
+  let market = null;
+  try { market = e.conditionId ? await tail.fetchMarket(upstream, e.conditionId) : null; } catch (err) { console.warn('Fresh market:', err.message); }
+  if (!market || market.closed || market.active === false) return null;
+  const end = tail.toMs(market.gameStartTime) == null ? tail.toMs(market.endDate) : null;
+  if (end != null && end - now < o.minCloseMs) return null;
+  const started = tail.toMs(market.gameStartTime);
+  if (started != null && Date.parse(e.at) >= started) return null;
+  if (e.price >= o.maxEntryPrice - 1e-9) return null;
+  const book = await tailEngine.book(e.asset);
+  const ask = tail.liveAsk(market, book, e, { now, opts: o }).price;
+  if (ask == null && !e.venue) return null;
+  const category = tail.classify({ ...e, question: market.question, eventSlug: e.eventSlug || market.eventSlug });
+  return {
+    id: `fresh:${e.id}`, type: 'entry', wallet: e.wallet, name: e.name || null, grade: 'fresh', scope: 'radar', category,
+    market: e.title || market.question || '', eventSlug: e.eventSlug || market.eventSlug || null, conditionId: e.conditionId, asset: e.asset,
+    outcome: e.outcome, outcomeIndex: e.outcomeIndex, url: e.url || null, theirPrice: e.price, theirNotional: e.notional,
+    currentPrice: ask, fee: ask == null ? 0 : tail.polymarketFee(ask, market.fee), units: FRESH_UNITS, venue: e.venue, at: e.at, fresh: e.fresh,
+  };
+}
+async function publishFresh(e) {
+  const sig = await freshSignal(e);
+  if (!sig || !(await freshTracker.record(sig))) return false;
+  const lic = webhookLicence();
+  if (lic.polymarket) postAlert([describeFresh(e, lic)], 'Fresh wallet alerts');
+  return true;
+}
+// "🆕 Fresh wallet (first trade 2.1 days ago, 1 market) bought Yes on "…" at 18¢ ($12,400) · Kalshi: YES … 20¢ <url>"
+function describeFresh(e, lic = { kalshi: true }) {
+  const v = (e.venues || []).find(x => lic.kalshi || x.key !== 'kalshi') || null;
+  const f = e.fresh || {};
+  const age = f.ageDays < 1 ? 'today' : `${f.ageDays} days ago`;
+  const where = v ? ` · ${v.name}${v.buy ? `: ${v.buy}` : ''} ${v.american != null ? american(v.american) : cents(v.price)}` : ` · ${NO_VENUE}`;
+  const link = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : e.url;
+  return `🆕 Fresh wallet (first trade ${age}, ${f.markets} market${f.markets === 1 ? '' : 's'}) bought ${e.outcome || '?'} on "${e.title}" at ${cents(e.price)} (${dollars(e.notional)})${where}${link ? ` <${link}>` : ''}`;
 }
 
 const countBy = (list, keyOf) => { const out = {}; for (const x of list) { const k = keyOf(x); out[k] = (out[k] || 0) + 1; } return out; };
@@ -2533,7 +2593,7 @@ function maskWhale(e, t = Date.now()) {
   if (!e || e.exchange !== 'polymarket') return e;
   const recent = t - Date.parse(e.at) < TAIL_FREE_DELAY_MS;
   const out = { ...e, id: maskId(e.id), wallet: maskWallet(e.wallet), name: null, txHash: null,
-    ...(recent ? { grade: null, graded: false, known: false, tag: 'whale', gradeLocked: true } : {}) };
+    ...(recent ? { grade: null, graded: false, known: false, tag: 'whale', gradeLocked: true, fresh: null, venue: null, venues: null } : {}) };
   if (!recent && !e.graded) return out;
   const sig = n => (n > 0 ? Number(n.toPrecision(2)) : n ?? null);
   return { ...out, conditionId: null, asset: null, contracts: null, price: toCent(e.price), notional: sig(e.notional), sizeRange: sizeRange(e.notional), at: quarterHour(e.at) };
@@ -2548,7 +2608,7 @@ const withheldOf = (lic, sources) => sources.filter(x => !lic[x]);
 function liveFor(type, data, lic) {
   if (!Array.isArray(data)) return [];
   const out = type === 'tail' ? (lic.polymarket ? data.map(s => venueFor(s, lic)) : [])
-    : type === 'whale' ? data.filter(whaleOk(lic))
+    : type === 'whale' ? data.filter(whaleOk(lic)).map(kalshiVenuesOk(lic))
     : type === 'xarb' ? data.filter(arbOk(lic))
     : type === 'board' ? (lic.polymarket ? data.map(a => ({ ...a, venues: (a.venues || []).filter(v => lic.kalshi || v.key !== 'kalshi') })) : [])
     : data;
@@ -2591,7 +2651,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.35.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.36.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2811,36 +2871,47 @@ app.get('/api/tail/record', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
     const q = req.query;
+    // ?book=fresh: the fresh-wallet radar's record instead
+    const book = q.book === 'fresh' ? 'fresh' : 'tail';
+    const tracker = book === 'fresh' ? freshTracker : tailTracker;
     const grade = ['A', 'B'].includes(String(q.grade || '').toUpperCase()) ? String(q.grade).toUpperCase() : undefined;
     const category = tail.CATEGORIES.includes(q.category) ? q.category : undefined;
     const sinceDays = parseFloat(q.days) || undefined;
-    const summary = await tailTracker.summary({ sinceDays, grade, category });
+    const summary = { ...(await tracker.summary({ sinceDays, grade, category })), book };
     const status = pro ? (['open', 'settled'].includes(q.status) ? q.status : undefined) : 'settled';
     const cut = sinceDays ? Date.now() - sinceDays * 86400e3 : 0;
-    const list = !lic.polymarket ? [] : (await tailTracker.list({ status, limit: 5000 }))
+    const list = !lic.polymarket ? [] : (await tracker.list({ status, limit: 5000 }))
       .filter(r => (!grade || r.grade === grade) && (!category || r.category === category) && Date.parse(r.recordedAt) >= cut)
       .slice(0, Math.min(parseInt(q.limit) || 50, 500));
     res.json(regionSafe({ ...summary, signals: pro ? list : list.map(maskSignal), pro, ...withheldBody(withheldOf(lic, ['polymarket'])) }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // Whale prints (newest first) and per-market flow over the last hour.
-// ?exchange=kalshi|polymarket&graded=1|0&minUsd=10000&since=<iso>&limit=100.
-// Free: wallets masked, and graded tags only once they're 30 minutes old.
-// Each exchange's prints need its licence.
-app.get('/api/whales', (req, res) => {
+// ?exchange=kalshi|polymarket&graded=1|0&fresh=1|0&minUsd=10000&since=<iso>&limit=100.
+// Free: wallets masked, and graded and fresh-wallet tags only once they're 30
+// minutes old. Each exchange's prints need its licence, and so do Kalshi venues.
+// freshRecord: the fresh-wallet radar's totals (its bets: /api/tail/record?book=fresh).
+const kalshiVenuesOk = lic => e => (lic.kalshi || !Array.isArray(e?.venues) ? e
+  : { ...e, venues: e.venues.filter(v => v.key !== 'kalshi'), venue: e.venues.find(v => v.key !== 'kalshi') || null });
+app.get('/api/whales', async (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
   const q = req.query;
   const exchange = ['kalshi', 'polymarket'].includes(q.exchange) ? q.exchange : null;
   const graded = pro && q.graded != null && q.graded !== '' ? /^(1|true|yes)$/i.test(q.graded) : null;
+  const freshOnly = pro && q.fresh != null && q.fresh !== '' ? /^(1|true|yes)$/i.test(q.fresh) : null;
   const minUsd = parseFloat(q.minUsd);
   const t = Date.now();
   const limit = Math.min(parseInt(q.limit) || 100, 500);
   const shown = whaleOk(lic);
   // the feed is cut to this viewer's exchanges before the limit, so a withheld one doesn't eat it
   const only = exchange || (lic.kalshi === lic.polymarket ? null : lic.kalshi ? 'kalshi' : 'polymarket');
-  const events = lic.kalshi || lic.polymarket ? whaleWatcher.events({ limit, exchange: only, graded, minUsd: Number.isFinite(minUsd) ? minUsd : null, since: q.since || null }).filter(shown) : [];
+  const events = lic.kalshi || lic.polymarket ? whaleWatcher.events({ limit, exchange: only, graded, fresh: freshOnly, minUsd: Number.isFinite(minUsd) ? minUsd : null, since: q.since || null })
+    .filter(shown).map(kalshiVenuesOk(lic)) : [];
   const flow = whaleWatcher.flow({ exchange, limit: Math.min(parseInt(q.flowLimit) || 50, 200) }).filter(f => shown(f));
+  let freshRecord = null;
+  try { const r = await freshTracker.summary({}); freshRecord = { overall: r.overall, open: r.open }; } catch { /* store down */ }
   res.json(regionSafe({
+    freshRecord,
     events: pro ? events : events.map(e => maskWhale(e, t)),
     flow: pro ? flow : flow.map(f => ({ ...f, largest: maskWhale(f.largest, t) })),
     pro, minUsd: whaleWatcher.settings().minUsd, windowMs: whaleWatcher.settings().windowMs, state: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
@@ -3339,7 +3410,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.35.0',
+  version: '3.36.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3450,14 +3521,14 @@ cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBa
 cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
 cron.schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 // Grade tracked signals whose markets resolved, every 10 minutes
-cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', () => tailTracker.check()));
+cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
 // New leaderboard wallets to score, every 6 hours (and once at startup)
 cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.35.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.36.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
@@ -3499,7 +3570,7 @@ module.exports = {
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
-  tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
+  tailEngine, tailTracker, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };
