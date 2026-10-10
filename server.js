@@ -2102,7 +2102,7 @@ const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is
 // read to confirm what clears (XARB_PMUS_BOOKS_PER_SCAN)
 const XARB_PMUS_LEAGUES = pmus.arbLeaguesFromEnv();
 const XARB_PMUS_BOOKS = Number.isFinite(parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) : 40;
-const xarbState = { arbs: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
+const xarbState = { arbs: [], near: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
 // every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
@@ -2250,8 +2250,7 @@ function describeExit(s, who) {
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
 function describeArb(a) {
   const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
-  const note = a.exhaustive === false ? ' · NOT PROVEN EXHAUSTIVE' : '';
-  return `♻️ Arb +${a.profitPct}%${note}: ${a.title} · ${legs}${a.warnings?.length ? ` · ⚠ ${a.warnings.join('; ')}` : ''}`;
+  return `♻️ Arb +${a.profitPct}%: ${a.title} · ${legs}${a.warnings?.length ? ` · ⚠ ${a.warnings.join('; ')}` : ''}`;
 }
 
 // Each cron job's last run and error, for /api/status.
@@ -2443,16 +2442,17 @@ function dedupeArbs(arbs) {
 // plus Polymarket US's own soccer result sets. What clears on the listed
 // prices is re-priced on the live books (which also say how many contracts
 // sit at that price) before it counts (a result set missing a book is no set:
-// xarb.findUnderrounds). → { arbs, rows, games, matches, screened }
+// xarb.findUnderrounds). → { arbs, rows, games, matches, screened, rowList, matchList }
+// (the rows and their Kalshi pairs, for the watchlist)
 async function polymarketUsArbs(kalshi, now) {
-  const none = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0 };
+  const none = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0, rowList: [], matchList: [] };
   if (!polymarketUs || !XARB_PMUS_LEAGUES.length) return none;
   const rows = await polymarketUs.arbRows({ leagues: XARB_PMUS_LEAGUES });
   if (!rows.length) return none;
   const o = { ...XARB_OPTS, now };
   const matches = xarb.matchMarkets(kalshi, rows, o);
   const screened = xarb.findUsArbs(kalshi, rows, { ...o, matches });
-  const counts = { rows: rows.length, games: new Set(rows.map(r => r.eventKey)).size, matches: matches.length, screened: screened.length };
+  const counts = { rows: rows.length, games: new Set(rows.map(r => r.eventKey)).size, matches: matches.length, screened: screened.length, rowList: rows, matchList: matches };
   if (!screened.length || XARB_PMUS_BOOKS <= 0) return { ...none, ...counts };
   const ids = new Set(screened.flatMap(a => a.legs.filter(l => l.venue === 'polymarketus').map(l => l.marketId)));
   const live = await polymarketUs.reprice(rows.filter(r => ids.has(r.id)), { maxBooks: XARB_PMUS_BOOKS });
@@ -2493,9 +2493,15 @@ async function scanXarbs() {
     const now = Date.now();
     // matched once: the cross-exchange arbs (intl) and signal routing both use it
     const matches = xarb.matchMarkets(kalshi, polymarket, { ...XARB_OPTS, now, games });
-    let us = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0 };
+    let us = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0, rowList: [], matchList: [] };
     try { us = await polymarketUsArbs(kalshi, now); } catch (e) { console.warn('Exchange arbs: Polymarket US:', e.message); }
     const arbs = dedupeArbs([...xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now, matches }), ...us.arbs]);
+    // the watchlist: what's closest to paying, on the venues this region can use
+    const intl = TAIL_REGION === 'intl';
+    let near = [];
+    try {
+      near = xarb.findNearArbs({ matches: [...(intl ? matches : []), ...us.matchList], rows: [...kalshi, ...(intl ? polymarket : []), ...us.rowList] }, { ...XARB_OPTS, now });
+    } catch (e) { console.warn('Exchange arbs: watchlist:', e.message); }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
     if (kalshi.length) {
       xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
@@ -2504,11 +2510,11 @@ async function scanXarbs() {
       }]));
     }
     Object.assign(xarbState, {
-      arbs, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
+      arbs, near, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
         kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
-        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length } },
+        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length }, near: near.length },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
     for (const a of arbs) xarbSeen.set(a.id, now);
@@ -2523,10 +2529,9 @@ async function scanXarbs() {
     const news = fresh.filter(a => (a.legs || []).every(l => !(l.venue in before) || before[l.venue]));
     if (news.length) {
       broadcast('xarb', news);
-      // an outcome set not proven exhaustive can lose every leg: listed, never
-      // alerted; and the webhook only gets legs the public may see
+      // the webhook only gets legs the public may see
       const ok = arbOk(webhookLicence());
-      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && a.exhaustive !== false && ok(a)).map(describeArb), 'Exchange arbs');
+      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && ok(a)).map(describeArb), 'Exchange arbs');
     }
     return news;
   } finally { xarbState.running = false; }
@@ -2655,7 +2660,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.41.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.45.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2922,7 +2927,8 @@ app.get('/api/whales', async (req, res) => {
     ...withheldBody(withheldOf(lic, ['kalshi', 'polymarket'])),
   }));
 });
-// Exchange arbs, best first. ?type=cross|multi|book&category=sports&minPct=1.
+// Exchange arbs, best first, and `near`: the watchlist of pairs and sets just
+// short of one (xarb.findNearArbs). ?type=cross|multi|book&category=sports&minPct=1.
 // Stakes are the same for everyone: each leg's `pct` of the total (and the
 // $100 reference split in `stakes`). US mode only has Kalshi and US
 // sportsbook legs. Free: count and profit % only.
@@ -2932,10 +2938,11 @@ app.get('/api/xarbs', (req, res) => {
   const minPct = parseFloat(q.minPct);
   const arbs = xarbState.arbs.filter(arbOk(lic))
     .filter(a => (!q.type || a.type === q.type) && (!q.category || a.category === q.category) && (!Number.isFinite(minPct) || a.profitPct >= minPct));
-  const base = { count: arbs.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  const near = (xarbState.near || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
+  const base = { count: arbs.length, nearCount: near.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
-    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)),
+    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near,
     minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
   }));
 });
@@ -3405,7 +3412,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.41.0',
+  version: '3.45.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3523,7 +3530,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.41.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.45.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms

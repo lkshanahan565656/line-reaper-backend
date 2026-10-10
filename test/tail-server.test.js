@@ -243,7 +243,9 @@ test('trader detail is Pro only', async () => {
 });
 
 test('exchange arb scan: the first scan primes, Pro sees legs and the % split, free sees count and profit % only', async () => {
-  fx.kalshiEvents = [kalshiEvent('KXFEDCHAIR-26', 'Who will Trump nominate as Fed Chair?', [['Kevin Warsh', '0.2800'], ['Kevin Hassett', '0.2800'], ['Christopher Waller', '0.2900'], ['Someone else', '0.0400']])];
+  // the Fed decision costs a little more than it pays: watched, not an arb
+  const fed = kalshiEvent('KXFEDDECISION-26DEC', 'Fed decision in Dec 2026?', [['Hold', '0.5000'], ['Cut 25bps', '0.3000'], ['Other', '0.1700']]);
+  fx.kalshiEvents = [kalshiEvent('KXFEDCHAIR-26', 'Who will Trump nominate as Fed Chair?', [['Kevin Warsh', '0.2800'], ['Kevin Hassett', '0.2800'], ['Christopher Waller', '0.2900'], ['Someone else', '0.0400']]), fed];
   const fresh = await S.runTailJob('xarb', S.scanXarbs);
   assert.deepEqual(fresh, [], 'a restart is not news');
   assert.equal(S.xarbState.arbs.length, 1);
@@ -270,10 +272,17 @@ test('exchange arb scan: the first scan primes, Pro sees legs and the % split, f
   assert.equal(big.body.bankroll, undefined);
   assert.equal((await get('/api/xarbs?minPct=50', PRO)).body.count, 0);
 
+  // the watchlist
+  assert.equal(pro.body.nearCount, 1);
+  assert.deepEqual(pro.body.near.map(n => [n.title, n.type, n.legs.length]), [['Fed decision in Dec 2026?', 'multi', 3]]);
+  assert.ok(pro.body.near[0].profitPct < 0 && pro.body.near[0].totalCost > 1);
+
   const free = await get('/api/xarbs');
   assert.equal(free.body.count, 1);
   assert.deepEqual(free.body.arbs, [{ profitPct: a.profitPct, locked: true }]);
   assert.equal(free.body.counts, undefined);
+  assert.deepEqual([free.body.nearCount, free.body.near], [1, undefined], 'free: how many are watched, not which');
+  fx.kalshiEvents = fx.kalshiEvents.filter(e => e !== fed);
 });
 
 test('a fresh trade by the A-grade wallet becomes a sized signal; whales see it too, from one shared v2 read', async () => {
@@ -472,8 +481,7 @@ test('live stream carries tail, whale and xarb events; new arbs of 1%+ hit the w
   assert.equal(w.data[0].side, 'no');
   assert.equal(w.data[0].notional, 17500);
   const x = await waitFor('xarb');
-  assert.deepEqual(x.data.map(a => a.title).sort(), ['Who will be the next Pope?', 'Who will be the next UK Prime Minister?'], 'only the new arbs');
-  assert.equal(x.data.find(a => /UK/.test(a.title)).exhaustive, false);
+  assert.deepEqual(x.data.map(a => a.title), ['Who will be the next Pope?'], 'only the new arb: the UK set has no catch-all, so it is not an arb');
   } finally { ac.abort(); await pump; }
 
   const text = posts.map(p => p.body.content).join('\n');
@@ -481,7 +489,7 @@ test('live stream carries tail, whale and xarb events; new arbs of 1%+ hit the w
   assert.match(text, /bought Yes on "Will Jones win the Texas Senate election\?"/);
   assert.match(text, /♻️ Arb \+\d+(\.\d+)?%: Who will be the next Pope\? · Kalshi Pietro Parolin 40¢ \+ Kalshi Luis Tagle 45¢ \+ Kalshi Someone else 5¢/);
   assert.doesNotMatch(text, /Fed Chair/, 'the arb already seen is not posted again');
-  assert.doesNotMatch(text, /UK Prime Minister/, 'a set not proven exhaustive is never alerted');
+  assert.doesNotMatch(text, /UK Prime Minister/, 'a set not proven complete is never listed or alerted');
   await new Promise(r => setTimeout(r, 20));
   assert.equal(S.liveListeners.size, 0, 'listener removed on disconnect');
 });
@@ -522,7 +530,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.41.0');
+  assert.equal(body.version, '3.45.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -530,7 +538,7 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(body.tail.record.open, 0);
   assert.ok(body.tail.routing.routed >= 2);
   assert.ok(body.whales.events >= 6);
-  assert.equal(body.xarb.arbs, 3);
+  assert.equal(body.xarb.arbs, 2, 'Fed Chair and the Pope; the UK set has no catch-all');
   assert.equal(body.xarb.counts.kalshiEvents, 3);
   assert.equal(body.region, 'us');
   assert.equal(body.licence.paywall, true);
@@ -548,8 +556,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.41.0');
-  assert.equal((await get('/')).body.version, '3.41.0');
+  assert.equal(require('../package.json').version, '3.45.0');
+  assert.equal((await get('/')).body.version, '3.45.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -741,7 +749,7 @@ test('licence gates, PAYWALL on and both flags off: the admin sees everything, p
     assert.ok(adminSignals.find(x => x.conditionId === NBA_COND).venues.some(v => v.key === 'kalshi'));
     const adminWhales = (await get('/api/whales', PRO)).body.events;
     assert.ok(adminWhales.some(e => e.exchange === 'kalshi') && adminWhales.some(e => e.exchange === 'polymarket'));
-    assert.ok((await get('/api/xarbs', PRO)).body.count >= 3);
+    assert.ok((await get('/api/xarbs', PRO)).body.count >= 2);
     assert.ok((await get('/api/tail/record', PRO)).body.signals.length >= 2);
     assert.equal((await get('/api/tail/settings', PRO)).body.licence.viewer.kalshi, true);
 
@@ -789,7 +797,7 @@ test('licence gates, PAYWALL on and both flags off: the admin sees everything, p
 
     // both on: the paying user sees it all
     process.env.KALSHI_DISPLAY_OK = 'yes';
-    assert.ok((await get('/api/xarbs', PAYING)).body.count >= 3);
+    assert.ok((await get('/api/xarbs', PAYING)).body.count >= 2);
     assert.equal((await get('/api/whales', PAYING)).body.withheld, undefined);
     assert.ok((await get('/api/tail/signals', PAYING)).body.signals.find(x => x.conditionId === NBA_COND).venues.some(v => v.key === 'kalshi'));
   } finally { grantBoth(); }
@@ -962,16 +970,17 @@ test('US mode strips polymarket.com links however deep, and nothing else', () =>
   assert.equal(S.TAIL_REGION, 'us');
 });
 
-test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing, the footer, and its scripts parse', () => {
+test('the bundled app: opens on SHARP TAIL, venue line, no bankroll or dollar sizing, the footer, the ARBS tab, and its scripts parse', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert.match(html, /showTab\('tail',this\)">🐋 SHARP TAIL</);
-  assert.match(html, /id="page-tail"/);
-  for (const v of ['signals', 'board', 'traders', 'whales', 'arbs', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  assert.match(html, /<button class="tab active" onclick="showTab\('tail',this\)">🐋 SHARP TAIL</, 'the first tab, open by default');
+  assert.match(html, /<div class="page active" id="page-tail">/);
+  for (const v of ['signals', 'board', 'traders', 'whales', 'record']) assert.ok(html.includes(`['${v}', `), v);
+  assert.ok(!html.includes("['arbs', "), 'arbs have their own tab now');
   assert.match(html, /\/api\/tail\/board\?limit=100/);
   assert.match(html, /addEventListener\(type, m => \{ try \{ tailOnLive\(type/);
   assert.match(html, /localStorage\.setItem\('lr_tail'/);
   // the same sizing for everyone: no bankroll input, no units turned into dollars, no ?bankroll= re-split
-  const tab = html.slice(html.indexOf('<div class="page" id="page-tail">'), html.indexOf('<!-- ESPORTS PAGE -->'));
+  const tab = html.slice(html.indexOf('<div class="page active" id="page-tail">'), html.indexOf('<!-- ESPORTS PAGE -->'));
   assert.ok(tab.length > 500);
   assert.doesNotMatch(tab, /tailBankroll|tailArbStake|BANKROLL \$/);
   assert.doesNotMatch(html, /tailDollarsOfUnits|tailState\.bankroll|tailState\.arbStake|\/api\/xarbs\?bankroll|'\?bankroll='/);
@@ -985,6 +994,12 @@ test('the bundled app: SHARP TAIL tab, venue line, no bankroll or dollar sizing,
   // desktop alerts for live sized entries, their own switch
   assert.match(html, /onclick="tailToggleNotify\(\)"/);
   assert.match(html, /if \(tailNotifyOn\(\)\) for \(const s of sized\.slice\(0, 3\)\)/);
+  // ARBS: the exchange arbs by default (and the watchlist), the sportsbook lab one tap away
+  assert.match(html, /showTab\('arb',this\)">♻️ ARBS</);
+  assert.match(html, /id="arbModeEx" onclick="arbMode\('exchanges'\)"/);
+  assert.match(html, /<div id="arbBooks" style="display:none">/);
+  assert.match(html, /tailGet\('\/api\/xarbs'\)/);
+  assert.match(html, /CLOSEST TO AN ARB/);
   const blocks = [...html.matchAll(/<script(\b[^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/src=/.test(m[1]));
   assert.ok(blocks.length >= 1);
   for (const [, , code] of blocks) assert.doesNotThrow(() => new Function(code));
