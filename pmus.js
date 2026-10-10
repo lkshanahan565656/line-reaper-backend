@@ -23,7 +23,8 @@
 // Over/Under a line, and is matched to the market and side asking exactly
 // that. Soccer's three-way markets and every other kind are left out.
 //
-// Taker fee: 0.0695 × p(1 − p) a contract (fees.md, from 2026-10-07).
+// Taker fee: the market's feeCoefficient × p(1 − p) a contract (0.0695 on
+// every market seen, and in fees.md from 2026-10-07).
 //
 // Parsers and matchers are pure; createPolymarketUs caches events (a minute)
 // and books (10 s) over an axios-style `http`.
@@ -42,18 +43,21 @@ const round = (x, n) => (x == null || !Number.isFinite(x) ? null : Math.round(x 
 const norm = s => String(s || '').trim().toLowerCase();
 const amount = v => num(v && typeof v === 'object' ? v.value : v);   // { value, currency } or a bare number
 const inUnit = p => (p > 0 && p < 1 ? p : null);
-const fee = p => (inUnit(p) ? round(FEE_RATE * p * (1 - p), 6) : 0);
+// taker fee a contract at p: the market's own feeCoefficient when it gives one
+const fee = (p, rate = FEE_RATE) => (inUnit(p) ? round((rate ?? FEE_RATE) * p * (1 - p), 6) : 0);
 
-// a Polymarket US market's kind from its sportsMarketType (or marketType)
+// a Polymarket US market's kind from its sportsMarketType: "football_team_
+// full_game_total" is the game's total, "football_team_points_full_game_total"
+// one team's points (left out, like halves and quarters)
+const KIND_RE = /^[a-z]+_team_full_game_(winner|spread|total)$/;
+const KINDS = { winner: 'moneyline', spread: 'spread', total: 'total' };
 function kindOf(m) {
-  const t = norm(m?.sportsMarketType);
-  if (/full_game_winner$/.test(t)) return 'moneyline';
-  if (/full_game_spread$/.test(t)) return 'spread';
-  if (/full_game_total$/.test(t)) return 'total';
-  return null;
+  const k = KIND_RE.exec(norm(m?.sportsMarketType))?.[1];
+  return k ? KINDS[k] : null;
 }
 
-// one market → { slug, kind, line, long, short, bid, ask, open, question } | null.
+const feeRateOf = m => { const r = num(m?.feeCoefficient); return r != null && r >= 0 && r < 1 ? r : FEE_RATE; };
+// one market → { slug, kind, line, long, short, bid, ask, open, question, feeRate } | null.
 // long / short: { team, aliases } for teams, { over: bool } for totals.
 function parseMarket(m) {
   if (!m || typeof m !== 'object') return null;
@@ -74,6 +78,7 @@ function parseMarket(m) {
   const status = norm(m.status);
   return {
     slug, kind, line: num(m.line), long, short, question: m.question || m.title || '',
+    feeRate: feeRateOf(m),
     bid: inUnit(amount(m.bestBidQuote)), ask: inUnit(amount(m.bestAskQuote)),
     open: m.closed !== true && m.closed !== 'true' && m.active !== false && (!status || status === 'market_status_open'),
   };
@@ -184,9 +189,88 @@ const eventUrl = event => (event?.league ? `${SITE}/sports/${event.league}/${eve
 // and totals sit in "<slug>-more-markets"
 const usSlugOf = s => (s?.eventSlug ? String(s.eventSlug).replace(/-more-markets$/, '') : null);
 
+// ── Polymarket US's games as arb rows ──
+// GET /v2/leagues/{league}/events (type sport, 50 a page) lists a league's
+// games with every market and its snapshot quotes. Each full-game market
+// becomes a row shaped like xarb.parsePolymarketBinaries' Polymarket rows
+// (YES first), so Kalshi's games pair with them the way they pair with
+// Polymarket's (xarb.matchMarkets):
+//   winner   → kind 'teams': YES = the long team
+//   total    → kind 'total': YES = Over, the long side
+//   spread   → kind 'spread': YES = the team giving points (lineTeam): the
+//              long team when its line is negative, else the short team
+//   soccer's full-time result (a YES/NO market each for team A, the draw
+//   and team B) → kind 'yesno' with game3 { teams, pick }, one event of
+//   three outcomes (mutuallyExclusive: buying all three YES is an arb when
+//   they add up to under $1)
+// Half lines only, as on Kalshi. A row remembers which side its YES is
+// (yesSide), so the live book can re-price it (repriceRow).
+const ARB_LEAGUES = ['nfl', 'cfb', 'nba', 'nhl', 'mlb', 'wnba', 'cbb', 'wcbb', 'mls', 'epl', 'ucl', 'uefa', 'lal', 'bun', 'sea', 'fl1', 'lol', 'cs2', 'valorant', 'cod'];
+const XARB_LEAGUE = { nfl: 'nfl', cfb: 'ncaaf', nba: 'nba', nhl: 'nhl', mlb: 'mlb', wnba: 'wnba', cbb: 'ncaab', mls: 'mls' };
+const RULES_NOTE = 'a postponed or canceled game settles by each exchange\'s own rules';
+const RESULT_RE = /^soccer_team_full_time_winner$/;
+const halfLine = x => Number.isFinite(x) && x > 0 && Math.abs(((x * 2) % 2) - 1) < 1e-9;
+const other = side => (side === 'long' ? 'short' : 'long');
+const isoOf = v => { const t = Date.parse(v || ''); return Number.isFinite(t) && t > 0 ? new Date(t).toISOString() : null; };
+
+function arbRowsOf(payload, { league = null } = {}) {
+  const e = payload?.event || payload;
+  const ev = parseEvent(e);
+  if (!ev || e.closed === true || e.active === false || e.ended === true) return [];
+  const raw = Array.isArray(e.markets) ? e.markets : [];
+  const start = isoOf(e.startTime) || isoOf(raw.find(m => m?.gameStartTime)?.gameStartTime) || isoOf(e.startDate);
+  const base = {
+    exchange: 'polymarketus', eventKey: `polymarketus:${ev.slug}`, eventTitle: ev.title, gameSlug: ev.slug, startTime: start,
+    closeTime: isoOf(e.endDate), category: 'sports', league: XARB_LEAGUE[league || ev.league] ?? null, url: eventUrl(ev),
+    liquidity: null, volume: null, rules: null, gameNo: null, hasDraw: false, eventDecided: false, eventComplete: true,
+    mutuallyExclusive: false, warnings: [RULES_NOTE],
+  };
+  const priced = (m, yesSide) => ({ yesSide, yesAsk: buyPrice(m, yesSide), noAsk: buyPrice(m, other(yesSide)), tradable: m.open, feeSchedule: { rate: m.feeRate, exponent: 1 } });
+  const out = [];
+  for (const m of ev.markets) {
+    if (!m.open) continue;
+    const row = { ...base, id: m.slug, title: m.question };
+    if (m.kind === 'moneyline') out.push({ ...row, kind: 'teams', outcomeLabel: m.long.team, noLabel: m.short.team, ...priced(m, 'long') });
+    else if (m.kind === 'total' && halfLine(Math.abs(m.line))) {
+      out.push({ ...row, kind: 'total', line: Math.abs(m.line), outcomeLabel: 'Over', noLabel: 'Under', ...priced(m, 'long') });
+    } else if (m.kind === 'spread' && halfLine(Math.abs(m.line))) {
+      const giver = m.line < 0 ? 'long' : 'short';
+      const team = (giver === 'long' ? m.long : m.short).team, them = (giver === 'long' ? m.short : m.long).team;
+      out.push({ ...row, kind: 'spread', line: Math.abs(m.line), lineTeam: team, outcomeLabel: team, noLabel: them, ...priced(m, giver) });
+    }
+  }
+  // soccer: team A, the draw, team B
+  const result = raw.filter(m => RESULT_RE.test(norm(m?.sportsMarketType)) && m.slug);
+  const teams = (Array.isArray(e.teams) ? e.teams : []).map(t => t?.name).filter(Boolean);
+  if (result.length === 3 && teams.length === 2) {
+    const rows = [];
+    for (const m of result) {
+      const longSide = (m.marketSides || []).find(x => x?.long === true || x?.long === 'true');
+      const name = longSide?.team?.name;
+      const pick = name ? teams.indexOf(name) : 'draw';
+      const q = { bid: inUnit(amount(m.bestBidQuote)), ask: inUnit(amount(m.bestAskQuote)), feeRate: feeRateOf(m) };
+      const open = m.closed !== true && m.active !== false && (!m.status || norm(m.status) === 'market_status_open');
+      if (pick === -1 || !open) break;
+      rows.push({ ...base, id: m.slug, title: m.question || '', kind: 'yesno', outcomeLabel: name || 'Draw', noLabel: null,
+        game3: { teams, pick }, mutuallyExclusive: true, ...priced({ ...q, open }, 'long') });
+    }
+    if (rows.length === 3 && new Set(rows.map(r => r.game3.pick)).size === 3) out.push(...rows);
+  }
+  return out;
+}
+
+// a row re-priced on its market's live book (the long side's), with what
+// sits at each price (yesDepth / noDepth); null when that book isn't open
+function repriceRow(row, book) {
+  if (!row || !book || !book.open) return null;
+  const yes = row.yesSide, no = other(yes);
+  const depth = side => (side === 'long' ? book.askSize : book.bidSize);
+  return { ...row, yesAsk: buyPrice(book, yes), noAsk: buyPrice(book, no), yesDepth: depth(yes), noDepth: depth(no), priced: 'book' };
+}
+
 function createPolymarketUs({ http, now = () => Date.now(), eventTtlMs = 60e3, bookTtlMs = 10e3, maxEvents = 500, log = console } = {}) {
   const events = new Map(), books = new Map();
-  const health = { lookups: 0, matched: 0, quoted: 0, errors: [] };
+  const health = { lookups: 0, matched: 0, quoted: 0, errors: [], arbs: { scans: 0, rows: 0, games: {}, confirmed: 0, skipped: 0 } };
   const warn = msg => { health.errors.push({ at: new Date(now()).toISOString(), message: String(msg) }); health.errors = health.errors.slice(-10); log?.warn?.(`Polymarket US: ${msg}`); };
   const cached = (map, key, ttl) => { const hit = map.get(key); return hit && now() - hit.at < ttl ? hit : null; };
   const keep = (map, key, value) => { map.delete(key); map.set(key, { at: now(), value }); while (map.size > maxEvents) map.delete(map.keys().next().value); return value; };
@@ -232,21 +316,62 @@ function createPolymarketUs({ http, now = () => Date.now(), eventTtlMs = 60e3, b
     const pick = pickOf(hit.market, hit.side);
     const depth = b ? (hit.side === 'long' ? b.askSize : b.bidSize) : null;
     return {
-      key: 'polymarketus', name: 'Polymarket US', price, fee: fee(price), cost: round(price + fee(price), 6),
+      key: 'polymarketus', name: 'Polymarket US', price, fee: fee(price, hit.market.feeRate), cost: round(price + fee(price, hit.market.feeRate), 6),
       side: hit.side, pick, buy: pick, marketId: hit.market.slug, title: hit.market.question, url: eventUrl(ev), match: 'slug',
       ...(depth != null ? { depth } : {}),
     };
   }
 
+  // Every game the leagues list, as arb rows (arbRowsOf), each league read
+  // once a scan (at most maxPages pages of 50); the leagues side by side
+  async function arbRows({ leagues = ARB_LEAGUES, maxPages = 6 } = {}) {
+    const read = async league => {
+      const rows = [];
+      let n = 0;
+      try {
+        for (let page = 0; page < maxPages; page++) {
+          const res = await http.get(`${GATEWAY}/v2/leagues/${encodeURIComponent(league)}/events`, { params: { limit: 50, offset: page * 50 }, timeout: TIMEOUT });
+          const list = Array.isArray(res?.data?.events) ? res.data.events : [];
+          for (const e of list) { const r = arbRowsOf(e, { league }); if (r.length) { rows.push(...r); n++; } }
+          if (list.length < 50) break;
+        }
+      } catch (e) { if (e?.response?.status !== 404) warn(`league ${league}: ${e?.message || e}`); }
+      return { league, rows, n };
+    };
+    const done = await Promise.all(leagues.map(read));
+    const rows = done.flatMap(d => d.rows);
+    const games = Object.fromEntries(done.filter(d => d.n).map(d => [d.league, d.n]));
+    Object.assign(health.arbs, { scans: health.arbs.scans + 1, rows: rows.length, games });
+    return rows;
+  }
+  // rows re-priced on their live books (at most maxBooks reads) → Map id →
+  // row, or null when its book is closed or can't be read
+  async function reprice(rows, { maxBooks = 40 } = {}) {
+    const ids = [...new Map(rows.map(r => [r.id, r])).values()];
+    const take = ids.slice(0, Math.max(0, maxBooks));
+    health.arbs.skipped += ids.length - take.length;
+    const live = await Promise.all(take.map(async r => repriceRow(r, await book(r.id))));
+    health.arbs.confirmed += live.filter(Boolean).length;
+    return new Map(take.map((r, i) => [r.id, live[i]]));
+  }
+
   const state = () => ({ ...health, events: events.size, errors: health.errors.slice(-5) });
-  return { quoteFor, event, book, state };
+  return { quoteFor, event, book, arbRows, reprice, state };
 }
 
 function enabledFromEnv(env = process.env) {
   return !/^(off|0|false|no)$/i.test(String(env.POLYMARKET_US || '').trim());
 }
+// XARB_PMUS_LEAGUES: the Polymarket US leagues the arb scan reads (comma
+// list of its league slugs; unset = ARB_LEAGUES, off = none)
+function arbLeaguesFromEnv(env = process.env) {
+  const v = String(env.XARB_PMUS_LEAGUES || '').trim().toLowerCase();
+  if (!v) return ARB_LEAGUES;
+  if (/^(off|0|false|no|none)$/.test(v)) return [];
+  return [...new Set(v.split(/[\s,]+/).filter(x => /^[a-z0-9-]+$/.test(x)))];
+}
 
 module.exports = {
-  GATEWAY, FEE_RATE, kindOf, parseMarket, parseEvent, parseBook, betOf, matchBet, buyPrice, pickOf, usSlugOf, fee,
-  createPolymarketUs, enabledFromEnv,
+  GATEWAY, FEE_RATE, ARB_LEAGUES, kindOf, parseMarket, parseEvent, parseBook, betOf, matchBet, buyPrice, pickOf, usSlugOf, fee, arbRowsOf, repriceRow,
+  createPolymarketUs, enabledFromEnv, arbLeaguesFromEnv,
 };
