@@ -2044,6 +2044,7 @@ const tail = require('./tail');
 const { createTailTracker, createStoreFromEnv: createTailStoreFromEnv, createFreshStoreFromEnv } = require('./tailtrack');
 const whales = require('./whales');
 const xarb = require('./xarb');
+const pmus = require('./pmus');
 const { createTradeStream } = require('./tailstream');
 const { createFileStore: createDocFileStore } = require('./evtrack');
 
@@ -2119,7 +2120,7 @@ function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, retry429Ms = 2000
 // hardest, so it gets about 7 a second (70 per 10 s, under half the
 // strictest limit); Gamma, the order book and Kalshi 4 to 5. Anyone else: one
 // a second. UPSTREAM_GAP_MS sets one gap for every host.
-const HOST_GAP_MS = { 'data-api.polymarket.com': 150, 'gamma-api.polymarket.com': 250, 'clob.polymarket.com': 200, 'api.elections.kalshi.com': 250 };
+const HOST_GAP_MS = { 'data-api.polymarket.com': 150, 'gamma-api.polymarket.com': 250, 'clob.polymarket.com': 200, 'api.elections.kalshi.com': 250, 'gateway.polymarket.us': 100 };
 const UPSTREAM_GAP_MS = Number.isFinite(parseFloat(process.env.UPSTREAM_GAP_MS)) ? Math.max(0, parseFloat(process.env.UPSTREAM_GAP_MS)) : null;
 const upstreamGap = UPSTREAM_GAP_MS != null ? UPSTREAM_GAP_MS : host => HOST_GAP_MS[host] ?? 1000;
 // axios.get is looked up on every call, so tests can stub it after this file loads
@@ -2157,6 +2158,8 @@ tailTracker.ready().catch(e => console.error('Tail tracker: store failed to init
 const freshTracker = createTailTracker({ store: createFreshStoreFromEnv(), http: upstream });
 freshTracker.ready().catch(e => console.error('Fresh tracker: store failed to initialise:', e.message));
 
+// Polymarket US: the same game market a US follower can buy (POLYMARKET_US=off: not quoted)
+const polymarketUs = pmus.enabledFromEnv() ? pmus.createPolymarketUs({ http: upstream }) : null;
 const TAIL_REGION = xarb.regionFromEnv();   // 'us' | 'intl'
 const XARB_OPTS = xarb.optsFromEnv();          // carries the region too
 const XARB_ALERT_MIN = Number.isFinite(parseFloat(process.env.XARB_ALERT_MIN)) ? parseFloat(process.env.XARB_ALERT_MIN) : 1;
@@ -2247,10 +2250,12 @@ const venueView = v => (v ? { key: v.key, name: v.name, price: v.price, fee: v.f
   ...(v.warning ? { warning: v.warning } : {}) } : null);
 // the routing of recent signals by id, in case the engine hands back copies
 const routedSignals = new Map();
-function routeSignal(s, { index = xarbState.venues, now = Date.now() } = {}) {
+// extra: quotes found elsewhere (Polymarket US) to weigh with the scan's
+function routeSignal(s, { index = xarbState.venues, now = Date.now(), extra = [] } = {}) {
   if (!s || s.type !== 'entry') return s;
   let quotes = [];
   try { quotes = xarb.venueQuotes(s, index, { ...XARB_OPTS, now }); } catch (e) { console.warn('Tail venues:', e.message); }
+  quotes = [...quotes, ...(extra || []).filter(Boolean)];
   const venues = quotes.map(v => sizeQuote(s, v));
   venues.sort((a, b) => (b.units - a.units) || (a.cost - b.cost) || (a.price - b.price));
   s.venues = venues.map(venueView);
@@ -2324,20 +2329,25 @@ async function runTailJob(name, fn) {
 // busy) is still the first one when it lands. A top-up adds to a position
 // already pinged, so it isn't pinged again.
 let tailPolled = false;
-const tailRouting = { routed: 0, withVenue: 0, lastAt: null, byCategory: {} };
+const tailRouting = { routed: 0, withVenue: 0, lastAt: null, byCategory: {}, byVenue: {} };
 // What a routed entry told followers to add: the venue's units, or with no
 // venue the Polymarket size the track record logs it at.
 const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
 // where to tail, as each entry is made (so the next buy by the same wallet
 // tops up what that venue was told) and before it's logged (the record
 // grades it at that venue's price)
-function routeTail(s) {
-  routeSignal(s);
+async function routeTail(s) {
+  let extra = [];
+  if (polymarketUs && s?.type === 'entry' && !s.blocked) {
+    try { const q = await polymarketUs.quoteFor(s); if (q) extra = [q]; } catch (e) { console.warn('Polymarket US:', e.message); }
+  }
+  routeSignal(s, { extra });
   tailRouting.routed++;
   if (s.venue) tailRouting.withVenue++;
   const c = tailRouting.byCategory[s.category || 'other'] ||= { routed: 0, withVenue: 0 };
   c.routed++;
   if (s.venue) c.withVenue++;
+  if (s.venue?.key) tailRouting.byVenue[s.venue.key] = (tailRouting.byVenue[s.venue.key] || 0) + 1;
   tailRouting.lastAt = new Date().toISOString();
   return tailUnits(s);
 }
@@ -2668,7 +2678,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.37.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.38.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3427,7 +3437,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.37.0',
+  version: '3.38.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3450,7 +3460,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
   // free: counts and timestamps only (see publicTailState)
-  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats() } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
+  tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats(), polymarketUs: polymarketUs?.state() ?? null } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
   xarb: { arbs: xarbState.arbs.length, updated: xarbState.updated, durationMs: xarbState.durationMs, running: xarbState.running, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
     venueMarkets: xarbState.venues?.size ?? 0, gameSweep: kalshiGameSweep ? kalshiGameSweep.stats() : null },
@@ -3545,7 +3555,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.37.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.38.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
@@ -3587,7 +3597,7 @@ module.exports = {
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
-  tailEngine, tailTracker, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
+  tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };

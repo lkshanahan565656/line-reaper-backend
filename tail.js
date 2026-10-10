@@ -637,7 +637,7 @@ function parseGammaMarket(m) {
     tokens: (jsonList(m.clobTokenIds) || []).map(String),
     bestBid: num(m.bestBid), bestAsk: num(m.bestAsk), lastTradePrice: num(m.lastTradePrice),
     endDate: m.endDate || m.endDateIso || null, gameStartTime: m.gameStartTime || m.game_start_time || null,
-    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null,
+    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null, line: num(m.line),
     active: m.active !== false && m.active !== 'false', closed: bool(m.closed), resolution: m.umaResolutionStatus || null,
     acceptingOrders: m.acceptingOrders == null ? null : bool(m.acceptingOrders),
     negRisk: bool(m.negRisk), volume: num(m.volume), liquidity: num(m.liquidity),
@@ -1242,7 +1242,9 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   const eventSlug = trade.eventSlug || market?.eventSlug || trade.slug || null;
   const base = {
     id: trade.key, wallet: trader.wallet, name: trader.name || trade.name || null, grade: tier.grade, scope: tier.scope, category,
-    market: trade.title || market?.question || '', eventSlug, conditionId: trade.conditionId, asset: trade.asset,
+    market: trade.title || market?.question || '', eventSlug, slug: trade.slug || market?.slug || null, conditionId: trade.conditionId, asset: trade.asset,
+    ...(market?.sportsMarketType ? { sportsMarketType: market.sportsMarketType } : {}), ...(market?.line != null ? { line: market.line } : {}),
+    ...(market?.outcomes?.length ? { outcomes: market.outcomes } : {}),
     outcome: trade.outcome, outcomeIndex: trade.outcomeIndex,
     theirPrice: trade.price, theirSize: round(trade.size, 4), theirNotional: round(trade.notional, 2),
     at: iso(trade.at ?? now), seenAt: iso(now), url: eventUrl(eventSlug),
@@ -1921,7 +1923,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   // → the new signals (entries and exits) since the last poll, oldest first.
-  // route(signal) → units, when given, sizes each entry where followers bet
+  // route(signal) → units (or a promise of them), when given, sizes each entry where followers bet
   // (another venue's price) as it's made; those units are what later buys by
   // the same wallet top up. Without it, the size at Polymarket's ask.
   // The poll and the live stream hand trades to one lane, so a trade is
@@ -2023,7 +2025,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       // scaling in over several orders is one position: later buys top it up
       if (signal.type === 'entry' && typeof route === 'function') {
         let added = 0;
-        try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+        try { added = await route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
         noteTailed(signal, added);
         noteEvent(signal, added);
       } else if (signal.type === 'entry' && signal.target > 0) {
