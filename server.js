@@ -330,9 +330,11 @@ function parseUnderdogPayload(data) {
   return lines;
 }
 
+const UNDERDOG_URL = process.env.UNDERDOG_URL || 'https://api.underdogfantasy.com/v1/over_under_lines';
 async function scrapeUnderdog() {
   try {
-    const res = await axios.get('https://api.underdogfantasy.com/beta/v5/over_under_lines', {
+    // beta/v5 and v6 answer 426 (upgrade required) since 2026-10; v1 serves the same payload
+    const res = await axios.get(UNDERDOG_URL, {
       headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'x-api-key': 'undefined' },
       timeout: 10000
     });
@@ -555,7 +557,7 @@ function calcBookEV(prob, book, mult = 1.00) {
 }
 
 const {
-  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch,
+  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
 const { propProb } = require('./dist');
@@ -2478,6 +2480,104 @@ async function scanXarbs() {
   } finally { xarbState.running = false; }
 }
 
+// ── ESPORTS MATCH BOARD ──
+// Every esports match on Kalshi and Polymarket, priced against each other and
+// a sportsbook (CS2), with the team-rating model alongside (esboard.js).
+const esboard = require('./esboard');
+const ESPORTS_OPTS = {
+  ...(process.env.ESPORTS_EDGE_MIN ? { edgeMin: parseFloat(process.env.ESPORTS_EDGE_MIN) } : {}),
+  ...(process.env.ESPORTS_MAX_SPREAD ? { maxSpread: parseFloat(process.env.ESPORTS_MAX_SPREAD) } : {}),
+};
+const ESPORTS_ALERT_MIN = parseFloat(process.env.ESPORTS_ALERT_MIN || '0.04');
+const ESPORTS_REALERT_MS = 6 * 3600e3;
+const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS });
+const esportsEdgeSeen = new Map();
+// US mode: Polymarket International can't be traded from the US (and Polymarket
+// US lists no esports), so its prices stay as a reference but its edges and
+// arb legs go.
+const tradableVenue = v => v === 'kalshi' || (v === 'polymarket' && TAIL_REGION !== 'us');
+async function scanEsportsBoard() {
+  const st = await esportsBoard.scan();
+  const now = Date.now();
+  // the exchanges' match prices are the match context for player props
+  for (const m of st.matches) {
+    const main = m.markets.find(mk => mk.kind === 'match');
+    const sport = sportKey(m.game);
+    if (!main || main.outcomes[0].fair == null || !['CS', 'VAL', 'LOL', 'DOTA', 'COD'].includes(sport) || m.live) continue;
+    try {
+      oddsBook.set({ sport, teamA: m.teams[0], teamB: m.teams[1], pA: main.outcomes[0].fair, bestOf: m.bestOf || 3, source: 'exchanges', start: m.start, ...(m.bestOf === 1 ? { perMap: true } : {}) });
+    } catch { /* a 0 or 1 price: skip */ }
+  }
+  const lic = webhookLicence();
+  const fresh = [];
+  for (const m of st.matches) {
+    for (const e of m.edges) {
+      if (!tradableVenue(e.venue) || !lic[e.venue] || e.ev < ESPORTS_ALERT_MIN) continue;
+      const key = `${m.id}|${e.market}|${e.outcome}|${e.venue}`;
+      if (esportsEdgeSeen.has(key) && now - esportsEdgeSeen.get(key) < ESPORTS_REALERT_MS) continue;
+      esportsEdgeSeen.set(key, now);
+      fresh.push({ m, e });
+    }
+  }
+  for (const [k, at] of esportsEdgeSeen) if (now - at > 2 * 86400e3) esportsEdgeSeen.delete(k);
+  // the first scan after a restart only primes (every edge would look new)
+  if (fresh.length && esportsBoard.primed) {
+    broadcast('esports-edge', fresh.map(({ m, e }) => ({ match: m.id, ...e })));
+    postAlert(fresh.map(({ m, e }) => describeEsportsEdge(m, e)), 'Esports edges');
+  }
+  esportsBoard.primed = true;
+  return st;
+}
+// "🎮 CS2 · Spirit vs MOUZ (Bo3, 1:00 PM ET): MOUZ to win on Kalshi at 42¢, fair 45.1¢ (+7.4%) <link>"
+function describeEsportsEdge(m, e) {
+  const mk = m.markets.find(x => x.key === e.market);
+  const what = e.kind === 'map' ? `${e.outcome} to win map ${mk?.n}` : e.kind === 'total' ? `${e.outcome} ${mk?.line} maps` : e.kind === 'spread' ? `${e.outcome} maps` : `${e.outcome} to win`;
+  const when = m.start ? new Date(m.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : 'time TBD';
+  const link = e.venue === 'kalshi' ? m.links.kalshi : TAIL_REGION === 'us' ? null : m.links.polymarket;
+  return `🎮 ${m.label} · ${m.teams.join(' vs ')} (${m.bestOf ? `Bo${m.bestOf}, ` : ''}${when}): ${what} on ${e.venue === 'kalshi' ? 'Kalshi' : 'Polymarket'} at ${cents(e.cost)}, fair ${cents(e.fair)} (+${(e.ev * 100).toFixed(1)}%)${link ? ` <${link}>` : ''}`;
+}
+// What one viewer may see of the board: venues they're licensed for, edges
+// only on venues they can trade, and Pro for the edges themselves.
+function esportsBoardFor(req) {
+  const lic = licenceOf(req), pro = hasPro(req);
+  const sharpBy = new Map();
+  if (lic.polymarket && pro) {
+    for (const sig of tailEngine.signals({ limit: 500, type: 'entry' })) {
+      if (!sig.conditionId) continue;
+      if (!sharpBy.has(sig.conditionId)) sharpBy.set(sig.conditionId, []);
+      sharpBy.get(sig.conditionId).push(sig);
+    }
+  }
+  const strip = q => (q ? { ...q } : q);
+  return esportsBoard.state.matches.map(m => {
+    const links = { ...(lic.kalshi ? { kalshi: m.links.kalshi } : {}), ...(lic.polymarket && TAIL_REGION !== 'us' ? { polymarket: m.links.polymarket } : {}) };
+    const sharps = [];
+    const markets = m.markets.map(mk => ({
+      ...mk,
+      arb: mk.arb && mk.arb.legs.every(l => tradableVenue(l.venue) && lic[l.venue]) && pro ? mk.arb : null,
+      outcomes: mk.outcomes.map(oc => {
+        const quotes = {};
+        for (const [v, q] of Object.entries(oc.quotes)) {
+          if ((v === 'kalshi' || v === 'polymarket') && !lic[v]) continue;
+          const c = strip(q);
+          if (!pro || !tradableVenue(v)) { delete c.edge; if (!pro) { c.ev = null; c.ref = null; } }
+          quotes[v] = c;
+        }
+        const pmq = oc.quotes.polymarket;
+        if (pmq?.conditionId && sharpBy.has(pmq.conditionId)) {
+          for (const sig of sharpBy.get(pmq.conditionId)) {
+            if (sig.outcome && sig.outcome !== oc.name && !esboard.sameTeam(sig.outcome, oc.name)) continue;
+            sharps.push({ market: mk.key, outcome: oc.name, name: sig.name || null, wallet: sig.wallet, grade: sig.grade, price: sig.theirPrice ?? sig.price ?? null, units: sig.units ?? null, at: sig.at });
+          }
+        }
+        return { ...oc, quotes, best: oc.best && tradableVenue(oc.best.venue) && lic[oc.best.venue] ? { ...oc.best, ev: pro ? oc.best.ev : null } : null };
+      }),
+    }));
+    const edges = pro ? m.edges.filter(e => tradableVenue(e.venue) && lic[e.venue]) : [];
+    return { ...m, links, markets, edges, arbs: pro ? markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })) : [], sharps, locked: !pro && m.edges.length > 0 };
+  });
+}
+
 // Free users get the shape of it, not who to follow: wallets become a keyed
 // hash (not reversible from Polymarket's public leaderboard), and names and
 // dollar totals (which would find the wallet on that leaderboard) are dropped.
@@ -2601,7 +2701,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.37.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.45.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -2901,6 +3001,20 @@ app.get('/api/tail/settings', (req, res) => {
 });
 
 // ── ESPORTS ENDPOINTS ─────────────────────────────────────────────────────────
+// The match board. ?game=CS2&edges=1 (only matches with an edge)&live=0 (pre-match only)
+app.get('/api/esports/matches', (req, res) => {
+  let matches = esportsBoardFor(req);
+  const game = String(req.query.game || '').toUpperCase();
+  if (game && game !== 'ALL') matches = matches.filter(m => m.game === game);
+  if (req.query.edges === '1') matches = matches.filter(m => m.edges.length || m.arbs.length);
+  if (req.query.live === '0') matches = matches.filter(m => !m.live);
+  const st = esportsBoard.state;
+  res.json({
+    matches, count: matches.length, updated: st.updated, counts: st.counts, errors: st.errors.slice(0, 5), pro: hasPro(req), region: TAIL_REGION,
+    games: Object.fromEntries(Object.entries(esboard.GAMES).map(([k, g]) => [k, g.label])),
+    rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
+  });
+});
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
@@ -3351,10 +3465,11 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.37.0',
+  version: '3.45.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
+  esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,
     updated: esportsCache.lastUpdated,
@@ -3460,6 +3575,7 @@ cron.schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWha
 cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
 // Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
 cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+cron.schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
 cron.schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 // Grade tracked signals whose markets resolved, every 10 minutes
 cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
@@ -3469,7 +3585,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.37.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.45.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
@@ -3495,6 +3611,7 @@ if (require.main === module) {
     // team ratings for match context, then rebuild picks with them
     setTimeout(() => refreshMatchFeeds()
       .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
+    setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
@@ -3514,4 +3631,5 @@ module.exports = {
   tailEngine, tailTracker, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
+  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge,
 };
