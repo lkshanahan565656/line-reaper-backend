@@ -65,7 +65,7 @@ test('closing price: a game closes at its start; anything else when the outcome 
   assert.equal(T.closingPrice(null, { closeAt: start }), null);
 });
 
-test('closing window: a game ends at Gamma\'s start; a game with no start has none; others end at their close, end date or now', () => {
+test('closing window: a game ends at Gamma\'s start; a game with no start has none; others end at their close, end date, now or two days after the bet', () => {
   const span = Math.min(7 * DAY, 1000 * 300e3);   // 7 days of 5-minute buckets is 2,016: cut to the 1,000 one call returns
   const kickoff = Date.parse('2026-10-06T23:30:00Z');
   const pos = { asset: 'tok', price: 0.4, category: 'sports', title: 'Lakers vs. Celtics', endAt: NOW - DAY };
@@ -76,9 +76,9 @@ test('closing window: a game ends at Gamma\'s start; a game with no start has no
   assert.equal(T.clvWindow(pos, T.parseGammaMarket({ question: 'Lakers -4.5', sportsMarketType: 'spreads' }), { now: NOW }), null);
   // a season-long sports future has no game: it closes like anything else
   const finals = T.parseGammaMarket({ question: 'Will the Lakers win the 2026 NBA Finals?', closedTime: '2026-06-20 02:10:00+00' });
-  assert.deepEqual(T.clvWindow({ ...pos, title: 'NBA Champion' }, finals, { now: NOW }), { start: Date.parse('2026-06-20T02:10:00Z') - span, end: Date.parse('2026-06-20T02:10:00Z'), rule: 'freeze' });
-  // other markets: the earliest of the market's close time, its end date and now
-  const pol = { asset: 'p', price: 0.5, category: 'politics', endAt: NOW - 3 * DAY };
+  assert.deepEqual(T.clvWindow({ ...pos, title: 'NBA Champion', enteredAt: Date.parse('2026-06-19T00:00:00Z') }, finals, { now: NOW }), { start: Date.parse('2026-06-20T02:10:00Z') - span, end: Date.parse('2026-06-20T02:10:00Z'), rule: 'freeze' });
+  // other markets: the earliest of the market's close time, its end date, now and two days after the first entry
+  const pol = { asset: 'p', price: 0.5, category: 'politics', endAt: NOW - 3 * DAY, enteredAt: NOW - DAY };
   assert.equal(T.clvWindow(pol, null, { now: NOW }).end, NOW - 3 * DAY);
   assert.equal(T.clvWindow({ ...pol, endAt: NOW + 30 * DAY }, null, { now: NOW }).end, NOW, 'resolved early, no close time known');
   assert.equal(T.clvWindow({ ...pol, endAt: NOW + 30 * DAY }, T.parseGammaMarket({ closedTime: iso(NOW - 5 * DAY) }), { now: NOW }).end, NOW - 5 * DAY);
@@ -87,6 +87,11 @@ test('closing window: a game ends at Gamma\'s start; a game with no start has no
   assert.equal(T.clvWindow(pos, T.parseGammaMarket({ gameStartTime: iso(NOW + H) }), { now: NOW }), null, 'not started yet');
   const short = T.clvWindow(pol, null, { now: NOW, opts: { clvWindowDays: 1 } });
   assert.equal(short.end - short.start, DAY);
+  // a market that drifts to its result would "close" at 96¢ for a winner: the line two days after the bet instead
+  assert.deepEqual(T.clvWindow({ ...pol, enteredAt: NOW - 20 * DAY }, null, { now: NOW }), { start: NOW - 18 * DAY - span, end: NOW - 18 * DAY, rule: 'freeze' });
+  assert.equal(T.clvWindow({ ...pol, enteredAt: NOW - 20 * DAY }, null, { now: NOW, opts: { clvHorizonDays: 5 } }).end, NOW - 15 * DAY);
+  assert.equal(T.clvWindow({ ...pol, enteredAt: null }, null, { now: NOW }), null, 'no entry time: no line to read');
+  assert.equal(T.clvWindow({ ...pos, enteredAt: null }, game, { now: NOW }).end, kickoff, 'a game needs no entry time');
 });
 
 test('a bet\'s CLV is (close − entry) / entry on the token held; bought after the line stopped counting, it has none', () => {
@@ -96,13 +101,18 @@ test('a bet\'s CLV is (close − entry) / entry on the token held; bought after 
   near(x.clv, 0.15);
   assert.deepEqual({ ...x, clv: null }, {
     asset: 'tok', conditionId: 'c', category: 'sports', title: 'Lakers vs. Celtics', risked: 1000, entry: 0.4, close: 0.46,
-    closeAt: iso(NOW - 5 * MIN), cutAt: iso(NOW), rule: 'game', clv: null,
+    closeAt: iso(NOW - 5 * MIN), cutAt: iso(NOW), enteredAt: iso(NOW - DAY), rule: 'game', clv: null,
   });
   near(T.clvOf({ ...pos, price: 0.5 }, close).clv, -0.08, 1e-9, 'the close went against it');
   assert.equal(T.clvOf({ ...pos, enteredAt: NOW + MIN }, close), null, 'bought in play');
   assert.ok(T.clvOf({ ...pos, enteredAt: null }, close), 'no entry time: taken as before');
   assert.equal(T.clvOf(pos, null), null);
   assert.equal(T.clvOf({ ...pos, price: 1 }, close), null);
+  // a longshot at 3¢ or less (or a lock at 97¢+) has no line to beat; one bet counts at most +100%
+  assert.equal(T.clvOf({ ...pos, price: 0.0132 }, close), null, 'a 1¢ Nobel nominee');
+  assert.equal(T.clvOf({ ...pos, price: 0.97 }, close), null);
+  assert.equal(T.clvOf({ ...pos, price: 0.1 }, close).clv, 1, '10¢ to 46¢ is +360%, counted as +100%');
+  near(T.clvOf({ ...pos, price: 0.1 }, close, { cap: 5 }).clv, 3.6);
 });
 
 test('CLV summary: stake-weighted average, share that beat the close, n; the most recent bets are sampled', () => {
@@ -119,6 +129,13 @@ test('CLV summary: stake-weighted average, share that beat the close, n; the mos
   ];
   assert.deepEqual(T.clvCandidates(resolved, 3).map(p => p.asset), ['b', 'c', 'a'], 'newest first, one per token, only priced bets with a token');
   assert.deepEqual(T.clvCandidates(resolved, 10).map(p => p.asset), ['b', 'c', 'a', 'e']);
+  // one per event, its biggest bet: a spread across fifteen nominees is one bet; longshots and locks aren't sampled
+  const HOUR_MS = 3600e3;
+  const nobel = Array.from({ length: 15 }, (_, i) => ({ asset: `n${i}`, eventSlug: 'nobel-peace-prize-2026', price: 0.2, risked: i === 7 ? 50 : 9.41, at: NOW - DAY }));
+  const mixed = [...nobel, { asset: 'f', eventSlug: 'fed-october', price: 0.6, risked: 500, at: NOW - 2 * DAY },
+    { asset: 'f2', eventSlug: 'fed-october', price: 0.3, risked: 100, at: NOW - 3 * HOUR_MS },
+    { asset: 'long', eventSlug: 'aliens', price: 0.02, risked: 900, at: NOW }, { asset: 'lock', eventSlug: 'sun', price: 0.98, risked: 900, at: NOW }];
+  assert.deepEqual(T.clvCandidates(mixed, 25).map(p => p.asset), ['f', 'n7'], 'Fed: settled most recently, its $500 bet; Nobel: the $50 one');
   assert.equal(T.DEFAULTS.clvSample, 25);
 });
 
