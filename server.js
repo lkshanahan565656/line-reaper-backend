@@ -2325,13 +2325,16 @@ async function pollTail() {
 async function streamTail(trades) {
   return publishTail(await tailEngine.ingest(trades, { route: routeTail }), tailPolled);
 }
+// A first entry: every A and consensus, B when sized somewhere. A blocked buy
+// (in-play, near-certain, split) is nothing to act on.
+const tailPings = s => !s.parentId && !s.blocked && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0));
 async function publishTail(signals, primed) {
   const fresh = [], ping = [];
   for (const s of signals) {
     let logged = false;
     try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
     if (logged || primed) fresh.push(s);
-    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0))) ping.push(s);
+    if (logged && tailPings(s)) ping.push(s);
   }
   if (fresh.length) broadcast('tail', fresh);
   // the webhook can reach other people: Polymarket wallets only with that
@@ -3484,5 +3487,5 @@ module.exports = {
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
   tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
-  routeSignal, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
+  routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };
