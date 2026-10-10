@@ -268,12 +268,13 @@ const nextCursor = payload => {
 // wallets and condition ids out of messages anyone can read (/api/status)
 const maskIds = s => String(s).replace(/0x[0-9a-f]{8,}/gi, '0x…');
 // unix seconds, unix ms or an ISO string → ms
+// (a Go zero time, "0001-01-01T00:00:00Z", is no time at all: before 1970 → null)
 function toMs(v) {
   if (v == null || v === '') return null;
   const n = Number(v);
   if (Number.isFinite(n)) return n <= 0 ? null : n > 1e12 ? n : n * 1000;
   const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
+  return Number.isFinite(t) && t > 0 ? t : null;
 }
 const money = x => `${x < 0 ? '-' : ''}$${String(Math.round(Math.abs(x))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 const pct = (x, d = 1) => `${round(x * 100, d)}%`;
@@ -1755,6 +1756,18 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // A graded wallet's trade after it was scored moves its book: a buy adds to
   // (or opens) the position, a sell takes from it. Trades from before the
   // score are already in the positions it was scored on.
+  // Some feed rows don't say which market they're in (no title or slug): an
+  // exit then read 'Exit: sold … of ""' filed under other. The name comes from
+  // what the wallet holds there, else from Gamma.
+  async function nameTrade(trader, tr) {
+    const h = (trader.holdings || []).find(x => x.asset === String(tr.asset));
+    const m = h?.title ? null : await quote(tr.conditionId);
+    const src = h?.title ? { title: h.title, slug: h.slug, eventSlug: h.eventSlug, outcome: h.outcome }
+      : m ? { title: m.question, slug: m.slug, eventSlug: m.eventSlug, outcome: m.outcomes?.[tr.outcomeIndex] ?? null } : null;
+    if (!src) return;
+    for (const k of ['title', 'slug', 'eventSlug', 'outcome']) if (!tr[k] && src[k]) tr[k] = src[k];
+  }
+
   function noteHolding(trader, tr) {
     if (!Array.isArray(trader.holdings) || !tr.asset || !(tr.size > 0)) return;
     const scored = toMs(trader.scoredAt);
@@ -1974,6 +1987,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      if (!(tr.title || tr.slug || tr.eventSlug) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
       // what a sale came out of, read before it's taken off (a trade from
       // before the wallet was scored is already in its positions)
       const scored = toMs(trader.scoredAt);

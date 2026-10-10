@@ -1693,9 +1693,25 @@ test('exits: a trim keeps the tail open; selling most of it ends it, and says wh
   const after = await poll({ side: 'SELL', price: 0.45, size: 3000 }, 'after');
   assert.equal(after.tailed.id, back.id);
 
+  // a feed row that doesn't name its market: named from what the wallet holds, else from Gamma
+  await poll({ price: 0.4, size: 4000 }, 'again');
+  const unnamed = { title: '', slug: '', eventSlug: '', outcome: '' };
+  const held = await poll({ side: 'SELL', price: 0.46, size: 4000, ...unnamed }, 'unnamed');
+  assert.deepEqual([held.market, held.eventSlug, held.outcome, held.category], ['Will X win the Ohio Senate election?', 'ohio-senate', 'Yes', 'politics']);
+  const gamma = await poll({ side: 'SELL', price: 0.55, size: 3000, asset: 'tok-no', outcomeIndex: 1, ...unnamed }, 'unnamed-no');
+  assert.deepEqual([gamma.market, gamma.eventSlug, gamma.outcome, gamma.category], ['Will X win the Ohio Senate election?', 'ohio-senate', 'No', 'politics']);
+
   // a sale with no known position counts as a full exit
   assert.deepEqual([T.soldShare({ size: 10 }, null), T.soldShare({ size: 10 }, { size: 4 }), T.soldShare({ size: 1 }, { size: 4 })], [null, 1, 0.25]);
   const bare = T.tradeSignal({ trade: { ...T.parseTrades([rawTrade(W(1), { side: 'SELL', size: 2000, price: 0.5, timestamp: Math.floor(NOW / 1000) })])[0] },
     trader: eng.trader(W(1)), now: NOW });
   assert.deepEqual([bare.signal.full, bare.signal.soldShare, bare.signal.tailed], [true, null, null]);
+});
+
+test('a Go zero time ("0001-01-01T00:00:00Z") is no time: the closing-line window starts after 1970', () => {
+  const m = T.parseGammaMarket(gammaMarket({ closedTime: '0001-01-01T00:00:00Z', endDate: '2026-10-01T00:00:00Z' }));
+  assert.equal(m.closedAt, null);
+  const win = T.clvWindow({ asset: 'tok-yes', category: 'politics' }, m, { now: NOW });
+  assert.equal(win.end, Date.parse('2026-10-01T00:00:00Z'));
+  assert.ok(win.start > 0, 'prices-history refuses a start before 1970 with a 400');
 });
