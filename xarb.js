@@ -599,7 +599,7 @@ function teamContext(games = []) {
   };
   function same(a, b, league = null) {
     const x = norm(a), y = norm(b);
-    if (!x || !y) return false;
+    if (!x || !y || stateTwin(a, b)) return false;
     if (x === y || teamMatches(a, b) || teamMatches(b, a)) return true;
     const ys = resolve(b, league);
     for (const n of resolve(a, league)) if (ys.has(n)) return true;
@@ -622,11 +622,27 @@ function pairSides(a, b, same) {
 // are all in the other's, or two people share a surname and first initial.
 const NAME_FILLER = new Set(['fc', 'cf', 'sc', 'sv', 'afc', 'bv', 'ac', 'as', 'ss', 'us', 'cd', 'ud', 'rc', 'rcd', 'sd', 'fk', 'sk', 'nk',
   'if', 'bk', 'ik', 'tsg', 'vfb', 'vfl', 'rb', 'club', 'de', 'del', 'la', 'the', 'team', 'esports', 'gaming', 'e', 'sports']);
-const NAME_ALIAS = { munchen: 'munich', koln: 'cologne', utd: 'united', man: 'manchester' };
-const nameWords = s => norm(s).split(' ').map(t => NAME_ALIAS[t] || t).filter(t => t && !NAME_FILLER.has(t) && !/^\d+$/.test(t));
+const NAME_ALIAS = { munchen: 'munich', koln: 'cologne', utd: 'united', man: 'manchester', saint: 'st' };
+// A last "St." is State: Kalshi's "Ohio St." is Polymarket's "Ohio State"
+// (a first one is Saint: "St. Louis"). Apostrophes go: "Hawai'i", "St. John's".
+const nameWords = s => {
+  const words = norm(String(s || '').replace(/['’]/g, '')).split(' ').filter(Boolean);
+  return words.map((t, i) => (t === 'st' && i > 0 && i === words.length - 1 ? 'state' : NAME_ALIAS[t] || t))
+    .filter(t => t && !NAME_FILLER.has(t) && !/^\d+$/.test(t));
+};
+const endsState = w => w[w.length - 1] === 'state';
+// "Ohio" and "Ohio St." are two schools, whatever the city rules say
+function stateTwin(a, b) {
+  const x = nameWords(a), y = nameWords(b);
+  if (endsState(x) === endsState(y)) return false;
+  const [st, plain] = endsState(x) ? [x, y] : [y, x];
+  return st.slice(0, -1).join(' ') === plain.join(' ');
+}
 function nameMatch(a, b) {
   const x = nameWords(a), y = nameWords(b);
   if (!x.length || !y.length) return false;
+  // Ohio State isn't Ohio, nor Iowa State Iowa (Golden State is the Golden State Warriors)
+  if (endsState(x) !== endsState(y) && !(x.includes('state') && y.includes('state'))) return false;
   const [s, l] = x.length <= y.length ? [x, y] : [y, x];
   if (s.every(t => l.includes(t)) && s.some(t => t.length >= 3)) return true;
   const last = s[s.length - 1];

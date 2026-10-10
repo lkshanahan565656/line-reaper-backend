@@ -2313,13 +2313,16 @@ async function pollTail() {
 async function streamTail(trades) {
   return publishTail(await tailEngine.ingest(trades, { route: routeTail }), tailPolled);
 }
+// A first entry: every A and consensus, B when sized somewhere. A blocked buy
+// (in-play, near-certain, split) is nothing to act on.
+const tailPings = s => !s.parentId && !s.blocked && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0));
 async function publishTail(signals, primed) {
   const fresh = [], ping = [];
   for (const s of signals) {
     let logged = false;
     try { logged = await tailTracker.record(s); } catch (e) { console.warn('Tail tracker:', e.message); }
     if (logged || primed) fresh.push(s);
-    if (logged && !s.parentId && (s.grade === 'A' || s.isConsensus || (TAIL_PING_B && s.grade === 'B' && tailUnits(s) > 0))) ping.push(s);
+    if (logged && tailPings(s)) ping.push(s);
   }
   if (fresh.length) broadcast('tail', fresh);
   // the webhook can reach other people: Polymarket wallets only with that
@@ -2562,7 +2565,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.32.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.33.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3310,7 +3313,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.32.0',
+  version: '3.33.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3428,7 +3431,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.32.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.33.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
@@ -3472,5 +3475,5 @@ module.exports = {
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
   tailEngine, tailTracker, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
-  routeSignal, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
+  routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
 };

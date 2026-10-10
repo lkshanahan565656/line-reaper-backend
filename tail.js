@@ -1233,7 +1233,9 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   if (trade.side !== 'BUY') return skip('unknown side');
   if (market) {
     if (market.closed || !market.active) return skip('market closed');
-    const end = toMs(market.endDate);
+    // a game's end date is its start, and it resolves hours later: a buy
+    // minutes before kick-off still counts (one after it is blocked below)
+    const end = toMs(market.gameStartTime) == null ? toMs(market.endDate) : null;
     if (end != null && end - now < o.minCloseMs) return skip(`market resolves within ${Math.round(o.minCloseMs / 60e3)} min`);
   }
 
