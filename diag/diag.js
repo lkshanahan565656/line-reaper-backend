@@ -26,11 +26,31 @@ const countBy = (xs, f) => { const o = {}; for (const x of xs) { const k = f(x);
 const NOW = Date.now();
 
 async function main() {
-  // docs: list endpoints
+  // Polymarket US leagues and their events
+  const usEvents = [];
   try {
-    const d = await http.get('https://docs.polymarket.us/llms.txt');
-    out('pmus-docs', String(d.data).split('\n').filter(l => /events|markets|series|sports|GET|list/i.test(l)).slice(0, 80));
-  } catch (e) { out('pmus-docs-error', e.message); }
+    const lg = await http.get(pmus.GATEWAY + '/v2/leagues', { params: { limit: 50 } });
+    const d = lg.data;
+    const list = Array.isArray(d) ? d : d?.leagues || d?.data || [];
+    out('pmus-leagues', { keys: d && typeof d === 'object' ? Object.keys(d) : typeof d, n: list.length, slugs: list.map(x => `${x.slug}${x.isOperational === false ? '(off)' : ''}`) });
+  } catch (e) { out('pmus-leagues-error', { m: e.message, s: e?.response?.status }); }
+  const trimS = m => JSON.parse(JSON.stringify(m, (k, v) => (typeof v === 'string' && v.length > 120 ? v.slice(0, 120) + '…' : v)));
+  for (const lg of ['nfl', 'cfb', 'ncaaf', 'nba', 'nhl', 'mlb', 'wnba', 'cbb', 'mls', 'epl', 'ucl', 'laliga']) {
+    try {
+      let n = 0, sample = null, keys = null, pages = 0;
+      for (let offset = 0; pages < 10; offset += 50, pages++) {
+        const r = await http.get(`${pmus.GATEWAY}/v2/leagues/${lg}/events`, { params: { limit: 50, offset } });
+        const evs = r.data?.events || [];
+        if (!keys) keys = Object.keys(r.data || {});
+        for (const e of evs) { usEvents.push({ league: lg, e }); n++; }
+        if (!sample && evs[0]) sample = evs[0];
+        if (evs.length < 50) break;
+      }
+      const kinds = {};
+      for (const { e } of usEvents.filter(x => x.league === lg)) for (const m of e.markets || []) kinds[m.sportsMarketType] = (kinds[m.sportsMarketType] || 0) + 1;
+      out(`pmus-league ${lg}`, { n, pages: pages + 1, keys, kinds, sample: sample ? trimS({ ...sample, markets: (sample.markets || []).slice(0, 2), marketGroups: undefined, description: undefined }) : null });
+    } catch (e) { out(`pmus-league ${lg}`, { error: e.message, status: e?.response?.status }); }
+  }
 
   // Kalshi: every game series
   const series = await xarb.fetchKalshiGameSeries(http).catch(e => { out('kalshi-series-error', e.message); return xarb.SEED_GAME_SERIES; });
@@ -50,9 +70,11 @@ async function main() {
 
   const polyGames = [];
   let gEvents = 0, gPages = 0, slugsPerPrefix = {};
-  const min = new Date(NOW - 6 * 3600e3).toISOString(), max = new Date(NOW + 48 * 3600e3).toISOString();
-  for (let offset = 0; gPages < 40; offset += 100) {
-    const res = await http.get('https://gamma-api.polymarket.com/events', { params: { tag_id: 100639, closed: false, end_date_min: min, end_date_max: max, order: 'endDate', ascending: true, limit: 100, offset } });
+  const min = new Date(NOW - 4 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z'), max = new Date(NOW + 30 * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z');
+  for (let offset = 0; gPages < 20; offset += 100) {
+    let res;
+    try { res = await http.get('https://gamma-api.polymarket.com/events', { params: { tag_id: 100639, closed: false, end_date_min: min, end_date_max: max, order: 'endDate', ascending: true, limit: 100, offset } }); }
+    catch (e) { out('poly-games-page-error', { offset, m: e.message }); break; }
     const page = Array.isArray(res.data) ? res.data : [];
     gPages++; gEvents += page.length;
     for (const e of page) { const p = String(e.slug || '').split('-')[0]; slugsPerPrefix[p] = (slugsPerPrefix[p] || 0) + 1; }
@@ -68,11 +90,23 @@ async function main() {
   }
 
   // unmatched two-team games in the big leagues, with Kalshi's games the same day
-  const matches = xarb.matchMarkets(kalshi, polyGames, { now: NOW });
+  const matches = xarb.matchMarkets(kalshi, polyVol, { now: NOW });
   const matchedP = new Set(matches.map(m => m.polymarket.gameSlug));
   const kTeams = kalshi.filter(r => r.kind === 'teams' && !r.hasDraw);
+  const { teamMatches } = require('../exchanges');
+  const named = (a, b) => { try { return xarb.nameMatch(a, b) || teamMatches(a, b) || teamMatches(b, a); } catch { return false; } };
+  const byName = {};
+  for (const p of polyVol.filter(r => r.kind === 'teams' && !matchedP.has(r.gameSlug) && r.league)) {
+    const L = p.league;
+    (byName[L] ||= []);
+    if (byName[L].length >= 10) continue;
+    const hits = kTeams.filter(k => [k.outcomeLabel, k.noLabel].some(x => named(x, p.outcomeLabel) || named(x, p.noLabel)))
+      .slice(0, 4).map(k => `${k.id} [${k.outcomeLabel}|${k.noLabel}] L=${k.league} start=${k.startTime} exp=${k.expectedExpiration} close=${k.closeTime} no=${k.gameNo}`);
+    byName[L].push({ slug: p.gameSlug, teams: [p.outcomeLabel, p.noLabel], start: p.startTime, close: p.closeTime, gameNo: p.gameNo, hits });
+  }
+  out('unmatched-by-name', byName);
   const samples = {};
-  for (const p of polyGames.filter(r => r.kind === 'teams' && !matchedP.has(r.gameSlug))) {
+  for (const p of polyVol.filter(r => r.kind === 'teams' && !matchedP.has(r.gameSlug))) {
     const L = p.league || p.gameSlug.split('-')[0];
     (samples[L] ||= []);
     if (samples[L].length >= 8) continue;
