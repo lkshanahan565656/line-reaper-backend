@@ -23,7 +23,8 @@
 // Over/Under a line, and is matched to the market and side asking exactly
 // that. Soccer's three-way markets and every other kind are left out.
 //
-// Taker fee: 0.0695 × p(1 − p) a contract (fees.md, from 2026-10-07).
+// Taker fee: the market's feeCoefficient × p(1 − p) a contract (0.0695 on
+// every market seen, and in fees.md from 2026-10-07).
 //
 // Parsers and matchers are pure; createPolymarketUs caches events (a minute)
 // and books (10 s) over an axios-style `http`.
@@ -42,18 +43,21 @@ const round = (x, n) => (x == null || !Number.isFinite(x) ? null : Math.round(x 
 const norm = s => String(s || '').trim().toLowerCase();
 const amount = v => num(v && typeof v === 'object' ? v.value : v);   // { value, currency } or a bare number
 const inUnit = p => (p > 0 && p < 1 ? p : null);
-const fee = p => (inUnit(p) ? round(FEE_RATE * p * (1 - p), 6) : 0);
+// taker fee a contract at p: the market's own feeCoefficient when it gives one
+const fee = (p, rate = FEE_RATE) => (inUnit(p) ? round((rate ?? FEE_RATE) * p * (1 - p), 6) : 0);
 
-// a Polymarket US market's kind from its sportsMarketType (or marketType)
+// a Polymarket US market's kind from its sportsMarketType: "football_team_
+// full_game_total" is the game's total, "football_team_points_full_game_total"
+// one team's points (left out, like halves and quarters)
+const KIND_RE = /^[a-z]+_team_full_game_(winner|spread|total)$/;
+const KINDS = { winner: 'moneyline', spread: 'spread', total: 'total' };
 function kindOf(m) {
-  const t = norm(m?.sportsMarketType);
-  if (/full_game_winner$/.test(t)) return 'moneyline';
-  if (/full_game_spread$/.test(t)) return 'spread';
-  if (/full_game_total$/.test(t)) return 'total';
-  return null;
+  const k = KIND_RE.exec(norm(m?.sportsMarketType))?.[1];
+  return k ? KINDS[k] : null;
 }
 
-// one market → { slug, kind, line, long, short, bid, ask, open, question } | null.
+const feeRateOf = m => { const r = num(m?.feeCoefficient); return r != null && r >= 0 && r < 1 ? r : FEE_RATE; };
+// one market → { slug, kind, line, long, short, bid, ask, open, question, feeRate } | null.
 // long / short: { team, aliases } for teams, { over: bool } for totals.
 function parseMarket(m) {
   if (!m || typeof m !== 'object') return null;
@@ -74,6 +78,7 @@ function parseMarket(m) {
   const status = norm(m.status);
   return {
     slug, kind, line: num(m.line), long, short, question: m.question || m.title || '',
+    feeRate: feeRateOf(m),
     bid: inUnit(amount(m.bestBidQuote)), ask: inUnit(amount(m.bestAskQuote)),
     open: m.closed !== true && m.closed !== 'true' && m.active !== false && (!status || status === 'market_status_open'),
   };
@@ -232,7 +237,7 @@ function createPolymarketUs({ http, now = () => Date.now(), eventTtlMs = 60e3, b
     const pick = pickOf(hit.market, hit.side);
     const depth = b ? (hit.side === 'long' ? b.askSize : b.bidSize) : null;
     return {
-      key: 'polymarketus', name: 'Polymarket US', price, fee: fee(price), cost: round(price + fee(price), 6),
+      key: 'polymarketus', name: 'Polymarket US', price, fee: fee(price, hit.market.feeRate), cost: round(price + fee(price, hit.market.feeRate), 6),
       side: hit.side, pick, buy: pick, marketId: hit.market.slug, title: hit.market.question, url: eventUrl(ev), match: 'slug',
       ...(depth != null ? { depth } : {}),
     };

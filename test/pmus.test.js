@@ -30,7 +30,9 @@ const total = (line, o = {}) => ({
 });
 const firstHalf = { slug: 'atc-nfl-cle-nyj-2026-10-11-winner-1h-cle', question: 'Will Cleveland win the first half?', sportsMarketType: 'football_team_first_half_winner',
   marketSides: [{ long: true, team: { name: 'Cleveland Browns' } }, { long: false, team: { name: 'Cleveland Browns' } }] };
-const EVENT = { event: { id: 1, slug: 'nfl-cle-nyj-2026-10-11', title: 'CLE Browns vs. NY Jets', markets: [firstHalf, moneyline(), spread(-1.5), spread(3.5), total(41.5), total(43.5)] } };
+// one team's points: not the game's total, whatever the line
+const teamTotal = total(43.5, { slug: 'ttc-nfl-cle-nyj-2026-10-11-cle-43pt5', question: 'Will the Cleveland Browns score more than 43.5 points?', sportsMarketType: 'football_team_points_full_game_total' });
+const EVENT = { event: { id: 1, slug: 'nfl-cle-nyj-2026-10-11', title: 'CLE Browns vs. NY Jets', markets: [firstHalf, teamTotal, moneyline(), spread(-1.5), spread(3.5), total(41.5), total(43.5)] } };
 
 // Polymarket International signals for the same game
 const sig = o => ({ type: 'entry', eventSlug: 'nfl-cle-nyj-2026-10-11', ...o });
@@ -42,9 +44,11 @@ const TOTAL = sig({ market: 'Browns vs. Jets: O/U 43.5', outcome: 'Under', outco
 test('parse: full-game markets only, long side first, the book of the long side', () => {
   const ev = P.parseEvent(EVENT);
   assert.equal(ev.league, 'nfl');
-  assert.deepEqual(ev.markets.map(m => [m.kind, m.line]), [['moneyline', null], ['spread', -1.5], ['spread', 3.5], ['total', 41.5], ['total', 43.5]], 'the first-half market is left out');
+  assert.deepEqual(ev.markets.map(m => [m.kind, m.line]), [['moneyline', null], ['spread', -1.5], ['spread', 3.5], ['total', 41.5], ['total', 43.5]], 'the first-half and team-points markets are left out');
   const m = ev.markets[0];
-  assert.deepEqual([m.long.team, m.short.team, m.bid, m.ask, m.open], ['Cleveland Browns', 'New York Jets', 0.44, 0.4425, true]);
+  assert.deepEqual([m.long.team, m.short.team, m.bid, m.ask, m.open, m.feeRate], ['Cleveland Browns', 'New York Jets', 0.44, 0.4425, true, P.FEE_RATE]);
+  assert.equal(P.parseMarket(moneyline({ feeCoefficient: 0.05 })).feeRate, 0.05, "the market's own fee rate");
+  assert.equal(P.fee(0.5, 0.05), 0.0125);
   assert.ok(m.long.aliases.includes('Browns') && m.long.aliases.includes('cle'));
   assert.equal(P.parseMarket(moneyline({ closed: true })).open, false);
   assert.equal(P.parseMarket(moneyline({ status: 'MARKET_STATUS_RESOLVED' })).open, false);
