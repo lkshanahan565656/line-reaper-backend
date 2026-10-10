@@ -53,6 +53,12 @@
 //            also needs 15+ measured CLV bets averaging +2%, B +0.5% once 15
 //            are measured. Fewer than 15: at most B. Also per category:
 //            elections skill says nothing about the NBA.
+//   B by the close  a record in profit that fails only z or B's ROI still
+//            grades B (via 'clv') when 15+ measured bets beat the close by
+//            3%+ on average and 55%+ of them beat it: P&L needs thousands of
+//            bets to prove a small edge, closing lines show it sooner. Its
+//            edge for sizing is the larger of the P&L one and CLV × n/(n+25)
+//            × 0.5. Closing lines are measured for these wallets too.
 //
 // Sizing at any venue (sizeAt), for a probability q at price c with a fee f
 // per contract:
@@ -154,6 +160,9 @@ const DEFAULTS = {
   boardMinCost: 100,             // $ in a position before it counts on the Sharp Board
   clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
   clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
+  clvPath: 1,                    // 0: B only from the record. 1: a profitable record that fails only the luck test or B's ROI...
+  clvPathMin: 0.03,              // ...grades B when its measured bets beat the close by this much on average (TAIL_CLV_PATH_MIN)...
+  clvPathHitRate: 0.55,          // ...and this share of them beat it (TAIL_CLV_PATH_HIT_RATE)
   clvWindowDays: 7,              // price history read up to the close...
   clvBucketSeconds: 300,         // ...in 5-minute buckets, one call a token...
   clvPointLimit: 1000,           // ...so the window shrinks to fit this many points
@@ -183,7 +192,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
+const PERCENT_KEYS = new Set(['maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -913,6 +922,8 @@ function walletStats(positions, { holdings = positions, open = [], since = null,
     forwardN: since == null ? null : fN, forwardPnl: since == null ? null : fPnl, forwardRoi: fRisk > 0 ? fPnl / fRisk : null,
     edge: (allPnl / (allRisked + o.priorRisk)) * o.regression,
     clv: clv.avg, clvN: clv.n, clvHitRate: clv.hitRate,
+    // what the closing lines alone say the edge is, shrunk the same way
+    clvEdge: clv.n >= o.clvMinN && clv.avg > 0 ? clv.avg * (clv.n / (clv.n + o.clvSample)) * o.regression : null,
     ...inPlayOf(play, o),
   };
 }
@@ -991,13 +1002,26 @@ function checkTier(s, g, o, now) {
 }
 const signedPct = (x, limit) => { const v = vs(x, limit, 1, 100); return `${v > 0 ? '+' : ''}${v}%`; };
 
+// The closing line's way to B: a record that fails only the luck test or B's
+// ROI bar, but made money and keeps beating the close. A few hundred bets of
+// P&L can't prove an edge of a few percent; closing lines show it sooner.
+const CLOSE_WAIVES = new Set(['z', 'roi']);
+const closeCanGrade = (failed, roi) => failed.length > 0 && failed.every(c => CLOSE_WAIVES.has(c)) && roi > 0;
+function byClose(s, failB, o) {
+  return !!o.clvPath && closeCanGrade(failB.map(f => f.code), s.roi)
+    && s.clvN >= o.clvMinN && s.clv >= o.clvPathMin - EPS && s.clvHitRate >= o.clvPathHitRate - EPS;
+}
+
 function gradeStats(s, opts = {}, now = Date.now()) {
   const o = resolveOptions(opts);
   const failA = checkTier(s, o.grades.A, o, now), failB = checkTier(s, o.grades.B, o, now);
-  const grade = !failA.length ? 'A' : !failB.length ? 'B' : null;
+  let grade = !failA.length ? 'A' : !failB.length ? 'B' : null, via = grade ? 'record' : null;
+  if (!grade && byClose(s, failB, o)) { grade = 'B'; via = 'clv'; }
   const notTailable = grade ? [] : failB;
   return {
-    grade, label: grade ? o.grades[grade].label : null, marketMaker: s.twoSided > o.maxTwoSided + EPS || roundTripper(s, o),
+    grade, via, label: grade ? o.grades[grade].label : null, marketMaker: s.twoSided > o.maxTwoSided + EPS || roundTripper(s, o),
+    // sized on the closing lines' edge when they're what earned the grade
+    edge: via === 'clv' ? Math.max(s.edge ?? 0, s.clvEdge ?? 0) : s.edge,
     reasons: notTailable.map(x => x.text), failed: notTailable.map(x => x.code),
     whyNotA: grade === 'A' ? [] : failA.map(x => x.text), failedA: grade === 'A' ? [] : failA.map(x => x.code),
   };
@@ -1054,6 +1078,7 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
   overall.roundTrips = trips.length;
   overall.roundTripShare = settled.length ? trips.length / settled.length : 0;
   const g = gradeStats(overall, o, now);
+  overall.edge = g.edge;
 
   const categories = {};
   for (const cat of CATEGORIES) {
@@ -1067,13 +1092,14 @@ function scoreWallet({ wallet, name = null, closed = [], open = [], trades = [],
     });
     // a market maker is out everywhere; being active anywhere counts as active
     const cg = gradeStats({ ...cs, twoSided: Math.max(cs.twoSided, overall.twoSided), roundTrips: overall.roundTrips, roundTripShare: overall.roundTripShare, activeAt: lastAt }, o, now);
-    categories[cat] = { ...presentStats(cs), clvScope, grade: cg.grade, label: cg.label, reasons: cg.reasons, failed: cg.failed, whyNotA: cg.whyNotA, failedA: cg.failedA };
+    cs.edge = cg.edge;
+    categories[cat] = { ...presentStats(cs), clvScope, grade: cg.grade, via: cg.via, label: cg.label, reasons: cg.reasons, failed: cg.failed, whyNotA: cg.whyNotA, failedA: cg.failedA };
   }
 
   const w = lower(wallet);
   return {
     id: w, wallet: w, name: name || tradeRows.find(t => t.name)?.name || null, url: profileUrl(w),
-    grade: g.grade, label: g.label, tailable: !!g.grade, marketMaker: g.marketMaker,
+    grade: g.grade, via: g.via, label: g.label, tailable: !!g.grade, marketMaker: g.marketMaker,
     reasons: g.reasons, failed: g.failed, whyNotA: g.whyNotA, failedA: g.failedA,
     ...presentStats(overall), categories,
     openPositions: stillOpen.length, openValue: round(stillOpen.reduce((a, r) => a + (r.currentValue || 0), 0), 2),
@@ -1115,7 +1141,8 @@ function gradeFor(trader, category, opts = {}) {
   const c = trader?.categories?.[category];
   if (c?.grade) return { grade: c.grade, edge: c.edge, scope: 'category' };
   if (!trader?.grade) return { grade: null, skip: c ? `not graded in ${category}` : 'not graded' };
-  if (c && c.n >= o.catBadMinN && !(c.pnl > 0 && c.roi != null && c.roi >= o.grades.B.minRoi - EPS)) {
+  const bar = trader.via === 'clv' ? 0 : o.grades.B.minRoi;   // graded by its closing lines: a category only has to be in profit
+  if (c && c.n >= o.catBadMinN && !(c.pnl > 0 && c.roi != null && c.roi >= bar - EPS)) {
     return { grade: null, skip: `no edge in ${category} (ROI ${pct(c.roi || 0)} over ${c.n} bets)` };
   }
   let edge = trader.edge;
@@ -1411,12 +1438,13 @@ function remember(map, key, value, max = Infinity) {
   return value;
 }
 const isGraded = tr => !!tr?.grade || Object.values(tr?.categories || {}).some(c => c.grade);
+const closeWorthy = tr => [tr, ...Object.values(tr?.categories || {})].some(x => x && !x.grade && closeCanGrade(x.failed || [], x.roi));
 const fromLeaderboard = c => (c?.sources || []).some(s => s !== 'trade');
 // Scores that matter: graded somewhere, or a real profitable sample that may
 // get there. They're kept in full, persisted and rescored first; the rest
 // shrink to a summary (the leaderboard still lists them, with reasons).
 const nearGraded = (tr, o) => isGraded(tr) || (tr?.n >= o.grades.B.minN && tr?.roi > 0 && !tr?.marketMaker);
-const SUMMARY_KEYS = ['id', 'wallet', 'name', 'url', 'grade', 'label', 'tailable', 'marketMaker', 'reasons', 'failed', 'n', 'events',
+const SUMMARY_KEYS = ['id', 'wallet', 'name', 'url', 'grade', 'via', 'label', 'tailable', 'marketMaker', 'reasons', 'failed', 'n', 'events',
   'risked', 'pnl', 'roi', 'z', 'winRate', 'avgEntry', 'concentration', 'twoSided', 'activeDays', 'lastAt', 'recentN', 'recentRoi', 'edge',
   'clv', 'clvN', 'clvHitRate', 'selectedAt', 'scoredAt', 'rulesVersion', 'sources', 'truncated'];
 function summaryOf(tr) {
@@ -1629,8 +1657,9 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     // a history doesn't shrink: far fewer bets than last time is a bad read
     const prev = traders.get(c.wallet);
     if (prev?.n >= 20 && score.n < prev.n / 2) throw new Error(`only ${score.n} resolved bets came back (had ${prev.n}), kept the last score`);
-    // closing lines cost a request a bet: only for wallets good enough without them
-    if (isGraded(score)) {
+    // closing lines cost a request a bet: only for wallets good enough without
+    // them, or that they could grade (in profit, failing only luck or ROI)
+    if (isGraded(score) || closeWorthy(score)) {
       const m = await measureClv(resolvedPositions(settled.rows, open.rows, t).resolved.filter(p => !isRoundTrip(p, o)), t);
       if (m.errors.length) warn(`clv ${c.wallet}: ${m.errors.length} of ${m.tried} lookups failed (${m.errors[0]})`);
       score = scoreWallet({ ...input, clv: m.samples, play: m.play }, { ...o, now: t });

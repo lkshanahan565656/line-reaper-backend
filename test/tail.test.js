@@ -471,13 +471,20 @@ test('elite in politics, bad in sports: graded per category, sports trades are n
   assert.equal(s.categories.sports.pnl, -20000);
   assert.ok(s.categories.sports.failed.includes('roi'));
   assert.ok(s.categories.sports.reasons.includes('ROI -33.3% (need 4%)'));
-  assert.equal(s.grade, null, 'the sports losses drag the whole record under the luck bar');
-  assert.ok(s.failed.includes('z'));
+  // the sports losses drag the whole record under the luck bar, but it's in
+  // profit and its bets beat the close by 5%: B by its closing lines
+  assert.deepEqual([s.grade, s.via], ['B', 'clv']);
+  assert.equal(s.categories.politics.via, 'record');
+  const noPath = T.scoreWallet({ wallet: W(1), closed: [...politicsElite(), ...sportsBad()], clv: clvs(25, 0.05) }, { now: NOW, clvPath: 0 });
+  assert.equal(noPath.grade, null, 'without the closing-line path: not graded overall');
+  assert.deepEqual(noPath.failed, ['z']);
 
   const politics = T.gradeFor(s, 'politics');
   assert.deepEqual({ ...politics, edge: round4(politics.edge) }, { grade: 'A', edge: round4((40000 / 140000) * 0.5), scope: 'category' });
-  assert.deepEqual(T.gradeFor(s, 'sports'), { grade: null, skip: 'not graded in sports' });
-  assert.deepEqual(T.gradeFor(s, 'crypto'), { grade: null, skip: 'not graded' });
+  assert.deepEqual(T.gradeFor(s, 'sports'), { grade: null, skip: 'no edge in sports (ROI -33.3% over 60 bets)' });
+  assert.equal(T.gradeFor(s, 'crypto').grade, 'B', 'no crypto record: the overall grade');
+  assert.deepEqual(T.gradeFor(noPath, 'sports'), { grade: null, skip: 'not graded in sports' });
+  assert.deepEqual(T.gradeFor(noPath, 'crypto'), { grade: null, skip: 'not graded' });
 
   const mkt = market();
   const pol = T.tradeSignal({ trade: trade({ proxyWallet: W(1) }), trader: s, market: mkt, now: NOW });
@@ -485,7 +492,7 @@ test('elite in politics, bad in sports: graded per category, sports trades are n
   assert.equal(pol.signal.category, 'politics');
   assert.equal(pol.signal.scope, 'category');
   const nba = T.tradeSignal({ trade: trade({ proxyWallet: W(1), title: 'Lakers vs. Celtics', eventSlug: 'nba-lal-bos-2026-10-08' }), trader: s, market: mkt, now: NOW });
-  assert.deepEqual(nba, { signal: null, skip: 'not graded in sports' });
+  assert.deepEqual(nba, { signal: null, skip: 'no edge in sports (ROI -33.3% over 60 bets)' });
 
   // graded overall, but a real losing record in one category blocks it there
   const overallA = { wallet: W(2), grade: 'A', edge: 0.05, categories: { sports: { grade: null, n: 25, pnl: -2000, roi: -0.08 }, crypto: { grade: null, n: 10, pnl: -500, roi: -0.05 } } };
@@ -1558,4 +1565,57 @@ test('memory: untailable scores shrink to a summary and only leaderboard ones ar
   assert.equal(eng.trader(W(3)), null, 'the oldest summary went first');
   assert.equal(eng.state().candidates, 4, 'and left the queue');
   assert.ok(eng.traders().every(x => x.reasons), 'summaries still list their reasons');
+});
+
+// 60 bets at 50¢ on 60 races, 32 won: ROI 6.7% but z 0.5 (could be luck)
+const modest = (wallet = W(1)) => Array.from({ length: 60 }, (_, i) => closed({
+  wallet, won: i < 32, title: `Will candidate ${i} win the ${STATES[i % 4]} Senate election?`, eventSlug: `race-m-${i}`, at: NOW - (i % 40) * DAY - 3600e3,
+}));
+
+test('the closing line\'s way to B: in profit, failing only luck or ROI, and beating the close by 3%+ on 55%+ of 15+ bets', () => {
+  const none = T.scoreWallet({ wallet: W(50), closed: modest(W(50)) }, { now: NOW });
+  assert.deepEqual([none.grade, none.failed], [null, ['z']], 'no closing lines measured: not graded');
+  const good = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.04) }, { now: NOW });
+  assert.deepEqual([good.grade, good.via, good.label], ['B', 'clv', 'sharp']);
+  assert.deepEqual([good.categories.politics.grade, good.categories.politics.via], ['B', 'clv']);
+  // sized on the larger of the two shrunk edges: P&L 4,000 / (60,000 + 20,000) × 0.5 vs 4% × 25/50 × 0.5
+  assert.equal(round4(good.edge), round4(Math.max((4000 / 80000) * 0.5, 0.04 * 0.5 * 0.5)));
+  const clvOnly = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.12) }, { now: NOW });
+  assert.equal(round4(clvOnly.edge), round4(0.12 * 0.5 * 0.5), 'a big closing-line edge outweighs a small P&L one');
+  assert.ok(T.tradeSignal({ trade: trade({ proxyWallet: W(50) }), trader: good, market: market(), now: NOW }).signal.units > 0, 'it tails');
+
+  const weak = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.02) }, { now: NOW });
+  assert.equal(weak.grade, null, '+2% is not enough');
+  const mixed = [...clvs(12, 0.08), ...clvs(13, -0.01).map((x, i) => ({ ...x, asset: `neg-${i}` }))];
+  const coin = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: mixed }, { now: NOW });
+  assert.ok(coin.clv >= 0.03 && coin.clvHitRate < 0.55 && coin.grade === null, 'a few big beats, mostly not: under the hit rate');
+  const few = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(14, 0.1) }, { now: NOW });
+  assert.equal(few.grade, null, '14 measured bets: too few');
+  // losing money, or failing anything else (here: too few bets), the closing lines can't save it
+  const losing = modest(W(51)).map((r, i) => (i < 32 && i >= 25 ? closed({ wallet: W(51), won: false, eventSlug: `race-l-${i}`, title: r.title, at: NOW - DAY }) : r));
+  assert.equal(T.scoreWallet({ wallet: W(51), closed: losing, clv: clvs(25, 0.1) }, { now: NOW }).grade, null);
+  assert.equal(T.scoreWallet({ wallet: W(50), closed: modest(W(50)).slice(0, 40), clv: clvs(25, 0.1) }, { now: NOW }).grade, null);
+  // switched off, or a stricter bar from the environment
+  assert.equal(T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.04) }, { now: NOW, clvPath: 0 }).grade, null);
+  const env = T.optionsFromEnv({ TAIL_CLV_PATH_MIN: '5', TAIL_CLV_PATH_HIT_RATE: '60' });
+  assert.deepEqual([env.clvPathMin, env.clvPathHitRate], [0.05, 0.6]);
+  assert.equal(T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.04) }, { now: NOW, ...env }).grade, null);
+});
+
+test('engine: closing lines are measured for a wallet they could grade, not for a hopeless one', async () => {
+  const w = world();
+  w.closed[W(52)] = modest(W(52));
+  w.closed[W(53)] = sportsBad(W(53));
+  const eng = T.createTailEngine({ http: w.http, now: () => NOW, log: {} });
+  eng.addCandidate(W(52));
+  eng.addCandidate(W(53));
+  await eng.scoreBatch(5);
+  const tr = eng.trader(W(52));
+  assert.deepEqual([tr.grade, tr.via, tr.clvN], ['B', 'clv', 25], 'bought at 50¢, closed at 53¢');
+  const asked = new Set(historyCalls(w.http).map(c => c.params.token_id));
+  const mine = new Set(w.closed[W(52)].map(r => r.token_id));
+  assert.equal([...asked].filter(x => mine.has(x)).length, 25, 'its 25 most recent bets');
+  assert.ok(!w.closed[W(53)].some(r => asked.has(r.token_id)), 'a losing record costs no closing-line calls');
+  assert.equal(eng.trader(W(53)).grade, null);
+  assert.equal(eng.traders({ grade: 'B' }).length, 1);
 });
