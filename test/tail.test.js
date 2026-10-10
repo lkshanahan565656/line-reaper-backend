@@ -765,6 +765,7 @@ const flatHistory = (p, price) => {
   for (let t = p.start; t < p.end && points.length < 1000; t += 300) points.push({ t, p: price });
   return { data: { history: points } };
 };
+const isClosed = m => m.closed === true || m.closed === 'true';
 function world() {
   const w = { leaderboard: [], closed: {}, open: {}, walletTrades: {}, trades: [], markets: {}, books: {}, history: {}, closeFor: () => 0.53, fail: new Set() };
   w.http = recorder((url, p) => {
@@ -780,7 +781,8 @@ function world() {
       if (h instanceof Error) throw h;
       return typeof h === 'function' ? h(p) : h ?? flatHistory(p, w.closeFor(p.token_id));
     }
-    if (url.endsWith('/markets')) return w.markets[p.condition_ids] ? [w.markets[p.condition_ids]] : [];
+    // like Gamma: a closed market only when asked for closed ones, an open one only when not
+    if (url.endsWith('/markets')) { const m = w.markets[p.condition_ids]; return m && isClosed(m) === !!p.closed ? [m] : []; }
     if (url.endsWith('/book')) { if (w.books[p.token_id]) return w.books[p.token_id]; throw new Error('no book'); }
     throw new Error(`unexpected ${url}`);
   });
@@ -1179,14 +1181,14 @@ test('engine: closing lines only for wallets that pass B without them; one price
   const first = calls[0].params, pos = newest.find(p => p.asset === first.token_id);
   assert.deepEqual(Object.keys(first).sort(), ['bucket_seconds', 'end', 'limit', 'start', 'token_id']);
   assert.deepEqual([first.bucket_seconds, first.limit, first.end, first.end - first.start], [300, 1000, Math.ceil(pos.endAt / 1000), 300000]);
-  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 25, 'one Gamma lookup a market (game start, close time)');
+  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 50, 'Gamma asked once a market for closed ones, once for open (none known here)');
   const a = eng.trader(W(1));
   assert.deepEqual([a.grade, a.clvN, a.clv, a.clvHitRate], ['A', 25, 0.06, 1], 'closes at 53¢ on 50¢ bets: +6%');
   assert.equal(a.clvSamples.length, 25);
 
   await eng.scoreBatch(2);
   assert.equal(historyCalls(w.http).length, 25, 'W2\'s tokens are W1\'s (cached), and W3 is not worth a request');
-  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 25);
+  assert.equal(w.http.calls.filter(c => c.url.endsWith('/markets')).length, 50, 'no new Gamma lookups');
   assert.deepEqual([eng.trader(W(2)).grade, eng.trader(W(2)).clvN], ['A', 25]);
   assert.deepEqual([eng.trader(W(3)).grade, eng.trader(W(3)).clvN], [null, 0]);
   assert.equal(eng.state().clvCached, 25);
@@ -1276,6 +1278,30 @@ test('engine: a live bettor (most sampled game bets bought after tip-off) is not
   await eng.scoreBatch(1);
   const ok = eng.trader(W(42));
   assert.deepEqual([ok.grade, ok.inPlayShare, ok.clvN], ['A', 0, 25]);
+});
+
+test('engine: settled games are closed on Gamma (closed=true only), and a live bettor is caught without a closing price', async () => {
+  const w = world();
+  // as live on 10-10: every settled game's market is closed, and thin ones have no price history before the start
+  const rows = Array.from({ length: 120 }, (_, i) => {
+    const r = closed({ wallet: W(44), won: i % 3 !== 0, title: `Florida State vs. Louisville (game ${i})`, eventSlug: `cfb-c-${i}`, at: NOW - (i % 100) * DAY - 3 * 3600e3 });
+    const tip = Date.parse(r.end_date) - 3 * 3600e3;
+    return { ...r, first_entry_at: new Date(tip + 60 * 60e3).toISOString() };
+  });
+  w.closed[W(44)] = rows;
+  for (const r of rows) {
+    w.markets[r.condition_id] = { conditionId: r.condition_id, question: r.title, closed: true, gameStartTime: new Date(Date.parse(r.end_date) - 3 * 3600e3).toISOString() };
+    w.history[r.token_id] = { data: [] };
+  }
+  const eng = T.createTailEngine({ http: w.http, now: () => NOW, log: {} });
+  eng.addCandidate(W(44));
+  await eng.scoreBatch(1);
+  const tr = eng.trader(W(44));
+  assert.deepEqual([tr.inPlayGames, tr.inPlayShare, tr.clvN], [25, 1, 0]);
+  assert.deepEqual([tr.grade, tr.failed], [null, ['inPlay']]);
+  const asked = w.http.calls.filter(c => c.url.endsWith('/markets'));
+  assert.equal(asked.length, 25, 'one lookup a settled market: closed=true first');
+  assert.ok(asked.every(c => c.params.closed === true));
 });
 
 test('scoreWallet: the in-play share only judges sports, and needs 8 sampled games', () => {

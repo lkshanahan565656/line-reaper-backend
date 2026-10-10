@@ -39,7 +39,8 @@ function fakeGamma(markets, books = {}) {
       calls.push(params.condition_ids);
       const m = markets[params.condition_ids];
       if (m instanceof Error) throw m;
-      return { data: m ? [m] : [] };
+      // like Gamma: a closed market only when asked for closed ones, an open one only when not
+      return { data: m && (m.closed === true || m.closed === 'true') === !!params.closed ? [m] : [] };
     },
   };
 }
@@ -84,7 +85,7 @@ test('follows the last price while open, then grades wins, losses and ROI', asyn
   t += 600e3;
   const c1 = await tr.check();
   assert.deepEqual(c1, { checked: 2, settled: 1, errors: [] });
-  assert.deepEqual(http.calls, ['0xm1', '0xm2'], 'one lookup per market, not per signal');
+  assert.deepEqual(http.calls, ['0xm1', '0xm2', '0xm2'], 'one lookup per market, not per signal (a closed one: open, then closed=true)');
   const open1 = await tr.list({ status: 'open' });
   assert.deepEqual(open1.map(r => [r.asset, r.closePrice]).sort(), [['tok-no', 0.52], ['tok-yes', 0.48]], 'NO side priced 1 − last');
 
