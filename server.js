@@ -2051,11 +2051,13 @@ const { createFileStore: createDocFileStore } = require('./evtrack');
 // per host that starts at most one request every gapMs (a number, or a
 // function of the host). Identical GETs that are in flight or were answered in the last few
 // seconds share one response (the tail engine and the whale watcher both read
-// the same recent-trades page every 30s).
-function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
+// the same recent-trades page every 30s). A 429 pushes that host's queue back
+// (Retry-After, else retry429Ms) and the request goes once more at its end.
+const retryAfterMs = e => { const s = Number(e?.response?.headers?.['retry-after']); return s > 0 ? Math.min(s * 1000, 30e3) : null; };
+function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, retry429Ms = 2000, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   const nextAt = new Map();   // host → when the next request may start
   const shared = new Map();   // url + params → { promise, doneAt }
-  const stats = { requests: 0, shared: 0, failed: 0, byHost: {} };
+  const stats = { requests: 0, shared: 0, failed: 0, retried429: 0, byHost: {} };
   const keyOf = (url, params) => `${url}?${JSON.stringify(Object.entries(params || {})
     .filter(([, v]) => v !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))}`;
   const hostOf = url => { try { return new URL(url).host; } catch { return ''; } };
@@ -2075,7 +2077,17 @@ function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, now = () => Date.
         if (start > t) await sleep(start - t);
         stats.requests++;
         stats.byHost[host] = (stats.byHost[host] || 0) + 1;
-        return get(url, cfg);
+        try { return await get(url, cfg); }
+        catch (e) {
+          if (e?.response?.status !== 429) throw e;
+          const again = Math.max(now() + (retryAfterMs(e) ?? retry429Ms), nextAt.get(host) ?? 0);
+          nextAt.set(host, again + gapFor(host));
+          stats.retried429++;
+          await sleep(again - now());
+          stats.requests++;
+          stats.byHost[host]++;
+          return get(url, cfg);
+        }
       })();
       entry.promise.then(() => { entry.doneAt = now(); }, () => { stats.failed++; if (shared.get(key) === entry) shared.delete(key); });
       shared.set(key, entry);
@@ -2562,7 +2574,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.30.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.33.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3310,7 +3322,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.30.0',
+  version: '3.33.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3428,7 +3440,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.30.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.33.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
