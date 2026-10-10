@@ -57,11 +57,20 @@ async function main() {
   const confirmed = xarb.findUsArbs(kalshi, liveRows, { now, matches: liveMatches });
   out('arbs-confirmed', { screened: screened.length, books: live.size, open: liveRows.length, n: confirmed.length,
     arbs: confirmed.map(a => ({ pct: a.profitPct, max: a.maxContracts, title: a.title, legs: a.legs.map(l => `${l.venue}:${l.side}:${l.pick}@${l.price}${l.depth != null ? ` x${l.depth}` : ''}`) })) });
-  // how close the matched pairs come: best all-in cost per pair (fees in), to see the spread of near misses
+  // how close the matched pairs come: all-in cost per $1 payout, both directions, fees in
+  const fee = (l, p) => (l === 'kalshi' ? 0.07 : 0.0695) * p * (1 - p);
   const near = [];
-  for (const m of matches) for (const a of xarb.findCrossArbs([], [], { now, minPct: -100, matches: [m] })) near.push({ pct: a.profitPct, title: a.title, by: m.by, legs: a.legs.map(l => `${l.venue}:${l.side}@${l.price}`) });
-  near.sort((a, b) => b.pct - a.pct);
-  out('closest-pairs', near.slice(0, 20));
+  for (const m of matches) {
+    const k = m.kalshi, p = m.polymarket;
+    for (const [ks, ps] of [['yes', m.same ? 'no' : 'yes'], ['no', m.same ? 'yes' : 'no']]) {
+      const kp = ks === 'yes' ? k.yesAsk : k.noAsk, pp = ps === 'yes' ? p.yesAsk : p.noAsk;
+      if (kp == null || pp == null) continue;
+      near.push({ cost: Math.round((kp + pp + fee('kalshi', kp) + fee('us', pp)) * 1e4) / 1e4, title: k.eventTitle || k.title, by: m.by, legs: `kalshi:${ks}@${kp} + us:${ps}@${pp}` });
+    }
+  }
+  near.sort((a, b) => a.cost - b.cost);
+  const buckets = countBy(near, x => (x.cost < 1 ? '<1.00' : x.cost < 1.01 ? '1.00-1.01' : x.cost < 1.02 ? '1.01-1.02' : x.cost < 1.05 ? '1.02-1.05' : '>=1.05'));
+  out('closest-pairs', { buckets, top: near.slice(0, 25) });
   out('done', { ms: Date.now() - t0 });
 }
 main().catch(e => { out('fatal', { m: e.message, stack: e.stack }); });
