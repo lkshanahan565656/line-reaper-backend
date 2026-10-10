@@ -17,7 +17,7 @@ for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.e
 Object.assign(process.env, {
   PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
-  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'),
+  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'),
   // the round-1 tests below run with both data licences granted; the gates have their own tests
   POLYMARKET_DISPLAY_OK: 'on', KALSHI_DISPLAY_OK: 'on',
 });
@@ -38,7 +38,7 @@ const W9 = '0x9999999999999999999999999999999999999999';   // an unknown whale
 const COND = '0xc0ffee0000000000000000000000000000000000000000000000000000000001';
 const COND2 = '0xc0ffee0000000000000000000000000000000000000000000000000000000002';   // a second market W1 bets
 const TEXAS = { asset: '7124001', cond: COND2, title: 'Will Jones win the Texas Senate election?', slug: 'texas-senate-jones', eventSlug: 'texas-senate-2026' };
-const fx = { closed: [], trades: [], markets: [], kalshiEvents: [], kalshiTrades: [], pmEvents: [] };
+const fx = { closed: [], trades: [], history: {}, markets: [], kalshiEvents: [], kalshiTrades: [], pmEvents: [] };
 const calls = [], posts = [];
 
 // v2 wraps every list: { data, pagination }
@@ -105,7 +105,7 @@ const ROUTES = {
   'https://data-api.polymarket.com/v2/leaderboard': p => page(p.category === 'overall' && p.time_period === 'all'
     ? [{ rank: 1, user_id: W1, user_name: 'ElectionEdge', volume: 1200000, pnl: 40000, profile_image: '', x_username: '', verified: false }] : []),
   'https://data-api.polymarket.com/v2/positions': p => page(p.user === W1 ? fx.closed.filter(r => r.status === p.status) : []),
-  'https://data-api.polymarket.com/v2/trades': p => page(p.user ? [] : fx.trades),
+  'https://data-api.polymarket.com/v2/trades': p => page(p.user ? fx.history[p.user] || [] : fx.trades),
   'https://data-api.polymarket.com/v2/prices-history': p => priceHistory(p.token_id),
   // like Gamma: a closed market only when asked for closed ones, an open one only when not
   'https://gamma-api.polymarket.com/markets': p => fx.markets.filter(m => m.conditionId === p.condition_ids && (m.closed === true || m.closed === 'true') === !!p.closed),
@@ -518,7 +518,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.35.0');
+  assert.equal(body.version, '3.36.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -544,8 +544,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.35.0');
-  assert.equal((await get('/')).body.version, '3.35.0');
+  assert.equal(require('../package.json').version, '3.36.0');
+  assert.equal((await get('/')).body.version, '3.36.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1072,4 +1072,76 @@ test('second chances on the live board: priced from the book, broadcast and ping
     assert.ok(posts.some(p => /🎯 Second chance: 1 sharp \(1A\) hold Yes on "Will Smith win the Ohio Senate election\?" at 40¢ avg; it's 39¢ now/.test(p.body.content)));
     assert.deepEqual(await S.watchBoard(), [], 'still under: no repeat');
   } finally { S.tailEngine.book = realBook; S.liveListeners.delete(fn); }
+});
+
+test('fresh wallets: a new wallet\'s whale buy is tagged, logged at 1u in its own record and pinged once', async () => {
+  const W8 = '0x8888888888888888888888888888888888888888';
+  const buy = trade({ wallet: W8, size: 30000, price: 0.2, tx: '0xtx80', name: 'New-Deer', agoMs: 15e3, asset: TEXAS.asset, cond: TEXAS.cond,
+    title: TEXAS.title, slug: TEXAS.slug, eventSlug: TEXAS.eventSlug });
+  fx.history = { [W8]: [buy] };
+  fx.trades = [buy];
+  fx.markets = [texasMarket()];
+  fx.kalshiTrades = [];
+  posts.length = 0;
+  tick(6e3);
+  await S.runTailJob('whales', S.pollWhales);
+
+  const pro = await get('/api/whales?fresh=1', PRO);
+  assert.equal(pro.body.events.length, 1);
+  const [e] = pro.body.events;
+  assert.equal(e.wallet, W8);
+  assert.equal(e.tag, 'fresh wallet');
+  assert.deepEqual({ markets: e.fresh.markets, trades: e.fresh.trades, ageDays: e.fresh.ageDays }, { markets: 1, trades: 1, ageDays: 0 });
+  assert.ok(calls.some(c => c.url.endsWith('/v2/trades') && c.params.user === W8 && c.params.taker_only === false), 'its history was read');
+  assert.ok((await get('/api/whales?fresh=0', PRO)).body.events.every(x => !x.fresh));
+  assert.equal(pro.body.state.lastHour.fresh, 1);
+
+  // its own record: 1u at what a follower could pay (Gamma's 41¢ ask here), not in Sharp Tail's
+  const rec = await get('/api/tail/record?book=fresh&status=open', PRO);
+  assert.equal(rec.body.book, 'fresh');
+  assert.equal(rec.body.open, 1);
+  const [r] = rec.body.signals;
+  assert.deepEqual([r.id, r.grade, r.units, r.entry, r.theirPrice, r.category], ['fresh:' + e.id, 'fresh', 1, 0.41, 0.2, 'politics']);
+  assert.ok(!(await get('/api/tail/record?status=open', PRO)).body.signals.some(x => x.id.startsWith('fresh:')));
+  const ping = posts.find(p => /🆕 Fresh wallet/.test(p.body.content));
+  assert.ok(ping, 'pinged');
+  assert.match(ping.body.content, /🆕 Fresh wallet \(first trade today, 1 market\) bought Yes on "Will Jones win the Texas Senate election\?" at 20¢ \(\$6,000\) · No US venue found yet: watch only/);
+  assert.ok(!/polymarket\.com/.test(ping.body.content), 'US mode');
+
+  // the next poll re-reads it: no second ping, no second record
+  posts.length = 0;
+  tick(31e3);
+  await S.runTailJob('whales', S.pollWhales);
+  assert.equal(posts.filter(p => /Fresh wallet/.test(p.body.content)).length, 0);
+  assert.equal((await get('/api/tail/record?book=fresh&status=open', PRO)).body.open, 1);
+
+  // free: the tag waits 30 minutes like a grade; the radar's totals are public
+  const free = await get('/api/whales');
+  const masked = free.body.events.find(x => x.exchange === 'polymarket' && x.title === TEXAS.title);
+  assert.equal(masked.fresh, null);
+  assert.equal(masked.tag, 'whale');
+  hasNoIdentity(free.body, W8, 'New-Deer');
+  assert.equal((await get('/api/whales?fresh=1')).body.events.some(x => x.fresh), false, 'the filter is Pro only');
+  assert.equal(free.body.freshRecord.open, 1);
+
+  // settled: graded like any tail
+  fx.markets = [texasMarket({ closed: true, prices: ['1', '0'], bestAsk: null, bestBid: null })];
+  tick(11 * 60e3);
+  await S.freshTracker.check();
+  const done = await get('/api/tail/record?book=fresh');
+  assert.equal(done.body.overall.wins, 1);
+  assert.ok(done.body.overall.units > 1.4, `1u at 41¢ wins about 1.44u (${done.body.overall.units})`);
+});
+
+test('fresh wallets: not followable when the game has started, the price is near-certain or the market is closed', async () => {
+  const base = { id: 'polymarket|0xfx', exchange: 'polymarket', wallet: '0x77', side: 'BUY', outcome: 'Yes', outcomeIndex: 0, price: 0.3, notional: 9000,
+    at: iso(Date.now() - 10e3), title: TEXAS.title, conditionId: COND2, asset: TEXAS.asset, fresh: { markets: 1, trades: 1, ageDays: 0.5 } };
+  // each market read past the shared-response window
+  const read = async (markets, e) => { fx.markets = markets; tick(6e3); return S.freshSignal({ ...base, at: iso(Date.now() - 10e3), ...e }); };
+  assert.equal(await read([texasMarket({ closed: true, prices: ['1', '0'] })]), null, 'closed');
+  assert.equal(await read([texasMarket()], { price: 0.96 }), null, 'near-certain');
+  assert.equal(await read([{ ...texasMarket(), gameStartTime: iso(Date.now() + 6e3 - 3600e3) }]), null, 'bought after the start');
+  const ok = await read([texasMarket()]);
+  assert.equal(ok.units, 1);
+  assert.match(S.describeFresh({ ...base, fresh: { markets: 2, ageDays: 3.5 } }), /first trade 3\.5 days ago, 2 markets/);
 });

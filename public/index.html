@@ -4074,8 +4074,10 @@ function tailWhalesHTML() {
     `<span style="color:#f1f5f9;font-weight:700">${events.length} WHALES</span>`,
     d.state?.lastHour ? `<span>LAST HOUR ${d.state.lastHour.whales} · ${tailUsd(d.state.lastHour.usd)}</span>` : '',
     `<span>${tailUsd(d.minUsd || 5000)}+ PRINTS</span>`,
+    d.state?.lastHour?.fresh ? `<span style="color:#fbbf24">${d.state.lastHour.fresh} FRESH WALLET${d.state.lastHour.fresh === 1 ? '' : 'S'} THIS HOUR</span>` : '',
+    d.freshRecord?.overall?.n ? `<span title="Every followable fresh-wallet buy logged as a flat 1u at the price a follower could get, graded when its market resolves">FRESH RADAR ${d.freshRecord.overall.wins}-${d.freshRecord.overall.losses} · ROI ${tailPct(d.freshRecord.overall.roi)}</span>` : '',
   ]);
-  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp tags show 30 minutes late. Pro shows both live.</span>', 'Whale flow') : '';
+  const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');
   if (!flow.length && !events.length) return note + banner + strip + tailEmpty('NO WHALES THIS HOUR', `Prints of ${tailUsd(d.minUsd || 5000)} or more on Kalshi and Polymarket show up here. The backend checks both every 30 seconds.`);
   const flowRows = flow.map(f => {
@@ -4098,13 +4100,15 @@ function tailWhalesHTML() {
     const what = pm ? `${e.side === 'SELL' ? 'sold' : 'bought'} <b style="color:#e2e8f0">${escAttr(e.outcome || '?')}</b>` : `bought <b style="color:#e2e8f0">${escAttr(String(e.side || '').toUpperCase())}</b>`;
     const tag = !pm ? `<span class="tail-tag">anonymous</span>${e.block ? ' <span class="tail-tag warn" title="A negotiated block trade, not an order hitting the book">block trade</span>' : ''}`
       : e.graded ? `${tailGrade(e.grade)} <span style="font-size:11px;color:#e2e8f0">${tailWho(e)}</span>`
-      : e.gradeLocked ? `<span class="tail-tag warn" title="Graded tags show 30 minutes late on the free plan">🔒 grade</span>`
+      : e.gradeLocked ? `<span class="tail-tag warn" title="Graded and fresh-wallet tags show 30 minutes late on the free plan">🔒 grade</span>`
+      : e.fresh ? `<span class="tail-tag warn" title="This wallet's first trade was ${e.fresh.ageDays < 1 ? 'today' : e.fresh.ageDays + ' days ago'} and it has traded ${e.fresh.markets} market${e.fresh.markets === 1 ? '' : 's'} (${e.fresh.trades} trades). New money this size on one side is how inside information tends to show up.">🆕 fresh wallet · ${e.fresh.ageDays < 1 ? 'today' : e.fresh.ageDays + 'd'} · ${e.fresh.markets} mkt</span>${e.wallet ? ` <span style="font-size:11px;color:#94a3b8">${tailWho(e)}</span>` : ''}`
       : `<span class="tail-tag">unknown whale</span>${e.wallet ? ` <span style="font-size:11px;color:#94a3b8">${tailWho(e)}</span>` : ''}`;
+    const follow = e.fresh && e.venue ? ` · <span style="color:#10b981">${escAttr(e.venue.name)}${e.venue.buy ? ': ' + escAttr(e.venue.buy) : ''} ${e.venue.american != null ? (e.venue.american > 0 ? '+' : '') + e.venue.american : tailC(e.venue.price)}</span>` : '';
     return `<div class="tail-row">
       <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#475569;min-width:34px">${tailAgo(e.at)}</span>
       <span class="tail-tag">${escAttr(e.exchange)}</span>
       <span style="font-family:'JetBrains Mono',monospace;font-weight:800;color:#f1f5f9;min-width:70px">${tailUsd(e.notional)}</span>
-      <span style="flex:1;min-width:200px;color:#cbd5e1">${what} at ${tailC(e.price)} · ${tailLink(e.url, escAttr(e.title || e.ticker || ''))}</span>
+      <span style="flex:1;min-width:200px;color:#cbd5e1">${what} at ${tailC(e.price)} · ${tailLink(e.url, escAttr(e.title || e.ticker || ''))}${follow}</span>
       <span style="display:flex;gap:6px;align-items:center">${tag}</span>
     </div>`;
   }).join('');
