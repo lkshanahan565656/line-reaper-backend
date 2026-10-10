@@ -112,6 +112,9 @@ const ROUTES = {
   'https://gamma-api.polymarket.com/events': () => fx.pmEvents,
   'https://api.elections.kalshi.com/trade-api/v2/events': () => ({ events: fx.kalshiEvents, cursor: '' }),
   'https://api.elections.kalshi.com/trade-api/v2/markets/trades': () => ({ trades: fx.kalshiTrades, cursor: '' }),
+  // Polymarket US: one NBA game (only when a test sets it)
+  'https://gateway.polymarket.us/v1/events/slug/nba-nyk-bos-2026-10-10': () => { if (!fx.pmus) throw Object.assign(new Error('Request failed with status code 404'), { response: { status: 404 } }); return fx.pmus.event; },
+  'https://gateway.polymarket.us/v1/markets/aec-nba-nyk-bos-2026-10-10/book': () => fx.pmus.book,
 };
 const axios = require('axios');
 axios.get = async (url, cfg = {}) => {
@@ -1176,4 +1179,41 @@ test('the webhook: an exit pings only when we tailed it and most of it went, nam
   const m = S.maskSignal(exit({ tag: 'mask', soldShare: 0.8182, full: true, boughtAt: 0.4137, tailed: { id: 'exit-test-entry', units: 1.2 } }));
   assert.deepEqual([m.soldShare, m.boughtAt, m.tailed.units], [0.8, 0.41, 1.2]);
   assert.match(m.tailed.id, /^x[0-9a-f]{12}$/);
+});
+
+test('where to tail: Polymarket US, the same game market, when it gives the most units', async () => {
+  const usd = v => ({ value: v, currency: 'USD' });
+  fx.pmus = {
+    event: { event: { slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', markets: [{
+      slug: 'aec-nba-nyk-bos-2026-10-10', question: 'Who will win Knicks vs Celtics?', sportsMarketType: 'basketball_team_full_game_winner', active: true, closed: false,
+      status: 'MARKET_STATUS_OPEN', bestBidQuote: usd('0.5300'), bestAskQuote: usd('0.5400'),
+      marketSides: [{ description: 'Celtics', long: true, team: { name: 'Boston Celtics', abbreviation: 'bos', ordering: 'home' } },
+        { description: 'Knicks', long: false, team: { name: 'New York Knicks', abbreviation: 'nyk', ordering: 'away' } }] }] } },
+    book: { marketData: { bids: [{ px: usd('0.5400'), qty: '5000' }], offers: [{ px: usd('0.5500'), qty: '4000' }], state: 'MARKET_STATE_OPEN' } },
+  };
+  const base = S.tailEngine.signals({ type: 'entry' }).find(x => x.category === 'sports') || S.tailEngine.signals({ type: 'entry' })[0];
+  const s = { ...base, id: 'pmus-test', eventSlug: 'nba-nyk-bos-2026-10-10', market: 'Knicks vs. Celtics', outcome: 'Celtics', outcomeIndex: 1,
+    outcomes: ['Knicks', 'Celtics'], sportsMarketType: 'moneyline', conditionId: '0xnone', asset: 'none', blocked: null, priorUnits: 0, eventRoom: undefined,
+    venue: undefined, venues: undefined, q: 0.66 };
+  tick(6e3);
+  const units = await S.routeTail(s);
+  const us = s.venues.find(v => v.key === 'polymarketus');
+  assert.ok(us, 'quoted');
+  assert.deepEqual([us.name, us.price, us.buy, us.url], ['Polymarket US', 0.55, 'Boston Celtics', 'https://polymarket.us/sports/nba/nba-nyk-bos-2026-10-10']);
+  assert.ok(Math.abs(us.fee - 0.0695 * 0.55 * 0.45) < 1e-6);
+  const z = tail.sizeAt({ q: s.q, price: us.price, feePerContract: us.fee, grade: s.grade, consensus: s.consensus, opts: S.tailEngine.settings() });
+  assert.equal(us.units, z.units, 'sized at its own price and fee');
+  assert.equal(s.venue.key, 'polymarketus');
+  assert.equal(units, s.venue.units);
+  assert.match(S.venueLine(s), /^Tail at Polymarket US: Boston Celtics 55¢ · \d+(\.\d+)?u · don't pay above \d+¢$/);
+  noPolymarketLinks(s.venues, 'a Polymarket US venue');
+
+  // a blocked buy isn't looked up; POLYMARKET_US=off would skip it all
+  const before = calls.filter(c => c.url.includes('gateway.polymarket.us')).length;
+  await S.routeTail({ ...s, id: 'pmus-blocked', blocked: 'in-play', venue: undefined, venues: undefined });
+  assert.equal(calls.filter(c => c.url.includes('gateway.polymarket.us')).length, before);
+  const st = (await get('/api/status', PRO)).body.tail;
+  assert.ok(st.polymarketUs.quoted >= 1);
+  assert.ok(st.routing.byVenue.polymarketus >= 1);
+  fx.pmus = null;
 });
