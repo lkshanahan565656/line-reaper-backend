@@ -452,9 +452,6 @@ body::before {
 .arb-sec-head .sub { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; color:#64748b; }
 
 /* ── ESPORTS: MATCH BOARD ── */
-.esm-modes { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin: 4px 0 12px; }
-.esm-mode { background: none; border: 0; color: var(--accent2); font: 600 13px 'Inter', system-ui, sans-serif; padding: 7px 16px; border-radius: 8px; cursor: pointer; }
-.esm-mode.active { background: #8b5cf6; color: #fff; }
 .esm-intro { font-size: 13px; color: #cbd5e1; line-height: 1.55; margin-bottom: 10px; }
 .esm-good { color: #34d399; font-weight: 700; }
 .esm-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; align-items: center; }
@@ -806,9 +803,9 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 
 <!-- ESPORTS PAGE -->
 <div class="page" id="page-esports">
-  <div class="esm-modes">
-    <button class="esm-mode" id="esModeMatches" onclick="setEsMode('matches')">Matches</button>
-    <button class="esm-mode" id="esModeProps" onclick="setEsMode('props')">Player props</button>
+  <div class="esm-bar" style="margin:4px 0 12px">
+    <button class="sport-chip" id="esModeMatches" onclick="setEsMode('matches')">MATCHES</button>
+    <button class="sport-chip" id="esModeProps" onclick="setEsMode('props')">PLAYER PROPS</button>
   </div>
 
   <div id="esMatchesPane">
