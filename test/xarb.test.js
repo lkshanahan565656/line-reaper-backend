@@ -906,6 +906,17 @@ const pmSoccer = ({ id = '1083681', slug = 'bun-dor-wer-2026-10-09', home = 'BV 
   })),
 });
 
+test('college games: Kalshi "Ohio St." pairs with Polymarket "Ohio State", and never with Ohio', () => {
+  const ks = kRows(kEvent('KXNCAAFGAME-26OCT10MDOSU', 'Maryland vs Ohio St.', [['Maryland', '0.1500', '0.8600'], ['Ohio St.', '0.8600', '0.1500']],
+    { exp: '2026-10-10T22:30:00Z' }));
+  const pm = (title, outcomes) => pRows({ ...pmGame({ question: title, outcomes, conditionId: '0xcfb', slug: 'cfb-md-ohiost-2026-10-10',
+    gameStartTime: '2026-10-10 19:30:00+00', endDate: '2026-10-10T19:30:00Z' }), id: '9100', slug: 'cfb-md-ohiost-2026-10-10', title,
+    tags: [{ label: 'Sports', slug: 'sports' }, { label: 'College Football', slug: 'cfb' }], endDate: '2026-10-10T19:30:00Z' });
+  const m = A.matchMarkets(ks, pm('Maryland vs. Ohio State', '["Maryland","Ohio State"]'), opts()).filter(x => x.by === 'teams');
+  assert.deepEqual(m.map(x => [x.kalshi.outcomeLabel, x.same]), [['Maryland', true], ['Ohio St.', false]]);
+  assert.deepEqual(A.matchMarkets(ks, pm('Maryland vs. Ohio', '["Maryland","Ohio"]'), opts()).filter(x => x.by === 'teams'), [], 'Ohio is another school');
+});
+
 test('kalshi tickers: the date (and a start time, when there is one) in US Eastern time', () => {
   assert.deepEqual(A.kalshiTickerTime('KXLOLGAME-26OCT091200KOIATLN'), { day: Date.parse('2026-10-09T04:00:00Z'), start: Date.parse('2026-10-09T16:00:00Z') });
   assert.deepEqual(A.kalshiTickerTime('KXATPMATCH-26OCT05BELMUL'), { day: Date.parse('2026-10-05T04:00:00Z'), start: null });
@@ -926,6 +937,12 @@ test('team names: club letters, numbers and initials aside, the same club or pla
   const no = [['Sebastian Baez', 'Sebastian Korda'], ['Manchester United', 'Manchester City'], ['New York Rangers', 'New York Islanders'],
     ['Real Madrid', 'Real Sociedad'], ['Chicago White Sox', 'Boston Red Sox'], ['Team Liquid', 'Team Spirit'], ['FC', 'FC Porto'], ['', 'Arsenal']];
   for (const [a, b] of no) assert.ok(!A.nameMatch(a, b), `${a} ≠ ${b}`);
+  // Kalshi's schools: a last "St." is State, a first one Saint; State is part of the name
+  const schools = [['Ohio St.', 'Ohio State'], ['San Jose St.', 'San José State'], ['NC St.', 'NC State'], ['Mississippi St.', 'Mississippi State'],
+    ["Hawai'i", 'Hawaii'], ['St. Thomas', 'Saint Thomas'], ["St. John's", "Saint John's"], ['St. Louis Cardinals', 'Saint Louis Cardinals']];
+  for (const [a, b] of schools) assert.ok(A.nameMatch(a, b), `${a} = ${b}`);
+  const notSchools = [['Ohio', 'Ohio St.'], ['Iowa St.', 'Iowa'], ['Washington St.', 'Washington'], ['Tennessee', 'Tennessee St.'], ['Kansas St.', 'Kansas']];
+  for (const [a, b] of notSchools) assert.ok(!A.nameMatch(a, b), `${a} ≠ ${b}`);
   // digits are team names, lines are not
   const g2 = kRows(kEvent('KXLOLGAME-26OCT101100G2VIT', 'G2 Esports vs. Team Vitality', [['G2 Esports', '0.6', '0.41'], ['Team Vitality', '0.41', '0.6']]));
   assert.ok(g2.every(r => r.kind === 'teams'));

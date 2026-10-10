@@ -517,7 +517,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.30.0');
+  assert.equal(body.version, '3.32.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +543,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.30.0');
-  assert.equal((await get('/')).body.version, '3.30.0');
+  assert.equal(require('../package.json').version, '3.32.0');
+  assert.equal((await get('/')).body.version, '3.32.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -692,10 +692,12 @@ test('where to tail: Kalshi when the books are worse; nothing matched is "watch 
   assert.equal(lone.venue, null);
   assert.deepEqual(lone.venues, []);
   assert.equal(S.venueLine(lone), 'No US venue found yet: watch only');
-  // in-play and near-certain bets aren't tails at any venue
+  // in-play and near-certain bets aren't tails at any venue, nor pinged, A grade or not
   for (const blocked of ['in-play', 'near-certain', 'split']) {
     const b = S.routeSignal({ ...s, id: `b-${blocked}`, topUp: false, blocked, venue: undefined, venues: undefined });
     assert.ok(b.venues.length > 0 && b.venues.every(v => v.units === 0), blocked);
+    assert.equal(S.tailPings({ ...b, grade: 'A' }), false, `${blocked}: no ping`);
+    assert.equal(S.tailPings({ ...b, blocked: null, grade: 'A' }), true);
   }
   // no venue goes past the room left on the game
   const room = S.routeSignal({ ...s, id: 'room', topUp: false, eventRoom: 0.25, venue: undefined, venues: undefined });

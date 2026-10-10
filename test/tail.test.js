@@ -602,6 +602,12 @@ test('signal: skips small trades, closing markets, stale and ungraded; SELLs are
   assert.ok(run({ trade: { size: 1250 } }).signal, '$500 exactly counts');
   assert.deepEqual(run({ market: { endDate: new Date(NOW + 14 * 60e3).toISOString() } }), { signal: null, skip: 'market resolves within 15 min' });
   assert.ok(run({ market: { endDate: new Date(NOW + 16 * 60e3).toISOString() } }).signal);
+  // a game's end date is its kick-off: 5 minutes before it still counts, and after it the buy is blocked, not dropped
+  const kickoff = new Date(NOW + 5 * 60e3).toISOString();
+  const late = run({ market: { endDate: kickoff, gameStartTime: kickoff } }).signal;
+  assert.deepEqual([late.type, late.blocked ?? null, late.units > 0], ['entry', null, true]);
+  const started = new Date(NOW - 5 * 60e3).toISOString();
+  assert.equal(run({ market: { endDate: started, gameStartTime: started } }).signal.blocked, 'in-play');
   assert.deepEqual(run({ market: { closed: true } }), { signal: null, skip: 'market closed' });
   assert.deepEqual(run({ trade: { timestamp: Math.floor((NOW - 2 * 3600e3) / 1000) } }), { signal: null, skip: 'stale trade' });
   assert.deepEqual(run({ trader: { grade: null } }), { signal: null, skip: 'not graded' });
