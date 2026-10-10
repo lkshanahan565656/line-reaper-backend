@@ -1135,7 +1135,6 @@ function venueQuotes(signal, index, opts = {}) {
     // sportsbooks: that team's moneyline in the same game
     const t0 = ms(row.startTime || row.closeTime);
     if (row.kind === 'teams' && t0 != null && row.noLabel) {
-      const team = yes ? row.outcomeLabel : row.noLabel;
       const found = [];
       for (const g of index?.games || []) {
         const tg = ms(g?.commence_time);

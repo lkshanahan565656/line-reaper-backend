@@ -42,7 +42,6 @@ let cache = {
   oddsApiProps: {},
   owlsOdds: {},
   splits: {},
-  lineHistory: {},
   oddsSnapshot: {},
   sharpMoves: [],
   udSportLabels: [],        // distinct sport labels seen in the UD feed (diagnostics)
@@ -454,18 +453,6 @@ function mergeProps(owlsData, oddsApiData) {
 // EV: (prob / 0.5622 - 1) * 100  [PrizePicks pays at -128 implied 56.22%]
 // k varies by sport+prop_type (see getVarianceMultiplier)
 
-function _erf(x) {
-  const sign = x >= 0 ? 1 : -1;
-  x = Math.abs(x);
-  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t * Math.exp(-x*x);
-  return sign * y;
-}
-function _normalCDF(x, mean, std) {
-  return 0.5 * (1 + _erf((x - mean) / (std * Math.sqrt(2))));
-}
-
 function getVarianceMultiplier(sport, propText) {
   const s = (sport || '').toUpperCase();
   const p = (propText || '').toUpperCase();
@@ -568,7 +555,7 @@ function calcBookEV(prob, book, mult = 1.00) {
 }
 
 const {
-  matchContext, describeContext, mixtureProb, opponentFrom, createOddsBook, teamsMatch,
+  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
 const { propProb } = require('./dist');
@@ -686,9 +673,6 @@ function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
   if (!r) return null;
   return { ...r, side, ppLine, modelPred, ev: calcBookEV(r.prob, 'prizepicks') };
 }
-
-// Prediction layer: convert player stats to expected kills
-const ROUNDS_PER_MAP = { CS: 24, VAL: 22, DOTA: 1, COD: 1, LOL: 1 };
 
 // ONE parser for map spans, used by both the predictor and the cross-book key.
 // Formats seen in the wild:
@@ -832,56 +816,6 @@ let esportsCache = {
   picks: [],
   lastUpdated: null,
 };
-
-const HLTV_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://www.hltv.org/',
-};
-
-async function fetchHLTVPlayerStats(playerName) {
-  try {
-    const cached = esportsCache.hltvPlayers[playerName.toLowerCase()];
-    if (cached && (Date.now() - cached.lastUpdate) < 3600000) return cached;
-
-    const searchRes = await axios.get(`https://www.hltv.org/stats/players?search=${encodeURIComponent(playerName)}`, {
-      headers: HLTV_HEADERS, timeout: 12000
-    });
-    const searchHtml = searchRes.data;
-    const linkMatch = searchHtml.match(/href="\/stats\/players\/(\d+)\/[^"]+"/);
-    if (!linkMatch) return null;
-    const playerId = linkMatch[1];
-
-    const res = await axios.get(`https://www.hltv.org/stats/players/${playerId}`, {
-      headers: HLTV_HEADERS, timeout: 12000
-    });
-    const html = res.data;
-
-    const stats = { name: playerName, lastUpdate: Date.now() };
-    const ratingMatch = html.match(/Rating[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
-    const kprMatch = html.match(/Kills\s*\/\s*round[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
-    const adrMatch = html.match(/ADR[^<]*<[^>]+>[\s\S]*?>([\d.]+)</);
-    const hsMatch = html.match(/Headshot\s*%[^<]*<[^>]+>[\s\S]*?>([\d.]+)/);
-    const mapsMatch = html.match(/Maps\s*played[^<]*<[^>]+>[\s\S]*?>(\d+)/);
-
-    if (ratingMatch) stats.rating = parseFloat(ratingMatch[1]);
-    if (kprMatch) stats.kpr = parseFloat(kprMatch[1]);
-    if (adrMatch) stats.adr = parseFloat(adrMatch[1]);
-    if (hsMatch) stats.hsPercent = parseFloat(hsMatch[1]);
-    if (mapsMatch) stats.mapsPlayed = parseInt(mapsMatch[1]);
-
-    if (stats.kpr) {
-      esportsCache.hltvPlayers[playerName.toLowerCase()] = stats;
-      console.log(`HLTV ${playerName}: KPR=${stats.kpr} R=${stats.rating}`);
-      return stats;
-    }
-    return null;
-  } catch (e) {
-    console.warn(`HLTV ${playerName}:`, e.response?.status || e.message);
-    return esportsCache.hltvPlayers[playerName.toLowerCase()] || null;
-  }
-}
 
 // ─── VALORANT VIA VLR.GG MIRROR ───────────────────────────────────────────────
 // Was: one region (NA) + exact name match, which is why VAL never populated —
@@ -1430,7 +1364,6 @@ function normalizeName(n) {
 // Handles: "MAPS 1-2 Kills" (PP), "Kills on Maps 1+2" (UD), "Kills Map 1+2" (Betr), "Kills Maps 1 2" (Sleeper)
 function normalizeMarket(m) {
   const s = (m || '').toLowerCase();
-  const isKills    = s.includes('kill');
   const isHS       = s.includes('headshot') || s.includes('hs');
   const isAssists  = s.includes('assist');
   const isFantasy  = s.includes('fantasy');
@@ -3291,15 +3224,6 @@ app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
   } catch(e) { res.status(e.response?.status||502).json({ error: `Owls error ${e.response?.status || ''}`.trim() }); }
 });
 
-app.post('/api/history/record', (req, res) => {
-  const { player, market, line, book, odds, timestamp } = req.body;
-  const key = `${player}|${market}`;
-  if (!cache.lineHistory[key]) cache.lineHistory[key] = [];
-  cache.lineHistory[key].push({ line, book, odds, timestamp: timestamp || new Date().toISOString() });
-  if (cache.lineHistory[key].length > 50) cache.lineHistory[key] = cache.lineHistory[key].slice(-50);
-  res.json({ ok: true });
-});
-app.get('/api/history/:player', (req, res) => res.json(cache.lineHistory[`${decodeURIComponent(req.params.player)}|${req.query.market}`] || []));
 
 // ── ALERTS ────────────────────────────────────────────────────────────────────
 app.get('/api/esports/alerts', requirePro, (req, res) => {

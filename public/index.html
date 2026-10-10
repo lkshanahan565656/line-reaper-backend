@@ -1137,12 +1137,6 @@ function fmt(odds) {
   return odds > 0 ? `+${odds}` : `${odds}`;
 }
 
-function oddsClass(odds) {
-  if (!odds) return '';
-  if (odds > 0) return odds > 150 ? 'long-dog' : 'pos';
-  return 'neg';
-}
-
 function bestBook(books, side) {
   let best = null; let bestBook = null;
   for (const [k, v] of Object.entries(books)) {
@@ -1224,7 +1218,6 @@ function renderCard({g, books, signals}, i) {
   const bookRows = bookEntries.map(([k,v]) => {
     const isBH = k === bH.bestBook;
     const isBA = k === bA.bestBook;
-    const label = bookLabel(k, true);
     return `<tr style="border-bottom:1px solid #111">
       <td style="padding:5px 8px;white-space:nowrap">${bookChip(k, 16, true, 10)}</td>
       <td style="padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:12px;text-align:center">
@@ -1309,79 +1302,6 @@ function renderArb(games) {
   arbState.passive = games || [];
   renderArbTool();
 }
-function renderArb_legacy(games) {
-  const el = document.getElementById('arbContent');
-  if (!games.length) return;
-
-  const arbs = games.map(g => {
-    const books = getBookOdds(g);
-    const arb = checkArb(books);
-    return arb ? { g, books, arb } : null;
-  }).filter(Boolean);
-
-  if (!arbs.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO ARBS</div><div class="empty-sub">Market is efficient right now — check back later</div></div>`;
-    return;
-  }
-
-  arbs.sort((a,b) => b.arb.margin - a.arb.margin);
-
-  el.innerHTML = arbs.map((a,i) => {
-    const sport = SPORT_LABEL[a.g.sport_key] || '';
-    const t = new Date(a.g.commence_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    const homeLabel = bookLabel(a.arb.bestHome.book, false);
-    const awayLabel = bookLabel(a.arb.bestAway.book, false);
-
-    // Calc stakes for $100 total
-    const impliedHome = a.arb.bestHome.odds > 0 ? 100/(a.arb.bestHome.odds+100) : (-a.arb.bestHome.odds)/((-a.arb.bestHome.odds)+100);
-    const impliedAway = a.arb.bestAway.odds > 0 ? 100/(a.arb.bestAway.odds+100) : (-a.arb.bestAway.odds)/((-a.arb.bestAway.odds)+100);
-    const sumImplied = impliedHome + impliedAway;
-    const stakeHome = ((impliedHome / sumImplied) * 100).toFixed(2);
-    const stakeAway = ((impliedAway / sumImplied) * 100).toFixed(2);
-
-    // All books for this game
-    const bookRows = Object.entries(a.books).map(([k,v]) => {
-      const isBH = k === a.arb.bestHome.book;
-      const isBA = k === a.arb.bestAway.book;
-      return `<tr style="border-bottom:1px solid #111;${(isBH||isBA)?'background:rgba(168,85,247,0.05)':''}">
-        <td style="padding:5px 10px;font-size:9px;font-family:'Share Tech Mono',monospace;color:${(isBH||isBA)?'#bbbbbb':'#555'}">${bookLabel(k,false)}${(isBH||isBA)?' ★':''}</td>
-        <td style="padding:5px 10px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px">
-          <span style="${isBA?'color:var(--green);font-weight:700':''}">${fmt(v.away)}</span>
-        </td>
-        <td style="padding:5px 10px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px">
-          <span style="${isBH?'color:var(--green);font-weight:700':''}">${fmt(v.home)}</span>
-        </td>
-      </tr>`;
-    }).join('');
-
-    return `<div class="best-line-card" style="animation-delay:${i*0.05}s;border-color:rgba(168,85,247,0.25);margin-bottom:10px">
-      <div style="padding:12px 14px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:13px;font-weight:700;font-family:'Cinzel',serif">${a.g.away_team} @ ${a.g.home_team}</div>
-          <div style="font-size:9px;letter-spacing:2px;color:#555;font-family:'Share Tech Mono',monospace;margin-top:2px">${sport} · ${t}</div>
-        </div>
-        <div style="color:#bbbbbb;font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700">+${a.arb.margin}%</div>
-      </div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:rgba(0,0,0,0.4)">
-            <th style="text-align:left;padding:5px 10px;font-size:8px;letter-spacing:1px;color:#444">BOOK</th>
-            <th style="text-align:center;padding:5px 10px;font-size:8px;letter-spacing:1px;color:#444">${a.g.away_team.split(' ').pop()}</th>
-            <th style="text-align:center;padding:5px 10px;font-size:8px;letter-spacing:1px;color:#444">${a.g.home_team.split(' ').pop()}</th>
-          </tr></thead>
-          <tbody>${bookRows}</tbody>
-        </table>
-      </div>
-      <div style="padding:10px 14px;background:rgba(168,85,247,0.06);border-top:1px solid rgba(168,85,247,0.15);font-family:'Share Tech Mono',monospace;font-size:11px;line-height:2">
-        ⚡ <strong style="color:#bbbbbb">GUARANTEED PROFIT per $100:</strong><br>
-        Bet <strong style="color:var(--green)">$${stakeAway}</strong> on ${a.g.away_team.split(' ').pop()} @ <strong>${awayLabel}</strong> at ${fmt(a.arb.bestAway.odds)}<br>
-        Bet <strong style="color:var(--green)">$${stakeHome}</strong> on ${a.g.home_team.split(' ').pop()} @ <strong>${homeLabel}</strong> at ${fmt(a.arb.bestHome.odds)}<br>
-        <strong style="color:#bbbbbb">Profit: $${parseFloat(a.arb.margin).toFixed(2)} guaranteed regardless of outcome</strong>
-      </div>
-    </div>`;
-  }).join('');
-}
-
 // ─── BET LOG ─────────────────────────────────────────────────────────────────
 function addBet() {
   const pick = document.getElementById('logPick').value.trim();
@@ -1709,10 +1629,6 @@ function renderShop(games, query='') {
 // Backend URL - update this after Railway deployment
 const BACKEND_URL = 'https://line-reaper-backend-production.up.railway.app';
 
-// Owls calls go through the backend proxy, which adds the key.
-const OWLS_BASE = `${BACKEND_URL}/api/owls`;
-const OWLS_HEADERS = {};
-
 // ── ACCOUNT ─────────────────────────────────────────────────────────────────
 // Logged-in users carry a bearer token on every backend call. Pro is decided
 // by the server (Stripe webhooks), never by the page. When the server's
@@ -1729,7 +1645,6 @@ window.fetch = (url, opts = {}) => {
   }
   return _rawFetch(url, opts);
 };
-const acctIsPro = () => !acct.paywall || !!acct.user?.isPro;
 
 async function acctInit() {
   try {
@@ -1844,7 +1759,6 @@ document.addEventListener('DOMContentLoaded', acctInit);
 
 // DFS cache
 let dfsCache = { prizepicks: [], underdog: [], sleeper: [], updated: null };
-let splitsCache = {};
 let backendOnline = false;
 
 async function checkBackend() {
@@ -1905,36 +1819,10 @@ async function loadDFSLines(sport) {
   }
 }
 
-async function loadSplits(sport) {
-  if (!backendOnline) return null;
-  try {
-    const r = await fetch(`${BACKEND_URL}/api/splits/${sport}`);
-    if (!r.ok) return null;
-    const data = await r.json();
-    splitsCache[sport] = data;
-    return data;
-  } catch(e) { return null; }
-}
 let owlsProps = {};
 let sharpMoves = [];
-let owlsSocket = null;
-let wsConnected = false;
-let wsReconnectTimer = null;
 let currentPropSport = 'mlb';
 let currentPropSearch = '';
-
-const PROP_LABELS = {
-  points:'PTS', rebounds:'REB', assists:'AST', steals:'STL', blocks:'BLK',
-  threes_made:'3PM', pts_rebs_asts:'PRA', pts_rebs:'PR', pts_asts:'PA',
-  rebs_asts:'RA', passing_yards:'PASS YDS', passing_tds:'PASS TDS',
-  rushing_yards:'RUSH YDS', receiving_yards:'REC YDS', receptions:'REC',
-  touchdowns:'TDS', goals:'GOALS', hockey_assists:'AST', hockey_points:'PTS',
-  shots_on_goal:'SOG', hits:'HITS', runs:'RUNS', rbis:'RBI',
-  home_runs:'HR', strikeouts_pitcher:'Ks', strikeouts_batter:'Ks',
-  stolen_bases:'SB', total_bases:'TB', double_double:'DD', triple_double:'TD'
-};
-
-const SHARP_BOOKS_ORDERED = ['pinnacle','novig','circa','westgate','wynn','south_point','draftkings','fanduel','betmgm','caesars','bet365','kalshi','polymarket'];
 
 // Book logos - using favicon/icon URLs
 const BOOK_LOGOS = {
@@ -1954,229 +1842,6 @@ const BOOK_LOGOS = {
   parlayplay:  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCABAAEADASIAAhEBAxEB/8QAGwABAAICAwAAAAAAAAAAAAAAAAQGAgUBAwf/xAAvEAACAQMDAwEHAwUAAAAAAAABAgMABBEFEiEGMVFBByIyYXGBwRNSchQjgpGh/8QAGwEAAwEAAwEAAAAAAAAAAAAAAAMEAQIFBgj/xAAqEQABAwEGBgEFAAAAAAAAAAABAAIDEQQhMUFRcQUSExRhoYEVIjKR0f/aAAwDAQACEQMRAD8A9gpSlfOy9olKUoQlKUoQlKUoQlKg65e3enaRdXdhYPqF1Em6O2Q4Mpz2/P2rSaX1JrUurW9pqejPZxXRVVJik/tsYQ+0vgo2GDL3Bz6VZBYZZo3SMpQVzFbsbsUp8zWODTmrTSqnb9b3FxHbuujzMs8mzehdkAx52dwTz6Y5BPOOxeqtRiliWfSXzcNFtUbgIQ8an3n24OGbBPGAD4ph4XaBcR7H9WdwzFWilV/VepprZLEWdmZ5L20/qFAJLRt7o27QCGwXBJyBhT8qaR1PLf6hHZ3Fg9urMiGdsqCWRjkKwGfeXGM8BlNZ9MtFK09jbXVZ3EeqsFKDkCu2OcQ8xxJu/c43EfQdqjja0n7jQJriRgFHngiuoXgnjWWKRSrowyGB7g1BsentO02YS2cMsJXOEFxKUGe+ELFf+VsaVrZpGNLWuIBxFUFjSakIgEahUG0DgAcAVw6iRGRwGVhgqeQR4IrmlL8rlRYrGibdqKu1dq4GMDwPlxR40kdHdFZkyVYgErnvg+lZVjJIkUbSSOqIgLMzHAUeST2FaCSbsVlAFlWo1/qzRumI1fVL1IXf4IQC0j/RByfr2qkdRe1C+1a6fRuhbOW/uPhe9SPcqfwB4/ybjwD3rVaR7FdU1Wc3/U+rMksp3SJE36srfykPA+2a9FZuCwxN63E5OmMm4uPxl8+lFJanOPLAK+cl7hMmmy8wT3EB/bKm4f7HNRXj2dpI3HlT+DzWFK6Sadst5YAfFR6rT9AKprC3Ou6UpSp0xRdQ1GHTow0iySyPxHBCu6SU+FX8nAHqRVbveldR6vYN1Jcm204HKaTaScN4M0g+M/JcAeT3q2LDGkjShQHYYLepHjPj5VlVUNqMF8Io7XMbab47JTo+f8sNFF07S7LSbVbXT7WG1gXtHEoUffyfmalUpUznueeZxqSmAACgX//Z',
   sleeper:     'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCABAAEADASIAAhEBAxEB/8QAHQAAAgEFAQEAAAAAAAAAAAAABQYHAQIDBAgACf/EADUQAAIBAwIDBQYGAQUAAAAAAAECAwQFEQAGBxIhMTJBUWEIEyJxgZEUFUJScrFiRpKhosL/xAAZAQADAQEBAAAAAAAAAAAAAAABAgMEAAX/xAAhEQEAAgEEAgMBAAAAAAAAAAABAAIRAwQSMSFBUXGhE//aAAwDAQACEQMRAD8A5zsVjSoQVVUuUPcT93qfTTIipEoRFVFHYFGBrFGqxRrGowqgKB6DV3Mderp0KGCYrWbMy82t+x2K5bluUVttNK9VVTMFVFIH3J6AaF82nzg5vGk2hu2CprIneKRuQlBkgFSp/vP009lx4gO4B3VtC+bKuIt99oWpJmXnjPMHSRezKsOhH9aDc2pb9ojiBat13O3Wm1rJILWZDNO8ZTLuF+BQeuABknzPpqH+bQpZa5YbAPiXyIkqlJEV1PaGGRpbvtjSnQ1VKMIO+n7fUemmHm1bIolRkcZVgQR6aXUoXMM6tmrKc2vZ1j5tELPRfi5XkYZjiAJ9T4DRzFhPZ2zbhvO9QWujKxGQF3kcdI0Hax9P7JGuh9ucBtmWgQyVMNXcqqMhvfTzFVLDyRcDHoc6ivhBuSi23vF1uEiQQ10H4ZZnOFR+YMuT4A4xn5a6Pim7Oupai+pWgQFfvZ62ZuuaouVRFW0ddWMZnmpagjLHx5Wyv0AGoS4k+z1uDY9PLc7dL+dWmMFpJI4+WaBfN0Gcj/JfqBrp6kuk0KBFcFR2BuuNbqXSR+0IR8tQL6lWUa1SfPzm1Xm1J/tBbBptn7piuNsgEFsu4aVYkGFhmB+NB5A5DAeGSPDUWc2tdbZMzOmHEx82m7bcKJYJqlyFX3jlm8goGk3m027dD3Lat0t8PxTqSyqO05AOP+pGgMMXq+6yVcre7Ajj8BjJI9dGLPxM3jYKdaa3bhrYoFGFiYiRVHoGBx9NbO0bht6rt0tk3JEkac5lpazuvCT3l5h2Dpnr07dBtxWejtFUFobtS3GB8lTEfjT+QHT7HTOm8efqYNPfDr2296tU6ceE+R6+x/YffjTxBf8A1RVp/CONf/OmLZ/tF7sstwi/PqgXq3kgSq8arMq+LIygZI8jkH01H23bPR3eqK112pbdAmCzSn43/iD0+50Z3dcNvUdvhsm3IlkQOJaqs7zzEd1ebxHUnp07NL/HNOb1Dqb/AI7iu3pVV7ceA+V6+g/JOPtFzUd74YWy70sizQ/jYJoJR+pJI2GfqMfbXMvNqaOKMs23uCuzNs1pIrpCkskZ7UVFZsH5GRR9NQnzaSngm+3cxJIHUMpyGGRopt+9yWO4rUqC0ZHLIgOCy+nqO0aUrbcliUQzHCjut5eh0WWRXGVYMPMHOkpqZMkNqtWSlPse278U3Lbtwpqeuk+Kall6Ryt4spHVGPipGM9RoRLwd3nGxVbZFLjxjqoyP+SNJMFVNSyCSnmkhcfqjYqfuNH6biRu+kQJDuK4BR0AZw+P9wOqch7iw1T8F971DBfyuGIHxkqowB9idPO2uFVk4ehNy76utIxpiJIaVMmPnHUdvWRvJQMZ7c6i+bidvOdeV9y3EA/scJ/QGgFbcay5Te/rquoqpeznnkZ2+5OgpOjLxH31Ub/3LLc5FaKmjX3NLCxyY4gc9f8AIkkn548NKrSBEZmPRRk6saRUGWYKB4k40JuVyEqmGE5U95vP00lrlSNWrZn/2Q==',
 };
-
-function bookLogoHTML(book, showLabel=true) {
-  const logo = BOOK_LOGOS[book];
-  const label = bookMeta(book).n;
-  const isSharp = SHARP_BOOKS_ORDERED.indexOf(book) < 4;
-  if (logo) {
-    return `<div class="book-logo-cell">
-      <img src="${logo}" class="book-logo" onerror="this.style.display='none'" alt="${label}"/>
-      ${showLabel ? `<span style="color:${isSharp?'#c8c8c8':'#555'}">${label}${isSharp?' ★':''}</span>` : ''}
-    </div>`;
-  }
-  return `<div class="book-logo-cell"><span style="color:${isSharp?'#c8c8c8':'#555'}">${label}${isSharp?' ★':''}</span></div>`;
-}
-
-// ─── REST ─────────────────────────────────────────────────────────────────────
-async function owlsFetch(path) {
-  try {
-    const r = await fetch(`${OWLS_BASE}${path}`, { headers: OWLS_HEADERS });
-    if (!r.ok) { console.warn('Owls', r.status, path); return null; }
-    return r.json();
-  } catch(e) {
-    console.warn('Owls error:', path, e.message);
-    return null;
-  }
-}
-
-// ─── SOCKET.IO WEBSOCKET ──────────────────────────────────────────────────────
-function connectOwlsWS() {
-  if (wsConnected || owlsSocket) return;
-  // The Owls socket needs the API key in the browser. With keys on the backend,
-  // live updates come from the backend's 30-second polling instead.
-  updateWSStatus(false, 'POLLING');
-  return;
-
-  // Load Socket.io from CDN then connect
-  if (typeof io === 'undefined') {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js';
-    script.onload = () => initOwlsSocket();
-    script.onerror = () => { console.warn('Socket.io CDN failed'); updateWSStatus(false); };
-    document.head.appendChild(script);
-  } else {
-    initOwlsSocket();
-  }
-}
-
-function initOwlsSocket() {
-  try {
-    owlsSocket = io('https://api.owlsinsight.com', {
-      transports: ['websocket','polling'],
-      reconnection: true,
-      reconnectionDelay: 3000,
-      reconnectionAttempts: 5,
-      timeout: 15000,
-    });
-
-    owlsSocket.on('connect', () => {
-      wsConnected = true;
-      updateWSStatus(true, 'LIVE ★');
-      console.log('[Owls WS] connected:', owlsSocket.id);
-
-      // Owls WS subscription — based on official docs
-      owlsSocket.emit('subscribe', {
-        sports: ['nba','mlb','nhl','nfl','ncaab','mma'],
-        markets: ['h2h','spreads','totals','player_props'],
-        books: ['pinnacle','novig','circa','westgate','wynn','south_point',
-                'draftkings','fanduel','betmgm','caesars','bet365']
-      });
-
-      // Also pull props via REST immediately — WS pushes updates, REST gives current state
-      pollOwlsPropsREST();
-
-      // If WS doesn't push props within 10s, poll REST again
-      setTimeout(() => {
-        if (!Object.keys(owlsProps).some(k => k !== `rest_${currentPropSport}`)) {
-          pollOwlsPropsREST();
-        }
-      }, 10000);
-    });
-
-    owlsSocket.on('disconnect', r => { wsConnected = false; updateWSStatus(false, 'OFFLINE'); console.log('[Owls WS] disconnected:', r); });
-    owlsSocket.on('connect_error', e => { if (!initOwlsSocket._warned) { console.warn('[Owls WS] error:', e.message, '— retrying quietly, will stop after 5 tries'); initOwlsSocket._warned = true; } updateWSStatus(false, 'ERR'); });
-
-    // ── Odds / line move events ──
-    owlsSocket.on('odds-update',       d => handleOwlsOddsUpdate(d));
-    owlsSocket.on('pinnacle-realtime', d => handleOwlsOddsUpdate(d, 'pinnacle'));
-    owlsSocket.on('ps3838-realtime',   d => handleOwlsOddsUpdate(d, 'pinnacle'));
-    owlsSocket.on('line-move',         d => handleLineMoveEvent(d));
-    owlsSocket.on('sharp-move',        d => handleLineMoveEvent({...d, isSharp:true}));
-    owlsSocket.on('steam-move',        d => handleLineMoveEvent({...d, isSharp:true}));
-    ['novig','circa','westgate','wynn','draftkings','fanduel','betmgm','caesars','bet365'].forEach(b => {
-      owlsSocket.on(`${b}-realtime`, d => handleOwlsOddsUpdate(d, b));
-      owlsSocket.on(`${b}-update`,   d => handleOwlsOddsUpdate(d, b));
-    });
-
-    // ── Props events ──
-    owlsSocket.on('props-update', d => { handleOwlsPropsUpdate(d); });
-    owlsSocket.on('player-props-update', d => { handleOwlsPropsUpdate(d); });
-
-    // ── Catch-all: log everything so we can see what's actually sent ──
-    owlsSocket.onAny?.((event, ...args) => {
-      if (!['connect','disconnect','ping','pong','connect_error'].includes(event)) {
-        console.log('[Owls WS event]', event, JSON.stringify(args[0]).slice(0, 300));
-      }
-    });
-
-  } catch(e) {
-    console.warn('[Owls] init error:', e);
-    updateWSStatus(false);
-    setTimeout(pollOwlsPropsREST, 2000);
-  }
-}
-
-// WS odds update — handles all Owls event shapes:
-// odds-update:       { sports: { nba: [games], mlb: [games] } }
-// pinnacle-realtime: { nba: [games], mlb: [games] }
-// ps3838-realtime:   { nba: [games] }
-function handleOwlsOddsUpdate(data, sourceBook) {
-  const ts = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
-
-  // Normalize to flat array of {sport, game} pairs
-  const gamePairs = [];
-
-  // Shape 1: { sports: { nba: [...], mlb: [...] } }
-  if (data?.sports && typeof data.sports === 'object') {
-    for (const [sport, games] of Object.entries(data.sports)) {
-      if (Array.isArray(games)) games.forEach(g => gamePairs.push({ sport, game: g }));
-    }
-  }
-  // Shape 2: { nba: [...], mlb: [...] } (pinnacle-realtime, ps3838-realtime)
-  const sportKeys = ['nba','mlb','nhl','nfl','mma','soccer','ncaab'];
-  for (const sk of sportKeys) {
-    if (Array.isArray(data?.[sk])) {
-      data[sk].forEach(g => gamePairs.push({ sport: sk, game: g }));
-    }
-  }
-  // Shape 3: flat array
-  if (Array.isArray(data)) {
-    data.forEach(g => gamePairs.push({ sport: g.sport_key || g.sport || '', game: g }));
-  }
-
-  let movesAdded = 0;
-  for (const { sport, game } of gamePairs) {
-    if (!game || !game.bookmakers) continue;
-    // Skip suspended/totals-only games (home_team === 'Over' etc)
-    if (game.home_team === 'Over' || game.home_team === 'Under') continue;
-
-    const gl = `${(game.away_team||'').split(' ').pop()}@${(game.home_team||'').split(' ').pop()}`;
-
-    for (const bm of (game.bookmakers || [])) {
-      const book = (bm.key || bm.title || sourceBook || '').toLowerCase();
-      const isSharp = ['pinnacle','novig','circa','westgate','wynn','south_point','ps3838'].includes(book);
-
-      for (const mkt of (bm.markets || [])) {
-        if (mkt.key === 'suspended') continue;
-        for (const o of (mkt.outcomes || [])) {
-          const curr = o.price;
-          if (!curr || curr > 5000 || curr < -5000) continue; // skip bogus
-          const snapKey = `ws_${game.id}_${book}_${mkt.key}_${o.name}`;
-          const prev = sharpOddsSnapshot[snapKey];
-
-          if (prev !== undefined && prev !== curr) {
-            const diff = Math.abs(curr - prev);
-            if (diff >= 3) {
-              const move = {
-                id: `ws_${Date.now()}_${Math.random()}`,
-                book: book === 'ps3838' ? 'pinnacle' : book,
-                sport, game: gl, market: mkt.key,
-                oldOdds: prev, newOdds: curr, side: o.name,
-                timestamp: ts, isSharp, diff,
-                direction: curr > prev ? 'up' : 'down'
-              };
-              sharpMoves.unshift(move);
-              movesAdded++;
-              if (sharpMoves.length > 300) sharpMoves.length = 300;
-              if (isSharp && diff >= 8) {
-                showToast(`⚡ ${move.book.toUpperCase()}: ${o.name} ${fmt(prev)}→${fmt(curr)}`);
-                playBeep();
-              }
-            }
-          }
-          sharpOddsSnapshot[snapKey] = curr;
-        }
-      }
-    }
-  }
-
-  if (movesAdded > 0 || document.getElementById('page-sharp')?.classList.contains('active')) {
-    renderSharpFeed();
-    updateTicker();
-  }
-}
-
-// WS props update — Owls pushes full game objects with props
-function handleOwlsPropsUpdate(data) {
-  const games = Array.isArray(data) ? data : (data?.games || data?.data || [data]);
-  owlsProps['ws_live'] = owlsProps['ws_live'] || [];
-  owlsProps['ws_live'].push(...games.filter(Boolean));
-  console.log('[Owls WS props] received', games.length, 'games');
-  if (document.getElementById('page-props')?.classList.contains('active')) renderPropsFromCache();
-}
-
-// Flat line-move event handler
-function handleLineMoveEvent(data) {
-  const ts = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
-  const book = (data.book || data.source || data.bookmaker || 'unknown').toLowerCase();
-  const isSharp = ['pinnacle','novig','circa','westgate','wynn','south_point'].includes(book);
-  const oldOdds = data.old_price ?? data.oldOdds ?? data.previous_price ?? data.open ?? null;
-  const newOdds = data.price ?? data.newOdds ?? data.new_price ?? data.current ?? null;
-  if (!oldOdds || !newOdds) return;
-  const diff = Math.abs(newOdds - oldOdds);
-  if (diff < 3) return;
-  const move = { id:Date.now()+Math.random(), book, sport:data.sport||'',
-    game: data.game || `${data.away_team||'?'}@${data.home_team||'?'}`,
-    market: data.market || data.bet_type || data.market_key || 'ML',
-    oldOdds, newOdds, side: data.side || data.outcome || data.team || data.name || '',
-    timestamp:ts, isSharp, diff, direction:newOdds>oldOdds?'up':'down' };
-  sharpMoves.unshift(move);
-  if (sharpMoves.length > 300) sharpMoves.length = 300;
-  if (isSharp && diff >= 8) { showToast(`⚡ ${book.toUpperCase()}: ${move.side} ${fmt(oldOdds)}→${fmt(newOdds)}`); playBeep(); }
-  if (document.getElementById('page-sharp')?.classList.contains('active')) renderSharpFeed();
-  updateTicker();
-}
 
 // ── Props — load ALL sports simultaneously for 24/7 coverage ─────────────────
 async function pollOwlsPropsREST() {
@@ -2554,7 +2219,6 @@ function updateTicker() {
 // ─── SHARP FEED — REST POLLING (WS add-on not on this plan) ──────────────────
 // We snapshot Owls odds every 30s via REST and diff against previous to detect moves.
 let sharpOddsSnapshot = {};    // { eventId_book_outcome: lastOdds }
-let sharpPollTimer = null;
 let sharpPollActive = false;
 
 async function startSharpPolling() {
@@ -2564,13 +2228,7 @@ async function startSharpPolling() {
 
   // Poll immediately then every 30s
   await pollSharpOdds();
-  sharpPollTimer = setInterval(pollSharpOdds, 30000);
-}
-
-function stopSharpPolling() {
-  sharpPollActive = false;
-  if (sharpPollTimer) { clearInterval(sharpPollTimer); sharpPollTimer = null; }
-  updateWSStatus(false, 'STOPPED');
+  setInterval(pollSharpOdds, 30000);
 }
 
 async function pollSharpOdds() {
@@ -3165,13 +2823,6 @@ function toggleEsportsSport(sport, el) {
     if (s === 'all') c.classList.toggle('active', esportsState.sports.size === 5);
     else if (s) c.classList.toggle('active', esportsState.sports.has(s));
   });
-  renderEsports();
-}
-
-function setEsportsMinEV(ev, el) {
-  esportsState.minEV = ev;
-  document.querySelectorAll('#esportsEVRow .sport-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
   renderEsports();
 }
 
@@ -5077,7 +4728,6 @@ document.querySelectorAll('.sport-row .sport-chip').forEach(c => {
 });
 loadData();
 checkBackend();
-connectOwlsWS();        // WS for real-time push — disable if hitting connection limit
 startSharpPolling();    // REST polling — always works regardless of WS
 // Odds auto-refresh: every 10 min, only while the tab is visible — protects the free 500/mo quota
 setInterval(() => { if (apiKey && !document.hidden && netFails.size < 2) loadData(); }, 600000);
