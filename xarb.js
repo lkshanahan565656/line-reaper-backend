@@ -615,11 +615,18 @@ function teamContext(games = []) {
 }
 
 // [a1, a2] vs [b1, b2] → 'same' (a1 is b1), 'flipped' (a1 is b2), or null
-// when either side is missing or it fits both ways round.
+// when either side is missing or it fits both ways round. Both ways round,
+// the way with more names spelled the same wins: "Louisiana" and
+// "Louisiana Tech" each fit the other loosely, but only one way exactly.
 function pairSides(a, b, same) {
   const direct = same(a[0], b[0]) && same(a[1], b[1]);
   const swap = same(a[0], b[1]) && same(a[1], b[0]);
-  return direct === swap ? null : direct ? 'same' : 'flipped';
+  if (direct && swap) {
+    const exact = (x, y) => (norm(x) && norm(x) === norm(y) ? 1 : 0);
+    const d = exact(a[0], b[0]) + exact(a[1], b[1]), s = exact(a[0], b[1]) + exact(a[1], b[0]);
+    return d === s ? null : d > s ? 'same' : 'flipped';
+  }
+  return direct ? 'same' : swap ? 'flipped' : null;
 }
 
 // Clubs, players and esports teams outside the built-in leagues: Kalshi says
@@ -676,13 +683,21 @@ const kalshiGameMs = k => (ms(k.startTime) ?? (ms(k.expectedExpiration) != null 
 // (the ticker's, else the estimate). Outside the built-in leagues (tennis,
 // soccer, esports) Kalshi's expected expiration can be a day out, so anywhere
 // on the ticker's date counts too (Eastern midnight − 6h to + 30h, for time
-// zones). → { t, lo, hi } | null
+// zones). Football's is often a placeholder: 20:00 UTC on the ticker's date
+// for a night kick-off, or a Friday ticker at 23:00 Eastern for a Saturday
+// game whose time isn't set. The same two football teams never meet twice in
+// a few days, so there the ticker's date and the two days after count.
+// → { t, lo, hi } | null
 const DAY_SLOP_MS = 6 * 3600e3;
+const FOOTBALL = new Set(['nfl', 'ncaaf']);
 function kalshiWindow(k, o) {
   const t = kalshiGameMs(k);
   if (t == null) return null;
   let lo = t - o.sportsWindowMs, hi = t + o.sportsWindowMs;
-  if (!k.league && k.gameDay != null) { lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + DAY + DAY_SLOP_MS); }
+  if (k.gameDay != null && (!k.league || FOOTBALL.has(k.league))) {
+    const days = k.league ? 3 : 1;
+    lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + days * DAY + DAY_SLOP_MS);
+  }
   return { t, lo, hi };
 }
 // index of the first { t } at or after `t` in a list sorted by t
