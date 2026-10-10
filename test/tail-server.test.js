@@ -535,6 +535,7 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
   assert.equal(body.tail.jobs.signals.failed, false);
+  assert.deepEqual(Object.keys(body.eventLoop), ['p50Ms', 'p99Ms', 'maxMs'], 'event-loop stalls, before the first 10-minute window closes');
   assert.equal(body.tail.record.open, 0);
   assert.ok(body.tail.routing.routed >= 2);
   assert.ok(body.whales.events >= 6);
