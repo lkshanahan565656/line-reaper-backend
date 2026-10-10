@@ -270,12 +270,13 @@ const nextCursor = payload => {
 // wallets and condition ids out of messages anyone can read (/api/status)
 const maskIds = s => String(s).replace(/0x[0-9a-f]{8,}/gi, '0x…');
 // unix seconds, unix ms or an ISO string → ms
+// (a Go zero time, "0001-01-01T00:00:00Z", is no time at all: before 1970 → null)
 function toMs(v) {
   if (v == null || v === '') return null;
   const n = Number(v);
   if (Number.isFinite(n)) return n <= 0 ? null : n > 1e12 ? n : n * 1000;
   const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
+  return Number.isFinite(t) && t > 0 ? t : null;
 }
 const money = x => `${x < 0 ? '-' : ''}$${String(Math.round(Math.abs(x))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 const pct = (x, d = 1) => `${round(x * 100, d)}%`;
@@ -639,7 +640,7 @@ function parseGammaMarket(m) {
     tokens: (jsonList(m.clobTokenIds) || []).map(String),
     bestBid: num(m.bestBid), bestAsk: num(m.bestAsk), lastTradePrice: num(m.lastTradePrice),
     endDate: m.endDate || m.endDateIso || null, gameStartTime: m.gameStartTime || m.game_start_time || null,
-    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null,
+    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null, line: num(m.line),
     active: m.active !== false && m.active !== 'false', closed: bool(m.closed), resolution: m.umaResolutionStatus || null,
     acceptingOrders: m.acceptingOrders == null ? null : bool(m.acceptingOrders),
     negRisk: bool(m.negRisk), volume: num(m.volume), liquidity: num(m.liquidity),
@@ -1260,7 +1261,9 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   const eventSlug = trade.eventSlug || market?.eventSlug || trade.slug || null;
   const base = {
     id: trade.key, wallet: trader.wallet, name: trader.name || trade.name || null, grade: tier.grade, scope: tier.scope, category,
-    market: trade.title || market?.question || '', eventSlug, conditionId: trade.conditionId, asset: trade.asset,
+    market: trade.title || market?.question || '', eventSlug, slug: trade.slug || market?.slug || null, conditionId: trade.conditionId, asset: trade.asset,
+    ...(market?.sportsMarketType ? { sportsMarketType: market.sportsMarketType } : {}), ...(market?.line != null ? { line: market.line } : {}),
+    ...(market?.outcomes?.length ? { outcomes: market.outcomes } : {}),
     outcome: trade.outcome, outcomeIndex: trade.outcomeIndex,
     theirPrice: trade.price, theirSize: round(trade.size, 4), theirNotional: round(trade.notional, 2),
     at: iso(trade.at ?? now), seenAt: iso(now), url: eventUrl(eventSlug),
@@ -1472,6 +1475,17 @@ async function fetchMarket(http, conditionId, { closed = false } = {}) {
     const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
     // hex ids may differ in case between the data API and Gamma
     const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => lower(x.conditionId) === lower(conditionId));
+    if (m) return m;
+  }
+  return null;
+}
+
+// a token id → its market (some live-feed rows carry only the token)
+async function fetchMarketByToken(http, tokenId) {
+  for (const c of [false, true]) {
+    const params = c ? { clob_token_ids: tokenId, closed: true } : { clob_token_ids: tokenId };
+    const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
+    const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => x.tokens.includes(String(tokenId)));
     if (m) return m;
   }
   return null;
@@ -1760,6 +1774,23 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     } finally { busy.score = false; }
   }
 
+  const tokenMarkets = new Map();   // token id → condition id (a token never changes market)
+  async function marketForToken(asset) {
+    const id = String(asset);
+    if (tokenMarkets.has(id)) return quote(tokenMarkets.get(id));
+    try {
+      const market = await fetchMarketByToken(http, id);
+      if (!market?.conditionId) return null;
+      tokenMarkets.set(id, market.conditionId);
+      if (tokenMarkets.size > 5000) tokenMarkets.delete(tokenMarkets.keys().next().value);
+      quotes.set(market.conditionId, { at: now(), market });
+      return market;
+    } catch (e) {
+      warn(`token ${id.slice(0, 12)}…: ${e?.message || e}`);
+      return null;
+    }
+  }
+
   async function quote(conditionId) {
     if (!conditionId) return null;
     const t = now();
@@ -1778,6 +1809,29 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // A graded wallet's trade after it was scored moves its book: a buy adds to
   // (or opens) the position, a sell takes from it. Trades from before the
   // score are already in the positions it was scored on.
+  // Some feed rows don't say which market they're in (no title or slug): an
+  // exit then read 'Exit: sold … of ""' filed under other. The name comes from
+  // what the wallet holds there, else from Gamma.
+  // A live-feed row can carry only the token id (no condition id either): the
+  // market then comes from the token, so the alert has a name and a price.
+  async function nameTrade(trader, tr) {
+    const h = (trader.holdings || []).find(x => x.asset === String(tr.asset));
+    if (!tr.conditionId && h?.conditionId) tr.conditionId = h.conditionId;
+    if (!tr.conditionId && tr.asset) {
+      const m = await marketForToken(tr.asset);
+      if (m?.conditionId) {
+        const i = m.tokens.indexOf(String(tr.asset));
+        tr.conditionId = m.conditionId;
+        if (i >= 0) { tr.outcomeIndex = i; if (!tr.outcome) tr.outcome = m.outcomes[i] ?? null; }
+      }
+    }
+    const m = h?.title ? null : await quote(tr.conditionId);
+    const src = h?.title ? { title: h.title, slug: h.slug, eventSlug: h.eventSlug, outcome: h.outcome }
+      : m ? { title: m.question, slug: m.slug, eventSlug: m.eventSlug, outcome: m.outcomes?.[tr.outcomeIndex] ?? null } : null;
+    if (!src) return;
+    for (const k of ['title', 'slug', 'eventSlug', 'outcome']) if (!tr[k] && src[k]) tr[k] = src[k];
+  }
+
   function noteHolding(trader, tr) {
     if (!Array.isArray(trader.holdings) || !tr.asset || !(tr.size > 0)) return;
     const scored = toMs(trader.scoredAt);
@@ -1944,7 +1998,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   // → the new signals (entries and exits) since the last poll, oldest first.
-  // route(signal) → units, when given, sizes each entry where followers bet
+  // route(signal) → units (or a promise of them), when given, sizes each entry where followers bet
   // (another venue's price) as it's made; those units are what later buys by
   // the same wallet top up. Without it, the size at Polymarket's ask.
   // The poll and the live stream hand trades to one lane, so a trade is
@@ -1997,6 +2051,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      if ((!(tr.title || tr.slug || tr.eventSlug) || !tr.conditionId) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
       // what a sale came out of, read before it's taken off (a trade from
       // before the wallet was scored is already in its positions)
       const scored = toMs(trader.scoredAt);
@@ -2046,7 +2101,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       // scaling in over several orders is one position: later buys top it up
       if (signal.type === 'entry' && typeof route === 'function') {
         let added = 0;
-        try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+        try { added = await route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
         noteTailed(signal, added);
         noteEvent(signal, added);
       } else if (signal.type === 'entry' && signal.target > 0) {
@@ -2106,6 +2161,6 @@ module.exports = {
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
-  fetchPriceHistory, fetchMarket,
+  fetchPriceHistory, fetchMarket, fetchMarketByToken,
   createTailEngine, toMs, maskIds, failText,
 };
