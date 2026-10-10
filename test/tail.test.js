@@ -1738,7 +1738,7 @@ test('a live-feed row with only a token id: the market, outcome and price come f
 test('a Go zero time ("0001-01-01T00:00:00Z") is no time: the closing-line window starts after 1970', () => {
   const m = T.parseGammaMarket(gammaMarket({ closedTime: '0001-01-01T00:00:00Z', endDate: '2026-10-01T00:00:00Z' }));
   assert.equal(m.closedAt, null);
-  const win = T.clvWindow({ asset: 'tok-yes', category: 'politics' }, m, { now: NOW });
+  const win = T.clvWindow({ asset: 'tok-yes', category: 'politics', enteredAt: Date.parse('2026-09-30T00:00:00Z') }, m, { now: NOW });
   assert.equal(win.end, Date.parse('2026-10-01T00:00:00Z'));
   assert.ok(win.start > 0, 'prices-history refuses a start before 1970 with a 400');
 });
