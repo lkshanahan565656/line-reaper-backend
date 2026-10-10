@@ -2051,17 +2051,28 @@ const { createFileStore: createDocFileStore } = require('./evtrack');
 // per host that starts at most one request every gapMs (a number, or a
 // function of the host). Identical GETs that are in flight or were answered in the last few
 // seconds share one response (the tail engine and the whale watcher both read
-// the same recent-trades page every 30s). A 429 pushes that host's queue back
-// (Retry-After, else retry429Ms) and the request goes once more at its end.
+// the same recent-trades page every 30s). A 429 pauses that host (Retry-After,
+// else retry429Ms doubling with each 429 in a row, at most 30s): requests
+// already queued wait it out too, and this one goes once more at the end.
+// Kalshi's public API shares its budget per IP, and Railway's IPs are shared.
 const retryAfterMs = e => { const s = Number(e?.response?.headers?.['retry-after']); return s > 0 ? Math.min(s * 1000, 30e3) : null; };
 function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, retry429Ms = 2000, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   const nextAt = new Map();   // host → when the next request may start
+  const pauseUntil = new Map(), streak = new Map();   // host → end of its 429 pause; 429s in a row
   const shared = new Map();   // url + params → { promise, doneAt }
   const stats = { requests: 0, shared: 0, failed: 0, retried429: 0, byHost: {} };
   const keyOf = (url, params) => `${url}?${JSON.stringify(Object.entries(params || {})
     .filter(([, v]) => v !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))}`;
   const hostOf = url => { try { return new URL(url).host; } catch { return ''; } };
   const gapFor = typeof gapMs === 'function' ? gapMs : () => gapMs;
+  const backOff = (host, e) => {
+    const n = (streak.get(host) || 0) + 1;
+    streak.set(host, n);
+    const until = now() + (retryAfterMs(e) ?? Math.min(30e3, retry429Ms * 2 ** (n - 1)));
+    pauseUntil.set(host, Math.max(pauseUntil.get(host) ?? 0, until));
+    return pauseUntil.get(host);
+  };
+  const ok = (host, r) => { streak.set(host, 0); return r; };
   return {
     get(url, cfg = {}) {
       const t = now();
@@ -2075,18 +2086,21 @@ function createPoliteHttp(get, { gapMs = 1000, shareMs = 5000, retry429Ms = 2000
       const entry = { doneAt: null };
       entry.promise = (async () => {
         if (start > t) await sleep(start - t);
+        const paused = pauseUntil.get(host) ?? 0;
+        if (paused > now()) await sleep(paused - now());
         stats.requests++;
         stats.byHost[host] = (stats.byHost[host] || 0) + 1;
-        try { return await get(url, cfg); }
+        try { return ok(host, await get(url, cfg)); }
         catch (e) {
           if (e?.response?.status !== 429) throw e;
-          const again = Math.max(now() + (retryAfterMs(e) ?? retry429Ms), nextAt.get(host) ?? 0);
+          const again = Math.max(backOff(host, e), nextAt.get(host) ?? 0);
           nextAt.set(host, again + gapFor(host));
           stats.retried429++;
           await sleep(again - now());
           stats.requests++;
           stats.byHost[host]++;
-          return get(url, cfg);
+          try { return ok(host, await get(url, cfg)); }
+          catch (e2) { if (e2?.response?.status === 429) backOff(host, e2); throw e2; }
         }
       })();
       entry.promise.then(() => { entry.doneAt = now(); }, () => { stats.failed++; if (shared.get(key) === entry) shared.delete(key); });
@@ -2577,7 +2591,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.34.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.34.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3325,7 +3339,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.34.0',
+  version: '3.34.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3443,7 +3457,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.34.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.34.1 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
