@@ -113,6 +113,9 @@ test('a bet\'s CLV is (close − entry) / entry on the token held; bought after 
   assert.equal(T.clvOf({ ...pos, price: 0.97 }, close), null);
   assert.equal(T.clvOf({ ...pos, price: 0.1 }, close).clv, 1, '10¢ to 46¢ is +360%, counted as +100%');
   near(T.clvOf({ ...pos, price: 0.1 }, close, { cap: 5 }).clv, 3.6);
+  assert.equal(T.clvOf(pos, { ...close, price: 0.001 }), null, 'a game priced at 0.1¢ before its start was already over');
+  assert.equal(T.clvOf(pos, { ...close, price: 0.995 }), null);
+  near(T.clvOf(pos, { ...close, price: 0.005, rule: 'freeze' }).clv, -0.9875, 1e-9, 'only a game close is checked for this');
 });
 
 test('CLV summary: stake-weighted average, share that beat the close, n; the most recent bets are sampled', () => {

@@ -825,6 +825,8 @@ function clvOf(pos, close, { cap = DEFAULTS.clvCap } = {}) {
   if (!pos || !close || !(pos.price > 0 && pos.price < 1) || !Number.isFinite(close.price)) return null;
   // bought at 3¢ or less (or 97¢+) the outcome was already out: no line to beat
   if (OUTCOME_OUT(pos.price)) return null;
+  // a game "closing" at 1¢ or 99¢ was already being played (or its start time is wrong)
+  if (close.rule === 'game' && (close.price <= 0.01 || close.price >= 0.99)) return null;
   if (pos.enteredAt != null && close.cut != null && pos.enteredAt >= close.cut) return null;
   return {
     asset: pos.asset, conditionId: pos.conditionId || null, category: pos.category || 'other', title: pos.title || '',
