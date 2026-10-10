@@ -1,5 +1,7 @@
 const axios = require('axios');
 const { createEsportsBoard } = require('../esboard');
+const R = require('../ratings');
+const { buildElo } = require('../context');
 const next = {};
 const http = { get(url, cfg = {}) {
   const host = new URL(url).host; const gap = host.includes('kalshi') ? 300 : 150;
@@ -7,24 +9,20 @@ const http = { get(url, cfg = {}) {
   return new Promise(r => setTimeout(r, at - Date.now())).then(() => axios.get(url, { ...cfg, headers: { 'User-Agent': 'Mozilla/5.0', ...(cfg.headers || {}) } }));
 } };
 (async () => {
-  const board = createEsportsBoard({ http });
+  const state = { elo: {}, meta: {} };
+  const t0 = Date.now();
+  await R.refreshRatings(axios, state, console, {});
+  console.log('ratings', JSON.stringify(state.meta), 'ms', Date.now() - t0);
+  for (const [k, e] of Object.entries(state.elo)) console.log(k, 'size', e.size, 'sample', ['Spirit','MOUZ','G2 Esports','T1','LOS','FURIA Esports','Team Vitality','LOUD','Vitality','NRG','Cupid Esports','Disguised'].map(n => `${n}:${e.rating(n) && Math.round(e.rating(n))}/${e.games(n)}`).join(' '));
+  const board = createEsportsBoard({ http, ratings: () => state.elo });
   const s = await board.scan();
-  console.log(JSON.stringify({ counts: s.counts, errors: s.errors, durationMs: s.durationMs }, null, 1));
-  const both = s.matches.filter(m => m.links.kalshi && m.links.polymarket);
-  const show = m => {
-    console.log(`\n=== ${m.label} | ${m.teams.join(' vs ')} | ${m.start} | Bo${m.bestOf} | ${m.tournament} | live ${m.live} | vol K ${m.volume.kalshi} P ${m.volume.polymarket}`);
-    for (const mk of m.markets) {
-      console.log(`  [${mk.key}] src=${mk.sources} ${mk.arb ? 'ARB ' + JSON.stringify(mk.arb) : ''}`);
-      for (const oc of mk.outcomes) console.log(`     ${oc.name}: fair ${oc.fair} model ${oc.model} | K ${oc.quotes.kalshi ? `${oc.quotes.kalshi.bid}/${oc.quotes.kalshi.ask} c${oc.quotes.kalshi.cost} ev${oc.quotes.kalshi.ev}${oc.quotes.kalshi.edge ? ' EDGE' : ''}` : '-'} | P ${oc.quotes.polymarket ? `${oc.quotes.polymarket.bid}/${oc.quotes.polymarket.ask} c${oc.quotes.polymarket.cost} ev${oc.quotes.polymarket.ev}${oc.quotes.polymarket.edge ? ' EDGE' : ''}` : '-'} | B ${oc.quotes.book ? oc.quotes.book.decimal + '=' + oc.quotes.book.prob : '-'}`);
-    }
-  };
-  both.slice(0, 6).forEach(show); s.matches.filter(m => m.game === "CS2" && m.links.kalshi && m.links.polymarket).slice(0, 4).forEach(show);
-  console.log('\n\n##### KALSHI ONLY');
-  s.matches.filter(m => m.links.kalshi && !m.links.polymarket).slice(0, 15).forEach(m => console.log(`${m.label} | ${m.teams.join(' vs ')} | ${m.start} | ${m.links.kalshi}`));
-  console.log('\n##### PM titles same day as kalshi-only (to spot pairing misses)');
-  s.matches.filter(m => !m.links.kalshi && m.links.polymarket && ['CS2','LOL','VAL','DOTA'].includes(m.game)).slice(0, 40).forEach(m => console.log(`${m.label} | ${m.teams.join(' vs ')} | ${m.start}`));
-  console.log('\n##### EDGES');
-  for (const m of s.matches) for (const e of m.edges) console.log(`${m.label} ${m.teams.join(' vs ')} ${m.start} :: ${JSON.stringify(e)}`);
-  console.log('\n##### ARBS');
-  for (const m of s.matches) for (const a of m.arbs) console.log(`${m.label} ${m.teams.join(' vs ')} ${m.start} :: ${JSON.stringify(a)}`);
+  console.log(JSON.stringify(s.counts));
+  for (const m of s.matches.filter(m => m.rating).slice(0, 25)) {
+    const mk = m.markets.find(x => x.kind === 'match');
+    console.log(`${m.label} | ${m.teams.join(' vs ')} | Bo${m.bestOf} | rating ${JSON.stringify(m.rating)} | match fair ${mk?.outcomes.map(o => o.fair)} model ${mk?.outcomes.map(o => o.model)}`);
+  }
+  // calibration-ish: model vs fair on match markets
+  const pairs = s.matches.filter(m => m.rating).map(m => m.markets.find(x => x.kind === 'match')).filter(mk => mk && mk.outcomes[0].fair != null && mk.outcomes[0].model != null).map(mk => [mk.outcomes[0].fair, mk.outcomes[0].model]);
+  const mae = pairs.reduce((x, [f, m]) => x + Math.abs(f - m), 0) / (pairs.length || 1);
+  console.log('model vs fair: n', pairs.length, 'MAE', mae.toFixed(3));
 })().catch(e => console.log('FATAL', e.stack));
