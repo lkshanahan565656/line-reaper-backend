@@ -751,6 +751,8 @@ function raceKey(r) {
   const raw = String(r?.title || '');
   const t = norm(raw);
   if (!/\bwin\b/.test(t) || NOT_A_RACE_RE.test(t) || /\band\b.*\bwin\b.*\band\b/.test(t)) return null;
+  // a margin bucket ("win ... by 0%-3%?", "by 12% or more", "by 5+ points") isn't the race
+  if (/%|\bby\s+(over\s+|at least\s+|more than\s+)?\d|\bor (more|less|fewer)\b|\bpoints?\b/i.test(raw)) return null;
   const party = /\b(democrats?|democratics?|dems?)\b/.test(t) ? 'D' : /\b(republicans?|gop)\b/.test(t) ? 'R' : null;
   if (!party || (/\b(democrats?|democratics?)\b/.test(t) && /\brepublicans?\b/.test(t))) return null;
   let office = null, place = null;

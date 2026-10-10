@@ -22,7 +22,7 @@ async function main() {
   const listed = new Set(kalshi.map(r => r.id));
   const tailIds = new Set();
   let tail = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     const t1 = Date.now();
     try { tail = await sweep.step(k.cursor); } catch (e) { out(`tail-error-${i}`, e.message); break; }
     out(`tail-step-${i}`, { ms: Date.now() - t1, rows: tail.length, stats: sweep.stats() });
@@ -34,13 +34,14 @@ async function main() {
   const matches = xarb.matchMarkets(kalshi, polymarket, { ...xarb.DEFAULTS, now, games: [] });
   out('matches-with-tail', { n: matches.length, by: countBy(matches, m => m.by), fromTail: matches.filter(m => tailIds.has(m.kalshi.id)).length });
   const races = matches.filter(m => m.by === 'race');
-  out('race-pairs', races.slice(0, 60).map(m => `${m.kalshi.id} | ${m.kalshi.title} · ${m.kalshi.outcomeLabel || ''} <> ${m.polymarket.title} · ${m.polymarket.outcomeLabel || ''} | k=${m.kalshi.yes ?? m.kalshi.yesAsk ?? ''} p=${m.polymarket.yes ?? m.polymarket.yesAsk ?? ''}`));
+  out('race-pairs', races.map(m => `${m.kalshi.id} <> ${m.polymarket.title} · ${m.polymarket.outcomeLabel || ''} | k=${m.kalshi.yes ?? m.kalshi.yesAsk ?? ''} p=${m.polymarket.yes ?? m.polymarket.yesAsk ?? ''}`));
   out('tail-matches', matches.filter(m => tailIds.has(m.kalshi.id)).slice(0, 40).map(m => `${m.by} | ${m.kalshi.title} · ${m.kalshi.outcomeLabel || ''} <> ${m.polymarket.title} · ${m.polymarket.outcomeLabel || ''}`));
   // race keys seen on each side that found no partner
   const keyed = side => side.map(r => ({ r, k: xarb.raceKey(r) })).filter(x => x.k);
   const kk = keyed(kalshi), pk = keyed(polymarket);
   const pairedK = new Set(races.map(m => m.kalshi.id)), pairedP = new Set(races.map(m => m.polymarket.id));
   out('race-keys', { kalshi: kk.length, polymarket: pk.length, pairedK: pairedK.size, pairedP: pairedP.size });
+  out('k-kansas', kalshi.filter(r => /KS-|KANSAS/i.test(r.id) && /GOV|SENATE/.test(r.id)).map(r => r.id));
   out('pm-race-unpaired', pk.filter(x => !pairedP.has(x.r.id)).slice(0, 40).map(x => `${x.k.key}|${x.k.year} :: ${x.r.title} · ${x.r.outcomeLabel || ''}`));
   out('k-race-unpaired', kk.filter(x => !pairedK.has(x.r.id)).slice(0, 40).map(x => `${x.k.key}|${x.k.year} :: ${x.r.id} ${x.r.title} · ${x.r.outcomeLabel || ''}`));
   // Polymarket titles that look like races but get no key (missed shapes)
