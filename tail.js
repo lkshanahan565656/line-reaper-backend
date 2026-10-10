@@ -225,6 +225,14 @@ function optionsFromEnv(env = process.env) {
 const num = v => (v == null || v === '' || typeof v === 'boolean' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const round = (x, n) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10 ** n) / 10 ** n);
 const lower = v => (v == null ? '' : String(v).trim().toLowerCase());
+// a failed request → its message, the host and path it went to, and the
+// API's own reason when it sent one ("… status code 400 from gamma-api.polymarket.com/markets: …")
+function failText(e) {
+  const url = e?.config?.url ? String(e.config.url).replace(/^https?:\/\/([^/?#]+)([^?#]*).*$/, '$1$2') : null;
+  const body = e?.response?.data;
+  const why = typeof body === 'string' ? body : body?.error || body?.message || null;
+  return `${e?.message || e}${url ? ` from ${url}` : ''}${why ? `: ${String(why).slice(0, 120)}` : ''}`;
+}
 const bool = v => v === true || v === 'true';
 const iso = ms => (ms == null || !Number.isFinite(ms) ? null : new Date(ms).toISOString());
 const jsonList = v => {
@@ -1651,7 +1659,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         }
         const x = clvOf(p, close);
         if (x) samples.push(x);
-      } catch (e) { errors.push(e?.message || String(e)); }
+      } catch (e) { errors.push(failText(e)); }
     }
     health.lastClvAt = iso(now());
     return { samples, errors, tried: picks.length, play };
@@ -2051,5 +2059,5 @@ module.exports = {
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
   fetchPriceHistory, fetchMarket,
-  createTailEngine, toMs, maskIds,
+  createTailEngine, toMs, maskIds, failText,
 };
