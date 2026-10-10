@@ -107,7 +107,8 @@ const ROUTES = {
   'https://data-api.polymarket.com/v2/positions': p => page(p.user === W1 ? fx.closed.filter(r => r.status === p.status) : []),
   'https://data-api.polymarket.com/v2/trades': p => page(p.user ? [] : fx.trades),
   'https://data-api.polymarket.com/v2/prices-history': p => priceHistory(p.token_id),
-  'https://gamma-api.polymarket.com/markets': p => fx.markets.filter(m => m.conditionId === p.condition_ids),
+  // like Gamma: a closed market only when asked for closed ones, an open one only when not
+  'https://gamma-api.polymarket.com/markets': p => fx.markets.filter(m => m.conditionId === p.condition_ids && (m.closed === true || m.closed === 'true') === !!p.closed),
   'https://gamma-api.polymarket.com/events': () => fx.pmEvents,
   'https://api.elections.kalshi.com/trade-api/v2/events': () => ({ events: fx.kalshiEvents, cursor: '' }),
   'https://api.elections.kalshi.com/trade-api/v2/markets/trades': () => ({ trades: fx.kalshiTrades, cursor: '' }),
@@ -517,7 +518,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.34.1');
+  assert.equal(body.version, '3.35.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -543,8 +544,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.34.1');
-  assert.equal((await get('/')).body.version, '3.34.1');
+  assert.equal(require('../package.json').version, '3.35.0');
+  assert.equal((await get('/')).body.version, '3.35.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {

@@ -115,7 +115,8 @@ const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
 // those counted only the fees as the stake on closed bets that paid fees, so
 // their ROI and luck test can be many times too high. Round 3's aren't graded
 // either: they counted split/merge round trips as near-certain winners.
-const RULES_VERSION = 4;
+// Round 5 finds settled games on Gamma (closing lines, live bettors).
+const RULES_VERSION = 5;
 const STAKE_FIX_VERSION = 3;
 const ROUND_TRIP_VERSION = 4;
 
@@ -1423,11 +1424,18 @@ async function fetchPriceHistory(http, tokenId, { start = null, end = null, buck
   return parsePriceHistory(res?.data, { strict: true });
 }
 
-async function fetchMarket(http, conditionId) {
-  const res = await http.get(`${GAMMA_API}/markets`, { params: { condition_ids: conditionId }, timeout: TIMEOUT });
-  const list = parseGammaMarkets(rowsOrThrow(res.data, 'markets'));
-  // hex ids may differ in case between the data API and Gamma
-  return list.find(m => lower(m.conditionId) === lower(conditionId)) || null;
+// Gamma leaves a closed market out unless asked for closed ones (closed=true),
+// so a settled bet's market came back as nothing: ask the likelier way first
+// (closed: true for settled bets), then the other.
+async function fetchMarket(http, conditionId, { closed = false } = {}) {
+  for (const c of closed ? [true, false] : [false, true]) {
+    const params = c ? { condition_ids: conditionId, closed: true } : { condition_ids: conditionId };
+    const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
+    // hex ids may differ in case between the data API and Gamma
+    const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => lower(x.conditionId) === lower(conditionId));
+    if (m) return m;
+  }
+  return null;
 }
 
 // ── engine ──
@@ -1605,7 +1613,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   async function lookup(conditionId) {
     if (lookups.has(conditionId)) return lookups.get(conditionId);
     health.clvRequests++;
-    return remember(lookups, conditionId, await fetchMarket(http, conditionId), o.clvCacheMax);
+    return remember(lookups, conditionId, await fetchMarket(http, conditionId, { closed: true }), o.clvCacheMax);
   }
 
   // One position's token's close (→ { price, at, cut, rule } | null), cached,
@@ -1635,9 +1643,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     for (const p of picks) {
       try {
         const close = await closeFor(p, t);
-        if (close?.rule === 'game' && p.enteredAt != null) {
+        // bought before or after the start needs only Gamma's start, not a closing price
+        const start = p.conditionId ? toMs(lookups.get(p.conditionId)?.gameStartTime) : null;
+        if (start != null && p.enteredAt != null) {
           play.games++;
-          if (p.enteredAt >= close.cut) play.inPlay++;
+          if (p.enteredAt >= start) play.inPlay++;
         }
         const x = clvOf(p, close);
         if (x) samples.push(x);
