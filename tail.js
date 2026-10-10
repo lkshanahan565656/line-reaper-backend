@@ -116,7 +116,7 @@ const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
 // their ROI and luck test can be many times too high. Round 3's aren't graded
 // either: they counted split/merge round trips as near-certain winners.
 // Round 5 finds settled games on Gamma (closing lines, live bettors).
-const RULES_VERSION = 5;
+const RULES_VERSION = 6;
 const STAKE_FIX_VERSION = 3;
 const ROUND_TRIP_VERSION = 4;
 
@@ -159,8 +159,10 @@ const DEFAULTS = {
   maxSignals: 500,
   holdingsMax: 50,               // open positions kept per graded wallet, for the Sharp Board
   boardMinCost: 100,             // $ in a position before it counts on the Sharp Board
-  clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
-  clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
+  clvSample: 25,                 // recent settled events whose closing line is measured, the biggest bet in each (TAIL_CLV_SAMPLE)
+  clvMinN: 15,                   // measured events before CLV counts, and before A is possible
+  clvHorizonDays: 2,             // a market with no game start: the line is read this long after the first entry, so it's the market's move after the bet, not its result (TAIL_CLV_HORIZON_DAYS)
+  clvCap: 1,                     // one bet's CLV counts at most this much (1 = +100%): a 1¢ longshot that touched 5¢ is +400% (TAIL_CLV_CAP)
   clvPath: 1,                    // 0: B only from the record. 1: a profitable record that fails only the luck test or B's ROI...
   clvPathMin: 0.03,              // ...grades B when its measured bets beat the close by this much on average (TAIL_CLV_PATH_MIN)...
   clvPathHitRate: 0.55,          // ...and this share of them beat it (TAIL_CLV_PATH_HIT_RATE)
@@ -784,7 +786,11 @@ function clvWindow(pos, market = null, { now = Date.now(), opts = {} } = {}) {
   if (game != null) { end = game; rule = 'game'; }
   else if (pos.category === 'sports' && (!market || GAME_TITLE.test(` ${market.question || pos.title || ''} `) || market.sportsMarketType)) return null;
   else {
-    end = Math.min(now, ...[market?.closedAt, pos.endAt ?? toMs(market?.endDate)].filter(Number.isFinite));
+    // no game: the line a few days after the bet (a market that drifts to its
+    // result would otherwise "close" at 96¢ for every winner and 4¢ for every loser)
+    const entered = toMs(pos.enteredAt);
+    if (entered == null) return null;
+    end = Math.min(now, entered + o.clvHorizonDays * DAY, ...[market?.closedAt, pos.endAt ?? toMs(market?.endDate)].filter(Number.isFinite));
     rule = 'freeze';
   }
   if (!(end <= now)) return null;
@@ -816,13 +822,17 @@ function closingPrice(points, { closeAt = null, freeze = false, truncated = fals
 // One position's CLV against its token's close: (close − entry) / entry. null
 // when it was bought after the line stopped counting (in play, or after the
 // outcome got out).
-function clvOf(pos, close) {
+function clvOf(pos, close, { cap = DEFAULTS.clvCap } = {}) {
   if (!pos || !close || !(pos.price > 0 && pos.price < 1) || !Number.isFinite(close.price)) return null;
+  // bought at 3¢ or less (or 97¢+) the outcome was already out: no line to beat
+  if (OUTCOME_OUT(pos.price)) return null;
+  // a game "closing" at 1¢ or 99¢ was already being played (or its start time is wrong)
+  if (close.rule === 'game' && (close.price <= 0.01 || close.price >= 0.99)) return null;
   if (pos.enteredAt != null && close.cut != null && pos.enteredAt >= close.cut) return null;
   return {
     asset: pos.asset, conditionId: pos.conditionId || null, category: pos.category || 'other', title: pos.title || '',
     risked: round(pos.risked, 2), entry: round(pos.price, 6), close: close.price, closeAt: iso(close.at), cutAt: iso(close.cut),
-    rule: close.rule || null, clv: (close.price - pos.price) / pos.price,
+    enteredAt: iso(toMs(pos.enteredAt)), rule: close.rule || null, clv: Math.min(cap, (close.price - pos.price) / pos.price),
   };
 }
 
@@ -838,19 +848,27 @@ function clvStats(samples) {
   };
 }
 
-// the k most recent settled positions with a token and a price, one per token
+// The k most recently settled events, and the biggest bet in each (a token,
+// a price between 3¢ and 97¢). Bets on one event move together: fifteen
+// nominees of one prize, bought in one go, are one bet, not fifteen.
 function clvCandidates(resolved, k = DEFAULTS.clvSample) {
   const when = p => p.at ?? p.endAt ?? p.enteredAt ?? 0;
-  const seenAssets = new Set(), out = [];
-  // ties broken by token, so the same record always samples the same bets
-  const byTime = (a, b) => (when(b) - when(a)) || (a.asset < b.asset ? -1 : a.asset > b.asset ? 1 : 0);
-  for (const p of [...(resolved || [])].filter(p => p?.asset && p.price > 0 && p.price < 1).sort(byTime)) {
-    if (out.length >= k) break;
-    if (seenAssets.has(p.asset)) continue;
-    seenAssets.add(p.asset);
-    out.push(p);
+  const stake = p => num(p.risked) ?? 0;
+  const events = new Map();
+  for (const p of resolved || []) {
+    if (!p?.asset || !(p.price > 0 && p.price < 1) || OUTCOME_OUT(p.price)) continue;
+    const key = p.eventSlug || p.slug || p.conditionId || p.asset;
+    const e = events.get(key);
+    // ties broken by token, so the same record always samples the same bets
+    if (!e) events.set(key, { pick: p, last: when(p) });
+    else {
+      e.last = Math.max(e.last, when(p));
+      if (stake(p) > stake(e.pick) || (stake(p) === stake(e.pick) && p.asset < e.pick.asset)) e.pick = p;
+    }
   }
-  return out;
+  return [...events.values()]
+    .sort((a, b) => (b.last - a.last) || (a.pick.asset < b.pick.asset ? -1 : a.pick.asset > b.pick.asset ? 1 : 0))
+    .slice(0, k).map(e => e.pick);
 }
 
 // ── scoring ──
@@ -1476,6 +1494,7 @@ async function fetchMarketByToken(http, tokenId) {
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
 // a Map used as a bounded cache: the oldest entry goes first
+const closeKey = (asset, enteredAt) => `${asset}|${toMs(enteredAt) ?? ''}`;
 function remember(map, key, value, max = Infinity) {
   map.delete(key);
   map.set(key, value);
@@ -1583,7 +1602,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       persisted.add(tr.wallet);
       // closes measured before the restart don't cost a request again
       for (const x of tr.clvSamples || []) {
-        if (x?.asset && Number.isFinite(x.close)) remember(closes, x.asset, { price: x.close, at: toMs(x.closeAt), cut: toMs(x.cutAt), rule: x.rule || null }, o.clvCacheMax);
+        if (!x?.asset || !Number.isFinite(x.close) || (x.rule !== 'game' && !x.enteredAt)) continue;   // older rules' lines: read again
+        remember(closes, x.rule === 'game' ? x.asset : closeKey(x.asset, x.enteredAt), { price: x.close, at: toMs(x.closeAt), cut: toMs(x.cutAt), rule: x.rule }, o.clvCacheMax);
       }
       // older rules: due now
       const scoredAt = stale ? 0 : Date.parse(tr.scoredAt) || null;
@@ -1653,8 +1673,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
 
   // One position's token's close (→ { price, at, cut, rule } | null), cached,
   // from one price history call. Throws when a lookup fails (tried again next time).
+  // A game's close is the same for every bet on it (kept by token); any other
+  // market's is read from the bet's entry (kept by token and entry time).
   async function closeFor(p, t) {
-    let close = closes.get(p.asset);
+    const betKey = closeKey(p.asset, p.enteredAt);
+    let close = closes.has(p.asset) ? closes.get(p.asset) : closes.get(betKey);
     if (close === undefined) {
       const market = p.conditionId ? await lookup(p.conditionId) : null;
       const win = clvWindow(p, market, { now: t, opts: o });
@@ -1665,7 +1688,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         const c = closingPrice(h.points, { closeAt: win.end, freeze: win.rule === 'freeze', truncated: h.truncated, maxGapMs: win.rule === 'game' ? o.clvMaxGapMs : null });
         if (c) close = { ...c, rule: win.rule };
       }
-      remember(closes, p.asset, close, o.clvCacheMax);
+      remember(closes, win?.rule === 'game' ? p.asset : betKey, close, o.clvCacheMax);
     }
     return close;
   }
@@ -1684,7 +1707,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
           play.games++;
           if (p.enteredAt >= start) play.inPlay++;
         }
-        const x = clvOf(p, close);
+        const x = clvOf(p, close, { cap: o.clvCap });
         if (x) samples.push(x);
       } catch (e) { errors.push(failText(e)); }
     }
