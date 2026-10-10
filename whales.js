@@ -459,11 +459,12 @@ function freshOf(history, { now = Date.now(), freshDays = DEFAULTS.freshDays, fr
 }
 
 // A wallet's trades, maker fills included, newest first, one read →
-// walletHistory. Rows for any other wallet mean the filter wasn't applied: an
-// error, so nobody is called fresh on someone else's history.
+// walletHistory. Without a start a user's read covers about three years;
+// start=1 is its whole history. Rows for any other wallet mean the filter
+// wasn't applied: an error, so nobody is called fresh on someone else's history.
 async function fetchWalletHistory(http, wallet, { limit = DEFAULTS.freshHistoryLimit } = {}) {
   const w = lower(wallet);
-  const res = await http.get(POLYMARKET_TRADES_URL, { params: { user: w, limit, taker_only: false }, timeout: TIMEOUT });
+  const res = await http.get(POLYMARKET_TRADES_URL, { params: { user: w, limit, taker_only: false, start: 1 }, timeout: TIMEOUT });
   const raw = rowsOf(res?.data, ['data', 'trades']);
   const trades = parsePolymarketTrades(raw);
   if (trades.some(t => t.wallet !== w)) throw new Error('trades for other wallets came back');

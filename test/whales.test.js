@@ -722,7 +722,7 @@ test('fetchWalletHistory: one read of the wallet, maker fills included; other wa
   const w = '0x00000000000000000000000000000000000000CC';
   const http = fakeHttp(() => ({ data: [pt2({ proxy_wallet: w, timestamp: sec(NOW - 3 * 86400e3) })], pagination: { has_more: false } }));
   const h = await W.fetchWalletHistory(http, w);
-  assert.deepEqual(http.calls[0].params, { user: w.toLowerCase(), limit: 500, taker_only: false });
+  assert.deepEqual(http.calls[0].params, { user: w.toLowerCase(), limit: 500, taker_only: false, start: 1 }, 'start=1: the whole history, not three years');
   assert.equal(h.trades, 1);
   assert.equal(h.full, true);
 
