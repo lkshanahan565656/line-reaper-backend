@@ -1661,3 +1661,41 @@ test('failText: a failed request names its host, path and the API reason, never 
   assert.equal(T.failText(Object.assign(new Error('x'), { config: { url: 'https://data-api.polymarket.com/v2/prices-history' }, response: { data: 'bad bucket' } })),
     'x from data-api.polymarket.com/v2/prices-history: bad bucket');
 });
+
+test('exits: a trim keeps the tail open; selling most of it ends it, and says what we tailed', async () => {
+  const w = world();
+  w.closed[W(1)] = politicsElite(W(1));
+  w.markets['0xm1'] = gammaMarket({ bestAsk: '0.41', bestBid: '0.40' });
+  let t = NOW;
+  const eng = T.createTailEngine({ http: w.http, now: () => t, opts: { watchPerPoll: 0, priorRisk: 200000 }, log: {} });
+  eng.addCandidate(W(1));
+  await eng.scoreBatch(1);
+  const route = () => 1.5;
+  const poll = async (o, tag) => {
+    t += 60e3;
+    w.trades = [rawTrade(W(1), { transactionHash: `0x${tag}`, timestamp: Math.floor((t - 5e3) / 1000), ...o })];
+    return (await eng.pollTrades({ route }))[0];
+  };
+  const entry = await poll({ price: 0.4, size: 10000 }, 'in');
+  assert.equal(entry.type, 'entry');
+
+  const trim = await poll({ side: 'SELL', price: 0.47, size: 2000 }, 'trim');
+  assert.deepEqual([trim.type, trim.soldShare, trim.full, trim.boughtAt], ['exit', 0.2, false, 0.4]);
+  assert.deepEqual(trim.tailed, { id: entry.id, units: 1.5 });
+  const more = await poll({ price: 0.41, size: 3000 }, 'more');
+  assert.deepEqual([more.topUp, more.parentId], [true, entry.id], 'a trim leaves the tail open');
+
+  const out = await poll({ side: 'SELL', price: 0.5, size: 9000 }, 'out');
+  assert.deepEqual([out.soldShare, out.full], [0.8182, true], "9,000 of 11,000");
+  assert.equal(out.tailed.id, entry.id);
+  const back = await poll({ price: 0.4, size: 3000 }, 'back');
+  assert.equal(back.topUp, false, 'out: the next buy is a new tail');
+  const after = await poll({ side: 'SELL', price: 0.45, size: 3000 }, 'after');
+  assert.equal(after.tailed.id, back.id);
+
+  // a sale with no known position counts as a full exit
+  assert.deepEqual([T.soldShare({ size: 10 }, null), T.soldShare({ size: 10 }, { size: 4 }), T.soldShare({ size: 1 }, { size: 4 })], [null, 1, 0.25]);
+  const bare = T.tradeSignal({ trade: { ...T.parseTrades([rawTrade(W(1), { side: 'SELL', size: 2000, price: 0.5, timestamp: Math.floor(NOW / 1000) })])[0] },
+    trader: eng.trader(W(1)), now: NOW });
+  assert.deepEqual([bare.signal.full, bare.signal.soldShare, bare.signal.tailed], [true, null, null]);
+});
