@@ -1235,3 +1235,102 @@ test('Polymarket US soccer: its three result markets pair with Kalshi\'s team an
   assert.ok(Math.abs(u.profitPct - ((1 - cost) / cost) * 100) < 0.05, String(u.profitPct));
   assert.equal(A.findUsArbs([], cheap.slice(0, 2), opts()).length, 0, 'a set missing an outcome is not complete');
 });
+
+// ── US races ──
+// Kalshi's race events (SENATETX-26) and Polymarket's (texas-senate-election-winner), shaped like the live APIs
+const kRace = (ticker, title, markets, o = {}) => ({
+  event_ticker: ticker, series_ticker: ticker.split('-')[0], title, sub_title: 'In 2026', category: 'Elections', mutually_exclusive: true,
+  markets: markets.map(([code, q, label, yes, no]) => ({ ticker: `${ticker}-${code}`, event_ticker: ticker, title: q, yes_sub_title: label, no_sub_title: label,
+    status: 'active', yes_ask_dollars: yes, no_ask_dollars: no, close_time: '2027-11-03T15:00:00Z', expected_expiration_time: '2027-01-04T15:00:00Z', ...o })),
+});
+const pmRace = (slug, title, markets) => ({
+  id: slug, slug, title, negRisk: true, endDate: '2026-11-04T04:59:00Z', tags: [{ label: 'Politics', slug: 'politics' }, { label: 'Elections', slug: 'elections' }],
+  markets: markets.map(([id, q, label, ask, bid]) => ({ id, question: q, groupItemTitle: label, conditionId: `0x${id}`, slug: `${slug}-${id}`, outcomes: '["Yes","No"]',
+    clobTokenIds: `["${id}y","${id}n"]`, bestAsk: ask, bestBid: bid, active: true, closed: false, negRisk: true, endDate: '2026-11-04T04:59:00Z' })),
+});
+const texasK = (ticker = 'SENATETX-26') => kRace(ticker, 'Texas Senate winner?', [
+  ['R', 'Will Republicans win the Senate race in Texas?', 'Ken Paxton', '0.4300', '0.5800'], ['D', 'Will Democratics win the Senate race in Texas?', 'James Talarico', '0.5800', '0.4300']]);
+const texasP = () => pmRace('texas-senate-election-winner', 'Texas Senate Election Winner', [
+  ['tx1', 'Will the Democrats win the Texas Senate race in 2026?', 'James Talarico (D)', 0.63, 0.62], ['tx2', 'Will the Republicans win the Texas Senate race in 2026?', 'Ken Paxton (R)', 0.38, 0.37],
+  ['tx3', 'Will Person A win the Texas Senate race in 2026?', 'Person A', null, null]]);
+
+test('races: a state\'s Senate, governor or House race pairs by office, place, party and year, however each side words it', () => {
+  const key = (exchange, title, eventKey = null, closeTime = '2026-11-04T04:59:00Z') => A.raceKey({ exchange, title, eventKey, closeTime })?.key ?? null;
+  assert.equal(key('polymarket', 'Will the Democrats win the Texas Senate race in 2026?'), 'senate|texas|D|');
+  assert.equal(key('kalshi', 'Will Democratics win the Senate race in Texas?', 'kalshi:SENATETX-26'), 'senate|texas|D|');
+  assert.equal(key('kalshi', 'Will the Democratic party win the governorship in Minnesota', 'kalshi:GOVPARTYMN-26'), 'governor|minnesota|D|');
+  assert.equal(key('polymarket', 'Will the Republicans win the Minnesota governor race in 2026?'), 'governor|minnesota|R|');
+  assert.equal(key('polymarket', 'Will the Republican Party win the SC-01 House seat?'), 'house|SC-1|R|');
+  assert.equal(key('kalshi', 'Will a Republican win the House race for SC-1?', 'kalshi:HOUSESC1-26'), 'house|SC-1|R|');
+  assert.equal(key('polymarket', 'Will the Democrats win the West Virginia Senate race in 2026?'), 'senate|west virginia|D|', 'not Virginia');
+  assert.equal(key('kalshi', 'Will Democrats win the Arkansas Senate race?', 'kalshi:SENATEAR-26'), 'senate|arkansas|D|', 'not Kansas');
+  assert.equal(key('polymarket', 'Will the Democrats win the Florida Senate special election in 2026?'), 'senate|florida|D|special');
+  for (const t of ['Will Dan Sullivan win the Alaska Senate race in 2026?', 'Will the Democratic Party control the Senate after the 2026 Midterm elections?',
+    'Margin of victory in the first round of the Texas Senate Republican primary?', 'Will Ken Paxton win the Texas Republican Senate nomination?',
+    'Will the Democrats win the Pennsylvania state senate?', 'Will Democrats and Republicans win the Texas Senate race?',
+    'Will the Democratic Party candidate win the 2026 Ohio gubernatorial election by 0%-3%?', 'Will the Republican Party candidate win the 2026 Wyoming gubernatorial election by 50% or more?',
+    'Will the Republicans win the Iowa governor race by 5 points?', 'Will Republicans win Latino voters in the Texas Senate election?']) assert.equal(key('polymarket', t), null, t);
+  assert.equal(key('polymarket', 'Will the Democratic Party candidate win the 2026 Oklahoma gubernatorial election?'), 'governor|oklahoma|D|', 'the plain winner question still counts');
+  assert.equal(A.raceKey({ exchange: 'kalshi', title: 'Will Democratics win the Senate race in Illinois?', eventKey: 'kalshi:SENATEIL-28' }).year, 2028);
+
+  const ks = kRows(texasK(), texasK('SENATETX-28'));
+  const ps = pRows(texasP());
+  const m = A.matchMarkets(ks, ps, opts());
+  assert.deepEqual(m.map(x => [x.by, x.kalshi.id, x.polymarket.id, x.same]),
+    [['race', 'SENATETX-26-R', 'tx2', true], ['race', 'SENATETX-26-D', 'tx1', true]], 'the 2026 race only; Person A has no party');
+  // a Democrats signal tails at Kalshi's Democratic YES, a Republicans NO at its Republican NO
+  const idx = A.venueIndex({ kalshi: ks, polymarket: ps, matches: m }, opts({ region: 'us' }));
+  const [d] = A.venueQuotes({ type: 'entry', conditionId: '0xtx1', outcome: 'Yes', outcomeIndex: 0 }, idx, opts({ region: 'us' }));
+  assert.deepEqual([d.key, d.marketId, d.side, d.price], ['kalshi', 'SENATETX-26-D', 'yes', 0.58]);
+  const [r] = A.venueQuotes({ type: 'entry', conditionId: '0xtx2', outcome: 'No', outcomeIndex: 1 }, idx, opts({ region: 'us' }));
+  assert.deepEqual([r.marketId, r.side, r.price], ['SENATETX-26-R', 'no', 0.58]);
+  assert.equal(d.warning, undefined, 'the same question: no rules warning');
+  // a Kalshi ticker with the inauguration year pairs with the election year's race, unless Kalshi lists that year too
+  const ks27 = kRows(texasK('SENATETX-27'));
+  assert.deepEqual(A.matchMarkets(ks27, ps, opts()).map(x => x.kalshi.id), ['SENATETX-27-R', 'SENATETX-27-D']);
+  assert.deepEqual(A.matchMarkets(kRows(texasK('SENATETX-27'), texasK()), ps, opts()).map(x => x.kalshi.id), ['SENATETX-26-R', 'SENATETX-26-D']);
+  // the title match never sees them, so no second pairing
+  assert.equal(A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'title').length, 0);
+});
+
+test('kalshi tail sweep: reads on from where the scan stopped, keeps everything but sports, and goes round again', async () => {
+  const pages = {
+    c30: { events: [texasK(), kEvent('KXMLBRBI-26OCT11LADMIL', 'LAD vs MIL: RBIs', [['Ohtani', '0.4', '0.6']])], cursor: 'c31' },
+    c31: { events: [kRace('GOVPARTYMN-26', 'Minnesota Governor winner?', [['D', 'Will the Democratic party win the governorship in Minnesota', 'Amy Klobuchar', '0.9500', '0.0600']])], cursor: '' },
+  };
+  pages.c30.events[1].category = 'Sports';
+  const asked = [];
+  let t = NOW;
+  const http = { async get(url, o) { asked.push(o.params.cursor); return { data: JSON.parse(JSON.stringify(pages[o.params.cursor] || { events: [], cursor: '' })) }; } };
+  const sweep = A.createKalshiTailSweep({ http, perScan: 1, now: () => t });
+  const first = await sweep.step('c30');
+  assert.deepEqual(asked, ['c30']);
+  assert.deepEqual(first.map(r => r.id), ['SENATETX-26-R', 'SENATETX-26-D'], 'the RBI prop is sports: left to the game sweep');
+  t += 60e3;
+  const second = await sweep.step('c30x');
+  assert.deepEqual(asked, ['c30', 'c31'], 'its own place in the list, not the scan\'s');
+  assert.equal(second.length, 3);
+  assert.equal(sweep.stats().cycles, 1, 'the end of the list');
+  t += 60e3;
+  await sweep.step('c30');
+  assert.deepEqual(asked.slice(-1), ['c30'], 'round again from the scan\'s stopping point');
+  t += 31 * 60e3;
+  pages.c30 = { events: [], cursor: 'c31' };
+  pages.c31 = { events: [], cursor: '' };
+  assert.equal((await sweep.step('c30')).length, 0, 'gone after 30 minutes unseen');
+  assert.equal((await A.createKalshiTailSweep({ http }).step(null)).length, 0, 'no stopping point (the scan read the whole list): nothing to do');
+});
+
+test('kalshi game series: fights (UFC, boxing, MMA) are games too', async () => {
+  const http = { async get() { return { data: { series: ['KXUFCFIGHT', 'KXBOXINGFIGHT', 'KXUFCROUNDS', 'KXNBAGAME', 'KXUFCTITLE'].map(ticker => ({ ticker })) } }; } };
+  assert.deepEqual(await A.fetchKalshiGameSeries(http), ['KXUFCFIGHT', 'KXBOXINGFIGHT', 'KXNBAGAME']);
+  // a UFC bout: the two fighters, priced like a game
+  const rows = kRows({ event_ticker: 'KXUFCFIGHT-26OCT10HERCAM', series_ticker: 'KXUFCFIGHT', title: 'Fight Night: Herbert vs Camilo', category: 'Sports', mutually_exclusive: true,
+    markets: [['HER', 'Jai Herbert', '0.3800', '0.6300'], ['CAM', 'Matheus Camilo', '0.6300', '0.3800']].map(([c, l, y, n]) => ({ ticker: `KXUFCFIGHT-26OCT10HERCAM-${c}`, event_ticker: 'KXUFCFIGHT-26OCT10HERCAM',
+      title: `${l} wins`, yes_sub_title: l, no_sub_title: l, status: 'active', yes_ask_dollars: y, no_ask_dollars: n, close_time: '2026-10-25T00:00:00Z', expected_expiration_time: '2026-10-11T05:00:00Z' })) });
+  assert.deepEqual(rows.map(r => [r.kind, r.outcomeLabel, r.noLabel]), [['teams', 'Jai Herbert', 'Matheus Camilo'], ['teams', 'Matheus Camilo', 'Jai Herbert']]);
+  const pm = pRows({ ...pmGame({ question: 'UFC Fight Night: Jai Herbert vs. Matheus Camilo (Lightweight, Main Card)', outcomes: '["Jai Herbert","Matheus Camilo"]', conditionId: '0xufc',
+    slug: 'ufc-jai2-mat36-2026-10-10', gameStartTime: '2026-10-11 01:00:00+00', endDate: '2026-10-11T01:00:00Z' }), id: '9200', slug: 'ufc-jai2-mat36-2026-10-10',
+    title: 'UFC Fight Night: Jai Herbert vs. Matheus Camilo', tags: [{ label: 'Sports', slug: 'sports' }, { label: 'UFC', slug: 'ufc' }], endDate: '2026-10-11T01:00:00Z' });
+  assert.equal(A.matchMarkets(rows, pm, opts({ now: Date.parse('2026-10-10T12:00:00Z') })).filter(x => x.by === 'teams').length, 2);
+});
