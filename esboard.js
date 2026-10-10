@@ -476,6 +476,15 @@ function createMoveTracker({ keepMs = 36 * 3600e3, maxSamples = 400 } = {}) {
   };
 }
 
+// Kalshi doesn't say best-of: its total-maps lines and map markets do.
+function inferBestOf(markets) {
+  const lines = markets.filter(mk => mk.kind === 'total').map(mk => mk.line);
+  const maps = markets.filter(mk => mk.kind === 'map').map(mk => mk.n);
+  if (lines.some(l => l >= 3.5) || maps.some(n => n >= 4)) return 5;
+  if (lines.includes(2.5) || maps.includes(3) || markets.some(mk => mk.kind === 'spread')) return 3;
+  return null;
+}
+
 // A map already played (or a total already over): someone bids 97¢+, or
 // nobody quotes the other side above 3¢.
 function decided(mk) {
@@ -493,7 +502,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       p = rating.mapProb(m.teams[0], m.teams[1]);
       ratingInfo = { mapProb: r4(p), games: [rating.games(m.teams[0]), rating.games(m.teams[1])], ratings: [Math.round(rating.rating(m.teams[0])), Math.round(rating.rating(m.teams[1]))] };
     }
-    const markets = [...m.markets.values()].filter(mk => mk.outcomes.some(oc => oc.quotes.kalshi || oc.quotes.polymarket) && !decided(mk));
+    const markets = [...m.markets.values()].filter(mk => mk.outcomes.some(oc => TRADABLE.some(v => oc.quotes[v]?.ask != null)) && !decided(mk));
     for (const mk of markets) {
       priceMarket(mk, { model: modelFor(mk, p, m.bestOf), start: m.start, now, opts: o });
       if (moves) {
@@ -503,6 +512,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       }
     }
     if (!markets.length) continue;
+    if (!m.bestOf) m.bestOf = inferBestOf(markets);
     const order = { match: 0, map: 1, total: 2, spread: 3 };
     markets.sort((a, b) => order[a.kind] - order[b.kind] || (a.n || 0) - (b.n || 0) || (a.line || 0) - (b.line || 0) || (a.team || 0) - (b.team || 0));
     const edges = [];
