@@ -61,7 +61,9 @@ const DEFAULTS = {
   edgeMin: 0.02,          // flag at 2% of the stake or more
   maxSpread: 0.08,        // a quote wider than 8¢ says little about the price
   maxRefGap: 0.08,        // two references further apart than this don't agree
-  maxCost: 0.97,          // a 97¢+ buy wins too little to be worth flagging
+  minCost: 0.10,          // longshots: a cent or two of noise reads as a huge %
+  maxCost: 0.90,          // a 90¢+ buy wins too little to be worth flagging
+  minEdgeCents: 0.015,    // and at least 1.5¢ a contract in absolute terms
   pairHours: 3,           // sources' start times within this are the same match
   lookbackHours: 8,       // keep matches that started this long ago (live)
   aheadDays: 10,
@@ -185,7 +187,7 @@ function parsePolymarketEvent(ev, game) {
       if (line == null || line >= 0) continue;
       const t = teamIndex(teams, names[0]);
       if (t < 0 || teamIndex(teams, names[1]) !== 1 - t) continue;
-      out.push({ ...base, key: `spread:${t}:${Math.abs(line)}`, kind: 'spread', team: t, line, outcomes: names });
+      out.push({ ...base, key: `spread:${t}:${Math.abs(line)}`, kind: 'spread', team: t, line, outcomes: [`${teams[t]} ${line}`, `${teams[1 - t]} +${-line}`] });
     }
   }
   return {
@@ -419,9 +421,12 @@ function priceMarket(market, { model = null, start = null, now = Date.now(), opt
       const ref = ref0 == null ? null : (i === 0 ? ref0 : 1 - ref0);
       const ev = ref == null ? null : r4((ref - cost) / cost);
       q.cost = cost;
+      q.ref = ref == null ? null : r4(ref);
       q.ev = ev;
-      const tight = q.bid != null && q.ask - q.bid <= o.maxSpread + 1e-9;
-      q.edge = ev != null && ev >= o.edgeMin && tight && refAgree && cost <= o.maxCost && (start == null || start > now) ? true : undefined;
+      // a real bid close behind the ask (and close relative to the price: 3¢/6¢ is no market)
+      const tight = q.bid != null && q.ask - q.bid <= Math.min(o.maxSpread, 0.35 * q.ask) + 1e-9;
+      q.edge = ev != null && ev >= o.edgeMin && ref - cost >= o.minEdgeCents - 1e-9 && tight && refAgree
+        && cost >= o.minCost && cost <= o.maxCost && (start == null || start > now) ? true : undefined;
       if (!best || cost < best.cost) best = { venue: v, cost, ev };
     }
     oc.best = best;
@@ -471,6 +476,12 @@ function createMoveTracker({ keepMs = 36 * 3600e3, maxSamples = 400 } = {}) {
   };
 }
 
+// A map already played (or a total already over): someone bids 97¢+, or
+// nobody quotes the other side above 3¢.
+function decided(mk) {
+  return mk.outcomes.some(oc => Object.values(oc.quotes).some(q => (q.bid != null && q.bid >= 0.97) || (q.ask != null && q.ask <= 0.03)));
+}
+
 // Price every market of every match; matches come out sorted by start.
 function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
@@ -482,7 +493,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       p = rating.mapProb(m.teams[0], m.teams[1]);
       ratingInfo = { mapProb: r4(p), games: [rating.games(m.teams[0]), rating.games(m.teams[1])], ratings: [Math.round(rating.rating(m.teams[0])), Math.round(rating.rating(m.teams[1]))] };
     }
-    const markets = [...m.markets.values()].filter(mk => mk.outcomes.some(oc => oc.quotes.kalshi || oc.quotes.polymarket));
+    const markets = [...m.markets.values()].filter(mk => mk.outcomes.some(oc => oc.quotes.kalshi || oc.quotes.polymarket) && !decided(mk));
     for (const mk of markets) {
       priceMarket(mk, { model: modelFor(mk, p, m.bestOf), start: m.start, now, opts: o });
       if (moves) {
@@ -495,7 +506,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
     const order = { match: 0, map: 1, total: 2, spread: 3 };
     markets.sort((a, b) => order[a.kind] - order[b.kind] || (a.n || 0) - (b.n || 0) || (a.line || 0) - (b.line || 0) || (a.team || 0) - (b.team || 0));
     const edges = [];
-    for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.fair, ev: oc.quotes[v].ev }); }));
+    for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.quotes[v].ref, ev: oc.quotes[v].ev }); }));
     edges.sort((a, b) => b.ev - a.ev);
     const main = markets.find(mk => mk.kind === 'match') || null;
     out.push({
@@ -524,7 +535,13 @@ async function fetchPmGame(http, sport, seriesId, { now = Date.now(), opts = {} 
   const o = { ...DEFAULTS, ...opts };
   const out = [];
   for (let page = 0; page < 3; page++) {
-    const res = await http.get(`${GAMMA}/events`, { params: { series_id: seriesId, closed: false, limit: 100, offset: page * 100 }, timeout: 25000 });
+    // old events can stay open for months: ask only for games ending in the window
+    const res = await http.get(`${GAMMA}/events`, {
+      params: {
+        series_id: seriesId, closed: false, limit: 100, offset: page * 100, order: 'startDate', ascending: false,
+        end_date_min: new Date(now - o.lookbackHours * 3600e3).toISOString(), end_date_max: new Date(now + (o.aheadDays + 1) * 86400e3).toISOString(),
+      }, timeout: 25000,
+    });
     const evs = Array.isArray(res?.data) ? res.data : [];
     for (const ev of evs) {
       const m = parsePolymarketEvent(ev, PM_TO_GAME[sport]);

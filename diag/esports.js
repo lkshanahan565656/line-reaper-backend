@@ -18,7 +18,7 @@ const http = { get(url, cfg = {}) {
       for (const oc of mk.outcomes) console.log(`     ${oc.name}: fair ${oc.fair} model ${oc.model} | K ${oc.quotes.kalshi ? `${oc.quotes.kalshi.bid}/${oc.quotes.kalshi.ask} c${oc.quotes.kalshi.cost} ev${oc.quotes.kalshi.ev}${oc.quotes.kalshi.edge ? ' EDGE' : ''}` : '-'} | P ${oc.quotes.polymarket ? `${oc.quotes.polymarket.bid}/${oc.quotes.polymarket.ask} c${oc.quotes.polymarket.cost} ev${oc.quotes.polymarket.ev}${oc.quotes.polymarket.edge ? ' EDGE' : ''}` : '-'} | B ${oc.quotes.book ? oc.quotes.book.decimal + '=' + oc.quotes.book.prob : '-'}`);
     }
   };
-  both.slice(0, 12).forEach(show);
+  both.slice(0, 6).forEach(show); s.matches.filter(m => m.game === "CS2" && m.links.kalshi && m.links.polymarket).slice(0, 4).forEach(show);
   console.log('\n\n##### KALSHI ONLY');
   s.matches.filter(m => m.links.kalshi && !m.links.polymarket).slice(0, 15).forEach(m => console.log(`${m.label} | ${m.teams.join(' vs ')} | ${m.start} | ${m.links.kalshi}`));
   console.log('\n##### PM titles same day as kalshi-only (to spot pairing misses)');
