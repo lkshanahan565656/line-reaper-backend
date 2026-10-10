@@ -2611,7 +2611,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.38.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.40.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3361,7 +3361,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.38.0',
+  version: '3.40.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3479,7 +3479,7 @@ cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.38.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.40.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
