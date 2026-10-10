@@ -2250,6 +2250,14 @@ async function runTailJob(name, fn) {
   finally { j.lastRun = new Date().toISOString(); j.ms = Date.now() - t0; }
 }
 
+// How long the event loop stalls, over the last 10 minutes. A job that holds it
+// past another job's start second makes that one run late (see CRON JOBS).
+const loopDelay = require('perf_hooks').monitorEventLoopDelay({ resolution: 20 });
+loopDelay.enable();
+const loopNow = () => ({ p50Ms: Math.round(loopDelay.percentile(50) / 1e6), p99Ms: Math.round(loopDelay.percentile(99) / 1e6), maxMs: Math.round(loopDelay.max / 1e6) });
+let loopWindow = null;
+setInterval(() => { loopWindow = { ...loopNow(), until: new Date().toISOString() }; loopDelay.reset(); }, 600000).unref();
+
 // New trades → signals. Sized ones are logged for the track record. The
 // first poll after a restart re-reads the last hour, so then only what the
 // tracker hadn't logged before counts as news. "First" is read before the
@@ -2601,7 +2609,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.37.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.44.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3351,7 +3359,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.37.0',
+  version: '3.44.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3381,6 +3389,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   region: TAIL_REGION,
   licence: licenceState(req),
   upstream: upstream.stats(),
+  eventLoop: loopWindow || loopNow(),
   live: { listeners: liveListeners.size, webhook: !!process.env.ALERT_WEBHOOK_URL && process.env.TAIL_WEBHOOK !== 'off' },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: !!process.env.ALERT_WEBHOOK_URL },
@@ -3395,13 +3404,21 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
 }); });
 
 // ─── CRON JOBS ────────────────────────────────────────────────────────────────
+// node-cron looks at the clock about once a second, and by default a job whose
+// second it didn't land on is dropped, not run late. A busy event loop at that
+// second (the xarb scan starts at :50 and takes ~30s, so it finishes right
+// around :20) made the 10-minute settle job miss every slot from 06:50 to
+// 18:20 on 10-10. Every job here runs late instead. (node-cron 3 also gets a
+// stepped range wrong: '7-59/10' runs at 10,20,…,50, so minutes are listed.)
+const schedule = (expr, fn) => cron.schedule(expr, fn, { recoverMissedExecutions: true });
+
 // Team ratings for match context, every 6 hours.
-cron.schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
+schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
 // Tracker: freeze started picks, then look for results (one sweep at a time).
 const trackerHealth = { lastRun: null, last: null, error: null };
 let trackerRunning = false;
-cron.schedule('*/5 * * * *', async () => {
+schedule('*/5 * * * *', async () => {
   if (trackerRunning) return;
   trackerRunning = true;
   try {
@@ -3413,21 +3430,21 @@ cron.schedule('*/5 * * * *', async () => {
   finally { trackerRunning = false; }
 });
 // PP/UD scrapes (PP self-backs-off when blocked)
-cron.schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
+schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
 
 // Owls — fully skipped once the breaker trips
-cron.schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
-cron.schedule('*/30 * * * * *', async () => {
+schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
+schedule('*/30 * * * * *', async () => {
   if (!owlsDisabled()) await Promise.all(['nba','mlb','nhl','nfl','mma'].map(s => fetchOwlsOdds(s)));
   try { runEvScreen(true); } catch (e) { console.warn('EV screen failed:', e.message); }
 });
-cron.schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
+schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
 
 // Odds API props — 30-min staggered, in-season only (the guard inside skips off-season sports)
-cron.schedule('0,30 * * * *', () => fetchOddsApiProps('basketball_nba'));
-cron.schedule('3,33 * * * *', () => fetchOddsApiProps('baseball_mlb'));
-cron.schedule('6,36 * * * *', () => fetchOddsApiProps('icehockey_nhl'));
-cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
+schedule('0,30 * * * *', () => fetchOddsApiProps('basketball_nba'));
+schedule('3,33 * * * *', () => fetchOddsApiProps('baseball_mlb'));
+schedule('6,36 * * * *', () => fetchOddsApiProps('icehockey_nhl'));
+schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 
 // REMOVED: the */3 fetchOddsForSport cron. It cost 4 sports x 3 markets every
 // 3 minutes = ~5,700 Odds API credits per DAY, and nothing consumed it — the
@@ -3435,41 +3452,41 @@ cron.schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
 // Esports match prices and schedules a minute before picks rebuild.
-cron.schedule('4-59/5 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
-cron.schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
+schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
+schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
 
 // Profile warmer: every minute, fill a few more players' stats until the whole
 // board is priced. Self-limiting — it stops when the queue empties.
-cron.schedule('* * * * *', () => warmCsProfiles().catch(()=>{}));
+schedule('* * * * *', () => warmCsProfiles().catch(()=>{}));
 
 // Valorant table refresh (cheap, 7 regions)
-cron.schedule('20 * * * *', () => refreshVLRTable().catch(()=>{}));
+schedule('20 * * * *', () => refreshVLRTable().catch(()=>{}));
 
 // LoL stats: Oracle's Elixir updates once per day — no value in more
-cron.schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
+schedule('10 7 * * *', () => refreshLoLStats().catch(()=>{}));
 // ...but until the FIRST successful load, retry every 30 min (covers boot
 // failures, timeouts, and transient S3 hiccups without any manual poking)
-cron.schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoLStats().catch(()=>{}); });
+schedule('*/30 * * * *', () => { if (lolStats.state !== 'ready') refreshLoLStats().catch(()=>{}); });
 
 // Sharp tail, whale flow and exchange arbs. The seconds offsets keep them off
 // the jobs above (which start on :00, :15 and :30), and every request they
 // make waits its turn in the polite per-host queue (UPSTREAM_GAP_MS).
 // Big trades on both exchanges every 30s: one shared read of Polymarket's trades page.
-cron.schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWhales), runTailJob('signals', pollTail)]));
+schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWhales), runTailJob('signals', pollTail)]));
 // A few wallets scored a minute (3+ requests each)
-cron.schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
+schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
 // Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
-cron.schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
-cron.schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
+schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 // Grade tracked signals whose markets resolved, every 10 minutes
-cron.schedule('20 7-59/10 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
+schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
 // New leaderboard wallets to score, every 6 hours (and once at startup)
-cron.schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
+schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.37.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.44.0 on port ${PORT}`);
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
     // One Owls call as a key check — if the key is dead, the breaker arms

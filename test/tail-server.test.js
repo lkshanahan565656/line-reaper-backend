@@ -518,11 +518,12 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.37.0');
+  assert.equal(body.version, '3.44.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
   assert.equal(body.tail.jobs.signals.failed, false);
+  assert.deepEqual(Object.keys(body.eventLoop), ['p50Ms', 'p99Ms', 'maxMs'], 'event-loop stalls, before the first 10-minute window closes');
   assert.equal(body.tail.record.open, 0);
   assert.ok(body.tail.routing.routed >= 2);
   assert.ok(body.whales.events >= 6);
@@ -544,8 +545,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.37.0');
-  assert.equal((await get('/')).body.version, '3.37.0');
+  assert.equal(require('../package.json').version, '3.44.0');
+  assert.equal((await get('/')).body.version, '3.44.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
