@@ -157,3 +157,89 @@ test('quoteFor: the live book prices it; events are cached a minute, books 10 s;
   assert.equal(P.enabledFromEnv({}), true);
   assert.equal(P.usSlugOf({ eventSlug: 'epl-ars-che-2026-10-11-more-markets' }), 'epl-ars-che-2026-10-11');
 });
+
+// the same game as a league list has it (/v2/leagues/{league}/events)
+const LISTED = { ...EVENT.event, startTime: '2026-10-11T17:00:00Z', endDate: '2026-10-11T21:00:00Z', active: true, closed: false, ended: false,
+  teams: [{ name: 'Cleveland Browns' }, { name: 'New York Jets' }] };
+// soccer's full-time result: a YES/NO market each for the home team, the draw and the away team
+const result = (slug, team, bid, ask) => ({
+  slug, question: team ? `Will ${team} win?` : 'Will it end in a draw?', sportsMarketType: 'soccer_team_full_time_winner', active: true, closed: false,
+  status: 'MARKET_STATUS_OPEN', bestBidQuote: usd(bid), bestAskQuote: usd(ask),
+  marketSides: [{ long: true, description: team || 'Draw', ...(team ? { team: { name: team } } : {}) }, { long: false, description: 'No' }],
+});
+const SOCCER = { id: 2, slug: 'epl-ars-che-2026-10-11', title: 'Arsenal vs. Chelsea', startTime: '2026-10-11T14:00:00Z', active: true, closed: false,
+  teams: [{ name: 'Arsenal FC' }, { name: 'Chelsea FC' }],
+  markets: [result('epl-ars-che-2026-10-11-ars', 'Arsenal FC', '0.4300', '0.4400'), result('epl-ars-che-2026-10-11-draw', null, '0.2300', '0.2400'),
+    result('epl-ars-che-2026-10-11-che', 'Chelsea FC', '0.2100', '0.2200')] };
+
+test('arbRowsOf: a listed game\'s winner, half-line spreads and totals, as Polymarket-shaped rows with YES first', () => {
+  const rows = P.arbRowsOf(LISTED, { league: 'nfl' });
+  const by = slug => rows.find(r => r.id === slug);
+  assert.equal(rows.length, 5, 'no first half, no team total');
+  const ml = by('aec-nfl-cle-nyj-2026-10-11');
+  assert.deepEqual([ml.exchange, ml.kind, ml.outcomeLabel, ml.noLabel, ml.yesAsk, ml.noAsk, ml.yesSide],
+    ['polymarketus', 'teams', 'Cleveland Browns', 'New York Jets', 0.4425, 0.56, 'long']);
+  assert.deepEqual([ml.eventKey, ml.gameSlug, ml.league, ml.startTime, ml.closeTime, ml.url],
+    ['polymarketus:nfl-cle-nyj-2026-10-11', 'nfl-cle-nyj-2026-10-11', 'nfl', '2026-10-11T17:00:00.000Z', '2026-10-11T21:00:00.000Z', 'https://polymarket.us/sports/nfl/nfl-cle-nyj-2026-10-11']);
+  assert.deepEqual(ml.feeSchedule, { rate: P.FEE_RATE, exponent: 1 });
+  assert.ok(ml.tradable && ml.warnings.length === 1 && !ml.mutuallyExclusive);
+  // Browns -1.5: YES = the Browns giving 1.5 (the long side)
+  const fav = by('asc-nfl-cle-nyj-2026-10-11-neg-1pt5');
+  assert.deepEqual([fav.kind, fav.line, fav.lineTeam, fav.outcomeLabel, fav.noLabel, fav.yesAsk, fav.noAsk], ['spread', 1.5, 'Cleveland Browns', 'Cleveland Browns', 'New York Jets', 0.42, 0.585]);
+  // Browns +3.5: the Jets give 3.5, so YES is the short side
+  const dog = by('asc-nfl-cle-nyj-2026-10-11-pos-3pt5');
+  assert.deepEqual([dog.line, dog.lineTeam, dog.yesSide, dog.yesAsk, dog.noAsk], [3.5, 'New York Jets', 'short', 0.585, 0.42]);
+  const tot = by('tsc-nfl-cle-nyj-2026-10-11-total-43pt5');
+  assert.deepEqual([tot.kind, tot.line, tot.outcomeLabel, tot.noLabel, tot.yesAsk, tot.noAsk], ['total', 43.5, 'Over', 'Under', 0.5, 0.52]);
+  // a whole-number line can push: left out, as on Kalshi; a closed or ended game: nothing
+  assert.equal(P.arbRowsOf({ ...LISTED, markets: [total(44)] }).length, 0);
+  assert.equal(P.arbRowsOf({ ...LISTED, ended: true }).length, 0);
+  assert.equal(P.arbRowsOf({ ...LISTED, markets: [moneyline({ closed: true })] }).length, 0);
+  assert.equal(P.arbRowsOf({ event: LISTED }).length, 5, 'an event payload too');
+});
+
+test('arbRowsOf: soccer\'s three result markets as one three-way set, or not at all', () => {
+  const rows = P.arbRowsOf(SOCCER, { league: 'epl' });
+  assert.deepEqual(rows.map(r => [r.kind, r.outcomeLabel, r.game3.pick, r.yesAsk, r.mutuallyExclusive]),
+    [['yesno', 'Arsenal FC', 0, 0.44, true], ['yesno', 'Draw', 'draw', 0.24, true], ['yesno', 'Chelsea FC', 1, 0.22, true]]);
+  assert.deepEqual(rows[0].game3.teams, ['Arsenal FC', 'Chelsea FC']);
+  assert.ok(rows.every(r => r.eventKey === 'polymarketus:epl-ars-che-2026-10-11' && r.league === null));
+  const closedDraw = { ...SOCCER, markets: SOCCER.markets.map(m => (m.slug.endsWith('draw') ? { ...m, closed: true } : m)) };
+  assert.equal(P.arbRowsOf(closedDraw).length, 0, 'two outcomes of three is no set');
+});
+
+test('repriceRow: the live book\'s prices for each side, and what sits there', () => {
+  const [, , dog] = P.arbRowsOf(LISTED).filter(r => r.kind === 'spread' || r.kind === 'teams');
+  assert.equal(dog.yesSide, 'short');
+  const live = P.repriceRow(dog, { bid: 0.45, ask: 0.46, bidSize: 120, askSize: 900, open: true });
+  assert.deepEqual([live.yesAsk, live.noAsk, live.yesDepth, live.noDepth, live.priced], [0.55, 0.46, 120, 900, 'book'], 'the short side sells into the 45¢ bid');
+  assert.equal(P.repriceRow(dog, { bid: 0.45, ask: 0.46, open: false }), null);
+  assert.equal(P.repriceRow(dog, null), null);
+});
+
+test('arbRows reads each league\'s list page by page; reprice reads a capped number of books', async () => {
+  const calls = [];
+  const many = Array.from({ length: 50 }, (_, i) => ({ ...LISTED, slug: `nfl-g${i}-2026-10-11`, markets: [moneyline({ slug: `aec-nfl-g${i}` })] }));
+  const http = { get: async (url, cfg = {}) => {
+    calls.push([url.replace(P.GATEWAY, ''), cfg.params?.offset ?? null]);
+    if (url.endsWith('/v2/leagues/nfl/events')) return { data: { events: cfg.params.offset === 0 ? many : [LISTED, { ...LISTED, slug: 'nfl-old', closed: true }] } };
+    if (url.endsWith('/v2/leagues/epl/events')) return { data: { events: [SOCCER] } };
+    if (url.endsWith('/book')) return { data: { marketData: { bids: [{ px: usd('0.4300'), qty: '50' }], offers: [{ px: usd('0.4500'), qty: '75' }], state: 'MARKET_STATE_OPEN' } } };
+    throw Object.assign(new Error('Request failed with status code 404'), { response: { status: 404 } });
+  } };
+  const warned = [];
+  const us = P.createPolymarketUs({ http, now: () => 0, log: { warn: m => warned.push(m) } });
+  const rows = await us.arbRows({ leagues: ['nfl', 'epl', 'xyz'] });
+  assert.equal(rows.length, 50 + 5 + 3);
+  assert.deepEqual(calls, [['/v2/leagues/nfl/events', 0], ['/v2/leagues/epl/events', 0], ['/v2/leagues/xyz/events', 0], ['/v2/leagues/nfl/events', 50]]);
+  assert.deepEqual(us.state().arbs.games, { nfl: 51, epl: 1 });
+  assert.equal(warned.length, 0, 'a league with no list is no error');
+  const live = await us.reprice([rows[50], rows[50], rows[51], rows[52]], { maxBooks: 2 });
+  assert.equal(live.size, 2);
+  assert.deepEqual([live.get(rows[50].id).yesAsk, live.get(rows[50].id).yesDepth], [0.45, 75]);
+  assert.equal(us.state().arbs.skipped, 1);
+  assert.equal(us.state().arbs.confirmed, 2);
+  assert.deepEqual(P.arbLeaguesFromEnv({}), P.ARB_LEAGUES);
+  assert.deepEqual(P.arbLeaguesFromEnv({ XARB_PMUS_LEAGUES: 'off' }), []);
+  assert.deepEqual(P.arbLeaguesFromEnv({ XARB_PMUS_LEAGUES: 'NBA, nhl,nba' }), ['nba', 'nhl']);
+});

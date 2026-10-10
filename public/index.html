@@ -857,7 +857,7 @@ const BOOK_MAP = {
   tipico_us:'Tipico', bet_us:'BetUS', betsson:'Betsson', unibet:'Unibet',
   marathonbet:'Marathon', betway:'Betway', nordicbet:'NordicBet',
   coolbet:'CoolBet', casumo:'Casumo', mobilbet:'Mobilbet',
-  kalshi:'Kalshi', polymarket:'Polymarket', novig:'Novig',
+  kalshi:'Kalshi', polymarket:'Polymarket', polymarketus:'Polymarket US', novig:'Novig',
   prophetx:'ProphetX', betopenly:'BetOpenly'
 };
 function bookLabel(key, short=false) {
@@ -3780,7 +3780,7 @@ function tailWhalesHTML() {
 }
 
 const TAIL_ARB_TYPES = { cross: 'CROSS-EXCHANGE', multi: 'BUY EVERY OUTCOME', book: 'EXCHANGE VS BOOK' };
-const TAIL_VENUES = { kalshi: 'Kalshi', polymarket: 'Polymarket' };
+const TAIL_VENUES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
 function tailArbsHTML() {
   const d = tailState.arbs || {};
   const arbs = d.arbs || [];
@@ -3790,7 +3790,7 @@ function tailArbsHTML() {
     d.updated ? `<span>SCANNED ${tailAgo(d.updated)} AGO</span>` : '',
   ]);
   const note = tailWithheld('arbs');
-  const where = tailUS() ? 'Kalshi and US sportsbooks only (US mode)' : 'Kalshi, Polymarket and the sportsbooks';
+  const where = tailUS() ? 'Kalshi, Polymarket US and US sportsbooks only (US mode)' : 'Kalshi, Polymarket, Polymarket US and the sportsbooks';
   if (!tailState.pro) {
     const pcts = arbs.slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
     return note + tailLockBanner(`<b>${d.count || 0} exchange arbs right now${pcts ? ': ' + pcts : ''}.</b> <span style="color:#cbd5e1">Pro shows the legs, the prices and how to split the stake.</span>`, 'Exchange arbs') + strip
@@ -3806,7 +3806,7 @@ function tailArbsHTML() {
       const price = l.price != null ? tailC(l.price) : fmtAm(l.american);
       return `<div class="arb-leg">
         <span style="font-weight:800;color:#e2e8f0;min-width:90px">${venue}</span>
-        <span style="flex:1;min-width:160px;color:#cbd5e1">${tailLink(l.url, `<b>${escAttr(l.pick || '')}</b>`)}${l.title && a.type === 'cross' ? ` <span style="color:#64748b;font-size:11px">· ${escAttr(l.title)}</span>` : ''}</span>
+        <span style="flex:1;min-width:160px;color:#cbd5e1">${tailLink(l.url, `<b>${escAttr(l.pick || '')}</b>`)}${l.title && a.type === 'cross' ? ` <span style="color:#64748b;font-size:11px">· ${escAttr(l.title)}</span>` : ''}${l.depth != null ? ` <span style="color:#64748b;font-size:11px" title="Contracts on offer at this price right now">· ${Math.floor(l.depth).toLocaleString()} at this price</span>` : ''}</span>
         <span style="font-family:'JetBrains Mono',monospace;color:#f1f5f9;min-width:60px;text-align:right">${price}</span>
         <span style="font-family:'JetBrains Mono',monospace;color:#10b981;min-width:130px;text-align:right" title="This leg's share of the total stake, fees included: the same split whatever the total">${sl.pct != null ? `${sl.pct.toFixed(1)}% of stake` : ''}</span>
       </div>`;
@@ -3822,10 +3822,10 @@ function tailArbsHTML() {
       </div>
       ${legs}
       <div class="arb-calc" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1;display:flex;gap:16px;flex-wrap:wrap">
-        <span>SPLIT ${(st.legs || []).map(l => l.pct != null ? l.pct.toFixed(1) + '%' : '—').join(' / ')}</span><span style="color:#10b981">PROFIT +${a.profitPct}% OF THE TOTAL</span>
+        <span>SPLIT ${(st.legs || []).map(l => l.pct != null ? l.pct.toFixed(1) + '%' : '—').join(' / ')}</span><span style="color:#10b981">PROFIT +${a.profitPct}% OF THE TOTAL</span>${a.maxContracts != null ? `<span title="The fewest contracts on offer at these prices across the legs whose book was read">MAX ${a.maxContracts.toLocaleString()} CONTRACTS</span>` : ''}
       </div>
     </div>`;
-  }).join('') + `<div style="font-size:11px;color:#64748b;margin-top:8px">${tailUS() ? 'US mode: Kalshi and US sportsbooks only. ' : ''}Prices include Kalshi's taker fee and each Polymarket market's own taker fee. Split the total by the percentages shown so every outcome pays the same. Size is not checked: the ask may only hold a few contracts, so look at each order book before going big. Exchange prices move fast: check each leg is still there before you place the second.</div>`;
+  }).join('') + `<div style="font-size:11px;color:#64748b;margin-top:8px">${tailUS() ? 'US mode: Kalshi, Polymarket US and US sportsbooks only. ' : ''}Prices include Kalshi's taker fee and each Polymarket market's own taker fee (Polymarket US: 0.0695 × p × (1 − p) a contract). Split the total by the percentages shown so every outcome pays the same. Size is only checked on Polymarket US legs ("at this price"): any other ask may only hold a few contracts, so look at each order book before going big. Exchange prices move fast: check each leg is still there before you place the second.</div>`;
 }
 
 function tailRecordHTML() {

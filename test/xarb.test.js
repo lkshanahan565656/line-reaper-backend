@@ -1138,3 +1138,75 @@ test('lines: US games pair spreads and totals in the same event, the team found 
   const m = A.matchMarkets(ks, ps, opts()).filter(x => x.by === 'line');
   assert.deepEqual(m.map(x => [x.kalshi.id, x.polymarket.id]), [['KXNBASPREAD-26OCT08NYKBOS-BOS5', '556'], ['KXNBATOTAL-26OCT08NYKBOS-221', '557']]);
 });
+
+// Polymarket US's league lists (pmus.arbRowsOf), shaped like the live gateway
+const PMUS = require('../pmus');
+const usd = v => ({ value: v, currency: 'USD' });
+const usMarket = (slug, type, sides, bid, ask, o = {}) => ({ slug, question: slug, sportsMarketType: type, active: true, closed: false,
+  status: 'MARKET_STATUS_OPEN', bestBidQuote: usd(bid), bestAskQuote: usd(ask), feeCoefficient: 0.0695, marketSides: sides, ...o });
+const usTeam = (name, long) => ({ long, description: name, team: { name } });
+const usNba = ({ bid = '0.5200', ask = '0.6000' } = {}) => PMUS.arbRowsOf({
+  id: 7, slug: 'nba-nyk-bos-2026-10-08', title: 'NY Knicks vs. BOS Celtics', startTime: START, endDate: '2026-10-09T02:00:00Z', active: true, closed: false,
+  teams: [{ name: 'New York Knicks' }, { name: 'Boston Celtics' }],
+  markets: [
+    usMarket('aec-nba-nyk-bos-2026-10-08', 'basketball_team_full_game_winner', [usTeam('New York Knicks', true), usTeam('Boston Celtics', false)], bid, ask),
+    usMarket('tsc-nba-nyk-bos-2026-10-08-221pt5', 'basketball_team_full_game_total', [{ long: true, description: 'Over' }, { long: false, description: 'Under' }],
+      '0.4400', '0.4500', { line: 221.5 }),
+  ],
+}, { league: 'nba' });
+const usSoccer = (prices = [['0.7700', '0.7800'], ['0.1500', '0.1600'], ['0.0900', '0.1000']]) => PMUS.arbRowsOf({
+  id: 8, slug: 'bun-dor-wer-2026-10-09', title: 'Dortmund vs. Bremen', startTime: '2026-10-09T18:30:00Z', active: true, closed: false,
+  teams: [{ name: H }, { name: W2 }],
+  markets: [[H, 'h'], [null, 'd'], [W2, 'a']].map(([team, k], i) => usMarket(`bun-dor-wer-2026-10-09-${k}`, 'soccer_team_full_time_winner',
+    [{ long: true, description: team || 'Draw', ...(team ? { team: { name: team } } : {}) }, { long: false, description: 'No' }], ...prices[i])),
+}, { league: 'bun' });
+
+test('Polymarket US: its listed games pair with Kalshi\'s like Polymarket\'s do; both US venues; capped by the book\'s depth', () => {
+  const kalshi = kRows(kalshiGame(), kLines('KXNBATOTAL', 'New York K at Boston: Total Points', [['221', 'Over 221.5 points scored', 221.5, '0.5200', '0.5000']],
+    { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }));
+  const us = usNba();
+  const matches = A.matchMarkets(kalshi, us, opts());
+  assert.deepEqual(matches.map(m => [m.by, m.kalshi.id, m.polymarket.id]), [
+    ['teams', 'KXNBAGAME-26OCT08NYKBOS-BOS', 'aec-nba-nyk-bos-2026-10-08'], ['teams', 'KXNBAGAME-26OCT08NYKBOS-NYK', 'aec-nba-nyk-bos-2026-10-08'],
+    ['line', 'KXNBATOTAL-26OCT08NYKBOS-221', 'tsc-nba-nyk-bos-2026-10-08-221pt5']]);
+  const arbs = A.findUsArbs(kalshi, us, opts({ region: 'us', matches }));
+  assert.equal(arbs.length, 2, 'the game once (its best direction) and the total');
+  const game = arbs.find(a => a.legs[1].marketId === 'aec-nba-nyk-bos-2026-10-08');
+  assert.deepEqual(game.legs.map(l => [l.venue, l.side, l.pick, l.price]), [['kalshi', 'no', 'New York K', 0.47], ['polymarketus', 'no', 'Boston Celtics', 0.48]],
+    'NO on Boston at Kalshi is the Knicks; the Celtics sell into the Knicks\' 52¢ bid');
+  // 0.47 + 0.48, plus Kalshi's fee and 0.0695 × 0.48 × 0.52 on Polymarket US
+  assert.ok(game.profitPct > 1 && game.profitPct < 2, String(game.profitPct));
+  assert.ok(Math.abs(game.stakes.legs[1].fee - Math.round(game.stakes.contracts * 0.0695 * 0.48 * 0.52 * 100) / 100) <= 0.01);
+  const total = arbs.find(a => a !== game);
+  assert.deepEqual(total.legs.map(l => [l.venue, l.side, l.price]), [['kalshi', 'no', 0.5], ['polymarketus', 'yes', 0.45]], 'Under at Kalshi, Over here');
+  assert.ok(arbs.every(a => A.usPlaceable(a) && a.maxContracts === null && /postponed or canceled/.test(a.warnings.join(' '))));
+
+  // on the live book 40 contracts sit at the Knicks' bid: no more than that
+  const live = [PMUS.repriceRow(us[0], { bid: 0.52, ask: 0.6, bidSize: 40, askSize: 10, open: true }), us[1]];
+  const relink = rows => matches.map(m => ({ ...m, polymarket: rows.find(r => r.id === m.polymarket.id) }));
+  const deep = A.findUsArbs(kalshi, live, opts({ region: 'us', matches: relink(live) })).find(a => a.legs[1].marketId === us[0].id);
+  assert.deepEqual([deep.legs[1].depth, deep.maxContracts, deep.stakes.contracts, deep.stakes.capped], [40, 40, 40, true]);
+  const thin = [PMUS.repriceRow(us[0], { bid: 0.52, ask: 0.6, bidSize: 0.5, open: true }), us[1]];
+  assert.equal(A.findUsArbs(kalshi, thin, opts({ matches: relink(thin) })).length, 1, 'not one whole contract: only the total is left');
+  // a gap the fees eat
+  const close = usNba({ bid: '0.5000' });
+  assert.equal(A.findUsArbs(kalshi, close, opts({ matches: A.matchMarkets(kalshi, close, opts()) })).length, 1);
+});
+
+test('Polymarket US soccer: its three result markets pair with Kalshi\'s team and tie markets, and are an underround on their own', () => {
+  const kalshi = kRows(dortmundBremen()), us = usSoccer();
+  const matches = A.matchMarkets(kalshi, us, opts());
+  assert.deepEqual(matches.map(m => [m.by, m.kalshi.outcomeLabel, m.polymarket.outcomeLabel]),
+    [['teams3', 'Dortmund', H], ['teams3', 'Bremen', W2], ['teams3', 'Tie', 'Draw']]);
+  const found = A.findUsArbs(kalshi, us, opts({ region: 'us', matches }));
+  assert.equal(found.length, 1);
+  const [a] = found;
+  assert.deepEqual(a.legs.map(l => [l.venue, l.side, l.price]), [['kalshi', 'yes', 0.73], ['polymarketus', 'no', 0.23]], 'Dortmund at Kalshi, not Dortmund here');
+  // 44¢ + 24¢ + 22¢ for every result, 0.0695 × p × (1 − p) on each
+  const cheap = usSoccer([['0.4300', '0.4400'], ['0.2300', '0.2400'], ['0.2100', '0.2200']]);
+  const [u] = A.findUsArbs([], cheap, opts({ region: 'us' }));
+  const cost = 0.9 + 0.0695 * (0.44 * 0.56 + 0.24 * 0.76 + 0.22 * 0.78);
+  assert.deepEqual([u.type, u.exchange, u.outcomes, u.exhaustive], ['multi', 'polymarketus', 3, true]);
+  assert.ok(Math.abs(u.profitPct - ((1 - cost) / cost) * 100) < 0.05, String(u.profitPct));
+  assert.equal(A.findUsArbs([], cheap.slice(0, 2), opts()).length, 0, 'a set missing an outcome is not complete');
+});
