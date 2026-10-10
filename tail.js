@@ -268,12 +268,13 @@ const nextCursor = payload => {
 // wallets and condition ids out of messages anyone can read (/api/status)
 const maskIds = s => String(s).replace(/0x[0-9a-f]{8,}/gi, '0x…');
 // unix seconds, unix ms or an ISO string → ms
+// (a Go zero time, "0001-01-01T00:00:00Z", is no time at all: before 1970 → null)
 function toMs(v) {
   if (v == null || v === '') return null;
   const n = Number(v);
   if (Number.isFinite(n)) return n <= 0 ? null : n > 1e12 ? n : n * 1000;
   const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
+  return Number.isFinite(t) && t > 0 ? t : null;
 }
 const money = x => `${x < 0 ? '-' : ''}$${String(Math.round(Math.abs(x))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 const pct = (x, d = 1) => `${round(x * 100, d)}%`;
@@ -1459,6 +1460,17 @@ async function fetchMarket(http, conditionId, { closed = false } = {}) {
   return null;
 }
 
+// a token id → its market (some live-feed rows carry only the token)
+async function fetchMarketByToken(http, tokenId) {
+  for (const c of [false, true]) {
+    const params = c ? { clob_token_ids: tokenId, closed: true } : { clob_token_ids: tokenId };
+    const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
+    const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => x.tokens.includes(String(tokenId)));
+    if (m) return m;
+  }
+  return null;
+}
+
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
 // a Map used as a bounded cache: the oldest entry goes first
@@ -1737,6 +1749,23 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     } finally { busy.score = false; }
   }
 
+  const tokenMarkets = new Map();   // token id → condition id (a token never changes market)
+  async function marketForToken(asset) {
+    const id = String(asset);
+    if (tokenMarkets.has(id)) return quote(tokenMarkets.get(id));
+    try {
+      const market = await fetchMarketByToken(http, id);
+      if (!market?.conditionId) return null;
+      tokenMarkets.set(id, market.conditionId);
+      if (tokenMarkets.size > 5000) tokenMarkets.delete(tokenMarkets.keys().next().value);
+      quotes.set(market.conditionId, { at: now(), market });
+      return market;
+    } catch (e) {
+      warn(`token ${id.slice(0, 12)}…: ${e?.message || e}`);
+      return null;
+    }
+  }
+
   async function quote(conditionId) {
     if (!conditionId) return null;
     const t = now();
@@ -1755,6 +1784,29 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // A graded wallet's trade after it was scored moves its book: a buy adds to
   // (or opens) the position, a sell takes from it. Trades from before the
   // score are already in the positions it was scored on.
+  // Some feed rows don't say which market they're in (no title or slug): an
+  // exit then read 'Exit: sold … of ""' filed under other. The name comes from
+  // what the wallet holds there, else from Gamma.
+  // A live-feed row can carry only the token id (no condition id either): the
+  // market then comes from the token, so the alert has a name and a price.
+  async function nameTrade(trader, tr) {
+    const h = (trader.holdings || []).find(x => x.asset === String(tr.asset));
+    if (!tr.conditionId && h?.conditionId) tr.conditionId = h.conditionId;
+    if (!tr.conditionId && tr.asset) {
+      const m = await marketForToken(tr.asset);
+      if (m?.conditionId) {
+        const i = m.tokens.indexOf(String(tr.asset));
+        tr.conditionId = m.conditionId;
+        if (i >= 0) { tr.outcomeIndex = i; if (!tr.outcome) tr.outcome = m.outcomes[i] ?? null; }
+      }
+    }
+    const m = h?.title ? null : await quote(tr.conditionId);
+    const src = h?.title ? { title: h.title, slug: h.slug, eventSlug: h.eventSlug, outcome: h.outcome }
+      : m ? { title: m.question, slug: m.slug, eventSlug: m.eventSlug, outcome: m.outcomes?.[tr.outcomeIndex] ?? null } : null;
+    if (!src) return;
+    for (const k of ['title', 'slug', 'eventSlug', 'outcome']) if (!tr[k] && src[k]) tr[k] = src[k];
+  }
+
   function noteHolding(trader, tr) {
     if (!Array.isArray(trader.holdings) || !tr.asset || !(tr.size > 0)) return;
     const scored = toMs(trader.scoredAt);
@@ -1974,6 +2026,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      if ((!(tr.title || tr.slug || tr.eventSlug) || !tr.conditionId) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
       // what a sale came out of, read before it's taken off (a trade from
       // before the wallet was scored is already in its positions)
       const scored = toMs(trader.scoredAt);
@@ -2083,6 +2136,6 @@ module.exports = {
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
-  fetchPriceHistory, fetchMarket,
+  fetchPriceHistory, fetchMarket, fetchMarketByToken,
   createTailEngine, toMs, maskIds, failText,
 };
