@@ -13,8 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --no-audit --no-fund
-      - run: node diag/newarbs.js > diag-out.txt 2>&1 || true
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          { date -u; for p in /api/status /api/xarbs /app; do echo "=== $p"; curl -sS -m 40 -i "$U$p" | head -c 6000; echo; done; } > diag-out.txt 2>&1 || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
