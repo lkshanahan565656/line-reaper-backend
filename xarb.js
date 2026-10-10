@@ -676,21 +676,13 @@ const kalshiGameMs = k => (ms(k.startTime) ?? (ms(k.expectedExpiration) != null 
 // (the ticker's, else the estimate). Outside the built-in leagues (tennis,
 // soccer, esports) Kalshi's expected expiration can be a day out, so anywhere
 // on the ticker's date counts too (Eastern midnight − 6h to + 30h, for time
-// zones). Football's is often a placeholder: 20:00 UTC on the ticker's date
-// for a night kick-off, or a Friday ticker at 23:00 Eastern for a Saturday
-// game whose time isn't set. The same two football teams never meet twice in
-// a few days, so there the ticker's date and the two days after count.
-// → { t, lo, hi } | null
+// zones). → { t, lo, hi } | null
 const DAY_SLOP_MS = 6 * 3600e3;
-const FOOTBALL = new Set(['nfl', 'ncaaf']);
 function kalshiWindow(k, o) {
   const t = kalshiGameMs(k);
   if (t == null) return null;
   let lo = t - o.sportsWindowMs, hi = t + o.sportsWindowMs;
-  if (k.gameDay != null && (!k.league || FOOTBALL.has(k.league))) {
-    const days = k.league ? 3 : 1;
-    lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + days * DAY + DAY_SLOP_MS);
-  }
+  if (!k.league && k.gameDay != null) { lo = Math.min(lo, k.gameDay - DAY_SLOP_MS); hi = Math.max(hi, k.gameDay + DAY + DAY_SLOP_MS); }
   return { t, lo, hi };
 }
 // index of the first { t } at or after `t` in a list sorted by t
@@ -736,6 +728,49 @@ function mutualBest(edges, keyA, keyB) {
     const x = ba.get(keyA(e)), y = bb.get(keyB(e));
     return !x.tie && !y.tie && x.other === keyB(e) && y.other === keyA(e) && x.score === e.score && y.score === e.score;
   });
+}
+
+// ── US races ──
+// Who wins a state's Senate or governor race, or a House district, by party.
+// Polymarket asks "Will the Democrats win the Texas Senate race in 2026?" and
+// "Will the Republican Party win the SC-01 House seat?"; Kalshi "Will
+// Democratics win the Senate race in Texas?" (SENATETX-26), "Will the
+// Democratic party win the governorship in Minnesota" and "Will Democratic
+// win the House race for CA-45?". The words come in a different order (the
+// title match refuses that), so these pair on office, place, party and year.
+// Primaries, margins, turnout, vote shares and combos are other questions.
+const US_STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut', 'delaware', 'florida', 'georgia',
+  'hawaii', 'idaho', 'illinois', 'indiana', 'iowa', 'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+  'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire', 'new jersey', 'new mexico', 'new york',
+  'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+  'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming'];
+const STATE_RES = US_STATES.map(n => [n, new RegExp(`\\b${n}\\b`)]);
+const NOT_A_RACE_RE = /\b(primary|primaries|nominee|nomination|nominated|runoff|margin|turnout|percent|share|by more than|combo|popular vote|lieutenant|state senate|state house|house of delegates|control|majority|seats|endorse|debate|poll|drop out|run for|recount|called|calls)\b/;
+// → { key: 'senate|texas|D|' , year } | null
+function raceKey(r) {
+  const raw = String(r?.title || '');
+  const t = norm(raw);
+  if (!/\bwin\b/.test(t) || NOT_A_RACE_RE.test(t) || /\band\b.*\bwin\b.*\band\b/.test(t)) return null;
+  const party = /\b(democrats?|democratics?|dems?)\b/.test(t) ? 'D' : /\b(republicans?|gop)\b/.test(t) ? 'R' : null;
+  if (!party || (/\b(democrats?|democratics?)\b/.test(t) && /\brepublicans?\b/.test(t))) return null;
+  let office = null, place = null;
+  const district = /\b([A-Z]{2})-(\d{1,2})\b/.exec(raw);
+  if (/\bhouse\b/.test(t) && district) { office = 'house'; place = `${district[1]}-${Number(district[2])}`; }
+  else {
+    office = /\bsenate\b/.test(t) ? 'senate' : /\b(governor|governorship|gubernatorial)\b/.test(t) ? 'governor' : null;
+    // the longest state name in the title ("West Virginia", not "Virginia")
+    const found = STATE_RES.filter(([, re]) => re.test(t)).map(([n]) => n).sort((a, b) => b.length - a.length);
+    place = found.find(n => !found.some(m => m !== n && m.includes(n))) || null;
+    if (found.filter(n => !found.some(m => m !== n && m.includes(n))).length !== 1) place = null;
+  }
+  if (!office || !place) return null;
+  // the year: Kalshi's event ticker says it (SENATETX-26), else the title,
+  // else the close (Polymarket's races close the morning after election day)
+  const tick = r.exchange === 'kalshi' ? /-(\d{2})(?:$|-)/.exec(String(r.eventKey || '').replace(/^kalshi:/, '')) : null;
+  const said = /\b(20\d{2})\b/.exec(raw);
+  const year = tick ? 2000 + Number(tick[1]) : said ? Number(said[1]) : r.exchange !== 'kalshi' && ms(r.closeTime) != null ? new Date(ms(r.closeTime)).getUTCFullYear() : null;
+  if (year == null) return null;
+  return { key: `${office}|${place}|${party}|${/\bspecial\b/.test(t) ? 'special' : ''}`, year };
 }
 
 function matchMarkets(kalshiRows, polyRows, opts = {}) {
@@ -820,6 +855,24 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
     }
   }
 
+  // US races: office, place, party and year (raceKey)
+  const races = new Map(), raced = new Set();
+  for (const p of polyRows || []) {
+    if (p.kind !== 'yesno' || p.game3) continue;
+    const rk = raceKey(p);
+    if (rk) push(races, `${rk.key}|${rk.year}`, p);
+  }
+  if (races.size) {
+    for (const k of kalshiRows || []) {
+      if (k.kind !== 'yesno' || k.game3) continue;
+      const rk = raceKey(k);
+      for (const p of (rk && races.get(`${rk.key}|${rk.year}`)) || []) {
+        out.push({ kalshi: k, polymarket: p, same: true, by: 'race' });
+        raced.add(k.id); raced.add(p.id);
+      }
+    }
+  }
+
   // everything else: identical numbers/dates/directions, similar words, the
   // same subject, close dates within 3 days, each side's unique best match.
   // Bucketed by signature and close day, so each Kalshi market only meets a
@@ -827,7 +880,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   const index = new Map();
   for (const p of polyRows || []) {
     const t = ms(p.closeTime);
-    if (p.kind !== 'yesno' || p.game3 || t == null) continue;
+    if (p.kind !== 'yesno' || p.game3 || t == null || raced.has(p.id)) continue;
     const key = titleKey(proposition(p));
     if (key.words.size) push(index, `${key.sig}|${Math.floor(t / DAY)}`, { r: p, key, t, subject: null });
   }
@@ -835,7 +888,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   const titled = [];
   for (const k of kalshiRows || []) {
     const t = ms(k.closeTime);
-    if (k.kind !== 'yesno' || k.game3 || t == null) continue;
+    if (k.kind !== 'yesno' || k.game3 || t == null || raced.has(k.id)) continue;
     const key = titleKey(proposition(k));
     if (!key.words.size) continue;
     let subject = null;
@@ -1219,9 +1272,11 @@ function pickVenue(quotes) {
 // came before. onPage(events) takes each page as it lands (parse it and let
 // the raw JSON go) instead of holding every page; events then stays empty and
 // `count` says how many there were. truncated: the page cap cut the list short.
-async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = null, seriesTicker = null } = {}) {
+// startCursor: carry on from where an earlier read stopped; the result's
+// cursor is where this one stopped (null at the end of the list)
+async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = null, seriesTicker = null, startCursor = null } = {}) {
   const events = [], errors = [];
-  let cursor = null, pages = 0, count = 0, truncated = false;
+  let cursor = startCursor || null, pages = 0, count = 0, truncated = false;
   try {
     while (pages < maxPages) {
       const params = { status: 'open', with_nested_markets: true, limit };
@@ -1237,7 +1292,7 @@ async function fetchKalshiEvents(http, { maxPages = 30, limit = 200, onPage = nu
       truncated = pages >= maxPages;
     }
   } catch (e) { errors.push({ exchange: 'kalshi', key: `events page ${pages + 1}`, message: e?.message || String(e) }); }
-  return { events, errors, pages, count, truncated };
+  return { events, errors, pages, count, truncated, cursor };
 }
 
 // busiest first (24h volume), so a page cap drops the quiet events, not a
@@ -1274,7 +1329,7 @@ async function fetchPolymarketEvents(http, { maxPages = 15, limit = GAMMA_PAGE_M
 // category (refreshed every 6h; a failed read retries in 10 min), plus a
 // built-in list.
 const KALSHI_SERIES_URL = 'https://api.elections.kalshi.com/trade-api/v2/series';
-const GAME_SERIES_RE = /(GAME|MATCH)$/i;
+const GAME_SERIES_RE = /(GAME|MATCH|FIGHT)$/i;   // FIGHT: UFC, boxing and MMA bouts
 const SEED_GAME_SERIES = ['KXNFLGAME', 'KXNBAGAME', 'KXMLBGAME', 'KXNHLGAME', 'KXWNBAGAME', 'KXNCAAFGAME', 'KXNCAAMBGAME', 'KXMLSGAME',
   'KXEPLGAME', 'KXLALIGAGAME', 'KXSERIEAGAME', 'KXBUNDESLIGAGAME', 'KXLIGUE1GAME', 'KXUCLGAME', 'KXATPMATCH', 'KXWTAMATCH', 'KXLOLGAME', 'KXCS2GAME'];
 // the game series, plus each one's TOTAL and SPREAD siblings (KXBUNDESLIGAGAME → KXBUNDESLIGATOTAL, KXBUNDESLIGASPREAD)
@@ -1330,6 +1385,44 @@ function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs =
   return { step, stats: () => ({ ...stats, withGames: cache.size }) };
 }
 
+// Kalshi's open-events list runs longest-dated first and the scan reads its
+// first 6,000 events (30 pages), so everything settling sooner (this month's
+// politics, economics and culture markets, and plenty of 2026 races) falls
+// off the end. This reads on from where the scan stopped, perScan pages a
+// scan, to the end of the list and round again, keeping the events worth
+// pairing (anything but sports: the game sweep has the games) for keepMs.
+// step(startCursor): startCursor is where this scan's main read stopped.
+function createKalshiTailSweep({ http, perScan = 6, keepMs = 30 * 60e3, maxEvents = 20000, now = () => Date.now(),
+  keep = ev => ev?.category !== 'Sports' } = {}) {
+  const cache = new Map();   // event ticker → { rows, at }
+  let cursor = null;
+  const stats = { cycles: 0, pages: 0, events: 0, rows: 0, failed: 0, lastError: null, position: 0 };
+  async function step(startCursor) {
+    const t = now();
+    if (!cursor) { cursor = startCursor || null; stats.position = 0; }
+    if (cursor) {
+      const r = await fetchKalshiEvents(http, { maxPages: perScan, startCursor: cursor, onPage: page => {
+        for (const ev of page) {
+          if (!keep(ev)) continue;
+          const rows = parseKalshiBinaries({ events: [ev], cursor: '' });
+          if (rows.length) { cache.delete(ev.event_ticker); cache.set(ev.event_ticker, { rows, at: t }); }
+        }
+      } });
+      stats.pages += r.pages;
+      stats.position += r.pages;
+      if (r.errors.length) { stats.failed++; stats.lastError = r.errors[0].message; }
+      else if (!r.cursor) { stats.cycles++; cursor = null; }   // the end of the list: round again from the scan's stopping point
+      else cursor = r.cursor;
+    }
+    while (cache.size > maxEvents) cache.delete(cache.keys().next().value);
+    const out = [];
+    for (const [k, c] of cache) { if (t - c.at > keepMs) cache.delete(k); else out.push(...c.rows); }
+    Object.assign(stats, { events: cache.size, rows: out.length });
+    return out;
+  }
+  return { step, stats: () => ({ ...stats }) };
+}
+
 // One full scan: fetch both exchanges, parse, find every arb.
 async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPages, ...opts } = {}) {
   const o = withDefaults(opts);
@@ -1349,7 +1442,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
   findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
-  fetchKalshiGameSeries, createKalshiGameSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
-  polymarketFeeSchedule, polymarketFee, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
+  fetchKalshiGameSeries, createKalshiGameSweep, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
+  polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, NOT_EXHAUSTIVE_WARNING, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
 };
