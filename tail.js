@@ -116,7 +116,7 @@ const EPS = 1e-9;   // thresholds like 0.08 must survive float noise
 // their ROI and luck test can be many times too high. Round 3's aren't graded
 // either: they counted split/merge round trips as near-certain winners.
 // Round 5 finds settled games on Gamma (closing lines, live bettors).
-const RULES_VERSION = 5;
+const RULES_VERSION = 6;
 const STAKE_FIX_VERSION = 3;
 const ROUND_TRIP_VERSION = 4;
 
@@ -159,8 +159,10 @@ const DEFAULTS = {
   maxSignals: 500,
   holdingsMax: 50,               // open positions kept per graded wallet, for the Sharp Board
   boardMinCost: 100,             // $ in a position before it counts on the Sharp Board
-  clvSample: 25,                 // recent settled bets whose closing line is measured (TAIL_CLV_SAMPLE)
-  clvMinN: 15,                   // measured bets before CLV counts, and before A is possible
+  clvSample: 25,                 // recent settled events whose closing line is measured, the biggest bet in each (TAIL_CLV_SAMPLE)
+  clvMinN: 15,                   // measured events before CLV counts, and before A is possible
+  clvHorizonDays: 2,             // a market with no game start: the line is read this long after the first entry, so it's the market's move after the bet, not its result (TAIL_CLV_HORIZON_DAYS)
+  clvCap: 1,                     // one bet's CLV counts at most this much (1 = +100%): a 1¢ longshot that touched 5¢ is +400% (TAIL_CLV_CAP)
   clvPath: 1,                    // 0: B only from the record. 1: a profitable record that fails only the luck test or B's ROI...
   clvPathMin: 0.03,              // ...grades B when its measured bets beat the close by this much on average (TAIL_CLV_PATH_MIN)...
   clvPathHitRate: 0.55,          // ...and this share of them beat it (TAIL_CLV_PATH_HIT_RATE)
@@ -268,12 +270,13 @@ const nextCursor = payload => {
 // wallets and condition ids out of messages anyone can read (/api/status)
 const maskIds = s => String(s).replace(/0x[0-9a-f]{8,}/gi, '0x…');
 // unix seconds, unix ms or an ISO string → ms
+// (a Go zero time, "0001-01-01T00:00:00Z", is no time at all: before 1970 → null)
 function toMs(v) {
   if (v == null || v === '') return null;
   const n = Number(v);
   if (Number.isFinite(n)) return n <= 0 ? null : n > 1e12 ? n : n * 1000;
   const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
+  return Number.isFinite(t) && t > 0 ? t : null;
 }
 const money = x => `${x < 0 ? '-' : ''}$${String(Math.round(Math.abs(x))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 const pct = (x, d = 1) => `${round(x * 100, d)}%`;
@@ -637,7 +640,7 @@ function parseGammaMarket(m) {
     tokens: (jsonList(m.clobTokenIds) || []).map(String),
     bestBid: num(m.bestBid), bestAsk: num(m.bestAsk), lastTradePrice: num(m.lastTradePrice),
     endDate: m.endDate || m.endDateIso || null, gameStartTime: m.gameStartTime || m.game_start_time || null,
-    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null,
+    closedAt: toMs(m.closedTime), sportsMarketType: m.sportsMarketType ?? null, line: num(m.line),
     active: m.active !== false && m.active !== 'false', closed: bool(m.closed), resolution: m.umaResolutionStatus || null,
     acceptingOrders: m.acceptingOrders == null ? null : bool(m.acceptingOrders),
     negRisk: bool(m.negRisk), volume: num(m.volume), liquidity: num(m.liquidity),
@@ -783,7 +786,11 @@ function clvWindow(pos, market = null, { now = Date.now(), opts = {} } = {}) {
   if (game != null) { end = game; rule = 'game'; }
   else if (pos.category === 'sports' && (!market || GAME_TITLE.test(` ${market.question || pos.title || ''} `) || market.sportsMarketType)) return null;
   else {
-    end = Math.min(now, ...[market?.closedAt, pos.endAt ?? toMs(market?.endDate)].filter(Number.isFinite));
+    // no game: the line a few days after the bet (a market that drifts to its
+    // result would otherwise "close" at 96¢ for every winner and 4¢ for every loser)
+    const entered = toMs(pos.enteredAt);
+    if (entered == null) return null;
+    end = Math.min(now, entered + o.clvHorizonDays * DAY, ...[market?.closedAt, pos.endAt ?? toMs(market?.endDate)].filter(Number.isFinite));
     rule = 'freeze';
   }
   if (!(end <= now)) return null;
@@ -815,13 +822,17 @@ function closingPrice(points, { closeAt = null, freeze = false, truncated = fals
 // One position's CLV against its token's close: (close − entry) / entry. null
 // when it was bought after the line stopped counting (in play, or after the
 // outcome got out).
-function clvOf(pos, close) {
+function clvOf(pos, close, { cap = DEFAULTS.clvCap } = {}) {
   if (!pos || !close || !(pos.price > 0 && pos.price < 1) || !Number.isFinite(close.price)) return null;
+  // bought at 3¢ or less (or 97¢+) the outcome was already out: no line to beat
+  if (OUTCOME_OUT(pos.price)) return null;
+  // a game "closing" at 1¢ or 99¢ was already being played (or its start time is wrong)
+  if (close.rule === 'game' && (close.price <= 0.01 || close.price >= 0.99)) return null;
   if (pos.enteredAt != null && close.cut != null && pos.enteredAt >= close.cut) return null;
   return {
     asset: pos.asset, conditionId: pos.conditionId || null, category: pos.category || 'other', title: pos.title || '',
     risked: round(pos.risked, 2), entry: round(pos.price, 6), close: close.price, closeAt: iso(close.at), cutAt: iso(close.cut),
-    rule: close.rule || null, clv: (close.price - pos.price) / pos.price,
+    enteredAt: iso(toMs(pos.enteredAt)), rule: close.rule || null, clv: Math.min(cap, (close.price - pos.price) / pos.price),
   };
 }
 
@@ -837,19 +848,27 @@ function clvStats(samples) {
   };
 }
 
-// the k most recent settled positions with a token and a price, one per token
+// The k most recently settled events, and the biggest bet in each (a token,
+// a price between 3¢ and 97¢). Bets on one event move together: fifteen
+// nominees of one prize, bought in one go, are one bet, not fifteen.
 function clvCandidates(resolved, k = DEFAULTS.clvSample) {
   const when = p => p.at ?? p.endAt ?? p.enteredAt ?? 0;
-  const seenAssets = new Set(), out = [];
-  // ties broken by token, so the same record always samples the same bets
-  const byTime = (a, b) => (when(b) - when(a)) || (a.asset < b.asset ? -1 : a.asset > b.asset ? 1 : 0);
-  for (const p of [...(resolved || [])].filter(p => p?.asset && p.price > 0 && p.price < 1).sort(byTime)) {
-    if (out.length >= k) break;
-    if (seenAssets.has(p.asset)) continue;
-    seenAssets.add(p.asset);
-    out.push(p);
+  const stake = p => num(p.risked) ?? 0;
+  const events = new Map();
+  for (const p of resolved || []) {
+    if (!p?.asset || !(p.price > 0 && p.price < 1) || OUTCOME_OUT(p.price)) continue;
+    const key = p.eventSlug || p.slug || p.conditionId || p.asset;
+    const e = events.get(key);
+    // ties broken by token, so the same record always samples the same bets
+    if (!e) events.set(key, { pick: p, last: when(p) });
+    else {
+      e.last = Math.max(e.last, when(p));
+      if (stake(p) > stake(e.pick) || (stake(p) === stake(e.pick) && p.asset < e.pick.asset)) e.pick = p;
+    }
   }
-  return out;
+  return [...events.values()]
+    .sort((a, b) => (b.last - a.last) || (a.pick.asset < b.pick.asset ? -1 : a.pick.asset > b.pick.asset ? 1 : 0))
+    .slice(0, k).map(e => e.pick);
 }
 
 // ── scoring ──
@@ -1242,7 +1261,9 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   const eventSlug = trade.eventSlug || market?.eventSlug || trade.slug || null;
   const base = {
     id: trade.key, wallet: trader.wallet, name: trader.name || trade.name || null, grade: tier.grade, scope: tier.scope, category,
-    market: trade.title || market?.question || '', eventSlug, conditionId: trade.conditionId, asset: trade.asset,
+    market: trade.title || market?.question || '', eventSlug, slug: trade.slug || market?.slug || null, conditionId: trade.conditionId, asset: trade.asset,
+    ...(market?.sportsMarketType ? { sportsMarketType: market.sportsMarketType } : {}), ...(market?.line != null ? { line: market.line } : {}),
+    ...(market?.outcomes?.length ? { outcomes: market.outcomes } : {}),
     outcome: trade.outcome, outcomeIndex: trade.outcomeIndex,
     theirPrice: trade.price, theirSize: round(trade.size, 4), theirNotional: round(trade.notional, 2),
     at: iso(trade.at ?? now), seenAt: iso(now), url: eventUrl(eventSlug),
@@ -1459,9 +1480,21 @@ async function fetchMarket(http, conditionId, { closed = false } = {}) {
   return null;
 }
 
+// a token id → its market (some live-feed rows carry only the token)
+async function fetchMarketByToken(http, tokenId) {
+  for (const c of [false, true]) {
+    const params = c ? { clob_token_ids: tokenId, closed: true } : { clob_token_ids: tokenId };
+    const res = await http.get(`${GAMMA_API}/markets`, { params, timeout: TIMEOUT });
+    const m = parseGammaMarkets(rowsOrThrow(res.data, 'markets')).find(x => x.tokens.includes(String(tokenId)));
+    if (m) return m;
+  }
+  return null;
+}
+
 // ── engine ──
 const GRADE_RANK = { A: 0, B: 1 };
 // a Map used as a bounded cache: the oldest entry goes first
+const closeKey = (asset, enteredAt) => `${asset}|${toMs(enteredAt) ?? ''}`;
 function remember(map, key, value, max = Infinity) {
   map.delete(key);
   map.set(key, value);
@@ -1569,7 +1602,8 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       persisted.add(tr.wallet);
       // closes measured before the restart don't cost a request again
       for (const x of tr.clvSamples || []) {
-        if (x?.asset && Number.isFinite(x.close)) remember(closes, x.asset, { price: x.close, at: toMs(x.closeAt), cut: toMs(x.cutAt), rule: x.rule || null }, o.clvCacheMax);
+        if (!x?.asset || !Number.isFinite(x.close) || (x.rule !== 'game' && !x.enteredAt)) continue;   // older rules' lines: read again
+        remember(closes, x.rule === 'game' ? x.asset : closeKey(x.asset, x.enteredAt), { price: x.close, at: toMs(x.closeAt), cut: toMs(x.cutAt), rule: x.rule }, o.clvCacheMax);
       }
       // older rules: due now
       const scoredAt = stale ? 0 : Date.parse(tr.scoredAt) || null;
@@ -1639,8 +1673,11 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
 
   // One position's token's close (→ { price, at, cut, rule } | null), cached,
   // from one price history call. Throws when a lookup fails (tried again next time).
+  // A game's close is the same for every bet on it (kept by token); any other
+  // market's is read from the bet's entry (kept by token and entry time).
   async function closeFor(p, t) {
-    let close = closes.get(p.asset);
+    const betKey = closeKey(p.asset, p.enteredAt);
+    let close = closes.has(p.asset) ? closes.get(p.asset) : closes.get(betKey);
     if (close === undefined) {
       const market = p.conditionId ? await lookup(p.conditionId) : null;
       const win = clvWindow(p, market, { now: t, opts: o });
@@ -1651,7 +1688,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         const c = closingPrice(h.points, { closeAt: win.end, freeze: win.rule === 'freeze', truncated: h.truncated, maxGapMs: win.rule === 'game' ? o.clvMaxGapMs : null });
         if (c) close = { ...c, rule: win.rule };
       }
-      remember(closes, p.asset, close, o.clvCacheMax);
+      remember(closes, win?.rule === 'game' ? p.asset : betKey, close, o.clvCacheMax);
     }
     return close;
   }
@@ -1670,7 +1707,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
           play.games++;
           if (p.enteredAt >= start) play.inPlay++;
         }
-        const x = clvOf(p, close);
+        const x = clvOf(p, close, { cap: o.clvCap });
         if (x) samples.push(x);
       } catch (e) { errors.push(failText(e)); }
     }
@@ -1737,6 +1774,23 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
     } finally { busy.score = false; }
   }
 
+  const tokenMarkets = new Map();   // token id → condition id (a token never changes market)
+  async function marketForToken(asset) {
+    const id = String(asset);
+    if (tokenMarkets.has(id)) return quote(tokenMarkets.get(id));
+    try {
+      const market = await fetchMarketByToken(http, id);
+      if (!market?.conditionId) return null;
+      tokenMarkets.set(id, market.conditionId);
+      if (tokenMarkets.size > 5000) tokenMarkets.delete(tokenMarkets.keys().next().value);
+      quotes.set(market.conditionId, { at: now(), market });
+      return market;
+    } catch (e) {
+      warn(`token ${id.slice(0, 12)}…: ${e?.message || e}`);
+      return null;
+    }
+  }
+
   async function quote(conditionId) {
     if (!conditionId) return null;
     const t = now();
@@ -1755,6 +1809,29 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   // A graded wallet's trade after it was scored moves its book: a buy adds to
   // (or opens) the position, a sell takes from it. Trades from before the
   // score are already in the positions it was scored on.
+  // Some feed rows don't say which market they're in (no title or slug): an
+  // exit then read 'Exit: sold … of ""' filed under other. The name comes from
+  // what the wallet holds there, else from Gamma.
+  // A live-feed row can carry only the token id (no condition id either): the
+  // market then comes from the token, so the alert has a name and a price.
+  async function nameTrade(trader, tr) {
+    const h = (trader.holdings || []).find(x => x.asset === String(tr.asset));
+    if (!tr.conditionId && h?.conditionId) tr.conditionId = h.conditionId;
+    if (!tr.conditionId && tr.asset) {
+      const m = await marketForToken(tr.asset);
+      if (m?.conditionId) {
+        const i = m.tokens.indexOf(String(tr.asset));
+        tr.conditionId = m.conditionId;
+        if (i >= 0) { tr.outcomeIndex = i; if (!tr.outcome) tr.outcome = m.outcomes[i] ?? null; }
+      }
+    }
+    const m = h?.title ? null : await quote(tr.conditionId);
+    const src = h?.title ? { title: h.title, slug: h.slug, eventSlug: h.eventSlug, outcome: h.outcome }
+      : m ? { title: m.question, slug: m.slug, eventSlug: m.eventSlug, outcome: m.outcomes?.[tr.outcomeIndex] ?? null } : null;
+    if (!src) return;
+    for (const k of ['title', 'slug', 'eventSlug', 'outcome']) if (!tr[k] && src[k]) tr[k] = src[k];
+  }
+
   function noteHolding(trader, tr) {
     if (!Array.isArray(trader.holdings) || !tr.asset || !(tr.size > 0)) return;
     const scored = toMs(trader.scoredAt);
@@ -1921,7 +1998,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
   }
 
   // → the new signals (entries and exits) since the last poll, oldest first.
-  // route(signal) → units, when given, sizes each entry where followers bet
+  // route(signal) → units (or a promise of them), when given, sizes each entry where followers bet
   // (another venue's price) as it's made; those units are what later buys by
   // the same wallet top up. Without it, the size at Polymarket's ask.
   // The poll and the live stream hand trades to one lane, so a trade is
@@ -1974,6 +2051,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
         if (tr.notional >= o.minTrade - EPS) sighted(tr);
         continue;
       }
+      if ((!(tr.title || tr.slug || tr.eventSlug) || !tr.conditionId) && tr.notional >= o.minTrade - EPS) await nameTrade(trader, tr);
       // what a sale came out of, read before it's taken off (a trade from
       // before the wallet was scored is already in its positions)
       const scored = toMs(trader.scoredAt);
@@ -2023,7 +2101,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
       // scaling in over several orders is one position: later buys top it up
       if (signal.type === 'entry' && typeof route === 'function') {
         let added = 0;
-        try { added = route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
+        try { added = await route(signal); } catch (e) { warn(`route: ${e?.message || e}`); }
         noteTailed(signal, added);
         noteEvent(signal, added);
       } else if (signal.type === 'entry' && signal.target > 0) {
@@ -2083,6 +2161,6 @@ module.exports = {
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
   twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
-  fetchPriceHistory, fetchMarket,
+  fetchPriceHistory, fetchMarket, fetchMarketByToken,
   createTailEngine, toMs, maskIds, failText,
 };
