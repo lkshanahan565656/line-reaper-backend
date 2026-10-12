@@ -170,6 +170,9 @@ function propRows(picks, verdict, o, now) {
 
 // exchange arbs (xarb.js) and esports match arbs: both sides for under $1.
 // Units don't apply: the stake splits across the legs.
+const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
+const venueName = l => l.venueTitle || VENUE_NAMES[l.venue] || l.venue;
+
 function arbRows(arbs, esportsArbs) {
   const rows = [];
   for (const a of arbs) {
@@ -177,8 +180,8 @@ function arbRows(arbs, esportsArbs) {
     const pcts = a.stakes?.legs?.map(l => l.pct);
     rows.push({
       id: `arb:${a.id}`, kind: 'arb', label: 'Exchange arb', title: a.title, category: a.category,
-      bet: a.legs.map((l, i) => `${l.venueTitle || l.venue}: ${l.pick}${pcts?.[i] != null ? ` (${pcts[i]}% of stake)` : ''}`).join(' + '),
-      venue: [...new Set(a.legs.map(l => l.venueTitle || l.venue))].join(' + '), price: a.totalCost ?? null, american: null, maxPrice: null,
+      bet: a.legs.map((l, i) => `${venueName(l)}: ${l.pick}${pcts?.[i] != null ? ` (${pcts[i]}% of stake)` : ''}`).join(' + '),
+      venue: [...new Set(a.legs.map(venueName))].join(' + '), price: a.totalCost ?? null, american: null, maxPrice: null,
       units: null, ev: r4(a.profitPct / 100), verdict: 'arb', why: [`both sides cost ${Math.round((a.totalCost || 0) * 1000) / 10}c for a $1 payout`, ...(a.warnings || [])],
       url: a.legs[0]?.url || null, startsAt: a.closeTime || null, at: null, warning: (a.warnings || [])[0] || null, legs: a.legs,
     });
