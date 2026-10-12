@@ -1288,8 +1288,11 @@ function venueQuotes(signal, index, opts = {}) {
       const side = yes === m.same ? 'yes' : 'no';
       const price = side === 'yes' ? k.yesAsk : k.noAsk;
       if (price == null) continue;
+      // the best bid for this side is 1 − the other side's ask (for a resting order)
+      const other = side === 'yes' ? k.noAsk : k.yesAsk;
       add({
         key: 'kalshi', name: 'Kalshi', price, fee: kalshiFee(price, KALSHI_FEE_LOT, o.kalshiFeeRate) / KALSHI_FEE_LOT,
+        ...(other > 0 && other < 1 ? { bid: round(1 - other, 6) } : {}),
         marketId: k.id, side, pick: leg(k, side).pick, buy: `${side.toUpperCase()} ${k.outcomeLabel || k.title}`, title: k.title, url: k.url, match: m.by,
         ...(m.by === 'title' ? { warning: RULES_WARNING } : {}),
       });
@@ -1332,7 +1335,8 @@ function venueQuotes(signal, index, opts = {}) {
       // the signal's own fee came from that market's schedule at that price
       const fee = own != null && Number.isFinite(signal.fee) ? signal.fee
         : row?.feeSchedule ? polymarketFee(price, 1, row.feeSchedule) : price * (o.polymarketFeeRate || 0);
-      add({ key: 'polymarket', name: 'Polymarket', price, fee, pick: signal.outcome ?? null, url: signal.url || row?.url || null });
+      add({ key: 'polymarket', name: 'Polymarket', price, fee, pick: signal.outcome ?? null, url: signal.url || row?.url || null,
+        ...(own != null && quote(signal.currentBid) != null ? { bid: quote(signal.currentBid) } : {}) });
     }
   }
   return out;

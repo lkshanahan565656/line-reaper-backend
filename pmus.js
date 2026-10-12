@@ -315,10 +315,13 @@ function createPolymarketUs({ http, now = () => Date.now(), eventTtlMs = 60e3, b
     health.quoted++;
     const pick = pickOf(hit.market, hit.side);
     const depth = b ? (hit.side === 'long' ? b.askSize : b.bidSize) : null;
+    // this side's best bid, for a resting order: the long bid, or 1 − the long ask
+    const src = b && (b.bid != null || b.ask != null) ? b : hit.market;
+    const bid = hit.side === 'long' ? inUnit(src?.bid) : inUnit(src?.ask) != null ? round(1 - src.ask, 6) : null;
     return {
       key: 'polymarketus', name: 'Polymarket US', price, fee: fee(price, hit.market.feeRate), cost: round(price + fee(price, hit.market.feeRate), 6),
       side: hit.side, pick, buy: pick, marketId: hit.market.slug, title: hit.market.question, url: eventUrl(ev), match: 'slug',
-      ...(depth != null ? { depth } : {}),
+      ...(depth != null ? { depth } : {}), ...(bid != null && bid < price ? { bid } : {}),
     };
   }
 
