@@ -592,7 +592,7 @@ function ingestSharp(sport, games) {
   if (loud.length) for (const fn of sharpListeners) { try { fn(loud); } catch { /* keep going */ } }
   const ping = loud.filter(e => e.kind === 'steam' || e.kind === 'sharp_lead');
   if (ping.length && webhook.enabled && process.env.SHARP_WEBHOOK !== 'off') {
-    webhook.send(ping.slice(0, 10).map(e => '⚡ ' + describeSharp(e)).join('\n'), 'Sharp alerts');
+    webhook.send(ping.slice(0, 10).map(e => '' + describeSharp(e)).join('\n'), 'Sharp alerts');
   }
   return fresh;
 }
@@ -1461,7 +1461,7 @@ async function generateEsportsPicks() {
   const contextCounts = {};
 
   // Manual predictions are stored under the exact 'player|market' string the user
-  // clicked ✏️ on — but the same pick reads "MAPS 1-2 Kills" on PP and
+  // clicked on — but the same pick reads "MAPS 1-2 Kills" on PP and
   // "Kills on Maps 1+2" on UD. Normalized index makes a manual number stick to
   // the pick no matter which book's format is on screen.
   const manualNorm = {};
@@ -1618,7 +1618,7 @@ async function generateEsportsPicks() {
       model: null, pushProb: 0, gameId: base.gameId ?? null,
       pricing: null,
     };
-    if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for ✏️ input
+    if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for input
 
     const ctxOpts = { context: g.context || null };
     let side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
@@ -2237,9 +2237,9 @@ function describeTail(s) {
   const link = url ? ` <${url}>` : '';
   if (s.type === 'exit') return describeExit(s, who);
   const size = s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
-  return `🐋 ${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
+  return `${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
 }
-// "🚪 Exit: A-grade X sold 80% of Yes on "…" at 62¢ ($4,000), bought at 41¢ · we tailed it 1.2u at Kalshi: YES … <url>"
+// "Exit: A-grade X sold 80% of Yes on "…" at 62¢ ($4,000), bought at 41¢ · we tailed it 1.2u at Kalshi: YES … <url>"
 // The venue is where the entry was sent, so followers know where to sell.
 function describeExit(s, who) {
   const share = s.soldShare != null && s.soldShare < 0.995 ? `${Math.round(s.soldShare * 100)}% of ` : '';
@@ -2248,12 +2248,12 @@ function describeExit(s, who) {
   if (v?.key === 'kalshi' && !webhookLicence().kalshi) v = null;
   const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}` : ''}` : '';
   const url = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : (v?.url || s.url);
-  return `🚪 Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
+  return `Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
 function describeArb(a) {
   const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
-  return `♻️ Arb +${a.profitPct}%: ${a.title} · ${legs}${a.warnings?.length ? ` · ⚠ ${a.warnings.join('; ')}` : ''}`;
+  return `Arb +${a.profitPct}%: ${a.title} · ${legs}${a.warnings?.length ? ` · ${a.warnings.join('; ')}` : ''}`;
 }
 
 // Each cron job's last run and error, for /api/status.
@@ -2367,13 +2367,13 @@ async function watchBoard() {
   if (lic.polymarket) postAlert(out.map(a => describeBoardAlert(lic.kalshi ? a : { ...a, venues: a.venues.filter(v => v.key !== 'kalshi') })), 'Board alerts');
   return out;
 }
-// "🎯 Second chance: 3 sharps (2A 1B) hold Yes on "…" at 41¢ avg; it's 39¢ now · Kalshi 40¢ <url>"
+// "Second chance: 3 sharps (2A 1B) hold Yes on "…" at 41¢ avg; it's 39¢ now · Kalshi 40¢ <url>"
 function describeBoardAlert(a) {
   const mix = [a.A ? `${a.A}A` : '', a.B ? `${a.B}B` : ''].filter(Boolean).join(' ');
   const v = (a.venues || [])[0];
   const where = v ? ` · ${v.name}${v.buy ? `: ${v.buy}` : ''} ${v.american != null ? american(v.american) : cents(v.price)}` : ` · ${NO_VENUE}`;
   const url = v?.url && !(TAIL_REGION === 'us' && PM_LINK.test(v.url)) ? ` <${v.url}>` : '';
-  return `🎯 Second chance: ${a.wallets} sharp${a.wallets === 1 ? '' : 's'} (${mix}) hold ${a.outcome || '?'} on "${a.title}" at ${cents(a.avgEntry)} avg; it's ${cents(a.price)} now${where}${url}`;
+  return `Second chance: ${a.wallets} sharp${a.wallets === 1 ? '' : 's'} (${mix}) hold ${a.outcome || '?'} on "${a.title}" at ${cents(a.avgEntry)} avg; it's ${cents(a.price)} now${where}${url}`;
 }
 
 async function pollWhales() {
@@ -2621,13 +2621,13 @@ async function scanEsportsBoard() {
   esportsBoard.primed = true;
   return st;
 }
-// "🎮 CS2 · Spirit vs MOUZ (Bo3, 1:00 PM ET): MOUZ to win on Kalshi at 42¢, fair 45.1¢ (+7.4%) <link>"
+// "CS2 · Spirit vs MOUZ (Bo3, 1:00 PM ET): MOUZ to win on Kalshi at 42¢, fair 45.1¢ (+7.4%) <link>"
 function describeEsportsEdge(m, e) {
   const mk = m.markets.find(x => x.key === e.market);
   const what = e.kind === 'map' ? `${e.outcome} to win map ${mk?.n}` : e.kind === 'total' ? `${e.outcome} ${mk?.line} maps` : e.kind === 'spread' ? `${e.outcome} maps` : `${e.outcome} to win`;
   const when = m.start ? new Date(m.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : 'time TBD';
   const link = e.venue === 'kalshi' ? m.links.kalshi : TAIL_REGION === 'us' ? null : m.links.polymarket;
-  return `🎮 ${m.label} · ${m.teams.join(' vs ')} (${m.bestOf ? `Bo${m.bestOf}, ` : ''}${when}): ${what} on ${e.venue === 'kalshi' ? 'Kalshi' : 'Polymarket'} at ${cents(e.cost)}, fair ${cents(e.fair)} (+${(e.ev * 100).toFixed(1)}%)${link ? ` <${link}>` : ''}`;
+  return `${m.label} · ${m.teams.join(' vs ')} (${m.bestOf ? `Bo${m.bestOf}, ` : ''}${when}): ${what} on ${e.venue === 'kalshi' ? 'Kalshi' : 'Polymarket'} at ${cents(e.cost)}, fair ${cents(e.fair)} (+${(e.ev * 100).toFixed(1)}%)${link ? ` <${link}>` : ''}`;
 }
 // What one viewer may see of the board: venues they're licensed for, edges
 // only on venues they can trade, and Pro for the edges themselves.
@@ -2794,7 +2794,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.47.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.48.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3579,7 +3579,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.47.0',
+  version: '3.48.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3710,10 +3710,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.47.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.48.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`✅ Line Reaper v3.47.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.48.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

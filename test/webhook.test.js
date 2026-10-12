@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const W = require('../webhook');
 
-const ALERT = '🐋 B-grade sharp bought Matheus Camilo at 63¢ · 1u at Kalshi: YES Camilo 64¢ <https://kalshi.com/markets/kxufcfight/x>';
+const ALERT = 'B-grade sharp bought Matheus Camilo at 63¢ · 1u at Kalshi: YES Camilo 64¢ <https://kalshi.com/markets/kxufcfight/x>';
 
 test('webhook kind: ntfy, Telegram and Slack by host; anything else gets the Discord format', () => {
   assert.equal(W.webhookKind('https://ntfy.sh/line-reaper-x7q2'), 'ntfy');
@@ -20,7 +20,7 @@ test('each kind gets the alert in its own format; an ntfy push opens the alert\'
   assert.equal(n.data, ALERT.replace(/<|>/g, ''), 'plain text, emoji and all, the link unwrapped');
   assert.deepEqual(n.headers, { 'Content-Type': 'text/plain; charset=utf-8', Title: 'Line Reaper', Click: 'https://kalshi.com/markets/kxufcfight/x' });
   assert.equal(W.webhookRequest('https://ntfy.sh/t', 'no link here').headers.Click, undefined);
-  assert.equal(W.webhookRequest('https://ntfy.sh/t', 'x', { title: 'Line Reaper ⚡' }).headers.Title, 'Line Reaper', 'headers are ASCII');
+  assert.equal(W.webhookRequest('https://ntfy.sh/t', 'x', { title: 'Line Reaper ' }).headers.Title, 'Line Reaper', 'headers are ASCII');
 
   const t = W.webhookRequest('https://api.telegram.org/bot123:abc/sendMessage?chat_id=42', ALERT);
   assert.equal(t.url, 'https://api.telegram.org/bot123:abc/sendMessage');

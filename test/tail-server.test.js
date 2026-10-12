@@ -487,7 +487,7 @@ test('live stream carries tail, whale and xarb events; new arbs of 1%+ hit the w
   const text = posts.map(p => p.body.content).join('\n');
   assert.equal((text.match(/A-grade ElectionEdge bought Yes/g) || []).length, 1, 'the new market is pinged, the 0u top-up is not');
   assert.match(text, /bought Yes on "Will Jones win the Texas Senate election\?"/);
-  assert.match(text, /♻️ Arb \+\d+(\.\d+)?%: Who will be the next Pope\? · Kalshi Pietro Parolin 40¢ \+ Kalshi Luis Tagle 45¢ \+ Kalshi Someone else 5¢/);
+  assert.match(text, /Arb \+\d+(\.\d+)?%: Who will be the next Pope\? · Kalshi Pietro Parolin 40¢ \+ Kalshi Luis Tagle 45¢ \+ Kalshi Someone else 5¢/);
   assert.doesNotMatch(text, /Fed Chair/, 'the arb already seen is not posted again');
   assert.doesNotMatch(text, /UK Prime Minister/, 'a set not proven complete is never listed or alerted');
   await new Promise(r => setTimeout(r, 20));
@@ -530,7 +530,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.47.0');
+  assert.equal(body.version, '3.48.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -557,8 +557,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.47.0');
-  assert.equal((await get('/')).body.version, '3.47.0');
+  assert.equal(require('../package.json').version, '3.48.0');
+  assert.equal((await get('/')).body.version, '3.48.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -973,7 +973,7 @@ test('US mode strips polymarket.com links however deep, and nothing else', () =>
 
 test('the bundled app: opens on SHARP TAIL, venue line, no bankroll or dollar sizing, the footer, the ARBS tab, and its scripts parse', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert.match(html, /<button class="tab active" onclick="showTab\('tail',this\)">🐋 SHARP TAIL</, 'the first tab, open by default');
+  assert.match(html, /<button class="tab active" onclick="showTab\('tail',this\)">SHARP TAIL</, 'the first tab, open by default');
   assert.match(html, /<div class="page active" id="page-tail">/);
   for (const v of ['signals', 'board', 'traders', 'whales', 'record']) assert.ok(html.includes(`['${v}', `), v);
   assert.ok(!html.includes("['arbs', "), 'arbs have their own tab now');
@@ -996,7 +996,7 @@ test('the bundled app: opens on SHARP TAIL, venue line, no bankroll or dollar si
   assert.match(html, /onclick="tailToggleNotify\(\)"/);
   assert.match(html, /if \(tailNotifyOn\(\)\) for \(const s of sized\.slice\(0, 3\)\)/);
   // ARBS: the exchange arbs by default (and the watchlist), the sportsbook lab one tap away
-  assert.match(html, /showTab\('arb',this\)">♻️ ARBS</);
+  assert.match(html, /showTab\('arb',this\)">ARBS</);
   assert.match(html, /id="arbModeEx" onclick="arbMode\('exchanges'\)"/);
   assert.match(html, /<div id="arbBooks" style="display:none">/);
   assert.match(html, /tailGet\('\/api\/xarbs'\)/);
@@ -1089,7 +1089,7 @@ test('second chances on the live board: priced from the book, broadcast and ping
     assert.equal(live.price, 0.39);
     assert.ok(Array.isArray(live.venues));
     assert.ok(heard.some(a => a.id === live.id), 'broadcast');
-    assert.ok(posts.some(p => /🎯 Second chance: 1 sharp \(1A\) hold Yes on "Will Smith win the Ohio Senate election\?" at 40¢ avg; it's 39¢ now/.test(p.body.content)));
+    assert.ok(posts.some(p => /Second chance: 1 sharp \(1A\) hold Yes on "Will Smith win the Ohio Senate election\?" at 40¢ avg; it's 39¢ now/.test(p.body.content)));
     assert.deepEqual(await S.watchBoard(), [], 'still under: no repeat');
   } finally { S.tailEngine.book = realBook; S.liveListeners.delete(fn); }
 });
@@ -1189,7 +1189,7 @@ test('the webhook: an exit pings only when we tailed it and most of it went, nam
     next = [exit({ tag: 'out', soldShare: 0.8, full: true, tailed: { id: 'exit-test-entry', units: 1.2 } })];
     await S.streamTail([]);
     assert.equal(posts.length, 1);
-    assert.match(posts[0].body.content, /^🚪 Exit: A-grade ElectionEdge sold 80% of Yes on ".+" at 62¢ \(\$4,000\), bought at 41¢ · we tailed it 1\.2u$/);
+    assert.match(posts[0].body.content, /^Exit: A-grade ElectionEdge sold 80% of Yes on ".+" at 62¢ \(\$4,000\), bought at 41¢ · we tailed it 1\.2u$/);
   } finally { S.tailEngine.ingest = real; }
 
   // free users get the exit coarsened
@@ -1276,7 +1276,7 @@ test('exchange arbs: Kalshi against the games Polymarket US lists, re-priced on 
     assert.match(a.warnings.join(' '), /postponed or canceled/);
     assert.ok(news.some(x => x.id === a.id), 'news');
     const text = posts.map(p => p.body.content).join('\n');
-    assert.match(text, /♻️ Arb \+\d+(\.\d+)?%: New York K at Boston · Kalshi New York K 39¢ \+ Polymarket US Boston Celtics 56¢/);
+    assert.match(text, /Arb \+\d+(\.\d+)?%: New York K at Boston · Kalshi New York K 39¢ \+ Polymarket US Boston Celtics 56¢/);
     // the app lists it for Pro, with no polymarket.com anywhere
     const listed = (await get('/api/xarbs', PRO)).body;
     const row = listed.arbs.find(x => x.id === a.id);

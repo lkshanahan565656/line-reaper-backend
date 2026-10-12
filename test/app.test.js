@@ -16,3 +16,12 @@ test('the bundled app carries no API keys', () => {
   assert.doesNotMatch(html, /apiKey=\$\{/, 'key in a query string');
   assert.doesNotMatch(html, /\b[0-9a-f]{32}\b/, 'something shaped like an Odds API key');
 });
+
+// ready-to-sell UI: no emoji anywhere, first-visit welcome screen
+test('page has no emoji and ships the welcome screen', () => {
+  const pict = /[\u{1F300}-\u{1FAFF}☀-➿⭐⌀-⏿]|️/u;
+  const bad = html.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => pict.test(l.replace(/[✓→▲▼●○◆▸▾◐★✕✗]/g, '')));
+  assert.deepStrictEqual(bad.map(b => b[0]), []);
+  assert.ok(html.includes('id="welcome"') && html.includes('by sharps'));
+  assert.ok(html.includes("lsGet('lr_welcomed')"));
+});
