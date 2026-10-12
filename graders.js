@@ -75,6 +75,110 @@ function createLoLGrader(http, { ttlMs = 10 * 60e3, now = () => Date.now() } = {
   };
 }
 
+// ─── LoL via lolesports (Riot's own feed) ─────────────────────────────────────
+// Leaguepedia rate-limits shared IPs hard (Railway and GitHub runners alike),
+// so the main LoL source is the feed lolesports.com itself uses: the schedule
+// finds the match, getEventDetails lists its games, and the live-stats window
+// read after a game ends holds every player's final kills and assists.
+// Covers the leagues lolesports lists (Worlds, LCK, LPL, LEC, LCS, CBLOL, ...);
+// anything else falls back to Leaguepedia.
+const LOLE_API = 'https://esports-api.lolesports.com/persisted/gw';
+const LOLE_FEED = 'https://feed.lolesports.com/livestats/v1/window';
+const LOLE_HEADERS = { 'x-api-key': '0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z', 'User-Agent': 'Mozilla/5.0 (LineReaper pick grading)' };
+
+// Pure: schedule events → the pick's match (completed or not), nearest start
+// within windowMs (Underdog has listed a Worlds match three hours late),
+// preferring one with the pick's team.
+function loleMatchFor(events, pick, { windowMs = 6 * 3600e3 } = {}) {
+  const start = Date.parse(pick.startTime);
+  const teams = pickTeams(pick).map(squash);
+  const hasTeam = e => (e.match?.teams || []).some(t => [t.name, t.code].some(n => {
+    const q = squash(n);
+    return q && teams.some(w => w === q || (Math.min(w.length, q.length) >= 4 && (w.includes(q) || q.includes(w))));
+  }));
+  const c = (events || [])
+    .filter(e => e?.type === 'match' && e.match?.id && Math.abs(Date.parse(e.startTime) - start) <= windowMs)
+    .map(e => ({ e, gap: Math.abs(Date.parse(e.startTime) - start), team: hasTeam(e) }))
+    .sort((a, b) => (b.team - a.team) || (a.gap - b.gap));
+  return teams.length ? (c.find(x => x.team)?.e || null) : (c[0]?.e || null);
+}
+// Pure: a finished game's last window frame → the player's stat, matching
+// "VITLyncas" (team code + name) or the bare name.
+function loleStatFromWindow(data, player, stat) {
+  const frames = data?.frames || [];
+  const last = frames[frames.length - 1];
+  if (!last || last.gameState !== 'finished') return undefined;
+  const want = squash(player);
+  const meta = [...(data.gameMetadata?.blueTeamMetadata?.participantMetadata || []), ...(data.gameMetadata?.redTeamMetadata?.participantMetadata || [])];
+  const hit = meta.find(m => squash(m.summonerName) === want)
+    || meta.find(m => want.length >= 3 && squash(m.summonerName).endsWith(want) && squash(m.summonerName).length - want.length <= 5);
+  if (!hit) return undefined;
+  const row = [...(last.blueTeam?.participants || []), ...(last.redTeam?.participants || [])].find(p => p.participantId === hit.participantId);
+  const v = Number(stat === 'assists' ? row?.assists : row?.kills);
+  return Number.isFinite(v) ? v : undefined;
+}
+
+function createLoLesportsGrader(http, { ttlMs = 10 * 60e3, now = () => Date.now() } = {}) {
+  let sched = { at: 0, events: [], from: Infinity };   // from: the oldest start the pages reach
+  const windows = new Map();   // game id → final window (kept once finished)
+  async function schedule(oldest) {
+    if (now() - sched.at < ttlMs && sched.from <= oldest) return sched.events;
+    const events = [];
+    let token = null, from = Infinity;
+    for (let page = 0; page < 4; page++) {
+      const res = await http.get(`${LOLE_API}/getSchedule`, { params: { hl: 'en-US', ...(token ? { pageToken: token } : {}) }, headers: LOLE_HEADERS, timeout: 20000 });
+      const sc = res.data?.data?.schedule;
+      events.push(...(sc?.events || []));
+      token = sc?.pages?.older;
+      from = token ? Math.min(...events.map(e => Date.parse(e.startTime) || Infinity)) : -Infinity;
+      if (from <= oldest) break;
+    }
+    sched = { at: now(), events, from };
+    return events;
+  }
+  async function finalWindow(gameId, startMs) {
+    if (windows.has(gameId)) return windows.get(gameId);
+    // A starting time past the game's end returns its last frames; it must be
+    // a multiple of 10 seconds and not in the future.
+    const t = Math.floor(Math.min(now() - 60e3, startMs + 14 * 3600e3) / 10000) * 10000;
+    const res = await http.get(`${LOLE_FEED}/${gameId}`, { params: { startingTime: new Date(t).toISOString() }, headers: { 'User-Agent': LOLE_HEADERS['User-Agent'] }, timeout: 20000 });
+    const frames = res.data?.frames || [];
+    if (frames[frames.length - 1]?.gameState === 'finished') windows.set(gameId, res.data);
+    while (windows.size > 500) windows.delete(windows.keys().next().value);
+    return res.data;
+  }
+  return async function gradeLoLesports(pick) {
+    const start = Date.parse(pick.startTime);
+    if (!Number.isFinite(start)) return null;
+    const ev = loleMatchFor(await schedule(start - 6 * 3600e3), pick);
+    if (!ev) return null;
+    const det = await http.get(`${LOLE_API}/getEventDetails`, { params: { hl: 'en-US', id: ev.match.id }, headers: LOLE_HEADERS, timeout: 20000 });
+    const games = (det.data?.data?.event?.match?.games || []).filter(g => g.state === 'completed');
+    const maps = {};
+    let found = false;
+    for (const g of games) {
+      const v = loleStatFromWindow(await finalWindow(g.id, start), pick.player, pick.stat);
+      if (v === undefined) continue;
+      maps[g.number] = v; found = true;
+    }
+    if (!found) return null;
+    return { maps, complete: ev.state === 'completed', matchId: ev.match.id };
+  };
+}
+
+// LoL: lolesports first, Leaguepedia when lolesports has no such match.
+function createLoLGraderChain(...graders) {
+  return async function gradeLoLChain(pick) {
+    let lastErr = null;
+    for (const g of graders) {
+      try { const r = await g(pick); if (r) return r; }
+      catch (e) { lastErr = e; }
+    }
+    if (lastErr) throw lastErr;
+    return null;
+  };
+}
+
 // Pure: OpenDota match list → per-map stat for the series starting near kickoff.
 // matches: [{ start_time (unix s), duration (s), kills, assists }]
 function dotaMapsFromMatches(matches, startMs, stat) {
@@ -140,12 +244,19 @@ function bo3TeamMatch(match, team) {
   }
   return false;
 }
+// Pure: the teams a pick could be on: its own, else both from the book's
+// match title ("Nuclear TigeRES vs XI Esport").
+function pickTeams(pick) {
+  if (squash(pick.team).length >= 2) return [pick.team];
+  return String(pick.matchTitle || '').split(/\s+(?:vs\.?|v|@|at)\s+/i).map(s => s.trim()).filter(s => squash(s).length >= 2);
+}
 // Pure: finished matches that could be the pick's, best first: its team's,
 // then the nearest start. Within windowMs of kickoff.
 function bo3Candidates(matches, pick, { windowMs = 3 * 3600e3 } = {}) {
   const start = Date.parse(pick.startTime);
+  const teams = pickTeams(pick);
   return (matches || [])
-    .map(m => ({ m, gap: Math.abs((bo3Ms(m.start_date) ?? Infinity) - start), team: bo3TeamMatch(m, pick.team) }))
+    .map(m => ({ m, gap: Math.abs((bo3Ms(m.start_date) ?? Infinity) - start), team: teams.some(t => bo3TeamMatch(m, t)) }))
     .filter(x => x.gap <= windowMs && x.m.status === 'finished' && (x.m.games || []).length)
     .sort((a, b) => (b.team - a.team) || (a.gap - b.gap));
 }
@@ -164,9 +275,15 @@ function bo3PlayerStat(rows, player, stat) {
 // 100, newest first, back to the oldest kickoff asked for); each map's stats
 // are kept once bo3 has them (they appear when the demo is parsed, a while
 // after the map). The series is complete when every map it played has stats.
-function createCsGrader(http, { ttlMs = 5 * 60e3, maxPages = 4, now = () => Date.now(), pause = 300 } = {}) {
+//
+// bo3 only parses demos for some matches: lower-tier ones keep empty stats
+// for good. When the pick's own match is over by more than giveUpMs and no
+// map has stats, the grader says so ({ unavailable }) and the tracker voids
+// the pick instead of holding it for three days and calling it a review.
+function createCsGrader(http, { ttlMs = 5 * 60e3, emptyTtlMs = 30 * 60e3, giveUpMs = 18 * 3600e3, maxPages = 4, now = () => Date.now(), pause = 300 } = {}) {
   let list = { at: 0, rows: [], oldest: Infinity };
-  const maps = new Map();   // game id → player rows
+  const maps = new Map();    // game id → player rows
+  const empty = new Map();   // game id → ms we last saw no rows (not asked again for emptyTtlMs)
   const wait = ms => (ms > 0 ? new Promise(r => setTimeout(r, ms)) : null);
   async function matchesSince(from) {
     if (now() - list.at < ttlMs && list.oldest <= from) return list.rows;
@@ -188,10 +305,12 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, maxPages = 4, now = () => Date
   }
   async function mapRows(id) {
     if (maps.has(id)) return maps.get(id);
+    if (now() - (empty.get(id) || -Infinity) < emptyTtlMs) return [];
     const res = await http.get(`${BO3_API}/games/${id}/players_stats`, { headers: BO3_HEADERS, timeout: 20000 });
     const rows = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.results) ? res.data.results : [];
-    if (rows.length) maps.set(id, rows);
+    if (rows.length) { maps.set(id, rows); empty.delete(id); } else empty.set(id, now());
     while (maps.size > 2000) maps.delete(maps.keys().next().value);
+    while (empty.size > 4000) empty.delete(empty.keys().next().value);
     await wait(pause);
     return rows;
   }
@@ -216,8 +335,13 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, maxPages = 4, now = () => Date
       }
       if (found) return { maps: out, complete: parsed === games.length, matchId: m.slug || m.id };
     }
+    const own = cands.find(c => c.team)?.m;
+    const ended = own && (bo3Ms(own.end_date) ?? bo3Ms(own.start_date));
+    if (own && ended != null && now() - ended > giveUpMs && !own.games.some(g => maps.has(g.id))) {
+      return { unavailable: `bo3.gg has no player stats for ${own.slug || 'this match'} (no demo parsed)` };
+    }
     return null;
   };
 }
 
-module.exports = { createLoLGrader, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
+module.exports = { pickTeams, createLoLGrader, createLoLesportsGrader, createLoLGraderChain, loleMatchFor, loleStatFromWindow, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };

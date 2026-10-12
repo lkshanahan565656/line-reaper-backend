@@ -173,6 +173,18 @@ function propRows(picks, verdict, o, now) {
 
 // sports props on the pick'em apps, priced off a sharp line by the EV screen
 // (ev.js): Kalshi's player ladders, or sportsbooks when a key is set. 1u each.
+const PROP_NAMES = {
+  anytime_td: 'touchdowns', rush_rec_yds: 'rush + rec yards', rush_att: 'rush attempts', pass_comp: 'completions',
+  pass_att: 'pass attempts', pass_ints: 'interceptions thrown', hits_allowed: 'hits allowed', hits_runs_rbis: 'hits + runs + RBIs',
+  pra: 'pts + rebs + asts', pts_rebs: 'pts + rebs', pts_asts: 'pts + asts', rebs_asts: 'rebs + asts', stocks: 'steals + blocks',
+  ftm: 'free throws made', rec_yds: 'receiving yards', rush_yds: 'rushing yards', pass_yds: 'passing yards', pass_tds: 'passing TDs',
+  rbis: 'RBIs', shots_on_goal: 'shots on goal',
+};
+const propName = m => PROP_NAMES[m] || String(m || '').replace(/_/g, ' ');
+function dfsBet(r) {
+  if (r.market === 'anytime_td' && r.point === 0.5) return r.side === 'Over' ? 'Scores a touchdown' : 'No touchdown';
+  return `${r.side === 'Over' ? 'More' : 'Less'} than ${r.point} ${propName(r.market)}`;
+}
 function dfsRows(rows, o, now) {
   const out = [];
   for (const r of rows) {
@@ -183,7 +195,7 @@ function dfsRows(rows, o, now) {
     const ref = (r.sharpBooks || []).map(b => (b === 'kalshi_props' ? 'Kalshi' : b)).join(', ') || 'consensus';
     out.push({
       id: `dfs:${r.group}|${r.side}|${r.book}`, kind: 'sportsProp', label: `${r.sport} prop`, title: r.player,
-      bet: `${r.side === 'Over' ? 'More' : 'Less'} than ${r.point} ${r.market.replace(/_/g, ' ')}`, venue: book, price: null, american: null, maxPrice: null,
+      bet: dfsBet(r), venue: book, price: null, american: null, maxPrice: null,
       units: 1, ev: r4(r.ev / 100), verdict: 'early', why: [`${ref} prices it at ${r.fairProb}% to hit`],
       url: null, startsAt: r.start, at: null, warning: null,
     });

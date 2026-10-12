@@ -75,7 +75,7 @@ test('locks at kickoff, ignores the board afterwards, and auto-grades', async ()
   await tr.recordBoard([boardPick({ ppLine: 50.5 })]);
   assert.equal((await tr.list())[0].closeLine, 38.5, 'frozen after lock');
 
-  assert.deepEqual(await tr.gradeDue(), { graded: 0, review: 0, waiting: 0, errors: 0 }, 'too early to grade');
+  assert.deepEqual(await tr.gradeDue(), { graded: 0, review: 0, void: 0, waiting: 0, errors: 0 }, 'too early to grade');
   clock.t += 2 * HOUR;
   const r = await tr.gradeDue();
   assert.equal(r.graded, 1);
@@ -85,7 +85,7 @@ test('locks at kickoff, ignores the board afterwards, and auto-grades', async ()
   assert.ok(Math.abs(row.profit - (1 / PP_IMPLIED - 1)) < 1e-9);
 });
 
-test('partial series goes to review; unsupported sport waits then goes to review', async () => {
+test('a 2-0 on a Maps 1-3 line grades on the maps played; unsupported sport waits then goes to review', async () => {
   const clock = { t: T0 };
   const graders = { CS: async () => ({ maps: { 1: 20, 2: 18 }, complete: true }) };
   const tr = makeTracker(clock, graders);
@@ -96,11 +96,13 @@ test('partial series goes to review; unsupported sport waits then goes to review
   clock.t = T0 + 7 * HOUR;
   await tr.lockStarted();
   let r = await tr.gradeDue();
-  assert.equal(r.review, 1);
+  assert.equal(r.graded, 1);
   assert.equal(r.waiting, 1);
   const cs = (await tr.list({ sport: 'CS' }))[0];
-  assert.equal(cs.status, 'review');
+  assert.equal(cs.status, 'graded');
   assert.equal(cs.result, 38);
+  assert.equal(cs.outcome, 'loss');
+  assert.match(cs.note, /maps played/);
 
   clock.t = T0 + 80 * HOUR;
   r = await tr.gradeDue();
@@ -226,4 +228,63 @@ test('rows stored under the old exact-start id still match', async () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].id, legacy.id);
   assert.equal(rows[0].closeLine, 39.5);
+});
+
+test('a series missing map 1 or 2 (a Bo1, or the wrong match) is voided, not graded', async () => {
+  const clock = { t: T0 };
+  const tr = makeTracker(clock, { CS: async () => ({ maps: { 1: 12 }, complete: true }) });
+  await tr.recordBoard([boardPick({ market: 'MAPS 1-2 Kills' })]);
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  const r = await tr.gradeDue();
+  assert.equal(r.void, 1);
+  const [row] = await tr.list();
+  assert.equal(row.status, 'void');
+  assert.match(row.note, /1 of 2 maps/);
+});
+
+test('a grader that says the stats will never exist voids the pick', async () => {
+  const clock = { t: T0 };
+  const tr = makeTracker(clock, { CS: async () => ({ unavailable: 'bo3.gg has no player stats for x (no demo parsed)' }) });
+  await tr.recordBoard([boardPick()]);
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  assert.equal((await tr.gradeDue()).void, 1);
+  const [row] = await tr.list();
+  assert.equal(row.status, 'void');
+  assert.equal(row.gradedBy, 'auto');
+  assert.match(row.note, /no demo parsed/);
+});
+
+test('grading rotates: rows that never find stats cannot starve the rest', async () => {
+  const clock = { t: T0 };
+  const asked = [];
+  const tr = makeTracker(clock, {
+    CS: async p => { asked.push(p.player); return null; },
+    LOL: async p => { asked.push(p.player); return { maps: { 1: 3, 2: 4 }, complete: true }; },
+  });
+  const picks = [];
+  for (let i = 0; i < 6; i++) picks.push(boardPick({ player: `cs${i}` }));
+  picks.push(boardPick({ sport: 'LOL', player: 'Faker', market: 'MAPS 1-2 Kills', ppLine: 5.5 }));
+  await tr.recordBoard(picks);
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  await tr.gradeDue({ limit: 4 });
+  clock.t += 60e3;
+  const r = await tr.gradeDue({ limit: 4 });
+  assert.equal(r.graded, 1, 'the LoL row gets its turn on the second sweep');
+  assert.equal((await tr.list({ sport: 'LOL' }))[0].result, 7);
+});
+
+test('grades on the book label, not an inferred span saved on older rows', async () => {
+  const clock = { t: T0 };
+  const tr = makeTracker(clock, { CS: async () => ({ maps: { 1: 10, 2: 9 }, complete: true }) });
+  await tr.recordBoard([boardPick({ market: 'MAPS 1-2 Kills', displayMarket: 'MAPS 1-3 Kills', ppLine: 18.5 })]);
+  const [row] = await tr.list();
+  assert.deepEqual(row.maps, [1, 2]);
+  row.maps = [1, 2, 3];   // what an older build saved
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  assert.equal((await tr.gradeDue()).graded, 1);
+  assert.equal((await tr.list())[0].result, 19);
 });

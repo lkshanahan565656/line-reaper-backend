@@ -18,11 +18,13 @@ const { canonName, canonMarket, probToAmerican } = require('./ev');
 const KALSHI_EVENTS = 'https://api.elections.kalshi.com/trade-api/v2/events';
 // Ladder series by league. Tickers Kalshi doesn't list just come back empty.
 const SERIES = {
-  MLB: ['KXMLBKS', 'KXMLBHITS', 'KXMLBTB', 'KXMLBHR', 'KXMLBRBI'],
-  NFL: ['KXNFLRECYDS', 'KXNFLRSHYDS', 'KXNFLPASSYDS', 'KXNFLREC', 'KXNFLPASSTDS'],
-  NBA: ['KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBA3PT'],
-  WNBA: ['KXWNBAPTS', 'KXWNBAREB', 'KXWNBAAST'],
-  NHL: ['KXNHLGOAL', 'KXNHLSOG', 'KXNHLPTS', 'KXNHLAST'],
+  MLB: ['KXMLBKS', 'KXMLBHIT', 'KXMLBTB', 'KXMLBHR', 'KXMLBRBI', 'KXMLBHRR', 'KXMLBHA'],
+  NFL: ['KXNFLRECYDS', 'KXNFLRSHYDS', 'KXNFLPASSYDS', 'KXNFLREC', 'KXNFLPASSTDS', 'KXNFLTD', 'KXNFLRRYDS',
+    'KXNFLRSHATT', 'KXNFLPASSCOMP', 'KXNFLPASSATT', 'KXNFLPASSINT'],
+  NBA: ['KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBA3PT', 'KXNBAPRA', 'KXNBAPR', 'KXNBAPA', 'KXNBARA',
+    'KXNBASTL', 'KXNBABLK', 'KXNBASTOCKS', 'KXNBAFTM'],
+  WNBA: ['KXWNBAPTS', 'KXWNBAREB', 'KXWNBAAST', 'KXWNBA3PT'],
+  NHL: ['KXNHLGOAL', 'KXNHLPTS', 'KXNHLAST', 'KXNHLSAVES'],
 };
 const DEFAULTS = {
   maxSpread: 0.06,      // widest yes bid/ask gap we treat as a price
@@ -116,15 +118,27 @@ function buildGames(events, dfsLines, o = DEFAULTS, now = Date.now()) {
   return { games: [...games.values()], counts: { ladders: ladders.length, matched, interpolated } };
 }
 
-// Polite fetch of every ladder series → [{ ev, league }]
-async function fetchEvents(http, series = SERIES) {
+// Polite fetch of every ladder series → [{ ev, league }]. Kalshi answers 429
+// to a quick run of requests (half the series came back empty that way), so
+// requests are spaced out and a 429 waits and tries once more.
+async function fetchEvents(http, series = SERIES, { pause = 400, retryAfter = 3000 } = {}) {
   const out = [], errors = [];
+  const wait = ms => (ms > 0 ? new Promise(r => setTimeout(r, ms)) : null);
   for (const [league, tickers] of Object.entries(series)) {
     for (const t of tickers) {
-      try {
-        const res = await http.get(KALSHI_EVENTS, { params: { series_ticker: t, status: 'open', with_nested_markets: true, limit: 200 }, timeout: 20000 });
-        for (const ev of res?.data?.events || []) out.push({ ev, league });
-      } catch (e) { errors.push(`${t}: ${e.response?.status || e.message}`); }
+      const params = { series_ticker: t, status: 'open', with_nested_markets: true, limit: 200 };
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await http.get(KALSHI_EVENTS, { params, timeout: 20000 });
+          for (const ev of res?.data?.events || []) out.push({ ev, league });
+          break;
+        } catch (e) {
+          if (e.response?.status === 429 && attempt === 0) { await wait(retryAfter); continue; }
+          errors.push(`${t}: ${e.response?.status || e.message}`);
+          break;
+        }
+      }
+      await wait(pause);
     }
   }
   return { events: out, errors };
