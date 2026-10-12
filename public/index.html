@@ -685,31 +685,30 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .live-pill { letter-spacing:1px; }
 body::before { background:none; }
 /* Welcome screen */
-.welcome { position:fixed; inset:0; z-index:500; display:none; overflow-y:auto; background:var(--bg); background-image:radial-gradient(ellipse 700px 420px at 50% -10%, rgba(16,185,129,.12), transparent 70%); }
+.welcome { position:fixed; inset:0; z-index:500; display:none; overflow-y:auto; background:var(--bg); }
 .welcome.open { display:block; }
-.wl-wrap { max-width:460px; margin:0 auto; padding:34px 22px 40px; }
-.wl-brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:3px; font-size:15px; margin-bottom:34px; }
-.wl-brand b { font-weight:300; color:#10b981; margin-left:7px; }
-.wl-h { font-size:34px; line-height:1.1; font-weight:800; letter-spacing:-.5px; margin-bottom:12px; }
-.wl-h span { color:#10b981; }
-.wl-sub { color:var(--text2); font-size:14px; line-height:1.55; margin-bottom:26px; }
-.wl-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 18px 12px; margin-bottom:22px; }
-.wl-card-top { display:flex; justify-content:space-between; align-items:center; font-size:11px; letter-spacing:1.5px; color:var(--text2); font-weight:600; margin-bottom:14px; }
-.wl-tag { font-size:10px; letter-spacing:1px; color:#10b981; border:1px solid rgba(16,185,129,.35); border-radius:20px; padding:2px 9px; }
-.wl-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:4px; }
-.wl-stat .k { font-size:10px; letter-spacing:1px; color:var(--muted2); font-weight:600; }
-.wl-stat .v { font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:600; color:#34d399; margin-top:3px; }
-.wl-stat .v.n { color:var(--text); }
-.wl-card svg.curve { display:block; width:100%; height:78px; margin-top:8px; }
-.wl-pts { list-style:none; margin-bottom:24px; }
-.wl-pts li { display:flex; gap:11px; font-size:13px; color:var(--text2); line-height:1.5; padding:7px 0; }
-.wl-pts li i { flex:none; width:6px; height:6px; margin-top:7px; border-radius:50%; background:#10b981; }
-.wl-pts b { color:var(--text); font-weight:600; }
-.wl-btn { display:block; width:100%; padding:14px; border-radius:10px; border:1px solid var(--border2); background:transparent; color:var(--text); font:600 13px 'Inter',sans-serif; letter-spacing:1px; cursor:pointer; margin-bottom:10px; }
-.wl-btn.primary { background:#10b981; border-color:#10b981; color:#04120c; font-weight:800; }
-.wl-skip { display:block; text-align:center; margin-top:6px; font-size:13px; color:var(--text2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; background:none; border:none; width:100%; padding:10px; font-family:'Inter',sans-serif; }
-.wl-skip:hover { color:var(--text2); }
-.wl-fine { margin-top:18px; font-size:10.5px; color:var(--muted2); line-height:1.5; text-align:center; }
+.wl-wrap { max-width:440px; margin:0 auto; padding:40px 24px 36px; min-height:100%; display:flex; flex-direction:column; }
+.wl-brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:3px; font-size:13px; padding-bottom:18px; margin-bottom:40px; border-bottom:1px solid var(--border); }
+.wl-brand b { font-weight:300; color:var(--text2); margin-left:6px; }
+.wl-h { font-size:38px; line-height:1.04; font-weight:700; letter-spacing:-1px; margin-bottom:14px; }
+.wl-sub { color:var(--text2); font-size:14px; line-height:1.6; margin-bottom:30px; max-width:380px; }
+.wl-rec { border-top:1px solid var(--border2); margin-bottom:6px; }
+.wl-rec-top { display:flex; justify-content:space-between; font-size:11px; letter-spacing:1.2px; color:var(--muted2); font-weight:600; padding:10px 0; border-bottom:1px solid var(--border); }
+.wl-row { display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px solid var(--border); font-size:13px; color:var(--text2); }
+.wl-row .v { font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
+.wl-row .v.up { color:#34d399; }
+.wl-note { font-size:11px; color:var(--muted2); line-height:1.5; margin:10px 0 30px; }
+.wl-list { list-style:none; margin:0 0 30px; padding:0; counter-reset:wl; }
+.wl-list li { display:grid; grid-template-columns:26px 1fr; font-size:13px; color:var(--text2); line-height:1.5; padding:9px 0; border-top:1px solid var(--border); counter-increment:wl; }
+.wl-list li::before { content:counter(wl, decimal-leading-zero); font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted2); padding-top:2px; }
+.wl-list b { color:var(--text); font-weight:600; }
+.wl-actions { margin-top:auto; }
+.wl-btn { display:block; width:100%; padding:13px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text); font:600 13px 'Inter',sans-serif; letter-spacing:.4px; cursor:pointer; margin-bottom:10px; }
+.wl-btn.primary { background:var(--text); border-color:var(--text); color:var(--bg); }
+.wl-skip { display:block; text-align:center; font-size:13px; color:var(--text2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; background:none; border:none; width:100%; padding:10px; font-family:'Inter',sans-serif; }
+.wl-skip.solo { border:1px solid var(--text); border-radius:6px; text-decoration:none; background:var(--text); color:var(--bg); font-weight:600; padding:13px; }
+@media (max-height:860px) { .wl-wrap { padding-top:24px; } .wl-brand { margin-bottom:26px; } .wl-sub { margin-bottom:20px; } .wl-note { margin-bottom:16px; } .wl-list { margin-bottom:18px; } .wl-row { padding:8px 0; } }
+.wl-fine { margin-top:16px; font-size:10.5px; color:var(--muted2); line-height:1.5; }
 
 /* ── Layout: More menu, customizer, foldable help ─────────────── */
 .tab-row { position:relative; align-items:center; }
@@ -782,26 +781,26 @@ body.no-help .clv-info { display:none; }
 <div class="welcome" id="welcome" role="dialog" aria-label="Welcome to Line Reaper">
   <div class="wl-wrap">
     <div class="wl-brand"><svg class="lr-mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></div>
-    <h1 class="wl-h">Made for sharps,<br><span>by sharps.</span></h1>
-    <p class="wl-sub">Line Reaper tracks the sharpest money on the exchanges and sportsbooks, grades every alert, and shows you which plays have actually earned their edge. The same tools we bet with.</p>
-    <div class="wl-card">
-      <div class="wl-card-top"><span id="wlYear">2026 RECORD</span><span class="wl-tag">TRACKED ON PIKKIT</span></div>
-      <div class="wl-stats">
-        <div class="wl-stat"><div class="k">PROFIT</div><div class="v" id="wlProfit">+850.00u</div></div>
-        <div class="wl-stat"><div class="k">ROI</div><div class="v" id="wlRoi">+24.90%</div></div>
-        <div class="wl-stat"><div class="k">BEATING CLV</div><div class="v n" id="wlClv">71.64%</div></div>
-      </div>
-      <svg class="curve" viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="wlg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d399" stop-opacity=".28"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></linearGradient></defs><path d="M0 72 L18 70 L38 69 L58 70 L72 66 L84 56 L96 53 L110 50 L124 49 L136 41 L146 36 L158 37 L168 34 L184 34 L200 30 L214 28 L226 22 L238 19 L250 20 L262 12 L272 9 L284 6 L300 3 L300 80 L0 80Z" fill="url(#wlg)"/><path d="M0 72 L18 70 L38 69 L58 70 L72 66 L84 56 L96 53 L110 50 L124 49 L136 41 L146 36 L158 37 L168 34 L184 34 L200 30 L214 28 L226 22 L238 19 L250 20 L262 12 L272 9 L284 6 L300 3" fill="none" stroke="#34d399" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+    <h1 class="wl-h">Made for sharps,<br>by sharps.</h1>
+    <p class="wl-sub">We bet on the exchanges every day. Line Reaper is the tracker we built for it: sharp money flagged and graded, arbs and edges priced, every result kept on the record.</p>
+    <div class="wl-rec">
+      <div class="wl-rec-top"><span id="wlYear">2026 RECORD</span><span>TRACKED ON PIKKIT</span></div>
+      <div class="wl-row"><span>Profit</span><span class="v up" id="wlProfit">+850.00u</span></div>
+      <div class="wl-row"><span>ROI</span><span class="v up" id="wlRoi">+24.90%</span></div>
+      <div class="wl-row"><span>Bets beating closing line</span><span class="v" id="wlClv">71.64%</span></div>
     </div>
-    <ul class="wl-pts">
-      <li><i></i><span><b>Sharp Tail.</b> Follow the exchange accounts that win, with sized units and a live grade on every alert.</span></li>
-      <li><i></i><span><b>Arbs and edges.</b> Cross-book and exchange arbitrage, plus +EV across sportsbooks.</span></li>
-      <li><i></i><span><b>Esports.</b> Match boards, props and model edges for CS2, LoL, Valorant and Dota.</span></li>
+    <p class="wl-note">Our own bets, verified on Pikkit. Alerts in the app are graded the same way, win or lose.</p>
+    <ul class="wl-list">
+      <li><span><b>Sharp Tail.</b> Follow the exchange accounts that win, with sized units and a live grade on every alert.</span></li>
+      <li><span><b>Arbs and edges.</b> Cross-book and exchange arbitrage, plus +EV across sportsbooks.</span></li>
+      <li><span><b>Esports.</b> Match boards, props and model edges for CS2, LoL, Valorant and Dota.</span></li>
     </ul>
-    <button class="wl-btn primary" id="wlCreate" style="display:none" onclick="welcomeGo('signup')">CREATE ACCOUNT</button>
-    <button class="wl-btn" id="wlLogin" style="display:none" onclick="welcomeGo('login')">LOG IN</button>
-    <button class="wl-skip" id="wlEnter" onclick="welcomeGo()">Enter the app</button>
-    <div class="wl-fine">Betting involves risk. Past results do not guarantee future returns. 21+ where legal.</div>
+    <div class="wl-actions">
+      <button class="wl-btn primary" id="wlCreate" style="display:none" onclick="welcomeGo('signup')">Create account</button>
+      <button class="wl-btn" id="wlLogin" style="display:none" onclick="welcomeGo('login')">Log in</button>
+      <button class="wl-skip solo" id="wlEnter" onclick="welcomeGo()">Enter the app</button>
+      <div class="wl-fine">Betting involves risk. Past results do not guarantee future returns. 21+ where legal.</div>
+    </div>
   </div>
 </div>
 
@@ -2442,10 +2441,11 @@ function layFoldLabel(info) {
 })();
 
 // ── WELCOME ─────────────────────────────────────────────────────────────────
-// First visit only. Account buttons appear only when the server can actually
-// make accounts, so nobody is ever blocked: "Enter the app" always works.
+// Shows on every fresh open of the app (once per browser session) while signed
+// out, so it is the sign-in screen. Account buttons appear only when the server
+// can make accounts; "Enter the app" always works so nobody is blocked.
 function welcomeInit() {
-  if (acct.token || lsGet('lr_welcomed')) return;
+  if (acct.token || ssGet('lr_welcomed')) return;
   const w = document.getElementById('welcome');
   if (!w) return;
   w.classList.add('open');
@@ -2454,12 +2454,15 @@ function welcomeInit() {
     if (s.accounts?.authSecretSet) {
       document.getElementById('wlCreate').style.display = 'block';
       document.getElementById('wlLogin').style.display = 'block';
-      document.getElementById('wlEnter').textContent = 'Continue without an account';
+      const e = document.getElementById('wlEnter');
+      e.textContent = 'Continue without an account';
+      e.classList.remove('solo');
     }
   }).catch(() => {});
 }
+function ssGet(k) { try { return sessionStorage.getItem(k); } catch { return null; } }
 function welcomeGo(mode) {
-  lsSet('lr_welcomed', '1');
+  try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
   document.getElementById('welcome').classList.remove('open');
   document.body.style.overflow = '';
   if (mode) acctOpen(mode);
