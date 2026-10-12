@@ -461,6 +461,38 @@ body::before {
 .esm-btn { background: #8b5cf6; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .esm-foot { font-size: 11px; color: #64748b; line-height: 1.6; margin-top: 18px; }
 .esm-sharp { color: #f59e0b; }
+.es-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 4px 0 10px; }
+.es-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
+.es-field select { background: rgba(15,23,42,.8); color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 120px; }
+.es-search { flex: 1; min-width: 160px; }
+.es-tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.es-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.es-seg button { background: transparent; color: #94a3b8; border: 0; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.es-seg button + button { border-left: 1px solid var(--border); }
+.es-seg button.active { background: rgba(139,92,246,.18); color: #f1f5f9; }
+.es-actions { display: flex; gap: 6px; }
+.es-sec { margin-bottom: 18px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); }
+.es-sec-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); border-left: 4px solid var(--bk); background: linear-gradient(90deg, color-mix(in srgb, var(--bk) 16%, transparent), transparent); }
+.es-sec-head img { width: 22px; height: 22px; border-radius: 5px; }
+.es-sec-head b { font-size: 14px; color: #f1f5f9; letter-spacing: .04em; }
+.es-sec-head span { margin-left: auto; font-size: 11px; color: #94a3b8; }
+.es-plays { width: 100%; border-collapse: collapse; }
+.es-plays th { padding: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; text-align: center; background: rgba(0,0,0,.25); }
+.es-plays th:nth-child(2), .es-plays td:nth-child(2) { text-align: left; }
+.es-plays td { padding: 9px 8px; text-align: center; border-top: 1px solid rgba(255,255,255,.04); font-size: 12px; color: #cbd5e1; }
+.es-plays .pl { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+.es-plays .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+.es-plays .tag { font-size: 10px; color: #a78bfa; font-weight: 700; background: rgba(139,92,246,.15); padding: 1px 6px; border-radius: 3px; margin-left: 6px; letter-spacing: .06em; }
+.es-pill { display: inline-block; min-width: 42px; padding: 4px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; }
+.es-pill.line { background: color-mix(in srgb, var(--bk) 25%, transparent); color: #fff; border: 1px solid var(--bk); }
+.es-pill.model { background: rgba(148,163,184,.12); color: #e2e8f0; border: 1px solid rgba(148,163,184,.25); }
+.es-lean { font-weight: 800; letter-spacing: .06em; font-size: 12px; }
+.es-lean.over { color: #10b981; } .es-lean.under { color: #f87171; }
+.es-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.es-unavail { font-size: 11px; color: #64748b; margin: -4px 0 12px; }
+.es-go { display: inline-block; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--bk); color: #f1f5f9; font-size: 11px; font-weight: 700; text-decoration: none; }
+.es-plays .show-sm { display: none; }
+@media (max-width: 640px) { .es-plays .hide-sm { display: none; } .es-plays .show-sm { display: block; } .es-plays td { padding: 8px 5px; } .es-plays .pl { font-size: 13px; } .es-field select { min-width: 0; } .es-field { flex: 1 1 40%; } .es-pill { min-width: 0; padding: 3px 6px; font-size: 12px; } }
 .esm-h2h { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; font-size: 12px; }
 .esm-h2h > div { background: rgba(148,163,184,.06); border: 1px solid rgba(148,163,184,.14); border-radius: 8px; padding: 8px 10px; }
 .esm-h2h h5 { margin: 0 0 4px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; font-weight: 600; }
@@ -1030,7 +1062,7 @@ body.no-help .clv-info { display:none; }
 
   <div id="esPropsPane" style="display:none">
   <div class="clv-info" style="border-left: 3px solid #8b5cf6">
-    <strong style="color:#e8e8e8">PLAYER PROPS</strong> — Underdog and PrizePicks esports lines, priced by the kills model from each player's recent maps and the match price.
+    <strong style="color:#e8e8e8">PLAYER PROPS</strong> Every esports prop line, priced by our model from each player's recent maps and the match price.
   </div>
 
   <div class="row" id="esportsSportRow" style="margin: 12px 0; flex-wrap: wrap; gap:6px">
@@ -1043,29 +1075,24 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" onclick="loadEsports()" style="margin-left:auto;background:rgba(139,92,246,.1);border-color:#8b5cf6;color:#a78bfa">REFRESH</button>
   </div>
 
-  <div class="row" id="esportsEVRow" style="margin-bottom: 10px; gap: 6px; align-items: center; flex-wrap:wrap">
-    <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace">PROP</span>
-    <button class="sport-chip active" data-mkt="all" onclick="setEsportsMarket('all')" style="font-size:10px;padding:3px 10px">ALL</button>
-    <button class="sport-chip" data-mkt="k" onclick="setEsportsMarket('k')" style="font-size:10px;padding:3px 10px">KILLS</button>
-    <button class="sport-chip" data-mkt="hs" onclick="setEsportsMarket('hs')" style="font-size:10px;padding:3px 10px">HEADSHOTS</button>
-    <button class="sport-chip" data-mkt="ast" onclick="setEsportsMarket('ast')" style="font-size:10px;padding:3px 10px">ASSISTS</button>
-    <span style="width:10px"></span>
-    <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace">MAPS</span>
-    <button class="sport-chip active" data-span="all" onclick="setEsportsSpan('all')" style="font-size:10px;padding:3px 10px">ALL</button>
-    <button class="sport-chip" data-span="1" onclick="setEsportsSpan('1')" style="font-size:10px;padding:3px 10px">MAP 1</button>
-    <button class="sport-chip" data-span="1-2" onclick="setEsportsSpan('1-2')" style="font-size:10px;padding:3px 10px">1-2</button>
-    <button class="sport-chip" data-span="1-3" onclick="setEsportsSpan('1-3')" style="font-size:10px;padding:3px 10px">1-3</button>
+  <div class="es-tools">
+    <label class="es-field"><span>Prop</span><select id="esMarketSel" onchange="setEsportsMarket(this.value)"><option value="all">All props</option><option value="k">Kills</option><option value="hs">Headshots</option><option value="ast">Assists</option><option value="fp">Fantasy</option></select></label>
+    <label class="es-field"><span>Maps</span><select id="esSpanSel" onchange="setEsportsSpan(this.value)"><option value="all">All maps</option><option value="1">Map 1</option><option value="1-2">Maps 1-2</option><option value="1-3">Maps 1-3</option></select></label>
+    <label class="es-field"><span>Sort by</span><select id="esSortSel" onchange="setEsportsSort(this.value)"><option value="ev">Best EV</option><option value="prob">Win probability</option><option value="edge">Model vs line</option><option value="start">Start time</option></select></label>
+    <label class="es-field"><span>Min EV</span><select id="esMinEvSel" onchange="setEsportsMinEv(this.value)"><option value="0">Any +EV</option><option value="2">2%+</option><option value="5">5%+</option><option value="8">8%+</option></select></label>
+    <input class="key-input es-search" id="esSearch" placeholder="Search player, team or prop" oninput="setEsportsSearch(this.value)" />
   </div>
-
-  <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap;align-items:center">
-    <input class="key-input" id="esSearch" placeholder="Search player or prop..." style="flex:1;min-width:150px" oninput="setEsportsSearch(this.value)" />
-    <div style="display:flex;gap:4px">
-      <button class="sport-chip" id="esViewBoard" onclick="setEsportsView('board')">BEST BOARD</button>
-      <button class="sport-chip" id="esViewEntry" onclick="setEsportsView('entry')">MODEL ENTRY</button>
-      <button class="sport-chip" id="esViewRecord" onclick="setEsportsView('record')">TRACK RECORD</button>
+  <div class="es-tabs">
+    <div class="es-seg">
+      <button id="esViewPlays" onclick="setEsportsView('plays')">Plays</button>
+      <button id="esViewBoard" onclick="setEsportsView('board')">All lines</button>
+      <button id="esViewEntry" onclick="setEsportsView('entry')">Model entry</button>
+      <button id="esViewRecord" onclick="setEsportsView('record')">Track record</button>
     </div>
-    <button class="sport-chip" onclick="esAutoBuild()" style="background:rgba(16,185,129,.1);border-color:#10b981;color:#34d399;font-weight:800">AUTO-BUILD SLIP</button>
-    <button class="sport-chip" id="esAlertBtn" onclick="esToggleAlerts()" style="position:relative">ALERTS<span id="esAlertBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:9px;font-size:9px;padding:1px 5px;font-weight:800"></span></button>
+    <div class="es-actions">
+      <button class="sport-chip" onclick="esAutoBuild()" style="background:rgba(16,185,129,.1);border-color:#10b981;color:#34d399;font-weight:800">AUTO-BUILD SLIP</button>
+      <button class="sport-chip" id="esAlertBtn" onclick="esToggleAlerts()" style="position:relative">ALERTS<span id="esAlertBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:9px;font-size:9px;padding:1px 5px;font-weight:800"></span></button>
+    </div>
   </div>
 
   <div id="esAlerts" style="display:none;margin-bottom:12px"></div>
@@ -1075,13 +1102,11 @@ body.no-help .clv-info { display:none; }
   </div>
 
   <div style="margin-top:20px;padding:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.6">
-    <strong style="color:#a78bfa">HOW IT WORKS:</strong><br>
-    1. <strong>PrizePicks scraper</strong> pulls all esports lines (CS, VAL, COD, DOTA, LOL)<br>
-    2. <strong>Auto-predictor</strong> uses HLTV.org + VLR.gg player stats to project kills/headshots<br>
-    3. <strong>Manual override</strong> — tap EDIT on any pick to input your own model number<br>
-    4. <strong>Tap +</strong> to add legs to the slip — it prices the same entry on every book at once (power vs flex, live multipliers) and flags the best payout<br>
-    5. <strong>¼-Kelly sizing</strong> from your bankroll, one-tap <strong>COPY</strong> for Discord, one-tap <strong>LOG</strong> into the Bet Log for CLV tracking<br>
-    <span style="color:#64748b">Payout tables are editable defaults in <code style="color:#a78bfa">ES_BOOKS</code> — verify vs the live apps, books tweak these.</span>
+    <strong style="color:#a78bfa">HOW IT WORKS</strong><br>
+    1. <strong>Lines</strong> come from Underdog and PrizePicks (CS2, Valorant, LoL, Dota). Match plays come from Kalshi and Polymarket.<br>
+    2. <strong>The model</strong> projects each player from recent maps (bo3.gg, vlr.gg, gol.gg, OpenDota), scaled by the matchup the exchanges price.<br>
+    3. <strong>Plays</strong> lists only the +EV sides, grouped by where you'd bet them. <strong>All lines</strong> shows everything.<br>
+    4. <strong>Tap +</strong> to build a slip priced on every book at once, with quarter-Kelly sizing from your bankroll. <strong>Model entry</strong> lets you enter your own number.<br>
   </div>
 
   <div id="esSlipBar" style="display:none"></div>
@@ -3574,7 +3599,9 @@ let esportsState = {
   minEV: 0,
   picks: [],
   search: '',
-  view: localStorage.getItem('lr_es_view') || 'board',   // 'board' | 'book' | 'entry' | 'record'
+  // 'plays' (the +EV plays, grouped by book) | 'board' (every line) | 'entry' | 'record'
+  view: ['plays', 'board', 'record'].includes(localStorage.getItem('lr_es_view')) ? localStorage.getItem('lr_es_view') : 'plays',
+  sort: localStorage.getItem('lr_es_sort') || 'ev',       // 'ev' | 'prob' | 'edge' | 'start'
   book: localStorage.getItem('lr_es_book') || 'all',     // 'all' | ES_BOOKS key — sorts/filters the board
   market: 'all',                                          // 'all' | 'k' | 'hs' | 'ast'
   span: 'all',                                            // 'all' | '1' | '1-2' | '1-3'
@@ -3658,16 +3685,19 @@ function esMarketKind(market) {
   if (s.includes('fantasy')) return 'fp';
   return 'k';
 }
-function setEsportsMarket(v) {
-  esportsState.market = v;
-  document.querySelectorAll('#esportsEVRow [data-mkt]').forEach(c => c.classList.toggle('active', c.dataset.mkt === v));
-  renderEsports();
+function setEsportsMarket(v) { esportsState.market = v; renderEsports(); }
+function setEsportsSpan(v) { esportsState.span = v; renderEsports(); }
+function setEsportsSort(v) { esportsState.sort = v; try { localStorage.setItem('lr_es_sort', v); } catch {} renderEsports(); }
+function setEsportsMinEv(v) { esportsState.minEV = parseFloat(v) || 0; renderEsports(); }
+// one ordering for every view: the sort menu's choice, ties broken by EV
+function esSortKey(p) {
+  const ev = p.locked ? 9999 : (esBestEv(p) ?? -9999);
+  if (esportsState.sort === 'prob') return p.locked ? 9999 : (parseFloat(p.prob) || -1);
+  if (esportsState.sort === 'edge') return p.locked ? 9999 : Math.abs(parseFloat(p.edgePct) || 0);
+  if (esportsState.sort === 'start') return -(Date.parse(p.startTime) || 9e15);
+  return ev;
 }
-function setEsportsSpan(v) {
-  esportsState.span = v;
-  document.querySelectorAll('#esportsEVRow [data-span]').forEach(c => c.classList.toggle('active', c.dataset.span === v));
-  renderEsports();
-}
+const esSorted = picks => picks.slice().sort((a, b) => esSortKey(b) - esSortKey(a) || (esBestEv(b) ?? -9999) - (esBestEv(a) ?? -9999));
 
 function setEsportsSearch(v) {
   esportsState.search = (v || '').trim().toLowerCase();
@@ -3868,9 +3898,7 @@ function esFiltered() {
   if (esportsState.market !== 'all') picks = picks.filter(p => esMarketKind(p.market) === esportsState.market);
   if (esportsState.span !== 'all') picks = picks.filter(p => esSpanOf(p.market) === esportsState.span);
   if (esportsState.search) {
-    picks = picks.filter(p =>
-      (p.player || '').toLowerCase().includes(esportsState.search) ||
-      (p.market || '').toLowerCase().includes(esportsState.search));
+    picks = picks.filter(p => [p.player, p.market, p.team, p.matchTitle].some(x => (x || '').toLowerCase().includes(esportsState.search)));
   }
   return picks;
 }
@@ -3910,9 +3938,9 @@ function esStatsStrip(picks) {
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:16px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
       <span style="color:#f1f5f9;font-weight:700">${picks.length} PICKS</span>
       <span style="color:#34d399">${pos.length} +EV</span>
-      <span id="esEngine" style="font-size:10px">${esportsState.engineHtml}</span>
+      <span id="esEngine" style="display:none">${esportsState.engineHtml}</span>
       ${top ? `<span style="color:#64748b">TOP: <span style="color:#f1f5f9">${escEs(top.player)}</span> <span style="color:${esEvColor(esBestEv(top))}">+${esBestEv(top).toFixed(1)}%</span></span>` : ''}
-      <span style="margin-left:auto;color:#64748b;font-size:10px" title="EV = win probability × the book's payout multiplier ÷ 0.5623 − 1. A boosted line (▲1.04x) can out-earn a higher-probability pick at 1.00x.">TAP + TO BUILD A SLIP · EV INCLUDES PAYOUT BOOSTS ⓘ</span>
+      <span style="margin-left:auto;color:#64748b;font-size:10px" title="EV = win probability × the book's payout multiplier ÷ 0.5623 − 1. A boosted line (▲1.04x) can out-earn a higher-probability pick at 1.00x.">TAP + TO BUILD A SLIP · EV INCLUDES PAYOUT BOOSTS</span>
     </div>`;
 }
 
@@ -3936,27 +3964,18 @@ function renderSportCounts() {
 function renderBookBar() {
   const bar = document.getElementById('esBookBar');
   if (!bar) return;
+  if (esportsState.view === 'plays' || esportsState.view === 'entry') { bar.innerHTML = ''; return; }
   const picks = esFiltered();
-  const counts = {};
-  for (const [k, B] of Object.entries(ES_BOOKS)) counts[k] = picks.filter(p => p[B.evField] != null).length;
-  const total = picks.length;
-
-  const tile = (key, name, color, count, logo, isAll) => {
-    const sel = esportsState.book === key;
-    const empty = !isAll && count === 0;
-    return `<div class="bookbar-tile ${sel ? 'sel' : ''} ${empty ? 'empty' : ''}" style="--bk:${color}"
-        onclick="setEsportsBook('${key}')" title="${empty ? name + ' has no lines right now — scraper may be blocked' : 'Sort the board by ' + name + ' EV'}">
-      <span class="bookbar-logo" style="background:linear-gradient(135deg, ${shadeHex(color, 30)}, ${color} 45%, ${shadeHex(color, -45)})">${isAll ? '★' : name[0]}${logo ? `<img src="${logo}" onerror="this.remove()">` : ''}</span>
+  const live = Object.entries(ES_BOOKS).map(([k, B]) => [k, B, picks.filter(p => p[B.evField] != null).length]).filter(x => x[2] > 0);
+  const off = Object.entries(ES_BOOKS).filter(([k, B]) => !live.some(x => x[0] === k)).map(([, B]) => B.name.charAt(0) + B.name.slice(1).toLowerCase());
+  const tile = (key, name, color, count, logo) => `<div class="bookbar-tile ${esportsState.book === key ? 'sel' : ''}" style="--bk:${color}" onclick="setEsportsBook('${key}')" title="Sort the board by ${name} EV">
+      <span class="bookbar-logo" style="background:linear-gradient(135deg, ${shadeHex(color, 30)}, ${color} 45%, ${shadeHex(color, -45)})">${name[0]}${logo ? `<img src="${logo}" onerror="this.remove()">` : ''}</span>
       <span class="bookbar-name">${name}</span>
-      <span class="bookbar-count" style="color:${empty ? 'var(--red)' : count ? '#34d399' : '#64748b'}">${empty ? 'NO LINES' : count + (isAll ? ' PICKS' : '')}</span>
+      <span class="bookbar-count" style="color:#34d399">${count} lines</span>
     </div>`;
-  };
-
-  bar.innerHTML =
-    tile('all', 'Best of All', '#8b5cf6', total, null, true) +
-    Object.entries(ES_BOOKS).map(([k, B]) =>
-      tile(k, B.name.charAt(0) + B.name.slice(1).toLowerCase(), B.color, counts[k],
-        logoSrc(k), false)).join('');
+  bar.innerHTML = tile('all', 'Every book', '#8b5cf6', picks.length, null)
+    + live.map(([k, B, n]) => tile(k, B.name.charAt(0) + B.name.slice(1).toLowerCase(), B.color, n, logoSrc(k))).join('')
+    + (off.length ? `<div class="es-unavail" style="width:100%;margin:6px 0 0">No esports lines right now from ${off.join(', ')}.</div>` : '');
 }
 
 function setEsportsBook(key) {
@@ -3971,7 +3990,9 @@ function renderEsports() {
   if (!el) return;
 
   // sync view toggle chips
+  document.getElementById('esViewPlays')?.classList.toggle('active', esportsState.view === 'plays');
   document.getElementById('esViewBoard')?.classList.toggle('active', esportsState.view === 'board');
+  for (const [id, v] of [['esMarketSel', esportsState.market], ['esSpanSel', esportsState.span], ['esSortSel', esportsState.sort], ['esMinEvSel', String(esportsState.minEV)]]) { const e = document.getElementById(id); if (e && e.value !== v) e.value = v; }
   document.getElementById('esViewEntry')?.classList.toggle('active', esportsState.view === 'entry');
   document.getElementById('esViewRecord')?.classList.toggle('active', esportsState.view === 'record');
   if (esportsState.view === 'record') { document.getElementById('esBookBar').innerHTML = ''; renderTrackRecord(el); return; }
@@ -4009,8 +4030,9 @@ function renderEsports() {
       <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Pro shows the side, the edge, and live alerts.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Seeing the picks')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   el.innerHTML = lockBanner + esStatsStrip(shown) + (esportsState.view === 'entry' ? esEntryHTML(shown)
+    : esportsState.view === 'plays' ? esPlaysHTML(picks)
     : B ? esSingleBookHTML(shown, esportsState.book)
-    : esportsState.view === 'board' ? esBoardHTML(shown) : esByBookHTML(shown));
+    : esBoardHTML(shown));
 }
 
 
@@ -5090,8 +5112,7 @@ async function trGrade(encId, isVoid = false) {
 
 // ── BEST BOARD: one merged list, best book highlighted per pick ─────────────
 function esBoardHTML(picks) {
-  const rank = p => p.locked ? 9999 : (esBestEv(p) ?? -9999);   // locked picks are +EV, so they lead
-  const sorted = picks.slice().sort((a, b) => rank(b) - rank(a));
+  const sorted = esSorted(picks);   // locked picks are +EV, so they lead on EV
 
   const rows = sorted.map(p => {
     const best = esBestEv(p);
@@ -5147,7 +5168,7 @@ function esBoardHTML(picks) {
 // ── SINGLE BOOK: whole board priced and sorted by one book ─────────────────
 function esSingleBookHTML(picks, key) {
   const B = ES_BOOKS[key];
-  const sorted = picks.slice().sort((a, b) => (b[B.evField] ?? -9999) - (a[B.evField] ?? -9999));
+  const sorted = esportsState.sort === 'ev' ? picks.slice().sort((a, b) => (b[B.evField] ?? -9999) - (a[B.evField] ?? -9999)) : esSorted(picks);
   const rows = sorted.map(p => {
     const ev = p[B.evField];
     const sideColor = p.side === 'OVER' ? '#10b981' : '#a78bfa';
@@ -5193,68 +5214,86 @@ function esSingleBookHTML(picks, key) {
   </div>`;
 }
 
-// ── BY BOOK: per-book sections, each sorted by that book's EV ───────────────
-function esByBookHTML(picks) {
-  let html = '';
-  for (const [key, B] of Object.entries(ES_BOOKS)) {
-    const sectionPicks = picks
-      .filter(p => p[B.evField] != null)
-      .sort((a, b) => b[B.evField] - a[B.evField])
-      .slice(0, 50);
-    if (!sectionPicks.length) continue;
-
-    const positive = sectionPicks.filter(p => p[B.evField] > 0).length;
-    const logo = (typeof BOOK_LOGOS !== 'undefined') ? BOOK_LOGOS[key] : null;
-
-    const rows = sectionPicks.map(p => {
-      const ev = p[B.evField];
-      const sideColor = p.side === 'OVER' ? '#10b981' : '#a78bfa';
-      let multBadge = '';
-      if (key === 'underdog' && p.udMultiplier && p.udMultiplier !== 1.00) {
-        multBadge = `<span style="font-size:10px;color:${p.udMultiplier > 1 ? '#10b981' : '#ef4444'};font-weight:700;margin-left:5px">${p.udMultiplier}x</span>`;
-      } else if (key === 'sleeper' && p.sleeperMultiplier) {
-        multBadge = `<span style="font-size:10px;color:#06b6d4;font-weight:700;margin-left:5px">${p.sleeperMultiplier}x</span>`;
-      } else if (key === 'parlayplay') {
-        multBadge = `<span style="font-size:10px;color:#ec4899;font-weight:700;margin-left:5px">${ES_BOOKS.parlayplay.perLegMult}x</span>`;
-      }
-
-      return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);${ev >= 5 ? 'background:rgba(16,185,129,.04)' : ''}">
-        <td style="padding:9px 6px 9px 10px">${esRowButtons(p)}</td>
-        <td style="padding:9px 8px;text-align:center;min-width:60px">
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:${esEvColor(ev)};font-size:15px">${ev > 0 ? '+' : ''}${ev.toFixed(1)}%</div>
-          ${ev >= 10 ? '<div style="font-size:10px;color:#f59e0b;font-weight:700">HOT</div>' : ''}
-        </td>
-        <td style="padding:9px 8px">
-          <div style="font-size:14px;font-weight:700;color:#f1f5f9">${escEs(p.player)}</div>
-          <div style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-size:10px;color:#a78bfa;font-weight:700;background:rgba(139,92,246,.15);padding:1px 6px;border-radius:3px;letter-spacing:1px">${escEs(p.sport)}</span>
-            <span style="font-size:11px;color:#cbd5e1" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps — shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}</span>
-          </div>
-        </td>
-        <td style="padding:9px 8px;text-align:center">
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:14px">${escEs(p.ppLine)}</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:2px">→ <span style="color:#a78bfa;font-weight:600">${escEs(p.modelPred ?? '—')}</span></div>
-        </td>
-        <td style="padding:9px 10px 9px 8px;text-align:center">
-          <span style="display:inline-block;padding:3px 10px;border:1.5px solid ${sideColor};color:${sideColor};border-radius:4px;font-size:11px;font-weight:800;letter-spacing:1.5px">${escEs(p.side || '—')}</span>${multBadge}
-          <div style="font-family:'JetBrains Mono',monospace;color:#cbd5e1;font-size:11px;margin-top:4px;font-weight:600">${p.prob != null ? p.prob + '% prob' : ''}</div>
-        ${p.predSource ? `<div style="font-size:8px;letter-spacing:1.5px;margin-top:2px;font-weight:800;color:${p.predSource === 'manual' ? '#a78bfa' : '#475569'}" title="${p.predSource === 'manual' ? 'Your model number' : 'Auto-predicted from HLTV/VLR stats'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}
-        </td>
-      </tr>`;
-    }).join('');
-
-    html += `<div style="margin-bottom:24px">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(90deg, ${B.color}30, transparent);border-left:4px solid ${B.color};border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none">
-        ${logo ? `<img src="${logo}" style="width:24px;height:24px;border-radius:4px" onerror="this.style.display='none'">` : ''}
-        <div style="font-size:15px;font-weight:800;color:#f1f5f9;letter-spacing:1.5px">${B.name}</div>
-        <div style="font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace;margin-left:auto">${sectionPicks.length} picks · ${positive} positive EV</div>
-      </div>
-      <div style="background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;overflow:hidden">
-        <table style="width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>
-      </div>
-    </div>`;
+// ── PLAYS: the +EV plays, one section per book, in the columns bettors know ──
+// Player · prop · the book's line · our model · lean · win probability · EV.
+// The exchanges' esports edges (from the match board) get their own sections,
+// so every play on the tab sits in one place, grouped by where you'd bet it.
+const ES_EXCHANGES = { kalshi: { name: 'Kalshi', color: '#00d4aa' }, polymarket: { name: 'Polymarket', color: '#2d5bff' } };
+function esWhenShort(iso) {
+  const t = Date.parse(iso);
+  if (!t) return '';
+  return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+}
+function esPlayRow(p, key, B) {
+  const ev = p.locked ? null : p[B.evField];
+  const line = key === 'underdog' && p.udLine != null ? p.udLine : p.ppLine;
+  const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
+  const match = [p.matchTitle || (p.team && p.context?.opponent ? `${p.team} vs ${p.context.opponent}` : p.team), esWhenShort(p.startTime)].filter(Boolean).join(' · ');
+  return `<tr>
+    <td style="width:44px">${p.locked ? esRowButtons(p) : `<button class="es-add ${esInSlip(p) ? 'in' : ''}" title="${esInSlip(p) ? 'Remove from slip' : 'Add to slip'}" onclick="esAdd(${p.__i})">${esInSlip(p) ? '&#10003;' : '+'}</button>`}</td>
+    <td><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(match)}</div></td>
+    <td class="hide-sm">${escEs(p.displayMarket || p.market)}${mult && mult !== 1 ? `<div class="sub">${mult}x payout</div>` : ''}</td>
+    <td><span class="es-pill line">${escEs(line)}</span></td>
+    <td class="hide-sm">${p.locked ? '<span class="sub">Pro</span>' : `<span class="es-pill model">${escEs(p.modelPred ?? '-')}</span>`}</td>
+    <td>${p.locked ? '' : `<span class="es-lean ${p.side === 'OVER' ? 'over' : 'under'}">${escEs(p.side || '-')}</span><div class="sub show-sm">${escEs(p.modelPred ?? '')} · ${p.prob != null ? p.prob.toFixed(0) + '%' : ''}</div>`}</td>
+    <td class="es-num hide-sm">${p.locked || p.prob == null ? '' : p.prob.toFixed(1) + '%'}</td>
+    <td class="es-num" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}</td>
+  </tr>`;
+}
+function esSection(key, name, color, logo, count, body, head) {
+  return `<div class="es-sec" style="--bk:${color}">
+    <div class="es-sec-head">${logo ? `<img src="${logo}" alt="" onerror="this.remove()">` : ''}<b>${escEs(name)}</b><span>${count}</span></div>
+    <div style="overflow-x:auto"><table class="es-plays"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+  </div>`;
+}
+function esExchangePlays() {
+  const out = {};
+  for (const m of esmState.data?.matches || []) {
+    if (m.live) continue;
+    const sport = (m.label || m.game || '').toUpperCase();
+    if (![...esportsState.sports].some(s => sport.includes(s === 'CS' ? 'CS' : s))) continue;
+    for (const e of m.edges || []) {
+      if (!ES_EXCHANGES[e.venue] || (e.ev * 100) < esportsState.minEV) continue;
+      const mk = m.markets.find(x => x.key === e.market);
+      if (esportsState.search && ![m.teams.join(' '), e.outcome].some(x => x.toLowerCase().includes(esportsState.search))) continue;
+      (out[e.venue] ||= []).push({ m, e, mk });
+    }
   }
-  return html || '<div class="empty-wrap"><div class="empty-sub">No book has EV on these picks yet</div></div>';
+  for (const k of Object.keys(out)) out[k].sort((a, b) => esportsState.sort === 'start' ? (Date.parse(a.m.start) || 0) - (Date.parse(b.m.start) || 0) : b.e.ev - a.e.ev);
+  return out;
+}
+function esPlaysHTML(picks) {
+  const min = esportsState.minEV || 0;
+  let html = '', total = 0;
+  const head = '<th></th><th>Player</th><th class="hide-sm">Prop</th><th>Line</th><th class="hide-sm">Model</th><th>Lean</th><th class="hide-sm">Prob</th><th>EV</th>';
+  for (const [key, B] of Object.entries(ES_BOOKS)) {
+    // a locked pick (free viewer) still shows under the book that carries its line
+    const carries = p => key === 'underdog' ? p.udLine != null : key === 'prizepicks' ? p.lineSource === 'pp' : false;
+    const rows = esSorted(picks.filter(p => p.locked ? carries(p) : p[B.evField] != null && p[B.evField] > 0 && p[B.evField] >= min));
+    const priced = picks.filter(p => p[B.evField] != null).length;
+    if (!rows.length) continue;
+    total += rows.length;
+    html += esSection(key, B.name.charAt(0) + B.name.slice(1).toLowerCase(), B.color, logoSrc(key), `${rows.length} play${rows.length > 1 ? 's' : ''} of ${priced} lines`, rows.map(p => esPlayRow(p, key, B)).join(''), head);
+  }
+  const ex = esExchangePlays();
+  const exHead = '<th></th><th>Match</th><th class="hide-sm">Market</th><th>Price</th><th class="hide-sm">Fair</th><th>Pick</th><th class="hide-sm">Start</th><th>EV</th>';
+  for (const [venue, rows] of Object.entries(ex)) {
+    const X = ES_EXCHANGES[venue];
+    total += rows.length;
+    html += esSection(venue, X.name, X.color, logoSrc(venue), `${rows.length} match play${rows.length > 1 ? 's' : ''}`, rows.map(({ m, e, mk }) => `<tr>
+      <td style="width:44px">${m.links?.[venue] ? `<a class="es-go" href="${escEs(m.links[venue])}" target="_blank" rel="noopener" title="Open on ${X.name}">Bet</a>` : ''}</td>
+      <td><div class="pl">${escEs(m.teams.join(' vs '))}<span class="tag">${escEs(m.label)}</span></div><div class="sub">${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</div></td>
+      <td class="hide-sm">${escEs(mk ? esmMarketName(mk) : e.market)}</td>
+      <td><span class="es-pill line">${Math.round(e.cost * 100)}c</span></td>
+      <td class="hide-sm"><span class="es-pill model">${Math.round(e.fair * 100)}c</span></td>
+      <td>${escEs(mk ? esmMarketText(mk, e.outcome) : e.outcome)}</td>
+      <td class="sub hide-sm">${escEs(esWhenShort(m.start))}</td>
+      <td class="es-num" style="color:${esEvColor(e.ev * 100)}">+${(e.ev * 100).toFixed(1)}%</td>
+    </tr>`).join(''), exHead);
+  }
+  if (!esmState.data && !esmState.loading && Date.now() - (esmState.playsTry || 0) > 60e3 && (esmState.playsTry = Date.now())) loadEsMatches().then(() => { if (esportsState.view === 'plays') renderEsports(); }).catch(() => {});
+  if (!total) return `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">No plays at this filter</div><div class="empty-sub">Every line is still on the All lines view. Try a lower minimum EV or more sports.</div></div>`;
+  return html + `<div class="es-unavail">EV is per leg against each book's payout. Exchange plays are priced against the fair price from the other venues.</div>`;
 }
 
 // ── MODEL ENTRY MODE: spreadsheet-speed manual model input ──────────────────

@@ -1660,7 +1660,7 @@ async function generateEsportsPicks() {
   function assemble(base, modelPred, predSource, manualKey, udm, lineSource, g = {}) {
     const lineVal = base.line;
     const pick = {
-      sport: base.sport, player: base.player, team: base.team || '', market: base.market,
+      sport: base.sport, player: base.player, team: base.team || '', matchTitle: base.matchTitle || '', market: base.market,
       ppLine: lineVal, startTime: base.startTime || '', lineSource,
       modelPred: modelPred != null ? parseFloat(modelPred.toFixed(2)) : null,
       predSource: modelPred != null ? predSource : null,
