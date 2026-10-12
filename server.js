@@ -2193,6 +2193,42 @@ function sizeQuote(s, v) {
 const venueView = v => (v ? { key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, ...(v.american != null ? { american: v.american } : {}),
   units: v.units, kelly: v.kelly, maxPrice: v.maxPrice, pick: v.pick ?? null, ...(v.buy ? { buy: v.buy } : {}), ...(v.side ? { side: v.side } : {}), url: v.url || null,
   ...(v.warning ? { warning: v.warning } : {}) } : null);
+// When no venue sizes a take, the best resting bid (tail.limitPlan): makers
+// pay no fee on Polymarket, and on Kalshi and Polymarket US we assume a
+// quarter of the taker fee at most (Kalshi's maker fee, where a market has
+// one, is 1.75% × p(1 − p) against 7%). Sportsbooks take no orders. Same
+// deductions as a take: a top-up only adds above what was told, and the
+// game's room caps it. A price that ran past the chase limit gets none: the
+// market has already moved on the sharp's news. The pick: most units, then
+// the higher bid (likelier to fill).
+const MAKER_SHARE = { polymarket: 0, kalshi: 0.25, polymarketus: 0.25 };
+function limitFor(s, v) {
+  if (!v || !(v.key in MAKER_SHARE) || v.book || !(v.price > 0 && v.price < 1)) return null;
+  const q = Number(s.q ?? s.prob);
+  const spread = v.price * (1 - v.price);
+  const rate = spread > 0 ? Math.max(0, Number(v.fee) || 0) / spread : 0;
+  let plan = null;
+  try {
+    plan = tail.limitPlan({ q, ask: v.price, bid: v.bid ?? null, makerFee: p => MAKER_SHARE[v.key] * rate * p * (1 - p),
+      grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, opts: tailEngine.settings() });
+  } catch (e) { console.warn('Tail limit sizing:', e.message); }
+  if (!plan) return null;
+  let units = plan.units;
+  const before = Number(s.priorUnits) > 0 ? Number(s.priorUnits) : 0;
+  if (before > 0) units = Math.max(0, r2u(units - before));
+  if (Number.isFinite(s.eventRoom)) units = Math.max(0, Math.min(units, s.eventRoom));
+  if (!(units > 0)) return null;
+  return { key: v.key, name: v.name, price: plan.price, fee: plan.fee, cost: plan.cost, units, kelly: plan.kelly, ask: v.price, bid: v.bid ?? null,
+    pick: v.pick ?? null, ...(v.buy ? { buy: v.buy } : {}), ...(v.side ? { side: v.side } : {}), url: v.url || null, until: s.gameStartTime || null,
+    ...(v.warning ? { warning: v.warning } : {}) };
+}
+function limitOf(s, venues) {
+  const chase = tailEngine.settings().chaseMax;
+  if (s.blocked || takeUnits(s) > 0 || (Number.isFinite(s.slippage) && Number.isFinite(chase) && s.slippage > chase + 1e-9)) return null;
+  const plans = venues.map(v => limitFor(s, v)).filter(Boolean);
+  plans.sort((a, b) => (b.units - a.units) || (b.price - a.price));
+  return plans[0] || null;
+}
 // the routing of recent signals by id, in case the engine hands back copies
 const routedSignals = new Map();
 // extra: quotes found elsewhere (Polymarket US) to weigh with the scan's
@@ -2205,9 +2241,10 @@ function routeSignal(s, { index = xarbState.venues, now = Date.now(), extra = []
   venues.sort((a, b) => (b.units - a.units) || (a.cost - b.cost) || (a.price - b.price));
   s.venues = venues.map(venueView);
   s.venue = venueView(xarb.pickVenue(venues));
+  s.limit = limitOf(s, venues);
   if (s.id) {
     routedSignals.delete(s.id);
-    routedSignals.set(s.id, { venue: s.venue, venues: s.venues });
+    routedSignals.set(s.id, { venue: s.venue, venues: s.venues, limit: s.limit });
     while (routedSignals.size > 2000) routedSignals.delete(routedSignals.keys().next().value);
   }
   return s;
@@ -2217,7 +2254,7 @@ function venueFor(sig, lic) {
   const s = sig && !('venue' in sig) && routedSignals.has(sig.id) ? { ...sig, ...routedSignals.get(sig.id) } : sig;
   if (s?.type !== 'entry' || lic.kalshi || !Array.isArray(s.venues) || !s.venues.some(v => v.key === 'kalshi')) return s;
   const venues = s.venues.filter(v => v.key !== 'kalshi');
-  return { ...s, venues, venue: xarb.pickVenue(venues), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
+  return { ...s, venues, venue: xarb.pickVenue(venues), ...(s.limit?.key === 'kalshi' ? { limit: null } : {}), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
 }
 // "Tail at Kalshi: NO New York K 55¢ · 1.25u · don't pay above 58¢" (a book's price in American odds too).
 // What to buy is spelled out: on Kalshi the same bet can be YES on one market or NO on another.
@@ -2228,15 +2265,20 @@ function venueLine(s) {
   const max = v.maxPrice == null ? '—' : book ? `${cents(v.maxPrice)} (${american(evScreen.probToAmerican(v.maxPrice))})` : cents(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${book ? american(v.american) : cents(v.price)} · ${v.units}u · don't pay above ${max}`;
 }
+// "Bid at Kalshi: YES New York K 54¢ limit · 0.5u · fills only if it trades down to you · cancel at the start"
+function limitLine(l) {
+  return `Bid at ${l.name}${l.buy ? `: ${l.buy}` : ''} ${cents(l.price)} limit · ${l.units}u · fills only if it trades down to you${l.until ? ' · cancel at the start' : ''}`;
+}
 // <url> stops Discord unfurling a preview card under every line. US mode
 // links the venue, never polymarket.com.
 function describeTail(s) {
   const who = `${s.grade}-grade ${s.name || shortWallet(s.wallet)}`;
   const where = `${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})`;
-  const url = TAIL_REGION === 'us' ? (s.venue?.url && !PM_LINK.test(s.venue.url) ? s.venue.url : null) : s.url;
+  const to = s.limit && !(takeUnits(s) > 0) ? s.limit : s.venue;
+  const url = TAIL_REGION === 'us' ? (to?.url && !PM_LINK.test(to.url) ? to.url : null) : s.url;
   const link = url ? ` <${url}>` : '';
   if (s.type === 'exit') return describeExit(s, who);
-  const size = s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
+  const size = s.limit && !(takeUnits(s) > 0) ? limitLine(s.limit) : s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
   return `${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
 }
 // "Exit: A-grade X sold 80% of Yes on "…" at 62¢ ($4,000), bought at 41¢ · we tailed it 1.2u at Kalshi: YES … <url>"
@@ -2244,9 +2286,11 @@ function describeTail(s) {
 function describeExit(s, who) {
   const share = s.soldShare != null && s.soldShare < 0.995 ? `${Math.round(s.soldShare * 100)}% of ` : '';
   const paid = s.boughtAt != null ? `, bought at ${cents(s.boughtAt)}` : '';
-  let v = s.tailed?.id ? routedSignals.get(s.tailed.id)?.venue : null;
+  const r = s.tailed?.id ? routedSignals.get(s.tailed.id) : null;
+  let v = r ? (Number(r.venue?.units) > 0 || !r.limit ? r.venue : r.limit) : null;
   if (v?.key === 'kalshi' && !webhookLicence().kalshi) v = null;
-  const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}` : ''}` : '';
+  const bid = v && r && v === r.limit ? ' with a bid (cancel it if it hasn\'t filled)' : '';
+  const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}${bid}` : ''}` : '';
   const url = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : (v?.url || s.url);
   return `Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
@@ -2284,7 +2328,9 @@ let tailPolled = false;
 const tailRouting = { routed: 0, withVenue: 0, lastAt: null, byCategory: {}, byVenue: {} };
 // What a routed entry told followers to add: the venue's units, or with no
 // venue the Polymarket size the track record logs it at.
-const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+// A resting bid (s.limit) counts when nothing sizes a take.
+const takeUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+const tailUnits = s => takeUnits(s) || (Number(s?.limit?.units) > 0 ? Number(s.limit.units) : 0);
 // where to tail, as each entry is made (so the next buy by the same wallet
 // tops up what that venue was told) and before it's logged (the record
 // grades it at that venue's price)
@@ -2794,7 +2840,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.48.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.49.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3579,7 +3625,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.48.0',
+  version: '3.49.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3710,10 +3756,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.48.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.49.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.48.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.49.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

@@ -90,6 +90,14 @@
 //   One game or event takes at most 3u across all its markets and wallets in
 //   24h (TAIL_MAX_EVENT_UNITS): its winner, spread and total move together.
 //
+// A resting bid when no venue sizes a take (limitPlan, routed by the server):
+// most B-grade edges are about a cent, the size of the spread plus the taker
+// fee. A buy order a cent under the ask, no lower than the best bid, pays the
+// maker fee instead (none on Polymarket; at most a quarter of the taker fee
+// assumed on Kalshi and Polymarket US). Sized at that price, × limitShare
+// (0.5, TAIL_LIMIT_SHARE): a bid fills most often when the price is falling.
+// Not when the price ran past the chase limit, or the bet is blocked.
+//
 // ROI, edge, Kelly and shares are fractions (0.08 = 8%); prices are dollars
 // per share (0–1). Times on returned objects are ISO strings.
 //
@@ -139,6 +147,7 @@ const DEFAULTS = {
   consensusWindowMs: 24 * 3600e3, // ...within this window
   consensusMult: 1.5,
   maxUnits: 3,
+  limitShare: 0.5,               // a resting bid's units, as a share of what a take at that price would get: bids fill most often when the price is falling (TAIL_LIMIT_SHARE, 0 = no bids)
   maxEventUnits: 3,              // units told across one game or event in consensusWindowMs, whoever bought (TAIL_MAX_EVENT_UNITS, 0 = no cap)
   forwardMinN: 30,               // bets resolved since the wallet was picked before they count
   batchSize: 60,                 // wallets scored per scoreBatch call, at most...
@@ -197,7 +206,7 @@ function resolveOptions(opts = {}) {
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
 const PERCENT_KEYS = new Set(['exitShare', 'maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
-const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb']);
+const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb', 'limitShare']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
   const read = (name, key) => {
@@ -1230,6 +1239,31 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
   return { kelly, units, maxPrice, cost, cap };
 }
 
+// A resting bid instead of a take. Most tails die by a cent: the sharp's edge
+// is about the size of the spread plus the taker fee (Polymarket sports 5%
+// × p(1 − p), Kalshi 7%). A buy order one cent under the ask, and no lower
+// than the best bid (so it sits at the front of the book), pays the maker
+// fee instead: none on Polymarket, at most a quarter of the taker fee on
+// Kalshi and Polymarket US (makerFee(price) says which). → { price, fee,
+// cost, units, kelly } at the highest such price sized above 0 (the likeliest
+// to fill), units × limitShare, or null. With no bid known the order goes at
+// most 2¢ under the ask.
+function limitPlan({ q, ask, bid = null, makerFee = () => 0, grade, consensus = 1, opts = {} } = {}) {
+  const o = resolveOptions(opts);
+  const a = num(ask), b = num(bid), prob = num(q);
+  if (!(prob > 0 && prob < 1) || !(a > 0 && a < 1) || !(o.limitShare > 0)) return null;
+  const top = round(Math.ceil(a * 100 - 1e-7) / 100 - 0.01, 2);
+  const floor = Math.max(0.01, b > 0 && b < a ? round(Math.floor(b * 100 + 1e-7) / 100, 2) : round(top - 0.02, 2));
+  for (let c = top; c >= floor - EPS; c = round(c - 0.01, 2)) {
+    if (c >= o.maxEntryPrice - EPS) continue;
+    const fee = Math.max(0, num(makerFee(c)) ?? 0);
+    const z = sizeAt({ q: prob, price: c, feePerContract: fee, grade, consensus, opts: o });
+    const units = round((z.units || 0) * o.limitShare, 2);
+    if (units > 0) return { price: c, fee: round(fee, 6), cost: round(c + fee, 6), units, kelly: round(z.kelly, 4) };
+  }
+  return null;
+}
+
 // a sale's share of the position it came out of (0–1), or null when the
 // position isn't known
 const soldShare = (trade, holding) => (num(holding?.size) > 0 && trade?.size > 0 ? round(Math.min(1, trade.size / num(holding.size)), 4) : null);
@@ -1327,7 +1361,7 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   }
   return {
     signal: {
-      ...base, type: 'entry', currentPrice: c, priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
+      ...base, type: 'entry', currentPrice: c, ...(book && inUnit(book.bid) != null ? { currentBid: book.bid } : {}), priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
       inPlay, gameStartTime: started == null ? null : iso(started), blocked,
       q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
       kelly: round(kelly, 4), units, target, cap: sized.cap,
@@ -2159,7 +2193,7 @@ module.exports = {
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
   clvWindow, closingPrice, clvOf, clvStats, clvCandidates,
-  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, tradeSignal, soldShare,
+  twoSidedShare, walletStats, gradeStats, scoreWallet, capStale, RULES_VERSION, isRoundTrip, gradeFor, trueProb, sizeAt, limitPlan, tradeSignal, soldShare,
   fetchPaged, fetchLeaderboard, fetchPositions, fetchSettledPositions, fetchClosedPositions, fetchOpenPositions, fetchRecentTrades, fetchWalletTrades,
   fetchPriceHistory, fetchMarket, fetchMarketByToken,
   createTailEngine, toMs, maskIds, failText,
