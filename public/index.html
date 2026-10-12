@@ -1006,12 +1006,13 @@ body.no-help .clv-info { display:none; }
 <!-- ARB PAGE -->
 <div class="page" id="page-best">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, esports edges and props, sportsbook lines above fair, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
+    <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, exchange prices that trail Polymarket, esports edges and props, sportsbook lines above fair, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
     <span style="color:#94a3b8;font-size:11px">Play types the record marks <b style="color:#f87171">avoid</b> are left off. <b style="color:#34d399">Proven</b> types and arbs come first, then <b style="color:#fbbf24">promising</b>, then ones too early to judge, biggest edge first. Units are the same for everyone (1u = 1% of bankroll).</span>
   </div>
   <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="sport-chip active" data-best="all" onclick="bestKind('all')">ALL</button>
     <button class="sport-chip" data-best="tail" onclick="bestKind('tail')">SHARP TAIL</button>
+    <button class="sport-chip" data-best="exchangeValue" onclick="bestKind('exchangeValue')">EXCHANGE VALUE</button>
     <button class="sport-chip" data-best="esportsEdge" onclick="bestKind('esportsEdge')">ESPORTS EDGES</button>
     <button class="sport-chip" data-best="esportsProp" onclick="bestKind('esportsProp')">ESPORTS PROPS</button>
     <button class="sport-chip" data-best="sportsProp" onclick="bestKind('sportsProp')">SPORTS PROPS</button>
@@ -5213,7 +5214,7 @@ function renderBest() {
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
       <td style="text-align:right"><button class="mb-log" onclick="mybLogBest(${i})" title="Log this bet to My Bets">LOG</button></td></tr>`; }).join('');
   const c = d.counts || {};
-  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
+  const sum = [['tail', 'Sharp Tail'], ['exchangeValue', 'exchange value'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">

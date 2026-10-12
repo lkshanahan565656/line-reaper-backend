@@ -1,6 +1,7 @@
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
 // One ranked list of what's worth betting right now, across the app: Sharp
-// Tail entries, esports exchange edges, esports props and exchange arbs. Each
+// Tail entries, esports exchange edges, esports props, exchange value and
+// exchange arbs. Each
 // row says what to bet, where, at what price, how many units and why.
 //
 // The ranking leans on the RESULTS scoreboard (results.js): every live play is
@@ -32,7 +33,7 @@ const DEFAULTS = {
   lineMaxEv: 0.15,            // past this it's nearly always a stale or wrong number
   lineMaxAgeMs: 45 * 60e3,    // book prices older than this have likely moved
   lineMinBooks: 3,            // a consensus price needs a few books behind it
-  edgeMaxUnits: 1,            // esports edges until proven
+  edgeMaxUnits: 1,            // esports edges and exchange value until proven
   provenMaxUnits: 2,
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
@@ -144,6 +145,32 @@ function edgeRows(matches, verdict, o, now) {
         url: m.links?.[e.venue] || null, startsAt: m.start || null, at: null, warning: null,
       });
     }
+  }
+  return { rows, dropped };
+}
+
+// exchange value (xvalue.js): a Kalshi or Polymarket US ask under
+// Polymarket's live mid, ¼ Kelly like an esports edge
+const VALUE_VENUES = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
+function valueRows(edges, verdict, o, now) {
+  const rows = [], dropped = [];
+  for (const e of edges) {
+    const start = ms(e.start);
+    if (start == null || start <= now || !(e.cost > 0 && e.cost < 1) || !(e.ev > 0)) continue;
+    const labels = { sport: e.league || e.category, book: e.venue, market: e.market };
+    const vd = verdict('exchangeValue', labels);
+    if (vd.avoid) { dropped.push({ kind: 'exchangeValue', title: e.title, play: vd.avoid.play }); continue; }
+    const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
+    const units = kellyUnits(e.fair, e.cost, cap, o);
+    if (!(units > 0)) continue;
+    const venue = VALUE_VENUES[e.venue] || e.venue;
+    const why = [`Polymarket's book has it at ${r2(e.fair * 100)}c, ${venue} sells it for ${r2(e.cost * 100)}c with the fee`];
+    if (vd.play) why.push(evidence(vd.play));
+    rows.push({
+      id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} exchange value`, title: e.title,
+      bet: e.pick, venue, price: e.cost, american: null, maxPrice: null, units, ev: r4(e.ev), verdict: vd.verdict, why,
+      url: e.url, startsAt: e.start, at: null, warning: null,
+    });
   }
   return { rows, dropped };
 }
@@ -280,7 +307,7 @@ function arbRows(arbs, esportsArbs) {
 }
 
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
-function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], plays = [] } = {}, opts = {}) {
+function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], value = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
   const verdict = verdictIndex(plays);
@@ -290,7 +317,7 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
     if (m.live || (start != null && start <= now)) continue;
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
-  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now)];
+  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now)];
   const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));

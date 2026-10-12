@@ -31,8 +31,8 @@
   const RESULTS = ['open', 'win', 'loss', 'push', 'void', 'half_win', 'half_loss', 'cashout'];
   const RESULT_LABEL = { open: 'Open', win: 'Won', loss: 'Lost', push: 'Push', void: 'Void', half_win: 'Half won', half_loss: 'Half lost', cashout: 'Cashed out' };
   // which of our tools a bet came from; Manual is anything typed in
-  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV'];
-  const KIND_TOOL = { tail: 'Sharp Tail', esportsEdge: 'Esports edge', esportsProp: 'Esports prop', sportsProp: 'Sports prop', arb: 'Arb' };
+  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Exchange value', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV'];
+  const KIND_TOOL = { tail: 'Sharp Tail', exchangeValue: 'Exchange value', esportsEdge: 'Esports edge', esportsProp: 'Esports prop', sportsProp: 'Sports prop', arb: 'Arb' };
 
   const isSettled = b => b.result !== 'open';
   let seq = 0;
