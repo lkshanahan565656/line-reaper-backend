@@ -389,8 +389,8 @@ body::before {
 @keyframes loadAnim { 0%{width:0;margin-left:0} 50%{width:55%;margin-left:20%} 100%{width:0;margin-left:100%} }
 
 .empty-wrap { text-align: center; padding: 60px 20px; color: var(--muted2); }
-.empty-big { font-family: 'Inter', sans-serif; font-size: 40px; color: var(--muted); letter-spacing: 4px; }
-.empty-sub { font-size: 12px; color: var(--muted2); margin-top: 10px; line-height: 1.6; }
+.empty-big { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 700; color: #64748b; letter-spacing: 3px; }
+.empty-sub { font-size: 12px; color: #94a3b8; margin-top: 10px; line-height: 1.6; }
 
 .error-box { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 14px; font-size: 12px; color: var(--red); line-height: 1.7; }
 
@@ -669,6 +669,8 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 /* ── Brand + polish ───────────────────────────────────────────── */
 .logo { display:flex; align-items:center; gap:10px; font-family:'Inter',sans-serif; font-size:17px; font-weight:800; letter-spacing:3px; text-shadow:none; }
 .logo-word b { font-weight:300; margin-left:7px; color:#10b981; }
+.logo-word { white-space:nowrap; }
+@media (max-width: 640px) { .nav-tag { display:none; } }
 .lr-mark { flex:none; border-radius:7px; }
 .ic-lock { vertical-align:-1px; opacity:.8; }
 .sp-badge { display:inline-block; font-size:9px; font-weight:800; letter-spacing:1px; padding:2px 6px; border-radius:4px; background:#1a2234; border:1px solid var(--border2); color:var(--text2); vertical-align:1px; }
@@ -701,7 +703,7 @@ body::before { background:none; }
 .wl-pts b { color:var(--text); font-weight:600; }
 .wl-btn { display:block; width:100%; padding:14px; border-radius:10px; border:1px solid var(--border2); background:transparent; color:var(--text); font:600 13px 'Inter',sans-serif; letter-spacing:1px; cursor:pointer; margin-bottom:10px; }
 .wl-btn.primary { background:#10b981; border-color:#10b981; color:#04120c; font-weight:800; }
-.wl-skip { display:block; text-align:center; margin-top:6px; font-size:12px; color:var(--muted2); cursor:pointer; background:none; border:none; width:100%; padding:8px; font-family:'Inter',sans-serif; }
+.wl-skip { display:block; text-align:center; margin-top:6px; font-size:13px; color:var(--text2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; background:none; border:none; width:100%; padding:10px; font-family:'Inter',sans-serif; }
 .wl-skip:hover { color:var(--text2); }
 .wl-fine { margin-top:18px; font-size:10.5px; color:var(--muted2); line-height:1.5; text-align:center; }
 
@@ -804,7 +806,7 @@ body.no-help .clv-info { display:none; }
     <div class="logo"><svg class="lr-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span class="logo-word">LINE<b>REAPER</b></span></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div>
-      <div style="font-size:8px;letter-spacing:3px;color:#444;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
+      <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#64748b;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
       <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
       <div id="acctBar" style="display:none;gap:6px;align-items:center;margin-top:2px"></div>
@@ -2399,7 +2401,7 @@ function layFoldInit(reset) {
       const txt = info.textContent.replace(/\s+/g, ' ').trim();
       head = document.createElement('button');
       head.className = 'fold-head';
-      head.innerHTML = `<span>ABOUT THIS TAB</span><span class="fh-t">${escAttr(txt.slice(0, 90))}</span><span class="fh-a"></span>`;
+      head.innerHTML = `<span>ABOUT THIS TAB</span><span class="fh-t">${escAttr(txt.slice(0, 200))}</span><span class="fh-a"></span>`;
       head.onclick = () => { info.classList.toggle('folded'); layout.folds[pg.id] = info.classList.contains('folded') ? 1 : 0; laySave(); layFoldLabel(info); };
       const body = document.createElement('div');
       body.className = 'fold-body';
