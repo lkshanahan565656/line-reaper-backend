@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINE REAPER</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#080b10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Line Reaper">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -2712,7 +2719,65 @@ document.addEventListener('click', () => document.getElementById('moreMenu')?.cl
 
 function layOpen() {
   layRenderList();
+  pushRefresh();
   document.getElementById('layModal').classList.add('open');
+}
+
+// ── PHONE APP + PUSH ────────────────────────────────────────────────────────
+// Installable (manifest + service worker). Push alerts are the same text the
+// alert webhook sends, for everyone; the server holds the subscriptions.
+let pwaPrompt = null;
+const pwaStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaPrompt = e; pushRefresh(); });
+window.addEventListener('appinstalled', () => { pwaPrompt = null; pushRefresh(); });
+async function pwaInstall() {
+  if (!pwaPrompt) return;
+  pwaPrompt.prompt();
+  try { await pwaPrompt.userChoice; } catch {}
+  pwaPrompt = null; pushRefresh();
+}
+const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64ToBytes = b => { const p = '='.repeat((4 - b.length % 4) % 4), r = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+async function pushSub() {
+  if (!pushOk()) return null;
+  try { return await (await navigator.serviceWorker.ready).pushManager.getSubscription(); } catch { return null; }
+}
+async function pushRefresh() {
+  const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote'), row = document.getElementById('pwaInstallRow');
+  if (!btn) return;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  row.style.display = pwaPrompt && !pwaStandalone() ? '' : 'none';
+  if (!pushOk()) {
+    btn.disabled = true; btn.textContent = 'NOT AVAILABLE'; btn.classList.remove('on');
+    note.textContent = ios && !pwaStandalone() ? 'On iPhone, tap Share, then Add to Home Screen, and open Line Reaper from your home screen to turn on push alerts.' : 'This browser does not support push alerts.';
+    return;
+  }
+  if (Notification.permission === 'denied') { btn.disabled = true; btn.textContent = 'BLOCKED'; btn.classList.remove('on'); note.textContent = 'Notifications are blocked for this site. Allow them in your browser settings, then come back.'; return; }
+  const sub = await pushSub();
+  btn.disabled = false; btn.textContent = sub ? 'ON' : 'TURN ON'; btn.classList.toggle('on', !!sub);
+}
+async function pushToggle() {
+  const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote');
+  btn.disabled = true;
+  try {
+    const sub = await pushSub();
+    if (sub) {
+      await fetch(`${BACKEND_URL}/api/push/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+      await sub.unsubscribe();
+    } else {
+      if (await Notification.requestPermission() !== 'granted') throw new Error('Notifications were not allowed.');
+      const k = await (await fetch(`${BACKEND_URL}/api/push/key`)).json();
+      if (!k.key) throw new Error(k.error || 'Push is not available right now.');
+      const reg = await navigator.serviceWorker.ready;
+      const fresh = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) });
+      const r = await fetch(`${BACKEND_URL}/api/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: fresh.toJSON() }) });
+      if (!r.ok) { await fresh.unsubscribe(); throw new Error((await r.json().catch(() => ({}))).error || 'Could not turn alerts on.'); }
+    }
+  } catch (e) { note.textContent = e.message || 'Could not change push alerts.'; }
+  await pushRefresh();
 }
 function layClose() { document.getElementById('layModal').classList.remove('open'); }
 function layRenderList() {
@@ -6269,6 +6334,10 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
+    <h3 style="margin-top:18px">Phone app</h3>
+    <p id="pwaNote">Install Line Reaper on your home screen and get a push when Sharp Tail or Best Plays has a new signal. Everyone gets the same alert.</p>
+    <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
+    <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
     <div class="lay-foot"><button onclick="layReset()">RESET</button><button class="primary" onclick="layClose()">DONE</button></div>
   </div>
 </div>
