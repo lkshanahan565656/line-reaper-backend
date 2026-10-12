@@ -582,6 +582,17 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .xa-lbl { font-size:10px; letter-spacing:1.5px; color:#64748b; margin-top:4px; }
 .xa-blurb { grid-column:1 / -1; font-size:12px; color:#94a3b8; line-height:1.5; }
 .xa-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.bank-bar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:10px 14px; margin-bottom:12px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,.2); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; }
+.bank-in { display:flex; align-items:center; gap:4px; }
+.bank-in input { background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
+.bank-unit b { color:#e2e8f0; }
+.bank-meter { width:90px; height:6px; background:rgba(148,163,184,.2); border-radius:3px; overflow:hidden; }
+.bank-meter span { display:block; height:100%; background:#10b981; }
+.bank-hint { color:#fbbf24; }
+.tail-money { margin-top:3px; font-size:12px; color:#cbd5e1; }
+.tail-money b { color:#10b981; }
+.tail-money.over { color:#fbbf24; }
+.xa-capwarn { margin:6px 0 10px; font-size:12px; color:#fbbf24; }
 .xa-stake { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
 .xa-stake input { width:90px; background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
 .xa-chips { display:flex; gap:6px; flex-wrap:wrap; }
@@ -3805,6 +3816,63 @@ function tailVenueLine(s) {
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
+// ── bankroll: units into dollars, with a daily limit ──
+// One bankroll for the whole app (the esports slip uses it too), kept in this
+// browser. 1u = 1% of it, the backend's sizing. New tails stop at a share of
+// the bankroll a day (default 10%), oldest signal first, so a busy slate
+// can't put half the roll in play. An arb is held to a share of it too.
+const bankGet = (k, d) => { const n = parseFloat(lsGet(k)); return isFinite(n) && n > 0 ? n : d; };
+const bank = () => ({ roll: bankGet('lr_bankroll', 1000), dayPct: bankGet('lr_tail_day_pct', 10), arbPct: bankGet('lr_arb_cap_pct', 25), set: lsGet('lr_bankroll') != null });
+function bankSet(k, v) {
+  const n = parseFloat(v);
+  if (!(isFinite(n) && n > 0)) return;
+  lsSet(k, String(n));
+  if (k === 'lr_bankroll' && typeof esportsState !== 'undefined') esportsState.bankroll = n;
+  if (typeof renderTail === 'function' && tailActive) renderTail();
+  if (typeof renderXarbs === 'function') renderXarbs();
+}
+const bankUsd = x => `$${x >= 100 ? Math.round(x).toLocaleString() : x.toFixed(2)}`;
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+// sized entries → Map(id → { usd, full, capped }) and today's total
+function tailStakes(list) {
+  const b = bank(), unit = b.roll / 100, cap = b.roll * b.dayPct / 100, today = new Date();
+  const out = new Map();
+  let used = 0;
+  const sized = list.filter(s => s.type !== 'exit' && tailUnitsOf(s) > 0)
+    .sort((x, y) => (Date.parse(x.seenAt || x.at) || 0) - (Date.parse(y.seenAt || y.at) || 0));
+  for (const s of sized) {
+    const full = tailUnitsOf(s) * unit;
+    const t = new Date(s.seenAt || s.at);
+    if (!sameDay(t, today)) { out.set(s.id, { usd: full, full, capped: false }); continue; }
+    const usd = Math.max(0, Math.min(full, cap - used));
+    used += usd;
+    out.set(s.id, { usd, full, capped: usd < full - 0.005 });
+  }
+  return { stakes: out, used, cap, unit, b };
+}
+// "$12 = 16 contracts at 72¢" (a book shows the stake only)
+function tailMoneyLine(s, st) {
+  if (!st) return '';
+  const v = tailBid(s) || s.venue;
+  if (!(st.usd > 0)) return `<div class="tail-money over">Daily limit reached: skip this one, or raise your limit (${bankUsd(st.full)} at full size)</div>`;
+  const px = v && v.american == null ? Number(v.cost || v.price) : null;
+  const n = px > 0 && px < 1 ? Math.floor(st.usd / px) : null;
+  return `<div class="tail-money">Stake <b>${bankUsd(st.usd)}</b>${n != null ? ` = ${n.toLocaleString()} contract${n === 1 ? '' : 's'} at ${tailC(v.price)}` : ''}${st.capped ? ` · cut to fit your daily limit (full size ${bankUsd(st.full)})` : ''}</div>`;
+}
+function bankBar(kind, used, cap) {
+  const b = bank();
+  const inp = (k, val, w, label, title) => `<label class="bank-in" title="${title}">${label}<input type="number" min="1" step="1" inputmode="decimal" value="${val}" style="width:${w}px" onchange="bankSet('${k}',this.value)"></label>`;
+  const pct = cap > 0 ? Math.min(100, used / cap * 100) : 0;
+  return `<div class="bank-bar">
+    ${inp('lr_bankroll', b.roll, 96, 'BANKROLL $', 'What you have set aside for betting. Kept in this browser only.')}
+    <span class="bank-unit">1u = <b>${bankUsd(b.roll / 100)}</b></span>
+    ${kind === 'tail' ? `${inp('lr_tail_day_pct', b.dayPct, 56, 'DAILY LIMIT %', 'The most of your bankroll new tails can take in one day. Signals past it show $0.')}
+      <span class="bank-meter" title="Put into today's tails, oldest first"><span style="width:${pct.toFixed(0)}%"></span></span><span class="bank-unit">${bankUsd(used)} of ${bankUsd(cap)} today</span>`
+    : inp('lr_arb_cap_pct', b.arbPct, 56, 'MAX PER ARB %', 'The most of your bankroll one arb can take. A fill can slip, so keep it modest.')}
+    ${b.set ? '' : '<span class="bank-hint">Set your bankroll to see every bet in dollars</span>'}
+  </div>`;
+}
+
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 const tailWithheld = view => {
@@ -3968,7 +4036,8 @@ function tailSignalsHTML() {
   if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
     ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
     : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
-  return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
+  const money = tailStakes(all);
+  return note + banner + strip + bankBar('tail', money.used, money.cap) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
     const routed = tailHasVenue(s), bid = tailBid(s), v = bid || s.venue;
     const left = exit ? `<b style="color:${s.full === false ? '#fbbf24' : '#f87171'}">${s.full === false ? 'TRIM' : 'EXIT'}</b><div class="tail-stat"><div class="k">${s.soldShare != null ? `SOLD ${Math.round(s.soldShare * 100)}%` : 'THEY SOLD'}</div></div>`
@@ -3979,7 +4048,8 @@ function tailSignalsHTML() {
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
-      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
+      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
+      + (sized ? tailMoneyLine(s, money.stakes.get(s.id)) : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
       + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (exit && s.tailed ? `<span class="tail-tag cons" title="We tailed this wallet into this outcome (${s.tailed.units}u)${s.full === false ? ': a trim, so the tail stays open' : ': their exit is your cue to get out where you bet it'}">WE TAILED ${s.tailed.units}U</span>` : '')
@@ -4320,7 +4390,9 @@ function renderXarbs() {
     ${cats.length > 1 ? `<div class="xa-chips">${['all', ...cats].map(chip).join('')}</div>` : ''}
   </div>`;
   const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
-  el.innerHTML = note + summary + controls
+  const bk = bank(), arbCap = bk.roll * bk.arbPct / 100;
+  const capWarn = arbState.stake > arbCap + 0.005 ? `<div class="xa-capwarn">Your stake is over your limit of ${bankUsd(arbCap)} for one arb (${bk.arbPct}% of ${bankUsd(bk.roll)}). <button class="xa-more" onclick="xarbRestake('${Math.floor(arbCap)}');renderXarbs()">Use ${bankUsd(Math.floor(arbCap))}</button></div>` : '';
+  el.innerHTML = note + summary + bankBar('arb') + controls + capWarn
     + sec('READY TO PLACE', ready.length ? `${ready.length} · just check each price is still there` : 'none right now',
       ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">Nothing that needs no checking right now. Real arbs are rare and close within minutes: when one opens it shows here first.</div>')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
