@@ -394,34 +394,6 @@ body::before {
 
 .error-box { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 14px; font-size: 12px; color: var(--red); line-height: 1.7; }
 
-/* BOOK LOGOS */
-.book-logo { width: 18px; height: 18px; border-radius: 3px; object-fit: contain; vertical-align: middle; }
-.book-logo-cell { display: flex; align-items: center; gap: 4px; justify-content: center; flex-direction: column; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; }
-
-/* PROPS TABLE */
-.props-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; }
-.props-table th { padding: 8px 10px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; background: rgba(0,0,0,0.3); font-family: 'Inter', sans-serif; }
-.props-table td { padding: 9px 10px; border-bottom: 1px solid rgba(30,39,56,0.5); }
-.props-table tr:hover td { background: rgba(255,255,255,0.015); }
-.odds-over { font-size: 13px; display: block; }
-.odds-over.best { color: var(--green); font-weight: 700; }
-.odds-under { font-size: 13px; display: block; }
-.odds-under.best { color: var(--green); font-weight: 700; }
-
-/* PLAYER CARD */
-.player-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; animation: fadeUp 0.2s ease both; transition: border-color 0.2s; }
-.player-card:hover { border-color: var(--border2); }
-.player-card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
-
-/* DEG SCORE / EV BADGE */
-.deg-score { display:inline-flex; align-items:center; font-size:9px; letter-spacing:1px; font-family:'JetBrains Mono',monospace; padding:2px 8px; border-radius:20px; font-weight:700; }
-.deg-score.hot  { background:rgba(16,185,129,.12); color:var(--green);  border:1px solid rgba(16,185,129,.3); }
-.deg-score.warm { background:rgba(245,158,11,.1);  color:var(--gold);   border:1px solid rgba(245,158,11,.25); }
-.deg-score.cool { background:rgba(71,85,105,.2);   color:#666;          border:1px solid #1e2738; }
-.player-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
-.player-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); letter-spacing: 1px; margin-top: 3px; }
-.player-mkt-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); }
-
 /* LINE SHOP */
 .shop-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease both; }
 
@@ -620,6 +592,16 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .xa-lbl { font-size:10px; letter-spacing:1.5px; color:#64748b; margin-top:4px; }
 .xa-blurb { grid-column:1 / -1; font-size:12px; color:#94a3b8; line-height:1.5; }
 .xa-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.bank-bar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:10px 14px; margin-bottom:12px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,.2); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; }
+.bank-in { display:flex; align-items:center; gap:4px; }
+.bank-in input { background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
+.bank-unit b { color:#e2e8f0; }
+.bank-meter { width:90px; height:6px; background:rgba(148,163,184,.2); border-radius:3px; overflow:hidden; }
+.bank-meter span { display:block; height:100%; background:#10b981; }
+.bank-hint { color:#fbbf24; }
+.tail-money { margin-top:3px; font-size:12px; color:#cbd5e1; }
+.tail-money b { color:#10b981; }
+.bank-meter.over span { background:#fbbf24; }
 .xa-stake { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
 .xa-stake input { width:90px; background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
 .xa-chips { display:flex; gap:6px; flex-wrap:wrap; }
@@ -752,6 +734,38 @@ body::before { background:none; }
 .more-menu .more-cust { border-top:1px solid var(--border); border-radius:0 0 6px 6px; margin-top:4px; color:#7dd3fc; }
 .clv-info:not(.folded) > .fold-head { margin-bottom:8px; }
 body.no-help .clv-info { display:none; }
+
+/* TOOLS: betting calculators */
+.tools-wrap { display:grid; grid-template-columns: 230px 1fr; gap:14px; margin-top:12px; }
+.tools-list { display:flex; flex-direction:column; gap:4px; }
+.tools-list button { text-align:left; background:var(--card); border:1px solid var(--border); color:var(--text2); border-radius:8px; padding:9px 12px; font:500 12px 'Inter',sans-serif; cursor:pointer; }
+.tools-list button:hover { border-color:var(--border2); color:var(--text); }
+.tools-list button.active { border-color:var(--green); color:var(--text); background:rgba(16,185,129,.07); }
+.tools-list button small { display:block; color:var(--muted2); font-size:10px; margin-top:2px; font-weight:400; }
+.tools-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; min-width:0; }
+.tl-title { font-weight:700; letter-spacing:1.5px; font-size:13px; color:#f1f5f9; }
+.tl-blurb { color:var(--text2); font-size:12px; line-height:1.6; margin:4px 0 14px; }
+.tl-fields { display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:10px; }
+.tl-field label { display:block; font-size:10px; letter-spacing:1px; color:var(--muted2); margin-bottom:4px; text-transform:uppercase; }
+.tl-field input, .tl-field select { width:100%; background:var(--surface); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:8px 10px; font:13px 'JetBrains Mono',monospace; }
+.tl-field input:focus, .tl-field select:focus { outline:none; border-color:var(--green); }
+.tl-field.wide { grid-column: 1 / -1; }
+.tl-out { margin-top:16px; display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+.tl-stat { background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:9px 11px; }
+.tl-stat .k { font-size:10px; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; }
+.tl-stat .v { font:600 16px 'JetBrains Mono',monospace; margin-top:3px; color:var(--text); }
+.tl-stat .v.pos { color:#34d399; } .tl-stat .v.neg { color:#f87171; }
+.tl-table { width:100%; border-collapse:collapse; margin-top:12px; font:12px 'JetBrains Mono',monospace; }
+.tl-table th { text-align:left; font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--muted2); padding:6px 8px; border-bottom:1px solid var(--border); }
+.tl-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.04); }
+.tl-note { margin-top:12px; font-size:11px; color:var(--text2); line-height:1.6; }
+.tl-err { margin-top:14px; font-size:12px; color:var(--muted2); }
+@media (max-width: 720px) {
+  .tools-wrap { grid-template-columns: 1fr; }
+  .tools-list { flex-direction:row; overflow-x:auto; padding-bottom:4px; }
+  .tools-list button { flex:0 0 auto; }
+  .tools-list button small { display:none; }
+}
 </style>
 </head>
 <body>
@@ -799,6 +813,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
     <button class="tab" onclick="showTab('results',this)">RESULTS</button>
+    <button class="tab" onclick="showTab('tools',this)">TOOLS</button>
     <span class="tab-sep" title="Sportsbook tools: these need an odds feed"></span>
     <button class="tab" onclick="showTab('lines',this)">LINES</button>
     <button class="tab" onclick="showTab('shop',this)">LINE SHOP</button>
@@ -888,6 +903,14 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" data-days="7" onclick="resultsDays(7)">7 DAYS</button>
   </div>
   <div id="resultsContent"></div>
+</div>
+
+<div class="page" id="page-tools">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">BETTING TOOLS</strong> — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees.
+    <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
+  </div>
+  <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
 </div>
 
 <div class="page" id="page-arb">
@@ -1220,6 +1243,217 @@ function showTab(name, el) {
   if (tailActive) loadTail(); else clearTimeout(tailTimer);
   if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
   if (name === 'results') loadResults();
+  if (name === 'tools') loadTools();
+}
+
+// ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
+// The math lives in calc.js on the backend (tested there) and loads once, the
+// first time this tab opens. Each calculator is a list of fields and a run()
+// that turns the parsed values into stat tiles, an optional table and a note.
+const tools = { ready: false, loading: null, active: 'ev', vals: {} };
+try { Object.assign(tools.vals, JSON.parse(localStorage.getItem('lr_tools') || '{}')); } catch {}
+try { tools.active = localStorage.getItem('lr_tool') || 'ev'; } catch {}
+
+function loadTools() {
+  if (window.LRCalc) { tools.ready = true; return renderTools(); }
+  if (tools.loading) return;
+  tools.loading = new Promise((resolve) => {
+    const sc = document.createElement('script');
+    sc.src = (BACKEND_URL || location.origin) + '/calc.js';
+    sc.onload = () => { tools.ready = !!window.LRCalc; resolve(); renderTools(); };
+    sc.onerror = () => { tools.loading = null; document.getElementById('toolsPanel').innerHTML = '<div class="tl-err">The calculators load from the Line Reaper server, which isn\'t reachable right now.</div>'; resolve(); };
+    document.head.appendChild(sc);
+  });
+}
+
+const tlPct = (x, d = 2) => (x == null || !isFinite(x) ? '—' : (x > 0 ? '+' : '') + (x * 100).toFixed(d) + '%');
+const tlProb = (x, d = 1) => (x == null || !isFinite(x) ? '—' : (x * 100).toFixed(d) + '%');
+const tlUsd = x => (x == null || !isFinite(x) ? '—' : (x < 0 ? '-$' : '$') + Math.abs(x).toFixed(2));
+const tlSgn = x => (x == null || !isFinite(x) ? '' : x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '');
+const tlAm = d => (window.LRCalc && d ? LRCalc.fmtAmerican(d) : '—');
+const tlList = s => String(s || '').split(/[,;\s]+/).filter(Boolean).map(x => LRCalc.parseOdds(x));
+const tlNum = s => { const v = parseFloat(String(s ?? '').replace(/[$,%]/g, '')); return isFinite(v) ? v : null; };
+const tlOptPct = s => { const v = tlNum(s); return v == null ? null : v > 1 ? v / 100 : v; };
+const DEVIG_OPTS = [['multiplicative', 'Multiplicative'], ['power', 'Power'], ['shin', 'Shin'], ['additive', 'Additive'], ['worst', 'Worst case']];
+
+const TOOL_DEFS = [
+  { id: 'ev', name: 'EV + Kelly', sub: 'Edge and bet size',
+    blurb: 'Your price against the fair one. Give a fair win chance, or paste both sides of a sharp market (Pinnacle, Kalshi, Polymarket) and it de-vigs them for you. Kelly sizes the bet; a quarter is the sane default.',
+    fields: [['price', 'Your odds', '+120'], ['fair', 'Fair win % (optional)', ''], ['sharp', 'Sharp market, both sides', '-105, -115'],
+      ['method', 'No-vig method', 'power', DEVIG_OPTS], ['bankroll', 'Bankroll $', '1000'], ['kf', 'Kelly fraction', '0.25']],
+    run(v) {
+      const d = LRCalc.parseOdds(v.price); if (!d) return null;
+      let p = tlOptPct(v.fair), src = 'your fair %';
+      if (p == null) { const m = tlList(v.sharp); const f = m.length >= 2 && m.every(Boolean) ? LRCalc.devig(m, v.method) : null; if (f) { p = f[0]; src = 'the sharp market, first side'; } }
+      if (!(p > 0 && p < 1)) return { stats: [['Your odds', tlAm(d)], ['Implied', tlProb(1 / d)]], note: 'Add a fair win % or a sharp market to price the edge.' };
+      const e = LRCalc.ev(p, d), k = LRCalc.kelly(p, d, tlNum(v.kf) || 0.25), br = tlNum(v.bankroll);
+      return { stats: [['EV', tlPct(e), tlSgn(e)], ['Fair odds', tlAm(1 / p)], ['Win chance', tlProb(p)], ['Implied by your odds', tlProb(1 / d)],
+        ['Kelly stake', br ? tlUsd(k * br) : tlProb(k, 2)], ['Kelly % of bankroll', tlProb(k, 2)]],
+        note: `Fair chance from ${src}. ${e > 0 ? 'Positive EV: the price pays more than the fair odds.' : 'No edge at this price.'}` };
+    } },
+  { id: 'novig', name: 'No-vig fair odds', sub: 'Strip the juice',
+    blurb: 'Fair odds from a market\'s prices, every method side by side. Power and Shin put more of the vig on the longshot, which is how sharp books really price it. Two-way or more.',
+    fields: [['odds', 'Every side of the market', '-300, +240', null, true]],
+    run(v) {
+      const m = tlList(v.odds); if (m.length < 2 || !m.every(Boolean)) return null;
+      const h = LRCalc.hold(m); const methods = DEVIG_OPTS.map(([k, n]) => [n, LRCalc.devig(m, k)]);
+      const rows = m.map((d, i) => `<tr><td>Side ${i + 1}</td><td>${tlAm(d)}</td>${methods.map(([, f]) => `<td>${f ? tlProb(f[i]) + ' <span style="color:var(--muted2)">' + tlAm(1 / f[i]) + '</span>' : '—'}</td>`).join('')}</tr>`).join('');
+      return { stats: [['Hold', tlProb(h.hold, 2)], ['Overround', tlProb(h.overround, 2)]],
+        table: `<table class="tl-table"><tr><th>SIDE</th><th>PRICE</th>${methods.map(([n]) => `<th>${n.toUpperCase()}</th>`).join('')}</tr>${rows}</table>` };
+    } },
+  { id: 'arb', name: 'Arbitrage', sub: 'Stake every side',
+    blurb: 'Stakes that pay the same whichever outcome lands. Rounding keeps the bets looking like a person placed them; the worst outcome is what you lock.',
+    fields: [['odds', 'Best price on each outcome', '+110, -102', null, true], ['total', 'Total stake $', '500'], ['round', 'Round stakes to $', '0', [['0', 'No rounding'], ['1', '$1'], ['5', '$5'], ['10', '$10']]]],
+    run(v) {
+      const m = tlList(v.odds); if (m.length < 2 || !m.every(Boolean)) return null;
+      const a = LRCalc.arbitrage(m, tlNum(v.total) || 100, tlNum(v.round) || 0); if (!a) return null;
+      const rows = m.map((d, i) => `<tr><td>Side ${i + 1}</td><td>${tlAm(d)}</td><td>${tlUsd(a.stakes[i])}</td><td>${tlUsd(a.returns[i])}</td><td class="${tlSgn(a.profits[i])}">${tlUsd(a.profits[i])}</td></tr>`).join('');
+      return { stats: [['Locked profit', tlUsd(a.profit), tlSgn(a.profit)], ['ROI', tlPct(a.worstRoi), tlSgn(a.worstRoi)], ['Total staked', tlUsd(a.staked)], ['Implied total', tlProb(a.book, 2)]],
+        table: `<table class="tl-table"><tr><th>SIDE</th><th>PRICE</th><th>STAKE</th><th>RETURN</th><th>PROFIT</th></tr>${rows}</table>`,
+        note: a.isArb ? 'This is an arb: every outcome profits.' : 'Not an arb: the prices add up past 100%, so every outcome loses a little.' };
+    } },
+  { id: 'hedge', name: 'Hedge', sub: 'Lock in a result',
+    blurb: 'An open bet (a parlay\'s remaining payout counts) and the price on the other side now. Equal locks the same result either way; break-even only gets your stake back and lets the rest ride.',
+    fields: [['stake', 'Open bet stake $', '50'], ['open', 'Open bet odds', '+600'], ['hedge', 'Hedge odds now', '-150'], ['mode', 'Hedge to', 'equal', [['equal', 'Equal profit'], ['breakeven', 'Break even']]]],
+    run(v) {
+      const h = LRCalc.hedge(tlNum(v.stake), LRCalc.parseOdds(v.open), LRCalc.parseOdds(v.hedge), v.mode); if (!h) return null;
+      return { stats: [['Hedge stake', tlUsd(h.hedgeStake)], ['If open bet wins', tlUsd(h.ifOpenWins), tlSgn(h.ifOpenWins)], ['If hedge wins', tlUsd(h.ifHedgeWins), tlSgn(h.ifHedgeWins)], ['Guaranteed', tlUsd(h.guaranteed), tlSgn(h.guaranteed)]] };
+    } },
+  { id: 'parlay', name: 'Parlay', sub: 'Payout and true EV',
+    blurb: 'Leg prices multiply into the parlay price. Add a fair win % for each leg (from the no-vig tool) to see whether the parlay is actually +EV.',
+    fields: [['legs', 'Leg odds', '-110, -110, +150', null, true], ['fair', 'Fair win % per leg (optional)', '', null, true], ['stake', 'Stake $', '10']],
+    run(v) {
+      const ds = tlList(v.legs); if (!ds.length || !ds.every(Boolean)) return null;
+      const ps = String(v.fair || '').split(/[,;\s]+/).filter(Boolean).map(tlOptPct);
+      const p = LRCalc.parlay(ds.map((d, i) => ({ dec: d, prob: ps.length === ds.length ? ps[i] : null })), tlNum(v.stake) || 10); if (!p) return null;
+      const st = [['Parlay odds', tlAm(p.dec)], ['Payout', tlUsd(p.payout)], ['Profit if it hits', tlUsd(p.profit)], ['Implied', tlProb(p.implied, 2)]];
+      if (p.prob != null) st.push(['True chance', tlProb(p.prob, 2)], ['EV', tlPct(p.ev), tlSgn(p.ev)], ['Fair odds', tlAm(p.fairDec)]);
+      return { stats: st, note: p.prob == null ? 'Give a fair % for every leg to price the EV.' : '' };
+    } },
+  { id: 'middle', name: 'Middle', sub: 'Two lines, one window',
+    blurb: 'Over the low number at one book, under the high number at another. Stakes are set so a miss costs the same either way; a hit wins both. Give a projection and spread to estimate how often it lands (NFL totals run about 13.5, NBA about 18).',
+    fields: [['lo', 'Over line', '44.5'], ['oOdds', 'Over odds', '-110'], ['hi', 'Under line', '47.5'], ['uOdds', 'Under odds', '-110'],
+      ['total', 'Total stake $', '220'], ['mean', 'Projected total (optional)', '46'], ['sd', 'Std dev (optional)', '13.5'], ['hit', 'Or hit chance % (optional)', '']],
+    run(v) {
+      const lo = tlNum(v.lo), hi = tlNum(v.hi);
+      let p = tlOptPct(v.hit);
+      if (p == null && tlNum(v.mean) != null && tlNum(v.sd)) p = LRCalc.windowProb(tlNum(v.mean), tlNum(v.sd), lo, hi);
+      const m = LRCalc.middle(LRCalc.parseOdds(v.oOdds), LRCalc.parseOdds(v.uOdds), tlNum(v.total) || 100, p); if (!m) return null;
+      return { stats: [['Over stake', tlUsd(m.stakeA)], ['Under stake', tlUsd(m.stakeB)], ['If it misses', tlUsd(m.miss), tlSgn(m.miss)], ['If it hits', tlUsd(m.hit), tlSgn(m.hit)],
+        ['Break-even hit rate', tlProb(m.breakeven, 2)], ['Hit chance', tlProb(p, 2)], ['EV', m.evPct != null ? tlPct(m.evPct) : '—', tlSgn(m.evPct)]],
+        note: hi > lo ? `Window: anything strictly between ${lo} and ${hi}.` : 'The under line has to sit above the over line for a middle.' };
+    } },
+  { id: 'freebet', name: 'Free bet converter', sub: 'Promo to cash',
+    blurb: 'A bonus bet pays only the winnings, so put it on a long price and hedge with cash. 70% or better is a strong conversion; longer odds usually convert better.',
+    fields: [['amount', 'Free bet $', '100'], ['fOdds', 'Free bet odds', '+400'], ['hOdds', 'Hedge odds (cash)', '-500']],
+    run(v) {
+      const f = LRCalc.freeBet(tlNum(v.amount), LRCalc.parseOdds(v.fOdds), LRCalc.parseOdds(v.hOdds)); if (!f) return null;
+      return { stats: [['Hedge stake', tlUsd(f.hedgeStake)], ['Locked profit', tlUsd(f.profit), tlSgn(f.profit)], ['Conversion', tlProb(f.conversion)]] };
+    } },
+  { id: 'boost', name: 'Profit boost', sub: 'Is the boost +EV',
+    blurb: 'A boost on the winnings. Give the other side\'s price and it de-vigs the original market to price the boost and the hedge that locks it in.',
+    fields: [['odds', 'Original odds', '+150'], ['boost', 'Boost %', '50'], ['stake', 'Max stake $', '50'], ['other', 'Other side odds', '-180'], ['method', 'No-vig method', 'power', DEVIG_OPTS]],
+    run(v) {
+      const b = LRCalc.profitBoost(LRCalc.parseOdds(v.odds), tlNum(v.boost), tlNum(v.stake) || 50, LRCalc.parseOdds(v.other), v.method); if (!b) return null;
+      const st = [['Boosted odds', tlAm(b.boosted)], ['Profit if it wins', tlUsd(b.profitIfWin)]];
+      if (b.prob != null) st.push(['Fair chance', tlProb(b.prob)], ['EV', tlPct(b.ev), tlSgn(b.ev)]);
+      if (b.hedge) st.push(['Hedge stake', tlUsd(b.hedge.hedgeStake)], ['Locked if hedged', tlUsd(b.hedge.guaranteed), tlSgn(b.hedge.guaranteed)]);
+      return { stats: st };
+    } },
+  { id: 'clv', name: 'Closing line value', sub: 'Did you beat the close',
+    blurb: 'The best long-run proof of an edge. Give both sides of the closing market so the close is de-vigged; without the other side the vig flatters the close.',
+    fields: [['bet', 'Your odds', '+110'], ['close', 'Closing odds, your side', '-105'], ['other', 'Closing odds, other side', '-115'], ['method', 'No-vig method', 'power', DEVIG_OPTS]],
+    run(v) {
+      const c = LRCalc.clv(LRCalc.parseOdds(v.bet), LRCalc.parseOdds(v.close), LRCalc.parseOdds(v.other), v.method); if (!c) return null;
+      return { stats: [['CLV', tlPct(c.clv), tlSgn(c.clv)], ['Fair close', tlAm(c.fairDec)], ['Fair chance at close', tlProb(c.fairProb)], ['Probability gained', tlPct(c.probGain)]],
+        note: c.devigged ? '' : 'Close not de-vigged: add the other side for the honest number.' };
+    } },
+  { id: 'exchange', name: 'Exchange fees', sub: 'Kalshi and Polymarket',
+    blurb: 'What an exchange contract really costs once the taker fee is in, and the sportsbook odds that equals. Kalshi rounds its fee up to the cent per order, so tiny orders pay the most.',
+    fields: [['venue', 'Exchange', 'kalshi', [['kalshi', 'Kalshi'], ['polymarket', 'Polymarket'], ['none', 'No fee (maker)']]], ['price', 'Price (cents)', '55'],
+      ['contracts', 'Contracts', '100'], ['rate', 'Polymarket fee rate', '0.05'], ['mine', 'Your win % (optional)', '']],
+    run(v) {
+      let pr = tlNum(v.price); if (pr == null) return null; if (pr >= 1) pr /= 100;
+      const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, v.venue, { rate: v.venue === 'polymarket' ? (tlNum(v.rate) ?? 0.05) : 0.07, myProb: tlOptPct(v.mine) }); if (!x) return null;
+      const st = [['Total cost', tlUsd(x.cost)], ['Fee', tlUsd(x.fee)], ['All-in per contract', (x.perContract * 100).toFixed(2) + 'c'], ['As odds', x.american],
+        ['Break-even', tlProb(x.breakeven, 2)], ['Profit if it wins', tlUsd(x.profitIfWin), tlSgn(x.profitIfWin)]];
+      if (x.ev != null) st.push(['EV', tlPct(x.ev), tlSgn(x.ev)], ['Quarter Kelly', tlProb(x.kelly, 2)]);
+      return { stats: st };
+    } },
+  { id: 'props', name: 'Prop line', sub: 'Projection to odds',
+    blurb: 'Chance a stat goes over or under a line from a projection. Counts (kills, strikeouts, shots) use a Poisson; add a standard deviation for bigger stats (yards, points) to use a normal curve. Whole-number lines can push.',
+    fields: [['mean', 'Projection', '4.2'], ['line', 'Line', '3.5'], ['sd', 'Std dev (optional)', ''], ['over', 'Over odds (optional)', '-120'], ['under', 'Under odds (optional)', '-110']],
+    run(v) {
+      const r = LRCalc.propLine(tlNum(v.mean), tlNum(v.line), tlNum(v.sd)); if (!r) return null;
+      const od = LRCalc.parseOdds(v.over), ud = LRCalc.parseOdds(v.under), live = r.over + r.under;
+      const eo = od && live ? LRCalc.ev(r.over / live, od) : null, eu = ud && live ? LRCalc.ev(r.under / live, ud) : null;
+      const st = [['Over', tlProb(r.over)], ['Under', tlProb(r.under)], ['Fair over', tlAm(r.fairOver)], ['Fair under', tlAm(r.fairUnder)]];
+      if (r.push > 0) st.push(['Push', tlProb(r.push)]);
+      if (eo != null) st.push(['Over EV', tlPct(eo), tlSgn(eo)]);
+      if (eu != null) st.push(['Under EV', tlPct(eu), tlSgn(eu)]);
+      return { stats: st, note: `Priced on a ${r.dist} curve.` };
+    } },
+  { id: 'convert', name: 'Odds converter', sub: 'Every format',
+    blurb: 'American, decimal, fractional, implied chance and the exchange price in cents.',
+    fields: [['odds', 'Odds', '-110']],
+    run(v) {
+      const c = LRCalc.convert(v.odds); if (!c) return null;
+      return { stats: [['American', c.american], ['Decimal', c.decimal.toFixed(3)], ['Fractional', c.fractional], ['Implied chance', tlProb(c.prob, 2)], ['Exchange price', c.cents + 'c']] };
+    } },
+];
+
+function toolDef(id) { return TOOL_DEFS.find(t => t.id === id) || TOOL_DEFS[0]; }
+function toolVals(t) {
+  const saved = tools.vals[t.id] || {};
+  const v = {}; t.fields.forEach(([k, , def]) => { v[k] = saved[k] ?? def; }); return v;
+}
+
+function renderTools() {
+  const list = document.getElementById('toolsList'), panel = document.getElementById('toolsPanel');
+  if (!list || !panel || !tools.ready) return;
+  const t = toolDef(tools.active), v = toolVals(t);
+  list.innerHTML = TOOL_DEFS.map(d => `<button class="${d.id === t.id ? 'active' : ''}" onclick="openTool('${d.id}')">${d.name}<small>${d.sub}</small></button>`).join('');
+  const field = ([k, label, , opts, wide]) => {
+    const val = String(v[k] ?? '').replace(/"/g, '&quot;');
+    const input = opts
+      ? `<select data-k="${k}" onchange="toolInput()">${opts.map(([ov, on]) => `<option value="${ov}"${String(v[k]) === ov ? ' selected' : ''}>${on}</option>`).join('')}</select>`
+      : `<input data-k="${k}" value="${val}" inputmode="text" autocomplete="off" oninput="toolInput()">`;
+    return `<div class="tl-field${wide ? ' wide' : ''}"><label>${label}</label>${input}</div>`;
+  };
+  panel.innerHTML = `<div class="tl-title">${t.name.toUpperCase()}</div><div class="tl-blurb">${t.blurb}</div>
+    <div class="tl-fields">${t.fields.map(field).join('')}</div><div id="toolOut"></div>`;
+  list.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  toolCompute();
+}
+
+function toolInput() {
+  const t = toolDef(tools.active), v = {};
+  document.querySelectorAll('#toolsPanel [data-k]').forEach(el => { v[el.dataset.k] = el.value; });
+  tools.vals[t.id] = v;
+  try { localStorage.setItem('lr_tools', JSON.stringify(tools.vals)); } catch {}
+  toolCompute();
+}
+
+function toolCompute() {
+  const t = toolDef(tools.active), out = document.getElementById('toolOut'); if (!out) return;
+  let r = null;
+  try { r = t.run(toolVals(t)); } catch { r = null; }
+  if (!r) { out.innerHTML = '<div class="tl-err">Fill in the fields to see the numbers. Odds can be -110, +150, 1.91, 3/2, 45% or 45c.</div>'; return; }
+  out.innerHTML = `<div class="tl-out">${r.stats.map(([k, val, cls]) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${val}</div></div>`).join('')}</div>`
+    + (r.table ? `<div style="overflow-x:auto">${r.table}</div>` : '') + (r.note ? `<div class="tl-note">${r.note}</div>` : '');
+}
+
+// Opens a calculator, optionally prefilled (other tabs can send a price here).
+function openTool(id, prefill) {
+  tools.active = toolDef(id).id;
+  try { localStorage.setItem('lr_tool', tools.active); } catch {}
+  if (prefill) tools.vals[tools.active] = { ...toolVals(toolDef(id)), ...prefill };
+  const page = document.getElementById('page-tools');
+  if (page && !page.classList.contains('active')) {
+    const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === "showTab('tools',this)");
+    return showTab('tools', btn);
+  }
+  if (tools.ready) renderTools(); else loadTools();
 }
 
 // ─── API KEY ──────────────────────────────────────────────────────────────────
@@ -1671,26 +1905,30 @@ function renderCLV() {
     return;
   }
 
-  const clvVals = withCLV.map(b => b.myOdds - b.closeOdds);
+  // CLV % = your decimal price / the closing decimal price − 1. Subtracting
+  // American odds broke across ±100 (+105 against a -110 close read +215).
+  const amDec = o => (o > 0 ? 1 + o / 100 : 1 + 100 / -o);
+  const clvPct = b => (amDec(b.myOdds) / amDec(b.closeOdds) - 1) * 100;
+  const clvVals = withCLV.map(clvPct);
   const avg = (clvVals.reduce((a,b)=>a+b,0)/clvVals.length).toFixed(1);
   const posCount = clvVals.filter(v=>v>0).length;
   const rate = ((posCount/clvVals.length)*100).toFixed(0);
 
-  document.getElementById('clvAvg').textContent = `${avg>0?'+':''}${avg}`;
+  document.getElementById('clvAvg').textContent = `${avg>0?'+':''}${avg}%`;
   document.getElementById('clvAvg').style.color = avg>0?'var(--accent)':'var(--danger)';
   document.getElementById('clvPos').textContent = posCount;
   document.getElementById('clvRate').textContent = `${rate}%`;
   document.getElementById('clvRate').style.color = rate>=50?'var(--accent2)':'var(--danger)';
 
   el.innerHTML = withCLV.map(b => {
-    const clv = b.myOdds - b.closeOdds;
+    const clv = clvPct(b);
     return `<div class="bet-row">
       <div class="bet-info">
         <div class="bet-pick">${b.pick}</div>
         <div class="bet-meta">Open: ${fmt(b.myOdds)} → Close: ${fmt(b.closeOdds)} · ${b.date}</div>
       </div>
       <div class="bet-right">
-        <div class="bet-clv ${clv>0?'good':'bad'}" style="font-size:16px;font-weight:700">${clv>0?'+':''}${clv}</div>
+        <div class="bet-clv ${clv>0?'good':'bad'}" style="font-size:16px;font-weight:700">${clv>0?'+':''}${clv.toFixed(1)}%</div>
         <div style="font-size:9px;color:var(--muted2)">${clv>0?'BEAT CLOSE ✓':'MISSED CLOSE ✗'}</div>
       </div>
     </div>`;
@@ -1823,9 +2061,11 @@ function renderShop(games, query='') {
     const bestAway = Math.max(...awayOdds.map(x=>x.odds));
     const worstAway = Math.min(...awayOdds.map(x=>x.odds));
 
-    // No-vig true prob using best sharp lines (DK/FD/LowVig)
-    const sharpHome = books['draftkings']?.home || books['fanduel']?.home || books['lowvig']?.home;
-    const sharpAway = books['draftkings']?.away || books['fanduel']?.away || books['lowvig']?.away;
+    // No-vig true prob from the sharpest book that prices both sides; the
+    // retail books (DK/FD) only as a last resort
+    const refBook = ['pinnacle','circa','novig','lowvig','betonlineag','draftkings','fanduel'].find(b => books[b]?.home && books[b]?.away);
+    const sharpHome = refBook ? books[refBook].home : null;
+    const sharpAway = refBook ? books[refBook].away : null;
     let trueHome = null, trueAway = null;
     if (sharpHome && sharpAway) {
       const ih = oddsToImplied(sharpHome);
@@ -2122,7 +2362,6 @@ function layMove(n, d) {
 function layPin(n) { layout.more[n] = !layIsMore(n); laySave(); layApply(); layRenderList(); }
 function layHide(n) {
   layout.hidden[n] = !layout.hidden[n]; laySave(); layApply(); layRenderList();
-  const active = document.querySelector('.tab.active');
   if (layout.hidden[n] && layTabs[n].classList.contains('active')) {
     const next = layNames().find(x => !layout.hidden[x]);
     if (next) showTab(next, layTabs[next]);
@@ -2507,9 +2746,12 @@ function renderPropsTable(data) {
       const diff = sharpLine - dfsLine; // positive = sharp line higher = DFS OVER is easier
       // Rough logistic shift: each 1pt ≈ 4% prob shift at 50/50 market
       const shift = diff * 0.04;
-      const adjProb = side === 'OVER' ? Math.min(.98, trueProb + shift) : Math.min(.98, (1-trueProb) + shift);
-      // DFS pays -110 equivalent (implied ~52.4%)
-      const dfsImplied = 0.524;
+      // trueProb is already this side's no-vig probability. A lower DFS line
+      // (diff > 0) helps the over and hurts the under.
+      const adjProb = Math.min(.98, Math.max(.02, side === 'OVER' ? trueProb + shift : trueProb - shift));
+      // A pick'em leg breaks even at 56.22% (the 4-pick 10x / standard -128
+      // leg the server prices against), not -110's 52.4%
+      const dfsImplied = 0.5622;
       return ((adjProb / dfsImplied) - 1) * 100;
     }
 
@@ -3382,7 +3624,7 @@ let esportsState = {
 //   perLegMult = fallback per-leg multiplier when the backend doesn't send one
 const ES_BOOKS = {
   prizepicks: { name:'PRIZEPICKS', color:'#3b82f6', evField:'ppEv',
-    power:{2:3, 3:5, 4:10},
+    power:{2:3, 3:5, 4:10, 5:20, 6:37.5},
     flex:{3:{3:2.25,2:1.25}, 4:{4:5,3:1.5}, 5:{5:10,4:2,3:0.4}, 6:{6:25,5:2,4:0.4}} },
   underdog:   { name:'UNDERDOG', color:'#a78bfa', evField:'udEv', multField:'udMultiplier', boostsPower:true,
     power:{2:3, 3:6, 4:10, 5:20} },
@@ -4015,15 +4257,64 @@ const tailWho = x => {
 // Where to tail: the venue the backend picked (most units after fees), as one line
 const tailAm = p => p > 0 && p < 1 ? (p >= 0.5 ? -Math.round(100 * p / (1 - p)) : Math.round(100 * (1 - p) / p)) : null;
 const tailHasVenue = s => s && ('venue' in s || 'venues' in s);
-const tailUnitsOf = s => !s || s.type === 'exit' ? 0 : tailHasVenue(s) ? (s.venue ? s.venue.units || 0 : 0) : s.units || 0;
+const tailTakeUnits = s => !s || s.type === 'exit' ? 0 : tailHasVenue(s) ? (s.venue ? s.venue.units || 0 : 0) : s.units || 0;
+// a resting bid (s.limit) when no venue sizes a take
+const tailBid = s => s && s.type !== 'exit' && !(tailTakeUnits(s) > 0) && s.limit && s.limit.units > 0 ? s.limit : null;
+const tailUnitsOf = s => tailTakeUnits(s) || (tailBid(s) ? tailBid(s).units : 0);
 const tailVenuePrice = v => v.american != null ? fmtAm(v.american) : tailC(v.price);
 function tailVenueLine(s) {
+  const b = tailBid(s);
+  if (b) return `Bid at ${b.name}${b.buy ? `: ${b.buy}` : ''} ${tailC(b.price)} limit · ${b.units}u · ask is ${tailC(b.ask)} · fills only if it trades down to you${b.until ? ' · cancel at the start' : ''}`;
   if (!tailHasVenue(s)) return s.units > 0 ? `Tail ${s.units}u at ${tailC(s.currentPrice)}` : '';   // an older backend
   const v = s.venue;
   if (!v) return tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
+// ── your unit in dollars ──
+// Every alert carries the same units for everyone (1u = 1% of a bankroll);
+// nothing here changes that. You set what one unit is worth to you, kept in
+// this browser, and each sized signal shows its units in your dollars and
+// the contracts they buy. Today's signals add up against a daily limit you
+// set, as a running total; the signals themselves stay as sent.
+const bankGet = (k, d) => { const n = parseFloat(lsGet(k)); return isFinite(n) && n > 0 ? n : d; };
+const bank = () => ({ unit: bankGet('lr_unit_usd', bankGet('lr_bankroll', 1000) / 100), dayUnits: bankGet('lr_tail_day_units', 10), set: lsGet('lr_unit_usd') != null });
+function bankSet(k, v) {
+  const n = parseFloat(v);
+  if (!(isFinite(n) && n > 0)) return;
+  lsSet(k, String(n));
+  if (typeof renderTail === 'function' && tailActive) renderTail();
+}
+const bankUsd = x => `$${x >= 100 ? Math.round(x).toLocaleString() : x.toFixed(2)}`;
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+// sized entries sent today, in units
+function tailToday(list) {
+  const today = new Date();
+  return list.filter(s => s.type !== 'exit' && tailUnitsOf(s) > 0 && sameDay(new Date(s.seenAt || s.at), today))
+    .reduce((a, s) => a + tailUnitsOf(s), 0);
+}
+// "1.5u = $15.00 = 25 contracts at 57¢" (a book shows the dollars only)
+function tailMoneyLine(s) {
+  const u = tailUnitsOf(s);
+  if (!(u > 0)) return '';
+  const usd = u * bank().unit, v = tailBid(s) || s.venue;
+  const px = v && v.american == null ? Number(v.cost || v.price) : null;
+  const n = px > 0 && px < 1 ? Math.floor(usd / px) : null;
+  return `<div class="tail-money">${u}u = <b>${bankUsd(usd)}</b> at your unit${n != null ? ` = ${n.toLocaleString()} contract${n === 1 ? '' : 's'} at ${tailC(v.price)}` : ''}</div>`;
+}
+function bankBar(todayUnits) {
+  const b = bank();
+  const inp = (k, val, w, label, title) => `<label class="bank-in" title="${title}">${label}<input type="number" min="0.01" step="any" inputmode="decimal" value="${val}" style="width:${w}px" onchange="bankSet('${k}',this.value)"></label>`;
+  const pct = Math.min(100, todayUnits / b.dayUnits * 100);
+  return `<div class="bank-bar">
+    ${inp('lr_unit_usd', Math.round(b.unit * 100) / 100, 80, '1 UNIT = $', 'What one unit is worth to you (1% of your bankroll is the usual). Kept in this browser only.')}
+    <span class="bank-unit">TODAY'S SIGNALS <b>${Math.round(todayUnits * 100) / 100}u</b> = <b>${bankUsd(todayUnits * b.unit)}</b></span>
+    <span class="bank-meter${todayUnits > b.dayUnits ? ' over' : ''}" title="Against the daily limit you set"><span style="width:${pct.toFixed(0)}%"></span></span>
+    ${inp('lr_tail_day_units', b.dayUnits, 56, 'MY DAILY LIMIT u', 'Your own cap on units a day, as a running total. It does not change the signals.')}
+    ${b.set ? '' : '<span class="bank-hint">Set your unit to see every signal in dollars</span>'}
+  </div>`;
+}
+
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 const tailWithheld = view => {
@@ -4187,18 +4478,19 @@ function tailSignalsHTML() {
   if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
     ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
     : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
-  return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
+  return note + banner + strip + bankBar(tailToday(all)) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
-    const routed = tailHasVenue(s), v = s.venue;
+    const routed = tailHasVenue(s), bid = tailBid(s), v = bid || s.venue;
     const left = exit ? `<b style="color:${s.full === false ? '#fbbf24' : '#f87171'}">${s.full === false ? 'TRIM' : 'EXIT'}</b><div class="tail-stat"><div class="k">${s.soldShare != null ? `SOLD ${Math.round(s.soldShare * 100)}%` : 'THEY SOLD'}</div></div>`
-      : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${routed && v ? escAttr(v.name) : ''}</div>`
+      : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${bid ? 'LIMIT BID · ' : ''}${routed && v ? escAttr(v.name) : ''}</div>`
       : routed && !v ? `<b style="color:#64748b">WATCH</b><div style="font-size:10px;color:#94a3b8;line-height:1.3">no venue yet</div>`
       : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v && !s.blocked ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
-      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
+      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
+      + (sized ? tailMoneyLine(s) : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
       + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (exit && s.tailed ? `<span class="tail-tag cons" title="We tailed this wallet into this outcome (${s.tailed.units}u)${s.full === false ? ': a trim, so the tail stays open' : ': their exit is your cue to get out where you bet it'}">WE TAILED ${s.tailed.units}U</span>` : '')
@@ -4571,8 +4863,8 @@ function tailRecordHTML() {
   const recent = (s.signals || []).map(r => `<div class="tail-row">
       ${tailGrade(r.grade)}
       <span style="flex:1;min-width:200px;color:#e2e8f0">${tailLink(r.url, escAttr(r.market || ''))} · <b>${escAttr(r.outcome || '?')}</b></span>
-      <span style="font-family:'JetBrains Mono',monospace;color:#94a3b8">${r.units}u at ${tailC(r.entry)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;color:${r.status === 'open' ? '#fbbf24' : color(r.profit)}">${r.status === 'open' ? 'OPEN' : r.result === 'void' ? 'VOID' : (r.result || '').toUpperCase() + ' ' + u(r.profit)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;color:#94a3b8">${r.units}u ${r.order === 'limit' ? 'bid ' : ''}at ${tailC(r.entry)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;color:${r.status === 'open' || r.result === 'unfilled' ? '#fbbf24' : color(r.profit)}">${r.status === 'open' ? (r.order === 'limit' && !r.filled ? 'BID OPEN' : 'OPEN') : r.result === 'void' ? 'VOID' : r.result === 'unfilled' ? 'NO FILL' : (r.result || '').toUpperCase() + ' ' + u(r.profit)}</span>
       <span style="font-family:'JetBrains Mono',monospace;min-width:80px;text-align:right;color:#64748b">${r.clv != null ? 'CLV ' + tailPct(r.clv) : ''}</span></div>`).join('');
   return `<div style="display:flex;gap:10px;flex-wrap:wrap">
       ${tile(`${o.wins || 0}-${o.losses || 0}`, 'SIGNALS GRADED (W-L)')}

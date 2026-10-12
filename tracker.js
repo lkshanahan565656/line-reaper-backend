@@ -372,14 +372,16 @@ function createTracker({
     const units = graded.reduce((s, r) => s + (r.profit || 0), 0);
     const withClv = rows.filter(r => r.status !== 'void' && r.clv != null && r.closeAt !== r.signalAt);
     const decided = wins + losses;
-    // Breakeven hit rate for the books these picks were played at
-    const be = graded.length ? graded.reduce((s, r) => s + 1 / r.signalDecimal, 0) / graded.length : null;
+    // Breakeven hit rate for the books these picks were played at. A push
+    // refunds the stake, so ROI and breakeven count decided picks only.
+    const dec = graded.filter(r => r.outcome !== 'push');
+    const be = dec.length ? dec.reduce((s, r) => s + 1 / r.signalDecimal, 0) / dec.length : null;
     return {
       picks: rows.length, graded: graded.length, wins, losses, pushes,
       hitRate: decided ? wins / decided : null,
       breakeven: be,
       units: Math.round(units * 100) / 100,
-      roi: graded.length ? units / graded.length : null,
+      roi: dec.length ? units / dec.length : null,
       avgEv: graded.length ? graded.reduce((s, r) => s + (r.signalEv || 0), 0) / graded.length / 100 : null,
       clvAvg: withClv.length ? withClv.reduce((s, r) => s + r.clv, 0) / withClv.length : null,
       beatClose: withClv.length ? withClv.filter(r => r.clv > 0).length / withClv.length : null,
