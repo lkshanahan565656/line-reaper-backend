@@ -591,8 +591,7 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .bank-hint { color:#fbbf24; }
 .tail-money { margin-top:3px; font-size:12px; color:#cbd5e1; }
 .tail-money b { color:#10b981; }
-.tail-money.over { color:#fbbf24; }
-.xa-capwarn { margin:6px 0 10px; font-size:12px; color:#fbbf24; }
+.bank-meter.over span { background:#fbbf24; }
 .xa-stake { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
 .xa-stake input { width:90px; background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
 .xa-chips { display:flex; gap:6px; flex-wrap:wrap; }
@@ -3816,60 +3815,47 @@ function tailVenueLine(s) {
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
-// ── bankroll: units into dollars, with a daily limit ──
-// One bankroll for the whole app (the esports slip uses it too), kept in this
-// browser. 1u = 1% of it, the backend's sizing. New tails stop at a share of
-// the bankroll a day (default 10%), oldest signal first, so a busy slate
-// can't put half the roll in play. An arb is held to a share of it too.
+// ── your unit in dollars ──
+// Every alert carries the same units for everyone (1u = 1% of a bankroll);
+// nothing here changes that. You set what one unit is worth to you, kept in
+// this browser, and each sized signal shows its units in your dollars and
+// the contracts they buy. Today's signals add up against a daily limit you
+// set, as a running total; the signals themselves stay as sent.
 const bankGet = (k, d) => { const n = parseFloat(lsGet(k)); return isFinite(n) && n > 0 ? n : d; };
-const bank = () => ({ roll: bankGet('lr_bankroll', 1000), dayPct: bankGet('lr_tail_day_pct', 10), arbPct: bankGet('lr_arb_cap_pct', 25), set: lsGet('lr_bankroll') != null });
+const bank = () => ({ unit: bankGet('lr_unit_usd', bankGet('lr_bankroll', 1000) / 100), dayUnits: bankGet('lr_tail_day_units', 10), set: lsGet('lr_unit_usd') != null });
 function bankSet(k, v) {
   const n = parseFloat(v);
   if (!(isFinite(n) && n > 0)) return;
   lsSet(k, String(n));
-  if (k === 'lr_bankroll' && typeof esportsState !== 'undefined') esportsState.bankroll = n;
   if (typeof renderTail === 'function' && tailActive) renderTail();
-  if (typeof renderXarbs === 'function') renderXarbs();
 }
 const bankUsd = x => `$${x >= 100 ? Math.round(x).toLocaleString() : x.toFixed(2)}`;
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-// sized entries → Map(id → { usd, full, capped }) and today's total
-function tailStakes(list) {
-  const b = bank(), unit = b.roll / 100, cap = b.roll * b.dayPct / 100, today = new Date();
-  const out = new Map();
-  let used = 0;
-  const sized = list.filter(s => s.type !== 'exit' && tailUnitsOf(s) > 0)
-    .sort((x, y) => (Date.parse(x.seenAt || x.at) || 0) - (Date.parse(y.seenAt || y.at) || 0));
-  for (const s of sized) {
-    const full = tailUnitsOf(s) * unit;
-    const t = new Date(s.seenAt || s.at);
-    if (!sameDay(t, today)) { out.set(s.id, { usd: full, full, capped: false }); continue; }
-    const usd = Math.max(0, Math.min(full, cap - used));
-    used += usd;
-    out.set(s.id, { usd, full, capped: usd < full - 0.005 });
-  }
-  return { stakes: out, used, cap, unit, b };
+// sized entries sent today, in units
+function tailToday(list) {
+  const today = new Date();
+  return list.filter(s => s.type !== 'exit' && tailUnitsOf(s) > 0 && sameDay(new Date(s.seenAt || s.at), today))
+    .reduce((a, s) => a + tailUnitsOf(s), 0);
 }
-// "$12 = 16 contracts at 72¢" (a book shows the stake only)
-function tailMoneyLine(s, st) {
-  if (!st) return '';
-  const v = tailBid(s) || s.venue;
-  if (!(st.usd > 0)) return `<div class="tail-money over">Daily limit reached: skip this one, or raise your limit (${bankUsd(st.full)} at full size)</div>`;
+// "1.5u = $15.00 = 25 contracts at 57¢" (a book shows the dollars only)
+function tailMoneyLine(s) {
+  const u = tailUnitsOf(s);
+  if (!(u > 0)) return '';
+  const usd = u * bank().unit, v = tailBid(s) || s.venue;
   const px = v && v.american == null ? Number(v.cost || v.price) : null;
-  const n = px > 0 && px < 1 ? Math.floor(st.usd / px) : null;
-  return `<div class="tail-money">Stake <b>${bankUsd(st.usd)}</b>${n != null ? ` = ${n.toLocaleString()} contract${n === 1 ? '' : 's'} at ${tailC(v.price)}` : ''}${st.capped ? ` · cut to fit your daily limit (full size ${bankUsd(st.full)})` : ''}</div>`;
+  const n = px > 0 && px < 1 ? Math.floor(usd / px) : null;
+  return `<div class="tail-money">${u}u = <b>${bankUsd(usd)}</b> at your unit${n != null ? ` = ${n.toLocaleString()} contract${n === 1 ? '' : 's'} at ${tailC(v.price)}` : ''}</div>`;
 }
-function bankBar(kind, used, cap) {
+function bankBar(todayUnits) {
   const b = bank();
-  const inp = (k, val, w, label, title) => `<label class="bank-in" title="${title}">${label}<input type="number" min="1" step="1" inputmode="decimal" value="${val}" style="width:${w}px" onchange="bankSet('${k}',this.value)"></label>`;
-  const pct = cap > 0 ? Math.min(100, used / cap * 100) : 0;
+  const inp = (k, val, w, label, title) => `<label class="bank-in" title="${title}">${label}<input type="number" min="0.01" step="any" inputmode="decimal" value="${val}" style="width:${w}px" onchange="bankSet('${k}',this.value)"></label>`;
+  const pct = Math.min(100, todayUnits / b.dayUnits * 100);
   return `<div class="bank-bar">
-    ${inp('lr_bankroll', b.roll, 96, 'BANKROLL $', 'What you have set aside for betting. Kept in this browser only.')}
-    <span class="bank-unit">1u = <b>${bankUsd(b.roll / 100)}</b></span>
-    ${kind === 'tail' ? `${inp('lr_tail_day_pct', b.dayPct, 56, 'DAILY LIMIT %', 'The most of your bankroll new tails can take in one day. Signals past it show $0.')}
-      <span class="bank-meter" title="Put into today's tails, oldest first"><span style="width:${pct.toFixed(0)}%"></span></span><span class="bank-unit">${bankUsd(used)} of ${bankUsd(cap)} today</span>`
-    : inp('lr_arb_cap_pct', b.arbPct, 56, 'MAX PER ARB %', 'The most of your bankroll one arb can take. A fill can slip, so keep it modest.')}
-    ${b.set ? '' : '<span class="bank-hint">Set your bankroll to see every bet in dollars</span>'}
+    ${inp('lr_unit_usd', Math.round(b.unit * 100) / 100, 80, '1 UNIT = $', 'What one unit is worth to you (1% of your bankroll is the usual). Kept in this browser only.')}
+    <span class="bank-unit">TODAY'S SIGNALS <b>${Math.round(todayUnits * 100) / 100}u</b> = <b>${bankUsd(todayUnits * b.unit)}</b></span>
+    <span class="bank-meter${todayUnits > b.dayUnits ? ' over' : ''}" title="Against the daily limit you set"><span style="width:${pct.toFixed(0)}%"></span></span>
+    ${inp('lr_tail_day_units', b.dayUnits, 56, 'MY DAILY LIMIT u', 'Your own cap on units a day, as a running total. It does not change the signals.')}
+    ${b.set ? '' : '<span class="bank-hint">Set your unit to see every signal in dollars</span>'}
   </div>`;
 }
 
@@ -4036,8 +4022,7 @@ function tailSignalsHTML() {
   if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
     ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
     : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
-  const money = tailStakes(all);
-  return note + banner + strip + bankBar('tail', money.used, money.cap) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
+  return note + banner + strip + bankBar(tailToday(all)) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
     const routed = tailHasVenue(s), bid = tailBid(s), v = bid || s.venue;
     const left = exit ? `<b style="color:${s.full === false ? '#fbbf24' : '#f87171'}">${s.full === false ? 'TRIM' : 'EXIT'}</b><div class="tail-stat"><div class="k">${s.soldShare != null ? `SOLD ${Math.round(s.soldShare * 100)}%` : 'THEY SOLD'}</div></div>`
@@ -4049,7 +4034,7 @@ function tailSignalsHTML() {
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
-      + (sized ? tailMoneyLine(s, money.stakes.get(s.id)) : '');
+      + (sized ? tailMoneyLine(s) : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
       + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (exit && s.tailed ? `<span class="tail-tag cons" title="We tailed this wallet into this outcome (${s.tailed.units}u)${s.full === false ? ': a trim, so the tail stays open' : ': their exit is your cue to get out where you bet it'}">WE TAILED ${s.tailed.units}U</span>` : '')
@@ -4390,9 +4375,7 @@ function renderXarbs() {
     ${cats.length > 1 ? `<div class="xa-chips">${['all', ...cats].map(chip).join('')}</div>` : ''}
   </div>`;
   const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
-  const bk = bank(), arbCap = bk.roll * bk.arbPct / 100;
-  const capWarn = arbState.stake > arbCap + 0.005 ? `<div class="xa-capwarn">Your stake is over your limit of ${bankUsd(arbCap)} for one arb (${bk.arbPct}% of ${bankUsd(bk.roll)}). <button class="xa-more" onclick="xarbRestake('${Math.floor(arbCap)}');renderXarbs()">Use ${bankUsd(Math.floor(arbCap))}</button></div>` : '';
-  el.innerHTML = note + summary + bankBar('arb') + controls + capWarn
+  el.innerHTML = note + summary + controls
     + sec('READY TO PLACE', ready.length ? `${ready.length} · just check each price is still there` : 'none right now',
       ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">Nothing that needs no checking right now. Real arbs are rare and close within minutes: when one opens it shows here first.</div>')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
