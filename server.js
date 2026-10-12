@@ -1988,6 +1988,24 @@ async function refreshExchanges() {
   exchangeState.updated = new Date().toISOString();
 }
 const EXCHANGE_OPTS = { polymarketFeeRate: parseFloat(process.env.POLYMARKET_FEE_RATE) || 0, kalshiFeeRate: process.env.KALSHI_FEE_RATE != null ? parseFloat(process.env.KALSHI_FEE_RATE) : 0.07 };
+// ── KALSHI PLAYER PROPS ──
+// Kalshi's player stat ladders are the free sharp line for Underdog's sports
+// props (kprops.js). Refreshed every 5 minutes, ahead of the EV screen.
+const kprops = require('./kprops');
+const kpropsState = { games: [], updated: null, counts: null, errors: [] };
+let kpropsRunning = false;
+async function refreshKalshiProps() {
+  if (kpropsRunning) return;
+  kpropsRunning = true;
+  try {
+    const { events, errors } = await kprops.fetchEvents(upstream);
+    const dfsLines = (cache.underdog.data || []).filter(l => !isEsports(l.sport));
+    const { games, counts } = kprops.buildGames(events, dfsLines);
+    Object.assign(kpropsState, { games, counts: { events: events.length, ...counts }, errors: errors.slice(0, 5), updated: new Date().toISOString() });
+  } catch (e) { kpropsState.errors = [e.message]; }
+  finally { kpropsRunning = false; }
+}
+
 function evFeeds() {
   const feeds = [];
   const add = (sport, label, c) => {
@@ -1996,6 +2014,8 @@ function evFeeds() {
     const games = /odds$/.test(label) && exchangeState.rows.length ? exchanges.attachExchanges(c.data, exchangeState.rows, { ...EXCHANGE_OPTS, league: sport }) : c.data;
     feeds.push({ sport, label, games, updated: c.updated || null });
   };
+  // Kalshi player ladders price the pick'em lines (kprops.js); sport comes per game
+  if (kpropsState.games.length) feeds.push({ sport: null, label: 'kalshi-props', games: kpropsState.games, updated: kpropsState.updated });
   for (const [s, key] of Object.entries(EV_SPORTS)) {
     add(s, 'owls-odds', cache.owlsOdds[s]);
     add(s, 'owls-props', cache.owlsProps[s]);
@@ -2044,7 +2064,8 @@ function redactEv(rows) {
 }
 // +EV rows a viewer may see: a Kalshi book needs the Kalshi licence; a
 // Polymarket book needs its licence and never shows in US mode
-const evRowOk = lic => r => (r?.book !== 'kalshi' || lic.kalshi) && (r?.book !== 'polymarket' || (lic.polymarket && TAIL_REGION !== 'us'));
+const evRowOk = lic => r => (r?.book !== 'kalshi' || lic.kalshi) && (r?.book !== 'polymarket' || (lic.polymarket && TAIL_REGION !== 'us'))
+  && (!(r?.sharpBooks || []).includes('kalshi_props') || lic.kalshi);   // priced off Kalshi's own data
 // a webhook post can reach other people, so it gets the public's licences
 const webhookLicence = () => licenceFor({ paywall: PAYWALL, admin: false });
 
@@ -2954,7 +2975,7 @@ app.get('/calc.js', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.54.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.55.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3725,6 +3746,7 @@ app.get('/api/best', async (req, res) => {
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
       picks: pro ? esportsCache.picks || [] : [],
+      props: pro ? runEvScreen().rows.filter(r => r.dfs).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       plays,
     }, { limit: Math.min(parseInt(req.query.limit) || 50, 200) });
@@ -3774,11 +3796,12 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.54.0',
+  version: '3.55.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   resultsBackup: resultsBackup.status(),
+  kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,
@@ -3846,6 +3869,8 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// Kalshi player ladders for the pick'em props, a minute after the UD scrape
+schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
 schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
 
@@ -3905,10 +3930,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.54.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.55.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.54.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.55.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

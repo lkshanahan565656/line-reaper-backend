@@ -168,6 +168,26 @@ function propRows(picks, verdict, o, now) {
   return { rows, dropped };
 }
 
+// sports props on the pick'em apps, priced off a sharp line by the EV screen
+// (ev.js): Kalshi's player ladders, or sportsbooks when a key is set. 1u each.
+function dfsRows(rows, o, now) {
+  const out = [];
+  for (const r of rows) {
+    if (!r.dfs || r.ev == null || r.ev / 100 < o.propMinEv) continue;
+    const start = ms(r.start);
+    if (start == null || start <= now) continue;
+    const book = r.book === 'underdog' ? 'Underdog' : r.book === 'prizepicks' ? 'PrizePicks' : r.book;
+    const ref = (r.sharpBooks || []).map(b => (b === 'kalshi_props' ? 'Kalshi' : b)).join(', ') || 'consensus';
+    out.push({
+      id: `dfs:${r.group}|${r.side}|${r.book}`, kind: 'sportsProp', label: `${r.sport} prop`, title: r.player,
+      bet: `${r.side === 'Over' ? 'More' : 'Less'} than ${r.point} ${r.market.replace(/_/g, ' ')}`, venue: book, price: null, american: null, maxPrice: null,
+      units: 1, ev: r4(r.ev / 100), verdict: 'early', why: [`${ref} prices it at ${r.fairProb}% to hit`],
+      url: null, startsAt: r.start, at: null, warning: null,
+    });
+  }
+  return out;
+}
+
 // exchange arbs (xarb.js) and esports match arbs: both sides for under $1.
 // Units don't apply: the stake splits across the legs.
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
@@ -201,7 +221,7 @@ function arbRows(arbs, esportsArbs) {
 }
 
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
-function bestPlays({ signals = [], matches = [], picks = [], arbs = [], plays = [] } = {}, opts = {}) {
+function bestPlays({ signals = [], matches = [], picks = [], props = [], arbs = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
   const verdict = verdictIndex(plays);
@@ -212,7 +232,7 @@ function bestPlays({ signals = [], matches = [], picks = [], arbs = [], plays = 
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
   const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now)];
-  const rows = [...parts.flatMap(p => p.rows), ...arbRows(arbs, esArbs)];
+  const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};

@@ -20,6 +20,7 @@ const SHARP_WEIGHTS = {
   pinnacle: 1, circa: 1, ps3838: 1,
   novig: 0.7, prophetx: 0.7, sporttrade: 0.7, betfair_ex_eu: 0.7, betfair_ex_uk: 0.7, matchbook: 0.6,
   lowvig: 0.4, betonlineag: 0.4,
+  kalshi_props: 0.7,   // Kalshi player ladders (kprops.js), an exchange price like novig's
 };
 const DFS_BOOKS = new Set(['prizepicks', 'underdog', 'sleeper', 'pick6', 'betr', 'parlayplay']);
 const MIN_CONSENSUS_BOOKS = 4;

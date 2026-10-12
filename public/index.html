@@ -911,6 +911,7 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" data-best="tail" onclick="bestKind('tail')">SHARP TAIL</button>
     <button class="sport-chip" data-best="esportsEdge" onclick="bestKind('esportsEdge')">ESPORTS EDGES</button>
     <button class="sport-chip" data-best="esportsProp" onclick="bestKind('esportsProp')">ESPORTS PROPS</button>
+    <button class="sport-chip" data-best="sportsProp" onclick="bestKind('sportsProp')">SPORTS PROPS</button>
     <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
   </div>
   <div id="bestContent"></div>
@@ -4800,7 +4801,7 @@ function renderBest() {
       <td class="bp-c" style="text-align:right">${size(r)}</td>
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td></tr>`; }).join('');
   const c = d.counts || {};
-  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
+  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">
