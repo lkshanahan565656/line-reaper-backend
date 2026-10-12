@@ -394,34 +394,6 @@ body::before {
 
 .error-box { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 14px; font-size: 12px; color: var(--red); line-height: 1.7; }
 
-/* BOOK LOGOS */
-.book-logo { width: 18px; height: 18px; border-radius: 3px; object-fit: contain; vertical-align: middle; }
-.book-logo-cell { display: flex; align-items: center; gap: 4px; justify-content: center; flex-direction: column; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; }
-
-/* PROPS TABLE */
-.props-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; }
-.props-table th { padding: 8px 10px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; background: rgba(0,0,0,0.3); font-family: 'Inter', sans-serif; }
-.props-table td { padding: 9px 10px; border-bottom: 1px solid rgba(30,39,56,0.5); }
-.props-table tr:hover td { background: rgba(255,255,255,0.015); }
-.odds-over { font-size: 13px; display: block; }
-.odds-over.best { color: var(--green); font-weight: 700; }
-.odds-under { font-size: 13px; display: block; }
-.odds-under.best { color: var(--green); font-weight: 700; }
-
-/* PLAYER CARD */
-.player-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; animation: fadeUp 0.2s ease both; transition: border-color 0.2s; }
-.player-card:hover { border-color: var(--border2); }
-.player-card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
-
-/* DEG SCORE / EV BADGE */
-.deg-score { display:inline-flex; align-items:center; font-size:9px; letter-spacing:1px; font-family:'JetBrains Mono',monospace; padding:2px 8px; border-radius:20px; font-weight:700; }
-.deg-score.hot  { background:rgba(16,185,129,.12); color:var(--green);  border:1px solid rgba(16,185,129,.3); }
-.deg-score.warm { background:rgba(245,158,11,.1);  color:var(--gold);   border:1px solid rgba(245,158,11,.25); }
-.deg-score.cool { background:rgba(71,85,105,.2);   color:#666;          border:1px solid #1e2738; }
-.player-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
-.player-meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); letter-spacing: 1px; margin-top: 3px; }
-.player-mkt-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); }
-
 /* LINE SHOP */
 .shop-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease both; }
 
@@ -2107,7 +2079,6 @@ function layMove(n, d) {
 function layPin(n) { layout.more[n] = !layIsMore(n); laySave(); layApply(); layRenderList(); }
 function layHide(n) {
   layout.hidden[n] = !layout.hidden[n]; laySave(); layApply(); layRenderList();
-  const active = document.querySelector('.tab.active');
   if (layout.hidden[n] && layTabs[n].classList.contains('active')) {
     const next = layNames().find(x => !layout.hidden[x]);
     if (next) showTab(next, layTabs[next]);
