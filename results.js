@@ -55,7 +55,7 @@ function score(bets) {
 // ─── records → bets with the labels plays are cut by ─────────────────────────
 const tailBet = r => ({
   profit: r.profit ?? null, staked: r.result === 'void' ? 0 : r.units, clv: r.clv ?? null,
-  labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet' },
+  labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet', order: r.order === 'limit' ? 'limit bid' : 'take' },
 });
 // evtrack: CLV in percent, no win/loss
 const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
@@ -66,8 +66,8 @@ const pickBet = r => ({
 
 // source → which records count and how plays are cut
 const SOURCES = {
-  tail: { label: 'Sharp Tail', done: r => r.status === 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus']] },
-  fresh: { label: 'Fresh wallets', done: r => r.status === 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
+  tail: { label: 'Sharp Tail', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
+  fresh: { label: 'Fresh wallets', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side']] },
@@ -82,7 +82,7 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
     const all = (lists[name] || []).filter(r => !sinceMs || (Date.parse(r.recordedAt || r.flaggedAt || r.startTime) || 0) >= sinceMs);
     const done = all.filter(def.done);
     const bets = done.map(def.bet);
-    sources[name] = { label: def.label, open: all.length - done.length, overall: score(bets) };
+    sources[name] = { label: def.label, open: all.length - done.length - all.filter(r => r.result === 'unfilled').length, overall: score(bets) };
     if (bets.length) plays.push({ source: name, label: def.label, play: 'all', ...sources[name].overall });
     for (const cut of def.cuts) {
       const g = new Map();

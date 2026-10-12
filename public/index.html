@@ -588,6 +588,16 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .xa-lbl { font-size:10px; letter-spacing:1.5px; color:#64748b; margin-top:4px; }
 .xa-blurb { grid-column:1 / -1; font-size:12px; color:#94a3b8; line-height:1.5; }
 .xa-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.bank-bar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; padding:10px 14px; margin-bottom:12px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,.2); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; }
+.bank-in { display:flex; align-items:center; gap:4px; }
+.bank-in input { background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
+.bank-unit b { color:#e2e8f0; }
+.bank-meter { width:90px; height:6px; background:rgba(148,163,184,.2); border-radius:3px; overflow:hidden; }
+.bank-meter span { display:block; height:100%; background:#10b981; }
+.bank-hint { color:#fbbf24; }
+.tail-money { margin-top:3px; font-size:12px; color:#cbd5e1; }
+.tail-money b { color:#10b981; }
+.bank-meter.over span { background:#fbbf24; }
 .xa-stake { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
 .xa-stake input { width:90px; background:var(--card); border:1px solid var(--border2); border-radius:6px; color:var(--text); padding:5px 8px; font:inherit; font-size:13px; }
 .xa-chips { display:flex; gap:6px; flex-wrap:wrap; }
@@ -3993,15 +4003,64 @@ const tailWho = x => {
 // Where to tail: the venue the backend picked (most units after fees), as one line
 const tailAm = p => p > 0 && p < 1 ? (p >= 0.5 ? -Math.round(100 * p / (1 - p)) : Math.round(100 * (1 - p) / p)) : null;
 const tailHasVenue = s => s && ('venue' in s || 'venues' in s);
-const tailUnitsOf = s => !s || s.type === 'exit' ? 0 : tailHasVenue(s) ? (s.venue ? s.venue.units || 0 : 0) : s.units || 0;
+const tailTakeUnits = s => !s || s.type === 'exit' ? 0 : tailHasVenue(s) ? (s.venue ? s.venue.units || 0 : 0) : s.units || 0;
+// a resting bid (s.limit) when no venue sizes a take
+const tailBid = s => s && s.type !== 'exit' && !(tailTakeUnits(s) > 0) && s.limit && s.limit.units > 0 ? s.limit : null;
+const tailUnitsOf = s => tailTakeUnits(s) || (tailBid(s) ? tailBid(s).units : 0);
 const tailVenuePrice = v => v.american != null ? fmtAm(v.american) : tailC(v.price);
 function tailVenueLine(s) {
+  const b = tailBid(s);
+  if (b) return `Bid at ${b.name}${b.buy ? `: ${b.buy}` : ''} ${tailC(b.price)} limit · ${b.units}u · ask is ${tailC(b.ask)} · fills only if it trades down to you${b.until ? ' · cancel at the start' : ''}`;
   if (!tailHasVenue(s)) return s.units > 0 ? `Tail ${s.units}u at ${tailC(s.currentPrice)}` : '';   // an older backend
   const v = s.venue;
   if (!v) return tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only';
   const max = v.maxPrice == null ? '—' : v.american != null ? `${tailC(v.maxPrice)} (${fmtAm(tailAm(v.maxPrice))})` : tailC(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${tailVenuePrice(v)} · ${v.units}u · don't pay above ${max}`;
 }
+// ── your unit in dollars ──
+// Every alert carries the same units for everyone (1u = 1% of a bankroll);
+// nothing here changes that. You set what one unit is worth to you, kept in
+// this browser, and each sized signal shows its units in your dollars and
+// the contracts they buy. Today's signals add up against a daily limit you
+// set, as a running total; the signals themselves stay as sent.
+const bankGet = (k, d) => { const n = parseFloat(lsGet(k)); return isFinite(n) && n > 0 ? n : d; };
+const bank = () => ({ unit: bankGet('lr_unit_usd', bankGet('lr_bankroll', 1000) / 100), dayUnits: bankGet('lr_tail_day_units', 10), set: lsGet('lr_unit_usd') != null });
+function bankSet(k, v) {
+  const n = parseFloat(v);
+  if (!(isFinite(n) && n > 0)) return;
+  lsSet(k, String(n));
+  if (typeof renderTail === 'function' && tailActive) renderTail();
+}
+const bankUsd = x => `$${x >= 100 ? Math.round(x).toLocaleString() : x.toFixed(2)}`;
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+// sized entries sent today, in units
+function tailToday(list) {
+  const today = new Date();
+  return list.filter(s => s.type !== 'exit' && tailUnitsOf(s) > 0 && sameDay(new Date(s.seenAt || s.at), today))
+    .reduce((a, s) => a + tailUnitsOf(s), 0);
+}
+// "1.5u = $15.00 = 25 contracts at 57¢" (a book shows the dollars only)
+function tailMoneyLine(s) {
+  const u = tailUnitsOf(s);
+  if (!(u > 0)) return '';
+  const usd = u * bank().unit, v = tailBid(s) || s.venue;
+  const px = v && v.american == null ? Number(v.cost || v.price) : null;
+  const n = px > 0 && px < 1 ? Math.floor(usd / px) : null;
+  return `<div class="tail-money">${u}u = <b>${bankUsd(usd)}</b> at your unit${n != null ? ` = ${n.toLocaleString()} contract${n === 1 ? '' : 's'} at ${tailC(v.price)}` : ''}</div>`;
+}
+function bankBar(todayUnits) {
+  const b = bank();
+  const inp = (k, val, w, label, title) => `<label class="bank-in" title="${title}">${label}<input type="number" min="0.01" step="any" inputmode="decimal" value="${val}" style="width:${w}px" onchange="bankSet('${k}',this.value)"></label>`;
+  const pct = Math.min(100, todayUnits / b.dayUnits * 100);
+  return `<div class="bank-bar">
+    ${inp('lr_unit_usd', Math.round(b.unit * 100) / 100, 80, '1 UNIT = $', 'What one unit is worth to you (1% of your bankroll is the usual). Kept in this browser only.')}
+    <span class="bank-unit">TODAY'S SIGNALS <b>${Math.round(todayUnits * 100) / 100}u</b> = <b>${bankUsd(todayUnits * b.unit)}</b></span>
+    <span class="bank-meter${todayUnits > b.dayUnits ? ' over' : ''}" title="Against the daily limit you set"><span style="width:${pct.toFixed(0)}%"></span></span>
+    ${inp('lr_tail_day_units', b.dayUnits, 56, 'MY DAILY LIMIT u', 'Your own cap on units a day, as a running total. It does not change the signals.')}
+    ${b.set ? '' : '<span class="bank-hint">Set your unit to see every signal in dollars</span>'}
+  </div>`;
+}
+
 // "Polymarket data: waiting on data permission" when the backend withholds a source
 const TAIL_SOURCE = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 const tailWithheld = view => {
@@ -4165,18 +4224,19 @@ function tailSignalsHTML() {
   if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
     ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
     : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
-  return note + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
+  return note + banner + strip + bankBar(tailToday(all)) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
-    const routed = tailHasVenue(s), v = s.venue;
+    const routed = tailHasVenue(s), bid = tailBid(s), v = bid || s.venue;
     const left = exit ? `<b style="color:${s.full === false ? '#fbbf24' : '#f87171'}">${s.full === false ? 'TRIM' : 'EXIT'}</b><div class="tail-stat"><div class="k">${s.soldShare != null ? `SOLD ${Math.round(s.soldShare * 100)}%` : 'THEY SOLD'}</div></div>`
-      : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${routed && v ? escAttr(v.name) : ''}</div>`
+      : sized ? `<b>${units.toFixed(2)}u</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${bid ? 'LIMIT BID · ' : ''}${routed && v ? escAttr(v.name) : ''}</div>`
       : routed && !v ? `<b style="color:#64748b">WATCH</b><div style="font-size:10px;color:#94a3b8;line-height:1.3">no venue yet</div>`
       : `<b style="color:#64748b">0u</b><div style="font-size:10px;color:#fbbf24;line-height:1.3">${escAttr(routed && v && !s.blocked ? (v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? 'price above the max' : 'edge too small here') : s.reason || '')}</div>`;
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
-      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '');
+      + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
+      + (sized ? tailMoneyLine(s) : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
       + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (exit && s.tailed ? `<span class="tail-tag cons" title="We tailed this wallet into this outcome (${s.tailed.units}u)${s.full === false ? ': a trim, so the tail stays open' : ': their exit is your cue to get out where you bet it'}">WE TAILED ${s.tailed.units}U</span>` : '')
@@ -4549,8 +4609,8 @@ function tailRecordHTML() {
   const recent = (s.signals || []).map(r => `<div class="tail-row">
       ${tailGrade(r.grade)}
       <span style="flex:1;min-width:200px;color:#e2e8f0">${tailLink(r.url, escAttr(r.market || ''))} · <b>${escAttr(r.outcome || '?')}</b></span>
-      <span style="font-family:'JetBrains Mono',monospace;color:#94a3b8">${r.units}u at ${tailC(r.entry)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;color:${r.status === 'open' ? '#fbbf24' : color(r.profit)}">${r.status === 'open' ? 'OPEN' : r.result === 'void' ? 'VOID' : (r.result || '').toUpperCase() + ' ' + u(r.profit)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;color:#94a3b8">${r.units}u ${r.order === 'limit' ? 'bid ' : ''}at ${tailC(r.entry)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;min-width:90px;text-align:right;color:${r.status === 'open' || r.result === 'unfilled' ? '#fbbf24' : color(r.profit)}">${r.status === 'open' ? (r.order === 'limit' && !r.filled ? 'BID OPEN' : 'OPEN') : r.result === 'void' ? 'VOID' : r.result === 'unfilled' ? 'NO FILL' : (r.result || '').toUpperCase() + ' ' + u(r.profit)}</span>
       <span style="font-family:'JetBrains Mono',monospace;min-width:80px;text-align:right;color:#64748b">${r.clv != null ? 'CLV ' + tailPct(r.clv) : ''}</span></div>`).join('');
   return `<div style="display:flex;gap:10px;flex-wrap:wrap">
       ${tile(`${o.wins || 0}-${o.losses || 0}`, 'SIGNALS GRADED (W-L)')}
