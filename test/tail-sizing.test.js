@@ -69,11 +69,12 @@ test('sizeAt maxPrice: the highest cent still worth paying with the fee, rounded
     [0.5, 0.0125, 0.48], [0.5, 0.02, 0.47], [0.995, 0, 0.99], [0.999, 0, 0.99], [0.015, 0, 0.01], [0.01, 0, null], [0.02, 0.015, null],
   ];
   for (const [q, fee, want] of cases) {
-    const r = T.sizeAt({ q, price: 0.005, feePerContract: fee, grade: 'A' });
+    // Kelly's own limit; the thin-edge bar is tested with it on in tracker-tail-refine
+    const r = T.sizeAt({ q, price: 0.005, feePerContract: fee, grade: 'A', opts: { minEv: 0 } });
     assert.equal(r.maxPrice, want, `q ${q} fee ${fee}`);
     if (want == null) continue;
     // at maxPrice there is still an edge; a cent more and there isn't
-    assert.ok(T.sizeAt({ q, price: want, feePerContract: fee, grade: 'A' }).kelly > 0, `edge at ${want}`);
+    assert.ok(T.sizeAt({ q, price: want, feePerContract: fee, grade: 'A', opts: { minEv: 0 } }).kelly > 0, `edge at ${want}`);
     if (want < 0.99) assert.ok(!(T.sizeAt({ q, price: round2(want + 0.01), feePerContract: fee, grade: 'A' }).kelly > 1e-9), `none at ${round2(want + 0.01)}`);
   }
 });
@@ -101,7 +102,7 @@ test('Polymarket taker fee: rate × (p(1 − p))^exponent from the market\'s sch
 const trader = (o = {}) => ({ wallet: W(9), name: 'sharpie', grade: 'A', edge: 0.05, avgEntry: 0.4, categories: {}, ...o });
 const market = (o = {}) => T.parseGammaMarket({
   conditionId: '0xm1', question: 'Will X win the Ohio Senate election?', outcomes: '["Yes","No"]', outcomePrices: '["0.405","0.595"]',
-  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.40', bestAsk: '0.41', lastTradePrice: '0.41', endDate: '2026-11-04T00:00:00Z',
+  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.40', bestAsk: '0.41', lastTradePrice: '0.41', endDate: '2026-10-12T00:00:00Z',
   active: true, closed: false, events: [{ slug: 'ohio-senate' }], ...o,
 });
 const trade = (o = {}) => T.parseTrades([{

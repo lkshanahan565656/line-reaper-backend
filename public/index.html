@@ -4927,6 +4927,7 @@ function renderXarbs() {
 function tailRecordHTML() {
   const s = tailState.record || {};
   const o = s.overall || { n: 0 };
+  const c = s.closing || { n: 0 };
   const u = x => x == null ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(2)}u`;
   const tile = (v, label, color = '#f1f5f9') => `<div style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
     <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;color:${color}">${v}</div><div style="font-size:10px;letter-spacing:1.5px;color:#64748b;margin-top:4px">${label}</div></div>`;
@@ -4952,10 +4953,11 @@ function tailRecordHTML() {
       ${tile(tailPct(o.roi), 'ROI ON UNITS STAKED', color(o.roi))}
       ${tile(o.winRate != null ? Math.round(o.winRate * 100) + '%' : '—', 'WIN RATE')}
       ${tile(tailPct(o.avgClv), `AVG CLOSING-LINE VALUE${o.clvN != null ? ` (${o.clvN} OF ${(o.wins || 0) + (o.losses || 0) + (o.voids || 0)} HAD A PRE-EVENT CLOSE)` : ''}`, color(o.avgClv))}
+      ${tile(c.n ? Math.round(c.beatClosePct * 100) + '%' : '—', `BEAT THE CLOSE${c.n ? ` (${c.n} BETS, OPEN ONES TOO, AVG ${tailPct(c.avgClv)})` : ''}`, color(c.avgClv))}
       ${tile(s.open || 0, 'OPEN', '#94a3b8')}
     </div>
     ${tailWithheld('record')}<div style="font-size:11px;color:#64748b;margin-top:8px">Every signal sized above 0u is logged at the price a follower could get when it fired, at the venue it named (not the sharp's own fill), fees included, and graded when its market resolves. Units are the same for everyone.</div>
-    ${o.n ? '' : tailEmpty('NOTHING GRADED YET', 'Signals grade when their markets resolve. Sports settle within hours, elections can take months.')}
+    ${o.n ? '' : tailEmpty('NOTHING GRADED YET', 'Signals grade when their markets resolve. A game shows whether it beat the close at kick-off; Polymarket can take hours to settle it, and elections months.')}
     ${table('BY GRADE', s.byGrade)}${table('BY MARKET', s.byCategory, k => k.toUpperCase())}${table('CONSENSUS VS ONE WALLET', s.byConsensus, k => k === 'consensus' ? '2+ graded wallets agreed' : 'one wallet')}
     ${recent ? `<div class="tail-box"><div class="tail-box-head">${tailState.pro ? 'LATEST SIGNALS' : 'RECENTLY GRADED'}</div>${recent}</div>` : ''}`;
 }

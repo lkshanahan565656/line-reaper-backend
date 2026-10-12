@@ -18,6 +18,9 @@
 //                50/50 → void, profit 0
 //                CLV  = closing price / entry − 1 (beat the close when > 0;
 //                prices against prices, before fees)
+//   close in     the game started, or the price jumped to the outcome: the
+//                CLV is known then (closeOut), hours before it resolves, and
+//                summary().closing counts it
 //
 // A resting bid (signal.limit: no venue sized a take, so the signal says to
 // bid a cent or two under the ask) is logged with order 'limit' at its own
@@ -206,6 +209,20 @@ function observe(rec, market, t = Date.now(), live = null) {
   return true;
 }
 
+// Pure: once the close is in (the game started, or the price jumped to the
+// outcome) the record's CLV is known, hours before the market resolves, so
+// the record shows whether we beat the close the same day. settle() works it
+// out again the same way. → true when it changed.
+function closeOut(rec, market, t = Date.now()) {
+  if (rec.clv != null || rec.closePrice == null || waiting(rec) || !market) return false;
+  const start = toMs(market.gameStartTime);
+  if (!rec.closeFrozen && !(start != null && t >= start)) return false;
+  const base = clvBase(rec);
+  if (!(base > 0)) return false;
+  rec.clv = r4(rec.closePrice / base - 1);
+  return true;
+}
+
 // Pure: a top-up record into its first bet. → the parent, changed
 function merge(parent, add) {
   const units = parent.units + add.units;
@@ -331,7 +348,10 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
             Object.assign(rec, { filled: true, filledAt: iso(at) });
           }
           if (settle(rec, market, t)) { open.delete(rec.id); settled++; writes.push(store.put(rec)); }
-          else if (observe(rec, market, t, mids.get(String(rec.asset)) ?? null)) writes.push(store.put(rec));
+          else {
+            const seen = observe(rec, market, t, mids.get(String(rec.asset)) ?? null);
+            if (closeOut(rec, market, t) || seen) writes.push(store.put(rec));
+          }
         }
       }
       await Promise.all(writes).catch(e => log.warn?.(`Tail tracker: ${e.message}`));
@@ -358,8 +378,12 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
       for (const r of done) (g[r[key] || '—'] ||= []).push(r);
       return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, stats(v)]).sort((a, b) => b[1].n - a[1].n));
     };
+    // beat the close: every bet with its close in, settled or not
+    const closed = all.filter(r => r.clv != null && r.result !== 'unfilled' && !waiting(r));
     return {
-      open: all.filter(r => r.status !== 'settled').length, overall: stats(done), byGrade: by('grade'), byCategory: by('category'),
+      open: all.filter(r => r.status !== 'settled').length, overall: stats(done),
+      closing: { n: closed.length, avgClv: closed.length ? r4(closed.reduce((a, r) => a + r.clv, 0) / closed.length) : null,
+        beatClosePct: closed.length ? r4(closed.filter(r => r.clv > 0).length / closed.length) : null }, byGrade: by('grade'), byCategory: by('category'),
       byConsensus: { consensus: stats(done.filter(r => r.isConsensus)), single: stats(done.filter(r => !r.isConsensus)) },
       byVenue: Object.fromEntries(Object.entries(groupBy(done, r => r.venue || 'Polymarket')).map(([k, v]) => [k, stats(v)])),
       byOrder: { take: stats(done.filter(r => r.order !== 'limit')), limit: stats(done.filter(r => r.order === 'limit')) },
@@ -378,4 +402,4 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
   return { record, recordAll, check, summary, list, ready: () => loaded, store, state: () => ({ open: open.size, lastCheck }) };
 }
 
-module.exports = { createTailTracker, createStoreFromEnv, createFreshStoreFromEnv, createPgStore, toRecord, settle, observe, merge, stats, bidOver, fillFromHistory };
+module.exports = { createTailTracker, createStoreFromEnv, createFreshStoreFromEnv, createPgStore, toRecord, settle, observe, closeOut, merge, stats, bidOver, fillFromHistory };

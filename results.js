@@ -76,10 +76,15 @@ const pickBet = r => ({
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
 });
 
+// A tail counts once it settles, or as CLV only (no profit yet) once its
+// close is in: a game's close is known at kick-off, hours before Polymarket
+// resolves it. A bid still waiting to fill isn't a bet.
+const tailDone = r => (r.status === 'settled' ? r.result !== 'unfilled' : r.clv != null && !(r.order === 'limit' && !r.filled));
+
 // source → which records count and how plays are cut
 const SOURCES = {
-  tail: { label: 'Sharp Tail', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
-  fresh: { label: 'Fresh wallets', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['category'], ['venue']] },
+  tail: { label: 'Sharp Tail', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
+  fresh: { label: 'Fresh wallets', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side']] },
@@ -94,7 +99,8 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
     const all = (lists[name] || []).filter(r => !sinceMs || (Date.parse(r.recordedAt || r.flaggedAt || r.startTime) || 0) >= sinceMs);
     const done = all.filter(def.done);
     const bets = done.map(def.bet);
-    sources[name] = { label: def.label, open: all.length - done.length - all.filter(r => r.result === 'unfilled').length, overall: score(bets) };
+    const open = def.open ? all.filter(def.open).length : all.length - done.length - all.filter(r => r.result === 'unfilled').length;
+    sources[name] = { label: def.label, open, overall: score(bets) };
     if (bets.length) plays.push({ source: name, label: def.label, play: 'all', ...sources[name].overall });
     for (const cut of def.cuts) {
       const g = new Map();

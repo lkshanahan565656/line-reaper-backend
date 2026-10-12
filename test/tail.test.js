@@ -506,7 +506,7 @@ test('elite in politics, bad in sports: graded per category, sports trades are n
 const trader = (o = {}) => ({ wallet: W(9), name: 'sharpie', grade: 'A', edge: 0.05, avgEntry: 0.4, categories: {}, ...o });
 const market = (o = {}) => T.parseGammaMarket({
   conditionId: '0xm1', question: 'Will X win the Ohio Senate election?', outcomes: '["Yes","No"]', outcomePrices: '["0.405","0.595"]',
-  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.40', bestAsk: '0.41', lastTradePrice: '0.41', endDate: '2026-11-04T00:00:00Z',
+  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.40', bestAsk: '0.41', lastTradePrice: '0.41', endDate: '2026-10-12T00:00:00Z',
   active: true, closed: false, events: [{ slug: 'ohio-senate' }], ...o,
 });
 const trade = (o = {}) => T.parseTrades([{
@@ -798,7 +798,7 @@ const scoredUsers = http => http.calls.filter(c => c.url.endsWith('/v2/positions
 const historyCalls = http => http.calls.filter(c => c.url.endsWith('/v2/prices-history'));
 const gammaMarket = (o = {}) => ({
   conditionId: '0xm1', question: 'Will X win the Ohio Senate election?', outcomes: '["Yes","No"]', outcomePrices: '["0.415","0.585"]',
-  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.41', bestAsk: '0.42', lastTradePrice: '0.42', endDate: '2026-11-04T00:00:00Z',
+  clobTokenIds: '["tok-yes","tok-no"]', bestBid: '0.41', bestAsk: '0.42', lastTradePrice: '0.42', endDate: '2026-10-12T00:00:00Z',
   active: true, closed: false, events: [{ slug: 'ohio-senate' }], ...o,
 });
 const rawTrade = (wallet, o = {}) => ({
@@ -1619,7 +1619,8 @@ test('the closing line\'s way to B: in profit, failing only luck or ROI, and bea
   assert.equal(round4(good.edge), round4(Math.max((4000 / 80000) * 0.5, 0.04 * 0.5 * 0.5)));
   const clvOnly = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.12) }, { now: NOW });
   assert.equal(round4(clvOnly.edge), round4(0.12 * 0.5 * 0.5), 'a big closing-line edge outweighs a small P&L one');
-  assert.ok(T.tradeSignal({ trade: trade({ proxyWallet: W(50) }), trader: good, market: market(), now: NOW }).signal.units > 0, 'it tails');
+  // at their own 40¢ (q 41¢ is +2.5% there); a cent higher the edge is gone
+  assert.ok(T.tradeSignal({ trade: trade({ proxyWallet: W(50) }), trader: good, market: market({ bestBid: '0.39', bestAsk: '0.40' }), now: NOW }).signal.units > 0, 'it tails');
 
   const weak = T.scoreWallet({ wallet: W(50), closed: modest(W(50)), clv: clvs(25, 0.02) }, { now: NOW });
   assert.equal(weak.grade, null, '+2% is not enough');
