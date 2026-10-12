@@ -30,7 +30,7 @@
 // Line moves: the fair price of every outcome is sampled each scan, so the
 // board can show where a match opened and what moved in the last hour.
 
-const { teamsMatch, mapToSeriesProb, devig } = require('./context');
+const { teamsMatch, mapToSeriesProb, seriesToMapProb, devig } = require('./context');
 const { kalshiFee } = require('./exchanges');
 const { kalshiTickerTime, polymarketFeeSchedule, polymarketFee } = require('./xarb');
 
@@ -491,16 +491,37 @@ function decided(mk) {
   return mk.outcomes.some(oc => Object.values(oc.quotes).some(q => (q.bid != null && q.bid >= 0.97) || (q.ask != null && q.ask <= 0.03)));
 }
 
+// ── ratings calibration ──
+// Elo from free results runs hot: it ranked teams sensibly but its prices sat
+// 12 points from the market on average, because a rating gap built on
+// regional leagues and stand-in rosters says less than it seems. Fitting one
+// number per game, the share of the gap the market agrees with (logit of the
+// market's map price ≈ scale × logit of Elo's), fixes most of that. The fit
+// reruns every scan over the matches that have both, and keeps its last value
+// when too few do.
+const logit = p => Math.log(p / (1 - p));
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+const clampP = p => Math.min(0.99, Math.max(0.01, p));
+function fitScale(pairs, { min = 12, lo = 0.15, hi = 1.5 } = {}) {
+  if (pairs.length < min) return null;
+  let xy = 0, xx = 0;
+  for (const { raw, market } of pairs) { const x = logit(clampP(raw)), y = logit(clampP(market)); xy += x * y; xx += x * x; }
+  return xx > 1e-9 ? Math.min(hi, Math.max(lo, xy / xx)) : null;
+}
+const scaled = (p, s) => sigmoid(s * logit(clampP(p)));
+
 // Price every market of every match; matches come out sorted by start.
-function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = {} } = {}) {
+// calib: { [game]: { scale, n, maeRaw, maeCal } }, carried between scans.
+function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = {}, calib = null } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const out = [];
+  const rated = [];
   for (const m of matches) {
     const rating = elo[GAMES[m.game]?.elo];
     let p = null, ratingInfo = null;
     if (rating && rating.games(m.teams[0]) >= 8 && rating.games(m.teams[1]) >= 8) {
-      p = rating.mapProb(m.teams[0], m.teams[1]);
-      ratingInfo = { mapProb: r4(p), games: [rating.games(m.teams[0]), rating.games(m.teams[1])], ratings: [Math.round(rating.rating(m.teams[0])), Math.round(rating.rating(m.teams[1]))] };
+      p = (rating.rawMapProb || rating.mapProb).call(rating, m.teams[0], m.teams[1]);
+      ratingInfo = { mapProb: r4(p), raw: r4(p), games: [rating.games(m.teams[0]), rating.games(m.teams[1])], ratings: [Math.round(rating.rating(m.teams[0])), Math.round(rating.rating(m.teams[1]))] };
     }
     const markets = [...m.markets.values()].filter(mk => mk.outcomes.some(oc => TRADABLE.some(v => oc.quotes[v]?.ask != null)) && !decided(mk));
     for (const mk of markets) {
@@ -519,6 +540,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
     for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.quotes[v].ref, ev: oc.quotes[v].ev }); }));
     edges.sort((a, b) => b.ev - a.ev);
     const main = markets.find(mk => mk.kind === 'match') || null;
+    if (p != null) rated.push({ m, p, markets, ratingInfo, main });
     out.push({
       id: m.id, game: m.game, label: m.label, teams: m.teams, start: m.start ? new Date(m.start).toISOString() : null,
       live: !!m.live || (m.start != null && m.start <= now), bestOf: m.bestOf, tournament: m.tournament, links: m.links, slug: m.slug || null,
@@ -526,8 +548,48 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       fair: main ? main.outcomes.map(oc => oc.fair) : null, move: main?.move || null,
     });
   }
+  calibrate(rated, { elo, calib });
   if (moves) moves.prune(now);
   return out.sort((a, b) => (Date.parse(a.start) || 0) - (Date.parse(b.start) || 0));
+}
+
+function calibrate(rated, { elo = {}, calib = null } = {}) {
+  const byGame = {};
+  for (const r of rated) (byGame[r.m.game] ||= []).push(r);
+  for (const [game, rows] of Object.entries(byGame)) {
+    const bestOfOf = r => r.m.bestOf || 3;
+    const pairs = rows.filter(r => r.main?.outcomes[0].fair != null).map(r => ({
+      raw: r.p, market: bestOfOf(r) === 1 ? r.main.outcomes[0].fair : seriesToMapProb(r.main.outcomes[0].fair, bestOfOf(r)), r,
+    }));
+    const prev = calib?.[game];
+    const fit = fitScale(pairs);
+    const scale = fit ?? prev?.scale ?? 1;
+    // mean error on the match price, before and after
+    const err = f => (pairs.length ? pairs.reduce((s, x) => s + Math.abs((bestOfOf(x.r) === 1 ? f(x.raw) : mapToSeriesProb(f(x.raw), bestOfOf(x.r))) - x.r.main.outcomes[0].fair), 0) / pairs.length : null);
+    // out of sample: each match priced with the scale fitted on the others
+    let holdout = null;
+    if (fit != null) {
+      let sum = 0;
+      for (const x of pairs) {
+        const s = fitScale(pairs.filter(y => y !== x), { min: 1 }) ?? 1;
+        const p = scaled(x.raw, s);
+        sum += Math.abs((bestOfOf(x.r) === 1 ? p : mapToSeriesProb(p, bestOfOf(x.r))) - x.r.main.outcomes[0].fair);
+      }
+      holdout = r4(sum / pairs.length);
+    }
+    if (calib) calib[game] = { scale: r4(scale), n: pairs.length, maeRaw: pairs.length ? r4(err(x => x)) : prev?.maeRaw ?? null, maeCal: pairs.length ? r4(err(x => scaled(x, scale))) : prev?.maeCal ?? null, maeHoldout: holdout ?? prev?.maeHoldout ?? null, fitted: fit != null || !!prev?.fitted };
+    const rating = elo[GAMES[game]?.elo];
+    if (rating) rating.scale = scale;
+    for (const r of rows) {
+      const p = scaled(r.p, scale);
+      r.ratingInfo.mapProb = r4(p);
+      r.ratingInfo.scale = r4(scale);
+      for (const mk of r.markets) {
+        const model = modelFor(mk, p, r.m.bestOf);
+        mk.outcomes.forEach((oc, i) => { oc.model = model ? r4(model[i]) : null; });
+      }
+    }
+  }
 }
 
 // ── fetching ──
@@ -588,7 +650,7 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
   const moves = createMoveTracker();
   const empty = new Map();
   let pmSeries = null, pmSeriesAt = 0;
-  const state = { matches: [], updated: null, durationMs: null, running: false, errors: [], counts: null };
+  const state = { matches: [], updated: null, durationMs: null, running: false, errors: [], counts: null, calibration: {} };
   async function scan() {
     if (state.running) return state;
     state.running = true;
@@ -613,7 +675,7 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
         .catch(e => { errors.push({ source: 'bo3', key: 'matches', message: e.message }); return []; });
       const [pm, kalshi, book] = await Promise.all([Promise.all(pmJobs).then(x => x.flat()), Promise.all(kalshiJobs).then(x => x.flat()), bookJob]);
       const merged = mergeSources({ pm, kalshi, book }, o);
-      const matches = buildBoard(merged, { elo: ratings() || {}, moves, now: t0, opts: o });
+      const matches = buildBoard(merged, { elo: ratings() || {}, moves, now: t0, opts: o, calib: state.calibration });
       const byGame = {};
       for (const m of matches) byGame[m.game] = (byGame[m.game] || 0) + 1;
       Object.assign(state, {
@@ -635,6 +697,6 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
 
 module.exports = {
   GAMES, DEFAULTS, cleanName, sameTeam, orient, parsePmTitle, seriesScores, modelFor,
-  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, mergeSources, priceMarket, buildBoard, createMoveTracker,
+  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
   createEsportsBoard, fetchPmSeries, PM_SERIES_FALLBACK,
 };

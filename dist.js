@@ -16,6 +16,17 @@
 // Whole-number lines can push, and we report that mass separately.
 //
 // Continuous stats (fantasy points) stay on the normal curve.
+//
+// Above SYM_MIN the count is priced on a discretised normal instead (same mean,
+// same variance, P(X = n) = mass between n ± 0.5). With the large k the model
+// carries for projection error (3.8 for CS headshots, 8 for LoL kills), the NB
+// is so right-skewed that its median sits well below its mean: a projection 2
+// headshots UNDER a 16.5 line read 66% while one 2 OVER a 17.5 line read 54%.
+// The live board turned 112 of 121 tracked picks into unders and lost on
+// closing value. Calibrated boards (LCSLarry's PrizePicks model among them)
+// treat a projection as symmetric, and so does this at realistic volumes; low
+// lines, where the skew is real and the normal puts mass below zero, keep the NB.
+const SYM_MIN = 8;
 
 // log Γ via Lanczos; good to ~15 digits, which is far beyond what we need.
 const LANCZOS = [
@@ -66,6 +77,17 @@ function useCount(stat, mean, k) {
 
 // { under, over, push } for one scenario. `line` may be half-integer or whole.
 function sideProbs(line, mean, k, stat = 'kills') {
+  if (useCount(stat, mean, k) && mean >= SYM_MIN) {
+    const sd = Math.sqrt(mean * k);
+    const whole = Math.abs(line - Math.round(line)) < 1e-9;
+    if (whole) {
+      const under = normalCdf(line - 0.5, mean, sd);
+      const over = 1 - normalCdf(line + 0.5, mean, sd);
+      return { under, over, push: Math.max(0, 1 - under - over), model: 'dnorm' };
+    }
+    const under = normalCdf(Math.floor(line) + 0.5, mean, sd);
+    return { under, over: 1 - under, push: 0, model: 'dnorm' };
+  }
   if (!useCount(stat, mean, k)) {
     const sd = Math.sqrt(Math.max(mean * k, 1e-9));
     const under = normalCdf(line, mean, sd);
@@ -87,17 +109,17 @@ function sideProbs(line, mean, k, stat = 'kills') {
 // variance adds the same way the mean does, k stays constant across maps.
 // Scenarios: [{ maps, weight }] from context.js, or a single one.
 function propProb(line, side, { meanPerMap, k, stat = 'kills', scenarios = [{ maps: 1, weight: 1 }] }) {
-  let under = 0, over = 0, push = 0;
+  let under = 0, over = 0, push = 0, model = null;
   for (const sc of scenarios) {
     const r = sideProbs(line, meanPerMap * sc.maps, k, stat);
     under += sc.weight * r.under;
     over += sc.weight * r.over;
     push += sc.weight * r.push;
+    model ??= r.model;
   }
-  const model = useCount(stat, meanPerMap, k) ? 'nb' : 'normal';
   const win = side === 'UNDER' ? under : over;
   // a push refunds the leg, so the probability that matters is win / (1 − push)
   return { win, under, over, push, effective: push < 1 ? win / (1 - push) : 0, model };
 }
 
-module.exports = { logGamma, nbPmf, nbCdf, normalCdf, sideProbs, propProb, useCount };
+module.exports = { SYM_MIN, logGamma, nbPmf, nbCdf, normalCdf, sideProbs, propProb, useCount };

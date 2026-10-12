@@ -225,3 +225,14 @@ test('scan: pulls every source through the given http and merges', async () => {
   const after = calls.filter(u => u.includes('kalshi')).length - before;
   assert.equal(after, 1, 'only the series that listed something');
 });
+
+test('ratings calibration: the share of the Elo gap the market agrees with, fitted and applied', () => {
+  const E = require('../esboard');
+  // Elo says 80/20 where the market says ~62/38 on the map: a scale near 0.36
+  const pairs = Array.from({ length: 14 }, () => ({ raw: 0.8, market: 0.62 }));
+  const s = E.fitScale(pairs);
+  assert.ok(s > 0.3 && s < 0.4, `scale ${s}`);
+  assert.equal(E.fitScale(pairs.slice(0, 3)), null, 'too few matches: no fit');
+  // a market that disagrees on direction can't flip the ratings: clamped at the floor
+  assert.equal(E.fitScale(pairs.map(() => ({ raw: 0.8, market: 0.3 }))), 0.15);
+});
