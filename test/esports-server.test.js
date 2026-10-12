@@ -255,3 +255,35 @@ test('props: Underdog esports lines get the player\'s team from the game\'s home
   assert.equal(lines[1].team, 'Betclic');
   assert.equal(lines[0].matchTitle, 'Betclic vs Ninjas in Pyjamas');
 });
+
+
+// Shapes copied from bo3's live payload for donk (2026-10-12, 90-day window)
+const gen = { games_count: 63, matches_count: 25, kills_sum: 1217, deaths_sum: 911, rounds_count: 1355 };
+const acc = [
+  { hit_group: '', kills_sum: 0 }, { hit_group: 'Chest', kills_sum: 257 }, { hit_group: 'Generic', kills_sum: 17 },
+  { hit_group: 'Head', kills_sum: 786 }, { hit_group: 'LeftArm', kills_sum: 10 }, { hit_group: 'LeftLeg', kills_sum: 12 },
+  { hit_group: 'RightArm', kills_sum: 40 }, { hit_group: 'Stomach', kills_sum: 98 }, { hit_group: 'RightLeg', kills_sum: 7 },
+];
+
+test('props: bo3 headshot rate comes from the Head hit group', () => {
+  assert.ok(Math.abs(S.bo3HeadshotPct(acc) - 786 / 1227 * 100) < 1e-9);
+  assert.ok(Math.abs(S.bo3HeadshotPct({ data: acc }) - 786 / 1227 * 100) < 1e-9);
+  assert.equal(S.bo3HeadshotPct([{ hit_group: 'Head', kills_sum: 10 }]), null);
+  assert.equal(S.bo3HeadshotPct(null), null);
+});
+
+test('props: bo3 maps are games, not series', () => {
+  const p = S.bo3ExtractProfile('donk', { data: [gen] }, null, acc);
+  assert.equal(p.mapsPlayed, 63);
+  assert.ok(Math.abs(p.avgKillsPerMap - 1217 / 63) < 1e-9);
+  assert.ok(Math.abs(p.roundsPerMap - 1355 / 63) < 1e-9);
+  assert.ok(Math.abs(p.hsPercent - 64.06) < 0.01);
+});
+
+test('props: headshot props use the player rate, not a flat 45%', () => {
+  const p = S.bo3ExtractProfile('donk', { data: [gen] }, null, acc);
+  const kills = S.predictKillsFromStats(p, 'CS', 2, 'kills');
+  const hs = S.predictKillsFromStats(p, 'CS', 2, 'Headshots on Maps 1+2');
+  assert.ok(Math.abs(hs / kills - 786 / 1227) < 1e-9);
+  assert.ok(kills > 36 && kills < 41);   // about 19.3 a map
+});
