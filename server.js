@@ -2985,11 +2985,41 @@ app.get('/app', (req, res) => {
 app.get('/calc.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
 });
-// Browsers opening the bare URL get the app; API clients (and the app's own
-// health check, which sends Accept: */*) still get the JSON status.
+// MY BETS math, the same way (bets.js, window.LRBets; it needs /calc.js first).
+app.get('/bets.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'bets.js'));
+});
+// The public sales page. Prices come from Railway variables so they can change
+// without a deploy: PRICE_MONTHLY (default 79), PRICE_INTRO (default 49, 0 hides
+// it) for the first INTRO_SEATS members (default 100). While PAYWALL is off the
+// page says Pro is free in early access.
+// The footer links to /terms, /privacy and /refunds.
+const LANDING_FILE = path.join(__dirname, 'public', 'landing.html');
+let landingSrc = null;
+function landingHtml({ paywall = PAYWALL, env = process.env } = {}) {
+  if (landingSrc == null) { try { landingSrc = fs.readFileSync(LANDING_FILE, 'utf8'); } catch { return null; } }
+  const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 ? n : d; };
+  const money = n => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+  const price = num(env.PRICE_MONTHLY, 79), intro = num(env.PRICE_INTRO, 49), seats = Math.round(num(env.INTRO_SEATS, 100));
+  const vals = {
+    PRICE: money(price), INTRO_PRICE: money(intro), INTRO_SEATS: String(seats),
+    INTRO_VISIBILITY: intro > 0 && intro < price && seats > 0 ? 'visible' : 'hidden',
+    EARLY_DISPLAY: paywall ? 'none' : 'block',
+    // without AUTH_SECRET there are no accounts yet, so the buttons just open the app
+    SIGNUP_LABEL: env.AUTH_SECRET ? 'Create a free account' : 'Start free',
+    LOGIN_DISPLAY: env.AUTH_SECRET ? 'inline-flex' : 'none',
+  };
+  return landingSrc.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (k in vals ? vals[k] : m));
+}
+// Browsers opening the bare URL get the sales page; API clients (and the app's
+// own health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
-  if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.57.0', updated: new Date().toISOString() });
+  if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '')) {
+    const html = landingHtml();
+    if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
+    if (loadApp()) return res.redirect('/app');
+  }
+  res.json({ status: 'Line Reaper backend running', version: '3.59.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3785,6 +3815,22 @@ app.get('/api/best', async (req, res) => {
     res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: preview, locked: out.total - preview.length }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// MY BETS (bets.js): a bet a user logged from a tracked play settles from the
+// trackers' own grading. The bets stay in the user's browser; this only says
+// what happened to the outcomes. body: { bets: [{ id, track }] }, 200 at most.
+const betsLib = require('./bets');
+const { sportKey: pickSportKey, outcomeFor: pickOutcomeFor } = require('./tracker');
+app.post('/api/bets/settle', async (req, res) => {
+  try {
+    const list = (Array.isArray(req.body?.bets) ? req.body.bets : []).slice(0, 200).filter(b => b && typeof b === 'object');
+    const lic = licenceOf(req), all = { limit: 1e9 };
+    const wants = k => list.some(b => b.track?.kind === k);
+    const [tail, picks] = await Promise.all([
+      wants('tail') && lic.polymarket ? tailTracker.list(all) : [],
+      wants('prop') ? tracker.list(all) : []]);
+    res.set('Cache-Control', 'no-store').json({ results: betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // The encrypted snapshot the results-backup Action keeps (backup.js).
 app.get('/api/results/backup', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
@@ -3825,7 +3871,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.57.0',
+  version: '3.59.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3960,10 +4006,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.56.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.59.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.56.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.59.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -4010,5 +4056,5 @@ module.exports = {
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
-  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup,
+  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml,
 };

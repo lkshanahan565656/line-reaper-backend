@@ -110,6 +110,7 @@ function tailRows(signals, verdict, o, now) {
       bet: v.buy || s.outcome, venue: v.name || v.key, price: v.american != null ? null : v.price, american: v.american ?? null,
       maxPrice: v.maxPrice ?? s.maxPrice ?? null, units, ev, verdict: vd.verdict, why, url: v.url || null,
       startsAt: s.gameStartTime || null, at: s.seenAt || s.at, warning: v.warning || null,
+      track: { kind: 'tail', id: s.id },
     });
   }
   return { rows, dropped };
@@ -163,6 +164,8 @@ function propRows(picks, verdict, o, now) {
       id: `prop:${p.sport}|${p.player}|${p.market}`, kind: 'esportsProp', label: `${labels.sport} prop`, title,
       bet: `${p.side === 'OVER' ? 'More' : 'Less'} than ${line} ${p.displayMarket || p.market}`, venue: book, price: null, american: null, maxPrice: null,
       units: 1, ev: r4(p.bestEv / 100), verdict: vd.verdict, why, url: null, startsAt: p.startTime, at: null, warning: null,
+      // what MY BETS sends back to settle a logged bet from the pick tracker
+      track: { kind: 'prop', sport: p.sport, player: p.player, market: p.market, line, side: p.side, startsAt: p.startTime },
     });
   }
   return { rows, dropped };
