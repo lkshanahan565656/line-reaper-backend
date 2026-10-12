@@ -39,7 +39,7 @@ function createMemoryStore(initial = []) {
 function createFileStore(file) {
   const rows = new Map();
   let writing = Promise.resolve();
-  return {
+  const store = {
     kind: 'file',
     async init() {
       try {
@@ -50,8 +50,9 @@ function createFileStore(file) {
       }
     },
     async all() { return [...rows.values()]; },
-    async put(p) {
-      rows.set(p.id, p);
+    async put(p) { return store.putMany([p]); },
+    async putMany(list) {
+      for (const p of list) rows.set(p.id, p);
       // serialize writes; write to a temp file then rename so a crash can't truncate it
       writing = writing.then(() => {
         fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -62,6 +63,7 @@ function createFileStore(file) {
       return writing;
     },
   };
+  return store;
 }
 
 function createPgStore(connectionString) {

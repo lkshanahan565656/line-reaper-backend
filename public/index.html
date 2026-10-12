@@ -662,6 +662,7 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
     <button class="tab active" onclick="showTab('tail',this)">🐋 SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">♻️ ARBS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS 🎮</button>
+    <button class="tab" onclick="showTab('results',this)">📈 RESULTS</button>
     <span class="tab-sep" title="Sportsbook tools: these need an odds feed"></span>
     <button class="tab" onclick="showTab('lines',this)">LINES</button>
     <button class="tab" onclick="showTab('shop',this)">LINE SHOP</button>
@@ -740,6 +741,19 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 </div>
 
 <!-- ARB PAGE -->
+<div class="page" id="page-results">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">WHAT'S WINNING</strong> — every Sharp Tail signal, fresh-wallet alert, esports exchange edge, +EV price and esports prop the app has flagged, graded and cut into plays.
+    <span style="color:#94a3b8;font-size:11px">CLV (did the price beat the close) proves an edge in dozens of bets where profit needs hundreds. <b style="color:#34d399">Proven</b>: 20+ bets and a t-stat of 2+. <b style="color:#fbbf24">Promising</b>: 8+ bets beating the close. <b style="color:#f87171">Avoid</b>: 8+ bets losing to it.</span>
+  </div>
+  <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="sport-chip active" data-days="0" onclick="resultsDays(0)">ALL TIME</button>
+    <button class="sport-chip" data-days="30" onclick="resultsDays(30)">30 DAYS</button>
+    <button class="sport-chip" data-days="7" onclick="resultsDays(7)">7 DAYS</button>
+  </div>
+  <div id="resultsContent"></div>
+</div>
+
 <div class="page" id="page-arb">
   <div class="arb-modes">
     <button class="sport-chip active" id="arbModeEx" onclick="arbMode('exchanges')">EXCHANGES</button>
@@ -1076,6 +1090,7 @@ function showTab(name, el) {
   tailActive = name === 'tail';
   if (tailActive) loadTail(); else clearTimeout(tailTimer);
   if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
+  if (name === 'results') loadResults();
 }
 
 // ─── API KEY ──────────────────────────────────────────────────────────────────
@@ -4067,6 +4082,50 @@ function arbShow() {
   if (arbModeNow === 'exchanges') loadXarbs(); else renderArbTool();
 }
 const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
+// ─── RESULTS ──────────────────────────────────────────────────────────────────
+const resultsUi = { days: 0 };
+function resultsDays(d) {
+  resultsUi.days = d;
+  document.querySelectorAll('#page-results [data-days]').forEach(b => b.classList.toggle('active', +b.dataset.days === d));
+  loadResults();
+}
+async function loadResults() {
+  const el = document.getElementById('resultsContent');
+  el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { renderResults(await tailGet(`/api/results${resultsUi.days ? `?days=${resultsUi.days}` : ''}`)); }
+  catch (e) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(e.old ? 'Results need backend v3.47 or later.' : e.message)); }
+}
+function renderResults(d) {
+  const pct = (x, plus = true) => x == null ? '—' : `${plus && x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+  const col = x => x == null ? 'var(--text2)' : x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'var(--text2)';
+  const VC = { proven: ['PROVEN', '#34d399'], promising: ['PROMISING', '#fbbf24'], early: ['TOO EARLY', '#94a3b8'], avoid: ['AVOID', '#f87171'] };
+  const cards = Object.values(d.sources || {}).map(s => { const o = s.overall; return `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:150px;flex:1">
+      <div style="font-size:11px;color:var(--text2);letter-spacing:.05em">${escAttr(s.label.toUpperCase())}</div>
+      <div style="font-size:18px;font-weight:700;margin:4px 0;color:${col(o.avgClv ?? o.roi)}">${o.avgClv != null ? `${pct(o.avgClv)} CLV` : o.roi != null ? `${pct(o.roi)} ROI` : '—'}</div>
+      <div style="font-size:11px;color:var(--text2)">${o.n} graded · ${s.open} open${o.graded ? ` · ${o.wins}-${o.losses} · ${o.units > 0 ? '+' : ''}${o.units}u` : ''}${o.beatClosePct != null ? ` · beat close ${pct(o.beatClosePct, false)}` : ''}</div>
+    </div>`; }).join('');
+  const plays = (d.plays || []).filter(p => p.play !== 'all');
+  const rows = plays.map(p => { const [v, c] = VC[p.verdict] || VC.early; return `<tr>
+      <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span></td>
+      <td>${escAttr(p.label)}</td><td>${escAttr(p.play)}</td><td style="text-align:right">${p.n}</td>
+      <td style="text-align:right;color:${col(p.avgClv)}">${pct(p.avgClv)}</td>
+      <td style="text-align:right">${p.beatClosePct != null ? pct(p.beatClosePct, false) : '—'}</td>
+      <td style="text-align:right">${p.graded ? `${p.wins}-${p.losses}` : '—'}</td>
+      <td style="text-align:right;color:${col(p.roi)}">${pct(p.roi)}</td>
+      <td style="text-align:right;color:${col(p.units)}">${p.graded ? `${p.units > 0 ? '+' : ''}${p.units}u` : '—'}</td></tr>`; }).join('');
+  const b = d.backup || {};
+  const kept = b.state === 'ready' ? `Records survive deploys (backup ${b.snapshotAt ? `from ${new Date(b.snapshotAt).toLocaleString()}` : 'starting now'}).`
+    : b.state === 'off' ? 'Backup is off here, so records reset on a restart.' : `Backup: ${escAttr(b.note || b.state || '')}`;
+  document.getElementById('resultsContent').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${cards}</div>
+    <h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:.05em;color:var(--text2)">PLAYS, BEST FIRST</h3>
+    ${rows ? `<div style="overflow-x:auto"><table class="esm-table">
+      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th><th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">${kept}</div>`;
+}
+
 async function loadXarbs() {
   clearTimeout(xarbUi.timer);
   const el = document.getElementById('xarbContent');

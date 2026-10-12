@@ -570,8 +570,12 @@ const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
+// Every track record is backed up to the repo's results-data branch and
+// restored on boot, so deploys don't wipe them (backup.js).
+const { createBackup, axiosFetchJson } = require('./backup');
+const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
-const evTracker = createEvTracker({ store: createEvStoreFromEnv(), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -1800,7 +1804,7 @@ async function dotaAccountId(playerName) {
 }
 
 const tracker = createTracker({
-  store: createStoreFromEnv(),
+  store: resultsBackup.wrap('esportsPicks', createStoreFromEnv()),
   graders: {
     LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId),
     ...(panda ? { CS: panda.grader('CS'), VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
@@ -2081,14 +2085,14 @@ function createTraderStoreFromEnv(env = process.env) {
 }
 
 // Thresholds come from TAIL_* (see .env.example), e.g. TAIL_MIN_TRADE, TAIL_A_MIN_Z.
-const tailEngine = tail.createTailEngine({ http: upstream, store: createTraderStoreFromEnv(), opts: tail.optionsFromEnv() });
+const tailEngine = tail.createTailEngine({ http: upstream, store: resultsBackup.wrap('tailTraders', createTraderStoreFromEnv(), { appendOnly: false }), opts: tail.optionsFromEnv() });
 // TAIL_STREAM=off: poll only
 const tailStream = createTradeStream({ onTrades: trades => runTailJob('stream', () => streamTail(trades)) });
 const tailStreamOn = !/^(off|0|false|no)$/i.test(String(process.env.TAIL_STREAM || '').trim());
-const tailTracker = createTailTracker({ store: createTailStoreFromEnv(), http: upstream });
+const tailTracker = createTailTracker({ store: resultsBackup.wrap('tail', createTailStoreFromEnv()), http: upstream });
 tailTracker.ready().catch(e => console.error('Tail tracker: store failed to initialise:', e.message));
 // the fresh-wallet radar's own record: its alerts as flat 1u bets
-const freshTracker = createTailTracker({ store: createFreshStoreFromEnv(), http: upstream });
+const freshTracker = createTailTracker({ store: resultsBackup.wrap('fresh', createFreshStoreFromEnv()), http: upstream });
 freshTracker.ready().catch(e => console.error('Fresh tracker: store failed to initialise:', e.message));
 
 // Polymarket US: the same game market a US follower can buy (POLYMARKET_US=off: not quoted)
@@ -2556,6 +2560,29 @@ const ESPORTS_ALERT_MIN = parseFloat(process.env.ESPORTS_ALERT_MIN || '0.04');
 const ESPORTS_REALERT_MS = 6 * 3600e3;
 const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS });
 const esportsEdgeSeen = new Map();
+// Every board edge is logged and graded on closing-line value like the +EV
+// screener: the close is the all-source fair price at the match's start.
+const esportsEdgeTracker = createEvTracker({
+  store: resultsBackup.wrap('esportsEdges', createEvStoreFromEnv(process.env, { table: 'esports_edges', fileVar: 'ESPORTS_EDGE_TRACK_FILE', file: 'esports-edges.json' })),
+  minEv: 0,
+});
+esportsEdgeTracker.ready().catch(e => console.error('Esports edge tracker: store failed to initialise:', e.message));
+// board → evtrack rows (ev and fair in percent) and the fair of every outcome
+function esportsEdgeRows(matches, venueOk = () => true) {
+  const rows = [], fairs = new Map();
+  for (const m of matches) {
+    if (!m.start || m.live) continue;
+    for (const mk of m.markets) for (const oc of mk.outcomes) if (oc.fair != null) fairs.set(`${m.id}|${mk.key}|${oc.name}`, oc.fair * 100);
+    for (const e of m.edges) {
+      if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
+      rows.push({
+        group: `${m.id}|${e.market}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
+        market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'esboard',
+      });
+    }
+  }
+  return { rows, fairs };
+}
 // US mode: Polymarket International can't be traded from the US (and Polymarket
 // US lists no esports), so its prices stay as a reference but its edges and
 // arb legs go.
@@ -2563,6 +2590,8 @@ const tradableVenue = v => v === 'kalshi' || (v === 'polymarket' && TAIL_REGION 
 async function scanEsportsBoard() {
   const st = await esportsBoard.scan();
   const now = Date.now();
+  const { rows: edgeRows, fairs: edgeFairs } = esportsEdgeRows(st.matches, tradableVenue);
+  esportsEdgeTracker.recordBoard(edgeRows, edgeFairs).catch(e => console.warn('Esports edge tracker:', e.message));
   // the exchanges' match prices are the match context for player props
   for (const m of st.matches) {
     const main = m.markets.find(mk => mk.kind === 'match');
@@ -2765,7 +2794,7 @@ app.get('/app', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.46.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.47.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3497,6 +3526,25 @@ app.get('/api/esports/context', (req, res) => res.json({
 }));
 
 // ── TRACK RECORD ──────────────────────────────────────────────────────────────
+// What's winning: every track record scored and cut into plays (results.js).
+// ?days=30 limits it to records from the last 30 days.
+const results = require('./results');
+app.get('/api/results', async (req, res) => {
+  try {
+    const days = parseFloat(req.query.days);
+    const all = { limit: 1e9 };
+    const [tail, fresh, ev, esportsEdges, esportsPicks] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all)]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// The encrypted snapshot the results-backup Action keeps (backup.js).
+app.get('/api/results/backup', async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+
 app.get('/api/tracker/summary', async (req, res) => {
   try {
     const minEv = req.query.minEV != null ? parseFloat(req.query.minEV) : undefined;
@@ -3531,10 +3579,11 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.46.0',
+  version: '3.47.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
+  resultsBackup: resultsBackup.status(),
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,
@@ -3661,10 +3710,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.46.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.47.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`✅ Line Reaper v3.46.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`✅ Line Reaper v3.47.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -3711,5 +3760,5 @@ module.exports = {
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
-  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge,
+  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup,
 };
