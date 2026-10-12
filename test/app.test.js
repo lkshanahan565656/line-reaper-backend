@@ -38,3 +38,13 @@ test('TOOLS tab ships the calculators and loads calc.js from the server', () => 
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   assert.match(server, /app\.get\('\/calc\.js'/);
 });
+
+// the public sales page at /
+test('sales page: no emoji, legal links, links into the app', () => {
+  const page = fs.readFileSync(path.join(__dirname, '..', 'public', 'landing.html'), 'utf8');
+  const pict = /[\u{1F300}-\u{1FAFF}☀-➿⭐⌀-⏿]|️/u;
+  assert.deepStrictEqual(page.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => pict.test(l)).map(b => b[0]), []);
+  for (const href of ['/terms', '/privacy', '/refunds', '/app?start=signup', '/app?start=app']) assert.ok(page.includes(`href="${href}"`), href);
+  assert.ok(html.includes("get('start')"), 'the app reads ?start= from the sales page links');
+
+});

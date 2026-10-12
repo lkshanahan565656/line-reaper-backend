@@ -2445,6 +2445,18 @@ function layFoldLabel(info) {
 // out, so it is the sign-in screen. Account buttons appear only when the server
 // can make accounts; "Enter the app" always works so nobody is blocked.
 function welcomeInit() {
+  // links from the sales page: /app?start=signup|login|app skip this screen,
+  // and signup/login open the account form when accounts are on
+  const start = new URLSearchParams(location.search).get('start');
+  if (start) {
+    const qs = new URLSearchParams(location.search); qs.delete('start');
+    history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
+    try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
+    if (!acct.token && (start === 'signup' || start === 'login')) {
+      fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
+    }
+    return;
+  }
   if (acct.token || ssGet('lr_welcomed')) return;
   const w = document.getElementById('welcome');
   if (!w) return;
