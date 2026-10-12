@@ -60,7 +60,7 @@ function indexed(rows) {
 
 function createMemoryUserStore() {
   const rows = new Map();
-  return { kind: 'memory', async init() {}, ...wrap(indexed(rows)), async put(u) { rows.set(u.id, u); } };
+  return { kind: 'memory', async init() {}, ...wrap(indexed(rows)), async put(u) { rows.set(u.id, u); }, async remove(id) { rows.delete(id); } };
 }
 
 function createFileUserStore(file) {
@@ -75,6 +75,15 @@ function createFileUserStore(file) {
     ...wrap(indexed(rows)),
     async put(u) {
       rows.set(u.id, u);
+      writing = writing.then(() => {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(`${file}.tmp`, JSON.stringify([...rows.values()]));
+        fs.renameSync(`${file}.tmp`, file);
+      }).catch(e => console.warn(`Users: write failed: ${e.message}`));
+      return writing;
+    },
+    async remove(id) {
+      rows.delete(id);
       writing = writing.then(() => {
         fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(`${file}.tmp`, JSON.stringify([...rows.values()]));
@@ -109,6 +118,10 @@ function createPgUserStore(connectionString) {
         `INSERT INTO users (id, email, doc) VALUES ($1, $2, $3)
          ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, doc = EXCLUDED.doc, updated_at = now()`,
         [u.id, u.email, u]);
+    },
+    async remove(id) {
+      rows.delete(id);
+      await pool.query('DELETE FROM users WHERE id = $1', [id]);
     },
   };
 }
@@ -149,17 +162,25 @@ function isPro(u, now = Date.now()) {
   return false;
 }
 
-function createAuth({ store, secret, now = () => Date.now() }) {
+// termsVersion: when set, sign-up needs consent { terms: true, age: true } and
+// records which version was accepted (legal.js TERMS_VERSION).
+function createAuth({ store, secret, now = () => Date.now(), termsVersion = null, minAge = 21 }) {
   if (!secret) throw new Error('createAuth: secret required');
   const ready = store.init();
 
-  async function signup(email, password) {
+  async function signup(email, password, consent = {}) {
     await ready;
     const e = String(email || '').trim().toLowerCase();
     if (!EMAIL_RE.test(e)) throw httpError(400, 'Enter a valid email');
     if (String(password || '').length < 8) throw httpError(400, 'Password must be at least 8 characters');
+    if (termsVersion) {
+      if (consent.age !== true) throw httpError(400, `Confirm you are ${minAge} or older`);
+      if (consent.terms !== true) throw httpError(400, 'Agree to the Terms of Service and Privacy Policy to continue');
+    }
     if (await store.byEmail(e)) throw httpError(409, 'An account with that email already exists');
-    const user = { id: crypto.randomUUID(), email: e, passwordHash: hashPassword(password), createdAt: new Date(now()).toISOString(), plan: 'free' };
+    const at = new Date(now()).toISOString();
+    const user = { id: crypto.randomUUID(), email: e, passwordHash: hashPassword(password), createdAt: at, plan: 'free' };
+    if (termsVersion) user.consent = { termsVersion, acceptedAt: at, ageConfirmed: minAge, ip: consent.ip ? String(consent.ip).slice(0, 64) : null };
     await store.put(user);
     return { user: publicUser(user), token: signToken({ sub: user.id }, secret, now()) };
   }
@@ -170,6 +191,21 @@ function createAuth({ store, secret, now = () => Date.now() }) {
     // same message either way, so the endpoint can't be used to find accounts
     if (!user || !verifyPassword(String(password || ''), user.passwordHash)) throw httpError(401, 'Wrong email or password');
     return { user: publicUser(user), token: signToken({ sub: user.id }, secret, now()) };
+  }
+
+  // Deletes the account for good. A live paid subscription must be cancelled
+  // first (Billing), so a deleted account can't keep being charged.
+  async function deleteAccount(user, password) {
+    await ready;
+    if (!user) throw httpError(401, 'Log in first');
+    const fresh = await store.get(user.id);
+    if (!fresh) throw httpError(404, 'Account not found');
+    if (!verifyPassword(String(password || ''), fresh.passwordHash)) throw httpError(401, 'Wrong password');
+    if (!fresh.comp && PAID_STATUSES.has(fresh.planStatus) && !fresh.cancelAtPeriodEnd) {
+      throw httpError(409, 'Cancel your subscription in Billing first, then delete the account');
+    }
+    await store.remove(fresh.id);
+    return { deleted: true };
   }
 
   async function fromToken(token) {
@@ -189,7 +225,7 @@ function createAuth({ store, secret, now = () => Date.now() }) {
     };
   }
 
-  return { signup, login, fromToken, attach, store, ready: () => ready };
+  return { signup, login, deleteAccount, fromToken, attach, store, ready: () => ready, termsVersion };
 }
 
 function httpError(status, message) {

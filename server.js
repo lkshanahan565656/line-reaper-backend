@@ -211,7 +211,9 @@ let ppFail = { count: 0, until: 0 };
 const dfsError = { prizepicks: null, underdog: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
+const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 async function scrapePrizePicks() {
+  if (!licences.isOn('prizepicks')) { dfsError.prizepicks = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
   if (Date.now() < ppFail.until) return;
   try {
     const res = await axios.get('https://api.prizepicks.com/projections', {
@@ -344,6 +346,7 @@ function parseUnderdogPayload(data) {
 
 const UNDERDOG_URL = process.env.UNDERDOG_URL || 'https://api.underdogfantasy.com/v1/over_under_lines';
 async function scrapeUnderdog() {
+  if (!licences.isOn('underdog')) { dfsError.underdog = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
   try {
     // beta/v5 and v6 answer 426 (upgrade required) since 2026-10; v1 serves the same payload
     const res = await axios.get(UNDERDOG_URL, {
@@ -364,7 +367,7 @@ async function scrapeUnderdog() {
 // entirely — no more log spam, no wasted CPU/egress on a lapsed key.
 // Set a valid OWLS_API_KEY env var on Railway and restart to re-enable.
 let owlsAuthFails = 0;
-const owlsDisabled = () => owlsAuthFails >= 3;
+const owlsDisabled = () => owlsAuthFails >= 3 || !licences.isOn('owls');
 function noteOwlsError(e, label) {
   const s = e.response?.status;
   if (s === 401 || s === 403) {
@@ -581,6 +584,8 @@ const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
 const webhook = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
+const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
+const legal = require('./legal');
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
 const exchanges = require('./exchanges');
@@ -630,13 +635,18 @@ function splitsMap() {
 // restart logs everyone out, which is fine locally and wrong in production.
 const AUTH_SECRET = process.env.AUTH_SECRET || require('crypto').randomBytes(32).toString('hex');
 if (!process.env.AUTH_SECRET) console.warn('AUTH_SECRET is not set: logins will not survive a restart.');
-const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET });
+const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET, termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE });
 const billing = createBilling({
   http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
   store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
 });
 // PAYWALL=on turns the gates on. Off by default so a deploy never locks you out.
 const PAYWALL = /^(1|on|true|yes)$/i.test(process.env.PAYWALL || '');
+// Feeds whose terms don't cover a paid product stop being fetched while the
+// paywall is on, each until its own *_DATA_OK setting is on (licences.js).
+const licences = createLicences({ paywall: () => PAYWALL, extraHosts: { underdog: [(() => { try { return new URL(UNDERDOG_URL).hostname; } catch { return ''; } })()].filter(Boolean) } });
+licences.install(axios);
+if (PAYWALL && licences.state().paused.length) console.log(`Licences: paused while PAYWALL is on: ${licences.state().paused.join(', ')}`);
 
 // New edges and line moves, pushed to the app (server-sent events) and, when
 // ALERT_WEBHOOK_URL is set, to the webhook.
@@ -2244,6 +2254,8 @@ const whaleWatcher = whales.createWhaleWatcher({
 // /api/ev/stream subscribers: fn(eventType, data)
 const liveListeners = new Set();
 function broadcast(type, data) {
+  const hidden = hiddenWallets();
+  if (hidden.length && mentions(data, hidden)) return;
   for (const fn of liveListeners) { try { fn(type, data); } catch { /* keep going */ } }
 }
 // One post of up to 10 lines. TAIL_WEBHOOK=off stops these.
@@ -2270,7 +2282,7 @@ function stripPolymarketLinks(x) {
   for (const [k, v] of Object.entries(x)) out[k] = stripPolymarketLinks(v);
   return out;
 }
-const regionSafe = x => (TAIL_REGION === 'us' ? stripPolymarketLinks(x) : x);
+const regionSafe = x => hideWallets(TAIL_REGION === 'us' ? stripPolymarketLinks(x) : x);
 
 // ── where to tail ──
 // Each new entry signal gets every venue quote for the same proposition
@@ -2957,10 +2969,12 @@ function loadApp() {
   if (appHtml) return appHtml;
   try {
     appHtml = fs.readFileSync(APP_FILE, 'utf8')
-      .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;');
+      .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;')
+      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`);
   } catch { appHtml = null; }
   return appHtml;
 }
+legal.mount(app);
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -3005,20 +3019,32 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.58.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.59.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
 const sendErr = (res, e) => res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
 
 app.post('/api/auth/signup', async (req, res) => {
-  try { res.status(201).json(await auth.signup(req.body?.email, req.body?.password)); }
+  try {
+    const consent = { terms: req.body?.acceptTerms === true, age: req.body?.confirmAge === true, version: req.body?.termsVersion, ip: (req.get('x-forwarded-for') || '').split(',')[0].trim() || req.ip };
+    res.status(201).json(await auth.signup(req.body?.email, req.body?.password, consent));
+  }
   catch (e) { sendErr(res, e); }
 });
 app.post('/api/auth/login', async (req, res) => {
   try { res.json(await auth.login(req.body?.email, req.body?.password)); }
   catch (e) { sendErr(res, e); }
 });
+// Delete your own account (privacy rights). Needs the password, and a paid
+// subscription has to be cancelled first so nobody is billed for a deleted account.
+app.post('/api/auth/delete', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  try { res.json(await auth.deleteAccount(req.user, req.body?.password)); }
+  catch (e) { sendErr(res, e); }
+});
+// the terms version the app asks people to accept
+app.get('/api/legal', (req, res) => res.json({ termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE, pages: legal.ORDER.map(k => ({ slug: k, path: `/${k}`, title: legal.PAGES[k].title })) }));
 app.get('/api/auth/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
   res.json({ user: publicUser(req.user), paywall: PAYWALL, billing: billing.configured() });
@@ -3033,7 +3059,8 @@ app.post('/api/billing/checkout', async (req, res) => {
   try {
     const back = returnUrl(req, `${req.protocol}://${req.get('host')}/`);
     const sep = back.includes('?') ? '&' : '?';
-    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back }));
+    const origin = `${(req.get('x-forwarded-proto') || req.protocol).split(',')[0].trim()}://${req.get('host')}`;
+    res.json(await billing.checkout(req.user, { successUrl: `${back}${sep}upgraded=1`, cancelUrl: back, legalUrl: origin }));
   } catch (e) { console.error('Checkout failed:', e.response?.data?.error?.message || e.message); sendErr(res, e); }
 });
 app.post('/api/billing/portal', async (req, res) => {
@@ -3191,6 +3218,7 @@ app.get('/api/tail/board', (req, res) => {
 app.get('/api/tail/trader/:wallet', requirePro, async (req, res) => {
   const lic = licenceOf(req);
   if (!lic.polymarket) return res.status(403).json({ error: `Polymarket wallets: ${LICENCE_NOTE}`, ...withheldBody(['polymarket']) });
+  if (hiddenWallets().includes(String(req.params.wallet).toLowerCase())) return res.status(404).json({ error: 'That wallet has not been scored yet' });
   const tr = tailEngine.trader(req.params.wallet);
   if (!tr) return res.status(404).json({ error: 'That wallet has not been scored yet' });
   const signals = tailEngine.signals({ limit: 500 }).filter(s => s.wallet === tr.wallet).slice(0, 50).map(s => venueFor(s, lic));
@@ -3629,6 +3657,7 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
 
 // Regex path: works on both Express 4 and Express 5 (string '*' wildcards break on v5)
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
+  if (!licences.isOn('owls')) return res.status(503).json({ error: 'Owls paused: waiting on data permission' });
   if (owlsDisabled()) return res.status(503).json({ error: 'Owls disabled — API key is dead (repeated 403s). Set OWLS_API_KEY and restart.' });
   const path = req.params[0], query = new URLSearchParams(req.query).toString();
   // only the read endpoints the app uses, so the server key can't be pointed elsewhere
@@ -3842,7 +3871,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.58.0',
+  version: '3.59.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3875,6 +3904,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   region: TAIL_REGION,
   eventLoop: loopWindow || loopNow(),
   licence: licenceState(req),
+  dataLicences: (!PAYWALL || isAdmin(req)) ? licences.state() : licences.publicState(),
   upstream: upstream.stats(),
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
@@ -3882,7 +3912,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
-  owls: owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
+  owls: !licences.isOn('owls') ? 'paused: waiting on data permission' : owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
   oddsApiBudget: oddsBudget.state(),
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
@@ -3976,10 +4006,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.58.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.59.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.58.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.59.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

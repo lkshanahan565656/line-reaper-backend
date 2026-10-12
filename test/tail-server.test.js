@@ -537,7 +537,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.58.0');
+  assert.equal(body.version, '3.59.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -564,8 +564,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.58.0');
-  assert.equal((await get('/')).body.version, '3.58.0');
+  assert.equal(require('../package.json').version, '3.59.0');
+  assert.equal((await get('/')).body.version, '3.59.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -735,7 +735,7 @@ test('where to tail: Kalshi when the books are worse; nothing matched is "watch 
 let payingToken = null;
 async function payingUser() {
   if (!payingToken) {
-    const r = await post('/api/auth/signup', { email: 'subscriber@example.com', password: 'correct horse battery' });
+    const r = await post('/api/auth/signup', { email: 'subscriber@example.com', password: 'correct horse battery', acceptTerms: true, confirmAge: true });
     assert.equal(r.status, 201);
     assert.equal((await post('/api/admin/comp', { email: 'subscriber@example.com', comp: true }, PRO)).status, 200);
     payingToken = r.body.token;
@@ -1327,4 +1327,80 @@ test('where to tail: no take sized anywhere → the best resting bid, pinged and
   assert.equal(await S.tailTracker.record(s), true);
   const rec = (await S.tailTracker.list({ limit: 5000 })).find(r => r.id === 'bid-route');
   assert.deepEqual([rec.order, rec.entry, rec.venue, rec.filled], ['limit', 0.72, 'Polymarket US', false]);
+});
+
+// ── legal pages, consent at sign-up, account deletion, paused feeds ──
+test('legal pages: every page renders at its path, aliases redirect, the API lists them', async () => {
+  for (const slug of ['terms', 'privacy', 'refunds', 'disclaimer', 'responsible-gambling', 'data-sources', 'legal']) {
+    const r = await fetch(`${base}/${slug}`);
+    assert.equal(r.status, 200, slug);
+    assert.match(r.headers.get('content-type'), /html/);
+    const html = await r.text();
+    assert.match(html, /<title>[^<]+\| Line Reaper<\/title>/);
+    assert.match(html, /1-800-GAMBLER/, `${slug} has the helpline in the footer`);
+    assert.ok(!/undefined|\$\{/.test(html), `${slug} has no template leftovers`);
+  }
+  const r = await fetch(`${base}/privacy-policy`, { redirect: 'manual' });
+  assert.equal(r.status, 301);
+  assert.equal(r.headers.get('location'), '/privacy');
+  const { body } = await get('/api/legal');
+  assert.match(body.termsVersion, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(body.minAge, 21);
+  assert.deepEqual(body.pages.map(p => p.path), ['/terms', '/privacy', '/refunds', '/disclaimer', '/responsible-gambling', '/data-sources']);
+});
+
+test('sign-up needs the age box and the terms box, and records the version accepted', async () => {
+  const noAge = await post('/api/auth/signup', { email: 'consent@example.com', password: 'longenough1', acceptTerms: true });
+  assert.equal(noAge.status, 400);
+  assert.match(noAge.body.error, /21 or older/);
+  const noTerms = await post('/api/auth/signup', { email: 'consent@example.com', password: 'longenough1', confirmAge: true });
+  assert.equal(noTerms.status, 400);
+  assert.match(noTerms.body.error, /Terms of Service/);
+  // a string "true" is not a tick
+  assert.equal((await post('/api/auth/signup', { email: 'consent@example.com', password: 'longenough1', acceptTerms: 'true', confirmAge: true })).status, 400);
+  const ok = await post('/api/auth/signup', { email: 'consent@example.com', password: 'longenough1', acceptTerms: true, confirmAge: true });
+  assert.equal(ok.status, 201);
+  const saved = JSON.parse(fs.readFileSync(process.env.USERS_FILE, 'utf8')).find(u => u.email === 'consent@example.com');
+  assert.equal(saved.consent.termsVersion, require('../legal').TERMS_VERSION);
+  assert.equal(saved.consent.ageConfirmed, 21);
+  assert.ok(saved.consent.acceptedAt);
+});
+
+test('delete account: needs the password, refuses a live subscription, then the login stops working', async () => {
+  const s = await post('/api/auth/signup', { email: 'leaver@example.com', password: 'longenough1', acceptTerms: true, confirmAge: true });
+  const auth = { authorization: `Bearer ${s.body.token}` };
+  assert.equal((await post('/api/auth/delete', { password: 'x' })).status, 401, 'logged out');
+  assert.equal((await post('/api/auth/delete', { password: 'wrongpass1' }, auth)).status, 401);
+  // a paying account has to cancel first
+  const users = JSON.parse(fs.readFileSync(process.env.USERS_FILE, 'utf8'));
+  const u = users.find(x => x.email === 'leaver@example.com');
+  Object.assign((await S.auth.store.get(u.id)), { planStatus: 'active', currentPeriodEnd: new Date(Date.now() + 9 * DAY).toISOString() });
+  const live = await post('/api/auth/delete', { password: 'longenough1' }, auth);
+  assert.equal(live.status, 409);
+  assert.match(live.body.error, /Cancel your subscription/);
+  // cancelled in the portal (still inside the period): fine
+  (await S.auth.store.get(u.id)).cancelAtPeriodEnd = true;
+  const gone = await post('/api/auth/delete', { password: 'longenough1' }, auth);
+  assert.equal(gone.status, 200);
+  assert.equal(gone.body.deleted, true);
+  assert.equal((await get('/api/auth/me', auth)).status, 401);
+  assert.equal((await post('/api/auth/login', { email: 'leaver@example.com', password: 'longenough1' })).status, 401);
+});
+
+test('paused feeds: with PAYWALL on the scraped and single-user feeds are paused; the admin sees why, the public sees names only', async () => {
+  const admin = (await get('/api/status', PRO)).body.dataLicences;
+  assert.equal(admin.paywall, true);
+  for (const k of ['owls', 'prizepicks', 'underdog', 'vlr', 'bo3', 'golgg', 'pinnacle']) assert.ok(admin.paused.includes(k), `${k} paused`);
+  assert.ok(admin.sources.every(s => s.flag && s.why));
+  const pub = (await get('/api/status')).body.dataLicences;
+  assert.deepEqual(Object.keys(pub), ['paused']);
+  assert.ok(pub.paused.every(p => p.key && p.name && !p.why));
+  // the Owls proxy says so instead of calling out
+  const owls = await get('/api/owls/nba/odds');
+  assert.equal(owls.status, 503);
+  assert.match(owls.body.error, /waiting on data permission/);
+  // the flag turns one back on, read per request
+  process.env.UNDERDOG_DATA_OK = 'on';
+  try { assert.ok(!(await get('/api/status', PRO)).body.dataLicences.paused.includes('underdog')); }
+  finally { delete process.env.UNDERDOG_DATA_OK; }
 });
