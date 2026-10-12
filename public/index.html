@@ -767,6 +767,80 @@ body.no-help .clv-info { display:none; }
 .tl-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.04); }
 .tl-note { margin-top:12px; font-size:11px; color:var(--text2); line-height:1.6; }
 .tl-err { margin-top:14px; font-size:12px; color:var(--muted2); }
+/* MY BETS: personal bet tracker */
+.mb-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.mb-head .tl-blurb { max-width:640px; margin-bottom:0; }
+.mb-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.mb-btn { display:inline-flex; align-items:center; padding:8px 14px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text); font:600 11px 'Inter',sans-serif; letter-spacing:1px; cursor:pointer; white-space:nowrap; }
+.mb-btn:hover { border-color:var(--text2); }
+.mb-btn.primary { background:var(--text); border-color:var(--text); color:var(--bg); }
+.mb-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); margin:16px 0 12px; }
+.mb-sub { font-size:11px; color:var(--muted2); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mb-chart { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px 8px; margin-bottom:14px; }
+.mb-chart:empty { display:none; }
+.mb-chart svg { display:block; width:100%; height:140px; }
+.mb-chart-head, .mb-chart-foot { display:flex; justify-content:space-between; font-size:11px; color:var(--text2); }
+.mb-chart-head { margin-bottom:8px; } .mb-chart-head b { font:600 13px 'JetBrains Mono',monospace; }
+.mb-chart-foot { font:10px 'JetBrains Mono',monospace; color:var(--muted2); margin-top:4px; }
+#page-betlog .pos { color:#34d399; } #page-betlog .neg { color:#f87171; }
+.mb-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+.mb-seg { display:inline-flex; border:1px solid var(--border2); border-radius:7px; overflow:hidden; }
+.mb-seg button { background:transparent; border:none; border-right:1px solid var(--border2); color:var(--text2); font:600 11px 'Inter',sans-serif; padding:7px 11px; cursor:pointer; white-space:nowrap; }
+.mb-seg button:last-child { border-right:none; }
+.mb-seg button.on { background:rgba(226,232,240,.09); color:var(--text); }
+.mb-filters { display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end; }
+.mb-filters select, .mb-filters input { background:var(--surface); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:7px 9px; font:12px 'Inter',sans-serif; min-width:0; }
+.mb-filters input { width:170px; }
+.mb-filters select:focus, .mb-filters input:focus { outline:none; border-color:var(--green); }
+.mb-table { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.mb-row { display:grid; grid-template-columns: 62px minmax(0,1fr) 72px 92px 112px 92px 66px 150px; gap:10px; align-items:center; padding:10px 14px; border-top:1px solid rgba(255,255,255,.04); font-size:12px; }
+.mb-row.mb-th { border-top:none; font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; padding-top:9px; padding-bottom:9px; background:rgba(0,0,0,.15); }
+.mb-row .r { text-align:right; }
+.mb-row .mono { font-family:'JetBrains Mono',monospace; }
+.mb-row small { display:block; color:var(--muted2); font-size:10px; margin-top:2px; }
+.mb-when { color:var(--text2); font-size:11px; }
+.mb-bet b { display:block; font-weight:600; color:var(--text); overflow-wrap:anywhere; }
+.mb-bet em { display:block; font-style:normal; color:var(--text2); font-size:11px; margin-top:1px; }
+.mb-bet small { font-family:'Inter',sans-serif; font-size:11px; }
+.mb-res { font-weight:600; font-size:11px; }
+.mb-res.win, .mb-res.half_win { color:#34d399; } .mb-res.loss, .mb-res.half_loss { color:#f87171; }
+.mb-res.open { color:var(--gold); font-weight:500; } .mb-res.push, .mb-res.void, .mb-res.cashout { color:var(--text2); }
+.mb-auto { display:inline-block; margin-left:6px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:#7dd3fc; border:1px solid rgba(125,211,252,.35); border-radius:4px; padding:1px 4px; vertical-align:1px; }
+.mb-act { display:flex; gap:6px; justify-content:flex-end; align-items:center; }
+.mb-quick { display:inline-flex; border:1px solid var(--border2); border-radius:6px; overflow:hidden; }
+.mb-quick button { background:transparent; border:none; border-right:1px solid var(--border2); color:var(--text2); font:600 11px 'JetBrains Mono',monospace; width:28px; padding:5px 0; cursor:pointer; }
+.mb-quick button:last-child { border-right:none; }
+.mb-quick button.w:hover { color:#34d399; background:rgba(16,185,129,.1); } .mb-quick button.l:hover { color:#f87171; background:rgba(239,68,68,.1); }
+.mb-quick button:hover { color:var(--text); }
+.mb-more, .mb-log { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 10px 'Inter',sans-serif; letter-spacing:1px; padding:6px 9px; cursor:pointer; }
+.mb-more:hover, .mb-log:hover { color:var(--text); border-color:var(--text2); }
+.mb-log { color:#34d399; border-color:rgba(16,185,129,.4); }
+.mb-moreall { margin:10px auto 0; display:flex; }
+.mb-empty { background:var(--card); border:1px dashed var(--border2); border-radius:12px; padding:22px; display:flex; flex-direction:column; gap:8px; font-size:13px; color:var(--text2); line-height:1.6; }
+.mb-empty b { color:var(--text); font-size:14px; }
+.mb-break td, .mb-break th { white-space:nowrap; }
+.mb-break .r { text-align:right; }
+.mb-break small { color:var(--muted2); }
+#mybBreak .mb-seg { margin-bottom:6px; }
+.mb-box { max-width:560px; }
+.mb-hint { min-height:16px; margin-top:12px; font:11px 'JetBrains Mono',monospace; color:var(--text2); }
+.lay-foot .mb-del { flex:0 0 auto; color:#f87171; border-color:rgba(239,68,68,.35); }
+@media (max-width: 1000px) { .mb-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .mb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mb-filters { justify-content:flex-start; }
+  .mb-filters select, .mb-filters input { flex:1 1 120px; }
+  .mb-row.mb-th { display:none; }
+  .mb-row { grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px 10px; padding:12px; }
+  .mb-row .mb-bet { grid-column: 1 / -1; grid-row:1; }
+  .mb-row .mb-when { grid-column: 1 / -1; grid-row:2; font-size:10px; margin-top:-4px; }
+  .mb-row > [data-k] { text-align:left; }
+  .mb-row > [data-k]::before { content:attr(data-k); display:block; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; margin-bottom:2px; }
+  .mb-row > [data-k="Result"] { grid-column: 1 / -1; grid-row:3; }
+  .mb-row > [data-k="Result"]::before { display:none; }
+  .mb-row .mb-act { grid-column: 1 / -1; justify-content:flex-start; }
+  .mb-quick button { width:40px; padding:7px 0; }
+}
 @media (max-width: 720px) {
   .tools-wrap { grid-template-columns: 1fr; }
   .tools-list { flex-direction:row; overflow-x:auto; padding-bottom:4px; }
@@ -821,6 +895,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
     <button class="tab" onclick="showTab('results',this)">RESULTS</button>
+    <button class="tab" onclick="showTab('betlog',this)">MY BETS</button>
     <button class="tab" onclick="showTab('tools',this)">TOOLS</button>
     <span class="tab-sep" title="Sportsbook tools: these need an odds feed"></span>
     <button class="tab" onclick="showTab('lines',this)">LINES</button>
@@ -828,7 +903,6 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('props',this)">PROPS</button>
     <button class="tab" onclick="showTab('ev',this)">+EV</button>
     <button class="tab" onclick="showTab('sharp',this)">SHARP FEED</button>
-    <button class="tab" onclick="showTab('betlog',this)">BET LOG</button>
     <button class="tab" onclick="showTab('clv',this)">CLV</button>
   </div>
 </div>
@@ -960,39 +1034,25 @@ body.no-help .clv-info { display:none; }
   </div>
 </div>
 
-<!-- BET LOG PAGE -->
+<!-- MY BETS PAGE -->
 <div class="page" id="page-betlog">
-  <div class="roi-grid">
-    <div class="roi-card"><div class="roi-num" id="roiTotal" style="color:var(--accent)">$0</div><div class="roi-lbl">P&L</div></div>
-    <div class="roi-card"><div class="roi-num" id="roiRecord" style="color:var(--text)">0-0</div><div class="roi-lbl">Record</div></div>
-    <div class="roi-card"><div class="roi-num" id="roiROI" style="color:var(--accent2)">0%</div><div class="roi-lbl">ROI</div></div>
-  </div>
-
-  <div class="bet-log-form">
-    <div class="form-title">Log a Bet</div>
-    <div class="form-grid">
-      <div class="form-group full"><div class="form-label">Pick / Team</div><input class="form-input" id="logPick" placeholder="e.g. Lakers ML, Over 221.5..." /></div>
-      <div class="form-group"><div class="form-label">Odds</div><input class="form-input" id="logOdds" placeholder="+150" /></div>
-      <div class="form-group"><div class="form-label">Stake ($)</div><input class="form-input" id="logStake" type="number" placeholder="25" /></div>
-      <div class="form-group"><div class="form-label">Sport</div>
-        <select class="form-select" id="logSport">
-          <option>NBA</option><option>MLB</option><option>NFL</option><option>NHL</option><option>Esports</option><option>Other</option>
-        </select>
-      </div>
-      <div class="form-group"><div class="form-label">Book</div>
-        <select class="form-select" id="logBook">
-          <option>PrizePicks</option><option>Sleeper</option><option>Underdog</option><option>Pick6</option><option>Chalkboard</option><option>Kalshi</option><option>Betr</option><option>Dabble</option><option>DraftKings</option><option>FanDuel</option><option>Other</option>
-        </select>
-      </div>
-      <div class="form-group"><div class="form-label">My Odds (open)</div><input class="form-input" id="logMyOdds" placeholder="Odds I got" /></div>
-      <div class="form-group"><div class="form-label">Close Odds (for CLV)</div><input class="form-input" id="logCloseOdds" placeholder="Closing line" /></div>
+  <div class="mb-head">
+    <div><div class="tl-title">MY BETS</div>
+      <div class="tl-blurb">Every bet you place, in one record: profit, ROI, closing line value and which tools make you money. Bets from our plays settle on their own. Kept in this browser only, so export a CSV now and then to back it up.</div></div>
+    <div class="mb-actions">
+      <button class="mb-btn primary" onclick="mybForm()">ADD BET</button>
+      <button class="mb-btn" onclick="mybExport()">EXPORT CSV</button>
+      <label class="mb-btn">IMPORT CSV<input type="file" accept=".csv,text/csv" hidden onchange="mybImport(this)"></label>
     </div>
-    <button class="log-btn" onclick="addBet()">+ LOG BET</button>
   </div>
-
-  <div class="section-head">Bet History</div>
-  <div id="betList"><div class="empty-wrap" style="padding:30px 0"><div class="empty-sub">No bets logged yet</div></div></div>
+  <div class="tl-out mb-stats" id="mybStats"></div>
+  <div class="mb-chart" id="mybChart"></div>
+  <div class="mb-bar" id="mybBar"></div>
+  <div id="mybList"></div>
+  <div class="section-head" style="margin-top:22px">Breakdown</div>
+  <div id="mybBreak"></div>
 </div>
+<div class="lay-modal" id="mybModal" onclick="if(event.target===this)mybFormClose()"></div>
 
 <!-- PROPS PAGE -->
 <div class="page" id="page-props">
@@ -1140,7 +1200,7 @@ body.no-help .clv-info { display:none; }
 <div class="page" id="page-clv">
   <div class="clv-info">
     <strong style="color:#e8e8e8">CLOSING LINE VALUE (CLV)</strong> is the best measure of whether you're actually sharp.<br><br>
-    If you consistently beat the closing line, you have a real edge — variance aside. Log your bets with both your odds and the closing odds on the Bet Log tab, and your CLV stats will appear here.
+    If you consistently beat the closing line, you have a real edge — variance aside. Add closing odds to your bets in My Bets (bets logged from Sharp Tail fill them in on their own), and your CLV shows up here.
   </div>
 
   <div class="roi-grid">
@@ -1202,7 +1262,6 @@ let apiKey = 'backend';
 try { localStorage.removeItem('ww_apiKey'); } catch {}
 let currentSport = 'all';
 let allGames = [];
-let bets = JSON.parse(localStorage.getItem('ww_bets') || '[]');
 let steamAlerts = new Set();
 
 // If BOTH the Odds API and our own backend are unreachable, this environment
@@ -1269,6 +1328,8 @@ function showTab(name, el) {
   if (name === 'results') loadResults();
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
+  if (name === 'betlog') mybOpen();
+  if (name === 'clv') mybReady().then(renderCLV);
 }
 
 // ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
@@ -1831,131 +1892,322 @@ function renderArb(games) {
   arbState.passive = games || [];
   renderArbTool();
 }
-// ─── BET LOG ─────────────────────────────────────────────────────────────────
-function addBet() {
-  const pick = document.getElementById('logPick').value.trim();
-  const odds = parseInt(document.getElementById('logOdds').value);
-  const stake = parseFloat(document.getElementById('logStake').value);
-  const sport = document.getElementById('logSport').value;
-  const book = document.getElementById('logBook').value;
-  const myOdds = parseInt(document.getElementById('logMyOdds').value) || null;
-  const closeOdds = parseInt(document.getElementById('logCloseOdds').value) || null;
+// ─── MY BETS ─────────────────────────────────────────────────────────────────
+// The user's own bets: logged by hand or in one tap from a play, kept in this
+// browser (lr_bets), with profit, ROI, record, CLV and breakdowns. The math is
+// bets.js on the backend (tested there), loaded after calc.js. Bets logged from
+// a tracked play (a Sharp Tail signal, an esports prop) carry a reference, and
+// POST /api/bets/settle grades them from the trackers. Stakes are the user's
+// own: the signals stay the same for everyone.
+const MYB_KEY = 'lr_bets';
+const myb = { list: [], ready: false, loading: null, ui: { status: 'all', days: 0, tool: '', book: '', sport: '', q: '', by: 'tool', shown: 50 }, edit: null, settling: false, lastSettle: 0 };
+try { Object.assign(myb.ui, JSON.parse(lsGet('lr_bets_ui') || '{}'), { shown: 50, q: '' }); } catch {}
+const mybLoadScript = src => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = (BACKEND_URL || location.origin) + src; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+function mybReady() {
+  if (myb.ready) return Promise.resolve(true);
+  if (!myb.loading) myb.loading = (async () => {
+    if (!window.LRCalc) await mybLoadScript('/calc.js');
+    if (!window.LRBets) await mybLoadScript('/bets.js');
+    let list = null;
+    try { list = JSON.parse(lsGet(MYB_KEY) || 'null'); } catch {}
+    if (!Array.isArray(list)) {
+      // first run: bring over the old BET LOG (ww_bets stays as it was)
+      let old = [];
+      try { old = JSON.parse(lsGet('ww_bets') || '[]'); } catch {}
+      list = LRBets.migrate(old);
+      if (list.length) lsSet(MYB_KEY, JSON.stringify(list));
+    }
+    myb.list = LRBets.sortNewest(list.filter(b => b && b.id && b.odds > 1));
+    myb.ready = true;
+    return true;
+  })().catch(() => { myb.loading = null; return false; });
+  return myb.loading;
+}
+function mybSave() { lsSet(MYB_KEY, JSON.stringify(myb.list)); }
+function mybSaveUi() { const { shown, q, ...ui } = myb.ui; lsSet('lr_bets_ui', JSON.stringify(ui)); }
+const mybUnit = () => (typeof bank === 'function' ? bank() : { unit: 10, set: false });
+const mybAm = d => (window.LRCalc ? LRCalc.fmtAmerican(d) : '—');
+const mybPrice = b => (b.cents ? `${(100 / b.odds).toFixed(1).replace(/\.0$/, '')}c` : mybAm(b.odds));
+const mybUsd = (x, sign) => (x == null || !isFinite(x) ? '—' : `${sign && x > 0 ? '+' : x < 0 ? '-' : ''}$${Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+const mybPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(d)}%`);
+const mybCls = x => (x == null ? '' : x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '');
+const mybDate = t => { const d = new Date(t); return isFinite(d) ? d.toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''; };
 
-  if (!pick || isNaN(odds) || isNaN(stake)) { showToast('Fill in Pick, Odds, and Stake', 'danger'); return; }
-
-  const bet = { id: Date.now(), pick, odds, stake, sport, book, myOdds, closeOdds, result: 'pending', date: new Date().toLocaleDateString() };
-  bets.unshift(bet);
-  saveBets();
-  renderBetLog();
-  renderCLV();
-
-  // Clear form
-  ['logPick','logOdds','logStake','logMyOdds','logCloseOdds'].forEach(id => document.getElementById(id).value = '');
-  showToast(`✓ Logged: ${pick} ${fmt(odds)}`);
+async function mybOpen() {
+  const el = document.getElementById('mybList');
+  if (!myb.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your bets...</div></div>`;
+  if (!(await mybReady())) { if (el) el.innerHTML = tailEmpty('COULD NOT LOAD', 'My Bets loads its math from the Line Reaper server, which isn\'t reachable right now.'); return; }
+  renderMyBets();
+  mybAutoSettle();
 }
 
-function setResult(id, result) {
-  const bet = bets.find(b=>b.id===id);
-  if (!bet) return;
-  bet.result = result;
-  saveBets(); renderBetLog(); renderCLV();
+// ── auto-settle from the trackers ──
+async function mybAutoSettle(force) {
+  if (!myb.ready || myb.settling || (!force && Date.now() - myb.lastSettle < 120e3)) return;
+  const want = myb.list.filter(b => b.track && (b.result === 'open' || !b.closeOdds)).slice(0, 200).map(b => ({ id: b.id, track: b.track }));
+  if (!want.length) return;
+  myb.settling = true; myb.lastSettle = Date.now();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/bets/settle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bets: want }) });
+    if (!r.ok) return;
+    const { results } = await r.json();
+    const before = myb.list.filter(b => b.result === 'open').length;
+    const { list, changed } = LRBets.applyTracked(myb.list, results || {});
+    if (changed) {
+      myb.list = list; mybSave();
+      const settled = before - list.filter(b => b.result === 'open').length;
+      if (settled > 0) showToast(`${settled} bet${settled === 1 ? '' : 's'} settled from our tracker`);
+      if (document.getElementById('page-betlog')?.classList.contains('active')) renderMyBets();
+    }
+  } catch {} finally { myb.settling = false; }
 }
 
-function deleteBet(id) {
-  bets = bets.filter(b=>b.id!==id);
-  saveBets(); renderBetLog(); renderCLV();
+// ── render ──
+function mybSet(k, v) { myb.ui[k] = v; if (k !== 'shown') myb.ui.shown = 50; mybSaveUi(); renderMyBets(); }
+function renderMyBets() {
+  if (!myb.ready) return;
+  const B = LRBets, ui = myb.ui, unit = mybUnit().unit;
+  const scope = B.filter(myb.list, { ...ui, status: 'all' });
+  const rows = B.filter(scope, { status: ui.status });
+  const s = B.stats(scope, { unitUsd: unit });
+  const tile = (k, v, cls, sub) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="mb-sub">${sub}</div>` : ''}</div>`;
+  document.getElementById('mybStats').innerHTML = [
+    tile('Profit', mybUsd(s.profit, true), mybCls(s.profit), s.units != null ? `${s.units > 0 ? '+' : ''}${s.units.toFixed(2)}u` : 'units: set your unit'),
+    tile('ROI', mybPct(s.roi), mybCls(s.roi), `${mybUsd(s.risked)} risked`),
+    tile('Record', s.record, '', s.winRate != null ? `${(s.winRate * 100).toFixed(1)}% won` : 'no results yet'),
+    tile('Avg CLV', mybPct(s.clv), mybCls(s.clv), s.clvN ? `${Math.round(s.beatClose * 100)}% beat the close (${s.clvN})` : 'add closing odds'),
+    tile('Open', `${s.open}`, '', s.open ? `${mybUsd(s.openStake)} to win ${mybUsd(s.openToWin)}` : 'nothing at risk'),
+    tile('Drawdown', s.drawdown ? mybUsd(-s.drawdown) : '$0.00', s.drawdown ? 'neg' : '', s.streak ? `streak ${s.streak}` : 'peak to trough'),
+  ].join('');
+  document.getElementById('mybChart').innerHTML = mybChart(B.curve(scope));
+
+  const opts = (k, label, all) => {
+    const vals = [...new Set(myb.list.map(b => b[k]).filter(Boolean))].sort();
+    if (ui[k] && !vals.includes(ui[k])) vals.push(ui[k]);
+    return `<select onchange="mybSet('${k}',this.value)" aria-label="${label}"><option value="">${all}</option>${vals.map(v => `<option${v === ui[k] ? ' selected' : ''} value="${escAttr(v)}">${escAttr(v)}</option>`).join('')}</select>`;
+  };
+  const seg = (k, list) => `<div class="mb-seg">${list.map(([v, l]) => `<button class="${String(ui[k]) === String(v) ? 'on' : ''}" onclick="mybSet('${k}',${typeof v === 'number' ? v : `'${v}'`})">${l}</button>`).join('')}</div>`;
+  const nOpen = scope.filter(b => b.result === 'open').length;
+  document.getElementById('mybBar').innerHTML = seg('status', [['open', `Open ${nOpen}`], ['settled', `Settled ${scope.length - nOpen}`], ['all', `All ${scope.length}`]])
+    + seg('days', [[7, '7D'], [30, '30D'], [90, '90D'], [0, 'All time']])
+    + `<div class="mb-filters">${opts('tool', 'Tool', 'All tools')}${opts('book', 'Book', 'All books')}${opts('sport', 'Sport', 'All sports')}
+      <input type="search" placeholder="Search bets" value="${escAttr(ui.q)}" oninput="myb.ui.q=this.value;myb.ui.shown=50;mybRenderList()" aria-label="Search bets"></div>`;
+  mybRenderList(rows);
+  mybRenderBreak(scope);
 }
 
-function calcPayout(stake, odds) {
-  if (odds > 0) return stake * (odds/100);
-  return stake * (100/Math.abs(odds));
-}
-
-function saveBets() { localStorage.setItem('ww_bets', JSON.stringify(bets)); }
-
-function renderBetLog() {
-  const wins = bets.filter(b=>b.result==='win');
-  const losses = bets.filter(b=>b.result==='loss');
-  const totalWon = wins.reduce((s,b)=>s+calcPayout(b.stake,b.odds),0);
-  const totalLost = losses.reduce((s,b)=>s+b.stake,0);
-  const pnl = totalWon - totalLost;
-  const totalStaked = [...wins,...losses].reduce((s,b)=>s+b.stake,0);
-  const roi = totalStaked > 0 ? ((pnl/totalStaked)*100).toFixed(1) : 0;
-
-  document.getElementById('roiTotal').textContent = `${pnl>=0?'+':''}$${pnl.toFixed(0)}`;
-  document.getElementById('roiTotal').style.color = pnl>=0?'var(--accent)':'var(--danger)';
-  document.getElementById('roiRecord').textContent = `${wins.length}-${losses.length}`;
-  document.getElementById('roiROI').textContent = `${roi}%`;
-  document.getElementById('roiROI').style.color = roi>=0?'var(--accent2)':'var(--danger)';
-
-  if (!bets.length) {
-    document.getElementById('betList').innerHTML = '<div class="empty-wrap" style="padding:30px 0"><div class="empty-sub">No bets logged yet</div></div>';
+function mybRenderList(rows) {
+  const B = LRBets, ui = myb.ui, el = document.getElementById('mybList');
+  if (!rows) rows = B.filter(B.filter(myb.list, { ...ui, status: 'all' }), { status: ui.status });
+  if (!myb.list.length) {
+    el.innerHTML = `<div class="mb-empty"><b>No bets yet.</b><span>Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays settle on their own once our tracker grades them.</span>
+      <div><button class="mb-btn primary" onclick="mybForm()">ADD A BET</button></div></div>`;
     return;
   }
-
-  document.getElementById('betList').innerHTML = bets.map(b => {
-    const payout = calcPayout(b.stake, b.odds);
-    const clv = b.myOdds && b.closeOdds ? b.myOdds - b.closeOdds : null;
-    const clvStr = clv !== null ? `CLV: ${clv>0?'+':''}${clv}` : '';
-    const clvCls = clv !== null ? (clv > 0 ? 'good' : 'bad') : '';
-
-    return `<div class="bet-row">
-      <div class="bet-info">
-        <div class="bet-pick">${b.pick}</div>
-        <div class="bet-meta">${fmt(b.odds)} · $${b.stake} · ${b.book} · ${b.sport} · ${b.date}</div>
-        ${clvStr ? `<div class="bet-clv ${clvCls}">${clvStr}</div>` : ''}
-      </div>
-      <div class="bet-right">
-        <div class="bet-result ${b.result}">${b.result==='win'?`+$${payout.toFixed(2)}`:b.result==='loss'?`-$${b.stake}`:'PENDING'}</div>
-        ${b.result==='pending'?`<div class="bet-actions">
-          <button class="bet-action-btn win-btn" onclick="setResult(${b.id},'win')">W</button>
-          <button class="bet-action-btn loss-btn" onclick="setResult(${b.id},'loss')">L</button>
-        </div>`:''}
-        <button class="bet-action-btn del-btn" onclick="deleteBet(${b.id})">✕</button>
-      </div>
+  if (!rows.length) { el.innerHTML = `<div class="mb-empty"><span>No bets match these filters.</span></div>`; return; }
+  const unit = mybUnit().unit;
+  const head = `<div class="mb-row mb-th"><span>Placed</span><span>Bet</span><span class="r">Odds</span><span class="r">Stake</span><span class="r">Result</span><span class="r">Profit</span><span class="r">CLV</span><span></span></div>`;
+  const body = rows.slice(0, ui.shown).map(b => {
+    const p = B.profit(b), c = B.clv(b), u = b.unitUsd || unit, open = b.result === 'open';
+    const res = open ? `<span class="mb-res open">To win ${mybUsd(B.toWin(b))}</span>`
+      : `<span class="mb-res ${b.result}">${escAttr(B.RESULT_LABEL[b.result])}</span>${b.settledBy === 'auto' ? '<span class="mb-auto" title="Graded by our tracker">AUTO</span>' : ''}`;
+    const act = open ? `<div class="mb-quick">
+        <button class="w" onclick="mybResult('${b.id}','win')" title="Won">W</button><button class="l" onclick="mybResult('${b.id}','loss')" title="Lost">L</button><button onclick="mybResult('${b.id}','push')" title="Push">P</button></div>` : '';
+    return `<div class="mb-row ${open ? 'is-open' : ''}">
+      <span class="mb-when">${escAttr(mybDate(b.placedAt))}</span>
+      <span class="mb-bet"><b>${escAttr(b.pick)}</b>${b.event ? `<em>${escAttr(b.event)}</em>` : ''}
+        <small>${[b.book, b.sport, b.tool !== 'Manual' ? b.tool : ''].filter(Boolean).map(escAttr).join(' · ')}${b.notes ? ` · ${escAttr(b.notes)}` : ''}</small></span>
+      <span class="r mono" data-k="Odds">${escAttr(mybPrice(b))}</span>
+      <span class="r mono" data-k="Stake">${mybUsd(b.stake)}<small>${u > 0 ? `${(b.stake / u).toFixed(2)}u` : ''}</small></span>
+      <span class="r" data-k="Result">${res}</span>
+      <span class="r mono ${mybCls(p)}" data-k="Profit">${p == null ? '—' : mybUsd(p, true)}</span>
+      <span class="r mono ${mybCls(c)}" data-k="CLV">${mybPct(c)}</span>
+      <span class="mb-act">${act}<button class="mb-more" onclick="mybForm('${b.id}')" title="Edit or settle">Edit</button></span>
     </div>`;
   }).join('');
+  el.innerHTML = `<div class="mb-table">${head}${body}</div>`
+    + (rows.length > ui.shown ? `<button class="mb-btn mb-moreall" onclick="mybSet('shown',${ui.shown + 100})">Show ${Math.min(100, rows.length - ui.shown)} more of ${rows.length - ui.shown}</button>` : '');
+}
+
+function mybRenderBreak(scope) {
+  const by = myb.ui.by, el = document.getElementById('mybBreak');
+  const rows = LRBets.breakdown(scope, by, { unitUsd: mybUnit().unit });
+  const tabs = [['tool', 'By tool'], ['book', 'By book'], ['sport', 'By sport'], ['month', 'By month']]
+    .map(([k, l]) => `<button class="${by === k ? 'on' : ''}" onclick="mybSet('by','${k}')">${l}</button>`).join('');
+  const label = k => (by === 'month' ? new Date(`${k}-01T12:00:00`).toLocaleDateString([], { month: 'short', year: 'numeric' }) : k);
+  el.innerHTML = `<div class="mb-seg">${tabs}</div>` + (!rows.length ? '' : `<div class="esm-table-wrap"><table class="tl-table mb-break">
+    <thead><tr><th>${by === 'month' ? 'Month' : by.charAt(0).toUpperCase() + by.slice(1)}</th><th class="r">Bets</th><th class="r">Record</th><th class="r">Risked</th><th class="r">Profit</th><th class="r">ROI</th><th class="r">CLV</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${escAttr(label(r.key))}</td><td class="r">${r.bets}${r.open ? `<small> (${r.open} open)</small>` : ''}</td><td class="r">${r.record}</td><td class="r">${mybUsd(r.risked)}</td>
+      <td class="r ${mybCls(r.profit)}">${mybUsd(r.profit, true)}</td><td class="r ${mybCls(r.roi)}">${mybPct(r.roi)}</td><td class="r ${mybCls(r.clv)}">${mybPct(r.clv)}</td></tr>`).join('')}</tbody></table></div>`);
+}
+
+// cumulative profit, an SVG line that scales to the box
+function mybChart(pts) {
+  if (pts.length < 2) return '';
+  const W = 800, H = 160, P = 6;
+  const vals = [0, ...pts.map(p => p.pnl)];
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+  const x = i => P + (i / (vals.length - 1)) * (W - 2 * P), y = v => P + (1 - (v - lo) / span) * (H - 2 * P);
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const last = vals[vals.length - 1], col = last >= 0 ? 'var(--green)' : 'var(--red)';
+  return `<div class="mb-chart-head"><span>Profit over ${pts.length} settled bets</span><b class="${mybCls(last)}">${mybUsd(last, true)}</b></div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cumulative profit">
+      <line x1="0" x2="${W}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--border2)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+      <path d="${line}L${x(vals.length - 1).toFixed(1)},${y(0).toFixed(1)}L${x(0).toFixed(1)},${y(0).toFixed(1)}Z" fill="${col}" opacity=".08"/>
+      <path d="${line}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    </svg>
+    <div class="mb-chart-foot"><span>${escAttr(mybDate(pts[0].t))}</span><span>${escAttr(mybDate(pts[pts.length - 1].t))}</span></div>`;
+}
+
+// ── actions ──
+function mybResult(id, result) {
+  const i = myb.list.findIndex(b => b.id === id);
+  if (i < 0) return;
+  myb.list[i] = LRBets.settle(myb.list[i], result);
+  mybSave(); renderMyBets(); renderCLV();
+}
+function mybDelete(id) {
+  if (!confirm('Delete this bet? This cannot be undone.')) return;
+  myb.list = myb.list.filter(b => b.id !== id);
+  mybSave(); mybFormClose(); renderMyBets(); renderCLV();
+}
+
+// The add / edit form. prefill: fields from a play (LRBets.fromPlay).
+async function mybForm(id, prefill) {
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const b = id ? myb.list.find(x => x.id === id) : null;
+  const unit = mybUnit();
+  const f = b ? { ...b, odds: b.cents ? `${+(100 / b.odds).toFixed(2)}c` : mybAm(b.odds), closeOdds: b.closeOdds ? mybAm(b.closeOdds) : '' }
+    : { event: '', pick: '', odds: '', stake: '', book: '', sport: '', tool: 'Manual', result: 'open', notes: '', closeOdds: '', placedAt: new Date().toISOString(), ...(prefill || {}) };
+  if (!b && prefill?.odds > 1) f.odds = prefill.cents ? `${+(100 / prefill.odds).toFixed(2)}c` : mybAm(prefill.odds);
+  myb.edit = { id: b?.id || null, track: b?.track || prefill?.track || null };
+  const local = new Date(f.placedAt); local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+  const list = k => [...new Set([...myb.list.map(x => x[k]), ...(k === 'book' ? ['Kalshi', 'Polymarket', 'Underdog', 'PrizePicks', 'DraftKings', 'FanDuel', 'Novig', 'ProphetX'] : ['NFL', 'NBA', 'MLB', 'NHL', 'CS', 'LoL', 'Valorant', 'Dota'])].filter(Boolean))]
+    .map(v => `<option value="${escAttr(v)}">`).join('');
+  const fld = (k, label, input, wide) => `<div class="tl-field${wide ? ' wide' : ''}"><label for="mb_${k}">${label}</label>${input}</div>`;
+  const inp = (k, v, attrs = '') => `<input id="mb_${k}" value="${escAttr(v ?? '')}" ${attrs}>`;
+  document.getElementById('mybModal').innerHTML = `<div class="lay-box mb-box" role="dialog" aria-label="${b ? 'Edit bet' : 'Log a bet'}">
+    <h3>${b ? 'Edit bet' : prefill ? 'Log this bet' : 'Add a bet'}</h3>
+    <p>${myb.edit.track ? 'This play is tracked: it settles on its own once our tracker grades it. ' : ''}Enter the price and stake you actually got.</p>
+    <div class="tl-fields">
+      ${fld('pick', 'Bet', inp('pick', f.pick, 'placeholder="Chiefs -3, Over 38.5 kills, Yes"'), true)}
+      ${fld('event', 'Event', inp('event', f.event, 'placeholder="Optional"'), true)}
+      ${fld('odds', 'Odds', inp('odds', f.odds, 'placeholder="-110, 2.50 or 57c" inputmode="text" oninput="mybFormHint()"'))}
+      ${fld('stake', 'Stake $', inp('stake', f.stake, 'type="number" min="0" step="any" inputmode="decimal" placeholder="25" oninput="mybFormHint()"'))}
+      ${fld('book', 'Book', inp('book', f.book, 'list="mbBooks" placeholder="Kalshi"') + `<datalist id="mbBooks">${list('book')}</datalist>`)}
+      ${fld('sport', 'Sport', inp('sport', f.sport, 'list="mbSports" placeholder="NFL"') + `<datalist id="mbSports">${list('sport')}</datalist>`)}
+      ${fld('tool', 'From', `<select id="mb_tool">${LRBets.TOOLS.map(t => `<option${t === f.tool ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}
+      ${fld('placedAt', 'Placed', `<input id="mb_placedAt" type="datetime-local" value="${local.toISOString().slice(0, 16)}">`)}
+      ${fld('result', 'Result', `<select id="mb_result" onchange="mybFormHint()">${LRBets.RESULTS.map(r => `<option value="${r}"${r === f.result ? ' selected' : ''}>${LRBets.RESULT_LABEL[r]}</option>`).join('')}</select>`)}
+      ${fld('cashout', 'Cashed out for $', inp('cashout', f.cashout ?? '', 'type="number" min="0" step="any" inputmode="decimal"'))}
+      ${fld('closeOdds', 'Closing odds', inp('closeOdds', f.closeOdds, 'placeholder="For CLV, optional"'))}
+      ${fld('notes', 'Notes', inp('notes', f.notes, 'placeholder="Optional"'), true)}
+    </div>
+    <div class="mb-hint" id="mbHint"></div>
+    <div class="lay-foot">
+      ${b ? `<button onclick="mybDelete('${b.id}')" class="mb-del">Delete</button>` : ''}
+      <button onclick="mybFormClose()">Cancel</button>
+      <button class="primary" onclick="mybFormSave()">${b ? 'Save' : 'Log bet'}</button>
+    </div></div>`;
+  document.getElementById('mybModal').classList.add('open');
+  mybFormHint();
+  setTimeout(() => document.getElementById(f.pick ? (f.odds ? 'mb_stake' : 'mb_odds') : 'mb_pick')?.focus(), 30);
+}
+function mybFormHint() {
+  const v = k => document.getElementById(`mb_${k}`)?.value ?? '';
+  const res = v('result');
+  const co = document.getElementById('mb_cashout')?.closest('.tl-field');
+  if (co) co.style.display = res === 'cashout' ? '' : 'none';
+  const d = LRCalc.parseOdds(v('odds')), stake = parseFloat(v('stake')), unit = mybUnit();
+  const el = document.getElementById('mbHint');
+  if (!el) return;
+  const parts = [];
+  if (d) parts.push(`${mybAm(d)} · ${(100 / d).toFixed(1)}% implied`);
+  if (stake > 0) parts.push(`${(stake / unit.unit).toFixed(2)}u at your $${unit.unit} unit`);
+  if (d && stake > 0) parts.push(`to win ${mybUsd(stake * (d - 1))}`);
+  el.textContent = parts.join(' · ');
+}
+function mybFormClose() { document.getElementById('mybModal').classList.remove('open'); myb.edit = null; }
+function mybFormSave() {
+  const v = k => document.getElementById(`mb_${k}`)?.value ?? '';
+  const prev = myb.edit?.id ? myb.list.find(b => b.id === myb.edit.id) : null;
+  const result = v('result');
+  const keepSettle = prev && prev.result === result;
+  const b = LRBets.make({
+    id: prev?.id, pick: v('pick'), event: v('event'), odds: v('odds'), stake: v('stake'), book: v('book'), sport: v('sport'),
+    tool: v('tool'), placedAt: v('placedAt') ? new Date(v('placedAt')).toISOString() : undefined, result, cashout: v('cashout'),
+    closeOdds: v('closeOdds') || null, notes: v('notes'), track: myb.edit?.track || null,
+    settledAt: keepSettle ? prev.settledAt : undefined, settledBy: keepSettle ? prev.settledBy : 'manual',
+  }, { unitUsd: prev?.unitUsd || mybUnit().unit });
+  if (b.error) { showToast(b.error, 'danger'); return; }
+  if (prev) myb.list = myb.list.map(x => (x.id === prev.id ? b : x));
+  else myb.list.unshift(b);
+  myb.list = LRBets.sortNewest(myb.list);
+  mybSave(); mybFormClose();
+  if (document.getElementById('page-betlog')?.classList.contains('active')) renderMyBets();
+  renderCLV();
+  showToast(prev ? 'Bet saved' : `Logged: ${b.pick} at ${mybPrice(b)}, ${mybUsd(b.stake)}`);
+}
+
+// one tap from a play: the form opens prefilled at the user's unit
+async function mybLogPlay(play) {
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const u = mybUnit();
+  mybForm(null, LRBets.fromPlay(play, { unitUsd: u.set ? u.unit : null }));
+}
+function mybLogBest(i) { const r = bestUi.shown?.[i]; if (r) mybLogPlay(r); }
+function mybLogTail(id) {
+  const s = tailState.signals.find(x => String(x.id) === String(id));
+  if (!s) return;
+  const v = tailBid(s) || s.venue;
+  mybLogPlay({ kind: 'tail', label: 'Sharp Tail', title: s.market, category: s.category, bet: v?.buy || s.outcome,
+    venue: v?.name || '', american: v?.american ?? null, price: v && v.american == null ? v.price : s.currentPrice,
+    units: tailUnitsOf(s) || null, track: { kind: 'tail', id: s.id } });
+}
+
+async function mybExport() {
+  if (!(await mybReady())) return;
+  if (!myb.list.length) { showToast('No bets to export yet', 'danger'); return; }
+  const csv = LRBets.toCSV(myb.list, { unitUsd: mybUnit().unit });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `line-reaper-bets-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function mybImport(input) {
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file || !(await mybReady())) return;
+  const { bets, skipped } = LRBets.fromCSV(await file.text(), { unitUsd: mybUnit().unit });
+  const { list, added } = LRBets.merge(myb.list, bets);
+  myb.list = list; mybSave(); renderMyBets(); renderCLV();
+  showToast(`Imported ${added} bet${added === 1 ? '' : 's'}${bets.length - added ? `, ${bets.length - added} already here` : ''}${skipped.length ? `, ${skipped.length} row${skipped.length === 1 ? '' : 's'} skipped (line ${skipped[0].line}: ${skipped[0].why})` : ''}`, added || !skipped.length ? '' : 'danger');
 }
 
 // ─── CLV ─────────────────────────────────────────────────────────────────────
+// Every bet in My Bets with a closing price.
 function renderCLV() {
-  const withCLV = bets.filter(b => b.myOdds && b.closeOdds);
   const el = document.getElementById('clvList');
-
+  if (!el || !myb.ready) return;
+  const withCLV = myb.list.filter(b => b.closeOdds);
+  const set = (id, t, c) => { const x = document.getElementById(id); x.textContent = t; if (c) x.style.color = c; };
   if (!withCLV.length) {
-    document.getElementById('clvAvg').textContent = '—';
-    document.getElementById('clvPos').textContent = '—';
-    document.getElementById('clvRate').textContent = '—';
-    el.innerHTML = '<div class="empty-wrap"><div class="empty-big">NO CLV</div><div class="empty-sub">Log bets with both opening + closing odds</div></div>';
+    set('clvAvg', '—'); set('clvPos', '—'); set('clvRate', '—');
+    el.innerHTML = '<div class="empty-wrap"><div class="empty-big">NO CLV</div><div class="empty-sub">Add closing odds to bets in My Bets. Bets logged from Sharp Tail fill it in on their own.</div></div>';
     return;
   }
-
-  // CLV % = your decimal price / the closing decimal price − 1. Subtracting
-  // American odds broke across ±100 (+105 against a -110 close read +215).
-  const amDec = o => (o > 0 ? 1 + o / 100 : 1 + 100 / -o);
-  const clvPct = b => (amDec(b.myOdds) / amDec(b.closeOdds) - 1) * 100;
-  const clvVals = withCLV.map(clvPct);
-  const avg = (clvVals.reduce((a,b)=>a+b,0)/clvVals.length).toFixed(1);
-  const posCount = clvVals.filter(v=>v>0).length;
-  const rate = ((posCount/clvVals.length)*100).toFixed(0);
-
-  document.getElementById('clvAvg').textContent = `${avg>0?'+':''}${avg}%`;
-  document.getElementById('clvAvg').style.color = avg>0?'var(--accent)':'var(--danger)';
-  document.getElementById('clvPos').textContent = posCount;
-  document.getElementById('clvRate').textContent = `${rate}%`;
-  document.getElementById('clvRate').style.color = rate>=50?'var(--accent2)':'var(--danger)';
-
+  const s = LRBets.stats(withCLV);
+  set('clvAvg', mybPct(s.clv), s.clv > 0 ? 'var(--green)' : 'var(--red)');
+  set('clvPos', String(Math.round(s.beatClose * s.clvN)));
+  set('clvRate', `${Math.round(s.beatClose * 100)}%`, s.beatClose >= 0.5 ? 'var(--accent2)' : 'var(--red)');
   el.innerHTML = withCLV.map(b => {
-    const clv = clvPct(b);
+    const c = LRBets.clv(b);
     return `<div class="bet-row">
-      <div class="bet-info">
-        <div class="bet-pick">${b.pick}</div>
-        <div class="bet-meta">Open: ${fmt(b.myOdds)} → Close: ${fmt(b.closeOdds)} · ${b.date}</div>
-      </div>
-      <div class="bet-right">
-        <div class="bet-clv ${clv>0?'good':'bad'}" style="font-size:16px;font-weight:700">${clv>0?'+':''}${clv.toFixed(1)}%</div>
-        <div style="font-size:9px;color:var(--muted2)">${clv>0?'BEAT CLOSE ✓':'MISSED CLOSE ✗'}</div>
-      </div>
+      <div class="bet-info"><div class="bet-pick">${escAttr(b.pick)}</div>
+        <div class="bet-meta">Yours ${escAttr(mybPrice(b))} · close ${escAttr(mybAm(b.closeOdds))} · ${escAttr(b.book || '')} · ${escAttr(mybDate(b.placedAt))}</div></div>
+      <div class="bet-right"><div class="bet-clv ${c > 0 ? 'good' : 'bad'}" style="font-size:16px;font-weight:700">${mybPct(c)}</div>
+        <div style="font-size:9px;color:var(--muted2)">${c > 0 ? 'BEAT THE CLOSE' : 'MISSED THE CLOSE'}</div></div>
     </div>`;
   }).join('');
 }
@@ -2298,7 +2550,7 @@ document.addEventListener('DOMContentLoaded', acctInit);
 // the sportsbook tools live under MORE, and every tab can be hidden, moved or
 // pinned from CUSTOMIZE. Help panels fold up. All of it is remembered locally.
 const LAY_KEY = 'lr_layout';
-const LAY_MORE_DEFAULT = ['lines', 'shop', 'props', 'ev', 'sharp', 'betlog', 'clv'];
+const LAY_MORE_DEFAULT = ['lines', 'shop', 'props', 'ev', 'sharp', 'clv'];
 const layTabs = {};   // name -> button, captured once from the static markup
 let layout = { order: [], more: {}, hidden: {}, help: true, folds: {} };
 
@@ -4531,7 +4783,8 @@ function tailSignalsHTML() {
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
       + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
-      + (sized ? tailMoneyLine(s) : '');
+      + (sized ? tailMoneyLine(s) : '')
+      + (sized && s.id != null ? `<button class="mb-log" style="margin-top:6px" onclick="mybLogTail(${escAttr(JSON.stringify(String(s.id)))})" title="Log your bet on this signal to My Bets">LOG BET</button>` : '');
     const cons = (s.isConsensus ? `<span class="tail-tag cons" title="${s.consensus.length} graded wallets bought this side within 24h">CONSENSUS ×${s.consensus.length}</span>` : '')
       + (s.inPlay ? `<span class="tail-tag warn" title="Bought after the game started. Live prices move faster than an alert, so it isn't sized">IN-PLAY</span>` : '')
       + (exit && s.tailed ? `<span class="tail-tag cons" title="We tailed this wallet into this outcome (${s.tailed.units}u)${s.full === false ? ': a trim, so the tail stays open' : ': their exit is your cue to get out where you bet it'}">WE TAILED ${s.tailed.units}U</span>` : '')
@@ -4806,7 +5059,8 @@ function renderBest() {
   const size = r => (r.units != null ? `${r.units}u` : 'split stake');
   const edge = r => (r.ev != null ? `+${(r.ev * 100).toFixed(1)}%` : '—');
   const when = t => { const x = new Date(t); return t && Number.isFinite(x.getTime()) ? x.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
-  const body = rows.map(r => { const [v, c] = VC[r.verdict] || VC.early; return `<tr>
+  bestUi.shown = rows;
+  const body = rows.map((r, i) => { const [v, c] = VC[r.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span><div style="font-size:10px;color:var(--text2)">${escAttr(r.label)}</div></td>
       <td><b>${tailLink(r.url, escAttr(r.bet))}</b><div style="font-size:11px;color:var(--text2)">${escAttr(r.title)}${r.startsAt ? ` · ${escAttr(when(r.startsAt))}` : ''}</div>
         <div class="bp-m">${escAttr(r.venue)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
@@ -4814,13 +5068,14 @@ function renderBest() {
       <td class="bp-c">${escAttr(r.venue)}</td>
       <td class="bp-c" style="text-align:right">${price(r)}${r.maxPrice != null ? `<div style="font-size:10px;color:var(--text2)">max ${tailC(r.maxPrice)}</div>` : ''}</td>
       <td class="bp-c" style="text-align:right">${size(r)}</td>
-      <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td></tr>`; }).join('');
+      <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
+      <td style="text-align:right"><button class="mb-log" onclick="mybLogBest(${i})" title="Log this bet to My Bets">LOG</button></td></tr>`; }).join('');
   const c = d.counts || {};
   const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">
-      <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th></tr></thead>
+      <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th><th></th></tr></thead>
       <tbody>${body}</tbody></table></div>` : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
     ${!d.pro && d.locked > 0 ? `<div class="bp-upgrade"><div><b>${d.locked} more play${d.locked === 1 ? '' : 's'} right now</b><span>The top ${(d.rows || []).length} are free. Pro unlocks the full ranked list, with units and the best price for every play.</span></div><button class="wl-btn primary" onclick="acctNeedPro('The full Best Plays list')">GET PRO</button></div>` : ''}
     <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
@@ -5759,21 +6014,18 @@ function esCopySlip() {
   else prompt('Copy your slip:', txt);
 }
 
-function esLogSlip() {
+async function esLogSlip() {
   const sel = esStatsForLegs(esportsState.slipBook, esportsState.slip);
   if (!sel) { showToast('Pick a book first', 'danger'); return; }
   const stake = parseFloat(document.getElementById('esSlipStake')?.value);
   if (!isFinite(stake) || stake <= 0) { showToast('Enter a stake first', 'danger'); return; }
-  const odds = esMultToAmerican(sel.fullMult);
-  if (odds == null) { showToast('Payout multiplier looks off — check ES_BOOKS', 'danger'); return; }
-  const bet = {
-    id: Date.now(), pick: esSlipLabel(sel), odds, stake,
-    sport: 'Esports', book: sel.book.name.charAt(0) + sel.book.name.slice(1).toLowerCase(),
-    myOdds: odds, closeOdds: null, result: 'pending', date: new Date().toLocaleDateString()
-  };
-  bets.unshift(bet);
-  saveBets(); renderBetLog(); renderCLV();
-  showToast(`✓ Logged ${sel.n}-leg ${sel.book.name} · $${stake} to win $${(stake * (sel.fullMult - 1)).toFixed(2)}`);
+  if (!(sel.fullMult > 1)) { showToast('Payout multiplier looks off: check ES_BOOKS', 'danger'); return; }
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const b = LRBets.make({ pick: esSlipLabel(sel), odds: sel.fullMult, stake, sport: 'Esports', tool: 'Esports slip',
+    book: sel.book.name.charAt(0) + sel.book.name.slice(1).toLowerCase() }, { unitUsd: mybUnit().unit });
+  if (b.error) { showToast(b.error, 'danger'); return; }
+  myb.list.unshift(b); mybSave(); renderCLV();
+  showToast(`Logged ${sel.n}-leg ${sel.book.name} to My Bets: $${stake} to win $${(stake * (sel.fullMult - 1)).toFixed(2)}`);
 }
 
 // ── AUTO-BUILD: scan the filtered pool, return the highest-EV slip ──────────
@@ -5842,8 +6094,8 @@ async function promptManualPred(player, market) {
 
 renderSlipBar();
 
-renderBetLog();
-renderCLV();
+// tracked bets settle in the background, a few seconds after load
+setTimeout(() => { if (/"track"/.test(lsGet('lr_bets') || '')) mybReady().then(ok => ok && mybAutoSettle()); }, 5000);
 document.getElementById('keyBanner') && (document.getElementById('keyBanner').style.display = 'none');
 // Dim off-season sport chips (they still work if tapped — costs 1 request)
 document.querySelectorAll('.sport-row .sport-chip').forEach(c => {
