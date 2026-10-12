@@ -205,10 +205,18 @@ function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
     games: n => { const key = resolve(n); return key ? seen[key] : 0; },
     // how favoured this team usually was, so we only adjust for the DIFFERENCE tonight
     typical: n => { const key = resolve(n); return key && seen[key] ? expSum[key] / seen[key] : 0.5; },
-    mapProb(a, b) {
+    // scale: how much of the rating gap the market agrees with, fitted
+    // against exchange prices by the esports board (esboard.js calibrate)
+    scale: 1,
+    rawMapProb(a, b) {
       const ra = this.rating(a), rb = this.rating(b);
       if (ra == null || rb == null) return null;
       return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+    },
+    mapProb(a, b) {
+      const ra = this.rating(a), rb = this.rating(b);
+      if (ra == null || rb == null) return null;
+      return 1 / (1 + Math.pow(10, (this.scale ?? 1) * (rb - ra) / 400));
     },
     size: names.length,
   };
