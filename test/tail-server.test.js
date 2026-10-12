@@ -17,7 +17,7 @@ for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.e
 Object.assign(process.env, {
   PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0', XARB_PMUS_LEAGUES: 'nba',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
-  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'),
+  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'), ESPORTS_EDGE_TRACK_FILE: path.join(DIR, 'esports-edges.json'),
   // the round-1 tests below run with both data licences granted; the gates have their own tests
   POLYMARKET_DISPLAY_OK: 'on', KALSHI_DISPLAY_OK: 'on',
 });
@@ -530,7 +530,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.46.0');
+  assert.equal(body.version, '3.47.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -557,8 +557,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.46.0');
-  assert.equal((await get('/')).body.version, '3.46.0');
+  assert.equal(require('../package.json').version, '3.47.0');
+  assert.equal((await get('/')).body.version, '3.47.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {

@@ -15,7 +15,7 @@ for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.e
 Object.assign(process.env, {
   PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
-  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'),
+  TAIL_TRACK_FILE: path.join(DIR, 'tail-signals.json'), TAIL_TRADERS_FILE: path.join(DIR, 'tail-traders.json'), FRESH_TRACK_FILE: path.join(DIR, 'fresh-signals.json'), ESPORTS_EDGE_TRACK_FILE: path.join(DIR, 'esports-edges.json'),
   POLYMARKET_DISPLAY_OK: 'on', KALSHI_DISPLAY_OK: 'on',
 });
 
@@ -96,6 +96,26 @@ test('a new edge alerts once, Kalshi only in US mode', async () => {
   tick();
   await S.scanEsportsBoard();
   assert.equal(posts.length, 1, 'the same edge is not re-sent');
+});
+
+test('the Kalshi edge is logged for the results board, graded on the close at the start', async () => {
+  await S.esportsEdgeTracker.ready();
+  const open = await S.esportsEdgeTracker.list({ status: 'open' });
+  const bet = open.find(b => b.book === 'kalshi' && b.side === 'T1');
+  assert.ok(bet, 'the edge went into the tracker');
+  assert.ok(!open.some(b => b.book === 'polymarket'), 'US mode: no Polymarket International edges');
+  assert.ok(bet.evAtFlag >= 2 && bet.decimal > 3);
+  // past the start: closed with CLV against the last fair
+  const rows = await S.esportsEdgeTracker.list({});
+  tick(7 * 3600e3);
+  await S.esportsEdgeTracker.recordBoard([], new Map());
+  const closed = (await S.esportsEdgeTracker.list({ status: 'closed' })).find(b => b.id === bet.id);
+  assert.ok(closed && Number.isFinite(closed.clv) && closed.clv > 0);
+  const res = (await get('/api/results')).body;
+  assert.equal(res.sources.esportsEdges.overall.n, rows.length);
+  assert.equal(res.backup.state, 'off');
+  assert.equal((await get('/api/results/backup')).status, 404);
+  tick(-7 * 3600e3);
 });
 
 test('/api/esports/matches: Pro sees Kalshi edges and Polymarket as a reference', async () => {

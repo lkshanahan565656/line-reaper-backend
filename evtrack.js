@@ -22,15 +22,16 @@ function createMemoryStore() {
 function createFileStore(file) {
   const rows = new Map();
   let writing = Promise.resolve();
-  return {
+  const store = {
     kind: 'file',
     async init() {
       try { for (const b of JSON.parse(fs.readFileSync(file, 'utf8'))) rows.set(b.id, b); }
       catch (e) { if (e.code !== 'ENOENT') console.warn(`EV tracker: could not read ${file}: ${e.message}`); }
     },
     async all() { return [...rows.values()]; },
-    async put(b) {
-      rows.set(b.id, b);
+    async put(b) { return store.putMany([b]); },
+    async putMany(list) {
+      for (const b of list) rows.set(b.id, b);
       writing = writing.then(() => {
         fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(`${file}.tmp`, JSON.stringify([...rows.values()]));
@@ -39,9 +40,11 @@ function createFileStore(file) {
       return writing;
     },
   };
+  return store;
 }
 
-function createPgStore(connectionString) {
+function createPgStore(connectionString, table = 'ev_bets') {
+  if (!/^[a-z_]+$/.test(table)) throw new Error(`bad table name ${table}`);
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString,
@@ -51,26 +54,26 @@ function createPgStore(connectionString) {
   return {
     kind: 'postgres',
     async init() {
-      await pool.query(`CREATE TABLE IF NOT EXISTS ev_bets (
+      await pool.query(`CREATE TABLE IF NOT EXISTS ${table} (
         id TEXT PRIMARY KEY, doc JSONB NOT NULL, status TEXT NOT NULL,
         start_time TIMESTAMPTZ, updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`);
-      for (const { doc } of (await pool.query('SELECT doc FROM ev_bets')).rows) rows.set(doc.id, doc);
+      for (const { doc } of (await pool.query(`SELECT doc FROM ${table}`)).rows) rows.set(doc.id, doc);
     },
     async all() { return [...rows.values()]; },
     async put(b) {
       rows.set(b.id, b);
       await pool.query(
-        `INSERT INTO ev_bets (id, doc, status, start_time, updated_at) VALUES ($1, $2, $3, $4, now())
+        `INSERT INTO ${table} (id, doc, status, start_time, updated_at) VALUES ($1, $2, $3, $4, now())
          ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, status = EXCLUDED.status, start_time = EXCLUDED.start_time, updated_at = now()`,
         [b.id, b, b.status, b.start || null]);
     },
   };
 }
 
-function createStoreFromEnv(env = process.env) {
-  if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL);
-  return createFileStore(env.EV_TRACK_FILE || path.join(__dirname, 'data', 'ev-bets.json'));
+function createStoreFromEnv(env = process.env, { table = 'ev_bets', fileVar = 'EV_TRACK_FILE', file = 'ev-bets.json' } = {}) {
+  if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL, table);
+  return createFileStore(env[fileVar] || path.join(__dirname, 'data', file));
 }
 
 // One bet per market side and book per game: a book dipping below the
