@@ -584,7 +584,10 @@ const escal = require('./escal');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
-const webhook = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
+const webhookOnly = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
+// Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on
+const push = require('./push').createPush({ store: require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' }) });
+const webhook = require('./push').withPush(webhookOnly, push);
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
 const legal = require('./legal');
@@ -3067,6 +3070,25 @@ function loadApp() {
   return appHtml;
 }
 legal.mount(app);
+// Installable app: manifest, service worker (root scope) and icons, then the push routes.
+const PUB = path.join(__dirname, 'public');
+app.get('/manifest.webmanifest', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/manifest+json').sendFile(path.join(PUB, 'manifest.webmanifest')));
+app.get('/sw.js', (req, res) => res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }).type('application/javascript').sendFile(path.join(PUB, 'sw.js')));
+app.get('/icons/:name', (req, res) => {
+  if (!/^[a-z0-9-]+\.png$/.test(req.params.name)) return res.sendStatus(404);
+  res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(PUB, 'icons', req.params.name), e => { if (e && !res.headersSent) res.sendStatus(404); });
+});
+app.get('/api/push/key', async (req, res) => {
+  const key = await push.publicKey();
+  if (!key) return res.status(503).json({ error: 'Push is not available right now' });
+  res.json({ key, devices: push.devices() });
+});
+app.post('/api/push/subscribe', (req, res, next) => (hasPro(req) ? next() : requirePro(req, res, next)), async (req, res) => {
+  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent') })); } catch (e) { sendErr(res, e); }
+});
+app.post('/api/push/unsubscribe', async (req, res) => {
+  try { res.json(await push.unsubscribe(req.body?.endpoint)); } catch (e) { sendErr(res, e); }
+});
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -4080,7 +4102,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   licence: licenceState(req),
   dataLicences: (!PAYWALL || isAdmin(req)) ? licences.state() : licences.publicState(),
   upstream: upstream.stats(),
-  live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats() },
+  live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
@@ -4186,7 +4208,7 @@ if (require.main === module) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.63.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
-    if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
+    if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
       webhook.send(`Line Reaper v3.63.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
@@ -4235,5 +4257,5 @@ module.exports = {
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
-  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml,
+  esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
 };
