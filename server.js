@@ -1885,7 +1885,7 @@ async function warmCsProfiles(batch = 12) {
 // Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
-const { createLoLGrader, createDotaGrader } = require('./graders');
+const { createLoLGrader, createDotaGrader, createCsGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
   const dir = await dotaLoadProPlayers();
@@ -1895,8 +1895,8 @@ async function dotaAccountId(playerName) {
 const tracker = createTracker({
   store: resultsBackup.wrap('esportsPicks', createStoreFromEnv()),
   graders: {
-    LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId),
-    ...(panda ? { CS: panda.grader('CS'), VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
+    LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
+    ...(panda ? { VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
   },
   normalizeName, normalizeMarket, parseMapSpan,
 });
@@ -2285,7 +2285,7 @@ function sizeQuote(s, v) {
   let z = null;
   if (typeof tail.sizeAt === 'function' && q > 0 && q < 1) {
     try {
-      z = tail.sizeAt({ q, price: v.price, feePerContract: v.fee || 0, grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, opts: tailEngine.settings() });
+      z = tail.sizeAt({ q, price: v.price, feePerContract: v.fee || 0, grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, days: s.days ?? 0, opts: tailEngine.settings() });
     } catch (e) { console.warn('Tail venue sizing:', e.message); }
   }
   let units = Number.isFinite(z?.units) ? z.units : 0;
@@ -2320,7 +2320,7 @@ function limitFor(s, v) {
   let plan = null;
   try {
     plan = tail.limitPlan({ q, ask: v.price, bid: v.bid ?? null, makerFee: p => MAKER_SHARE[v.key] * rate * p * (1 - p),
-      grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, opts: tailEngine.settings() });
+      grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, days: s.days ?? 0, opts: tailEngine.settings() });
   } catch (e) { console.warn('Tail limit sizing:', e.message); }
   if (!plan) return null;
   let units = plan.units;
@@ -2975,7 +2975,7 @@ app.get('/calc.js', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.55.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.56.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3796,7 +3796,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.55.0',
+  version: '3.56.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3930,10 +3930,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.55.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.56.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.55.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.56.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

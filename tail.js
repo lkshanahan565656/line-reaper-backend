@@ -66,8 +66,15 @@
 //   units = ¼ Kelly × 100 (1u = 1% of bankroll), capped 2u (A) / 1u (B),
 //           × 1.5 (so up to 3u for A, 1.5u for B) when 2+ graded wallets
 //           bought that side within 24h. Kelly ≤ 0 → 0u.
+//   thin   0u when the expected return at that cost, (q − cost) / cost, is
+//           under minEv (1%) × the weeks until the market settles (at least
+//           one): a 0.6¢ edge on a 93¢ favourite is inside the spread, and a
+//           2% edge on a market that settles in two months earns less than
+//           cash while it ties the bankroll up (TAIL_MIN_EV, 0 = off). Games
+//           settle within the week, so they only need minEv.
 //   maxPrice  the highest price, to the cent, with Kelly still above 0 once
-//           the fee is paid (c + f < q), the fee taken as fixed.
+//           the fee is paid (c + f < q) and the return over the thin bar,
+//           the fee taken as fixed.
 // Units are the same for everyone: nothing here knows anyone's bankroll.
 //
 // A tail when a graded wallet BUYs at p and we can buy now at c on Polymarket:
@@ -147,6 +154,7 @@ const DEFAULTS = {
   consensusWindowMs: 24 * 3600e3, // ...within this window
   consensusMult: 1.5,
   maxUnits: 3,
+  minEv: 0.01,                   // expected return at our cost a take or bid needs, per week the money is tied up (TAIL_MIN_EV, 0 = off)
   limitShare: 0.5,               // a resting bid's units, as a share of what a take at that price would get: bids fill most often when the price is falling (TAIL_LIMIT_SHARE, 0 = no bids)
   maxEventUnits: 3,              // units told across one game or event in consensusWindowMs, whoever bought (TAIL_MAX_EVENT_UNITS, 0 = no cap)
   forwardMinN: 30,               // bets resolved since the wallet was picked before they count
@@ -205,7 +213,7 @@ function resolveOptions(opts = {}) {
 // 1%; TAIL_B_MIN_CLV's 0.5% is 0.005, since 0.5 would read as 50%),
 // TAIL_CHASE_MAX takes cents or dollars (1 is 1¢), and the factors
 // (regression, Kelly fraction, max probability) take 0.25 or 25 (1 is 1.0).
-const PERCENT_KEYS = new Set(['exitShare', 'maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
+const PERCENT_KEYS = new Set(['exitShare', 'maxTwoSided', 'minRoi', 'minRecentRoi', 'maxConcentration', 'chaseMax', 'minClv', 'maxEntryPrice', 'maxInPlay', 'clvPathMin', 'clvPathHitRate', 'minEv', 'roundTripEntry', 'roundTripExit', 'maxRoundTrips']);
 const FACTOR_KEYS = new Set(['regression', 'kellyFraction', 'maxProb', 'limitShare']);
 const snake = k => k.replace(/[A-Z]/g, c => `_${c}`).toUpperCase();
 function optionsFromEnv(env = process.env) {
@@ -1208,13 +1216,26 @@ function trueProb(p, edge, pivot = 0.5) {
   return odds / (1 + odds);
 }
 
+// The expected return a bet needs: minEv, × the weeks until it settles past
+// the first.
+const evBar = (days, o) => o.minEv * Math.max(1, (num(days) || 0) / 7);
+// Days until a market settles: 0 for a game (it settles within hours of its
+// start), else to its end date; null when unknown.
+function daysOut(market, now = Date.now()) {
+  if (!market || toMs(market.gameStartTime) != null) return market ? 0 : null;
+  const end = toMs(market.endDate);
+  return end == null ? null : round(Math.max(0, (end - now) / DAY), 1);
+}
+
 // Units for a bet on an outcome we put at probability q, bought at `price`
 // with a fee of feePerContract a contract, from a wallet of `grade`, with
 // `consensus` graded wallets (a count, or their list) on the same side.
 // The same at every venue and for everyone. → { kelly, units, maxPrice, cost,
-// cap }: kelly null when there is no price to buy at; maxPrice the highest
-// price (to the cent) still worth paying with that fee, null when none is.
-function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} } = {}) {
+// cap, thin }: kelly null when there is no price to buy at; maxPrice the highest
+// price (to the cent) still worth paying with that fee, null when none is;
+// thin when Kelly is positive but the expected return is under the bar for a
+// market that settles in `days` (see minEv above).
+function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, days = 0, opts = {} } = {}) {
   const o = resolveOptions(opts);
   const prob = num(q), p = num(price);
   const fee = Math.max(0, num(feePerContract) ?? 0);
@@ -1224,19 +1245,22 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
   const base = tier ? tier.capUnits : 0;
   const cap = isConsensus ? Math.min(base * o.consensusMult, o.maxUnits) : base;
   const ok = prob > 0 && prob < 1;
-  // Kelly > 0 ⇔ price + fee < q: the last whole cent under q − fee
-  const top = ok ? (Math.ceil((prob - fee) * 100 - 1e-7) - 1) / 100 : null;
+  // Kelly > 0 ⇔ price + fee < q: the last whole cent under q − fee; with the
+  // return bar, the last cent with (q − cost) / cost at or over it
+  const bar = o.minEv > 0 ? evBar(days, o) : 0;
+  const top = !ok ? null : bar > 0 ? Math.floor((prob / (1 + bar) - fee) * 100 + 1e-7) / 100 : (Math.ceil((prob - fee) * 100 - 1e-7) - 1) / 100;
   const maxPrice = top != null && top >= 0.01 ? Math.min(round(top, 2), 0.99) : null;
   if (!ok || !(p > 0 && p < 1) || !(p + fee < 1)) return { kelly: null, units: 0, maxPrice, cost: p > 0 ? p + fee : null, cap };
   const cost = p + fee;
   const kelly = (prob - cost) / (1 - cost);
   let units = 0;
-  if (kelly > EPS && tier) {
+  const thin = kelly > EPS && bar > 0 && (prob - cost) / cost < bar - EPS;
+  if (kelly > EPS && tier && !thin) {
     units = Math.min(Math.max(o.kellyFraction * kelly * o.bankrollUnits, 0), base);
     if (isConsensus) units = Math.min(units * o.consensusMult, o.maxUnits);
     units = round(units, 2);
   }
-  return { kelly, units, maxPrice, cost, cap };
+  return { kelly, units, maxPrice, cost, cap, thin };
 }
 
 // A resting bid instead of a take. Most tails die by a cent: the sharp's edge
@@ -1248,7 +1272,7 @@ function sizeAt({ q, price, feePerContract = 0, grade, consensus = 1, opts = {} 
 // cost, units, kelly } at the highest such price sized above 0 (the likeliest
 // to fill), units × limitShare, or null. With no bid known the order goes at
 // most 2¢ under the ask.
-function limitPlan({ q, ask, bid = null, makerFee = () => 0, grade, consensus = 1, opts = {} } = {}) {
+function limitPlan({ q, ask, bid = null, makerFee = () => 0, grade, consensus = 1, days = 0, opts = {} } = {}) {
   const o = resolveOptions(opts);
   const a = num(ask), b = num(bid), prob = num(q);
   if (!(prob > 0 && prob < 1) || !(a > 0 && a < 1) || !(o.limitShare > 0)) return null;
@@ -1257,12 +1281,16 @@ function limitPlan({ q, ask, bid = null, makerFee = () => 0, grade, consensus = 
   for (let c = top; c >= floor - EPS; c = round(c - 0.01, 2)) {
     if (c >= o.maxEntryPrice - EPS) continue;
     const fee = Math.max(0, num(makerFee(c)) ?? 0);
-    const z = sizeAt({ q: prob, price: c, feePerContract: fee, grade, consensus, opts: o });
+    const z = sizeAt({ q: prob, price: c, feePerContract: fee, grade, consensus, days, opts: o });
     const units = round((z.units || 0) * o.limitShare, 2);
     if (units > 0) return { price: c, fee: round(fee, 6), cost: round(c + fee, 6), units, kelly: round(z.kelly, 4) };
   }
   return null;
 }
+
+const thinText = (days, o) => (days > 7
+  ? `edge under ${round(evBar(days, o) * 100, 1)}%: too thin for money tied up ${Math.round(days)} days`
+  : `edge under ${round(o.minEv * 100, 1)}%: inside the spread`);
 
 // a sale's share of the position it came out of (0–1), or null when the
 // position isn't known
@@ -1332,7 +1360,8 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   const scoped = tier.scope === 'category' ? trader.categories?.[category] : trader;
   const q = Math.min(o.maxProb, trueProb(p, tier.edge, num(scoped?.avgEntry) ?? 0.5));
   const fee = c == null ? null : polymarketFee(c, market?.fee);
-  const sized = sizeAt({ q, price: c, feePerContract: fee ?? 0, grade: tier.grade, consensus: wallets.length, opts: o });
+  const days = daysOut(market, now);
+  const sized = sizeAt({ q, price: c, feePerContract: fee ?? 0, grade: tier.grade, consensus: wallets.length, days, opts: o });
   let units = 0, reason = null, target = 0;
   const kelly = c == null ? null : sized.kelly;
   if (blocked === 'in-play') reason = 'in-play bet: live prices move faster than anyone can follow';
@@ -1342,9 +1371,10 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
   } else if (blocked || (c ?? 0) >= o.maxEntryPrice - EPS) reason = `at ${Math.round(o.maxEntryPrice * 100)}¢+ there's little to win and everything to lose`;
   else if (c == null) reason = 'no live price: check it before following';
   else if (c - p > o.chaseMax + EPS || !(kelly > EPS)) reason = "price ran, don't chase";
+  else if (sized.thin) reason = thinText(days, o);
   else {
     units = target = sized.units;
-    if (!(units > 0)) reason = 'edge too small to size';
+    if (!(units > 0)) reason = sized.thin ? thinText(days, o) : 'edge too small to size';
   }
   const before = num(prior?.units) > 0 ? num(prior.units) : 0;
   if (before > 0 && target > 0) {
@@ -1364,7 +1394,7 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
       ...base, type: 'entry', currentPrice: c, ...(book && inUnit(book.bid) != null ? { currentBid: book.bid } : {}), priceSource: live.source, slippage: c == null ? null : round(c - p, 4), edge: round(tier.edge, 4),
       inPlay, gameStartTime: started == null ? null : iso(started), blocked,
       q, prob: round(q, 4), fee: fee == null ? null : round(fee, 6), feeRate: market?.fee?.rate ?? 0, maxPrice: sized.maxPrice,
-      kelly: round(kelly, 4), units, target, cap: sized.cap,
+      kelly: round(kelly, 4), units, target, cap: sized.cap, days,
       parentId: before > 0 ? prior.id ?? null : null, topUp: before > 0, priorUnits: before,
       eventKey: event?.key ?? null, eventUnits: round(told, 2), eventRoom: room,
       consensus: wallets, isConsensus, against: opposed, reason,
@@ -2188,7 +2218,7 @@ function createTailEngine({ http, store = null, now = () => Date.now(), opts = {
 
 module.exports = {
   DEFAULTS, CATEGORIES, LEADERBOARD_CATEGORIES, LEADERBOARD_PERIODS, SETTLED_STATUSES, DATA_API, GAMMA_API,
-  resolveOptions, optionsFromEnv, classify,
+  resolveOptions, optionsFromEnv, classify, daysOut,
   parseClosedPositions, parseOpenPositions, resolvedFromOpen, resolvedPositions, parseTrades, parseLeaderboard, parseGammaMarket, parseGammaMarkets,
   parseFeeSchedule, polymarketFee, parsePriceHistory,
   outcomeIndexOf, askFor, priceOf, resolutionOf, markOpen, holdingsOf, boardAlerts, parseBook, fetchBook, liveAsk, CLOB_API,
