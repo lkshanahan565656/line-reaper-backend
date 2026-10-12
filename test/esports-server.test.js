@@ -289,3 +289,27 @@ test('props: headshot props use the player rate, not a flat 45%', () => {
   assert.ok(Math.abs(hs / kills - 786 / 1227) < 1e-9);
   assert.ok(kills > 36 && kills < 41);   // about 19.3 a map
 });
+
+test('the bare URL: browsers get the sales page, API clients the JSON status', async () => {
+  const r = await fetch(base + '/', { headers: { accept: 'text/html,application/xhtml+xml,*/*;q=0.8' } });
+  assert.equal(r.status, 200);
+  const html = await r.text();
+  assert.ok(html.includes('by sharps') && html.includes('id="pricing"'));
+  assert.doesNotMatch(html, /\{\{[A-Z_]+\}\}/, 'every template token filled');
+  assert.equal((await get('/')).body.status, 'Line Reaper backend running');
+});
+
+test('sales page prices and early-access note come from env', () => {
+  const { landingHtml } = S;
+  const free = landingHtml({ paywall: false, env: {} });
+  assert.match(free, /\$79<span>/);
+  assert.match(free, /\$49 a month for the first 100 members/);
+  assert.match(free, /class="early" style="display:block"/);
+  assert.ok(free.includes('>Start free<') && !free.includes('>Create a free account<'), 'no accounts without AUTH_SECRET');
+  const paid = landingHtml({ paywall: true, env: { PRICE_MONTHLY: '59', PRICE_INTRO: '0', AUTH_SECRET: 'x' } });
+  assert.match(paid, /\$59<span>/);
+  assert.match(paid, /class="intro" style="visibility:hidden"/);
+  assert.match(paid, /class="early" style="display:none"/);
+  assert.ok(paid.includes('>Create a free account<'));
+  for (const p of [free, paid]) assert.doesNotMatch(p, /\{\{[A-Z_]+\}\}/);
+});
