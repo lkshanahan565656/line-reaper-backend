@@ -28,6 +28,10 @@ const TIER = { proven: 0, promising: 1, early: 2 };
 const DEFAULTS = {
   tailMaxAgeMs: 2 * 3600e3,   // a sharp's buy older than this has been priced in
   propMinEv: 0.02,            // props: at least 2% EV over the pick'em break-even
+  lineMinEv: 0.02,            // sportsbook game lines: 2% or more over the fair price
+  lineMaxEv: 0.15,            // past this it's nearly always a stale or wrong number
+  lineMaxAgeMs: 45 * 60e3,    // book prices older than this have likely moved
+  lineMinBooks: 3,            // a consensus price needs a few books behind it
   edgeMaxUnits: 1,            // esports edges until proven
   provenMaxUnits: 2,
   kellyFraction: 0.25,
@@ -191,6 +195,46 @@ function dfsRows(rows, o, now) {
   return out;
 }
 
+// sportsbook game lines the EV screen (ev.js) prices above fair, from the
+// Odds API. Sized like an esports edge: ¼ Kelly, capped until proven.
+const BOOK_NAMES = {
+  draftkings: 'DraftKings', fanduel: 'FanDuel', betmgm: 'BetMGM', williamhill_us: 'Caesars', caesars: 'Caesars', betrivers: 'BetRivers',
+  espnbet: 'ESPN Bet', fanatics: 'Fanatics', hardrockbet: 'Hard Rock', hard_rock_bet: 'Hard Rock', ballybet: 'Bally Bet', betparx: 'BetPARX',
+  bovada: 'Bovada', betonlineag: 'BetOnline', lowvig: 'LowVig', mybookieag: 'MyBookie', betus: 'BetUS', betanysports: 'BetAnySports',
+  pinnacle: 'Pinnacle', novig: 'Novig', prophetx: 'ProphetX', kalshi: 'Kalshi', polymarket: 'Polymarket', fliff: 'Fliff', bet365: 'Bet365',
+};
+const bookName = k => BOOK_NAMES[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const LINE_MARKETS = { h2h: 'moneyline', spreads: 'spread', totals: 'total' };
+function lineRows(lines, verdict, o, now) {
+  const rows = [], dropped = [];
+  for (const r of lines) {
+    if (r.dfs || r.player || r.ev == null || r.ev / 100 < o.lineMinEv || r.ev / 100 > o.lineMaxEv) continue;
+    if (!(r.decimal > 1) || !(r.fairProb > 0)) continue;
+    const start = ms(r.start), seen = ms(r.updated);
+    if (start == null || start <= now || seen == null || now - seen > o.lineMaxAgeMs) continue;
+    if (r.source !== 'sharp' && !(r.books >= o.lineMinBooks)) continue;
+    const labels = { sport: r.sport, book: r.book, market: r.market };
+    const vd = verdict('ev', labels);
+    const title = r.event || r.group;
+    if (vd.avoid) { dropped.push({ kind: 'bookLine', title, play: vd.avoid.play }); continue; }
+    const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
+    const units = kellyUnits(r.fairProb / 100, 1 / r.decimal, cap, o);
+    if (!(units > 0)) continue;
+    const kind = LINE_MARKETS[r.market] || r.market;
+    // a spread side already carries its points ("Bills -3.5"); a total's doesn't
+    const point = r.market === 'totals' && r.point != null ? ` ${r.point}` : '';
+    const ref = (r.sharpBooks || []).length ? r.sharpBooks.map(bookName).join(', ') : `${r.books} books`;
+    const why = [`fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice} (${r.fairProb}%) from ${ref}, ${bookName(r.book)} pays ${r.price > 0 ? '+' : ''}${r.price}`];
+    if (vd.play) why.push(evidence(vd.play));
+    rows.push({
+      id: `line:${r.group}|${r.side}|${r.book}`, kind: 'bookLine', label: `${String(r.sport || '').toUpperCase()} ${kind}`, title,
+      bet: `${r.side}${point}`, venue: bookName(r.book), price: null, american: r.price, maxPrice: null,
+      units, ev: r4(r.ev / 100), verdict: vd.verdict, why, url: null, startsAt: r.start, at: r.updated, warning: null,
+    });
+  }
+  return { rows, dropped };
+}
+
 // exchange arbs (xarb.js) and esports match arbs: both sides for under $1.
 // Units don't apply: the stake splits across the legs.
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
@@ -224,7 +268,7 @@ function arbRows(arbs, esportsArbs) {
 }
 
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
-function bestPlays({ signals = [], matches = [], picks = [], props = [], arbs = [], plays = [] } = {}, opts = {}) {
+function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
   const verdict = verdictIndex(plays);
@@ -234,7 +278,7 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], arbs = 
     if (m.live || (start != null && start <= now)) continue;
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
-  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now)];
+  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now)];
   const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));

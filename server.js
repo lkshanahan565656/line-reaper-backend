@@ -63,7 +63,7 @@ function inSeasonSports() {
 }
 
 // Low-usage mode for small Odds API plans (see quota.js).
-const { createCreditBudget, oddsCost } = require('./quota');
+const { createCreditBudget, oddsCost, pickPollSport } = require('./quota');
 const oddsBudget = createCreditBudget({
   setting: process.env.ODDS_API_BUDGET || '', resetDay: parseInt(process.env.ODDS_API_RESET_DAY) || 1,
 });
@@ -3019,7 +3019,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.60.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.61.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3612,6 +3612,32 @@ const ODDS_FEED_TTL_MS = parseInt(process.env.ODDS_FEED_TTL_MS) || 120000;
 const FEED_MARKETS = new Set(['h2h', 'spreads', 'totals', 'outrights']);
 const oddsFeedCache = new Map();
 const oddsFeedInflight = new Map();
+// One billed Odds API odds pull for a sport, shared by the app's feed and the
+// sportsbook poller. Concurrent callers wait on the same request; the credit
+// budget can refuse it ({ budget: { waitMs } } is thrown then).
+// Low-usage mode skips totals: on the free plan that stretches 500 credits a
+// month to about 8 board refreshes a day instead of 5.
+const feedMarkets = () => (oddsBudget.active() ? 'h2h,spreads' : 'h2h,spreads,totals');
+async function pullOddsFeed(sport, regions) {
+  const key = `${sport}|${regions}`;
+  if (!oddsFeedInflight.has(key)) {
+    const markets = feedMarkets();
+    const budget = oddsBudget.take(oddsCost(markets, regions));
+    if (!budget.ok) throw Object.assign(new Error('budget'), { budget });
+    oddsFeedInflight.set(key, axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
+      params: { apiKey: ODDS_API_KEY, regions, markets, oddsFormat: 'american', ...(regions !== 'us' ? { includeLinks: true } : {}) }, timeout: 12000,
+    }).then(r => {
+      noteQuota(r);
+      oddsFeedCache.set(key, { at: Date.now(), data: r.data });
+      // the screener and sharp tracker read game lines from here too
+      if (regions === 'us') cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
+      ingestSharp(sport, r.data);
+      return r.data;
+    }).finally(() => oddsFeedInflight.delete(key)));
+  }
+  return oddsFeedInflight.get(key);
+}
+
 app.get('/api/odds-feed/:sport', async (req, res) => {
   const sport = String(req.params.sport);
   if (!/^[a-z0-9_]+$/.test(sport)) return res.status(400).json({ error: 'Bad sport key' });
@@ -3622,47 +3648,73 @@ app.get('/api/odds-feed/:sport', async (req, res) => {
   const wanted = new Set(String(req.query.markets || 'h2h,spreads').split(',').filter(x => FEED_MARKETS.has(x)));
   // Low-usage mode fetches only the main US books: the wide pull costs 3× the credits.
   const wide = !oddsBudget.active() && (/us2|us_ex/.test(String(req.query.regions || '')) || wanted.has('totals'));
-  const markets = 'h2h,spreads,totals';
   const regions = wide ? 'us,us2,us_ex' : 'us';
-  const includeLinks = wide;
   const key = `${sport}|${regions}`;
   const trim = data => (Array.isArray(data) ? data.map(g => ({ ...g, bookmakers: (g.bookmakers || []).map(b => ({ ...b, markets: (b.markets || []).filter(m => wanted.has(m.key)) })) })) : data);
   res.set('Access-Control-Expose-Headers', 'x-requests-remaining, x-cache');
   const hit = oddsFeedCache.get(key);
-  if (hit && Date.now() - hit.at < ODDS_FEED_TTL_MS) {
+  // low-usage mode: whatever the poller last pulled is as fresh as it gets
+  if (hit && (Date.now() - hit.at < ODDS_FEED_TTL_MS || (oddsBudget.active() && !oddsBudget.check(oddsCost(feedMarkets(), regions)).ok))) {
     if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
     res.set('x-cache', 'hit');
     return res.json(trim(hit.data));
   }
   try {
-    // concurrent viewers wait on the same request
-    if (!oddsFeedInflight.has(key)) {
-      const budget = oddsBudget.take(oddsCost(markets, regions));
-      if (!budget.ok) {
-        const mins = Math.ceil(budget.waitMs / 60000);
-        res.set('x-cache', 'budget');
-        if (hit) return res.json(trim(hit.data));
-        return res.status(503).json({ error: `Saving Odds API credits: next refresh in about ${mins} min`, lowUsage: true, retryInMs: budget.waitMs });
-      }
-      oddsFeedInflight.set(key, axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/odds/`, {
-        params: { apiKey: ODDS_API_KEY, regions, markets, oddsFormat: 'american', ...(includeLinks ? { includeLinks: true } : {}) }, timeout: 12000,
-      }).finally(() => oddsFeedInflight.delete(key)));
-    }
-    const r = await oddsFeedInflight.get(key);
-    noteQuota(r);
-    oddsFeedCache.set(key, { at: Date.now(), data: r.data });
-    // the screener and sharp tracker read game lines from here too
-    if (!wide) cache.odds[sport] = { data: r.data, updated: new Date().toISOString() };
-    ingestSharp(sport, r.data);
+    const data = await pullOddsFeed(sport, regions);
     if (cache.quotaRemaining != null) res.set('x-requests-remaining', String(cache.quotaRemaining));
     res.set('x-cache', 'miss');
-    res.json(trim(r.data));
+    res.json(trim(data));
   } catch (e) {
+    if (e.budget) {
+      const mins = Math.ceil(e.budget.waitMs / 60000);
+      res.set('x-cache', 'budget');
+      if (hit) return res.json(trim(hit.data));
+      return res.status(503).json({ error: `Saving Odds API credits: next refresh in about ${mins} min`, lowUsage: true, retryInMs: e.budget.waitMs });
+    }
     const status = e.response?.status || 502;
     if (hit) { res.set('x-cache', 'stale'); return res.json(trim(hit.data)); }   // better old odds than none
     res.status(status).json({ error: status === 429 ? 'Odds API quota used up' : status === 401 ? 'Odds API key rejected' : `Odds API error ${status}` });
   }
 });
+
+// ─── SPORTSBOOK POLLER ────────────────────────────────────────────────────────
+// With a key set, the server pulls the sportsbooks' game lines itself, so the
+// +EV screen and Best Plays have book prices even when nobody has the Lines tab
+// open. One sport per tick, and only when the credit budget allows a pull. The
+// pull goes to the sport with the most games starting in the next 12 hours,
+// weighted by how long since its last pull. Event lists are free to read.
+const oddsEventTimes = {};   // sport → { at, starts: [ms] }
+const bookPoll = { lastSport: null, lastAt: null, pulls: 0, skipped: 0, error: null };
+async function upcomingGames(sport, now) {
+  let c = oddsEventTimes[sport];
+  if (!c || now - c.at > 3600e3) {
+    const r = await axios.get(`https://api.the-odds-api.com/v4/sports/${sport}/events`, { params: { apiKey: ODDS_API_KEY }, timeout: 10000 });
+    noteQuota(r);
+    c = oddsEventTimes[sport] = { at: now, starts: (r.data || []).map(e => Date.parse(e.commence_time)).filter(Number.isFinite) };
+  }
+  return c.starts.filter(t => t > now && t - now < 12 * 3600e3).length;
+}
+async function pollSportsbooks() {
+  if (!ODDS_API_KEY) return;
+  if (!oddsBudget.check(oddsCost(feedMarkets(), 'us')).ok) { bookPoll.skipped++; return; }
+  const now = Date.now();
+  try {
+    const candidates = [];
+    for (const sport of inSeasonSports()) {
+      const last = oddsFeedCache.get(`${sport}|us`);
+      candidates.push({ sport, games: await upcomingGames(sport, now), lastAt: last ? last.at : null });
+    }
+    // a pull from the app inside the TTL already counts as fresh
+    const sport = pickPollSport(candidates.filter(c => !c.lastAt || now - c.lastAt >= ODDS_FEED_TTL_MS), now);
+    if (!sport) return;
+    await pullOddsFeed(sport, 'us');
+    Object.assign(bookPoll, { lastSport: sport, lastAt: new Date().toISOString(), pulls: bookPoll.pulls + 1, error: null });
+    runEvScreen(true);
+  } catch (e) {
+    if (e.budget) bookPoll.skipped++;
+    else bookPoll.error = e.response?.status ? `Odds API ${e.response.status}` : e.message;
+  }
+}
 
 // Regex path: works on both Express 4 and Express 5 (string '*' wildcards break on v5)
 app.get(/^\/api\/owls\/(.*)$/, async (req, res) => {
@@ -3815,6 +3867,7 @@ app.get('/api/best', async (req, res) => {
       matches: esportsBoardFor(req),
       picks: pro ? esportsCache.picks || [] : [],
       props: pro ? runEvScreen().rows.filter(r => r.dfs).filter(evRowOk(lic)) : [],
+      lines: pro ? runEvScreen().rows.filter(r => !r.dfs).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       plays,
     }, { limit: Math.min(parseInt(req.query.limit) || 300, 500) });
@@ -3880,7 +3933,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.60.0',
+  version: '3.61.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3924,6 +3977,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   owls: !licences.isOn('owls') ? 'paused: waiting on data permission' : owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
   oddsApiQuotaRemaining: cache.quotaRemaining,
   oddsApiBudget: oddsBudget.state(),
+  sportsbookPoll: bookPoll,
   owlsProps: Object.entries(cache.owlsProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
   oddsApiProps: Object.entries(cache.oddsApiProps).map(([k,v])=>`${k}:${Array.isArray(v.data)?v.data.length:0}`).join(', ') || 'none',
 }); });
@@ -3973,6 +4027,9 @@ schedule('3,33 * * * *', () => fetchOddsApiProps('baseball_mlb'));
 schedule('6,36 * * * *', () => fetchOddsApiProps('icehockey_nhl'));
 schedule('9,39 * * * *', () => fetchOddsApiProps('americanfootball_nfl'));
 
+// Sportsbook game lines, one sport per tick when the credit budget allows
+schedule('7,17,27,37,47,57 * * * *', () => pollSportsbooks());
+
 // REMOVED: the */3 fetchOddsForSport cron. It cost 4 sports x 3 markets every
 // 3 minutes = ~5,700 Odds API credits per DAY, and nothing consumed it — the
 // frontend fetches its own odds. /api/odds/:sport still works on demand.
@@ -4015,10 +4072,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.60.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.61.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.60.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.61.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -4033,6 +4090,7 @@ if (require.main === module) {
       setTimeout(() => fetchOddsApiProps(s), delay);
       delay += 4000;
     }
+    setTimeout(() => pollSportsbooks(), 6000);
     // Generate esports picks once UD is loaded
     setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
     // LoL dataset download (~1 min); regenerates picks when done
@@ -4053,7 +4111,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, cache, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
