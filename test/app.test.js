@@ -31,3 +31,10 @@ test('layout customizer: MORE menu, tab reorder/hide, foldable help panels', () 
   for (const fn of ['layApply', 'layMove', 'layHide', 'layPin', 'layReset', 'layFoldInit']) assert.ok(html.includes(`function ${fn}`), fn);
   assert.ok(html.includes("const LAY_KEY = 'lr_layout'"));
 });
+
+test('TOOLS tab ships the calculators and loads calc.js from the server', () => {
+  assert.ok(html.includes("showTab('tools',this)") && html.includes('id="page-tools"'));
+  assert.ok(html.includes("'/calc.js'"));
+  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(server, /app\.get\('\/calc\.js'/);
+});

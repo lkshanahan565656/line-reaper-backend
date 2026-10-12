@@ -2922,6 +2922,11 @@ app.get('/app', (req, res) => {
   if (!html) return res.status(404).send('App not bundled with this deploy');
   res.set('Cache-Control', 'no-cache').type('html').send(html);
 });
+// The calculator math the TOOLS tab runs in the browser (the same file the
+// tests check), so the page and the tests can't drift apart.
+app.get('/calc.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
+});
 // Browsers opening the bare URL get the app; API clients (and the app's own
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
