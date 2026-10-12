@@ -148,6 +148,19 @@ test('/api/esports/matches: free viewers see prices, not the edges', async () =>
   assert.ok(q.ask > 0, 'the price itself is public');
 });
 
+test('/api/best: the Kalshi edge is a best play for Pro, counts only for free', async () => {
+  const { status, body } = await get('/api/best', PRO);
+  assert.equal(status, 200);
+  const row = body.rows.find(r => r.kind === 'esportsEdge');
+  assert.ok(row, 'the board edge is on the list');
+  assert.equal(row.venue, 'Kalshi');
+  assert.ok(row.units > 0 && row.units <= 1);
+  assert.ok(!body.rows.some(r => /polymarket/i.test(r.venue)), 'US mode: no Polymarket International plays');
+  const free = (await get('/api/best')).body;
+  assert.equal(free.pro, false);
+  assert.deepEqual(free.rows, []);
+});
+
 test('/api/esports/matches: a venue without display permission is withheld', async () => {
   process.env.KALSHI_DISPLAY_OK = 'off';
   try {

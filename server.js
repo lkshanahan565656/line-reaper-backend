@@ -3616,6 +3616,28 @@ app.get('/api/results', async (req, res) => {
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// Best plays right now across the app, ranked by what the results say is
+// working (bestplays.js). Each source goes through its own licence and region
+// gates first. The rows are what's being sold, so free users get the counts.
+const bestplays = require('./bestplays');
+app.get('/api/best', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const all = { limit: 1e9 };
+    const [tail, fresh, ev, esportsEdges, esportsPicks] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all)]);
+    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks });
+    const out = bestplays.bestPlays({
+      signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
+      matches: esportsBoardFor(req),
+      picks: pro ? esportsCache.picks || [] : [],
+      arbs: xarbState.arbs.filter(arbOk(lic)),
+      plays,
+    }, { limit: Math.min(parseInt(req.query.limit) || 50, 200) });
+    const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION };
+    res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: [], locked: out.total }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // The encrypted snapshot the results-backup Action keeps (backup.js).
 app.get('/api/results/backup', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
