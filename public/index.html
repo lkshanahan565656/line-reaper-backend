@@ -449,6 +449,8 @@ body::before {
 .esm-sub { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin-top: 8px; align-items: center; }
 .esm-up { color: #34d399; } .esm-down { color: #f87171; }
 .esm-more { background: none; border: 0; color: #a78bfa; font-size: 11px; cursor: pointer; padding: 0; margin-left: auto; }
+.bp-m { display: none; font-size: 12px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+@media (max-width: 640px) { #bestContent .bp-c { display: none; } #bestContent .bp-m { display: block; } #bestContent td:first-child { width: 72px; } }
 .esm-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
 .esm-table th { text-align: left; font-weight: 600; color: #64748b; font-size: 10px; letter-spacing: 1px; padding: 4px 6px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
 .esm-table td { padding: 5px 6px; border-bottom: 1px solid rgba(148,163,184,.08); color: #cbd5e1; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
@@ -809,6 +811,7 @@ body.no-help .clv-info { display:none; }
     </div>
   </div>
   <div class="tab-row">
+    <button class="tab" onclick="showTab('best',this)">BEST PLAYS</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
@@ -892,6 +895,21 @@ body.no-help .clv-info { display:none; }
 </div>
 
 <!-- ARB PAGE -->
+<div class="page" id="page-best">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, esports edges and props, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
+    <span style="color:#94a3b8;font-size:11px">Play types the record marks <b style="color:#f87171">avoid</b> are left off. <b style="color:#34d399">Proven</b> types and arbs come first, then <b style="color:#fbbf24">promising</b>, then ones too early to judge, biggest edge first. Units are the same for everyone (1u = 1% of bankroll).</span>
+  </div>
+  <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="sport-chip active" data-best="all" onclick="bestKind('all')">ALL</button>
+    <button class="sport-chip" data-best="tail" onclick="bestKind('tail')">SHARP TAIL</button>
+    <button class="sport-chip" data-best="esportsEdge" onclick="bestKind('esportsEdge')">ESPORTS EDGES</button>
+    <button class="sport-chip" data-best="esportsProp" onclick="bestKind('esportsProp')">ESPORTS PROPS</button>
+    <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
+  </div>
+  <div id="bestContent"></div>
+</div>
+
 <div class="page" id="page-results">
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">WHAT'S WINNING</strong> — every Sharp Tail signal, fresh-wallet alert, esports exchange edge, +EV price and esports prop the app has flagged, graded and cut into plays.
@@ -1243,6 +1261,7 @@ function showTab(name, el) {
   if (tailActive) loadTail(); else clearTimeout(tailTimer);
   if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
   if (name === 'results') loadResults();
+  if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
 }
 
@@ -4732,6 +4751,56 @@ function renderResults(d) {
       <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th><th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
       <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
     <div style="font-size:11px;color:var(--text2);margin-top:10px">${kept}</div>`;
+}
+
+// ─── BEST PLAYS ───────────────────────────────────────────────────────────────
+const bestUi = { kind: 'all', data: null, timer: null };
+function bestKind(k) {
+  bestUi.kind = k;
+  document.querySelectorAll('#page-best [data-best]').forEach(b => b.classList.toggle('active', b.dataset.best === k));
+  renderBest();
+}
+async function loadBest() {
+  clearTimeout(bestUi.timer);
+  const el = document.getElementById('bestContent');
+  if (!bestUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { bestUi.data = await tailGet('/api/best'); bestUi.error = null; }
+  catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : e.message; }
+  renderBest();
+  if (document.getElementById('page-best').classList.contains('active')) bestUi.timer = setTimeout(loadBest, 60000);
+}
+function renderBest() {
+  const el = document.getElementById('bestContent');
+  if (bestUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(bestUi.error)); return; }
+  const d = bestUi.data;
+  if (!d) return;
+  if (!d.pro) {
+    el.innerHTML = tailEmpty(`${d.locked || 0} PLAYS RIGHT NOW`, 'Best plays are part of Pro. The RESULTS tab shows which play types are winning, free.');
+    return;
+  }
+  const VC = { proven: ['PROVEN', '#34d399'], arb: ['ARB', '#34d399'], promising: ['PROMISING', '#fbbf24'], early: ['TOO EARLY', '#94a3b8'] };
+  const rows = (d.rows || []).filter(r => bestUi.kind === 'all' || r.kind === bestUi.kind);
+  const price = r => r.american != null ? fmtAm(r.american) : r.price != null ? tailC(r.price) : '—';
+  const size = r => (r.units != null ? `${r.units}u` : 'split stake');
+  const edge = r => (r.ev != null ? `+${(r.ev * 100).toFixed(1)}%` : '—');
+  const when = t => { const x = new Date(t); return t && Number.isFinite(x.getTime()) ? x.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
+  const body = rows.map(r => { const [v, c] = VC[r.verdict] || VC.early; return `<tr>
+      <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span><div style="font-size:10px;color:var(--text2)">${escAttr(r.label)}</div></td>
+      <td><b>${tailLink(r.url, escAttr(r.bet))}</b><div style="font-size:11px;color:var(--text2)">${escAttr(r.title)}${r.startsAt ? ` · ${escAttr(when(r.startsAt))}` : ''}</div>
+        <div class="bp-m">${escAttr(r.venue)} · ${price(r)}${r.maxPrice != null ? ` (max ${tailC(r.maxPrice)})` : ''} · ${size(r)} · <span style="color:var(--green)">${edge(r)}</span></div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">${(r.why || []).map(escAttr).join(' · ')}</div>${r.warning ? `<div class="xa-warn">${escAttr(r.warning)}</div>` : ''}</td>
+      <td class="bp-c">${escAttr(r.venue)}</td>
+      <td class="bp-c" style="text-align:right">${price(r)}${r.maxPrice != null ? `<div style="font-size:10px;color:var(--text2)">max ${tailC(r.maxPrice)}</div>` : ''}</td>
+      <td class="bp-c" style="text-align:right">${size(r)}</td>
+      <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td></tr>`; }).join('');
+  const c = d.counts || {};
+  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''} · updated ${escAttr(when(d.updated))}</div>
+    ${body ? `<div style="overflow-x:auto"><table class="esm-table">
+      <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th></tr></thead>
+      <tbody>${body}</tbody></table></div>` : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">Edge is expected value at the price shown (for an arb, the locked-in return). Prices move: check the venue before you bet, and don't pay above the max. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>`;
 }
 
 async function loadXarbs() {

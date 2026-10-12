@@ -2931,7 +2931,7 @@ app.get('/calc.js', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.51.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.52.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3686,6 +3686,28 @@ app.get('/api/results', async (req, res) => {
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// Best plays right now across the app, ranked by what the results say is
+// working (bestplays.js). Each source goes through its own licence and region
+// gates first. The rows are what's being sold, so free users get the counts.
+const bestplays = require('./bestplays');
+app.get('/api/best', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const all = { limit: 1e9 };
+    const [tail, fresh, ev, esportsEdges, esportsPicks] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all)]);
+    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks });
+    const out = bestplays.bestPlays({
+      signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
+      matches: esportsBoardFor(req),
+      picks: pro ? esportsCache.picks || [] : [],
+      arbs: xarbState.arbs.filter(arbOk(lic)),
+      plays,
+    }, { limit: Math.min(parseInt(req.query.limit) || 50, 200) });
+    const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION };
+    res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: [], locked: out.total }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // The encrypted snapshot the results-backup Action keeps (backup.js).
 app.get('/api/results/backup', async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json(await resultsBackup.exportSnapshot()); }
@@ -3726,7 +3748,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.51.0',
+  version: '3.52.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3857,10 +3879,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.51.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.52.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.51.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.52.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
