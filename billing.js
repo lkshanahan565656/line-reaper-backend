@@ -15,6 +15,12 @@ const crypto = require('crypto');
 
 const STRIPE = 'https://api.stripe.com/v1';
 
+// Shown by Stripe above the subscribe button (max 1200 characters).
+function renewalNotice(base) {
+  const b = String(base).replace(/\/$/, '');
+  return `Your subscription renews automatically at the price above each billing period until you cancel. Cancel anytime in Billing in the app; you keep access until the end of the period you paid for. By subscribing you agree to the Terms (${b}/terms) and the Refund Policy (${b}/refunds).`;
+}
+
 // Stripe takes form-encoded bodies with bracketed keys: line_items[0][price]=…
 function form(obj, prefix = '', out = new URLSearchParams()) {
   for (const [k, v] of Object.entries(obj)) {
@@ -58,7 +64,7 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
     return c.id;
   }
 
-  async function checkout(user, { successUrl, cancelUrl }) {
+  async function checkout(user, { successUrl, cancelUrl, legalUrl = null }) {
     if (!configured()) throw Object.assign(new Error('Billing is not set up yet'), { status: 503 });
     const customer = await ensureCustomer(user);
     const session = await post('/checkout/sessions', {
@@ -66,6 +72,9 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl, cancel_url: cancelUrl,
       allow_promotion_codes: 'true',
+      // the automatic-renewal terms, right above the pay button (state
+      // auto-renewal laws want them clear and next to the consent)
+      ...(legalUrl ? { custom_text: { submit: { message: renewalNotice(legalUrl) } } } : {}),
       ...(trialDays > 0 ? { subscription_data: { trial_period_days: trialDays } } : {}),
     });
     return { url: session.url, id: session.id };
@@ -111,6 +120,8 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
         user.plan = event.type === 'customer.subscription.deleted' ? 'free' : 'pro';
         user.planStatus = event.type === 'customer.subscription.deleted' ? 'canceled' : obj.status;
         user.subscriptionId = obj.id;
+        // cancelled in the portal but still inside the paid period
+        user.cancelAtPeriodEnd = event.type !== 'customer.subscription.deleted' && !!obj.cancel_at_period_end;
         // after a deletion the paid period is over; don't keep honouring it
         user.currentPeriodEnd = event.type === 'customer.subscription.deleted' || !obj.current_period_end
           ? null : new Date(obj.current_period_end * 1000).toISOString();
@@ -125,4 +136,4 @@ function createBilling({ http, secretKey, priceId, store, trialDays = 0, log = c
   return { checkout, portal, handleEvent, configured };
 }
 
-module.exports = { createBilling, verifyWebhook, form };
+module.exports = { createBilling, verifyWebhook, form, renewalNotice };

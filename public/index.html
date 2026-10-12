@@ -709,6 +709,20 @@ body::before { background:none; }
 .wl-skip.solo { border:1px solid var(--text); border-radius:6px; text-decoration:none; background:var(--text); color:var(--bg); font-weight:600; padding:13px; }
 @media (max-height:860px) { .wl-wrap { padding-top:24px; } .wl-brand { margin-bottom:26px; } .wl-sub { margin-bottom:20px; } .wl-note { margin-bottom:16px; } .wl-list { margin-bottom:18px; } .wl-row { padding:8px 0; } }
 .wl-fine { margin-top:16px; font-size:10.5px; color:var(--muted2); line-height:1.5; }
+.wl-fine a, .lr-foot a, .acct-legal a { color:var(--text2); text-underline-offset:2px; }
+.wl-agree, .acct-check { display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.5; color:var(--text2); margin:0 0 14px; cursor:pointer; text-align:left; }
+.wl-agree input, .acct-check input { flex:none; width:16px; height:16px; margin:2px 0 0; accent-color:#10b981; cursor:pointer; }
+.wl-agree a, .acct-check a { color:var(--text); text-underline-offset:2px; }
+.wl-agree.need { color:#fca5a5; }
+.wl-btn:disabled, .wl-skip:disabled { opacity:.45; cursor:not-allowed; }
+.acct-check { margin:10px 0 0; font-size:12px; }
+.acct-legal { font-size:11px; color:var(--muted2); line-height:1.5; margin-top:10px; }
+.lr-foot { max-width:1200px; margin:28px auto 0; padding:18px 16px 28px; border-top:1px solid var(--border); font-size:11px; line-height:1.6; color:var(--muted2); }
+.lr-foot nav { display:flex; flex-wrap:wrap; gap:4px 16px; margin-bottom:6px; }
+.lr-foot a { text-decoration:none; }
+.lr-foot a:hover { color:var(--text); text-decoration:underline; }
+.lr-foot button { background:none; border:none; padding:0; font:inherit; color:var(--muted2); cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.acct-del { background:#7f1d1d !important; border-color:#b91c1c !important; color:#fee2e2 !important; }
 
 /* ── Layout: More menu, customizer, foldable help ─────────────── */
 .tab-row { position:relative; align-items:center; }
@@ -796,10 +810,11 @@ body.no-help .clv-info { display:none; }
       <li><span><b>Esports.</b> Match boards, props and model edges for CS2, LoL, Valorant and Dota.</span></li>
     </ul>
     <div class="wl-actions">
+      <label class="wl-agree" id="wlAgreeRow"><input type="checkbox" id="wlAgree" onchange="welcomeAgree()"><span>I am 21 or older and I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
       <button class="wl-btn primary" id="wlCreate" style="display:none" onclick="welcomeGo('signup')">Create account</button>
       <button class="wl-btn" id="wlLogin" style="display:none" onclick="welcomeGo('login')">Log in</button>
       <button class="wl-skip solo" id="wlEnter" onclick="welcomeGo()">Enter the app</button>
-      <div class="wl-fine">Betting involves risk. Past results do not guarantee future returns. 21+ where legal.</div>
+      <div class="wl-fine">Line Reaper is an information tool, not a sportsbook, and nothing here is betting advice. Betting involves risk and past results, including the record above, are not typical and do not guarantee future returns. 21+ where legal. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a> · <a href="/refunds" target="_blank" rel="noopener">Refunds</a> · <a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a>. Gambling problem? Call or text 1-800-GAMBLER.</div>
     </div>
   </div>
 </div>
@@ -1152,6 +1167,11 @@ body.no-help .clv-info { display:none; }
   <div class="section-head">CLV by Bet</div>
   <div id="clvList"><div class="empty-wrap"><div class="empty-big">NO BETS</div><div class="empty-sub">Log bets with closing odds to see CLV</div></div></div>
 </div>
+
+<footer class="lr-foot">
+  <nav aria-label="Legal"><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
+  <div>Line Reaper is an information and analytics tool, not a sportsbook, exchange or adviser. It does not take bets or hold funds, and nothing here is financial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div>
+</footer>
 
 <script>
 // ─── BOOK MAP ────────────────────────────────────────────────────────────────
@@ -2186,6 +2206,8 @@ async function acctInit() {
     const s = await fetch(`${BACKEND_URL}/api/status`).then(r => r.json());
     acct.paywall = !!s.accounts?.paywall;
     acct.billing = !!s.accounts?.billing;
+    acct.paused = (s.dataLicences?.paused || []).map(p => (typeof p === 'string' ? p : p.key));
+    if (acct.paused.includes('prizepicks') && acct.paused.includes('underdog')) updateBackendStatus(backendOnline);
   } catch {}
   if (acct.token) {
     const r = await fetch(`${BACKEND_URL}/api/auth/me`).catch(() => null);
@@ -2212,6 +2234,8 @@ async function acctRefresh() {
 function acctSetToken(t) { acct.token = t; lsSet('lr_token', t); if (!t) acct.user = null; }
 
 function acctRender() {
+  const fd = document.getElementById('footDelete');
+  if (fd) fd.style.display = acct.user ? '' : 'none';
   const bar = document.getElementById('acctBar');
   if (!bar) return;
   if (!acct.paywall && !acct.user) { bar.style.display = 'none'; return; }
@@ -2228,17 +2252,30 @@ const escAttr = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '
 
 function acctOpen(mode, pitch) {
   acct.mode = mode;
-  const signup = mode === 'signup';
-  document.getElementById('acctTitle').textContent = signup ? 'CREATE ACCOUNT' : 'LOG IN';
-  document.getElementById('acctGo').textContent = signup ? 'CREATE ACCOUNT' : 'LOG IN';
+  const signup = mode === 'signup', del = mode === 'delete';
+  document.getElementById('acctTitle').textContent = signup ? 'CREATE ACCOUNT' : del ? 'DELETE ACCOUNT' : 'LOG IN';
+  const go = document.getElementById('acctGo');
+  go.textContent = signup ? 'CREATE ACCOUNT' : del ? 'DELETE MY ACCOUNT' : 'LOG IN';
+  go.classList.toggle('acct-del', del);
+  const email = document.getElementById('acctEmail');
+  email.style.display = del ? 'none' : '';
+  email.required = !del;
   document.getElementById('acctPass').autocomplete = signup ? 'new-password' : 'current-password';
-  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Pro shows the side and EV on every +EV esports pick, live alerts, and correlated slip pricing.' : '');
-  document.getElementById('acctSwap').innerHTML = signup
+  document.getElementById('acctPass').placeholder = del ? 'Your password, to confirm' : 'Password (8+ characters)';
+  document.getElementById('acctPitch').textContent = pitch || (signup ? 'Pro shows the side and EV on every +EV esports pick, live alerts, and correlated slip pricing.'
+    : del ? `This permanently deletes ${acct.user?.email || 'your account'} and its settings. A paid plan has to be cancelled in Billing first. This cannot be undone.` : '');
+  document.getElementById('acctConsent').style.display = signup ? '' : 'none';
+  // ticked on the welcome screen this session: carry it over
+  document.getElementById('acctAge').checked = document.getElementById('acctTerms').checked = signup && !!document.getElementById('wlAgree')?.checked;
+  document.getElementById('acctLegal').innerHTML = signup
+    ? (acct.billing ? 'Pro is a subscription that renews automatically until you cancel. Cancel anytime in Billing. ' : '') + 'Betting involves risk. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a>'
+    : del ? '' : 'By logging in you agree to the current <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.';
+  document.getElementById('acctSwap').innerHTML = del ? '' : signup
     ? `Have an account? <a href="#" onclick="acctOpen('login');return false" style="color:#a78bfa">Log in</a>`
     : `New here? <a href="#" onclick="acctOpen('signup');return false" style="color:#a78bfa">Create an account</a>`;
   document.getElementById('acctErr').textContent = '';
   document.getElementById('acctModal').classList.add('open');
-  document.getElementById('acctEmail').focus();
+  document.getElementById(del ? 'acctPass' : 'acctEmail').focus();
 }
 function acctClose() { document.getElementById('acctModal').classList.remove('open'); }
 
@@ -2246,11 +2283,17 @@ async function acctSubmit(e) {
   e.preventDefault();
   const err = document.getElementById('acctErr');
   err.textContent = '';
-  const body = JSON.stringify({ email: document.getElementById('acctEmail').value, password: document.getElementById('acctPass').value });
+  const signup = acct.mode === 'signup';
+  if (acct.mode === 'delete') return acctDelete();
+  if (signup && !document.getElementById('acctAge').checked) { err.textContent = 'Confirm you are 21 or older'; return; }
+  if (signup && !document.getElementById('acctTerms').checked) { err.textContent = 'Agree to the Terms of Service and Privacy Policy to continue'; return; }
+  const body = JSON.stringify({ email: document.getElementById('acctEmail').value, password: document.getElementById('acctPass').value,
+    ...(signup ? { acceptTerms: true, confirmAge: true, termsVersion: TERMS_VERSION } : {}) });
   try {
-    const r = await fetch(`${BACKEND_URL}/api/auth/${acct.mode === 'signup' ? 'signup' : 'login'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    const r = await fetch(`${BACKEND_URL}/api/auth/${signup ? 'signup' : 'login'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { err.textContent = d.error || `Failed (${r.status})`; return; }
+    if (signup) lsSet('lr_terms', TERMS_VERSION);
     acctSetToken(d.token);
     acct.user = d.user;
     document.getElementById('acctPass').value = '';
@@ -2275,6 +2318,16 @@ async function acctPortal() {
   if (d?.url) location.href = d.url; else showToast(d?.error || 'Billing portal failed', 'danger');
 }
 function acctLogout() { acctSetToken(null); acctRender(); acctChanged(); }
+async function acctDelete() {
+  const err = document.getElementById('acctErr');
+  const r = await fetch(`${BACKEND_URL}/api/auth/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: document.getElementById('acctPass').value }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({}));
+  if (!r?.ok) { err.textContent = d?.error || 'Could not reach the server'; return; }
+  document.getElementById('acctPass').value = '';
+  acctClose();
+  acctLogout();
+  showToast('Your account has been deleted');
+}
 
 // what to do when someone locks into or out of Pro: reload what Pro changes
 function acctChanged() {
@@ -2450,6 +2503,7 @@ function welcomeInit() {
   if (!w) return;
   w.classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.getElementById('wlAgree').checked = termsAccepted();
   fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => {
     if (s.accounts?.authSecretSet) {
       document.getElementById('wlCreate').style.display = 'block';
@@ -2461,7 +2515,23 @@ function welcomeInit() {
   }).catch(() => {});
 }
 function ssGet(k) { try { return sessionStorage.getItem(k); } catch { return null; } }
+// Entering the app or making an account needs the 21+ / terms box ticked.
+// Logging in doesn't: an account already agreed when it signed up. The
+// version ticked is remembered, so a returning visitor sees it ticked.
+const TERMS_VERSION = '__TERMS_VERSION__';
+const termsAccepted = () => lsGet('lr_terms') === TERMS_VERSION;
+function welcomeAgree() {
+  const ok = document.getElementById('wlAgree').checked;
+  document.getElementById('wlAgreeRow').classList.toggle('need', false);
+  if (ok) lsSet('lr_terms', TERMS_VERSION);
+}
 function welcomeGo(mode) {
+  if (mode !== 'login' && !document.getElementById('wlAgree').checked) {
+    const row = document.getElementById('wlAgreeRow');
+    row.classList.add('need');
+    row.querySelector('input').focus();
+    return;
+  }
   try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
   document.getElementById('welcome').classList.remove('open');
   document.body.style.overflow = '';
@@ -2495,6 +2565,8 @@ function updateBackendStatus(online, pp = null, ud = null) {
   const el = document.getElementById('backendStatus');
   if (!el) return;
   const k = n => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
+  // DFS feeds switched off for the paid product: say nothing about them
+  if (acct.paused?.includes('prizepicks') && acct.paused?.includes('underdog')) { el.textContent = ''; return; }
   if (online && pp != null) {
     el.innerHTML = `PP <span style="color:${pp === 0 ? 'var(--red)' : 'var(--green)'}">${pp === 0 ? '✗ 0' : k(pp)}</span> · UD <span style="color:${ud > 0 ? 'var(--green)' : 'var(--red)'}">${ud > 0 ? k(ud) : '✗ 0'}</span>`;
     el.style.color = 'var(--muted2)';
@@ -5875,10 +5947,15 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
     <form onsubmit="acctSubmit(event)">
       <input id="acctEmail" type="email" placeholder="Email" autocomplete="email" required>
       <input id="acctPass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
+      <div id="acctConsent" style="display:none">
+        <label class="acct-check"><input type="checkbox" id="acctAge"><span>I am 21 or older.</span></label>
+        <label class="acct-check"><input type="checkbox" id="acctTerms"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>, <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="/refunds" target="_blank" rel="noopener">Refund Policy</a>.</span></label>
+      </div>
       <div id="acctErr" style="color:var(--red);font-size:12px;margin-top:8px;min-height:14px"></div>
       <button class="acct-btn pro" type="submit" id="acctGo" style="width:100%;padding:10px;margin-top:6px;font-size:12px">LOG IN</button>
     </form>
     <div style="font-size:12px;color:#94a3b8;margin-top:12px;text-align:center" id="acctSwap"></div>
+    <div class="acct-legal" id="acctLegal"></div>
   </div>
 </div>
 </body>

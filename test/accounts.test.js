@@ -231,3 +231,49 @@ test('a paying subscription keeps Pro for 3 days past its period end (late renew
   assert.ok(!A.isPro({ planStatus: 'active', currentPeriodEnd: ago(4) }, now));
   assert.ok(!A.isPro({ planStatus: 'canceled', currentPeriodEnd: ago(1) }, now), 'cancelled gets no grace');
 });
+
+test('checkout shows the auto-renewal terms above the pay button when the site address is known', async () => {
+  const store = A.createMemoryUserStore();
+  const auth = A.createAuth({ store, secret: SECRET });
+  const { user } = await auth.signup('r@b.co', 'longenough');
+  const http = fakeStripe();
+  const billing = createBilling({ http, secretKey: 'sk', priceId: 'p', store });
+  await billing.checkout(await store.get(user.id), { successUrl: 's', cancelUrl: 'c', legalUrl: 'https://lr.example/' });
+  const msg = http.calls.find(c => c.url.endsWith('/checkout/sessions')).body.get('custom_text[submit][message]');
+  assert.match(msg, /renews automatically/);
+  assert.match(msg, /https:\/\/lr\.example\/terms\b/);
+  assert.match(msg, /https:\/\/lr\.example\/refunds\b/);
+  assert.ok(msg.length <= 1200, 'Stripe caps it at 1200 characters');
+  await billing.checkout(await store.get(user.id), { successUrl: 's', cancelUrl: 'c' });
+  assert.equal(http.calls.filter(c => c.url.endsWith('/checkout/sessions'))[1].body.get('custom_text[submit][message]'), null);
+});
+
+test('a cancel in the portal is remembered until the period ends', async () => {
+  const store = A.createMemoryUserStore();
+  const auth = A.createAuth({ store, secret: SECRET });
+  const { user } = await auth.signup('c@b.co', 'longenough');
+  Object.assign(await store.get(user.id), { stripeCustomerId: 'cus_c' });
+  const billing = createBilling({ http: fakeStripe(), secretKey: 'sk', priceId: 'p', store, log: { warn() {} } });
+  const end = Math.floor(Date.now() / 1000) + 9 * 86400;
+  await billing.handleEvent({ type: 'customer.subscription.updated', data: { object: { id: 'sub_c', customer: 'cus_c', status: 'active', cancel_at_period_end: true, current_period_end: end } } });
+  assert.equal((await store.get(user.id)).cancelAtPeriodEnd, true);
+  assert.ok(A.isPro(await store.get(user.id)), 'still Pro until the end');
+  await billing.handleEvent({ type: 'customer.subscription.updated', data: { object: { id: 'sub_c', customer: 'cus_c', status: 'active', cancel_at_period_end: false, current_period_end: end } } });
+  assert.equal((await store.get(user.id)).cancelAtPeriodEnd, false, 'resumed');
+});
+
+test('with a terms version, sign-up needs both ticks and stores the consent; delete removes the account', async () => {
+  const store = A.createMemoryUserStore();
+  const auth = A.createAuth({ store, secret: SECRET, termsVersion: '2026-10-12', minAge: 21 });
+  await assert.rejects(auth.signup('t@b.co', 'longenough'), e => e.status === 400 && /21 or older/.test(e.message));
+  await assert.rejects(auth.signup('t@b.co', 'longenough', { age: true }), e => e.status === 400 && /Terms/.test(e.message));
+  const { user } = await auth.signup('t@b.co', 'longenough', { age: true, terms: true, ip: '1.2.3.4' });
+  const saved = await store.get(user.id);
+  assert.deepEqual({ ...saved.consent, acceptedAt: !!saved.consent.acceptedAt }, { termsVersion: '2026-10-12', acceptedAt: true, ageConfirmed: 21, ip: '1.2.3.4' });
+  assert.ok(!('consent' in user), 'not sent to the client');
+  await assert.rejects(auth.deleteAccount(saved, 'nope-nope'), e => e.status === 401);
+  saved.comp = true; saved.planStatus = 'active';
+  assert.deepEqual(await auth.deleteAccount(saved, 'longenough'), { deleted: true }, 'a comped account can go any time');
+  assert.equal(await store.get(user.id), null);
+  assert.equal(await store.byEmail('t@b.co'), null);
+});
