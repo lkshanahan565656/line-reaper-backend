@@ -35,6 +35,8 @@ const DEFAULTS = {
   lineMinBooks: 3,            // a consensus price needs a few books behind it
   edgeMaxUnits: 1,            // esports edges and exchange value until proven
   provenMaxUnits: 2,
+  entryMinEv: 0.03,           // an Underdog entry: at least 3% EV on the whole entry
+  entryMaxLegs: 3,            // more legs, more variance, and the greedy pick gets worse
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
   limit: 300,
@@ -306,6 +308,48 @@ function arbRows(arbs, esportsArbs) {
   return rows;
 }
 
+// The best Underdog entry from today's esports prop plays. A pick'em leg is
+// never bet alone: the bet is the entry, and its EV depends on the payout table
+// and on legs from one series moving together (slip.js prices both). Only
+// legs at Underdog's standard price go in, since a boosted or discounted leg
+// changes the payout the standard tables assume. ¼ Kelly on the entry's own
+// payout distribution, 1u = 1% of bankroll, capped like an unproven edge.
+const UD_TABLES = (() => {
+  const { PAYOUTS } = require('./slip');
+  return { underdog_standard: PAYOUTS.underdog_standard, underdog_flex: PAYOUTS.underdog_flex };
+})();
+function entryRows(picks, propRowIds, o, now) {
+  const { bestSlips } = require('./slip');
+  const pool = [];
+  for (const p of picks) {
+    if (!propRowIds.has(`prop:${p.sport}|${p.player}|${p.market}`) || !p.pricing || p.bestBook !== 'UD') continue;
+    if (p.udMultiplier != null && Math.abs(p.udMultiplier - 1) > 1e-6) continue;
+    pool.push({
+      player: p.player, team: p.team, gameId: p.gameId, sport: p.sport, market: p.displayMarket || p.market,
+      side: p.side, line: p.pricing.line, prob: p.prob / 100, ev: p.bestEv, startTime: p.startTime,
+      meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios, shift: p.pricing.shift || 0,
+    });
+  }
+  if (pool.length < 2) return [];
+  const slips = bestSlips(pool.slice(0, 30), { maxLegs: o.entryMaxLegs, payouts: UD_TABLES }).filter(sl => sl.ev / 100 >= o.entryMinEv);
+  if (!slips.length) return [];
+  const best = slips[0];
+  const legs = best.picks;
+  const starts = legs.map(l => ms(l.startTime)).filter(x => x != null && x > now);
+  const units = Math.min(o.edgeMaxUnits, Math.max(0.25, quarter(o.kellyFraction * best.kelly * o.bankrollUnits)));
+  const table = best.table === 'underdog_flex' ? 'Flex' : 'Standard';
+  return [{
+    id: `entry:${legs.map(l => `${l.player}|${l.market}`).sort().join('+')}`, kind: 'esportsProp', label: `Underdog ${legs.length}-pick ${table}`,
+    title: legs.map(l => l.player).join(' + '),
+    bet: legs.map(l => `${l.player} ${l.side === 'OVER' ? 'More' : 'Less'} ${l.line} ${l.market}`).join(' · '),
+    venue: 'Underdog', price: null, american: null, maxPrice: null,
+    units, ev: r4(best.ev / 100), verdict: 'early',
+    why: [`all ${legs.length} hit ${(best.probAll * 100).toFixed(1)}% of the time${best.correlated ? ', counting legs from the same series moving together' : ''}`,
+      `${table} payout table, each leg on its own row below`],
+    url: null, startsAt: starts.length ? new Date(Math.min(...starts)).toISOString() : null, at: null, warning: null,
+  }];
+}
+
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
 function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], value = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
@@ -318,7 +362,8 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
   const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now)];
-  const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
+  const propIds = new Set(parts[2].rows.map(r => r.id));
+  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};

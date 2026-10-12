@@ -107,6 +107,28 @@ test('esports props: 1u, need 2% EV and a future start, avoid types drop', () =>
   assert.equal(bestPlays({ picks, plays }, { now: NOW }).rows.length, 0);
 });
 
+test('esports props: the best Underdog entry from the prop plays, standard-priced legs only, ¼ Kelly capped at 1u', () => {
+  const leg = (player, team, o = {}) => ({
+    sport: 'CS2', player, team, market: 'Kills on Maps 1+2', udLine: 30.5, ppLine: 30.5, side: 'OVER', prob: 64, modelPred: 33.5,
+    bestEv: 8, bestBook: 'UD', udMultiplier: 1, startTime: iso(3600e3), gameId: `g${team}`,
+    pricing: { line: 30.5, side: 'OVER', meanPerMap: null, k: null, stat: 'kills', scenarios: null, shift: 0 }, ...o,
+  });
+  const picks = [leg('a', 'A'), leg('b', 'B'), leg('c', 'C', { prob: 60, bestEv: 4 }), leg('boost', 'D', { udMultiplier: 1.2, bestEv: 20, prob: 70 }), leg('thin', 'E', { bestEv: 1 })];
+  const out = bestPlays({ picks }, { now: NOW });
+  const entry = out.rows.find(r => r.id.startsWith('entry:'));
+  assert.ok(entry, 'an entry row is built');
+  assert.equal(entry.kind, 'esportsProp');
+  assert.equal(entry.venue, 'Underdog');
+  assert.doesNotMatch(entry.title, /boost|thin/, 'boosted legs and legs that are not plays stay out');
+  assert.ok(entry.ev >= DEFAULTS.entryMinEv);
+  assert.ok(entry.units > 0 && entry.units <= DEFAULTS.edgeMaxUnits);
+  // two independent 64% legs on a 3x payout: 0.64² × 3 − 1
+  const two = bestPlays({ picks: [leg('a', 'A'), leg('b', 'B')] }, { now: NOW }).rows.find(r => r.id.startsWith('entry:'));
+  assert.ok(Math.abs(two.ev - (0.64 * 0.64 * 3 - 1)) < 0.01, `${two.ev}`);
+  // one leg is not an entry
+  assert.equal(bestPlays({ picks: [leg('a', 'A')] }, { now: NOW }).rows.filter(r => r.id.startsWith('entry:')).length, 0);
+});
+
 test('sports props read like a bet: Kalshi-matched markets get plain names', () => {
   const { bestPlays } = require('../bestplays');
   const start = new Date(Date.now() + 3600e3).toISOString();
