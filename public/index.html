@@ -464,6 +464,14 @@ body::before {
 .esm-foot { font-size: 11px; color: #64748b; line-height: 1.6; margin-top: 18px; }
 .esm-sharp { color: #f59e0b; }
 .es-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 4px 0 10px; }
+.mybk-panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+.mybk-panel.open { display: block; }
+.mybk-head { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.mybk-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.mybk-chip { background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 999px; padding: 5px 10px; font-size: 11px; cursor: pointer; }
+.mybk-chip.on { border-color: var(--green); color: var(--green); background: rgba(52,211,153,.08); }
+.shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+.shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .es-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
 .es-field select { background: rgba(15,23,42,.8); color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 120px; }
 .es-search { flex: 1; min-width: 160px; }
@@ -978,7 +986,14 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" onclick="setShopSport('baseball_mlb',this)">MLB</button>
     <button class="sport-chip" onclick="setShopSport('americanfootball_nfl',this)">NFL</button>
     <button class="sport-chip" onclick="setShopSport('icehockey_nhl',this)">NHL</button>
+    <button class="sport-chip" onclick="setShopSport('mma_mixed_martial_arts',this)">MMA</button>
   </div>
+  <div class="shop-ctrl">
+    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sportsbook</span><select id="shopBookSel" onchange="shopSet('book',this.value)"><option value="all">All books</option></select></label>
+    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sort games by</span><select id="shopSortSel" onchange="shopSet('sort',this.value)"><option value="start">Starting soonest</option><option value="edge">Biggest edge</option><option value="gap">Biggest price gap</option><option value="books">Most books</option></select></label>
+    <button class="sport-chip" onclick="myBooksToggle('shopMyBooks')">MY BOOKS</button>
+  </div>
+  <div class="mybk-panel" id="shopMyBooks"></div>
   <div id="shopContent"><div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">Load lines first from the Lines tab</div></div></div>
 </div>
 
@@ -991,7 +1006,7 @@ body.no-help .clv-info { display:none; }
 <!-- ARB PAGE -->
 <div class="page" id="page-best">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, esports edges and props, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
+    <strong style="color:#e8e8e8">BEST PLAYS RIGHT NOW</strong> — Sharp Tail signals, esports edges and props, sportsbook lines above fair, and exchange arbs in one list, ranked by what the RESULTS tab says is working.
     <span style="color:#94a3b8;font-size:11px">Play types the record marks <b style="color:#f87171">avoid</b> are left off. <b style="color:#34d399">Proven</b> types and arbs come first, then <b style="color:#fbbf24">promising</b>, then ones too early to judge, biggest edge first. Units are the same for everyone (1u = 1% of bankroll).</span>
   </div>
   <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
@@ -1000,12 +1015,15 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" data-best="esportsEdge" onclick="bestKind('esportsEdge')">ESPORTS EDGES</button>
     <button class="sport-chip" data-best="esportsProp" onclick="bestKind('esportsProp')">ESPORTS PROPS</button>
     <button class="sport-chip" data-best="sportsProp" onclick="bestKind('sportsProp')">SPORTS PROPS</button>
+    <button class="sport-chip" data-best="bookLine" onclick="bestKind('bookLine')">SPORTSBOOK LINES</button>
     <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
   </div>
   <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sort by</span><select id="bestSortSel" onchange="bestSet('sort',this.value)"><option value="rank">Best ranked</option><option value="edge">Biggest edge</option><option value="start">Starting soonest</option><option value="book">Sportsbook</option></select></label>
+    <button class="sport-chip" onclick="myBooksToggle('bestMyBooks')">MY BOOKS</button>
   </div>
+  <div class="mybk-panel" id="bestMyBooks"></div>
   <div id="bestContent"></div>
 </div>
 
@@ -2301,139 +2319,160 @@ function calcEV(myOdds, trueProb) {
   return ((trueProb / myImp) - 1) * 100;
 }
 
+// The Line Shop's sorting: which books to show, and which games first.
+const shopUi = { book: 'all', sort: 'start' };
+try { Object.assign(shopUi, JSON.parse(localStorage.getItem('lr_shop') || '{}')); } catch {}
+function shopSet(k, v) {
+  shopUi[k] = v;
+  try { localStorage.setItem('lr_shop', JSON.stringify(shopUi)); } catch {}
+  renderShop(allGames, document.getElementById('shopSearch')?.value || '');
+}
+
 function renderShop(games, query='') {
   const el = document.getElementById('shopContent');
   if (!games.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">Load lines from the Lines tab first</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">Sportsbook lines load from the Lines tab once the server has an Odds API key</div></div>`;
     return;
   }
 
   let filtered = games;
-
-  // Sport filter
-  if (shopSport !== 'all') {
-    filtered = filtered.filter(g => g.sport_key === shopSport);
-  }
-
-  // Search filter
+  if (shopSport !== 'all') filtered = filtered.filter(g => g.sport_key === shopSport);
   if (query.trim().length > 1) {
     const q = query.toLowerCase();
-    filtered = filtered.filter(g =>
-      g.home_team.toLowerCase().includes(q) ||
-      g.away_team.toLowerCase().includes(q)
-    );
+    filtered = filtered.filter(g => g.home_team.toLowerCase().includes(q) || g.away_team.toLowerCase().includes(q));
   }
 
-  if (!filtered.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO MATCH</div><div class="empty-sub">No games found for "${query}"</div></div>`;
+  // the sportsbook menu lists every book in view, with how many games each prices
+  const nBook = {};
+  for (const g of filtered) for (const k of Object.keys(getBookOdds(g))) { const n = evBookName(k); nBook[n] = (nBook[n] || 0) + 1; }
+  const sel = document.getElementById('shopBookSel');
+  if (sel) {
+    const names = Object.keys(nBook).sort((a, b) => nBook[b] - nBook[a] || a.localeCompare(b));
+    if (shopUi.book !== 'all' && shopUi.book !== 'mine' && !nBook[shopUi.book]) names.push(shopUi.book);
+    sel.innerHTML = `<option value="all">All books</option>` + (myBooks.length ? `<option value="mine">My books (${myBooks.length})</option>` : '')
+      + names.map(n => `<option value="${escAttr(n)}">${escAttr(n)} (${nBook[n] || 0})</option>`).join('');
+    sel.value = shopUi.book === 'mine' && !myBooks.length ? 'all' : shopUi.book;
+  }
+  const sortSel = document.getElementById('shopSortSel');
+  if (sortSel) sortSel.value = shopUi.sort;
+  const showBook = name => shopUi.book === 'all' || (shopUi.book === 'mine' ? (!myBooks.length || isMyBook(name)) : name === shopUi.book);
+
+  // one entry per game: the books shown, the fair price and the best edge among them
+  const cards = [];
+  for (const g of filtered) {
+    const books = getBookOdds(g);
+    // fair price from the sharpest book that prices both sides, whatever is shown
+    const refBook = ['pinnacle','circa','novig','lowvig','betonlineag','draftkings','fanduel'].find(b => books[b]?.home && books[b]?.away);
+    let trueHome = null, trueAway = null;
+    if (refBook) {
+      const ih = oddsToImplied(books[refBook].home), ia = oddsToImplied(books[refBook].away);
+      trueHome = impliedToNo_vig(ih, ia); trueAway = impliedToNo_vig(ia, ih);
+    }
+    const entries = Object.entries(books).filter(([k, v]) => v.home !== null && v.away !== null && showBook(evBookName(k))).map(([k, v]) => ({
+      key: k, name: evBookName(k), ...v,
+      evHome: trueHome ? calcEV(v.home, trueHome) : null, evAway: trueAway ? calcEV(v.away, trueAway) : null,
+    }));
+    if (!entries.length) continue;
+    const bestEv = e => Math.max(e.evHome ?? -Infinity, e.evAway ?? -Infinity);
+    // the book you'd bet at goes first: best edge on either side, then your books
+    entries.sort((a, b) => bestEv(b) - bestEv(a) || isMyBook(b.name) - isMyBook(a.name) || a.name.localeCompare(b.name));
+    const hi = xs => Math.max(...xs), lo = xs => Math.min(...xs);
+    const bestHome = hi(entries.map(e => e.home)), bestAway = hi(entries.map(e => e.away));
+    const worstHome = lo(entries.map(e => e.home)), worstAway = lo(entries.map(e => e.away));
+    // price gap in win-chance points: what shopping saves you over the worst book
+    const gapHome = (oddsToImplied(worstHome) - oddsToImplied(bestHome)) * 100;
+    const gapAway = (oddsToImplied(worstAway) - oddsToImplied(bestAway)) * 100;
+    cards.push({ g, entries, trueHome, trueAway, bestHome, bestAway, worstHome, worstAway, gapHome, gapAway,
+      edge: Math.max(...entries.map(bestEv)), gap: Math.max(gapHome, gapAway), start: Date.parse(g.commence_time) || Infinity });
+  }
+
+  if (!cards.length) {
+    const why = query.trim().length > 1 ? `No games found for "${escAttr(query)}"` : shopUi.book === 'mine' ? 'None of your books price these games yet. Add more under MY BOOKS.' : 'No games for this book right now.';
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO MATCH</div><div class="empty-sub">${why}</div></div>`;
     return;
   }
+  const by = { start: (a, b) => a.start - b.start, edge: (a, b) => b.edge - a.edge, gap: (a, b) => b.gap - a.gap, books: (a, b) => b.entries.length - a.entries.length || a.start - b.start };
+  cards.sort(by[shopUi.sort] || by.start);
 
-  const BOOK_LABELS = {
-    draftkings: 'DraftKings', fanduel: 'FanDuel', betmgm: 'BetMGM',
-    caesars: 'Caesars', williamhill_us: 'William Hill', pointsbetus: 'PointsBet',
-    barstool: 'Barstool', betonlineag: 'BetOnline.ag', lowvig: 'LowVig.ag',
-    bovada: 'Bovada', betrivers: 'BetRivers', betus: 'BetUS',
-    mybookieag: 'MyBookie.ag', betfair: 'Betfair', unibet_us: 'Unibet',
-    foxbet: 'FoxBet', superbook: 'SuperBook', wynnbet: 'WynnBet',
-    betfred: 'Betfred', twinspires: 'TwinSpires', si_sportsbook: 'SI Sportsbook',
-    hard_rock_bet: 'Hard Rock Bet', espnbet: 'ESPN Bet', bet365: 'Bet365',
-    pinnacle: 'Pinnacle', bookmaker: 'BookMaker', heritage: 'Heritage Sports',
-    jazzsports: 'Jazz Sports', betanysports: 'BetAnySports', everygame: 'Everygame',
-    intertops: 'Intertops', sportsbetting: 'SportsBetting.ag', gtbets: 'GTBets',
-    betwhale: 'BetWhale', circa: 'Circa Sports', golden_nugget: 'Golden Nugget',
-    ballybet: 'Bally Bet', betparx: 'BetParx', fliff: 'Fliff', prophet: 'Prophet',
-    prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper'
-  };
-
-  el.innerHTML = filtered.map((g, gi) => {
-    const books = getBookOdds(g);
-    const entries = Object.entries(books).filter(([,v]) => v.home !== null && v.away !== null);
-    if (!entries.length) return '';
-
+  const evTag = ev => ev !== null ? `<span class="shop-ev ${ev>0?'pos':'neg'}">${ev>0?'+':''}${ev.toFixed(1)}%</span>` : '';
+  el.innerHTML = cards.map((c, gi) => {
+    const { g, entries } = c;
     const sport = SPORT_LABEL[g.sport_key] || g.sport_key?.toUpperCase();
-    const t = new Date(g.commence_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-    // Find best/worst for home and away
-    const homeOdds = entries.map(([k,v]) => ({book:k, odds:v.home}));
-    const awayOdds = entries.map(([k,v]) => ({book:k, odds:v.away}));
-    const bestHome = Math.max(...homeOdds.map(x=>x.odds));
-    const worstHome = Math.min(...homeOdds.map(x=>x.odds));
-    const bestAway = Math.max(...awayOdds.map(x=>x.odds));
-    const worstAway = Math.min(...awayOdds.map(x=>x.odds));
-
-    // No-vig true prob from the sharpest book that prices both sides; the
-    // retail books (DK/FD) only as a last resort
-    const refBook = ['pinnacle','circa','novig','lowvig','betonlineag','draftkings','fanduel'].find(b => books[b]?.home && books[b]?.away);
-    const sharpHome = refBook ? books[refBook].home : null;
-    const sharpAway = refBook ? books[refBook].away : null;
-    let trueHome = null, trueAway = null;
-    if (sharpHome && sharpAway) {
-      const ih = oddsToImplied(sharpHome);
-      const ia = oddsToImplied(sharpAway);
-      trueHome = impliedToNo_vig(ih, ia);
-      trueAway = impliedToNo_vig(ia, ih);
-    }
-
-    // Line spread (best - worst = shopping value)
-    const homeSpread = bestHome - worstHome;
-    const awaySpread = bestAway - worstAway;
-
-    const rows = entries.map(([k,v]) => {
-      const label = BOOK_LABELS[k] || k;
-      const isBH = v.home === bestHome;
-      const isWH = v.home === worstHome && bestHome !== worstHome;
-      const isBA = v.away === bestAway;
-      const isWA = v.away === worstAway && bestAway !== worstAway;
-
-      const evHome = trueHome ? calcEV(v.home, trueHome) : null;
-      const evAway = trueAway ? calcEV(v.away, trueAway) : null;
-
-      const evHomeStr = evHome !== null ? `<span class="shop-ev ${evHome>0?'pos':'neg'}">${evHome>0?'+':''}${evHome.toFixed(1)}%</span>` : '';
-      const evAwayStr = evAway !== null ? `<span class="shop-ev ${evAway>0?'pos':'neg'}">${evAway>0?'+':''}${evAway.toFixed(1)}%</span>` : '';
-
+    const t = new Date(g.commence_time).toLocaleString('en-US',{weekday:'short',hour:'numeric',minute:'2-digit'});
+    const rows = entries.map(e => {
+      const isBH = e.home === c.bestHome, isWH = e.home === c.worstHome && c.bestHome !== c.worstHome;
+      const isBA = e.away === c.bestAway, isWA = e.away === c.worstAway && c.bestAway !== c.worstAway;
       return `<tr>
-        <td class="shop-book-name">${label}</td>
-        <td class="${isBH?'shop-best':isWH?'shop-worst':''}">${fmt(v.home)}${evHomeStr}</td>
-        <td class="${isBA?'shop-best':isWA?'shop-worst':''}">${fmt(v.away)}${evAwayStr}</td>
-        <td style="color:var(--muted2);font-size:10px">${v.homePoint !== null ? `${v.homePoint>0?'+':''}${v.homePoint}` : '—'}</td>
+        <td class="shop-book-name">${escAttr(e.name)}${myBooks.length && isMyBook(e.name) ? '<span class="shop-mine">MINE</span>' : ''}</td>
+        <td class="${isBH?'shop-best':isWH?'shop-worst':''}">${fmt(e.home)}${evTag(e.evHome)}</td>
+        <td class="${isBA?'shop-best':isWA?'shop-worst':''}">${fmt(e.away)}${evTag(e.evAway)}</td>
+        <td style="color:var(--muted2);font-size:10px">${e.homePoint !== null ? `${e.homePoint>0?'+':''}${e.homePoint}` : '—'}</td>
       </tr>`;
     }).join('');
-
-    const trueHomeStr = trueHome ? `${(trueHome*100).toFixed(1)}%` : '—';
-    const trueAwayStr = trueAway ? `${(trueAway*100).toFixed(1)}%` : '—';
-
-    return `<div class="shop-card" style="animation-delay:${gi*0.04}s">
+    const pctStr = p => p ? `${(p*100).toFixed(1)}%` : '—';
+    const gapCol = x => x >= 2 ? 'var(--accent)' : 'var(--muted2)';
+    return `<div class="shop-card" style="animation-delay:${Math.min(gi, 12)*0.04}s">
       <div class="shop-header">
         <div>
-          <div class="shop-game">${g.away_team} @ ${g.home_team}</div>
-          <div class="shop-sport">${sport} · ${t}</div>
+          <div class="shop-game">${escAttr(g.away_team)} @ ${escAttr(g.home_team)}</div>
+          <div class="shop-sport">${sport} · ${t} · ${entries.length} book${entries.length === 1 ? '' : 's'}</div>
         </div>
-        <div style="text-align:right;font-family:'Syne Mono',monospace;font-size:10px;color:var(--muted2)">
-          <div>Shopping value</div>
-          <div style="color:${homeSpread>10?'var(--accent)':'var(--muted2)'}">H: ${homeSpread>0?'+':''}${homeSpread} pts</div>
-          <div style="color:${awaySpread>10?'var(--accent)':'var(--muted2)'}">A: ${awaySpread>0?'+':''}${awaySpread} pts</div>
+        <div style="text-align:right;font-family:'Syne Mono',monospace;font-size:10px;color:var(--muted2)" title="How much better the best price is than the worst, in win-chance points">
+          <div>Price gap</div>
+          <div style="color:${gapCol(c.gapHome)}">H: ${c.gapHome.toFixed(1)} pts</div>
+          <div style="color:${gapCol(c.gapAway)}">A: ${c.gapAway.toFixed(1)} pts</div>
         </div>
       </div>
       <table class="shop-table">
         <thead>
           <tr>
             <th>Book</th>
-            <th>${g.home_team.split(' ').pop()} (H)</th>
-            <th>${g.away_team.split(' ').pop()} (A)</th>
+            <th>${escAttr(g.home_team.split(' ').pop())} (H)</th>
+            <th>${escAttr(g.away_team.split(' ').pop())} (A)</th>
             <th>Spread</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="shop-summary">
-        <span>No-vig HOME: <strong>${trueHomeStr}</strong></span>
-        <span>No-vig AWAY: <strong>${trueAwayStr}</strong></span>
-        <span>Best HOME: <strong>${fmt(bestHome)}</strong></span>
-        <span>Best AWAY: <strong>${fmt(bestAway)}</strong></span>
+        <span>No-vig HOME: <strong>${pctStr(c.trueHome)}</strong></span>
+        <span>No-vig AWAY: <strong>${pctStr(c.trueAway)}</strong></span>
+        <span>Best HOME: <strong>${fmt(c.bestHome)}</strong></span>
+        <span>Best AWAY: <strong>${fmt(c.bestAway)}</strong></span>
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── MY BOOKS ─────────────────────────────────────────────────────────────────
+// The sportsbooks and apps a user can actually bet at. The Line Shop and Best
+// Plays can show just these. Saved in this browser.
+const MY_BOOK_CHOICES = ['DraftKings','FanDuel','BetMGM','Caesars','BetRivers','ESPN Bet','Fanatics','Hard Rock','Bally Bet','BetPARX','Bet365',
+  'Bovada','BetOnline','LowVig','MyBookie','BetUS','Pinnacle','Novig','ProphetX','Kalshi','Polymarket','Underdog','PrizePicks','Sleeper','Fliff'];
+let myBooks = [];
+try { const x = JSON.parse(localStorage.getItem('lr_mybooks') || '[]'); if (Array.isArray(x)) myBooks = x.filter(b => typeof b === 'string'); } catch {}
+const isMyBook = name => myBooks.includes(name);
+function myBooksToggle(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) myBooksDraw(el);
+}
+function myBooksDraw(el) {
+  const seen = new Set([...MY_BOOK_CHOICES, ...myBooks]);
+  el.innerHTML = `<div class="mybk-head">Tap the books you can bet at. Pick <b>My books</b> in the Sportsbook menu to see only those.</div>
+    <div class="mybk-list">${[...seen].map(b => `<button class="mybk-chip${isMyBook(b) ? ' on' : ''}" data-book="${escAttr(b)}" onclick="myBooksFlip(this.dataset.book)">${escAttr(b)}</button>`).join('')}</div>`;
+}
+function myBooksFlip(name) {
+  myBooks = isMyBook(name) ? myBooks.filter(b => b !== name) : [...myBooks, name];
+  try { localStorage.setItem('lr_mybooks', JSON.stringify(myBooks)); } catch {}
+  // picking books switches the views to them; clearing them all goes back to every book
+  if (myBooks.length) { shopUi.book = 'mine'; bestUi.book = 'mine'; }
+  else { if (shopUi.book === 'mine') shopUi.book = 'all'; if (bestUi.book === 'mine') bestUi.book = 'all'; }
+  try { localStorage.setItem('lr_shop', JSON.stringify(shopUi)); localStorage.setItem('lr_best', JSON.stringify({ book: bestUi.book, sort: bestUi.sort })); } catch {}
+  document.querySelectorAll('.mybk-panel.open').forEach(myBooksDraw);
+  renderShop(allGames, document.getElementById('shopSearch')?.value || '');
+  if (bestUi.data) renderBest();
 }
 
 // ─── OWLS INSIGHT — PROPS + SHARP TRACKING ───────────────────────────────────
@@ -4411,7 +4450,7 @@ function renderEsports() {
 const evState = { rows: [], sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', fanatics:'Fanatics', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', polymarket:'Polymarket' };
+const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions' };
 const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
@@ -5146,12 +5185,14 @@ function renderBest() {
   const bookSel = document.getElementById('bestBookSel');
   if (bookSel) {
     const keep = bestUi.book !== 'all' && !nBook[bestUi.book] ? [bestUi.book] : [];
-    bookSel.innerHTML = `<option value="all">All books (${ofKind.length})</option>` + [...books, ...keep].map(b => `<option value="${escAttr(b)}">${escAttr(b)} (${nBook[b] || 0})</option>`).join('');
+    const nMine = ofKind.filter(r => bestBooks(r).some(isMyBook)).length;
+    bookSel.innerHTML = `<option value="all">All books (${ofKind.length})</option>` + (myBooks.length ? `<option value="mine">My books (${nMine})</option>` : '') + [...books, ...keep.filter(b => b !== 'mine')].map(b => `<option value="${escAttr(b)}">${escAttr(b)} (${nBook[b] || 0})</option>`).join('');
     bookSel.value = bestUi.book;
   }
   const sortSel = document.getElementById('bestSortSel');
   if (sortSel) sortSel.value = bestUi.sort;
-  const rows = ofKind.filter(r => bestUi.book === 'all' || bestBooks(r).includes(bestUi.book));
+  // "My books": a play counts if every venue it needs is one of yours
+  const rows = ofKind.filter(r => bestUi.book === 'all' || (bestUi.book === 'mine' ? bestBooks(r).every(isMyBook) : bestBooks(r).includes(bestUi.book)));
   const t = r => { const x = Date.parse(r.startsAt); return Number.isFinite(x) ? x : Infinity; };
   if (bestUi.sort === 'edge') rows.sort((a, b) => (b.ev ?? -1) - (a.ev ?? -1));
   else if (bestUi.sort === 'start') rows.sort((a, b) => t(a) - t(b));
@@ -5172,7 +5213,7 @@ function renderBest() {
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
       <td style="text-align:right"><button class="mb-log" onclick="mybLogBest(${i})" title="Log this bet to My Bets">LOG</button></td></tr>`; }).join('');
   const c = d.counts || {};
-  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
+  const sum = [['tail', 'Sharp Tail'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">

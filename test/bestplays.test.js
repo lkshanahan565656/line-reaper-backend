@@ -115,3 +115,35 @@ test('sports props read like a bet: Kalshi-matched markets get plain names', () 
   const bets = out.rows.filter(r => r.kind === 'sportsProp').map(r => r.bet).sort();
   assert.deepEqual(bets, ['Less than 59.5 rush + rec yards', 'Scores a touchdown']);
 });
+
+test('sportsbook lines: fresh, above fair, not started, sized by quarter Kelly and named by book', () => {
+  const line = (id, o = {}) => ({
+    group: `g${id}|h2h`, sport: 'nfl', event: 'Bills @ Jets', start: iso(3 * 3600e3), market: 'h2h', player: null, point: null,
+    side: 'Bills', book: 'draftkings', price: 120, decimal: 2.2, fairProb: 47.5, fairPrice: 111, ev: 4.5, source: 'sharp',
+    sharpBooks: ['pinnacle'], books: 6, updated: iso(-10 * 60e3), ...o,
+  });
+  const lines = [
+    line('ok'),
+    line('tot', { market: 'totals', side: 'Over', point: 44.5, book: 'fanduel', ev: 3 }),
+    line('thin', { ev: 1 }),
+    line('wild', { ev: 25 }),
+    line('stale', { updated: iso(-2 * 3600e3) }),
+    line('started', { start: iso(-60e3) }),
+    line('dfs', { dfs: true }),
+    line('prop', { player: 'Josh Allen' }),
+    line('fewbooks', { source: 'consensus', sharpBooks: [], books: 2 }),
+  ];
+  const { rows, counts } = bestPlays({ lines }, { now: NOW });
+  assert.deepEqual(rows.map(r => r.id), ['line:gok|h2h|Bills|draftkings', 'line:gtot|h2h|Over|fanduel']);
+  assert.equal(counts.bookLine, 2);
+  const [r, t] = rows;
+  assert.equal(r.venue, 'DraftKings');
+  assert.equal(r.american, 120);
+  assert.equal(r.bet, 'Bills');
+  assert.equal(r.ev, 0.045);
+  // p .475 at decimal 2.2: f = (.475 - 1/2.2) / (1 - 1/2.2) ≈ .0375 → ¼ × 3.75 = 0.75u
+  assert.equal(r.units, 0.75);
+  assert.match(r.why[0], /fair \+111 \(47.5%\) from Pinnacle, DraftKings pays \+120/);
+  assert.equal(t.bet, 'Over 44.5');
+  assert.equal(t.label, 'NFL total');
+});

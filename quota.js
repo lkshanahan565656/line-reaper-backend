@@ -86,4 +86,17 @@ function createCreditBudget({ setting = '', resetDay = 1, reserve = 0.05, now = 
 const oddsCost = (markets, regions) =>
   String(markets).split(',').filter(Boolean).length * String(regions).split(',').filter(Boolean).length;
 
-module.exports = { createCreditBudget, msUntilReset, oddsCost };
+// Which sport the sportsbook poller pulls next: the most games starting in the
+// next 12 hours, weighted by hours since its last pull (capped at 6, which a
+// never-pulled sport counts as). candidates: [{ sport, games, lastAt }]
+function pickPollSport(candidates, now = Date.now()) {
+  let best = null;
+  for (const c of candidates) {
+    if (!(c.games > 0)) continue;
+    const score = (c.lastAt ? Math.min(6, (now - c.lastAt) / 3600e3) : 6) * c.games;
+    if (!best || score > best.score) best = { sport: c.sport, score };
+  }
+  return best ? best.sport : null;
+}
+
+module.exports = { createCreditBudget, msUntilReset, oddsCost, pickPollSport };
