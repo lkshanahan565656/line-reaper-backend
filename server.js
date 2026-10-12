@@ -3690,6 +3690,7 @@ app.get('/api/results', async (req, res) => {
 // working (bestplays.js). Each source goes through its own licence and region
 // gates first. The rows are what's being sold, so free users get the counts.
 const bestplays = require('./bestplays');
+const BEST_FREE_PREVIEW = 3;
 app.get('/api/best', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
@@ -3705,7 +3706,9 @@ app.get('/api/best', async (req, res) => {
       plays,
     }, { limit: Math.min(parseInt(req.query.limit) || 50, 200) });
     const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION };
-    res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: [], locked: out.total }));
+    // free preview: everyone sees the same top plays (the alert is the same for all), Pro sees the whole list
+    const preview = out.rows.slice(0, BEST_FREE_PREVIEW);
+    res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: preview, locked: out.total - preview.length }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The encrypted snapshot the results-backup Action keeps (backup.js).
