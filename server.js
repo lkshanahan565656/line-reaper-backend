@@ -965,10 +965,15 @@ async function fetchDotaPlayerStats(playerName) {
       dotaCache.players[key] = { failed: true, lastUpdate: Date.now() };
       return null;
     }
-    const res = await axios.get(`https://api.opendota.com/api/players/${accountId}/matches`, {
-      params: { limit: 40, significant: 1 }, timeout: 20000,
-    });
-    const ms = (Array.isArray(res.data) ? res.data : []).filter(m => m && isFinite(m.kills));
+    // lobby_type 1 is tournament lobbies, where pro props are played. A pro's
+    // public ranked games run hotter and would skew every line to the over;
+    // fall back to them only when a player has too few pro games on record.
+    const get = (extra) => axios.get(`https://api.opendota.com/api/players/${accountId}/matches`, {
+      params: { limit: 40, significant: 1, ...extra }, timeout: 20000,
+    }).then(r => (Array.isArray(r.data) ? r.data : []).filter(m => m && isFinite(m.kills)));
+    let ms = await get({ lobby_type: 1 });
+    let pro = true;
+    if (ms.length < 5) { ms = await get({}); pro = false; }
     if (ms.length < 5) {
       dotaCache.players[key] = { failed: true, lastUpdate: Date.now() };
       return null;
@@ -977,7 +982,7 @@ async function fetchDotaPlayerStats(playerName) {
     const assists = ms.reduce((s, m) => s + (m.assists || 0), 0) / ms.length;
     const stats = {
       name: playerName, accountId, avgKillsPerMap: kills, avgAssistsPerMap: assists,
-      mapsPlayed: ms.length, lastUpdate: Date.now(), source: 'opendota',
+      mapsPlayed: ms.length, pro, lastUpdate: Date.now(), source: 'opendota',
     };
     dotaCache.players[key] = stats;
     console.log(`OpenDota ${playerName}: ${kills.toFixed(1)} kills/game over ${ms.length} matches`);
@@ -1016,6 +1021,18 @@ function bo3FirstObject(x) {
   if (x.data) return bo3FirstObject(x.data);
   if (x.results) return bo3FirstObject(x.results);
   return typeof x === 'object' ? x : null;
+}
+function bo3HeadshotPct(acc) {
+  const rows = Array.isArray(acc) ? acc : Array.isArray(acc?.data) ? acc.data : Array.isArray(acc?.results) ? acc.results : null;
+  if (!rows) return null;
+  let head = 0, all = 0;
+  for (const r of rows) {
+    const k = parseFloat(r?.kills_sum);
+    if (!isFinite(k)) continue;
+    all += k;
+    if (/^head$/i.test(r.hit_group || '')) head += k;
+  }
+  return all >= 50 ? head / all * 100 : null;   // too few kills to trust a rate
 }
 let bo3LoggedKeys = false;
 const bo3Health = { profiles: 0, lastError: null, predsAccepted: 0, predsRejected: 0, lastRejected: null };
@@ -1058,10 +1075,14 @@ function bo3ExtractProfile(playerName, gen, map, acc) {
   const kpr = bo3Pick(g, ['kpr', 'kills_per_round', 'avg_kills_per_round', 'killsPerRound']);
   const kills = bo3Pick(g, ['kills', 'total_kills', 'kills_count', 'kills_sum']);
   const rounds = bo3Pick(g, ['rounds', 'rounds_count', 'total_rounds', 'round_count']);
-  const mapsPlayed = bo3Pick(g, ['maps', 'maps_count', 'maps_played', 'matches_count'])
-    ?? bo3Pick(m, ['maps_count', 'count', 'total']);
+  // bo3 calls a map a "game": games_count is maps, matches_count is series.
+  // Reading matches_count as maps put donk at 48.7 kills a map.
+  const mapsPlayed = bo3Pick(g, ['games_count', 'maps', 'maps_count', 'maps_played'])
+    ?? bo3Pick(m, ['maps_count', 'count', 'total']) ?? bo3Pick(g, ['matches_count']);
   const rating = bo3Pick(g, ['rating', 'player_rating', 'hltv_rating', 'rating_avg']);
-  let hsPercent = bo3Pick(a, ['headshot_accuracy', 'hs_accuracy', 'headshots_percentage', 'hs_percent', 'headshot_percent'])
+  // accuracy_stats is one row per hit group; headshot rate is Head kills over
+  // all kills. Without it every headshot prop was priced at a flat 45%.
+  let hsPercent = bo3HeadshotPct(acc)
     ?? bo3Pick(g, ['headshots_percentage', 'hs_percent', 'headshot_percent']);
 
   const stats = { name: playerName, lastUpdate: Date.now(), source: 'bo3' };
@@ -1069,6 +1090,7 @@ function bo3ExtractProfile(playerName, gen, map, acc) {
   else if (kills && rounds) stats.kpr = kills / rounds;
   if (kills && mapsPlayed) stats.avgKillsPerMap = kills / mapsPlayed;
   if (rounds && mapsPlayed) stats.roundsPerMap = rounds / mapsPlayed;
+  if (mapsPlayed) stats.mapsPlayed = mapsPlayed;
   if (rating) stats.rating = rating;
   if (hsPercent != null) stats.hsPercent = hsPercent > 1 ? hsPercent : hsPercent * 100;
   return (stats.kpr || stats.avgKillsPerMap) ? stats : null;
@@ -1576,10 +1598,11 @@ async function generateEsportsPicks() {
           const player = await fetchDotaPlayerStats(lineObj.player);
           if (player) {
             const mk = (lineObj.market || '').toLowerCase();
-            const per = mk.includes('assist') ? player.avgAssistsPerMap : player.avgKillsPerMap;
+            // fantasy points need the book's scoring table, which we can't verify yet
+            const per = mk.includes('fantasy') ? null : mk.includes('assist') ? player.avgAssistsPerMap : player.avgKillsPerMap;
             if (per) autoPred = per * mapCount;
             sampleSize = player.mapsPlayed ?? null;
-            statLine = `${player.avgKillsPerMap.toFixed(1)} k/game · ${player.avgAssistsPerMap.toFixed(1)} a/game · ${player.mapsPlayed} matches`;
+            statLine = `${player.avgKillsPerMap.toFixed(1)} k/game · ${player.avgAssistsPerMap.toFixed(1)} a/game · ${player.mapsPlayed} ${player.pro === false ? 'public' : 'pro'} games`;
           }
         }
       } else if (sportKey) {
@@ -2931,7 +2954,7 @@ app.get('/calc.js', (req, res) => {
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.52.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.54.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3751,7 +3774,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.52.0',
+  version: '3.54.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3882,10 +3905,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.52.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.54.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.52.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.54.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -3928,7 +3951,7 @@ module.exports = {
   aggregateLPRows, refreshLoLFromLeaguepedia,
   vlrIngestSegments, vlrTable, vlrKey, fetchVLRPlayerStats, dotaCache, warmCsProfiles, warmer,
   inferMapSpan, describePlayer, udPricing, relabelMarket,
-  predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile,
+  predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile, bo3HeadshotPct,
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
