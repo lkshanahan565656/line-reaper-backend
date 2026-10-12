@@ -159,7 +159,9 @@ test('/api/best: the Kalshi edge is a best play for Pro, counts only for free', 
   assert.ok(!body.rows.some(r => /polymarket/i.test(r.venue)), 'US mode: no Polymarket International plays');
   const free = (await get('/api/best')).body;
   assert.equal(free.pro, false);
-  assert.deepEqual(free.rows, []);
+  assert.ok(free.rows.length <= 3, 'free users get a short preview of the same plays');
+  assert.equal(free.rows.length + free.locked, free.total);
+  assert.ok(free.rows.every(r => body.rows.some(p => p.id === r.id)), 'the preview is the same alert Pro sees');
 });
 
 test('/api/esports/matches: a venue without display permission is withheld', async () => {
