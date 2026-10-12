@@ -220,4 +220,4 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, maxPages = 4, now = () => Date
   };
 }
 
-module.exports = { createLoLGrader, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
+module.exports = { bo3TeamNames, createLoLGrader, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
