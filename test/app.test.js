@@ -23,7 +23,7 @@ test('page has no emoji and ships the welcome screen', () => {
   const bad = html.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => pict.test(l.replace(/[✓→▲▼●○◆▸▾◐★✕✗]/g, '')));
   assert.deepStrictEqual(bad.map(b => b[0]), []);
   assert.ok(html.includes('id="welcome"') && html.includes('by sharps'));
-  assert.ok(html.includes("lsGet('lr_welcomed')"));
+  assert.ok(html.includes("ssGet('lr_welcomed')"));
 });
 
 test('layout customizer: MORE menu, tab reorder/hide, foldable help panels', () => {
