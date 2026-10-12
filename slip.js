@@ -53,7 +53,8 @@ function legProbIn(leg, maps) {
     meanPerMap: leg.meanPerMap, k: leg.k, stat: leg.stat,
     scenarios: [{ maps, weight: 1 }],
   });
-  return r.effective;
+  // the board's calibration on the pick record (escal.js) moves every scenario alike
+  return leg.shift ? Math.max(0.01, Math.min(0.99, r.effective + leg.shift)) : r.effective;
 }
 
 // Group legs by the series they belong to. Legs with no gameId are their own
@@ -362,5 +363,5 @@ function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
 module.exports = {
   PAYOUTS, CORR, priceSlip, priceAll, bestSlips, slipHitsDistribution,
   independentHitsDistribution, kelly, evFromDistribution, groupBySeries, pairRho, adjustJoint,
-  hitsDistribution, patternDistribution, seriesLatents,
+  hitsDistribution, patternDistribution, seriesLatents, legProbIn,
 };
