@@ -10,6 +10,10 @@
 //   avoid      8+ bets, losing to the close and losing money (or a t of -2)
 //   early      everything else
 //
+// "Bets" means bets that carry the number being judged: a CLV verdict counts
+// bets with a closing price, an ROI verdict counts graded bets. A play with 20
+// records but CLV on only 3 of them has 3 bets of CLV evidence, not 20.
+//
 // CLV is the main signal (closing price / entry − 1): it settles at the start
 // of the event and needs a few dozen bets where ROI needs hundreds. ROI is
 // profit / staked in units. Both are fractions (0.05 = 5%).
@@ -27,10 +31,18 @@ function tStat(a) {
 }
 
 function verdictOf(s) {
-  const lead = s.avgClv ?? s.roi;
-  if (s.n >= 20 && ((s.clvT ?? -Infinity) >= 2 && s.avgClv > 0 || (s.roiT ?? -Infinity) >= 2 && s.roi > 0)) return 'proven';
-  if (s.n >= 8 && ((s.clvT ?? 0) <= -2 || (lead != null && lead <= 0 && (s.roi == null || s.roi < 0)))) return 'avoid';
-  if (s.n >= 8 && lead != null && lead > 0) return 'promising';
+  const clvN = s.clvN ?? s.n, roiN = s.graded ?? s.n;
+  // CLV leads once it has a sample; until then ROI does, when there is one
+  const useClv = s.avgClv != null && (clvN >= 8 || s.roi == null);
+  const lead = useClv ? s.avgClv : s.roi;
+  const leadN = useClv ? clvN : roiN;
+  const clvProven = clvN >= 20 && (s.clvT ?? -Infinity) >= 2 && s.avgClv > 0;
+  const roiProven = roiN >= 20 && (s.roiT ?? -Infinity) >= 2 && s.roi > 0;
+  if (clvProven || roiProven) return 'proven';
+  const clvBad = clvN >= 8 && (s.clvT ?? 0) <= -2;
+  const losing = leadN >= 8 && lead != null && lead <= 0 && (s.roi == null || s.roi < 0);
+  if (clvBad || losing) return 'avoid';
+  if (leadN >= 8 && lead != null && lead > 0) return 'promising';
   return 'early';
 }
 
@@ -55,7 +67,7 @@ function score(bets) {
 // ─── records → bets with the labels plays are cut by ─────────────────────────
 const tailBet = r => ({
   profit: r.profit ?? null, staked: r.result === 'void' ? 0 : r.units, clv: r.clv ?? null,
-  labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet' },
+  labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet', order: r.order === 'limit' ? 'limit bid' : 'take' },
 });
 // evtrack: CLV in percent, no win/loss
 const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
@@ -66,8 +78,8 @@ const pickBet = r => ({
 
 // source → which records count and how plays are cut
 const SOURCES = {
-  tail: { label: 'Sharp Tail', done: r => r.status === 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus']] },
-  fresh: { label: 'Fresh wallets', done: r => r.status === 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
+  tail: { label: 'Sharp Tail', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
+  fresh: { label: 'Fresh wallets', done: r => r.status === 'settled' && r.result !== 'unfilled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side']] },
@@ -82,7 +94,7 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
     const all = (lists[name] || []).filter(r => !sinceMs || (Date.parse(r.recordedAt || r.flaggedAt || r.startTime) || 0) >= sinceMs);
     const done = all.filter(def.done);
     const bets = done.map(def.bet);
-    sources[name] = { label: def.label, open: all.length - done.length, overall: score(bets) };
+    sources[name] = { label: def.label, open: all.length - done.length - all.filter(r => r.result === 'unfilled').length, overall: score(bets) };
     if (bets.length) plays.push({ source: name, label: def.label, play: 'all', ...sources[name].overall });
     for (const cut of def.cuts) {
       const g = new Map();

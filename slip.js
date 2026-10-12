@@ -75,7 +75,8 @@ function adjustJoint(pA, pB, rho) {
   if (!rho) return pA * pB;
   const sd = Math.sqrt(pA * (1 - pA) * pB * (1 - pB));
   const joint = pA * pB + rho * sd;
-  return Math.min(Math.min(pA, pB), Math.max(0, joint));
+  // Fréchet bounds: no joint can sit below pA + pB − 1 or above min(pA, pB)
+  return Math.min(Math.min(pA, pB), Math.max(0, pA + pB - 1, joint));
 }
 
 function pairRho(a, b) {
@@ -325,6 +326,8 @@ function priceAll(legs, payouts = PAYOUTS) {
     .sort((a, b) => b.ev - a.ev);
 }
 
+const legPlayer = l => String(l.player || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
 // Greedy builder: from a pool of candidate legs, the best entry at each size.
 // Greedy because the exact search is combinatorial and the pool is the board.
 function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
@@ -334,6 +337,12 @@ function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
     let chosen = [];
     const rest = ranked.slice();
     while (chosen.length < n && rest.length) {
+      // the apps take one pick per player per entry, and two lines on one
+      // player (kills and headshots) are far more correlated than the
+      // teammate term assumes, so a player already in the entry is skipped
+      const taken = new Set(chosen.map(legPlayer).filter(Boolean));
+      for (let i = rest.length - 1; i >= 0; i--) if (taken.has(legPlayer(rest[i]))) rest.splice(i, 1);
+      if (!rest.length) break;
       let bestIdx = 0, bestEv = -Infinity;
       for (let i = 0; i < rest.length; i++) {
         const trial = [...chosen, rest[i]];
@@ -343,6 +352,7 @@ function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
       }
       chosen.push(rest.splice(bestIdx, 1)[0]);
     }
+    if (chosen.length < n) break;
     const priced = priceAll(chosen, payouts)[0];
     if (priced) out.push({ ...priced, legs: chosen.length, picks: chosen });
   }

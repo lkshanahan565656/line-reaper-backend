@@ -574,7 +574,7 @@ const {
   matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
-const { fetchGolPlayers, golSeason, createVlrStats, indexGames, headToHead, nameKey } = require('./propstats');
+const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = require('./propstats');
 const { propProb } = require('./dist');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
@@ -651,12 +651,13 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 
   // Adaptive variance for low-volume props (DOTA, LOL kills)
   const s = (sport || '').toUpperCase();
+  // A k below 1 claims kills are steadier than a Poisson count with a known
+  // mean, which no player is: it priced a 4.0 projection at 88% over 2.5, where
+  // even a perfectly known Poisson mean gives 76%. Low lines floor at 1.5.
   if (s.includes('DOTA')) {
     if (modelPred >= 15) k = 4.0;
     else if (modelPred >= 10) k = 2.8;
-    else if (modelPred >= 7) k = 1.5;
-    else if (modelPred >= 5) k = 0.7;
-    else k = 0.4;
+    else k = 1.5;
   }
   // Low LoL lines (supports, 1.5 to 2.5 kills) are priced on the count curve,
   // where a big k piles mass on zero and turns every one into a 65% under.
@@ -667,11 +668,13 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 
   // Counts are priced as counts (negative binomial); fantasy points and any
   // case the count model can't represent fall back to the normal curve.
+  // modelPred is the expected total over the span (per-map rate × expMaps), so
+  // the per-map mean divides it back out, but only when the scenarios used are
+  // the context's own; with no scenarios the whole projection is one 'map'.
   const sc = opts.context?.scenarios;
-  const scenarios = (sc && sc.length && opts.context.expMaps > 0) ? sc : [{ maps: 1, weight: 1 }];
-  const meanPerMap = scenarios.length > 1 || opts.context?.expMaps
-    ? modelPred / opts.context.expMaps
-    : modelPred;
+  const useCtx = !!(sc && sc.length && opts.context.expMaps > 0);
+  const scenarios = useCtx ? sc : [{ maps: 1, weight: 1 }];
+  const meanPerMap = useCtx ? modelPred / opts.context.expMaps : modelPred;
   const stat = /fantasy/i.test(propText || '') ? 'fantasy'
     : /assist/i.test(propText || '') ? 'assists'
     : /headshot/i.test(propText || '') ? 'headshots' : 'kills';
@@ -1657,7 +1660,7 @@ async function generateEsportsPicks() {
   function assemble(base, modelPred, predSource, manualKey, udm, lineSource, g = {}) {
     const lineVal = base.line;
     const pick = {
-      sport: base.sport, player: base.player, team: base.team || '', market: base.market,
+      sport: base.sport, player: base.player, team: base.team || '', matchTitle: base.matchTitle || '', market: base.market,
       ppLine: lineVal, startTime: base.startTime || '', lineSource,
       modelPred: modelPred != null ? parseFloat(modelPred.toFixed(2)) : null,
       predSource: modelPred != null ? predSource : null,
@@ -2256,6 +2259,42 @@ function sizeQuote(s, v) {
 const venueView = v => (v ? { key: v.key, name: v.name, price: v.price, fee: v.fee, cost: v.cost, ...(v.american != null ? { american: v.american } : {}),
   units: v.units, kelly: v.kelly, maxPrice: v.maxPrice, pick: v.pick ?? null, ...(v.buy ? { buy: v.buy } : {}), ...(v.side ? { side: v.side } : {}), url: v.url || null,
   ...(v.warning ? { warning: v.warning } : {}) } : null);
+// When no venue sizes a take, the best resting bid (tail.limitPlan): makers
+// pay no fee on Polymarket, and on Kalshi and Polymarket US we assume a
+// quarter of the taker fee at most (Kalshi's maker fee, where a market has
+// one, is 1.75% × p(1 − p) against 7%). Sportsbooks take no orders. Same
+// deductions as a take: a top-up only adds above what was told, and the
+// game's room caps it. A price that ran past the chase limit gets none: the
+// market has already moved on the sharp's news. The pick: most units, then
+// the higher bid (likelier to fill).
+const MAKER_SHARE = { polymarket: 0, kalshi: 0.25, polymarketus: 0.25 };
+function limitFor(s, v) {
+  if (!v || !(v.key in MAKER_SHARE) || v.book || !(v.price > 0 && v.price < 1)) return null;
+  const q = Number(s.q ?? s.prob);
+  const spread = v.price * (1 - v.price);
+  const rate = spread > 0 ? Math.max(0, Number(v.fee) || 0) / spread : 0;
+  let plan = null;
+  try {
+    plan = tail.limitPlan({ q, ask: v.price, bid: v.bid ?? null, makerFee: p => MAKER_SHARE[v.key] * rate * p * (1 - p),
+      grade: s.grade, consensus: Array.isArray(s.consensus) && s.consensus.length ? s.consensus : 1, opts: tailEngine.settings() });
+  } catch (e) { console.warn('Tail limit sizing:', e.message); }
+  if (!plan) return null;
+  let units = plan.units;
+  const before = Number(s.priorUnits) > 0 ? Number(s.priorUnits) : 0;
+  if (before > 0) units = Math.max(0, r2u(units - before));
+  if (Number.isFinite(s.eventRoom)) units = Math.max(0, Math.min(units, s.eventRoom));
+  if (!(units > 0)) return null;
+  return { key: v.key, name: v.name, price: plan.price, fee: plan.fee, cost: plan.cost, units, kelly: plan.kelly, ask: v.price, bid: v.bid ?? null,
+    pick: v.pick ?? null, ...(v.buy ? { buy: v.buy } : {}), ...(v.side ? { side: v.side } : {}), url: v.url || null, until: s.gameStartTime || null,
+    ...(v.warning ? { warning: v.warning } : {}) };
+}
+function limitOf(s, venues) {
+  const chase = tailEngine.settings().chaseMax;
+  if (s.blocked || takeUnits(s) > 0 || (Number.isFinite(s.slippage) && Number.isFinite(chase) && s.slippage > chase + 1e-9)) return null;
+  const plans = venues.map(v => limitFor(s, v)).filter(Boolean);
+  plans.sort((a, b) => (b.units - a.units) || (b.price - a.price));
+  return plans[0] || null;
+}
 // the routing of recent signals by id, in case the engine hands back copies
 const routedSignals = new Map();
 // extra: quotes found elsewhere (Polymarket US) to weigh with the scan's
@@ -2268,9 +2307,10 @@ function routeSignal(s, { index = xarbState.venues, now = Date.now(), extra = []
   venues.sort((a, b) => (b.units - a.units) || (a.cost - b.cost) || (a.price - b.price));
   s.venues = venues.map(venueView);
   s.venue = venueView(xarb.pickVenue(venues));
+  s.limit = limitOf(s, venues);
   if (s.id) {
     routedSignals.delete(s.id);
-    routedSignals.set(s.id, { venue: s.venue, venues: s.venues });
+    routedSignals.set(s.id, { venue: s.venue, venues: s.venues, limit: s.limit });
     while (routedSignals.size > 2000) routedSignals.delete(routedSignals.keys().next().value);
   }
   return s;
@@ -2280,7 +2320,7 @@ function venueFor(sig, lic) {
   const s = sig && !('venue' in sig) && routedSignals.has(sig.id) ? { ...sig, ...routedSignals.get(sig.id) } : sig;
   if (s?.type !== 'entry' || lic.kalshi || !Array.isArray(s.venues) || !s.venues.some(v => v.key === 'kalshi')) return s;
   const venues = s.venues.filter(v => v.key !== 'kalshi');
-  return { ...s, venues, venue: xarb.pickVenue(venues), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
+  return { ...s, venues, venue: xarb.pickVenue(venues), ...(s.limit?.key === 'kalshi' ? { limit: null } : {}), venueNote: `Kalshi prices: ${LICENCE_NOTE}` };
 }
 // "Tail at Kalshi: NO New York K 55¢ · 1.25u · don't pay above 58¢" (a book's price in American odds too).
 // What to buy is spelled out: on Kalshi the same bet can be YES on one market or NO on another.
@@ -2291,15 +2331,20 @@ function venueLine(s) {
   const max = v.maxPrice == null ? '—' : book ? `${cents(v.maxPrice)} (${american(evScreen.probToAmerican(v.maxPrice))})` : cents(v.maxPrice);
   return `Tail at ${v.name}${v.buy ? `: ${v.buy}` : ''} ${book ? american(v.american) : cents(v.price)} · ${v.units}u · don't pay above ${max}`;
 }
+// "Bid at Kalshi: YES New York K 54¢ limit · 0.5u · fills only if it trades down to you · cancel at the start"
+function limitLine(l) {
+  return `Bid at ${l.name}${l.buy ? `: ${l.buy}` : ''} ${cents(l.price)} limit · ${l.units}u · fills only if it trades down to you${l.until ? ' · cancel at the start' : ''}`;
+}
 // <url> stops Discord unfurling a preview card under every line. US mode
 // links the venue, never polymarket.com.
 function describeTail(s) {
   const who = `${s.grade}-grade ${s.name || shortWallet(s.wallet)}`;
   const where = `${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})`;
-  const url = TAIL_REGION === 'us' ? (s.venue?.url && !PM_LINK.test(s.venue.url) ? s.venue.url : null) : s.url;
+  const to = s.limit && !(takeUnits(s) > 0) ? s.limit : s.venue;
+  const url = TAIL_REGION === 'us' ? (to?.url && !PM_LINK.test(to.url) ? to.url : null) : s.url;
   const link = url ? ` <${url}>` : '';
   if (s.type === 'exit') return describeExit(s, who);
-  const size = s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
+  const size = s.limit && !(takeUnits(s) > 0) ? limitLine(s.limit) : s.units > 0 || s.venue ? venueLine(s) : `0u: ${s.reason}`;
   return `${who} bought ${where} · ${size}${s.isConsensus ? ` · consensus ×${s.consensus.length}` : ''}${link}`;
 }
 // "Exit: A-grade X sold 80% of Yes on "…" at 62¢ ($4,000), bought at 41¢ · we tailed it 1.2u at Kalshi: YES … <url>"
@@ -2307,9 +2352,11 @@ function describeTail(s) {
 function describeExit(s, who) {
   const share = s.soldShare != null && s.soldShare < 0.995 ? `${Math.round(s.soldShare * 100)}% of ` : '';
   const paid = s.boughtAt != null ? `, bought at ${cents(s.boughtAt)}` : '';
-  let v = s.tailed?.id ? routedSignals.get(s.tailed.id)?.venue : null;
+  const r = s.tailed?.id ? routedSignals.get(s.tailed.id) : null;
+  let v = r ? (Number(r.venue?.units) > 0 || !r.limit ? r.venue : r.limit) : null;
   if (v?.key === 'kalshi' && !webhookLicence().kalshi) v = null;
-  const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}` : ''}` : '';
+  const bid = v && r && v === r.limit ? ' with a bid (cancel it if it hasn\'t filled)' : '';
+  const ours = s.tailed ? ` · we tailed it ${s.tailed.units}u${v ? ` at ${v.name}${v.buy ? `: ${v.buy}` : ''}${bid}` : ''}` : '';
   const url = TAIL_REGION === 'us' ? (v?.url && !PM_LINK.test(v.url) ? v.url : null) : (v?.url || s.url);
   return `Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
@@ -2347,7 +2394,9 @@ let tailPolled = false;
 const tailRouting = { routed: 0, withVenue: 0, lastAt: null, byCategory: {}, byVenue: {} };
 // What a routed entry told followers to add: the venue's units, or with no
 // venue the Polymarket size the track record logs it at.
-const tailUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+// A resting bid (s.limit) counts when nothing sizes a take.
+const takeUnits = s => (s.venue && Number(s.venue.price) > 0 && Number(s.venue.price) < 1 ? Number(s.venue.units) || 0 : Number(s.units) || 0);
+const tailUnits = s => takeUnits(s) || (Number(s?.limit?.units) > 0 ? Number(s.limit.units) : 0);
 // where to tail, as each entry is made (so the next buy by the same wallet
 // tops up what that venue was told) and before it's logged (the record
 // grades it at that venue's price)
@@ -2635,11 +2684,17 @@ function esportsEdgeRows(matches, venueOk = () => true) {
   const rows = [], fairs = new Map();
   for (const m of matches) {
     if (!m.start || m.live) continue;
-    for (const mk of m.markets) for (const oc of mk.outcomes) if (oc.fair != null) fairs.set(`${m.id}|${mk.key}|${oc.name}`, oc.fair * 100);
+    // An edge is flagged against the fair price from the OTHER sources, so the
+    // close is read the same way, per venue. Closing on the all-source fair
+    // folded the venue's own mid back in and cut every CLV toward zero.
+    for (const mk of m.markets) for (const oc of mk.outcomes) for (const v of ['kalshi', 'polymarket']) {
+      const ref = oc.quotes?.[v]?.ref;
+      if (ref != null) fairs.set(`${m.id}|${mk.key}|${v}|${oc.name}`, ref * 100);
+    }
     for (const e of m.edges) {
       if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
       rows.push({
-        group: `${m.id}|${e.market}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
+        group: `${m.id}|${e.market}|${e.venue}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
         market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'esboard',
       });
     }
@@ -2867,11 +2922,16 @@ app.get('/app', (req, res) => {
   if (!html) return res.status(404).send('App not bundled with this deploy');
   res.set('Cache-Control', 'no-cache').type('html').send(html);
 });
+// The calculator math the TOOLS tab runs in the browser (the same file the
+// tests check), so the page and the tests can't drift apart.
+app.get('/calc.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
+});
 // Browsers opening the bare URL get the app; API clients (and the app's own
 // health check, which sends Accept: */*) still get the JSON status.
 app.get('/', (req, res) => {
   if (req.accepts(['json', 'html']) === 'html' && /text\/html/.test(req.get('accept') || '') && loadApp()) return res.redirect('/app');
-  res.json({ status: 'Line Reaper backend running', version: '3.51.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.52.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3535,7 +3595,17 @@ app.get('/api/esports/stream', requirePro, (req, res) => {
 function legsFromBoard(input) {
   const board = esportsCache.picks || [];
   return (input || []).map(spec => {
-    if (spec.pricing || spec.prob != null) return spec;
+    if (spec.pricing || spec.prob != null) {
+      // a hand-built leg: probability in percent or as a fraction, and the
+      // pricing block flattened so the slip can re-price it per scenario
+      const pr = spec.pricing || {};
+      const prob = spec.prob != null ? (Number(spec.prob) > 1 ? Number(spec.prob) / 100 : Number(spec.prob)) : null;
+      const leg = { ...spec, prob, line: spec.line ?? pr.line, side: spec.side ?? pr.side, meanPerMap: spec.meanPerMap ?? pr.meanPerMap, k: spec.k ?? pr.k, stat: spec.stat ?? pr.stat, scenarios: spec.scenarios ?? pr.scenarios };
+      if (leg.prob == null && leg.meanPerMap != null && leg.k != null && leg.line != null && leg.side) {
+        leg.prob = propProb(leg.line, leg.side, { meanPerMap: leg.meanPerMap, k: leg.k, stat: leg.stat, scenarios: leg.scenarios || undefined }).effective;
+      }
+      return Number.isFinite(leg.prob) ? leg : null;
+    }
     const hit = board.find(p =>
       normalizeName(p.player) === normalizeName(spec.player) &&
       (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market)));
@@ -3678,7 +3748,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.51.0',
+  version: '3.52.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -3809,10 +3879,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.51.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.52.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.51.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.52.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -3849,7 +3919,7 @@ if (require.main === module) {
 module.exports = {
   app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
-  calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
+  calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
