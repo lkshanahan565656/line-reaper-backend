@@ -651,12 +651,13 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 
   // Adaptive variance for low-volume props (DOTA, LOL kills)
   const s = (sport || '').toUpperCase();
+  // A k below 1 claims kills are steadier than a Poisson count with a known
+  // mean, which no player is: it priced a 4.0 projection at 88% over 2.5, where
+  // even a perfectly known Poisson mean gives 76%. Low lines floor at 1.5.
   if (s.includes('DOTA')) {
     if (modelPred >= 15) k = 4.0;
     else if (modelPred >= 10) k = 2.8;
-    else if (modelPred >= 7) k = 1.5;
-    else if (modelPred >= 5) k = 0.7;
-    else k = 0.4;
+    else k = 1.5;
   }
   // Low LoL lines (supports, 1.5 to 2.5 kills) are priced on the count curve,
   // where a big k piles mass on zero and turns every one into a 65% under.
@@ -667,11 +668,13 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 
   // Counts are priced as counts (negative binomial); fantasy points and any
   // case the count model can't represent fall back to the normal curve.
+  // modelPred is the expected total over the span (per-map rate × expMaps), so
+  // the per-map mean divides it back out, but only when the scenarios used are
+  // the context's own; with no scenarios the whole projection is one 'map'.
   const sc = opts.context?.scenarios;
-  const scenarios = (sc && sc.length && opts.context.expMaps > 0) ? sc : [{ maps: 1, weight: 1 }];
-  const meanPerMap = scenarios.length > 1 || opts.context?.expMaps
-    ? modelPred / opts.context.expMaps
-    : modelPred;
+  const useCtx = !!(sc && sc.length && opts.context.expMaps > 0);
+  const scenarios = useCtx ? sc : [{ maps: 1, weight: 1 }];
+  const meanPerMap = useCtx ? modelPred / opts.context.expMaps : modelPred;
   const stat = /fantasy/i.test(propText || '') ? 'fantasy'
     : /assist/i.test(propText || '') ? 'assists'
     : /headshot/i.test(propText || '') ? 'headshots' : 'kills';
@@ -2635,11 +2638,17 @@ function esportsEdgeRows(matches, venueOk = () => true) {
   const rows = [], fairs = new Map();
   for (const m of matches) {
     if (!m.start || m.live) continue;
-    for (const mk of m.markets) for (const oc of mk.outcomes) if (oc.fair != null) fairs.set(`${m.id}|${mk.key}|${oc.name}`, oc.fair * 100);
+    // An edge is flagged against the fair price from the OTHER sources, so the
+    // close is read the same way, per venue. Closing on the all-source fair
+    // folded the venue's own mid back in and cut every CLV toward zero.
+    for (const mk of m.markets) for (const oc of mk.outcomes) for (const v of ['kalshi', 'polymarket']) {
+      const ref = oc.quotes?.[v]?.ref;
+      if (ref != null) fairs.set(`${m.id}|${mk.key}|${v}|${oc.name}`, ref * 100);
+    }
     for (const e of m.edges) {
       if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
       rows.push({
-        group: `${m.id}|${e.market}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
+        group: `${m.id}|${e.market}|${e.venue}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
         market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'esboard',
       });
     }
@@ -3535,7 +3544,17 @@ app.get('/api/esports/stream', requirePro, (req, res) => {
 function legsFromBoard(input) {
   const board = esportsCache.picks || [];
   return (input || []).map(spec => {
-    if (spec.pricing || spec.prob != null) return spec;
+    if (spec.pricing || spec.prob != null) {
+      // a hand-built leg: probability in percent or as a fraction, and the
+      // pricing block flattened so the slip can re-price it per scenario
+      const pr = spec.pricing || {};
+      const prob = spec.prob != null ? (Number(spec.prob) > 1 ? Number(spec.prob) / 100 : Number(spec.prob)) : null;
+      const leg = { ...spec, prob, line: spec.line ?? pr.line, side: spec.side ?? pr.side, meanPerMap: spec.meanPerMap ?? pr.meanPerMap, k: spec.k ?? pr.k, stat: spec.stat ?? pr.stat, scenarios: spec.scenarios ?? pr.scenarios };
+      if (leg.prob == null && leg.meanPerMap != null && leg.k != null && leg.line != null && leg.side) {
+        leg.prob = propProb(leg.line, leg.side, { meanPerMap: leg.meanPerMap, k: leg.k, stat: leg.stat, scenarios: leg.scenarios || undefined }).effective;
+      }
+      return Number.isFinite(leg.prob) ? leg : null;
+    }
     const hit = board.find(p =>
       normalizeName(p.player) === normalizeName(spec.player) &&
       (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market)));
@@ -3827,7 +3846,7 @@ if (require.main === module) {
 module.exports = {
   app, cache, oddsBudget, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
-  calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks,
+  calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,

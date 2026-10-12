@@ -1646,26 +1646,30 @@ function renderCLV() {
     return;
   }
 
-  const clvVals = withCLV.map(b => b.myOdds - b.closeOdds);
+  // CLV % = your decimal price / the closing decimal price − 1. Subtracting
+  // American odds broke across ±100 (+105 against a -110 close read +215).
+  const amDec = o => (o > 0 ? 1 + o / 100 : 1 + 100 / -o);
+  const clvPct = b => (amDec(b.myOdds) / amDec(b.closeOdds) - 1) * 100;
+  const clvVals = withCLV.map(clvPct);
   const avg = (clvVals.reduce((a,b)=>a+b,0)/clvVals.length).toFixed(1);
   const posCount = clvVals.filter(v=>v>0).length;
   const rate = ((posCount/clvVals.length)*100).toFixed(0);
 
-  document.getElementById('clvAvg').textContent = `${avg>0?'+':''}${avg}`;
+  document.getElementById('clvAvg').textContent = `${avg>0?'+':''}${avg}%`;
   document.getElementById('clvAvg').style.color = avg>0?'var(--accent)':'var(--danger)';
   document.getElementById('clvPos').textContent = posCount;
   document.getElementById('clvRate').textContent = `${rate}%`;
   document.getElementById('clvRate').style.color = rate>=50?'var(--accent2)':'var(--danger)';
 
   el.innerHTML = withCLV.map(b => {
-    const clv = b.myOdds - b.closeOdds;
+    const clv = clvPct(b);
     return `<div class="bet-row">
       <div class="bet-info">
         <div class="bet-pick">${b.pick}</div>
         <div class="bet-meta">Open: ${fmt(b.myOdds)} → Close: ${fmt(b.closeOdds)} · ${b.date}</div>
       </div>
       <div class="bet-right">
-        <div class="bet-clv ${clv>0?'good':'bad'}" style="font-size:16px;font-weight:700">${clv>0?'+':''}${clv}</div>
+        <div class="bet-clv ${clv>0?'good':'bad'}" style="font-size:16px;font-weight:700">${clv>0?'+':''}${clv.toFixed(1)}%</div>
         <div style="font-size:9px;color:var(--muted2)">${clv>0?'BEAT CLOSE ✓':'MISSED CLOSE ✗'}</div>
       </div>
     </div>`;
@@ -1798,9 +1802,11 @@ function renderShop(games, query='') {
     const bestAway = Math.max(...awayOdds.map(x=>x.odds));
     const worstAway = Math.min(...awayOdds.map(x=>x.odds));
 
-    // No-vig true prob using best sharp lines (DK/FD/LowVig)
-    const sharpHome = books['draftkings']?.home || books['fanduel']?.home || books['lowvig']?.home;
-    const sharpAway = books['draftkings']?.away || books['fanduel']?.away || books['lowvig']?.away;
+    // No-vig true prob from the sharpest book that prices both sides; the
+    // retail books (DK/FD) only as a last resort
+    const refBook = ['pinnacle','circa','novig','lowvig','betonlineag','draftkings','fanduel'].find(b => books[b]?.home && books[b]?.away);
+    const sharpHome = refBook ? books[refBook].home : null;
+    const sharpAway = refBook ? books[refBook].away : null;
     let trueHome = null, trueAway = null;
     if (sharpHome && sharpAway) {
       const ih = oddsToImplied(sharpHome);
@@ -2482,9 +2488,12 @@ function renderPropsTable(data) {
       const diff = sharpLine - dfsLine; // positive = sharp line higher = DFS OVER is easier
       // Rough logistic shift: each 1pt ≈ 4% prob shift at 50/50 market
       const shift = diff * 0.04;
-      const adjProb = side === 'OVER' ? Math.min(.98, trueProb + shift) : Math.min(.98, (1-trueProb) + shift);
-      // DFS pays -110 equivalent (implied ~52.4%)
-      const dfsImplied = 0.524;
+      // trueProb is already this side's no-vig probability. A lower DFS line
+      // (diff > 0) helps the over and hurts the under.
+      const adjProb = Math.min(.98, Math.max(.02, side === 'OVER' ? trueProb + shift : trueProb - shift));
+      // A pick'em leg breaks even at 56.22% (the 4-pick 10x / standard -128
+      // leg the server prices against), not -110's 52.4%
+      const dfsImplied = 0.5622;
       return ((adjProb / dfsImplied) - 1) * 100;
     }
 
@@ -3355,7 +3364,7 @@ let esportsState = {
 //   perLegMult = fallback per-leg multiplier when the backend doesn't send one
 const ES_BOOKS = {
   prizepicks: { name:'PRIZEPICKS', color:'#3b82f6', evField:'ppEv',
-    power:{2:3, 3:5, 4:10},
+    power:{2:3, 3:5, 4:10, 5:20, 6:37.5},
     flex:{3:{3:2.25,2:1.25}, 4:{4:5,3:1.5}, 5:{5:10,4:2,3:0.4}, 6:{6:25,5:2,4:0.4}} },
   underdog:   { name:'UNDERDOG', color:'#a78bfa', evField:'udEv', multField:'udMultiplier', boostsPower:true,
     power:{2:3, 3:6, 4:10, 5:20} },

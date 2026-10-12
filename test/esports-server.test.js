@@ -105,6 +105,7 @@ test('the Kalshi edge is logged for the results board, graded on the close at th
   assert.ok(bet, 'the edge went into the tracker');
   assert.ok(!open.some(b => b.book === 'polymarket'), 'US mode: no Polymarket International edges');
   assert.ok(bet.evAtFlag >= 2 && bet.decimal > 3);
+  assert.equal(bet.closeFair, bet.fairAtFlag, 'the close is read against the same other-source fair the edge was flagged on');
   // past the start: closed with CLV against the last fair
   const rows = await S.esportsEdgeTracker.list({});
   tick(7 * 3600e3);
@@ -189,6 +190,40 @@ test('props: probabilities track LCSLarry on the same projections, overs and und
   const under = S.calcEsportsEV(16.5, 14.5, 'UNDER', 'CS', 'MAPS 1-2 Headshots').prob;
   const over = S.calcEsportsEV(16.5, 18.5, 'OVER', 'CS', 'MAPS 1-2 Headshots').prob;
   assert.ok(Math.abs(under - over) < 1.5, `under ${under} vs over ${over}`);
+});
+
+test('props: low Dota lines are never priced steadier than a Poisson count', () => {
+  const pois = (m, n) => { let c = 0, t = Math.exp(-m); for (let i = 0; i <= n; i++) { c += t; t *= m / (i + 1); } return c; };
+  // 4.0 projected kills over 2.5: a known Poisson mean gives 76%, so a model
+  // with projection error has to sit at or below that
+  const r = S.calcEsportsEV(2.5, 4, 'OVER', 'DOTA2', 'Kills Map 1');
+  assert.ok(r.varianceK >= 1.5 && r.prob <= (1 - pois(4, 2)) * 100, `${r.varianceK} ${r.prob}`);
+  // and more projected kills never reads as a weaker over
+  let last = 0;
+  for (const pred of [5, 6, 7, 8, 9]) {
+    const p = S.calcEsportsEV(4.5, pred, 'OVER', 'DOTA2', 'Kills Map 1').prob;
+    assert.ok(p > last, `${pred}: ${p} after ${last}`);
+    last = p;
+  }
+});
+
+test('props: the per-map mean only divides by expected maps when those scenarios are used', () => {
+  const ctx = { scenarios: [{ maps: 2, weight: 0.5 }, { maps: 3, weight: 0.5 }], expMaps: 2.5 };
+  assert.equal(S.calcEsportsEV(40.5, 42, 'OVER', 'CS', 'MAPS 1-3 Kills', { context: ctx }).meanPerMap, 42 / 2.5);
+  const bare = S.calcEsportsEV(40.5, 42, 'OVER', 'CS', 'MAPS 1-3 Kills', { context: { scenarios: [], expMaps: 2.5 } });
+  assert.equal(bare.meanPerMap, 42);
+  assert.deepEqual(bare.scenarios, [{ maps: 1, weight: 1 }]);
+});
+
+test('slip: hand-built legs take a percent or a fraction, and a pricing block alone', () => {
+  const [a, b, c] = S.legsFromBoard([
+    { player: 'A', prob: 58 },
+    { player: 'B', prob: 0.58 },
+    { player: 'C', pricing: { line: 20.5, side: 'OVER', meanPerMap: 11, k: 2.5, stat: 'kills', scenarios: [{ maps: 2, weight: 1 }] } },
+  ]);
+  assert.equal(a.prob, 0.58);
+  assert.equal(b.prob, 0.58);
+  assert.ok(c.prob > 0.5 && c.prob < 0.7 && c.meanPerMap === 11 && c.scenarios.length === 1);
 });
 
 test('props: Underdog esports lines get the player\'s team from the game\'s home and away sides (title reads away vs home)', () => {
