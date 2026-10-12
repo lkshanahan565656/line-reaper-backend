@@ -32,7 +32,7 @@ const DEFAULTS = {
   provenMaxUnits: 2,
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
-  limit: 50,
+  limit: 300,
 };
 
 // each source's labels, in the shape results.js cuts plays by
