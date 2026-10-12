@@ -415,7 +415,7 @@ const fmtU = u => (u > 0 ? '+' : '') + u.toFixed(2) + 'u';
 const fmtPct = x => (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%';
 const cls = x => x > 0 ? 'up' : x < 0 ? 'down' : '';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const ORDER = ['tail', 'fresh', 'esportsEdges', 'esportsPicks', 'ev'];
+const ORDER = ['tail', 'fresh', 'exchangeValue', 'esportsEdges', 'esportsPicks', 'ev'];
 
 fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const src = d.sources || {};
@@ -441,7 +441,7 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   document.getElementById('liveTracked').textContent = '-';
 });
 
-const KIND = { arb: 'Arbs', tail: 'Sharp Tail', esportsEdge: 'Esports edges', esportsProp: 'Esports props', sportsProp: 'Sports props' };
+const KIND = { arb: 'Arbs', tail: 'Sharp Tail', exchangeValue: 'Exchange value', esportsEdge: 'Esports edges', esportsProp: 'Esports props', sportsProp: 'Sports props' };
 fetch('/api/best?limit=1').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   document.getElementById('liveTotal').textContent = (d.total || 0).toLocaleString();
   const parts = Object.entries(d.counts || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])

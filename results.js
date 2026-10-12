@@ -1,7 +1,7 @@
 // ─── WHAT'S WINNING ───────────────────────────────────────────────────────────
 // One scoreboard across every track record: Sharp Tail signals, the
-// fresh-wallet radar, the +EV screener, esports exchange edges and esports
-// prop picks. Each record becomes a bet { profit, staked, clv }, bets are
+// fresh-wallet radar, the +EV screener, esports exchange edges, exchange
+// value (US exchange prices under Polymarket's) and esports prop picks. Each record becomes a bet { profit, staked, clv }, bets are
 // grouped into plays (A-grade sports tails, Kalshi CS2 match edges, ...) and
 // every play gets a verdict from its own sample:
 //
@@ -86,12 +86,13 @@ const SOURCES = {
   tail: { label: 'Sharp Tail', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
   fresh: { label: 'Fresh wallets', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
+  exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side']] },
 };
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
-// lists: { tail: [records], fresh, esportsEdges, ev, esportsPicks } →
+// lists: { tail: [records], fresh, esportsEdges, exchangeValue, ev, esportsPicks } →
 // { sources: { name: { label, open, overall } }, plays: [ranked] }
 function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   const sources = {}, plays = [];
