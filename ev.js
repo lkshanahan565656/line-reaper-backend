@@ -85,6 +85,18 @@ const MARKET_ALIASES = [
   [/^player_rush_yds$|^rush(ing)? yards$/, 'rush_yds'],
   [/^player_reception_yds$|^receiving yards$|^rec yards$/, 'rec_yds'],
   [/^player_receptions$|^receptions$/, 'receptions'],
+  // Kalshi ladder wordings next to the Underdog and Odds API names
+  [/^player_rush_reception_yds$|^rush \+ rec yards$|^rushing and receiving yards( combined)?$/, 'rush_rec_yds'],
+  [/^player_anytime_td$|^anytime td$|^touchdowns$/, 'anytime_td'],
+  [/^player_rush_attempts$|^rush(ing)? attempts$/, 'rush_att'],
+  [/^player_pass_completions$|^(passing )?completions$/, 'pass_comp'],
+  [/^player_pass_attempts$|^pass(ing)? attempts$/, 'pass_att'],
+  [/^player_pass_interceptions$|^ints thrown$|^passing interceptions$/, 'pass_ints'],
+  [/^pitcher_hits_allowed$|^(pitcher )?hits allowed$/, 'hits_allowed'],
+  [/^hits \+ runs \+ rbis$|^batter_hits_runs_rbis$/, 'hits_runs_rbis'],
+  [/^(player_)?steals?_blocks?$|^blks \+ stls$|^steals (and|\+) blocks$/, 'stocks'],
+  [/^free throws made$|^player_frees_made$/, 'ftm'],
+  [/^pts \+ rebs \+ asts$/, 'pra'], [/^pts \+ rebs$/, 'pts_rebs'], [/^pts \+ asts$/, 'pts_asts'], [/^rebs \+ asts$/, 'rebs_asts'],
 ];
 function canonMarket(m) {
   const s = String(m || '').trim().toLowerCase().replace(/\s+/g, ' ');

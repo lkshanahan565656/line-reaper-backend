@@ -107,6 +107,15 @@ test('esports props: 1u, need 2% EV and a future start, avoid types drop', () =>
   assert.equal(bestPlays({ picks, plays }, { now: NOW }).rows.length, 0);
 });
 
+test('sports props read like a bet: Kalshi-matched markets get plain names', () => {
+  const { bestPlays } = require('../bestplays');
+  const start = new Date(Date.now() + 3600e3).toISOString();
+  const row = (market, point, side) => ({ dfs: true, ev: 4, start, book: 'underdog', sharpBooks: ['kalshi_props'], group: `g|${market}`, side, point, market, sport: 'NFL', player: 'Davante Adams', fairProb: 58 });
+  const out = bestPlays({ props: [row('anytime_td', 0.5, 'Over'), row('rush_rec_yds', 59.5, 'Under')] });
+  const bets = out.rows.filter(r => r.kind === 'sportsProp').map(r => r.bet).sort();
+  assert.deepEqual(bets, ['Less than 59.5 rush + rec yards', 'Scores a touchdown']);
+});
+
 test('sportsbook lines: fresh, above fair, not started, sized by quarter Kelly and named by book', () => {
   const line = (id, o = {}) => ({
     group: `g${id}|h2h`, sport: 'nfl', event: 'Bills @ Jets', start: iso(3 * 3600e3), market: 'h2h', player: null, point: null,

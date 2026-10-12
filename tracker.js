@@ -223,12 +223,13 @@ function createTracker({
 
       if (!row) {
         if (!qualifies) continue;
-        const span = parseMapSpan(p.displayMarket || p.market);
+        // Settled on the book's own label ("Maps 1+2"), never a span we inferred
+        const span = parseMapSpan(p.market);
         const book = p.bestBook || (p.lineSource === 'ud' ? 'UD' : 'PP');
         const signalLine = book === 'UD' && p.udLine != null ? p.udLine : line;
         const fresh = {
           id: pickId(p), status: 'open', gameId: p.gameId ?? null,
-          sport: sportKey(p.sport), player: p.player, team: p.team || '',
+          sport: sportKey(p.sport), player: p.player, team: p.team || '', matchTitle: p.matchTitle || '',
           market: p.market, displayMarket: p.displayMarket || p.market,
           stat: statKind(p.market), maps: spanToMaps(span.label),
           startTime: new Date(startMs).toISOString(),
@@ -251,6 +252,8 @@ function createTracker({
         Object.assign(row, {
           startTime: new Date(startMs).toISOString(),   // follow reschedules
           ...(row.gameId == null && p.gameId != null ? { gameId: p.gameId } : {}),
+          ...(!row.matchTitle && p.matchTitle ? { matchTitle: p.matchTitle } : {}),
+          ...(!row.team && p.team ? { team: p.team } : {}),
           closeLine, closeSide: p.side || row.closeSide, closeEv: p.bestEv ?? row.closeEv,
           closeAt: new Date(t).toISOString(),
           clv: lineClv(row.signalSide, row.signalLine, closeLine),
@@ -289,7 +292,11 @@ function createTracker({
 
   // Ask each sport's grader for results. A grader returns:
   //   { maps: { 1: 18, 2: 21 }, complete: bool }  — per-map stat for this player
+  //   { unavailable: 'why' }                       — the source will never have it
   //   null                                         — nothing yet / unsupported
+  // Rows are tried least-recently-tried first, so a batch of rows whose stats
+  // never arrive can't hold every sweep and starve the rest.
+  const lastTry = new Map();   // row id → ms of the last grader call
   async function gradeDue({ limit = 25 } = {}) {
     await ready;
     const t = now();
@@ -305,29 +312,45 @@ function createTracker({
         parked++;
         return false;
       })
+      .sort((a, b) => (lastTry.get(a.id) || 0) - (lastTry.get(b.id) || 0))
       .slice(0, limit);
-    const out = { graded: 0, review: 0, waiting: parked, errors: 0 };
+    const out = { graded: 0, review: 0, void: 0, waiting: parked, errors: 0 };
     for (const row of due) {
       const grader = graders[row.sport];
       const age = t - new Date(row.startTime).getTime();
       let res = null;
       if (grader && row.stat !== 'fantasy') {
+        lastTry.set(row.id, now());
         try { res = await grader(row); }
         catch (e) { out.errors++; log.warn?.(`Tracker: ${row.sport} grader failed for ${row.player}: ${e.message}`); }
       }
+      if (res?.unavailable) {
+        voidRow(row, 'auto', res.unavailable);
+        await store.put(row); out.void++; continue;
+      }
       if (res && res.maps) {
-        const have = row.maps.filter(m => res.maps[m] != null);
-        if (have.length === row.maps.length) {
-          applyResult(row, row.maps.reduce((s, m) => s + res.maps[m], 0), 'auto');
+        // Older rows saved an inferred span; the book settles on its label.
+        const maps = spanToMaps(parseMapSpan(row.market).label);
+        if (maps.join() !== (row.maps || []).join()) row.maps = maps;
+        const have = maps.filter(m => res.maps[m] != null);
+        if (have.length === maps.length) {
+          applyResult(row, maps.reduce((s, m) => s + res.maps[m], 0), 'auto');
           await store.put(row); out.graded++; continue;
         }
         if (res.complete) {
-          // Series finished without every map in the span (e.g. Maps 1-3 in a 2-0).
-          // Books differ on how they settle that, so a human decides.
-          row.status = 'review';
-          row.result = have.reduce((s, m) => s + res.maps[m], 0);
-          row.note = `Series ended after ${have.length} of ${row.maps.length} maps in the span`;
-          await store.put(row); out.review++; continue;
+          // Series over without every map in the span. Maps 1 and 2 are always
+          // played in a Bo3, so a "Maps 1-3" line on a 2-0 counts the maps played
+          // (the board prices these on expected maps played). A missing map 1
+          // or 2 means a Bo1 or the wrong match: void it.
+          const partial = have.reduce((s, m) => s + res.maps[m], 0);
+          const missing = maps.filter(m => res.maps[m] == null);
+          if (missing.every(m => m >= 3) && have.length >= 2) {
+            applyResult(row, partial, 'auto', `Series ended after ${have.length} maps; graded on maps played`);
+            await store.put(row); out.graded++; continue;
+          }
+          voidRow(row, 'auto', `Series ended after ${have.length} of ${maps.length} maps in the span`);
+          row.result = partial;
+          await store.put(row); out.void++; continue;
         }
       }
       if (age >= giveUpAfterMs) {
@@ -336,17 +359,21 @@ function createTracker({
         await store.put(row); out.review++;
       } else out.waiting++;
     }
+    for (const id of lastTry.keys()) if (!due.some(r => r.id === id) && t - lastTry.get(id) > giveUpAfterMs) lastTry.delete(id);
     return out;
+  }
+
+  function voidRow(row, by, note) {
+    Object.assign(row, { status: 'void', outcome: null, profit: null, gradedBy: by,
+      gradedAt: new Date(now()).toISOString(), note: note || 'Voided' });
   }
 
   async function manualGrade(id, { result, void: isVoid, note } = {}) {
     await ready;
     const row = (await store.all()).find(r => r.id === id);
     if (!row) return null;
-    if (isVoid) {
-      Object.assign(row, { status: 'void', outcome: null, profit: null, gradedBy: 'manual',
-        gradedAt: new Date(now()).toISOString(), note: note || 'Voided' });
-    } else {
+    if (isVoid) voidRow(row, 'manual', note);
+    else {
       const v = parseFloat(result);
       if (!isFinite(v)) throw new Error('result must be a number');
       applyResult(row, v, 'manual', note || null);

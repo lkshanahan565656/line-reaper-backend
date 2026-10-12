@@ -134,7 +134,7 @@ test('CS grader: maps from bo3, complete only when every map has stats; the matc
     const id = Number(url.match(/games\/(\d+)\//)[1]);
     return { data: stats[id] };
   } };
-  const grade = createCsGrader(http, { now: () => NOW, pause: 0 });
+  const grade = createCsGrader(http, { now: () => NOW, pause: 0, emptyTtlMs: 0 });
   const pick = { player: 'ZywOo', team: 'Vitality', stat: 'kills', startTime: '2026-10-12T15:00:00Z' };
   assert.deepEqual(await grade(pick), { maps: { 1: 20, 2: 17 }, complete: false, matchId: 'vit-navi' });
   stats[73] = [bo3Row('ZywOo', 22, 11)];

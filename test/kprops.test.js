@@ -74,3 +74,31 @@ test('best plays: +EV pick\'em sports props come in as 1u rows', () => {
   assert.equal(r.units, 1);
   assert.match(r.why[0], /Kalshi prices it at 58.6%/);
 });
+
+test('kprops: Kalshi wordings meet Underdog names (TDs, rush + rec, attempts, completions, hits allowed)', () => {
+  const td = (name, n, bid, ask, stat) => ({ ticker: `KXNFLTD-X-${name}-${n}`, title: `${name}: ${n}+ ${stat}`, floor_strike: n - 0.5,
+    strike_type: 'greater', yes_bid_dollars: String(bid), yes_ask_dollars: String(ask), expected_expiration_time: '2026-10-13T03:15:00Z' });
+  const evt = { event_ticker: 'KXNFLTD-26OCT12', title: 'Los Angeles R vs Detroit: Touchdowns', markets: [
+    td('Davante Adams', 1, 0.41, 0.43, 'touchdowns'), td('Kyren Williams', 60, 0.55, 0.57, 'rushing and receiving yards combined'),
+    td('Kyren Williams', 15, 0.48, 0.50, 'rushing attempts'), td('Matthew Stafford', 21, 0.52, 0.54, 'passing completions')] };
+  const line = (player, market, l) => ({ book: 'underdog', sport: 'NFL', player, market, line: l, startTime: '2026-10-13T00:15:00Z', overMultiplier: 1, underMultiplier: 1 });
+  const { games, counts } = kp.buildGames([{ ev: evt, league: 'NFL' }], [
+    line('Davante Adams', 'Anytime TD', 0.5), line('Kyren Williams', 'Rush + Rec Yards', 59.5),
+    line('Kyren Williams', 'Rush Attempts', 14.5), line('Matthew Stafford', 'Completions', 20.5)], kp.DEFAULTS, NOW);
+  assert.equal(counts.matched, 4);
+  assert.deepEqual(games[0].books[0].props.map(p => p.market).sort(), ['anytime_td', 'pass_comp', 'rush_att', 'rush_rec_yds']);
+});
+
+test('kprops: series are fetched with a pause, and a 429 waits and tries once more', async () => {
+  let n = 0;
+  const http = { get: async (url, { params }) => {
+    n++;
+    if (params.series_ticker === 'A' && n === 1) { const e = new Error('429'); e.response = { status: 429 }; throw e; }
+    if (params.series_ticker === 'B') { const e = new Error('429'); e.response = { status: 429 }; throw e; }
+    return { data: { events: [{ event_ticker: params.series_ticker }] } };
+  } };
+  const out = await kp.fetchEvents(http, { NFL: ['A', 'B', 'C'] }, { pause: 0, retryAfter: 0 });
+  assert.deepEqual(out.events.map(e => e.ev.event_ticker), ['A', 'C']);
+  assert.deepEqual(out.errors, ['B: 429']);
+  assert.equal(n, 5);
+});

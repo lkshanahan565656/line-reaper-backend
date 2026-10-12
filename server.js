@@ -1630,17 +1630,15 @@ async function generateEsportsPicks() {
       }
       rawPred = autoPred;
 
-      // The label may understate the map span — rescale from the player's own
-      // per-map rate before pricing, and record that we did.
-      if (autoPred && sportKey !== 'LOL') {
-        const inferred = inferMapSpan(lineObj.line, autoPred, mapCount);
-        if (inferred) {
-          const perMap = autoPred / mapCount;
-          autoPred = perMap * inferred;
-          rawPred = autoPred;
-          spanInferred = inferred;
-          spanCounts.inferred++;
-        }
+      // A line far above the player's own per-map rate for the labelled span
+      // ("Maps 1+2" priced like three maps) used to be rescaled to a longer
+      // span. Underdog settles on its label, so the tracker graded those on a
+      // span the book never used. Now the line is left unpriced: when the book
+      // and our rate disagree by a whole map, the error is almost always ours.
+      if (autoPred && sportKey !== 'LOL' && inferMapSpan(lineObj.line, autoPred, mapCount)) {
+        spanCounts.inferred++;
+        autoPred = null;
+        rawPred = null;
       }
 
       // MATCH CONTEXT — scale per-map rate by the matchup and price the span
@@ -1895,7 +1893,7 @@ async function warmCsProfiles(batch = 12) {
 // Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
-const { createLoLGrader, createDotaGrader, createCsGrader } = require('./graders');
+const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
   const dir = await dotaLoadProPlayers();
@@ -1905,7 +1903,7 @@ async function dotaAccountId(playerName) {
 const tracker = createTracker({
   store: resultsBackup.wrap('esportsPicks', createStoreFromEnv()),
   graders: {
-    LOL: createLoLGrader(axios), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
+    LOL: createLoLGraderChain(createLoLesportsGrader(axios), createLoLGrader(axios)), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
     ...(panda ? { VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
   },
   normalizeName, normalizeMarket, parseMapSpan,
@@ -3019,7 +3017,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.61.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.62.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3933,7 +3931,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.61.0',
+  version: '3.62.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4072,10 +4070,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.61.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.62.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.61.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.62.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
