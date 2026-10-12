@@ -3,6 +3,7 @@
 // Each returns the games it used so the parsing can be unit-tested.
 
 const { buildElo, lolGamesFromRows, dotaGamesFromRows, valGamesFromRows } = require('./context');
+const { indexGames } = require('./propstats');
 
 const UA = { 'User-Agent': 'LineReaper/3.11 (team ratings)', 'Accept': 'application/json' };
 
@@ -198,6 +199,8 @@ async function refreshRatings(http, state, log = console, { panda = null } = {})
       const games = await job();
       if (!games.length) throw new Error('no games returned');
       state.elo[sport] = buildElo(games);
+      // the raw map results also feed team-vs-team history on the match board
+      (state.games ||= {})[sport] = indexGames(games);
       state.meta[sport] = { games: games.length, teams: state.elo[sport].size, updated: new Date().toISOString(), error: null };
       log.log?.(`Ratings ${sport}: ${games.length} maps → ${state.elo[sport].size} teams`);
     } catch (e) {

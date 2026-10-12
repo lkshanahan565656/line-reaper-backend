@@ -489,6 +489,12 @@ body::before {
 .esm-btn { background: #8b5cf6; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .esm-foot { font-size: 11px; color: #64748b; line-height: 1.6; margin-top: 18px; }
 .esm-sharp { color: #f59e0b; }
+.esm-h2h { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; font-size: 12px; }
+.esm-h2h > div { background: rgba(148,163,184,.06); border: 1px solid rgba(148,163,184,.14); border-radius: 8px; padding: 8px 10px; }
+.esm-h2h h5 { margin: 0 0 4px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; font-weight: 600; }
+.esm-form { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.esm-form i { width: 14px; height: 14px; border-radius: 3px; font-style: normal; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; color: #0b1220; }
+.esm-form i.w { background: #22c55e; } .esm-form i.l { background: #ef4444; } .esm-form i.d { background: #94a3b8; }
 @media (max-width: 560px) { .esm-teams { grid-template-columns: 1fr; } .esm-prices { justify-content: flex-start; } .esm-time { margin-left: 0; width: 100%; } }
 
 /* ── ESPORTS: BIG BOOK SORTER BAR ── */
@@ -3235,6 +3241,21 @@ function esmPx(q, venue, link) {
   const txt = `<small>${label}</small>${esmCents(q.cost ?? q.ask)}`;
   return link ? `<a class="esm-px ${cls}" href="${escEs(link)}" target="_blank" rel="noopener" title="${esmVenue(venue)}: ask ${esmCents(q.ask)}${q.fee ? ' + fee' : ''}${q.ev != null ? `, ${(q.ev * 100).toFixed(1)}% vs fair` : ''}">${txt}</a>` : `<span class="esm-px ${cls}">${txt}</span>`;
 }
+// Team-vs-team: the last meetings and each side's recent series form
+const esmForm = f => (f ? `<span class="esm-form">${f.last.map(r => `<i class="${r.toLowerCase()}">${r}</i>`).join('')}</span>` : '');
+function esmH2hLine(m) {
+  const h = m.h2h;
+  if (!h) return '';
+  if (h.record) return `<span>Head to head ${escEs(m.teams[0])} ${h.record[0]}-${h.record[1]} (maps ${h.maps[0]}-${h.maps[1]})</span>`;
+  return h.form[0] || h.form[1] ? '<span>First meeting in our results</span>' : '';
+}
+function esmH2hDetail(m) {
+  const h = m.h2h;
+  if (!h || (!h.meetings.length && !h.form[0] && !h.form[1])) return '';
+  const formBox = (t, f) => `<div><h5>${escEs(t)} form</h5>${f ? `${f.won}-${f.lost} in last ${f.series} series, maps ${f.maps}-${f.mapsLost}${esmForm(f)}` : 'No recent results'}</div>`;
+  const meet = h.meetings.length ? `<div><h5>Last meetings</h5>${h.meetings.map(x => `${x.date || ''} <b>${escEs(m.teams[0])} ${x.score[0]}-${x.score[1]}</b>`).join('<br>')}</div>` : '';
+  return `<div class="esm-h2h">${meet}${formBox(m.teams[0], h.form[0])}${formBox(m.teams[1], h.form[1])}</div>`;
+}
 function esmMatchCard(m) {
   const main = m.markets.find(mk => mk.kind === 'match');
   const open = esmState.open.has(m.id);
@@ -3256,11 +3277,11 @@ function esmMatchCard(m) {
       <td class="${oc.quotes.kalshi?.edge ? 'good' : ''}">${oc.quotes.kalshi?.ask != null ? esmCents(oc.quotes.kalshi.cost) : '—'}</td>
       <td class="${oc.quotes.polymarket?.edge ? 'good' : ''}">${oc.quotes.polymarket?.ask != null ? esmCents(oc.quotes.polymarket.cost) : '—'}</td>
       <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
-  }</table></div>${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps). Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
+  }</table></div>${esmH2hDetail(m)}${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps)${m.rating.scale != null && m.rating.scale !== 1 ? `, calibrated to the market (gap x${m.rating.scale.toFixed(2)})` : ''}. Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
   return `<div class="esm-card ${m.edges.length ? 'edge' : ''}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-teams">${rows}</div>${meter}
-    <div class="esm-sub">${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Edge on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
+    <div class="esm-sub">${esmH2hLine(m)}${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Edge on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
     ${detail}
   </div>`;
 }
