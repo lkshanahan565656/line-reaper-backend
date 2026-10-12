@@ -276,13 +276,14 @@ function parseUnderdogPayload(data) {
     };
   }
   if (Array.isArray(data.games)) for (const g of data.games) {
-    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
+    games[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '',
+      fullTitle: g.full_team_names_title || g.title || '', home: g.home_team_id || null, away: g.away_team_id || null };
   }
   if (Array.isArray(data.solo_games)) for (const g of data.solo_games) {
     soloGames[g.id] = { sport: g.sport_id || g.sport || '', startTime: g.scheduled_at || '', title: g.title || g.full_team_names_title || g.abbreviated_title || '' };
   }
   if (Array.isArray(data.appearances)) for (const a of data.appearances) {
-    appearances[a.id] = { player_id: a.player_id, match_id: a.match_id || a.solo_game_id || null };
+    appearances[a.id] = { player_id: a.player_id, match_id: a.match_id || a.solo_game_id || null, team_id: a.team_id || null };
   }
 
   const lines = [];
@@ -312,11 +313,22 @@ function parseUnderdogPayload(data) {
       }
     }
 
+    // Esports players carry no team name. The appearance names the player's
+    // team id, the game names its home and away ids, and its title reads
+    // "Away vs Home", the US order (checked on vlr.gg 2026-10-12: leaf, valyn
+    // and trent, home in "100 Thieves vs G2 Esports", all play for G2).
+    let team = player.team || '';
+    const teamId = appearance?.team_id || null;
+    if (!team && teamId && (game.home || game.away)) {
+      const sides = splitMatchTitle(game.fullTitle);
+      if (sides) team = teamId === game.home ? sides[1] : teamId === game.away ? sides[0] : '';
+    }
+
     lines.push({
       book: 'underdog',
       sport,
       player: player.name || '',
-      team: player.team || '',
+      team,
       market: appStat.display_stat || ou.title || '',
       line: parseFloat(line.stat_value || 0),
       startTime: game.startTime || '',
@@ -494,7 +506,9 @@ function getVarianceMultiplier(sport, propText) {
   }
   if (s.includes('LOL') || s.includes('LEAGUE')) {
     if (isAssists || isFantasy) return 5.0;
-    return 8.0;  // LOL kills variance is ~7-9x the mean
+    // Fitted to LCSLarry's PrizePicks LoL rows (Maps 1-3 kills: 10.5 vs 12.6
+    // reads 59%, 15 vs 16.7 reads 58%), which put the variance near 6.5x the mean
+    return 6.5;
   }
   return 2.5;
 }
@@ -557,9 +571,10 @@ function calcBookEV(prob, book, mult = 1.00) {
 }
 
 const {
-  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey,
+  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
+const { fetchGolPlayers, golSeason, createVlrStats, indexGames, headToHead, nameKey } = require('./propstats');
 const { propProb } = require('./dist');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
@@ -643,8 +658,11 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
     else if (modelPred >= 5) k = 0.7;
     else k = 0.4;
   }
+  // Low LoL lines (supports, 1.5 to 2.5 kills) are priced on the count curve,
+  // where a big k piles mass on zero and turns every one into a 65% under.
+  // Close to Poisson is what a support's kills actually look like.
   if (s.includes('LOL') && modelPred < 5) {
-    k = Math.max(k * 0.5, 2.5);
+    k = 2.0;
   }
 
   // Counts are priced as counts (negative binomial); fantasy points and any
@@ -885,7 +903,12 @@ async function refreshVLRTable(timespan = 60) {
   return total;
 }
 
-async function fetchVLRPlayerStats(playerName) {
+// The vlrggapi mirror behind the table answers 402 now, so a player it
+// doesn't have is read from vlr.gg itself (search, then the player's 60-day
+// agent table), cached 12 hours. See propstats.js.
+const vlrStats = createVlrStats({ http: axios });
+
+async function fetchVLRPlayerStats(playerName, team = '') {
   if (!vlrTable.updated || (Date.now() - Date.parse(vlrTable.updated)) > 3600000) {
     await refreshVLRTable().catch(() => {});
   }
@@ -896,7 +919,7 @@ async function fetchVLRPlayerStats(playerName) {
     const tail = vlrKey((playerName || '').split(/\s+/).pop());
     hit = vlrTable.players[tail];
   }
-  if (!hit) return null;
+  if (!hit) return vlrStats.lookup(playerName, team);
   // shape it like the CS profile so predictKillsFromStats works unchanged
   return {
     name: hit.name, kpr: hit.kpr, hsPercent: hit.hsPercent, rating: hit.rating,
@@ -1295,10 +1318,23 @@ async function refreshLoLFromLeaguepedia(windowDays = 120) {
   generateEsportsPicks().catch(() => {});
 }
 
+// gol.gg's season table: every pro's games and per-game kills/assists on one
+// page. Tried first now that Oracle's Elixir is gone and Leaguepedia
+// rate-limits datacenter IPs.
+async function refreshLoLFromGol() {
+  const rows = await fetchGolPlayers(axios);
+  const players = {};
+  for (const r of Object.values(rows)) players[r.name.toLowerCase()] = { kpg: r.kpg, apg: r.apg, dpg: r.dpg, kp: r.kp, games: r.games };
+  Object.assign(lolStats, { players, teams: {}, games: Object.values(rows).reduce((a, r) => a + r.games, 0) / 5 | 0, updated: new Date().toISOString(), state: 'ready', lastError: null, source: 'gol.gg' });
+  console.log(`gol.gg: ${Object.keys(players).length} LoL players (${golSeason()})`);
+  generateEsportsPicks().catch(() => {});
+}
+
 async function refreshLoLStats(windowDays = 120) {
   if (lolStats.state === 'downloading') return;
   lolStats.state = 'downloading';
   const errors = [];
+  try { await refreshLoLFromGol(); return; } catch (e) { errors.push(`gol.gg → ${e.response?.status || e.message}`); }
   for (const url of await oeCandidateUrls()) {
     try {
       console.log('OE: downloading', url.slice(0, 90), '...');
@@ -1349,8 +1385,16 @@ async function refreshLoLStats(windowDays = 120) {
 //   half player's own kills/game, half (share of team kills × team pace).
 // Identical today, but the share half becomes opponent-aware once lines
 // carry match context (then team pace blends with opponent kills-allowed).
-function predictLoLStat(playerName, mapCount, stat = 'kills') {
+function lolPlayer(playerName) {
   const p = lolStats.players[(playerName || '').toLowerCase()];
+  if (p) return p;
+  const key = nameKey(playerName);
+  if (!key) return null;
+  const hit = Object.keys(lolStats.players).find(k => nameKey(k) === key);
+  return hit ? lolStats.players[hit] : null;
+}
+function predictLoLStat(playerName, mapCount, stat = 'kills') {
+  const p = lolPlayer(playerName);
   if (!p || !p.games || p.games < 4) return null;
   let perGame, share, teamPg;
   if (stat === 'assists') { perGame = p.apg; share = p.assistShare; teamPg = p.teamApg; }
@@ -1413,6 +1457,16 @@ async function refreshMatchFeeds() {
   }
 }
 const ratingsOpts = { panda };
+
+function evenContext(maps, opponent = null) {
+  const bestOf = Math.max(...maps) >= 4 ? 5 : 3;
+  const scenarios = spanScenarios(maps, 0.5, bestOf);
+  return {
+    source: 'even', opponent, pMap: 0.5, bestOf, pTypical: 0.5,
+    pLastMap: pMapPlayed(Math.max(...maps), 0.5, bestOf),
+    scenarios, expMaps: scenarios.reduce((a, sc) => a + sc.maps * sc.weight, 0), factor: 1,
+  };
+}
 
 function spanToMapList(label, count) {
   const m = String(label || '').match(/^(\d+)(?:-(\d+))?$/);
@@ -1496,12 +1550,17 @@ async function generateEsportsPicks() {
         const mk = (lineObj.market || '').toLowerCase();
         if (mk.includes('fantasy')) autoPred = null;   // FP needs the book's scoring formula — manual for now
         else autoPred = predictLoLStat(lineObj.player, mapCount, mk.includes('assist') ? 'assists' : 'kills');
-        const lp = lolStats.players[(lineObj.player || '').toLowerCase()];
+        const lp = lolPlayer(lineObj.player);
         sampleSize = lp?.games ?? null;
-        if (lp) statLine = `${lp.kpg.toFixed(1)} k/game · ${lp.apg.toFixed(1)} a/game · ${(lp.killShare != null ? (lp.killShare * 100).toFixed(0) + '% of team kills · ' : '')}${lp.games} games`;
+        if (lp) statLine = `${lp.kpg.toFixed(1)} k/game · ${(lp.apg ?? 0).toFixed(1)} a/game · ${(lp.killShare != null ? (lp.killShare * 100).toFixed(0) + '% of team kills · ' : lp.kp ? Math.round(lp.kp * 100) + '% kill participation · ' : '')}${lp.games} games`;
       } else if (sportKey === 'VAL') {
-        // VLR table is loaded in bulk and cached — no per-player budget needed
-        const player = await fetchVLRPlayerStats(lineObj.player);
+        // the bulk table is free; a vlr.gg page lookup spends the per-cycle budget
+        let player = null;
+        const known = !!vlrTable.players[vlrKey(lineObj.player)] || vlrStats.cache.has(nameKey(lineObj.player));
+        if (known || freshLookups < MAX_FRESH_LOOKUPS) {
+          if (!known) freshLookups++;
+          player = await fetchVLRPlayerStats(lineObj.player, lineObj.team);
+        }
         if (player) {
           autoPred = predictKillsFromStats(player, 'VAL', mapCount, lineObj.market);
           sampleSize = player.mapsPlayed ?? null;
@@ -1557,6 +1616,10 @@ async function generateEsportsPicks() {
         const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
           || (lineObj.matchTitle && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
         context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps }, { oddsBook, elo: ratingsState.elo });
+        // No price and no rating, but the span runs past the maps a Bo3 always
+        // plays ("Maps 1+2+3"): a deciding map happens about half the time, not
+        // always, so price it as an even matchup rather than a sure 3 maps.
+        if (!context && Math.max(...maps) > 2) context = evenContext(maps, opponent);
         if (context) {
           const perMap = autoPred / spanMaps;
           autoPred = perMap * context.factor * context.expMaps;
@@ -2713,8 +2776,22 @@ function esportsBoardFor(req) {
       }),
     }));
     const edges = pro ? m.edges.filter(e => tradableVenue(e.venue) && lic[e.venue]) : [];
-    return { ...m, links, markets, edges, arbs: pro ? markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })) : [], sharps, locked: !pro && m.edges.length > 0 };
+    return { ...m, links, markets, edges, arbs: pro ? markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })) : [], sharps, locked: !pro && m.edges.length > 0, h2h: matchHistory(m) };
   });
+}
+// Team-vs-team: last meetings and each side's recent form, from the same map
+// results the ratings use. Cached per match until the ratings refresh.
+const h2hCache = new Map();
+function matchHistory(m) {
+  const index = ratingsState.games?.[esboard.GAMES[m.game]?.elo];
+  if (!index) return null;
+  const key = `${m.id}|${m.teams.join('|')}`;
+  const hit = h2hCache.get(key);
+  if (hit && hit.index === index) return hit.h2h;
+  const h2h = headToHead(index, m.teams[0], m.teams[1]);
+  if (h2hCache.size > 2000) h2hCache.clear();
+  h2hCache.set(key, { index, h2h });
+  return h2h;
 }
 
 // Free users get the shape of it, not who to follow: wallets become a keyed
@@ -3151,7 +3228,7 @@ app.get('/api/esports/matches', (req, res) => {
   if (req.query.live === '0') matches = matches.filter(m => !m.live);
   const st = esportsBoard.state;
   res.json({
-    matches, count: matches.length, updated: st.updated, counts: st.counts, errors: st.errors.slice(0, 5), pro: hasPro(req), region: TAIL_REGION,
+    matches, count: matches.length, updated: st.updated, counts: st.counts, calibration: st.calibration, errors: st.errors.slice(0, 5), pro: hasPro(req), region: TAIL_REGION,
     games: Object.fromEntries(Object.entries(esboard.GAMES).map(([k, g]) => [k, g.label])),
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
@@ -3208,7 +3285,7 @@ app.get('/api/esports/player/:sport/:name', async (req, res) => {
   const { sport, name } = req.params;
   let stats = null;
   if (sport.toLowerCase().includes('val')) stats = await fetchVLRPlayerStats(name);
-  else if (sport.toLowerCase().includes('lol')) stats = lolStats.players[name.toLowerCase()] || null;
+  else if (sport.toLowerCase().includes('lol')) stats = lolPlayer(name);
   else if (sport.toLowerCase().includes('cs')) stats = await fetchBo3PlayerStats(name);
   res.json(stats || { error: 'Player not found' });
 });
@@ -3630,7 +3707,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   resultsBackup: resultsBackup.status(),
-  esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, errors: esportsBoard.state.errors.slice(0, 5) },
+  esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,
     updated: esportsCache.lastUpdated,
@@ -3642,7 +3719,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   spanInferredCount: esportsCache.spanInferred || 0,
   priceMismatchCount: esportsCache.priceMismatches || 0,
   warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
-  valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError },
+  valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError, vlrPages: { ...vlrStats.health, cached: vlrStats.cache.size } },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,

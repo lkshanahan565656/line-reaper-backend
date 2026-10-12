@@ -164,3 +164,46 @@ test('status reports the board', async () => {
   const { body } = await get('/api/status');
   assert.equal(body.esportsBoard.counts.matches, 1);
 });
+
+// ── props model (LCSLarry-calibrated) ──
+// Rows from LCSLarry's PrizePicks board (2026-10-12): line, their projection,
+// their probability. Given the same projection, our probability should land
+// within a few points, on overs and unders alike.
+const LARRY = [
+  ['CS', 'MAPS 1-2 Headshots', 16.5, 14.5, 60.1], ['CS', 'MAPS 1-2 Headshots', 17.5, 19.5, 60.0], ['CS', 'MAPS 1-2 Kills', 30, 32.2, 60.0],
+  ['CS', 'MAPS 1-2 Kills', 26.5, 28.7, 59.7], ['LOL', 'MAPS 1-3 Kills', 10.5, 12.6, 59.1], ['CS', 'MAPS 1-2 Kills', 32.5, 34.8, 59.1],
+  ['LOL', 'MAPS 1-3 Kills', 11, 12.9, 58.8], ['LOL', 'MAPS 1-3 Kills', 15, 16.7, 58.4], ['CS', 'MAPS 1-2 Headshots', 16.5, 14.9, 58.0],
+  ['CS', 'MAPS 1-2 Kills', 22.5, 21.4, 58.0], ['CS', 'MAPS 1-2 Kills', 32.5, 31.1, 58.0], ['CS', 'MAPS 1-2 Kills', 32, 30.7, 57.9],
+  ['LOL', 'MAPS 1-3 Kills (Combo)', 21.5, 24, 57.8], ['CS', 'MAPS 1-2 Headshots', 12.5, 13.9, 57.8], ['VAL', 'MAPS 1-2 Kills', 29.5, 28.1, 57.7],
+  ['CS', 'MAPS 1-2 Headshots', 10, 11.2, 57.7], ['CS', 'MAPS 1-2 Kills', 22.5, 24.3, 57.6], ['CS', 'MAPS 1-2 Headshots', 10, 9.1, 57.6],
+];
+test('props: probabilities track LCSLarry on the same projections, overs and unders alike', () => {
+  let err = 0;
+  for (const [sport, market, line, pred, theirs] of LARRY) {
+    const r = S.calcEsportsEV(line, pred, pred > line ? 'OVER' : 'UNDER', sport, market);
+    assert.ok(Math.abs(r.prob - theirs) < 3.5, `${sport} ${market} ${line} vs ${pred}: ours ${r.prob.toFixed(1)}, theirs ${theirs}`);
+    err += Math.abs(r.prob - theirs);
+  }
+  assert.ok(err / LARRY.length < 1.5, `mean gap ${(err / LARRY.length).toFixed(2)} points`);
+  // the same 2-headshot gap reads the same whichever side it falls on
+  const under = S.calcEsportsEV(16.5, 14.5, 'UNDER', 'CS', 'MAPS 1-2 Headshots').prob;
+  const over = S.calcEsportsEV(16.5, 18.5, 'OVER', 'CS', 'MAPS 1-2 Headshots').prob;
+  assert.ok(Math.abs(under - over) < 1.5, `under ${under} vs over ${over}`);
+});
+
+test('props: Underdog esports lines get the player\'s team from the game\'s home and away sides (title reads away vs home)', () => {
+  const payload = {
+    games: [{ id: 7, sport_id: 'CS', title: 'Betclic vs Ninjas in Pyjamas', full_team_names_title: 'Betclic vs Ninjas in Pyjamas', home_team_id: 'h', away_team_id: 'a', scheduled_at: '2026-10-12T10:00:00Z' }],
+    players: [{ id: 'p1', last_name: 'sjuush', sport_id: 'CS' }, { id: 'p2', last_name: 'stavn', sport_id: 'CS' }],
+    appearances: [{ id: 'x1', player_id: 'p1', match_id: 7, team_id: 'h' }, { id: 'x2', player_id: 'p2', match_id: 7, team_id: 'a' }],
+    over_under_lines: [
+      { stat_value: '27.5', over_under: { appearance_stat: { appearance_id: 'x1', display_stat: 'Kills on Maps 1+2' } }, options: [] },
+      { stat_value: '32', over_under: { appearance_stat: { appearance_id: 'x2', display_stat: 'Kills on Maps 1+2' } }, options: [] },
+    ],
+  };
+  const lines = S.parseUnderdogPayload(payload);
+  // the title reads away vs home
+  assert.equal(lines[0].team, 'Ninjas in Pyjamas');
+  assert.equal(lines[1].team, 'Betclic');
+  assert.equal(lines[0].matchTitle, 'Betclic vs Ninjas in Pyjamas');
+});
