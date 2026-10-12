@@ -19,6 +19,17 @@
 //                CLV  = closing price / entry − 1 (beat the close when > 0;
 //                prices against prices, before fees)
 //
+// A resting bid (signal.limit: no venue sized a take, so the signal says to
+// bid a cent or two under the ask) is logged with order 'limit' at its own
+// price and maker fee, and only counts once it would have filled: the
+// outcome's Polymarket price traded through the bid (half a cent under it,
+// so the queue ahead of us went first) after the signal and before the
+// event. Each check reads the live price; when the event comes without a
+// fill, the price history since the signal decides once. Never filled →
+// result 'unfilled', left out of every stat. On Kalshi and Polymarket US the
+// Polymarket price stands in for that venue's. A filled bid's CLV is
+// against its own price.
+//
 // A top-up (the sharp buying more of the same thing) joins its first bet as
 // one record: the units add up, and the entry (and the cost) becomes the
 // single price with the same payout (units / Σ(units_i / entry_i)).
@@ -34,7 +45,7 @@
 
 const path = require('path');
 const { createMemoryStore, createFileStore } = require('./evtrack');
-const { fetchMarket, fetchBook, resolutionOf, priceOf, outcomeIndexOf, toMs } = require('./tail');
+const { fetchMarket, fetchBook, fetchPriceHistory, resolutionOf, priceOf, outcomeIndexOf, toMs } = require('./tail');
 
 function createPgStore(connectionString, table = 'tail_signals') {
   if (!/^[a-z_]+$/.test(table)) throw new Error(`bad table name ${table}`);
@@ -95,11 +106,18 @@ function venueFee(venue, s) {
 // Polymarket ask, the signal's units and its fee.
 function toRecord(s, t = Date.now()) {
   if (!s || s.type !== 'entry' || !s.id) return null;
-  const v = s.venue && typeof s.venue === 'object' && inUnit(num(s.venue.price)) ? s.venue : null;
-  const entry = v ? num(v.price) : num(s.currentPrice);
-  const units = v && num(v.units) != null ? num(v.units) : num(s.units);
+  let v = s.venue && typeof s.venue === 'object' && inUnit(num(s.venue.price)) ? s.venue : null;
+  let entry = v ? num(v.price) : num(s.currentPrice);
+  let units = v && num(v.units) != null ? num(v.units) : num(s.units);
+  let fee = v ? venueFee(v, s) : Math.max(0, num(s.fee) ?? 0);
+  const limit = !(units > 0) && s.limit && inUnit(num(s.limit.price)) && num(s.limit.units) > 0 ? s.limit : null;
+  if (limit) {
+    v = limit;
+    entry = num(limit.price);
+    units = num(limit.units);
+    fee = Math.max(0, num(limit.fee) ?? 0);
+  }
   if (!(units > 0) || !inUnit(entry)) return null;
-  const fee = v ? venueFee(v, s) : Math.max(0, num(s.fee) ?? 0);
   if (!(entry + fee < 1)) return null;
   const consensus = Array.isArray(s.consensus) ? s.consensus : [];
   return {
@@ -110,6 +128,7 @@ function toRecord(s, t = Date.now()) {
     theirPrice: s.theirPrice, venue: v ? String(v.name || v.venue || 'venue') : null, polyPrice: s.currentPrice ?? null,
     entry, fee: r6(fee), cost: r6(entry + fee), units, edge: s.edge ?? null, kelly: s.kelly ?? null, q: s.q ?? s.prob ?? null,
     consensus, isConsensus: s.isConsensus ?? consensus.length >= 2,
+    ...(limit ? { order: 'limit', filled: false, filledAt: null, until: limit.until || s.gameStartTime || null } : {}),
     closePrice: null, closeAt: null, closeFrozen: false, profit: null, clv: null, settledAt: null,
   };
 }
@@ -118,7 +137,30 @@ const costOf = rec => (rec.cost > 0 ? rec.cost : rec.entry + (rec.fee || 0));
 // CLV compares Polymarket's close with Polymarket's price when the signal
 // went out, not with another venue's entry. Records without a venue entered
 // at that price; a venue record with no Polymarket ask has no CLV.
-const clvBase = rec => (inUnit(num(rec.polyPrice)) ? num(rec.polyPrice) : rec.venue ? null : rec.entry);
+const clvBase = rec => (rec.order === 'limit' ? rec.entry : inUnit(num(rec.polyPrice)) ? num(rec.polyPrice) : rec.venue ? null : rec.entry);
+
+// ── resting bids ──
+const THROUGH = 0.005;   // traded this far under the bid: the queue ahead of it filled first
+const waiting = rec => rec.order === 'limit' && !rec.filled;
+const tradedThrough = (rec, px) => inUnit(num(px)) && num(px) <= rec.entry - THROUGH + 1e-9;
+// Pure: the event (a game's start, the market's end, orders stopping, the
+// bid's own until) has come, or the market is settled. → bool
+function bidOver(rec, market, t = Date.now()) {
+  if (!market || market.closed || !market.active || market.acceptingOrders === false || resolutionOf(market)) return true;
+  const ends = [toMs(market.gameStartTime), toMs(market.endDate), toMs(rec.until)].filter(x => x != null);
+  return ends.some(x => t >= x);
+}
+// Pure: when the bid filled from price history ({ points: [{ t, p }] }), from
+// the signal to the cut-off. → ms or null
+function fillFromHistory(rec, points, cut) {
+  const from = Date.parse(rec.at || rec.recordedAt);
+  for (const x of points || []) {
+    if (Number.isFinite(from) && x.t < from) continue;
+    if (cut != null && x.t > cut) break;
+    if (tradedThrough(rec, x.p)) return x.t;
+  }
+  return null;
+}
 
 // Pure: settle a record against its (parsed) market. → true when it changed.
 function settle(rec, market, t = Date.now()) {
@@ -219,7 +261,9 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
     await loaded;
     const rec = toRecord(signal, now());
     if (!rec || await known(rec.id)) return false;
-    const parent = signal.parentId ? open.get(signal.parentId) : null;
+    // a bid and a take fill differently: each stays its own record
+    let parent = signal.parentId ? open.get(signal.parentId) : null;
+    if (parent && (parent.order || 'take') !== (rec.order || 'take')) parent = null;
     const doc = parent ? merge(parent, rec) : rec;
     if (!parent) open.set(rec.id, rec);
     await store.put(doc).catch(e => log.warn?.(`Tail tracker: ${e.message}`));
@@ -263,6 +307,29 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
         }
         const t = now();
         for (const rec of byMarket.get(cid)) {
+          if (waiting(rec)) {
+            const live = mids.get(String(rec.asset)) ?? (market.updatedAt != null && t - market.updatedAt > GAMMA_STALE_MS ? null : priceOf(market, rec));
+            if (!bidOver(rec, market, t)) {
+              if (tradedThrough(rec, live)) Object.assign(rec, { filled: true, filledAt: iso(t) });
+              observe(rec, market, t, mids.get(String(rec.asset)) ?? null);
+              writes.push(store.put(rec));
+              continue;
+            }
+            // the event came first: did it trade through the bid in between?
+            const cut = Math.min(t, ...[toMs(market.gameStartTime), toMs(market.endDate), toMs(rec.until)].filter(x => x != null));
+            let at = null;
+            try {
+              if (rec.asset == null) throw new Error('no token');
+              const { points } = await fetchPriceHistory(http, rec.asset, { start: Date.parse(rec.at || rec.recordedAt), end: cut, bucketSeconds: 60 });
+              at = fillFromHistory(rec, points, cut);
+            } catch (e) { errors.push({ conditionId: cid, message: `bid fill: ${e?.message || e}` }); continue; }
+            if (at == null) {
+              Object.assign(rec, { status: 'settled', result: 'unfilled', profit: 0, settledAt: iso(t) });
+              open.delete(rec.id); settled++; writes.push(store.put(rec));
+              continue;
+            }
+            Object.assign(rec, { filled: true, filledAt: iso(at) });
+          }
           if (settle(rec, market, t)) { open.delete(rec.id); settled++; writes.push(store.put(rec)); }
           else if (observe(rec, market, t, mids.get(String(rec.asset)) ?? null)) writes.push(store.put(rec));
         }
@@ -282,16 +349,22 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
 
   async function summary(filter = {}) {
     const all = await filtered(filter);
-    const done = all.filter(r => r.status === 'settled');
+    // a bid that never filled was never a bet
+    const done = all.filter(r => r.status === 'settled' && r.result !== 'unfilled');
+    const bids = all.filter(r => r.order === 'limit');
+    const filledN = bids.filter(r => r.filled).length, unfilledN = bids.filter(r => r.result === 'unfilled').length;
     const by = key => {
       const g = {};
       for (const r of done) (g[r[key] || '—'] ||= []).push(r);
       return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, stats(v)]).sort((a, b) => b[1].n - a[1].n));
     };
     return {
-      open: all.length - done.length, overall: stats(done), byGrade: by('grade'), byCategory: by('category'),
+      open: all.filter(r => r.status !== 'settled').length, overall: stats(done), byGrade: by('grade'), byCategory: by('category'),
       byConsensus: { consensus: stats(done.filter(r => r.isConsensus)), single: stats(done.filter(r => !r.isConsensus)) },
       byVenue: Object.fromEntries(Object.entries(groupBy(done, r => r.venue || 'Polymarket')).map(([k, v]) => [k, stats(v)])),
+      byOrder: { take: stats(done.filter(r => r.order !== 'limit')), limit: stats(done.filter(r => r.order === 'limit')) },
+      bids: { placed: bids.length, filled: filledN, unfilled: unfilledN, waiting: bids.length - filledN - unfilledN,
+        fillRate: filledN + unfilledN > 0 ? r4(filledN / (filledN + unfilledN)) : null },
       lastCheck,
     };
   }
@@ -305,4 +378,4 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
   return { record, recordAll, check, summary, list, ready: () => loaded, store, state: () => ({ open: open.size, lastCheck }) };
 }
 
-module.exports = { createTailTracker, createStoreFromEnv, createFreshStoreFromEnv, createPgStore, toRecord, settle, observe, merge, stats };
+module.exports = { createTailTracker, createStoreFromEnv, createFreshStoreFromEnv, createPgStore, toRecord, settle, observe, merge, stats, bidOver, fillFromHistory };

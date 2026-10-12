@@ -530,7 +530,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.50.0');
+  assert.equal(body.version, '3.51.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -557,8 +557,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.50.0');
-  assert.equal((await get('/')).body.version, '3.50.0');
+  assert.equal(require('../package.json').version, '3.51.0');
+  assert.equal((await get('/')).body.version, '3.51.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1290,4 +1290,34 @@ test('exchange arbs: Kalshi against the games Polymarket US lists, re-priced on 
     assert.equal(usArbs().length, 0, 'the list said yes, the book said no');
     assert.equal(S.xarbState.counts.polymarketUs.screened, 1);
   } finally { fx.pmus = null; fx.kalshiEvents = savedK; fx.pmEvents = savedP; }
+});
+
+test('where to tail: no take sized anywhere → the best resting bid, pinged and logged at its own price', async () => {
+  const base = {
+    id: 'bid-route', type: 'entry', wallet: '0x' + 'b'.repeat(40), grade: 'B', category: 'sports', market: 'Coventry vs. Newcastle', conditionId: '0xnobidmatch', asset: 'nobid',
+    outcome: 'No', theirPrice: 0.73, currentPrice: 0.73, slippage: 0, units: 0, q: 0.7324, prob: 0.7324, consensus: ['0x' + 'b'.repeat(40)], isConsensus: false,
+    blocked: null, reason: "price ran, don't chase", gameStartTime: new Date(Date.now() + 3 * 3600e3).toISOString(), at: new Date().toISOString(),
+  };
+  // Polymarket US asks 73¢ with its ~1.4¢ taker fee: no take; a 72¢ bid pays a quarter of it
+  const us = { key: 'polymarketus', name: 'Polymarket US', price: 0.73, fee: 0.0137, cost: 0.7437, bid: 0.72, side: 'short', pick: 'Newcastle or Draw', buy: 'Newcastle or Draw', url: 'https://polymarket.us/event/x' };
+  const s = S.routeSignal({ ...base }, { extra: [us] });
+  assert.equal(s.venue.units, 0);
+  assert.equal(s.limit.key, 'polymarketus');
+  assert.equal(s.limit.price, 0.72);
+  assert.ok(s.limit.units > 0 && s.limit.units <= 0.5);
+  assert.ok(s.limit.fee > 0 && s.limit.fee < 0.0137 / 2);
+  assert.match(S.describeTail(s), /Bid at Polymarket US: Newcastle or Draw 72¢ limit · [\d.]+u · fills only if it trades down to you · cancel at the start <https:\/\/polymarket\.us\/event\/x>/);
+  assert.equal(S.tailPings(s), true, 'a sized B bid is pinged like a sized take');
+  assert.equal(await S.routeTail({ ...base, id: 'bid-route-2' }), 0, 'no US venue matched: nothing');
+  // no bid where the take is sized, the price ran past the chase limit, or the bet is blocked
+  assert.equal(S.routeSignal({ ...base, id: 'b2', q: 0.8 }, { extra: [us] }).limit, null);
+  assert.equal(S.routeSignal({ ...base, id: 'b3', slippage: 0.05 }, { extra: [us] }).limit, null);
+  assert.equal(S.routeSignal({ ...base, id: 'b4', blocked: 'in-play' }, { extra: [us] }).limit, null);
+  // a top-up or a full game takes it down like a take
+  assert.equal(S.routeSignal({ ...base, id: 'b5', priorUnits: 9 }, { extra: [us] }).limit, null);
+  assert.equal(S.routeSignal({ ...base, id: 'b6', eventRoom: 0.1 }, { extra: [us] }).limit.units, 0.1);
+  // the track record logs it as a bid
+  assert.equal(await S.tailTracker.record(s), true);
+  const rec = (await S.tailTracker.list({ limit: 5000 })).find(r => r.id === 'bid-route');
+  assert.deepEqual([rec.order, rec.entry, rec.venue, rec.filled], ['limit', 0.72, 'Polymarket US', false]);
 });
