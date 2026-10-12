@@ -90,7 +90,7 @@ test('a new edge alerts once, Kalshi only in US mode', async () => {
   await S.scanEsportsBoard();
   assert.equal(posts.length, 1);
   const text = posts[0].body.content;
-  assert.match(text, /🎮 Valorant · G2 Esports vs T1 \(Bo3, .* ET\): T1 to win on Kalshi at \d+(\.\d)?¢, fair 44\.5¢ \(\+\d+\.\d%\)/);
+  assert.match(text, /Valorant · G2 Esports vs T1 \(Bo3, .* ET\): T1 to win on Kalshi at \d+(\.\d)?¢, fair 44\.5¢ \(\+\d+\.\d%\)/);
   assert.match(text, /kalshi\.com\/markets\/kxvalorantgame-/);
   assert.ok(!/Polymarket at/.test(text), 'no Polymarket edges in US mode');
   tick();

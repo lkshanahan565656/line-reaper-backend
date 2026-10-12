@@ -79,13 +79,13 @@ function diffBoards(prev, next, { minEv, moveMinEv, cooldownMs, now = Date.now()
 function describe(e) {
   const pct = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
   const who = `${e.player} ${e.side || ''} ${e.line} ${e.market} (${e.sport}${e.book ? ', ' + e.book : ''})`;
-  if (e.kind === 'edge') return `🎯 New edge ${pct(e.ev)}: ${who}`;
+  if (e.kind === 'edge') return `New edge ${pct(e.ev)}: ${who}`;
   if (e.kind === 'move') {
     const arrow = e.to > e.from ? '↑' : '↓';
     const note = e.direction === 'with' ? 'market moving our way, edge shrinking' : 'market moving away, edge growing';
-    return `📈 Line ${arrow} ${e.from} → ${e.to}: ${e.player} ${e.market} · ${note} · now ${pct(e.ev)}${e.sideFlipped ? ' · SIDE FLIPPED' : ''}`;
+    return `Line ${arrow} ${e.from} → ${e.to}: ${e.player} ${e.market} · ${note} · now ${pct(e.ev)}${e.sideFlipped ? ' · SIDE FLIPPED' : ''}`;
   }
-  return `⛔ Edge gone: ${e.player} ${e.market} (was ${pct(e.previousEv)}${e.removed ? ', pulled from the board' : ''})`;
+  return `Edge gone: ${e.player} ${e.market} (was ${pct(e.previousEv)}${e.removed ? ', pulled from the board' : ''})`;
 }
 
 // Discord-compatible webhook body. One message per refresh, up to 10 lines,

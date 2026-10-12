@@ -285,7 +285,7 @@ function diffEv(prev, next, { minEv = 3, now = Date.now(), seen = new Map(), coo
 function describeEv(r) {
   const what = r.player ? `${r.player} ${r.side} ${r.point} ${r.market}` : `${r.event} ${r.market === 'h2h' ? 'ML' : r.market} ${r.side}`;
   const price = r.dfs ? (r.multiplier && r.multiplier !== 1 ? `${r.multiplier}x` : 'pick') : (r.price > 0 ? `+${r.price}` : r.price);
-  return `💰 +${r.ev.toFixed(1)}% ${what} @ ${r.book} ${price} (fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice}${r.source === 'consensus' ? ', consensus' : ''})`;
+  return `+${r.ev.toFixed(1)}% ${what} @ ${r.book} ${price} (fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice}${r.source === 'consensus' ? ', consensus' : ''})`;
 }
 
 module.exports = {
