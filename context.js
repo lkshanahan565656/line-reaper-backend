@@ -187,24 +187,36 @@ function opponentFrom(team, title, explicitOpponent) {
 // ── Elo ratings from results ──
 // games: [{ a, b, aWon: bool, t }] at MAP level, any order.
 function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
-  const r = {}, seen = {}, expSum = {};
+  const r = {}, seen = {}, gaps = {};
   const get = n => (r[n] ??= start);
   for (const g of games.slice().sort((x, y) => (x.t || 0) - (y.t || 0))) {
     const a = teamKey(g.a), b = teamKey(g.b);
     if (!a || !b || a === b) continue;
-    const ea = 1 / (1 + Math.pow(10, (get(b) - get(a)) / 400));
+    const gap = get(b) - get(a);
+    const ea = 1 / (1 + Math.pow(10, gap / 400));
     const sa = g.aWon ? 1 : 0;
     r[a] += k * (sa - ea);
     r[b] -= k * (sa - ea);
     seen[a] = (seen[a] || 0) + 1; seen[b] = (seen[b] || 0) + 1;
-    expSum[a] = (expSum[a] || 0) + ea; expSum[b] = (expSum[b] || 0) + (1 - ea);
+    // the rating gap each team faced, so `typical` can be read on the same
+    // calibrated scale as tonight's mapProb
+    (gaps[a] ||= []).push(gap);
+    (gaps[b] ||= []).push(-gap);
   }
   const names = Object.keys(r);
   return {
     rating: n => { const key = resolve(n); return key ? r[key] : null; },
     games: n => { const key = resolve(n); return key ? seen[key] : 0; },
     // how favoured this team usually was, so we only adjust for the DIFFERENCE tonight
-    typical: n => { const key = resolve(n); return key && seen[key] ? expSum[key] / seen[key] : 0.5; },
+    // Read through the same `scale` as mapProb: tonight's price is calibrated
+    // to the market, and comparing it to an uncalibrated "usual" price made
+    // every strong team look less favoured than usual and cut its kills.
+    typical(n) {
+      const key = resolve(n), g = key && gaps[key];
+      if (!g?.length) return 0.5;
+      const s = this.scale ?? 1;
+      return g.reduce((x, d) => x + 1 / (1 + Math.pow(10, s * d / 400)), 0) / g.length;
+    },
     // scale: how much of the rating gap the market agrees with, fitted
     // against exchange prices by the esports board (esboard.js calibrate)
     scale: 1,
