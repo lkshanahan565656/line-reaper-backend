@@ -18,11 +18,13 @@ const { canonName, canonMarket, probToAmerican } = require('./ev');
 const KALSHI_EVENTS = 'https://api.elections.kalshi.com/trade-api/v2/events';
 // Ladder series by league. Tickers Kalshi doesn't list just come back empty.
 const SERIES = {
-  MLB: ['KXMLBKS', 'KXMLBHITS', 'KXMLBTB', 'KXMLBHR', 'KXMLBRBI'],
-  NFL: ['KXNFLRECYDS', 'KXNFLRSHYDS', 'KXNFLPASSYDS', 'KXNFLREC', 'KXNFLPASSTDS'],
-  NBA: ['KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBA3PT'],
-  WNBA: ['KXWNBAPTS', 'KXWNBAREB', 'KXWNBAAST'],
-  NHL: ['KXNHLGOAL', 'KXNHLSOG', 'KXNHLPTS', 'KXNHLAST'],
+  MLB: ['KXMLBKS', 'KXMLBHIT', 'KXMLBTB', 'KXMLBHR', 'KXMLBRBI', 'KXMLBHRR', 'KXMLBHA'],
+  NFL: ['KXNFLRECYDS', 'KXNFLRSHYDS', 'KXNFLPASSYDS', 'KXNFLREC', 'KXNFLPASSTDS', 'KXNFLTD', 'KXNFLRRYDS',
+    'KXNFLRSHATT', 'KXNFLPASSCOMP', 'KXNFLPASSATT', 'KXNFLPASSINT'],
+  NBA: ['KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBA3PT', 'KXNBAPRA', 'KXNBAPR', 'KXNBAPA', 'KXNBARA',
+    'KXNBASTL', 'KXNBABLK', 'KXNBASTOCKS', 'KXNBAFTM'],
+  WNBA: ['KXWNBAPTS', 'KXWNBAREB', 'KXWNBAAST', 'KXWNBA3PT'],
+  NHL: ['KXNHLGOAL', 'KXNHLPTS', 'KXNHLAST', 'KXNHLSAVES'],
 };
 const DEFAULTS = {
   maxSpread: 0.06,      // widest yes bid/ask gap we treat as a price
