@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createCreditBudget, msUntilReset, oddsCost } = require('../quota');
+const { createCreditBudget, msUntilReset, oddsCost, pickPollSport } = require('../quota');
 
 const DAY = 86400000;
 
@@ -71,4 +71,16 @@ test('the call that reveals a free plan still paces the next one', () => {
   assert.ok(b.take(3).ok);
   b.noteHeaders({ 'x-requests-remaining': '497', 'x-requests-used': '3' });
   assert.equal(b.take(3).ok, false);
+});
+
+test('sportsbook poller: the biggest slate soonest, weighted by time since its last pull', () => {
+  const now = Date.parse('2026-10-12T12:00:00Z'), h = 3600e3;
+  // nothing starting soon anywhere: no pull
+  assert.equal(pickPollSport([{ sport: 'nfl', games: 0, lastAt: null }], now), null);
+  // never pulled counts as 6 hours old: 14 NFL games beat 10 NHL games
+  assert.equal(pickPollSport([{ sport: 'nhl', games: 10, lastAt: null }, { sport: 'nfl', games: 14, lastAt: null }], now), 'nfl');
+  // NFL pulled an hour ago (1 × 14) loses to NHL untouched for 3 hours (3 × 10)
+  assert.equal(pickPollSport([{ sport: 'nfl', games: 14, lastAt: now - h }, { sport: 'nhl', games: 10, lastAt: now - 3 * h }], now), 'nhl');
+  // age caps at 6 hours, so a day-old 2-game slate can't starve a 14-game one pulled 2 hours ago
+  assert.equal(pickPollSport([{ sport: 'mma', games: 2, lastAt: now - 24 * h }, { sport: 'nfl', games: 14, lastAt: now - 2 * h }], now), 'nfl');
 });
