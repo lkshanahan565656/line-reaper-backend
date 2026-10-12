@@ -25,3 +25,9 @@ test('page has no emoji and ships the welcome screen', () => {
   assert.ok(html.includes('id="welcome"') && html.includes('by sharps'));
   assert.ok(html.includes("lsGet('lr_welcomed')"));
 });
+
+test('layout customizer: MORE menu, tab reorder/hide, foldable help panels', () => {
+  for (const id of ['layModal', 'moreMenu']) assert.ok(html.includes(id), id);
+  for (const fn of ['layApply', 'layMove', 'layHide', 'layPin', 'layReset', 'layFoldInit']) assert.ok(html.includes(`function ${fn}`), fn);
+  assert.ok(html.includes("const LAY_KEY = 'lr_layout'"));
+});
