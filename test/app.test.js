@@ -48,3 +48,14 @@ test('sales page: no emoji, legal links, links into the app', () => {
   assert.ok(html.includes("get('start')"), 'the app reads ?start= from the sales page links');
 
 });
+
+test('MY BETS tab: on the main bar, loads bets.js after calc.js, LOG buttons on plays', () => {
+  assert.ok(html.includes("showTab('betlog',this)\">MY BETS<") && html.includes('id="page-betlog"'));
+  assert.ok(!/LAY_MORE_DEFAULT = \[[^\]]*'betlog'/.test(html), 'not hidden under MORE');
+  assert.ok(html.indexOf("'/calc.js'") < html.indexOf("'/bets.js'"));
+  for (const fn of ['mybLogBest', 'mybLogTail', 'mybAutoSettle', 'mybExport', 'mybImport']) assert.ok(html.includes(`function ${fn}`), fn);
+  assert.ok(html.includes("const MYB_KEY = 'lr_bets'") && html.includes("lsGet('ww_bets')"), 'old BET LOG migrates');
+  const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(server, /app\.get\('\/bets\.js'/);
+  assert.match(server, /app\.post\('\/api\/bets\/settle'/);
+});
