@@ -3019,7 +3019,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.59.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.60.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3349,10 +3349,19 @@ app.get('/api/esports/matches', (req, res) => {
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
 });
+// one build at a time: a page load and a refresh share a run in flight
+let esPicksRun = null;
+function esPicksOnce() {
+  if (!esPicksRun) esPicksRun = generateEsportsPicks().finally(() => { esPicksRun = null; });
+  return esPicksRun;
+}
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
-  if (!fresh) await generateEsportsPicks();
+  // a cold cache waits for the first build; a stale one answers at once and
+  // rebuilds behind, so the board never hangs on a slow stats lookup
+  if (!(esportsCache.picks || []).length) await esPicksOnce();
+  else if (!fresh) esPicksOnce().catch(() => {});
   const pro = hasPro(req);
   // an EV filter would let a free user find each locked pick's EV by bisection
   const minEV = pro ? (parseFloat(req.query.minEV) || -100) : -100;
@@ -3370,7 +3379,7 @@ app.post('/api/esports/refresh', async (req, res) => {
   const admin = process.env.TRACKER_ADMIN_TOKEN && req.get('x-admin-token') === process.env.TRACKER_ADMIN_TOKEN;
   if (!admin && Date.now() - lastManualRefresh < 60000) return res.json({ ok: true, count: esportsCache.picks.length, cached: true });
   lastManualRefresh = Date.now();
-  await generateEsportsPicks();
+  await esPicksOnce();
   res.json({ ok: true, count: esportsCache.picks.length });
 });
 
@@ -3808,7 +3817,7 @@ app.get('/api/best', async (req, res) => {
       props: pro ? runEvScreen().rows.filter(r => r.dfs).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       plays,
-    }, { limit: Math.min(parseInt(req.query.limit) || 50, 200) });
+    }, { limit: Math.min(parseInt(req.query.limit) || 300, 500) });
     const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION };
     // free preview: everyone sees the same top plays (the alert is the same for all), Pro sees the whole list
     const preview = out.rows.slice(0, BEST_FREE_PREVIEW);
@@ -3871,7 +3880,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.59.0',
+  version: '3.60.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4006,10 +4015,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.59.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.60.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.59.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.60.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
