@@ -236,6 +236,8 @@ function createTracker({
           signalAt: new Date(t).toISOString(),
           signalSide: p.side, signalLine, signalBook: book,
           signalEv: p.bestEv, signalProb: p.prob, signalDecimal: legDecimal(book, p),
+          // the model's probability before the record's calibration shift (escal.js)
+          rawProb: p.rawProb ?? p.prob, calShift: p.calShift || 0,
           modelPred: p.modelPred, rawPred: p.rawPred ?? null, predSource: p.predSource,
           confidence: p.confidence, sampleSize: p.sampleSize ?? null,
           context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,

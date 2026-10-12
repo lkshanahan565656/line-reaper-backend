@@ -308,7 +308,11 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
 
 // ── the one call the pick generator makes ──
 // Returns null when we can't say anything about this match.
-function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
+// `usual`: the player's own team's map win rate behind his averages, used as
+// the baseline when there are no ratings for the sport (CS2). A player whose
+// 90 days came against weaker teams wins more maps than 50%, and his kill rate
+// carries that; tonight's matchup is measured against it, not against 50%.
+function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook, elo = {} }) {
   if (!team) return null;
   const s = sportKey(sport);
   let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
@@ -316,6 +320,7 @@ function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
   if (fed) { pMap = fed.pMap; source = fed.source === 'manual' || !fed.source ? 'odds' : fed.source; bestOf = fed.bestOf || bestOf; }
   const ratings = elo[s];
   if (ratings) pTypical = ratings.typical(team);
+  else if (usual > 0 && usual < 1) pTypical = usual;
   if (pMap == null && ratings && opponent) {
     const p = ratings.mapProb(team, opponent);
     if (p != null && ratings.games(team) >= 5 && ratings.games(opponent) >= 5) { pMap = p; source = 'elo'; }

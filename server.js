@@ -579,6 +579,8 @@ const {
 const { refreshRatings } = require('./ratings');
 const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = require('./propstats');
 const { propProb } = require('./dist');
+const { sportKey: trackerSportKey, statKind: trackerStatKind } = require('./tracker');
+const escal = require('./escal');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
@@ -767,7 +769,8 @@ function predictKillsFromStats(player, sport, mapCount, propType = 'kills') {
   if ((propType || '').toLowerCase().includes('headshot')) {
     pred = pred * ((player.hsPercent ? player.hsPercent / 100 : null) || 0.45);
   }
-  if (player.rating) pred *= 1 + (player.rating - 1.0) * 0.15;
+  // No rating bonus on top: a rating is built mostly from kills per round, so
+  // scaling KPR-based kills by it again counted the same skill twice.
   return pred;
 }
 
@@ -1101,6 +1104,10 @@ function bo3ExtractProfile(playerName, gen, map, acc) {
   if (kills && mapsPlayed) stats.avgKillsPerMap = kills / mapsPlayed;
   if (rounds && mapsPlayed) stats.roundsPerMap = rounds / mapsPlayed;
   if (mapsPlayed) stats.mapsPlayed = mapsPlayed;
+  // how often his team wins a map against the opponents behind these averages,
+  // so tonight's matchup is read relative to his usual one (context.js)
+  const mapsWon = bo3Pick(g, ['games_won_count', 'games_won']);
+  if (mapsWon != null && mapsPlayed) stats.mapWinRate = mapsWon / mapsPlayed;
   if (rating) stats.rating = rating;
   if (hsPercent != null) stats.hsPercent = hsPercent > 1 ? hsPercent : hsPercent * 100;
   return (stats.kpr || stats.avgKillsPerMap) ? stats : null;
@@ -1549,6 +1556,17 @@ async function generateEsportsPicks() {
   let priceMismatches = 0;
   const contextCounts = {};
 
+  // What the record says so far: kinds of pick that keep losing get their
+  // probability pulled down, kinds that keep winning get a little more (escal.js)
+  let calib = null;
+  if (process.env.ESPORTS_CALIBRATION !== 'off') {
+    try {
+      const prior = parseFloat(process.env.ESPORTS_CAL_PRIOR);
+      calib = escal.calibrate(await tracker.list({ status: 'graded', limit: 100000 }), Number.isFinite(prior) && prior > 0 ? { prior } : {});
+    } catch (e) { console.warn('Esports: calibration skipped:', e.message); }
+  }
+  esportsCache.calibration = calib ? { prior: calib.prior, buckets: Object.values(calib.buckets), at: new Date().toISOString() } : null;
+
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked on — but the same pick reads "MAPS 1-2 Kills" on PP and
   // "Kills on Maps 1+2" on UD. Normalized index makes a manual number stick to
@@ -1579,7 +1597,7 @@ async function generateEsportsPicks() {
       else if (sportU.includes('LOL') || sportU.includes('LEAGUE')) sportKey = 'LOL';
       else if (sportU.includes('DOTA')) sportKey = 'DOTA';
 
-      let autoPred = null;
+      let autoPred = null, usualWin = null;
       if (sportKey === 'LOL') {
         // Oracle's Elixir aggregates are in memory — no lookup budget needed
         const mk = (lineObj.market || '').toLowerCase();
@@ -1626,6 +1644,10 @@ async function generateEsportsPicks() {
           autoPred = predictKillsFromStats(player, sportKey, mapCount, lineObj.market);
           sampleSize = player.mapsPlayed ?? null;
           statLine = describePlayer(player);
+          // shrunk toward 50% by 10 maps, so a hot 6-map run doesn't read as his norm
+          if (player.mapWinRate != null && player.mapsPlayed) {
+            usualWin = (player.mapWinRate * player.mapsPlayed + 5) / (player.mapsPlayed + 10);
+          }
         }
       }
       rawPred = autoPred;
@@ -1649,7 +1671,7 @@ async function generateEsportsPicks() {
         const maps = spanToMapList(label, spanMaps);
         const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
           || (lineObj.matchTitle && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
-        context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps }, { oddsBook, elo: ratingsState.elo });
+        context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps, usual: usualWin }, { oddsBook, elo: ratingsState.elo });
         // No price and no rating, but the span runs past the maps a Bo3 always
         // plays ("Maps 1+2+3"): a deciding map happens about half the time, not
         // always, so price it as an even matchup rather than a sure 3 maps.
@@ -1728,6 +1750,18 @@ async function generateEsportsPicks() {
     const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market, ctxOpts);
     if (!r) return pick;
 
+    // calibrate on the record: same shift on every line this pick is priced at
+    const calShift = calib ? calib.shift(trackerSportKey(base.sport), trackerStatKind(base.market), side) : 0;
+    pick.rawProb = parseFloat(r.prob.toFixed(2));
+    pick.calShift = calShift || 0;
+    if (calShift) {
+      r.prob = escal.adjustPct(r.prob, calShift);
+      r.confidence = r.prob > 62 ? 'HIGH' : r.prob > 56 ? 'MED' : 'LOW';
+      const b = calib.bucket(trackerSportKey(base.sport), trackerStatKind(base.market), side);
+      const rec = `${b.wins}-${b.losses} on ${b.sport} ${b.stat} ${side === 'OVER' ? 'overs' : 'unders'}`;
+      pick.statLine = [pick.statLine, `record ${rec}: ${calShift > 0 ? '+' : ''}${(calShift * 100).toFixed(1)} pts`].filter(Boolean).join(' · ');
+    }
+
     pick.side = side;
     pick.prob = parseFloat(r.prob.toFixed(2));
     // How far our number sits from the book's, in stat units and percent
@@ -1741,6 +1775,7 @@ async function generateEsportsPicks() {
     pick.pricing = {
       line: lineVal, side, meanPerMap: r.meanPerMap, k: r.varianceK, stat: r.stat,
       scenarios: r.scenarios.map(x => ({ maps: x.maps, weight: +x.weight.toFixed(4) })),
+      shift: calShift || 0,
     };
 
     if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
@@ -1751,7 +1786,7 @@ async function generateEsportsPicks() {
       let udProb = r.prob;
       if (udm.line != null && udm.line !== lineVal) {
         const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market, ctxOpts);
-        if (r2) udProb = r2.prob;
+        if (r2) udProb = escal.adjustPct(r2.prob, calShift);
       }
       const udP = udPricing(udProb, udSideMult);
       pick.udEv = udP.ev != null ? parseFloat(udP.ev.toFixed(2)) : null;
@@ -3017,7 +3052,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.62.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.63.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3776,7 +3811,7 @@ function legsFromBoard(input) {
       player: hit.player, team: hit.team, gameId: hit.gameId, stat: hit.pricing?.stat,
       side: hit.side, line: hit.pricing?.line, prob: hit.prob / 100,
       meanPerMap: hit.pricing?.meanPerMap, k: hit.pricing?.k, scenarios: hit.pricing?.scenarios,
-      ev: hit.bestEv,
+      shift: hit.pricing?.shift || 0, ev: hit.bestEv,
     };
   });
 }
@@ -3801,6 +3836,7 @@ app.get('/api/esports/best-slips', requirePro, (req, res) => {
       player: p.player, team: p.team, gameId: p.gameId, sport: p.sport, market: p.displayMarket,
       side: p.side, line: p.pricing.line, prob: p.prob / 100, ev: p.bestEv,
       meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
+      shift: p.pricing.shift || 0,
     }));
   if (pool.length < 2) return res.json({ slips: [], pool: pool.length });
   const slips = bestSlips(pool, { maxLegs }).map(s => ({
@@ -3823,6 +3859,9 @@ app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.get('/api/esports/match-odds', (req, res) => res.json({ matches: oddsBook.list() }));
+// What the pick record has taught the board: per sport, stat and side, how
+// often it hit against what the model said, and the shift now applied.
+app.get('/api/esports/calibration', (req, res) => res.json(esportsCache.calibration || { buckets: [], off: process.env.ESPORTS_CALIBRATION === 'off' }));
 app.get('/api/feeds', (req, res) => res.json({
   pandascore: { enabled: feedState.pandascore.enabled, updated: feedState.pandascore.updated, errors: feedState.pandascore.errors,
     upcoming: Object.fromEntries(Object.entries(feedState.pandascore.schedules).map(([k, v]) => [k, v.length])) },
@@ -3931,7 +3970,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.62.0',
+  version: '3.63.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4070,10 +4109,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.62.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.63.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhook.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.62.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.63.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
