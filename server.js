@@ -2781,7 +2781,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
   const { edges, fairs, pairs } = xvalue.findValue(input, { ...o, books, requireBook: true });
   for (const e of edges) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
   await xvalueTracker.recordBoard(xvalue.trackRows(edges), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, edges: edges.length } });
+  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, edges: edges.length } });
   const lic = webhookLicence();
   const fresh = edges.filter(e => e.ev >= XVALUE_ALERT_MIN && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   for (const e of fresh) xvalueSeen.set(e.id, now);
@@ -2865,6 +2865,10 @@ async function scanXarbs() {
     await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
+    }
+    // the screen's fair column: Polymarket's mid (its live book where this scan read one)
+    if (polymarket.length) {
+      try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
     }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
     if (kalshi.length) {
@@ -3271,7 +3275,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.72.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.73.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3583,7 +3587,11 @@ app.get('/api/xarbs', async (req, res) => {
 app.get('/api/xscreen', (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
   // without Kalshi's data licence its prices are left out, not the games
-  const rows = (xarbState.screen || []).map(r => (lic.kalshi ? r : { ...r, sides: r.sides.map(x => ({ ...x, kalshi: null, kalshiUrl: null, best: x.other != null ? r.venue : null, gap: null })) }));
+  // without Polymarket's, the fair column (its mid) is
+  const rows = (xarbState.screen || [])
+    .map(r => (lic.kalshi ? r : { ...r, sides: r.sides.map(x => ({ ...x, kalshi: null, kalshiUrl: null, best: x.other != null ? r.venue : null, gap: null, ev: x.fair != null && x.other != null ? Math.round((x.fair / x.other - 1) * 1e4) / 1e4 : null })) }))
+    .map(r => (lic.polymarket ? r : { ...r, maxEv: null, sides: r.sides.map(x => ({ ...x, fair: null, ev: null })) }))
+    .map(r => { const evs = r.sides.map(x => x.ev).filter(e => e != null); return { ...r, maxEv: evs.length ? Math.max(...evs) : null }; });
   const base = { count: rows.length, updated: xarbState.updated, pro, region: TAIL_REGION };
   if (!pro) return res.json(base);
   res.json(regionSafe({ ...base, rows }));
@@ -4229,7 +4237,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.72.0',
+  version: '3.73.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4368,10 +4376,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.72.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.73.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.72.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.73.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

@@ -5176,7 +5176,7 @@ function arbShow() {
 // ─── PRICES: the exchanges' odds screen ───────────────────────────────────────
 // Each paired game line, each side's all-in price (fee in) on Kalshi and
 // Polymarket US, the cheaper one lit up. Same game, same payout: buy where it costs less.
-const xscreenUi = { data: null, error: null, kind: 'all', league: 'all' };
+const xscreenUi = { data: null, error: null, kind: 'all', league: 'all', sort: 'soon' };
 async function loadXscreen() {
   const el = document.getElementById('xscreenContent');
   if (!xscreenUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
@@ -5193,22 +5193,28 @@ function renderXscreen() {
   if (!d) return;
   if (!d.pro) { el.innerHTML = tailLockBanner(`<b>${d.count || 0} game lines priced on both exchanges right now.</b> <span style="color:#cbd5e1">Pro shows each side's price on Kalshi and Polymarket US, and which is cheaper.</span>`, 'The exchange price screen'); return; }
   const rows = (d.rows || []).filter(r => (xscreenUi.kind === 'all' || r.kind === xscreenUi.kind) && (xscreenUi.league === 'all' || r.league === xscreenUi.league));
+  if (xscreenUi.sort === 'ev') rows.sort((a, b) => (b.maxEv ?? -9) - (a.maxEv ?? -9));
+  const hasFair = (d.rows || []).some(r => r.sides.some(x => x.fair != null));
   const leagues = [...new Set((d.rows || []).map(r => r.league).filter(Boolean))];
   const chip = (k, v, label) => `<button class="sport-chip ${xscreenUi[k] === v ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xscreenSet('${k}','${escAttr(v)}')">${escAttr(label)}</button>`;
   const venue = TAIL_VENUES[(d.rows || [])[0]?.venue] || 'Polymarket US';
   const when = t => { const x = new Date(t); return x.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
   const cell = (c, url, win) => c == null ? '<td class="xs-p">—</td>' : `<td class="xs-p">${tailLink(url, `<span class="${win ? 'xs-win' : ''}">${tailC(c)}</span>`)}</td>`;
+  // fair = Polymarket's mid; EV of the cheaper all-in price at it, lit from +2%
+  const fairCell = x => x.fair == null ? '<td class="xs-p">—</td>'
+    : `<td class="xs-p">${tailC(x.fair)}${x.ev != null ? `<div class="${x.ev >= 0.02 ? 'xs-win' : ''}" style="font-size:10px;color:var(--text2)">${x.ev >= 0 ? '+' : ''}${Math.round(x.ev * 1000) / 10}%</div>` : ''}</td>`;
   const body = rows.map(r => {
     const what = r.kind === 'moneyline' ? 'Moneyline' : r.kind === 'total' ? `Total ${r.line}` : `Spread ${r.line}`;
     return r.sides.map((x, i) => `<tr${i ? '' : ' class="xs-top"'}>
       ${i ? '<td></td>' : `<td rowspan="1"><b>${escAttr(r.title)}</b><div class="xa-sub">${escAttr((r.league || '').toUpperCase())} · ${escAttr(what)} · ${escAttr(when(r.start))}</div></td>`}
       <td>${escAttr(x.pick)}</td>${cell(x.kalshi, x.kalshiUrl, x.best === 'kalshi')}${cell(x.other, x.otherUrl, x.best === r.venue)}
-      <td class="xs-p" style="color:var(--text2)">${x.gap >= 0.005 ? `${Math.round(x.gap * 1000) / 10}¢` : ''}</td></tr>`).join('');
+      <td class="xs-p" style="color:var(--text2)">${x.gap >= 0.005 ? `${Math.round(x.gap * 1000) / 10}¢` : ''}</td>${hasFair ? fairCell(x) : ''}</tr>`).join('');
   }).join('');
   el.innerHTML = `<div class="xa-controls" style="flex-wrap:wrap;gap:6px">${chip('kind', 'all', 'ALL')}${chip('kind', 'moneyline', 'MONEYLINE')}${chip('kind', 'spread', 'SPREADS')}${chip('kind', 'total', 'TOTALS')}
-      ${leagues.length > 1 ? `<span style="width:8px"></span>${chip('league', 'all', 'ALL LEAGUES')}${leagues.map(l => chip('league', l, l.toUpperCase())).join('')}` : ''}</div>
-    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee. Games in the next 36 hours, ${rows.length} lines.</div>
-    ${body ? `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>Game</th><th>Side</th><th style="text-align:right">Kalshi</th><th style="text-align:right">${escAttr(venue)}</th><th style="text-align:right">Saved</th></tr></thead><tbody>${body}</tbody></table></div>`
+      ${leagues.length > 1 ? `<span style="width:8px"></span>${chip('league', 'all', 'ALL LEAGUES')}${leagues.map(l => chip('league', l, l.toUpperCase())).join('')}` : ''}
+      ${hasFair ? `<span style="width:8px"></span>${chip('sort', 'soon', 'SOONEST')}${chip('sort', 'ev', 'BEST EV')}` : ''}</div>
+    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee.${hasFair ? " Fair is Polymarket's mid, the sharpest book on most games; the % under it is the cheaper price's edge, green from +2%." : ''} Games in the next 36 hours, ${rows.length} lines.</div>
+    ${body ? `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>Game</th><th>Side</th><th style="text-align:right">Kalshi</th><th style="text-align:right">${escAttr(venue)}</th><th style="text-align:right">Saved</th>${hasFair ? '<th style="text-align:right">Fair</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`
       : tailEmpty('NOTHING PRICED ON BOTH RIGHT NOW', 'Games show up here once both exchanges list them.')}`;
 }
 const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
