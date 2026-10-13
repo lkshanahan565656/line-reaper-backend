@@ -453,6 +453,9 @@ function createTracker({
       byConfidence: groupBy(r => r.confidence || 'n/a'),
       byEv: groupBy(r => evBucket(r.signalEv)),
       bySource: groupBy(r => r.predSource || 'n/a'),
+      // books' consensus (esmarket.js, from v3.82.0) vs the old model price, so a
+      // cutoff can be judged on picks the current pricing made
+      byPricing: groupBy(r => r.fair === 'market' ? 'market' : 'model'),
       byContext: groupBy(r => r.context || 'none'),
       counts: {
         open: rows.filter(r => r.status === 'open').length,
