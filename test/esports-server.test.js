@@ -353,3 +353,14 @@ test('first bloods and deaths never share a key with kills across books', () => 
   assert.notEqual(k('Deaths on Maps 1+2'), k('Kills on Maps 1+2'));
   assert.ok(k('MAPS 1-2 First Bloods').startsWith('fb|'));
 });
+
+test('Underdog sanity check is one-sided: a bad Underdog price shows its EV, a fake edge is withheld', () => {
+  // 0.82x boost implies 68.6%. Our 55% there is just a bad price: negative EV, no flag
+  const bad = S.udPricing(55, 0.82);
+  assert.strictEqual(bad.flag, null);
+  assert.ok(bad.ev < -15);
+  // 1.1x implies 51.1%; a fair of 66% at that line is the kind of edge that's our error
+  const fake = S.udPricing(66, 1.1);
+  assert.strictEqual(fake.flag, 'price-mismatch');
+  assert.strictEqual(fake.ev, null);
+});
