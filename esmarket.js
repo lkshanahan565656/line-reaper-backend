@@ -22,6 +22,8 @@ const DEFAULTS = {
   maxModelWeight: 0.5,
   vigProduct: 0.95,     // Underdog's two multipliers multiply to about this
   outlier: { rel: 0.3, abs: 2.5 },
+  biasPriorN: 40,       // graded picks a book's bias needs before it counts in full
+  maxBiasRel: 0.1,      // never move a book's line by more than 10%
 };
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -94,9 +96,11 @@ function consensus(quotes, overFair, o = DEFAULTS) {
   for (const q of quotes || []) {
     const s = bookOverShare(q, o);
     if (!s) continue;
-    const m = impliedMean(q.line, clamp(s.pOver, 0.02, 0.98), overFair);
+    let m = impliedMean(q.line, clamp(s.pOver, 0.02, 0.98), overFair);
     if (m == null) continue;
-    out.push({ book: q.book, line: q.line, pOver: +s.pOver.toFixed(4), mean: +m.toFixed(2), weight: s.weight });
+    // a book whose lines have run high or low on this stat (lineBias)
+    if (q.bias) m += q.bias * q.line;
+    out.push({ book: q.book, line: q.line, pOver: +s.pOver.toFixed(4), mean: +m.toFixed(2), weight: s.weight, ...(q.bias ? { bias: q.bias } : {}) });
   }
   if (!out.length) return null;
   const med = weightedMedian(out.map(x => ({ v: x.mean, w: x.weight })));
@@ -137,6 +141,34 @@ function modelWeights(rows, o = DEFAULTS) {
   };
 }
 
+// Where a book's lines have landed against results, per sport, stat and book:
+// the average of (result − line) / line, so a support's 2.5 and a carry's 27.5
+// share one number, each pick clipped to ±50% and the whole shrunk toward 0 by
+// biasPriorN picks. On the
+// 10-13 record Underdog's CS headshot lines ran 1.4 high (overs hit 10 of 33),
+// and the half-and-half check held: biases fit on the first 50 graded picks
+// called the next 51 better than an even line did. Pushes count as 0.
+function lineBias(rows, o = DEFAULTS) {
+  const acc = {};
+  for (const r of rows || []) {
+    if (!r || r.status !== 'graded' || r.result == null || r.signalLine == null || !r.signalBook) continue;
+    const line = Number(r.signalLine), d = (Number(r.result) - line) / line;
+    if (!(line > 0) || !Number.isFinite(d)) continue;
+    const k = `${r.sport}|${r.stat}|${r.signalBook}`;
+    const a = acc[k] || (acc[k] = { n: 0, sum: 0 });
+    a.n++; a.sum += clamp(d, -0.5, 0.5);
+  }
+  const out = {};
+  for (const [k, a] of Object.entries(acc)) {
+    const [sport, stat, book] = k.split('|');
+    out[k] = { sport, stat, book, n: a.n, raw: +(a.sum / a.n).toFixed(4), bias: +clamp(a.sum / (a.n + o.biasPriorN), -o.maxBiasRel, o.maxBiasRel).toFixed(4) };
+  }
+  return {
+    table: out,
+    bias: (sport, stat, book) => out[`${sport}|${stat}|${book}`]?.bias ?? 0,
+  };
+}
+
 // The number the board prices with: the market's, nudged by our projection.
 function blend(marketMean, rawPred, weight) {
   if (marketMean == null) return null;
@@ -144,4 +176,4 @@ function blend(marketMean, rawPred, weight) {
   return marketMean + weight * (rawPred - marketMean);
 }
 
-module.exports = { DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, blend, weightedMedian };
+module.exports = { DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, lineBias, blend, weightedMedian };
