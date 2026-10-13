@@ -1648,6 +1648,7 @@ async function generateEsportsPicks() {
   let graded = [];
   try { graded = await tracker.list({ status: 'graded', limit: 100000 }); } catch (e) { console.warn('Esports: graded record unavailable:', e.message); }
   weights = esmarket.modelWeights(graded);
+  const biases = esmarket.lineBias(graded);
   if (process.env.ESPORTS_CALIBRATION !== 'off') {
     try {
       const prior = parseFloat(process.env.ESPORTS_CAL_PRIOR);
@@ -1658,7 +1659,7 @@ async function generateEsportsPicks() {
     } catch (e) { console.warn('Esports: calibration skipped:', e.message); }
   }
   esportsCache.calibration = calib ? { prior: calib.prior, buckets: Object.values(calib.buckets), at: new Date().toISOString() } : null;
-  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), at: new Date().toISOString() };
+  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), lineBias: Object.values(biases.table), at: new Date().toISOString() };
   const marketCounts = { priced: 0, marketOnly: 0, multiBook: 0, dropped: 0 };
 
   // Where the books put this player, and the number the board prices with.
@@ -1674,9 +1675,9 @@ async function generateEsportsPicks() {
       const r = calcEsportsEV(ln, m, 'OVER', base.sport, base.market, ctxOpts);
       return r ? Math.max(0.001, Math.min(0.999, (r.prob + skewOf(ln)) / 100)) : null;
     };
-    const cons = esmarket.consensus(quotes.filter(Boolean), overFair);
-    if (!cons) return g;
     const sk = trackerSportKey(base.sport), st = trackerStatKind(base.market);
+    const cons = esmarket.consensus(quotes.filter(Boolean).map(q => ({ ...q, bias: biases.bias(sk, st, q.book) })), overFair);
+    if (!cons) return g;
     const raw = g.predSource === 'auto' ? g.rawPred : null;
     let w = weights.weight(sk, st);
     if (g.sampleSize != null) w *= Math.min(1, Math.max(0.25, g.sampleSize / 40));
@@ -1686,7 +1687,7 @@ async function generateEsportsPicks() {
     if (raw == null) marketCounts.marketOnly++;
     if (kept.length > 1) marketCounts.multiBook++;
     marketCounts.dropped += cons.quotes.length - kept.length;
-    const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.dropped ? ' (left out)' : ''}`;
+    const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.bias ? `, runs ${q.bias > 0 ? 'low' : 'high'} ${Math.abs(q.bias).toFixed(1)}` : ''}${q.dropped ? ' (left out)' : ''}`;
     const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}`;
     return {
       ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',
@@ -3490,7 +3491,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.82.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.83.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4497,7 +4498,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.82.0',
+  version: '3.83.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4640,10 +4641,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.82.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.83.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.82.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.83.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
