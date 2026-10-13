@@ -184,3 +184,19 @@ test('exchange middles: 3% EV and up, half a unit until proven, with the window 
   assert.match(rows[0].why[0], /lands 218 to 221 \(about 8%\), a miss costs 0.6%/);
   assert.equal(bestPlays({ middles: [mid(7.6)] }, { now: Date.parse('2026-10-09T00:00:00Z') }).rows.length, 0, 'started: gone');
 });
+
+test('a narrower cut that beats the close lifts an avoid on its parent cut, never on the whole source', () => {
+  const play = (by, p, verdict) => ({ source: 'exchangeValue', by, play: p, verdict, n: 12, avgClv: verdict === 'avoid' ? -0.01 : 0.02 });
+  const v = require("../bestplays").verdictIndex([
+    play('signal', 'price gap', 'avoid'),
+    play('signal+sport', 'price gap · afccl', 'promising'),
+    play('sport', 'sports', 'avoid'),
+  ]);
+  const gap = sport => v('exchangeValue', { signal: 'price gap', sport, book: 'kalshi', market: 'moneyline' });
+  assert.equal(gap('afccl').avoid, undefined);
+  assert.equal(gap('afccl').verdict, 'promising');
+  assert.equal(gap('nba').avoid.play, 'price gap');
+  assert.ok(gap('sports').avoid);
+  const all = require("../bestplays").verdictIndex([{ source: 'exchangeValue', play: 'all', verdict: 'avoid', n: 30 }, play('sport', 'afccl', 'promising')]);
+  assert.ok(all('exchangeValue', { signal: 'steam', sport: 'afccl' }).avoid);
+});
