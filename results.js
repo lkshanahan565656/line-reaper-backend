@@ -92,6 +92,9 @@ const SOURCES = {
   bidArbs: { label: 'Bid, then hedge', done: r => r.status === 'filled' && r.lock != null, open: r => r.status === 'open',
     bet: r => ({ profit: r.lock / 100, staked: 1, clv: null, labels: { venue: r.maker?.venue === 'kalshi' ? 'bid on Kalshi' : 'bid on Polymarket US', market: r.kind } }),
     cuts: [['venue'], ['market']] },
+  // a middle is graded on whether the final landed between its lines (1u staked)
+  middles: { label: 'Middles', done: r => r.status === 'graded', open: r => r.status === 'open',
+    bet: r => ({ profit: r.profit, staked: 1, clv: null, labels: { league: r.league, kind: r.kind } }), cuts: [['league'], ['kind']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
 };
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };

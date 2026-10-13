@@ -2803,6 +2803,13 @@ const bidTracker = require('./bidtrack').createBidTracker({
   fees: XARB_OPTS,
 });
 bidTracker.ready().catch(e => console.error('Bid tracker: store failed to initialise:', e.message));
+// every middle, graded from Kalshi's settled ladder once its game is over (middletrack.js)
+const middleTracker = require('./middletrack').createMiddleTracker({
+  store: resultsBackup.wrap('middles', createEvStoreFromEnv(process.env, { table: 'exchange_middles', fileVar: 'MIDDLE_TRACK_FILE', file: 'middles.json' })),
+  http: upstream,
+});
+middleTracker.ready().catch(e => console.error('Middle tracker: store failed to initialise:', e.message));
+let middleGradedAt = 0;
 async function scanXarbs() {
   if (xarbState.running) return [];
   xarbState.running = true;
@@ -2853,6 +2860,8 @@ async function scanXarbs() {
     let screen = [];
     try { screen = xarb.exchangeScreen([...(intl ? matches : []), ...us.matchList], { ...XARB_OPTS, now }); }
     catch (e) { console.warn('Exchange arbs: price screen:', e.message); }
+    await middleTracker.record(middles).catch(e => console.warn('Middle tracker:', e.message));
+    if (now - middleGradedAt > 10 * 60e3) { middleGradedAt = now; middleTracker.grade().catch(e => console.warn('Middle tracker:', e.message)); }
     await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
@@ -3262,7 +3271,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.70.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.71.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3560,9 +3569,9 @@ app.get('/api/xarbs', async (req, res) => {
   const near = (xarbState.near || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
   const bids = (xarbState.bids || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
   const middles = (xarbState.middles || []).filter(arbOk(lic));
-  let bidRecord = null;
-  try { bidRecord = await bidTracker.summary(); } catch { /* store down */ }
-  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  let bidRecord = null, middleRecord = null;
+  try { [bidRecord, middleRecord] = await Promise.all([bidTracker.summary(), middleTracker.summary()]); } catch { /* store down */ }
+  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
     ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids, middles,
@@ -4126,9 +4135,9 @@ app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list()]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list()]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -4141,9 +4150,9 @@ app.get('/api/best', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list()]);
-    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list()]);
+    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles });
     const out = bestplays.bestPlays({
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
@@ -4216,7 +4225,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.70.0',
+  version: '3.71.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4355,10 +4364,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.70.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.71.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.70.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.71.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
