@@ -17,19 +17,22 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
   for (let i = 0; i < 4; i++) kalshi = await sweep.step();
   const matches = xarb.matchMarkets(kalshi, poly, { now: now() });
   const t = now();
-  const pairs = [];
+  const pairs = [], why = {};
+  const no = k => { why[k] = (why[k] || 0) + 1; };
   for (const m of matches) {
     const p = m.polymarket, k = m.kalshi;
-    if (m.by === 'title' || !p.tradable || !k.tradable) continue;
-    const st = Date.parse(p.startTime || k.startTime || '');
-    if (!(st - t > 60e3 && st - t < 36 * 3600e3)) continue;
-    if (p.yesAsk == null || p.noAsk == null || p.yesAsk + p.noAsk - 1 > 0.06) continue;
+    if (m.by === 'title') { no('title'); continue; }
+    if (!p.tradable || !k.tradable) { no('untradable'); continue; }
+    const st = Date.parse(p.startTime || k.startTime || k.closeTime || '');
+    if (!Number.isFinite(st)) { no('nostart'); continue; }
+    if (!(st - t > -3 * 3600e3 && st - t < 48 * 3600e3)) { no('window'); continue; }
+    if (p.yesAsk == null || p.noAsk == null || p.yesAsk + p.noAsk - 1 > 0.08) { no('wide'); continue; }
     const tok = p.tokenIds?.[p.yesIndex ?? 0];
-    if (!tok) continue;
-    pairs.push({ tok, pid: p.id, yesIndex: p.yesIndex ?? 0, kt: k.id, same: m.same, title: p.title, league: p.league, start: st, ws: [], gm: [], km: [] });
+    if (!tok) { no('notoken'); continue; }
+    pairs.push({ live: st <= t, tok, pid: p.id, yesIndex: p.yesIndex ?? 0, kt: k.id, same: m.same, title: p.title, league: p.league, start: st, ws: [], gm: [], km: [] });
   }
   pairs.splice(400);
-  log('poly rows', poly.length, 'kalshi rows', kalshi.length, 'matches', matches.length, 'watched', pairs.length);
+  log('poly rows', poly.length, 'kalshi rows', kalshi.length, 'matches', matches.length, 'watched', pairs.length, JSON.stringify(why), 'pregame', pairs.filter(p => p.start > t).length);
   const byTok = new Map(pairs.map(p => [p.tok, p]));
   const book = new Map();   // tok → {bid, ask}
   const stats = { msgs: 0, types: {}, opens: 0, errors: [], gammaPolls: 0, kalshiPolls: 0, kalshiErr: null, gammaErr: null };
@@ -113,7 +116,7 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
       const g0 = at(p.gm, from.t), k0 = at(p.km, x.t), kFrom = at(p.km, from.t);
       const gT = p.gm.find(y => y.t >= from.t && g0 != null && (y.v - g0) * dir >= 0.02);
       const kT = p.km.find(y => y.t >= from.t && kFrom != null && (y.v - kFrom) * dir >= 0.6 * Math.abs(move));
-      moves.push({ title: p.title, league: p.league, from: +from.v.toFixed(3), to: +x.v.toFixed(3), wsAt: new Date(x.t).toISOString().slice(11, 19),
+      moves.push({ live: p.live, title: p.title, league: p.league, from: +from.v.toFixed(3), to: +x.v.toFixed(3), wsAt: new Date(x.t).toISOString().slice(11, 19),
         buildSec: Math.round((x.t - from.t) / 1e3), gammaLagSec: gT ? Math.round((gT.t - x.t) / 1e3) : null,
         kalshiAtMove: k0 != null ? +k0.toFixed(3) : null, kalshiFrom: kFrom != null ? +kFrom.toFixed(3) : null, kalshiFollowSec: kT ? Math.round((kT.t - x.t) / 1e3) : null });
     }
