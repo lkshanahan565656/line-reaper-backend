@@ -86,9 +86,10 @@ const SOURCES = {
   tail: { label: 'Sharp Tail', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
   fresh: { label: 'Fresh wallets', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
-  // steam (a price Polymarket just moved) and a standing gap are cut apart
+  // steam (a price Polymarket just moved), a line mover (a big move today,
+  // followed near fair) and a standing gap are cut apart
   exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed',
-    bet: b => { const x = evBet(b); x.labels.signal = b.source === 'steam' ? 'steam' : b.source === 'kalshiref' ? 'Kalshi price' : 'price gap'; return x; },
+    bet: b => { const x = evBet(b); x.labels.signal = b.source === 'mover' ? 'line mover' : b.source === 'steam' ? 'steam' : b.source === 'kalshiref' ? 'Kalshi price' : 'price gap'; return x; },
     cuts: [['signal'], ['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   // a filled bid-then-hedge is graded on its lock at once (1u); unfilled and cancelled ones aren't bets
