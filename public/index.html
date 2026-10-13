@@ -5229,20 +5229,20 @@ function renderXscreen() {
   const when = t => { const x = new Date(t); return x.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
   const cell = (c, url, win) => c == null ? '<td class="xs-p">—</td>' : `<td class="xs-p">${tailLink(url, `<span class="${win ? 'xs-win' : ''}">${tailC(c)}</span>`)}</td>`;
   // fair = Polymarket's mid; EV of the cheaper all-in price at it, lit from +2%
-  const fairCell = x => x.fair == null ? '<td class="xs-p">—</td>'
-    : `<td class="xs-p">${tailC(x.fair)}${x.ev != null ? `<div class="${x.ev >= 0.02 ? 'xs-win' : ''}" style="font-size:10px;color:var(--text2)">${x.ev >= 0 ? '+' : ''}${Math.round(x.ev * 1000) / 10}%</div>` : ''}</td>`;
+  const fairCell = (x, r) => x.fair == null ? '<td class="xs-p">—</td>'
+    : `<td class="xs-p"${r.fairBy === 'kalshi' ? ' title="Kalshi\'s mid: Polymarket has no tight book on this line"' : ''}>${tailC(x.fair)}${r.fairBy === 'kalshi' ? '<sup style="color:var(--text2)">K</sup>' : ''}${x.ev != null ? `<div class="${x.ev >= 0.02 ? 'xs-win' : ''}" style="font-size:10px;color:var(--text2)">${x.ev >= 0 ? '+' : ''}${Math.round(x.ev * 1000) / 10}%</div>` : ''}</td>`;
   const inCombo = (id, i) => xscreenUi.combo.some(l => l.id === id && l.i === i);
   const body = rows.map(r => {
     const what = r.kind === 'moneyline' ? 'Moneyline' : r.kind === 'total' ? `Total ${r.line}` : `Spread ${r.line}`;
     return r.sides.map((x, i) => `<tr${i ? '' : ' class="xs-top"'}>
       ${i ? '<td></td>' : `<td rowspan="1"><b>${escAttr(r.title)}</b><div class="xa-sub">${escAttr((r.league || '').toUpperCase())} · ${escAttr(what)} · ${escAttr(when(r.start))}</div></td>`}
       <td style="white-space:nowrap">${hasFair && x.fair != null ? `<button class="xs-add${inCombo(r.id, i) ? ' on' : ''}" title="Add to a combo" onclick="xcomboToggle('${escAttr(r.id)}',${i})">${inCombo(r.id, i) ? '✓' : '+'}</button>` : ''}${escAttr(x.pick)}</td>${cell(x.kalshi, x.kalshiUrl, x.best === 'kalshi')}${cell(x.other, x.otherUrl, x.best === r.venue)}
-      <td class="xs-p" style="color:var(--text2)">${x.gap >= 0.005 ? `${Math.round(x.gap * 1000) / 10}¢` : ''}</td>${hasFair ? fairCell(x) : ''}</tr>`).join('');
+      <td class="xs-p" style="color:var(--text2)">${x.gap >= 0.005 ? `${Math.round(x.gap * 1000) / 10}¢` : ''}</td>${hasFair ? fairCell(x, r) : ''}</tr>`).join('');
   }).join('');
   el.innerHTML = `<div class="xa-controls" style="flex-wrap:wrap;gap:6px">${chip('kind', 'all', 'ALL')}${chip('kind', 'moneyline', 'MONEYLINE')}${chip('kind', 'spread', 'SPREADS')}${chip('kind', 'total', 'TOTALS')}
       ${leagues.length > 1 ? `<span style="width:8px"></span>${chip('league', 'all', 'ALL LEAGUES')}${leagues.map(l => chip('league', l, l.toUpperCase())).join('')}` : ''}
       ${hasFair ? `<span style="width:8px"></span>${chip('sort', 'soon', 'SOONEST')}${chip('sort', 'ev', 'BEST EV')}` : ''}</div>
-    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee.${hasFair ? " Fair is Polymarket's mid, the sharpest book on most games; the % under it is the cheaper price's edge, green from +2%." : ''} Games in the next 36 hours, ${rows.length} lines.${hasFair ? ' Tap + on sides to price a Kalshi combo.' : ''}</div>
+    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee.${hasFair ? " Fair is Polymarket's mid, the sharpest book on most games (K: Kalshi's mid, where Polymarket's book is thin); the % under it is the cheaper price's edge, green from +2%." : ''} Games in the next 36 hours, ${rows.length} lines.${hasFair ? ' Tap + on sides to price a Kalshi combo.' : ''}</div>
     ${xcomboHTML()}
     ${body ? `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>Game</th><th>Side</th><th style="text-align:right">Kalshi</th><th style="text-align:right">${escAttr(venue)}</th><th style="text-align:right">Saved</th>${hasFair ? '<th style="text-align:right">Fair</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`
       : tailEmpty('NOTHING PRICED ON BOTH RIGHT NOW', 'Games show up here once both exchanges list them.')}`;
@@ -5475,9 +5475,9 @@ function xarbNearRow(a) {
 function xarbValueRow(e) {
   const when = e.start ? xarbWhen(e.start) : '';
   return `<div class="xa-nrow">
-    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''} · Polymarket's book: ${tailC(e.fair)}</div></div>
+    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''} · ${escAttr(e.refName || 'Polymarket')}'s book: ${tailC(e.fair)}</div></div>
     <div class="xa-ncost" title="What it costs with the fee">${tailC(e.cost)}<span>with fee</span></div>
-    <div class="xa-ngap pos" title="Expected return at Polymarket's price">+${Math.round(e.ev * 1000) / 10}%</div>
+    <div class="xa-ngap pos" title="Expected return at ${escAttr(e.refName || 'Polymarket')}'s price">+${Math.round(e.ev * 1000) / 10}%</div>
   </div>`;
 }
 // steam: Polymarket just moved and this venue hasn't followed yet
@@ -5486,9 +5486,9 @@ function xarbSteamRow(e) {
   const mins = Math.max(1, Math.round(s.sinceMs / 60000));
   const followed = Math.abs(s.follow) < 0.005 ? 'hasn\'t moved' : `moved ${s.follow > 0 ? '+' : ''}${tailC(s.follow)}`;
   return `<div class="xa-nrow">
-    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''}</div><div class="xa-sub" style="color:var(--green)">Polymarket ${tailC(s.from)} → ${tailC(s.to)} in ${mins} min · ${escAttr(e.venueName || e.venue)} ${followed}</div></div>
+    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''}</div><div class="xa-sub" style="color:var(--green)">${escAttr(e.refName || 'Polymarket')} ${tailC(s.from)} → ${tailC(s.to)} in ${mins} min · ${escAttr(e.venueName || e.venue)} ${followed}</div></div>
     <div class="xa-ncost" title="What it costs with the fee">${tailC(e.cost)}<span>with fee</span></div>
-    <div class="xa-ngap pos" title="Expected return at Polymarket's new price">+${Math.round(e.ev * 1000) / 10}%</div>
+    <div class="xa-ngap pos" title="Expected return at ${escAttr(e.refName || 'Polymarket')}'s new price">+${Math.round(e.ev * 1000) / 10}%</div>
   </div>`;
 }
 function renderXarbs() {
@@ -5550,7 +5550,7 @@ function renderXarbs() {
     + (vd && vd.pro ? sec('STEAM', steam.length ? `${steam.length} · Polymarket just moved, the US price hasn't caught up` : 'nothing right now',
       steamRec + (steam.length ? `<div class="xa-near">${steam.slice(0, 12).map(xarbSteamRow).join('')}</div>` : '<div class="xa-empty">No stale price right now. When Polymarket\'s book jumps 3 cents or more and Kalshi or Polymarket US hasn\'t followed, the old price shows here. They close within minutes.</div>')) : '')
     + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now${vd.steamCount ? `, ${vd.steamCount} of them steam` : ''}.</b>`, 'Exchange value')) : '')
-    + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
+    + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under the sharp price (Polymarket's book, or Kalshi's where Polymarket's is thin)` : 'nothing right now',
       value.length ? `<div class="xa-near">${value.slice(0, 12).map(xarbValueRow).join('')}</div>` : '<div class="xa-empty">No single bet is priced under Polymarket\'s book right now. These need no second bet: just buy the one side.</div>') : '')
     + sec('CLOSEST TO AN ARB', nearList.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
       nearList.length ? `<div class="xa-near">${nearList.slice(0, xarbUi.allNear ? nearList.length : XARB_NEAR_SHOWN).map(xarbNearRow).join('')}${near.length > Math.min(nearSimple.length, XARB_NEAR_SHOWN)

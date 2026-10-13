@@ -82,10 +82,10 @@ function createSteamWatch(opts = {}) {
 }
 
 // "moved 48¢ → 53¢ in 6 min, Kalshi still 49¢"
-function moveText(s, venueName) {
+function moveText(s, venueName, refName = 'Polymarket') {
   const c = x => `${Math.round(x * 1000) / 10}¢`;
   const mins = Math.max(1, Math.round(s.sinceMs / 60e3));
-  return `Polymarket moved ${c(s.from)} → ${c(s.to)} in ${mins} min, ${venueName} ${Math.abs(s.follow) < 0.005 ? 'hasn\'t moved' : `moved ${s.follow > 0 ? '+' : ''}${c(s.follow)}`}`;
+  return `${refName} moved ${c(s.from)} → ${c(s.to)} in ${mins} min, ${venueName} ${Math.abs(s.follow) < 0.005 ? 'hasn\'t moved' : `moved ${s.follow > 0 ? '+' : ''}${c(s.follow)}`}`;
 }
 
 module.exports = { createSteamWatch, moveText, optsFromEnv, DEFAULTS };

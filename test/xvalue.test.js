@@ -146,3 +146,33 @@ test('the price screen gets each side\'s fair and the cheaper price\'s EV', () =
   assert.equal(w.maxEv, null);
   assert.equal(w.sides[0].fair, undefined);
 });
+
+test('Kalshi prices a Polymarket US side Polymarket has no tight book on', () => {
+  // Kalshi Boston 52/49 → bid 51, mid 51.5; Knicks (NO Boston) fair 48.5. PM US Knicks ask 44.
+  const k = kRow({ yesAsk: 0.52, noAsk: 0.49 });
+  const us = usRow({ yesAsk: 0.44, noAsk: 0.58 });
+  const wide = pRow({ yesAsk: 0.62, noAsk: 0.44 });            // a 6¢ Polymarket book: no ref
+  const usMatches = [match(k, us, false)];
+  const { edges, kalshiPriced } = V.findValue({ usRows: [us], polymarket: [wide], usMatches }, { now: NOW, venues: ['polymarketus'] });
+  const e = edges.find(x => x.pick === 'Knicks');
+  assert.ok(e);
+  assert.equal(kalshiPriced, 1);
+  assert.equal(e.fair, 0.485);
+  assert.equal(e.refName, 'Kalshi');
+  assert.equal(e.ref.venue, 'kalshi');
+  assert.equal(e.refToken, null);                               // nothing to read on Polymarket
+  assert.equal(V.trackRows([e])[0].source, 'kalshiref');
+  assert.match(V.describe(e), /Kalshi 48\.5¢/);
+  // a tight Polymarket book wins: Kalshi isn't used
+  const tight = V.findValue({ usRows: [us], polymarket: [pRow()], usMatches }, { now: NOW, venues: ['polymarketus'] });
+  assert.equal(tight.kalshiPriced, 0);
+  assert.ok(tight.edges.every(x => x.ref.venue === 'polymarket'));
+  // a wide Kalshi market prices nothing
+  const kw = kRow({ yesAsk: 0.55, noAsk: 0.49 });
+  assert.equal(V.findValue({ usRows: [us], polymarket: [wide], usMatches: [match(kw, us, false)] }, { now: NOW, venues: ['polymarketus'] }).kalshiPriced, 0);
+  // the PRICES screen takes Kalshi's mid too, marked
+  const row = { id: us.id, sides: [{ pick: 'Knicks', kalshi: 0.5, other: 0.45 }, { pick: 'Celtics', kalshi: 0.53, other: 0.59 }] };
+  const [r] = V.screenFairs([row], { usRows: [us], polymarket: [wide], usMatches });
+  assert.equal(r.fairBy, 'kalshi');
+  assert.equal(r.sides[0].fair, 0.485);
+});
