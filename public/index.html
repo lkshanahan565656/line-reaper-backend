@@ -5344,6 +5344,23 @@ function xarbCard(a) {
     <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>, split as above. Whichever way it ends you get back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b>, a profit of <b class="xa-pos" data-gain="${a.profitPct}">${xarbUsd(S * a.profitPct / 100)}</b>.${a.maxContracts != null ? ` At most ${a.maxContracts.toLocaleString()} contracts are on offer at these prices.` : ''}</div>
   </div>`;
 }
+// a limit bid on one venue, then the other side at the other venue once it fills
+function xarbBidCard(a) {
+  const S = arbState.stake, st = a.stakes || {};
+  const [bid, take] = a.legs || [];
+  if (!bid || !take) return '';
+  const amt = i => { const pct = st.legs?.[i]?.pct; return `<span class="xa-amt"${pct != null ? ` data-pct="${pct}"` : ''}>${pct != null ? xarbUsd(S * pct / 100) : '—'}</span>`; };
+  const where = `ask ${tailC(bid.ask)}${bid.bid != null ? `, best bid ${tailC(bid.bid)}` : ''}${bid.front ? ': your bid goes first in line' : ': your bid joins the best bid'}`;
+  const meta = ['Bid, then hedge', escAttr(a.category || 'other'), a.closeTime ? `closes ${escAttr(xarbWhen(a.closeTime))}` : ''].filter(Boolean).join(' · ');
+  return `<div class="xa-card">
+    <div class="xa-head"><div class="xa-pct">+${a.profitPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+    <div class="xa-leg"><span class="xa-step">1</span><span class="xa-venue">${xarbVenue(bid)}</span>
+      <span class="xa-what">${tailLink(bid.url, `Place a limit bid: buy <b>${escAttr(bid.pick || '')}</b> at ${tailC(bid.price)}`)}<span class="xa-sub">${where}</span></span>${amt(0)}</div>
+    <div class="xa-leg"><span class="xa-step">2</span><span class="xa-venue">${xarbVenue(take)}</span>
+      <span class="xa-what">${tailLink(take.url, `When it fills, buy <b>${escAttr(take.pick || '')}</b> at ${tailC(take.price)}`)}<span class="xa-sub">still breaks even up to ${tailC(take.maxPrice)}</span></span>${amt(1)}</div>
+    <div class="xa-foot">With both in, <b data-stake>${xarbUsd(S)}</b> gets back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b> whichever way it ends. If step 2's price goes past ${tailC(take.maxPrice)} before your bid fills, cancel the bid.</div>
+  </div>`;
+}
 function xarbNearRow(a) {
   const legs = (a.legs || []).map(l => tailLink(l.url, `${xarbVenue(l)} ${escAttr(l.pick || '')} ${xarbPrice(l)}`)).join(' + ');
   const short = a.profitPct < 0;
@@ -5374,21 +5391,21 @@ function renderXarbs() {
   const stat = (n, label, color) => `<div class="xa-stat"><div class="xa-num"${color ? ` style="color:${color}"` : ''}>${n}</div><div class="xa-lbl">${label}</div></div>`;
   const summary = `<div class="xa-sum">
     ${stat(d.count || 0, d.count === 1 ? 'ARB RIGHT NOW' : 'ARBS RIGHT NOW', d.count ? 'var(--green)' : '')}
-    ${stat(d.nearCount ?? (d.near || []).length, 'CLOSE TO ONE')}
+    ${stat(d.bidCount ?? (d.bids || []).length, 'LOCK WITH A BID', d.bidCount ? 'var(--green)' : '')}
     ${stat(d.updated ? tailAgo(d.updated) : '—', 'SINCE THE LAST SCAN')}
     <div class="xa-blurb">An arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on ${venues}${markets ? ` (${markets.toLocaleString()} right now)` : ''} is checked once a minute, fees included.</div>
   </div>`;
   const note = tailWithheld('arbs');
   if (!d.pro) {
     const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.bidCount ? `, and ${d.bidCount} you can lock with a limit bid` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
     return;
   }
-  const all = [...(d.arbs || []), ...(d.near || [])];
+  const all = [...(d.arbs || []), ...(d.near || []), ...(d.bids || [])];
   const cats = [...new Set(all.map(a => a.category || 'other'))];
   if (xarbUi.category !== 'all' && !cats.includes(xarbUi.category)) xarbUi.category = 'all';
   const inCat = a => xarbUi.category === 'all' || (a.category || 'other') === xarbUi.category;
-  const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat);
+  const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat), bids = (d.bids || []).filter(inCat);
   // two bets is something anyone can place; bigger sets go in a fold
   const simple = arbs.filter(a => (a.legs || []).length <= 2), multi = arbs.filter(a => (a.legs || []).length > 2);
   const ready = simple.filter(a => !(a.warnings || []).length), check = simple.filter(a => (a.warnings || []).length);
@@ -5401,9 +5418,16 @@ function renderXarbs() {
   </div>`;
   const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
   const nearList = xarbUi.allNear ? near : nearSimple;
+  const twoBet = sec('2-BET ARBS', ready.length ? `${ready.length} · one bet on each exchange, check each price is still there` : 'none right now',
+      ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.</div>');
+  const br = d.bidRecord;
+  const bidRec = br && (br.filled || br.unfilled || br.cancelled)
+    ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${br.filled} filled${br.fillRate != null ? ` (${Math.round(br.fillRate * 100)}% of those finished)` : ''}, ${br.locked} locked a profit, ${br.lost} lost${br.avgLock != null ? `, average ${br.avgLock > 0 ? '+' : ''}${br.avgLock}% a fill` : ''}. ${br.cancelled} cancelled when the hedge ran, ${br.unfilled} never filled.</div>`
+    : br ? `<div class="xa-sub" style="margin:0 0 8px">Every plan here is tracked until its game starts: whether the bid filled and what the hedge cost by then. ${br.open} being tracked now.</div>` : '';
+  const bidSec = sec('BID, THEN HEDGE', bids.length ? `${bids.length} · two bets: a limit bid, then the other side once it fills` : 'none right now',
+      bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
   el.innerHTML = note + summary + controls
-    + sec('2-BET ARBS', ready.length ? `${ready.length} · one bet on each exchange, check each price is still there` : 'none right now',
-      ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.</div>')
+    + (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet)
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
     + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now.</b>`, 'Exchange value')) : '')
     + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
@@ -5415,6 +5439,7 @@ function renderXarbs() {
     + `<details class="xa-how"><summary>How to place an arb</summary>
       <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
       <p>Prices move fast. Check each one is still there before you place the next, and look at the order book before going big: the price shown may only hold a few contracts.</p>
+      <p>Bid, then hedge: two exchanges rarely disagree by the 3 to 4 cents two taker fees cost, but a limit bid pays far less in fees and buys a cent or two under the ask. Place the bid in step 1 and leave it. When it fills, buy step 2 right away at its price or anything up to the break-even shown. Until both are in you only hold one side, so watch step 2's price and cancel the bid if it runs past the break-even.</p>
       <p>The watchlist shows pairs that cost a little more than $1 for every $1 they pay. When one drops under $1 it moves up to the arbs. Game markets settle a postponed or canceled game by each exchange's own rules, so read both before betting one.</p></details>`;
 }
 

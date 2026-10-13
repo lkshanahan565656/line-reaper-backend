@@ -1151,6 +1151,90 @@ function findNearArbs({ matches = [], rows = [] } = {}, opts = {}) {
   return [...best.values()].sort((a, b) => b.profitPct - a.profitPct).slice(0, o.nearMax);
 }
 
+// ── bid, then hedge ──
+// Two venues rarely cross by the ~3.5¢ two taker fees cost, so a taker arb
+// is rare. A maker gets most of it back: rest a limit bid on one side at one
+// venue (inside its spread, at or above its best bid, so it's first in line),
+// and when it fills take the other side at the other venue's ask. The maker
+// pays at most a quarter of the taker fee (Polymarket International makers
+// pay nothing), and the bid sits a tick or more under that venue's ask. If
+// the hedge's ask still holds when the bid fills, the pair pays $1 whatever
+// happens for less than $1. `hedgeMax` is the most the hedge can cost and
+// still break even; above it, cancel or hold one side. Best plan per game,
+// biggest lock first. A lock over maxPct is a mismatched pair, not money.
+const MAKER_SHARE = { kalshi: 0.25, polymarketus: 0.25, polymarket: 0 };
+const BID_LOT = 100;
+const bidOf = (r, side) => { const a = side === 'yes' ? r.noAsk : r.yesAsk; return a != null && a > 0 && a < 1 ? round(1 - a, 6) : null; };
+function makerFee(l, p, n, o) {
+  const share = MAKER_SHARE[l.venue] ?? 0.25;
+  if (!share) return 0;
+  if (l.venue === 'kalshi') return kalshiFee(p, n, o.kalshiFeeRate * share);
+  return l.feeSchedule ? polymarketFee(p, n, { ...l.feeSchedule, rate: l.feeSchedule.rate * share }) : 0;
+}
+const takerCost = (l, p, n, o) => legCost({ ...l, price: p }, n, o).total;
+function bidPlan(maker, hedge, o) {
+  const ask = maker.price, bid = maker.bid, take = hedge.price;
+  if (ask == null || bid == null || take == null || !(take > 0.03 && take < 0.97)) return null;
+  const n = BID_LOT, hedgeCost = takerCost(hedge, take, n, o);
+  if (takerCost(maker, ask, n, o) + hedgeCost < n) return null;   // already a plain arb
+  // highest whole cent under the ask, at or above the best bid, that still locks minPct
+  for (let c = Math.round(ask * 100) - 1; c >= Math.max(3, Math.round(bid * 100)); c--) {
+    const b = c / 100, makerCost = b * n + makerFee(maker, b, n, o), cost = makerCost + hedgeCost;
+    const pct = ((n - cost) / cost) * 100;
+    if (pct > o.bidMaxPct) return null;
+    if (pct < o.minPct) continue;
+    // the most the hedge can cost per contract and still pay back the bid
+    let hi = take;
+    while (hi < 0.99 && makerCost + takerCost(hedge, round(hi + 0.01, 2), n, o) <= n) hi = round(hi + 0.01, 2);
+    return { price: b, front: b > bid + 1e-9, makerCost, hedgeCost, cost, pct, hedgeMax: hi };
+  }
+  return null;
+}
+function findBidArbs(matches = [], opts = {}) {
+  const o = withDefaults({ bidMaxPct: 8, bidMax: 25, ...opts });
+  const best = new Map();
+  for (const m of matches) {
+    // a resting bid in a game already under way gets picked off
+    if ([m.kalshi.startTime, m.polymarket.startTime].some(t => ms(t) != null && ms(t) <= o.now)) continue;
+    const key = m.by === 'teams' ? `${m.kalshi.eventKey}|${m.polymarket.id}` : `${m.kalshi.id}|${m.polymarket.id}`;
+    for (const [fields, [kLeg, pLeg]] of crossSets(m, o)) {
+      const rows = { kalshi: m.kalshi, other: m.polymarket };
+      kLeg.bid = bidOf(rows.kalshi, kLeg.side);
+      pLeg.bid = bidOf(rows.other, pLeg.side);
+      for (const [maker, hedge] of [[kLeg, pLeg], [pLeg, kLeg]]) {
+        const plan = bidPlan(maker, hedge, o);
+        if (!plan) continue;
+        const legs = [
+          { ...maker, order: 'bid', ask: maker.price, price: plan.price, front: plan.front },
+          { ...hedge, order: 'take', maxPrice: plan.hedgeMax },
+        ];
+        const a = {
+          id: `bid:${arbId('cross', legs)}`, ...fields, type: 'bid', legs, kind: m.kalshi.kind || null,
+          startTime: [m.kalshi.startTime, m.polymarket.startTime].find(t => ms(t) != null) || null,
+          totalCost: round(plan.cost / BID_LOT, 4), profitPct: r2(plan.pct),
+          stakes: { legs: [{ pct: pctOf(plan.makerCost, plan.cost) }, { pct: pctOf(plan.hedgeCost, plan.cost) }] },
+          at: new Date(o.now).toISOString(),
+        };
+        if (o.region === 'us' && !usPlaceable(a)) continue;
+        // per game, the bid nearest its ask (the likeliest to fill), then the bigger lock
+        const gap = x => x.legs[0].ask - x.legs[0].price, cur = best.get(key);
+        if (!cur || gap(a) < gap(cur) - 1e-9 || (Math.abs(gap(a) - gap(cur)) < 1e-9 && a.profitPct > cur.profitPct)) best.set(key, a);
+      }
+    }
+  }
+  // a bid that goes first in line fills; one joining a queue in a wide book
+  // mostly doesn't, so those come after
+  return [...best.values()].sort((a, b) => (b.legs[0].front ? 1 : 0) - (a.legs[0].front ? 1 : 0) || b.profitPct - a.profitPct).slice(0, o.bidMax);
+}
+// What a bid plan locks if the bid fills at `bidPrice` and the hedge is
+// bought at `hedgePrice`, fees in → % of the cost (negative: a loss).
+function bidLock(maker, bidPrice, hedge, hedgePrice, opts = {}) {
+  const o = withDefaults(opts), n = BID_LOT;
+  if (!(bidPrice > 0 && bidPrice < 1 && hedgePrice > 0 && hedgePrice < 1)) return null;
+  const cost = bidPrice * n + makerFee(maker, bidPrice, n, o) + takerCost(hedge, hedgePrice, n, o);
+  return r2(((n - cost) / cost) * 100);
+}
+
 // ── US venues ──
 // Polymarket International is closed to US persons, and offshore / non-US
 // books that turn up in the odds feeds aren't US sportsbooks either. Kalshi,
@@ -1536,7 +1620,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,

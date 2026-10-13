@@ -1406,3 +1406,63 @@ test('game sweep reads the Polymarket US leagues every few minutes, ahead of the
   }
   assert.equal(seen.size, 3);
 });
+
+// ── bid, then hedge ──
+test('bid arbs: a limit bid inside one venue\'s spread, hedged at the other\'s ask, when taking both costs too much', () => {
+  // Knicks 50¢ at Kalshi + Celtics 48¢ here is 98¢, but two taker fees (~3.5¢) make it cost more than $1
+  const kalshi = kRows(kalshiGame({ yes_ask_dollars: '0.5200', no_ask_dollars: '0.5000' }, { yes_ask_dollars: '0.5000', no_ask_dollars: '0.5200' }));
+  const us = usNba();
+  const matches = A.matchMarkets(kalshi, us, opts());
+  assert.deepEqual(A.findUsArbs(kalshi, us, opts({ region: 'us', matches })).filter(a => a.legs[1].marketId === us[0].id), [], 'no plain arb');
+  const bids = A.findBidArbs(matches, opts({ region: 'us' }));
+  const game = bids.find(a => a.legs[1].marketId === us[0].id);
+  assert.ok(game, 'the game has a bid plan');
+  const [bid, take] = game.legs;
+  assert.deepEqual([game.type, bid.venue, bid.order, bid.pick, bid.price, bid.ask, bid.bid, bid.front], ['bid', 'kalshi', 'bid', 'New York K', 0.49, 0.5, 0.48, true],
+    'a cent under Kalshi\'s ask, a cent over its bid: first in line');
+  assert.deepEqual([take.venue, take.order, take.pick, take.price], ['polymarketus', 'take', 'Boston Celtics', 0.48]);
+  // 49¢ + Kalshi's maker fee (0.0175 × .49 × .51) + 48¢ + 0.0695 × .48 × .52
+  const cost = 0.49 + Math.ceil(0.0175 * 100 * 0.49 * 0.51 * 100 - 1e-9) / 10000 + 0.48 + 0.0695 * 0.48 * 0.52;
+  assert.equal(game.totalCost, Math.round(cost * 1e4) / 1e4);
+  assert.equal(game.profitPct, Math.round(((1 - cost) / cost) * 1e4) / 100);
+  assert.ok(take.maxPrice >= 0.48 && take.maxPrice < 0.5, 'break-even hedge price');
+  assert.ok(Math.abs(game.stakes.legs[0].pct + game.stakes.legs[1].pct - 100) < 0.2);
+  // once the game starts, no resting bids
+  assert.deepEqual(A.findBidArbs(matches, opts({ region: 'us', now: Date.parse(START) + 1 })), []);
+  // a pair that's already a plain arb isn't a bid plan
+  const k2 = kRows(kalshiGame());
+  const m2 = A.matchMarkets(k2, us, opts());
+  assert.ok(!A.findBidArbs(m2, opts({ region: 'us' })).some(a => a.legs.some(l => l.marketId === us[0].id) && a.legs.some(l => l.price === 0.47)));
+});
+
+test('bid tracker: a plan fills when the maker ask reaches the bid, is graded on the hedge it really gets, and drops when cancelled or unfilled', async () => {
+  const { createBidTracker } = require('../bidtrack');
+  let t = NOW;
+  const tr = createBidTracker({ now: () => t });
+  const kalshi = kRows(kalshiGame({ yes_ask_dollars: '0.5200', no_ask_dollars: '0.5000' }, { yes_ask_dollars: '0.5000', no_ask_dollars: '0.5200' }));
+  const us = usNba();
+  const plan = A.findBidArbs(A.matchMarkets(kalshi, us, opts()), opts({ region: 'us' })).find(a => a.legs[1].marketId === us[0].id);
+  assert.ok(plan.startTime, 'a plan carries its start');
+  await tr.record([plan], [...kalshi, ...us]);
+  assert.equal((await tr.summary()).open, 1);
+  // Kalshi's Knicks ask comes down to the 49¢ bid; the Celtics are still 48¢ here
+  const m = plan.legs[0];
+  const filled = kalshi.map(r => (r.id === m.marketId ? { ...r, [m.side === 'yes' ? 'yesAsk' : 'noAsk']: 0.49 } : r));
+  t += 60e3;
+  await tr.record([], [...filled, ...us]);
+  const s = await tr.summary();
+  assert.deepEqual([s.open, s.filled, s.locked, s.avgLock], [0, 1, 1, plan.profitPct]);
+  // the hedge running past break-even first: cancelled, no bet
+  const tr2 = createBidTracker({ now: () => NOW });
+  await tr2.record([plan], [...kalshi, ...us]);
+  const ran = us.map((r, i) => (i === 0 ? { ...r, noAsk: 0.55 } : r));
+  await tr2.record([], [...kalshi, ...ran]);
+  assert.deepEqual([(await tr2.summary()).cancelled, (await tr2.summary()).filled], [1, 0]);
+  // and the game starting with the bid resting: unfilled
+  let t3 = NOW;
+  const tr3 = createBidTracker({ now: () => t3 });
+  await tr3.record([plan], [...kalshi, ...us]);
+  t3 = Date.parse(START) + 1;
+  await tr3.record([], [...kalshi, ...us]);
+  assert.equal((await tr3.summary()).unfilled, 1);
+});
