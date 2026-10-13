@@ -1,3 +1,4 @@
+// run 2: after the first-blood fix
 const fs = require('fs');
 const U = 'http://localhost:3999';
 const get = async p => { try { const r = await fetch(U + p, { signal: AbortSignal.timeout(120000) }); return await r.json(); } catch (e) { return { error: e.message }; } };
