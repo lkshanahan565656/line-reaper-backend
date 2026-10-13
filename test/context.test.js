@@ -213,3 +213,11 @@ test('odds for an academy match are not applied to the main team; Elo keeps them
   assert.equal(elo.games('Fnatic'), 0);
   assert.equal(elo.games('Fnatic Rising'), 10);
 });
+
+test('opponent from the title when the roster name differs from the title name', () => {
+  assert.equal(C.opponentFrom("Xi'an Team WE", 'FlyQuest vs. Team WE'), 'FlyQuest');
+  assert.equal(C.opponentFrom('HANJIN BRION', 'LGD Gaming vs. OKSavingsBank BRION'), 'LGD Gaming');
+  assert.equal(C.opponentFrom('MOUZ', 'MOUZ NXT vs Sashi'), null);
+  assert.equal(C.opponentFrom('Falcons', 'Falcons 2 vs NAVI'), null);
+  assert.equal(C.opponentFrom('Gen.G', 'Team Liquid vs NAVI'), null);
+});

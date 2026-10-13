@@ -334,3 +334,12 @@ test('props: Underdog sides it doesn\'t take are marked closed, and pulled lines
   assert.equal(lines[0].underMultiplier, null);
   assert.equal(lines[2].underMultiplier, 1.1);
 });
+
+test('props: a projection on the line is a coin flip once the curve\'s skew is taken out', () => {
+  // support kill lines skew hard to the under; big CS lines are symmetric
+  const sup = S.lineSkew(1.5, 'LOL', 'Kills on Maps 1+2+3');
+  assert.ok(sup > 8 && sup < 15, `support skew ${sup}`);
+  assert.ok(Math.abs(S.lineSkew(27.5, 'CS', 'Kills on Maps 1+2')) < 0.5);
+  const z = S.calcEsportsEV(1.5, 1.5, 'OVER', 'LOL', 'Kills on Maps 1+2+3');
+  assert.ok(Math.abs(z.prob + sup - 50) < 1e-9);
+});
