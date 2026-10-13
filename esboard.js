@@ -69,7 +69,27 @@ const DEFAULTS = {
   aheadDays: 10,
   feeLot: 100,            // Kalshi's fee rounds up per order: quoted on 100 contracts
   kalshiFeeRate: 0.07,
+  // limit bids: Kalshi charges a maker about a quarter of the taker fee;
+  // Polymarket charges makers nothing
+  makerShare: { kalshi: 0.25, polymarket: 0 },
 };
+
+// A limit bid worth resting when taking the ask has no edge. Esports books
+// are wide (24/28¢ is common), so the value sits between bid and ask: a bid
+// that improves the best bid by at least a cent, as high as it can go while
+// it still clears edgeMin over the fair price after the maker fee. Returns
+// null when no such cent exists, or when the take is already an edge.
+function bidPlan(q, ref, venue, o) {
+  if (q.edge || ref == null || q.bid == null || q.ask == null) return null;
+  const rate = (o.makerShare?.[venue] ?? 0) * o.kalshiFeeRate;
+  const cost = p => p + (venue === 'kalshi' ? rate * p * (1 - p) : 0);
+  const evAt = p => (ref - cost(p)) / cost(p);
+  let p = Math.round((q.ask - 0.01) * 100) / 100;
+  while (p > q.bid + 0.005 && (evAt(p) < o.edgeMin || ref - cost(p) < o.minEdgeCents - 1e-9)) p = Math.round((p - 0.01) * 100) / 100;
+  if (!(p >= q.bid + 0.01 - 1e-9) || p < o.minCost || cost(p) > o.maxCost) return null;
+  if (evAt(p) < o.edgeMin || ref - cost(p) < o.minEdgeCents - 1e-9) return null;
+  return { price: p, cost: r4(cost(p)), ev: r4(evAt(p)) };
+}
 
 const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const price = v => { const x = num(v); return x != null && x > 0 && x < 1 ? Math.round(x * 1e4) / 1e4 : null; };
@@ -427,6 +447,8 @@ function priceMarket(market, { model = null, start = null, now = Date.now(), opt
       const tight = q.bid != null && q.ask - q.bid <= Math.min(o.maxSpread, 0.35 * q.ask) + 1e-9;
       q.edge = ev != null && ev >= o.edgeMin && ref - cost >= o.minEdgeCents - 1e-9 && tight && refAgree
         && cost >= o.minCost && cost <= o.maxCost && (start == null || start > now) ? true : undefined;
+      q.bidPlan = refAgree && (start == null || start > now) ? bidPlan(q, ref, v, o) : null;
+      if (!q.bidPlan) delete q.bidPlan;
       if (!best || cost < best.cost) best = { venue: v, cost, ev };
     }
     oc.best = best;
@@ -539,12 +561,15 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
     const edges = [];
     for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.quotes[v].ref, ev: oc.quotes[v].ev }); }));
     edges.sort((a, b) => b.ev - a.ev);
+    const bids = [];
+    for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { const b = oc.quotes[v]?.bidPlan; if (b) bids.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, price: b.price, cost: b.cost, fair: oc.quotes[v].ref, ev: b.ev, ask: oc.quotes[v].ask, bid: oc.quotes[v].bid }); }));
+    bids.sort((a, b) => b.ev - a.ev);
     const main = markets.find(mk => mk.kind === 'match') || null;
     if (p != null) rated.push({ m, p, markets, ratingInfo, main });
     out.push({
       id: m.id, game: m.game, label: m.label, teams: m.teams, start: m.start ? new Date(m.start).toISOString() : null,
       live: !!m.live || (m.start != null && m.start <= now), bestOf: m.bestOf, tournament: m.tournament, links: m.links, slug: m.slug || null,
-      volume: m.volume, rating: ratingInfo, markets, edges, arbs: markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })),
+      volume: m.volume, rating: ratingInfo, markets, edges, bids, arbs: markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })),
       fair: main ? main.outcomes.map(oc => oc.fair) : null, move: main?.move || null,
     });
   }
@@ -696,6 +721,7 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
 }
 
 module.exports = {
+  bidPlan,
   GAMES, DEFAULTS, cleanName, sameTeam, orient, parsePmTitle, seriesScores, modelFor,
   parsePolymarketEvent, parseKalshiEvent, parseBo3Match, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
   createEsportsBoard, fetchPmSeries, PM_SERIES_FALLBACK,

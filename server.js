@@ -2865,10 +2865,48 @@ function esportsEdgeRows(matches, venueOk = () => true) {
 // US lists no esports), so its prices stay as a reference but its edges and
 // arb legs go.
 const tradableVenue = v => v === 'kalshi' || (v === 'polymarket' && TAIL_REGION !== 'us');
+// Limit bids the board suggests, by market side, until the match starts. A bid
+// counts as a bet only once it would have filled: the venue's ask came down to
+// the bid's price before the start (a seller crossed to it, and a bid that
+// improved the best bid was first in line). Filled bids are graded on CLV like
+// edges, as their own book ("kalshi-bid") so their record stands alone.
+const esportsBidLedger = new Map();
+function esportsBidFills(matches, venueOk = () => true, now = Date.now()) {
+  const rows = [];
+  const seen = new Set();
+  for (const m of matches) {
+    const started = !m.start || m.live || Date.parse(m.start) <= now;
+    for (const b of m.bids || []) {
+      if (started || !venueOk(b.venue)) continue;
+      const key = `${m.id}|${b.market}|${b.venue}|${b.outcome}`;
+      seen.add(key);
+      const had = esportsBidLedger.get(key);
+      // keep the highest price suggested: a bid someone placed earlier stays up
+      if (!had || b.price > had.price) esportsBidLedger.set(key, { ...b, matchId: m.id, start: m.start, sport: m.game, event: m.label });
+    }
+    for (const mk of m.markets || []) for (const oc of mk.outcomes) for (const v of ['kalshi', 'polymarket']) {
+      const key = `${m.id}|${mk.key}|${v}|${oc.name}`;
+      const b = esportsBidLedger.get(key);
+      if (!b) continue;
+      if (Date.parse(b.start) <= now) { esportsBidLedger.delete(key); continue; }
+      const ask = oc.quotes?.[v]?.ask;
+      if (ask != null && ask <= b.price + 1e-9) {
+        rows.push({
+          group: `${m.id}|${mk.key}|${v}`, side: oc.name, book: `${v}-bid`, start: b.start, sport: b.sport, event: b.event,
+          market: b.kind, price: b.cost, decimal: 1 / b.cost, ev: b.ev * 100, fairProb: b.fair * 100, source: 'esboard-bid',
+        });
+        esportsBidLedger.delete(key);
+      }
+    }
+  }
+  for (const [key, b] of esportsBidLedger) if (Date.parse(b.start) <= now) esportsBidLedger.delete(key);
+  return rows;
+}
 async function scanEsportsBoard() {
   const st = await esportsBoard.scan();
   const now = Date.now();
   const { rows: edgeRows, fairs: edgeFairs } = esportsEdgeRows(st.matches, tradableVenue);
+  edgeRows.push(...esportsBidFills(st.matches, tradableVenue, now));
   esportsEdgeTracker.recordBoard(edgeRows, edgeFairs).catch(e => console.warn('Esports edge tracker:', e.message));
   // the exchanges' match prices are the match context for player props
   for (const m of st.matches) {
@@ -2931,7 +2969,7 @@ function esportsBoardFor(req) {
         for (const [v, q] of Object.entries(oc.quotes)) {
           if ((v === 'kalshi' || v === 'polymarket') && !lic[v]) continue;
           const c = strip(q);
-          if (!pro || !tradableVenue(v)) { delete c.edge; if (!pro) { c.ev = null; c.ref = null; } }
+          if (!pro || !tradableVenue(v)) { delete c.edge; delete c.bidPlan; if (!pro) { c.ev = null; c.ref = null; } }
           quotes[v] = c;
         }
         const pmq = oc.quotes.polymarket;
@@ -2945,7 +2983,8 @@ function esportsBoardFor(req) {
       }),
     }));
     const edges = pro ? m.edges.filter(e => tradableVenue(e.venue) && lic[e.venue]) : [];
-    return { ...m, links, markets, edges, arbs: pro ? markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })) : [], sharps, locked: !pro && m.edges.length > 0, h2h: matchHistory(m) };
+    const bids = pro ? (m.bids || []).filter(e => tradableVenue(e.venue) && lic[e.venue]) : [];
+    return { ...m, links, markets, edges, bids, arbs: pro ? markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })) : [], sharps, locked: !pro && m.edges.length > 0, h2h: matchHistory(m) };
   });
 }
 // Team-vs-team: last meetings and each side's recent form, from the same map
