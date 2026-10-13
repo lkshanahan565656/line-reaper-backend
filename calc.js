@@ -331,7 +331,31 @@
     return normalCdf((hi + 0.5 - mean) / sd) - normalCdf((lo - 0.5 - mean) / sd);
   }
 
-  return { americanToDecimal, decimalToAmerican, decimalToFractional, decimalToProb, probToDecimal,
+  // ── exchange combos ──
+  // A Kalshi combo (parlay) is quoted on request by market makers. Priced off
+  // each leg's fair, legs taken as independent: fair = the product. maxAsk is
+  // the most a quote can ask, Kalshi's taker fee in, and still be worth minEv;
+  // breakEven is the same at 0. Legs from one game move together, so their
+  // product is only a rough guide (sameGame says so).
+  function comboFair(legs, { minEv = 0.02, feeRate = 0.07 } = {}) {
+    if (!Array.isArray(legs) || legs.length < 2 || !legs.every(l => okProb(l && l.fair))) return null;
+    const fair = legs.reduce((p, l) => p * l.fair, 1);
+    if (!okProb(fair)) return null;
+    // the ask p whose all-in cost p + r·p·(1 − p) is `cost`
+    const askFor = cost => {
+      const r = feeRate, b = 1 + r, disc = b * b - 4 * r * cost;
+      const p = r > 0 ? (b - Math.sqrt(Math.max(0, disc))) / (2 * r) : cost;
+      return Math.floor(p * 100 + 1e-9) / 100;
+    };
+    const games = legs.map(l => l.game).filter(Boolean);
+    return {
+      fair: round(fair, 4), decimal: round(1 / fair, 3), american: Math.round(decimalToAmerican(1 / fair)),
+      maxAsk: askFor(fair / (1 + minEv)), breakEven: askFor(fair),
+      sameGame: new Set(games).size < games.length,
+    };
+  }
+
+  return { comboFair, americanToDecimal, decimalToAmerican, decimalToFractional, decimalToProb, probToDecimal,
     parseOdds, fmtAmerican, convert, hold, devig, ev, kelly, arbitrage, hedge, parlay, middle,
     freeBet, profitBoost, clv, kalshiFee, polymarketFee, exchangeBuy, poissonPmf, normalCdf, propLine,
     windowProb, round };
