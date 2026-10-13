@@ -90,7 +90,7 @@ const SOURCES = {
   // followed near fair) and a standing gap are cut apart
   exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed',
     bet: b => { const x = evBet(b); x.labels.signal = b.source === 'mover' ? 'line mover' : b.source === 'steam' ? 'steam' : b.source === 'kalshiref' ? 'Kalshi price' : 'price gap'; return x; },
-    cuts: [['signal'], ['sport'], ['book'], ['market'], ['sport', 'book']] },
+    cuts: [['signal'], ['sport'], ['book'], ['market'], ['sport', 'book'], ['signal', 'sport']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   // a filled bid-then-hedge is graded on its lock at once (1u); unfilled and cancelled ones aren't bets
   bidArbs: { label: 'Bid, then hedge', done: r => r.status === 'filled' && r.lock != null, open: r => r.status === 'open',

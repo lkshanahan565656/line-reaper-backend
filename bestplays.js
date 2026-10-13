@@ -69,10 +69,15 @@ function verdictIndex(plays = []) {
       found.push(by.get(`${source}|${cut.join('+')}|${vals.join(' · ')}`));
     }
     const hits = found.filter(Boolean);
-    const avoid = hits.find(p => p.verdict === 'avoid');
+    // an "avoid" stands unless a narrower cut inside it beats the close on its
+    // own: standing price gaps lose on US leagues (Kalshi is the sharp book
+    // there) but can win on soccer and tennis, where Polymarket leads
+    const keys = p => (p.by && p.by !== 'all' ? p.by.split('+') : []);
+    const inside = (q, p) => keys(p).length > 0 && keys(q).length > keys(p).length && keys(p).every(k => keys(q).includes(k));
+    const avoid = hits.find(p => p.verdict === 'avoid' && !hits.some(q => ['proven', 'promising'].includes(q.verdict) && inside(q, p)));
     if (avoid) return { avoid };
     // the best verdict any of its cuts has earned; the most specific cut wins ties
-    const best = hits.reduce((a, p) => (!a || TIER[p.verdict] < TIER[a.verdict] || (TIER[p.verdict] === TIER[a.verdict] && (p.by || '').length > (a.by || '').length) ? p : a), null);
+    const best = hits.filter(p => p.verdict !== 'avoid').reduce((a, p) => (!a || TIER[p.verdict] < TIER[a.verdict] || (TIER[p.verdict] === TIER[a.verdict] && (p.by || '').length > (a.by || '').length) ? p : a), null);
     return { verdict: best ? best.verdict : 'early', play: best && best.verdict !== 'early' ? best : null };
   };
 }
