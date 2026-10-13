@@ -583,6 +583,15 @@ test('signal: consensus (2+ graded wallets, same side) boosts ×1.5, still cappe
   assert.equal(sig({ ...fav, opts: { maxUnits: 2.5 } }).units, 2.5, 'never above maxUnits');
 });
 
+test('signal: no edge at the ask says what it is worth, not that the price ran', () => {
+  // q = 0.42; the ask is 0.43, 3¢ over their fill: inside the chase limit
+  const s = sig({ market: { bestAsk: '0.43' } });
+  assert.equal(s.slippage, 0.03);
+  assert.equal(s.units, 0);
+  assert.ok(s.maxPrice < 0.43, `max price ${s.maxPrice}`);
+  assert.equal(s.reason, `no edge at 43¢ after the fee: worth ${Math.round(s.maxPrice * 100)}¢ or less`);
+});
+
 test('signal: the price ran → 0u, don\'t chase', () => {
   const big = { trader: { edge: 0.2 } };   // q = 0.48
   const at3c = sig({ ...big, market: { bestAsk: '0.43' } });
@@ -594,7 +603,7 @@ test('signal: the price ran → 0u, don\'t chase', () => {
   const gone = sig({ market: { bestAsk: '0.42' } });   // q = 0.42 = c → f = 0
   assert.equal(gone.kelly, 0);
   assert.equal(gone.units, 0);
-  assert.equal(gone.reason, "price ran, don't chase");
+  assert.match(gone.reason, /^no edge at 42¢ after the fee/, 'the price barely moved: no edge, not a chase');
   const noQuote = sig({ market: null });
   assert.equal(noQuote.units, 0);
   assert.equal(noQuote.currentPrice, null);
