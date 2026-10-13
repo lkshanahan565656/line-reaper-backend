@@ -3504,7 +3504,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.84.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.85.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4352,12 +4352,18 @@ function legsFromBoard(input) {
   });
 }
 
+const { autoSlips, priceOnBooks } = require('./slipbuild');
 app.post('/api/esports/slip', requirePro, (req, res) => {
   const legs = legsFromBoard(req.body?.legs);
   const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
   if (missing.length) return res.status(400).json({ error: 'Not on the board or not priced yet', missing: missing.map(m => m.player) });
   if (legs.length < 2) return res.status(400).json({ error: 'A slip needs at least 2 legs' });
-  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS) });
+  // the same slip on each book's own lines and payouts (slipbuild.js)
+  const board = esportsCache.picks || [];
+  const picks = (req.body?.legs || []).map(spec => board.find(p =>
+    normalizeName(p.player) === normalizeName(spec.player) &&
+    (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market))) || null);
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks) });
 });
 
 app.get('/api/esports/best-slips', requirePro, (req, res) => {
@@ -4385,7 +4391,6 @@ app.get('/api/esports/best-slips', requirePro, (req, res) => {
 // The best entry each pick'em book takes right now (slipbuild.js): every leg at
 // that book's own line and payout, same-series legs priced together. When no
 // slip clears break-even the closest one is listed, marked 'near'.
-const { autoSlips } = require('./slipbuild');
 let autoSlipMemo = { at: null, data: null };
 app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   if (!(esportsCache.picks || []).length) await esPicksOnce().catch(() => {});
@@ -4527,7 +4532,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.84.0',
+  version: '3.85.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4670,10 +4675,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.84.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.85.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.84.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.85.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);

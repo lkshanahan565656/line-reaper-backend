@@ -92,3 +92,16 @@ test('the size played is the one that grows a bankroll fastest, not the longest'
   assert.ok(pp[0].growth >= longest.growth);
   assert.equal(r.slips[0].legs, pp[0].legs);
 });
+
+test('a hand-built slip is priced on each book that carries every leg, at its own lines', () => {
+  const { priceOnBooks } = require('../slipbuild');
+  const a = pick({ PP: { prob: 0.6 }, UD: { prob: 0.58, line: 21.5, mult: 1 } });
+  const b = pick({ PP: { prob: 0.62 }, SL: { prob: 0.6, mult: 1.8 } });
+  const r = priceOnBooks([a, b]);
+  assert.equal(r.PP.legs, 2);
+  assert.ok(Math.abs(r.PP.ev - (0.6 * 0.62 * 3 - 1) * 100) < 0.01);
+  assert.equal(r.UD, null);      // b isn't on Underdog
+  assert.equal(r.SL, null);      // a isn't on Sleeper
+  assert.equal(priceOnBooks([a, null]).PP, null);
+  assert.equal(priceOnBooks([a, { ...a, market: 'Headshots' }]).PP, null);   // one player twice
+});

@@ -6168,6 +6168,25 @@ function esStatsForLegs(bookKey, legs) {
   return { bookKey, book: B, n, mode: best.mode, fullMult: best.fullMult, probAll, ev: best.ev, kelly };
 }
 
+// The backend prices the slip on each book's own lines and payouts, legs from
+// one series together (/api/esports/slip → books). Once that answer is in for
+// these exact legs it replaces the quick estimate for PrizePicks, Underdog and
+// Sleeper; a book it says can't take every leg drops out.
+const ES_SRV_CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+const esSlipKey = legs => legs.map(l => l.key).join('+');
+function esSrvSlip(legs) {
+  const c = esportsState.slipServer;
+  return c && c.key === esSlipKey(legs) ? c : null;
+}
+function esSlipStats(bookKey, legs) {
+  const srv = esSrvSlip(legs), code = ES_SRV_CODE[bookKey];
+  if (!srv?.books || !code) return esStatsForLegs(bookKey, legs);
+  const e = srv.books[code];
+  if (!e || !(e.paysAll > 0)) return null;
+  return { bookKey, book: ES_BOOKS[bookKey], n: e.legs, mode: /flex/.test(e.table) ? 'FLEX' : 'POWER', fullMult: e.paysAll,
+    probAll: e.probAll, ev: e.ev, kelly: e.kelly, server: e };
+}
+
 function renderSlipBar() {
   const bar = document.getElementById('esSlipBar');
   if (!bar) return;
@@ -6196,7 +6215,7 @@ function renderSlipBar() {
     return;
   }
 
-  const allStats = Object.keys(ES_BOOKS).map(k => esStatsForLegs(k, legs)).filter(Boolean);
+  const allStats = Object.keys(ES_BOOKS).map(k => esSlipStats(k, legs)).filter(Boolean);
   if (!allStats.length) {
     bar.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-family:'Inter',sans-serif;font-size:16px;letter-spacing:3px;color:#e2e8f0">SLIP</span>
@@ -6248,7 +6267,7 @@ function renderSlipBar() {
       </span>
     </div>
     <div id="esSlipCorr" style="margin-top:6px;font-size:11px;font-family:'JetBrains Mono',monospace"></div>
-    <div style="margin-top:6px;font-size:9px;color:#475569;font-family:'JetBrains Mono',monospace">★ = best payout · numbers above treat legs as independent; the series check prices legs that share a match together · payout tables are editable defaults in ES_BOOKS — verify vs live apps</div>`;
+    <div style="margin-top:6px;font-size:9px;color:#475569;font-family:'JetBrains Mono',monospace">★ = best payout · ${esSrvSlip(legs)?.books ? `PrizePicks, Underdog and Sleeper are priced at each book's own line, legs from one series together` : `numbers above treat legs as independent; the series check prices legs that share a match together`} · payout tables are defaults, verify against the live apps</div>`;
   esCheckCorrelation(legs);
 }
 
@@ -6259,6 +6278,14 @@ async function esCheckCorrelation(legs) {
   const el = document.getElementById('esSlipCorr');
   if (!el || legs.length < 2) return;
   const seq = ++esCorrSeq;
+  const cached = esSrvSlip(legs);
+  if (cached?.books) {
+    const e = cached.books[ES_SRV_CODE[esportsState.slipBook]];
+    el.innerHTML = !e ? '' : e.correlated
+      ? `<span style="color:#fbbf24;font-weight:800">SAME-SERIES LEGS</span> <span style="color:#94a3b8">priced together on ${escEs(e.bookName)}: EV <b style="color:${esEvColor(e.ev)}">${e.ev > 0 ? '+' : ''}${e.ev.toFixed(1)}%</b> <span style="color:#475569">(independent ${e.evIndependent > 0 ? '+' : ''}${e.evIndependent.toFixed(1)}%)</span></span>`
+      : `<span style="color:#64748b">SERIES CHECK: legs are in different matches, so they're priced independently</span>`;
+    return;
+  }
   el.innerHTML = `<span style="color:#475569">Checking same-series correlation…</span>`;
   try {
     const r = await fetch(`${BACKEND_URL}/api/esports/slip`, {
@@ -6270,6 +6297,12 @@ async function esCheckCorrelation(legs) {
     if (r.status === 401 || r.status === 402) { el.innerHTML = `<span style="color:#f59e0b;cursor:pointer" onclick="acctNeedPro('Correlated slip pricing')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> SERIES CHECK: same-series correlation pricing is a Pro feature</span>`; return; }
     const data = await r.json();
     if (!r.ok) { el.innerHTML = `<span style="color:#64748b">Series check unavailable: ${escEs(data.error || r.status)}</span>`; return; }
+    if (data.books) {
+      // per-book prices for these legs: redraw the bar with them
+      esportsState.slipServer = { key: esSlipKey(legs), books: data.books };
+      renderSlipBar();
+      return;
+    }
     const best = data.prices?.[0];
     if (!best) { el.innerHTML = ''; return; }
     const shift = (best.probAll - best.probAllIndependent) * 100;
@@ -6299,7 +6332,7 @@ function esSlipLabel(sel) {
 }
 
 function esCopySlip() {
-  const sel = esStatsForLegs(esportsState.slipBook, esportsState.slip);
+  const sel = esSlipStats(esportsState.slipBook, esportsState.slip);
   if (!sel) { showToast('Pick a book first', 'danger'); return; }
   const lines = esportsState.slip.map(l =>
     `▸ ${l.player} ${l.side} ${l.line} ${l.market} — ${(l.prob * 100).toFixed(0)}%`);
@@ -6312,7 +6345,7 @@ function esCopySlip() {
 }
 
 async function esLogSlip() {
-  const sel = esStatsForLegs(esportsState.slipBook, esportsState.slip);
+  const sel = esSlipStats(esportsState.slipBook, esportsState.slip);
   if (!sel) { showToast('Pick a book first', 'danger'); return; }
   const stake = parseFloat(document.getElementById('esSlipStake')?.value);
   if (!isFinite(stake) || stake <= 0) { showToast('Enter a stake first', 'danger'); return; }
