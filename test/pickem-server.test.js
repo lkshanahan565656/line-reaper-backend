@@ -42,3 +42,19 @@ test('Sleeper lines are priced on the esports board next to Underdog', async () 
   assert.equal(tw.bestBook, 'SL');
   assert.ok(!picks.some(p => p.player === 'ghost'));
 });
+
+test('an Underdog line that only takes Higher gets no Underdog price on a Lower pick', async () => {
+  const start = new Date(Date.now() + 5 * 3600e3).toISOString();
+  srv.cache.prizepicks = { data: [{ book: 'prizepicks', sport: 'CS2', player: 'ropz', team: 'FaZe', market: 'MAPS 1-2 Kills', line: 30.5, startTime: start, matchTitle: 'FaZe vs NAVI', gameId: 'pp1' }], updated: null };
+  srv.cache.underdog = { data: [{ book: 'underdog', sport: 'CS', player: 'ropz', team: 'FaZe', market: 'Kills on Maps 1+2', line: 30.5, startTime: start, matchTitle: 'FaZe vs NAVI',
+    overMultiplier: 1.03, underMultiplier: null, overOpen: true, underOpen: false }] };
+  srv.cache.sleeper = { data: [] };
+  srv.esportsCache.manualPredictions = { 'ropz|MAPS 1-2 Kills': 26 };
+  const picks = await srv.generateEsportsPicks();
+  const p = picks.find(x => x.player === 'ropz');
+  assert.equal(p.side, 'UNDER');
+  assert.equal(p.udEv, null);
+  assert.equal(p.udClosed, true);
+  assert.equal(p.bestBook, 'PP');
+  assert.ok(!p.pricing.books.UD);
+});

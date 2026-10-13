@@ -27,7 +27,7 @@ function bookLeg(p, book) {
   if (ev == null || !Number.isFinite(b.prob)) return null;
   if (book === 'UD' && b.decimal) return null;   // decimal-priced Underdog legs pay differently
   return {
-    player: p.player, team: p.team || '', gameId: p.gameId ?? null, sport: p.sport,
+    player: p.player, team: p.team || '', gameId: p.gameId ?? null, sport: p.sport, matchTitle: p.matchTitle || '',
     market: p.displayMarket || p.market, rawMarket: p.market, side: p.side, startTime: p.startTime || '',
     line: b.line, prob: b.prob, ev, mult: b.mult ?? null, shift: b.shift || 0,
     meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
@@ -111,9 +111,12 @@ function present(book, s) {
     status: s.ev > 0 ? 'plus' : 'near',
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
     paysAll: pays != null ? +pays.toFixed(2) : null,
+    // what 1u returns on each hit count, for grading (sliptrack.js)
+    payTable: pays == null ? null : table === 'sleeper' || table === 'underdog_standard' || table === 'prizepicks_power' ? { [n]: +pays.toFixed(4) } : { ...PAYOUTS[table][n] },
     hits: s.hits, kelly: s.kelly, growth: +(s.growth || 0).toFixed(6),
     picks: s.picks.map(l => ({
       player: l.player, team: l.team, sport: l.sport, market: l.market, rawMarket: l.rawMarket, side: l.side, line: l.line,
+      gameId: l.gameId, matchTitle: l.matchTitle,
       prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime,
     })),
   };

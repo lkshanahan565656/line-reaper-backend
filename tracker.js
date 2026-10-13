@@ -465,7 +465,7 @@ function createTracker({
     };
   }
 
-  return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, pickId, ready: () => ready };
+  return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, pickId, graders, ready: () => ready };
 }
 
 module.exports = {
