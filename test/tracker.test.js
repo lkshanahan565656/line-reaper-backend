@@ -115,7 +115,7 @@ test('manual grade, void, and summary math', async () => {
   const tr = makeTracker(clock);
   await tr.recordBoard([
     boardPick({ player: 'A', bestEv: 2 }),
-    boardPick({ player: 'B', bestEv: 7, side: 'UNDER' }),
+    boardPick({ player: 'B', bestEv: 7, side: 'UNDER', fairSource: 'market' }),
     boardPick({ player: 'C', bestEv: 12, bestBook: 'UD', udLine: 38.5, udImplied: 52.63 }),
   ]);
   clock.t = T0 + 5 * HOUR;
@@ -136,6 +136,8 @@ test('manual grade, void, and summary math', async () => {
   assert.equal(s.byEv['0-3%'].wins, 1);
   assert.equal(s.byEv['6-10%'].losses, 1);
   assert.equal(s.bySide.UNDER.losses, 1);
+  assert.equal(s.byPricing.market.losses, 1);
+  assert.equal(s.byPricing.model.wins, 1);
 
   const hi = await tr.summary({ minEv: 5 });
   assert.equal(hi.overall.graded, 1);
