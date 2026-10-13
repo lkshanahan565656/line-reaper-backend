@@ -37,6 +37,9 @@ const DEFAULTS = {
   // Kalshi as the reference for a Polymarket US side Polymarket can't price
   kalshiMaxSpread: 0.03,
   kalshiMinLiquidity: 500,
+  // Kalshi quotes in whole cents, so its mid is only good to half a cent: a
+  // Kalshi-priced edge has to clear the fee by a cent too (5.5¢ vs 5.3¢ is +3% and noise)
+  kalshiMinEdge: 0.01,
 };
 const VENUE = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 const REF_NAME = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
@@ -193,6 +196,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], us
       const steam = o.steam ? o.steam.steamOf(id, fair, c.cost, now) : null;
       const minEv = steam && o.steamMinEv != null ? Math.min(o.minEv, o.steamMinEv) : o.minEv;
       if (ev < minEv || ev > o.maxEv) continue;
+      if (kalshiRef && fair - c.cost < o.kalshiMinEdge - 1e-9) continue;
       const e = {
         id, group, venue: t.exchange, venueName: VENUE[t.exchange] || t.exchange, marketId: t.id, side, pick,
         title: t.eventTitle || t.title, market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind,
