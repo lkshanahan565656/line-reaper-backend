@@ -5420,8 +5420,12 @@ function renderXarbs() {
   const nearList = xarbUi.allNear ? near : nearSimple;
   const twoBet = sec('2-BET ARBS', ready.length ? `${ready.length} · one bet on each exchange, check each price is still there` : 'none right now',
       ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.</div>');
+  const br = d.bidRecord;
+  const bidRec = br && (br.filled || br.unfilled || br.cancelled)
+    ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${br.filled} filled${br.fillRate != null ? ` (${Math.round(br.fillRate * 100)}% of those finished)` : ''}, ${br.locked} locked a profit, ${br.lost} lost${br.avgLock != null ? `, average ${br.avgLock > 0 ? '+' : ''}${br.avgLock}% a fill` : ''}. ${br.cancelled} cancelled when the hedge ran, ${br.unfilled} never filled.</div>`
+    : br ? `<div class="xa-sub" style="margin:0 0 8px">Every plan here is tracked until its game starts: whether the bid filled and what the hedge cost by then. ${br.open} being tracked now.</div>` : '';
   const bidSec = sec('BID, THEN HEDGE', bids.length ? `${bids.length} · two bets: a limit bid, then the other side once it fills` : 'none right now',
-      bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>');
+      bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
   el.innerHTML = note + summary + controls
     + (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet)
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')

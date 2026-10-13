@@ -1209,7 +1209,8 @@ function findBidArbs(matches = [], opts = {}) {
           { ...hedge, order: 'take', maxPrice: plan.hedgeMax },
         ];
         const a = {
-          id: `bid:${arbId('cross', legs)}`, ...fields, type: 'bid', legs,
+          id: `bid:${arbId('cross', legs)}`, ...fields, type: 'bid', legs, kind: m.kalshi.kind || null,
+          startTime: [m.kalshi.startTime, m.polymarket.startTime].find(t => ms(t) != null) || null,
           totalCost: round(plan.cost / BID_LOT, 4), profitPct: r2(plan.pct),
           stakes: { legs: [{ pct: pctOf(plan.makerCost, plan.cost) }, { pct: pctOf(plan.hedgeCost, plan.cost) }] },
           at: new Date(o.now).toISOString(),
@@ -1221,7 +1222,17 @@ function findBidArbs(matches = [], opts = {}) {
       }
     }
   }
-  return [...best.values()].sort((a, b) => b.profitPct - a.profitPct).slice(0, o.bidMax);
+  // a bid that goes first in line fills; one joining a queue in a wide book
+  // mostly doesn't, so those come after
+  return [...best.values()].sort((a, b) => (b.legs[0].front ? 1 : 0) - (a.legs[0].front ? 1 : 0) || b.profitPct - a.profitPct).slice(0, o.bidMax);
+}
+// What a bid plan locks if the bid fills at `bidPrice` and the hedge is
+// bought at `hedgePrice`, fees in → % of the cost (negative: a loss).
+function bidLock(maker, bidPrice, hedge, hedgePrice, opts = {}) {
+  const o = withDefaults(opts), n = BID_LOT;
+  if (!(bidPrice > 0 && bidPrice < 1 && hedgePrice > 0 && hedgePrice < 1)) return null;
+  const cost = bidPrice * n + makerFee(maker, bidPrice, n, o) + takerCost(hedge, hedgePrice, n, o);
+  return r2(((n - cost) / cost) * 100);
 }
 
 // ── US venues ──
@@ -1609,7 +1620,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
