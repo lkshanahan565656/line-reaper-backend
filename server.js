@@ -215,11 +215,12 @@ const { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, attachMat
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
 // 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
-// every 10 minutes; the esports leagues (ids learned from the whole board)
-// are re-pulled on their own every 2 minutes, a few hundred KB.
+// every 20 minutes; the esports leagues (ids learned from the whole board)
+// are re-pulled on their own every 6, a few seconds apart. Polling the four
+// leagues every 2 minutes drew 429s.
 const PRIZEPICKS_URL = process.env.PRIZEPICKS_URL || 'https://partner-api.prizepicks.com/projections';
-const PP_FULL_MS = 10 * 60 * 1000;
-const ppState = { fullAt: 0, esportsLeagues: [] };
+const PP_FULL_MS = 20 * 60 * 1000, PP_ESPORTS_MS = 6 * 60 * 1000;
+const ppState = { fullAt: 0, esportsAt: 0, esportsLeagues: [] };
 const PP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   'Accept': 'application/json', 'Origin': 'https://app.prizepicks.com', 'Referer': 'https://app.prizepicks.com/',
@@ -229,6 +230,7 @@ async function scrapePrizePicks() {
   if (Date.now() < ppFail.until) return;
   try {
     const full = Date.now() - ppState.fullAt > PP_FULL_MS || !ppState.esportsLeagues.length;
+    if (!full && Date.now() - ppState.esportsAt < PP_ESPORTS_MS) return;
     let allLines;
     if (full) {
       const res = await axios.get(PRIZEPICKS_URL, { params: { per_page: 10000, single_stat: true }, headers: PP_HEADERS, timeout: 30000, maxContentLength: 80e6 });
@@ -236,10 +238,12 @@ async function scrapePrizePicks() {
       allLines = lines;
       ppState.esportsLeagues = Object.entries(leagues).filter(([, name]) => isEsports(name)).map(([id]) => id);
       if (!ppState.esportsLeagues.length) ppState.esportsLeagues = [...new Set(lines.filter(l => isEsports(l.sport) && l.leagueId).map(l => l.leagueId))];
-      ppState.fullAt = Date.now();
+      ppState.fullAt = ppState.esportsAt = Date.now();
     } else {
+      ppState.esportsAt = Date.now();
       const fresh = [];
-      for (const id of ppState.esportsLeagues) {
+      for (const [i, id] of ppState.esportsLeagues.entries()) {
+        if (i) await new Promise(r => setTimeout(r, 3000));
         const res = await axios.get(PRIZEPICKS_URL, { params: { league_id: id, per_page: 1000, single_stat: true }, headers: PP_HEADERS, timeout: 15000 });
         fresh.push(...parsePrizePicksPayload(res.data).lines);
       }
@@ -3349,7 +3353,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.75.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.75.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4311,7 +4315,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.75.0',
+  version: '3.75.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4453,10 +4457,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.75.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.75.1 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.75.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.75.1 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
