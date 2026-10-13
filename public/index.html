@@ -479,6 +479,8 @@ body::before {
 .mybk-chip.on { border-color: var(--green); color: var(--green); background: rgba(52,211,153,.08); }
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pb-table td.pb-pl { text-align: left; min-width: 150px; }
 .pb-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
 .pb-table { width: 100%; border-collapse: collapse; }
 .pb-table th { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
@@ -493,7 +495,7 @@ body::before {
 .pb-gap { color: var(--gold); font-size: 10px; font-weight: 700; margin-left: 4px; }
 .pb-sum { font-size: 11px; color: #94a3b8; margin: 0 0 8px; }
 .pb-table .show-sm { display: none; }
-@media (max-width: 640px) { .pb-table td, .pb-table th { padding: 7px 4px; } .pb-table .pb-cell { min-width: 62px; } .pb-table .hide-sm { display: none; } .pb-table .show-sm { display: inline; } .pb-line { font-size: 13px; } .pb-dim { font-size: 9.5px; } .pb-table .pl { font-size: 13px; } }
+@media (max-width: 640px) { .pb-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .pb-chips .sport-chip { flex: 0 0 auto; } .pb-table td.pb-pl { min-width: 104px; } .pb-table td, .pb-table th { padding: 7px 4px; } .pb-table .pb-cell { min-width: 62px; } .pb-table .hide-sm { display: none; } .pb-table .show-sm { display: inline; } .pb-line { font-size: 13px; } .pb-dim { font-size: 9.5px; } .pb-table .pl { font-size: 13px; } }
 .es-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
 .es-field select { background: rgba(15,23,42,.8); color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 120px; }
 .es-search { flex: 1; min-width: 160px; }
@@ -1143,9 +1145,9 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line: sports off Kalshi's player ladders (no sportsbook vig), esports off our model. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines on the same stat.</span>
   </div>
-  <div class="row" id="pbSports" style="margin:12px 0 8px;gap:6px;flex-wrap:wrap"></div>
-  <div class="row" id="pbBooks" style="margin:0 0 10px;gap:6px;flex-wrap:wrap"></div>
-  <div class="row" style="margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
+  <div class="pb-chips" id="pbSports" style="margin:12px 0 8px"></div>
+  <div class="pb-chips" id="pbBooks" style="margin:0 0 10px"></div>
+  <div style="display:flex;margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
     <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
     <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option></select></label>
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
@@ -3085,7 +3087,7 @@ function pbCell(row, key) {
   if (key === 'prizepicks') price = '<span class="pb-dim">standard</span>';
   else {
     const o = c.overOpen ? (c.over != null ? mult(c.over) : '1x') : 'closed', u = c.underOpen ? (c.under != null ? mult(c.under) : '1x') : 'closed';
-    price = `<span class="pb-dim">O ${o} · U ${u}</span>`;
+    price = o === u ? `<span class="pb-dim">${o === '1.00x' ? 'standard' : o + ' both'}</span>` : `<span class="pb-dim">O ${o} · U ${u}</span>`;
   }
   const ev = c.ev ? `<div class="pb-ev" style="color:${c.ev.ev > 0 ? 'var(--green)' : '#64748b'}">${c.ev.side === 'Over' ? 'More' : 'Less'} ${c.ev.ev > 0 ? '+' : ''}${c.ev.ev.toFixed(1)}%</div>` : '';
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';

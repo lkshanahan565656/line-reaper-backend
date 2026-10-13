@@ -15,7 +15,7 @@ const PP_LEAGUES = [
   [/^(.+?)SZN$/, 'Season '], [/^(.+?)LIVE$/, ''], [/^(NBA|WNBA|NHL|NFL|MLB)P$/, ''],
 ];
 const SPORT_ALIASES = { CS2: 'CS', CSGO: 'CS', LOL: 'LOL', 'LEAGUE OF LEGENDS': 'LOL', VALORANT: 'VAL', DOTA2: 'DOTA',
-  FIFA: 'SOCCER', UCL: 'SOCCER', EPL: 'SOCCER', MLS: 'SOCCER', LALIGA: 'SOCCER', SERIEA: 'SOCCER', BUNDES: 'SOCCER', SOCCER: 'SOCCER', NCAAF: 'CFB', NCAAB: 'CBB' };
+  FIFA: 'SOCCER', UFC: 'MMA', UCL: 'SOCCER', EPL: 'SOCCER', MLS: 'SOCCER', LALIGA: 'SOCCER', SERIEA: 'SOCCER', BUNDES: 'SOCCER', SOCCER: 'SOCCER', NCAAF: 'CFB', NCAAB: 'CBB' };
 const ESPORTS = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'COD', 'R6', 'HALO', 'RL', 'OW']);
 
 function boardSport(sport) {

@@ -1525,12 +1525,17 @@ function normalizeName(n) {
 // Handles: "MAPS 1-2 Kills" (PP), "Kills on Maps 1+2" (UD), "Kills Map 1+2" (Betr), "Kills Maps 1 2" (Sleeper)
 function normalizeMarket(m) {
   const s = (m || '').toLowerCase();
-  const isHS       = s.includes('headshot') || s.includes('hs');
+  const isHS       = s.includes('headshot') || /\bhs\b/.test(s);
   const isAssists  = s.includes('assist');
   const isFantasy  = s.includes('fantasy');
+  // "First Bloods" and "Deaths" are stats of their own: read as kills, a
+  // PrizePicks first-blood line (6 to 8) sat on Underdog's kills line (30)
+  const isFB       = /first ?(blood|kill)/.test(s);
+  const isDeaths   = s.includes('death');
   // "Kills Maps 1 2" (Sleeper) uses spaces — normalize to the + form first
   let mapCount = parseMapSpan(s.replace(/(\d)\s+(\d)/g, '$1+$2')).label;
-  let stat = isHS ? 'hs' : isAssists ? 'ast' : isFantasy ? 'fp' : 'k';
+  let stat = isHS ? 'hs' : isFB ? 'fb' : isAssists ? 'ast' : isFantasy ? 'fp' : isDeaths ? 'death'
+    : s.includes('kill') ? 'k' : 'x:' + s.replace(/maps?\s*[\d+\-\s]+|games?\s*[\d+\-\s]+|on\b/g, '').replace(/[^a-z]/g, '');
   return `${stat}|${mapCount}`;
 }
 
@@ -1660,6 +1665,12 @@ async function generateEsportsPicks() {
     let predSource = modelPred != null ? 'manual' : null;
     let rawPred = null, sampleSize = null, spanInferred = null, statLine = null, context = null;
 
+    // only kills, headshots, assists and fantasy are modelled; a first-blood
+    // line priced as kills would read as a huge under
+    const statKind = normalizeMarket(lineObj.market).split('|')[0];
+    if (modelPred == null && !['k', 'hs', 'ast', 'fp'].includes(statKind)) {
+      return { modelPred: null, predSource: null, manualKey, rawPred, sampleSize, spanInferred, statLine, context };
+    }
     if (modelPred == null) {
       const sportU = (lineObj.sport || '').toUpperCase();
       const mapCount = parseMapCount(lineObj.market);

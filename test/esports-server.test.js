@@ -343,3 +343,13 @@ test('props: a projection on the line is a coin flip once the curve\'s skew is t
   const z = S.calcEsportsEV(1.5, 1.5, 'OVER', 'LOL', 'Kills on Maps 1+2+3');
   assert.ok(Math.abs(z.prob + sup - 50) < 1e-9);
 });
+
+test('first bloods and deaths never share a key with kills across books', () => {
+  const k = S.normalizeMarket;
+  assert.equal(k('MAPS 1-2 Kills'), k('Kills on Maps 1+2'));
+  assert.equal(k('Kills Maps 1-2'), k('Kills on Maps 1+2'));
+  assert.equal(k('MAPS 1-2 Headshots'), k('Headshots on Maps 1+2'));
+  assert.notEqual(k('MAPS 1-2 First Bloods'), k('MAPS 1-2 Kills'));
+  assert.notEqual(k('Deaths on Maps 1+2'), k('Kills on Maps 1+2'));
+  assert.ok(k('MAPS 1-2 First Bloods').startsWith('fb|'));
+});
