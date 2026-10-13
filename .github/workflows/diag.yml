@@ -7,18 +7,19 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: |
-          for i in $(seq 1 40); do curl -sS -m 20 https://line-reaper-backend-production.up.railway.app/api/status | grep -q '"3.80.1"' && break; sleep 30; done; { date -u; curl -sS -m 30 https://line-reaper-backend-production.up.railway.app/app | grep -c bidsProven; node diag/sharp-tabs.js; } > diag-out.txt 2>&1 || true; node diag/snap.js || true
+          git fetch origin main && git checkout origin/main -- . && npm install --no-audit --no-fund >/dev/null 2>&1
+          { date -u; RUN_MIN=14 node diag/realtime.js; } > diag-out.txt 2>&1 || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-out
-          git add -f diag-out.txt snap
+          git add -f diag-out.txt
           git commit -m "diag output"
           git push -f origin diag-out
