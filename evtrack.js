@@ -73,7 +73,7 @@ function createPgStore(connectionString, table = 'ev_bets') {
 
 function createStoreFromEnv(env = process.env, { table = 'ev_bets', fileVar = 'EV_TRACK_FILE', file = 'ev-bets.json' } = {}) {
   if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL, table);
-  return createFileStore(env[fileVar] || path.join(__dirname, 'data', file));
+  return createFileStore(env[fileVar] || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), file));
 }
 
 // One bet per market side and book per game: a book dipping below the

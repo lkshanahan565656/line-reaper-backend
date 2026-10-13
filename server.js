@@ -2429,7 +2429,7 @@ const upstream = createPoliteHttp((url, cfg) => axios.get(url, cfg), { gapMs: up
 // polite requests): Postgres table tail_traders with DATABASE_URL, otherwise
 // the TAIL_TRADERS_FILE JSON file.
 function createTraderStoreFromEnv(env = process.env) {
-  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(__dirname, 'data', 'tail-traders.json'));
+  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'tail-traders.json'));
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
@@ -2979,14 +2979,20 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
   Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), moverBets: moverBets.length } });
   const lic = webhookLicence();
-  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
+  // alerts follow the record the way Best Plays does: a signal, league or
+  // market the results call "avoid" (standing price gaps, -0.6% CLV over 32
+  // on 10-13) stays on the ARBS tab but doesn't ping anyone
+  let plays = [];
+  try { ({ plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) })); } catch (e) { console.warn('Exchange value: record:', e.message); }
+  const bp = require('./bestplays'), verdict = bp.verdictIndex(plays);
+  const avoided = e => !!verdict('exchangeValue', { signal: bp.valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market }).avoid;
+  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   // a line mover alerts only once its own record is proven, at that record's CLV
   if (moverBets.length) {
     try {
-      const { plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) });
       const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === 'line mover');
       if (rec && rec.verdict === 'proven' && rec.avgClv >= MOVER_ALERT_MIN) {
-        fresh.push(...moverBets.filter(e => valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
+        fresh.push(...moverBets.filter(e => valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
       }
     } catch (e) { console.warn('Line movers: record:', e.message); }
   }
@@ -4632,7 +4638,7 @@ schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => {
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
-if (require.main === module) {
+if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.82.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up

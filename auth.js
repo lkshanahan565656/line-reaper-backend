@@ -132,7 +132,7 @@ function wrap(idx) {
 
 function createUserStoreFromEnv(env = process.env) {
   if (env.DATABASE_URL) return createPgUserStore(env.DATABASE_URL);
-  return createFileUserStore(env.USERS_FILE || path.join(__dirname, 'data', 'users.json'));
+  return createFileUserStore(env.USERS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'users.json'));
 }
 
 // What the client is allowed to see about a user.
