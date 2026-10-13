@@ -176,3 +176,12 @@ test('Kalshi prices a Polymarket US side Polymarket has no tight book on', () =>
   assert.equal(r.fairBy, 'kalshi');
   assert.equal(r.sides[0].fair, 0.485);
 });
+
+test('a Kalshi-priced edge has to clear the fee by a cent', () => {
+  // Kalshi 6/95 → mid 5.5¢; PM US at 5.2¢ + fee is about +5% but under a cent
+  const k = kRow({ yesAsk: 0.06, noAsk: 0.95 });
+  const us = usRow({ yesAsk: 0.97, noAsk: 0.052 });
+  const out = V.findValue({ usRows: [us], polymarket: [], usMatches: [match(k, us, false)] }, { now: NOW, venues: ['polymarketus'] });
+  assert.equal(out.kalshiPriced, 1);
+  assert.equal(out.edges.length, 0);
+});
