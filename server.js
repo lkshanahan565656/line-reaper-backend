@@ -3730,6 +3730,9 @@ app.get('/api/esports/probe/udmarkets', (req, res) => {
   res.json({ totalEsportsLines: rows.length, markets: out });
 });
 
+// Which pick'em books answer from Railway (bookprobe.js)
+require('./bookprobe').mountBookProbe(app, axios);
+
 // Per-sport source inspectors
 // NOTE: two explicit routes instead of an optional ":name?" param — Express 5
 // removed optional-param syntax and throws at startup on it.
