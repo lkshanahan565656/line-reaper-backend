@@ -240,6 +240,8 @@ function createTracker({
           // the model's probability before the record's calibration shift (escal.js)
           rawProb: p.rawProb ?? p.prob, calShift: p.calShift || 0,
           modelPred: p.modelPred, rawPred: p.rawPred ?? null, predSource: p.predSource,
+          // 'market' when the books' consensus set the number (esmarket.js)
+          fair: p.fairSource || null, marketPred: p.marketPred ?? null,
           confidence: p.confidence, sampleSize: p.sampleSize ?? null,
           context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),

@@ -641,6 +641,7 @@ const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = requ
 const { propProb } = require('./dist');
 const { sportKey: trackerSportKey, statKind: trackerStatKind } = require('./tracker');
 const escal = require('./escal');
+const esmarket = require('./esmarket');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
@@ -1639,14 +1640,62 @@ async function generateEsportsPicks() {
 
   // What the record says so far: kinds of pick that keep losing get their
   // probability pulled down, kinds that keep winning get a little more (escal.js)
-  let calib = null;
+  // The market price (esmarket.js) is the default: the books' own lines and
+  // payouts set the number, and our projection only nudges it by what the
+  // record says it's worth. ESPORTS_MARKET=off goes back to model-first pricing.
+  const marketOn = process.env.ESPORTS_MARKET !== 'off';
+  let calib = null, weights = esmarket.modelWeights([]);
+  let graded = [];
+  try { graded = await tracker.list({ status: 'graded', limit: 100000 }); } catch (e) { console.warn('Esports: graded record unavailable:', e.message); }
+  weights = esmarket.modelWeights(graded);
   if (process.env.ESPORTS_CALIBRATION !== 'off') {
     try {
       const prior = parseFloat(process.env.ESPORTS_CAL_PRIOR);
-      calib = escal.calibrate(await tracker.list({ status: 'graded', limit: 100000 }), Number.isFinite(prior) && prior > 0 ? { prior } : {});
+      // calibrate on picks priced the way the board prices now: the model-first
+      // record says how wrong that model was, not how the market price does
+      const rows = marketOn ? graded.filter(r => r.fair === 'market') : graded.filter(r => r.fair !== 'market');
+      calib = escal.calibrate(rows, Number.isFinite(prior) && prior > 0 ? { prior } : {});
     } catch (e) { console.warn('Esports: calibration skipped:', e.message); }
   }
   esportsCache.calibration = calib ? { prior: calib.prior, buckets: Object.values(calib.buckets), at: new Date().toISOString() } : null;
+  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), at: new Date().toISOString() };
+  const marketCounts = { priced: 0, marketOnly: 0, multiBook: 0, dropped: 0 };
+
+  // Where the books put this player, and the number the board prices with.
+  // quotes: [{ book, line, over, under, overOpen, underOpen }]
+  function marketize(base, g, quotes) {
+    if (!marketOn || g.predSource === 'manual') return g;
+    const statKind = normalizeMarket(base.market).split('|')[0];
+    if (!['k', 'hs', 'ast'].includes(statKind)) return g;
+    const ctxOpts = { context: g.context || null };
+    const skews = new Map();
+    const skewOf = ln => { if (!skews.has(ln)) skews.set(ln, lineSkew(ln, base.sport, base.market, ctxOpts)); return skews.get(ln); };
+    const overFair = (ln, m) => {
+      const r = calcEsportsEV(ln, m, 'OVER', base.sport, base.market, ctxOpts);
+      return r ? Math.max(0.001, Math.min(0.999, (r.prob + skewOf(ln)) / 100)) : null;
+    };
+    const cons = esmarket.consensus(quotes.filter(Boolean), overFair);
+    if (!cons) return g;
+    const sk = trackerSportKey(base.sport), st = trackerStatKind(base.market);
+    const raw = g.predSource === 'auto' ? g.rawPred : null;
+    let w = weights.weight(sk, st);
+    if (g.sampleSize != null) w *= Math.min(1, Math.max(0.25, g.sampleSize / 40));
+    const mean = esmarket.blend(cons.mean, raw, w);
+    const kept = cons.quotes.filter(q => !q.dropped);
+    marketCounts.priced++;
+    if (raw == null) marketCounts.marketOnly++;
+    if (kept.length > 1) marketCounts.multiBook++;
+    marketCounts.dropped += cons.quotes.length - kept.length;
+    const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.dropped ? ' (left out)' : ''}`;
+    const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}`;
+    return {
+      ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',
+      market: { mean: cons.mean, quotes: cons.quotes, modelWeight: +w.toFixed(3), raw: raw != null ? +raw.toFixed(2) : null },
+      statLine: [g.statLine, note].filter(Boolean).join(' · '),
+    };
+  }
+  const udQuote = udm => udm && { book: 'UD', line: udm.line, over: udm.overMultiplier, under: udm.underMultiplier, overOpen: udm.overOpen, underOpen: udm.underOpen };
+  const slQuote = slm => slm && { book: 'SL', line: slm.line, over: slm.overMultiplier, under: slm.underMultiplier, overOpen: slm.overOpen, underOpen: slm.underOpen };
 
   // Manual predictions are stored under the exact 'player|market' string the user
   // clicked on — but the same pick reads "MAPS 1-2 Kills" on PP and
@@ -1811,6 +1860,10 @@ async function generateEsportsPicks() {
       modelPred: modelPred != null ? parseFloat(modelPred.toFixed(2)) : null,
       predSource: modelPred != null ? predSource : null,
       rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
+      fairSource: modelPred != null ? (g.fair || 'model') : null,
+      marketPred: g.market ? g.market.mean : null,
+      marketQuotes: g.market ? g.market.quotes : null,
+      modelWeight: g.market ? g.market.modelWeight : null,
       sampleSize: g.sampleSize ?? null,
       spanInferred: g.spanInferred ?? null,
       displayMarket: g.spanInferred ? relabelMarket(base.market, g.spanInferred) : base.market,
@@ -1839,7 +1892,7 @@ async function generateEsportsPicks() {
     // anything we know. The skew is measured at the line and taken back out.
     // Auto projections only: they're anchored toward the line, which treats the
     // line as the book's mean. A hand-entered number is the user's own mean.
-    const skewAt = ln => predSource === 'auto' ? lineSkew(ln, base.sport, base.market, ctxOpts) : 0;
+    const skewAt = ln => (predSource === 'auto' || predSource === 'market') ? lineSkew(ln, base.sport, base.market, ctxOpts) : 0;
     const skew = skewAt(lineVal);
     const over = calcEsportsEV(lineVal, modelPred, 'OVER', base.sport, base.market, ctxOpts);
     if (!over) return pick;
@@ -1951,7 +2004,7 @@ async function generateEsportsPicks() {
     const udm = udMap[key] || null, slm = slMap[key] || null;
     if (udm) udm.matched = true;
     if (slm) slm.matched = true;
-    const g = await getModelPred(line);
+    const g = marketize(line, await getModelPred(line), [{ book: 'PP', line: line.line }, udQuote(udm), slQuote(slm)]);
     picks.push(assemble(line, g.modelPred, g.predSource, g.manualKey, udm, 'pp', g, slm));
   }
 
@@ -1961,7 +2014,7 @@ async function generateEsportsPicks() {
     const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId };
     const slm = slMap[`${normalizeName(udm.player)}|${normalizeMarket(udm.market)}`] || null;
     if (slm) slm.matched = true;
-    const g = await getModelPred(base);
+    const g = marketize(base, await getModelPred(base), [udQuote(udm), slQuote(slm)]);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g, slm));
   }
 
@@ -1969,7 +2022,7 @@ async function generateEsportsPicks() {
   for (const slm of Object.values(slMap)) {
     if (slm.matched) continue;
     const base = { sport: slm.sport, player: slm.player, team: slm.team, market: slm.market, line: slm.line, startTime: slm.startTime, matchTitle: slm.matchTitle, gameId: slm.gameId };
-    const g = await getModelPred(base);
+    const g = marketize(base, await getModelPred(base), [slQuote(slm)]);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, null, 'sl', g, slm));
   }
 
@@ -1981,6 +2034,7 @@ async function generateEsportsPicks() {
   esportsCache.contextCounts = contextCounts;
   esportsCache.priceMismatches = priceMismatches;
   esportsCache.closedSides = closedSides;
+  esportsCache.marketCounts = marketCounts;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
@@ -4323,7 +4377,10 @@ app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
 app.get('/api/esports/match-odds', (req, res) => res.json({ matches: oddsBook.list() }));
 // What the pick record has taught the board: per sport, stat and side, how
 // often it hit against what the model said, and the shift now applied.
-app.get('/api/esports/calibration', (req, res) => res.json(esportsCache.calibration || { buckets: [], off: process.env.ESPORTS_CALIBRATION === 'off' }));
+app.get('/api/esports/calibration', (req, res) => res.json({
+  ...(esportsCache.calibration || { buckets: [], off: process.env.ESPORTS_CALIBRATION === 'off' }),
+  modelWeights: esportsCache.modelWeights || null, marketCounts: esportsCache.marketCounts || null,
+}));
 app.get('/api/feeds', (req, res) => res.json({
   pandascore: { enabled: feedState.pandascore.enabled, updated: feedState.pandascore.updated, errors: feedState.pandascore.errors,
     upcoming: Object.fromEntries(Object.entries(feedState.pandascore.schedules).map(([k, v]) => [k, v.length])) },
