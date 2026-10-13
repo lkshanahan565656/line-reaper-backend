@@ -480,22 +480,50 @@ body::before {
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.pb-table td.pb-pl { text-align: left; min-width: 150px; }
-.pb-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
-.pb-table { width: 100%; border-collapse: collapse; }
-.pb-table th { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
-.pb-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 12px; }
-.pb-table .pb-cell { text-align: center; min-width: 86px; }
-.pb-table .pb-none { color: #334155; }
-.pb-table .pb-best { background: rgba(16,185,129,.08); }
-.pb-line { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #e2e8f0; }
-.pb-ev { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px; }
+.pb-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.pb-stat { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.18)); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.pb-stat b { display: block; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-stat span { display: block; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: #64748b; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-stat.good b { color: #34d399; }
+.pb-list { display: flex; flex-direction: column; gap: 8px; }
+.pb-card { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 2.4fr) 150px; gap: 14px; align-items: center; padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; transition: border-color .15s, background .15s; }
+.pb-card:hover { border-color: var(--border2); background: #131a26; }
+.pb-card.plus { border-color: rgba(16,185,129,.35); background: linear-gradient(90deg, rgba(16,185,129,.07), var(--card) 40%); }
+.pb-card.plus::before { content: ''; position: absolute; left: -1px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--green); }
+.pb-who { min-width: 0; }
+.pb-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.pb-name b { font-size: 15px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-sport { flex: 0 0 auto; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; padding: 2px 6px; border-radius: 5px; color: #cbd5e1; background: rgba(148,163,184,.12); border: 1px solid rgba(148,163,184,.18); }
+.pb-sport.es { color: #c4b5fd; background: rgba(139,92,246,.14); border-color: rgba(139,92,246,.3); }
+.pb-mk { color: #cbd5e1; font-size: 12.5px; margin: 3px 0 2px; }
+.pb-gap { display: inline-block; color: #fbbf24; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.25); font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 1px 6px; border-radius: 10px; margin-left: 6px; vertical-align: 1px; }
+.pb-meta { color: #64748b; font-size: 11px; line-height: 1.45; }
+.pb-books { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pb-bk { position: relative; min-width: 0; padding: 7px 8px 8px; border-radius: 10px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.05); text-align: center; }
+.pb-bk.best { border-color: rgba(16,185,129,.55); background: rgba(16,185,129,.09); box-shadow: 0 0 0 1px rgba(16,185,129,.15) inset; }
+.pb-bk.none { opacity: .45; }
+.pb-bkname { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 9.5px; font-weight: 800; letter-spacing: .1em; color: #94a3b8; text-transform: uppercase; }
+.pb-bkname i { width: 6px; height: 6px; border-radius: 50%; background: var(--bk); flex: 0 0 auto; }
+.pb-line { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; color: #f1f5f9; margin: 3px 0 1px; }
+.pb-bk.none .pb-line { color: #475569; }
 .pb-dim { color: #64748b; font-size: 10.5px; }
-.pb-mk { color: #cbd5e1; font-size: 12px; margin: 2px 0; }
-.pb-gap { color: var(--gold); font-size: 10px; font-weight: 700; margin-left: 4px; }
-.pb-sum { font-size: 11px; color: #94a3b8; margin: 0 0 8px; }
-.pb-table .show-sm { display: none; }
-@media (max-width: 640px) { .pb-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .pb-chips .sport-chip { flex: 0 0 auto; } .pb-table td.pb-pl { min-width: 104px; } .pb-table td, .pb-table th { padding: 7px 4px; } .pb-table .pb-cell { min-width: 62px; } .pb-table .hide-sm { display: none; } .pb-table .show-sm { display: inline; } .pb-line { font-size: 13px; } .pb-dim { font-size: 9.5px; } .pb-table .pl { font-size: 13px; } }
+.pb-evp { display: inline-block; margin-top: 5px; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 10px; color: #94a3b8; background: rgba(148,163,184,.1); white-space: nowrap; }
+.pb-evp.pos { color: #052e1f; background: #34d399; }
+.pb-besttag { position: absolute; top: -7px; right: 6px; font-size: 8.5px; font-weight: 800; letter-spacing: .1em; color: #052e1f; background: #34d399; padding: 1px 5px; border-radius: 4px; }
+.pb-play { text-align: right; min-width: 0; }
+.pb-play .pb-big { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.pb-play .pb-what { font-size: 12px; color: #e2e8f0; font-weight: 600; margin-top: 2px; }
+.pb-side { font-weight: 800; }
+.pb-side.over { color: #34d399; } .pb-side.under { color: #f87171; }
+@media (max-width: 760px) {
+  .pb-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .pb-chips .sport-chip { flex: 0 0 auto; }
+  .pb-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pb-card { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 10px; padding: 12px; }
+  .pb-books { grid-column: 1 / -1; grid-row: 2; }
+  .pb-play { grid-column: 2; grid-row: 1; align-self: start; }
+  .pb-play .pb-big { font-size: 19px; }
+  .pb-line { font-size: 15px; }
+}
 .es-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
 .es-field select { background: rgba(15,23,42,.8); color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 120px; }
 .es-search { flex: 1; min-width: 160px; }
@@ -525,23 +553,73 @@ body::before {
 .es-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
 .es-unavail { font-size: 11px; color: #64748b; margin: -4px 0 12px; }
 .es-go { display: inline-block; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--bk); color: #f1f5f9; font-size: 11px; font-weight: 700; text-decoration: none; }
-.es-autoslips { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px; margin-bottom:14px; }
-.es-as { border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:12px 14px; background:rgba(15,23,42,.6); }
-.es-as.plus { border-color:rgba(16,185,129,.45); }
-.es-as.near { border-style:dashed; }
-.es-as-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.es-as-book { font-weight:800; font-size:13px; letter-spacing:.04em; }
-.es-as-badge { font-size:10px; font-weight:800; letter-spacing:.06em; padding:2px 7px; border-radius:4px; }
-.es-as-badge.plus { color:#34d399; background:rgba(16,185,129,.15); }
-.es-as-badge.near { color:#fbbf24; background:rgba(245,158,11,.12); }
-.es-as-ev { margin-left:auto; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:15px; }
-.es-as-leg { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#cbd5e1; padding:3px 0; border-top:1px solid rgba(255,255,255,.04); }
-.es-as-leg b { color:#f1f5f9; }
-.es-as-leg span:last-child { color:#64748b; white-space:nowrap; }
-.es-as-foot { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; }
-.es-as-foot b { color:#f1f5f9; }
-.es-as-foot .slip-btn { margin-left:auto; }
-.es-as-note { font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.5; }
+.es-autoslips { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; margin-bottom:18px; }
+.es-as { position:relative; border:1px solid rgba(255,255,255,.08); border-radius:16px; background:linear-gradient(180deg, color-mix(in srgb, var(--bk) 9%, #111620), #0d121b 55%); overflow:hidden; box-shadow:0 10px 30px -18px rgba(0,0,0,.8); }
+.es-as::before { content:''; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg, var(--bk), color-mix(in srgb, var(--bk) 20%, transparent)); }
+.es-as.plus { border-color:color-mix(in srgb, var(--bk) 45%, rgba(16,185,129,.35)); }
+.es-as.near { border-style:dashed; opacity:.92; }
+.es-as-head { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+.es-as-logo { position:relative; width:30px; height:30px; border-radius:8px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; background:var(--bk); overflow:hidden; }
+.es-as-logo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.es-as-title { min-width:0; }
+.es-as-book { display:block; font-weight:800; font-size:14px; color:#f8fafc; letter-spacing:.02em; }
+.es-as-sub { display:flex; align-items:center; gap:6px; font-size:11px; color:#94a3b8; margin-top:2px; }
+.es-as-badge { font-size:9.5px; font-weight:800; letter-spacing:.08em; padding:2px 7px; border-radius:10px; }
+.es-as-badge.plus { color:#052e1f; background:#34d399; }
+.es-as-badge.near { color:#fbbf24; background:rgba(245,158,11,.14); }
+.es-as-ev { margin-left:auto; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:26px; letter-spacing:-.03em; line-height:1; }
+.es-as-ev small { display:block; font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; margin-top:4px; font-family:'Inter',sans-serif; }
+.es-as-legs { margin:0 10px; border-radius:12px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.05); }
+.es-as-leg { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center; padding:9px 10px; font-size:12px; color:#cbd5e1; }
+.es-as-leg + .es-as-leg { border-top:1px solid rgba(255,255,255,.05); }
+.es-as-leg b { color:#f1f5f9; font-size:13px; }
+.es-as-leg .who { min-width:0; } .es-as-leg .who div { color:#64748b; font-size:11px; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-side { display:inline-flex; flex-direction:column; line-height:1.15; align-items:center; justify-content:center; min-width:54px; padding:5px 6px; border-radius:8px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.es-side.over { color:#34d399; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3); }
+.es-side.under { color:#f87171; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.28); }
+.es-side em { font-style:normal; display:block; font-family:'JetBrains Mono',monospace; font-size:13px; color:#f1f5f9; letter-spacing:0; }
+.es-meter { width:64px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:12px; color:#e2e8f0; font-weight:700; }
+.es-meter i { display:block; height:4px; margin-top:4px; border-radius:2px; background:rgba(148,163,184,.15); overflow:hidden; }
+.es-meter i::after { content:''; display:block; height:100%; width:var(--p); background:linear-gradient(90deg, #10b981, #34d399); border-radius:2px; }
+.es-as-foot { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)) auto; gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-stat { font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; text-transform:uppercase; }
+.es-as-stat b { display:block; font-family:'JetBrains Mono',monospace; font-size:15px; color:#f1f5f9; letter-spacing:0; margin-top:2px; }
+.es-as-load { cursor:pointer; border:0; border-radius:10px; padding:10px 16px; font-weight:800; font-size:12px; letter-spacing:.08em; color:#06110d; background:linear-gradient(180deg, #34d399, #10b981); }
+.es-as-load:hover { filter:brightness(1.08); }
+.es-as.near .es-as-load { color:#e2e8f0; background:var(--card2); border:1px solid var(--border2); }
+.es-as-note { font-size:11px; color:#94a3b8; line-height:1.5; }
+.es-as > .es-as-note { padding:0 16px 12px; margin-top:-4px; }
+.es-as-more { display:flex; flex-wrap:wrap; gap:5px; padding:0 16px 14px; margin-top:-4px; }
+.es-as-more span { font-size:10.5px; color:#cbd5e1; background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.15); padding:3px 8px; border-radius:10px; font-family:'JetBrains Mono',monospace; }
+.es-as-more span b { color:#34d399; }
+.es-hdr { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:4px 0 10px; }
+.es-hdr h3 { font-size:15px; letter-spacing:.14em; color:#f8fafc; font-weight:800; margin:0; }
+.es-hdr .sub { font-size:11px; color:#64748b; }
+.es-rec { margin-left:auto; font-size:11px; color:#94a3b8; padding:4px 10px; border-radius:20px; border:1px solid var(--border); background:rgba(0,0,0,.2); }
+.es-strip { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:16px; }
+.es-strip > div { background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.18)); border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
+.es-strip b { display:block; font-family:'JetBrains Mono',monospace; font-size:18px; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-strip span { display:block; font-size:9.5px; letter-spacing:.12em; color:#64748b; text-transform:uppercase; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-strip-note { font-size:10.5px; color:#64748b; margin:-8px 0 14px; }
+.es-play { display:grid; grid-template-columns:40px minmax(0,1fr) 150px 110px 96px; gap:12px; align-items:center; padding:11px 14px; }
+.es-play + .es-play { border-top:1px solid rgba(255,255,255,.05); }
+.es-play:hover { background:rgba(255,255,255,.015); }
+.es-play .pl { font-size:14px; font-weight:700; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-play .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
+.es-play .sub { font-size:11px; color:#64748b; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-play .mk { font-size:12px; color:#cbd5e1; }
+.es-play .evbig { text-align:right; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:18px; letter-spacing:-.02em; }
+.es-play .evbig small { display:block; font-size:9px; letter-spacing:.12em; color:#64748b; font-family:'Inter',sans-serif; font-weight:700; }
+.es-play .pick { font-size:12px; color:#e2e8f0; font-weight:700; }
+@media (max-width: 640px) {
+  .es-play { grid-template-columns:36px minmax(0,1fr) auto auto; gap:6px 10px; padding:11px 12px; }
+  .es-play .mkcol, .es-play .es-meter { display:none; }
+  .es-play .evbig { font-size:16px; }
+  .es-as-foot { grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .es-as-load { grid-column:1 / -1; padding:12px; }
+  .es-as-ev { font-size:23px; }
+  .es-strip b { font-size:16px; }
+}
 .es-plays .show-sm { display: none; }
 @media (max-width: 640px) { .es-plays .hide-sm { display: none; } .es-plays .show-sm { display: block; } .es-plays td { padding: 8px 5px; } .es-plays .pl { font-size: 13px; } .es-field select { min-width: 0; } .es-field { flex: 1 1 40%; } .es-pill { min-width: 0; padding: 3px 6px; font-size: 12px; } }
 .esm-h2h { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; font-size: 12px; }
@@ -3095,20 +3173,25 @@ function pbFmtStart(t) {
   const today = new Date().toDateString() === d.toDateString();
   return (today ? '' : d.toLocaleDateString([], { weekday: 'short' }) + ' ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
-function pbCell(row, key) {
+const PB_COLOR = { underdog: '#a78bfa', prizepicks: '#3b82f6', sleeper: '#06b6d4' };
+const PB_ES = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'R6', 'COD']);
+const pbSideWord = (book, side) => book === 'prizepicks' ? (side === 'Over' ? 'More' : 'Less') : (side === 'Over' ? 'Higher' : 'Lower');
+const pbEvTxt = v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+function pbCell(row, key, name) {
   const c = row.books[key];
-  if (!c) return `<td class="pb-cell pb-none">—</td>`;
+  const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[key]}"><i></i>${name}</div>`;
+  if (!c) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
   const best = row.best && !row.best.locked && row.best.book === key;
   const mult = v => (v == null ? '' : `${(+v).toFixed(2)}x`);
   let price = '';
-  if (key === 'prizepicks') price = '<span class="pb-dim">standard</span>';
+  if (key === 'prizepicks') price = 'standard';
   else {
     const o = c.overOpen ? (c.over != null ? mult(c.over) : '1x') : 'closed', u = c.underOpen ? (c.under != null ? mult(c.under) : '1x') : 'closed';
-    price = o === u ? `<span class="pb-dim">${o === '1.00x' ? 'standard' : o + ' both'}</span>` : `<span class="pb-dim">O ${o} · U ${u}</span>`;
+    price = o === u ? (o === '1.00x' ? 'standard' : o + ' both') : `O ${o} · U ${u}`;
   }
-  const ev = c.ev ? `<div class="pb-ev" style="color:${c.ev.ev > 0 ? 'var(--green)' : '#64748b'}">${c.ev.side === 'Over' ? 'More' : 'Less'} ${c.ev.ev > 0 ? '+' : ''}${c.ev.ev.toFixed(1)}%</div>` : '';
+  const ev = c.ev ? `<span class="pb-evp${c.ev.ev > 0 ? ' pos' : ''}">${pbSideWord(key, c.ev.side)} ${pbEvTxt(c.ev.ev)}</span>` : '';
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
-  return `<td class="pb-cell${best ? ' pb-best' : ''}"><div class="pb-line">${c.line}</div>${price}${fair}${ev}</td>`;
+  return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}</div>${fair}${ev}</div>`;
 }
 function renderPropsBoard() {
   pbChips();
@@ -3118,19 +3201,26 @@ function renderPropsBoard() {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">${pbState.q || pbState.book || pbState.sport !== 'ALL' || pbState.show !== 'all' ? 'Nothing matches these filters.' : 'The books are still loading. Try again in a minute.'}</div></div>`;
     return;
   }
-  const head = `<tr><th>Player</th>${PB_BOOKS.map(([k, name, ab]) => `<th class="pb-cell"><span class="hide-sm">${name}</span><span class="show-sm">${ab}</span></th>`).join('')}<th class="pb-cell">Best play</th></tr>`;
   const body = rows.map(r => {
     const b = r.best;
-    const bestTxt = !b ? '<span class="pb-dim">no price</span>' : b.locked ? '<span class="pb-dim">Pro</span>'
-      : `<div class="pb-ev" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${b.ev > 0 ? '+' : ''}${b.ev.toFixed(1)}%</div><div>${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} ${b.side === 'Over' ? 'More' : 'Less'} ${b.line}</div><div class="pb-dim">${b.source === 'model' ? 'model' : 'Kalshi'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>`;
+    const plus = b && !b.locked && b.ev > 0;
+    const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
+      : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'model' ? 'model' : 'Kalshi'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>`;
     const proj = r.model?.proj != null ? ` · proj ${r.model.proj}` : '';
-    const gap = r.gap > 0 ? ` <span class="pb-gap">gap ${r.gap}</span>` : '';
-    return `<tr><td class="pb-pl"><div class="pl">${escAttr(r.player)}</div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-dim">${escAttr(r.sport)}${r.team ? ' · ' + escAttr(r.team) : ''}${r.matchTitle ? ' · ' + escAttr(r.matchTitle) : ''}${r.startTime ? ' · ' + pbFmtStart(r.startTime) : ''}${proj}</div></td>${PB_BOOKS.map(([k]) => pbCell(r, k)).join('')}<td class="pb-cell">${bestTxt}</td></tr>`;
+    const gap = r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
+    const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
+    return `<div class="pb-card${plus ? ' plus' : ''}">
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-meta">${meta}${proj}</div></div>
+      <div class="pb-books">${PB_BOOKS.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
+      <div class="pb-play">${bestTxt}</div></div>`;
   }).join('');
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   const priced = d.counts?.priced ?? 0;
-  el.innerHTML = `<div class="pb-sum">${d.total} lines · ${priced} priced across all books${d.pro ? '' : ' · prices are Pro'}</div>
-    <div class="pb-wrap"><table class="es-plays pb-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>${more}`;
+  const plusN = rows.filter(r => r.best && !r.best.locked && r.best.ev > 0).length;
+  const top = rows.filter(r => r.best && !r.best.locked).sort((a, b) => b.best.ev - a.best.ev)[0];
+  const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
+  el.innerHTML = `<div class="pb-sum">${stat(d.total.toLocaleString(), 'lines')}${stat(priced.toLocaleString(), d.pro ? 'priced' : 'priced · Pro')}${stat(plusN, `+EV in top ${rows.length}`, plusN ? 'good' : '')}${stat(top ? pbEvTxt(top.best.ev) : '—', top ? 'top · ' + escAttr(top.player) : 'top play', top && top.best.ev > 0 ? 'good' : '')}</div>
+    <div class="pb-list">${body}</div>${more}`;
 }
 
 // ─── TICKER UPDATE ───────────────────────────────────────────────────────────
@@ -4210,14 +4300,13 @@ function esRowButtons(p) {
 function esStatsStrip(picks) {
   const pos = picks.filter(p => p.locked || (esBestEv(p) ?? -999) > 0);
   const top = pos.filter(p => !p.locked).slice().sort((a,b) => esBestEv(b) - esBestEv(a))[0];
-  return `
-    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:16px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
-      <span style="color:#f1f5f9;font-weight:700">${picks.length} PICKS</span>
-      <span style="color:#34d399">${pos.length} +EV</span>
+  return `<div class="es-strip">
+      <div><b>${picks.length}</b><span>lines</span></div>
+      <div><b style="color:${pos.length ? '#34d399' : '#f1f5f9'}">${pos.length}</b><span>+EV now</span></div>
+      <div><b style="color:${top ? esEvColor(esBestEv(top)) : '#f1f5f9'}">${top ? '+' + esBestEv(top).toFixed(1) + '%' : '—'}</b><span>${top ? escEs(top.player) : 'top play'}</span></div>
       <span id="esEngine" style="display:none">${esportsState.engineHtml}</span>
-      ${top ? `<span style="color:#64748b">TOP: <span style="color:#f1f5f9">${escEs(top.player)}</span> <span style="color:${esEvColor(esBestEv(top))}">+${esBestEv(top).toFixed(1)}%</span></span>` : ''}
-      <span style="margin-left:auto;color:#64748b;font-size:10px" title="EV = win probability × the book's payout multiplier ÷ 0.5623 − 1. A boosted line (▲1.04x) can out-earn a higher-probability pick at 1.00x.">TAP + TO BUILD A SLIP · EV INCLUDES PAYOUT BOOSTS</span>
-    </div>`;
+    </div>
+    <div class="es-strip-note" title="EV = win probability × the book's payout multiplier ÷ 0.5623 − 1. A boosted line (▲1.04x) can out-earn a higher-probability pick at 1.00x.">Tap + to build a slip. EV includes payout boosts.</div>`;
 }
 
 // Big logo bar: tap a book to sort the whole board by THAT book's EV.
@@ -5797,26 +5886,27 @@ function esWhenShort(iso) {
   if (!t) return '';
   return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
 }
+const esSideWord = (side, key) => key === 'prizepicks' ? (side === 'OVER' ? 'More' : 'Less') : (side === 'OVER' ? 'Higher' : 'Lower');
 function esPlayRow(p, key, B) {
   const ev = p.locked ? null : p[B.evField];
   const line = esLineFor(p, key);
   const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
   const match = [p.matchTitle || (p.team && p.context?.opponent ? `${p.team} vs ${p.context.opponent}` : p.team), esWhenShort(p.startTime)].filter(Boolean).join(' · ');
-  return `<tr>
-    <td style="width:44px">${p.locked ? esRowButtons(p) : `<button class="es-add ${esInSlip(p) ? 'in' : ''}" title="${esInSlip(p) ? 'Remove from slip' : 'Add to slip'}" onclick="esAdd(${p.__i})">${esInSlip(p) ? '&#10003;' : '+'}</button>`}</td>
-    <td><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(match)}</div></td>
-    <td class="hide-sm">${escEs(p.displayMarket || p.market)}${mult && mult !== 1 ? `<div class="sub">${mult}x payout</div>` : ''}</td>
-    <td><span class="es-pill line">${escEs(line)}</span></td>
-    <td class="hide-sm">${p.locked ? '<span class="sub">Pro</span>' : `<span class="es-pill model">${escEs(p.modelPred ?? '-')}</span>`}</td>
-    <td>${p.locked ? '' : `<span class="es-lean ${p.side === 'OVER' ? 'over' : 'under'}">${escEs(p.side || '-')}</span><div class="sub show-sm">${escEs(p.modelPred ?? '')} · ${p.prob != null ? p.prob.toFixed(0) + '%' : ''}</div>`}</td>
-    <td class="es-num hide-sm">${p.locked || p.prob == null ? '' : p.prob.toFixed(1) + '%'}</td>
-    <td class="es-num" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}</td>
-  </tr>`;
+  const btn = p.locked ? esRowButtons(p) : `<button class="es-add ${esInSlip(p) ? 'in' : ''}" title="${esInSlip(p) ? 'Remove from slip' : 'Add to slip'}" onclick="esAdd(${p.__i})">${esInSlip(p) ? '&#10003;' : '+'}</button>`;
+  const side = p.locked ? `<span class="es-side" style="color:#94a3b8;border:1px solid var(--border)">Line<em>${escEs(line)}</em></span>`
+    : `<span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${esSideWord(p.side, key)}<em>${escEs(line)}</em></span>`;
+  return `<div class="es-play">
+    <div>${btn}</div>
+    <div style="min-width:0"><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div></div>
+    <div class="mkcol sub" style="white-space:normal">${p.locked ? 'Pro' : `model <b style="color:#e2e8f0">${escEs(p.modelPred ?? '-')}</b>`}${mult && mult !== 1 ? ` · ${mult}x payout` : ''}</div>
+    <div style="text-align:center">${side}</div>
+    <div class="evbig" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}${p.locked || p.prob == null ? '' : `<small>${p.prob.toFixed(0)}% to hit</small>`}</div>
+  </div>`;
 }
-function esSection(key, name, color, logo, count, body, head) {
+function esSection(key, name, color, logo, count, body) {
   return `<div class="es-sec" style="--bk:${color}">
     <div class="es-sec-head">${logo ? `<img src="${logo}" alt="" onerror="this.remove()">` : ''}<b>${escEs(name)}</b><span>${count}</span></div>
-    <div style="overflow-x:auto"><table class="es-plays"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    <div>${body}</div>
   </div>`;
 }
 function esExchangePlays() {
@@ -5862,23 +5952,29 @@ function esAutoSlipsHTML() {
     return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">BEST SLIPS</b> · no entry on PrizePicks, Underdog or Sleeper is within ${d.nearPct}% of break-even right now (${legs} +EV leg${legs === 1 ? '' : 's'} on the board).</div>`;
   }
   const cards = d.slips.map((s, i) => {
-    const B = ES_BOOKS[ES_AS_KEY[s.book]];
-    const legs = s.picks.map(l => `<div class="es-as-leg"><span><b>${escEs(l.player)}</b> ${esAsSide(l, s.book)} ${l.line} ${escEs(l.market)}${l.mult && Math.abs(l.mult - 1) > 1e-6 ? ` <span style="color:#a78bfa">${l.mult}x</span>` : ''}</span><span>${l.prob}% · ${escEs(l.sport)}</span></div>`).join('');
+    const key = ES_AS_KEY[s.book], B = ES_BOOKS[key], logo = logoSrc(key);
+    const legs = s.picks.map(l => `<div class="es-as-leg">
+      <span class="es-side ${l.side === 'OVER' ? 'over' : 'under'}">${esAsSide(l, s.book)}<em>${l.line}</em></span>
+      <div class="who"><b>${escEs(l.player)}</b>${l.mult && Math.abs(l.mult - 1) > 1e-6 ? ` <span style="color:#a78bfa;font-size:11px;font-weight:700">${l.mult}x</span>` : ''}<div>${escEs(l.market)} · ${escEs(l.sport)}${l.team ? ' · ' + escEs(l.team) : ''}</div></div>
+      <div class="es-meter">${l.prob}%<i style="--p:${Math.max(0, Math.min(100, l.prob))}%"></i></div>
+    </div>`).join('');
     const flex = /flex/.test(s.table);
-    return `<div class="es-as ${s.status}">
+    const more = (d.books?.[s.book] || []).filter(o => o.legs !== s.legs && o.status === 'plus');
+    return `<div class="es-as ${s.status}" style="--bk:${B?.color || '#8b5cf6'}">
       <div class="es-as-head">
-        <span class="es-as-book" style="color:${B?.color || '#e2e8f0'}">${escEs(s.bookName)} ${s.legs}-pick ${escEs(s.tableName)}</span>
-        <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span>
-        <span class="es-as-ev" style="color:${esEvColor(s.ev)}">${s.ev > 0 ? '+' : ''}${s.ev.toFixed(1)}%</span>
+        <span class="es-as-logo">${escEs(s.bookName[0])}${logo ? `<img src="${logo}" alt="" onerror="this.remove()">` : ''}</span>
+        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span></span></div>
+        <span class="es-as-ev" style="color:${esEvColor(s.ev)}">${s.ev > 0 ? '+' : ''}${s.ev.toFixed(1)}%<small>EXPECTED RETURN</small></span>
       </div>
-      ${legs}
+      <div class="es-as-legs">${legs}</div>
       <div class="es-as-foot">
-        <span>HIT ALL <b>${(s.probAll * 100).toFixed(1)}%</b></span>
-        ${s.paysAll ? `<span>PAYS <b>${s.paysAll}x</b>${flex ? ' (pays on a miss too)' : ''}</span>` : ''}
-        ${s.status === 'plus' && s.kelly > 0 ? `<span>¼ KELLY <b>${(s.kelly * 25).toFixed(1)}%</b></span>` : ''}
-        <button class="slip-btn" onclick="esLoadAutoSlip(${i})">LOAD</button>
+        <div class="es-as-stat">Hit all<b>${(s.probAll * 100).toFixed(1)}%</b></div>
+        <div class="es-as-stat">Pays<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
+        <div class="es-as-stat">¼ Kelly<b>${s.status === 'plus' && s.kelly > 0 ? (s.kelly * 25).toFixed(1) + '%' : '—'}</b></div>
+        <button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>
       </div>
-      ${(() => { const more = (d.books?.[s.book] || []).filter(o => o.legs !== s.legs && o.status === 'plus'); return more.length ? `<div class="es-as-note">Also +EV: ${more.map(o => `${o.legs}-pick ${escEs(o.tableName)} +${o.ev.toFixed(1)}% (hits ${(o.probAll * 100).toFixed(1)}%)`).join(' · ')}. This one grows a bankroll fastest.</div>` : ''; })()}
+      ${flex && s.paysAll ? `<div class="es-as-note">Flex: pays on a miss too.</div>` : ''}
+      ${more.length ? `<div class="es-as-note" style="padding-bottom:6px">Also +EV on ${escEs(s.bookName)} (this one grows a bankroll fastest):</div><div class="es-as-more">${more.map(o => `<span>${o.legs}-pick ${escEs(o.tableName)} <b>+${o.ev.toFixed(1)}%</b> · hits ${(o.probAll * 100).toFixed(1)}%</span>`).join('')}</div>` : ''}
       ${s.status === 'near' ? `<div class="es-as-note">Closest entry on ${escEs(s.bookName)}, ${Math.abs(s.ev).toFixed(1)}% short of break-even. Not a bet; it shows what's nearly there.</div>` : ''}
       ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}
     </div>`;
@@ -5886,9 +5982,9 @@ function esAutoSlipsHTML() {
   const rec = d.record;
   const pct = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
   const recLine = !rec ? '' : rec.slips
-    ? `<span style="font-size:11px;color:#94a3b8">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
-    : `<span style="font-size:11px;color:#94a3b8">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
-  return `<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 8px"><span style="font-family:'Inter',sans-serif;font-size:14px;letter-spacing:2px;color:#e2e8f0;font-weight:800">BEST SLIPS</span><span style="font-size:11px;color:#64748b">best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>`;
+    ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
+    : `<span class="es-rec">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
+  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>`;
 }
 function esLoadAutoSlip(i) {
   const s = esAsState.data?.slips?.[i];
@@ -5915,7 +6011,6 @@ function esLoadAutoSlip(i) {
 function esPlaysHTML(picks) {
   const min = esportsState.minEV || 0;
   let html = '', total = 0;
-  const head = '<th></th><th>Player</th><th class="hide-sm">Prop</th><th>Line</th><th class="hide-sm">Model</th><th>Lean</th><th class="hide-sm">Prob</th><th>EV</th>';
   for (const [key, B] of Object.entries(ES_BOOKS)) {
     // a locked pick (free viewer) still shows under the book that carries its line
     const carries = p => key === 'underdog' ? p.udLine != null : key === 'sleeper' ? p.sleeperLine != null : key === 'prizepicks' ? p.lineSource === 'pp' : false;
@@ -5923,23 +6018,19 @@ function esPlaysHTML(picks) {
     const priced = picks.filter(p => p[B.evField] != null).length;
     if (!rows.length) continue;
     total += rows.length;
-    html += esSection(key, B.name.charAt(0) + B.name.slice(1).toLowerCase(), B.color, logoSrc(key), `${rows.length} play${rows.length > 1 ? 's' : ''} of ${priced} lines`, rows.map(p => esPlayRow(p, key, B)).join(''), head);
+    html += esSection(key, { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' }[key] || B.name.charAt(0) + B.name.slice(1).toLowerCase(), B.color, logoSrc(key), `${rows.length} play${rows.length > 1 ? 's' : ''} of ${priced} lines`, rows.map(p => esPlayRow(p, key, B)).join(''));
   }
   const ex = esExchangePlays();
-  const exHead = '<th></th><th>Match</th><th class="hide-sm">Market</th><th>Price</th><th class="hide-sm">Fair</th><th>Pick</th><th class="hide-sm">Start</th><th>EV</th>';
   for (const [venue, rows] of Object.entries(ex)) {
     const X = ES_EXCHANGES[venue];
     total += rows.length;
-    html += esSection(venue, X.name, X.color, logoSrc(venue), `${rows.length} match play${rows.length > 1 ? 's' : ''}`, rows.map(({ m, e, mk }) => `<tr>
-      <td style="width:44px">${m.links?.[venue] ? `<a class="es-go" href="${escEs(m.links[venue])}" target="_blank" rel="noopener" title="Open on ${X.name}">Bet</a>` : ''}</td>
-      <td><div class="pl">${escEs(m.teams.join(' vs '))}<span class="tag">${escEs(m.label)}</span></div><div class="sub">${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</div></td>
-      <td class="hide-sm">${escEs(mk ? esmMarketName(mk) : e.market)}</td>
-      <td><span class="es-pill line">${Math.round(e.cost * 100)}c</span></td>
-      <td class="hide-sm"><span class="es-pill model">${Math.round(e.fair * 100)}c</span></td>
-      <td>${escEs(mk ? esmMarketText(mk, e.outcome) : e.outcome)}</td>
-      <td class="sub hide-sm">${escEs(esWhenShort(m.start))}</td>
-      <td class="es-num" style="color:${esEvColor(e.ev * 100)}">+${(e.ev * 100).toFixed(1)}%</td>
-    </tr>`).join(''), exHead);
+    html += esSection(venue, X.name, X.color, logoSrc(venue), `${rows.length} match play${rows.length > 1 ? 's' : ''}`, rows.map(({ m, e, mk }) => `<div class="es-play">
+      <div>${m.links?.[venue] ? `<a class="es-go" href="${escEs(m.links[venue])}" target="_blank" rel="noopener" title="Open on ${X.name}">Bet</a>` : ''}</div>
+      <div style="min-width:0"><div class="pl">${escEs(m.teams.join(' vs '))}<span class="tag">${escEs(m.label)}</span></div><div class="sub">${escEs([m.tournament, m.bestOf ? 'Bo' + m.bestOf : '', esWhenShort(m.start)].filter(Boolean).join(' · '))}</div></div>
+      <div class="mkcol sub" style="white-space:normal">${escEs(mk ? esmMarketName(mk) : e.market)}</div>
+      <div class="pick" style="text-align:center">${escEs(mk ? esmMarketText(mk, e.outcome) : e.outcome)}<div class="sub" style="text-align:center">at <b style="color:#f1f5f9">${Math.round(e.cost * 100)}c</b></div></div>
+      <div class="evbig" style="color:${esEvColor(e.ev * 100)}">+${(e.ev * 100).toFixed(1)}%<small>fair ${Math.round(e.fair * 100)}c</small></div>
+    </div>`).join(''));
   }
   if (!esmState.data && !esmState.loading && Date.now() - (esmState.playsTry || 0) > 60e3 && (esmState.playsTry = Date.now())) loadEsMatches().then(() => { if (esportsState.view === 'plays') renderEsports(); }).catch(() => {});
   if (!total) return `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">No plays at this filter</div><div class="empty-sub">Every line is still on the All lines view. Try a lower minimum EV or more sports.</div></div>`;
