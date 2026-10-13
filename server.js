@@ -2816,6 +2816,7 @@ async function polymarketUsArbs(kalshi, now) {
 // close of every tracked bet still open. Every edge is graded on CLV at the
 // start, like the esports edges.
 const xvalue = require('./xvalue');
+const movers = require('./movers');
 const XVALUE_OPTS = xvalue.optsFromEnv();
 const XVALUE_BOOKS = Number.isFinite(parseInt(process.env.XVALUE_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XVALUE_BOOKS_PER_SCAN)) : 30;
 const XVALUE_ALERT_MIN = Number.isFinite(parseFloat(process.env.XVALUE_ALERT_MIN)) ? parseFloat(process.env.XVALUE_ALERT_MIN) : 0.03;
@@ -2823,7 +2824,7 @@ const XVALUE_REALERT_MS = 6 * 3600e3;
 // steam (steam.js): Polymarket just moved and the US venue hasn't followed
 const steamWatch = require('./steam').createSteamWatch(require('./steam').optsFromEnv());
 const STEAM_ALERT_MIN = Number.isFinite(parseFloat(process.env.STEAM_ALERT_MIN)) ? parseFloat(process.env.STEAM_ALERT_MIN) : 0.02;
-const xvalueState = { edges: [], updated: null, counts: null, primed: false };
+const xvalueState = { edges: [], movers: [], updated: null, counts: null, primed: false };
 const xvalueSeen = new Map();     // edge id → last alert (ms)
 const xvalueBookCache = new Map();  // ref id → { book, at }: a read counts for XVALUE_BOOK_TTL_MS
 const XVALUE_BOOK_TTL_MS = 4 * 60e3;
@@ -2844,6 +2845,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   const scr = xvalue.screen(input, o);
   // steaming sides first: a move is minutes old and the book read confirms it
   const steaming = steamWatch.candidates(scr.quotes, now);
+  try { xvalueState.movers = movers.findMovers(scr.quotes, polymarket); } catch (e) { console.warn('Line movers:', e.message); }
   steamWatch.observe(scr.quotes, now);
   for (const q of steaming) if (q.refToken && !want.has(q.refId)) want.set(q.refId, q.refToken);
   for (const e of scr.edges) if (e.refToken && !want.has(e.refId)) want.set(e.refId, e.refToken);
@@ -3370,7 +3372,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.77.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.78.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3699,10 +3701,12 @@ app.get('/api/exchange-value', async (req, res) => {
     const pro = hasPro(req), lic = licenceOf(req);
     const edges = xvalueState.edges.filter(valueOk(lic));
     const record = await xvalueTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined });
-    const base = { count: edges.length, steamCount: edges.filter(e => e.steam).length, updated: xvalueState.updated, pro, region: TAIL_REGION, venues: XVALUE_VENUES, record,
+    const moved = !lic.polymarket ? [] : (xvalueState.movers || []).map(m => ({ ...m, venues: m.venues.filter(v => v.venue !== 'kalshi' || lic.kalshi) }))
+      .filter(m => m.venues.length).map(m => ({ ...m, best: m.venues[0] }));
+    const base = { count: edges.length, steamCount: edges.filter(e => e.steam).length, moverCount: moved.length, updated: xvalueState.updated, pro, region: TAIL_REGION, venues: XVALUE_VENUES, record,
       ...withheldBody(withheldOf(lic, ['polymarket', 'kalshi'])) };
     if (!pro) return res.json({ ...base, edges: edges.map(e => ({ ev: e.ev, locked: true })) });
-    res.json(regionSafe({ ...base, edges: edges.slice(0, Math.min(parseInt(req.query.limit) || 200, 500)), counts: xvalueState.counts,
+    res.json(regionSafe({ ...base, edges: edges.slice(0, Math.min(parseInt(req.query.limit) || 200, 500)), movers: moved, counts: xvalueState.counts,
       settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS, steam: { ...steamWatch.opts, alertMin: STEAM_ALERT_MIN } } }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -4332,7 +4336,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.77.0',
+  version: '3.78.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4474,10 +4478,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.77.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.78.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.77.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.78.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);

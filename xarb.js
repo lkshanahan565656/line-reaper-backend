@@ -428,6 +428,9 @@ function parsePolymarketBinaries(payload, { now = Date.now() } = {}) {
         mutuallyExclusive: negRisk && kind === 'yesno', hasDraw: false, tradable, eventDecided: decided,
         eventComplete: true, conditionId: m.conditionId || null, rules: clip(m.description || ev.description),
         yesIndex, tokenIds: (jsonList(m.clobTokenIds) || []).map(String), feeSchedule: polymarketFeeSchedule(m),
+        // Gamma's move in the first outcome's price over the last hour and day (missing when flat), as YES's
+        hourChange: tradable ? (num(m.oneHourPriceChange) ?? 0) * (yesIndex === 0 ? 1 : -1) + 0 : null,
+        dayChange: tradable ? (num(m.oneDayPriceChange) ?? 0) * (yesIndex === 0 ? 1 : -1) + 0 : null,
       });
     }
     // an open market we couldn't read leaves the outcome set incomplete

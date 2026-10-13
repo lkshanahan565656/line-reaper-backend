@@ -184,7 +184,11 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], us
       if (!c) continue;
       const ev = fair / c.cost - 1;
       const id = `${group}|${side}`;
-      if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) quotes.set(id, { fair, cost: c.cost, spread: ref.spread, refId, refToken });
+      if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) {
+        quotes.set(id, { fair, cost: c.cost, price: c.price, spread: ref.spread, refId, refToken, dir: (side === 'yes') === !!same ? 1 : -1,
+          venue: t.exchange, pick, title: t.eventTitle || t.title, league: t.league || p.league || null, category: t.category || p.category || 'sports',
+          market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind, start: new Date(start).toISOString(), url: t.url || null });
+      }
       // a side the reference just moved on (steam.js) is worth a bet at a smaller edge
       const steam = o.steam ? o.steam.steamOf(id, fair, c.cost, now) : null;
       const minEv = steam && o.steamMinEv != null ? Math.min(o.minEv, o.steamMinEv) : o.minEv;
