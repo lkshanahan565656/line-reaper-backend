@@ -2285,7 +2285,7 @@ const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is
 // read to confirm what clears (XARB_PMUS_BOOKS_PER_SCAN)
 const XARB_PMUS_LEAGUES = pmus.arbLeaguesFromEnv();
 const XARB_PMUS_BOOKS = Number.isFinite(parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) : 40;
-const xarbState = { arbs: [], near: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
+const xarbState = { arbs: [], near: [], bids: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
 // every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
@@ -2803,6 +2803,10 @@ async function scanXarbs() {
     try {
       near = xarb.findNearArbs({ matches: [...(intl ? matches : []), ...us.matchList], rows: [...kalshi, ...(intl ? polymarket : []), ...us.rowList] }, { ...XARB_OPTS, now });
     } catch (e) { console.warn('Exchange arbs: watchlist:', e.message); }
+    // bid on one venue, hedge on the other: the pairs a maker can lock when a taker can't
+    let bids = [];
+    try { bids = xarb.findBidArbs([...(intl ? matches : []), ...us.matchList], { ...XARB_OPTS, now }); }
+    catch (e) { console.warn('Exchange arbs: bid plans:', e.message); }
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
     }
@@ -2814,11 +2818,11 @@ async function scanXarbs() {
       }]));
     }
     Object.assign(xarbState, {
-      arbs, near, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
+      arbs, near, bids, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
         kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
-        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length, byLeague: us.byLeague || null }, near: near.length },
+        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length, byLeague: us.byLeague || null }, near: near.length, bids: bids.length },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
     for (const a of arbs) xarbSeen.set(a.id, now);
@@ -3205,7 +3209,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.65.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.66.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3488,6 +3492,8 @@ app.get('/api/whales', async (req, res) => {
 });
 // Exchange arbs, best first, and `near`: the watchlist of pairs and sets just
 // short of one (xarb.findNearArbs). ?type=cross|multi|book&category=sports&minPct=1.
+// `bids`: pairs a limit bid on one venue and a take on the other would lock
+// (xarb.findBidArbs).
 // Stakes are the same for everyone: each leg's `pct` of the total (and the
 // $100 reference split in `stakes`). US mode only has Kalshi and US
 // sportsbook legs. Free: count and profit % only.
@@ -3498,10 +3504,11 @@ app.get('/api/xarbs', (req, res) => {
   const arbs = xarbState.arbs.filter(arbOk(lic))
     .filter(a => (!q.type || a.type === q.type) && (!q.category || a.category === q.category) && (!Number.isFinite(minPct) || a.profitPct >= minPct));
   const near = (xarbState.near || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
-  const base = { count: arbs.length, nearCount: near.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  const bids = (xarbState.bids || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
+  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
-    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near,
+    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids,
     minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
   }));
 });
@@ -4142,7 +4149,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.65.0',
+  version: '3.66.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4281,10 +4288,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.65.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.66.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.65.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.66.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
