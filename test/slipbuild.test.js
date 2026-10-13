@@ -82,3 +82,13 @@ test('an entry always has two teams, and started matches drop out', () => {
   assert.equal(started.pool.PP.legs, 1);
   assert.equal(started.slips.length, 0);
 });
+
+test('the size played is the one that grows a bankroll fastest, not the longest', () => {
+  const picks = [0.68, 0.6, 0.58, 0.58, 0.56, 0.556].map(p => pick({ PP: { prob: p } }));
+  const r = autoSlips(picks);
+  const pp = r.books.PP;
+  const longest = pp.reduce((a, b) => (b.ev > a.ev ? b : a));
+  assert.ok(longest.legs > pp[0].legs);       // EV alone would pick the long one
+  assert.ok(pp[0].growth >= longest.growth);
+  assert.equal(r.slips[0].legs, pp[0].legs);
+});

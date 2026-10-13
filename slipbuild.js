@@ -34,11 +34,20 @@ function bookLeg(p, book) {
   };
 }
 
+// Expected log growth of a bankroll staking the slip's own Kelly fraction. EV
+// alone always favours the longest entry (a 6-pick at +60% that hits 4% of the
+// time); growth is what the bankroll actually compounds at, so it picks which
+// size to play.
+function growth(r, table) {
+  if (!(r.kelly > 0)) return 0;
+  return r.hits.reduce((g, p, h) => g + p * Math.log(1 + r.kelly * ((table[h] || 0) - 1)), 0);
+}
+
 // Every table BOOK offers for these legs, best EV first
 function priceOn(book, legs) {
   const n = legs.length;
   const out = [];
-  const add = (name, table) => { if (table) { const r = priceSlip(legs, name, { [name]: { [n]: table } }); if (r) out.push(r); } };
+  const add = (name, table) => { if (table) { const r = priceSlip(legs, name, { [name]: { [n]: table } }); if (r) out.push({ ...r, growth: growth(r, table) }); } };
   if (book === 'PP') {
     add('prizepicks_power', PAYOUTS.prizepicks_power[n]);
     add('prizepicks_flex', PAYOUTS.prizepicks_flex[n]);
@@ -78,7 +87,8 @@ function buildForBook(pool, book, maxLegs) {
     chosen.push(rest.splice(bestIdx, 1)[0]);
     if (best) sizes.push({ ...best, picks: chosen.slice() });
   }
-  return sizes.sort((a, b) => b.ev - a.ev);
+  // +EV sizes by growth first, then the rest by how close they come
+  return sizes.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
 }
 
 const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
@@ -101,7 +111,7 @@ function present(book, s) {
     status: s.ev > 0 ? 'plus' : 'near',
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
     paysAll: pays != null ? +pays.toFixed(2) : null,
-    hits: s.hits, kelly: s.kelly,
+    hits: s.hits, kelly: s.kelly, growth: +(s.growth || 0).toFixed(6),
     picks: s.picks.map(l => ({
       player: l.player, team: l.team, sport: l.sport, market: l.market, rawMarket: l.rawMarket, side: l.side, line: l.line,
       prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime,
@@ -109,7 +119,7 @@ function present(book, s) {
   };
 }
 
-// picks: the esports board → { slips: [best per book, +EV first], books: { PP: [...every size] }, pool }
+// picks: the esports board → { slips: [best per book, fastest growth first], books: { PP: [...every size] }, pool }
 function autoSlips(picks, { now = Date.now(), near = NEAR_PCT } = {}) {
   const live = (picks || []).filter(p => {
     const t = Date.parse(p.startTime);
@@ -123,7 +133,7 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT } = {}) {
     books[book] = sizes;
     if (sizes.length) slips.push(sizes[0]);
   }
-  slips.sort((a, b) => b.ev - a.ev);
+  slips.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
   return { slips, books, pool, nearPct: near };
 }
 

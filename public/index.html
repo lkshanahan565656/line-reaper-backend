@@ -5878,6 +5878,7 @@ function esAutoSlipsHTML() {
         ${s.status === 'plus' && s.kelly > 0 ? `<span>¼ KELLY <b>${(s.kelly * 25).toFixed(1)}%</b></span>` : ''}
         <button class="slip-btn" onclick="esLoadAutoSlip(${i})">LOAD</button>
       </div>
+      ${(() => { const more = (d.books?.[s.book] || []).filter(o => o.legs !== s.legs && o.status === 'plus'); return more.length ? `<div class="es-as-note">Also +EV: ${more.map(o => `${o.legs}-pick ${escEs(o.tableName)} +${o.ev.toFixed(1)}% (hits ${(o.probAll * 100).toFixed(1)}%)`).join(' · ')}. This one grows a bankroll fastest.</div>` : ''; })()}
       ${s.status === 'near' ? `<div class="es-as-note">Closest entry on ${escEs(s.bookName)}, ${Math.abs(s.ev).toFixed(1)}% short of break-even. Not a bet; it shows what's nearly there.</div>` : ''}
       ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}
     </div>`;
