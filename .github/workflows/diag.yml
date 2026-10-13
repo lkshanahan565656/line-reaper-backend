@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
       - run: |
-          { date -u; node diag/sharp-tabs.js; } > diag-out.txt 2>&1 || true; node diag/snap.js || true
+          for i in $(seq 1 40); do curl -sS -m 20 https://line-reaper-backend-production.up.railway.app/api/status | grep -q '"3.80.1"' && break; sleep 30; done; { date -u; curl -sS -m 30 https://line-reaper-backend-production.up.railway.app/app | grep -c bidsProven; node diag/sharp-tabs.js; } > diag-out.txt 2>&1 || true; node diag/snap.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
