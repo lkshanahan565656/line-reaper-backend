@@ -5598,14 +5598,14 @@ function renderXarbs() {
   const stat = (n, label, color) => `<div class="xa-stat"><div class="xa-num"${color ? ` style="color:${color}"` : ''}>${n}</div><div class="xa-lbl">${label}</div></div>`;
   const summary = `<div class="xa-sum">
     ${stat(d.count || 0, d.count === 1 ? 'ARB RIGHT NOW' : 'ARBS RIGHT NOW', d.count ? 'var(--green)' : '')}
-    ${stat(d.bidCount ?? (d.bids || []).length, 'LOCK WITH A BID', d.bidCount ? 'var(--green)' : '')}
+    ${stat(d.middleCount ?? (d.middles || []).length, 'MIDDLES', d.middleCount ? 'var(--green)' : '')}
     ${stat(d.updated ? tailAgo(d.updated) : '—', 'SINCE THE LAST SCAN')}
     <div class="xa-blurb">An arb is a set of bets that pays the same whichever way it ends, for less than it pays out. Every open market on ${venues}${markets ? ` (${markets.toLocaleString()} right now)` : ''} is checked once a minute, fees included.</div>
   </div>`;
   const note = tailWithheld('arbs');
   if (!d.pro) {
     const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.bidCount ? `, ${d.bidCount} you can lock with a limit bid` : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
     return;
   }
   const all = [...(d.arbs || []), ...(d.near || []), ...(d.bids || [])];
@@ -5637,8 +5637,11 @@ function renderXarbs() {
     : br ? `<div class="xa-sub" style="margin:0 0 8px">Every plan here is tracked until its game starts: whether the bid filled and what the hedge cost by then. ${br.open} being tracked now.</div>` : '';
   const bidSec = sec('BID, THEN HEDGE', bids.length ? `${bids.length} · two bets: a limit bid, then the other side once it fills` : 'none right now',
       bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
+  // bid plans lead only once they've shown they fill: live, 0 of 271 had by 10-13 17:49 (the hedge ran first)
+  const bidsProven = br && br.filled >= 5 && br.fillRate >= 0.2;
+  const bidFold = bids.length || br?.cancelled ? `<details class="xa-how"><summary>Bid, then hedge (${bids.length} open)${br && (br.filled || br.cancelled) ? ` · ${br.filled} of ${br.filled + br.unfilled + br.cancelled} filled so far` : ''}</summary>${bidSec}</details>` : '';
   el.innerHTML = note + summary + controls
-    + (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet)
+    + (bidsProven ? (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet) : twoBet)
     + (middles.length || mr?.graded ? sec('MIDDLES', middles.length ? `${middles.length} · one bet always pays, both pay if the game lands between the lines` : 'none right now',
       (mr ? `<div class="xa-sub" style="margin:0 0 8px">${mr.graded ? `Tracked so far: ${mr.hits} of ${mr.graded} hit (about ${mr.expectedHits} expected), ${mr.units > 0 ? '+' : ''}${mr.units}u at 1u each.` : 'Every middle here is graded from the final once its game is over.'} ${mr.open} waiting on games.</div>` : '')
       + middles.slice(0, 12).map(xarbMiddleCard).join('')) : '')
@@ -5654,6 +5657,7 @@ function renderXarbs() {
     + sec('CLOSEST TO AN ARB', nearList.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
       nearList.length ? `<div class="xa-near">${nearList.slice(0, xarbUi.allNear ? nearList.length : XARB_NEAR_SHOWN).map(xarbNearRow).join('')}${near.length > Math.min(nearSimple.length, XARB_NEAR_SHOWN)
         ? `<button class="xa-more" onclick="xarbSet('allNear',${!xarbUi.allNear})">${xarbUi.allNear ? 'Two-bet pairs only' : `Show all ${near.length}, bigger sets too`}</button>` : ''}</div>` : '')
+    + (bidsProven ? '' : bidFold)
     + (multi.length ? `<details class="xa-how"><summary>${multi.length} bigger set${multi.length === 1 ? '' : 's'} (3 or more bets each)</summary>${multi.map(xarbCard).join('')}</details>` : '')
     + `<details class="xa-how"><summary>How to place an arb</summary>
       <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
