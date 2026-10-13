@@ -1029,6 +1029,7 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" data-best="sportsProp" onclick="bestKind('sportsProp')">SPORTS PROPS</button>
     <button class="sport-chip" data-best="bookLine" onclick="bestKind('bookLine')">SPORTSBOOK LINES</button>
     <button class="sport-chip" data-best="arb" onclick="bestKind('arb')">ARBS</button>
+    <button class="sport-chip" data-best="middle" onclick="bestKind('middle')">MIDDLES</button>
   </div>
   <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
@@ -5325,7 +5326,7 @@ function renderBest() {
       <td class="bp-c" style="text-align:right;color:var(--green)">${edge(r)}</td>
       <td style="text-align:right"><button class="mb-log" onclick="mybLogBest(${i})" title="Log this bet to My Bets">LOG</button></td></tr>`; }).join('');
   const c = d.counts || {};
-  const sum = [['tail', 'Sharp Tail'], ['exchangeValue', 'exchange value'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
+  const sum = [['tail', 'Sharp Tail'], ['exchangeValue', 'exchange value'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['middle', 'middles'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
     <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">

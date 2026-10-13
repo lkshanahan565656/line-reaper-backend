@@ -39,6 +39,7 @@ const DEFAULTS = {
   entryMaxLegs: 3,            // more legs, more variance, and the greedy pick gets worse
   bidShare: 0.5,              // a limit bid is half a take: it fills when the price is moving against it
   arbMaxLegs: 4,              // a 16-bet set isn't a play anyone places
+  middleMinEvPct: 3,          // exchange middles: 3% EV or more (they miss most of the time)
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
   limit: 300,
@@ -300,7 +301,7 @@ function lineRows(lines, verdict, o, now) {
 
 // exchange arbs (xarb.js) and esports match arbs: both sides for under $1.
 // Units don't apply: the stake splits across the legs.
-const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
+const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US', novig: 'Novig', prophetx: 'ProphetX' };
 const venueName = l => l.venueTitle || VENUE_NAMES[l.venue] || l.venue;
 
 function arbRows(arbs, esportsArbs, o) {
@@ -328,6 +329,30 @@ function arbRows(arbs, esportsArbs, o) {
     });
   }
   return rows;
+}
+
+// exchange middles (xarb.findMiddles): two lines on two exchanges, one leg
+// always pays, both inside the window. Half a unit until the middles record
+// proves out (a whole one then), from middleMinEv up; a losing record drops them.
+function middleRows(middles, verdict, o, now) {
+  const rows = [], dropped = [];
+  for (const m of middles) {
+    const start = ms(m.startTime);
+    if (start == null || start <= now || !(m.evPct >= o.middleMinEvPct) || (m.legs || []).length !== 2) continue;
+    const vd = verdict('middles', { league: m.league, kind: m.kind });
+    if (vd.avoid) { dropped.push({ kind: 'middle', title: m.title, play: vd.avoid.play }); continue; }
+    const lo = Math.floor(m.low) + 1, hi = Math.ceil(m.high) - 1;
+    const what = m.kind === 'total' ? 'the total' : m.subject || 'the margin';
+    const why = [`both pay if ${what} lands ${lo === hi ? lo : `${lo} to ${hi}`} (about ${Math.round(m.hitProb * 100)}%), a miss costs ${Math.abs(m.missPct)}%`];
+    if (vd.play) why.push(evidence(vd.play));
+    rows.push({
+      id: `middle:${m.id}`, kind: 'middle', label: `${String(m.league || '').toUpperCase()} middle`, title: m.title,
+      bet: m.legs.map(l => `${venueName(l)}: ${l.pick}`).join(' + '), venue: [...new Set(m.legs.map(venueName))].join(' + '),
+      price: m.totalCost ?? null, american: null, maxPrice: null, units: vd.verdict === 'proven' ? 1 : 0.5, ev: r4(m.evPct / 100), verdict: vd.verdict, why,
+      url: m.legs[0]?.url || null, startsAt: m.startTime, at: null, warning: null, legs: m.legs,
+    });
+  }
+  return { rows, dropped };
 }
 
 // The best Underdog entry from today's esports prop plays. A pick'em leg is
@@ -373,7 +398,7 @@ function entryRows(picks, propRowIds, o, now) {
 }
 
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
-function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], value = [], plays = [] } = {}, opts = {}) {
+function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], value = [], middles = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
   const verdict = verdictIndex(plays);
@@ -383,7 +408,7 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
     if (m.live || (start != null && start <= now)) continue;
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
-  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now)];
+  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now), middleRows(middles, verdict, o, now)];
   const propIds = new Set(parts[2].rows.map(r => r.id));
   const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs, o)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);

@@ -169,3 +169,15 @@ test('sportsbook lines: fresh, above fair, not started, sized by quarter Kelly a
   assert.equal(t.bet, 'Over 44.5');
   assert.equal(t.label, 'NFL total');
 });
+
+test('exchange middles: 3% EV and up, half a unit until proven, with the window spelled out', () => {
+  const t = Date.parse('2026-10-08T12:00:00Z');
+  const mid = (evPct, o = {}) => ({ id: `m${evPct}`, title: 'New York K at Boston', league: 'nba', kind: 'total', low: 217.5, high: 221.5, hitProb: 0.083, missPct: -0.6, evPct, totalCost: 1.006,
+    startTime: '2026-10-08T23:00:00Z', legs: [{ venue: 'polymarketus', pick: 'Over 217.5', url: 'u' }, { venue: 'kalshi', pick: 'Under 221.5' }], ...o });
+  const out = bestPlays({ middles: [mid(7.6), mid(2)] }, { now: t });
+  const rows = out.rows.filter(r => r.kind === 'middle');
+  assert.equal(rows.length, 1, 'the 2% one stays off');
+  assert.deepEqual([rows[0].bet, rows[0].venue, rows[0].units, rows[0].ev], ['Polymarket US: Over 217.5 + Kalshi: Under 221.5', 'Polymarket US + Kalshi', 0.5, 0.076]);
+  assert.match(rows[0].why[0], /lands 218 to 221 \(about 8%\), a miss costs 0.6%/);
+  assert.equal(bestPlays({ middles: [mid(7.6)] }, { now: Date.parse('2026-10-09T00:00:00Z') }).rows.length, 0, 'started: gone');
+});
