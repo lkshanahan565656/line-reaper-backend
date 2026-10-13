@@ -1434,3 +1434,35 @@ test('bid arbs: a limit bid inside one venue\'s spread, hedged at the other\'s a
   const m2 = A.matchMarkets(k2, us, opts());
   assert.ok(!A.findBidArbs(m2, opts({ region: 'us' })).some(a => a.legs.some(l => l.marketId === us[0].id) && a.legs.some(l => l.price === 0.47)));
 });
+
+test('bid tracker: a plan fills when the maker ask reaches the bid, is graded on the hedge it really gets, and drops when cancelled or unfilled', async () => {
+  const { createBidTracker } = require('../bidtrack');
+  let t = NOW;
+  const tr = createBidTracker({ now: () => t });
+  const kalshi = kRows(kalshiGame({ yes_ask_dollars: '0.5200', no_ask_dollars: '0.5000' }, { yes_ask_dollars: '0.5000', no_ask_dollars: '0.5200' }));
+  const us = usNba();
+  const plan = A.findBidArbs(A.matchMarkets(kalshi, us, opts()), opts({ region: 'us' })).find(a => a.legs[1].marketId === us[0].id);
+  assert.ok(plan.startTime, 'a plan carries its start');
+  await tr.record([plan], [...kalshi, ...us]);
+  assert.equal((await tr.summary()).open, 1);
+  // Kalshi's Knicks ask comes down to the 49¢ bid; the Celtics are still 48¢ here
+  const m = plan.legs[0];
+  const filled = kalshi.map(r => (r.id === m.marketId ? { ...r, [m.side === 'yes' ? 'yesAsk' : 'noAsk']: 0.49 } : r));
+  t += 60e3;
+  await tr.record([], [...filled, ...us]);
+  const s = await tr.summary();
+  assert.deepEqual([s.open, s.filled, s.locked, s.avgLock], [0, 1, 1, plan.profitPct]);
+  // the hedge running past break-even first: cancelled, no bet
+  const tr2 = createBidTracker({ now: () => NOW });
+  await tr2.record([plan], [...kalshi, ...us]);
+  const ran = us.map((r, i) => (i === 0 ? { ...r, noAsk: 0.55 } : r));
+  await tr2.record([], [...kalshi, ...ran]);
+  assert.deepEqual([(await tr2.summary()).cancelled, (await tr2.summary()).filled], [1, 0]);
+  // and the game starting with the bid resting: unfilled
+  let t3 = NOW;
+  const tr3 = createBidTracker({ now: () => t3 });
+  await tr3.record([plan], [...kalshi, ...us]);
+  t3 = Date.parse(START) + 1;
+  await tr3.record([], [...kalshi, ...us]);
+  assert.equal((await tr3.summary()).unfilled, 1);
+});

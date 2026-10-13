@@ -2765,6 +2765,12 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
 
 // One scan: every open Kalshi and Polymarket event, plus the game lines the
 // backend already holds (sportsbooks, with the exchange books attached).
+// bid-then-hedge plans, followed to a fill, a cancel or the start (bidtrack.js)
+const bidTracker = require('./bidtrack').createBidTracker({
+  store: resultsBackup.wrap('bidArbs', createEvStoreFromEnv(process.env, { table: 'bid_arbs', fileVar: 'BIDARB_TRACK_FILE', file: 'bid-arbs.json' })),
+  fees: XARB_OPTS,
+});
+bidTracker.ready().catch(e => console.error('Bid tracker: store failed to initialise:', e.message));
 async function scanXarbs() {
   if (xarbState.running) return [];
   xarbState.running = true;
@@ -2807,6 +2813,7 @@ async function scanXarbs() {
     let bids = [];
     try { bids = xarb.findBidArbs([...(intl ? matches : []), ...us.matchList], { ...XARB_OPTS, now }); }
     catch (e) { console.warn('Exchange arbs: bid plans:', e.message); }
+    await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
     }
@@ -3209,7 +3216,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.66.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.67.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3497,7 +3504,7 @@ app.get('/api/whales', async (req, res) => {
 // Stakes are the same for everyone: each leg's `pct` of the total (and the
 // $100 reference split in `stakes`). US mode only has Kalshi and US
 // sportsbook legs. Free: count and profit % only.
-app.get('/api/xarbs', (req, res) => {
+app.get('/api/xarbs', async (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
   const q = req.query;
   const minPct = parseFloat(q.minPct);
@@ -3505,7 +3512,9 @@ app.get('/api/xarbs', (req, res) => {
     .filter(a => (!q.type || a.type === q.type) && (!q.category || a.category === q.category) && (!Number.isFinite(minPct) || a.profitPct >= minPct));
   const near = (xarbState.near || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
   const bids = (xarbState.bids || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
-  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
+  let bidRecord = null;
+  try { bidRecord = await bidTracker.summary(); } catch { /* store down */ }
+  const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, bidRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
   if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
     ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids,
@@ -4059,9 +4068,9 @@ app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all)]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list()]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -4074,9 +4083,9 @@ app.get('/api/best', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all)]);
-    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list()]);
+    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs });
     const out = bestplays.bestPlays({
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
@@ -4149,7 +4158,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.66.0',
+  version: '3.67.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4288,10 +4297,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.66.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.67.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.66.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.67.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
