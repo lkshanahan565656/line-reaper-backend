@@ -14,6 +14,12 @@
 // The move is read against the venue's cost at the time of the low, so a
 // venue that already followed doesn't count. Only quotes from a tight book
 // (spread ≤ maxSpread) go into the history: a wide book's mid is noise.
+//
+// Each side keeps only the points that can still be a window's low (a point
+// with a lower fair after it never can), so a flat side is a point or two and
+// the history is small enough to ride through a deploy: dump() goes into the
+// results backup, load() puts it back on boot. Without that, every deploy
+// left steam blind for its first 20 minutes (six deploys 19:56 to 21:52 10-13).
 
 const DEFAULTS = {
   windowMs: 20 * 60e3,
@@ -45,6 +51,7 @@ function createSteamWatch(opts = {}) {
       if (q.fair == null || q.cost == null || !(q.spread <= o.maxSpread + 1e-9)) continue;
       if (!hist.has(id)) hist.set(id, []);
       const h = hist.get(id);
+      while (h.length && h[h.length - 1].fair > q.fair + 1e-12) h.pop();
       h.push({ t: now, fair: q.fair, cost: q.cost });
       while (h.length && h[0].t < cut) h.shift();
     }
@@ -78,7 +85,35 @@ function createSteamWatch(opts = {}) {
     return out.sort((a, b) => b.steam.move - a.steam.move);
   }
 
-  return { observe, steamOf, candidates, size: () => hist.size, opts: o };
+  // the history as backup docs: { id, h: [[t, fair, cost], ...] }
+  function dump() {
+    return [...hist].map(([id, h]) => ({ id, h: h.map(p => [p.t, r4(p.fair), r4(p.cost)]) }));
+  }
+  // back from a backup: points still inside the window, merged by time into
+  // whatever this container has seen since it booted → sides restored
+  let restored = 0;
+  function load(docs = [], now = Date.now()) {
+    const cut = now - o.windowMs;
+    let n = 0;
+    for (const d of docs) {
+      if (!d || d.id == null || !Array.isArray(d.h)) continue;
+      const pts = d.h.filter(p => Array.isArray(p) && p[0] >= cut && p[0] <= now && Number.isFinite(p[1]) && Number.isFinite(p[2]))
+        .map(([t, fair, cost]) => ({ t, fair, cost }));
+      if (!pts.length) continue;
+      const merged = [...pts, ...(hist.get(d.id) || [])].sort((a, b) => a.t - b.t);
+      const h = [];
+      for (const p of merged) {
+        while (h.length && h[h.length - 1].fair > p.fair + 1e-12) h.pop();
+        h.push(p);
+      }
+      hist.set(d.id, h);
+      n++;
+    }
+    restored += n;
+    return n;
+  }
+
+  return { observe, steamOf, candidates, dump, load, size: () => hist.size, points: () => [...hist.values()].reduce((a, h) => a + h.length, 0), restored: () => restored, opts: o };
 }
 
 // "moved 48¢ → 53¢ in 6 min, Kalshi still 49¢"
