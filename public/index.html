@@ -880,6 +880,8 @@ body.no-help .clv-info { display:none; }
 .xs-table .xs-top td { border-top:1px solid var(--border); }
 .xs-p { text-align:right; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
 .xs-win { color:var(--green) !important; font-weight:700; }
+.xs-add { width:22px; height:22px; margin-right:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text2); font-weight:700; cursor:pointer; padding:0; line-height:20px; }
+.xs-add.on { border-color:var(--green); color:var(--green); }
 </style>
 </head>
 <body>
@@ -5178,7 +5180,31 @@ function arbShow() {
 // ─── PRICES: the exchanges' odds screen ───────────────────────────────────────
 // Each paired game line, each side's all-in price (fee in) on Kalshi and
 // Polymarket US, the cheaper one lit up. Same game, same payout: buy where it costs less.
-const xscreenUi = { data: null, error: null, kind: 'all', league: 'all', sort: 'soon' };
+const xscreenUi = { data: null, error: null, kind: 'all', league: 'all', sort: 'soon', combo: [] };
+// COMBO: tap sides to build a Kalshi combo and see what a quote is worth (LRCalc.comboFair)
+function xcomboToggle(id, i) {
+  const r = (xscreenUi.data?.rows || []).find(x => x.id === id), x = r?.sides?.[i];
+  if (!x || x.fair == null) return;
+  const c = xscreenUi.combo, at = c.findIndex(l => l.id === id);
+  if (at >= 0 && c[at].i === i) c.splice(at, 1);
+  else if (at >= 0) c[at] = { id, i, pick: x.pick, title: r.title, game: `${r.title}|${r.start}`, fair: x.fair };
+  else if (c.length < 10) c.push({ id, i, pick: x.pick, title: r.title, game: `${r.title}|${r.start}`, fair: x.fair });
+  if (!window.LRCalc) mybLoadScript('/calc.js').then(renderXscreen).catch(() => {});
+  renderXscreen();
+}
+function xcomboHTML() {
+  const c = xscreenUi.combo;
+  if (!c.length) return '';
+  // keep each leg's fair current as the screen refreshes
+  for (const l of c) { const x = (xscreenUi.data?.rows || []).find(r => r.id === l.id)?.sides?.[l.i]; if (x?.fair != null) l.fair = x.fair; }
+  const f = c.length >= 2 && window.LRCalc ? LRCalc.comboFair(c) : null;
+  const legs = c.map(l => `<div class="xa-nrow" style="padding:6px 10px"><div class="xa-ntitle"><b>${escAttr(l.pick)}</b><div class="xa-sub">${escAttr(l.title)}</div></div>
+    <div class="xa-ncost">${tailC(l.fair)}<span>fair</span></div><button class="xa-more" style="margin:0;width:auto;padding:4px 10px" onclick="xcomboToggle('${escAttr(l.id)}',${l.i})">REMOVE</button></div>`).join('');
+  const sum = !f ? `<div class="xa-sub" style="margin-top:8px">${c.length < 2 ? 'Add at least one more leg.' : 'Loading the math...'}</div>`
+    : `<div class="xa-foot">Fair price <b>${tailC(f.fair)}</b> (${f.american > 0 ? '+' : ''}${f.american}, pays ${f.decimal}x). Request this combo on Kalshi and <b class="xa-pos">take a quote at ${tailC(f.maxAsk)} or less</b> (2% edge after the fee). At ${tailC(f.breakEven)} it only breaks even; above that, pass.</div>
+      ${f.sameGame ? '<div class="xa-warn">Two legs are from the same game. They move together, so the fair price here is only a rough guide.</div>' : ''}`;
+  return `<div class="xa-sec"><div class="xa-sec-head">YOUR COMBO<span>${c.length} leg${c.length === 1 ? '' : 's'} · <a href="#" onclick="xscreenUi.combo=[];renderXscreen();return false" style="color:var(--text2)">clear</a></span></div><div class="xa-near">${legs}</div>${sum}</div>`;
+}
 async function loadXscreen() {
   const el = document.getElementById('xscreenContent');
   if (!xscreenUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
@@ -5205,17 +5231,19 @@ function renderXscreen() {
   // fair = Polymarket's mid; EV of the cheaper all-in price at it, lit from +2%
   const fairCell = x => x.fair == null ? '<td class="xs-p">—</td>'
     : `<td class="xs-p">${tailC(x.fair)}${x.ev != null ? `<div class="${x.ev >= 0.02 ? 'xs-win' : ''}" style="font-size:10px;color:var(--text2)">${x.ev >= 0 ? '+' : ''}${Math.round(x.ev * 1000) / 10}%</div>` : ''}</td>`;
+  const inCombo = (id, i) => xscreenUi.combo.some(l => l.id === id && l.i === i);
   const body = rows.map(r => {
     const what = r.kind === 'moneyline' ? 'Moneyline' : r.kind === 'total' ? `Total ${r.line}` : `Spread ${r.line}`;
     return r.sides.map((x, i) => `<tr${i ? '' : ' class="xs-top"'}>
       ${i ? '<td></td>' : `<td rowspan="1"><b>${escAttr(r.title)}</b><div class="xa-sub">${escAttr((r.league || '').toUpperCase())} · ${escAttr(what)} · ${escAttr(when(r.start))}</div></td>`}
-      <td>${escAttr(x.pick)}</td>${cell(x.kalshi, x.kalshiUrl, x.best === 'kalshi')}${cell(x.other, x.otherUrl, x.best === r.venue)}
+      <td style="white-space:nowrap">${hasFair && x.fair != null ? `<button class="xs-add${inCombo(r.id, i) ? ' on' : ''}" title="Add to a combo" onclick="xcomboToggle('${escAttr(r.id)}',${i})">${inCombo(r.id, i) ? '✓' : '+'}</button>` : ''}${escAttr(x.pick)}</td>${cell(x.kalshi, x.kalshiUrl, x.best === 'kalshi')}${cell(x.other, x.otherUrl, x.best === r.venue)}
       <td class="xs-p" style="color:var(--text2)">${x.gap >= 0.005 ? `${Math.round(x.gap * 1000) / 10}¢` : ''}</td>${hasFair ? fairCell(x) : ''}</tr>`).join('');
   }).join('');
   el.innerHTML = `<div class="xa-controls" style="flex-wrap:wrap;gap:6px">${chip('kind', 'all', 'ALL')}${chip('kind', 'moneyline', 'MONEYLINE')}${chip('kind', 'spread', 'SPREADS')}${chip('kind', 'total', 'TOTALS')}
       ${leagues.length > 1 ? `<span style="width:8px"></span>${chip('league', 'all', 'ALL LEAGUES')}${leagues.map(l => chip('league', l, l.toUpperCase())).join('')}` : ''}
       ${hasFair ? `<span style="width:8px"></span>${chip('sort', 'soon', 'SOONEST')}${chip('sort', 'ev', 'BEST EV')}` : ''}</div>
-    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee.${hasFair ? " Fair is Polymarket's mid, the sharpest book on most games; the % under it is the cheaper price's edge, green from +2%." : ''} Games in the next 36 hours, ${rows.length} lines.</div>
+    <div class="xa-sub" style="margin:6px 0 10px">Same bet, same $1 payout on both exchanges: buy where it costs less. Prices include each exchange's taker fee.${hasFair ? " Fair is Polymarket's mid, the sharpest book on most games; the % under it is the cheaper price's edge, green from +2%." : ''} Games in the next 36 hours, ${rows.length} lines.${hasFair ? ' Tap + on sides to price a Kalshi combo.' : ''}</div>
+    ${xcomboHTML()}
     ${body ? `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>Game</th><th>Side</th><th style="text-align:right">Kalshi</th><th style="text-align:right">${escAttr(venue)}</th><th style="text-align:right">Saved</th>${hasFair ? '<th style="text-align:right">Fair</th>' : ''}</tr></thead><tbody>${body}</tbody></table></div>`
       : tailEmpty('NOTHING PRICED ON BOTH RIGHT NOW', 'Games show up here once both exchanges list them.')}`;
 }
