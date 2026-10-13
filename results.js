@@ -86,7 +86,10 @@ const SOURCES = {
   tail: { label: 'Sharp Tail', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
   fresh: { label: 'Fresh wallets', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
   esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
-  exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
+  // steam (a price Polymarket just moved) and a standing gap are cut apart
+  exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed',
+    bet: b => { const x = evBet(b); x.labels.signal = b.source === 'steam' ? 'steam' : 'price gap'; return x; },
+    cuts: [['signal'], ['sport'], ['book'], ['market'], ['sport', 'book']] },
   ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
   // a filled bid-then-hedge is graded on its lock at once (1u); unfilled and cancelled ones aren't bets
   bidArbs: { label: 'Bid, then hedge', done: r => r.status === 'filled' && r.lock != null, open: r => r.status === 'open',

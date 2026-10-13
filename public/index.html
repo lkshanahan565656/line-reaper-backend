@@ -5450,6 +5450,17 @@ function xarbValueRow(e) {
     <div class="xa-ngap pos" title="Expected return at Polymarket's price">+${Math.round(e.ev * 1000) / 10}%</div>
   </div>`;
 }
+// steam: Polymarket just moved and this venue hasn't followed yet
+function xarbSteamRow(e) {
+  const s = e.steam, when = e.start ? xarbWhen(e.start) : '';
+  const mins = Math.max(1, Math.round(s.sinceMs / 60000));
+  const followed = Math.abs(s.follow) < 0.005 ? 'hasn\'t moved' : `moved ${s.follow > 0 ? '+' : ''}${tailC(s.follow)}`;
+  return `<div class="xa-nrow">
+    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''}</div><div class="xa-sub" style="color:var(--green)">Polymarket ${tailC(s.from)} → ${tailC(s.to)} in ${mins} min · ${escAttr(e.venueName || e.venue)} ${followed}</div></div>
+    <div class="xa-ncost" title="What it costs with the fee">${tailC(e.cost)}<span>with fee</span></div>
+    <div class="xa-ngap pos" title="Expected return at Polymarket's new price">+${Math.round(e.ev * 1000) / 10}%</div>
+  </div>`;
+}
 function renderXarbs() {
   const el = document.getElementById('xarbContent');
   if (!el) return;
@@ -5481,7 +5492,10 @@ function renderXarbs() {
   const simple = arbs.filter(a => (a.legs || []).length <= 2), multi = arbs.filter(a => (a.legs || []).length > 2);
   const ready = simple.filter(a => !(a.warnings || []).length), check = simple.filter(a => (a.warnings || []).length);
   const nearSimple = near.filter(a => (a.legs || []).length <= 2);
-  const vd = xarbUi.value, value = (vd?.edges || []).filter(e => !e.locked).filter(e => xarbUi.category === 'all' || (e.category || 'sports') === xarbUi.category);
+  const vd = xarbUi.value, valueAll = (vd?.edges || []).filter(e => !e.locked).filter(e => xarbUi.category === 'all' || (e.category || 'sports') === xarbUi.category);
+  const steam = valueAll.filter(e => e.steam), value = valueAll.filter(e => !e.steam);
+  const sr = vd?.record?.bySource?.steam;
+  const steamRec = sr?.n ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${sr.n} graded at the start, average closing-line value ${sr.avgClv > 0 ? '+' : ''}${sr.avgClv}%, ${Math.round(sr.beatClosePct * 100)}% beat the close.</div>` : '';
   const chip = k => `<button class="sport-chip ${xarbUi.category === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('category','${escAttr(k)}')">${escAttr(k.toUpperCase())}</button>`;
   const controls = `<div class="xa-controls">
     <label class="xa-stake">YOUR STAKE $<input type="number" min="1" step="1" inputmode="decimal" value="${arbState.stake}" oninput="xarbRestake(this.value)"></label>
@@ -5503,7 +5517,9 @@ function renderXarbs() {
       (mr ? `<div class="xa-sub" style="margin:0 0 8px">${mr.graded ? `Tracked so far: ${mr.hits} of ${mr.graded} hit (about ${mr.expectedHits} expected), ${mr.units > 0 ? '+' : ''}${mr.units}u at 1u each.` : 'Every middle here is graded from the final once its game is over.'} ${mr.open} waiting on games.</div>` : '')
       + middles.slice(0, 12).map(xarbMiddleCard).join('')) : '')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
-    + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now.</b>`, 'Exchange value')) : '')
+    + (vd && vd.pro ? sec('STEAM', steam.length ? `${steam.length} · Polymarket just moved, the US price hasn't caught up` : 'nothing right now',
+      steamRec + (steam.length ? `<div class="xa-near">${steam.slice(0, 12).map(xarbSteamRow).join('')}</div>` : '<div class="xa-empty">No stale price right now. When Polymarket\'s book jumps 3 cents or more and Kalshi or Polymarket US hasn\'t followed, the old price shows here. They close within minutes.</div>')) : '')
+    + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now${vd.steamCount ? `, ${vd.steamCount} of them steam` : ''}.</b>`, 'Exchange value')) : '')
     + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
       value.length ? `<div class="xa-near">${value.slice(0, 12).map(xarbValueRow).join('')}</div>` : '<div class="xa-empty">No single bet is priced under Polymarket\'s book right now. These need no second bet: just buy the one side.</div>') : '')
     + sec('CLOSEST TO AN ARB', nearList.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
@@ -5514,6 +5530,7 @@ function renderXarbs() {
       <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
       <p>Prices move fast. Check each one is still there before you place the next, and look at the order book before going big: the price shown may only hold a few contracts.</p>
       <p>Bid, then hedge: two exchanges rarely disagree by the 3 to 4 cents two taker fees cost, but a limit bid pays far less in fees and buys a cent or two under the ask. Place the bid in step 1 and leave it. When it fills, buy step 2 right away at its price or anything up to the break-even shown. Until both are in you only hold one side, so watch step 2's price and cancel the bid if it runs past the break-even.</p>
+      <p>Steam: Polymarket's book is the deepest on most games, so news and big money move it first. When its price jumps 3 cents or more inside 20 minutes and Kalshi or Polymarket US still sells the old price, buy the old price before it catches up. These go fast; check the price is still there.</p>
       <p>Middles: the same game's total, or one team's spread, sits at different lines on the two exchanges. Buy the Over at the lower line on one and the Under at the higher line on the other. One of them always pays, so a miss costs a few cents, and if the game lands between the lines both pay. The edge is an average over many of them: most miss.</p>
       <p>The watchlist shows pairs that cost a little more than $1 for every $1 they pay. When one drops under $1 it moves up to the arbs. Game markets settle a postponed or canceled game by each exchange's own rules, so read both before betting one.</p></details>`;
 }
