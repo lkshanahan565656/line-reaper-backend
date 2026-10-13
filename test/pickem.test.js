@@ -56,7 +56,11 @@ test('Sleeper pricing: decimal EV, vig out before the sanity check', () => {
   const a = sleeperPricing(58, 1.8, 1.9);
   assert.ok(Math.abs(a.ev - 4.4) < 1e-9);
   assert.ok(Math.abs(a.implied - 51.35) < 0.01);
-  // 1.48 vs 2.19 implies about 60% over; a model at 45% is too far off to trust
-  assert.strictEqual(sleeperPricing(45, 1.48, 2.19).ev, null);
-  assert.strictEqual(sleeperPricing(45, 1.48, 2.19).flag, 'price-mismatch');
+  // 1.48 vs 2.19 implies about 60% over. A model at 75% is a fake edge: withheld
+  assert.strictEqual(sleeperPricing(75, 1.48, 2.19).ev, null);
+  assert.strictEqual(sleeperPricing(75, 1.48, 2.19).flag, 'price-mismatch');
+  // at 45% it's just a bad price on Sleeper: the negative EV shows
+  const bad = sleeperPricing(45, 1.48, 2.19);
+  assert.strictEqual(bad.flag, null);
+  assert.ok(Math.abs(bad.ev - (0.45 * 1.48 - 1) * 100) < 1e-9);
 });

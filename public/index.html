@@ -4233,7 +4233,7 @@ async function loadEsports() {
         const mism = s.priceMismatchCount || 0;
         const bad = (s.implausibleLines || []).length;
         const badSeg = (bad ? ` · <span style="color:#f59e0b" title="${escEs(s.implausibleLines.slice(0,5).join(' | '))}">${bad} implausible lines skipped</span>` : '')
-          + (mism ? ` · <span style="color:#fbbf24" title="Picks where our probability disagreed with the book's implied price by more than 15 points — withheld rather than shown as a huge fake edge.">${mism} withheld (price mismatch)</span>` : '');
+          + (mism ? ` · <span style="color:#fbbf24" title="Book prices where our fair sat more than 10 points above the book's implied chance, at that book's own line. Withheld rather than shown as a huge fake edge.">${mism} withheld (price mismatch)</span>` : '');
         esportsState.engineHtml = `ENGINE v${s.version} · ${lolSeg} · ${csSeg} · ${valSeg} · ${dotaSeg}${w ? ' · ' + w : ''}${badSeg}`;
       }
       const el = document.getElementById('esEngine');
@@ -4357,7 +4357,12 @@ function esStatEdge(p) {
     parts.push(`<span title="${mk ? `The books together put this at ${p.marketPred}. With our projection weighted ${Math.round((p.modelWeight || 0) * 100)}%, fair is ${p.modelPred}.` : `The book posted ${line}. We project ${p.modelPred}.`} The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs ${mk ? 'FAIR' : 'OURS'} ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
   }
   if (p.udFlag === 'price-mismatch') {
-    parts.push(`<span title="Underdog's payout implies ${p.udImplied}% while our model says ${p.prob}%. A gap that big on one leg almost always means our number is wrong, so no EV is published." style="color:#fbbf24;font-weight:800">PRICE MISMATCH — book implies ${p.udImplied}%, model ${p.prob}% · no EV shown</span>`);
+    const at = p.udLine != null ? p.udLine : p.ppLine, mine = p.udProb ?? p.prob;
+    parts.push(`<span title="At Underdog's line (${at}) its payout implies ${p.udImplied}%, and our fair says ${mine}%. An edge that big on one leg is almost always our error, so the Underdog EV is left out." style="color:#fbbf24;font-weight:800">UNDERDOG ${at} implies ${p.udImplied}%, fair ${mine}% · Underdog EV withheld</span>`);
+  }
+  if (p.sleeperFlag === 'price-mismatch') {
+    const at = p.sleeperLine != null ? p.sleeperLine : p.ppLine, mine = p.sleeperProb ?? p.prob;
+    parts.push(`<span title="At Sleeper's line (${at}) its payout implies ${p.sleeperImplied}% with the vig out, and our fair says ${mine}%. An edge that big on one leg is almost always our error, so the Sleeper EV is left out." style="color:#fbbf24;font-weight:800">SLEEPER ${at} implies ${p.sleeperImplied}%, fair ${mine}% · Sleeper EV withheld</span>`);
   }
   const why = p.statLine ? `<details class="es-why"><summary>Why this number</summary><div>${escEs(p.statLine)}</div></details>` : '';
   return (parts.length ? `<div class="es-edge">${parts.join('')}</div>` : '') + why;

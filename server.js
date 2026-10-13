@@ -591,10 +591,12 @@ const BETR_IMPLIED = 0.5622;
 //                EV = prob x mult - 1
 // Treating the second kind as the first is what produced +339% "edges".
 //
-// Then a reality check: every payout implies a probability. If our model
-// disagrees with the book's implied number by more than 15 points, one of us
-// is badly wrong — and on a single leg it is almost always us. Those get no
-// EV and a flag instead of a fantasy edge.
+// Then a reality check: every payout implies a probability. If our fair is
+// more than 10 points ABOVE the book's implied number, the "edge" is almost
+// always our error, so it gets no EV and a flag instead of a fantasy edge.
+// Below it is just a bad price on that book: the (negative) EV is shown. The
+// check runs at the book's own line, so a book hanging 3.5 where PrizePicks
+// hangs 1.5 is compared against our chance at 3.5, not at 1.5.
 const UD_DECIMAL_THRESHOLD = 1.35;
 // Was 0.15 — two legs at a 14-point gap still slipped through and compounded
 // into an "+88% EV" 2-leg slip. On a single prop, a 10-point disagreement with
@@ -608,7 +610,7 @@ function udPricing(prob, mult) {
   const implied = decimal ? 1 / m : UD_IMPLIED / m;
   const ev = decimal ? (p * m - 1) * 100 : (p * m / UD_IMPLIED - 1) * 100;
   const gap = p - implied;
-  const flag = Math.abs(gap) > MAX_PROB_DISAGREEMENT ? 'price-mismatch' : null;
+  const flag = gap > MAX_PROB_DISAGREEMENT ? 'price-mismatch' : null;
   return { ev: flag ? null : ev, implied: implied * 100, regime: decimal ? 'decimal' : 'boost', flag, gap: gap * 100 };
 }
 
@@ -1977,6 +1979,7 @@ async function generateEsportsPicks() {
       pick.udMultiplier = udSideMult;
       pick.udRegime = udP.regime;
       pick.udImplied = parseFloat(udP.implied.toFixed(1));
+      pick.udProb = parseFloat(udProb.toFixed(2));   // our chance at Underdog's own line
       pick.udFlag = udP.flag;
       if (udP.flag) priceMismatches++;
     }
@@ -1996,6 +1999,7 @@ async function generateEsportsPicks() {
         pick.sleeperEv = slP.ev != null ? parseFloat(slP.ev.toFixed(2)) : null;
         pick.sleeperMultiplier = slMult;
         pick.sleeperImplied = parseFloat(slP.implied.toFixed(1));
+        pick.sleeperProb = parseFloat(slProb.toFixed(2));
         pick.sleeperFlag = slP.flag;
         if (slP.flag) priceMismatches++;
       }
@@ -2054,7 +2058,7 @@ async function generateEsportsPicks() {
   esportsCache.priceMismatches = priceMismatches;
   esportsCache.closedSides = closedSides;
   esportsCache.marketCounts = marketCounts;
-  if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
+  if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
@@ -3520,7 +3524,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.88.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.89.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4547,7 +4551,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.88.0',
+  version: '3.89.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4690,10 +4694,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.88.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.89.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.88.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.89.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);

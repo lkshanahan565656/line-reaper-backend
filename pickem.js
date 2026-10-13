@@ -154,7 +154,7 @@ function attachMatches(slLines, refLines, teamsMatch, sportKey, now = Date.now()
 }
 
 // One Sleeper leg: EV at its own decimal multiplier, with the same sanity check
-// as Underdog. When both sides are open the vig comes out before comparing our
+// as Underdog (withheld only when our chance sits far ABOVE Sleeper's). When both sides are open the vig comes out before comparing our
 // probability with Sleeper's.
 const MAX_GAP = 0.10;
 function sleeperPricing(prob, mult, otherMult) {
@@ -162,7 +162,7 @@ function sleeperPricing(prob, mult, otherMult) {
   const raw = 1 / mult;
   const implied = otherMult ? raw / (raw + 1 / otherMult) : raw;
   const gap = p - implied;
-  const flag = Math.abs(gap) > MAX_GAP ? 'price-mismatch' : null;
+  const flag = gap > MAX_GAP ? 'price-mismatch' : null;
   return { ev: flag ? null : (p * mult - 1) * 100, implied: implied * 100, flag, gap: gap * 100 };
 }
 
