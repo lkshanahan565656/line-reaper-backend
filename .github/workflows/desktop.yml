@@ -31,8 +31,8 @@ jobs:
           LR_NO_BROWSER=1 PORT=3777 LR_DATA_DIR="$RUNNER_TEMP/lr" ./out/${{ matrix.name }} > "$RUNNER_TEMP/lr.log" 2>&1 &
           sleep 60
           curl -sf -o /dev/null -w "app: %{http_code} %{size_download} bytes\n" http://localhost:3777/app
-          curl -s http://localhost:3777/api/underdog | head -c 200; echo
-          curl -s http://localhost:3777/api/exchanges | head -c 200; echo
+          curl -s http://localhost:3777/api/underdog | head -c 200 || true; echo
+          curl -s http://localhost:3777/api/exchanges | head -c 200 || true; echo
           grep -E "UD error|PP error|Esports: PP" "$RUNNER_TEMP/lr.log" | head -5 || true
       - name: Package
         shell: bash
