@@ -15,8 +15,8 @@ jobs:
           node-version: 20
       - run: |
           set +e
-          git fetch origin main && git checkout origin/main -- . && npm install --no-audit --no-fund >/dev/null 2>&1
-          { date -u; RUN_MIN=12 node diag/realtime.js; } > diag-out.txt 2>&1 || true
+          for i in $(seq 1 40); do curl -sS -m 20 https://line-reaper-backend-production.up.railway.app/api/status | grep -q '"3.83.1"' && break; sleep 30; done
+          { date -u; curl -sS -m 60 https://line-reaper-backend-production.up.railway.app/api/results | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);console.log(JSON.stringify(r.sources.exchangeValue));for(const p of r.plays.filter(p=>p.source==="exchangeValue"))console.log(p.by,"|",p.play,"| n",p.n,"| clv",p.avgClv,"|",p.verdict)})'; } > diag-out.txt 2>&1 || true
       - if: always()
         run: |
           git config user.name diag-bot
