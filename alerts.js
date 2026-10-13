@@ -24,6 +24,7 @@ function keyOf(p) {
 }
 
 function lineOf(p) {
+  if (p.bestBook === 'SL' && p.sleeperLine != null) return p.sleeperLine;
   return p.bestBook === 'UD' && p.udLine != null ? p.udLine : p.ppLine;
 }
 

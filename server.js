@@ -208,46 +208,49 @@ async function fetchOddsApiProps(sportKey) {
 // 30-minute retries instead of hammering every 2 min. Esports runs on UD anyway.
 let ppFail = { count: 0, until: 0 };
 // the last failure of each DFS scrape, for /api/status (cleared on success)
-const dfsError = { prizepicks: null, underdog: null };
+const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
+const { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, attachMatches, sleeperPricing } = require('./pickem');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
+// partner-api answers from Railway where api.prizepicks.com 403s (probed
+// 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
+// every 10 minutes; the esports leagues (ids learned from the whole board)
+// are re-pulled on their own every 2 minutes, a few hundred KB.
+const PRIZEPICKS_URL = process.env.PRIZEPICKS_URL || 'https://partner-api.prizepicks.com/projections';
+const PP_FULL_MS = 10 * 60 * 1000;
+const ppState = { fullAt: 0, esportsLeagues: [] };
+const PP_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  'Accept': 'application/json', 'Origin': 'https://app.prizepicks.com', 'Referer': 'https://app.prizepicks.com/',
+};
 async function scrapePrizePicks() {
   if (!licences.isOn('prizepicks')) { dfsError.prizepicks = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
   if (Date.now() < ppFail.until) return;
   try {
-    const res = await axios.get('https://api.prizepicks.com/projections', {
-      params: { per_page: 1000, single_stat: true, is_active: true },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json', 'Origin': 'https://app.prizepicks.com',
-        'Referer': 'https://app.prizepicks.com/',
-      },
-      timeout: 15000
-    });
-    const data = res.data, players = {}, leagues = {}, allLines = [];
-    if (data.included) {
-      for (const inc of data.included) {
-        if (inc.type === 'new_player') players[inc.id] = { name: inc.attributes.display_name || inc.attributes.name, team: inc.attributes.team || '' };
-        if (inc.type === 'league') leagues[inc.id] = inc.attributes.name || '';
+    const full = Date.now() - ppState.fullAt > PP_FULL_MS || !ppState.esportsLeagues.length;
+    let allLines;
+    if (full) {
+      const res = await axios.get(PRIZEPICKS_URL, { params: { per_page: 10000, single_stat: true }, headers: PP_HEADERS, timeout: 30000, maxContentLength: 80e6 });
+      const { lines, leagues } = parsePrizePicksPayload(res.data);
+      allLines = lines;
+      ppState.esportsLeagues = Object.entries(leagues).filter(([, name]) => isEsports(name)).map(([id]) => id);
+      if (!ppState.esportsLeagues.length) ppState.esportsLeagues = [...new Set(lines.filter(l => isEsports(l.sport) && l.leagueId).map(l => l.leagueId))];
+      ppState.fullAt = Date.now();
+    } else {
+      const fresh = [];
+      for (const id of ppState.esportsLeagues) {
+        const res = await axios.get(PRIZEPICKS_URL, { params: { league_id: id, per_page: 1000, single_stat: true }, headers: PP_HEADERS, timeout: 15000 });
+        fresh.push(...parsePrizePicksPayload(res.data).lines);
       }
-    }
-    if (data.data) {
-      for (const proj of data.data) {
-        const attr = proj.attributes;
-        const player = players[proj.relationships?.new_player?.data?.id] || {};
-        const sport = leagues[proj.relationships?.league?.data?.id] || attr.league || '';
-        if (!attr.line_score) continue;
-        allLines.push({ book: 'prizepicks', sport, player: player.name || attr.description || '', team: player.team || '', market: attr.stat_type || '', line: parseFloat(attr.line_score), startTime: attr.start_time || '',
-          matchTitle: player.name ? (attr.description || '') : '', gameId: attr.game_id || null });
-      }
+      allLines = [...(cache.prizepicks.data || []).filter(l => !isEsports(l.sport)), ...fresh];
     }
     if (allLines.length > 0) {
       cache.prizepicks = { data: allLines, updated: new Date().toISOString() };
       ppFail = { count: 0, until: 0 };
       dfsError.prizepicks = null;
       cache.ppLeagueLabels = [...new Set(allLines.map(l => l.sport))].slice(0, 20);
-      console.log(`PP: ${allLines.length} lines · leagues: ${cache.ppLeagueLabels.slice(0, 12).join(', ')}`);
+      console.log(`PP${full ? '' : ' esports'}: ${allLines.length} lines (${allLines.filter(l => isEsports(l.sport)).length} esports) · leagues: ${cache.ppLeagueLabels.slice(0, 12).join(', ')}`);
     }
   } catch(e) {
     const s = e.response?.status;
@@ -370,6 +373,29 @@ async function scrapeUnderdog() {
     const withMult = lines.filter(l => l.multiplier !== 1.00).length;
     console.log(`UD: ${lines.length} lines (${withMult} boosted/demoted) · sports: ${cache.udSportLabels.slice(0, 12).join(', ') || 'NONE RESOLVED'}`);
   } catch(e) { noteDfsError('underdog', e); console.error('UD error:', e.message, e.response?.status); }
+}
+
+// Sleeper: esports player lines with a payout per side. Player names come from
+// /players/{sport} (about 2 MB per esports title), refreshed every 6 hours.
+const SLEEPER_LINES_URL = 'https://api.sleeper.app/lines/available?dynamic=true&include_preseason=true&eg=15.control';
+const sleeperPlayers = { bySport: {}, at: {} };
+async function scrapeSleeper() {
+  if (!licences.isOn('sleeper')) { dfsError.sleeper = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
+  try {
+    const res = await axios.get(SLEEPER_LINES_URL, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }, timeout: 20000, maxContentLength: 40e6 });
+    const rows = Array.isArray(res.data) ? res.data : [];
+    for (const sport of sleeperEsportsKeys(rows)) {
+      if (Date.now() - (sleeperPlayers.at[sport] || 0) < 6 * 3600 * 1000) continue;
+      try {
+        const pr = await axios.get(`https://api.sleeper.app/players/${encodeURIComponent(sport)}`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000, maxContentLength: 40e6 });
+        if (pr.data && typeof pr.data === 'object') { sleeperPlayers.bySport[sport] = pr.data; sleeperPlayers.at[sport] = Date.now(); }
+      } catch (e) { console.warn(`Sleeper players ${sport}:`, e.response?.status, e.message); }
+    }
+    const lines = parseSleeperLines(rows, sleeperPlayers.bySport);
+    cache.sleeper = { data: lines, updated: new Date().toISOString(), rows: rows.length };
+    dfsError.sleeper = null;
+    console.log(`Sleeper: ${lines.length} esports lines from ${rows.length} rows`);
+  } catch (e) { noteDfsError('sleeper', e); console.error('Sleeper error:', e.message, e.response?.status); }
 }
 
 // ─── OWLS FETCHERS (with dead-key circuit breaker) ────────────────────────────
@@ -1566,7 +1592,12 @@ async function generateEsportsPicks() {
       matched: false,
     };
   }
-  console.log(`Esports: PP=${ppEsports.length} UD=${udEsports.length} udMap=${Object.keys(udMap).length}`);
+  // Sleeper lines take their match and start time from a PP or UD line on the
+  // same team (pickem.js attachMatches); the UD title reads best, so it's first
+  const slEsports = attachMatches((cache.sleeper.data || []), [...udEsports, ...ppEsports], teamsMatch, trackerSportKey);
+  const slMap = {};
+  for (const l of slEsports) slMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = { ...l, matched: false };
+  console.log(`Esports: PP=${ppEsports.length} UD=${udEsports.length} SL=${slEsports.length}/${(cache.sleeper.data || []).length} udMap=${Object.keys(udMap).length}`);
 
   // Limit fresh stat lookups per cycle so pick generation stays fast;
   // cached players are free and refresh hourly.
@@ -1737,7 +1768,7 @@ async function generateEsportsPicks() {
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
   // no more fabricated Betr/ParlayPlay/Sleeper numbers with default multipliers.
-  function assemble(base, modelPred, predSource, manualKey, udm, lineSource, g = {}) {
+  function assemble(base, modelPred, predSource, manualKey, udm, lineSource, g = {}, slm = null) {
     const lineVal = base.line;
     const pick = {
       sport: base.sport, player: base.player, team: base.team || '', matchTitle: base.matchTitle || '', market: base.market,
@@ -1758,7 +1789,7 @@ async function generateEsportsPicks() {
       manualKey,
       side: null, prob: null, ev: null,
       ppEv: null, udEv: null, betrEv: null, parlayEv: null, sleeperEv: null,
-      udMultiplier: null, sleeperMultiplier: null, udLine: udm ? udm.line : null,
+      udMultiplier: null, sleeperMultiplier: null, udLine: udm ? udm.line : null, sleeperLine: slm ? slm.line : null, sleeperFlag: null,
       udRegime: null, udImplied: null, udFlag: null,
       bestBook: null, bestEv: null, bookEdge: null, confidence: null, varianceK: null,
       model: null, pushProb: 0, gameId: base.gameId ?? null,
@@ -1783,9 +1814,11 @@ async function generateEsportsPicks() {
     // Only a side the book actually takes is a pick. UD-only lines with the
     // model's side closed stay listed with the projection but no side, so they
     // never reach Best Plays, entries, alerts or the tracked record.
-    if (udm && lineSource === 'ud' && (side === 'OVER' ? !udm.overOpen : !udm.underOpen)) {
+    const onlyBook = lineSource === 'ud' ? udm : lineSource === 'sl' ? slm : null;
+    if (onlyBook && (side === 'OVER' ? !onlyBook.overOpen : !onlyBook.underOpen)) {
       pick.sideClosed = side;
-      pick.statLine = [pick.statLine, `model leans ${side === 'OVER' ? 'Higher' : 'Lower'}, Underdog only offers ${side === 'OVER' ? 'Lower' : 'Higher'} on this line`].filter(Boolean).join(' · ');
+      const bookName = lineSource === 'sl' ? 'Sleeper' : 'Underdog';
+      pick.statLine = [pick.statLine, `model leans ${side === 'OVER' ? 'Higher' : 'Lower'}, ${bookName} only offers ${side === 'OVER' ? 'Lower' : 'Higher'} on this line`].filter(Boolean).join(' · ');
       closedSides++;
       return pick;
     }
@@ -1843,12 +1876,30 @@ async function generateEsportsPicks() {
       if (udP.flag) priceMismatches++;
     }
 
-    const books = [['PP', pick.ppEv], ['UD', pick.udEv]].filter(b => b[1] != null);
+    if (slm) {
+      const slMult = side === 'OVER' ? slm.overMultiplier : slm.underMultiplier;
+      if (slMult) {
+        let slProb = r.prob;
+        if (slm.line !== lineVal) {
+          const r3 = calcEsportsEV(slm.line, modelPred, side, base.sport, base.market, ctxOpts);
+          const s3 = skewAt(slm.line);
+          if (r3) slProb = escal.adjustPct(r3.prob, calShift + (side === 'OVER' ? s3 : -s3) / 100);
+        }
+        const slP = sleeperPricing(slProb, slMult, side === 'OVER' ? slm.underMultiplier : slm.overMultiplier);
+        pick.sleeperEv = slP.ev != null ? parseFloat(slP.ev.toFixed(2)) : null;
+        pick.sleeperMultiplier = slMult;
+        pick.sleeperImplied = parseFloat(slP.implied.toFixed(1));
+        pick.sleeperFlag = slP.flag;
+        if (slP.flag) priceMismatches++;
+      }
+    }
+
+    const books = [['PP', pick.ppEv], ['UD', pick.udEv], ['SL', pick.sleeperEv]].filter(b => b[1] != null);
     if (books.length) {
       const best = books.reduce((a, b) => (b[1] > a[1] ? b : a));
       pick.bestBook = best[0];
       pick.bestEv = best[1];
-      pick.ev = pick.ppEv != null ? pick.ppEv : pick.udEv;
+      pick.ev = pick.ppEv ?? pick.udEv ?? pick.sleeperEv;
       // book-vs-book EV gap — under its own name so it can't clobber pick.edge,
       // which is our projection's distance from the line
       pick.bookEdge = parseFloat((best[1] - (pick.ppEv ?? best[1])).toFixed(2));
@@ -1861,18 +1912,30 @@ async function generateEsportsPicks() {
   // PP lines first (when PP is alive) — cross-matched to UD
   for (const line of ppEsports) {
     if (!line.player || line.line == null) continue;
-    const udm = udMap[`${normalizeName(line.player)}|${normalizeMarket(line.market)}`] || null;
+    const key = `${normalizeName(line.player)}|${normalizeMarket(line.market)}`;
+    const udm = udMap[key] || null, slm = slMap[key] || null;
     if (udm) udm.matched = true;
+    if (slm) slm.matched = true;
     const g = await getModelPred(line);
-    picks.push(assemble(line, g.modelPred, g.predSource, g.manualKey, udm, 'pp', g));
+    picks.push(assemble(line, g.modelPred, g.predSource, g.manualKey, udm, 'pp', g, slm));
   }
 
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
     const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId };
+    const slm = slMap[`${normalizeName(udm.player)}|${normalizeMarket(udm.market)}`] || null;
+    if (slm) slm.matched = true;
     const g = await getModelPred(base);
-    picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g));
+    picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g, slm));
+  }
+
+  // Sleeper lines neither PP nor UD carries
+  for (const slm of Object.values(slMap)) {
+    if (slm.matched) continue;
+    const base = { sport: slm.sport, player: slm.player, team: slm.team, market: slm.market, line: slm.line, startTime: slm.startTime, matchTitle: slm.matchTitle, gameId: slm.gameId };
+    const g = await getModelPred(base);
+    picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, null, 'sl', g, slm));
   }
 
   if (implausibleLines.length) {
@@ -1891,7 +1954,7 @@ async function generateEsportsPicks() {
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
   alerter.onBoard(picks).catch(e => console.warn('Alerts: failed:', e.message));
-  console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
+  console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
 
@@ -3275,7 +3338,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.73.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.74.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4237,10 +4300,11 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.73.0',
+  version: '3.74.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
+  sleeper: { count: cache.sleeper.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -4249,6 +4313,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
     updated: esportsCache.lastUpdated,
     ppEsportsLines: (cache.prizepicks.data||[]).filter(l => isEsports(l.sport)).length,
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
+    sleeperEsportsLines: (cache.sleeper.data||[]).length,
+    ppEsportsLeagues: ppState.esportsLeagues,
   },
   lolData: { players: Object.keys(lolStats.players).length, teams: Object.keys(lolStats.teams).length, games: lolStats.games, updated: lolStats.updated, state: lolStats.state, error: lolStats.lastError, source: lolStats.source },
   implausibleLines: esportsCache.implausible || [],
@@ -4315,7 +4381,7 @@ schedule('*/5 * * * *', async () => {
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
-schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog()]); });
+schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]); });
 
 // Owls — fully skipped once the breaker trips
 schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
@@ -4376,13 +4442,13 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.73.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.74.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.73.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.74.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
-    await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
+    await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
     // One Owls call as a key check — if the key is dead, the breaker arms
     // quickly on the first cron cycle and everything goes quiet.
     fetchOwlsProps('mlb');

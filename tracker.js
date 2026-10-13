@@ -139,6 +139,7 @@ function sportKey(sport) {
 //   UD:  from its implied % (already accounts for boost vs decimal regime)
 function legDecimal(book, pick) {
   if (book === 'UD' && pick.udImplied) return 100 / pick.udImplied;
+  if (book === 'SL' && pick.sleeperMultiplier) return pick.sleeperMultiplier;
   return 1 / PP_IMPLIED;
 }
 
@@ -226,7 +227,7 @@ function createTracker({
         // Settled on the book's own label ("Maps 1+2"), never a span we inferred
         const span = parseMapSpan(p.market);
         const book = p.bestBook || (p.lineSource === 'ud' ? 'UD' : 'PP');
-        const signalLine = book === 'UD' && p.udLine != null ? p.udLine : line;
+        const signalLine = book === 'UD' && p.udLine != null ? p.udLine : book === 'SL' && p.sleeperLine != null ? p.sleeperLine : line;
         const fresh = {
           id: pickId(p), status: 'open', gameId: p.gameId ?? null,
           sport: sportKey(p.sport), player: p.player, team: p.team || '', matchTitle: p.matchTitle || '',
@@ -249,7 +250,7 @@ function createTracker({
         existing.push(fresh);
         created++;
       } else if (row.status === 'open') {
-        const closeLine = row.signalBook === 'UD' && p.udLine != null ? p.udLine : line;
+        const closeLine = row.signalBook === 'UD' && p.udLine != null ? p.udLine : row.signalBook === 'SL' && p.sleeperLine != null ? p.sleeperLine : line;
         if (closeLine == null) continue;
         Object.assign(row, {
           startTime: new Date(startMs).toISOString(),   // follow reschedules
