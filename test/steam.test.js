@@ -98,3 +98,47 @@ test('the same outcome on both Kalshi team markets is one bet, the cheaper one',
   const out = V.dedupeEdges([e('A|yes', 0.045), e('B|no', 0.02), { ...e('C|yes', 0.03), fair: 0.575 }]);
   assert.deepEqual(out.map(x => x.id), ['A|yes', 'C|yes']);
 });
+
+test('the history keeps only possible lows and rides a backup through a restart', () => {
+  const w = createSteamWatch();
+  // 50 → 49 → 51 → 50.5: 50 can never be a low again once 49 came after it
+  [[0.5, 0], [0.49, 2], [0.51, 4], [0.505, 6]].forEach(([f, m]) => w.observe(q(f, 0.5), T0 + m * MIN));
+  assert.equal(w.points(), 2, '49 and 50.5 are left');
+  const s = w.steamOf('k|1|yes', 0.53, 0.5, T0 + 8 * MIN);
+  assert.equal(s.from, 0.49, 'the same low as the full history');
+  const docs = JSON.parse(JSON.stringify(w.dump()));
+  // a new container: the move arrives right after the boot
+  const fresh = createSteamWatch();
+  assert.equal(fresh.steamOf('k|1|yes', 0.53, 0.5, T0 + 9 * MIN), null, 'blind without the backup');
+  assert.equal(fresh.load(docs, T0 + 9 * MIN), 1);
+  assert.equal(fresh.steamOf('k|1|yes', 0.53, 0.5, T0 + 9 * MIN).from, 0.49);
+  // points out of the window don't come back, and a merge keeps the order
+  assert.equal(createSteamWatch().load(docs, T0 + 40 * MIN), 0);
+  const mixed = createSteamWatch();
+  mixed.observe(q(0.495, 0.5), T0 + 9 * MIN);
+  mixed.load(docs, T0 + 9 * MIN);
+  assert.equal(mixed.steamOf('k|1|yes', 0.53, 0.5, T0 + 10 * MIN).from, 0.49);
+  assert.equal(mixed.restored(), 1);
+});
+
+test('the steam history is a non-append store in the results backup', async () => {
+  const { createBackup } = require('../backup');
+  const crypto = require('crypto');
+  const key = crypto.randomBytes(32);
+  const w = createSteamWatch();
+  w.observe(q(0.48, 0.495), T0);
+  const mk = (watch, fetchJson) => {
+    const b = createBackup({ key, sources: ['x'], fetchJson, log: {}, now: () => T0 + MIN });
+    const st = b.wrap('steamHistory', { init: async () => {}, all: async () => watch.dump(), put: async d => watch.load([d], T0 + MIN), putMany: async ds => watch.load(ds, T0 + MIN) }, { appendOnly: false });
+    return { b, st };
+  };
+  const old = mk(w, async () => null);
+  await old.st.init();
+  const snap = await old.b.exportSnapshot();
+  assert.equal(snap.other.steamHistory, 1);
+  assert.equal(snap.counts.steamHistory, undefined, 'not count-checked: it shrinks as moves age out');
+  const w2 = createSteamWatch();
+  const neu = mk(w2, async () => snap);
+  await neu.st.init();
+  assert.ok(w2.steamOf('k|1|yes', 0.53, 0.495, T0 + 2 * MIN));
+});
