@@ -525,6 +525,23 @@ body::before {
 .es-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
 .es-unavail { font-size: 11px; color: #64748b; margin: -4px 0 12px; }
 .es-go { display: inline-block; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--bk); color: #f1f5f9; font-size: 11px; font-weight: 700; text-decoration: none; }
+.es-autoslips { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px; margin-bottom:14px; }
+.es-as { border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:12px 14px; background:rgba(15,23,42,.6); }
+.es-as.plus { border-color:rgba(16,185,129,.45); }
+.es-as.near { border-style:dashed; }
+.es-as-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.es-as-book { font-weight:800; font-size:13px; letter-spacing:.04em; }
+.es-as-badge { font-size:10px; font-weight:800; letter-spacing:.06em; padding:2px 7px; border-radius:4px; }
+.es-as-badge.plus { color:#34d399; background:rgba(16,185,129,.15); }
+.es-as-badge.near { color:#fbbf24; background:rgba(245,158,11,.12); }
+.es-as-ev { margin-left:auto; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:15px; }
+.es-as-leg { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#cbd5e1; padding:3px 0; border-top:1px solid rgba(255,255,255,.04); }
+.es-as-leg b { color:#f1f5f9; }
+.es-as-leg span:last-child { color:#64748b; white-space:nowrap; }
+.es-as-foot { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; }
+.es-as-foot b { color:#f1f5f9; }
+.es-as-foot .slip-btn { margin-left:auto; }
+.es-as-note { font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.5; }
 .es-plays .show-sm { display: none; }
 @media (max-width: 640px) { .es-plays .hide-sm { display: none; } .es-plays .show-sm { display: block; } .es-plays td { padding: 8px 5px; } .es-plays .pl { font-size: 13px; } .es-field select { min-width: 0; } .es-field { flex: 1 1 40%; } .es-pill { min-width: 0; padding: 3px 6px; font-size: 12px; } }
 .esm-h2h { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; font-size: 12px; }
@@ -3990,6 +4007,7 @@ async function loadEsports() {
     esportsState.picks = data.picks || [];
     esportsState.picks.forEach((p, i) => p.__i = i);
     esportsState.lockedCount = data.pro === false ? (data.locked || 0) : 0;
+    loadEsAutoSlips();
     console.log('[Esports]', data.count || 0, 'picks loaded');
     if (data.picks?.[0]) console.log('[Esports] sample:', data.picks[0]);
 
@@ -4288,7 +4306,7 @@ function renderEsports() {
       <div style="font-size:13px;color:#fcd34d"><b>${esportsState.lockedCount} +EV picks are locked.</b> <span style="color:#cbd5e1">Pro shows the side, the edge, and live alerts.</span></div>
       <button class="acct-btn pro" onclick="acctNeedPro('Seeing the picks')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>` : '';
   el.innerHTML = lockBanner + esStatsStrip(shown) + (esportsState.view === 'entry' ? esEntryHTML(shown)
-    : esportsState.view === 'plays' ? esPlaysHTML(picks)
+    : esportsState.view === 'plays' ? esAutoSlipsHTML() + esPlaysHTML(picks)
     : B ? esSingleBookHTML(shown, esportsState.book)
     : esBoardHTML(shown));
 }
@@ -5817,6 +5835,77 @@ function esExchangePlays() {
   for (const k of Object.keys(out)) out[k].sort((a, b) => esportsState.sort === 'start' ? (Date.parse(a.m.start) || 0) - (Date.parse(b.m.start) || 0) : b.e.ev - a.e.ev);
   return out;
 }
+// ── BEST SLIPS: the best entry on each book, built on the backend ──────────
+// /api/esports/auto-slips prices every leg at that book's own line and payout
+// and prices legs from one series together. A book with no +EV slip shows its
+// closest one, marked near break-even.
+const esAsState = { data: null, locked: false, loading: false };
+const ES_AS_KEY = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
+async function loadEsAutoSlips() {
+  if (esAsState.loading) return;
+  esAsState.loading = true;
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/esports/auto-slips`);
+    esAsState.locked = r.status === 401 || r.status === 402;
+    esAsState.data = r.ok ? await r.json() : null;
+  } catch { esAsState.data = null; }
+  esAsState.loading = false;
+  if (esportsState.view === 'plays') renderEsports();
+}
+const esAsSide = (l, book) => book === 'PP' ? (l.side === 'OVER' ? 'More' : 'Less') : (l.side === 'OVER' ? 'Higher' : 'Lower');
+function esAutoSlipsHTML() {
+  if (esAsState.locked) return `<div class="es-as-note" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book is a Pro feature</div>`;
+  const d = esAsState.data;
+  if (!d) return '';
+  if (!d.slips?.length) {
+    const legs = Object.values(d.pool || {}).reduce((a, b) => a + (b.plus || 0), 0);
+    return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">BEST SLIPS</b> · no entry on PrizePicks, Underdog or Sleeper is within ${d.nearPct}% of break-even right now (${legs} +EV leg${legs === 1 ? '' : 's'} on the board).</div>`;
+  }
+  const cards = d.slips.map((s, i) => {
+    const B = ES_BOOKS[ES_AS_KEY[s.book]];
+    const legs = s.picks.map(l => `<div class="es-as-leg"><span><b>${escEs(l.player)}</b> ${esAsSide(l, s.book)} ${l.line} ${escEs(l.market)}${l.mult && Math.abs(l.mult - 1) > 1e-6 ? ` <span style="color:#a78bfa">${l.mult}x</span>` : ''}</span><span>${l.prob}% · ${escEs(l.sport)}</span></div>`).join('');
+    const flex = /flex/.test(s.table);
+    return `<div class="es-as ${s.status}">
+      <div class="es-as-head">
+        <span class="es-as-book" style="color:${B?.color || '#e2e8f0'}">${escEs(s.bookName)} ${s.legs}-pick ${escEs(s.tableName)}</span>
+        <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span>
+        <span class="es-as-ev" style="color:${esEvColor(s.ev)}">${s.ev > 0 ? '+' : ''}${s.ev.toFixed(1)}%</span>
+      </div>
+      ${legs}
+      <div class="es-as-foot">
+        <span>HIT ALL <b>${(s.probAll * 100).toFixed(1)}%</b></span>
+        ${s.paysAll ? `<span>PAYS <b>${s.paysAll}x</b>${flex ? ' (pays on a miss too)' : ''}</span>` : ''}
+        ${s.status === 'plus' && s.kelly > 0 ? `<span>¼ KELLY <b>${(s.kelly * 25).toFixed(1)}%</b></span>` : ''}
+        <button class="slip-btn" onclick="esLoadAutoSlip(${i})">LOAD</button>
+      </div>
+      ${s.status === 'near' ? `<div class="es-as-note">Closest entry on ${escEs(s.bookName)}, ${Math.abs(s.ev).toFixed(1)}% short of break-even. Not a bet; it shows what's nearly there.</div>` : ''}
+      ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;align-items:baseline;gap:8px;margin:2px 0 8px"><span style="font-family:'Inter',sans-serif;font-size:14px;letter-spacing:2px;color:#e2e8f0;font-weight:800">BEST SLIPS</span><span style="font-size:11px;color:#64748b">best entry on each book, every game on the board</span></div><div class="es-autoslips">${cards}</div>`;
+}
+function esLoadAutoSlip(i) {
+  const s = esAsState.data?.slips?.[i];
+  if (!s) return;
+  const key = ES_AS_KEY[s.book];
+  const legs = [];
+  for (const l of s.picks) {
+    const p = (esportsState.picks || []).find(x => x.player === l.player && x.market === l.rawMarket);
+    if (!p) continue;
+    legs.push({
+      key: `${p.player}|${p.market}`, player: p.player, market: p.market, side: p.side,
+      line: p.ppLine, model: p.modelPred, sport: p.sport, prob: esLegProb(p),
+      evs: { prizepicks: p.ppEv ?? null, underdog: p.udEv ?? null, betr: p.betrEv ?? null, parlayplay: p.parlayEv ?? null, sleeper: p.sleeperEv ?? null },
+      mults: { underdog: parseFloat(p.udMultiplier) || null, sleeper: parseFloat(p.sleeperMultiplier) || null },
+    });
+  }
+  if (legs.length !== s.picks.length) { showToast('The board changed since this slip was built. Refresh and try again', 'danger'); return; }
+  esportsState.slip = legs;
+  esportsState.slipBook = key;
+  esSaveSlip(); renderSlipBar(); renderEsports();
+  document.getElementById('esSlipBar')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
 function esPlaysHTML(picks) {
   const min = esportsState.minEV || 0;
   let html = '', total = 0;

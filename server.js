@@ -1945,18 +1945,29 @@ async function generateEsportsPicks() {
       shift: (calShift || 0) + sideSkew / 100,
     };
 
-    if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
+    // each book's own line, probability and payout, for slips built on that book (slipbuild.js)
+    const bookLegs = {};
+    if (lineSource === 'pp') {
+      pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
+      bookLegs.PP = { line: lineVal, shift: pick.pricing.shift, prob: r.prob / 100 };
+    }
+    pick.pricing.books = bookLegs;
 
     if (udm) {
       const udSideMult = side === 'OVER' ? (udm.overMultiplier || 1.00) : (udm.underMultiplier || 1.00);
+      let udShift = pick.pricing.shift;
       // UD's line can differ from PP's — price UD against ITS OWN line
       let udProb = r.prob;
       if (udm.line != null && udm.line !== lineVal) {
         const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market, ctxOpts);
         const s2 = skewAt(udm.line);
         if (r2) udProb = escal.adjustPct(r2.prob, calShift + (side === 'OVER' ? s2 : -s2) / 100);
+        udShift = calShift + (side === 'OVER' ? s2 : -s2) / 100;
       }
       const udP = udPricing(udProb, udSideMult);
+      if (udP.ev != null && (side === 'OVER' ? udm.overOpen !== false : udm.underOpen !== false)) {
+        bookLegs.UD = { line: udm.line ?? lineVal, shift: udShift, prob: udProb / 100, mult: udSideMult, decimal: udP.regime === 'decimal' };
+      }
       pick.udEv = udP.ev != null ? parseFloat(udP.ev.toFixed(2)) : null;
       pick.udMultiplier = udSideMult;
       pick.udRegime = udP.regime;
@@ -1968,13 +1979,15 @@ async function generateEsportsPicks() {
     if (slm) {
       const slMult = side === 'OVER' ? slm.overMultiplier : slm.underMultiplier;
       if (slMult) {
-        let slProb = r.prob;
+        let slProb = r.prob, slShift = pick.pricing.shift;
         if (slm.line !== lineVal) {
           const r3 = calcEsportsEV(slm.line, modelPred, side, base.sport, base.market, ctxOpts);
           const s3 = skewAt(slm.line);
           if (r3) slProb = escal.adjustPct(r3.prob, calShift + (side === 'OVER' ? s3 : -s3) / 100);
+          slShift = calShift + (side === 'OVER' ? s3 : -s3) / 100;
         }
         const slP = sleeperPricing(slProb, slMult, side === 'OVER' ? slm.underMultiplier : slm.overMultiplier);
+        if (slP.ev != null) bookLegs.SL = { line: slm.line, shift: slShift, prob: slProb / 100, mult: slMult };
         pick.sleeperEv = slP.ev != null ? parseFloat(slP.ev.toFixed(2)) : null;
         pick.sleeperMultiplier = slMult;
         pick.sleeperImplied = parseFloat(slP.implied.toFixed(1));
@@ -3491,7 +3504,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.83.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.84.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4369,6 +4382,22 @@ app.get('/api/esports/best-slips', requirePro, (req, res) => {
   res.json({ slips, pool: pool.length });
 });
 
+// The best entry each pick'em book takes right now (slipbuild.js): every leg at
+// that book's own line and payout, same-series legs priced together. When no
+// slip clears break-even the closest one is listed, marked 'near'.
+const { autoSlips } = require('./slipbuild');
+let autoSlipMemo = { at: null, data: null };
+app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
+  if (!(esportsCache.picks || []).length) await esPicksOnce().catch(() => {});
+  const at = esportsCache.lastUpdated || null;
+  // the board rebuilds every few minutes; the search only reruns when it does,
+  // or when a match has started since (its legs drop out)
+  if (!autoSlipMemo.data || autoSlipMemo.at !== at || Date.now() - autoSlipMemo.built > 120000) {
+    autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || []) };
+  }
+  res.json({ ...autoSlipMemo.data, updated: at });
+});
+
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
 // Enter a match price (e.g. from Pinnacle) so CS2/Valorant picks get context.
 // body: { sport, teamA, teamB, priceA, priceB, bestOf? }  American or decimal prices
@@ -4498,7 +4527,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.83.0',
+  version: '3.84.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4641,10 +4670,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.83.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.84.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.83.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.84.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
