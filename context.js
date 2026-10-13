@@ -181,7 +181,23 @@ function opponentFrom(team, title, explicitOpponent) {
   if (!sides || !team) return null;
   if (teamsMatch(team, sides[0])) return sides[1];
   if (teamsMatch(team, sides[1])) return sides[0];
+  // Books and stat sites name teams differently ("Xi'an Team WE" in a "FlyQuest
+  // vs. Team WE" match, "HANJIN BRION" in "LGD vs. OKSavingsBank BRION"). Fall
+  // back to shared words, and only when exactly one side shares any.
+  const a = sharedWords(team, sides[0]), b = sharedWords(team, sides[1]);
+  if (a > 0 && b === 0) return sides[1];
+  if (b > 0 && a === 0) return sides[0];
   return null;
+}
+
+const NAME_FILLER = new Set(['team', 'esports', 'esport', 'gaming', 'club', 'the', 'fc']);
+const nameWords = n => String(n || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => (w.length >= 2 || /\d/.test(w)) && !NAME_FILLER.has(w));
+const SECOND_WORD_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)$/;
+function sharedWords(x, y) {
+  const wx = nameWords(x), wy = nameWords(y), sx = new Set(wx), sy = new Set(wy);
+  // a second roster is another team ("MOUZ" is not "MOUZ NXT")
+  if (wx.some(w => SECOND_WORD_RE.test(w) && !sy.has(w)) || wy.some(w => SECOND_WORD_RE.test(w) && !sx.has(w))) return 0;
+  return wy.filter(w => sx.has(w)).length;
 }
 
 // ── Elo ratings from results ──

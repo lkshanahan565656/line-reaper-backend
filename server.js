@@ -716,6 +716,13 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
   };
 }
 
+// Points the curve's shape alone takes off the over when the projection sits
+// exactly on the line (0 for symmetric curves, up to ~12 on support kill lines).
+function lineSkew(line, sport, propText, opts = {}) {
+  const z = calcEsportsEV(line, line, 'OVER', sport, propText, opts);
+  return z ? 50 - z.prob : 0;
+}
+
 function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
   if (!ppLine || !modelPred) return null;
   const side = modelPred < ppLine ? 'UNDER' : modelPred > ppLine ? 'OVER' : null;
@@ -1684,8 +1691,14 @@ async function generateEsportsPicks() {
         const label = spanInferred ? `1-${spanInferred}` : parseMapSpan(lineObj.market).label;
         const maps = spanToMapList(label, spanMaps);
         const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
-          || (lineObj.matchTitle && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
-        context = matchContext({ sport: sportU, team: lineObj.team, opponent, maps, usual: usualWin }, { oddsBook, elo: ratingsState.elo });
+          || (lineObj.matchTitle && !splitMatchTitle(lineObj.matchTitle) && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
+        // the title's own name for the player's side, when it differs from the
+        // roster name ("Team WE" vs "Xi'an Team WE"): the match prices use it
+        const sides = splitMatchTitle(lineObj.matchTitle);
+        const titleTeam = sides && opponent ? (sides[0] === opponent ? sides[1] : sides[1] === opponent ? sides[0] : null) : null;
+        const ctxArgs = { sport: sportU, opponent, maps, usual: usualWin }, ctxDeps = { oddsBook, elo: ratingsState.elo };
+        context = (titleTeam && titleTeam !== lineObj.team && matchContext({ ...ctxArgs, team: titleTeam }, ctxDeps))
+          || matchContext({ ...ctxArgs, team: lineObj.team }, ctxDeps);
         // No price and no rating, but the span runs past the maps a Bo3 always
         // plays ("Maps 1+2+3"): a deciding map happens about half the time, not
         // always, so price it as an even matchup rather than a sure 3 maps.
@@ -1754,12 +1767,18 @@ async function generateEsportsPicks() {
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for input
 
     const ctxOpts = { context: g.context || null };
-    let side = modelPred < lineVal ? 'UNDER' : modelPred > lineVal ? 'OVER' : null;
-    if (g.context?.scenarios?.length > 1) {
-      // a 2-or-3-map mixture isn't symmetric: pick the side with the better probability
-      const over = calcEsportsEV(lineVal, modelPred, 'OVER', base.sport, base.market, ctxOpts);
-      if (over) side = over.prob >= 50 ? 'OVER' : 'UNDER';
-    }
+    // The book hangs its line where it sees 50/50, the median. Kill counts are
+    // right-skewed, so a projection sitting right on the line still prices the
+    // under at 55 to 62%: a lean that comes from the curve's shape, not from
+    // anything we know. The skew is measured at the line and taken back out.
+    // Auto projections only: they're anchored toward the line, which treats the
+    // line as the book's mean. A hand-entered number is the user's own mean.
+    const skewAt = ln => predSource === 'auto' ? lineSkew(ln, base.sport, base.market, ctxOpts) : 0;
+    const skew = skewAt(lineVal);
+    const over = calcEsportsEV(lineVal, modelPred, 'OVER', base.sport, base.market, ctxOpts);
+    if (!over) return pick;
+    const overFair = over.prob + skew;
+    const side = overFair > 50.05 ? 'OVER' : overFair < 49.95 ? 'UNDER' : null;
     if (!side) return pick;
     // Only a side the book actually takes is a pick. UD-only lines with the
     // model's side closed stay listed with the projection but no side, so they
@@ -1772,6 +1791,9 @@ async function generateEsportsPicks() {
     }
     const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market, ctxOpts);
     if (!r) return pick;
+    const sideSkew = side === 'OVER' ? skew : -skew;
+    r.prob = escal.adjustPct(r.prob, sideSkew / 100);
+    pick.skewPts = parseFloat(sideSkew.toFixed(2));
 
     // calibrate on the record: same shift on every line this pick is priced at
     const calShift = calib ? calib.shift(trackerSportKey(base.sport), trackerStatKind(base.market), side) : 0;
@@ -1798,7 +1820,7 @@ async function generateEsportsPicks() {
     pick.pricing = {
       line: lineVal, side, meanPerMap: r.meanPerMap, k: r.varianceK, stat: r.stat,
       scenarios: r.scenarios.map(x => ({ maps: x.maps, weight: +x.weight.toFixed(4) })),
-      shift: calShift || 0,
+      shift: (calShift || 0) + sideSkew / 100,
     };
 
     if (lineSource === 'pp') pick.ppEv = parseFloat(calcBookEV(r.prob, 'prizepicks').toFixed(2));
@@ -1809,7 +1831,8 @@ async function generateEsportsPicks() {
       let udProb = r.prob;
       if (udm.line != null && udm.line !== lineVal) {
         const r2 = calcEsportsEV(udm.line, modelPred, side, base.sport, base.market, ctxOpts);
-        if (r2) udProb = escal.adjustPct(r2.prob, calShift);
+        const s2 = skewAt(udm.line);
+        if (r2) udProb = escal.adjustPct(r2.prob, calShift + (side === 'OVER' ? s2 : -s2) / 100);
       }
       const udP = udPricing(udProb, udSideMult);
       pick.udEv = udP.ev != null ? parseFloat(udP.ev.toFixed(2)) : null;
@@ -3205,7 +3228,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.65.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.66.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4142,7 +4165,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.65.0',
+  version: '3.66.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4281,10 +4304,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.65.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.66.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.65.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.66.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -4322,7 +4345,7 @@ if (require.main === module) {
 module.exports = {
   app, cache, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
-  calcBookEV, calcEsportsEV, predictEsportsSide, generateEsportsPicks, legsFromBoard,
+  calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
   aggregateLPRows, refreshLoLFromLeaguepedia,
