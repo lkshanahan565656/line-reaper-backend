@@ -85,7 +85,8 @@
 //   f     Polymarket's taker fee: rate × (c(1 − c))^exponent a share from the
 //         market's feeSchedule (sports 0.05, most others none)
 //   units sizeAt(q, c, f) at OUR price, not theirs
-//   c more than 3¢ above p, or Kelly ≤ 0 → 0u: the price ran, don't chase.
+//   c more than 3¢ above p → 0u: the price ran, don't chase. Kelly ≤ 0 at
+//   c → 0u: no edge at c after the fee (worth maxPrice or less).
 //   Bought after the game started (Gamma gameStartTime), or at 95¢+ → 0u at
 //   every venue (`blocked`): live prices move faster than an alert, and a
 //   95¢ favourite has 5¢ to win and 95 to lose. TAIL_SIZE_IN_PLAY=1 and
@@ -1288,6 +1289,7 @@ function limitPlan({ q, ask, bid = null, makerFee = () => 0, grade, consensus = 
   return null;
 }
 
+const noEdgeText = (c, max) => `no edge at ${Math.round(c * 100)}¢ after the fee${max != null && max < c ? `: worth ${Math.round(max * 100)}¢ or less` : ''}`;
 const thinText = (days, o) => (days > 7
   ? `edge under ${round(evBar(days, o) * 100, 1)}%: too thin for money tied up ${Math.round(days)} days`
   : `edge under ${round(o.minEv * 100, 1)}%: inside the spread`);
@@ -1370,7 +1372,10 @@ function tradeSignal({ trade, trader, market = null, book = null, consensus = []
       : `graded sharps split: ${opposed.length} on the other side of this market`;
   } else if (blocked || (c ?? 0) >= o.maxEntryPrice - EPS) reason = `at ${Math.round(o.maxEntryPrice * 100)}¢+ there's little to win and everything to lose`;
   else if (c == null) reason = 'no live price: check it before following';
-  else if (c - p > o.chaseMax + EPS || !(kelly > EPS)) reason = "price ran, don't chase";
+  else if (c - p > o.chaseMax + EPS) reason = "price ran, don't chase";
+  // the price is where they bought, but their edge doesn't cover the spread
+  // and the fee: say so, and what it is worth (the most to pay)
+  else if (!(kelly > EPS)) reason = noEdgeText(c, sized.maxPrice);
   else if (sized.thin) reason = thinText(days, o);
   else {
     units = target = sized.units;

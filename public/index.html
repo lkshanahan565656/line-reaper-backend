@@ -586,6 +586,20 @@ body.lr-slip-open #page-esports { padding-bottom: 340px; }
 .tail-card.sized { border-left:3px solid #10b981; }
 .tail-card.exit { border-left:3px solid #f87171; }
 .tail-card.muted { opacity:.72; }
+.tail-none { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:12px; color:#94a3b8; line-height:1.6; }
+.tail-none b { color:#e2e8f0; }
+.tail-fold { margin-top:10px; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.tail-fold > summary { cursor:pointer; padding:10px 14px; font-size:10px; letter-spacing:1.5px; font-weight:800; color:#94a3b8; list-style:none; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; }
+.tail-fold > summary::-webkit-details-marker { display:none; }
+.tail-fold > summary::before { content:'▸'; color:#64748b; }
+.tail-fold[open] > summary::before { content:'▾'; }
+.tail-fold > summary span { font-weight:500; letter-spacing:0; font-size:11px; color:#64748b; }
+.tail-pass { padding:8px 14px; border-top:1px solid rgba(255,255,255,.05); display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; }
+.tail-pass-main { font-size:12px; color:#e2e8f0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tail-pass-mkt { color:#94a3b8; }
+.tail-pass-meta { grid-column:1; font-size:10px; color:#64748b; font-family:'JetBrains Mono',monospace; }
+.tail-pass-why { grid-column:2; grid-row:1 / span 2; font-size:11px; color:#fbbf24; text-align:right; max-width:260px; }
+@media (max-width:600px) { .tail-pass { grid-template-columns:1fr; } .tail-pass-why { grid-column:1; grid-row:auto; text-align:left; max-width:none; } .tail-pass-main { white-space:normal; } }
 .tail-units { min-width:86px; text-align:center; }
 .tail-units b { display:block; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:800; color:#10b981; }
 .tail-stat { text-align:center; min-width:64px; }
@@ -3469,6 +3483,29 @@ async function pollSharpOdds() {
 // so their old number is the bet. Steam: 3+ books moved together in minutes.
 // RLM: the line moved against the side most of the public is on.
 let sharpSigTimer = null;
+// With no sportsbook odds feed the book-vs-book view has nothing to compare,
+// so SHARP FEED shows the exchanges' sharp money instead: steam (Polymarket
+// jumped, Kalshi or Polymarket US still sells the old price) and today's
+// line movers, the same rows as ARBS.
+let sharpNoBooks = false;
+async function sharpExchangeHTML(card) {
+  let vd = null;
+  try { const r = await fetch(`${BACKEND_URL}/api/exchange-value`); if (r.ok) vd = await r.json(); } catch {}
+  const intro = `<div class="tail-none" style="margin-bottom:10px"><b>No sportsbook odds feed is connected,</b> so this shows the sharp money on the exchanges. Polymarket has the deepest book and moves first on news and big bets; Kalshi and Polymarket US often lag behind it.</div>`;
+  if (!vd) return intro;
+  if (!vd.pro) return intro + (vd.count ? tailLockBanner(`<b>${vd.count} exchange price${vd.count === 1 ? '' : 's'} behind Polymarket right now${vd.steamCount ? `, ${vd.steamCount} of them steam` : ''}.</b>`, 'Exchange steam') : '');
+  const steam = (vd.edges || []).filter(e => e.steam && !e.locked);
+  const movers = vd.movers || [];
+  const sr = vd.record?.bySource?.steam;
+  return intro
+    + card(`EXCHANGE STEAM${steam.length ? ` (${steam.length})` : ''} · POLYMARKET MOVED, THE US PRICE HASN'T`, '#fbbf24',
+      (steam.length ? `<div class="xa-near" style="padding:0 14px">${steam.slice(0, 10).map(xarbSteamRow).join('')}</div>`
+        : `<div style="padding:10px 14px;font-size:12px;color:#94a3b8">Nothing steaming right now. When Polymarket's book jumps 3¢+ inside 20 minutes and Kalshi or Polymarket US still sells the old price, it shows here; they close within minutes.</div>`)
+      + (sr?.n ? `<div style="padding:0 14px 10px;font-size:11px;color:#64748b">Tracked: ${sr.n} graded, average closing-line value ${sr.avgClv > 0 ? '+' : ''}${sr.avgClv}%.</div>` : ''))
+    + card(`LINE MOVERS TODAY${movers.length ? ` (${movers.length})` : ''} · WHERE POLYMARKET'S MONEY WENT`, '#38bdf8',
+      movers.length ? `<div class="xa-near" style="padding:0 14px">${movers.slice(0, 10).map(xarbMoverRow).join('')}</div>${movers.length > 10 ? `<div style="padding:0 14px 10px;font-size:11px;color:#64748b">Top 10 of ${movers.length}. All of them are on ARBS.</div>` : ''}`
+        : `<div style="padding:10px 14px;font-size:12px;color:#94a3b8">No game line on both exchanges has moved 3¢ or more on Polymarket today.</div>`);
+}
 async function loadSharpSignals() {
   clearTimeout(sharpSigTimer);
   const el = document.getElementById('sharpSignals');
@@ -3493,8 +3530,12 @@ async function loadSharpSignals() {
       <button class="acct-btn pro" onclick="acctNeedPro('Sharp leads')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
   if (steam.length) html += card('STEAM', '#fbbf24', steam.map(e => line(e.text, `${escAttr((e.sport || '').toUpperCase())} · ${ago(e.ts)} ago`)).join(''));
   if (rlm.length) html += card('REVERSE LINE MOVES · MONEY VS TICKETS', '#a78bfa', rlm.slice(0, 15).map(e => line(e.text, `${e.betsPct ?? '—'}% bets · ${e.moneyPct ?? '—'}% money`)).join(''));
+  // no sportsbook feed: the sharp money that does move is on the exchanges
+  sharpNoBooks = !(d.state?.games > 0);
+  if (sharpNoBooks && !html) html = await sharpExchangeHTML(card);
   if (!html) html = `<div style="padding:12px 14px;font-size:12px;color:#64748b;background:var(--card);border:1px solid var(--border);border-radius:10px">No steam or sharp leads yet. The backend compares every book on each 30-second poll; signals show up here when books move together or a sharp book moves first.</div>`;
   el.innerHTML = html;
+  renderSharpFeed();
   if (document.getElementById('page-sharp')?.classList.contains('active')) sharpSigTimer = setTimeout(loadSharpSignals, 30000);
 }
 
@@ -3507,6 +3548,10 @@ function renderSharpFeed() {
     americanfootball_nfl:'NFL', mma_mixed_martial_arts:'MMA'
   };
 
+  if (!sharpMoves.length && sharpNoBooks) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-sub">Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.</div></div>`;
+    return;
+  }
   if (!sharpMoves.length) {
     el.innerHTML = `<div class="empty-wrap">
       <div class="empty-big" style="font-size:26px">MONITORING</div>
@@ -4820,7 +4865,7 @@ function tailRenderControls() {
   const lbl = t => `<span style="font-size:10px;color:#64748b;letter-spacing:1.5px">${t}</span>`;
   let html = '';
   if (tailState.view === 'signals') {
-    html = chip('sizedOnly', false, 'ALL SIGNALS', !tailState.sizedOnly) + chip('sizedOnly', true, 'SIZED ONLY', tailState.sizedOnly);
+    html = chip('sizedOnly', false, 'ALL SIGNALS', !tailState.sizedOnly) + chip('sizedOnly', true, 'BETS ONLY', tailState.sizedOnly);
   } else if (tailState.view === 'traders') {
     html = lbl('MARKET') + ['all', ...TAIL_CATS].map(c => chip('category', c, c.toUpperCase(), tailState.category === c)).join('')
       + '<span style="width:10px"></span>' + lbl('GRADE')
@@ -4947,23 +4992,55 @@ function renderTail() {
   el.innerHTML = v === 'signals' ? tailSignalsHTML() : v === 'board' ? tailBoardHTML() : v === 'traders' ? tailTradersHTML() : v === 'whales' ? tailWhalesHTML() : tailRecordHTML();
 }
 
+// What a follower does with a signal: bet it (a sized take or a limit bid),
+// get out (an exit of something we tailed), or nothing. The "nothing" ones
+// are most of the feed (no edge left after the spread and the fee, 95¢+,
+// in-play, hedges), so they fold into one compact list under the bets.
+const tailActionable = s => (s.type === 'exit' ? !!s.tailed : tailUnitsOf(s) > 0);
+function tailPassReason(s) {
+  if (s.type === 'exit') return 'we did not tail this one';
+  const v = s.venue;
+  if (tailHasVenue(s) && v && !s.blocked && !s.reason) return v.maxPrice != null && v.price + (v.fee || 0) > v.maxPrice ? `price above the max at ${v.name}` : `edge too small at ${v.name}`;
+  if (tailHasVenue(s) && !v && !s.reason) return tailUS() ? 'no US venue lists it' : 'no venue lists it';
+  return s.reason || 'not sized';
+}
+// the reason's head, for the tally: "no edge at 78¢ after the fee: worth 76¢" → "no edge after the fee"
+const tailReasonKind = r => /^no edge at/.test(r) ? 'no edge left after the fee' : /^edge under .*too thin/.test(r) ? 'edge too thin for the wait'
+  : /^edge under/.test(r) ? 'edge inside the spread' : /^at \d+¢\+/.test(r) ? 'at 95¢+' : /^in-play/.test(r) ? 'bought in-play'
+  : /hedge|split/.test(r) ? 'sharps on both sides' : /^already/.test(r) ? 'already tailed' : /venue|lists it/.test(r) ? (tailUS() ? 'no US venue' : 'no venue') : r;
+function tailPassRow(s) {
+  const exit = s.type === 'exit';
+  return `<div class="tail-pass">
+    <div class="tail-pass-main">${tailGrade(s.grade)} <b>${escAttr(s.outcome || '?')}</b> <span class="tail-pass-mkt">${escAttr(s.market || '')}</span></div>
+    <div class="tail-pass-meta">${exit ? 'SOLD' : 'BOUGHT'} at ${tailC(s.theirPrice)} · ${s.theirNotional != null ? tailUsd(s.theirNotional) : escAttr(s.sizeRange || '—')} · ${tailWho(s)} · ${tailAgo(s.at)} ago</div>
+    <div class="tail-pass-why">${escAttr(tailPassReason(s))}</div>
+  </div>`;
+}
 function tailSignalsHTML() {
   const all = tailState.signals;
-  const list = all.filter(s => !tailState.sizedOnly || tailUnitsOf(s) > 0 || s.type === 'exit');
+  const bets = all.filter(tailActionable), passed = all.filter(s => !tailActionable(s));
   const banner = !tailState.pro ? tailLockBanner(`<b>${tailState.locked ? `${tailState.locked} signal${tailState.locked === 1 ? '' : 's'} from the last ${tailState.delay} minutes ${tailState.locked === 1 ? 'is' : 'are'} locked.` : 'Live signals are a Pro feature.'}</b> <span style="color:#cbd5e1">Free shows signals ${tailState.delay || 30}+ minutes late with wallets hidden. Pro gets them the moment the sharp bets.</span>`, 'Live tail signals') : '';
+  const sizedNow = bets.filter(s => s.type !== 'exit').length;
   const strip = tailStrip([
-    `<span style="color:#f1f5f9;font-weight:700">${list.length} SIGNALS</span>`,
-    `<span>${all.filter(s => tailUnitsOf(s) > 0).length} SIZED</span>`,
+    `<span style="color:${sizedNow ? '#10b981' : '#f1f5f9'};font-weight:700">${sizedNow} TO BET</span>`,
+    `<span>${all.length} SHARP BETS WATCHED</span>`,
     tailState.updated ? `<span>POLLED ${tailAgo(tailState.updated)} AGO</span>` : '',
     `<button class="sport-chip" style="font-size:10px;padding:3px 10px" onclick="tailToggleNotify()" title="A desktop alert the moment a graded sharp bets, while this tab is open">${tailNotifyOn() ? 'ALERTS OFF' : 'ALERT ME'}</button>`,
   ]);
   const note = tailWithheld('signals');
-  if (!list.length && note) return note + strip;
-  if (!list.length && !tailState.pro && tailState.locked) return banner + strip + tailEmpty('NOTHING 30 MINUTES OLD YET', 'On the free plan each signal shows up here 30 minutes after it fires.');
-  if (!list.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
+  if (!all.length && note) return note + strip;
+  if (!all.length && !tailState.pro && tailState.locked) return banner + strip + tailEmpty('NOTHING 30 MINUTES OLD YET', 'On the free plan each signal shows up here 30 minutes after it fires.');
+  if (!all.length) return banner + strip + tailEmpty('NO SIGNALS YET', tailState.traders.length || tailState.pro
     ? 'A signal fires when a graded wallet makes a $500+ bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.'
     : 'Signals show up here when graded wallets bet. The backend watches Polymarket\'s live trade feed, with a check every 30 seconds as a backup.');
-  return note + banner + strip + bankBar(tailToday(all)) + `<div style="display:flex;flex-direction:column;gap:8px">` + list.slice(0, 200).map(s => {
+  const tally = Object.entries(passed.reduce((o, s) => { const k = tailReasonKind(tailPassReason(s)); o[k] = (o[k] || 0) + 1; return o; }, {}))
+    .sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${n} ${escAttr(k)}`).join(' · ');
+  const none = `<div class="tail-none"><b>Nothing to bet right now.</b> A signal is only sized when the price you can get still beats what the sharp's record says it's worth, after the fee. ${passed.length ? `Of the ${passed.length} sharp bet${passed.length === 1 ? '' : 's'} watched${tally ? `: ${tally}` : ''}.` : ''}</div>`;
+  const cards = bets.slice(0, 200).map(tailSignalCard).join('');
+  const fold = !tailState.sizedOnly && passed.length ? `<details class="tail-fold"${tailState.foldOpen ? ' open' : ''} ontoggle="tailState.foldOpen=this.open"><summary>WATCHED, NOT BET (${passed.length})<span>${tally}</span></summary>${passed.slice(0, 200).map(tailPassRow).join('')}</details>` : '';
+  return note + banner + strip + bankBar(tailToday(all)) + (bets.length ? `<div style="display:flex;flex-direction:column;gap:8px">${cards}</div>` : none) + fold;
+}
+function tailSignalCard(s) {
     const exit = s.type === 'exit', units = tailUnitsOf(s), sized = !exit && units > 0;
     const routed = tailHasVenue(s), bid = tailBid(s), v = bid || s.venue;
     const left = exit ? `<b style="color:${s.full === false ? '#fbbf24' : '#f87171'}">${s.full === false ? 'TRIM' : 'EXIT'}</b><div class="tail-stat"><div class="k">${s.soldShare != null ? `SOLD ${Math.round(s.soldShare * 100)}%` : 'THEY SOLD'}</div></div>`
@@ -4973,7 +5050,7 @@ function tailSignalsHTML() {
     // the lead line, then the other venues quoted (most units first)
     const lead = exit ? '' : `<div class="tail-venue ${routed && !v ? 'none' : ''}">${v?.url ? tailLink(v.url, escAttr(tailVenueLine(s))) : escAttr(tailVenueLine(s))}</div>`
       + (v?.warning ? `<div style="margin-top:3px"><span class="tail-tag warn">${escAttr(v.warning)}</span></div>` : '')
-      + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${(s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price && x.pick === v.pick)).slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
+      + ((s.venues || []).length > 1 ? `<div class="tail-venues">ALSO ${[...new Map((s.venues || []).filter(x => x !== v && !(v && x.key === v.key && x.price === v.price)).map(x => [`${x.name}|${tailVenuePrice(x)}|${x.units}`, x])).values()].slice(0, 4).map(x => `${escAttr(x.name)} ${tailVenuePrice(x)} ${x.units}u`).join(' · ')}</div>` : '')
       + (s.venueNote ? `<div class="tail-venues">${escAttr(s.venueNote)}</div>` : '')
       + (sized ? tailMoneyLine(s) : '')
       + (sized && s.id != null ? `<button class="mb-log" style="margin-top:6px" onclick="mybLogTail(${escAttr(JSON.stringify(String(s.id)))})" title="Log your bet on this signal to My Bets">LOG BET</button>` : '');
@@ -4996,7 +5073,6 @@ function tailSignalsHTML() {
       <div class="tail-stat" title="Shrunk edge of this wallet (in this category when graded there)"><div class="k">EDGE</div><div class="v">${s.edge == null && s.locked ? '<svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>' : tailPct(s.edge)}</div></div>
       <div class="tail-stat" title="Full Kelly at the venue's price after fees; the units are a quarter of it"><div class="k">KELLY</div><div class="v">${(v ? v.kelly : s.kelly) == null ? (s.locked ? '<svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>' : '—') : tailPct(v ? v.kelly : s.kelly)}</div></div>`}
     </div>`;
-  }).join('') + `</div>`;
 }
 
 function tailThresholds() {
@@ -5012,11 +5088,15 @@ function tailThresholds() {
 // with the most sharp weight, what they paid, the price now and where to take it.
 function tailBoardHTML() {
   const d = tailState.board || {};
-  const rows = d.rows || [];
+  // a market you can take first (most sharp weight first within each), then watch-only ones
+  const canTake = r => (r.venues || []).length > 0;
+  const rows = [...(d.rows || [])].sort((a, b) => canTake(b) - canTake(a));
+  const takeable = rows.filter(canTake).length;
   const locked = d.locked || 0;
   const banner = !tailState.pro && locked ? tailLockBanner(`<b>${locked} more market${locked === 1 ? '' : 's'} with sharp money ${locked === 1 ? 'is' : 'are'} locked.</b> <span style="color:#cbd5e1">Pro shows every market, the wallets and where to take the same side.</span>`, 'The Sharp Board') : '';
   const strip = tailStrip([
     `<span style="color:#f1f5f9;font-weight:700">${rows.length + locked} MARKETS</span>`,
+    rows.length ? `<span style="color:${takeable ? '#10b981' : '#94a3b8'}">${takeable} YOU CAN TAKE${tailUS() ? ' IN THE US' : ''}</span>` : '',
     d.graded ? `<span>${d.graded.anyCategory ?? 0} GRADED SHARPS</span>` : '',
     d.pending ? `<span>${d.pending} WALLETS STILL GRADING</span>` : '',
   ]);
@@ -5033,10 +5113,10 @@ function tailBoardHTML() {
       : (tailUS() ? 'No US venue found yet: watch only' : 'No venue found yet: watch only');
     const against = r.against?.wallets ? `<span style="color:#f87171">${r.against.wallets} sharp${r.against.wallets === 1 ? '' : 's'}${r.against.cost != null && !r.locked ? ` (${tailUsd(r.against.cost)})` : ''} on the other side</span>` : '<span style="color:#10b981">no sharp on the other side</span>';
     const who = (L.list || []).slice(0, 6).map(w => `<span class="tail-tag">${tailGrade(w.grade)} ${tailWho({ ...w, locked: r.locked })}${w.cost != null ? ` ${tailUsd(w.cost)}` : ''}${w.avgPrice != null ? ` @ ${tailC(w.avgPrice)}` : ''}</span>`).join(' ');
-    return `<div class="tail-card sized">
+    return `<div class="tail-card ${v ? 'sized' : 'muted'}">
       <div class="tail-units"><b>${L.wallets}</b><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#94a3b8">${L.wallets === 1 ? 'SHARP' : 'SHARPS'}${mix ? ` · ${mix}` : ''}</div></div>
       <div style="flex:1;min-width:220px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tail-tag">${escAttr(r.category || '')}</span>${L.belowEntry ? '<span class="tail-tag cons" title="The price now is at or below what the sharps paid on average">✓ AT OR BELOW THEIR ENTRY</span>' : ''}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tail-tag">${escAttr(r.category || '')}</span>${v && L.avgEntry != null && v.cost != null && v.cost <= L.avgEntry + 1e-9 ? `<span class="tail-tag cons" title="${escAttr(v.name)} costs ${tailC(v.cost)} with the fee, at or under the ${tailC(L.avgEntry)} the sharps paid on average">✓ ${escAttr(v.name.toUpperCase())} AT OR UNDER THEIR PRICE</span>` : ''}${L.belowEntry ? '<span class="tail-tag cons" title="The price now is at or below what the sharps paid on average">✓ AT OR BELOW THEIR ENTRY</span>' : ''}</div>
         <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-top:4px">${escAttr(r.title || '')}</div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px">ON <b style="color:#e2e8f0">${escAttr(L.outcome || '?')}</b>${L.cost != null && !r.locked ? ` · ${tailUsd(L.cost)} in` : ''} · ${against}</div>
         <div class="tail-venue ${v ? '' : 'none'}">${take}</div>
@@ -5496,7 +5576,10 @@ function xarbMoverRow(m) {
   const when = m.start ? xarbWhen(m.start) : '';
   const c = x => `${x > 0 ? '+' : ''}${Math.round(x * 1000) / 10}¢`;
   const moved = `Polymarket ${tailC(m.from)} → ${tailC(m.fair)} today${Math.abs(m.hour) >= 0.005 ? ` (${c(m.hour)} in the last hour)` : ''}`;
-  const venues = m.venues.map(v => `${tailLink(v.url, escAttr(v.venueName))} ${tailC(v.cost)}`).join(' · ');
+  // Kalshi often sells the same side twice (YES on one team's market, NO on the other's): once is enough
+  const seen = new Set();
+  const venues = m.venues.filter(v => { const k = `${v.venueName}|${v.cost}`; if (seen.has(k)) return false; seen.add(k); return true; })
+    .map(v => `${tailLink(v.url, escAttr(v.venueName))} ${tailC(v.cost)}`).join(' · ');
   const b = m.best || m.venues[0];
   return `<div class="xa-nrow">
     <div class="xa-ntitle"><b>${escAttr(b.pick || m.pick)}</b> <span style="color:var(--green)">▲ ${c(m.move)}</span><div class="xa-sub">${escAttr(m.title || '')}${when ? ` · ${escAttr(when)}` : ''}</div><div class="xa-sub">${moved}</div><div class="xa-sub">${venues} with fee</div></div>

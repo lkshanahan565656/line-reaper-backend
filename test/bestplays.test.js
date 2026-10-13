@@ -33,10 +33,13 @@ test('Sharp Tail entries: sized, fresh, not sold, not started', () => {
     sig('sold'),
     { id: 'exit', type: 'exit', wallet: 'wsold', asset: 'asold', at: iso(-60e3) },
     sig('novenue', { venue: null }),
+    // Polymarket's ask has no edge left, but Kalshi sells it cheaper and sizes it
+    sig('kalshionly', { units: 0, reason: 'no edge at 70¢ after the fee: worth 68¢ or less' }),
+    sig('blocked', { blocked: 'split', reason: 'it also bought the other side: a hedge, not a pick' }),
   ];
   const { rows } = bestPlays({ signals }, { now: NOW });
-  assert.deepEqual(rows.map(r => r.id), ['tail:ok']);
-  const r = rows[0];
+  assert.deepEqual(rows.map(r => r.id).sort(), ['tail:kalshionly', 'tail:ok']);
+  const r = rows.find(x => x.id === 'tail:ok');
   assert.equal(r.venue, 'Kalshi');
   assert.equal(r.units, 1);
   assert.equal(r.maxPrice, 0.55);

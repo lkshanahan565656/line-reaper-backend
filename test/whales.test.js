@@ -804,3 +804,16 @@ test('watcher: no walletHistory, or WHALE_FRESH_DAYS=0, means no radar', async (
   assert.deepEqual(W.optionsFromEnv({ WHALE_FRESH_DAYS: '3', WHALE_FRESH_MAX_MARKETS: '2', WHALE_FRESH_MIN_USD: '10000' }),
     { freshDays: 3, freshMaxMarkets: 2, freshMinUsd: 10000 });
 });
+
+test('kalshi trades: combos and 15-minute crypto markets are left out of the feed', () => {
+  const fills = kfills([
+    kt({ ticker: 'KXMVECROSSCATEGORY-S2026B5545628059-47794EEFF7F', count: 20000 }),
+    kt({ ticker: 'KXBTC15M-26OCT131345-45', count: 20000 }),
+    kt({ ticker: 'KXGOLD15M-26OCT131345-T4100', count: 20000 }),
+    kt({ ticker: 'KXBTCD-26OCT1317-T112999.99', count: 20000 }),
+    kt({ ticker: KNICKS, count: 20000 }),
+  ]);
+  assert.deepEqual(fills.map(f => f.ticker), ['KXBTCD-26OCT1317-T112999.99', KNICKS]);
+  assert.equal(W.kalshiNoise('KXMVESPORTSMULTIGAMEEXTENDED-S2026X-Y'), true);
+  assert.equal(W.kalshiNoise(FED), false);
+});
