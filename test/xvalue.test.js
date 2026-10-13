@@ -185,3 +185,15 @@ test('a Kalshi-priced edge has to clear the fee by a cent', () => {
   assert.equal(out.kalshiPriced, 1);
   assert.equal(out.edges.length, 0);
 });
+
+test('bets outside the big US leagues still get a league label for the record', () => {
+  assert.equal(V.leagueTag({ exchange: 'kalshi', id: 'KXEPLGAME-26OCT18ARSLIV-ARS' }), 'epl');
+  assert.equal(V.leagueTag({ exchange: 'kalshi', id: 'KXATPMATCH-26OCT14SINALC-SIN' }), 'atp');
+  assert.equal(V.leagueTag({ exchange: 'kalshi', id: 'KXMVESPORTSMULTIGAMEEXTENDED-S1' }), null);
+  assert.equal(V.leagueTag({ exchange: 'polymarketus', gameSlug: 'ucl-ars-bay-2026-10-21' }), 'ucl');
+  assert.equal(V.leagueTag({ exchange: 'polymarket', slug: 'will-it-rain' }), null);
+  const k = kRow({ league: null, id: 'KXEPLGAME-26OCT12NYKBOS-BOS' });
+  const [e] = V.findValue({ matches: [match(k, pRow({ league: null }))], kalshi: [k] }, { now: NOW }).edges;
+  assert.equal(e.league, 'epl');
+  assert.equal(V.trackRows([e])[0].sport, 'epl');
+});

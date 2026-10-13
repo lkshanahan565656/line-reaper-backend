@@ -46,6 +46,19 @@ const VENUE = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 const REF_NAME = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 
 const r4 = x => Math.round(x * 1e4) / 1e4;
+// a league label for the record when the parsers only know the big US ones:
+// Kalshi's series ("KXEPLGAME-…" → epl, "KXATPMATCH-…" → atp), Polymarket's
+// game slug ("ucl-ars-bay-2026-10-21" → ucl). Only labels Results and Best
+// Plays (so a losing league can be cut); matching never sees it.
+function leagueTag(r) {
+  if (!r) return null;
+  if (r.exchange === 'kalshi') {
+    const m = String(r.id || r.eventKey || '').match(/KX([A-Z0-9]{2,12}?)(?:GAME|MATCH|FIGHT|TOTAL|SPREAD|SERIES)\b/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+  const m = String(r.gameSlug || r.slug || '').toLowerCase().match(/^([a-z][a-z0-9]{1,7})-[a-z0-9]+-[a-z0-9]+-\d{4}-\d\d-\d\d/);
+  return m ? m[1] : null;
+}
 const ms = t => { const x = Date.parse(t); return Number.isFinite(x) ? x : null; };
 const isYes = s => /^yes$/i.test(String(s || '').trim());
 
@@ -190,7 +203,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], us
       const id = `${group}|${side}`;
       if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) {
         quotes.set(id, { fair, cost: c.cost, price: c.price, spread: ref.spread, refId, refToken, dir: (side === 'yes') === !!same ? 1 : -1,
-          venue: t.exchange, pick, title: t.eventTitle || t.title, league: t.league || p.league || null, category: t.category || p.category || 'sports',
+          venue: t.exchange, pick, title: t.eventTitle || t.title, league: t.league || p.league || leagueTag(t) || leagueTag(p), category: t.category || p.category || 'sports',
           market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind, start: new Date(start).toISOString(), url: t.url || null });
       }
       // a side the reference just moved on (steam.js) is worth a bet at a smaller edge
@@ -201,7 +214,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], us
       const e = {
         id, group, venue: t.exchange, venueName: VENUE[t.exchange] || t.exchange, marketId: t.id, side, pick,
         title: t.eventTitle || t.title, market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind,
-        league: t.league || p.league || null, category: t.category || p.category || 'sports',
+        league: t.league || p.league || leagueTag(t) || leagueTag(p), category: t.category || p.category || 'sports',
         price: c.price, cost: r4(c.cost), fair: r4(fair), ev: r4(ev),
         refId, refToken, refName: REF_NAME[refVenue],
         ref: { venue: refVenue, mid: r4(ref.fair), spread: r4(ref.spread), liquidity: ref.liquidity, source: ref.source, url: p.url },
@@ -304,4 +317,4 @@ function describe(e) {
   return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (${e.ev >= 0 ? '+' : ''}${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
-module.exports = { planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
+module.exports = { leagueTag, planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
