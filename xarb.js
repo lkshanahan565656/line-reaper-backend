@@ -1326,6 +1326,39 @@ function findMiddles(kalshiRows = [], polyRows = [], matches = [], opts = {}) {
   return [...best.values()].sort((a, b) => b.evPct - a.evPct).slice(0, o.middleMax);
 }
 
+// ── price screen ──
+// The odds screen for the exchanges: every paired game line (moneyline,
+// total, spread) with each side's all-in price per $1 contract on Kalshi and
+// on Polymarket US (taker fee in), and which is cheaper. Soonest games first.
+function exchangeScreen(matches = [], opts = {}) {
+  const o = withDefaults({ screenHours: 36, screenMax: 120, ...opts });
+  const allIn = l => (l.price == null ? null : round(legCost(l, BID_LOT, o).total / BID_LOT, 4));
+  const rows = new Map();
+  for (const m of matches) {
+    if (!['teams', 'line'].includes(m.by)) continue;
+    const k = m.kalshi, p = m.polymarket;
+    if (!k.tradable || !p.tradable) continue;
+    const start = [k.startTime, p.startTime].find(t => ms(t) != null) || null;
+    if (!start || ms(start) <= o.now || ms(start) > o.now + o.screenHours * 3600e3) continue;
+    const key = `${p.id}`;   // a game's two Kalshi team markets are one Polymarket US market
+    if (rows.has(key)) continue;
+    const kind = p.kind === 'teams' ? 'moneyline' : p.kind;
+    const names = kind === 'total' ? [`Over ${p.line}`, `Under ${p.line}`]
+      : kind === 'spread' ? [`${p.outcomeLabel} -${p.line}`, `${p.noLabel} +${p.line}`] : [p.outcomeLabel, p.noLabel];
+    const sides = [['yes', m.same ? 'yes' : 'no'], ['no', m.same ? 'no' : 'yes']].map(([pSide, kSide], i) => {
+      const kl = leg(k, kSide), pl = leg(p, pSide);
+      const kc = allIn(kl), pc = allIn(pl);
+      const best = kc == null && pc == null ? null : pc == null || (kc != null && kc < pc) ? 'kalshi' : kc === pc ? 'tie' : p.exchange;
+      return { pick: names[i] || pl.pick, kalshi: kc, kalshiUrl: kl.url, other: pc, otherUrl: pl.url, best, gap: kc != null && pc != null ? round(Math.abs(kc - pc), 4) : null };
+    });
+    rows.set(key, { id: key, title: k.eventTitle || p.eventTitle || p.title, league: k.league || p.league, kind, line: p.line ?? null, start, venue: p.exchange, sides,
+      category: 'sports', maxGap: Math.max(0, ...sides.map(s => s.gap || 0)) });
+  }
+  const order = { moneyline: 0, spread: 1, total: 2 };
+  return [...rows.values()].sort((a, b) => ms(a.start) - ms(b.start) || a.title.localeCompare(b.title) || (order[a.kind] ?? 3) - (order[b.kind] ?? 3) || (a.line ?? 0) - (b.line ?? 0))
+    .slice(0, o.screenMax);
+}
+
 // ── US venues ──
 // Polymarket International is closed to US persons, and offshore / non-US
 // books that turn up in the odds feeds aren't US sportsbooks either. Kalshi,
@@ -1711,7 +1744,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, exchangeScreen, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
