@@ -34,8 +34,12 @@ const DEFAULTS = {
   minLeadMs: 60e3,       // a game starting within a minute is as good as live
   kalshiFeeRate: 0.07,
   lot: 100,
+  // Kalshi as the reference for a Polymarket US side Polymarket can't price
+  kalshiMaxSpread: 0.03,
+  kalshiMinLiquidity: 500,
 };
 const VENUE = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
+const REF_NAME = { polymarket: 'Polymarket', kalshi: 'Kalshi' };
 
 const r4 = x => Math.round(x * 1e4) / 1e4;
 const ms = t => { const x = Date.parse(t); return Number.isFinite(x) ? x : null; };
@@ -48,6 +52,7 @@ function optsFromEnv(env = process.env) {
   if (f('XVALUE_MAX_EV') != null) o.maxEv = f('XVALUE_MAX_EV');
   if (f('XVALUE_MAX_SPREAD') != null) o.maxSpread = f('XVALUE_MAX_SPREAD');
   if (f('XVALUE_MIN_LIQUIDITY') != null) o.minLiquidity = f('XVALUE_MIN_LIQUIDITY');
+  if (f('XVALUE_KALSHI_MAX_SPREAD') != null) o.kalshiMaxSpread = f('XVALUE_KALSHI_MAX_SPREAD');
   return o;
 }
 
@@ -64,6 +69,18 @@ function refFair(p, o) {
   if (!(spread >= 0) || spread > o.maxSpread + 1e-9) return null;
   if (p.liquidity != null && p.liquidity < o.minLiquidity) return null;
   return { fair: (ask + bid) / 2, spread, liquidity: p.liquidity ?? null, source: book ? 'book' : 'gamma' };
+}
+
+// Kalshi's fair YES price from its own quote (the list API is live, no book
+// read needed): only a market 3¢ wide or tighter with money behind it. A Kalshi game is
+// as deep as Polymarket's on the US leagues, so where Polymarket has no tight
+// book (most NHL and college games) Kalshi's mid prices Polymarket US.
+function kalshiFair(k, o) {
+  if (!k || !k.tradable || k.yesAsk == null || k.noAsk == null) return null;
+  const spread = k.yesAsk + k.noAsk - 1;
+  if (!(spread >= 0) || spread > o.kalshiMaxSpread + 1e-9) return null;
+  if (k.liquidity != null && k.liquidity < o.kalshiMinLiquidity) return null;
+  return { fair: (k.yesAsk + 1 - k.noAsk) / 2, spread, liquidity: k.liquidity ?? null, source: 'kalshi' };
 }
 
 // per-contract cost of buying `side` of row t, fee included
@@ -113,9 +130,12 @@ function pairUs(usRows = [], polyRows = []) {
   return out;
 }
 
-// { matches (Kalshi ↔ Polymarket), kalshi, usRows, polymarket } → { edges, fairs, pairs }
+// { matches (Kalshi ↔ Polymarket), kalshi, usRows, polymarket, usMatches
+// (Kalshi ↔ Polymarket US) } → { edges, fairs, quotes, pairs }
 // venues: which US venues may be bet ('kalshi', 'polymarketus')
-function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } = {}, opts = {}) {
+// A Polymarket US side is priced off Polymarket when Polymarket quotes it
+// tightly (on Gamma: an unread book doesn't hand it to Kalshi), else off Kalshi.
+function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], usMatches = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
   const venues = new Set(o.venues || ['kalshi', 'polymarketus']);
@@ -132,15 +152,29 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
       if (twin && twin !== m.kalshi) pairs.push({ target: twin, ref: m.polymarket, same: !m.same });
     }
   }
-  if (venues.has('polymarketus')) pairs.push(...pairUs(usRows, polymarket));
+  if (venues.has('polymarketus')) {
+    const us = pairUs(usRows, polymarket);
+    pairs.push(...us);
+    const gammaOnly = { ...o, books: null, requireBook: false };
+    const polyPriced = new Set(us.filter(x => refFair(x.ref, gammaOnly)).map(x => String(x.target.id)));
+    for (const m of usMatches) {
+      if (m.by === 'title' || !m.polymarket || polyPriced.has(String(m.polymarket.id))) continue;
+      pairs.push({ target: m.polymarket, ref: m.kalshi, same: m.same, kalshiRef: true });
+    }
+  }
 
   const best = new Map(), fairs = new Map(), quotes = new Map();
-  for (const { target: t, ref: p, same } of pairs) {
+  let kalshiPriced = 0;
+  for (const { target: t, ref: p, same, kalshiRef } of pairs) {
     if (!t || !t.tradable) continue;
     const start = ms(t.startTime) ?? ms(p.startTime);
     if (start == null || start - now < o.minLeadMs) continue;
-    const ref = refFair(p, o);
+    const ref = kalshiRef ? kalshiFair(p, o) : refFair(p, o);
     if (!ref) continue;
+    if (kalshiRef) kalshiPriced++;
+    const refVenue = kalshiRef ? 'kalshi' : 'polymarket';
+    const refToken = kalshiRef ? null : p.tokenIds?.[p.yesIndex ?? 0] ?? null;
+    const refId = kalshiRef ? `kalshi:${p.id}` : String(p.id);
     for (const side of ['yes', 'no']) {
       const fair = (side === 'yes') === !!same ? ref.fair : 1 - ref.fair;
       const pick = `${pickOf(t, side)}${lineText(t, side)}`;
@@ -150,8 +184,8 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
       if (!c) continue;
       const ev = fair / c.cost - 1;
       const id = `${group}|${side}`;
-      if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) quotes.set(id, { fair, cost: c.cost, spread: ref.spread, refId: String(p.id), refToken: p.tokenIds?.[p.yesIndex ?? 0] ?? null });
-      // a side Polymarket just moved on (steam.js) is worth a bet at a smaller edge
+      if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) quotes.set(id, { fair, cost: c.cost, spread: ref.spread, refId, refToken });
+      // a side the reference just moved on (steam.js) is worth a bet at a smaller edge
       const steam = o.steam ? o.steam.steamOf(id, fair, c.cost, now) : null;
       const minEv = steam && o.steamMinEv != null ? Math.min(o.minEv, o.steamMinEv) : o.minEv;
       if (ev < minEv || ev > o.maxEv) continue;
@@ -160,8 +194,8 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
         title: t.eventTitle || t.title, market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind,
         league: t.league || p.league || null, category: t.category || p.category || 'sports',
         price: c.price, cost: r4(c.cost), fair: r4(fair), ev: r4(ev),
-        refId: String(p.id), refToken: p.tokenIds?.[p.yesIndex ?? 0] ?? null,
-        ref: { venue: 'polymarket', mid: r4(ref.fair), spread: r4(ref.spread), liquidity: ref.liquidity, source: ref.source, url: p.url },
+        refId, refToken, refName: REF_NAME[refVenue],
+        ref: { venue: refVenue, mid: r4(ref.fair), spread: r4(ref.spread), liquidity: ref.liquidity, source: ref.source, url: p.url },
         start: new Date(start).toISOString(), url: t.url || null, rules: t.rules || null,
         steam: steam || null,
       };
@@ -170,7 +204,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
     }
   }
   const edges = [...best.values()].sort((a, b) => b.ev - a.ev);
-  return { edges, fairs, quotes, pairs: pairs.length };
+  return { edges, fairs, quotes, pairs: pairs.length, kalshiPriced };
 }
 
 // The first pass on Gamma's quotes, wide enough that a lagging Gamma price
@@ -186,7 +220,7 @@ function screen(input, opts = {}) {
 // Polymarket US rows pair by slug, kind, line and team; a Polymarket row (intl
 // mode) is its own ref. Looser than an edge: a wider spread still prices it.
 const FAIR_SCREEN = { maxSpread: 0.04 };
-function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } = {}, opts = {}) {
+function screenFairs(rows = [], { usRows = [], polymarket = [], books = null, usMatches = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...FAIR_SCREEN, ...opts, books, requireBook: false };
   const want = new Set(rows.map(r => String(r.id)));
   const refs = new Map();
@@ -195,6 +229,13 @@ function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } =
     if (f && !refs.has(String(target.id))) refs.set(String(target.id), { fair: f.fair, same });
   }
   for (const p of polymarket) if (want.has(String(p.id)) && !refs.has(String(p.id))) { const f = refFair(p, o); if (f) refs.set(String(p.id), { fair: f.fair, same: true }); }
+  // what Polymarket can't price, Kalshi's tight quote does
+  for (const m of usMatches) {
+    const id = String(m.polymarket?.id);
+    if (m.by === 'title' || !want.has(id) || refs.has(id)) continue;
+    const f = kalshiFair(m.kalshi, o);
+    if (f) refs.set(id, { fair: f.fair, same: m.same, by: 'kalshi' });
+  }
   return rows.map(r => {
     const ref = refs.get(String(r.id));
     if (!ref) return { ...r, maxEv: null };
@@ -206,7 +247,7 @@ function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } =
       return { ...x, fair: r4(fair), ev: ev == null ? null : r4(ev) };
     });
     const evs = sides.map(x => x.ev).filter(e => e != null);
-    return { ...r, sides, maxEv: evs.length ? Math.max(...evs) : null };
+    return { ...r, sides, maxEv: evs.length ? Math.max(...evs) : null, ...(ref.by ? { fairBy: ref.by } : {}) };
   });
 }
 
@@ -240,7 +281,8 @@ function dedupeEdges(edges) {
 function trackRows(edges) {
   return edges.map(e => ({
     group: e.group, side: e.pick, book: e.venue, start: e.start, sport: e.league || e.category, event: e.title,
-    market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: e.steam ? 'steam' : 'xvalue',
+    market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100,
+    source: e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'kalshiref' : 'xvalue',
   }));
 }
 
@@ -248,8 +290,9 @@ function trackRows(edges) {
 function describe(e) {
   const when = e.start ? new Date(e.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : '';
   const c = x => `${Math.round(x * 1000) / 10}¢`;
-  const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName)}. ` : '';
-  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), Polymarket ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
+  const ref = e.refName || 'Polymarket';
+  const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName, ref)}. ` : '';
+  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
 module.exports = { planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };

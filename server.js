@@ -2836,8 +2836,8 @@ xvalueTracker.ready().catch(e => console.error('Exchange value tracker: store fa
 // US mode bets Kalshi and Polymarket US; elsewhere Polymarket itself is open,
 // so only Kalshi trailing it is news
 const XVALUE_VENUES = TAIL_REGION === 'us' ? ['kalshi', 'polymarketus'] : ['kalshi'];
-async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now()) {
-  const input = { matches, kalshi, usRows, polymarket };
+async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now = Date.now()) {
+  const input = { matches, kalshi, usRows, polymarket, usMatches };
   const o = { ...XVALUE_OPTS, kalshiFeeRate: XARB_OPTS.kalshiFeeRate ?? xvalue.DEFAULTS.kalshiFeeRate, venues: XVALUE_VENUES, now };
   // what to read: the screen's best first, then the open bets' refs
   const want = new Map();
@@ -2870,11 +2870,11 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
     books.set(id, c.book);
   }
   const found = xvalue.findValue(input, { ...o, books, requireBook: true, steam: steamWatch, steamMinEv: steamWatch.opts.minEv });
-  const { fairs, pairs } = found, edges = xvalue.dedupeEdges(found.edges);
+  const { fairs, pairs, kalshiPriced } = found, edges = xvalue.dedupeEdges(found.edges);
   edges.sort((a, b) => (b.steam ? 1 : 0) - (a.steam ? 1 : 0) || b.ev - a.ev);
   for (const e of edges) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
   await xvalueTracker.recordBoard(xvalue.trackRows(edges), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size() } });
+  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size() } });
   const lic = webhookLicence();
   const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   for (const e of fresh) xvalueSeen.set(e.id, now);
@@ -2959,11 +2959,11 @@ async function scanXarbs() {
     if (now - middleGradedAt > 10 * 60e3) { middleGradedAt = now; middleTracker.grade().catch(e => console.warn('Middle tracker:', e.message)); }
     await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
-      try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
+      try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList, usMatches: us.matchList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
     }
     // the screen's fair column: Polymarket's mid (its live book where this scan read one)
     if (polymarket.length) {
-      try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
+      try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books, usMatches: us.matchList }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
     }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
     if (kalshi.length) {
@@ -3370,7 +3370,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.76.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.77.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4332,7 +4332,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.76.0',
+  version: '3.77.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4474,10 +4474,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.76.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.77.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.76.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.77.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);

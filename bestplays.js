@@ -178,20 +178,23 @@ function edgeRows(matches, verdict, o, now) {
 // exchange value (xvalue.js): a Kalshi or Polymarket US ask under
 // Polymarket's live mid, ¼ Kelly like an esports edge
 const VALUE_VENUES = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
+// the results cut a value bet falls in: steam, or a standing gap to Polymarket or to Kalshi
+const valueSignal = e => e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'Kalshi price' : 'price gap';
 function valueRows(edges, verdict, o, now) {
   const rows = [], dropped = [];
   for (const e of edges) {
     const start = ms(e.start);
     if (start == null || start <= now || !(e.cost > 0 && e.cost < 1) || !(e.ev > 0)) continue;
-    const labels = { signal: e.steam ? 'steam' : 'price gap', sport: e.league || e.category, book: e.venue, market: e.market };
+    const labels = { signal: valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market };
     const vd = verdict('exchangeValue', labels);
     if (vd.avoid) { dropped.push({ kind: 'exchangeValue', title: e.title, play: vd.avoid.play }); continue; }
     const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
     const units = kellyUnits(e.fair, e.cost, cap, o);
     if (!(units > 0)) continue;
     const venue = VALUE_VENUES[e.venue] || e.venue;
-    const why = [`Polymarket's book has it at ${r2(e.fair * 100)}c, ${venue} sells it for ${r2(e.cost * 100)}c with the fee`];
-    if (e.steam) why.unshift(`Steam: ${moveText(e.steam, venue)}`);
+    const ref = e.refName || 'Polymarket';
+    const why = [`${ref}'s book has it at ${r2(e.fair * 100)}c, ${venue} sells it for ${r2(e.cost * 100)}c with the fee`];
+    if (e.steam) why.unshift(`Steam: ${moveText(e.steam, venue, ref)}`);
     if (vd.play) why.push(evidence(vd.play));
     rows.push({
       id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} ${e.steam ? 'steam' : 'exchange value'}`, title: e.title, steam: !!e.steam,
