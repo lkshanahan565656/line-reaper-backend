@@ -336,6 +336,11 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, emptyTtlMs = 30 * 60e3, giveUp
       if (found) return { maps: out, complete: parsed === games.length, matchId: m.slug || m.id };
     }
     const own = cands.find(c => c.team)?.m;
+    // Every map of the team's match parsed and the player in none of them:
+    // he didn't play (or the book had his team wrong). Underdog voids a DNP.
+    if (own && own.games.length && own.games.every(g => maps.has(g.id))) {
+      return { unavailable: `${pick.player} is not in the player stats for ${own.slug || 'the match'} (did not play)` };
+    }
     const ended = own && (bo3Ms(own.end_date) ?? bo3Ms(own.start_date));
     if (own && ended != null && now() - ended > giveUpMs && !own.games.some(g => maps.has(g.id))) {
       return { unavailable: `bo3.gg has no player stats for ${own.slug || 'this match'} (no demo parsed)` };
