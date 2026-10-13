@@ -15,8 +15,8 @@ jobs:
           node-version: 20
       - run: |
           set +e
-          for i in $(seq 1 40); do curl -sS -m 20 https://line-reaper-backend-production.up.railway.app/api/status | grep -q '"3.91.1"' && break; sleep 30; done; sleep 240
-          { date -u; npm i axios >/dev/null 2>&1; node diag/xedge.js; } > diag-out.txt 2>&1 || true
+          for i in $(seq 1 40); do curl -sS -m 20 https://line-reaper-backend-production.up.railway.app/api/status | grep -q '"3.91.1"' && break; sleep 30; done
+          { date -u; npm i axios >/dev/null 2>&1; node diag/kstale.js; } > diag-out.txt 2>&1 || true
       - if: always()
         run: |
           git config user.name diag-bot
