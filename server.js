@@ -2925,14 +2925,20 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
   Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), moverBets: moverBets.length } });
   const lic = webhookLicence();
-  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
+  // alerts follow the record the way Best Plays does: a signal, league or
+  // market the results call "avoid" (standing price gaps, -0.6% CLV over 32
+  // on 10-13) stays on the ARBS tab but doesn't ping anyone
+  let plays = [];
+  try { ({ plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) })); } catch (e) { console.warn('Exchange value: record:', e.message); }
+  const bp = require('./bestplays'), verdict = bp.verdictIndex(plays);
+  const avoided = e => !!verdict('exchangeValue', { signal: bp.valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market }).avoid;
+  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   // a line mover alerts only once its own record is proven, at that record's CLV
   if (moverBets.length) {
     try {
-      const { plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) });
       const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === 'line mover');
       if (rec && rec.verdict === 'proven' && rec.avgClv >= MOVER_ALERT_MIN) {
-        fresh.push(...moverBets.filter(e => valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
+        fresh.push(...moverBets.filter(e => valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
       }
     } catch (e) { console.warn('Line movers: record:', e.message); }
   }
@@ -3430,7 +3436,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.81.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.81.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4434,7 +4440,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.81.0',
+  version: '3.81.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4577,10 +4583,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.81.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.81.1 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.81.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.81.1 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);

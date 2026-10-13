@@ -437,4 +437,4 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
   return { rows: rows.slice(0, o.limit), total: rows.length, counts, dropped: parts.flatMap(p => p.dropped) };
 }
 
-module.exports = { bestPlays, verdictIndex, kellyUnits, DEFAULTS };
+module.exports = { bestPlays, verdictIndex, valueSignal, kellyUnits, DEFAULTS };
