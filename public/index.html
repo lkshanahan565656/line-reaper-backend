@@ -601,6 +601,42 @@ body::before {
 .es-strip b { display:block; font-family:'JetBrains Mono',monospace; font-size:18px; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .es-strip span { display:block; font-size:9.5px; letter-spacing:.12em; color:#64748b; text-transform:uppercase; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .es-strip-note { font-size:10.5px; color:#64748b; margin:-8px 0 14px; }
+.es-lines { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:24px; }
+.es-lines-head { display:flex; align-items:center; gap:8px; padding:10px 14px; font-size:10px; letter-spacing:.12em; color:#94a3b8; font-weight:800; text-transform:uppercase; border-bottom:1px solid var(--border); background:rgba(0,0,0,.3); }
+.es-lines-head span:last-child { margin-left:auto; color:#64748b; font-weight:600; letter-spacing:.06em; text-transform:none; }
+.es-line > div:first-child > div { flex-direction:column; gap:5px !important; }
+.es-line .es-edit { font-size:9px; font-weight:800; letter-spacing:.08em; color:#94a3b8; opacity:.75; }
+.es-line { display:grid; grid-template-columns:44px minmax(0,1fr) auto 92px; gap:12px; align-items:center; padding:11px 14px; }
+.es-line + .es-line { border-top:1px solid rgba(255,255,255,.05); }
+.es-line.hot { background:linear-gradient(90deg, rgba(16,185,129,.07), transparent 45%); }
+.es-line .pl { font-size:14px; font-weight:700; color:#f1f5f9; }
+.es-line .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
+.es-line .mk { font-size:12px; color:#cbd5e1; margin-top:2px; }
+.es-line .mult { font-size:10px; font-weight:900; padding:1px 6px; border-radius:4px; color:#0b0f17; margin-left:6px; }
+.es-line .nums { display:flex; align-items:center; gap:8px; }
+.es-lf { text-align:center; padding:5px 9px; border-radius:9px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.06); min-width:74px; }
+.es-lf b { font-family:'JetBrains Mono',monospace; font-size:15px; color:#f8fafc; }
+.es-lf div { font-size:10px; color:#64748b; margin-top:1px; white-space:nowrap; }
+.es-lf div span { color:#a78bfa; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.es-line .evbig { text-align:right; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:18px; letter-spacing:-.02em; }
+.es-line .evbig small { display:block; font-size:9px; letter-spacing:.12em; color:#64748b; font-family:'Inter',sans-serif; font-weight:700; }
+.es-line .evbig .hot { color:#f59e0b; }
+.es-bookevs { display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; }
+.es-bookevs span { display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:10px; border:1px solid rgba(148,163,184,.15); background:rgba(148,163,184,.06); }
+.es-bookevs img { width:11px; height:11px; border-radius:3px; }
+.es-edge { margin-top:4px; font-size:10px; font-family:'JetBrains Mono',monospace; display:flex; gap:8px; flex-wrap:wrap; }
+.es-why { margin-top:3px; font-size:10px; color:#64748b; }
+.es-why summary { cursor:pointer; list-style:none; color:#64748b; font-weight:700; letter-spacing:.06em; font-size:9.5px; text-transform:uppercase; display:inline-block; }
+.es-why summary::-webkit-details-marker { display:none; }
+.es-why summary::before { content:'+ '; }
+.es-why[open] summary::before { content:'– '; }
+.es-why div { margin-top:3px; line-height:1.45; font-family:'JetBrains Mono',monospace; }
+.es-src { font-size:8px; letter-spacing:.14em; font-weight:800; margin-top:3px; }
+@media (max-width: 640px) {
+  .es-line { grid-template-columns:40px minmax(0,1fr) auto; gap:8px 10px; padding:11px 12px; }
+  .es-line .nums { grid-column:2 / -1; grid-row:2; }
+  .es-line .evbig { grid-column:3; grid-row:1; align-self:start; font-size:16px; }
+}
 .es-play { display:grid; grid-template-columns:40px minmax(0,1fr) 150px 110px 96px; gap:12px; align-items:center; padding:11px 14px; }
 .es-play + .es-play { border-top:1px solid rgba(255,255,255,.05); }
 .es-play:hover { background:rgba(255,255,255,.015); }
@@ -652,18 +688,57 @@ body::before {
   background: rgba(8,11,16,.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border2); padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   box-shadow: 0 -12px 40px rgba(0,0,0,.5); }
-body.lr-slip-open #page-esports { padding-bottom: 340px; }
-.slip-leg { display:inline-flex; align-items:center; gap:6px; background:var(--card2); border:1px solid var(--border);
-  border-radius:6px; padding:4px 8px; font-size:11px; color:var(--text2); }
+body.lr-slip-open #page-esports { padding-bottom: 300px; }
+body.lr-slip-open.lr-slip-min #page-esports { padding-bottom: 90px; }
+#esSlipBar .sb-wrap { max-width: 1240px; margin: 0 auto; }
+.sb-head { display:flex; align-items:center; gap:10px; }
+.sb-title { font-size:12px; font-weight:800; letter-spacing:.16em; color:#f8fafc; white-space:nowrap; }
+.sb-title span { color:#64748b; }
+.sb-sum { display:flex; align-items:baseline; gap:8px; margin-left:auto; min-width:0; font-size:11px; color:#94a3b8; white-space:nowrap; overflow:hidden; }
+.sb-sum b { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:800; letter-spacing:-.02em; }
+.sb-icon { cursor:pointer; flex:0 0 auto; width:32px; height:32px; border-radius:9px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+.sb-icon:hover { color:#f1f5f9; border-color:#475569; }
+.sb-legs { display:flex; gap:6px; overflow-x:auto; padding:10px 0 2px; scrollbar-width:none; }
+.sb-legs::-webkit-scrollbar { display:none; }
+.slip-leg { flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; background:var(--card2); border:1px solid var(--border);
+  border-radius:20px; padding:5px 6px 5px 11px; font-size:11.5px; color:var(--text2); white-space:nowrap; }
 .slip-leg b { color:#f1f5f9; font-weight:700; }
-.slip-x { cursor:pointer; color:var(--muted2); font-weight:800; padding:0 2px; font-size:12px; }
-.slip-x:hover { color:var(--red); }
-.slip-bookpill { cursor:pointer; border:1px solid var(--border); border-radius:8px; padding:6px 10px;
-  font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text2); background:var(--card);
-  display:flex; flex-direction:column; align-items:center; gap:2px; min-width:82px; transition: border-color .15s; }
+.slip-leg .sd { font-weight:800; font-size:10.5px; letter-spacing:.04em; }
+.slip-leg .sd.over { color:#34d399; } .slip-leg .sd.under { color:#f87171; }
+.slip-leg .pr { font-family:'JetBrains Mono',monospace; color:#34d399; }
+.slip-x { cursor:pointer; color:var(--muted2); font-weight:800; font-size:11px; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:rgba(148,163,184,.08); }
+.slip-x:hover { color:var(--red); background:rgba(239,68,68,.12); }
+.sb-books { display:flex; gap:6px; overflow-x:auto; padding:8px 0 2px; scrollbar-width:none; }
+.sb-books::-webkit-scrollbar { display:none; }
+.slip-bookpill { flex:0 0 auto; cursor:pointer; border:1px solid var(--border); border-radius:12px; padding:7px 12px;
+  font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text2); background:var(--card);
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:96px; transition: border-color .15s, background .15s; }
+.slip-bookpill .bn { font-family:'Inter',sans-serif; font-size:10px; font-weight:800; letter-spacing:.08em; display:flex; align-items:center; gap:5px; }
+.slip-bookpill .bn i { width:6px; height:6px; border-radius:50%; background:var(--bk); }
+.slip-bookpill .be { font-size:15px; font-weight:800; }
 .slip-bookpill:hover { border-color: var(--border2); }
-.slip-bookpill.sel { border-color:#10b981; background:rgba(16,185,129,.08); }
-.slip-bookpill.na { opacity:.3; cursor:default; pointer-events:none; }
+.slip-bookpill.sel { border-color:#10b981; background:rgba(16,185,129,.09); box-shadow:0 0 0 1px rgba(16,185,129,.2) inset; }
+.slip-bookpill.na { display:none; }
+.sb-mid { display:flex; gap:8px; flex-wrap:wrap; align-items:stretch; margin-top:8px; }
+.sb-mid .sb-books { padding:0; }
+.sb-stats { flex:1 1 420px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; }
+.sb-stats > div { background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:7px 10px; font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; text-transform:uppercase; min-width:0; }
+.sb-stats b { display:block; font-family:'JetBrains Mono',monospace; font-size:14px; color:#f1f5f9; letter-spacing:0; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sb-stats b small { font-size:10px; color:#64748b; font-weight:600; }
+.sb-act { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.sb-in { display:flex; align-items:center; gap:5px; font-size:9.5px; letter-spacing:.1em; color:#64748b; font-weight:700; }
+.sb-in input { width:84px; padding:6px 8px; font-size:12px; }
+.sb-act .sb-btns { margin-left:auto; display:flex; gap:6px; }
+.sb-note { margin-top:6px; font-size:9.5px; color:#475569; line-height:1.4; }
+#esSlipBar.min .sb-legs, #esSlipBar.min .sb-mid, #esSlipBar.min .sb-act, #esSlipBar.min .sb-note, #esSlipBar.min #esSlipCorr { display:none; }
+@media (max-width: 640px) {
+  .sb-stats { flex-basis:100%; gap:4px; } .sb-stats > div { padding:6px 7px; font-size:8.5px; } .sb-stats b { font-size:12.5px; } .sb-stats b small { display:none; }
+  .sb-sumtxt { display:none; }
+  .slip-bookpill { padding:5px 10px; min-width:84px; } .slip-bookpill .be { font-size:13px; }
+  .sb-act .sb-btns { margin-left:0; width:100%; } .sb-act .sb-btns .slip-btn { flex:1; }
+  .sb-act { flex-wrap:wrap; } .sb-in { flex:1 1 0; min-width:0; } .sb-in input { flex:1 1 0; width:0 !important; min-width:0; }
+  .sb-note { display:none; }
+}
 .slip-btn { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text);
   border-radius:8px; padding:8px 14px; font-size:11px; font-weight:800; letter-spacing:1px; font-family:'Inter',sans-serif; }
 .slip-btn:hover { border-color:#10b981; color:#34d399; }
@@ -4272,7 +4347,7 @@ const esInSlip = p => esportsState.slip.some(l => l.key === `${p.player}|${p.mar
 // sits from the book's line (the edge we're actually claiming).
 function esStatEdge(p) {
   const parts = [];
-  if (p.statLine) parts.push(`<span style="color:#64748b">${escEs(p.statLine)}</span>`);
+  
   if (p.edge != null && p.edgePct != null) {
     const up = p.edge > 0;
     const line = esLineFor(p, esportsState.book);
@@ -4284,8 +4359,8 @@ function esStatEdge(p) {
   if (p.udFlag === 'price-mismatch') {
     parts.push(`<span title="Underdog's payout implies ${p.udImplied}% while our model says ${p.prob}%. A gap that big on one leg almost always means our number is wrong, so no EV is published." style="color:#fbbf24;font-weight:800">PRICE MISMATCH — book implies ${p.udImplied}%, model ${p.prob}% · no EV shown</span>`);
   }
-  if (!parts.length) return '';
-  return `<div style="margin-top:3px;font-size:9px;font-family:'JetBrains Mono',monospace;display:flex;gap:8px;flex-wrap:wrap">${parts.join('')}</div>`;
+  const why = p.statLine ? `<details class="es-why"><summary>Why this number</summary><div>${escEs(p.statLine)}</div></details>` : '';
+  return (parts.length ? `<div class="es-edge">${parts.join('')}</div>` : '') + why;
 }
 
 function esRowButtons(p) {
@@ -5773,107 +5848,45 @@ async function trGrade(encId, isVoid = false) {
 }
 
 // ── BEST BOARD: one merged list, best book highlighted per pick ─────────────
+// One row on the All lines board (key null: every book) or a single book's board.
+function esLineRow(p, key) {
+  const B = key ? ES_BOOKS[key] : null;
+  const ev = B ? p[B.evField] : esBestEv(p);
+  const line = B ? esLineFor(p, key) : p.ppLine;
+  const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
+  const multTag = mult && mult !== 1 ? `<span class="mult" title="${key === 'sleeper' || p.udRegime === 'decimal' ? `Straight decimal payout: a ${mult}x pays ${mult} for 1, implying about ${(100/mult).toFixed(0)}% to hit.` : `Boost on standard pick'em pricing: EV = probability × ${mult} ÷ 0.5623 − 1.`}" style="background:${p.udRegime === 'decimal' ? '#a78bfa' : mult > 1 ? '#10b981' : '#ef4444'}">${p.udRegime === 'decimal' || key === 'sleeper' ? '' : mult > 1 ? '▲' : '▼'}${mult}x</span>` : '';
+  const books = B ? '' : Object.entries(ES_BOOKS).map(([k, X]) => {
+    const v = p[X.evField];
+    if (v == null) return '';
+    const isBest = ev != null && v === ev;
+    return `<span title="${X.name}" style="color:${esEvColor(v)};${isBest ? `border-color:${X.color};background:${X.color}22` : ''}">${logoSrc(k) ? `<img src="${logoSrc(k)}" alt="" onerror="this.remove()">` : ''}${v > 0 ? '+' : ''}${v.toFixed(1)}</span>`;
+  }).join('');
+  const bookRow = B ? '' : `<div class="es-bookevs">${books || (p.locked ? '<span style="color:#f59e0b">Pro pick</span>' : '<span style="color:#475569">no book EVs: needs model input</span>')}</div>`;
+  const sideWord = p.side ? (key ? esSideWord(p.side, key) : p.side === 'OVER' ? 'Over' : 'Under') : '—';
+  const side = p.locked ? '' : `<div style="text-align:center"><span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${escEs(sideWord)}<em>${p.prob != null ? Math.round(p.prob) + '%' : ''}</em></span>${p.predSource ? `<div class="es-src" style="color:${p.predSource === 'manual' ? '#a78bfa' : '#475569'}" title="${p.predSource === 'manual' ? 'Your model number' : 'Auto-predicted from HLTV/VLR stats'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}</div>`;
+  const evTxt = p.locked && !B ? `<span class="es-lock" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Pro shows the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>`
+    : ev == null ? '—' : `${ev > 0 ? '+' : ''}${ev.toFixed(1)}%`;
+  return `<div class="es-line${ev != null && ev >= 5 ? ' hot' : ''}">
+    <div>${esRowButtons(p)}</div>
+    <div style="min-width:0">
+      <div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div>
+      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}</div>
+      ${bookRow}${esStatEdge(p)}
+    </div>
+    <div class="nums"><div class="es-lf"><b>${escEs(line)}</b><div>fair <span>${escEs(p.modelPred ?? '—')}</span></div></div>${side}</div>
+    <div class="evbig" style="color:${esEvColor(ev)}">${evTxt}${ev != null && ev >= 10 ? '<small class="hot">HOT</small>' : `<small>${B ? escEs(B.name.charAt(0) + B.name.slice(1).toLowerCase()) : 'best'} EV</small>`}</div>
+  </div>`;
+}
 function esBoardHTML(picks) {
   const sorted = esSorted(picks);   // locked picks are +EV, so they lead on EV
-
-  const rows = sorted.map(p => {
-    const best = esBestEv(p);
-    const sideColor = p.side === 'OVER' ? '#10b981' : '#a78bfa';
-    const bookStrip = Object.entries(ES_BOOKS).map(([k, B]) => {
-      const ev = p[B.evField];
-      if (ev == null) return '';
-      const isBest = best != null && ev === best;
-      return `<span class="es-bookev" title="${B.name}" style="display:inline-flex;align-items:center;gap:4px;color:${esEvColor(ev)};${isBest ? `border-color:${B.color};background:${B.color}18` : ''}">${logoSrc(k) ? `<img src="${logoSrc(k)}" style="width:11px;height:11px;border-radius:3px" onerror="this.remove()">` : ''}${ev > 0 ? '+' : ''}${ev.toFixed(1)}</span>`;
-    }).join('');
-
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);${best != null && best >= 5 ? 'background:rgba(16,185,129,.04)' : ''}">
-      <td style="padding:9px 6px 9px 10px">${esRowButtons(p)}</td>
-      <td style="padding:9px 8px;text-align:center;min-width:60px">
-        ${p.locked ? `<span class="es-lock" onclick="acctNeedPro('Seeing the picks')" title="A +EV pick. Pro shows the side and the edge."><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>` : `<div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:${esEvColor(best)};font-size:15px">${best == null ? '—' : (best > 0 ? '+' : '') + best.toFixed(1) + '%'}</div>`}
-        ${best != null && best >= 10 ? '<div style="font-size:10px;color:#f59e0b;font-weight:700">HOT</div>' : ''}
-      </td>
-      <td style="padding:9px 8px">
-        <div style="font-size:14px;font-weight:700;color:#f1f5f9">${escEs(p.player)}</div>
-        <div style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:10px;color:#a78bfa;font-weight:700;background:rgba(139,92,246,.15);padding:1px 6px;border-radius:3px;letter-spacing:1px">${escEs(p.sport)}</span>
-          <span style="font-size:11px;color:#cbd5e1" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps — shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}</span>
-        </div>
-        ${esStatEdge(p)}
-        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${bookStrip || (p.locked ? '<span style="font-size:9px;color:#f59e0b">Pro pick</span>' : '<span style="font-size:9px;color:#475569">no book EVs — needs model input</span>')}</div>
-      </td>
-      <td style="padding:9px 8px;text-align:center">
-        <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:14px">${escEs(p.ppLine)}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:2px">→ <span style="color:#a78bfa;font-weight:600">${escEs(p.modelPred ?? '—')}</span></div>
-      </td>
-      <td style="padding:9px 10px 9px 8px;text-align:center">
-        <span style="display:inline-block;padding:3px 10px;border:1.5px solid ${sideColor};color:${sideColor};border-radius:4px;font-size:11px;font-weight:800;letter-spacing:1.5px">${escEs(p.side || '—')}</span>
-        <div style="font-family:'JetBrains Mono',monospace;color:#cbd5e1;font-size:11px;margin-top:4px;font-weight:600">${p.prob != null ? p.prob + '% prob' : ''}</div>
-        ${p.predSource ? `<div style="font-size:8px;letter-spacing:1.5px;margin-top:2px;font-weight:800;color:${p.predSource === 'manual' ? '#a78bfa' : '#475569'}" title="${p.predSource === 'manual' ? 'Your model number' : 'Auto-predicted from HLTV/VLR stats'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
-
-  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px">
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="background:rgba(0,0,0,.4);border-bottom:1px solid var(--border)">
-        <th style="padding:8px 10px"></th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">BEST EV</th>
-        <th style="padding:8px;text-align:left;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">PLAYER · PROP · BOOKS</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">LINE→MODEL</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">SIDE</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
+  return `<div class="es-lines"><div class="es-lines-head"><span>Every line · best EV across books</span><span>${sorted.length} lines</span></div>${sorted.map(p => esLineRow(p, null)).join('')}</div>`;
 }
 
 // ── SINGLE BOOK: whole board priced and sorted by one book ─────────────────
 function esSingleBookHTML(picks, key) {
   const B = ES_BOOKS[key];
   const sorted = esportsState.sort === 'ev' ? picks.slice().sort((a, b) => (b[B.evField] ?? -9999) - (a[B.evField] ?? -9999)) : esSorted(picks);
-  const rows = sorted.map(p => {
-    const ev = p[B.evField];
-    const sideColor = p.side === 'OVER' ? '#10b981' : '#a78bfa';
-    const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
-    const line = esLineFor(p, key);
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);${ev >= 5 ? 'background:rgba(16,185,129,.04)' : ''}">
-      <td style="padding:9px 6px 9px 10px">${esRowButtons(p)}</td>
-      <td style="padding:9px 8px;text-align:center;min-width:60px">
-        <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:${esEvColor(ev)};font-size:15px">${ev > 0 ? '+' : ''}${ev.toFixed(1)}%</div>
-        ${ev >= 10 ? '<div style="font-size:10px;color:#f59e0b;font-weight:700">HOT</div>' : ''}
-      </td>
-      <td style="padding:9px 8px">
-        <div style="font-size:14px;font-weight:700;color:#f1f5f9">${escEs(p.player)}</div>
-        <div style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span style="font-size:10px;color:#a78bfa;font-weight:700;background:rgba(139,92,246,.15);padding:1px 6px;border-radius:3px;letter-spacing:1px">${escEs(p.sport)}</span>
-          <span style="font-size:11px;color:#cbd5e1" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps — shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}</span>
-          ${mult && mult !== 1 ? `<span title="${key === 'sleeper' || p.udRegime === 'decimal' ? `Straight decimal payout — a ${mult}x pays ${mult} for 1, implying about ${(100/mult).toFixed(0)}% to hit.` : `Boost on standard pick'em pricing — EV = probability × ${mult} ÷ 0.5623 − 1.`}" style="font-size:10px;font-weight:900;padding:1px 6px;border-radius:4px;letter-spacing:.5px;color:#0b0f17;background:${p.udRegime === 'decimal' ? '#a78bfa' : mult > 1 ? '#10b981' : '#ef4444'}">${p.udRegime === 'decimal' ? '◆' : mult > 1 ? '▲' : '▼'} ${mult}x ${p.udRegime === 'decimal' ? 'PAYOUT' : 'BOOST'}</span>` : ''}
-        </div>
-        ${esStatEdge(p)}
-      </td>
-      <td style="padding:9px 8px;text-align:center">
-        <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:14px">${escEs(line)}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:2px">→ <span style="color:#a78bfa;font-weight:600">${escEs(p.modelPred ?? '—')}</span></div>
-      </td>
-      <td style="padding:9px 10px 9px 8px;text-align:center">
-        <span style="display:inline-block;padding:3px 10px;border:1.5px solid ${sideColor};color:${sideColor};border-radius:4px;font-size:11px;font-weight:800;letter-spacing:1.5px">${escEs(p.side || '—')}</span>
-        <div style="font-family:'JetBrains Mono',monospace;color:#cbd5e1;font-size:11px;margin-top:4px;font-weight:600">${p.prob != null ? p.prob + '% prob' : ''}</div>
-        ${p.predSource ? `<div style="font-size:8px;letter-spacing:1.5px;margin-top:2px;font-weight:800;color:${p.predSource === 'manual' ? '#a78bfa' : '#475569'}">${p.predSource === 'manual' ? 'MANUAL' : 'AUTO'}</div>` : ''}
-      </td>
-    </tr>`;
-  }).join('');
-  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px">
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="background:rgba(0,0,0,.4);border-bottom:1px solid var(--border)">
-        <th style="padding:8px 10px"></th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:${B.color};letter-spacing:1.5px;font-weight:800">${escEs(B.name)} EV</th>
-        <th style="padding:8px;text-align:left;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">PLAYER · PROP</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">LINE→MODEL</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">SIDE</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
+  return `<div class="es-lines" style="--bk:${B.color}"><div class="es-lines-head" style="border-left:3px solid ${B.color}"><span style="color:${B.color}">${escEs(B.name)} · priced at its own lines</span><span>${sorted.length} lines</span></div>${sorted.map(p => esLineRow(p, key)).join('')}</div>`;
 }
 
 // ── PLAYS: the +EV plays, one section per book, in the columns bettors know ──
@@ -6283,6 +6296,12 @@ function esSlipStats(bookKey, legs) {
     probAll: e.probAll, ev: e.ev, kelly: e.kelly, server: e };
 }
 
+esportsState.slipMin = lsGet('lr_slip_min') === '1';
+function esToggleSlipMin() {
+  esportsState.slipMin = !esportsState.slipMin;
+  lsSet('lr_slip_min', esportsState.slipMin ? '1' : '');
+  renderSlipBar();
+}
 function renderSlipBar() {
   const bar = document.getElementById('esSlipBar');
   if (!bar) return;
@@ -6296,29 +6315,25 @@ function renderSlipBar() {
   bar.style.display = 'block';
   document.body.classList.add('lr-slip-open');
 
-  const legChips = legs.map((l, i) => `
-    <span class="slip-leg"><b>${escEs(l.player)}</b> ${escEs(l.side)} ${escEs(l.line)} <span style="color:#64748b">${escEs((l.market || '').slice(0, 18))}</span>
-      <span style="color:#34d399;font-family:'JetBrains Mono',monospace">${(l.prob * 100).toFixed(0)}%</span>
-      <span class="slip-x" onclick="esRemoveLeg(${i})">✕</span></span>`).join('');
+  const legChips = `<div class="sb-legs">${legs.map((l, i) => `
+    <span class="slip-leg"><b>${escEs(l.player)}</b> <span class="sd ${l.side === 'OVER' ? 'over' : 'under'}">${escEs(l.side)} ${escEs(l.line)}</span> <span style="color:#64748b">${escEs((l.market || '').slice(0, 18))}</span>
+      <span class="pr">${(l.prob * 100).toFixed(0)}%</span>
+      <span class="slip-x" title="Remove" onclick="esRemoveLeg(${i})">✕</span></span>`).join('')}</div>`;
+  const min = !!esportsState.slipMin;
+  bar.classList.toggle('min', min);
+  document.body.classList.toggle('lr-slip-min', min);
+  const head = (sum) => `<div class="sb-head"><span class="sb-title">SLIP <span>· ${legs.length} LEG${legs.length === 1 ? '' : 'S'}</span></span>${sum}
+    <button class="sb-icon" title="${min ? 'Expand' : 'Collapse'}" onclick="esToggleSlipMin()">${min ? '&#9650;' : '&#9660;'}</button>
+    <button class="sb-icon" title="Clear the slip" onclick="esClearSlip()">✕</button></div>`;
 
   if (legs.length < 2) {
-    bar.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-family:'Inter',sans-serif;font-size:16px;letter-spacing:3px;color:#e2e8f0">SLIP</span>
-      ${legChips}
-      <span style="font-size:11px;color:#64748b">Add at least 2 legs to price the entry</span>
-      <button class="slip-btn" style="margin-left:auto" onclick="esClearSlip()">CLEAR</button>
-    </div>`;
+    bar.innerHTML = `<div class="sb-wrap">${head('<span class="sb-sum">Add one more leg to price the entry</span>')}${legChips}</div>`;
     return;
   }
 
   const allStats = Object.keys(ES_BOOKS).map(k => esSlipStats(k, legs)).filter(Boolean);
   if (!allStats.length) {
-    bar.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-family:'Inter',sans-serif;font-size:16px;letter-spacing:3px;color:#e2e8f0">SLIP</span>
-      ${legChips}
-      <span style="font-size:11px;color:#f59e0b">No single book offers all ${legs.length} of these legs at this size — drop one</span>
-      <button class="slip-btn" style="margin-left:auto" onclick="esClearSlip()">CLEAR</button>
-    </div>`;
+    bar.innerHTML = `<div class="sb-wrap">${head(`<span class="sb-sum" style="color:#f59e0b">No book offers all ${legs.length} legs at this size</span>`)}${legChips}<div class="sb-note" style="display:block;color:#f59e0b">Drop a leg to price it.</div></div>`;
     return;
   }
 
@@ -6329,41 +6344,36 @@ function renderSlipBar() {
 
   const bookPills = Object.entries(ES_BOOKS).map(([k, B]) => {
     const st = allStats.find(s => s.bookKey === k);
-    if (!st) return `<div class="slip-bookpill na"><span style="color:${B.color};font-weight:700">${B.name}</span><span>—</span></div>`;
+    if (!st) return `<div class="slip-bookpill na"><span class="bn" style="--bk:${B.color}"><i></i>${B.name}</span><span>—</span></div>`;
     const isSel = k === esportsState.slipBook;
     const isBest = k === bestKey;
     return `<div class="slip-bookpill ${isSel ? 'sel' : ''}" onclick="esportsState.slipBook='${k}';renderSlipBar()">
-      <span style="color:${B.color};font-weight:700">${B.name}${isBest ? ' ★' : ''}</span>
-      <span style="color:#cbd5e1">${st.fullMult.toFixed(2)}x ${st.mode === 'FLEX' ? 'FLX' : ''}</span>
-      <span style="color:${esEvColor(st.ev)};font-weight:800">${st.ev > 0 ? '+' : ''}${st.ev.toFixed(1)}%</span>
+      <span class="bn" style="--bk:${B.color};color:${B.color}"><i></i>${B.name}${isBest ? ' ★' : ''}</span>
+      <span class="be" style="color:${esEvColor(st.ev)}">${st.ev > 0 ? '+' : ''}${st.ev.toFixed(1)}%</span>
+      <span style="color:#94a3b8">${st.fullMult.toFixed(2)}x${st.mode === 'FLEX' ? ' flex' : ''}</span>
     </div>`;
   }).join('');
 
   const qKelly = sel.kelly * 0.25;
   const suggested = Math.max(0, Math.round(esportsState.bankroll * qKelly * 100) / 100);
 
-  bar.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <span style="font-family:'Inter',sans-serif;font-size:16px;letter-spacing:3px;color:#e2e8f0">SLIP · ${legs.length} LEGS</span>
-      ${legChips}
-      <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b">BANKROLL $
-        <input class="key-input" style="width:80px;padding:4px 8px;font-size:11px" type="number" value="${esportsState.bankroll}" onchange="setEsBankroll(this.value)" /></span>
-      <button class="slip-btn" onclick="esClearSlip()">CLEAR</button>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${bookPills}</div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:11px">
-      <span style="color:#94a3b8">HIT ALL: <b style="color:#f1f5f9">${(sel.probAll * 100).toFixed(1)}%</b></span>
-      <span style="color:#94a3b8">PAYS: <b style="color:${sel.book.color}">${sel.fullMult.toFixed(2)}x${sel.mode === 'FLEX' ? ' flex' : ''}</b></span>
-      <span style="color:#94a3b8">EV: <b style="color:${esEvColor(sel.ev)}">${sel.ev > 0 ? '+' : ''}${sel.ev.toFixed(1)}%</b></span>
-      <span style="color:#94a3b8">¼-KELLY: <b style="color:${sel.ev > 0 ? '#34d399' : '#64748b'}">$${suggested.toFixed(2)}</b> <span style="color:#475569">(${(qKelly * 100).toFixed(1)}%)</span></span>
-      <span style="display:flex;align-items:center;gap:4px;color:#64748b">STAKE $<input class="key-input" id="esSlipStake" style="width:70px;padding:4px 8px;font-size:11px" type="number" value="${suggested > 0 ? suggested.toFixed(2) : ''}" placeholder="0" /></span>
-      <span style="margin-left:auto;display:flex;gap:6px">
-        <button class="slip-btn" onclick="esCopySlip()">COPY</button>
-        <button class="slip-btn primary" onclick="esLogSlip()">＋ LOG BET</button>
-      </span>
+  bar.innerHTML = `<div class="sb-wrap">
+    ${head(`<span class="sb-sum"><span class="sb-sumtxt">${escEs(sel.book.name.charAt(0) + sel.book.name.slice(1).toLowerCase())} · hits ${(sel.probAll * 100).toFixed(1)}%</span> <b style="color:${esEvColor(sel.ev)}">${sel.ev > 0 ? '+' : ''}${sel.ev.toFixed(1)}%</b></span>`)}
+    ${legChips}
+    <div class="sb-mid"><div class="sb-books">${bookPills}</div>
+    <div class="sb-stats">
+      <div>Hit all<b>${(sel.probAll * 100).toFixed(1)}%</b></div>
+      <div>Pays<b style="color:${sel.book.color}">${sel.fullMult.toFixed(2)}x${sel.mode === 'FLEX' ? ' <small>flex</small>' : ''}</b></div>
+      <div>EV<b style="color:${esEvColor(sel.ev)}">${sel.ev > 0 ? '+' : ''}${sel.ev.toFixed(1)}%</b></div>
+      <div>¼ Kelly<b style="color:${sel.ev > 0 ? '#34d399' : '#64748b'}">$${suggested.toFixed(2)} <small>${(qKelly * 100).toFixed(1)}%</small></b></div>
+    </div></div>
+    <div class="sb-act">
+      <label class="sb-in">BANKROLL $<input class="key-input" type="number" value="${esportsState.bankroll}" onchange="setEsBankroll(this.value)" /></label>
+      <label class="sb-in">STAKE $<input class="key-input" id="esSlipStake" type="number" value="${suggested > 0 ? suggested.toFixed(2) : ''}" placeholder="0" /></label>
+      <span class="sb-btns"><button class="slip-btn" onclick="esCopySlip()">COPY</button><button class="slip-btn primary" onclick="esLogSlip()">＋ LOG BET</button></span>
     </div>
     <div id="esSlipCorr" style="margin-top:6px;font-size:11px;font-family:'JetBrains Mono',monospace"></div>
-    <div style="margin-top:6px;font-size:9px;color:#475569;font-family:'JetBrains Mono',monospace">★ = best payout · ${esSrvSlip(legs)?.books ? `PrizePicks, Underdog and Sleeper are priced at each book's own line, legs from one series together` : `numbers above treat legs as independent; the series check prices legs that share a match together`} · payout tables are defaults, verify against the live apps</div>`;
+    <div class="sb-note">★ = best payout · ${esSrvSlip(legs)?.books ? `PrizePicks, Underdog and Sleeper are priced at each book's own line, legs from one series together` : `numbers above treat legs as independent; the series check prices legs that share a match together`} · payout tables are defaults, verify against the live apps</div></div>`;
   esCheckCorrelation(legs);
 }
 
