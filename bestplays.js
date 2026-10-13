@@ -37,6 +37,7 @@ const DEFAULTS = {
   provenMaxUnits: 2,
   entryMinEv: 0.03,           // an Underdog entry: at least 3% EV on the whole entry
   entryMaxLegs: 3,            // more legs, more variance, and the greedy pick gets worse
+  bidShare: 0.5,               // a limit bid is half a take: it fills when the price is moving against it
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
   limit: 300,
@@ -145,6 +146,26 @@ function edgeRows(matches, verdict, o, now) {
         bet: `${e.outcome}${mk?.label && e.kind !== 'match' ? ` (${mk.label})` : ''}`, venue: e.venue === 'kalshi' ? 'Kalshi' : e.venue === 'polymarket' ? 'Polymarket' : e.venue,
         price: e.cost, american: null, maxPrice: null, units, ev: r4(e.ev), verdict: vd.verdict, why,
         url: m.links?.[e.venue] || null, startsAt: m.start || null, at: null, warning: null,
+      });
+    }
+    // limit bids inside a wide book: value if a seller comes down to them
+    for (const b of m.bids || []) {
+      if (!(b.cost > 0 && b.cost < 1) || b.fair == null || !(b.ev > 0)) continue;
+      const venue = b.venue === 'kalshi' ? 'Kalshi' : b.venue === 'polymarket' ? 'Polymarket' : b.venue;
+      const vd = verdict('esportsEdges', { sport: m.game, book: `${b.venue}-bid`, market: b.kind });
+      if (vd.avoid) { dropped.push({ kind: 'esportsEdge', title: m.label, play: vd.avoid.play }); continue; }
+      const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
+      const units = quarter(o.bidShare * kellyUnits(b.fair, b.cost, cap, o));
+      if (!(units > 0)) continue;
+      const mk = (m.markets || []).find(x => x.key === b.market);
+      const why = [`fair ${Math.round(b.fair * 100)}c from the other markets; the book is ${Math.round(b.bid * 100)}/${Math.round(b.ask * 100)}c, so take has no edge but a ${Math.round(b.price * 100)}c bid does`,
+        'cancel it at the start; it only counts once a seller fills it'];
+      if (vd.play) why.push(evidence(vd.play));
+      rows.push({
+        id: `bid:${m.id}|${b.market}|${b.outcome}|${b.venue}`, kind: 'esportsEdge', label: `${m.game} limit bid`, title: m.label || (m.teams || []).join(' vs '),
+        bet: `Bid ${Math.round(b.price * 100)}c on ${b.outcome}${mk?.label && b.kind !== 'match' ? ` (${mk.label})` : ''}`, venue,
+        price: b.price, american: null, maxPrice: b.price, units, ev: r4(b.ev), verdict: vd.verdict, why,
+        url: m.links?.[b.venue] || null, startsAt: m.start || null, at: null, warning: null,
       });
     }
   }

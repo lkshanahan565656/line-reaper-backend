@@ -56,3 +56,33 @@ test('matchContext: with no ratings, a player\'s usual map win rate is the basel
   assert.equal(used.pTypical, 0.6);
   assert.ok(used.factor < at50.factor, 'a team that usually wins 60% of maps is further below its norm tonight');
 });
+
+const B = require('../esboard');
+test('esports limit bid: the highest cent above the best bid that still clears the edge after the maker fee', () => {
+  const o = B.DEFAULTS;
+  // Kalshi 24/28 with the fair at 36.5: take is +24% already, so test the plan on a pricier ask
+  const plan = B.bidPlan({ bid: 0.24, ask: 0.40, edge: undefined }, 0.365, 'kalshi', o);
+  assert.ok(plan, 'a plan exists');
+  assert.ok(plan.price >= 0.25 && plan.price <= 0.39);
+  assert.ok(plan.ev >= o.edgeMin);
+  // one cent higher would not clear it
+  const fee = p => 0.25 * o.kalshiFeeRate * p * (1 - p);
+  const up = Math.round((plan.price + 0.01) * 100) / 100;
+  assert.ok(up >= 0.40 || (0.365 - (up + fee(up))) / (up + fee(up)) < o.edgeMin || 0.365 - (up + fee(up)) < o.minEdgeCents);
+  // a one-cent book has no room, a take edge needs no bid, a fair under the bid gets none
+  assert.equal(B.bidPlan({ bid: 0.30, ask: 0.31 }, 0.365, 'kalshi', o), null);
+  assert.equal(B.bidPlan({ bid: 0.24, ask: 0.28, edge: true }, 0.365, 'kalshi', o), null);
+  assert.equal(B.bidPlan({ bid: 0.40, ask: 0.46 }, 0.39, 'kalshi', o), null);
+});
+
+test('Best Plays shows a limit bid as half a take, under esports edges', () => {
+  const { bestPlays } = require('../bestplays');
+  const NOW = Date.parse('2026-10-12T12:00:00Z');
+  const m = { id: 'CS2:a-b', game: 'CS2', label: 'A vs B', teams: ['A', 'B'], start: new Date(NOW + 3600e3).toISOString(), edges: [], links: { kalshi: 'https://kalshi.com/x' }, markets: [],
+    bids: [{ market: 'match', kind: 'match', outcome: 'B', venue: 'kalshi', price: 0.33, cost: 0.3337, fair: 0.365, ev: 0.0938, ask: 0.40, bid: 0.30 }] };
+  const row = bestPlays({ matches: [m] }, { now: NOW }).rows.find(r => r.id.startsWith('bid:'));
+  assert.ok(row);
+  assert.equal(row.kind, 'esportsEdge');
+  assert.match(row.bet, /^Bid 33c on B/);
+  assert.ok(row.units > 0 && row.units <= 0.5);
+});
