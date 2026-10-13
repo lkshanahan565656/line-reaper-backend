@@ -85,3 +85,16 @@ test('results cut exchange value into steam and price gaps', () => {
   assert.ok(steam && gap);
   assert.ok(steam.avgClv > 0 && gap.avgClv < 0);
 });
+
+test('book reads: steam first, then the stalest, never-read before read', () => {
+  const now = T0;
+  const cache = new Map([['a', { at: now - 60e3 }], ['b', { at: now - 180e3 }]]);
+  assert.deepEqual(V.planReads({ urgent: ['s'], rest: ['a', 'b', 'c', 's'], cache, now, max: 3 }), ['s', 'c', 'b']);
+  assert.deepEqual(V.planReads({ urgent: [], rest: ['a', 'b'], cache, now, max: 5 }), ['b', 'a']);
+});
+
+test('the same outcome on both Kalshi team markets is one bet, the cheaper one', () => {
+  const e = (id, ev) => ({ id, venue: 'kalshi', refId: '9', fair: 0.425, start: 'x', ev });
+  const out = V.dedupeEdges([e('A|yes', 0.045), e('B|no', 0.02), { ...e('C|yes', 0.03), fair: 0.575 }]);
+  assert.deepEqual(out.map(x => x.id), ['A|yes', 'C|yes']);
+});

@@ -2825,6 +2825,8 @@ const steamWatch = require('./steam').createSteamWatch(require('./steam').optsFr
 const STEAM_ALERT_MIN = Number.isFinite(parseFloat(process.env.STEAM_ALERT_MIN)) ? parseFloat(process.env.STEAM_ALERT_MIN) : 0.02;
 const xvalueState = { edges: [], updated: null, counts: null, primed: false };
 const xvalueSeen = new Map();     // edge id → last alert (ms)
+const xvalueBookCache = new Map();  // ref id → { book, at }: a read counts for XVALUE_BOOK_TTL_MS
+const XVALUE_BOOK_TTL_MS = 4 * 60e3;
 const xvalueRefs = new Map();     // tracked group → { refId, token, start }: its close keeps coming from the book
 const xvalueTracker = createEvTracker({
   store: resultsBackup.wrap('exchangeValue', createEvStoreFromEnv(process.env, { table: 'exchange_value', fileVar: 'XVALUE_TRACK_FILE', file: 'exchange-value.json' })),
@@ -2849,15 +2851,30 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
     if (Date.parse(r.start) <= now - 3600e3) { xvalueRefs.delete(g); continue; }
     if (!want.has(r.refId)) want.set(r.refId, r.token);
   }
-  const books = new Map();
-  for (const [id, token] of [...want].slice(0, XVALUE_BOOKS)) {
-    try { const b = await tail.fetchBook(upstream, token); if (b) books.set(id, b); } catch { /* a missing book: no edge */ }
+  // books read in the last few scans still count, so the reads rotate
+  // through every candidate; a steaming side's is always read fresh
+  const reads = xvalue.planReads({ urgent: steaming.map(q => q.refId), rest: [...want.keys()], cache: xvalueBookCache, now, max: XVALUE_BOOKS });
+  let read = 0;
+  for (const id of reads) {
+    try { const b = await tail.fetchBook(upstream, want.get(id)); if (b) { xvalueBookCache.set(id, { book: b, at: now }); read++; } } catch { /* a missing book: no edge */ }
   }
-  const { edges, fairs, pairs } = xvalue.findValue(input, { ...o, books, requireBook: true, steam: steamWatch, steamMinEv: steamWatch.opts.minEv });
+  // an older read only counts while Gamma's quote still agrees with it
+  const gammaMid = new Map();
+  for (const p of polymarket) if (want.has(String(p.id)) && p.yesAsk != null && p.noAsk != null) gammaMid.set(String(p.id), (p.yesAsk + 1 - p.noAsk) / 2);
+  const books = new Map();
+  for (const [id, c] of xvalueBookCache) {
+    if (now - c.at > XVALUE_BOOK_TTL_MS) { xvalueBookCache.delete(id); continue; }
+    if (!want.has(id)) continue;
+    const g = gammaMid.get(id), mid = c.book.ask != null && c.book.bid != null ? (c.book.ask + c.book.bid) / 2 : null;
+    if (c.at < now && (g == null || mid == null || Math.abs(g - mid) > 0.015)) continue;
+    books.set(id, c.book);
+  }
+  const found = xvalue.findValue(input, { ...o, books, requireBook: true, steam: steamWatch, steamMinEv: steamWatch.opts.minEv });
+  const { fairs, pairs } = found, edges = xvalue.dedupeEdges(found.edges);
   edges.sort((a, b) => (b.steam ? 1 : 0) - (a.steam ? 1 : 0) || b.ev - a.ev);
   for (const e of edges) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
   await xvalueTracker.recordBoard(xvalue.trackRows(edges), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size() } });
+  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size() } });
   const lic = webhookLicence();
   const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   for (const e of fresh) xvalueSeen.set(e.id, now);
@@ -3353,7 +3370,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.75.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.76.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4315,7 +4332,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.75.1',
+  version: '3.76.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4457,10 +4474,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.75.1 on port ${PORT}`);
+    console.log(`Line Reaper v3.76.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.75.1 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.76.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
