@@ -1382,3 +1382,27 @@ test('kalshi game series: fights (UFC, boxing, MMA) are games too', async () => 
     title: 'UFC Fight Night: Jai Herbert vs. Matheus Camilo', tags: [{ label: 'Sports', slug: 'sports' }, { label: 'UFC', slug: 'ufc' }], endDate: '2026-10-11T01:00:00Z' });
   assert.equal(A.matchMarkets(rows, pm, opts({ now: Date.parse('2026-10-10T12:00:00Z') })).filter(x => x.by === 'teams').length, 2);
 });
+
+test('game sweep reads the Polymarket US leagues every few minutes, ahead of the rest', async () => {
+  let t = NOW;
+  const reads = [];
+  const listed = ['KXNBAGAME', 'KXNBATOTAL', 'KXNFLGAME', ...Array.from({ length: 20 }, (_, i) => `KXQUIET${i}GAME`)];
+  const http = {
+    async get(url, o) {
+      if (url === A.KALSHI_SERIES_URL) return { data: { series: listed.map(ticker => ({ ticker })) } };
+      reads.push(o.params.series_ticker);
+      return { data: { events: [], cursor: '' } };
+    },
+  };
+  const sweep = A.createKalshiGameSweep({ http, perScan: 4, quietSlots: 1, seeds: [], now: () => t });
+  await sweep.step();
+  assert.deepEqual(reads.slice(0, 2).sort(), ['KXNBAGAME', 'KXNBATOTAL'], 'at most half the slots, priority first');
+  for (let i = 0; i < 3; i++) { t += 60e3; reads.length = 0; await sweep.step(); }
+  // by now each priority series is due again within 3 minutes of its last read
+  const seen = new Map();
+  for (let i = 0; i < 12; i++) {
+    t += 60e3; reads.length = 0; await sweep.step();
+    for (const s of reads) if (['KXNBAGAME', 'KXNBATOTAL', 'KXNFLGAME'].includes(s)) { if (seen.has(s)) assert.ok(t - seen.get(s) <= 4 * 60e3, `${s} re-read in time`); seen.set(s, t); }
+  }
+  assert.equal(seen.size, 3);
+});

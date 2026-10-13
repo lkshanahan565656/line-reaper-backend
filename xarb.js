@@ -1424,8 +1424,16 @@ async function fetchKalshiGameSeries(http) {
   const roots = new Set(tickers.filter(t => GAME_SERIES_RE.test(t)).map(t => t.replace(GAME_SERIES_RE, '')));
   return tickers.filter(t => GAME_SERIES_RE.test(t) || (LINE_SERIES_RE.test(t) && roots.has(t.replace(LINE_SERIES_RE, ''))));
 }
+// The leagues Polymarket US lists (pmus ARB_LEAGUES) as Kalshi series roots:
+// their GAME, TOTAL and SPREAD series are read every few minutes ahead of the
+// rest, so a game listed on both pairs within a scan or two of a restart
+// instead of waiting its turn among hundreds of quiet series.
+const PRIORITY_ROOTS = ['KXNFL', 'KXNCAAF', 'KXNBA', 'KXNHL', 'KXMLB', 'KXWNBA', 'KXNCAAMB', 'KXNCAAWB', 'KXMLS', 'KXEPL', 'KXUCL', 'KXLALIGA',
+  'KXBUNDESLIGA', 'KXSERIEA', 'KXLIGUE1', 'KXLOL', 'KXCS2', 'KXVALORANT', 'KXCOD'];
+const seriesRoot = x => String(x || '').toUpperCase().replace(/(GAME|MATCH|FIGHT|TOTAL|SPREAD)$/, '');
 function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs = 6 * 3600e3, retryMs = 10 * 60e3, keepMs = 30 * 60e3,
-  seeds = SEED_GAME_SERIES, now = () => Date.now() } = {}) {
+  seeds = SEED_GAME_SERIES, priorityRoots = PRIORITY_ROOTS, priorityMs = 3 * 60e3, now = () => Date.now() } = {}) {
+  const roots = new Set(priorityRoots);
   let series = [...seeds], nextList = 0;
   const cache = new Map();      // series → { rows, at }: its open games' rows
   const readAt = new Map();     // series → last read (ms)
@@ -1448,9 +1456,13 @@ function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs =
     const t = now();
     await refreshList(t);
     const due = [...series].sort((a, b) => (readAt.get(a) ?? -1) - (readAt.get(b) ?? -1));
-    const busy = due.filter(x => cache.has(x)), quiet = due.filter(x => !cache.has(x));
-    const q = Math.min(quietSlots, quiet.length);
-    const pick = [...busy.slice(0, perScan - q), ...quiet.slice(0, q)];
+    // the Polymarket US leagues first, once priorityMs old; they take at most half the slots
+    const urgent = due.filter(x => roots.has(seriesRoot(x)) && !(t - (readAt.get(x) ?? -Infinity) < priorityMs)).slice(0, Math.ceil(perScan / 2));
+    const taken = new Set(urgent), rest = due.filter(x => !taken.has(x));
+    const busy = rest.filter(x => cache.has(x)), quiet = rest.filter(x => !cache.has(x));
+    const slots = perScan - urgent.length;
+    const q = Math.min(quietSlots, quiet.length, slots);
+    const pick = [...urgent, ...busy.slice(0, slots - q), ...quiet.slice(0, q)];
     for (const x of quiet.slice(q)) if (pick.length < perScan) pick.push(x);
     await Promise.all(pick.map(async x => {
       const rows = [];
@@ -1525,7 +1537,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
   findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
-  fetchKalshiGameSeries, createKalshiGameSweep, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
+  fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
 };
