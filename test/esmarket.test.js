@@ -63,12 +63,12 @@ test('blend nudges the market by the weight', () => {
 test('line bias: shrunk toward 0, capped, and moves the consensus', () => {
   const { lineBias } = require('../esmarket');
   const rows = [];
-  for (let i = 0; i < 40; i++) rows.push({ status: 'graded', sport: 'CS', stat: 'headshots', signalBook: 'UD', signalLine: 13.5, result: 11.5 });
+  for (let i = 0; i < 40; i++) rows.push({ status: 'graded', sport: 'CS', stat: 'headshots', signalBook: 'UD', signalLine: 10, result: 8.4 });
   const b = lineBias(rows);
-  assert.strictEqual(b.bias('CS', 'headshots', 'UD'), -1);   // −2 over 40 picks, prior 40
+  assert.ok(Math.abs(b.bias('CS', 'headshots', 'UD') + 0.08) < 1e-9);   // −16% over 40 picks, prior 40
   assert.strictEqual(b.bias('CS', 'headshots', 'PP'), 0);
-  const big = lineBias(rows.map(r => ({ ...r, result: 0 })));
-  assert.ok(Math.abs(big.bias('CS', 'headshots', 'UD') + 1.35) < 1e-9);   // 10% of the line
-  const c = consensus([{ book: 'UD', line: 13.5, over: 1, under: 1, bias: -1 }], curve);
-  assert.ok(Math.abs(c.mean - 12.5) < 0.02, c.mean);
+  const big = lineBias(rows.concat(rows).concat(rows).map(r => ({ ...r, result: 0 })));
+  assert.strictEqual(big.bias('CS', 'headshots', 'UD'), -0.1);   // capped at 10%
+  const c = consensus([{ book: 'UD', line: 12.5, over: 1, under: 1, bias: -0.08 }], curve);
+  assert.ok(Math.abs(c.mean - 11.5) < 0.02, c.mean);
 });

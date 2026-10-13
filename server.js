@@ -1687,7 +1687,7 @@ async function generateEsportsPicks() {
     if (raw == null) marketCounts.marketOnly++;
     if (kept.length > 1) marketCounts.multiBook++;
     marketCounts.dropped += cons.quotes.length - kept.length;
-    const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.bias ? `, runs ${q.bias > 0 ? 'low' : 'high'} ${Math.abs(q.bias).toFixed(1)}` : ''}${q.dropped ? ' (left out)' : ''}`;
+    const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.bias ? `, runs ${q.bias > 0 ? 'low' : 'high'} ${Math.abs(q.bias * 100).toFixed(0)}%` : ''}${q.dropped ? ' (left out)' : ''}`;
     const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}`;
     return {
       ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',

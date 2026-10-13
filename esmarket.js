@@ -23,7 +23,7 @@ const DEFAULTS = {
   vigProduct: 0.95,     // Underdog's two multipliers multiply to about this
   outlier: { rel: 0.3, abs: 2.5 },
   biasPriorN: 40,       // graded picks a book's bias needs before it counts in full
-  maxBiasRel: 0.1,      // never move a book's line by more than 10% of it
+  maxBiasRel: 0.1,      // never move a book's line by more than 10%
 };
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -99,7 +99,7 @@ function consensus(quotes, overFair, o = DEFAULTS) {
     let m = impliedMean(q.line, clamp(s.pOver, 0.02, 0.98), overFair);
     if (m == null) continue;
     // a book whose lines have run high or low on this stat (lineBias)
-    if (q.bias) m += q.bias;
+    if (q.bias) m += q.bias * q.line;
     out.push({ book: q.book, line: q.line, pOver: +s.pOver.toFixed(4), mean: +m.toFixed(2), weight: s.weight, ...(q.bias ? { bias: q.bias } : {}) });
   }
   if (!out.length) return null;
@@ -142,7 +142,9 @@ function modelWeights(rows, o = DEFAULTS) {
 }
 
 // Where a book's lines have landed against results, per sport, stat and book:
-// the average of (result − line), shrunk toward 0 by biasPriorN picks. On the
+// the average of (result − line) / line, so a support's 2.5 and a carry's 27.5
+// share one number, each pick clipped to ±50% and the whole shrunk toward 0 by
+// biasPriorN picks. On the
 // 10-13 record Underdog's CS headshot lines ran 1.4 high (overs hit 10 of 33),
 // and the half-and-half check held: biases fit on the first 50 graded picks
 // called the next 51 better than an even line did. Pushes count as 0.
@@ -150,17 +152,16 @@ function lineBias(rows, o = DEFAULTS) {
   const acc = {};
   for (const r of rows || []) {
     if (!r || r.status !== 'graded' || r.result == null || r.signalLine == null || !r.signalBook) continue;
-    const d = Number(r.result) - Number(r.signalLine);
-    if (!Number.isFinite(d)) continue;
+    const line = Number(r.signalLine), d = (Number(r.result) - line) / line;
+    if (!(line > 0) || !Number.isFinite(d)) continue;
     const k = `${r.sport}|${r.stat}|${r.signalBook}`;
-    const a = acc[k] || (acc[k] = { n: 0, sum: 0, lineSum: 0 });
-    a.n++; a.sum += d; a.lineSum += Number(r.signalLine);
+    const a = acc[k] || (acc[k] = { n: 0, sum: 0 });
+    a.n++; a.sum += clamp(d, -0.5, 0.5);
   }
   const out = {};
   for (const [k, a] of Object.entries(acc)) {
     const [sport, stat, book] = k.split('|');
-    const cap = o.maxBiasRel * (a.lineSum / a.n);
-    out[k] = { sport, stat, book, n: a.n, raw: +(a.sum / a.n).toFixed(3), bias: +clamp(a.sum / (a.n + o.biasPriorN), -cap, cap).toFixed(3) };
+    out[k] = { sport, stat, book, n: a.n, raw: +(a.sum / a.n).toFixed(4), bias: +clamp(a.sum / (a.n + o.biasPriorN), -o.maxBiasRel, o.maxBiasRel).toFixed(4) };
   }
   return {
     table: out,
