@@ -1,0 +1,229 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.81.0 on port 3999
+Tracker: store ready
+PP: 2703 lines (259 esports) · leagues: NHL, MLB, NBA, BAD, R6, TENNIS, TT, UCL, LoL, CS2, NHL1P, NBAP
+Sleeper: 155 esports and 2694 sports lines from 2849 rows
+Sleeper: 155 esports and 2694 sports lines from 2849 rows
+Owls odds nhl: 403 (auth) — 2 more failures until Owls disables itself
+Owls odds mlb: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+UD: 7836 lines (5707 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+Startup complete
+UD: 7836 lines (5707 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 drg: KPM=14.6 KPR=0.68 HS%=58 R=—
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+bo3 ALLE: KPM=11.8 KPR=0.55 HS%=53 R=—
+bo3 ckzao: KPM=15.9 KPR=0.74 HS%=56 R=—
+bo3 lash: KPM=14.4 KPR=0.67 HS%=39 R=—
+gol.gg: 2181 LoL players (S16)
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 xureba: KPM=12.3 KPR=0.57 HS%=51 R=—
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+bo3 xureba: KPM=12.3 KPR=0.57 HS%=51 R=—
+bo3 PKL: KPM=12.2 KPR=0.56 HS%=52 R=—
+bo3 PKL: KPM=12.2 KPR=0.56 HS%=52 R=—
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 detr0ittJ: KPM=14.4 KPR=0.67 HS%=35 R=—
+bo3 detr0ittJ: KPM=14.4 KPR=0.67 HS%=35 R=—
+bo3 tomate: KPM=15.8 KPR=0.73 HS%=51 R=—
+bo3 tomate: KPM=15.8 KPR=0.73 HS%=51 R=—
+bo3 gbb: KPM=15.6 KPR=0.72 HS%=52 R=—
+bo3 gbb: KPM=15.6 KPR=0.72 HS%=52 R=—
+Esports board: 194 matches (94 on both exchanges, 3 edges) in 8293ms
+bo3 destiny: KPM=15.1 KPR=0.70 HS%=47 R=—
+bo3 destiny: KPM=15.1 KPR=0.70 HS%=47 R=—
+bo3 intra: KPM=15.5 KPR=0.74 HS%=61 R=—
+bo3 intra: KPM=15.5 KPR=0.74 HS%=61 R=—
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 sjuush: KPM=14.4 KPR=0.65 HS%=55 R=—
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 Umar: KPM=14.2 KPR=0.68 HS%=37 R=—
+bo3 LEARSI: KPM=12.1 KPR=0.58 HS%=59 R=—
+bo3 Umar: KPM=14.2 KPR=0.68 HS%=37 R=—
+bo3 XANTARES: KPM=14.8 KPR=0.69 HS%=53 R=—
+bo3 Pose1doNN: no usable kill fields — inspect /api/esports/probe/cs/Pose1doNN
+bo3 Pose1doNN: no usable kill fields — inspect /api/esports/probe/cs/Pose1doNN
+bo3 sml: no usable kill fields — inspect /api/esports/probe/cs/sml
+Esports board: 194 matches (94 on both exchanges, 3 edges) in 3589ms
+bo3 sml: no usable kill fields — inspect /api/esports/probe/cs/sml
+bo3 CoolComs: no usable kill fields — inspect /api/esports/probe/cs/CoolComs
+bo3 Jame: KPM=13.4 KPR=0.64 HS%=30 R=—
+bo3 CoolComs: no usable kill fields — inspect /api/esports/probe/cs/CoolComs
+OpenDota: 7687 pro player names indexed
+bo3 CAJUN: KPM=15.0 KPR=0.67 HS%=49 R=—
+bo3 CAJUN: KPM=15.0 KPR=0.67 HS%=49 R=—
+bo3 twigs: KPM=11.1 KPR=0.53 HS%=51 R=—
+bo3 kyousuke: KPM=15.4 KPR=0.76 HS%=60 R=—
+bo3 twigs: KPM=11.1 KPR=0.53 HS%=51 R=—
+bo3 Wicadia: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 Wicadia: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 woxic: KPM=15.0 KPR=0.71 HS%=29 R=—
+bo3 woxic: KPM=15.0 KPR=0.71 HS%=29 R=—
+bo3 XiELO: KPM=13.9 KPR=0.66 HS%=62 R=—
+bo3 Jimpphat: KPM=14.9 KPR=0.70 HS%=58 R=—
+bo3 Jimpphat: KPM=14.9 KPR=0.70 HS%=58 R=—
+bo3 xKacpersky: KPM=15.8 KPR=0.71 HS%=54 R=—
+bo3 kyxsan: KPM=12.0 KPR=0.57 HS%=54 R=—
+bo3 Jambo: KPM=16.1 KPR=0.74 HS%=37 R=—
+bo3 kyxsan: KPM=12.0 KPR=0.57 HS%=54 R=—
+bo3 dgt: KPM=14.5 KPR=0.71 HS%=57 R=—
+bo3 dgt: KPM=14.5 KPR=0.71 HS%=57 R=—
+bo3 HUASOPEEK: KPM=13.8 KPR=0.68 HS%=63 R=—
+bo3 d1Ledez: KPM=14.9 KPR=0.66 HS%=61 R=—
+bo3 HUASOPEEK: KPM=13.8 KPR=0.68 HS%=63 R=—
+bo3 meyern: KPM=12.1 KPR=0.60 HS%=39 R=—
+Ratings LOL: 5503 maps → 299 teams
+bo3 molodoy: KPM=15.8 KPR=0.74 HS%=38 R=—
+bo3 meyern: KPM=12.1 KPR=0.60 HS%=39 R=—
+bo3 luchov: KPM=12.8 KPR=0.63 HS%=59 R=—
+bo3 luchov: KPM=12.8 KPR=0.63 HS%=59 R=—
+bo3 zweih: KPM=11.7 KPR=0.56 HS%=51 R=—
+bo3 max: KPM=13.3 KPR=0.67 HS%=— R=—
+bo3 max: KPM=13.3 KPR=0.67 HS%=— R=—
+bo3 TeSeS: KPM=12.2 KPR=0.60 HS%=63 R=—
+bo3 dwushka: KPM=14.5 KPR=0.67 HS%=61 R=—
+bo3 dwushka: KPM=14.5 KPR=0.67 HS%=61 R=—
+bo3 frontales: KPM=15.5 KPR=0.72 HS%=33 R=—
+bo3 frontales: KPM=15.5 KPR=0.72 HS%=33 R=—
+bo3 cairne: KPM=15.5 KPR=0.72 HS%=52 R=—
+bo3 mizu: no usable kill fields — inspect /api/esports/probe/cs/mizu
+bo3 mizu: no usable kill fields — inspect /api/esports/probe/cs/mizu
+bo3 n0rb3r7: KPM=15.1 KPR=0.70 HS%=54 R=—
+bo3 n0rb3r7: KPM=15.1 KPR=0.70 HS%=54 R=—
+bo3 JACKASMO: KPM=15.5 KPR=0.72 HS%=59 R=—
+bo3 kade0: KPM=13.4 KPR=0.62 HS%=54 R=—
+bo3 kade0: KPM=13.4 KPR=0.62 HS%=54 R=—
+bo3 fear: KPM=12.4 KPR=0.57 HS%=47 R=—
+bo3 stavn: KPM=16.6 KPR=0.75 HS%=31 R=—
+bo3 fear: KPM=12.4 KPR=0.57 HS%=47 R=—
+bo3 mazay: KPM=15.2 KPR=0.70 HS%=56 R=—
+bo3 mazay: KPM=15.2 KPR=0.70 HS%=56 R=—
+bo3 m0NESY: KPM=17.3 KPR=0.85 HS%=42 R=—
+bo3 KSCerato: KPM=15.8 KPR=0.74 HS%=50 R=—
+bo3 m0NESY: KPM=17.3 KPR=0.85 HS%=42 R=—
+Warmer: +19 CS profiles (57 still queued)
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+Tail stream: no messages for 15s, reconnecting
+bo3 adamb: KPM=15.0 KPR=0.71 HS%=54 R=—
+bo3 adamb: KPM=15.0 KPR=0.71 HS%=54 R=—
+bo3 adamb: KPM=15.0 KPR=0.71 HS%=54 R=—
+Ratings DOTA: 780 maps → 193 teams
+bo3 Krimbo: KPM=14.2 KPR=0.65 HS%=52 R=—
+bo3 Krimbo: KPM=14.2 KPR=0.65 HS%=52 R=—
+bo3 Krimbo: KPM=14.2 KPR=0.65 HS%=52 R=—
+Esports: 18 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 83 Sleeper-priced, 0 manual, 172 need model input)
+bo3 latto: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 latto: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 Starry: KPM=16.0 KPR=0.71 HS%=60 R=—
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 dumau: KPM=15.1 KPR=0.70 HS%=45 R=—
+bo3 dumau: KPM=15.1 KPR=0.70 HS%=45 R=—
+bo3 FalleN: KPM=11.4 KPR=0.53 HS%=51 R=—
+bo3 n1ssim: KPM=14.1 KPR=0.66 HS%=54 R=—
+bo3 n1ssim: KPM=14.1 KPR=0.66 HS%=54 R=—
+bo3 Magnojez: KPM=15.8 KPR=0.70 HS%=51 R=—
+bo3 art: KPM=12.0 KPR=0.55 HS%=46 R=—
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 94 Sleeper-priced, 0 manual, 141 need model input)
+bo3 FL1T: KPM=13.5 KPR=0.64 HS%=57 R=—
+bo3 art: KPM=12.0 KPR=0.55 HS%=46 R=—
+bo3 shadiy: KPM=16.5 KPR=0.75 HS%=45 R=—
+bo3 HObbit: KPM=11.8 KPR=0.57 HS%=44 R=—
+bo3 yuurih: KPM=12.0 KPR=0.56 HS%=49 R=—
+bo3 YEKINDAR: KPM=14.6 KPR=0.69 HS%=63 R=—
+bo3 Westmelon: KPM=14.8 KPR=0.66 HS%=61 R=—
+bo3 zorte: KPM=14.2 KPR=0.63 HS%=33 R=—
+bo3 z4kr: KPM=15.0 KPR=0.66 HS%=33 R=—
+bo3 S1ren: KPM=14.7 KPR=0.66 HS%=59 R=—
+Warmer: +11 CS profiles (22 still queued)
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+Ratings VAL: 1531 maps → 191 teams
+bo3 Boombl4: KPM=12.9 KPR=0.57 HS%=43 R=—
+bo3 Boombl4: KPM=12.9 KPR=0.57 HS%=43 R=—
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+UD: 7835 lines (5708 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+bo3 BRACE: KPM=14.5 KPR=0.72 HS%=55 R=—
+bo3 EmiliaQAQ: KPM=15.4 KPR=0.68 HS%=64 R=—
+Sleeper: 155 esports and 2622 sports lines from 2777 rows
+bo3 C4LLM3SU3: KPM=15.2 KPR=0.67 HS%=55 R=—
+bo3 laxiee: KPM=15.4 KPR=0.71 HS%=57 R=—
+bo3 yourwombat: KPM=13.2 KPR=0.65 HS%=40 R=—
+bo3 yourwombat: KPM=13.2 KPR=0.65 HS%=40 R=—
+bo3 yourwombat: KPM=13.2 KPR=0.65 HS%=40 R=—
+bo3 foggers: KPM=14.3 KPR=0.69 HS%=53 R=—
+bo3 foggers: KPM=14.3 KPR=0.69 HS%=53 R=—
+bo3 foggers: KPM=14.3 KPR=0.69 HS%=53 R=—
+bo3 foggers: KPM=14.3 KPR=0.69 HS%=53 R=—
+bo3 rekonz: KPM=13.3 KPR=0.67 HS%=57 R=—
+bo3 rekonz: KPM=13.3 KPR=0.67 HS%=57 R=—
+bo3 rekonz: KPM=13.3 KPR=0.67 HS%=57 R=—
+bo3 rekonz: KPM=13.3 KPR=0.67 HS%=57 R=—
+bo3 SkulL: KPM=13.3 KPR=0.67 HS%=50 R=—
+bo3 SkulL: KPM=13.3 KPR=0.67 HS%=50 R=—
+bo3 SkulL: KPM=13.3 KPR=0.67 HS%=50 R=—
+bo3 SkulL: KPM=13.3 KPR=0.67 HS%=50 R=—
+bo3 BobZ: KPM=9.2 KPR=0.44 HS%=45 R=—
+bo3 micalis: KPM=12.0 KPR=0.63 HS%=69 R=—
+bo3 BobZ: KPM=9.2 KPR=0.44 HS%=45 R=—
+bo3 BobZ: KPM=9.2 KPR=0.44 HS%=45 R=—
+bo3 BobZ: KPM=9.2 KPR=0.44 HS%=45 R=—
+bo3 Roflko: KPM=15.6 KPR=0.81 HS%=54 R=—
+bo3 Roflko: KPM=15.6 KPR=0.81 HS%=54 R=—
+bo3 Roflko: KPM=15.6 KPR=0.81 HS%=54 R=—
+bo3 Roflko: KPM=15.6 KPR=0.81 HS%=54 R=—
+bo3 sav: KPM=12.5 KPR=0.62 HS%=58 R=—
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 116 Sleeper-priced, 0 manual, 78 need model input)
+bo3 sav: KPM=12.5 KPR=0.62 HS%=58 R=—
+bo3 sav: KPM=12.5 KPR=0.62 HS%=58 R=—
+bo3 sav: KPM=12.5 KPR=0.62 HS%=58 R=—
+Warmer: +12 CS profiles (5 still queued)
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+Esports board: 194 matches (94 on both exchanges, 3 edges) in 3850ms
+bo3 adeX: KPM=19.5 KPR=0.92 HS%=32 R=—
+bo3 adeX: KPM=19.5 KPR=0.92 HS%=32 R=—
+bo3 PokemoN: KPM=15.7 KPR=0.74 HS%=61 R=—
+bo3 PokemoN: KPM=15.7 KPR=0.74 HS%=61 R=—
+bo3 PokemoN: KPM=15.7 KPR=0.74 HS%=61 R=—
+bo3 ju1ces: KPM=13.6 KPR=0.70 HS%=43 R=—
+bo3 ju1ces: KPM=13.6 KPR=0.70 HS%=43 R=—
+bo3 ju1ces: KPM=13.6 KPR=0.70 HS%=43 R=—
+bo3 ADK: KPM=10.2 KPR=0.51 HS%=52 R=—
+bo3 ADK: KPM=10.2 KPR=0.51 HS%=52 R=—
+bo3 ADK: KPM=10.2 KPR=0.51 HS%=52 R=—
+bo3 PoseidoNN: KPM=18.0 KPR=0.82 HS%=33 R=—
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 122 Sleeper-priced, 0 manual, 71 need model input)
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 122 Sleeper-priced, 0 manual, 71 need model input)
+bo3 PoseidoNN: KPM=18.0 KPR=0.82 HS%=33 R=—
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 122 Sleeper-priced, 0 manual, 71 need model input)
+Ratings CS: 9539 maps → 608 teams
+Esports: PP=259 UD=265 SL=137/155 udMap=263
+Esports: 23 picks withheld — model probability disagreed with the book's implied price by >15 points
+Esports: generated 341 picks (80 UD-sourced, 2 Sleeper-sourced, 126 Sleeper-priced, 0 manual, 71 need model input)
+bo3 m0NESY-: no search hit
+Sleeper: 155 esports and 2633 sports lines from 2788 rows
+UD: 7797 lines (5692 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+Esports board: 194 matches (94 on both exchanges, 3 edges) in 6216ms
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+UD: 7797 lines (5693 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+Sleeper: 156 esports and 2699 sports lines from 2855 rows
+PP error: Request failed with status code 429 429
+Esports board: 194 matches (94 on both exchanges, 3 edges) in 3928ms
