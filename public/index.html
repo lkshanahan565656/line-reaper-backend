@@ -5883,7 +5883,12 @@ function esAutoSlipsHTML() {
       ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}
     </div>`;
   }).join('');
-  return `<div style="display:flex;align-items:baseline;gap:8px;margin:2px 0 8px"><span style="font-family:'Inter',sans-serif;font-size:14px;letter-spacing:2px;color:#e2e8f0;font-weight:800">BEST SLIPS</span><span style="font-size:11px;color:#64748b">best entry on each book, every game on the board</span></div><div class="es-autoslips">${cards}</div>`;
+  const rec = d.record;
+  const pct = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+  const recLine = !rec ? '' : rec.slips
+    ? `<span style="font-size:11px;color:#94a3b8">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
+    : `<span style="font-size:11px;color:#94a3b8">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
+  return `<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 8px"><span style="font-family:'Inter',sans-serif;font-size:14px;letter-spacing:2px;color:#e2e8f0;font-weight:800">BEST SLIPS</span><span style="font-size:11px;color:#64748b">best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>`;
 }
 function esLoadAutoSlip(i) {
   const s = esAsState.data?.slips?.[i];

@@ -1953,7 +1953,12 @@ async function generateEsportsPicks() {
     }
     pick.pricing.books = bookLegs;
 
-    if (udm) {
+    // Underdog listing the player isn't Underdog taking this side: a Higher-only
+    // line gets no UD price on a Lower pick (it used to be priced at 1x and
+    // could win best book on a PrizePicks-sourced pick).
+    const udOpen = udm && (side === 'OVER' ? udm.overOpen !== false : udm.underOpen !== false);
+    if (udm && !udOpen) pick.udClosed = true;
+    if (udOpen) {
       const udSideMult = side === 'OVER' ? (udm.overMultiplier || 1.00) : (udm.underMultiplier || 1.00);
       let udShift = pick.pricing.shift;
       // UD's line can differ from PP's — price UD against ITS OWN line
@@ -1965,7 +1970,7 @@ async function generateEsportsPicks() {
         udShift = calShift + (side === 'OVER' ? s2 : -s2) / 100;
       }
       const udP = udPricing(udProb, udSideMult);
-      if (udP.ev != null && (side === 'OVER' ? udm.overOpen !== false : udm.underOpen !== false)) {
+      if (udP.ev != null) {
         bookLegs.UD = { line: udm.line ?? lineVal, shift: udShift, prob: udProb / 100, mult: udSideMult, decimal: udP.regime === 'decimal' };
       }
       pick.udEv = udP.ev != null ? parseFloat(udP.ev.toFixed(2)) : null;
@@ -2056,6 +2061,8 @@ async function generateEsportsPicks() {
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
+  try { slipTracker.record(autoSlips(picks).slips).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
+  catch (e) { console.warn('Slip tracker: build failed:', e.message); }
   alerter.onBoard(picks).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
@@ -2141,6 +2148,7 @@ async function warmCsProfiles(batch = 12) {
 // Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
+const { autoSlips, priceOnBooks } = require('./slipbuild');
 const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
@@ -2156,6 +2164,14 @@ const tracker = createTracker({
   },
   normalizeName, normalizeMarket, parseMapSpan,
 });
+// every +EV Best Slip, graded from the same match stats (sliptrack.js)
+const slipTracker = require('./sliptrack').createSlipTracker({
+  store: resultsBackup.wrap('esportsSlips', createEvStoreFromEnv(process.env, { table: 'esports_slips', fileVar: 'SLIP_TRACK_FILE', file: 'esports-slips.json' })),
+  graders: tracker.graders, parseMapSpan,
+  keyFor: leg => tracker.pickId(leg),
+  lookup: async () => new Map((await tracker.list({ status: 'graded', limit: 1e6 })).filter(r => r.result != null).map(r => [r.id, r.result])),
+});
+slipTracker.ready().catch(e => console.error('Slip tracker: store failed to initialise:', e.message));
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
@@ -3504,7 +3520,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.85.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.86.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4352,7 +4368,6 @@ function legsFromBoard(input) {
   });
 }
 
-const { autoSlips, priceOnBooks } = require('./slipbuild');
 app.post('/api/esports/slip', requirePro, (req, res) => {
   const legs = legsFromBoard(req.body?.legs);
   const missing = (req.body?.legs || []).filter((_, i) => !legs[i]);
@@ -4400,7 +4415,7 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   if (!autoSlipMemo.data || autoSlipMemo.at !== at || Date.now() - autoSlipMemo.built > 120000) {
     autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || []) };
   }
-  res.json({ ...autoSlipMemo.data, updated: at });
+  res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null) });
 });
 
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
@@ -4532,7 +4547,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.85.0',
+  version: '3.86.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4605,7 +4620,7 @@ schedule('*/5 * * * *', async () => {
   trackerRunning = true;
   try {
     const locked = await tracker.lockStarted();
-    trackerHealth.last = { locked, ...(await tracker.gradeDue()) };
+    trackerHealth.last = { locked, ...(await tracker.gradeDue()), slips: await slipTracker.grade().catch(e => ({ error: e.message })) };
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
   } catch (e) { trackerHealth.error = e.message; }
@@ -4675,10 +4690,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.85.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.86.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.85.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.86.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
@@ -4714,7 +4729,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, cache, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, slipTracker, cache, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
