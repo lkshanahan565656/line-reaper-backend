@@ -1235,6 +1235,97 @@ function bidLock(maker, bidPrice, hedge, hedgePrice, opts = {}) {
   return r2(((n - cost) / cost) * 100);
 }
 
+// ── middles ──
+// The same game's total (or one team's spread) at two different lines on two
+// venues: YES on the lower line here, NO on the higher one there. Outside the
+// window exactly one leg pays $1; inside it (a final total, or margin,
+// strictly between the lines) both do. Each pair of contracts costs `cost`,
+// fees in, so it returns 1 − cost on a miss and 2 − cost on a hit, and is
+// worth 1 + P(hit) − cost. P(hit) comes from a normal curve on the final
+// score, centred where both venues' line prices put it (each mid's
+// line + sd·Φ⁻¹(P(over)), median), with each league's usual spread of
+// results, on whole scores strictly inside the window. Football's key
+// numbers make it rough there; it's an estimate, and it says so.
+const MIDDLE_SD = {
+  total: { nba: 18, wnba: 16, nfl: 13.5, ncaaf: 16, ncaab: 15 },
+  spread: { nba: 12, wnba: 11, nfl: 13.5, ncaaf: 15, ncaab: 11 },
+};
+const erfc1 = x => {   // Abramowitz–Stegun 7.1.26
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * Math.exp(-x * x);
+  return x >= 0 ? y : 2 - y;
+};
+const phi = z => 1 - 0.5 * erfc1(z / Math.SQRT2);
+function phiInv(q) {
+  let lo = -8, hi = 8;
+  for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (phi(mid) < q) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+const midOf = r => (r.yesAsk != null && r.noAsk != null && r.yesAsk + r.noAsk < 1.25 ? (r.yesAsk + 1 - r.noAsk) / 2 : null);
+function windowProb(mean, sd, low, high) {
+  const lo = Math.floor(low) + 1, hi = Math.ceil(high) - 1;
+  return hi < lo ? 0 : phi((hi + 0.5 - mean) / sd) - phi((lo - 0.5 - mean) / sd);
+}
+function findMiddles(kalshiRows = [], polyRows = [], matches = [], opts = {}) {
+  const o = withDefaults({ middleMinEv: 1, middleMaxEv: 15, middleMax: 25, ...opts });
+  const kLines = new Map(), pLines = new Map();
+  for (const k of kalshiRows) if ((k.kind === 'total' || k.kind === 'spread') && k.gameKey && k.tradable) push(kLines, k.gameKey, k);
+  for (const p of polyRows) if ((p.kind === 'total' || p.kind === 'spread') && p.gameSlug && p.tradable) push(pLines, p.gameSlug, p);
+  const best = new Map(), seen = new Set();
+  for (const g of matches.map(gamePair).filter(Boolean)) {
+    const gk = `${g.kGame}|${g.pGame}`;
+    if (seen.has(gk)) continue;
+    seen.add(gk);
+    const ks = kLines.get(g.kGame) || [], ps = pLines.get(g.pGame) || [];
+    if (!ks.length || !ps.length) continue;
+    const start = [...ks, ...ps].map(r => r.startTime).find(t => ms(t) != null) || null;
+    if (start && ms(start) <= o.now) continue;
+    // one subject per kind: the total, or the Polymarket side's giving team's margin
+    const sameTeam = (kTeam, pTeam) => {
+      const i = g.kTeams.findIndex(t => norm(t) === norm(kTeam) || nameMatch(t, kTeam));
+      return i >= 0 && (norm(g.pTeams[i]) === norm(pTeam) || nameMatch(g.pTeams[i], pTeam));
+    };
+    for (const kind of ['total', 'spread']) {
+      for (const pTeam of kind === 'total' ? [null] : [...new Set(ps.filter(r => r.kind === 'spread').map(r => r.lineTeam))]) {
+        const pr = ps.filter(r => r.kind === kind && (kind === 'total' || r.lineTeam === pTeam));
+        const kr = ks.filter(r => r.kind === kind && (kind === 'total' || sameTeam(r.lineTeam, pTeam)));
+        const league = kr[0]?.league || pr[0]?.league;
+        const sd = MIDDLE_SD[kind][league];
+        if (!pr.length || !kr.length || !sd) continue;
+        const centres = [...kr, ...pr].map(r => { const q = midOf(r); return q != null && q > 0.03 && q < 0.97 ? r.line + sd * phiInv(q) : null; }).filter(x => x != null).sort((a, b) => a - b);
+        if (!centres.length) continue;
+        const mean = centres[Math.floor(centres.length / 2)];
+        for (const [lowRows, highRows] of [[pr, kr], [kr, pr]]) {
+          for (const lo of lowRows) for (const hi of highRows) {
+            if (!(hi.line > lo.line) || hi.line - lo.line > 2 * sd) continue;
+            const legs = [leg(lo, 'yes'), leg(hi, 'no')];
+            // plain words, whatever each venue calls its side
+            legs[0].pick = kind === 'total' ? `Over ${lo.line}` : `${pTeam} wins by more than ${lo.line}`;
+            legs[1].pick = kind === 'total' ? `Under ${hi.line}` : `${pTeam} doesn't win by more than ${hi.line}`;
+            if (legs.some(l => !(l.price > 0.03 && l.price < 0.97))) continue;
+            const cost = setCost(legs, BID_LOT, o) / BID_LOT, hit = windowProb(mean, sd, lo.line, hi.line);
+            const ev = ((1 + hit - cost) / cost) * 100;
+            if (ev < o.middleMinEv || ev > o.middleMaxEv) continue;
+            const subject = kind === 'total' ? 'total' : `${pTeam} margin`;
+            const a = {
+              id: `middle:${arbId('middle', legs)}`, type: 'middle', category: 'sports', kind, league, subject,
+              title: hi.eventTitle || lo.eventTitle || hi.title, startTime: start, closeTime: later(lo.closeTime, hi.closeTime),
+              low: lo.line, high: hi.line, center: round(mean, 1), legs, totalCost: round(cost, 4), hitProb: round(hit, 4),
+              evPct: r2(ev), missPct: r2(((1 - cost) / cost) * 100), hitPct: r2(((2 - cost) / cost) * 100),
+              stakes: { legs: legs.map(l => ({ pct: pctOf(legCost(l, BID_LOT, o).total, cost * BID_LOT) })) },
+              warnings: [...new Set([...(lo.warnings || []), ...(hi.warnings || [])])], at: new Date(o.now).toISOString(),
+            };
+            if (o.region === 'us' && !usPlaceable(a)) continue;
+            const key = `${gk}|${kind}|${pTeam || ''}`;
+            if (!best.has(key) || best.get(key).evPct < a.evPct) best.set(key, a);
+          }
+        }
+      }
+    }
+  }
+  return [...best.values()].sort((a, b) => b.evPct - a.evPct).slice(0, o.middleMax);
+}
+
 // ── US venues ──
 // Polymarket International is closed to US persons, and offshore / non-US
 // books that turn up in the odds feeds aren't US sportsbooks either. Kalshi,
@@ -1620,7 +1711,7 @@ async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPa
 
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,
