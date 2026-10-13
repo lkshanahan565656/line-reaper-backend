@@ -2375,7 +2375,7 @@ const upstream = createPoliteHttp((url, cfg) => axios.get(url, cfg), { gapMs: up
 // polite requests): Postgres table tail_traders with DATABASE_URL, otherwise
 // the TAIL_TRADERS_FILE JSON file.
 function createTraderStoreFromEnv(env = process.env) {
-  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(__dirname, 'data', 'tail-traders.json'));
+  if (!env.DATABASE_URL) return createDocFileStore(env.TAIL_TRADERS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'tail-traders.json'));
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
@@ -4581,7 +4581,7 @@ schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => {
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
-if (require.main === module) {
+if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.81.1 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up

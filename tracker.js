@@ -101,7 +101,7 @@ function createPgStore(connectionString) {
 
 function createStoreFromEnv(env = process.env) {
   if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL);
-  return createFileStore(env.TRACKER_FILE || path.join(__dirname, 'data', 'esports-picks.json'));
+  return createFileStore(env.TRACKER_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-picks.json'));
 }
 
 // ─── PURE HELPERS (unit-tested) ───────────────────────────────────────────────
