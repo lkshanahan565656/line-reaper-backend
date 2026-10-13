@@ -5081,7 +5081,7 @@ const XARB_WARNINGS = {
 };
 const xarbWarning = w => XARB_WARNINGS[w] || w;
 const xarbUsd = x => `$${(Math.round(x * 100) / 100).toFixed(2)}`;
-const xarbUi = { data: null, error: null, category: 'all', timer: null, allNear: false };
+const xarbUi = { data: null, value: null, error: null, category: 'all', timer: null, allNear: false };
 const XARB_NEAR_SHOWN = 8;
 let arbModeNow = 'exchanges';
 try { if (localStorage.getItem('lr_arb_mode') === 'books') arbModeNow = 'books'; } catch {}
@@ -5229,8 +5229,9 @@ async function loadXarbs() {
   const el = document.getElementById('xarbContent');
   if (!xarbUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try {
-    const d = await tailGet('/api/xarbs');
+    const [d, v] = await Promise.all([tailGet('/api/xarbs'), tailGet('/api/exchange-value').catch(() => null)]);
     xarbUi.data = d;
+    xarbUi.value = v;
     xarbUi.error = null;
     tailState.withheld.arbs = { list: Array.isArray(d.withheld) ? d.withheld : [], note: d.note || null };
   } catch (e) { xarbUi.error = e.old ? 'Exchange arbs need backend v3.20 or later.' : e.message; }
@@ -5287,6 +5288,15 @@ function xarbNearRow(a) {
     <div class="xa-ngap${short ? '' : ' pos'}" title="${short ? 'How far it is from paying anything' : 'An arb, but under the minimum worth listing'}">${short ? '' : '+'}${a.profitPct}%</div>
   </div>`;
 }
+// one bet, no splitting: a Kalshi or Polymarket US price under Polymarket's book
+function xarbValueRow(e) {
+  const when = e.start ? xarbWhen(e.start) : '';
+  return `<div class="xa-nrow">
+    <div class="xa-ntitle">${tailLink(e.url, `<b>${escAttr(e.pick)}</b> on ${escAttr(e.venueName || e.venue)} at ${tailC(e.price)}`)}<div class="xa-sub">${escAttr(e.title || '')}${when ? ` · ${escAttr(when)}` : ''} · Polymarket's book: ${tailC(e.fair)}</div></div>
+    <div class="xa-ncost" title="What it costs with the fee">${tailC(e.cost)}<span>with fee</span></div>
+    <div class="xa-ngap pos" title="Expected return at Polymarket's price">+${Math.round(e.ev * 1000) / 10}%</div>
+  </div>`;
+}
 function renderXarbs() {
   const el = document.getElementById('xarbContent');
   if (!el) return;
@@ -5314,20 +5324,29 @@ function renderXarbs() {
   if (xarbUi.category !== 'all' && !cats.includes(xarbUi.category)) xarbUi.category = 'all';
   const inCat = a => xarbUi.category === 'all' || (a.category || 'other') === xarbUi.category;
   const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat);
-  const ready = arbs.filter(a => !(a.warnings || []).length), check = arbs.filter(a => (a.warnings || []).length);
+  // two bets is something anyone can place; bigger sets go in a fold
+  const simple = arbs.filter(a => (a.legs || []).length <= 2), multi = arbs.filter(a => (a.legs || []).length > 2);
+  const ready = simple.filter(a => !(a.warnings || []).length), check = simple.filter(a => (a.warnings || []).length);
+  const nearSimple = near.filter(a => (a.legs || []).length <= 2);
+  const vd = xarbUi.value, value = (vd?.edges || []).filter(e => !e.locked).filter(e => xarbUi.category === 'all' || (e.category || 'sports') === xarbUi.category);
   const chip = k => `<button class="sport-chip ${xarbUi.category === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('category','${escAttr(k)}')">${escAttr(k.toUpperCase())}</button>`;
   const controls = `<div class="xa-controls">
     <label class="xa-stake">YOUR STAKE $<input type="number" min="1" step="1" inputmode="decimal" value="${arbState.stake}" oninput="xarbRestake(this.value)"></label>
     ${cats.length > 1 ? `<div class="xa-chips">${['all', ...cats].map(chip).join('')}</div>` : ''}
   </div>`;
   const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
+  const nearList = xarbUi.allNear ? near : nearSimple;
   el.innerHTML = note + summary + controls
-    + sec('READY TO PLACE', ready.length ? `${ready.length} · just check each price is still there` : 'none right now',
-      ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">Nothing that needs no checking right now. Real arbs are rare and close within minutes: when one opens it shows here first.</div>')
+    + sec('2-BET ARBS', ready.length ? `${ready.length} · one bet on each exchange, check each price is still there` : 'none right now',
+      ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.</div>')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
-    + sec('CLOSEST TO AN ARB', near.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
-      near.length ? `<div class="xa-near">${near.slice(0, xarbUi.allNear ? near.length : XARB_NEAR_SHOWN).map(xarbNearRow).join('')}${near.length > XARB_NEAR_SHOWN
-        ? `<button class="xa-more" onclick="xarbSet('allNear',${!xarbUi.allNear})">${xarbUi.allNear ? 'Show fewer' : `Show all ${near.length}`}</button>` : ''}</div>` : '')
+    + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now.</b>`, 'Exchange value')) : '')
+    + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
+      value.length ? `<div class="xa-near">${value.slice(0, 12).map(xarbValueRow).join('')}</div>` : '<div class="xa-empty">No single bet is priced under Polymarket\'s book right now. These need no second bet: just buy the one side.</div>') : '')
+    + sec('CLOSEST TO AN ARB', nearList.length ? 'what one of each bet costs for every $1 it pays, fees in' : 'nothing close right now',
+      nearList.length ? `<div class="xa-near">${nearList.slice(0, xarbUi.allNear ? nearList.length : XARB_NEAR_SHOWN).map(xarbNearRow).join('')}${near.length > Math.min(nearSimple.length, XARB_NEAR_SHOWN)
+        ? `<button class="xa-more" onclick="xarbSet('allNear',${!xarbUi.allNear})">${xarbUi.allNear ? 'Two-bet pairs only' : `Show all ${near.length}, bigger sets too`}</button>` : ''}</div>` : '')
+    + (multi.length ? `<details class="xa-how"><summary>${multi.length} bigger set${multi.length === 1 ? '' : 's'} (3 or more bets each)</summary>${multi.map(xarbCard).join('')}</details>` : '')
     + `<details class="xa-how"><summary>How to place an arb</summary>
       <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
       <p>Prices move fast. Check each one is still there before you place the next, and look at the order book before going big: the price shown may only hold a few contracts.</p>

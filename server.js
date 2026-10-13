@@ -2253,6 +2253,8 @@ const polymarketUs = pmus.enabledFromEnv() ? pmus.createPolymarketUs({ http: ups
 const TAIL_REGION = xarb.regionFromEnv();   // 'us' | 'intl'
 const XARB_OPTS = xarb.optsFromEnv();          // carries the region too
 const XARB_ALERT_MIN = Number.isFinite(parseFloat(process.env.XARB_ALERT_MIN)) ? parseFloat(process.env.XARB_ALERT_MIN) : 1;
+// sets of more bets than this stay in the app, off the phone alerts (XARB_ALERT_MAX_LEGS)
+const XARB_ALERT_MAX_LEGS = Number.isFinite(parseInt(process.env.XARB_ALERT_MAX_LEGS)) ? parseInt(process.env.XARB_ALERT_MAX_LEGS) : 4;
 const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is news again
 // Kalshi vs Polymarket US arbs: the Polymarket US leagues read each scan
 // (XARB_PMUS_LEAGUES; off = none) and at most this many of its live books
@@ -2664,7 +2666,17 @@ async function polymarketUsArbs(kalshi, now) {
   const o = { ...XARB_OPTS, now };
   const matches = xarb.matchMarkets(kalshi, rows, o);
   const screened = xarb.findUsArbs(kalshi, rows, { ...o, matches });
-  const counts = { rows: rows.length, games: new Set(rows.map(r => r.eventKey)).size, matches: matches.length, screened: screened.length, rowList: rows, matchList: matches };
+  // per league (the slug's first word): games listed, and games with a Kalshi pair
+  const byLeague = {};
+  const lg = r => String(r.gameSlug || '').split('-')[0] || '?';
+  const paired = new Set(matches.map(m => m.polymarket.eventKey));
+  for (const [key, r] of new Map(rows.map(x => [x.eventKey, x]))) {
+    const l = lg(r);
+    byLeague[l] ||= { games: 0, paired: 0 };
+    byLeague[l].games++;
+    if (paired.has(key)) byLeague[l].paired++;
+  }
+  const counts = { rows: rows.length, games: new Set(rows.map(r => r.eventKey)).size, matches: matches.length, screened: screened.length, byLeague, rowList: rows, matchList: matches };
   if (!screened.length || XARB_PMUS_BOOKS <= 0) return { ...none, ...counts };
   const ids = new Set(screened.flatMap(a => a.legs.filter(l => l.venue === 'polymarketus').map(l => l.marketId)));
   const live = await polymarketUs.reprice(rows.filter(r => ids.has(r.id)), { maxBooks: XARB_PMUS_BOOKS });
@@ -2782,7 +2794,7 @@ async function scanXarbs() {
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
         kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
-        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length }, near: near.length },
+        polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length, byLeague: us.byLeague || null }, near: near.length },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
     for (const a of arbs) xarbSeen.set(a.id, now);
@@ -2799,7 +2811,7 @@ async function scanXarbs() {
       broadcast('xarb', news);
       // the webhook only gets legs the public may see
       const ok = arbOk(webhookLicence());
-      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && ok(a)).map(describeArb), 'Exchange arbs');
+      postAlert(news.filter(a => a.profitPct >= XARB_ALERT_MIN && (a.legs || []).length <= XARB_ALERT_MAX_LEGS && ok(a)).map(describeArb), 'Exchange arbs');
     }
     return news;
   } finally { xarbState.running = false; }

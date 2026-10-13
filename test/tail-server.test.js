@@ -1265,7 +1265,7 @@ test('exchange arbs: Kalshi against the games Polymarket US lists, re-priced on 
     await S.runTailJob('xarb', S.scanXarbs);
     assert.equal(usArbs().length, 0);
     assert.equal(S.xarbState.primed.polymarketus, true);
-    assert.deepEqual(S.xarbState.counts.polymarketUs, { rows: 1, games: 1, matches: 2, screened: 0, arbs: 0 }, 'both Kalshi team markets pair with it');
+    assert.deepEqual(S.xarbState.counts.polymarketUs, { rows: 1, games: 1, matches: 2, screened: 0, arbs: 0, byLeague: { nba: { games: 1, paired: 1 } } }, 'both Kalshi team markets pair with it');
 
     // the Celtics drop to 55¢ on the list; the book has 300 at 56¢
     fx.pmus = { listed: event('0.5300', '0.5500'), book: book('0.5400', '0.5600', '300') };
