@@ -7,19 +7,27 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/props-every-book-h7dt5c
+          path: app
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: cd app && npm ci --no-audit --no-fund || npm install --no-audit --no-fund
       - run: |
-          { date -u; node diag/props.js; } > diag-out.txt 2>&1 || true
+          mkdir -p out
+          (cd app && PORT=3999 node server.js > ../out/server.log 2>&1 &)
+          node diag/props.js > out/diag.txt 2>&1 || true
+          tail -c 20000 out/server.log > out/server-tail.log; rm out/server.log
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout --orphan diag-props-out
           git rm -rq --cached . || true
-          git add -f diag-out.txt
+          git add -f out
           git commit -qm "diag output"
           git push -f origin diag-props-out
