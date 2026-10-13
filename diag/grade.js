@@ -1,16 +1,12 @@
 const axios = require('axios');
-const { createCsGrader, createLoLesportsGrader } = require('../graders');
-const B = 'https://line-reaper-backend-production.up.railway.app';
-const http = { get: async (u, o) => { try { const r = await axios.get(u, o); return r; } catch (e) { console.log(' ERR', u.slice(0, 90), e.response?.status); throw e; } } };
+const H = { headers: { origin: 'https://bo3.gg', referer: 'https://bo3.gg/', 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } };
 (async () => {
-  const picks = (await axios.get(B + '/api/tracker/picks')).data.picks;
-  const cs = createCsGrader(http, { pause: 100 }), lol = createLoLesportsGrader(http);
-  for (const p of picks.filter(p => p.status === 'locked' && p.sport === 'CS' && p.startTime < '2026-10-12T20')) {
-    let r; try { r = await cs(p); } catch (e) { r = 'threw ' + e.message; }
-    console.log('CS', p.player, '|', p.team, '|', p.matchTitle, p.startTime, p.maps, JSON.stringify(r));
+  for (const id of [188535, 188536]) {
+    const r = await axios.get(`https://api.bo3.gg/api/v1/games/${id}/players_stats`, H);
+    const rows = Array.isArray(r.data) ? r.data : r.data.results || [];
+    console.log(id, rows.length, JSON.stringify(rows.map(x => [x.steam_profile?.player?.nickname, x.steam_profile?.player?.slug, x.steam_profile?.nickname, x.kills, x.headshots])));
+    if (rows[0]) console.log(JSON.stringify(rows[0]).slice(0, 800));
   }
-  for (const p of picks.filter(p => p.sport === 'LOL' && p.status === 'review')) {
-    let r; try { r = await lol(p); } catch (e) { r = 'threw ' + e.message; }
-    console.log('LOL', p.player, p.team, JSON.stringify(r));
-  }
+  const m = await axios.get('https://api.bo3.gg/api/v1/matches/rooster-vs-orgless-aust-12-10-2026', H).catch(e => ({ data: e.message }));
+  console.log(JSON.stringify(m.data).slice(0, 400));
 })().catch(e => console.log('FATAL', e.message));
