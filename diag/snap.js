@@ -2,7 +2,7 @@
 const fs = require('fs');
 const U = 'https://line-reaper-backend-production.up.railway.app';
 const paths = ['/api/status', '/api/tail/settings', '/api/tail/signals?limit=300', '/api/tail/board?limit=100', '/api/tail/traders?limit=200&grade=graded',
-  '/api/whales?limit=150', '/api/tail/record?limit=60', '/api/sharp', '/api/sharp-moves', '/api/exchange-value', '/api/exchanges', '/api/xarb', '/api/bestplays', '/api/results'];
+  '/api/whales?limit=150', '/api/tail/record?limit=60', '/api/sharp', '/api/sharp-moves', '/api/exchange-value', '/api/exchanges', '/api/xarbs', '/api/best-plays', '/api/results'];
 (async () => {
   fs.mkdirSync('snap', { recursive: true });
   const index = {};
