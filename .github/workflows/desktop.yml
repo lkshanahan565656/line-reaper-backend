@@ -43,10 +43,9 @@ jobs:
         with: { name: "${{ matrix.name }}", path: dist/* }
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/desktop-v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
-      - run: gh release create "${{ github.ref_name }}" dist/* --repo "$GITHUB_REPOSITORY" --title "Line Reaper desktop" --notes "Download the file for your computer and open it. Windows: SmartScreen, More info, Run anyway. Mac: right-click, Open." 
+      - run: gh release create "desktop-${{ github.run_number }}" dist/* --repo "$GITHUB_REPOSITORY" --title "Line Reaper desktop" --notes "Download the file for your computer and open it. Windows: SmartScreen, More info, Run anyway. Mac: right-click, Open." 
         env: { GH_TOKEN: "${{ github.token }}" }
