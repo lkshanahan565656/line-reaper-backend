@@ -266,7 +266,7 @@ function dfsRows(rows, o, now) {
     if (!r.dfs || r.ev == null || r.ev / 100 < o.propMinEv) continue;
     const start = ms(r.start);
     if (start == null || start <= now) continue;
-    const book = r.book === 'underdog' ? 'Underdog' : r.book === 'prizepicks' ? 'PrizePicks' : r.book;
+    const book = r.book === 'underdog' ? 'Underdog' : r.book === 'prizepicks' ? 'PrizePicks' : r.book === 'sleeper' ? 'Sleeper' : r.book;
     const ref = (r.sharpBooks || []).map(b => (b === 'kalshi_props' ? 'Kalshi' : b)).join(', ') || 'consensus';
     out.push({
       id: `dfs:${r.group}|${r.side}|${r.book}`, kind: 'sportsProp', label: `${r.sport} prop`, title: r.player,
