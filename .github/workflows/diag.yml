@@ -14,9 +14,11 @@ jobs:
         with:
           node-version: 20
       - run: |
+          set +e
           git fetch origin main && git checkout origin/main -- . && npm install --no-audit --no-fund >/dev/null 2>&1
           { date -u; RUN_MIN=12 node diag/realtime.js; } > diag-out.txt 2>&1 || true
-      - run: |
+      - if: always()
+        run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-out
