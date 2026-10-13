@@ -5361,6 +5361,24 @@ function xarbBidCard(a) {
     <div class="xa-foot">With both in, <b data-stake>${xarbUsd(S)}</b> gets back <b class="xa-pos" data-ret="${a.profitPct}">${xarbUsd(S * (1 + a.profitPct / 100))}</b> whichever way it ends. If step 2's price goes past ${tailC(take.maxPrice)} before your bid fills, cancel the bid.</div>
   </div>`;
 }
+// a total or spread at two lines on two venues: one leg always pays, both if it lands between
+function xarbMiddleCard(a) {
+  const S = arbState.stake, st = a.stakes || {};
+  const [lo, hi] = a.legs || [];
+  if (!lo || !hi) return '';
+  const amt = i => { const pct = st.legs?.[i]?.pct; return `<span class="xa-amt"${pct != null ? ` data-pct="${pct}"` : ''}>${pct != null ? xarbUsd(S * pct / 100) : '—'}</span>`; };
+  const lw = Math.floor(a.low) + 1, hw = Math.ceil(a.high) - 1;
+  const what = a.kind === 'total' ? 'the total' : escAttr(a.subject || 'the margin');
+  const win = lw === hw ? `${lw}` : `${lw} to ${hw}`;
+  const meta = [`Middle · ${escAttr((a.league || '').toUpperCase())}`, `hits if ${what} is ${win}`, `about ${Math.round(a.hitProb * 1000) / 10}% of the time`].filter(Boolean).join(' · ');
+  const legRow = (l, i) => `<div class="xa-leg"><span class="xa-step">${i + 1}</span><span class="xa-venue">${xarbVenue(l)}</span>
+      <span class="xa-what">${tailLink(l.url, `Buy <b>${escAttr(l.pick || '')}</b> at ${xarbPrice(l)}`)}</span>${amt(i)}</div>`;
+  return `<div class="xa-card">
+    <div class="xa-head"><div class="xa-pct">+${a.evPct}%</div><div class="xa-title">${escAttr(a.title || '')}<div class="xa-meta">${meta}</div></div></div>
+    ${legRow(lo, 0)}${legRow(hi, 1)}
+    <div class="xa-foot">Put in <b data-stake>${xarbUsd(S)}</b>. If ${what} lands ${win}, both pay: <b class="xa-pos" data-ret="${a.hitPct}">${xarbUsd(S * (1 + a.hitPct / 100))}</b>. Otherwise one pays: <b data-ret="${a.missPct}">${xarbUsd(S * (1 + a.missPct / 100))}</b>. The +${a.evPct}% is the average over many of these, from an estimate of how often the game lands there.</div>
+  </div>`;
+}
 function xarbNearRow(a) {
   const legs = (a.legs || []).map(l => tailLink(l.url, `${xarbVenue(l)} ${escAttr(l.pick || '')} ${xarbPrice(l)}`)).join(' + ');
   const short = a.profitPct < 0;
@@ -5398,14 +5416,14 @@ function renderXarbs() {
   const note = tailWithheld('arbs');
   if (!d.pro) {
     const pcts = (d.arbs || []).slice(0, 12).map(a => `+${a.profitPct}%`).join(', ');
-    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.bidCount ? `, and ${d.bidCount} you can lock with a limit bid` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
+    el.innerHTML = note + summary + tailLockBanner(`<b>${d.count || 0} arb${d.count === 1 ? '' : 's'} right now${pcts ? ': ' + pcts : ''}${d.bidCount ? `, ${d.bidCount} you can lock with a limit bid` : ''}${d.middleCount ? `, ${d.middleCount} middle${d.middleCount === 1 ? '' : 's'}` : ''}.</b> <span style="color:#cbd5e1">Pro shows each bet, its price and how to split your stake.</span>`, 'Exchange arbs');
     return;
   }
   const all = [...(d.arbs || []), ...(d.near || []), ...(d.bids || [])];
   const cats = [...new Set(all.map(a => a.category || 'other'))];
   if (xarbUi.category !== 'all' && !cats.includes(xarbUi.category)) xarbUi.category = 'all';
   const inCat = a => xarbUi.category === 'all' || (a.category || 'other') === xarbUi.category;
-  const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat), bids = (d.bids || []).filter(inCat);
+  const arbs = (d.arbs || []).filter(inCat), near = (d.near || []).filter(inCat), bids = (d.bids || []).filter(inCat), middles = (d.middles || []).filter(inCat);
   // two bets is something anyone can place; bigger sets go in a fold
   const simple = arbs.filter(a => (a.legs || []).length <= 2), multi = arbs.filter(a => (a.legs || []).length > 2);
   const ready = simple.filter(a => !(a.warnings || []).length), check = simple.filter(a => (a.warnings || []).length);
@@ -5428,6 +5446,7 @@ function renderXarbs() {
       bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
   el.innerHTML = note + summary + controls
     + (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet)
+    + (middles.length ? sec('MIDDLES', `${middles.length} · one bet always pays, both pay if the game lands between the lines`, middles.slice(0, 12).map(xarbMiddleCard).join('')) : '')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
     + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now.</b>`, 'Exchange value')) : '')
     + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
@@ -5440,6 +5459,7 @@ function renderXarbs() {
       <p>Split your stake across the bets by the amounts shown and place every one. Each bet buys the same number of $1 contracts, so exactly one pays out and it covers the rest, fees included (Kalshi's taker fee, Polymarket US's 0.0695 × p × (1 − p) a contract, and each Polymarket market's own fee).</p>
       <p>Prices move fast. Check each one is still there before you place the next, and look at the order book before going big: the price shown may only hold a few contracts.</p>
       <p>Bid, then hedge: two exchanges rarely disagree by the 3 to 4 cents two taker fees cost, but a limit bid pays far less in fees and buys a cent or two under the ask. Place the bid in step 1 and leave it. When it fills, buy step 2 right away at its price or anything up to the break-even shown. Until both are in you only hold one side, so watch step 2's price and cancel the bid if it runs past the break-even.</p>
+      <p>Middles: the same game's total, or one team's spread, sits at different lines on the two exchanges. Buy the Over at the lower line on one and the Under at the higher line on the other. One of them always pays, so a miss costs a few cents, and if the game lands between the lines both pay. The edge is an average over many of them: most miss.</p>
       <p>The watchlist shows pairs that cost a little more than $1 for every $1 they pay. When one drops under $1 it moves up to the arbs. Game markets settle a postponed or canceled game by each exchange's own rules, so read both before betting one.</p></details>`;
 }
 

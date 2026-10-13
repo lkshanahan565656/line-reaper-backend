@@ -1466,3 +1466,31 @@ test('bid tracker: a plan fills when the maker ask reaches the bid, is graded on
   await tr3.record([], [...kalshi, ...us]);
   assert.equal((await tr3.summary()).unfilled, 1);
 });
+
+// ── middles ──
+test('middles: Over the lower line on one venue, Under the higher on the other, priced on where both put the total', () => {
+  const kalshi = kRows(kalshiGame(), kLines('KXNBATOTAL', 'New York K at Boston: Total Points', [
+    ['215', 'Over 215.5 points scored', 215.5, '0.6200', '0.4000'], ['221', 'Over 221.5 points scored', 221.5, '0.5000', '0.5200'],
+    ['227', 'Over 227.5 points scored', 227.5, '0.3700', '0.6500']], { tail: '26OCT08NYKBOS', exp: '2026-10-09T02:00:00Z' }));
+  const us = PMUS.arbRowsOf({
+    id: 7, slug: 'nba-nyk-bos-2026-10-08', title: 'NY Knicks vs. BOS Celtics', startTime: START, endDate: '2026-10-09T02:00:00Z', active: true, closed: false,
+    teams: [{ name: 'New York Knicks' }, { name: 'Boston Celtics' }],
+    markets: [
+      usMarket('aec-nba-nyk-bos-2026-10-08', 'basketball_team_full_game_winner', [usTeam('New York Knicks', true), usTeam('Boston Celtics', false)], '0.4400', '0.4600'),
+      usMarket('tsc-nba-nyk-bos-2026-10-08-217pt5', 'basketball_team_full_game_total', [{ long: true, description: 'Over' }, { long: false, description: 'Under' }],
+        '0.4400', '0.4500', { line: 217.5 }),
+    ],
+  }, { league: 'nba' });
+  const matches = A.matchMarkets(kalshi, us, opts());
+  const mids = A.findMiddles(kalshi, us, matches, opts({ region: 'us' }));
+  assert.equal(mids.length, 1, 'one per game and subject');
+  const [m] = mids;
+  assert.deepEqual([m.type, m.kind, m.low, m.high], ['middle', 'total', 217.5, 221.5]);
+  assert.deepEqual(m.legs.map(l => [l.venue, l.side, l.price]), [['polymarketus', 'yes', 0.45], ['kalshi', 'no', 0.52]], 'Over 217.5 here, Under 221.5 at Kalshi');
+  assert.ok(m.center > 219 && m.center < 224, String(m.center));
+  assert.ok(m.hitProb > 0.06 && m.hitProb < 0.1, `218 to 221 inclusive: ${m.hitProb}`);
+  assert.ok(m.totalCost > 1 && m.missPct < 0 && m.hitPct > 90, 'a small loss on a miss, nearly double on a hit');
+  assert.ok(Math.abs(m.evPct - ((1 + m.hitProb - m.totalCost) / m.totalCost) * 100) < 0.05);
+  // started games and leagues with no spread of results on file: none
+  assert.deepEqual(A.findMiddles(kalshi, us, matches, opts({ region: 'us', now: Date.parse(START) + 1 })), []);
+});
