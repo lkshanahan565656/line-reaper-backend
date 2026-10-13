@@ -213,8 +213,8 @@ function propRows(picks, verdict, o, now) {
     const vd = verdict('esportsPicks', labels);
     const title = `${p.player}${p.team ? ` (${p.team})` : ''}`;
     if (vd.avoid) { dropped.push({ kind: 'esportsProp', title, play: vd.avoid.play }); continue; }
-    const book = p.bestBook === 'UD' ? 'Underdog' : 'PrizePicks';
-    const line = p.bestBook === 'UD' && p.udLine != null ? p.udLine : p.ppLine ?? p.udLine;
+    const book = p.bestBook === 'UD' ? 'Underdog' : p.bestBook === 'SL' ? 'Sleeper' : 'PrizePicks';
+    const line = p.bestBook === 'UD' && p.udLine != null ? p.udLine : p.bestBook === 'SL' && p.sleeperLine != null ? p.sleeperLine : p.ppLine ?? p.udLine;
     const why = [`model ${p.modelPred} vs line ${line}, ${p.prob}% to hit`];
     if (p.sampleSize) why.push(`${p.sampleSize} maps of history`);
     if (vd.play) why.push(evidence(vd.play));

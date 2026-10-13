@@ -16,8 +16,10 @@
 const BLOCKED = [
   { key: 'owls', name: 'Owls Insight', flag: 'OWLS_DATA_OK', hosts: ['api.owlsinsight.com'],
     why: 'The Owls licence covers one user, not a product others pay for.' },
-  { key: 'prizepicks', name: 'PrizePicks', flag: 'PRIZEPICKS_DATA_OK', hosts: ['api.prizepicks.com', 'app.prizepicks.com'],
+  { key: 'prizepicks', name: 'PrizePicks', flag: 'PRIZEPICKS_DATA_OK', hosts: ['api.prizepicks.com', 'app.prizepicks.com', 'partner-api.prizepicks.com'],
     why: 'PrizePicks terms ban scraping.' },
+  { key: 'sleeper', name: 'Sleeper', flag: 'SLEEPER_DATA_OK', hosts: ['api.sleeper.app'],
+    why: 'Sleeper has no public lines API licence; its app API is used unofficially.' },
   { key: 'underdog', name: 'Underdog', flag: 'UNDERDOG_DATA_OK', hosts: ['api.underdogfantasy.com', 'stats.underdogfantasy.com'],
     why: 'Underdog terms ban scraping.' },
   { key: 'vlr', name: 'VLR.gg', flag: 'VLR_DATA_OK', hosts: ['vlr.gg', 'www.vlr.gg', 'vlrggapi.vercel.app'],

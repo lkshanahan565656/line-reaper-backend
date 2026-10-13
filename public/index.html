@@ -4121,6 +4121,8 @@ const escEs = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const logoSrc = k => { const u = (typeof BOOK_LOGOS !== 'undefined' && BOOK_LOGOS[k]) ? BOOK_LOGOS[k] : null; return u && !/["'<>]/.test(u) ? u : null; };
 const esEvColor = ev => ev == null ? '#475569' : ev >= 10 ? '#10b981' : ev >= 5 ? '#34d399' : ev > 0 ? '#fbbf24' : ev > -3 ? '#94a3b8' : '#64748b';
 const esLegProb = p => { const v = parseFloat(p.prob); return isFinite(v) && v > 0 ? v / 100 : null; };
+// each book prices its own line: Underdog's and Sleeper's can differ from the board's
+const esLineFor = (p, key) => key === 'underdog' && p.udLine != null ? p.udLine : key === 'sleeper' && p.sleeperLine != null ? p.sleeperLine : p.ppLine;
 const esBestEv = p => {
   const evs = [p.ppEv, p.udEv, p.betrEv, p.parlayEv, p.sleeperEv].filter(v => v != null);
   return evs.length ? Math.max(...evs) : null;
@@ -4393,7 +4395,7 @@ function esStatEdge(p) {
   if (p.statLine) parts.push(`<span style="color:#64748b">${escEs(p.statLine)}</span>`);
   if (p.edge != null && p.edgePct != null) {
     const up = p.edge > 0;
-    const line = (p.udLine != null && esportsState.book === 'underdog') ? p.udLine : p.ppLine;
+    const line = esLineFor(p, esportsState.book);
     parts.push(`<span title="The book posted ${line}. We project ${p.modelPred}. The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs OURS ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
   }
   if (p.udFlag === 'price-mismatch') {
@@ -5866,7 +5868,7 @@ function esSingleBookHTML(picks, key) {
     const ev = p[B.evField];
     const sideColor = p.side === 'OVER' ? '#10b981' : '#a78bfa';
     const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
-    const line = key === 'underdog' && p.udLine != null ? p.udLine : p.ppLine;
+    const line = esLineFor(p, key);
     return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);${ev >= 5 ? 'background:rgba(16,185,129,.04)' : ''}">
       <td style="padding:9px 6px 9px 10px">${esRowButtons(p)}</td>
       <td style="padding:9px 8px;text-align:center;min-width:60px">
@@ -5878,7 +5880,7 @@ function esSingleBookHTML(picks, key) {
         <div style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span style="font-size:10px;color:#a78bfa;font-weight:700;background:rgba(139,92,246,.15);padding:1px 6px;border-radius:3px;letter-spacing:1px">${escEs(p.sport)}</span>
           <span style="font-size:11px;color:#cbd5e1" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps — shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}</span>
-          ${mult && mult !== 1 ? `<span title="${p.udRegime === 'decimal' ? `Straight decimal payout — a ${mult}x pays ${mult} for 1, implying about ${(100/mult).toFixed(0)}% to hit.` : `Boost on standard pick'em pricing — EV = probability × ${mult} ÷ 0.5623 − 1.`}" style="font-size:10px;font-weight:900;padding:1px 6px;border-radius:4px;letter-spacing:.5px;color:#0b0f17;background:${p.udRegime === 'decimal' ? '#a78bfa' : mult > 1 ? '#10b981' : '#ef4444'}">${p.udRegime === 'decimal' ? '◆' : mult > 1 ? '▲' : '▼'} ${mult}x ${p.udRegime === 'decimal' ? 'PAYOUT' : 'BOOST'}</span>` : ''}
+          ${mult && mult !== 1 ? `<span title="${key === 'sleeper' || p.udRegime === 'decimal' ? `Straight decimal payout — a ${mult}x pays ${mult} for 1, implying about ${(100/mult).toFixed(0)}% to hit.` : `Boost on standard pick'em pricing — EV = probability × ${mult} ÷ 0.5623 − 1.`}" style="font-size:10px;font-weight:900;padding:1px 6px;border-radius:4px;letter-spacing:.5px;color:#0b0f17;background:${p.udRegime === 'decimal' ? '#a78bfa' : mult > 1 ? '#10b981' : '#ef4444'}">${p.udRegime === 'decimal' ? '◆' : mult > 1 ? '▲' : '▼'} ${mult}x ${p.udRegime === 'decimal' ? 'PAYOUT' : 'BOOST'}</span>` : ''}
         </div>
         ${esStatEdge(p)}
       </td>
@@ -5919,7 +5921,7 @@ function esWhenShort(iso) {
 }
 function esPlayRow(p, key, B) {
   const ev = p.locked ? null : p[B.evField];
-  const line = key === 'underdog' && p.udLine != null ? p.udLine : p.ppLine;
+  const line = esLineFor(p, key);
   const mult = key === 'underdog' ? p.udMultiplier : key === 'sleeper' ? p.sleeperMultiplier : null;
   const match = [p.matchTitle || (p.team && p.context?.opponent ? `${p.team} vs ${p.context.opponent}` : p.team), esWhenShort(p.startTime)].filter(Boolean).join(' · ');
   return `<tr>
@@ -5961,7 +5963,7 @@ function esPlaysHTML(picks) {
   const head = '<th></th><th>Player</th><th class="hide-sm">Prop</th><th>Line</th><th class="hide-sm">Model</th><th>Lean</th><th class="hide-sm">Prob</th><th>EV</th>';
   for (const [key, B] of Object.entries(ES_BOOKS)) {
     // a locked pick (free viewer) still shows under the book that carries its line
-    const carries = p => key === 'underdog' ? p.udLine != null : key === 'prizepicks' ? p.lineSource === 'pp' : false;
+    const carries = p => key === 'underdog' ? p.udLine != null : key === 'sleeper' ? p.sleeperLine != null : key === 'prizepicks' ? p.lineSource === 'pp' : false;
     const rows = esSorted(picks.filter(p => p.locked ? carries(p) : p[B.evField] != null && p[B.evField] > 0 && p[B.evField] >= min));
     const priced = picks.filter(p => p[B.evField] != null).length;
     if (!rows.length) continue;
