@@ -305,14 +305,23 @@ function parseUnderdogPayload(data) {
     const game = games[matchId] || soloGames[matchId] || {};
     const sport = game.sport || player.sport || '';
 
-    // per-side payout multipliers
-    let overMult = 1.00, underMult = 1.00;
-    if (Array.isArray(line.options)) {
-      for (const opt of line.options) {
+    // A pulled or suspended line can't be bet at all
+    if (line.status && line.status !== 'active') continue;
+
+    // per-side payout multipliers. UD lists one option per side it takes, so a
+    // line with only a Higher option can't be played Lower (and vice versa); a
+    // suspended option is closed too. No options listed at all: both assumed.
+    let overMult = 1.00, underMult = 1.00, overOpen = true, underOpen = true;
+    const opts = Array.isArray(line.options) ? line.options.filter(Boolean) : [];
+    if (opts.length) {
+      overOpen = underOpen = false;
+      for (const opt of opts) {
+        const open = !opt.status || opt.status === 'active';
         const m = parseFloat(opt.payout_multiplier || opt.multiplier || 1);
-        if (opt.choice === 'higher' || opt.choice_display === 'Higher') overMult = m;
-        else if (opt.choice === 'lower' || opt.choice_display === 'Lower') underMult = m;
+        if (opt.choice === 'higher' || opt.choice_display === 'Higher') { overMult = m; overOpen = open; }
+        else if (opt.choice === 'lower' || opt.choice_display === 'Lower') { underMult = m; underOpen = open; }
       }
+      if (!overOpen && !underOpen) continue;
     }
 
     // Esports players carry no team name. The appearance names the player's
@@ -336,9 +345,10 @@ function parseUnderdogPayload(data) {
       startTime: game.startTime || '',
       matchTitle: game.title || '',
       gameId: matchId,
-      overMultiplier: overMult,
-      underMultiplier: underMult,
-      multiplier: Math.max(overMult, underMult),
+      overMultiplier: overOpen ? overMult : null,
+      underMultiplier: underOpen ? underMult : null,
+      overOpen, underOpen,
+      multiplier: Math.max(overOpen ? overMult : 0, underOpen ? underMult : 0),
     });
   }
   return lines;
@@ -1542,6 +1552,7 @@ async function generateEsportsPicks() {
     if (!l.player || l.line == null) continue;
     udMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = {
       line: l.line, overMultiplier: l.overMultiplier || 1.00, underMultiplier: l.underMultiplier || 1.00,
+      overOpen: l.overOpen !== false, underOpen: l.underOpen !== false,
       market: l.market, sport: l.sport, player: l.player, team: l.team || '', startTime: l.startTime || '',
       matchTitle: l.matchTitle || '',
       gameId: l.gameId || null,
@@ -1556,7 +1567,7 @@ async function generateEsportsPicks() {
   const MAX_FRESH_LOOKUPS = 40;
   const implausibleLines = [];
   const spanCounts = { inferred: 0 };
-  let priceMismatches = 0;
+  let priceMismatches = 0, closedSides = 0;
   const contextCounts = {};
 
   // What the record says so far: kinds of pick that keep losing get their
@@ -1750,6 +1761,15 @@ async function generateEsportsPicks() {
       if (over) side = over.prob >= 50 ? 'OVER' : 'UNDER';
     }
     if (!side) return pick;
+    // Only a side the book actually takes is a pick. UD-only lines with the
+    // model's side closed stay listed with the projection but no side, so they
+    // never reach Best Plays, entries, alerts or the tracked record.
+    if (udm && lineSource === 'ud' && (side === 'OVER' ? !udm.overOpen : !udm.underOpen)) {
+      pick.sideClosed = side;
+      pick.statLine = [pick.statLine, `model leans ${side === 'OVER' ? 'Higher' : 'Lower'}, Underdog only offers ${side === 'OVER' ? 'Lower' : 'Higher'} on this line`].filter(Boolean).join(' · ');
+      closedSides++;
+      return pick;
+    }
     const r = calcEsportsEV(lineVal, modelPred, side, base.sport, base.market, ctxOpts);
     if (!r) return pick;
 
@@ -1839,6 +1859,7 @@ async function generateEsportsPicks() {
   esportsCache.spanInferred = spanCounts.inferred;
   esportsCache.contextCounts = contextCounts;
   esportsCache.priceMismatches = priceMismatches;
+  esportsCache.closedSides = closedSides;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} picks withheld — model probability disagreed with the book's implied price by >15 points`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
@@ -3184,7 +3205,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.64.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.65.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3606,6 +3627,8 @@ app.get('/api/esports/probe/udmarkets', (req, res) => {
     B.count++;
     if (l.line != null) B.lines.push(l.line);
     if (B.samplePlayers.length < 3) B.samplePlayers.push(`${l.player} ${l.line}`);
+    if (l.overOpen === false) B.lowerOnly = (B.lowerOnly || 0) + 1;
+    if (l.underOpen === false) B.higherOnly = (B.higherOnly || 0) + 1;
   }
   const out = Object.values(byMarket).map(B => {
     const ls = B.lines.slice().sort((a, b) => a - b);
@@ -3617,6 +3640,7 @@ app.get('/api/esports/probe/udmarkets', (req, res) => {
       parsedMaps: span.count, parsedLabel: span.label,
       impliedPerMap: med != null ? +(med / span.count).toFixed(2) : null,
       plausible: lineIsPlausible(med, span.count, B.sport, B.market),
+      higherOnly: B.higherOnly || 0, lowerOnly: B.lowerOnly || 0,
       samplePlayers: B.samplePlayers,
     };
   }).sort((a, b) => b.count - a.count);
@@ -4118,7 +4142,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.64.0',
+  version: '3.65.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4257,10 +4281,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.64.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.65.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.64.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.65.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

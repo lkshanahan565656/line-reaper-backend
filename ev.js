@@ -256,6 +256,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
       for (const side of ['Over', 'Under']) {
         const fp = f.fair[side];
         if (fp == null) continue;
+        if ((side === 'Over' ? l.overOpen : l.underOpen) === false) continue;   // book doesn't take this side
         const mult = side === 'Over' ? l.overMultiplier : l.underMultiplier;
         const ev = dfsEv(fp, l.book, mult ?? 1);
         if (ev == null || ev < minEv) continue;
