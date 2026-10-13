@@ -19,6 +19,7 @@
 // The inputs are already licence- and region-gated by the server.
 
 const { sportKey, statKind } = require('./tracker');
+const { moveText } = require('./steam');
 
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -182,7 +183,7 @@ function valueRows(edges, verdict, o, now) {
   for (const e of edges) {
     const start = ms(e.start);
     if (start == null || start <= now || !(e.cost > 0 && e.cost < 1) || !(e.ev > 0)) continue;
-    const labels = { sport: e.league || e.category, book: e.venue, market: e.market };
+    const labels = { signal: e.steam ? 'steam' : 'price gap', sport: e.league || e.category, book: e.venue, market: e.market };
     const vd = verdict('exchangeValue', labels);
     if (vd.avoid) { dropped.push({ kind: 'exchangeValue', title: e.title, play: vd.avoid.play }); continue; }
     const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
@@ -190,9 +191,10 @@ function valueRows(edges, verdict, o, now) {
     if (!(units > 0)) continue;
     const venue = VALUE_VENUES[e.venue] || e.venue;
     const why = [`Polymarket's book has it at ${r2(e.fair * 100)}c, ${venue} sells it for ${r2(e.cost * 100)}c with the fee`];
+    if (e.steam) why.unshift(`Steam: ${moveText(e.steam, venue)}`);
     if (vd.play) why.push(evidence(vd.play));
     rows.push({
-      id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} exchange value`, title: e.title,
+      id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} ${e.steam ? 'steam' : 'exchange value'}`, title: e.title, steam: !!e.steam,
       bet: e.pick, venue, price: e.cost, american: null, maxPrice: null, units, ev: r4(e.ev), verdict: vd.verdict, why,
       url: e.url, startsAt: e.start, at: null, warning: null,
     });

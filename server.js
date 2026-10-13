@@ -2753,6 +2753,9 @@ const XVALUE_OPTS = xvalue.optsFromEnv();
 const XVALUE_BOOKS = Number.isFinite(parseInt(process.env.XVALUE_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XVALUE_BOOKS_PER_SCAN)) : 30;
 const XVALUE_ALERT_MIN = Number.isFinite(parseFloat(process.env.XVALUE_ALERT_MIN)) ? parseFloat(process.env.XVALUE_ALERT_MIN) : 0.03;
 const XVALUE_REALERT_MS = 6 * 3600e3;
+// steam (steam.js): Polymarket just moved and the US venue hasn't followed
+const steamWatch = require('./steam').createSteamWatch(require('./steam').optsFromEnv());
+const STEAM_ALERT_MIN = Number.isFinite(parseFloat(process.env.STEAM_ALERT_MIN)) ? parseFloat(process.env.STEAM_ALERT_MIN) : 0.02;
 const xvalueState = { edges: [], updated: null, counts: null, primed: false };
 const xvalueSeen = new Map();     // edge id → last alert (ms)
 const xvalueRefs = new Map();     // tracked group → { refId, token, start }: its close keeps coming from the book
@@ -2769,7 +2772,12 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
   const o = { ...XVALUE_OPTS, kalshiFeeRate: XARB_OPTS.kalshiFeeRate ?? xvalue.DEFAULTS.kalshiFeeRate, venues: XVALUE_VENUES, now };
   // what to read: the screen's best first, then the open bets' refs
   const want = new Map();
-  for (const e of xvalue.screen(input, o)) if (e.refToken && !want.has(e.refId)) want.set(e.refId, e.refToken);
+  const scr = xvalue.screen(input, o);
+  // steaming sides first: a move is minutes old and the book read confirms it
+  const steaming = steamWatch.candidates(scr.quotes, now);
+  steamWatch.observe(scr.quotes, now);
+  for (const q of steaming) if (q.refToken && !want.has(q.refId)) want.set(q.refId, q.refToken);
+  for (const e of scr.edges) if (e.refToken && !want.has(e.refId)) want.set(e.refId, e.refToken);
   for (const [g, r] of xvalueRefs) {
     if (Date.parse(r.start) <= now - 3600e3) { xvalueRefs.delete(g); continue; }
     if (!want.has(r.refId)) want.set(r.refId, r.token);
@@ -2778,18 +2786,21 @@ async function scanValue({ kalshi, polymarket, matches, usRows }, now = Date.now
   for (const [id, token] of [...want].slice(0, XVALUE_BOOKS)) {
     try { const b = await tail.fetchBook(upstream, token); if (b) books.set(id, b); } catch { /* a missing book: no edge */ }
   }
-  const { edges, fairs, pairs } = xvalue.findValue(input, { ...o, books, requireBook: true });
+  const { edges, fairs, pairs } = xvalue.findValue(input, { ...o, books, requireBook: true, steam: steamWatch, steamMinEv: steamWatch.opts.minEv });
+  edges.sort((a, b) => (b.steam ? 1 : 0) - (a.steam ? 1 : 0) || b.ev - a.ev);
   for (const e of edges) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
   await xvalueTracker.recordBoard(xvalue.trackRows(edges), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, edges: edges.length } });
+  Object.assign(xvalueState, { edges, books, updated: new Date(now).toISOString(), counts: { pairs, screened: want.size, books: books.size, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size() } });
   const lic = webhookLicence();
-  const fresh = edges.filter(e => e.ev >= XVALUE_ALERT_MIN && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
+  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   for (const e of fresh) xvalueSeen.set(e.id, now);
   for (const [id, at] of xvalueSeen) if (now - at > 2 * 86400e3) xvalueSeen.delete(id);
   // the first scan after a restart only primes
   if (fresh.length && xvalueState.primed) {
     broadcast('xvalue', fresh);
-    postAlert(fresh.map(xvalue.describe), 'Exchange value');
+    const steamy = fresh.filter(e => e.steam), plain = fresh.filter(e => !e.steam);
+    if (steamy.length) postAlert(steamy.map(xvalue.describe), 'Steam');
+    if (plain.length) postAlert(plain.map(xvalue.describe), 'Exchange value');
   }
   xvalueState.primed = true;
   return edges;
@@ -3275,7 +3286,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.73.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.74.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3604,11 +3615,11 @@ app.get('/api/exchange-value', async (req, res) => {
     const pro = hasPro(req), lic = licenceOf(req);
     const edges = xvalueState.edges.filter(valueOk(lic));
     const record = await xvalueTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined });
-    const base = { count: edges.length, updated: xvalueState.updated, pro, region: TAIL_REGION, venues: XVALUE_VENUES, record,
+    const base = { count: edges.length, steamCount: edges.filter(e => e.steam).length, updated: xvalueState.updated, pro, region: TAIL_REGION, venues: XVALUE_VENUES, record,
       ...withheldBody(withheldOf(lic, ['polymarket', 'kalshi'])) };
     if (!pro) return res.json({ ...base, edges: edges.map(e => ({ ev: e.ev, locked: true })) });
     res.json(regionSafe({ ...base, edges: edges.slice(0, Math.min(parseInt(req.query.limit) || 200, 500)), counts: xvalueState.counts,
-      settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS } }));
+      settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS, steam: { ...steamWatch.opts, alertMin: STEAM_ALERT_MIN } } }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The thresholds in force (defaults overridden by env), so the app can show
@@ -4237,7 +4248,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.73.0',
+  version: '3.74.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4376,10 +4387,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.73.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.74.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.73.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.74.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);

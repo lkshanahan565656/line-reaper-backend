@@ -22,6 +22,7 @@
 
 const { kalshiFee } = require('./exchanges');
 const { polymarketFee, nameMatch } = require('./xarb');
+const { moveText } = require('./steam');
 
 const DEFAULTS = {
   minEv: 0.02,
@@ -133,7 +134,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
   }
   if (venues.has('polymarketus')) pairs.push(...pairUs(usRows, polymarket));
 
-  const best = new Map(), fairs = new Map();
+  const best = new Map(), fairs = new Map(), quotes = new Map();
   for (const { target: t, ref: p, same } of pairs) {
     if (!t || !t.tradable) continue;
     const start = ms(t.startTime) ?? ms(p.startTime);
@@ -148,29 +149,36 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [] } =
       const c = costOf(t, side, o);
       if (!c) continue;
       const ev = fair / c.cost - 1;
-      if (ev < o.minEv || ev > o.maxEv) continue;
+      const id = `${group}|${side}`;
+      if (!quotes.has(id) || quotes.get(id).fair / quotes.get(id).cost < fair / c.cost) quotes.set(id, { fair, cost: c.cost, spread: ref.spread, refId: String(p.id), refToken: p.tokenIds?.[p.yesIndex ?? 0] ?? null });
+      // a side Polymarket just moved on (steam.js) is worth a bet at a smaller edge
+      const steam = o.steam ? o.steam.steamOf(id, fair, c.cost, now) : null;
+      const minEv = steam && o.steamMinEv != null ? Math.min(o.minEv, o.steamMinEv) : o.minEv;
+      if (ev < minEv || ev > o.maxEv) continue;
       const e = {
-        id: `${group}|${side}`, group, venue: t.exchange, venueName: VENUE[t.exchange] || t.exchange, marketId: t.id, side, pick,
+        id, group, venue: t.exchange, venueName: VENUE[t.exchange] || t.exchange, marketId: t.id, side, pick,
         title: t.eventTitle || t.title, market: t.kind === 'teams' || t.game3 ? 'moneyline' : t.kind,
         league: t.league || p.league || null, category: t.category || p.category || 'sports',
         price: c.price, cost: r4(c.cost), fair: r4(fair), ev: r4(ev),
         refId: String(p.id), refToken: p.tokenIds?.[p.yesIndex ?? 0] ?? null,
         ref: { venue: 'polymarket', mid: r4(ref.fair), spread: r4(ref.spread), liquidity: ref.liquidity, source: ref.source, url: p.url },
         start: new Date(start).toISOString(), url: t.url || null, rules: t.rules || null,
+        steam: steam || null,
       };
       // one bet per contract side
       if (!best.has(e.id) || best.get(e.id).ev < e.ev) best.set(e.id, e);
     }
   }
   const edges = [...best.values()].sort((a, b) => b.ev - a.ev);
-  return { edges, fairs, pairs: pairs.length };
+  return { edges, fairs, quotes, pairs: pairs.length };
 }
 
 // The first pass on Gamma's quotes, wide enough that a lagging Gamma price
 // doesn't hide an edge the book has: what to read the live book for.
 const SCREEN = { minEv: -0.01, maxEv: 0.3, maxSpread: 0.06 };
+// edges, plus every paired side's quote (what steam.js keeps a history of)
 function screen(input, opts = {}) {
-  return findValue(input, { ...opts, ...SCREEN, books: null, requireBook: false }).edges;
+  return findValue(input, { ...opts, ...SCREEN, books: null, requireBook: false, steam: null });
 }
 
 // The price screen's fair column (xarb.exchangeScreen rows): each side's fair
@@ -206,7 +214,7 @@ function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } =
 function trackRows(edges) {
   return edges.map(e => ({
     group: e.group, side: e.pick, book: e.venue, start: e.start, sport: e.league || e.category, event: e.title,
-    market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'xvalue',
+    market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: e.steam ? 'steam' : 'xvalue',
   }));
 }
 
@@ -214,7 +222,8 @@ function trackRows(edges) {
 function describe(e) {
   const when = e.start ? new Date(e.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : '';
   const c = x => `${Math.round(x * 1000) / 10}¢`;
-  return `${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), Polymarket ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
+  const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName)}. ` : '';
+  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), Polymarket ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
 module.exports = { findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
