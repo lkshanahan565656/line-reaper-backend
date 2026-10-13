@@ -81,7 +81,7 @@ function createPgStore(connectionString, table = 'tail_signals') {
 
 function createStoreFromEnv(env = process.env, { table = 'tail_signals', fileVar = 'TAIL_TRACK_FILE', file = 'tail-signals.json' } = {}) {
   if (env.DATABASE_URL) return createPgStore(env.DATABASE_URL, table);
-  return createFileStore(env[fileVar] || path.join(__dirname, 'data', file));
+  return createFileStore(env[fileVar] || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), file));
 }
 const createFreshStoreFromEnv = (env = process.env) => createStoreFromEnv(env, { table: 'fresh_signals', fileVar: 'FRESH_TRACK_FILE', file: 'fresh-signals.json' });
 
