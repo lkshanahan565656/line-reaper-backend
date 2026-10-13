@@ -122,3 +122,11 @@ test('Best Plays lists exchange value with ¼ Kelly units, capped until proven',
   assert.ok(r.units > 0 && r.units <= 1);
   assert.equal(out.counts.exchangeValue, 1);
 });
+
+test('Best Plays leaves out arbs of more than 4 bets', () => {
+  const { bestPlays } = require('../bestplays');
+  const leg = i => ({ venue: 'kalshi', pick: `P${i}`, price: 0.05, url: null });
+  const arb = n => ({ id: `a${n}`, type: n > 2 ? 'multi' : 'cross', title: `${n} legs`, profitPct: 3, totalCost: 0.97, legs: Array.from({ length: n }, (_, i) => leg(i)) });
+  const out = bestPlays({ arbs: [arb(2), arb(4), arb(16)] }, { now: NOW });
+  assert.deepEqual(out.rows.filter(r => r.kind === 'arb').map(r => r.title).sort(), ['2 legs', '4 legs']);
+});

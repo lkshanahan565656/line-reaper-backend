@@ -35,6 +35,7 @@ const DEFAULTS = {
   lineMinBooks: 3,            // a consensus price needs a few books behind it
   edgeMaxUnits: 1,            // esports edges and exchange value until proven
   provenMaxUnits: 2,
+  arbMaxLegs: 4,              // a 16-bet set isn't a play anyone places
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
   limit: 300,
@@ -279,10 +280,10 @@ function lineRows(lines, verdict, o, now) {
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
 const venueName = l => l.venueTitle || VENUE_NAMES[l.venue] || l.venue;
 
-function arbRows(arbs, esportsArbs) {
+function arbRows(arbs, esportsArbs, o) {
   const rows = [];
   for (const a of arbs) {
-    if (a.locked || !(a.profitPct > 0) || !(a.legs || []).length) continue;
+    if (a.locked || !(a.profitPct > 0) || !(a.legs || []).length || a.legs.length > o.arbMaxLegs) continue;
     const pcts = a.stakes?.legs?.map(l => l.pct);
     rows.push({
       id: `arb:${a.id}`, kind: 'arb', label: 'Exchange arb', title: a.title, category: a.category,
@@ -318,7 +319,7 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
   const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now)];
-  const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
+  const rows = [...parts.flatMap(p => p.rows), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs, o)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};
