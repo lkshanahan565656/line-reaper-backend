@@ -93,7 +93,9 @@ function kellyUnits(p, c, cap, o) {
 }
 
 // Sharp Tail entries still worth following: sized, priced at a venue, recent,
-// not started, and not since sold by the wallet that bought them
+// not started, and not since sold by the wallet that bought them. The venue's
+// units decide: a signal's reason is about Polymarket's price, and Kalshi or
+// a book can still size it (the server sizes every venue with the same caps).
 function tailRows(signals, verdict, o, now) {
   const exits = new Map();
   for (const s of signals) if (s.type === 'exit') {
@@ -102,7 +104,7 @@ function tailRows(signals, verdict, o, now) {
   }
   const rows = [], dropped = [];
   for (const s of signals) {
-    if (s.type !== 'entry' || s.locked || s.reason || s.blocked) continue;
+    if (s.type !== 'entry' || s.locked || s.blocked) continue;
     const v = s.venue;
     const units = Number(v?.units ?? s.units);
     if (!v || !(units > 0) || !(v.price > 0 && v.price < 1 || v.american != null)) continue;

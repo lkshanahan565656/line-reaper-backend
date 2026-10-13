@@ -168,7 +168,14 @@ function kalshiTakerSide(t) {
 }
 const truthy = v => v === true || /^(true|1|yes)$/i.test(String(v ?? ''));
 
-// One row per fill, deduped by trade_id. → { id, ticker, side, price (taker
+// Kalshi markets nobody can follow from a whale print: multi-leg combos
+// (KXMVE…, quoted on request only, titled by ticker) and 15-minute crypto or
+// commodity markets (KXBTC15M…), which settle before a tail could be placed.
+// They were most of the feed by count and most of the flow by dollars.
+const KALSHI_NOISE = /^KXMVE|^KX[A-Z0-9]*15M-/i;
+const kalshiNoise = ticker => KALSHI_NOISE.test(String(ticker || ''));
+
+// One row per fill, deduped by trade_id, without the noise markets. → { id, ticker, side, price (taker
 // side), yesPrice, contracts, notional, block, at (ms), time (as sent, for grouping) }
 function parseKalshiTrades(payload) {
   const out = [], ids = new Set();
@@ -182,7 +189,7 @@ function parseKalshiTrades(payload) {
     const price = side === 'yes' ? yes : no;
     const contracts = num(t.count_fp) ?? num(t.count);
     const ticker = t.ticker ?? t.market_ticker;
-    if (!ticker || !(price > 0 && price < 1) || !(contracts > 0)) continue;
+    if (!ticker || kalshiNoise(ticker) || !(price > 0 && price < 1) || !(contracts > 0)) continue;
     const time = t.created_time ?? t.createdTime ?? t.ts ?? null;
     const at = toMs(time);
     const id = String(t.trade_id ?? t.tradeId ?? t.id ?? `${ticker}|${side}|${time}|${contracts}|${price}`);
@@ -696,7 +703,7 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
 
 module.exports = {
   DEFAULTS, KALSHI_TRADES_URL, POLYMARKET_TRADES_URL, resolveOptions, optionsFromEnv, polymarketTradeParams,
-  parseKalshiTrades, kalshiTakerSide, kalshiPrints, kalshiWhaleEvent, kalshiWhales, kalshiEventTicker,
+  parseKalshiTrades, kalshiNoise, kalshiTakerSide, kalshiPrints, kalshiWhaleEvent, kalshiWhales, kalshiEventTicker,
   parsePolymarketTrades, gradeInfo, polymarketWhaleEvent, polymarketWhales,
   aggregateFlow, fetchKalshiTrades, fetchPolymarketTrades, walletHistory, freshOf, fetchWalletHistory, createWhaleWatcher, toMs,
 };
