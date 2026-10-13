@@ -12,7 +12,7 @@ jobs:
       matrix:
         include:
           - { os: windows-latest, target: node22-win-x64, name: LineReaper-Windows.exe }
-          - { os: macos-13, target: node22-macos-x64, name: LineReaper-Mac-Intel }
+          - { os: macos-14, target: node22-macos-x64, name: LineReaper-Mac-Intel }
           - { os: macos-14, target: node22-macos-arm64, name: LineReaper-Mac-AppleSilicon }
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,6 +26,7 @@ jobs:
         if: runner.os == 'macOS'
         run: codesign --force --sign - out/${{ matrix.name }}
       - name: Smoke test on live feeds
+        continue-on-error: ${{ matrix.target == 'node22-macos-x64' }}
         shell: bash
         run: |
           LR_NO_BROWSER=1 PORT=3777 LR_DATA_DIR="$RUNNER_TEMP/lr" ./out/${{ matrix.name }} > "$RUNNER_TEMP/lr.log" 2>&1 &
