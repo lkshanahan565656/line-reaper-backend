@@ -1225,7 +1225,7 @@ body.no-help .clv-info { display:none; }
 
   <div id="esPropsPane" style="display:none">
   <div class="clv-info" style="border-left: 3px solid #8b5cf6">
-    <strong style="color:#e8e8e8">PLAYER PROPS</strong> Every esports prop line, priced by our model from each player's recent maps and the match price.
+    <strong style="color:#e8e8e8">PLAYER PROPS</strong> Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A play is a book that's out of line with the others.
   </div>
 
   <div class="row" id="esportsSportRow" style="margin: 12px 0; flex-wrap: wrap; gap:6px">
@@ -1267,7 +1267,7 @@ body.no-help .clv-info { display:none; }
   <div style="margin-top:20px;padding:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.6">
     <strong style="color:#a78bfa">HOW IT WORKS</strong><br>
     1. <strong>Lines</strong> come from Underdog and PrizePicks (CS2, Valorant, LoL, Dota). Match plays come from Kalshi and Polymarket.<br>
-    2. <strong>The model</strong> projects each player from recent maps (bo3.gg, vlr.gg, gol.gg, OpenDota), scaled by the matchup the exchanges price.<br>
+    2. <strong>Fair</strong> is the books' consensus: Underdog's and Sleeper's payouts and PrizePicks' line each say where the player's middle sits. Our projection (recent maps from bo3.gg, vlr.gg, gol.gg and OpenDota, scaled by the match price) moves it only by the weight its graded record has earned.<br>
     3. <strong>Plays</strong> lists only the +EV sides, grouped by where you'd bet them. <strong>All lines</strong> shows everything.<br>
     4. <strong>Tap +</strong> to build a slip priced on every book at once, with quarter-Kelly sizing from your bankroll. <strong>Model entry</strong> lets you enter your own number.<br>
   </div>
@@ -4168,7 +4168,10 @@ function esStatEdge(p) {
   if (p.edge != null && p.edgePct != null) {
     const up = p.edge > 0;
     const line = esLineFor(p, esportsState.book);
-    parts.push(`<span title="The book posted ${line}. We project ${p.modelPred}. The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs OURS ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
+    // a market price is the books' own consensus (Underdog and Sleeper payouts,
+    // every book's line), nudged by our projection only as far as the record allows
+    const mk = p.fairSource === 'market';
+    parts.push(`<span title="${mk ? `The books together put this at ${p.marketPred}. With our projection weighted ${Math.round((p.modelWeight || 0) * 100)}%, fair is ${p.modelPred}.` : `The book posted ${line}. We project ${p.modelPred}.`} The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs ${mk ? 'FAIR' : 'OURS'} ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
   }
   if (p.udFlag === 'price-mismatch') {
     parts.push(`<span title="Underdog's payout implies ${p.udImplied}% while our model says ${p.prob}%. A gap that big on one leg almost always means our number is wrong, so no EV is published." style="color:#fbbf24;font-weight:800">PRICE MISMATCH — book implies ${p.udImplied}%, model ${p.prob}% · no EV shown</span>`);
