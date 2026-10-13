@@ -1510,3 +1510,27 @@ test('price screen: each side of a paired game line, all-in on both exchanges, a
   assert.equal(rows.filter(r => r.kind === 'moneyline').length, 1, 'the two Kalshi team markets are one row');
   assert.deepEqual(A.exchangeScreen(A.matchMarkets(kalshi, us, opts()), opts({ now: Date.parse(START) + 1 })), [], 'started games drop off');
 });
+
+test('middle tracker: logged once, graded from the settled Kalshi ladder when the game is over', async () => {
+  const { createMiddleTracker } = require('../middletrack');
+  let t = NOW;
+  const ladder = [['215', 215.5, 'yes'], ['218', 218.5, 'yes'], ['221', 221.5, 'no'], ['224', 224.5, 'no']]
+    .map(([c, s, r]) => ({ ticker: `KXNBATOTAL-26OCT08NYKBOS-${c}`, floor_strike: s, result: r }));
+  const calls = [];
+  const http = { get: async (url, cfg) => { calls.push(cfg.params.event_ticker); return { data: { markets: ladder } }; } };
+  const tr = createMiddleTracker({ http, now: () => t });
+  const m = { id: 'middle:x', startTime: START, title: 'New York K at Boston', league: 'nba', kind: 'total', low: 217.5, high: 221.5, totalCost: 1.006, hitProb: 0.083, evPct: 7.6,
+    legs: [{ venue: 'polymarketus', marketId: 'tsc', pick: 'Over 217.5', price: 0.45 }, { venue: 'kalshi', marketId: 'KXNBATOTAL-26OCT08NYKBOS-221', pick: 'Under 221.5', price: 0.52 }] };
+  await tr.record([m]);
+  await tr.record([m]);
+  assert.equal((await tr.list()).length, 1, 'once');
+  await tr.grade();
+  assert.deepEqual(calls, [], 'nothing read before the game is over');
+  t = Date.parse(START) + 4 * 3600e3;
+  await tr.grade();
+  assert.deepEqual(calls, ['KXNBATOTAL-26OCT08NYKBOS']);
+  const s = await tr.summary();
+  // the total was over 218.5 and not over 221.5: inside 217.5 to 221.5, both legs paid
+  assert.deepEqual([s.graded, s.hits, s.open], [1, 1, 0]);
+  assert.ok(Math.abs(s.units - (2 - 1.006) / 1.006) < 0.01);
+});

@@ -5484,7 +5484,7 @@ function renderXarbs() {
   const nearList = xarbUi.allNear ? near : nearSimple;
   const twoBet = sec('2-BET ARBS', ready.length ? `${ready.length} · one bet on each exchange, check each price is still there` : 'none right now',
       ready.length ? ready.map(xarbCard).join('') : '<div class="xa-empty">No two-bet arb right now. Real ones close within minutes: when one opens it shows here first.</div>');
-  const br = d.bidRecord;
+  const br = d.bidRecord, mr = d.middleRecord;
   const bidRec = br && (br.filled || br.unfilled || br.cancelled)
     ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${br.filled} filled${br.fillRate != null ? ` (${Math.round(br.fillRate * 100)}% of those finished)` : ''}, ${br.locked} locked a profit, ${br.lost} lost${br.avgLock != null ? `, average ${br.avgLock > 0 ? '+' : ''}${br.avgLock}% a fill` : ''}. ${br.cancelled} cancelled when the hedge ran, ${br.unfilled} never filled.</div>`
     : br ? `<div class="xa-sub" style="margin:0 0 8px">Every plan here is tracked until its game starts: whether the bid filled and what the hedge cost by then. ${br.open} being tracked now.</div>` : '';
@@ -5492,7 +5492,9 @@ function renderXarbs() {
       bidRec + (bids.length ? bids.slice(0, 12).map(xarbBidCard).join('') : '<div class="xa-empty">No pair to lock with a bid right now. These show up when Kalshi and Polymarket US disagree by a couple of cents.</div>'));
   el.innerHTML = note + summary + controls
     + (ready.length || !bids.length ? twoBet + bidSec : bidSec + twoBet)
-    + (middles.length ? sec('MIDDLES', `${middles.length} · one bet always pays, both pay if the game lands between the lines`, middles.slice(0, 12).map(xarbMiddleCard).join('')) : '')
+    + (middles.length || mr?.graded ? sec('MIDDLES', middles.length ? `${middles.length} · one bet always pays, both pay if the game lands between the lines` : 'none right now',
+      (mr ? `<div class="xa-sub" style="margin:0 0 8px">${mr.graded ? `Tracked so far: ${mr.hits} of ${mr.graded} hit (about ${mr.expectedHits} expected), ${mr.units > 0 ? '+' : ''}${mr.units}u at 1u each.` : 'Every middle here is graded from the final once its game is over.'} ${mr.open} waiting on games.</div>` : '')
+      + middles.slice(0, 12).map(xarbMiddleCard).join('')) : '')
     + (check.length ? sec('CHECK THE RULES FIRST', `${check.length} · read the note on each before you bet`, check.map(xarbCard).join('')) : '')
     + (vd && !vd.pro && vd.count ? sec('ONE-BET VALUE', `${vd.count} right now`, tailLockBanner(`<b>${vd.count} single bet${vd.count === 1 ? '' : 's'} priced under Polymarket's book right now.</b>`, 'Exchange value')) : '')
     + (vd && vd.pro ? sec('ONE-BET VALUE', value.length ? `${value.length} · Kalshi or Polymarket US selling under Polymarket's own price` : 'nothing right now',
