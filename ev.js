@@ -96,10 +96,28 @@ const MARKET_ALIASES = [
   [/^hits \+ runs \+ rbis$|^batter_hits_runs_rbis$/, 'hits_runs_rbis'],
   [/^(player_)?steals?_blocks?$|^blks \+ stls$|^steals (and|\+) blocks$/, 'stocks'],
   [/^free throws made$|^player_frees_made$/, 'ftm'],
+  // PrizePicks and Sleeper wordings
+  [/^pass \+ rush yards$|^passing and rushing yards$|^player_pass_rush_yds$/, 'pass_rush_yds'],
+  [/^(rec )?targets$|^receiving targets$/, 'targets'],
+  [/^pass completions$/, 'pass_comp'],
+  [/^int$|^interceptions$/, 'pass_ints'],
+  [/^(batter )?walks$|^bat walks$/, 'walks'],
+  [/^(pitcher )?earned runs( allowed)?$/, 'earned_runs'],
+  [/^(goalie )?saves$/, 'saves'],
+  [/^power ?play points$|^powerplay points$/, 'pp_points'],
+  [/^pitching outs recorded$|^outs$/, 'pitcher_outs'],
+  [/^singles$/, 'singles'],
+  [/^longest reception$/, 'longest_rec'], [/^longest rush$/, 'longest_rush'], [/^longest (passing )?completion$/, 'longest_comp'],
+  [/^kicking points$/, 'kicking_points'], [/^(fg|field goals?) made$/, 'fg_made'],
   [/^pts \+ rebs \+ asts$/, 'pra'], [/^pts \+ rebs$/, 'pts_rebs'], [/^pts \+ asts$/, 'pts_asts'], [/^rebs \+ asts$/, 'rebs_asts'],
 ];
+// Each pick'em book spells the same stat its own way ("Rush+Rec Yds" on
+// PrizePicks, "Rush + Rec Yards" on Underdog): spacing round '+' and the
+// short forms are evened out before the aliases run.
+const MARKET_WORDS = [[/\byds\b/g, 'yards'], [/\btds\b/g, 'tds'], [/^anytime tds$/, 'anytime td'], [/^anytime touchdowns$/, 'anytime td']];
 function canonMarket(m) {
-  const s = String(m || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  let s = String(m || '').trim().toLowerCase().replace(/\s*\+\s*/g, ' + ').replace(/\s+/g, ' ');
+  for (const [re, to] of MARKET_WORDS) s = s.replace(re, to);
   for (const [re, key] of MARKET_ALIASES) if (re.test(s)) return key;
   return s.replace(/\s+/g, '_');
 }
@@ -202,7 +220,8 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
 // ── the screen ──
 // games: arrays in Odds API / Owls shape (see quotesFromGames)
 // dfsLines: [{book, sport, player, market, line, startTime, overMultiplier, underMultiplier}]
-// dfsEv(prob, book, mult) → EV % for one DFS leg (the server's calcBookEV)
+// dfsEv(prob, book, mult, line, side) → EV % for one DFS leg (the server's calcBookEV;
+// line and side let it check a two-sided price like Sleeper's for vig)
 // fairs (optional Map) is filled with `${group}|${side}` → fair prob % for every
 // market priced, +EV or not, so a tracker can follow a price to the close.
 function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null } = {}) {
@@ -258,7 +277,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         if (fp == null) continue;
         if ((side === 'Over' ? l.overOpen : l.underOpen) === false) continue;   // book doesn't take this side
         const mult = side === 'Over' ? l.overMultiplier : l.underMultiplier;
-        const ev = dfsEv(fp, l.book, mult ?? 1);
+        const ev = dfsEv(fp, l.book, mult ?? 1, l, side);
         if (ev == null || ev < minEv) continue;
         rows.push({
           group: head.group, sport: head.sport || l.sport, event: head.event, start: head.start || l.startTime,

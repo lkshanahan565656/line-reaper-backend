@@ -479,6 +479,21 @@ body::before {
 .mybk-chip.on { border-color: var(--green); color: var(--green); background: rgba(52,211,153,.08); }
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.pb-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+.pb-table { width: 100%; border-collapse: collapse; }
+.pb-table th { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+.pb-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 12px; }
+.pb-table .pb-cell { text-align: center; min-width: 86px; }
+.pb-table .pb-none { color: #334155; }
+.pb-table .pb-best { background: rgba(16,185,129,.08); }
+.pb-line { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #e2e8f0; }
+.pb-ev { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px; }
+.pb-dim { color: #64748b; font-size: 10.5px; }
+.pb-mk { color: #cbd5e1; font-size: 12px; margin: 2px 0; }
+.pb-gap { color: var(--gold); font-size: 10px; font-weight: 700; margin-left: 4px; }
+.pb-sum { font-size: 11px; color: #94a3b8; margin: 0 0 8px; }
+.pb-table .show-sm { display: none; }
+@media (max-width: 640px) { .pb-table td, .pb-table th { padding: 7px 4px; } .pb-table .pb-cell { min-width: 62px; } .pb-table .hide-sm { display: none; } .pb-table .show-sm { display: inline; } .pb-line { font-size: 13px; } .pb-dim { font-size: 9.5px; } .pb-table .pl { font-size: 13px; } }
 .es-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; font-weight: 600; }
 .es-field select { background: rgba(15,23,42,.8); color: #e2e8f0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 120px; }
 .es-search { flex: 1; min-width: 160px; }
@@ -1110,24 +1125,18 @@ body.no-help .clv-info { display:none; }
 
 <!-- PROPS PAGE -->
 <div class="page" id="page-props">
-  <div class="clv-info" style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.8">
-    <strong style="color:#c8c8c8;letter-spacing:2px">SHARP PROPS</strong> — Live player props from Pinnacle ★, Novig ★, DraftKings, FanDuel, BetMGM, Caesars, Bet365.<br>
-    <span style="color:#444">EV% = edge vs no-vig Pinnacle/Novig line · Green = best available price · ★ = sharp reference book</span><br>
-    <span style="color:#444">PrizePicks & Underdog lines not in API — compare their posted numbers to the LINE column to find mismatches</span>
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
+    <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line: sports off Kalshi's player ladders (no sportsbook vig), esports off our model. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines on the same stat.</span>
   </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-    <button class="sport-chip" onclick="setPropsTab('nba',this)">NBA</button>
-    <button class="sport-chip active" onclick="setPropsTab('mlb',this)">MLB</button>
-    <button class="sport-chip" onclick="setPropsTab('nhl',this)">NHL</button>
-    <button class="sport-chip" onclick="setPropsTab('nfl',this)">NFL</button>
-    <button class="sport-chip" onclick="setPropsTab('ncaab',this)">NCAAB</button>
-    <button class="sport-chip" onclick="setPropsTab('ncaaf',this)">NCAAF</button>
-    <button class="refresh-chip" onclick="owlsProps={};pollOwlsPropsREST()">REFRESH</button>
+  <div class="row" id="pbSports" style="margin:12px 0 8px;gap:6px;flex-wrap:wrap"></div>
+  <div class="row" id="pbBooks" style="margin:0 0 10px;gap:6px;flex-wrap:wrap"></div>
+  <div class="row" style="margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
+    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
+    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option></select></label>
+    <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
-  <div style="margin-bottom:12px">
-    <input class="key-input" id="propSearch" placeholder="Search player..." oninput="currentPropSearch=this.value;loadOwlsProps()" style="width:100%"/>
-  </div>
-  <div id="propsContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Fetching sharp props...</div></div></div>
+  <div id="pbContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every book...</div></div></div>
 </div>
 
 <!-- SHARP FEED PAGE -->
@@ -1361,12 +1370,6 @@ const SPORT_LABEL = {
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 let shopSport = 'all';
 
-function setPropsTab(sport, el) {
-  currentPropSport = sport;
-  document.querySelectorAll('#page-props .sport-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  loadOwlsProps();
-}
 
 function showTab(name, el) {
   try { localStorage.setItem('lr_tab', name); } catch {}
@@ -1376,7 +1379,7 @@ function showTab(name, el) {
   if (el) el.classList.add('active');
   if (name === 'clv') renderCLV();
   if (name === 'shop') renderShop(allGames, document.getElementById('shopSearch')?.value || '');
-  if (name === 'props') loadOwlsProps();
+  if (name === 'props') loadPropsBoard();
   if (name === 'sharp') { renderSharpFeed(); loadSharpSignals(); }
   if (name === 'esports') { setEsMode(esmState.mode, true); }
   evActive = name === 'ev';
@@ -2978,9 +2981,6 @@ async function loadDFSLines(sport) {
     }
     updateBackendStatus(true, dfsCache.prizepicks?.length || 0, dfsCache.underdog?.length || 0);
 
-    if (document.getElementById('page-props')?.classList.contains('active')) {
-      renderPropsFromCache();
-    }
   } catch(e) {
     console.warn('DFS load error:', e.message);
   }
@@ -3010,42 +3010,6 @@ const BOOK_LOGOS = {
   sleeper:     'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCABAAEADASIAAhEBAxEB/8QAHQAAAgEFAQEAAAAAAAAAAAAABQYHAQIDBAgACf/EADUQAAIBAwIDBQYGAQUAAAAAAAECAwQFEQAGBxIhMTJBUWEIEyJxgZEUFUJScrFiRpKhosL/xAAZAQADAQEBAAAAAAAAAAAAAAABAgMEAAX/xAAhEQEAAgEEAgMBAAAAAAAAAAABAAIRAwQSMSFBUXGhE//aAAwDAQACEQMRAD8A5zsVjSoQVVUuUPcT93qfTTIipEoRFVFHYFGBrFGqxRrGowqgKB6DV3Mderp0KGCYrWbMy82t+x2K5bluUVttNK9VVTMFVFIH3J6AaF82nzg5vGk2hu2CprIneKRuQlBkgFSp/vP009lx4gO4B3VtC+bKuIt99oWpJmXnjPMHSRezKsOhH9aDc2pb9ojiBat13O3Wm1rJILWZDNO8ZTLuF+BQeuABknzPpqH+bQpZa5YbAPiXyIkqlJEV1PaGGRpbvtjSnQ1VKMIO+n7fUemmHm1bIolRkcZVgQR6aXUoXMM6tmrKc2vZ1j5tELPRfi5XkYZjiAJ9T4DRzFhPZ2zbhvO9QWujKxGQF3kcdI0Hax9P7JGuh9ucBtmWgQyVMNXcqqMhvfTzFVLDyRcDHoc6ivhBuSi23vF1uEiQQ10H4ZZnOFR+YMuT4A4xn5a6Pim7Oupai+pWgQFfvZ62ZuuaouVRFW0ddWMZnmpagjLHx5Wyv0AGoS4k+z1uDY9PLc7dL+dWmMFpJI4+WaBfN0Gcj/JfqBrp6kuk0KBFcFR2BuuNbqXSR+0IR8tQL6lWUa1SfPzm1Xm1J/tBbBptn7piuNsgEFsu4aVYkGFhmB+NB5A5DAeGSPDUWc2tdbZMzOmHEx82m7bcKJYJqlyFX3jlm8goGk3m027dD3Lat0t8PxTqSyqO05AOP+pGgMMXq+6yVcre7Ajj8BjJI9dGLPxM3jYKdaa3bhrYoFGFiYiRVHoGBx9NbO0bht6rt0tk3JEkac5lpazuvCT3l5h2Dpnr07dBtxWejtFUFobtS3GB8lTEfjT+QHT7HTOm8efqYNPfDr2296tU6ceE+R6+x/YffjTxBf8A1RVp/CONf/OmLZ/tF7sstwi/PqgXq3kgSq8arMq+LIygZI8jkH01H23bPR3eqK112pbdAmCzSn43/iD0+50Z3dcNvUdvhsm3IlkQOJaqs7zzEd1ebxHUnp07NL/HNOb1Dqb/AI7iu3pVV7ceA+V6+g/JOPtFzUd74YWy70sizQ/jYJoJR+pJI2GfqMfbXMvNqaOKMs23uCuzNs1pIrpCkskZ7UVFZsH5GRR9NQnzaSngm+3cxJIHUMpyGGRopt+9yWO4rUqC0ZHLIgOCy+nqO0aUrbcliUQzHCjut5eh0WWRXGVYMPMHOkpqZMkNqtWSlPse278U3Lbtwpqeuk+Kall6Ryt4spHVGPipGM9RoRLwd3nGxVbZFLjxjqoyP+SNJMFVNSyCSnmkhcfqjYqfuNH6biRu+kQJDuK4BR0AZw+P9wOqch7iw1T8F971DBfyuGIHxkqowB9idPO2uFVk4ehNy76utIxpiJIaVMmPnHUdvWRvJQMZ7c6i+bidvOdeV9y3EA/scJ/QGgFbcay5Te/rquoqpeznnkZ2+5OgpOjLxH31Ub/3LLc5FaKmjX3NLCxyY4gc9f8AIkkn548NKrSBEZmPRRk6saRUGWYKB4k40JuVyEqmGE5U95vP00lrlSNWrZn/2Q==',
 };
 
-// ── Props — load ALL sports simultaneously for 24/7 coverage ─────────────────
-async function pollOwlsPropsREST() {
-  const el = document.getElementById('propsContent');
-  if (el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading props...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
-
-  const sportMap = { nba:'nba', mlb:'mlb', nhl:'nhl', nfl:'nfl', mma:'mma', ncaab:'ncaab' };
-  const sport = sportMap[currentPropSport] || currentPropSport;
-
-  try {
-    const r = await fetch(`${BACKEND_URL}/api/props/${sport}`);
-    console.log('[Props]', sport, r.status);
-    if (r.ok) {
-      const raw = await r.json();
-      // Backend may return [] or {} — normalize to array
-      const data = Array.isArray(raw) ? raw : Object.values(raw).flat();
-      const games = data.length;
-      const total = data.reduce((s,g)=>s+(g.books||[]).reduce((s2,b)=>s2+(b.props||[]).length,0),0);
-      console.log('[Props] games:', games, 'props:', total, 'sample:', JSON.stringify(data[0]?.books?.[0]?.props?.[0] || null));
-      if (games > 0 && total > 0) {
-        owlsProps[`rest_${sport}`] = data;
-        renderPropsFromCache();
-      } else {
-        const st = await fetch(`${BACKEND_URL}/api/status`);
-        const status = await st.json();
-        console.log('[Props] backend status:', JSON.stringify(status));
-        if (el) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO PROPS YET</div><div class="empty-sub" style="margin-top:10px">Backend is loading props — wait 30s and refresh.<br><br><span style="color:#555;font-size:10px;font-family:monospace">${JSON.stringify(status).slice(0,300)}</span></div></div>`;
-      }
-    } else {
-      throw new Error(`${r.status}`);
-    }
-  } catch(e) {
-    console.warn('[Props] error:', e.message);
-    if (el) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">Error: ${e.message}</div></div>`;
-  }
-}
-
 function updateWSStatus(active, mode='POLLING') {
   const dot = document.getElementById('wsDot');
   const lbl = document.getElementById('wsLabel');
@@ -3053,328 +3017,87 @@ function updateWSStatus(active, mode='POLLING') {
   if (lbl) lbl.textContent = active ? mode : 'OFFLINE';
 }
 
-// ─── PROPS ────────────────────────────────────────────────────────────────────
-async function loadOwlsProps(sport) {
-  if (sport) currentPropSport = sport;
-  const el = document.getElementById('propsContent');
-  if (!el) return;
-
-  // If we already have cached data, render it first then refresh
-  if (Object.keys(owlsProps).length > 0) renderPropsFromCache();
-
-  // Always hit REST — this is what actually works
-  await pollOwlsPropsREST();
-}
-
-function renderPropsFromCache() {
-  if (!Object.keys(owlsProps).length) return;
-
-  const combined = { _all: [] };
-  for (const [, raw] of Object.entries(owlsProps)) {
-    // New backend returns: array of game objects directly
-    if (Array.isArray(raw)) {
-      combined._all.push(...raw);
-    } else if (raw?.data && Array.isArray(raw.data)) {
-      combined._all.push(...raw.data);
-    } else if (raw?.games && Array.isArray(raw.games)) {
-      combined._all.push(...raw.games);
-    } else if (raw && typeof raw === 'object') {
-      for (const val of Object.values(raw)) {
-        if (Array.isArray(val)) combined._all.push(...val);
-      }
-    }
+// ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
+const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', limit: 150, data: null, seq: 0 };
+const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL']];
+const PB_SPORT_ORDER = ['NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
+let pbTimer = null;
+function pbSet(k, v) { pbState[k] = v; pbState.limit = 150; loadPropsBoard(); }
+function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
+async function loadPropsBoard() {
+  const seq = ++pbState.seq;
+  const qs = new URLSearchParams({ sport: pbState.sport, sort: pbState.sort, limit: pbState.limit });
+  if (pbState.book) qs.set('book', pbState.book);
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.show === 'multi') qs.set('multi', '1');
+  if (pbState.show === 'priced') qs.set('priced', '1');
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/board?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;   // a newer filter already went out
+    pbState.data = d;
+    renderPropsBoard();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">Couldn't load the board (${escAttr(e.message)}). Try again in a minute.</div></div>`;
   }
-
-  // Dedupe by game id
-  const seen = new Set();
-  combined._all = combined._all.filter(g => {
-    const key = g.id || `${g.home_team}@${g.away_team}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+}
+function pbChips() {
+  const d = pbState.data, c = d?.counts || { sports: {}, books: {} };
+  const sports = Object.keys(c.sports || {}).sort((a, b) => {
+    const ia = PB_SPORT_ORDER.indexOf(a), ib = PB_SPORT_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || c.sports[b] - c.sports[a];
   });
-
-  if (!combined._all.length) {
-    document.getElementById('propsContent').innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:24px">NO PROPS</div><div class="empty-sub">No props data yet — backend may still be loading.<br>Try switching sport tabs or wait 30s.</div></div>`;
+  const chip = (on, label, n, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}${n != null ? ` <span style="opacity:.55">${n}</span>` : ''}</button>`;
+  document.getElementById('pbSports').innerHTML = [chip(pbState.sport === 'ALL', 'ALL', c.rows, "pbSet('sport','ALL')"),
+    chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
+    ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
+  document.getElementById('pbBooks').innerHTML = [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')"),
+    ...PB_BOOKS.map(([k, name]) => chip(pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
+}
+function pbFmtStart(t) {
+  const d = new Date(t);
+  if (!t || isNaN(d)) return '';
+  const today = new Date().toDateString() === d.toDateString();
+  return (today ? '' : d.toLocaleDateString([], { weekday: 'short' }) + ' ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+function pbCell(row, key) {
+  const c = row.books[key];
+  if (!c) return `<td class="pb-cell pb-none">—</td>`;
+  const best = row.best && !row.best.locked && row.best.book === key;
+  const mult = v => (v == null ? '' : `${(+v).toFixed(2)}x`);
+  let price = '';
+  if (key === 'prizepicks') price = '<span class="pb-dim">standard</span>';
+  else {
+    const o = c.overOpen ? (c.over != null ? mult(c.over) : '1x') : 'closed', u = c.underOpen ? (c.under != null ? mult(c.under) : '1x') : 'closed';
+    price = `<span class="pb-dim">O ${o} · U ${u}</span>`;
+  }
+  const ev = c.ev ? `<div class="pb-ev" style="color:${c.ev.ev > 0 ? 'var(--green)' : '#64748b'}">${c.ev.side === 'Over' ? 'More' : 'Less'} ${c.ev.ev > 0 ? '+' : ''}${c.ev.ev.toFixed(1)}%</div>` : '';
+  const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
+  return `<td class="pb-cell${best ? ' pb-best' : ''}"><div class="pb-line">${c.line}</div>${price}${fair}${ev}</td>`;
+}
+function renderPropsBoard() {
+  pbChips();
+  const el = document.getElementById('pbContent'), d = pbState.data;
+  const rows = d?.rows || [];
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">${pbState.q || pbState.book || pbState.sport !== 'ALL' || pbState.show !== 'all' ? 'Nothing matches these filters.' : 'The books are still loading. Try again in a minute.'}</div></div>`;
     return;
   }
-
-  renderPropsTable(combined);
-}
-
-function renderPropsTable(data) {
-  const el = document.getElementById('propsContent');
-  const DFS_BOOKS = ['prizepicks','underdog','sleeper','pick6'];
-  const SHARP_REF  = ['pinnacle','novig','circa','draftkings','fanduel'];
-  const playerMap = {};
-
-  // Owls props format: game.books[].props[] — each prop has playerName, category, line, overPrice, underPrice
-  function addProp(book, playerName, team, market, line, overOdds, underOdds) {
-    if (!playerName || !market || line == null) return;
-    if (DFS_BOOKS.includes((book||'').toLowerCase())) return;
-    const key = `${playerName}|||${market}`;
-    if (!playerMap[key]) playerMap[key] = { player:playerName, team:team||'', market, line:null, books:{} };
-    if (!playerMap[key].books[book]) playerMap[key].books[book] = { line, over:overOdds, under:underOdds };
-    if (playerMap[key].line == null || SHARP_REF.indexOf(book) < SHARP_REF.indexOf(
-      Object.keys(playerMap[key].books).find(b=>SHARP_REF.includes(b)) || 'zzz'
-    )) playerMap[key].line = line;
-  }
-
-  // Parse a single Owls game object
-  function parseOwlsGame(game) {
-    for (const bk of (game.books || game.bookmakers || [])) {
-      const bn = (bk.key || bk.title || bk.name || 'unknown').toLowerCase();
-      for (const p of (bk.props || bk.player_props || [])) {
-        addProp(bn,
-          p.playerName || p.player_name || p.player || p.name,
-          p.team || p.teamAbbrev || '',
-          p.category || p.market || p.stat_type || p.type || p.prop_type,
-          p.line ?? p.point ?? p.value,
-          p.overPrice ?? p.over_price ?? p.overOdds ?? p.over_odds ?? p.over ?? p.price,
-          p.underPrice ?? p.under_price ?? p.underOdds ?? p.under_odds ?? p.under
-        );
-      }
-    }
-  }
-
-  // data._all = flat array of Owls game objects (set by renderPropsFromCache)
-  for (const game of (data._all || [])) {
-    parseOwlsGame(game);
-  }
-
-  const rows = Object.values(playerMap);
-  const filtered = currentPropSearch
-    ? rows.filter(r=>r.player.toLowerCase().includes(currentPropSearch.toLowerCase()))
-    : rows;
-
-  if (!filtered.length) {
-    const hasDFSData = dfsCache.prizepicks.length > 0 || dfsCache.underdog.length > 0;
-    el.innerHTML = `<div class="empty-wrap">
-      <div class="empty-big" style="font-size:24px">NO PROPS</div>
-      <div class="empty-sub" style="margin-top:10px">
-        Owls returned no ${currentPropSport.toUpperCase()} props right now.<br><br>
-        <strong style="color:#888">This is normal</strong> — books post props ~2hrs before first pitch / tip-off.<br>
-        Try NBA or check back in the morning when lines open.<br><br>
-        ${hasDFSData ? `<span style="color:var(--blue)">PP: ${dfsCache.prizepicks.length} lines · UD: ${dfsCache.underdog.length} lines loaded and ready</span>` : ''}
-      </div>
-    </div>`;
-    return;
-  }
-
-  const PROP_LABEL = {
-    points:'PTS',rebounds:'REB',assists:'AST',steals:'STL',blocks:'BLK',
-    threes_made:'3PM',pts_rebs_asts:'PRA',pts_rebs:'PR',pts_asts:'PA',rebs_asts:'RA',
-    passing_yards:'PASS YDS',passing_tds:'PASS TDS',rushing_yards:'RUSH YDS',
-    receiving_yards:'REC YDS',receptions:'REC',touchdowns:'TDS',
-    goals:'GOALS',shots_on_goal:'SOG',hits:'HITS',runs:'RUNS',rbis:'RBI',
-    home_runs:'HR',strikeouts_pitcher:'Ks',stolen_bases:'SB',total_bases:'TB',
-  };
-
-  // DFS line lookup from backend cache (PP/UD data loaded at startup)
-  const MKT_ALIASES = {
-    points:['pts','points','fantasy points'],rebounds:['reb','rebounds','rebs'],
-    assists:['ast','assists'],threes_made:['3pm','threes','three','3-pt','3pt made'],
-    steals:['stl','steals'],blocks:['blk','blocks'],pts_rebs_asts:['pra','pts+reb+ast'],
-    home_runs:['hr','home run','home runs'],
-    strikeouts_pitcher:['k','strikeout','strikeouts','ks','pitcher strikeouts'],
-    hits:['hits','h'],runs:['runs','r'],rbis:['rbi','rbis'],goals:['goals','g'],
-    shots_on_goal:['shots','sog'],passing_yards:['pass yds','passing yards'],
-    rushing_yards:['rush yds','rushing yards'],receiving_yards:['rec yds','receiving yards'],
-    receptions:['rec','receptions','catches'],
-  };
-  function nmkt(m) { return (m||'').toLowerCase().replace(/[^a-z]/g,''); }
-  function mktMatch(sharp, dfs) {
-    const sn=nmkt(sharp), dn=nmkt(dfs);
-    if (sn===dn) return true;
-    return (MKT_ALIASES[sharp]||[]).some(a=>{ const na=nmkt(a); return dn.includes(na)||na.includes(dn.slice(0,4)); });
-  }
-  function getDFSLine(playerName, market) {
-    const cp=(playerName||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
-    const fn=cp.split(' ')[0], ln=cp.split(' ').slice(-1)[0];
-    const find = (cache) => cache.find(l => {
-      const lp=(l.player||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
-      return (lp.includes(fn)||lp.includes(ln)) && mktMatch(market, l.market);
-    });
-    return { pp: find(dfsCache.prizepicks)?.line ?? null, ud: find(dfsCache.underdog)?.line ?? null };
-  }
-
-  // Build individual play objects (one per player+market+side)
-  const plays = [];
-
-  for (const row of filtered) {
-    const booksWithData = Object.entries(row.books).filter(([,v])=>v.over!=null||v.under!=null);
-    if (!booksWithData.length) continue;
-
-    // No-vig from sharpest reference
-    let trueOver=null, trueUnder=null;
-    for (const ref of SHARP_REF) {
-      const bk = row.books[ref];
-      if (bk?.over!=null && bk?.under!=null) {
-        const io=oddsToImplied(bk.over), iu=oddsToImplied(bk.under);
-        trueOver=io/(io+iu); trueUnder=iu/(io+iu); break;
-      }
-    }
-
-    const overEntries  = booksWithData.filter(([,v])=>v.over!=null).map(([k,v])=>({book:k,odds:v.over,line:v.line}));
-    const underEntries = booksWithData.filter(([,v])=>v.under!=null).map(([k,v])=>({book:k,odds:v.under,line:v.line}));
-
-    // DFS line lookup from backend cache
-    const dfs = getDFSLine(row.player, row.market);
-
-    // DFS EV: using sharp no-vig prob, what's the edge at the DFS line?
-    // If sharp line = 26.5 and DFS line = 24.5, the true over prob at 24.5 is higher
-    // We approximate: each 0.5 pt difference ≈ 2-3% shift in probability
-    function dfsEV(sharpLine, dfsLine, trueProb, side) {
-      if (!dfsLine || !sharpLine || !trueProb) return null;
-      const diff = sharpLine - dfsLine; // positive = sharp line higher = DFS OVER is easier
-      // Rough logistic shift: each 1pt ≈ 4% prob shift at 50/50 market
-      const shift = diff * 0.04;
-      // trueProb is already this side's no-vig probability. A lower DFS line
-      // (diff > 0) helps the over and hurts the under.
-      const adjProb = Math.min(.98, Math.max(.02, side === 'OVER' ? trueProb + shift : trueProb - shift));
-      // A pick'em leg breaks even at 56.22% (the 4-pick 10x / standard -128
-      // leg the server prices against), not -110's 52.4%
-      const dfsImplied = 0.5622;
-      return ((adjProb / dfsImplied) - 1) * 100;
-    }
-
-    const ppEvOver  = dfs.pp ? dfsEV(row.line, dfs.pp, trueOver,  'OVER')  : null;
-    const ppEvUnder = dfs.pp ? dfsEV(row.line, dfs.pp, trueUnder, 'UNDER') : null;
-    const udEvOver  = dfs.ud ? dfsEV(row.line, dfs.ud, trueOver,  'OVER')  : null;
-    const udEvUnder = dfs.ud ? dfsEV(row.line, dfs.ud, trueUnder, 'UNDER') : null;
-
-    if (overEntries.length) {
-      const best = overEntries.reduce((a,b)=>a.odds>b.odds?a:b);
-      const ev = trueOver ? calcEV(best.odds, trueOver) : null;
-      plays.push({ ...row, side:'OVER', best, ev, trueProb:trueOver, allEntries:overEntries,
-        dfs, ppEv:ppEvOver, udEv:udEvOver });
-    }
-    if (underEntries.length) {
-      const best = underEntries.reduce((a,b)=>a.odds>b.odds?a:b);
-      const ev = trueUnder ? calcEV(best.odds, trueUnder) : null;
-      plays.push({ ...row, side:'UNDER', best, ev, trueProb:trueUnder, allEntries:underEntries,
-        dfs, ppEv:ppEvUnder, udEv:udEvUnder });
-    }
-  }
-
-  // Sort: best DFS EV first if available, else best sportsbook EV
-  plays.sort((a,b) => {
-    const aTop = Math.max(a.ev||0, a.ppEv||0, a.udEv||0);
-    const bTop = Math.max(b.ev||0, b.ppEv||0, b.udEv||0);
-    return bTop - aTop;
-  });
-
-  const mktLabel = m => PROP_LABEL[m]||(m||'').replace(/_/g,' ').toUpperCase();
-
-  // Key books to always show as columns
-  const COL_BOOKS = ['pinnacle','novig','draftkings','fanduel','betmgm','caesars','bet365'];
-
-  function bookLogoImg(key, size=14) {
-    const logo = BOOK_LOGOS[key];
-    return logo ? `<img src="${logo}" style="width:${size}px;height:${size}px;border-radius:2px;vertical-align:middle;display:inline-block" onerror="this.style.display='none'" title="${key}">` : `<span style="font-size:8px;color:#555">${key.slice(0,3).toUpperCase()}</span>`;
-  }
-
-  function evColor(ev) {
-    if (ev == null) return '#333';
-    if (ev > 5) return '#10b981';
-    if (ev > 2) return '#34d399';
-    if (ev > 0) return '#6ee7b7';
-    if (ev < -3) return '#ef4444';
-    return '#475569';
-  }
-  function evBg(ev) {
-    if (ev == null) return 'transparent';
-    if (ev > 2) return 'rgba(16,185,129,.12)';
-    if (ev > 0) return 'rgba(16,185,129,.05)';
-    return 'transparent';
-  }
-
-  // Build table header
-  const headerCols = COL_BOOKS.map(b =>
-    `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">${bookLogoImg(b,13)}<span style="font-size:7px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px">${b==='draftkings'?'DK':b==='fanduel'?'FD':b==='betmgm'?'MGM':b==='caesars'?'CZR':b==='bet365'?'365':b==='pinnacle'?'PIN':b.slice(0,3).toUpperCase()}</span></div>`
-  ).join('');
-
-  const rows2 = plays.slice(0, 150).map((p, i) => {
-    const topEV = Math.max(p.ev||0, p.ppEv||0, p.udEv||0);
-    const hasDFSEdge = (p.ppEv||0) > 1 || (p.udEv||0) > 1;
-    const hasBookEdge = (p.ev||0) > 1;
-    const isHot = topEV > 4;
-
-    // EV badge on far left
-    const evNum = topEV > 0 ? `+${topEV.toFixed(1)}%` : topEV < 0 ? `${topEV.toFixed(1)}%` : '—';
-    const evCell = `<div style="min-width:52px;text-align:center;padding:0 6px">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;color:${evColor(topEV)};background:${evBg(topEV)};border-radius:6px;padding:3px 6px;display:inline-block">${evNum}</div>
-      ${isHot ? '<div style="font-size:7px;color:#f59e0b;letter-spacing:1px;margin-top:2px">HOT</div>' : ''}
-    </div>`;
-
-    // Player + market + line + side
-    const sideColor = p.side === 'OVER' ? 'var(--green)' : 'var(--purple)';
-    const playerCell = `<div style="min-width:180px;max-width:220px;padding:0 8px">
-      <div style="font-size:12px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.player}</div>
-      <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
-        <span style="font-size:9px;color:#555;font-family:'JetBrains Mono',monospace">${mktLabel(p.market)}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#fff">${p.line}</span>
-        <span style="font-size:9px;font-weight:700;color:${sideColor};letter-spacing:1px;border:1px solid ${sideColor};border-radius:3px;padding:0 4px">${p.side}</span>
-      </div>
-    </div>`;
-
-    // Book odds columns
-    const bookMap = {};
-    p.allEntries.forEach(e => { bookMap[e.book] = e.odds; });
-
-    const bookCols = COL_BOOKS.map(bk => {
-      const odds = bookMap[bk];
-      const bkEV = p.trueProb && odds != null ? calcEV(odds, p.trueProb) : null;
-      const isBest = bk === p.best?.book;
-      if (odds == null) return `<div style="min-width:56px;text-align:center;color:#1e2738;font-size:10px">—</div>`;
-      return `<div style="min-width:56px;text-align:center;background:${isBest?'rgba(16,185,129,.08)':'transparent'};border-radius:4px;padding:2px 0">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:${isBest?'700':'400'};color:${isBest?'#10b981':odds>0?'#7dd3a8':'#94a3b8'}">${fmt(odds)}</div>
-        ${bkEV!=null?`<div style="font-size:8px;color:${evColor(bkEV)}">${bkEV>0?'+':''}${bkEV.toFixed(1)}%</div>`:''}
-      </div>`;
-    }).join('');
-
-    // DFS columns
-    const ppLine = p.dfs?.pp;
-    const udLine = p.dfs?.ud;
-    const ppCell = ppLine != null ? `<div style="min-width:60px;text-align:center">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${ppLine < p.line && p.side==='OVER' ? '#10b981' : ppLine > p.line && p.side==='UNDER' ? '#10b981' : '#64748b'}">${ppLine}</div>
-      ${p.ppEv!=null?`<div style="font-size:8px;color:${evColor(p.ppEv)};font-weight:700">${p.ppEv>0?'+':''}${p.ppEv.toFixed(1)}%</div>`:''}
-    </div>` : `<div style="min-width:60px;text-align:center;color:#1e2738;font-size:10px">—</div>`;
-
-    const udCell = udLine != null ? `<div style="min-width:60px;text-align:center">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${udLine < p.line && p.side==='OVER' ? '#8b5cf6' : udLine > p.line && p.side==='UNDER' ? '#8b5cf6' : '#64748b'}">${udLine}</div>
-      ${p.udEv!=null?`<div style="font-size:8px;color:${evColor(p.udEv)};font-weight:700">${p.udEv>0?'+':''}${p.udEv.toFixed(1)}%</div>`:''}
-    </div>` : `<div style="min-width:60px;text-align:center;color:#1e2738;font-size:10px">—</div>`;
-
-    const rowBg = isHot ? 'rgba(245,158,11,.04)' : hasDFSEdge ? 'rgba(59,130,246,.03)' : hasBookEdge ? 'rgba(16,185,129,.02)' : 'transparent';
-    const rowBorder = isHot ? 'rgba(245,158,11,.2)' : hasDFSEdge ? 'rgba(59,130,246,.12)' : 'var(--border)';
-
-    return `<div style="display:flex;align-items:center;padding:7px 8px;border-bottom:1px solid ${rowBorder};background:${rowBg};min-width:0;overflow-x:auto">
-      ${evCell}${playerCell}${bookCols}${ppCell}${udCell}
-    </div>`;
+  const head = `<tr><th>Player</th>${PB_BOOKS.map(([k, name, ab]) => `<th class="pb-cell"><span class="hide-sm">${name}</span><span class="show-sm">${ab}</span></th>`).join('')}<th class="pb-cell">Best play</th></tr>`;
+  const body = rows.map(r => {
+    const b = r.best;
+    const bestTxt = !b ? '<span class="pb-dim">no price</span>' : b.locked ? '<span class="pb-dim">Pro</span>'
+      : `<div class="pb-ev" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${b.ev > 0 ? '+' : ''}${b.ev.toFixed(1)}%</div><div>${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} ${b.side === 'Over' ? 'More' : 'Less'} ${b.line}</div><div class="pb-dim">${b.source === 'model' ? 'model' : 'Kalshi'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>`;
+    const proj = r.model?.proj != null ? ` · proj ${r.model.proj}` : '';
+    const gap = r.gap > 0 ? ` <span class="pb-gap">gap ${r.gap}</span>` : '';
+    return `<tr><td class="pb-pl"><div class="pl">${escAttr(r.player)}</div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-dim">${escAttr(r.sport)}${r.team ? ' · ' + escAttr(r.team) : ''}${r.matchTitle ? ' · ' + escAttr(r.matchTitle) : ''}${r.startTime ? ' · ' + pbFmtStart(r.startTime) : ''}${proj}</div></td>${PB_BOOKS.map(([k]) => pbCell(r, k)).join('')}<td class="pb-cell">${bestTxt}</td></tr>`;
   }).join('');
-
-  const posEV = plays.filter(p=>p.ev!=null&&p.ev>0).length;
-  const dfsEdge = plays.filter(p=>(p.ppEv||0)>1||(p.udEv||0)>1).length;
-
-  el.innerHTML = `
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#445;letter-spacing:2px;border-bottom:1px solid var(--border)">
-      <span style="color:#e2e8f0;font-weight:700">${plays.length} PLAYS</span>
-      <span style="color:var(--green)">${posEV} +EV</span>
-      ${dfsEdge > 0 ? `<span style="color:var(--blue)">${dfsEdge} DFS EDGES</span>` : ''}
-      <span style="color:#334155">SORTED BY EV%</span>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px">
-      <div style="display:flex;align-items:center;padding:5px 8px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--border);overflow-x:auto;min-width:0">
-        <div style="min-width:52px;font-size:7px;color:#334155;letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-align:center">EV%</div>
-        <div style="min-width:180px;font-size:7px;color:#334155;letter-spacing:1px;font-family:'JetBrains Mono',monospace;padding:0 8px">PLAYER</div>
-        ${headerCols}
-        <div style="min-width:60px;font-size:7px;color:#3b82f6;letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-align:center">${bookLogoImg('prizepicks',11)} PP</div>
-        <div style="min-width:60px;font-size:7px;color:#8b5cf6;letter-spacing:1px;font-family:'JetBrains Mono',monospace;text-align:center">${bookLogoImg('underdog',11)} UD</div>
-      </div>
-      ${rows2}
-    </div>
-  `;
+  const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
+  const priced = d.counts?.priced ?? 0;
+  el.innerHTML = `<div class="pb-sum">${d.total} lines · ${priced} priced across all books${d.pro ? '' : ' · prices are Pro'}</div>
+    <div class="pb-wrap"><table class="es-plays pb-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>${more}`;
 }
 
 // ─── TICKER UPDATE ───────────────────────────────────────────────────────────

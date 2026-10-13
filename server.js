@@ -37,6 +37,7 @@ let cache = {
   prizepicks: { data: [], updated: null },
   underdog: { data: [], updated: null },
   sleeper: { data: [], updated: null },
+  sleeperSports: { data: [], updated: null },
   odds: {},
   owlsProps: {},
   oddsApiProps: {},
@@ -211,7 +212,8 @@ let ppFail = { count: 0, until: 0 };
 const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
-const { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, attachMatches, sleeperPricing } = require('./pickem');
+const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, slimPlayers, attachMatches, sleeperPricing } = require('./pickem');
+const propsBoard = require('./propsboard');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
 // 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
@@ -379,27 +381,45 @@ async function scrapeUnderdog() {
   } catch(e) { noteDfsError('underdog', e); console.error('UD error:', e.message, e.response?.status); }
 }
 
-// Sleeper: esports player lines with a payout per side. Player names come from
-// /players/{sport} (about 2 MB per esports title), refreshed every 6 hours.
+// Sleeper: player lines with a payout per side, esports and sports. Player
+// names come from /players/{sport} (0.2 to 6 MB a sport, slimmed to name and
+// team), refreshed every 6 hours. cache.sleeper keeps the esports lines the
+// esports board reads; cache.sleeperSports the rest, for the props board.
 const SLEEPER_LINES_URL = 'https://api.sleeper.app/lines/available?dynamic=true&include_preseason=true&eg=15.control';
 const sleeperPlayers = { bySport: {}, at: {} };
+let sleeperRunning = false;
 async function scrapeSleeper() {
   if (!licences.isOn('sleeper')) { dfsError.sleeper = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
+  if (sleeperRunning) return;   // the first run fetches every player table; the next tick waits
+  sleeperRunning = true;
   try {
     const res = await axios.get(SLEEPER_LINES_URL, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }, timeout: 20000, maxContentLength: 40e6 });
     const rows = Array.isArray(res.data) ? res.data : [];
-    for (const sport of sleeperEsportsKeys(rows)) {
+    for (const sport of sleeperSportKeys(rows)) {
       if (Date.now() - (sleeperPlayers.at[sport] || 0) < 6 * 3600 * 1000) continue;
       try {
-        const pr = await axios.get(`https://api.sleeper.app/players/${encodeURIComponent(sport)}`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000, maxContentLength: 40e6 });
-        if (pr.data && typeof pr.data === 'object') { sleeperPlayers.bySport[sport] = pr.data; sleeperPlayers.at[sport] = Date.now(); }
+        const pr = await axios.get(`https://api.sleeper.app/players/${encodeURIComponent(sport)}`, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000, maxContentLength: 40e6 });
+        if (pr.data && typeof pr.data === 'object') { sleeperPlayers.bySport[sport] = slimPlayers(pr.data); sleeperPlayers.at[sport] = Date.now(); }
       } catch (e) { console.warn(`Sleeper players ${sport}:`, e.response?.status, e.message); }
     }
     const lines = parseSleeperLines(rows, sleeperPlayers.bySport);
-    cache.sleeper = { data: lines, updated: new Date().toISOString(), rows: rows.length };
+    const now = new Date().toISOString();
+    cache.sleeper = { data: lines, updated: now, rows: rows.length };
+    const sports = parseSleeperLines(rows, sleeperPlayers.bySport, { sports: true }).filter(l => !isEsports(l.sport));
+    cache.sleeperSports = { data: sports, updated: now };
     dfsError.sleeper = null;
-    console.log(`Sleeper: ${lines.length} esports lines from ${rows.length} rows`);
+    console.log(`Sleeper: ${lines.length} esports and ${sports.length} sports lines from ${rows.length} rows`);
   } catch (e) { noteDfsError('sleeper', e); console.error('Sleeper error:', e.message, e.response?.status); }
+  finally { sleeperRunning = false; }
+}
+
+// Every book's sports prop lines in one list, PrizePicks' half and quarter
+// leagues folded into their sport, Sleeper given start times from the others
+function sportsPropLines() {
+  const ud = (cache.underdog.data || []).filter(l => !isEsports(l.sport));
+  const pp = (cache.prizepicks.data || []).filter(l => !isEsports(l.sport));
+  const sl = propsBoard.borrowStarts(cache.sleeperSports.data || [], [...ud, ...pp]);
+  return [...ud, ...pp, ...sl].map(propsBoard.normLine).filter(l => !l.esports);
 }
 
 // ─── OWLS FETCHERS (with dead-key circuit breaker) ────────────────────────────
@@ -2156,11 +2176,21 @@ async function refreshKalshiProps() {
   kpropsRunning = true;
   try {
     const { events, errors } = await kprops.fetchEvents(upstream);
-    const dfsLines = (cache.underdog.data || []).filter(l => !isEsports(l.sport));
-    const { games, counts } = kprops.buildGames(events, dfsLines);
+    // every book's line gets its own rung price, not only Underdog's
+    const { games, counts } = kprops.buildGames(events, sportsPropLines());
     Object.assign(kpropsState, { games, counts: { events: events.length, ...counts }, errors: errors.slice(0, 5), updated: new Date().toISOString() });
   } catch (e) { kpropsState.errors = [e.message]; }
   finally { kpropsRunning = false; }
+}
+
+// One pick'em leg's EV. Sleeper prices each side, so its vig comes out and a
+// price far from fair is withheld (pickem.js sleeperPricing), as on esports.
+function dfsLegEv(p, book, mult, line, side) {
+  if (book === 'sleeper' && line) {
+    const other = side === 'Over' ? line.underMultiplier : line.overMultiplier;
+    return sleeperPricing(p, mult, other || null).ev;
+  }
+  return calcBookEV(p, book, mult);
 }
 
 function evFeeds() {
@@ -2190,9 +2220,9 @@ let evRecent = [];
 function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
-  const dfsLines = [...(cache.prizepicks.data || []), ...(cache.underdog.data || [])].filter(l => !isEsports(l.sport));
+  const dfsLines = sportsPropLines();
   const fairs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: calcBookEV, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs });
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs });
   const prev = evCache.at ? evCache.rows : null;
   evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   evTracker.recordBoard(rows, fairs).catch(e => console.warn('EV tracker:', e.message));
@@ -3928,7 +3958,47 @@ app.get('/api/underdog', (req, res) => {
   res.json({ data, updated: cache.underdog.updated, count: data.length });
 });
 
-app.get('/api/sleeper', (req, res) => res.json({ data: cache.sleeper.data || [] }));
+app.get('/api/sleeper', (req, res) => res.json({ data: [...(cache.sleeper.data || []), ...(cache.sleeperSports.data || [])] }));
+
+// ── PROPS BOARD: every book's player lines side by side (propsboard.js) ──────
+// Underdog, PrizePicks and Sleeper, sports and esports. Sports lines are priced
+// off Kalshi's player ladders at each book's own line; esports off our model.
+// Rebuilt at most once a minute. ?sport=NFL|ESPORTS|SPORTS &book=underdog
+// &q=name &sort=ev|gap|books|start|player &multi=1 (2+ books) &priced=1
+let propsBoardCache = { at: 0, rows: [] };
+function propsBoardRows() {
+  if (Date.now() - propsBoardCache.at < 60000) return propsBoardCache;
+  const es = l => isEsports(l.sport);
+  const esLines = [...(cache.underdog.data || []).filter(es), ...(cache.prizepicks.data || []).filter(es), ...(cache.sleeper.data || [])];
+  const esKey = (sport, market) => normalizeMarket(market);
+  const rows = propsBoard.buildRows([...sportsPropLines(), ...esLines], { esKey });
+  const esPicks = new Map();
+  for (const p of esportsCache.picks || []) {
+    const sport = propsBoard.boardSport(p.sport).sport;
+    esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
+  }
+  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
+  propsBoardCache = { at: Date.now(), rows, counts: propsBoard.counts(rows) };
+  return propsBoardCache;
+}
+app.get('/api/props/board', (req, res) => {
+  const { rows, counts } = propsBoardRows();
+  const pro = hasPro(req);
+  // Kalshi's prices back the sports fair; without its licence those stay hidden
+  const kalshiOk = licenceOf(req).kalshi;
+  const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
+  const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
+  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1' });
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  let page = hits.slice(offset, offset + limit);
+  if (!pro) page = page.map(propsBoard.redactRow);
+  else if (!kalshiOk) page = page.map(r => (r.esports ? r : propsBoard.redactRow(r)));
+  res.json({
+    rows: page, total: hits.length, offset, limit, pro, counts,
+    updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
+  });
+});
 
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
 app.get('/api/props/:sport', async (req, res) => {
@@ -4357,9 +4427,10 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
-  sleeper: { count: cache.sleeper.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
+  sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
+  propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,

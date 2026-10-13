@@ -46,14 +46,48 @@ function sleeperMarket(wager) {
   return `${words(m[1])} ${unit} ${m[4] ? `${m[3]}-${m[4]}` : m[3]}`;
 }
 
+// Sleeper's sports keys (soccer comes per competition, "clubsoccer:epl"), as
+// the labels Underdog and PrizePicks use, so one player's lines line up
+const SLEEPER_SPORTS = { nfl: 'NFL', nba: 'NBA', mlb: 'MLB', nhl: 'NHL', wnba: 'WNBA', cfb: 'CFB', cbb: 'CBB', tennis: 'TENNIS', mma: 'MMA', golf: 'GOLF' };
+const sleeperSport = key => {
+  const k = String(key || '').toLowerCase();
+  return SLEEPER_ESPORTS[k] || SLEEPER_SPORTS[k] || (/^clubsoccer|^soccer/.test(k) ? 'SOCCER' : null);
+};
+// Sleeper's wager keys in the words Underdog uses ("Rush + Rec Yards"), so
+// ev.js canonMarket reads all three books the same
+const SLEEPER_WAGERS = {
+  points: 'Points', rebounds: 'Rebounds', assists: 'Assists', threes_made: '3-Pointers Made', steals: 'Steals', blocks: 'Blocks',
+  pts_reb_ast: 'Pts + Rebs + Asts', pts_reb: 'Pts + Rebs', pts_ast: 'Pts + Asts', reb_ast: 'Rebs + Asts', turnovers: 'Turnovers',
+  hits: 'Hits', hits_runs_rbis: 'Hits + Runs + RBIs', runs: 'Runs', singles: 'Singles', total_bases: 'Total Bases', bat_walks: 'Batter Walks',
+  rbis: 'RBIs', stolen_bases: 'Stolen Bases', earned_runs: 'Earned Runs Allowed', first_inning_runs: '1st Inn. Runs Allowed',
+  hits_allowed: 'Hits Allowed', outs: 'Pitching Outs', strike_outs: 'Pitcher Strikeouts', walks: 'Pitcher Walks Allowed',
+  goals: 'Goals', powerplay_points: 'Power Play Points', goals_against: 'Goals Against', saves: 'Saves', blocked_shots: 'Blocked Shots',
+  anytime_touchdowns: 'Anytime TD', receiving_yards: 'Receiving Yards', receptions: 'Receptions', rushing_yards: 'Rush Yards',
+  passing_yards: 'Pass Yards', passing_touchdowns: 'Pass TDs', rushing_and_receiving_yards: 'Rush + Rec Yards',
+  passing_and_rushing_yards: 'Pass + Rush Yards', rushing_attempts: 'Rush Attempts', pass_completions: 'Completions',
+  passing_attempts: 'Pass Attempts', interceptions: 'INTs Thrown', longest_rush: 'Longest Rush', longest_reception: 'Longest Reception',
+  longest_passing_completion: 'Longest Completion', extra_point_made: 'XP Made', field_goal_made: 'FG Made', kicking_points: 'Kicking Points',
+  games_played: 'Total Games', games_won: 'Games Won', aces: 'Aces', breakpts_won: 'Break Points Won',
+  significant_strikes: 'Significant Strikes', takedowns: 'Takedowns', total_fight_time: 'Fight Time',
+  shots_on_target: 'Shots On Target', passes_attempted: 'Passes Attempted', first_half_goals_against: '1H Goals Against',
+};
+function sleeperSportMarket(sport, wager) {
+  const w = String(wager || '').toLowerCase();
+  if (w === 'shots') return sport === 'NHL' ? 'Shots on Goal' : 'Shots';
+  return SLEEPER_WAGERS[w] || sleeperMarket(w);
+}
+
 // rows: /lines/available. players: { sport: { id: player } } from /players/{sport}.
 // Each side's payout_multiplier is that leg's own multiplier (an entry pays
 // their product), so it's a decimal price: 1.48 Over vs 2.19 Under says Sleeper
 // sees the over near 60%.
-function parseSleeperLines(rows, players = {}) {
+// Esports only unless { sports: true }: the esports board borrows each line's
+// match from another book, while the props board takes every sport.
+function parseSleeperLines(rows, players = {}, { sports = false } = {}) {
   const lines = [];
   for (const row of Array.isArray(rows) ? rows : []) {
-    const sport = SLEEPER_ESPORTS[String(row.sport || '').toLowerCase()];
+    const key = String(row.sport || '').toLowerCase();
+    const sport = sports ? sleeperSport(key) : SLEEPER_ESPORTS[key];
     if (!sport || row.subject_type !== 'player' || row.outcome_type !== 'over_under') continue;
     if (row.status && row.status !== 'active') continue;
     if (row.game_status && row.game_status !== 'pre_game') continue;
@@ -67,11 +101,12 @@ function parseSleeperLines(rows, players = {}) {
       team = team || o.subject_team || '';
     }
     if (line == null || !isFinite(line) || (over == null && under == null)) continue;
-    const p = (players[String(row.sport).toLowerCase()] || {})[row.subject_id] || {};
+    const p = (players[key] || {})[row.subject_id] || {};
     const name = p.metadata?.username || p.username || [p.first_name, p.last_name].filter(Boolean).join(' ');
     if (!name) continue;
+    const esport = !!SLEEPER_ESPORTS[key];
     lines.push({
-      book: 'sleeper', sport, player: name, team: team || p.team || '', market: sleeperMarket(row.wager_type), line,
+      book: 'sleeper', sport, player: name, team: team || p.team || '', market: esport ? sleeperMarket(row.wager_type) : sleeperSportMarket(sport, row.wager_type), line,
       gameId: row.game_id || null, startTime: '', matchTitle: '',
       overMultiplier: over, underMultiplier: under, overOpen: over != null, underOpen: under != null,
     });
@@ -84,6 +119,21 @@ function sleeperEsportsKeys(rows) {
   const s = new Set();
   for (const r of Array.isArray(rows) ? rows : []) if (SLEEPER_ESPORTS[String(r.sport || '').toLowerCase()]) s.add(String(r.sport).toLowerCase());
   return [...s];
+}
+// Every sport key with lines, esports and sports
+function sleeperSportKeys(rows) {
+  const s = new Set();
+  for (const r of Array.isArray(rows) ? rows : []) if (sleeperSport(r.sport)) s.add(String(r.sport).toLowerCase());
+  return [...s];
+}
+// A player table is a few MB (CFB about 6); only the fields a line needs are kept
+function slimPlayers(table) {
+  const out = {};
+  for (const [id, p] of Object.entries(table || {})) {
+    if (!p || typeof p !== 'object') continue;
+    out[id] = { first_name: p.first_name || '', last_name: p.last_name || '', team: p.team || '', ...(p.metadata?.username ? { metadata: { username: p.metadata.username } } : {}) };
+  }
+  return out;
 }
 
 // Sleeper lines carry no start time or match. Borrow both from a PrizePicks or
@@ -116,4 +166,4 @@ function sleeperPricing(prob, mult, otherMult) {
   return { ev: flag ? null : (p * mult - 1) * 100, implied: implied * 100, flag, gap: gap * 100 };
 }
 
-module.exports = { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
+module.exports = { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
