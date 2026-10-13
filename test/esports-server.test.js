@@ -313,3 +313,24 @@ test('sales page prices and early-access note come from env', () => {
   assert.ok(paid.includes('>Create a free account<'));
   for (const p of [free, paid]) assert.doesNotMatch(p, /\{\{[A-Z_]+\}\}/);
 });
+
+test('props: Underdog sides it doesn\'t take are marked closed, and pulled lines are dropped', () => {
+  const base = id => ({ stat_value: '30.5', over_under: { appearance_stat: { appearance_id: id, display_stat: 'Kills on Maps 1+2' } } });
+  const payload = {
+    games: [{ id: 7, sport_id: 'CS', title: 'A vs B', scheduled_at: '2026-10-12T10:00:00Z' }],
+    players: [1, 2, 3, 4, 5].map(i => ({ id: 'p' + i, last_name: 'n' + i, sport_id: 'CS' })),
+    appearances: [1, 2, 3, 4, 5].map(i => ({ id: 'x' + i, player_id: 'p' + i, match_id: 7 })),
+    over_under_lines: [
+      { ...base('x1'), options: [{ choice: 'higher', payout_multiplier: '1.0' }] },
+      { ...base('x2'), options: [{ choice: 'higher', payout_multiplier: '1.0' }, { choice: 'lower', payout_multiplier: '1.0', status: 'suspended' }] },
+      { ...base('x3'), options: [{ choice: 'higher', payout_multiplier: '0.9' }, { choice: 'lower', payout_multiplier: '1.1' }] },
+      { ...base('x4'), status: 'suspended', options: [{ choice: 'higher' }, { choice: 'lower' }] },
+      { ...base('x5'), options: [] },
+    ],
+  };
+  const lines = S.parseUnderdogPayload(payload);
+  assert.equal(lines.length, 4);
+  assert.deepEqual(lines.map(l => [l.overOpen, l.underOpen]), [[true, false], [true, false], [true, true], [true, true]]);
+  assert.equal(lines[0].underMultiplier, null);
+  assert.equal(lines[2].underMultiplier, 1.1);
+});

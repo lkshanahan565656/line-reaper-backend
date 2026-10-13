@@ -5990,6 +5990,7 @@ function esAdd(i) {
     esSaveSlip(); renderSlipBar(); renderEsports();
     return;
   }
+  if (p.sideClosed) { showToast(`Underdog doesn't offer ${p.sideClosed === 'OVER' ? 'Higher' : 'Lower'} on this line, so there's no play`, 'danger'); return; }
   const prob = esLegProb(p);
   if (prob == null) { showToast('No model probability on this pick — tap EDIT and enter a model number first', 'danger'); return; }
   if (esportsState.slip.some(l => l.player === p.player)) { showToast(`${p.player} is already in the slip — books don't allow the same player twice`, 'danger'); return; }
