@@ -4168,7 +4168,10 @@ function esStatEdge(p) {
   if (p.edge != null && p.edgePct != null) {
     const up = p.edge > 0;
     const line = esLineFor(p, esportsState.book);
-    parts.push(`<span title="The book posted ${line}. We project ${p.modelPred}. The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs OURS ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
+    // a market price is the books' own consensus (Underdog and Sleeper payouts,
+    // every book's line), nudged by our projection only as far as the record allows
+    const mk = p.fairSource === 'market';
+    parts.push(`<span title="${mk ? `The books together put this at ${p.marketPred}. With our projection weighted ${Math.round((p.modelWeight || 0) * 100)}%, fair is ${p.modelPred}.` : `The book posted ${line}. We project ${p.modelPred}.`} The gap is the edge we think we're getting." style="color:${up ? '#10b981' : '#f87171'};font-weight:700">BOOK ${line} vs ${mk ? 'FAIR' : 'OURS'} ${p.modelPred} · EDGE ${up ? '+' : ''}${p.edge} (${up ? '+' : ''}${p.edgePct}%)</span>`);
   }
   if (p.udFlag === 'price-mismatch') {
     parts.push(`<span title="Underdog's payout implies ${p.udImplied}% while our model says ${p.prob}%. A gap that big on one leg almost always means our number is wrong, so no EV is published." style="color:#fbbf24;font-weight:800">PRICE MISMATCH — book implies ${p.udImplied}%, model ${p.prob}% · no EV shown</span>`);
