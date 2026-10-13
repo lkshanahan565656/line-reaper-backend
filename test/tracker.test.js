@@ -288,3 +288,34 @@ test('grades on the book label, not an inferred span saved on older rows', async
   assert.equal((await tr.gradeDue()).graded, 1);
   assert.equal((await tr.list())[0].result, 19);
 });
+
+test('an auto review from a partial series is asked again and grades once every map is in', async () => {
+  const clock = { t: T0 };
+  let maps = { 1: 2 };
+  const tr = makeTracker(clock, { LOL: async () => ({ maps, complete: true }) });
+  await tr.recordBoard([boardPick({ sport: 'LOL', player: 'Bdd', market: 'MAPS 1-3 Kills', ppLine: 14.5, side: 'UNDER' })]);
+  const [row] = await tr.list();
+  clock.t = T0 + 7 * HOUR;
+  await tr.lockStarted();
+  // what an older build left: a review with the partial result
+  Object.assign(row, { status: 'review', result: 2, note: 'Series ended after 1 of 3 maps in the span' });
+  maps = { 1: 2, 2: 4, 3: 5, 4: 9 };
+  assert.equal((await tr.gradeDue()).graded, 1);
+  const [after] = await tr.list();
+  assert.equal(after.status, 'graded');
+  assert.equal(after.result, 11);
+  assert.equal(after.outcome, 'win');
+});
+
+test('a manual or no-result review is left alone', async () => {
+  const clock = { t: T0 };
+  let asked = 0;
+  const tr = makeTracker(clock, { CS: async () => { asked++; return null; } });
+  await tr.recordBoard([boardPick()]);
+  const [row] = await tr.list();
+  clock.t = T0 + 7 * HOUR;
+  Object.assign(row, { status: 'review', note: 'No result found automatically' });
+  await tr.gradeDue();
+  assert.equal(asked, 0);
+  assert.equal((await tr.list())[0].status, 'review');
+});

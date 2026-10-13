@@ -307,8 +307,12 @@ function createTracker({
     let parked = 0;
     const due = (await store.all())
       .filter(r => {
-        if (r.status !== 'locked') return false;
         const age = t - new Date(r.startTime).getTime();
+        // An auto review from a partial series is asked again (hourly, for a
+        // week): a source that had only some maps may have them all now.
+        if (r.status === 'review') return /^Series ended after/.test(r.note || '') && !!graders[r.sport]
+          && age < 7 * 86400e3 && t - (lastTry.get(r.id) || 0) >= 3600e3;
+        if (r.status !== 'locked') return false;
         if (age < gradeAfterMs) return false;
         if ((graders[r.sport] && r.stat !== 'fantasy') || age >= giveUpAfterMs) return true;
         parked++;
@@ -355,6 +359,7 @@ function createTracker({
           await store.put(row); out.void++; continue;
         }
       }
+      if (row.status === 'review') continue;
       if (age >= giveUpAfterMs) {
         row.status = 'review';
         row.note = grader ? 'No result found automatically' : `No automatic grader for ${row.sport} yet`;

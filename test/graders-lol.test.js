@@ -74,3 +74,13 @@ test('CS grader: the pick\'s match never parsed and long over → unavailable; r
   assert.match(out.unavailable, /nuclear-tigeres-vs-xi-esport/);
   assert.equal(await createCsGrader(http, { now: () => later, pause: 0 })({ ...pick, matchTitle: '' }), null, 'no team: no verdict');
 });
+
+test('CS grader: the team\'s match fully parsed without the player → did not play', async () => {
+  const game = (id, number) => ({ id, number, status: 'finished', winner_team_clan: { clan_name: 'Rooster' }, loser_team_clan: { clan_name: 'Orgless (Aus)' } });
+  const match = { id: 5, slug: 'rooster-vs-orgless-aust', status: 'finished', start_date: '2026-10-12T09:00:00.000+00:00', games: [game(1, 1), game(2, 2)] };
+  const row = nick => ({ kills: 20, headshots: 9, steam_profile: { player: { nickname: nick, slug: nick.toLowerCase() } } });
+  const http = { get: async url => (url.endsWith('/matches') ? { data: { results: [match] } } : { data: [row('Supers'), row('foggers')] }) };
+  const grade = createCsGrader(http, { now: () => NOW, pause: 0 });
+  assert.match((await grade({ player: 'chelleos', team: 'Rooster', stat: 'kills', startTime: '2026-10-12T09:10:00Z' })).unavailable, /did not play/);
+  assert.deepEqual((await grade({ player: 'foggers', team: 'Rooster', stat: 'kills', startTime: '2026-10-12T09:10:00Z' })).maps, { 1: 20, 2: 20 });
+});

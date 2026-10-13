@@ -139,6 +139,6 @@ test('CS grader: maps from bo3, complete only when every map has stats; the matc
   assert.deepEqual(await grade(pick), { maps: { 1: 20, 2: 17 }, complete: false, matchId: 'vit-navi' });
   stats[73] = [bo3Row('ZywOo', 22, 11)];
   assert.deepEqual(await grade({ ...pick, stat: 'headshots' }), { maps: { 1: 8, 2: 6, 3: 11 }, complete: true, matchId: 'vit-navi' });
-  assert.equal(await grade({ ...pick, player: 'flameZ' }), null);
+  assert.match((await grade({ ...pick, player: 'flameZ' })).unavailable, /did not play/, 'every map parsed, player absent');
   assert.equal(listCalls, 1);
 });
