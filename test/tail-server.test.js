@@ -537,7 +537,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.68.0');
+  assert.equal(body.version, '3.69.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -564,8 +564,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.68.0');
-  assert.equal((await get('/')).body.version, '3.68.0');
+  assert.equal(require('../package.json').version, '3.69.0');
+  assert.equal((await get('/')).body.version, '3.69.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1403,4 +1403,10 @@ test('paused feeds: with PAYWALL on the scraped and single-user feeds are paused
   process.env.UNDERDOG_DATA_OK = 'on';
   try { assert.ok(!(await get('/api/status', PRO)).body.dataLicences.paused.includes('underdog')); }
   finally { delete process.env.UNDERDOG_DATA_OK; }
+});
+
+test('middle alerts: the same text for everyone, with the window and what a miss costs', () => {
+  const text = S.describeMiddle({ evPct: 7.6, title: 'New York K at Boston', low: 217.5, high: 221.5, hitProb: 0.083, missPct: -0.6,
+    legs: [{ venue: 'polymarketus', pick: 'Over 217.5', price: 0.45 }, { venue: 'kalshi', pick: 'Under 221.5', price: 0.52 }] });
+  assert.equal(text, 'Middle +7.6% EV: New York K at Boston · Polymarket US Over 217.5 45¢ + Kalshi Under 221.5 52¢ · both pay at 218 to 221 (about 8%), a miss costs 0.6%');
 });
