@@ -1494,3 +1494,19 @@ test('middles: Over the lower line on one venue, Under the higher on the other, 
   // started games and leagues with no spread of results on file: none
   assert.deepEqual(A.findMiddles(kalshi, us, matches, opts({ region: 'us', now: Date.parse(START) + 1 })), []);
 });
+
+test('price screen: each side of a paired game line, all-in on both exchanges, and the cheaper one', () => {
+  const kalshi = kRows(kalshiGame());
+  const us = usNba();
+  const rows = A.exchangeScreen(A.matchMarkets(kalshi, us, opts()), opts({ region: 'us' }));
+  const ml = rows.find(r => r.kind === 'moneyline');
+  assert.ok(ml, 'the moneyline');
+  assert.deepEqual(ml.sides.map(s => s.pick), ['New York Knicks', 'Boston Celtics']);
+  const [nyk, bos] = ml.sides;
+  // Knicks: Kalshi 47¢ + its fee against Polymarket US 60¢ + 0.0695 × .6 × .4
+  assert.equal(nyk.best, 'kalshi');
+  assert.ok(Math.abs(nyk.other - (0.6 + 0.0695 * 0.24)) < 1e-4);
+  assert.equal(bos.best, 'polymarketus', 'the Celtics are 48¢ here, 55¢ at Kalshi');
+  assert.equal(rows.filter(r => r.kind === 'moneyline').length, 1, 'the two Kalshi team markets are one row');
+  assert.deepEqual(A.exchangeScreen(A.matchMarkets(kalshi, us, opts()), opts({ now: Date.parse(START) + 1 })), [], 'started games drop off');
+});

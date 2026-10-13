@@ -2308,7 +2308,7 @@ const XARB_REALERT_MS = 30 * 60e3;   // an arb gone this long that comes back is
 // read to confirm what clears (XARB_PMUS_BOOKS_PER_SCAN)
 const XARB_PMUS_LEAGUES = pmus.arbLeaguesFromEnv();
 const XARB_PMUS_BOOKS = Number.isFinite(parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) ? Math.max(0, parseInt(process.env.XARB_PMUS_BOOKS_PER_SCAN)) : 40;
-const xarbState = { arbs: [], near: [], bids: [], middles: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
+const xarbState = { arbs: [], near: [], bids: [], middles: [], screen: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
 // middles worth a phone alert (EV %), and how long before the same one alerts again
@@ -2849,6 +2849,10 @@ async function scanXarbs() {
     let middles = [];
     try { middles = xarb.findMiddles(kalshi, [...us.rowList, ...(intl ? polymarket : [])], [...(intl ? matches : []), ...us.matchList], { ...XARB_OPTS, now }); }
     catch (e) { console.warn('Exchange arbs: middles:', e.message); }
+    // the exchanges' odds screen: each paired line's sides, all-in, cheaper venue marked
+    let screen = [];
+    try { screen = xarb.exchangeScreen([...(intl ? matches : []), ...us.matchList], { ...XARB_OPTS, now }); }
+    catch (e) { console.warn('Exchange arbs: price screen:', e.message); }
     await bidTracker.record(bids, [...kalshi, ...us.rowList, ...(intl ? polymarket : [])]).catch(e => console.warn('Bid tracker:', e.message));
     if (polymarket.length) {
       try { await scanValue({ kalshi, polymarket, matches, usRows: us.rowList }, now); } catch (e) { console.warn('Exchange value:', e.message); }
@@ -2861,7 +2865,7 @@ async function scanXarbs() {
       }]));
     }
     Object.assign(xarbState, {
-      arbs, near, bids, middles, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
+      arbs, near, bids, middles, screen, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
         kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
@@ -3258,7 +3262,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.69.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.70.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3564,6 +3568,16 @@ app.get('/api/xarbs', async (req, res) => {
     ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids, middles,
     minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
   }));
+});
+// The exchanges' odds screen (xarb.exchangeScreen): games in the next 36
+// hours, each side's all-in price on Kalshi and Polymarket US. Free: the count.
+app.get('/api/xscreen', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  // without Kalshi's data licence its prices are left out, not the games
+  const rows = (xarbState.screen || []).map(r => (lic.kalshi ? r : { ...r, sides: r.sides.map(x => ({ ...x, kalshi: null, kalshiUrl: null, best: x.other != null ? r.venue : null, gap: null })) }));
+  const base = { count: rows.length, updated: xarbState.updated, pro, region: TAIL_REGION };
+  if (!pro) return res.json(base);
+  res.json(regionSafe({ ...base, rows }));
 });
 // Exchange value (xvalue.js): Kalshi and Polymarket US asks under Polymarket's
 // live mid, best first, plus how the flagged prices did against the close.
@@ -4202,7 +4216,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.69.0',
+  version: '3.70.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4341,10 +4355,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.69.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.70.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.69.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.70.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
