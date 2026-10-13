@@ -137,4 +137,18 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT } = {}) {
   return { slips, books, pool, nearPct: near };
 }
 
-module.exports = { autoSlips, bookLeg, priceOn, buildForBook, LEG_FLOOR, NEAR_PCT };
+// One slip the user built, priced on each book that takes every leg, at that
+// book's own lines → { PP: entry | null, UD: ..., SL: ... }. A book that doesn't
+// carry a leg, or wants two picks on one player, can't take the slip.
+function priceOnBooks(picks) {
+  const out = {};
+  for (const book of ['PP', 'UD', 'SL']) {
+    const legs = picks.map(p => p && bookLeg(p, book));
+    const players = new Set(legs.map(l => l && norm(l.player)));
+    const best = legs.length >= 2 && legs.every(Boolean) && players.size === legs.length ? priceOn(book, legs)[0] : null;
+    out[book] = best ? present(book, { ...best, picks: legs }) : null;
+  }
+  return out;
+}
+
+module.exports = { autoSlips, priceOnBooks, bookLeg, priceOn, buildForBook, LEG_FLOOR, NEAR_PCT };
