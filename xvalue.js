@@ -210,6 +210,32 @@ function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } =
   });
 }
 
+// Which Polymarket books to read this scan, at most `max`: every urgent ref
+// (a steaming side: the move needs a fresh price), then the rest by how long
+// ago their book was read, never-read first. cache: ref id → { book, at }.
+// With a few dozen reads a minute and books kept `ttl`, every candidate gets
+// read every few scans instead of only the screen's top few.
+function planReads({ urgent = [], rest = [], cache = new Map(), now = Date.now(), max = 30 } = {}) {
+  const out = [], seen = new Set();
+  for (const id of urgent) if (!seen.has(id) && out.length < max) { seen.add(id); out.push(id); }
+  const age = id => { const c = cache.get(id); return c ? now - c.at : Infinity; };
+  const queue = rest.filter(id => !seen.has(id) && (seen.add(id), true)).map((id, i) => ({ id, i, age: age(id) }))
+    .sort((a, b) => b.age - a.age || a.i - b.i);
+  for (const q of queue) if (out.length < max) out.push(q.id);
+  return out;
+}
+
+// A Kalshi game is two team markets, so one outcome can be YES on one and NO
+// on the other: the same bet at the same fair. Keep its cheaper market.
+function dedupeEdges(edges) {
+  const best = new Map();
+  for (const e of edges) {
+    const k = `${e.venue}|${e.refId}|${e.fair}|${e.start}`;
+    if (!best.has(k) || best.get(k).ev < e.ev) best.set(k, e);
+  }
+  return edges.filter(e => best.get(`${e.venue}|${e.refId}|${e.fair}|${e.start}`) === e);
+}
+
 // edges → evtrack rows (ev and fair in percent)
 function trackRows(edges) {
   return edges.map(e => ({
@@ -226,4 +252,4 @@ function describe(e) {
   return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), Polymarket ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
-module.exports = { findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
+module.exports = { planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
