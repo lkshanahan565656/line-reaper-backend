@@ -130,3 +130,19 @@ test('Best Plays leaves out arbs of more than 4 bets', () => {
   const out = bestPlays({ arbs: [arb(2), arb(4), arb(16)] }, { now: NOW });
   assert.deepEqual(out.rows.filter(r => r.kind === 'arb').map(r => r.title).sort(), ['2 legs', '4 legs']);
 });
+
+test('the price screen gets each side\'s fair and the cheaper price\'s EV', () => {
+  const row = { id: 'aec-nba-nyk-bos-2026-10-12', venue: 'polymarketus', kind: 'moneyline', sides: [
+    { pick: 'Knicks', kalshi: 0.42, other: 0.41 }, { pick: 'Celtics', kalshi: 0.6, other: null },
+  ] };
+  const [r] = V.screenFairs([row], { usRows: [usRow()], polymarket: [pRow()] });
+  assert.equal(r.sides[0].fair, 0.435);                      // Knicks: 1 − Celtics mid 56.5
+  assert.equal(r.sides[1].fair, 0.565);
+  assert.equal(r.sides[0].ev, Math.round((0.435 / 0.41 - 1) * 1e4) / 1e4);
+  assert.equal(r.sides[1].ev, Math.round((0.565 / 0.6 - 1) * 1e4) / 1e4);
+  assert.equal(r.maxEv, r.sides[0].ev);
+  // a wide or unpaired ref leaves the row without a fair
+  const [w] = V.screenFairs([row], { usRows: [usRow()], polymarket: [pRow({ yesAsk: 0.62, noAsk: 0.44 })] });
+  assert.equal(w.maxEv, null);
+  assert.equal(w.sides[0].fair, undefined);
+});

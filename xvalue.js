@@ -173,6 +173,35 @@ function screen(input, opts = {}) {
   return findValue(input, { ...opts, ...SCREEN, books: null, requireBook: false }).edges;
 }
 
+// The price screen's fair column (xarb.exchangeScreen rows): each side's fair
+// from Polymarket's mid, and the EV of the cheaper venue's all-in price at it.
+// Polymarket US rows pair by slug, kind, line and team; a Polymarket row (intl
+// mode) is its own ref. Looser than an edge: a wider spread still prices it.
+const FAIR_SCREEN = { maxSpread: 0.04 };
+function screenFairs(rows = [], { usRows = [], polymarket = [], books = null } = {}, opts = {}) {
+  const o = { ...DEFAULTS, ...FAIR_SCREEN, ...opts, books, requireBook: false };
+  const want = new Set(rows.map(r => String(r.id)));
+  const refs = new Map();
+  for (const { target, ref, same } of pairUs(usRows.filter(u => want.has(String(u.id))), polymarket)) {
+    const f = refFair(ref, o);
+    if (f && !refs.has(String(target.id))) refs.set(String(target.id), { fair: f.fair, same });
+  }
+  for (const p of polymarket) if (want.has(String(p.id)) && !refs.has(String(p.id))) { const f = refFair(p, o); if (f) refs.set(String(p.id), { fair: f.fair, same: true }); }
+  return rows.map(r => {
+    const ref = refs.get(String(r.id));
+    if (!ref) return { ...r, maxEv: null };
+    // side 0 is the screen row's YES, side 1 its NO
+    const sides = r.sides.map((x, i) => {
+      const fair = (i === 0) === ref.same ? ref.fair : 1 - ref.fair;
+      const best = [x.kalshi, x.other].filter(c => c != null);
+      const ev = best.length ? fair / Math.min(...best) - 1 : null;
+      return { ...x, fair: r4(fair), ev: ev == null ? null : r4(ev) };
+    });
+    const evs = sides.map(x => x.ev).filter(e => e != null);
+    return { ...r, sides, maxEv: evs.length ? Math.max(...evs) : null };
+  });
+}
+
 // edges → evtrack rows (ev and fair in percent)
 function trackRows(edges) {
   return edges.map(e => ({
@@ -188,4 +217,4 @@ function describe(e) {
   return `${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), Polymarket ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
-module.exports = { findValue, screen, SCREEN, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
+module.exports = { findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
