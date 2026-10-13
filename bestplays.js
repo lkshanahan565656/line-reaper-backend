@@ -20,6 +20,7 @@
 
 const { sportKey, statKind } = require('./tracker');
 const { moveText } = require('./steam');
+const { moverText } = require('./movers');
 
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -57,10 +58,12 @@ function verdictIndex(plays = []) {
   const by = new Map();
   for (const p of plays) by.set(`${p.source}|${p.by || 'all'}|${p.play}`, p);
   const SOURCES = require('./results').SOURCES;
-  return (source, labels) => {
+  // only: cut names (['signal']) to judge on those cuts alone, without 'all'
+  return (source, labels, { only = null } = {}) => {
     const def = SOURCES[source];
-    const found = [by.get(`${source}|all|all`)];
+    const found = only ? [] : [by.get(`${source}|all|all`)];
     for (const cut of def ? def.cuts : []) {
+      if (only && cut.join('+') !== only.join('+')) continue;
       const vals = cut.map(k => labels[k]);
       if (vals.some(v => v == null || v === '')) continue;
       found.push(by.get(`${source}|${cut.join('+')}|${vals.join(' · ')}`));
@@ -179,26 +182,35 @@ function edgeRows(matches, verdict, o, now) {
 // Polymarket's live mid, ¼ Kelly like an esports edge
 const VALUE_VENUES = { kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 // the results cut a value bet falls in: steam, or a standing gap to Polymarket or to Kalshi
-const valueSignal = e => e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'Kalshi price' : 'price gap';
+const valueSignal = e => e.mover ? 'line mover' : e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'Kalshi price' : 'price gap';
 function valueRows(edges, verdict, o, now) {
   const rows = [], dropped = [];
   for (const e of edges) {
     const start = ms(e.start);
-    if (start == null || start <= now || !(e.cost > 0 && e.cost < 1) || !(e.ev > 0)) continue;
+    if (start == null || start <= now || !(e.cost > 0 && e.cost < 1) || !(e.ev > 0 || (e.mover && e.ev >= 0))) continue;
     const labels = { signal: valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market };
     const vd = verdict('exchangeValue', labels);
     if (vd.avoid) { dropped.push({ kind: 'exchangeValue', title: e.title, play: vd.avoid.play }); continue; }
-    const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
-    const units = kellyUnits(e.fair, e.cost, cap, o);
+    // a line mover is priced near fair: it's a play only once its own record
+    // beats the close, and that record's CLV is its edge
+    let vdm = vd, p = e.fair;
+    if (e.mover) {
+      vdm = verdict('exchangeValue', labels, { only: ['signal'] });
+      if (!['proven', 'promising'].includes(vdm.verdict) || !(vdm.play?.avgClv > 0)) continue;
+      p = Math.max(e.fair, e.cost * (1 + vdm.play.avgClv));
+    }
+    const cap = vdm.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
+    const units = kellyUnits(p, e.cost, cap, o);
     if (!(units > 0)) continue;
     const venue = VALUE_VENUES[e.venue] || e.venue;
     const ref = e.refName || 'Polymarket';
     const why = [`${ref}'s book has it at ${r2(e.fair * 100)}c, ${venue} sells it for ${r2(e.cost * 100)}c with the fee`];
     if (e.steam) why.unshift(`Steam: ${moveText(e.steam, venue, ref)}`);
-    if (vd.play) why.push(evidence(vd.play));
+    if (e.mover) why.unshift(`Line mover: ${moverText(e.mover)}`);
+    if (vdm.play) why.push(evidence(vdm.play));
     rows.push({
-      id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} ${e.steam ? 'steam' : 'exchange value'}`, title: e.title, steam: !!e.steam,
-      bet: e.pick, venue, price: e.cost, american: null, maxPrice: null, units, ev: r4(e.ev), verdict: vd.verdict, why,
+      id: `value:${e.id}`, kind: 'exchangeValue', label: `${String(e.league || e.category || '').toUpperCase()} ${e.mover ? 'line mover' : e.steam ? 'steam' : 'exchange value'}`, title: e.title, steam: !!e.steam,
+      bet: e.pick, venue, price: e.cost, american: null, maxPrice: null, units, ev: r4(p / e.cost - 1), verdict: vdm.verdict, why,
       url: e.url, startsAt: e.start, at: null, warning: null,
     });
   }

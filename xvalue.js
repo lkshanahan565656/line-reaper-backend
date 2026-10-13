@@ -23,6 +23,7 @@
 const { kalshiFee } = require('./exchanges');
 const { polymarketFee, nameMatch } = require('./xarb');
 const { moveText } = require('./steam');
+const { moverText } = require('./movers');
 
 const DEFAULTS = {
   minEv: 0.02,
@@ -290,7 +291,7 @@ function trackRows(edges) {
   return edges.map(e => ({
     group: e.group, side: e.pick, book: e.venue, start: e.start, sport: e.league || e.category, event: e.title,
     market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100,
-    source: e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'kalshiref' : 'xvalue',
+    source: e.mover ? 'mover' : e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'kalshiref' : 'xvalue',
   }));
 }
 
@@ -299,8 +300,8 @@ function describe(e) {
   const when = e.start ? new Date(e.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : '';
   const c = x => `${Math.round(x * 1000) / 10}¢`;
   const ref = e.refName || 'Polymarket';
-  const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName, ref)}. ` : '';
-  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (+${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
+  const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName, ref)}. ` : e.mover ? `LINE MOVER: ${moverText(e.mover)}. ` : '';
+  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (${e.ev >= 0 ? '+' : ''}${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
 }
 
 module.exports = { planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
