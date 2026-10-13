@@ -436,9 +436,86 @@ body::before {
 .esm-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; align-items: center; }
 .esm-summary { font-size: 12px; color: var(--accent2); margin: 6px 0 12px; }
 .esm-summary b { color: var(--accent); }
-.esm-h { font-size: 11px; letter-spacing: 1.5px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin: 16px 0 8px; text-transform: uppercase; }
-.esm-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
-.esm-card.edge { border-color: rgba(16,185,129,.55); }
+.esm-h { display: flex; align-items: center; gap: 10px; font-size: 10.5px; letter-spacing: .14em; color: #94a3b8; font-weight: 700; margin: 18px 0 10px; text-transform: uppercase; }
+.esm-h::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border2), transparent); }
+.esm-h.good { color: #34d399; }
+.esm-card { position: relative; background: linear-gradient(180deg, #121825, #0e131c 60%); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px 12px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 10px 30px -20px rgba(0,0,0,.9); transition: border-color .15s; }
+.esm-card:hover { border-color: var(--border2); }
+.esm-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, rgba(139,92,246,.7), transparent 70%); }
+.esm-card.edge { border-color: rgba(16,185,129,.45); background: linear-gradient(180deg, rgba(16,185,129,.07), #0e131c 55%); }
+.esm-card.edge::before { background: linear-gradient(90deg, #34d399, transparent 75%); height: 3px; }
+.esm-card.live::before { background: linear-gradient(90deg, #f87171, transparent 70%); }
+.esm-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.esm-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 64px auto; gap: 12px; align-items: center; }
+.esm-av { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font: 800 12px 'Inter', sans-serif; letter-spacing: .02em; color: #fff; background: linear-gradient(135deg, hsl(var(--h) 55% 42%), hsl(var(--h) 60% 26%)); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; }
+.esm-name { min-width: 0; }
+.esm-name b { display: block; font-size: 15px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.esm-name .esm-form { margin: 3px 0 0; }
+.esm-fair { text-align: right; }
+.esm-fair b { display: block; font: 800 20px 'JetBrains Mono', monospace; letter-spacing: -.03em; color: #f1f5f9; line-height: 1; }
+.esm-fair small { display: block; font-size: 8.5px; letter-spacing: .14em; color: #64748b; font-weight: 700; margin-top: 3px; }
+.esm-fair.fav b { color: #c4b5fd; }
+.esm-split { display: flex; height: 6px; border-radius: 6px; overflow: hidden; margin-top: 12px; background: rgba(148,163,184,.12); gap: 2px; }
+.esm-split i { display: block; height: 100%; }
+.esm-split i:first-child { background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 6px 0 0 6px; }
+.esm-split i:last-child { background: linear-gradient(90deg, #334155, #475569); border-radius: 0 6px 6px 0; }
+.esm-tkt { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-top: 10px; }
+.esm-tkt .what { font-size: 16px; font-weight: 800; color: #f8fafc; }
+.esm-tkt .esm-prices { justify-content: flex-start; margin-top: 8px; }
+.esm-tkt .ev { text-align: right; font: 800 26px 'JetBrains Mono', monospace; letter-spacing: -.03em; color: #34d399; line-height: 1; }
+.esm-tkt .ev small { display: block; font: 700 9px 'Inter', sans-serif; letter-spacing: .12em; color: #64748b; margin-top: 4px; }
+.esm-tkt .esm-btn { display: inline-block; margin-top: 8px; font: 700 12px 'Inter', sans-serif; letter-spacing: 0; }
+.tr-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.tr-chips .lbl { font-size: 9.5px; letter-spacing: .12em; color: #64748b; font-weight: 700; margin-left: 8px; }
+.pb-sum.tr-sum { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.tr-sum .pb-stat.bad b { color: #f87171; }
+.tr-note { font-size: 11px; color: #64748b; margin: 0 0 16px; line-height: 1.6; }
+.tr-card { background: linear-gradient(180deg, #121825, #0e131c 70%); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+.tr-card.warn { border-color: rgba(245,158,11,.35); }
+.tr-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-size: 10.5px; letter-spacing: .14em; color: #94a3b8; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.tr-card.warn .tr-head { color: #fbbf24; }
+.tr-cols, .tr-row { display: grid; grid-template-columns: minmax(0, 1.1fr) 70px 82px minmax(0, 1.6fr) 84px 70px 92px; gap: 12px; align-items: center; padding: 9px 16px; }
+.tr-cols { padding-top: 7px; padding-bottom: 7px; font-size: 9px; letter-spacing: .12em; color: #475569; font-weight: 700; text-transform: uppercase; }
+.tr-row { border-top: 1px solid rgba(255,255,255,.04); font: 600 12px 'JetBrains Mono', monospace; color: #cbd5e1; }
+.tr-row:hover { background: rgba(255,255,255,.015); }
+.tr-row .g { font: 700 13px 'Inter', sans-serif; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-row .dim { color: #475569; }
+.tr-hit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tr-bar { position: relative; flex: 1; height: 6px; border-radius: 6px; background: rgba(148,163,184,.12); min-width: 40px; }
+.tr-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.tr-bar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #e2e8f0; border-radius: 1px; opacity: .7; }
+.tr-u { justify-self: start; padding: 2px 8px; border-radius: 10px; font-weight: 800; background: rgba(148,163,184,.1); }
+.tr-u.pos { color: #052e1f; background: #34d399; } .tr-u.neg { color: #fecaca; background: rgba(239,68,68,.18); }
+.tr-sm { display: none; }
+.tr-rv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid rgba(255,255,255,.04); }
+.tr-rv b { color: #f1f5f9; font-size: 13px; }
+.tr-rv .m { color: #94a3b8; font-size: 11px; margin-top: 2px; }
+.tr-rv .n { color: #64748b; font-size: 10px; }
+.tr-rv .act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.me-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.me-help { font-size: 11px; color: #64748b; flex: 1 1 260px; }
+.me-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+.me-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px 76px 104px; gap: 10px; align-items: center; padding: 9px 12px; background: linear-gradient(90deg, #121825, var(--card)); border: 1px solid var(--border); border-radius: 12px; transition: border-color .15s; }
+.me-row:focus-within { border-color: rgba(139,92,246,.6); box-shadow: 0 0 0 3px rgba(139,92,246,.12); }
+.me-row.done { border-color: rgba(16,185,129,.35); }
+.me-who b { display: block; font-size: 14px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.me-who > span { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.me-tile { text-align: center; padding: 5px 4px 6px; border-radius: 10px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.05); }
+.me-tile b { display: block; font: 700 16px 'JetBrains Mono', monospace; color: #f1f5f9; }
+.me-tile.cur b { color: #c4b5fd; font-size: 14px; }
+.me-tile small { display: block; font-size: 8.5px; letter-spacing: .12em; color: #64748b; font-weight: 800; }
+.me-row .es-entry { width: 100%; padding: 9px 10px; font-size: 15px; font-family: 'JetBrains Mono', monospace; border-radius: 10px; text-align: center; }
+@media (max-width: 760px) {
+  .pb-sum.tr-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tr-cols { display: none; }
+  .tr-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding: 10px 14px; }
+  .tr-row .g { grid-column: 1; } .tr-row .tr-u { grid-column: 2; grid-row: 1; justify-self: end; }
+  .tr-row .tr-hit { grid-column: 1 / -1; }
+  .tr-row .lg { display: none; } .tr-sm { display: block; grid-column: 1 / -1; font-size: 11px; color: #94a3b8; }
+  .me-row { grid-template-columns: minmax(0, 1fr) 50px 50px 72px; gap: 6px; padding: 9px 10px; }
+  .me-tile b { font-size: 14px; } .me-tile.cur b { font-size: 12px; } .me-tile small { font-size: 7.5px; letter-spacing: .06em; } .me-row .es-entry { padding: 9px 4px; font-size: 14px; }
+}
+.esm-note { font-size: 11px; color: #94a3b8; margin: -4px 0 12px; }
 .esm-top { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--accent2); flex-wrap: wrap; }
 .esm-game { background: rgba(139,92,246,.15); color: #c4b5fd; border-radius: 6px; padding: 2px 7px; font-weight: 700; font-size: 10px; letter-spacing: .5px; }
 .esm-live { background: rgba(239,68,68,.15); color: #f87171; border-radius: 6px; padding: 2px 7px; font-weight: 700; font-size: 10px; }
@@ -446,16 +523,19 @@ body::before {
 .esm-teams { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin-top: 10px; align-items: center; }
 .esm-team { font-size: 15px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .esm-prices { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
-.esm-px { font: 600 12px 'JetBrains Mono', monospace; border: 1px solid var(--border); border-radius: 7px; padding: 4px 7px; color: #cbd5e1; white-space: nowrap; text-decoration: none; }
-.esm-px small { color: #64748b; font-weight: 500; margin-right: 3px; }
-.esm-px.fair { color: var(--accent); border-color: rgba(148,163,184,.35); }
-.esm-px.good { color: #34d399; border-color: rgba(16,185,129,.6); background: rgba(16,185,129,.08); }
-.esm-px.ref { opacity: .75; }
+.esm-px { display: inline-flex; flex-direction: column; align-items: center; min-width: 54px; font: 700 14px 'JetBrains Mono', monospace; border: 1px solid rgba(255,255,255,.06); background: rgba(0,0,0,.22); border-radius: 10px; padding: 5px 8px 6px; color: #e2e8f0; white-space: nowrap; text-decoration: none; transition: border-color .15s, background .15s; }
+a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246,.08); }
+.esm-px small { font: 800 8.5px 'Inter', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+.esm-px.fair { color: #f1f5f9; border-color: rgba(148,163,184,.3); }
+.esm-px.good { color: #34d399; border-color: rgba(16,185,129,.55); background: rgba(16,185,129,.09); box-shadow: 0 0 0 1px rgba(16,185,129,.15) inset; }
+.esm-px.good small { color: #34d399; }
+.esm-px.ref { opacity: .7; }
 .esm-meter { height: 4px; border-radius: 3px; background: rgba(148,163,184,.18); margin-top: 10px; overflow: hidden; }
 .esm-meter i { display: block; height: 100%; background: #8b5cf6; }
-.esm-sub { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin-top: 8px; align-items: center; }
+.esm-sub { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin-top: 10px; align-items: center; }
 .esm-up { color: #34d399; } .esm-down { color: #f87171; }
-.esm-more { background: none; border: 0; color: #a78bfa; font-size: 11px; cursor: pointer; padding: 0; margin-left: auto; }
+.esm-more { background: rgba(139,92,246,.1); border: 1px solid rgba(139,92,246,.3); border-radius: 999px; color: #c4b5fd; font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 10px; margin-left: auto; }
+.esm-more:hover { background: rgba(139,92,246,.2); }
 .bp-m { display: none; font-size: 12px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
 @media (max-width: 640px) { #bestContent .bp-c { display: none; } #bestContent .bp-m { display: block; } #bestContent td:first-child { width: 72px; } }
 .esm-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
@@ -664,7 +744,9 @@ body::before {
 .esm-form { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
 .esm-form i { width: 14px; height: 14px; border-radius: 3px; font-style: normal; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; color: #0b1220; }
 .esm-form i.w { background: #22c55e; } .esm-form i.l { background: #ef4444; } .esm-form i.d { background: #94a3b8; }
-@media (max-width: 560px) { .esm-teams { grid-template-columns: 1fr; } .esm-prices { justify-content: flex-start; } .esm-time { margin-left: 0; width: 100%; } }
+@media (max-width: 560px) { .esm-teams { grid-template-columns: 1fr; } .esm-prices { justify-content: flex-start; } .esm-time { margin-left: 0; width: 100%; }
+  .esm-card { padding: 12px 12px 10px; } .esm-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 6px 10px; } .esm-av { width: 30px; height: 30px; font-size: 11px; }
+  .esm-row .esm-prices { grid-column: 2 / -1; } .esm-px { min-width: 48px; font-size: 13px; padding: 4px 7px 5px; } .esm-tkt .ev { font-size: 22px; } }
 
 /* ── ESPORTS: BIG BOOK SORTER BAR ── */
 #esBookBar { display:flex; gap:10px; overflow-x:auto; padding:4px 2px 10px; margin-bottom:6px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -3939,7 +4021,7 @@ function esmMarketName(mk) {
 function esmPx(q, venue, link) {
   if (!q || q.ask == null) return '';
   const cls = q.edge ? 'good' : venue === 'book' ? 'ref' : '';
-  const label = venue === 'kalshi' ? 'K' : venue === 'polymarket' ? 'PM' : 'Book';
+  const label = venue === 'kalshi' ? 'Kalshi' : venue === 'polymarket' ? 'Poly' : 'Book';
   const txt = `<small>${label}</small>${esmCents(q.cost ?? q.ask)}`;
   return link ? `<a class="esm-px ${cls}" href="${escEs(link)}" target="_blank" rel="noopener" title="${esmVenue(venue)}: ask ${esmCents(q.ask)}${q.fee ? ' + fee' : ''}${q.ev != null ? `, ${(q.ev * 100).toFixed(1)}% vs fair` : ''}">${txt}</a>` : `<span class="esm-px ${cls}">${txt}</span>`;
 }
@@ -3958,6 +4040,15 @@ function esmH2hDetail(m) {
   const meet = h.meetings.length ? `<div><h5>Last meetings</h5>${h.meetings.map(x => `${x.date || ''} <b>${escEs(m.teams[0])} ${x.score[0]}-${x.score[1]}</b>`).join('<br>')}</div>` : '';
   return `<div class="esm-h2h">${meet}${formBox(m.teams[0], h.form[0])}${formBox(m.teams[1], h.form[1])}</div>`;
 }
+// a team's badge: initials on a colour picked from its name
+function esmAvatar(name) {
+  const n = String(name || '?');
+  let h = 0;
+  for (const c of n) h = (h * 31 + c.charCodeAt(0)) % 360;
+  const w = n.replace(/[^\p{L}\p{N} ]/gu, '').trim().split(/\s+/).filter(Boolean);
+  const ini = (w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?').slice(0, 2)).toUpperCase();
+  return `<span class="esm-av" style="--h:${h}" aria-hidden="true">${escEs(ini)}</span>`;
+}
 function esmMatchCard(m) {
   const main = m.markets.find(mk => mk.kind === 'match');
   const open = esmState.open.has(m.id);
@@ -3965,14 +4056,16 @@ function esmMatchCard(m) {
     : m.move && Math.abs(m.move.sinceOpen) >= 0.03 ? `<span>Opened ${esmPct(m.move.open)} for ${escEs(m.teams[0])}, now ${esmPct(m.move.now)}</span>` : '';
   const vol = (m.volume?.kalshi || 0) + (m.volume?.polymarket || 0);
   const sharps = (m.sharps || []).length ? `<span class="esm-sharp">${m.sharps.length} sharp bet${m.sharps.length > 1 ? 's' : ''}: ${escEs([...new Set(m.sharps.map(s => s.outcome))].join(', '))}</span>` : '';
-  const rows = main ? main.outcomes.map(oc => `
-      <div class="esm-team">${escEs(oc.name)}</div>
-      <div class="esm-prices">
-        ${oc.fair != null ? `<span class="esm-px fair"><small>Fair</small>${esmPct(oc.fair)}</span>` : ''}
-        ${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}
-        ${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}
-      </div>`).join('') : m.teams.map((t, i) => `<div class="esm-team">${escEs(t)}</div><div class="esm-prices">${i === 0 ? '<span class="esm-sub" style="margin:0">No match price yet</span>' : ''}</div>`).join('');
-  const meter = main && main.outcomes[0].fair != null ? `<div class="esm-meter"><i style="width:${Math.round(main.outcomes[0].fair * 100)}%"></i></div>` : '';
+  const form = i => (m.h2h && m.h2h.form ? esmForm(m.h2h.form[i]) : '');
+  const fav = main ? Math.max(...main.outcomes.map(o => o.fair ?? -1)) : -1;
+  const rows = main ? main.outcomes.map((oc, i) => `
+      <div class="esm-row">${esmAvatar(oc.name)}
+        <div class="esm-name"><b>${escEs(oc.name)}</b>${form(i)}</div>
+        <div class="esm-fair ${oc.fair != null && oc.fair === fav ? 'fav' : ''}">${oc.fair != null ? `<b>${esmPct(oc.fair)}</b><small>FAIR</small>` : ''}</div>
+        <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}</div>
+      </div>`).join('') : m.teams.map((t, i) => `<div class="esm-row">${esmAvatar(t)}<div class="esm-name"><b>${escEs(t)}</b>${form(i)}</div><div></div><div class="esm-prices">${i === 0 ? '<span class="esm-sub" style="margin:0">No match price yet</span>' : ''}</div></div>`).join('');
+  const f0 = main && main.outcomes[0].fair != null ? Math.round(main.outcomes[0].fair * 100) : null;
+  const meter = f0 != null ? `<div class="esm-split" title="Fair: ${escEs(main.outcomes[0].name)} ${f0}%, ${escEs(main.outcomes[1]?.name || '')} ${100 - f0}%"><i style="width:${f0}%"></i><i style="flex:1"></i></div>` : '';
   const detail = open ? `<div class="esm-table-wrap"><table class="esm-table"><tr><th>Market</th><th>Pick</th><th>Kalshi</th><th>Polymarket</th><th>Book</th><th>Fair</th><th>Ratings</th></tr>${
     m.markets.map(mk => mk.outcomes.map((oc, i) => `<tr>
       <td>${i === 0 ? esmMarketName(mk) : ''}</td><td>${escEs(oc.name)}</td>
@@ -3980,9 +4073,9 @@ function esmMatchCard(m) {
       <td class="${oc.quotes.polymarket?.edge ? 'good' : ''}">${oc.quotes.polymarket?.ask != null ? esmCents(oc.quotes.polymarket.cost) : '—'}</td>
       <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
   }</table></div>${esmH2hDetail(m)}${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps)${m.rating.scale != null && m.rating.scale !== 1 ? `, calibrated to the market (gap x${m.rating.scale.toFixed(2)})` : ''}. Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
-  return `<div class="esm-card ${m.edges.length ? 'edge' : ''}">
+  return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
-    <div class="esm-teams">${rows}</div>${meter}
+    <div class="esm-rows">${rows}</div>${meter}
     <div class="esm-sub">${esmH2hLine(m)}${move}${sharps}${vol ? `<span>$${Math.round(vol).toLocaleString()} traded</span>` : ''}${m.locked ? '<span><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> Edge on this match: Pro</span>' : ''}<button class="esm-more" onclick="toggleEsmOpen('${escEs(m.id)}')">${open ? 'Hide markets' : `All ${m.markets.length} market${m.markets.length > 1 ? 's' : ''}`}</button></div>
     ${detail}
   </div>`;
@@ -3991,9 +4084,9 @@ function esmEdgeCard(m, e) {
   const mk = m.markets.find(x => x.key === e.market);
   const link = m.links[e.venue];
   return `<div class="esm-card edge"><div class="esm-top"><span class="esm-game">${escEs(m.label)}</span><span>${escEs(m.teams.join(' vs '))}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
-    <div class="esm-bet" style="margin-top:8px"><span class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</span>
-    <span class="esm-px good"><small>${esmVenue(e.venue)}</small>${esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span>
-    <span class="ev">+${(e.ev * 100).toFixed(1)}%</span>${link ? `<a class="esm-btn" href="${escEs(link)}" target="_blank" rel="noopener">Open ${esmVenue(e.venue)}</a>` : ''}</div></div>`;
+    <div class="esm-tkt"><div><div class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</div>
+      <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
+    <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${link ? `<a class="esm-btn" href="${escEs(link)}" target="_blank" rel="noopener">Open ${esmVenue(e.venue)}</a>` : ''}</div></div></div>`;
 }
 function renderEsMatches() {
   const d = esmState.data;
@@ -4013,10 +4106,11 @@ function renderEsMatches() {
   const edges = list.flatMap(m => m.edges.map(e => ({ m, e }))).sort((a, b) => b.e.ev - a.e.ev);
   if (esmState.edgesOnly) list = list.filter(m => m.edges.length || m.locked);
   const c = d.counts || {};
-  sEl.innerHTML = `<b>${list.length}</b> matches · <b>${c.both ?? 0}</b> on both exchanges · <b>${edges.length}</b> edge${edges.length === 1 ? '' : 's'} · updated ${esmAgo(d.updated)}${d.region === 'us' ? ' · US mode: Kalshi edges only, Polymarket shown as a reference' : ''}`;
+  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Matches</span></div><div class="pb-stat"><b>${c.both ?? 0}</b><span>On both exchanges</span></div>
+    <div class="pb-stat ${edges.length ? 'good' : ''}"><b>${edges.length}</b><span>Edge${edges.length === 1 ? '' : 's'} now</span></div><div class="pb-stat"><b>${esmAgo(d.updated)}</b><span>Updated</span></div></div>${d.region === 'us' ? '<div class="esm-note">US mode: Kalshi edges only, Polymarket shown as a reference.</div>' : ''}`;
   if (!all.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No matches yet</div><div class="empty-sub">The board fills a minute or two after a restart.</div></div>`; return; }
   let html = '';
-  if (edges.length) html += `<div class="esm-h">Best prices right now</div>` + edges.slice(0, 8).map(({ m, e }) => esmEdgeCard(m, e)).join('');
+  if (edges.length) html += `<div class="esm-h good">Best prices right now</div>` + edges.slice(0, 8).map(({ m, e }) => esmEdgeCard(m, e)).join('');
   // upcoming by day first, matches in play last
   let day = null;
   for (const m of [...list.filter(x => !x.live), ...list.filter(x => x.live)]) {
@@ -5735,40 +5829,39 @@ function trTable(title, groups) {
   const rows = Object.entries(groups || {}).filter(([, g]) => g.picks > 0)
     .sort((a, b) => b[1].graded - a[1].graded);
   if (!rows.length) return '';
-  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:auto;margin-bottom:16px">
-    <div style="padding:10px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">${title}</div>
-    <table style="width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">
-      <thead><tr style="color:#64748b;font-size:10px;letter-spacing:1px">
-        <th style="text-align:left;padding:6px 14px">GROUP</th><th>PICKS</th><th>W-L-P</th><th>HIT</th><th>B/E</th><th>UNITS</th><th>ROI</th><th>BEAT CLOSE</th>
-      </tr></thead>
-      <tbody>${rows.map(([k, g]) => `<tr style="border-top:1px solid rgba(255,255,255,.04);text-align:center">
-        <td style="text-align:left;padding:7px 14px;color:#f1f5f9;font-weight:700">${escEs(k)}</td>
-        <td>${g.graded}<span style="color:#475569">/${g.picks}</span></td>
-        <td style="color:#cbd5e1">${g.wins}-${g.losses}-${g.pushes}</td>
-        <td style="color:${g.hitRate != null && g.breakeven != null ? trColor(g.hitRate - g.breakeven) : '#94a3b8'}">${trPct(g.hitRate)}</td>
-        <td style="color:#64748b">${trPct(g.breakeven)}</td>
-        <td style="color:${trColor(g.units)};font-weight:700">${trSigned(g.units)}u</td>
-        <td style="color:${trColor(g.roi)}">${g.roi == null ? '—' : trSigned(g.roi * 100, 1) + '%'}</td>
-        <td style="color:${g.beatClose != null ? trColor(g.beatClose - 0.5) : '#94a3b8'}">${trPct(g.beatClose, 0)}<span style="color:#475569;font-size:10px"> n=${g.clvSample}</span></td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
+  const pct = v => Math.max(0, Math.min(100, (v || 0) * 100));
+  return `<div class="tr-card"><div class="tr-head">${title}</div>
+    <div class="tr-cols"><span>Group</span><span>Graded</span><span>W-L-P</span><span>Hit rate vs break-even</span><span>Units</span><span>ROI</span><span>Beat close</span></div>
+    ${rows.map(([k, g]) => {
+      const hitCol = g.hitRate != null && g.breakeven != null ? trColor(g.hitRate - g.breakeven) : '#94a3b8';
+      const roi = g.roi == null ? '—' : trSigned(g.roi * 100, 1) + '%';
+      const bc = `<span style="color:${g.beatClose != null ? trColor(g.beatClose - 0.5) : '#94a3b8'}">${trPct(g.beatClose, 0)}</span><span class="dim" style="font-size:10px"> n=${g.clvSample}</span>`;
+      return `<div class="tr-row">
+        <span class="g">${escEs(k)}</span>
+        <span class="lg">${g.graded}<span class="dim">/${g.picks}</span></span>
+        <span class="lg">${g.wins}-${g.losses}-${g.pushes}</span>
+        <span class="tr-hit"><span class="tr-bar">${g.hitRate != null ? `<i style="width:${pct(g.hitRate)}%;background:${hitCol}"></i>` : ''}${g.breakeven != null ? `<em style="left:${pct(g.breakeven)}%" title="Break-even ${trPct(g.breakeven)}"></em>` : ''}</span><span style="color:${hitCol};min-width:46px;text-align:right">${trPct(g.hitRate)}</span><span class="dim" style="min-width:42px">${trPct(g.breakeven)}</span></span>
+        <span class="tr-u ${g.units > 0 ? 'pos' : g.units < 0 ? 'neg' : ''}">${trSigned(g.units)}u</span>
+        <span class="lg" style="color:${trColor(g.roi)}">${roi}</span>
+        <span class="lg">${bc}</span>
+        <span class="tr-sm">${g.wins}-${g.losses}-${g.pushes} · ${g.graded}/${g.picks} graded · ROI <span style="color:${trColor(g.roi)}">${roi}</span> · beat close ${bc}</span>
+      </div>`;
+    }).join('')}</div>`;
 }
 
 function trReviewHTML(picks) {
   if (!picks.length) return '';
-  return `<div style="background:var(--card);border:1px solid rgba(245,158,11,.35);border-radius:12px;overflow:auto;margin-bottom:16px">
-    <div style="padding:10px 14px;font-size:10px;letter-spacing:1.5px;color:#f59e0b;font-weight:700;border-bottom:1px solid var(--border)">NEEDS A RESULT · ${picks.length}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      ${picks.map(p => `<tr style="border-top:1px solid rgba(255,255,255,.04)">
-        <td style="padding:8px 14px"><div style="color:#f1f5f9;font-weight:700">${escEs(p.player)} <span style="font-size:10px;color:#a78bfa">${escEs(p.sport)}</span></div>
-          <div style="color:#94a3b8;font-size:11px">${escEs(p.displayMarket)} · ${escEs(p.signalSide)} ${escEs(p.signalLine)} · ${new Date(p.startTime).toLocaleString()}</div>
-          ${p.note ? `<div style="color:#64748b;font-size:10px">${escEs(p.note)}${p.result != null ? ` (partial: ${escEs(p.result)})` : ''}</div>` : ''}</td>
-        <td style="padding:8px 14px;white-space:nowrap;text-align:right">
+  return `<div class="tr-card warn"><div class="tr-head">Needs a result · ${picks.length}</div>
+      ${picks.map(p => `<div class="tr-rv">
+        <div><b>${escEs(p.player)}</b> <span class="pb-sport es">${escEs(p.sport)}</span>
+          <div class="m">${escEs(p.displayMarket)} · ${escEs(p.signalSide)} ${escEs(p.signalLine)} · ${new Date(p.startTime).toLocaleString()}</div>
+          ${p.note ? `<div class="n">${escEs(p.note)}${p.result != null ? ` (partial: ${escEs(p.result)})` : ''}</div>` : ''}</div>
+        <div class="act">
           <input class="key-input" id="tr_${btoa(unescape(encodeURIComponent(p.id))).replace(/=/g, '')}" placeholder="${escEs(p.stat)}" style="width:70px" inputmode="decimal">
           <button class="sport-chip" onclick="trGrade('${encodeURIComponent(p.id)}')">SAVE</button>
           <button class="sport-chip" onclick="trGrade('${encodeURIComponent(p.id)}', true)" title="Pick was voided by the book">VOID</button>
-        </td></tr>`).join('')}
-    </table></div>`;
+        </div></div>`).join('')}
+    </div>`;
 }
 
 async function renderTrackRecord(el) {
@@ -5784,25 +5877,25 @@ async function renderTrackRecord(el) {
     ]);
     if (sum.error) throw new Error(sum.error);
     const o = sum.overall;
-    const cell = (num, label, color = '#f1f5f9') => `<div class="stat-cell"><div class="stat-num" style="color:${color}">${num}</div><div class="stat-label">${label}</div></div>`;
-    const chip = (v, label) => `<button class="sport-chip ${trState.sport === v ? 'active' : ''}" onclick="trState.sport='${v}';renderEsports()" style="font-size:10px;padding:3px 10px">${label}</button>`;
-    const evChip = (v, label) => `<button class="sport-chip ${String(trState.minEV) === String(v) ? 'active' : ''}" onclick="trState.minEV='${v}';renderEsports()" style="font-size:10px;padding:3px 10px">${label}</button>`;
+    const cell = (num, label, tone = '') => `<div class="pb-stat ${tone}"><b>${num}</b><span>${label}</span></div>`;
+    const tone = v => (v == null ? '' : v > 0 ? 'good' : v < 0 ? 'bad' : '');
+    const chip = (v, label) => `<button class="sport-chip ${trState.sport === v ? 'active' : ''}" onclick="trState.sport='${v}';renderEsports()">${label}</button>`;
+    const evChip = (v, label) => `<button class="sport-chip ${String(trState.minEV) === String(v) ? 'active' : ''}" onclick="trState.minEV='${v}';renderEsports()">${label}</button>`;
     el.innerHTML = `
-      <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <div class="tr-chips">
         ${chip('', 'ALL')}${chip('CS', 'CS2')}${chip('VAL', 'VALORANT')}${chip('LOL', 'LOL')}${chip('DOTA', 'DOTA')}${chip('COD', 'COD')}
-        <span style="width:10px"></span>
-        <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace">MIN EV</span>
+        <span class="lbl">MIN EV</span>
         ${evChip('', 'ANY')}${evChip(3, '3%+')}${evChip(6, '6%+')}${evChip(10, '10%+')}
       </div>
-      <div class="stats-bar" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
+      <div class="pb-sum tr-sum">
         ${cell(`${o.wins}-${o.losses}-${o.pushes}`, 'Record')}
-        ${cell(trPct(o.hitRate), `Hit rate (B/E ${trPct(o.breakeven)})`, o.hitRate != null && o.breakeven != null ? trColor(o.hitRate - o.breakeven) : '#94a3b8')}
-        ${cell(trSigned(o.units) + 'u', 'Units (1u / leg)', trColor(o.units))}
-        ${cell(o.roi == null ? '—' : trSigned(o.roi * 100, 1) + '%', 'ROI per leg', trColor(o.roi))}
-        ${cell(trPct(o.beatClose, 0), `Beat close (n=${o.clvSample})`, o.beatClose != null ? trColor(o.beatClose - 0.5) : '#94a3b8')}
-        ${cell(sum.counts.locked, 'Awaiting result', '#94a3b8')}
+        ${cell(trPct(o.hitRate), `Hit rate · B/E ${trPct(o.breakeven)}`, o.hitRate != null && o.breakeven != null ? tone(o.hitRate - o.breakeven) : '')}
+        ${cell(trSigned(o.units) + 'u', 'Units (1u / leg)', tone(o.units))}
+        ${cell(o.roi == null ? '—' : trSigned(o.roi * 100, 1) + '%', 'ROI per leg', tone(o.roi))}
+        ${cell(trPct(o.beatClose, 0), `Beat close · n=${o.clvSample}`, o.beatClose != null ? tone(o.beatClose - 0.5) : '')}
+        ${cell(sum.counts.locked, 'Awaiting result')}
       </div>
-      <div style="font-size:11px;color:#64748b;margin:-4px 0 16px;line-height:1.6">
+      <div class="tr-note">
         Each pick is logged the first time the board shows it +EV and graded at that line and side. ROI treats every pick as a single 1-unit leg at the book's standard payout (PrizePicks ≈ 1.78x).
         Beat close = the line moved your way before kickoff. Storage: ${escEs(sum.store)}.
       </div>
@@ -6064,40 +6157,25 @@ function esEntryHTML(picks) {
     const key = `${p.player}|${p.market}`;
     const draft = esportsState.entryDraft[key];
     const carried = esportsState.entryCarried.has(key);
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-      <td style="padding:7px 10px">
-        <div style="font-size:13px;font-weight:700;color:#f1f5f9">${escEs(p.player)}</div>
-        <div style="font-size:10px;color:#94a3b8;margin-top:1px">${escEs((p.market || '').slice(0, 36))} <span style="color:#a78bfa;font-weight:700">${escEs(p.sport)}</span></div>
-      </td>
-      <td style="padding:7px 8px;text-align:center;font-family:'JetBrains Mono',monospace;color:#fff;font-weight:700;font-size:14px">${escEs(p.ppLine)}</td>
-      <td style="padding:7px 8px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#a78bfa">${p.modelPred != null ? p.modelPred : '—'}</td>
-      <td style="padding:7px 10px 7px 4px">
-        <input class="key-input es-entry" data-i="${i}" data-key="${escEs(key)}" type="number" step="0.1" inputmode="decimal"
+    return `<div class="me-row ${draft != null ? 'done' : ''}">
+      <div class="me-who"><b>${escEs(p.player)}</b><span>${escEs((p.market || '').slice(0, 36))} <span class="pb-sport es">${escEs(p.sport)}</span></span></div>
+      <div class="me-tile"><small>LINE</small><b>${escEs(p.ppLine)}</b></div>
+      <div class="me-tile cur"><small>CURRENT</small><b>${p.modelPred != null ? p.modelPred : '—'}</b></div>
+      <input class="key-input es-entry" data-i="${i}" data-key="${escEs(key)}" type="number" step="0.1" inputmode="decimal" aria-label="Your model for ${escEs(p.player)}"
           placeholder="model" value="${draft != null ? draft : ''}"
-          style="width:84px;padding:6px 8px;font-size:13px;font-family:'JetBrains Mono',monospace;${carried ? 'background:rgba(139,92,246,.10);border-color:rgba(139,92,246,.4)' : ''}"
+          style="${carried ? 'background:rgba(139,92,246,.10);border-color:rgba(139,92,246,.4)' : ''}"
           oninput="esEntryInput(this)"
           onkeydown="if(event.key==='Enter'){event.preventDefault();esEntryNext(${i})}" />
-      </td>
-    </tr>`;
+    </div>`;
   }).join('');
   const pending = Object.keys(esportsState.entryDraft).length;
   return `
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+  <div class="me-head">
     <button class="sport-chip ${esportsState.entryNeedsOnly ? 'active' : ''}" onclick="esportsState.entryNeedsOnly=!esportsState.entryNeedsOnly;renderEsports()">NEEDS INPUT ONLY</button>
-    <span style="font-size:10px;color:#64748b;font-family:'JetBrains Mono',monospace">${rows.length} ROWS · ENTER = NEXT ROW · Kills entry auto-fills that player's HS (purple = carried, edit freely)</span>
+    <span class="me-help">${rows.length} rows · Enter jumps to the next row · a Kills entry fills that player's Headshots (purple = carried, edit freely)</span>
     <button class="sport-chip" id="esSaveAllBtn" style="margin-left:auto;background:rgba(16,185,129,.12);border-color:#10b981;color:#34d399;font-weight:800" onclick="esSaveAllModels()">SAVE ALL${pending ? ` (${pending})` : ''}</button>
   </div>
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px">
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="background:rgba(0,0,0,.4);border-bottom:1px solid var(--border)">
-        <th style="padding:8px 10px;text-align:left;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">PLAYER · PROP</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">LINE</th>
-        <th style="padding:8px;text-align:center;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">CURRENT</th>
-        <th style="padding:8px;text-align:left;font-size:10px;color:#94a3b8;letter-spacing:1.5px;font-weight:700">YOUR MODEL</th>
-      </tr></thead>
-      <tbody>${trs}</tbody>
-    </table>
-  </div>`;
+  <div class="me-list">${trs}</div>`;
 }
 
 function esEntryInput(el) {
@@ -6105,6 +6183,7 @@ function esEntryInput(el) {
   const v = parseFloat(el.value);
   if (isFinite(v) && v > 0) { esportsState.entryDraft[key] = v; esportsState.entryCarried.delete(key); }
   else { delete esportsState.entryDraft[key]; esportsState.entryCarried.delete(key); }
+  el.closest('.me-row')?.classList.toggle('done', esportsState.entryDraft[key] != null);
 
   // Kills entry → auto-carry a proportional Headshots model for the same player/map-range
   const cut = key.indexOf('|');
