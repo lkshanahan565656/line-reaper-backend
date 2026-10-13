@@ -2311,6 +2311,10 @@ const XARB_PMUS_BOOKS = Number.isFinite(parseInt(process.env.XARB_PMUS_BOOKS_PER
 const xarbState = { arbs: [], near: [], bids: [], middles: [], errors: [], counts: null, updated: null, durationMs: null, running: false, primed: { kalshi: false, polymarket: false, polymarketus: false }, kalshiTitles: new Map(),
   venues: null };   // the last scan's rows, indexed for routing signals (xarb.venueIndex)
 const xarbSeen = new Map();          // arb id → last scan it showed up in (ms)
+// middles worth a phone alert (EV %), and how long before the same one alerts again
+const MIDDLE_ALERT_MIN = Number.isFinite(parseFloat(process.env.MIDDLE_ALERT_MIN)) ? parseFloat(process.env.MIDDLE_ALERT_MIN) : 4;
+const MIDDLE_REALERT_MS = 6 * 3600e3;
+const middleSeen = new Map();
 // every Kalshi GAME/MATCH series read on its own, a slice a scan, so games
 // the capped open-events list misses can still be tailed (XARB_GAME_SERIES_PER_SCAN, default 40; 0 = off)
 const KALSHI_GAME_SWEEP_PER_SCAN = Number.isFinite(parseInt(process.env.XARB_GAME_SERIES_PER_SCAN)) ? parseInt(process.env.XARB_GAME_SERIES_PER_SCAN) : 40;
@@ -2499,6 +2503,11 @@ function describeExit(s, who) {
   return `Exit: ${who} sold ${share}${s.outcome || '?'} on "${s.market}" at ${cents(s.theirPrice)} (${dollars(s.theirNotional)})${paid}${ours}${url ? ` <${url}>` : ''}`;
 }
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US' };
+function describeMiddle(m) {
+  const lo = Math.floor(m.low) + 1, hi = Math.ceil(m.high) - 1;
+  const legs = (m.legs || []).map(l => `${VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${cents(l.price)}`).join(' + ');
+  return `Middle +${m.evPct}% EV: ${m.title} · ${legs} · both pay at ${lo === hi ? lo : `${lo} to ${hi}`} (about ${Math.round(m.hitProb * 100)}%), a miss costs ${Math.abs(m.missPct)}%`;
+}
 function describeArb(a) {
   const legs = (a.legs || []).map(l => `${l.venueTitle || VENUE_NAMES[l.venue] || l.venue} ${l.pick} ${l.price != null ? cents(l.price) : l.american > 0 ? `+${l.american}` : l.american}`).join(' + ');
   return `Arb +${a.profitPct}%: ${a.title} · ${legs}${a.warnings?.length ? ` · ${a.warnings.join('; ')}` : ''}`;
@@ -2869,6 +2878,12 @@ async function scanXarbs() {
     if (polymarket.length) xarbState.primed.polymarket = true;
     if (us.rows) xarbState.primed.polymarketus = true;
     const news = fresh.filter(a => (a.legs || []).every(l => !(l.venue in before) || before[l.venue]));
+    // the best middles go to the webhook too, once per 6 hours each, after both venues are primed
+    const mFresh = middles.filter(m => m.evPct >= MIDDLE_ALERT_MIN && (!middleSeen.has(m.id) || now - middleSeen.get(m.id) > MIDDLE_REALERT_MS));
+    for (const m of mFresh) middleSeen.set(m.id, now);
+    for (const [id, at] of middleSeen) if (now - at > 2 * 86400e3) middleSeen.delete(id);
+    const mNews = mFresh.filter(m => (m.legs || []).every(l => !(l.venue in before) || before[l.venue]));
+    if (mNews.length) postAlert(mNews.filter(arbOk(webhookLicence())).map(describeMiddle), 'Exchange middles');
     if (news.length) {
       broadcast('xarb', news);
       // the webhook only gets legs the public may see
@@ -3243,7 +3258,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.68.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.69.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4187,7 +4202,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.68.0',
+  version: '3.69.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4326,10 +4341,10 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.68.0 on port ${PORT}`);
+    console.log(`Line Reaper v3.69.0 on port ${PORT}`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.68.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v3.69.0 is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog()]);
@@ -4375,7 +4390,7 @@ module.exports = {
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile, bo3HeadshotPct,
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
-  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb,
+  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
 };
