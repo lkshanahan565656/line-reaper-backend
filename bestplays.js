@@ -37,7 +37,8 @@ const DEFAULTS = {
   provenMaxUnits: 2,
   entryMinEv: 0.03,           // an Underdog entry: at least 3% EV on the whole entry
   entryMaxLegs: 3,            // more legs, more variance, and the greedy pick gets worse
-  bidShare: 0.5,               // a limit bid is half a take: it fills when the price is moving against it
+  bidShare: 0.5,              // a limit bid is half a take: it fills when the price is moving against it
+  arbMaxLegs: 4,              // a 16-bet set isn't a play anyone places
   kellyFraction: 0.25,
   bankrollUnits: 100,         // 1u = 1% of bankroll
   limit: 300,
@@ -302,10 +303,10 @@ function lineRows(lines, verdict, o, now) {
 const VENUE_NAMES = { kalshi: 'Kalshi', polymarket: 'Polymarket', novig: 'Novig', prophetx: 'ProphetX' };
 const venueName = l => l.venueTitle || VENUE_NAMES[l.venue] || l.venue;
 
-function arbRows(arbs, esportsArbs) {
+function arbRows(arbs, esportsArbs, o) {
   const rows = [];
   for (const a of arbs) {
-    if (a.locked || !(a.profitPct > 0) || !(a.legs || []).length) continue;
+    if (a.locked || !(a.profitPct > 0) || !(a.legs || []).length || a.legs.length > o.arbMaxLegs) continue;
     const pcts = a.stakes?.legs?.map(l => l.pct);
     rows.push({
       id: `arb:${a.id}`, kind: 'arb', label: 'Exchange arb', title: a.title, category: a.category,
@@ -384,7 +385,7 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
   }
   const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now)];
   const propIds = new Set(parts[2].rows.map(r => r.id));
-  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs)];
+  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs, o)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};
