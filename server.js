@@ -3813,7 +3813,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.110.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.110.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4143,7 +4143,7 @@ app.get('/api/gas-locks', async (req, res) => {
     const recent = (await gasTracker.list()).filter(r => r.status === 'graded').sort((a, b) => (b.gradedAt || '').localeCompare(a.gradedAt || '')).slice(0, 50);
     const plays = lic.kalshi ? gasState.plays : [];
     const base = { count: plays.length, updated: gasState.updated, pro, record, backtest: gaslocks.BACKTEST,
-      rule: { states: gaslocks.DEFAULTS.states, minPrice: gaslocks.DEFAULTS.minPrice, maxPrice: gaslocks.DEFAULTS.maxPrice, fromHours: gaslocks.DEFAULTS.fromHours, toHours: gaslocks.DEFAULTS.toHours, minDepthUsd: gaslocks.DEFAULTS.minDepthUsd },
+      rule: { states: gaslocks.DEFAULTS.states, minPrice: gaslocks.DEFAULTS.minPrice, maxPrice: gaslocks.DEFAULTS.maxPrice, maxSpread: gaslocks.DEFAULTS.maxSpread, fromHours: gaslocks.DEFAULTS.fromHours, toHours: gaslocks.DEFAULTS.toHours, minDepthUsd: gaslocks.DEFAULTS.minDepthUsd },
       off: process.env.GAS_LOCKS === 'off', ...withheldBody(withheldOf(lic, ['kalshi'])) };
     if (!pro) return res.json({ ...base, recent });
     res.json({ ...base, plays, recent, counts: gasState.counts, errors: gasState.errors });
@@ -5006,7 +5006,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.110.0',
+  version: '3.110.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

@@ -27,6 +27,10 @@ test('candidate: the favourite asked 90-98c, 12 to 19 hours before expiry', () =
   // 99c and 89c are out, and so is a market outside the window or about to close
   assert.equal(G.candidate(mkt({ yes_ask_dollars: '0.9900' }), { now: NOW }), null);
   assert.equal(G.candidate(mkt({ yes_ask_dollars: '0.8900' }), { now: NOW }), null);
+  // a wide book: 96c asked over a 30c bid (the backtest only bought 5c spreads or tighter)
+  assert.equal(G.candidate(mkt({ yes_bid_dollars: '0.3000' }), { now: NOW }), null, 'wide spread');
+  assert.equal(G.candidate(mkt({ yes_bid_dollars: '0.9100' }), { now: NOW }).spread, 0.05, '5c is fine');
+  assert.equal(G.candidate(mkt({ yes_bid_dollars: '0' }), { now: NOW }), null, 'no bid');
   assert.equal(G.candidate(mkt(), { now: Date.parse('2026-10-14T12:00:00Z') }), null, '26 hours out');
   assert.equal(G.candidate(mkt({ close_time: '2026-10-14T21:05:00Z' }), { now: NOW }), null, 'closing in 5 minutes');
 });

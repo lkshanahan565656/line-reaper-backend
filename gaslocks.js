@@ -24,6 +24,7 @@ const HOUR = 3600e3;
 const DEFAULTS = {
   states: ['CA', 'MA', 'MD', 'WA', 'MI', 'VA', 'TX', 'FL', 'MN', 'OH', 'TN', 'OR', 'NY', 'NJ', 'SC'],
   minPrice: 0.90, maxPrice: 0.98,          // the favourite's ask (99¢ earns ~0.9% and is all fee rounding on small orders)
+  maxSpread: 0.05,                         // yes ask − yes bid; the backtest only ever bought tight books
   fromHours: 12, toHours: 19,              // hours before Kalshi's expected expiration (14:00 UTC)
   minDepthUsd: 100,                        // dollars resting at or under the ask
   orderContracts: 100,                     // fee priced on an order this size (Kalshi rounds per order)
@@ -45,7 +46,9 @@ function candidate(m, { now = Date.now(), ...o } = {}) {
   if (!Number.isFinite(exp) || !Number.isFinite(close) || close <= now + 10 * 60e3) return null;
   const hrs = (exp - now) / HOUR;
   if (hrs < opts.fromHours || hrs > opts.toHours) return null;
-  const ya = num(m.yes_ask_dollars), na = num(m.no_ask_dollars);
+  const ya = num(m.yes_ask_dollars), na = num(m.no_ask_dollars), yb = num(m.yes_bid_dollars);
+  // a 95¢ ask over a 30¢ bid isn't a 95% favourite: those lost ~13% a bet in the backtest
+  if (!(ya > 0 && ya < 1 && yb > 0 && yb < 1) || ya - yb > opts.maxSpread + 1e-9) return null;
   const inRange = p => p != null && p >= opts.minPrice - 1e-9 && p <= opts.maxPrice + 1e-9;
   const side = inRange(ya) ? 'yes' : inRange(na) ? 'no' : null;
   if (!side) return null;
@@ -56,7 +59,7 @@ function candidate(m, { now = Date.now(), ...o } = {}) {
   return {
     id: `${m.ticker}:${side}`, ticker: m.ticker, event: m.event_ticker || m.ticker.split('-').slice(0, 2).join('-'), state, strike, day, side,
     pick: `${state} gas ${side === 'yes' ? 'above' : 'at or below'} $${strike?.toFixed(3)}`,
-    title: m.title || null, price, cost: costOf(price, opts.orderContracts), hoursLeft: Math.round(hrs * 10) / 10,
+    title: m.title || null, price, spread: r4(ya - yb), cost: costOf(price, opts.orderContracts), hoursLeft: Math.round(hrs * 10) / 10,
     expectedExpiration: m.expected_expiration_time, closeTime: m.close_time,
     url: `https://kalshi.com/markets/${String(m.event_ticker || '').toLowerCase()}`,
   };
