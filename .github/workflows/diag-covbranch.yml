@@ -1,0 +1,26 @@
+name: diag-covbranch
+on:
+  push:
+    branches: [diag-covbranch]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: timeout 2400 node diag/cb.js || true
+      - run: |
+          gzip -9 out/snap/*.json out/*.log || true
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-covbranch-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-covbranch-out
