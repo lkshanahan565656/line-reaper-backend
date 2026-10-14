@@ -1,0 +1,291 @@
+=== SERIES + RULES ===
+
+## KXCS2GAME fee_type=quadratic mult=1 settlement_sources=[{"name":"B03","url":"https://bo3.gg/matches/finished"},{"name":"HLTV","url":"https://www.hltv.org/results"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 67 markets per event {"2":67}
+sample KXCS2GAME-26OCT140700BAKSBW | BakS eSports vs. Bushido Wildcats | mutually_exclusive true
+RULES1: If BakS eSports wins the NODWIN Clutch Series 2026: BakS eSports vs. Bushido Wildcats CS2 match originally scheduled for Oct 14, 2026 at 7:00 AM EDT, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the NODWIN Clutch Series 2026: BakS eSports vs. Bushido Wildcats CS2 match originally scheduled for Oct 14, 2026 at 7:00 AM EDT
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-13T04:30:00Z close 2026-10-16T11:00:00Z exp 2026-10-14T15:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXLOLGAME fee_type=quadratic mult=1 settlement_sources=[{"name":"Sofascore","url":"https://www.sofascore.com/esports/lol"},{"name":"BO3","url":"https://bo3.gg/lol/matches/finished"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 4 markets per event {"2":4}
+sample KXLOLGAME-26OCT131200SLYANB | Solary vs. Anubis Gaming | mutually_exclusive true
+RULES1: If Solary wins the EMEA Masters 2026: Solary vs. Anubis Gaming League of Legends match originally scheduled for Oct 13, 2026 at 12:00 PM EDT, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the EMEA Masters 2026: Solary vs. Anubis Gaming League of Legends match originally scheduled for Oct 13, 2026 at 12:00 PM EDT
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-10T20:15:00Z close 2026-10-15T16:00:00Z exp 2026-10-13T20:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXVALORANTGAME fee_type=quadratic mult=1 settlement_sources=[{"name":"VALORANT Esports ","url":"https://valorantesports.com/en-SG/tournament/113482053125573837/stage/113482257443381258"},{"name":"Gamers World","url":"https://egamersworld.com/"},{"name":"BO3","url":"https://bo3.gg/valorant/matches/finished"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 5 markets per event {"2":5}
+sample KXVALORANTGAME-26OCT141400AEBFLYR | Akave Esports Black vs. FlyQuest RED | mutually_exclusive true
+RULES1: If Akave Esports Black wins the VCT Game Changers Americas Last Chance Qualifier 2026: Akave Esports Black vs. FlyQuest RED Valorant match originally scheduled for Oct 14, 2026 at 2:00 PM EDT, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the VCT Game Changers Americas Last Chance Qualifier 2026: Akave Esports Black vs. FlyQuest RED Valorant match originally scheduled for Oct 14, 2026 at 2:00 PM EDT
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-11T00:05:00Z close 2026-10-16T18:00:00Z exp 2026-10-14T22:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXDOTA2GAME fee_type=quadratic mult=1 settlement_sources=[{"name":"BO3","url":"https://bo3.gg/dota2/matches/finished"},{"name":"Dota 2 ","url":"https://www.dota2.com/home"},{"name":"DLTV","url":"https://dltv.org/results"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 30 markets per event {"2":30}
+sample KXDOTA2GAME-26OCT140800RESYB | Team Resilience vs. Yakult's Brothers | mutually_exclusive true
+RULES1: If Team Resilience wins the DreamLeague China Closed Qualifier 2026: Team Resilience vs. Yakult's Brothers Dota 2 match originally scheduled for Oct 14, 2026 at 8:00 AM EDT, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the DreamLeague China Closed Qualifier 2026: Team Resilience vs. Yakult's Brothers Dota 2 match originally scheduled for Oct 14, 2026 at 8:00 AM EDT
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-13T17:35:00Z close 2026-10-16T12:00:00Z exp 2026-10-14T16:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXCODGAME fee_type=quadratic mult=1 settlement_sources=[{"name":"Call of Duty League","url":"https://callofdutyleague.com/en-us/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ACHIEVEMENTS.pdf
+open events 0 markets per event {}
+
+## KXR6GAME fee_type=quadratic mult=1 settlement_sources=[{"name":"Ubisoft","url":"https://www.ubisoft.com/en-us/esports/rainbow-six/siege/calendar"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 6 markets per event {"2":6}
+sample KXR6GAME-26OCT151400M80DZ | M80 vs. DarkZero Esports | mutually_exclusive true
+RULES1: If M80 wins the North America League Stage 2 2026: M80 vs. DarkZero Esports R6 match originally scheduled for Oct 15, 2026 at 2:00 PM EDT, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the North America League Stage 2 2026: M80 vs. DarkZero Esports R6 match originally scheduled for Oct 15, 2026 at 2:00 PM EDT
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-12T00:05:00Z close 2026-10-17T18:00:00Z exp 2026-10-15T22:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXOWGAME fee_type=quadratic mult=1 settlement_sources=[{"name":"Overwatch","url":"https://esports.overwatch.com/en-us/schedule"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 8 markets per event {"2":8}
+sample KXOWGAME-26OCT160400SEIFAL | OCS Korea Stage 3 2026: SEIJI ESPORTS vs. Falcons | mutually_exclusive true
+RULES1: If SEIJI ESPORTS wins the OCS Korea Stage 3 2026: SEIJI ESPORTS vs. Falcons Overwatch match originally scheduled for Oct 16, 2026, then the market resolves to Yes.
+RULES2: The following market refers to the full match in the OCS Korea Stage 3 2026: SEIJI ESPORTS vs. Falcons Overwatch match originally scheduled for Oct 16, 2026
+If the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant match is forfeited before any play occurs, the market will resolve to the fair market price.
+If the relevant match begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+times open 2026-10-13T08:15:00Z close 2026-10-18T08:00:00Z exp 2026-10-16T12:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXCS2MAP fee_type=quadratic mult=1 settlement_sources=[{"name":"B03","url":"https://bo3.gg/matches/finished"},{"name":"HLTV","url":"https://www.hltv.org/results"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 95 markets per event {"2":95}
+sample KXCS2MAP-26OCT140700NIPFAL-2 | NIP vs. Team Falcons: Map 2 | mutually_exclusive true
+RULES1: If NIP wins map 2 in the Thunderpick World Championship 2026: NIP vs. Team Falcons CS2 match originally scheduled for Oct 14, 2026 at 7:00 AM EDT, then the market resolves to Yes.
+RULES2: The following market refers to map 2 in the Thunderpick World Championship 2026: NIP vs. Team Falcons CS2 match originally scheduled for Oct 14, 2026 at 7:00 AM EDT
+If the relevant match or map is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant map is cancelled before play begins, the market will resolve to the fair market price.
+If a match is forfeited before any play occurs, the market will resolve to the fair market price.
+If a map is forfeited before any play occurs in the map, the market will resolve to the fair market price.
+If a map begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-12T00:25:00Z close 2026-10-16T11:00:00Z exp 2026-10-14T14:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXVALORANTMAP fee_type=quadratic mult=1 settlement_sources=[{"name":"Valorant","url":"https://valorantesports.com/en-US"},{"name":"Gamers World","url":"https://egamersworld.com/"},{"name":"BO3","url":"https://bo3.gg/valorant/matches/finished"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 10 markets per event {"2":10}
+sample KXVALORANTMAP-26OCT141400AEBFLYR-1 | Akave Esports Black vs. FlyQuest RED: Map 1 | mutually_exclusive true
+RULES1: If Akave Esports Black wins map 1 in the VCT Game Changers Americas Last Chance Qualifier 2026: Akave Esports Black vs. FlyQuest RED Valorant match originally scheduled for Oct 14, 2026 at 2:00 PM EDT, then the market resolves to Yes.
+RULES2: The following market refers to map 1 in the VCT Game Changers Americas Last Chance Qualifier 2026: Akave Esports Black vs. FlyQuest RED Valorant match originally scheduled for Oct 14, 2026 at 2:00 PM EDT
+If the relevant match or map is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant map is cancelled before play begins, the market will resolve to the fair market price.
+If a match is forfeited before any play occurs, the market will resolve to the fair market price.
+If a map is forfeited before any play occurs in the map, the market will resolve to the fair market price.
+If a map begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-11T00:25:00Z close 2026-10-16T18:00:00Z exp 2026-10-14T21:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXLOLMAP fee_type=quadratic mult=1 settlement_sources=[{"name":"Sofascore","url":"https://www.sofascore.com/esports/lol"},{"name":"BO3","url":"https://bo3.gg/lol/matches/finished"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 12 markets per event {"2":12}
+sample KXLOLMAP-26OCT131200SLYANB-1 | Solary vs. Anubis Gaming: Map 1 | mutually_exclusive true
+RULES1: If Solary wins map 1 in the EMEA Masters 2026: Solary vs. Anubis Gaming League of Legends match originally scheduled for Oct 13, 2026 at 12:00 PM EDT, then the market resolves to Yes.
+RULES2: The following market refers to map 1 in the EMEA Masters 2026: Solary vs. Anubis Gaming League of Legends match originally scheduled for Oct 13, 2026 at 12:00 PM EDT
+If the relevant match or map is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant map is cancelled before play begins, the market will resolve to the fair market price.
+If a match is forfeited before any play occurs, the market will resolve to the fair market price.
+If a map is forfeited before any play occurs in the map, the market will resolve to the fair market price.
+If a map begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-10T20:35:00Z close 2026-10-15T16:00:00Z exp 2026-10-13T19:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+## KXDOTA2MAP fee_type=quadratic mult=1 settlement_sources=[{"name":"BO3","url":"https://bo3.gg/dota2/matches/finished"},{"name":"DLTV","url":"https://dltv.org/results"},{"name":"Gamers World","url":"https://egamersworld.com/"}]
+contract_terms https://assets.kalshi.com/contract_terms/ESPORTSWIN.pdf
+open events 57 markets per event {"2":57}
+sample KXDOTA2MAP-26OCT140800RESYB-2 | Team Resilience vs. Yakult's Brothers: Map 2 | mutually_exclusive true
+RULES1: If Team Resilience wins map 2 in the DreamLeague China Closed Qualifier 2026: Team Resilience vs. Yakult's Brothers Dota 2 match originally scheduled for Oct 14, 2026 at 8:00 AM EDT, then the market resolves to Yes.
+RULES2: The following market refers to map 2 in the DreamLeague China Closed Qualifier 2026: Team Resilience vs. Yakult's Brothers Dota 2 match originally scheduled for Oct 14, 2026 at 8:00 AM EDT
+If the relevant match or map is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair market price.
+If the relevant match is cancelled before play begins, the market will resolve to the fair market price.
+If the relevant map is cancelled before play begins, the market will resolve to the fair market price.
+If a match is forfeited before any play occurs, the market will resolve to the fair market price.
+If a map is forfeited before any play occurs in the map, the market will resolve to the fair market price.
+If a map begins and is subsequently forfeited, the market will resolve according to the official result published by the governing body or tournament organizer.
+
+Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.
+times open 2026-10-13T17:55:00Z close 2026-10-16T12:00:00Z exp 2026-10-14T15:00:00Z can_close_early true early_close "This market will close and expire after a winner is declared."
+
+=== SETTLED MAP MARKETS: volume by minute around ticker start ===
+
+KXCS2MAP-26OCT140700MELEXR-2-MEL result=no close=2026-10-14T12:45:26Z settled vol=914.75 candles=57 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"30":0,"60":702.75,"90":211,"-180":0,"-150":0,"-90":0,"-30":0}
+ trade prints min:price 77:0.2000 78:0.3400 79:0.3300 80:0.1600 81:0.0900 82:0.1000 83:0.0900 86:0.0600 88:0.0200 89:0.0200 102:0.0100
+
+KXCS2MAP-26OCT140700BAKSBW-2-BAKS result=no close=2026-10-14T13:50:08Z settled vol=264.10 candles=112 ERR=
+ vol by 30-min bucket (min from start): {"90":1,"120":0,"150":263.1,"-180":0,"-150":0,"-120":0,"-90":0,"-60":0,"-30":0}
+ trade prints min:price 115:0.7400 162:0.0100
+
+KXCS2MAP-26OCT140630BREEACE-2-BRE result=yes close=2026-10-14T12:50:12Z settled vol=576.11 candles=105 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"60":0,"90":23.11,"120":553,"-180":0,"-150":0,"-120":0,"-90":0,"-30":0}
+ trade prints min:price 98:0.3700 101:0.2000 108:0.1600 119:0.3000 120:0.4100 127:0.6400 129:0.6900 130:0.7400 131:0.9400 133:0.9900
+
+KXCS2MAP-26OCT140600SASHIAST-2-SASHI result=no close=2026-10-14T12:10:12Z settled vol=3602.92 candles=93 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"30":0,"60":42.55,"90":2348.35,"120":1211.99,"-180":0,"-150":0,"-60":0,"-30":0}
+ trade prints min:price 77:0.1800 84:0.1600 87:0.1300 91:0.1400 96:0.1300 99:0.0700 100:0.0400 105:0.0500 108:0.0300 109:0.0500 110:0.0700 112:0.0800 115:0.2000 117:0.2100 118:0.2300 119:0.1700 120:0.2100 121:0.2600 122:0.2500 123:0.2600 124:0.0600 125:0.0200 126:0.0100
+
+KXCS2MAP-26OCT140600LPHNTR-2-LPH result=no close=2026-10-14T12:30:35Z settled vol=438.98 candles=79 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"90":0,"120":438.98,"150":0,"-180":0,"-150":0,"-120":0,"-90":0,"-60":0,"-30":0}
+ trade prints min:price 120:0.2800 121:0.2600 135:0.3700 147:0.0100
+
+KXCS2MAP-26OCT140600FNCHOTU-2-FNC result=no close=2026-10-14T11:45:02Z settled vol=17026.68 candles=129 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"30":178.57999999999998,"60":11793.880000000001,"90":5052.219999999999,"-180":0,"-120":0,"-90":0,"-60":0,"-30":0}
+ trade prints min:price 45:0.5100 47:0.4900 51:0.4800 56:0.4800 58:0.4900 59:0.4900 61:0.5900 62:0.5200 64:0.5100 66:0.5300 67:0.4900 68:0.3700 72:0.3600 73:0.2400 75:0.3200 76:0.3500 77:0.3600 78:0.3500 79:0.4600 80:0.4600 81:0.3800 83:0.4300 85:0.4000 86:0.3500 87:0.5200 88:0.6100 89:0.6000 90:0.6500 91:0.5700 92:0.3300 93:0.3500 95:0.5500 96:0.5400 97:0.2900 99:0.2000 100:0.1600 101:0.0200 102:0.0100 103:0.0100
+
+KXVALORANTMAP-26OCT121200NVUBBL-3-NVU result=no close=2026-10-12T17:10:31Z settled vol=925.99 candles=234 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"30":101.99,"60":824,"-180":0,"-150":0,"-120":0,"-90":0,"-60":0,"-30":0}
+ trade prints min:price 38:0.3800 41:0.7400 65:0.0100
+
+KXVALORANTMAP-26OCT121200NVUBBL-2-NVU result=no close=2026-10-12T16:20:15Z settled vol=1405.55 candles=185 ERR=
+ vol by 30-min bucket (min from start): {"0":934.19,"-180":0,"-150":0,"-120":0,"-90":0,"-60":0,"-30":471.36}
+ trade prints min:price -17:0.3700 -16:0.3600 -12:0.6400 12:0.1000 14:0.0700 15:0.0100
+
+KXVALORANTMAP-26OCT110800NRG100T-2-NRG result=no close=2026-10-11T10:50:16Z settled vol=39525.39 candles=82 ERR=
+ vol by 30-min bucket (min from start): {"-180":233.49,"-150":39.69,"-120":22697.38,"-90":16301.880000000001}
+ trade prints min:price -174:0.5200 -171:0.5200 -168:0.5200 -164:0.5200 -150:0.5200 -146:0.4800 -130:0.5100 -118:0.5100 -117:0.5100 -116:0.5100 -115:0.5000 -114:0.5000 -113:0.5000 -112:0.5000 -111:0.5000 -110:0.5000 -109:0.5000 -108:0.5000 -107:0.5000 -106:0.5000 -105:0.5800 -104:0.6200 -103:0.6500 -102:0.6400 -101:0.5100 -100:0.4300 -99:0.4400 -98:0.3900 -97:0.4300 -96:0.3900 -95:0.3800 -94:0.4400 -93:0.3800 -92:0.3400 -91:0.3200 -90:0.2200 -89:0.2400 -88:0.3200 -87:0.2800 -86:0.2300 -85:0.2200 -84:0.2200 -83:0.1900 -82:0.1900 -81:0.1900 -80:0.0500 -79:0.0600 -78:0.0800 -77:0.0400 -76:0.0100 -75:0.0300 -74:0.0600 -69:0.0100
+
+KXVALORANTMAP-26OCT110500G2T1-2-G2 result=no close=2026-10-11T13:09:59Z settled vol=78746.51 candles=130 ERR=
+ vol by 30-min bucket (min from start): {"0":0,"30":0,"60":0,"90":310,"120":80.94,"150":536.71,"180":29052.6,"210":29712.6,"240":19053.660000000003,"-150":0}
+ trade prints min:price 113:0.6000 140:0.6300 144:0.6400 158:0.6400 164:0.6400 171:0.6200 173:0.6400 178:0.6400 183:0.6000 188:0.6400 189:0.6500 190:0.6500 191:0.6500 192:0.6500 193:0.6500 194:0.6500 195:0.6400 196:0.6600 197:0.6600 198:0.6600 199:0.6600 200:0.6300 201:0.6800 202:0.7500 203:0.7900 204:0.8100 205:0.6800 206:0.6800 207:0.6000 208:0.5900 209:0.5300 210:0.4900 211:0.4600 212:0.4300 213:0.3900 214:0.3900 215:0.5100 216:0.4700 217:0.6000 218:0.6100 219:0.5800 220:0.5800 221:0.6800 222:0.7500 223:0.7600 225:0.6800 226:0.6800 227:0.6600 228:0.5400 229:0.6200 230:0.6900 231:0.7600 232:0.7300 233:0.5600 234:0.7300 235:0.7900 236:0.8100 237:0.7100 238:0.5600 239:0.4200
+
+KXVALORANTMAP-26OCT100800VITG2-2-VIT result=yes close=2026-10-10T13:54:59Z settled vol=45365.31 candles=142 ERR=
+ vol by 30-min bucket (min from start): {"0":331.35,"30":36.52,"60":20407.04,"90":24553.880000000005,"-180":0,"-120":0,"-60":0,"-30":36.52}
+ trade prints min:price -16:0.4700 -5:0.4800 5:0.5900 9:0.5400 14:0.5200 16:0.5500 35:0.5300 46:0.5000 65:0.5300 66:0.5200 67:0.5200 68:0.5300 69:0.5400 70:0.5300 71:0.5300 72:0.5200 73:0.5100 74:0.5100 75:0.4900 76:0.4900 77:0.4700 78:0.5000 79:0.3900 80:0.3800 81:0.3500 82:0.3700 83:0.4400 84:0.4400 85:0.5500 86:0.5900 87:0.5800 88:0.6800 89:0.7000 90:0.6400 91:0.7000 92:0.6900 93:0.7900 94:0.6400 95:0.6200 96:0.7400 97:0.7800 98:0.8300 99:0.8600 100:0.8300 101:0.7800 102:0.7900 103:0.7300 104:0.8500 105:0.8800 106:0.9100 107:0.9300 108:0.9800 109:0.9800 110:0.9900 111:0.9900 112:0.9900 113:0.9900 114:0.9900 115:0.9900 116:0.9900
+
+KXVALORANTMAP-26OCT100800LOUDNRG-2-LOUD result=no close=2026-10-10T10:55:02Z settled vol=116666.81 candles=101 ERR=
+ vol by 30-min bucket (min from start): {"-180":3252.16,"-150":16996.360000000004,"-120":39675.66999999999,"-90":56071.73}
+ trade prints min:price -174:0.5300 -173:0.5300 -172:0.5100 -171:0.5100 -166:0.5200 -165:0.5200 -163:0.5200 -157:0.5200 -154:0.5200 -151:0.5200 -150:0.5200 -149:0.5200 -148:0.5200 -147:0.5200 -146:0.5300 -143:0.5300 -139:0.5200 -138:0.5300 -137:0.5400 -136:0.5400 -135:0.5400 -130:0.5400 -128:0.5400 -127:0.5400 -126:0.5400 -125:0.5300 -124:0.5400 -123:0.5400 -122:0.5400 -121:0.5400 -120:0.5400 -119:0.5400 -118:0.5500 -117:0.5500 -116:0.5500 -115:0.5100 -114:0.4600 -113:0.4100 -112:0.4200 -111:0.4300 -110:0.3700 -109:0.3100 -108:0.3200 -107:0.2600 -106:0.2800 -105:0.2800 -104:0.3700 -103:0.2800 -102:0.2600 -101:0.2000 -100:0.3400 -99:0.4000 -98:0.4100 -97:0.4400 -96:0.4500 -95:0.5400 -94:0.6200 -93:0.6200 -92:0.7000 -91:0.5600
+
+=== bo3.gg: live / upcoming matches and map info ===
+
+## current matches 5 
+keys id,slug,round_id,team1_id,team2_id,winner_team_id,loser_team_id,tournament_id,team1_score,team2_score,status,bo_type,start_date,end_date,stage_id,maps_score,parsed_status,tier,tier_rank,position,points,rating,stars,team1_last_game_score,team2_last_game_score,live_updates,live_coverage,live_coverage_advantage,live_coverage_source,discipline_id,prev_match1_winner,prev_match2_winner,prev_match1_id,prev_match2_id,game_version,team1_new_participant,team2_new_participant,comments_count,bet_updates,comments 
+ {"id":131434,"slug":"ex-rustec-vs-mellren-14-10-2026","round_id":40733,"team1_id":24857,"team2_id":23102,"winner_team_id":24857,"loser_team_id":23102,"tournament_id":5625,"team1_score":2,"team2_score":1,"status":"current","bo_type":3,"start_date":"2026-10-14T11:00:00.000+00:00","end_date":"2026-10-14T13:50:50.000+00:00","stage_id":10948,"maps_score":[false,true,false],"parsed_status":"waiting","tier":"b","tier_rank":3,"position":null,"points":null,"rating":0.10408163265306122,"stars":0,"team1_last_game_score":null,"team2_last_game_score":null,"live_updates":null,"live_coverage":false,"live_coverage_advantage":false,"live_coverage_source":null,"discipline_id":1,"prev_match1_winner":false,"prev_match2_winner":false,"prev_match1_id":null,"prev_match2_id":null,"game_version":2,"team1_new_participant":false,"team2_new_participant":false,"comments_count":0,"bet_updates":null,"comments":[]}
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=131434 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":189103,"match_id":131434,"begin_at":"2026-10-14T13:05:40.000+00:00","state":null,"map_name":"de_anubis","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-06T16:02:00.199+00:00","updated_at":"2026-10-14T13:54:26.007+00:00","partially_state":null,"game_version":2},{"id":189104,"match_id":131434,"begin_at":"2026-10-14T12:12:35.000+00:00","state":null,"map_name":"de_cache","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":13,"loser_clan_score":3,"winner_clan_name":"ex-RUSTEC","loser_clan_name":"Mellren","ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-06T16:02:00.210+00:00","updated_at":"2026-10-14T13:54:26.105+00:00","partially_state":null,"game_version":2},{"id":189105,"match_id":131434,"begin_at":"2026-10-14T11:12:18.000+00:00","state":null,"map_name":"de_ancient","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":13,"loser_clan_score":8,"winner_clan_name":"Mellren","loser_clan_name":"ex-RUSTEC","ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-06T16:02:00.222+00:00","updated_at":"2026-10-14T13:54:26.435+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=131434&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/ex-rustec-vs-mellren-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/ex-rustec-vs-mellren-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/131434/maps 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=131877 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":189732,"match_id":131877,"begin_at":"2026-10-14T13:27:04.000+00:00","state":null,"map_name":"de_dust2","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"current","rounds_count":null,"created_at":"2026-10-12T18:00:52.397+00:00","updated_at":"2026-10-14T13:54:20.039+00:00","partially_state":null,"game_version":2},{"id":189733,"match_id":131877,"begin_at":"2026-10-14T12:26:31.000+00:00","state":null,"map_name":"de_mirage","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":13,"loser_clan_score":9,"winner_clan_name":"Los Kogutas","loser_clan_name":"6666","ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-12T18:00:52.410+00:00","updated_at":"2026-10-14T13:42:39.204+00:00","partially_state":null,"game_version":2},{"id":189734,"match_id":131877,"begin_at":"2026-10-14T11:12:04.000+00:00","state":null,"map_name":"de_nuke","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":16,"loser_clan_score":14,"winner_clan_name":"6666","loser_clan_name":"Los Kogutas","ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-12T18:00:52.426+00:00","updated_at":"2026-10-14T13:42:39.425+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=131877&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/los-kogutos-vs-sixsixsixsix-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/los-kogutos-vs-sixsixsixsix-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/131877/maps 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=131160 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":188387,"match_id":131160,"begin_at":null,"state":null,"map_name":"de_mirage","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-04T07:02:01.230+00:00","updated_at":"2026-10-14T13:54:21.424+00:00","partially_state":null,"game_version":2},{"id":188388,"match_id":131160,"begin_at":"2026-10-14T12:53:57.000+00:00","state":null,"map_name":"de_dust2","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-04T07:02:01.255+00:00","updated_at":"2026-10-14T13:54:21.474+00:00","partially_state":null,"game_version":2},{"id":188389,"match_id":131160,"begin_at":"2026-10-14T11:31:22.000+00:00","state":null,"map_name":"de_cache","duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":16,"loser_clan_score":14,"winner_clan_name":"BAKS","loser_clan_name":"BUSHIDO WILDCATS","ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"finished","rounds_count":null,"created_at":"2026-10-04T07:02:01.276+00:00","updated_at":"2026-10-14T13:54:21.559+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=131160&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/bushido-wildcats-cs-vs-baks-esports-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/bushido-wildcats-cs-vs-baks-esports-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/131160/maps 
+ {"ERR":404,"body":"\"\""}
+
+## upcoming matches 5 
+keys id,slug,round_id,team1_id,team2_id,winner_team_id,loser_team_id,tournament_id,team1_score,team2_score,status,bo_type,start_date,end_date,stage_id,maps_score,parsed_status,tier,tier_rank,position,points,rating,stars,team1_last_game_score,team2_last_game_score,live_updates,live_coverage,live_coverage_advantage,live_coverage_source,discipline_id,prev_match1_winner,prev_match2_winner,prev_match1_id,prev_match2_id,game_version,team1_new_participant,team2_new_participant,comments_count,bet_updates,comments 
+ {"id":131661,"slug":"legacy-br-vs-parivision-14-10-2026","round_id":40824,"team1_id":8118,"team2_id":8171,"winner_team_id":null,"loser_team_id":null,"tournament_id":5111,"team1_score":0,"team2_score":0,"status":"upcoming","bo_type":3,"start_date":"2026-10-14T14:45:00.000+00:00","end_date":null,"stage_id":10936,"maps_score":[true,true,true],"parsed_status":"waiting","tier":"s","tier_rank":1,"position":5,"points":null,"rating":0.7632653061224489,"stars":4,"team1_last_game_score":null,"team2_last_game_score":null,"live_updates":null,"live_coverage":false,"live_coverage_advantage":false,"live_coverage_source":null,"discipline_id":1,"prev_match1_winner":false,"prev_match2_winner":false,"prev_match1_id":null,"prev_match2_id":null,"game_version":2,"team1_new_participant":false,"team2_new_participant":false,"comments_count":0,"bet_updates":{"path":"https://thunderpick.io/match/2796375","team_1":{"name":"Legacy","coeff":1.62,"active":true,"team_id":8118,"max_coeff":1.72,"aggrement_score":0.72},"team_2":{"name":"PARIVISION","coeff":2.15,"active":true,"team_id":8171,"max_coeff":2.15,"aggrement_score":0.28},"provider":"thunderpick","markets_count":362,"bet_provider_id":40,"additional_markets":[{"coeff":1.2,"active":true,"team_id":8118,"bet_type":"team_1_handicap_over_1_5","max_coeff":1.22,"aggrement_score":0.95},{"coeff":4,"active":true,"team_id":8171,"bet_type":"team_2_handicap_under_1_5","max_coeff":4,"aggrement_score":0.05},{"coeff":2.9,"active":true,"team_id":8118,"bet_type":"team_1_handicap_under_1_5","max_coeff":3.1,"aggrement_score":0.45},{"coeff":1.35,"active":true,"team_id":8171,"bet_type":"team_2_handicap_over_1_5","max_coeff":1.38,"aggrement_score":0.55},{"coeff":1.85,"active":true,"team_id":null,"bet_type":"total_maps_over_2_5","max_coeff":1.85,"aggrement_score":0.5},{"coeff":1.85,"active":true,"team_id":null,"bet_type":"total_maps_under_2_5","max_coeff":1.85,"aggrement_score":0.5},{"coeff":2.9,"active":true,"team_id":8118,"bet_type":"score_2_0","max_coeff":3.1,"aggrement_score":0.45},{"coeff":3.8,"active":true,"team_id":8171,"bet_type":"score_1_2","max_coeff":3.8,"aggrement_score":0.05},{"coeff":4,"active":true,"team_id":8171,"bet_type":"score_0_2","max_coeff":4,"aggrement_score":0.05},{"coeff":3.1,"active":true,"team_id":8118,"bet_type":"score_2_1","max_coeff":3.2,"aggrement_score":0.45},{"coeff":4,"active":true,"team_id":8118,"bet_type":"team_1_to_not_win_at_least_one_map","max_coeff":4,"aggrement_score":0.05},{"coeff":1.2,"active":true,"team_id":8118,"
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=131661 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":189484,"match_id":131661,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:09.600+00:00","updated_at":"2026-10-14T13:24:23.366+00:00","partially_state":null,"game_version":2},{"id":189485,"match_id":131661,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:09.628+00:00","updated_at":"2026-10-14T13:24:23.405+00:00","partially_state":null,"game_version":2},{"id":189486,"match_id":131661,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:09.644+00:00","updated_at":"2026-10-14T13:24:23.448+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=131661&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/legacy-br-vs-parivision-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/legacy-br-vs-parivision-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/131661/maps 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=131662 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":189487,"match_id":131662,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:11.360+00:00","updated_at":"2026-10-13T14:07:03.196+00:00","partially_state":null,"game_version":2},{"id":189488,"match_id":131662,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:11.375+00:00","updated_at":"2026-10-13T14:07:03.223+00:00","partially_state":null,"game_version":2},{"id":189489,"match_id":131662,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-10-10T16:01:11.392+00:00","updated_at":"2026-10-13T14:07:03.249+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=131662&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/furia-vs-betboom-team-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/furia-vs-betboom-team-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/131662/maps 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=128542 
+ {"total":{"count":3,"pages":1,"offset":0,"limit":10},"results":[{"id":183799,"match_id":128542,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":3,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-08-30T19:03:22.452+00:00","updated_at":"2026-10-13T14:06:14.992+00:00","partially_state":null,"game_version":2},{"id":183800,"match_id":128542,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":2,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-08-30T19:03:22.461+00:00","updated_at":"2026-10-13T14:06:15.015+00:00","partially_state":null,"game_version":2},{"id":183801,"match_id":128542,"begin_at":null,"state":null,"map_name":null,"duration":null,"demo_header":null,"ov_index":null,"winner_clan_score":null,"loser_clan_score":null,"winner_clan_name":null,"loser_clan_name":null,"ps_id":null,"number":1,"demo_url":null,"demo_data":null,"code":null,"status":"upcoming","rounds_count":null,"created_at":"2026-08-30T19:03:22.468+00:00","updated_at":"2026-10-13T14:06:15.037+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=128542&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/sissi-state-punks-vs-playing-ducks-14-10-2026?scope=show-match&with=games,streams,teams,tournament_deep,stage,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
+
+> https://api.bo3.gg/api/v1/matches/sissi-state-punks-vs-playing-ducks-14-10-2026/picks_bans 
+ {"ERR":404,"body":"\"\""}
+
+> https://api.bo3.gg/api/v1/matches/128542/maps 
+ {"ERR":404,"body":"\"\""}
+
+## finished match games sample
+
+> https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=132016 
+ {"total":{"count":2,"pages":1,"offset":0,"limit":10},"results":[{"id":190051,"match_id":132016,"begin_at":"2026-10-14T11:54:29.000+00:00","state":"done","map_name":"de_anubis","duration":2157484310528,"demo_header":{"_id":"6acf80cea7f830ea6c653d08","map_name":"de_anubis","filestamp":"PBDEMS2","tick_rate":-1,"frame_rate":128,"server_name":"unknown","real_game_id":190051},"ov_index":0,"winner_clan_score":13,"loser_clan_score":4,"winner_clan_name":"Nuclear TigeRES","loser_clan_name":"LPH Gaming","ps_id":null,"number":2,"demo_url":"demos/manually_uploaded/1791983766_nuclear-tigeres-vs-lph-m2-anubis.dem","demo_data":null,"code":null,"status":"finished","rounds_count":17,"created_at":"2026-10-14T09:01:33.716+00:00","updated_at":"2026-10-14T13:18:02.921+00:00","partially_state":null,"game_version":2},{"id":190052,"match_id":132016,"begin_at":"2026-10-14T10:51:49.000+00:00","state":"done","map_name":"de_nuke","duration":3278374961152,"demo_header":{"_id":"6acf8098a7f830ea6c65104e","map_name":"de_nuke","filestamp":"PBDEMS2","tick_rate":-1,"frame_rate":128,"server_name":"unknown","real_game_id":190052},"ov_index":0,"winner_clan_score":13,"loser_clan_score":9,"winner_clan_name":"Nuclear TigeRES","loser_clan_name":"LPH Gaming","ps_id":null,"number":1,"demo_url":"demos/manually_uploaded/1791983749_nuclear-tigeres-vs-lph-m1-nuke.dem","demo_data":null,"code":null,"status":"finished","rounds_count":22,"created_at":"2026-10-14T09:01:33.743+00:00","updated_at":"2026-10-14T13:17:33.276+00:00","partially_state":null,"game_version":2}],"links":{"self":"/api/v1/games?filter%5Bgames.match_id%5D%5Beq%5D=132016&page%5Blimit%5D=10"}}
+
+> https://api.bo3.gg/api/v1/matches/nuclear-tigeres-vs-lph-gaming-14-10-2026?scope=show-match&with=games,picks_bans 
+ {"ERR":422,"body":"{\"status\":\"unavailable_association_parameter\",\"message\":\"Unavailable Association Parameter: value for parameter \\\"with\\\" or \\\"join\\\" is not supported.\"}"}
