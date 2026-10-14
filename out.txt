@@ -1,0 +1,25 @@
+Wed Oct 14 17:36:52 UTC 2026
+17:36:52 markets 42874
+17:45:58 done 2000 kept 1139 trades 364553 calls 4441 errs 0 429 2246 trunc 0
+17:55:01 done 4000 kept 2295 trades 689423 calls 8850 errs 0 429 4482 trunc 0
+18:04:12 done 6000 kept 3409 trades 1043920 calls 13355 errs 0 429 6782 trunc 0
+18:14:02 done 8000 kept 4584 trades 1558370 calls 18128 errs 0 429 9197 trunc 1
+18:23:10 done 10000 kept 5734 trades 1906073 calls 22571 errs 0 429 11451 trunc 2
+18:32:30 done 12000 kept 6930 trades 2308978 calls 27125 errs 0 429 13766 trunc 3
+18:42:12 done 14000 kept 8061 trades 2805599 calls 31846 errs 0 429 16158 trunc 4
+18:51:57 done 16000 kept 9200 trades 3315903 calls 36582 errs 0 429 18550 trunc 4
+19:01:28 done 18000 kept 10343 trades 3750463 calls 41220 errs 0 429 20905 trunc 6
+19:11:04 done 20000 kept 11469 trades 4244193 calls 45890 errs 0 429 23273 trunc 9
+19:20:34 done 22000 kept 12568 trades 4660724 calls 50498 errs 0 429 25599 trunc 10
+19:29:56 done 24000 kept 13751 trades 5096308 calls 55024 errs 0 429 27879 trunc 12
+19:39:21 done 26000 kept 14912 trades 5479236 calls 59600 errs 0 429 30197 trunc 13
+19:48:45 done 28000 kept 16060 trades 5909053 calls 64194 errs 0 429 32532 trunc 14
+19:58:00 done 30000 kept 17236 trades 6303827 calls 68699 errs 0 429 34820 trunc 14
+20:07:23 done 32000 kept 18352 trades 6714049 calls 73326 errs 0 429 37194 trunc 15
+20:16:57 done 34000 kept 19512 trades 7173578 calls 77975 errs 0 429 39543 trunc 15
+20:26:22 done 36000 kept 20677 trades 7609307 calls 82569 errs 0 429 41877 trunc 16
+20:35:34 done 38000 kept 21797 trades 7963599 calls 87068 errs 0 429 44169 trunc 17
+20:44:24 done 40000 kept 22900 trades 8234090 calls 91394 errs 0 429 46379 trunc 17
+20:53:34 done 42000 kept 24024 trades 8586786 calls 95861 errs 0 429 48641 trunc 17
+20:57:31 finished 42874 kept 24520 trades 8744849 calls 97771 errs 0 429 49610 trunc 17
+Wed Oct 14 20:57:40 UTC 2026
