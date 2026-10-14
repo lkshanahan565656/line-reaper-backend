@@ -1,0 +1,20 @@
+name: diag-plive
+on:
+  push:
+    branches: [diag-plive]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p out; B=https://line-reaper-backend-production.up.railway.app
+          curl -s "$B/api/status" | jq '{version, pinnacleProps, feeds}' > out/status.json || true
+          curl -s "$B/api/props/record" | jq '{overall, byKind}' > out/record.json || true
+          curl -s "$B/api/props/board?limit=60&sort=ev&sport=NFL" | jq '[.rows[] | select(.pinnacle) | {player, mkey, pinnacle, best}] | .[:8]' > out/board-nfl.json || true
+          cat out/*.json
+      - run: |
+          git init -q o && cd o && cp -r ../out . && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-plive-out && git add out && git commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-plive-out
