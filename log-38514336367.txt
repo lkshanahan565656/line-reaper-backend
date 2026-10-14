@@ -261,3 +261,25 @@
 09:19:07 tick 246: pin 1601 games, kalshi 9992 rows / pmus 7944, matched 4213, sides 8398, ev>=thr 63, new 0, eps 401
 09:20:05 tick 247: pin 1601 games, kalshi 9988 rows / pmus 7944, matched 4213, sides 8399, ev>=thr 63, new 0, eps 401
 09:21:07 tick 248: pin 1601 games, kalshi 9988 rows / pmus 7944, matched 4213, sides 8401, ev>=thr 63, new 0, eps 401
+09:22:07 tick 249: pin 1601 games, kalshi 9988 rows / pmus 7944, matched 4213, sides 8401, ev>=thr 63, new 1, eps 402
+09:23:06 tick 250: pin 1603 games, kalshi 9986 rows / pmus 7944, matched 4217, sides 8409, ev>=thr 63, new 0, eps 402
+09:23:15 pinnacle errors mma: 401
+09:24:06 tick 251: pin 1586 games, kalshi 9986 rows / pmus 7944, matched 4217, sides 8409, ev>=thr 65, new 2, eps 404
+09:25:07 tick 252: pin 1603 games, kalshi 9986 rows / pmus 7944, matched 4217, sides 8411, ev>=thr 62, new 0, eps 404
+09:26:06 tick 253: pin 1602 games, kalshi 9986 rows / pmus 7944, matched 4215, sides 8411, ev>=thr 63, new 1, eps 405
+09:27:07 tick 254: pin 1607 games, kalshi 9986 rows / pmus 7944, matched 4218, sides 8416, ev>=thr 62, new 2, eps 407
+09:28:05 tick 255: pin 1607 games, kalshi 9984 rows / pmus 7944, matched 4218, sides 8416, ev>=thr 62, new 0, eps 407
+09:29:05 tick 256: pin 1607 games, kalshi 9976 rows / pmus 7944, matched 4218, sides 8408, ev>=thr 61, new 0, eps 407
+09:30:06 tick 257: pin 1605 games, kalshi 9976 rows / pmus 7944, matched 4214, sides 8346, ev>=thr 60, new 0, eps 407
+09:31:07 tick 258: pin 1587 games, kalshi 9976 rows / pmus 7944, matched 4183, sides 8347, ev>=thr 60, new 0, eps 407
+09:32:05 tick 259: pin 1587 games, kalshi 9976 rows / pmus 7944, matched 4183, sides 8347, ev>=thr 59, new 0, eps 407
+09:33:06 tick 260: pin 1587 games, kalshi 9976 rows / pmus 7944, matched 4181, sides 8344, ev>=thr 59, new 1, eps 408
+09:34:05 tick 261: pin 1588 games, kalshi 9976 rows / pmus 7944, matched 4181, sides 8344, ev>=thr 59, new 0, eps 408
+09:35:05 tick 262: pin 1588 games, kalshi 9970 rows / pmus 7944, matched 4181, sides 8344, ev>=thr 59, new 0, eps 408
+09:36:07 tick 263: pin 1588 games, kalshi 9970 rows / pmus 7944, matched 4181, sides 8344, ev>=thr 59, new 0, eps 408
+09:37:07 tick 264: pin 1588 games, kalshi 9970 rows / pmus 7944, matched 4181, sides 8341, ev>=thr 60, new 2, eps 410
+09:38:07 tick 265: pin 1589 games, kalshi 9970 rows / pmus 7944, matched 4183, sides 8346, ev>=thr 62, new 2, eps 412
+09:38:15 pinnacle errors mma: 401
+09:39:05 tick 266: pin 1572 games, kalshi 9966 rows / pmus 7944, matched 4183, sides 8346, ev>=thr 62, new 1, eps 413
+09:40:08 tick 267: pin 1589 games, kalshi 9966 rows / pmus 7944, matched 4183, sides 8345, ev>=thr 62, new 0, eps 413
+09:41:07 tick 268: pin 1589 games, kalshi 9966 rows / pmus 7944, matched 4183, sides 8345, ev>=thr 63, new 1, eps 414
