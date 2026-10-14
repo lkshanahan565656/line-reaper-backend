@@ -1,0 +1,27 @@
+name: diag-grade
+on:
+  push:
+    branches: [diag-grade]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          npm i --no-audit --no-fund 2>&1 | tail -1
+          if [ -n "$WAIT_VERSION" ]; then for i in $(seq 1 60); do curl -s https://line-reaper-backend-production.up.railway.app/api/status | grep -q "\"$WAIT_VERSION\"" && break; sleep 30; done; fi
+          node diag/gradecheck.js 2>&1 | tee grade-out.txt
+        env: { WAIT_VERSION: "" }
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-grade-out
+          git add -f grade-out.txt; git add -f bets.json || true
+          git commit -m "diag grade output"
+          git push -f origin diag-grade-out
