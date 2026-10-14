@@ -15,7 +15,7 @@ jobs:
       - run: |
           set +e
           npm ci --omit=dev --no-audit --no-fund 2>&1 | tail -3; node -e "require('axios')" || npm i axios --no-audit --no-fund 2>&1 | tail -2
-          { date -u; DUR_MIN=${DUR_MIN:-3} EVERY_S=20 node diag/fastarbs.js; } 2>&1 | tee diag-arbs-out.txt || true
+          { date -u; DUR_MIN=${DUR_MIN:-2} EVERY_S=20 node diag/fastarbs.js; } 2>&1 | tee diag-arbs-out.txt || true
       - if: always()
         run: |
           git config user.name diag-bot
