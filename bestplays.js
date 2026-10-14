@@ -24,6 +24,7 @@ const { moveText } = require('./steam');
 const { moverText } = require('./movers');
 const { canonName } = require('./ev');
 const { idOf: sportPropId } = require('./sporttrack');
+const sportPropsLib = require('./sportprops');
 
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -323,6 +324,9 @@ function dfsRows(rows, o, now, skip = new Set()) {
 // line priced on Pinnacle's devigged prop, Kalshi's ladder and the other apps,
 // the same plays the sports props record (sporttrack.js) follows and grades.
 // 1u each, as graded. flagged: [{ row, play, kind }] with kind 'gap' or 'ev'.
+// the PrizePicks entries a leg's fair clears, cheapest break-even first
+const ppEntriesTxt = list => (!list?.length ? 'clears no entry'
+  : list.length === sportPropsLib.PP_ENTRIES.length ? 'clears every PrizePicks entry' : `clears ${list.join(', ')}`);
 const SOURCE_NAMES = { pinnacle: 'Pinnacle', kalshi: 'Kalshi', fanduel: 'FanDuel', betrivers: 'BetRivers', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
 const sportPropKey = (player, book, side, line) => `${canonName(player)}|${book}|${side}|${Number(line)}`;
 function boardPropRows(flagged, verdict, record, o, now) {
@@ -344,7 +348,7 @@ function boardPropRows(flagged, verdict, record, o, now) {
     const src = [...(p.sources || [])].sort((a, b) => (b.book === 'pinnacle') - (a.book === 'pinnacle') || (b.book === 'kalshi') - (a.book === 'kalshi'))
       .map(x => (sharpSrc(x) ? `${SOURCE_NAMES[x.book]} ${x.p}% over ${x.line}` : `${SOURCE_NAMES[x.book] || x.book} ${x.line}`));
     const why = [`fair ${(p.fair * 100).toFixed(1)}% to hit from ${src.join(', ')}`];
-    if (kind === 'sharp' && p.entry) why.push(`priced as a ${p.entry} leg (${p.entries?.length ? `clears ${p.entries.join(', ')}` : 'break-even'})`);
+    if (kind === 'sharp' && p.entry) why.push(`priced as a ${p.entry} leg; ${ppEntriesTxt(p.entries)}`);
     if (p.stale) why.push(`the books moved ${p.stale.pts} points our way while ${venue}'s line stood still`);
     if (kind === 'gap' && p.gap) why.unshift(`line gap: ${p.gap.vs.map(v => `${SOURCE_NAMES[v.book] || v.book} has ${v.line}`).join(', ')}`);
     why.push(vd.play ? evidence(vd.play) : record('sportsProps', labels));
