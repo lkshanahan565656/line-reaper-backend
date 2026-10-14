@@ -1,0 +1,25 @@
+name: diag-xcheck
+on:
+  push:
+    branches: [diag-xcheck]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts
+      - run: RUN_MIN=75 timeout 5700 node diag/xcheck.js || true
+      - run: |
+          cd out && for f in *.jsonl keys.json; do [ -f "$f" ] && gzip -f "$f"; done; cd ..
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-xcheck-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-xcheck-out
