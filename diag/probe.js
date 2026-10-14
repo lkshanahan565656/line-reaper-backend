@@ -15,13 +15,14 @@ const get = async (name, url) => { try { const r = await fetch(url, { headers: H
     await get(`ev_${id}_extra`, `${FD}/event-page?_ak=${AK}&eventId=${id}${extra}`);
     await get(`ev_${id}_tab`, `${FD}/event-page?_ak=${AK}&eventId=${id}&tab=odds-boosts`);
   }
+  for (const [hn, hv] of [['x-sportsbook-region', 'NJ'], ['X-Sportsbook-Region', 'nj']]) { H[hn] = hv; await get('cmp_region_' + hv, `${FD}/content-managed-page?page=CUSTOM&customPageId=oddsboosts&pbHorizontal=false&_ak=${AK}&timezone=America%2FNew_York`); await get('ev_region_' + hv, `${FD}/event-page?_ak=${AK}&eventId=30861650`); delete H[hn]; }
   await get('cmp_extra', `${FD}/content-managed-page?page=CUSTOM&customPageId=oddsboosts${extra}&_ak=${AK}`);
   const html = await get('web', 'https://sportsbook.fanduel.com/');
   const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1]);
   const finds = [];
   for (const s of srcs) {
     const js = await get('js', 'https://sportsbook.fanduel.com' + s);
-    for (const m of js.matchAll(/.{0,200}(event-page|content-managed-page|oddsboosts|getMarketPrices|fixedodds|ODDS_BOOST).{0,200}/g)) finds.push(`${s}: ${m[0]}`);
+    for (const m of js.matchAll(/.{0,300}(requiresRegion[^:]|x-sportsbook-region|X-Sportsbook-Region|sportsbook-region|x-application).{0,300}/g)) finds.push(`${s}: ${m[0]}`);
   }
   fs.writeFileSync('out/js_finds.txt', finds.slice(0, 300).join('\n\n'));
   fs.writeFileSync('out/summary.json', JSON.stringify(out, null, 1));
