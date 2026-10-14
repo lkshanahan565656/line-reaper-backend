@@ -16,24 +16,20 @@ jobs:
           for i in $(seq 1 40); do
             v=$(curl -s $U/api/status | jq -r .version 2>/dev/null || true)
             echo "$(date -u +%H:%M:%S) $v" >> out/versions.txt
-            [ "$v" = "3.115.0" ] && break
+            [ "$v" = "3.117.0" ] && break
             sleep 30
           done
-          sleep 900
+          sleep 420
           curl -s $U/api/status > out/status.json
-          curl -s "$U/api/props/board?sport=ALL&book=underdog&priced=1&facets=1&sort=ev&limit=500" > out/lines_ud.json
-          curl -s "$U/api/props/board?sport=ALL&book=prizepicks&priced=1&facets=1&sort=ev&limit=500" > out/lines_pp.json
-          curl -s "$U/api/props/board?sport=ESPORTS&book=underdog&priced=1&facets=1&sort=ev&limit=500" > out/lines_es.json
-          curl -s "$U/api/props/board?sport=SPORTS&sort=ev&limit=150" > out/cards.json
           curl -s "$U/api/ev?limit=1000" > out/ev.json
-          curl -s -o /dev/null -w "%{http_code}" $U/api/me/used > out/used_status.txt
-          curl -s $U/app -o out/app.html
+          curl -s $U/api/ev/record > out/record.json
+          curl -s $U/api/big-money > out/big.json
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout --orphan diag-live-out
           git rm -rq --cached . || true
-          gzip -9 out/*.json out/*.html
+          gzip -9 out/*.json
           git add -f out
           git commit -qm "live output"
           git push -f origin diag-live-out
