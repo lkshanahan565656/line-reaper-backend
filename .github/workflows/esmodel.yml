@@ -1,0 +1,33 @@
+name: esmodel
+on:
+  push:
+    branches: [diag-esmodel]
+concurrency:
+  group: esmodel
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --omit=dev || npm install --omit=dev
+      - run: |
+          set +e
+          { date -u; node diag/kpull.js; date -u; } > k.txt 2>&1 &
+          { date -u; node diag/rpull.js; date -u; } > r.txt 2>&1 &
+          wait
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esmodel-out
+          git add -f k.txt r.txt data/*.json.gz
+          git commit -qm "esmodel output" ; git push -f origin diag-esmodel-out
