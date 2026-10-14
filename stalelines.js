@@ -206,7 +206,7 @@ function bookPropQuotes(games, feedSport, sportOf, { books = BOOK_VENUES } = {})
         for (const [x, d] of v.lines) { const p = devig2(d.d0, d.d1); if (p != null) pts.push({ x: Number(x), p: r4(p), d0: d.d0, d1: d.d1 }); }
         if (!pts.length) continue;
         out.push({ key: propKey(sport, v.player, v.mkey, g.commence_time), source: bm.key, q: { kind: 'prop', mkey: v.mkey, sport, pts },
-          meta: { sport, kind: 'prop', market: v.mkey, player: v.player, event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time } });
+          meta: { sport, kind: 'prop', market: v.mkey, player: v.player, event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time, gameId: g.id } });
       }
     }
   }
@@ -266,7 +266,13 @@ function createStaleLines(opts = {}) {
   const subjects = new Map();   // key → { meta, src: { source: [{ t, seenAt, q, fp }] }, anchor, moves: [] }
   const log = [];               // closed moves, for the lag table
   const reads = {};             // source kind → read times
-  let seq = 0, movesSeen = 0;
+  // `${source}|${scope}` (scope 'game' or 'prop') → the last few complete reads
+  // of that source: a subject missing from one wasn't on offer then
+  const complete = {};
+  // Pinnacle subjects listed twice at one number at different prices: no fair
+  // we can trust, so no moves and no rows while it lasts (key → last seen)
+  const ambiguous = new Map();
+  let seq = 0, movesSeen = 0, observed = 0;
   const startedAt = Date.now();
 
   const latest = (s, source) => { const l = s.src[source]; return l?.length ? l[l.length - 1] : null; };
@@ -289,22 +295,42 @@ function createStaleLines(opts = {}) {
     if (l[l.length - 1] !== t) l.push(t);
     while (l.length > 30) l.shift();
   }
+  const scopeOf = s => (s.meta.kind === 'prop' ? 'prop' : 'game');
+  // complete reads of the source since the entry was last seen in one: of
+  // everything ('fanduel|game'), or of the subject's game ('betrivers|prop|<game id>')
+  const missed = (source, s, e) => {
+    const k = `${source}|${scopeOf(s)}`;
+    return [...(complete[k] || []), ...(s.meta.gameId != null ? complete[`${k}|${s.meta.gameId}`] || [] : [])].filter(x => x > e.seenAt).sort((a, b) => a - b);
+  };
+  const isAmbiguous = (key, t) => { const a = ambiguous.get(key); return a != null && t - a <= o.keepMs; };
+  // a lower-vig pair first, then the lower chance: the same pick whatever order the feed lists them in
+  const vig = a => (a.d0 > 1 && a.d1 > 1 ? 1 / a.d0 + 1 / a.d1 : 9);
+  const better = (a, b) => vig(a) < vig(b) || (vig(a) === vig(b) && a.p < b.p);
 
-  // a batch of quotes read at time t (ms). kind names the read for the cadence table.
-  function observe(quotes, t, kind = null) {
+  // a batch of quotes read at time t (ms). kind names the read for the cadence
+  // table; done lists what the batch read in full ('fanduel|game',
+  // 'pinnacle|prop', …), so a subject it left out is known to be off the board.
+  function observe(quotes, t, kind = null, done = []) {
     if (kind) noteRead(kind, t);
     // Pinnacle first: it's read first in each pass, so a venue that moved in
     // the same pass followed with a lag under a minute, it didn't lead.
     // A source quoting one prop at two lines in a batch (Pinnacle lists some
-    // players twice) is one quote with both lines, else it flips every read.
+    // players twice) is one quote with both lines, else it flips every read;
+    // two prices at one line keep the lower-vig one, and on Pinnacle make the
+    // subject ambiguous.
     const merged = new Map();
     for (const x of quotes || []) {
       const k = `${x.key}|${x.source}`, m = merged.get(k);
-      if (!m) merged.set(k, x);
-      else if (x.q.kind === 'prop' && m.q.kind === 'prop') {
-        const pts = [...m.q.pts, ...x.q.pts.filter(a => !m.q.pts.some(b => Math.abs(b.x - a.x) < 1e-9))].sort((a, b) => a.x - b.x);
-        merged.set(k, { ...m, q: { ...m.q, pts } });
+      if (!m) { merged.set(k, x); continue; }
+      if (x.q.kind !== 'prop' || m.q.kind !== 'prop') continue;
+      const pts = [...m.q.pts];
+      for (const a of x.q.pts) {
+        const i = pts.findIndex(b => Math.abs(b.x - a.x) < 1e-9);
+        if (i < 0) { pts.push(a); continue; }
+        if (x.source === 'pinnacle' && Math.abs(pts[i].p - a.p) > 0.005) ambiguous.set(x.key, t);
+        if (better(a, pts[i])) pts[i] = a;
       }
+      merged.set(k, { ...m, q: { ...m.q, pts: pts.sort((a, b) => a.x - b.x) } });
     }
     const ordered = [...merged.values()].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'));
     for (const { key, source, q, meta } of ordered) {
@@ -321,39 +347,71 @@ function createStaleLines(opts = {}) {
       while (l.length > o.histCap || (l.length > 1 && t - l[0].t > o.keepMs && t - l[1].t > o.keepMs)) l.shift();
       if (source === 'pinnacle') checkMove(key, s, t);
     }
+    // after the batch: a move found in it is checked against the venues' reads before it
+    for (const c of done || []) { const l = (complete[c] ||= []); if (!l.length || l[l.length - 1] < t) l.push(t); while (l.length > 5) l.shift(); }
+    if (++observed % 500 === 0) for (const [k, l] of Object.entries(complete)) if (t - l[l.length - 1] > 86400e3) delete complete[k];
   }
-  const fresh = (v, e, t) => !!e && t - e.seenAt <= (o.venueMaxAgeMs[v] ?? 6 * 60e3);
-  const pinFresh = (s, e, t) => !!e && t - e.seenAt <= (s.meta.kind === 'prop' ? o.pinMaxAgeMs.prop : o.pinMaxAgeMs.game);
+  // a venue is quoting a subject when it was read lately and no complete read
+  // of it since has left the subject out (pulled or suspended)
+  const fresh = (v, e, t, s = null) => !!e && t - e.seenAt <= (o.venueMaxAgeMs[v] ?? 6 * 60e3) && !(s && missed(v, s, e).length);
+  const pinFresh = (s, e, t) => !!e && t - e.seenAt <= (s.meta.kind === 'prop' ? o.pinMaxAgeMs.prop : o.pinMaxAgeMs.game) && !missed('pinnacle', s, e).length;
 
+  const posts = (q, x) => (q.pts || []).some(a => Math.abs(a.x - x) < 1e-9 && a.p > 0 && a.p < 1);
   function checkMove(key, s, t) {
     const cur = latest(s, 'pinnacle');
     // the move is measured from Pinnacle's last move, or from where it stood
     // an hour ago: slow drift over a day is not a move
     if (s.anchor && t - s.anchor.t > o.windowMs) s.anchor = at(s, 'pinnacle', t - o.windowMs);
-    if (!s.anchor || s.anchor === cur) { s.anchor = cur; return; }
+    if (!s.anchor || s.anchor === cur || isAmbiguous(key, t)) { s.anchor = cur; return; }
     const from = s.anchor.q, to = cur.q;
     const fm = mainOf(from), tm = mainOf(to);
     if (!fm || !tm) return;
     const oldX = fm.x;
-    const p0 = pAt(from, oldX), p1 = pAt(to, oldX);
+    // read at Pinnacle's old number while it still posts it (a juice tick that
+    // only changes which of its lines is nearest even money isn't a move);
+    // when it doesn't, at the nearest number both reads post (one listing
+    // missing from a read isn't a move); else off the stat's curve
+    let mx = oldX, exact = true;
+    if (from.kind !== 'ml' && !posts(to, oldX)) {
+      const shared = (from.pts || []).filter(a => posts(to, a.x)).sort((a, b) => Math.abs(a.x - oldX) - Math.abs(b.x - oldX));
+      if (shared.length) mx = shared[0].x; else exact = false;
+    }
+    const p0 = pAt(from, mx), p1 = pAt(to, mx);
     if (p0 == null || p1 == null) { s.anchor = cur; return; }
     const d = p1 - p0;
-    const numberMoved = oldX != null && tm.x != null && Math.abs(tm.x - oldX) >= 0.5 - 1e-9;
+    // a new number read off the curve needs less: the curve can't see the juice
+    const numberMoved = !exact && oldX != null && tm.x != null && Math.abs(tm.x - oldX) >= 0.5 - 1e-9;
     if (!(Math.abs(d) >= o.moveProbPts / 100 - 1e-9 || (numberMoved && Math.abs(d) >= o.lineMovePts / 100 - 1e-9))) return;
-    const mv = { id: ++seq, key, t, from, to, fromAt: s.anchor.t, oldX, newX: tm.x, d, dir: Math.sign(d), venues: {} };
-    // Pinnacle turned back: the earlier move's open venues were right to sit still
-    for (const prev of s.moves) if (prev.dir !== mv.dir) for (const st of Object.values(prev.venues)) if (st.status === 'open') st.status = 'reverted';
+    // Pinnacle moved some time after its previous read: a venue change read
+    // before that read led it, one read since can't be put on either side
+    const pl = s.src.pinnacle, prevAt = pl.length > 1 ? pl[pl.length - 2].seenAt : s.anchor.seenAt;
+    const mv = { id: ++seq, key, t, from, to, fromAt: s.anchor.t, prevAt, oldX, newX: tm.x, d, dir: Math.sign(d), venues: {} };
+    // Pinnacle turned back: an earlier move's open venues were right to sit
+    // still, unless Pinnacle is still well past them that way (they stay stale there)
+    const held = new Set();
+    for (const prev of s.moves) if (prev.dir !== mv.dir) for (const [v, st] of Object.entries(prev.venues)) {
+      if (st.status !== 'open') continue;
+      const e = latest(s, v), sv = e ? shiftedAt(e.q, to, prev.oldX) : null, pp = pAt(to, prev.oldX);
+      if (sv != null && pp != null && (pp - sv) * prev.dir > need(prev) / 2) held.add(v);
+      else st.status = 'reverted';
+    }
     const pNew = pAt(to, oldX);
     for (const v of VENUES) {
+      if (held.has(v)) continue;
       const e = latest(s, v);
-      if (!fresh(v, e, t)) continue;   // not quoting the subject now: nothing to follow
+      if (!fresh(v, e, t, s)) continue;   // not quoting the subject now: nothing to follow
       const snap = { snapE: e, snapFp: e.fp, snapQ: e.q, snapAt: e.t };
-      // a venue that moved Pinnacle's way in the ledMs before led the move;
-      // one already at (or past) Pinnacle's new price was never behind it
+      // a venue that moved Pinnacle's way in the ledMs before, and is still
+      // there: led the move if that read came before Pinnacle's previous one,
+      // else followed within a read. One already at (or past) Pinnacle's new
+      // price was never behind it.
       const before = at(s, v, t - o.ledMs);
-      const m = before && before !== e ? moved(mv, before, e) : 0;
+      const mNow = before && before !== e ? moved(mv, before, e) : 0;
+      let hit = null;
+      if (mNow != null && mNow >= need(mv)) for (const x of s.src[v]) { if (x.t > before.t) { const m = moved(mv, before, x); if (m != null && m >= need(mv)) { hit = x; break; } } }
       const sv = shiftedAt(e.q, to, oldX);
-      if (m != null && m >= need(mv)) mv.venues[v] = { status: 'led', how: 'moved', ledMs: t - e.t, ...snap };
+      if (hit && hit.t <= prevAt) mv.venues[v] = { status: 'led', how: 'moved', ledMs: t - hit.t, ...snap };
+      else if (hit) mv.venues[v] = { status: 'followed', lagMs: 0, followAt: hit.t, sameRead: true, ...snap };
       else if (sv != null && pNew != null && (sv - pNew) * mv.dir >= -need(mv) / 2) mv.venues[v] = { status: 'led', how: 'already', ...snap };
       else mv.venues[v] = { status: 'open', ...snap };
     }
@@ -375,10 +433,16 @@ function createStaleLines(opts = {}) {
           for (const e of later) {
             const m = moved(mv, { q: st.snapQ }, e);
             if (m == null || m < need(mv)) continue;
-            // a read taken before Pinnacle's move that landed after it: the venue was first
-            if (e.t < mv.t) { st.status = 'led'; st.how = 'moved'; st.ledMs = mv.t - e.t; }
-            else { st.status = 'followed'; st.lagMs = e.t - mv.t; st.followAt = e.t; }
+            // a read taken before Pinnacle's previous read that landed late: the
+            // venue was first; one since Pinnacle's previous read followed within a read
+            if (e.t <= (mv.prevAt ?? -Infinity)) { st.status = 'led'; st.how = 'moved'; st.ledMs = mv.t - e.t; }
+            else { st.status = 'followed'; st.lagMs = Math.max(0, e.t - mv.t); st.followAt = e.t; }
             break;
+          }
+          // left out of two complete reads since: the venue took the number down
+          if (st.status === 'open') {
+            const e = latest(s, v), miss = e ? missed(v, s, e) : [];
+            if (miss.length >= 2) { st.status = 'pulled'; st.lagMs = Math.max(0, miss[0] - mv.t); }
           }
         }
       }
@@ -421,16 +485,17 @@ function createStaleLines(opts = {}) {
   function rows(t, { priceApp = null } = {}) {
     const out = [];
     for (const [key, s] of subjects) {
-      const mv = s.moves[s.moves.length - 1];
-      if (!mv) continue;
+      if (!s.moves.length || isAmbiguous(key, t)) continue;
       const start = ms(s.meta.start);
       if (start != null && t >= start) continue;
       const pin = latest(s, 'pinnacle');
       if (!pinFresh(s, pin, t)) continue;
-      for (const [v, st] of Object.entries(mv.venues)) {
-        if (st.status !== 'open') continue;
+      // each venue once, against the earliest move it's still behind
+      const firstOpen = new Map();
+      for (const m of s.moves) for (const [v, st] of Object.entries(m.venues)) if (st.status === 'open' && !firstOpen.has(v)) firstOpen.set(v, m);
+      for (const [v, mv] of firstOpen) {
         const e = latest(s, v);
-        if (!fresh(v, e, t)) continue;   // not read lately
+        if (!fresh(v, e, t, s)) continue;   // not read lately, or left out of its latest read
         const vm = mainOf(e.q);
         if (!vm) continue;
         const x = vm.x;
@@ -490,12 +555,14 @@ function createStaleLines(opts = {}) {
   function fairAt(key, x, t = Date.now()) {
     const s = subjects.get(key);
     const pin = s && latest(s, 'pinnacle');
-    return s && pinFresh(s, pin, t) ? pAt(pin.q, x) : null;
+    return s && !isAmbiguous(key, t) && pinFresh(s, pin, t) ? pAt(pin.q, x) : null;
   }
 
   // close-of-market fairs and the venues' prices now, for every bet a tracker
-  // holds: bets → Map(id → { group, key, x, venue })
-  function marks(bets, t = Date.now()) {
+  // holds: bets → Map(id → { group, key, x, venue, at }). A price counts as the
+  // bet's delayed price only from a venue read execAfterMs after the flag (at):
+  // the read the bet was flagged on can't say whether it was still there.
+  function marks(bets, t = Date.now(), { execAfterMs = 105e3 } = {}) {
     const fairs = new Map(), costs = new Map();
     for (const g of bets.values()) {
       const s = subjects.get(g.key);
@@ -503,7 +570,8 @@ function createStaleLines(opts = {}) {
       const p0 = fairAt(g.key, g.x, t);
       if (p0 != null) { fairs.set(`${g.group}|${sideName(s.meta.kind, s.meta, 0)}`, r2(p0 * 100)); fairs.set(`${g.group}|${sideName(s.meta.kind, s.meta, 1)}`, r2((1 - p0) * 100)); }
       const e = latest(s, g.venue);
-      if (!e || APP_VENUES.includes(g.venue) || !fresh(g.venue, e, t)) continue;
+      if (!e || APP_VENUES.includes(g.venue) || !fresh(g.venue, e, t, s)) continue;
+      if (g.at != null && e.seenAt < g.at + execAfterMs) continue;
       const pt = e.q.kind === 'ml' ? e.q : (e.q.pts || []).find(a => Math.abs(a.x - g.x) < 1e-9);
       if (!pt) continue;
       for (const side of [0, 1]) { const d = side === 0 ? pt.d0 : pt.d1; if (d > 1) costs.set(`${g.group}|${sideName(s.meta.kind, s.meta, side)}|${g.venue}`, 1 / d); }
@@ -525,7 +593,7 @@ function createStaleLines(opts = {}) {
     }
     const cells = {};
     for (const m of day) for (const [v, st] of Object.entries(m.venues)) {
-      const c = (cells[`${v}|${m.kind}`] ||= { venue: v, kind: m.kind, moves: 0, followed: 0, led: 0, never: 0, open: 0, reverted: 0, started: 0, lags: [], openAges: [] });
+      const c = (cells[`${v}|${m.kind}`] ||= { venue: v, kind: m.kind, moves: 0, followed: 0, led: 0, never: 0, open: 0, reverted: 0, started: 0, pulled: 0, lags: [], openAges: [] });
       c.moves++;
       if (st.status === 'followed') { c.followed++; c.lags.push(st.lagMs / 60e3); }
       else if (st.status === 'open') { c.open++; c.openAges.push((t - m.t) / 60e3); }
@@ -538,7 +606,7 @@ function createStaleLines(opts = {}) {
       // gone the hour unfollowed, or still open past m)
       const within = m => { const n = c.followed + c.never + c.openAges.filter(a => a > m).length; return n ? r2(100 * c.lags.filter(x => x <= m).length / n) : null; };
       const done = c.followed + c.never;
-      return { venue: c.venue, kind: c.kind, moves: c.moves, followed: c.followed, led: c.led, never: c.never, open: c.open, reverted: c.reverted, started: c.started,
+      return { venue: c.venue, kind: c.kind, moves: c.moves, followed: c.followed, led: c.led, never: c.never, open: c.open, reverted: c.reverted, started: c.started, pulled: c.pulled,
         medianMin: median(c.lags), p75Min: pctl(c.lags, 0.75), within2: within(2), within5: within(5), within15: within(15), neverPct: done ? r2(100 * c.never / done) : null };
     }).sort((a, b) => b.moves - a.moves);
     const cadence = Object.fromEntries(Object.entries(reads).map(([k, l]) => {

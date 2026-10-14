@@ -62,7 +62,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       const b = {
         id, status: 'open', kind, sport: row.sport, player: row.player, team: row.team || '', matchTitle: row.matchTitle || '',
         market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
-        signalAt: new Date(t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
+        // a stale-line leg is logged as of the read it first showed on
+        signalAt: new Date(STALE.has(kind) && play.signalAt ? Math.min(play.signalAt, t) : t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
@@ -154,6 +155,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       graded: g.length, wins, losses: g.length - wins, hitRate: g.length ? r4(wins / g.length) : null,
       breakeven: g.length ? r4(g.length / g.reduce((a, b) => a + b.signalDecimal, 0)) : null,
       units: r2(units), roi: g.length ? r4(units / g.length) : null, avgEv: avg(list, b => b.signalEv),
+      // close EV on the legs still up at the next read: the executable grade before results
+      execClosed: live.filter(b => b.execOk === true).length, execCloseEvAvg: avg(live.filter(b => b.execOk === true), b => b.closeEv ?? 0),
       // the record that counts: only plays still up at the next read
       execGraded: exec.length, execUnits: r2(exec.reduce((a, b) => a + (b.profit || 0), 0)), execRoi: exec.length ? r4(exec.reduce((a, b) => a + (b.profit || 0), 0) / exec.length) : null,
       gapOutcomes: list.reduce((a, b) => { if (b.gapOutcome) a[b.gapOutcome] = (a[b.gapOutcome] || 0) + 1; return a; }, {}),

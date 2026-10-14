@@ -5006,12 +5006,15 @@ function evStaleRecord(a, apps) {
       <span style="min-width:110px;margin-left:auto;text-align:right;color:${!n ? '#64748b' : good ? '#10b981' : '#f87171'}">${n ? val : 'not graded yet'}</span></div>`;
   // a stale line is only worth something if it is still there when you get to it: the books' grade at the
   // +2 min price (and how many still had it), the apps' share still up at the next read
+  // books: CLV at the flag; +2 MIN = graded at the price two minutes on, where
+  // the book still quoted the number; still there = at the flagged price or better
   const book = (k, label) => { const v = src[k]; const n = v?.n || 0;
-    const ex = v?.execN ? ` · +2 MIN ${pct(v.avgExecClv)} (${v.execN} of ${n} still there)` : (n ? ' · none still there at +2 min' : '');
+    const ex = v?.execN ? ` · +2 MIN ${pct(v.avgExecClv)} · ${v.execStillN ?? 0} of ${n} still there` : (n ? ' · none quoted at +2 min' : '');
     return row(label, n, 'CLV ' + pct(v?.avgClv) + ex, v?.execN > 0 && v.avgExecClv > 0); };
+  // apps: close EV at the flagged line; still up = same line, same payout at the app's next read
   const app = (v, label) => { const n = v?.closed || 0;
-    const ex = v?.execChecked ? ` · ${Math.round(100 * (v.execShare || 0))}% still up at the next read` : '';
-    return row(label, n, 'close EV ' + pct(v?.closeEvAvg) + ex, v?.closeEvAvg > 0, 'closed'); };
+    const ex = v?.execChecked ? ` · ${Math.round(100 * (v.execShare || 0))}% still up at the next read` + (v.execClosed ? ` (close EV ${pct(v.execCloseEvAvg)})` : '') : '';
+    return row(label, n, 'close EV ' + pct(v?.closeEvAvg) + ex, v?.execClosed > 0 && v.execCloseEvAvg > 0, 'closed'); };
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}
@@ -5025,10 +5028,10 @@ function evStaleLag(L) {
   const pctOr = v => v == null ? '—' : `${Math.round(v)}%`;
   return `<details ${evState.staleLagOpen ? 'open' : ''} ontoggle="evState.staleLagOpen=this.open" style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
     <summary style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;cursor:pointer">HOW FAST EACH VENUE FOLLOWS PINNACLE · ${L.moves24h} MOVES IN ${L.hours >= 23.9 ? '24 H' : (L.hours < 1 ? Math.round(L.hours * 60) + ' MIN' : Math.round(L.hours * 10) / 10 + ' H')}</summary>
-    <div style="font-size:11px;color:#64748b;padding:0 14px 8px">A move is Pinnacle's chance at its old number shifting ${L.thresholds?.moveProbPts} points, or its number moving half a point with ${L.thresholds?.lineMovePts} point of chance. A venue follows when it moves half as far the same way. AHEAD: it moved first, or was already at Pinnacle's new price. Reads: Pinnacle and the books' game lines every ${gap('books')}, Pinnacle's props every ${gap('pinnacle-props')}, PrizePicks every ${gap('prizepicks')}, Underdog every ${gap('underdog')}, Sleeper every ${gap('sleeper')}; a lag under one read shows as 0.</div>
+    <div style="font-size:11px;color:#64748b;padding:0 14px 8px">A move is Pinnacle's chance at its old number shifting ${L.thresholds?.moveProbPts} points, or its number moving half a point with ${L.thresholds?.lineMovePts} point of chance. A venue follows when it moves half as far the same way; one that moved between Pinnacle's last two reads follows with a lag of 0. AHEAD: it moved before Pinnacle's previous read, or was already at Pinnacle's new price. PULLED: it took the number down instead. Reads: Pinnacle and the books' game lines every ${gap('books')}, Pinnacle's props every ${gap('pinnacle-props')}, PrizePicks every ${gap('prizepicks')}, Underdog every ${gap('underdog')}, Sleeper every ${gap('sleeper')}; a lag under one read shows as 0.</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;min-width:520px">
-      <tr style="color:#64748b;text-align:right"><th style="text-align:left;padding:5px 14px">VENUE</th><th>MARKET</th><th>MOVES</th><th>AHEAD</th><th>MEDIAN LAG</th><th>≤2 MIN</th><th>≤15 MIN</th><th style="padding-right:14px">NOT IN 1 H</th></tr>
-      ${cells.map(c => `<tr style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:#cbd5e1"><td style="text-align:left;padding:5px 14px;color:#f1f5f9">${escAttr(EV_STALE_VENUE[c.venue] || c.venue)}</td><td>${escAttr(EV_STALE_KIND[c.kind] || c.kind)}</td><td>${c.moves}</td><td>${c.led}</td><td>${c.medianMin == null ? '—' : c.medianMin + ' min'}</td><td>${pctOr(c.within2)}</td><td>${pctOr(c.within15)}</td><td style="padding-right:14px">${pctOr(c.neverPct)}</td></tr>`).join('') || `<tr><td colspan="8" style="padding:8px 14px;color:#64748b">No Pinnacle moves seen since the server started.</td></tr>`}
+      <tr style="color:#64748b;text-align:right"><th style="text-align:left;padding:5px 14px">VENUE</th><th>MARKET</th><th>MOVES</th><th>AHEAD</th><th>MEDIAN LAG</th><th>≤2 MIN</th><th>≤15 MIN</th><th>PULLED</th><th style="padding-right:14px">NOT IN 1 H</th></tr>
+      ${cells.map(c => `<tr style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:#cbd5e1"><td style="text-align:left;padding:5px 14px;color:#f1f5f9">${escAttr(EV_STALE_VENUE[c.venue] || c.venue)}</td><td>${escAttr(EV_STALE_KIND[c.kind] || c.kind)}</td><td>${c.moves}</td><td>${c.led}</td><td>${c.medianMin == null ? '—' : c.medianMin + ' min'}</td><td>${pctOr(c.within2)}</td><td>${pctOr(c.within15)}</td><td>${c.pulled || 0}</td><td style="padding-right:14px">${pctOr(c.neverPct)}</td></tr>`).join('') || `<tr><td colspan="9" style="padding:8px 14px;color:#64748b">No Pinnacle moves seen since the server started.</td></tr>`}
     </table></div></details>`;
 }
 function renderEvStale(el) {

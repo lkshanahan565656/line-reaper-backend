@@ -4063,7 +4063,8 @@ app.get('/api/ev', (req, res) => {
   const staleOut = stale.slice(0, 300);
   res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })),
     esports: pro ? esOut : redactEv(esOut).map(r => ({ ...r, esports: true })), esportsAt: esBooksState.screenedAt,
-    stale: pro ? staleOut : redactEv(staleOut).map(r => ({ ...r, stale: true })), staleAt: staleState.screenedAt, staleLag: staleState.enabled ? staleState.engine.lagSummary() : null,
+    // free users see a lock per row the Pro view shows at its default floor (+1%)
+    stale: pro ? staleOut : redactEv(staleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, stale: true })), staleAt: staleState.screenedAt, staleLag: staleState.enabled ? staleState.engine.lagSummary() : null,
     count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
@@ -4796,7 +4797,7 @@ async function refreshFreeBooks() {
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache });
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps); }
+    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps, !pin.errors.length); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
@@ -4810,7 +4811,7 @@ const PIN_PROPS_MAX_AGE_MS = 10 * 60e3;
 async function refreshPinnacleProps() {
   if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
   const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
-  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps(props); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props'); }
+  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps(props); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
   // an outage keeps the last read a while, never as the fair for long
   else if (Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) pinPropsIndex = new Map();
   const bySport = {};
@@ -4878,20 +4879,47 @@ const staleLines = require('./stalelines');
 const STALE_SPORT = Object.fromEntries(Object.entries(freebooks.LEAGUES).map(([k, l]) => [l.props, k]));
 const staleState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.STALE_LINES || '').trim()),
   engine: staleLines.createStaleLines({ sportKey: x => STALE_SPORT[x] || String(x || '').toLowerCase() }), rows: [], screenedAt: null, errors: [] };
-// every bet the books' stale record holds (by bet id), so each keeps a close and a +2 min price
+// every bet the books' stale record holds (by bet id), so each keeps a close
+// and a +2 min price until its game starts; reloaded from the record on a restart
 const staleBets = new Map();
 const STALE_TRACK_MIN = process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2;
-function observeStale(quotes, t, kind, screen = true) {
+staleTracker.ready().then(async () => {
+  for (const b of await staleTracker.list({ status: 'open', limit: 1e6 })) {
+    // group = `${source}|${subject key}|${number or 'ml'}`
+    const parts = String(b.group || '').split('|');
+    if (parts.length < 3 || staleBets.has(b.id)) continue;
+    const xs = parts[parts.length - 1];
+    staleBets.set(b.id, { group: b.group, key: parts.slice(1, -1).join('|'), x: xs === 'ml' ? null : Number(xs), venue: b.book, at: Date.parse(b.flaggedAt), start: Date.parse(b.start || '') });
+  }
+}).catch(e => console.warn('Stale lines tracker:', e.message));
+// the apps' stale legs at 2%+ from the read they first showed on, until the
+// props record takes them: a leg the app fixes at its next read still goes in
+// (and fails its exec check) instead of never being logged
+const staleAppPending = new Map();
+let staleBoardByKey = new Map();
+// done: what the read covered in full ('fanduel|game|<game id>', 'pinnacle|prop'),
+// so a subject it left out counts as taken down, not as still on offer
+function observeStale(quotes, t, kind, screen = true, done = []) {
   if (!staleState.enabled || !quotes?.length) return;
-  try { staleState.engine.observe(quotes, t, kind); if (screen) runStaleScreen(); }
+  try { staleState.engine.observe(quotes, t, kind, done); if (screen) runStaleScreen(); }
   catch (e) { staleState.errors = [`${kind} ${e.message}`, ...staleState.errors].slice(0, 5); }
 }
 // Pinnacle's, FanDuel's and BetRivers' game lines (one pass, Pinnacle read
 // first), Kalshi's mids on the same games, and the books' props (FanDuel's
 // only on the passes that read its prop pages)
-function observeStaleBooks(gamesBySport, fdPropsRead) {
+function observeStaleBooks(gamesBySport, fdPropsRead, pinOk = true) {
   if (!staleState.enabled) return;
-  const t = Date.now(), quotes = [];
+  const t = Date.now(), quotes = [], done = pinOk ? ['pinnacle|game'] : [];
+  // a book's read of a game is complete when its event came back: a market
+  // missing from it is suspended or pulled (FanDuel's props only on the
+  // passes that read its prop pages)
+  for (const g of Object.values(gamesBySport).flat()) for (const bm of g.bookmakers || []) {
+    if (bm.key === 'betrivers') done.push(`betrivers|game|${g.id}`, `betrivers|prop|${g.id}`);
+    else if (bm.key === 'fanduel') {
+      done.push(`fanduel|game|${g.id}`);
+      if (fdPropsRead && (bm.markets || []).some(m => !/^(h2h|spreads|totals)$/.test(m.key))) done.push(`fanduel|prop|${g.id}`);
+    }
+  }
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
   let kbooks = new Map();
   try { if (kmid.length) kbooks = pingames.kalshiMidBooks(kmid, Object.values(gamesBySport).flat()); }
@@ -4901,18 +4929,19 @@ function observeStaleBooks(gamesBySport, fdPropsRead) {
     quotes.push(...staleLines.gameQuotes(withK, s));
     quotes.push(...staleLines.bookPropQuotes(games, s, x => freebooks.LEAGUES[x]?.props || null, { books: fdPropsRead ? ['fanduel', 'betrivers'] : ['betrivers'] }));
   }
-  observeStale(quotes, t, 'books');
+  observeStale(quotes, t, 'books', true, done);
 }
 // the apps' lines at the time each app was last read, and Kalshi's ladder
 function observeStaleApps(rows) {
   if (!staleState.enabled) return;
   const sports = rows.filter(r => !r.esports);
+  staleBoardByKey = new Map(sports.map(r => [r.key, r]));
   // PrizePicks' sports lines come with its whole board, every 20 minutes
   const readAt = { prizepicks: ppState.fullOkAt, underdog: Date.parse(cache.underdog.updated || ''), sleeper: Date.parse(cache.sleeperSports.updated || '') };
   const all = staleLines.appQuotes(sports, { pOverOf: sportProps.bookPOver, kalshiOf: rowKalshi });
   for (const book of staleLines.APP_VENUES) {
     const t = readAt[book];
-    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false);
+    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, [`${book}|prop`]);
   }
   const kt = Date.parse(kpropsState.updated || '');
   if (Number.isFinite(kt)) observeStale(all.filter(q => q.source === 'kalshi'), kt, 'kalshi-props', false);
@@ -4940,22 +4969,34 @@ function runStaleScreen() {
   const books = rows.filter(r => !r.app);
   for (const r of books) {
     const id = `${r.group}|${r.side}|${r.venue}`;
-    if (r.ev >= STALE_TRACK_MIN && !staleBets.has(id)) staleBets.set(id, { group: r.group, key: r.key, x: r.x, venue: r.venue, at: t });
+    if (r.ev >= STALE_TRACK_MIN && !staleBets.has(id)) staleBets.set(id, { group: r.group, key: r.key, x: r.x, venue: r.venue, at: t, start: Date.parse(r.start || '') });
   }
-  for (const [id, v] of staleBets) if (t - v.at > 3 * 86400e3) staleBets.delete(id);
+  for (const [id, v] of staleBets) if (Number.isFinite(v.start) ? t > v.start + 3600e3 : t - v.at > 8 * 86400e3) staleBets.delete(id);
+  for (const r of rows) {
+    if (!r.app || !(r.ev >= 2) || !r.rowKey) continue;
+    const id = `${r.group}|${r.side}|${r.venue}`;
+    if (!staleAppPending.has(id)) staleAppPending.set(id, { r, at: t, row: staleBoardByKey.get(r.rowKey) || null });
+  }
+  for (const [id, v] of staleAppPending) if (t - v.at > 6 * 3600e3) staleAppPending.delete(id);
   const { fairs, costs } = staleState.engine.marks(staleBets, t);
   staleTracker.recordBoard(books, fairs, { costs }).catch(e => console.warn('Stale lines tracker:', e.message));
 }
-// the apps' stale rows as props-record legs (kinds 'stale' and 'stale-single')
+// the apps' stale legs since the last call as props-record legs (kinds
+// 'stale' and 'stale-single'), as priced when each first showed
 function staleAppPlays(boardRows) {
   if (!staleState.enabled) return [];
   const byKey = new Map(boardRows.map(r => [r.key, r]));
-  return staleState.rows.filter(r => r.app && r.ev >= 2 && r.rowKey && byKey.has(r.rowKey)).map(r => ({
-    row: byKey.get(r.rowKey), kind: r.clears ? 'stale' : 'stale-single',
-    play: { book: r.venue, side: r.side, line: r.point, mult: r.mult, fair: r.fairProb / 100, ev: r.ev, decimal: r.decimal, entry: r.entry, entries: r.entries,
-      sources: [{ book: 'pinnacle', line: null, p: r.fairProb }],
-      stale: { mins: r.mins, dPts: r.dPts, pinPre: r.pinPre, pinPost: r.pinPost, confirmedBy: r.confirmedBy, moveAt: r.moveAt } },
-  }));
+  const out = [];
+  for (const { r, at, row } of staleAppPending.values()) {
+    const br = byKey.get(r.rowKey) || row;
+    if (!br) continue;
+    out.push({ row: br, kind: r.source,
+      play: { book: r.venue, side: r.side, line: r.point, mult: r.mult, fair: r.fairProb / 100, ev: r.ev, decimal: r.decimal, entry: r.entry, entries: r.entries, signalAt: at,
+        sources: [{ book: 'pinnacle', line: null, p: r.fairProb }],
+        stale: { mins: r.mins, dPts: r.dPts, pinPre: r.pinPre, pinPost: r.pinPost, confirmedBy: r.confirmedBy, moveAt: r.moveAt } } });
+  }
+  staleAppPending.clear();
+  return out;
 }
 
 // ── BIG MONEY (bigmoney.js) ──
@@ -5229,7 +5270,8 @@ async function trackSportProps() {
   try {
     propsBoardCache.at = 0;
     const { rows, sportPlays } = propsBoardRows();
-    const updated = { prizepicks: ppState.fullAt ? new Date(ppState.fullAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
+    // when each app's lines were last read (a PrizePicks pull that failed read nothing)
+    const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)];
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }

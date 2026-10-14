@@ -122,3 +122,27 @@ test('a sharp leg is graded at its entry and scores each source', async () => {
   assert.ok(Math.abs(s.bySource.pinnacle.brier - 0.42 ** 2) < 1e-3);
   assert.ok(s.bySource.consensus);
 });
+
+test('a stale-line leg is logged as of the read it first showed on, and only legs still up count toward its executable close EV', async () => {
+  let t = Date.parse('2026-10-19T12:00:00Z');
+  const tr = createSportTracker({ store: createMemoryStore(), now: () => t, log: { warn() {} } });
+  const r = row({ underdog: cell(48.5, 1, 1) }, { startTime: '2026-10-19T17:00:00Z' });
+  const first = t - 100e3;   // shown 100 s before the record took it
+  const play = { book: 'underdog', side: 'Under', line: 48.5, mult: 1, fair: 0.58, ev: 3.1, decimal: 1.7784, signalAt: first, sources: [] };
+  await tr.record({ rows: [r], flagged: [{ row: r, play, kind: 'stale' }], fairAt: () => 0.42, updated: { underdog: new Date(t).toISOString() } });
+  let [b] = await tr.list();
+  assert.strictEqual(b.signalAt, new Date(first).toISOString());
+  // Underdog's next read, 2 min after it first showed: the app has moved the line
+  t += 30e3;
+  const moved = row({ underdog: cell(46.5, 1, 1) }, { startTime: '2026-10-19T17:00:00Z' });
+  await tr.record({ rows: [moved], flagged: [], fairAt: () => 0.42, updated: { underdog: new Date(t).toISOString() } });
+  [b] = await tr.list();
+  assert.strictEqual(b.execOk, false);
+  t = Date.parse('2026-10-19T17:01:00Z');
+  await tr.record({ rows: [moved], flagged: [] });
+  const s = (await tr.summary()).byKind.stale;
+  assert.strictEqual(s.closed, 1);
+  assert.ok(s.closeEvAvg > 0);          // the market agreed...
+  assert.strictEqual(s.execClosed, 0);  // ...but nobody could take it
+  assert.strictEqual(s.execCloseEvAvg, null);
+});

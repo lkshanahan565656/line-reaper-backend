@@ -184,18 +184,26 @@ test('Pinnacle turning back marks the first move reverted, not never followed; a
   assert.equal(c.never, 0);
 });
 
-test('an app read taken before Pinnacle\'s move but landing after it counts as ahead, not stale', () => {
-  const eng = S.createStaleLines();
+test('an app change read before Pinnacle\'s previous read led the move; one read between Pinnacle\'s two reads followed within a read', () => {
   const pin = line => [{ sport: 'NFL', player: 'Josh Allen', mkey: 'pass_yds', line, pOver: 0.5, over: -110, under: -110, start: START }];
-  const row = { key: 'NFL|joshallen|pass_yds', sport: 'NFL', player: 'Josh Allen', mkey: 'pass_yds', startTime: START, books: { underdog: { line: 245.5, over: 1, under: 1, overOpen: true, underOpen: true } } };
-  eng.observe(S.pinPropQuotes(pin(245.5)), min(0));
-  eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(0));
-  eng.observe(S.pinPropQuotes(pin(256.5)), min(4));
-  row.books.underdog.line = 255.5;
-  eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(3));   // read at 3, observed after Pinnacle's move at 4
-  eng.step(min(5));
-  assert.equal(eng.rows(min(5), { priceApp: () => ({ ev: 9, decimal: 1.8 }) }).length, 0);
-  assert.equal(eng.lagSummary(min(5)).lag.find(c => c.venue === 'underdog').led, 1);
+  const run = appReadAt => {
+    const eng = S.createStaleLines();
+    const row = { key: 'NFL|joshallen|pass_yds', sport: 'NFL', player: 'Josh Allen', mkey: 'pass_yds', startTime: START, books: { underdog: { line: 245.5, over: 1, under: 1, overOpen: true, underOpen: true } } };
+    eng.observe(S.pinPropQuotes(pin(245.5)), min(0));
+    eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(0));
+    eng.observe(S.pinPropQuotes(pin(245.5)), min(2));   // Pinnacle's previous read, still on 245.5
+    eng.observe(S.pinPropQuotes(pin(256.5)), min(4));
+    row.books.underdog.line = 255.5;
+    eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(appReadAt));   // observed after Pinnacle's move at 4
+    eng.step(min(5));
+    assert.equal(eng.rows(min(5), { priceApp: () => ({ ev: 9, decimal: 1.8 }) }).length, 0);
+    return eng.lagSummary(min(5)).lag.find(c => c.venue === 'underdog');
+  };
+  const early = run(1.5), between = run(3);
+  assert.equal(early.led, 1);
+  assert.equal(between.led, 0);
+  assert.equal(between.followed, 1);
+  assert.equal(between.medianMin, 0);
 });
 
 test('lag stats: a true median, and open moves past the mark count against "within"', () => {
@@ -232,4 +240,111 @@ test('the lag table counts moves under the rows\' sport keys, whatever name the 
   const lag = eng.lagSummary(min(1));
   assert.deepEqual(Object.keys(lag.bySport), ['nfl']);
   assert.equal(eng.rows(min(1)).find(r => r.venue === 'fanduel').sport, 'nfl');
+});
+
+test('a juice tick that only changes which of Pinnacle\'s posted lines is nearest even money is not a move', () => {
+  // a player listed at two lines, each ticking a point
+  const eng = S.createStaleLines();
+  const p = (a, b) => [
+    { sport: 'WNBA', player: 'Angel Reese', mkey: 'points', line: 14.5, pOver: a, over: -125, under: 105, start: START },
+    { sport: 'WNBA', player: 'Angel Reese', mkey: 'points', line: 15.5, pOver: b, over: 102, under: -122, start: START },
+  ];
+  const fd = [{ key: 'WNBA|angelreese|points|2026-10-14', source: 'fanduel', q: { kind: 'prop', mkey: 'points', sport: 'WNBA', pts: [{ x: 15.5, p: 0.5, d0: 1.909, d1: 1.909 }] }, meta: { sport: 'WNBA', kind: 'prop', market: 'points', player: 'Angel Reese', start: START } }];
+  for (let m = 0; m < 12; m += 2) { eng.observe([...S.pinPropQuotes(m % 4 ? p(0.52, 0.47) : p(0.53, 0.48)), ...fd], min(m)); eng.step(min(m)); }
+  assert.equal(eng.lagSummary(min(12)).moves24h, 0);
+  assert.equal(eng.rows(min(12)).length, 0);
+  // a total with Pinnacle's alternate ladder: the main stays 47.5, the nearest-50% rung flips
+  const e2 = S.createStaleLines();
+  const A = book('pinnacle', [[-3, -105, -105]], [[47.5, -122, 102], [46.5, -150, 125], [48.5, -102, -118]]);
+  const B = book('pinnacle', [[-3, -105, -105]], [[47.5, -115, -105], [46.5, -150, 125], [48.5, 104, -124]]);
+  for (let m = 0; m < 10; m++) { e2.observe(S.gameQuotes([game([m % 2 ? B : A])], 'nfl'), min(m)); e2.step(min(m)); }
+  assert.equal(e2.lagSummary(min(10)).moves24h, 0);
+});
+
+test('one of Pinnacle\'s listings missing from a read is not a move', () => {
+  const eng = S.createStaleLines();
+  const L = (line, pOver, over, under) => ({ sport: 'WNBA', player: 'Angel Reese', mkey: 'points', line, pOver, over, under, start: START });
+  const both = [L(14.5, 0.52, -112, -108), L(16.5, 0.37, 160, -195)];
+  eng.observe(S.pinPropQuotes(both), min(0));
+  eng.observe(S.pinPropQuotes([both[1]]), min(2));
+  eng.observe(S.pinPropQuotes(both), min(4));
+  eng.step(min(4));
+  assert.equal(eng.lagSummary(min(4)).moves24h, 0);
+});
+
+test('Pinnacle listing one player twice at one line at two prices: no fair we trust, so no moves and no rows, in any order', () => {
+  const eng = S.createStaleLines();
+  const A = { sport: 'WNBA', player: 'Angel Reese', mkey: 'threes', line: 0.5, pOver: 0.43, over: 128, under: -152, start: START };
+  const B = { sport: 'WNBA', player: 'Angel Reese', mkey: 'threes', line: 0.5, pOver: 0.396, over: 142, under: -170, start: START };
+  const fd = [{ key: 'WNBA|angelreese|threes|2026-10-14', source: 'fanduel', q: { kind: 'prop', mkey: 'threes', sport: 'WNBA', pts: [{ x: 0.5, p: 0.42, d0: 2.3, d1: 1.66 }] }, meta: { sport: 'WNBA', kind: 'prop', market: 'threes', player: 'Angel Reese', start: START } }];
+  [[A, B], [B, A], [A, B], [B, A]].forEach((order, i) => { eng.observe([...S.pinPropQuotes(order), ...fd], min(2 * i)); eng.step(min(2 * i)); });
+  assert.equal(eng.lagSummary(min(8)).moves24h, 0);
+  assert.equal(eng.rows(min(8)).length, 0);
+  assert.equal(eng.fairAt('WNBA|angelreese|threes|2026-10-14', 0.5, min(8)), null);
+  // the pick between two prices at one line doesn't depend on the order
+  const e1 = S.createStaleLines(), e2 = S.createStaleLines();
+  const C = { ...A, pOver: 0.432, over: 125, under: -150 };
+  e1.observe(S.pinPropQuotes([A, C]), min(0)); e2.observe(S.pinPropQuotes([C, A]), min(0));
+  assert.deepEqual(e1.history('WNBA|angelreese|threes|2026-10-14').sources.pinnacle, e2.history('WNBA|angelreese|threes|2026-10-14').sources.pinnacle);
+});
+
+test('a partial pullback leaves a venue that never moved stale, priced at Pinnacle\'s fair now', () => {
+  const eng = S.createStaleLines();
+  const pin = (o, u) => book('pinnacle', [[-3, -105, -105]], [[47.5, o, u]]);
+  const fd = book('fanduel', [[-3, -110, -110]], [[47.5, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pin(-105, -105), fd])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pin(-134, 120), fd])], 'nfl'), min(1));
+  eng.step(min(1));
+  assert.ok(eng.rows(min(1)).find(r => r.venue === 'fanduel' && r.kind === 'total').ev > 5);
+  eng.observe(S.gameQuotes([game([pin(-119, 111), fd])], 'nfl'), min(3));   // back halfway
+  eng.step(min(3));
+  const r = eng.rows(min(3)).find(x => x.venue === 'fanduel' && x.kind === 'total');
+  assert.ok(r, 'still stale after the pullback');
+  assert.equal(r.side, 'Over');
+  assert.ok(r.ev > 1.5 && r.ev < 3, `ev ${r.ev}`);
+  assert.equal(r.mins, 2);   // since the first move
+  assert.match(r.pinNow, /^o47\.5 53/);
+  const c = eng.lagSummary(min(3)).lag.find(x => x.venue === 'fanduel' && x.kind === 'total');
+  assert.equal(c.reverted, 0);
+  assert.equal(c.led, 0);
+});
+
+test('a line the venue takes down drops off the board at once, gets no +2 min price, and is pulled after two reads without it', () => {
+  const eng = S.createStaleLines();
+  const done = ['pinnacle|game', 'fanduel|game', 'betrivers|game'];
+  const fd = book('fanduel', [[-3, -110, -110]]), br = book('betrivers', [[-3, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pinBefore, fd, br])], 'nfl'), min(0), 'books', done);
+  eng.observe(S.gameQuotes([game([pinAfter, fd, br])], 'nfl'), min(1), 'books', done);
+  eng.step(min(1));
+  const brRow = eng.rows(min(1)).find(r => r.venue === 'betrivers' && r.kind === 'spread');
+  assert.ok(brRow);
+  const bets = new Map([['br', { group: brRow.group, key: brRow.key, x: brRow.x, venue: 'betrivers', at: min(1) }]]);
+  // BetRivers suspends the spread: gone from its next reads
+  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(2), 'books', done);
+  eng.step(min(2));
+  assert.equal(eng.rows(min(2)).filter(r => r.venue === 'betrivers').length, 0);
+  assert.ok(eng.rows(min(2)).find(r => r.venue === 'fanduel'));
+  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(3), 'books', done);
+  eng.step(min(3));
+  assert.equal(eng.marks(bets, min(3)).costs.size, 0);
+  const c = eng.lagSummary(min(3)).lag.find(x => x.venue === 'betrivers' && x.kind === 'spread');
+  assert.equal(c.pulled, 1);
+  assert.equal(c.open, 0);
+});
+
+test('the +2 min price comes from a venue read at least 105 s after the flag, never the read it was flagged on', () => {
+  const eng = S.createStaleLines();
+  const fd = book('fanduel', [[-3, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pinBefore, fd])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(1));
+  eng.step(min(1));
+  const r = eng.rows(min(1)).find(x => x.venue === 'fanduel' && x.kind === 'spread');
+  const bets = new Map([['fd', { group: r.group, key: r.key, x: r.x, venue: 'fanduel', at: min(1) }]]);
+  // Pinnacle read again; FanDuel not yet
+  eng.observe(S.gameQuotes([game([pinAfter])], 'nfl'), min(2.9));
+  assert.equal(eng.marks(bets, min(2.9)).costs.size, 0);
+  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(3));
+  const { costs, fairs } = eng.marks(bets, min(3));
+  assert.ok(Math.abs(costs.get(`${r.group}|Kansas City Chiefs|fanduel`) - 1 / 1.9091) < 1e-3);
+  assert.ok(fairs.get(`${r.group}|Kansas City Chiefs`) > 53);
 });

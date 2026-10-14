@@ -192,7 +192,9 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       // graded again at the price two minutes after the flag (execClv), where a subscriber gets in
       const ex = list.filter(b => b.execClv != null);
       // execAlertClv: the same bets graded at the alert, so the two compare like for like
-      const exec = ex.length ? { execN: ex.length, avgExecClv: r2(ex.reduce((a, b) => a + b.execClv, 0) / ex.length), execAlertClv: r2(ex.reduce((a, b) => a + b.clv, 0) / ex.length), execBeatPct: r2(100 * ex.filter(b => b.execClv > 0).length / ex.length) } : { execN: 0 };
+      // execStillN: of those, the ones still at the flagged price or better (rounding aside)
+      const exec = ex.length ? { execN: ex.length, avgExecClv: r2(ex.reduce((a, b) => a + b.execClv, 0) / ex.length), execAlertClv: r2(ex.reduce((a, b) => a + b.clv, 0) / ex.length), execBeatPct: r2(100 * ex.filter(b => b.execClv > 0).length / ex.length),
+        execStillN: ex.filter(b => b.execPrice * b.decimal <= 1 + 5e-4).length } : { execN: 0 };
       const sz = list.filter(b => b.execSizedClv != null);
       if (sz.length) Object.assign(exec, { sizedN: sz.length, avgSizedClv: r2(sz.reduce((a, b) => a + b.execSizedClv, 0) / sz.length), sizedFullPct: r2(100 * sz.filter(b => b.execSizedUsd >= 99).length / sz.length) });
       return { n, avgEvAtFlag: avg(b => b.evAtFlag), avgClv: avg(b => b.clv), beatClosePct: r2(100 * list.filter(b => b.clv > 0).length / n), ...exec };
