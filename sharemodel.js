@@ -8,8 +8,8 @@
 //   Pinnacle's team total on each map the line covers × the player's share
 //
 // with the share from his recent games (kills a game over the five players'
-// kills a game, the five the books list for his team), shrunk toward an even
-// fifth by SHRINK_GAMES games. A team with fewer than five players on the
+// kills a game, the five the books list for his team), a share above a fifth
+// shrunk toward it by shrinkGames games. A team with fewer than five players on the
 // board, or a player with too few games, is an unknown lineup: no share.
 //
 // Two numbers for each line, both off Pinnacle's team total:
@@ -25,7 +25,14 @@ const { sideProbs } = require('./dist');
 const { probToAmerican } = require('./ev');
 
 const DEFAULTS = {
-  shrinkGames: 5,    // games of an even fifth mixed into each player's share (Dota fit: 0 to 5 best)
+  // games of an even fifth mixed into a share above a fifth: a carry's hot
+  // stretch regresses, a support's low share doesn't (it's the role). Fit on
+  // 6,661 LoL and 9,299 Dota games: RMSE 2.079 vs 2.089 raw, carries
+  // calibrated within a point or two
+  shrinkGames: 8,
+  // LoL supports (under this share) run over their mean less than the curve
+  // says (55% priced, 49% hit), so they aren't priced
+  lolMinShare: 0.12,
   minGames: 6,       // fewer games than this and the share is a guess
   need: 5,           // players on the board for a team before its shares mean anything
   minEv: 2,          // percent past the app's break-even
@@ -48,7 +55,8 @@ function teamShares(players, o = {}) {
   const even = 1 / ok.length;
   const shrunk = ok.map(p => {
     const raw = p.rate / sum;
-    return { key: p.key, raw, games: p.games, s: (raw * p.games + even * shrinkGames) / (p.games + shrinkGames) };
+    const k = raw > even ? shrinkGames : 0;
+    return { key: p.key, raw, games: p.games, s: (raw * p.games + even * k) / (p.games + k) };
   });
   const tot = shrunk.reduce((a, x) => a + x.s, 0);
   const out = new Map();

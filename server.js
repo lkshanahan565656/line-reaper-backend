@@ -2319,6 +2319,7 @@ function priceKillShares(picks, { fam, sideOf }) {
     const sh = shares.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
     const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
     if (!sh || !pingap.spanIsCertain(maps, p.context?.bestOf)) continue;
+    if (game === 'LOL' && sh.share < sharemodel.DEFAULTS.lolMinShare) { st.supports = (st.supports || 0) + 1; continue; }
     const have = maps.map(n => s.m.pinTeamKills[n]?.[s.i]).filter(x => x > 0);
     if (!have.length) continue;
     // a map Pinnacle hasn't posted yet takes the average of the ones it has
@@ -2354,7 +2355,7 @@ function priceKillShares(picks, { fam, sideOf }) {
     const s = sideOf(p), game = fam(p);
     const sh = shares.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
     const k = `${game}|${normalizeName(p.player)}`;
-    if (!sh) continue;
+    if (!sh || (game === 'LOL' && sh.share < sharemodel.DEFAULTS.lolMinShare)) continue;
     const e = index.get(k) || { share: sh.share, teamName: s.m.teams[s.i], start: Date.parse(s.m.start) || null,
       pinByMap: Object.fromEntries(Object.entries(s.m.pinTeamKills).map(([n, v]) => [n, v?.[s.i]]).filter(([, v]) => v > 0)), booksPerMap: null };
     const base = p.matchup?.baseMean ?? p.marketPred;
