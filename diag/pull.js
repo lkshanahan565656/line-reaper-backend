@@ -78,6 +78,17 @@ async function pinnacle() {
   save('pin.json.gz', { at: new Date().toISOString(), matchups: mu, markets: mk });
 }
 
+async function kambi() {
+  const KB = 'https://eu-offering-api.kambicdn.com/offering/v2018/rsiusnj';
+  const h = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/129.0 Safari/537.36', Accept: 'application/json' };
+  const lv = await fetch(`${KB}/listView/esports/all/all/all/matches.json?lang=en_US&market=US&useCombined=true`, { headers: h }).then(r => r.json()).catch(() => null);
+  const evs = (lv?.events || []).map(x => x.event).filter(e => e && e.state === 'NOT_STARTED');
+  const out = [];
+  for (const e of evs.slice(0, 12)) out.push(await fetch(`${KB}/betoffer/event/${e.id}.json?lang=en_US&market=US&includeParticipants=true`, { headers: h }).then(r => r.json()).catch(() => null));
+  log('kambi', evs.length);
+  save('kambi.json.gz', out);
+}
+
 async function gol() {
   const y = new Date().getFullYear() - 2010;
   const r = await get(`https://gol.gg/players/list/season-S${y}/split-ALL/tournament-ALL/`, { ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/129.0 Safari/537.36' });
@@ -86,6 +97,6 @@ async function gol() {
 }
 
 (async () => {
-  const which = (process.env.WHICH || 'pin,gol,dota,lol').split(',');
-  for (const w of which) { try { await ({ lol, dota, pin: pinnacle, gol })[w](); } catch (e) { log(w, 'failed', e.message); } }
+  const which = (process.env.WHICH || 'pin,kambi,gol,dota,lol').split(',');
+  for (const w of which) { try { await ({ lol, dota, pin: pinnacle, gol, kambi })[w](); } catch (e) { log(w, 'failed', e.message); } }
 })();
