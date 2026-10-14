@@ -132,7 +132,7 @@ function fill(books, legs) {
   const seen = new Map();     // arb key → tracking
   const cycles = [];
   const bestHist = {};        // bucket of each matched pair's best all-in %
-  let rot = 0, cycle = 0, kErr = 0, ladderEv = 0; const ladHist = {}; const kMsg = {};
+  let rot = 0, cycle = 0, kErr = 0, ladderEv = 0; const ladHist = {}; let lastLadder = []; const kMsg = {};
   while (Date.now() - t0 < DUR) {
     const c0 = Date.now(); cycle++; kErr = 0;
     const batch = [...prio, ...rest.slice(rot, rot + 25)]; rot = rest.length ? (rot + 25) % rest.length : 0;
@@ -158,6 +158,7 @@ function fill(books, legs) {
     ladderEv = Math.max(ladderEv, evK.length + evU.length);
     const lbest = new Map();
     for (const a of [...ladK, ...ladU]) { const k = a.legs[0].row.id + a.legs[1].row.id; if (!lbest.has(k) || lbest.get(k).pct < a.pct) lbest.set(k, a); }
+    lastLadder = [...lbest.values()].sort((a, b) => b.pct - a.pct).slice(0, 40).map(a => ({ title: a.title, league: a.legs[0].row.league, subject: a.subject, pct: a.pct, cost: a.cost, start: a.startTime, legs: a.legs.map(l => `${l.venue} ${l.id} ${l.side}@${l.price} t=${l.t}`) }));
     for (const a of lbest.values()) { const b = Math.max(-10, Math.floor(a.pct)); ladHist[b] = (ladHist[b] || 0) + 1; if (a.pct > -1) cands.push(a); }
     let mid = [];
     try { mid = xarb.findMiddles(kalshi, us, matches, { ...o, middleMinEv: -1000, middleMaxEv: 1e9, middleMax: 1e6 }).filter(m => m.totalCost < 1.01); } catch (e) { console.log('middles', e.message); }
@@ -193,6 +194,8 @@ function fill(books, legs) {
   const list = [...seen.values()].map(s => ({ ...s, lastedSec: Math.round((s.last - s.first) / 1000) })).sort((a, b) => b.bestProfit - a.bestProfit);
   console.log('kalshi errors', JSON.stringify(kMsg));
   console.log('ladder events (max per cycle)', ladderEv, 'ladder best % per pair (bucket: count)', JSON.stringify(ladHist));
+  console.log('top ladder pairs, last cycle');
+  for (const x of lastLadder) console.log(JSON.stringify(x));
   console.log('\n=== best all-in % per matched pair, per cycle (floor bucket: count) ===');
   console.log(JSON.stringify(Object.fromEntries(Object.entries(bestHist).sort((a, b) => a[0] - b[0]))));
   console.log(`\n=== fillable arbs (book depth > 0): ${list.length} distinct ===`);
