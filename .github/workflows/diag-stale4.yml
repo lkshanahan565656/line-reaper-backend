@@ -1,0 +1,26 @@
+name: diag-stale4
+on:
+  push:
+    branches: [diag-stale4]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium || true
+      - run: MIN=45 timeout 5400 node diag/stale.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-stale4-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-stale4-out
