@@ -5864,7 +5864,6 @@ function trGapCard(sum) {
   const g = sum.byGap && sum.byGap['line gap'];
   if (!g || !g.picks) return '';
   const o = sum.gapOutcomes || {};
-  const ended = (o.caught || 0) + (o.pulled || 0) + (o.joined || 0) + (o.held || 0);
   const fixed = (o.caught || 0) + (o.pulled || 0);
   const tone = v => (v == null ? '' : v > 0 ? 'good' : v < 0 ? 'bad' : '');
   const cell = (num, label, t = '') => `<div class="pb-stat ${t}"><b>${num}</b><span>${label}</span></div>`;
@@ -5874,7 +5873,7 @@ function trGapCard(sum) {
       ${cell(trSigned(g.units) + 'u', 'Units (1u / leg)', tone(g.units))}
       ${g.mktMoved ? cell(trPct(g.mktBeatShare, 0), `Close our way · ${g.mktBeat}/${g.mktMoved}`, g.mktBeatShare != null ? tone(g.mktBeatShare - 0.5) : '') : cell('—', 'Close our way · none moved yet')}
       ${g.closeEvAvg != null ? cell(trSigned(g.closeEvAvg * 100, 1) + '%', `EV at the close · n=${g.mktClvSample}`, tone(g.closeEvAvg)) : ''}
-      ${ended ? cell(trPct(fixed / ended, 0), `Book fixed its line · ${fixed}/${ended}`, tone(fixed / ended - 0.5)) : ''}
+      ${fixed + (o.joined || 0) ? cell(trPct(fixed / (fixed + (o.joined || 0)), 0), `Gaps closed our way · ${fixed}/${fixed + (o.joined || 0)}`, tone(fixed / (fixed + (o.joined || 0)) - 0.5)) : ''}
     </div>
     <div class="tr-note" style="margin:0">A line gap is a play where the book we took hung a softer line than another book on the same player and stat (an over below the others, an under above them). By lock, the book we took moved its line most of the way to the others on ${o.caught || 0}, pulled the line on ${o.pulled || 0}, and stayed put while the others came to it on ${o.joined || 0}; ${o.held || 0} gaps held.</div>
   </div>`;

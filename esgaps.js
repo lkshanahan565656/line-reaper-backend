@@ -10,7 +10,10 @@
 const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
 
 const DEFAULTS = {
-  minProbPts: 4,     // the gap must be worth this many points of win chance on our side
+  // the gap must be worth this many points of win chance on our side. A one-kill
+  // difference on a CS line (about 5 points) is everyday shading between books
+  // (live 2026-10-14: 69 of 78 gaps were under 8); a LoL 1.5 vs 3.5 is 20 to 37.
+  minProbPts: 8,
 };
 
 // Each book's own line on a board pick. ppLine is the base line, which is the
