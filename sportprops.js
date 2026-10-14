@@ -206,4 +206,213 @@ function researchGap(plays, o = DEFAULTS) {
   return [{ play: odd, kind: 'gap-odd' }, ...(stale ? [{ play: stale, kind: 'gap-stale' }] : [])];
 }
 
-module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS };
+// ── SHARP CONSENSUS ──────────────────────────────────────────────────────────
+// The pick'em apps are the soft side; the sportsbooks that take real action
+// are the price. Pinnacle, FanDuel and BetRivers each post both sides of a
+// player prop (vig out, power method), and Kalshi's player ladders trade it
+// outright. Each source's line and no-vig chance read as a mean on the stat's
+// curve, weighted by how sharp the source is, and the weighted mean prices the
+// app's own line. No pick'em app is in it: an app's line is what's being
+// priced, never the fair. A play needs two or more sharp sources that roughly
+// agree; one book alone, or books far apart (often two different games), say
+// nothing.
+const SHARP_BOOKS = ['pinnacle', 'kalshi', 'fanduel', 'betrivers'];
+const CONSENSUS = {
+  // Starting weights (Pinnacle the market-maker, FanDuel the biggest US book,
+  // Kambi copying the market). The record's bySource Brier scores are what
+  // should set these: SPORT_SHARP_WEIGHTS=pinnacle:3,fanduel:2,...
+  weights: { pinnacle: 3, kalshi: 2, fanduel: 2, betrivers: 1 },
+  minSources: 2,
+  maxSpreadPts: 12,     // sources this far apart at our line: not one market
+  minEv: 2,             // % over the entry's break-even
+};
+
+// The cheapest break-even of each pick'em entry, from slip.js's payout tables:
+// power pays on a sweep only, flex on a near miss too. A leg is priced at the
+// entry it's graded against (gradeEntry), and every entry it clears is listed.
+const { PAYOUTS } = require('./slip');
+const choose = (n, k) => { let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return r; };
+function tableBreakEven(table, n) {
+  const ev = p => Object.entries(table).reduce((a, [h, pay]) => a + choose(n, +h) * p ** +h * (1 - p) ** (n - +h) * pay, 0);
+  let lo = 0.3, hi = 0.95;
+  for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (ev(m) < 1) lo = m; else hi = m; }
+  return +((lo + hi) / 2).toFixed(4);
+}
+const PP_ENTRIES = [
+  ...Object.entries(PAYOUTS.prizepicks_power).map(([n, t]) => ({ name: `${n}-pick power`, legs: +n, be: tableBreakEven(t, +n) })),
+  ...Object.entries(PAYOUTS.prizepicks_flex).map(([n, t]) => ({ name: `${n}-pick flex`, legs: +n, be: tableBreakEven(t, +n) })),
+].sort((a, b) => a.be - b.be);
+// PrizePicks legs are graded at a 3-pick power play (6x, 55.0% a leg): the
+// smallest entry with a low break-even, built from the few legs that clear at
+// once. A 5- or 6-pick flex needs less a leg but more legs at the same time.
+const PP_GRADE = PP_ENTRIES.find(e => e.name === '3-pick power');
+
+// sharp: [{ book, line, pOver }] (Pinnacle's quote, FanDuel's and BetRivers'
+// props for this game); kalshi: line → P(over) from the board's cells.
+// → { p, mean, n, spreadPts, sources: [{ book, line, p, at }] } or null.
+// `at` is that source's own chance at our line, read off its own mean.
+function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = {}) {
+  const srcs = [];
+  for (const s of sharp) if (s && s.line != null && s.pOver > 0 && s.pOver < 1 && o.weights[s.book] > 0) srcs.push({ book: s.book, line: s.line, p: s.pOver });
+  // Kalshi: its price at our line when it has one, else its nearest rung
+  if (kalshi?.size && o.weights.kalshi > 0) {
+    let best = null;
+    for (const [l, p] of kalshi) if (p > 0 && p < 1 && (!best || Math.abs(l - line) < Math.abs(best[0] - line))) best = [l, p];
+    if (best) srcs.push({ book: 'kalshi', line: best[0], p: best[1] });
+  }
+  const means = [];
+  for (const s of srcs) {
+    const m = meanFor(row.mkey, row.sport, s.line, s.p);
+    if (m == null) continue;
+    means.push({ ...s, m, w: o.weights[s.book], at: pOver(row.mkey, row.sport, m, line) });
+  }
+  if (means.length < o.minSources) return null;
+  const ats = means.map(x => x.at);
+  const spreadPts = +((Math.max(...ats) - Math.min(...ats)) * 100).toFixed(1);
+  if (spreadPts > o.maxSpreadPts) return null;
+  const w = means.reduce((a, x) => a + x.w, 0);
+  const mean = means.reduce((a, x) => a + x.m * x.w, 0) / w;
+  return { p: pOver(row.mkey, row.sport, mean, line), mean: +mean.toFixed(2), n: means.length, spreadPts,
+    sources: means.map(x => ({ book: x.book, line: x.line, p: +(x.p * 100).toFixed(1), at: +(x.at * 100).toFixed(1) })) };
+}
+
+// Every open side of every app on a row, priced on the sharp consensus.
+// dfsEv(p, book, mult, cell, side) prices Underdog and Sleeper at their own
+// payouts (dfsLegEv); a PrizePicks leg is priced at PP_GRADE and lists every
+// entry it clears. → plays, best first:
+// { book, side, line, mult, fair, ev, decimal, entry, entries, n, spreadPts, sources }
+function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS } = {}) {
+  if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
+  const out = [];
+  for (const [book, c] of Object.entries(row.books || {})) {
+    const f = consensusFor(row, c.line, { sharp, kalshi, o });
+    if (!f) continue;
+    for (const side of ['Over', 'Under']) {
+      if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
+      const fair = side === 'Over' ? f.p : 1 - f.p;
+      const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+      let ev, decimal = null, entry = null, entries = null;
+      if (book === 'prizepicks') {
+        ev = (fair / PP_GRADE.be - 1) * 100;
+        decimal = +(1 / PP_GRADE.be).toFixed(4);
+        entry = PP_GRADE.name;
+        entries = PP_ENTRIES.filter(e => fair > e.be).map(e => e.name);
+      } else {
+        ev = dfsEv(fair, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side);
+      }
+      if (ev == null || !Number.isFinite(ev)) continue;
+      out.push({ book, side, line: c.line, mult, fair: +fair.toFixed(4), ev: +ev.toFixed(2), decimal, entry, entries,
+        mean: f.mean, n: f.n, spreadPts: f.spreadPts, sources: f.sources });
+    }
+  }
+  return out.sort((a, b) => b.ev - a.ev);
+}
+
+// Sportsbook props (freebooks' Odds API games) → [{ sport, key, book, line, pOver, start }]:
+// one no-vig quote per book, player, stat and game, in pinprops' row keys.
+// sportOf maps the feed's sport key (nfl) to the board's (NFL).
+function bookPropQuotes(gamesBySport, sportOf, canonName, books = ['fanduel', 'betrivers']) {
+  const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+  const out = [];
+  for (const [s, games] of Object.entries(gamesBySport || {})) {
+    const sport = sportOf(s);
+    if (!sport) continue;
+    for (const g of games || []) {
+      for (const bm of g.bookmakers || []) {
+        if (!books.includes(bm.key)) continue;
+        for (const m of bm.markets || []) {
+          if (/^(h2h|spreads|totals)$/.test(m.key)) continue;
+          const pairs = new Map();
+          for (const x of m.outcomes || []) {
+            if (!x.description || x.point == null) continue;
+            const k = `${x.description}|${x.point}`;
+            if (!pairs.has(k)) pairs.set(k, {});
+            pairs.get(k)[x.name] = x;
+          }
+          for (const { Over, Under } of pairs.values()) {
+            if (!Over || !Under) continue;
+            const po = toProb(Over.price), pu = toProb(Under.price);
+            if (!(po > 0 && pu > 0) || po + pu < 1) continue;
+            out.push({ sport, key: `${sport}|${canonName(Over.description)}|${m.key}`, book: bm.key, player: Over.description, mkey: m.key,
+              line: Number(Over.point), pOver: +devigPower(po, pu).toFixed(4), start: g.commence_time });
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+// power devig: p^k + q^k = 1 (as pinprops does)
+function devigPower(po, pu) {
+  let lo = 0.5, hi = 2;
+  for (let i = 0; i < 50; i++) { const k = (lo + hi) / 2; if (po ** k + pu ** k > 1) lo = k; else hi = k; }
+  return po ** ((lo + hi) / 2);
+}
+// One quote per book for a board row: that book's line in the same game
+// (start within slackMs), the nearest start when it lists two.
+function quotesFor(idx, row, slackMs = 3 * 3600e3) {
+  const list = idx?.get(row?.key);
+  const t = Date.parse(row?.startTime || '');
+  if (!list?.length || !t) return [];
+  const best = new Map();
+  for (const q of list) {
+    const d = Math.abs(Date.parse(q.start) - t);
+    if (d > slackMs) continue;
+    const b = best.get(q.book);
+    if (!b || d < b.d) best.set(q.book, { q, d });
+  }
+  return [...best.values()].map(x => x.q);
+}
+
+// "SPORT_SHARP_WEIGHTS=pinnacle:3,fanduel:2" → weights over the defaults
+function parseWeights(s, base = CONSENSUS.weights) {
+  const w = { ...base };
+  for (const part of String(s || '').split(',')) {
+    const [k, v] = part.split(':').map(x => x && x.trim().toLowerCase());
+    if (SHARP_BOOKS.includes(k) && Number.isFinite(parseFloat(v))) w[k] = parseFloat(v);
+  }
+  return w;
+}
+
+// ── STALE LINES ──
+// A pick'em line that sat still while the sharp books moved: the app hasn't
+// caught up yet. moves() keeps each row's consensus mean and each app's line
+// over the last hour; stale(row, book, side) is how many points of win chance
+// the consensus moved toward our side since that app's line last changed.
+function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}) {
+  const hist = new Map();   // row key → [{ t, mean }]
+  const since = new Map();  // row key|book → { line, t }
+  function observe(row, mean) {
+    const t = now();
+    if (mean != null) {
+      const h = hist.get(row.key) || [];
+      if (!h.length || h[h.length - 1].mean !== mean) h.push({ t, mean });
+      while (h.length && t - h[0].t > windowMs) h.shift();
+      hist.set(row.key, h);
+    }
+    for (const [b, c] of Object.entries(row.books || {})) {
+      const k = `${row.key}|${b}`, s = since.get(k);
+      if (!s || s.line !== c.line) since.set(k, { line: c.line, t });
+    }
+  }
+  // → { pts, mins } or null: the consensus at the app's line now vs when it set it
+  function stale(row, book, line, side) {
+    const h = hist.get(row.key), s = since.get(`${row.key}|${book}`);
+    if (!h?.length || !s || s.line !== line) return null;
+    const then = h.filter(x => x.t <= s.t).pop() || h[0];
+    const cur = h[h.length - 1];
+    if (cur === then) return null;
+    const d = pOver(row.mkey, row.sport, cur.mean, line) - pOver(row.mkey, row.sport, then.mean, line);
+    const pts = +((side === 'Over' ? d : -d) * 100).toFixed(1);
+    return { pts, mins: Math.round((now() - Math.max(s.t, then.t)) / 60e3) };
+  }
+  function prune() {
+    const t = now();
+    for (const [k, h] of hist) if (!h.length || t - h[h.length - 1].t > windowMs * 3) hist.delete(k);
+    for (const [k, s] of since) if (t - s.t > 2 * 86400e3) since.delete(k);
+  }
+  return { observe, stale, prune, size: () => hist.size };
+}
+
+module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
+  SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

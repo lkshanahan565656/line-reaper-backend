@@ -6,7 +6,8 @@
 //          same line and side still up at the same payout or better? A play
 //          that was gone by then was never something a subscriber could take.
 //   close  until the game starts, each read keeps the books' lines and the
-//          fair (the other books and Kalshi) at OUR signal line, so CLV is
+//          fair (the play's own: the sharp consensus for kind 'sharp', else
+//          the other books, Kalshi and Pinnacle) at OUR signal line, so CLV is
 //          the chance our ticket wins as the market stood at the start.
 //   grade  ESPN's box score settles it (sportgrade.js). A player who didn't
 //          play, or a box that never shows him, is void after voidAfterMs.
@@ -53,7 +54,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       if (open.has(id)) continue;
       const start = Date.parse(row.startTime || '');
       if (!(start > t)) continue;
-      const decimal = legDecimal(play.book, play.mult);
+      // a consensus PrizePicks leg is priced at the entry it's graded on (play.decimal)
+      const decimal = play.decimal ?? legDecimal(play.book, play.mult);
       const b = {
         id, status: 'open', kind, sport: row.sport, player: row.player, team: row.team || '', matchTitle: row.matchTitle || '',
         market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
@@ -61,6 +63,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
+        ...(kind === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(),
       };
       open.set(id, b);
@@ -87,7 +90,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         }
         const lines = linesOf(row);
         if (JSON.stringify(lines) !== JSON.stringify(b.closeLines)) { b.closeLines = lines; dirty = true; }
-        const pOver = fairAt ? fairAt(row, b.book, b.signalLine) : null;
+        const pOver = fairAt ? fairAt(row, b.book, b.signalLine, b.kind) : null;
         if (pOver != null) {
           const fair = r4(b.signalSide === 'Over' ? pOver : 1 - pOver);
           if (fair !== b.closeFair) { b.closeFair = fair; dirty = true; }
@@ -152,6 +155,20 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       gapOutcomes: list.reduce((a, b) => { if (b.gapOutcome) a[b.gapOutcome] = (a[b.gapOutcome] || 0) + 1; return a; }, {}),
     };
   }
+  // How sharp each source proves: the Brier score of its own chance of our
+  // side at our line (sources[].at, at the signal) on graded consensus legs,
+  // next to the consensus's own. Lower is sharper; these set the weights.
+  function sourceScores(list) {
+    const g = list.filter(b => b.kind === 'sharp' && b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss'));
+    const acc = {};
+    const add = (k, p, y) => { const a = (acc[k] ||= { n: 0, brier: 0 }); a.n++; a.brier += (p - y) ** 2; };
+    for (const b of g) {
+      const y = b.outcome === 'win' ? 1 : 0;
+      add('consensus', b.signalFair, y);
+      for (const x of b.sources || []) if (x.at != null) add(x.book, b.signalSide === 'Over' ? x.at / 100 : 1 - x.at / 100, y);
+    }
+    return Object.fromEntries(Object.entries(acc).map(([k, a]) => [k, { n: a.n, brier: r4(a.brier / a.n) }]));
+  }
   async function summary({ sinceDays } = {}) {
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
@@ -165,7 +182,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     };
     const byKind = {};
     for (const b of every) (byKind[b.kind] ||= []).push(b);
-    return { overall: stats(all), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
+    return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
       voided: (await store.all()).filter(b => b.status === 'void').length };
   }
   async function list({ status, limit = 100 } = {}) {
