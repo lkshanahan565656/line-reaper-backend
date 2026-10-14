@@ -1,0 +1,32 @@
+name: diag-h2h2
+on:
+  push:
+    branches: [diag-h2h2]
+concurrency:
+  group: diag-h2h2
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          mkdir -p out
+          (timeout 70m node diag/csrecent.js 2>&1 | tee out/cs.txt) &
+          (LOLE_DAYS=16 timeout 70m node diag/lole.js 2>&1 | tee out/lol.txt) &
+          wait
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-h2h2-out
+          git add -f out
+          git commit -qm "h2h recent results" ; git push -f origin diag-h2h2-out
