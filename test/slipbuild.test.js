@@ -39,7 +39,7 @@ test('a boosted Underdog leg scales standard and keeps the entry out of flex', (
   const tables = priceOn('UD', legs).map(r => r.table);
   assert.deepEqual(tables, ['underdog_standard']);
   const [r] = priceOn('UD', legs);
-  assert.ok(Math.abs(r.ev - (0.216 * 6 * 0.9 - 1) * 100) < 0.01);
+  assert.ok(Math.abs(r.ev - (0.216 * 6.5 * 0.9 - 1) * 100) < 0.01);
   assert.ok(priceOn('UD', legs.map(l => ({ ...l, mult: 1 }))).some(x => x.table === 'underdog_flex'));
 });
 

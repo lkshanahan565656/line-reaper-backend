@@ -15,7 +15,7 @@ const { priceSlip, PAYOUTS, factorSport } = require('./slip');
 const LEG_FLOOR = -6;      // % EV: legs further below their book's break-even never help a slip
 const POOL_MAX = 20;       // best legs per book the greedy search looks at
 const NEAR_PCT = 5;        // a slip within 5% of break-even is 'near'
-const MAX_LEGS = { PP: 6, UD: 5, SL: 6 };
+const MAX_LEGS = { PP: 6, UD: 6, SL: 6 };
 
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
