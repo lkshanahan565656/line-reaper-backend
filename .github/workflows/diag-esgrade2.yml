@@ -1,0 +1,26 @@
+name: diag-esgrade2
+on:
+  push:
+    branches: [diag-esgrade2]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --omit=dev || npm install --omit=dev
+      - run: timeout 2700 node diag/live.js 2>&1 | tee run.txt || true
+      - if: always()
+        run: |
+          mkdir -p out; cp run.txt out/ || true
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-esgrade2-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-esgrade2-out
