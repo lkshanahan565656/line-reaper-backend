@@ -20,3 +20,4 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [n, p] of snaps) { const r = await get(p); fs.writeFileSync(`out/snap/${n}.json`, r.body); }
   srv.kill(); process.exit(0);
 })();
+// run 22:49
