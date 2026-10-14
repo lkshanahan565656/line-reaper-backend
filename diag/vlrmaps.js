@@ -16,17 +16,18 @@ function parse(html) {
   for (const c of parts) {
     const gid = /data-game-id="(\d+)"/.exec(c.slice(0, 300))?.[1];
     if (!gid) continue;
-    const head = c.split(/<table/)[0];
+    const cut = c.search(/<table|class="ovw-/);
+    const head = cut > 0 ? c.slice(0, cut) : c.slice(0, 20000);
     const scores = [...head.matchAll(/<div class="score[^"]*"[^>]*>\s*(\d+)\s*</g)].map(m => +m[1]);
-    const mapName = txt(/<div class="map"[^>]*>[\s\S]*?<span[^>]*>([\s\S]*?)<span/.exec(head)?.[1] || '');
+    const mapName = txt(/<div class="map-name"[^>]*>[\s\S]*?<span[^>]*>([\s\S]*?)<span/.exec(head)?.[1] || /<div class="map"[^>]*>[\s\S]*?<span[^>]*>([\s\S]*?)<span/.exec(head)?.[1] || '');
     const teams = [...head.matchAll(/<div class="team-name"[^>]*>([\s\S]*?)<\/div>/g)].map(m => txt(m[1]));
     const p = [];
-    for (const row of c.split(/<tr[\s>]/).slice(1)) {
+    for (const row of c.split(/class="ovw-row"|<tr[\s>]/).slice(1)) {
       if (!/mod-player/.test(row)) continue;
-      const name = txt(/<div class="text-of"[^>]*>([\s\S]*?)<\/div>/.exec(row)?.[1]);
-      const tag = txt(/<div class="ge-text-light"[^>]*>([\s\S]*?)<\/div>/.exec(row)?.[1]);
-      const k = /mod-vlr-kills[\s\S]*?mod-both[^>]*>\s*(\d+)/.exec(row)?.[1];
-      const d = /mod-vlr-deaths[\s\S]*?mod-both[^>]*>\s*(\d+)/.exec(row)?.[1];
+      const name = txt((/<div class="ovw-player-name[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(row) || /<div class="text-of"[^>]*>([\s\S]*?)<\/div>/.exec(row))?.[1]);
+      const tag = txt((/<div class="ovw-player-tag[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(row) || /<div class="ge-text-light"[^>]*>([\s\S]*?)<\/div>/.exec(row))?.[1]);
+      const k = (/data-col="kills"><span class="side mod-both[^"]*">\s*(\d+)/.exec(row) || /mod-vlr-kills[\s\S]*?mod-both[^>]*>\s*(\d+)/.exec(row))?.[1];
+      const d = (/data-col="deaths"><span class="side mod-both[^"]*">\s*(\d+)/.exec(row) || /mod-vlr-deaths[\s\S]*?mod-both[^>]*>\s*(\d+)/.exec(row))?.[1];
       const pid = /href="\/player\/(\d+)/.exec(row)?.[1];
       if (name && k != null) p.push([pid, name, tag, +k, d != null ? +d : null]);
     }

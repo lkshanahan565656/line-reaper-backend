@@ -20,13 +20,13 @@ jobs:
       - run: |
           set +e
           node diag/pinsnap.js 2>&1 | tee r.txt
-          MINUTES=3 node diag/vlrmaps.js 2>&1 | tee -a r.txt
+          MINUTES=2 node diag/vlrmaps.js 2>&1 | tee -a r.txt
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-rounds-out
           git add -f r.txt data/*.gz data/*.html
           git commit -qm "rounds output (probe)" ; git push -f origin diag-rounds-out
-          MINUTES=110 node diag/vlrmaps.js 2>&1 | tee -a r.txt
+          SINCE=2025-07-01 MINUTES=60 node diag/vlrmaps.js 2>&1 | tee -a r.txt
           true
       - if: always()
         run: |
