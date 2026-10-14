@@ -1,0 +1,65 @@
+const test = require('node:test');
+const assert = require('node:assert');
+const fb = require('../freebooks');
+const ev = require('../ev');
+
+const NOW = Date.parse('2026-10-14T12:00:00Z');
+const runner = (type, name, odds, handicap = 0) => ({ result: { type }, runnerName: name, runnerStatus: 'ACTIVE', handicap, winRunnerOdds: { americanDisplayOdds: { americanOddsInt: odds } } });
+const fdPage = {
+  attachments: {
+    events: { 1: { eventId: 1, name: 'Milwaukee Brewers (R Gasser) @ Los Angeles Dodgers (B Snell)', openDate: '2026-10-15T00:00:00.000Z' },
+      2: { eventId: 2, name: 'Old @ Game', openDate: '2026-10-14T10:00:00.000Z' } },
+    markets: {
+      a: { eventId: 1, marketType: 'MONEY_LINE', marketStatus: 'OPEN', inPlay: false, runners: [runner('AWAY', 'Brewers', 150), runner('HOME', 'Dodgers', -178)] },
+      b: { eventId: 1, marketType: 'MATCH_HANDICAP_(2-WAY)', marketStatus: 'OPEN', runners: [runner('AWAY', 'Brewers', -150, 1.5), runner('HOME', 'Dodgers', 125, -1.5)] },
+      c: { eventId: 1, marketType: 'TOTAL_POINTS_(OVER/UNDER)', marketStatus: 'OPEN', runners: [runner('OVER', 'Over', -104, 7.5), runner('UNDER', 'Under', -118, 7.5)] },
+      d: { eventId: 1, marketType: 'TO_HIT_A_HOME_RUN', marketStatus: 'OPEN', runners: [runner('X', 'x', 300)] },
+      e: { eventId: 2, marketType: 'MONEY_LINE', marketStatus: 'OPEN', runners: [runner('AWAY', 'Old', 100), runner('HOME', 'Game', -120)] },
+    },
+  },
+};
+const kbEvent = {
+  events: [{ id: 9, englishName: 'Los Angeles Dodgers - Milwaukee Brewers', start: '2026-10-15T00:05:00Z', state: 'NOT_STARTED' }],
+  betOffers: [
+    { criterion: { englishLabel: 'Moneyline - Including Extra Innings' }, outcomes: [{ type: 'OT_ONE', oddsAmerican: '-170', status: 'OPEN' }, { type: 'OT_TWO', oddsAmerican: '160', status: 'OPEN' }] },
+    { criterion: { englishLabel: 'Run Line - Including Extra Innings' }, outcomes: [{ type: 'OT_ONE', line: -1500, oddsAmerican: '130', status: 'OPEN' }, { type: 'OT_TWO', line: 1500, oddsAmerican: '-155', status: 'OPEN' }] },
+    { criterion: { englishLabel: 'Total Runs - Including Extra Innings' }, outcomes: [{ type: 'OT_OVER', line: 7500, oddsAmerican: '-110', status: 'OPEN' }, { type: 'OT_UNDER', line: 7500, oddsAmerican: '-110', status: 'OPEN' }] },
+    { criterion: { englishLabel: 'Total Runs - Inning 1' }, outcomes: [{ type: 'OT_OVER', line: 500, oddsAmerican: '120', status: 'OPEN' }, { type: 'OT_UNDER', line: 500, oddsAmerican: '-150', status: 'OPEN' }] },
+  ],
+};
+const pinGame = { id: 77, sport: 'baseball', league: 'MLB', home: 'Los Angeles Dodgers', away: 'Milwaukee Brewers', start: '2026-10-15T00:00:00.000Z',
+  ml: { home: 0.6, away: 0.4, raw: [-155, 140] }, spreads: [{ home: -1.5, pHome: 0.42, raw: [135, -150] }], totals: [{ line: 7.5, pOver: 0.49, raw: [-105, -105] }] };
+
+test('parseFanDuel: full-game lines of games not started, pitchers out of the names', () => {
+  const g = fb.parseFanDuel(fdPage, NOW);
+  assert.equal(g.length, 1);
+  assert.deepEqual([g[0].home, g[0].away], ['Los Angeles Dodgers', 'Milwaukee Brewers']);
+  assert.deepEqual(g[0].h2h, [{ name: 'Milwaukee Brewers', price: 150 }, { name: 'Los Angeles Dodgers', price: -178 }]);
+  assert.deepEqual(g[0].spreads.map(o => o.point), [1.5, -1.5]);
+  assert.deepEqual(g[0].totals.map(o => [o.name, o.point]), [['Over', 7.5], ['Under', 7.5]]);
+});
+
+test('parseKambiEvent: home first, lines in thousandths, periods left out', () => {
+  const g = fb.parseKambiEvent(kbEvent, NOW);
+  assert.equal(g.home, 'Los Angeles Dodgers');
+  assert.deepEqual(g.h2h, [{ name: 'Los Angeles Dodgers', price: -170 }, { name: 'Milwaukee Brewers', price: 160 }]);
+  assert.deepEqual(g.spreads, [{ name: 'Los Angeles Dodgers', price: 130, point: -1.5 }, { name: 'Milwaukee Brewers', price: -155, point: 1.5 }]);
+  assert.equal(g.totals.length, 2);
+  assert.equal(fb.parseKambiEvent({ ...kbEvent, events: [{ ...kbEvent.events[0], state: 'STARTED' }] }, NOW), null);
+});
+
+test('mergeGames + ev.screen: the books score against Pinnacle in one market', () => {
+  const games = fb.mergeGames('mlb', [pinGame], [...fb.parseFanDuel(fdPage, NOW), fb.parseKambiEvent(kbEvent, NOW)]);
+  assert.deepEqual(games[0].bookmakers.map(b => b.key), ['pinnacle', 'fanduel', 'betrivers']);
+  const rows = ev.screen({ feeds: [{ sport: 'mlb', games }], now: NOW, minEv: -100 });
+  const fd = rows.find(r => r.book === 'fanduel' && r.market === 'h2h' && r.side === 'Milwaukee Brewers');
+  assert.equal(fd.source, 'sharp');
+  assert.deepEqual(fd.sharpBooks, ['pinnacle']);
+  assert.ok(fd.ev > 0);   // +150 against Pinnacle's +140 / -155 with the vig out
+  const br = rows.find(r => r.book === 'betrivers' && r.market === 'spreads' && /Dodgers/.test(r.side));
+  assert.ok(br && br.ev < 0);
+});
+
+test('bookmakerFor: a game whose teams do not both land is left out', () => {
+  assert.equal(fb.bookmakerFor({ book: 'fanduel', home: 'New York Yankees', away: 'Boston Red Sox', h2h: [{ name: 'x', price: 100 }], spreads: [], totals: [] }, pinGame), null);
+});
