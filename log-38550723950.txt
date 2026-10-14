@@ -269,3 +269,24 @@
 14:54:10 tick 561: pin 1490 games, kalshi 10022 rows / pmus 7948, matched 4143, sides 8254, ev>=thr 52, new 1, eps 726
 14:55:10 tick 562: pin 1490 games, kalshi 10022 rows / pmus 7948, matched 4143, sides 8252, ev>=thr 50, new 0, eps 726
 14:56:09 tick 563: pin 1491 games, kalshi 10022 rows / pmus 7948, matched 4143, sides 8252, ev>=thr 50, new 0, eps 726
+14:57:10 tick 564: pin 1491 games, kalshi 10022 rows / pmus 7948, matched 4143, sides 8248, ev>=thr 48, new 2, eps 728
+14:58:08 tick 565: pin 1490 games, kalshi 10022 rows / pmus 7948, matched 4141, sides 8248, ev>=thr 47, new 1, eps 729
+14:59:10 tick 566: pin 1490 games, kalshi 10022 rows / pmus 7948, matched 4141, sides 8250, ev>=thr 47, new 0, eps 729
+15:00:09 tick 567: pin 1491 games, kalshi 10022 rows / pmus 7948, matched 4141, sides 8198, ev>=thr 45, new 0, eps 729
+15:01:12 tick 568: pin 1468 games, kalshi 10022 rows / pmus 7948, matched 4115, sides 8202, ev>=thr 44, new 1, eps 730
+15:02:10 tick 569: pin 1468 games, kalshi 10018 rows / pmus 7948, matched 4115, sides 8201, ev>=thr 44, new 0, eps 730
+15:03:09 tick 570: pin 1468 games, kalshi 10014 rows / pmus 7948, matched 4113, sides 8194, ev>=thr 43, new 0, eps 730
+15:03:09 settle: 38 due, 11 settled
+15:04:10 tick 571: pin 1468 games, kalshi 10014 rows / pmus 7948, matched 4112, sides 8192, ev>=thr 45, new 3, eps 733
+15:05:10 tick 572: pin 1467 games, kalshi 10014 rows / pmus 7948, matched 4110, sides 8188, ev>=thr 44, new 0, eps 733
+15:06:09 tick 573: pin 1467 games, kalshi 10014 rows / pmus 7948, matched 4110, sides 8188, ev>=thr 44, new 0, eps 733
+15:07:10 tick 574: pin 1467 games, kalshi 10024 rows / pmus 7948, matched 4110, sides 8188, ev>=thr 44, new 0, eps 733
+15:08:11 tick 575: pin 1467 games, kalshi 10022 rows / pmus 7948, matched 4110, sides 8187, ev>=thr 45, new 2, eps 735
+15:09:10 tick 576: pin 1467 games, kalshi 10022 rows / pmus 7948, matched 4110, sides 8187, ev>=thr 49, new 5, eps 740
+15:10:10 tick 577: pin 1476 games, kalshi 10022 rows / pmus 7948, matched 4128, sides 8223, ev>=thr 46, new 0, eps 740
+15:11:19 tick 578: pin 1476 games, kalshi 10022 rows / pmus 7948, matched 4128, sides 8224, ev>=thr 49, new 3, eps 743
+15:12:14 tick 579: pin 1476 games, kalshi 10022 rows / pmus 7948, matched 4128, sides 8219, ev>=thr 53, new 6, eps 749
+15:13:16 tick 580: pin 1475 games, kalshi 10020 rows / pmus 7948, matched 4126, sides 8216, ev>=thr 49, new 2, eps 751
+15:14:13 tick 581: pin 1474 games, kalshi 10028 rows / pmus 7948, matched 4124, sides 8211, ev>=thr 52, new 5, eps 756
+15:15:16 tick 582: pin 1473 games, kalshi 10028 rows / pmus 7948, matched 4121, sides 8209, ev>=thr 50, new 1, eps 757
+15:16:13 tick 583: pin 1473 games, kalshi 10028 rows / pmus 7948, matched 4121, sides 8205, ev>=thr 45, new 0, eps 757
