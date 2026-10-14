@@ -25,10 +25,13 @@ jobs:
           git checkout -B diag-h2h-out
           git add -f out
           git commit -qm "h2h probes" ; git push -f origin diag-h2h-out
+          cp -r out /tmp/probes
           git checkout -q diag-h2h
+          mkdir -p out
           (timeout 95m node diag/h2hpull.js dota 2>&1 | tee out/dota.txt) &
           (SINCE=2025-09-01 MINUTES=90 node diag/vlrmaps.js 2>&1 | tee out/vlr.txt; cp data/vlrmaps.json.gz out/ ) &
           wait
+          cp -n /tmp/probes/* out/
           true
       - if: always()
         run: |
