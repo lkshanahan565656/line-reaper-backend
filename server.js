@@ -3368,12 +3368,8 @@ const ESPORTS_OPTS = {
 };
 const ESPORTS_ALERT_MIN = parseFloat(process.env.ESPORTS_ALERT_MIN || '0.04');
 const ESPORTS_REALERT_MS = 6 * 3600e3;
-// Pinnacle's guest feed is the sharp fair for esports exchange bets: one switch,
-// PINNACLE=on, covers it with the player-props fair (PINNACLE_PROPS=on and a
-// PINNACLE_GUEST_KEY also count). Not a licensed feed: with PAYWALL=on it
-// pauses until PINNACLE_DATA_OK (licences.js).
-const pinnacleOn = () => !!process.env.PINNACLE_GUEST_KEY || ['PINNACLE', 'PINNACLE_PROPS'].some(k => /^(on|1|true|yes)$/i.test(String(process.env[k] || '').trim()));
-const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS, pinnacle: () => ({ on: pinnacleOn(), key: process.env.PINNACLE_GUEST_KEY || '' }) });
+// Pinnacle's no-vig price is the board's fair where it lists the market (PINNACLE=on).
+const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS, pinnacle: () => ({ on: PINNACLE_ON, key: process.env.PINNACLE_GUEST_KEY || '' }) });
 const esportsEdgeSeen = new Map();
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
