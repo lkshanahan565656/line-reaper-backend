@@ -1,19 +1,24 @@
-name: diag-boosts
+name: diag-boosts2
 on:
   push:
-    branches: [diag-boosts]
+    branches: [diag-boosts2]
 permissions:
   contents: write
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: timeout 900 node diag/probe.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          timeout 19800 node diag/poll.js || true
+          git checkout --orphan diag-boosts2-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-boosts2-out
