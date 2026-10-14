@@ -51,3 +51,14 @@ test('evtrack grades a bet at the price 2 minutes after the flag too', async () 
   assert.equal(s.execN, 2);
   assert.equal(s.execClv, Math.round(b.execClv / 100 * 1e4) / 1e4);
 });
+
+test('a signal alerts only once its record 2 minutes after the alert beats the close', () => {
+  const play = o => ({ source: 'exchangeValue', by: 'signal', play: 'steam', n: 23, avgClv: 0.041, ...o });
+  assert.equal(X.execPasses([play({})], 'steam').pass, false, 'no delayed grades yet: held');
+  assert.equal(X.execPasses([play({ execN: 10, execClv: 0.03, execBeatPct: 0.7 })], 'steam').pass, false, 'too few');
+  assert.equal(X.execPasses([play({ execN: 20, execClv: 0.004, execBeatPct: 0.5 })], 'steam').pass, false, 'under 1%');
+  assert.equal(X.execPasses([play({ execN: 20, execClv: 0.021, execBeatPct: 0.72 })], 'steam').pass, true);
+  assert.equal(X.execPasses([play({ execN: 20, execClv: 0.021 })], 'price gap').pass, false, 'another signal\'s record');
+  assert.equal(X.recordLine('steam', play({ execN: 18, execClv: 0.021, execBeatPct: 0.72 })), 'Steam record: +2.1% CLV 2 min after the alert over 18 bets (+4.1% at the alert), 72% beat the close');
+  assert.equal(X.recordLine('steam', play({})), 'Steam record: +4.1% CLV at the alert over 23 bets');
+});

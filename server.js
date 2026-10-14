@@ -3003,6 +3003,8 @@ const MOVER_ALERT_MIN = Number.isFinite(parseFloat(process.env.MOVER_ALERT_MIN))
 const execcheck = require('./execcheck');
 const XVALUE_MIN_DEPTH = Number.isFinite(parseFloat(process.env.XVALUE_MIN_DEPTH_USD)) ? parseFloat(process.env.XVALUE_MIN_DEPTH_USD) : execcheck.DEFAULTS.minUsd;
 const depthCheck = execcheck.createDepthCheck({ http: upstream });
+const envNum = (k, d) => Number.isFinite(parseFloat(process.env[k])) ? parseFloat(process.env[k]) : d;
+const XVALUE_EXEC = { minN: envNum('XVALUE_EXEC_MIN_N', execcheck.DEFAULTS.alertMinN), minClv: envNum('XVALUE_EXEC_MIN_CLV', execcheck.DEFAULTS.alertMinClv) };
 const xvalueSeen = new Map();     // edge id → last alert (ms)
 const xvalueBookCache = new Map();  // ref id → { book, at }: a read counts for XVALUE_BOOK_TTL_MS
 const XVALUE_BOOK_TTL_MS = 4 * 60e3;
@@ -3069,13 +3071,16 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   try { ({ plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) })); } catch (e) { console.warn('Exchange value: record:', e.message); }
   const bp = require('./bestplays'), verdict = bp.verdictIndex(plays);
   const avoided = e => !!verdict('exchangeValue', { signal: bp.valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market }).avoid;
-  const canFill = e => execcheck.executable(e, XVALUE_MIN_DEPTH);
+  // executable: size on the book now, and the signal's own record graded at
+  // the price 2 minutes after each alert beats the close
+  const execOf = e => execcheck.execPasses(plays, bp.valueSignal(e), XVALUE_EXEC);
+  const canFill = e => execcheck.executable(e, XVALUE_MIN_DEPTH) && execOf(e).pass;
   const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && canFill(e) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   // a line mover alerts only once its own record is proven, at that record's CLV
   if (moverBets.length) {
     try {
       const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === 'line mover');
-      if (rec && rec.verdict === 'proven' && rec.avgClv >= MOVER_ALERT_MIN) {
+      if (rec && rec.verdict === 'proven' && (rec.execClv ?? rec.avgClv) >= MOVER_ALERT_MIN) {
         fresh.push(...moverBets.filter(e => canFill(e) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
       }
     } catch (e) { console.warn('Line movers: record:', e.message); }
@@ -3086,9 +3091,14 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   if (fresh.length && xvalueState.primed) {
     broadcast('xvalue', fresh);
     const steamy = fresh.filter(e => e.steam), moved = fresh.filter(e => e.mover), plain = fresh.filter(e => !e.steam && !e.mover);
-    if (steamy.length) postAlert(steamy.map(xvalue.describe), 'Steam');
-    if (moved.length) postAlert(moved.map(xvalue.describe), 'Line mover');
-    if (plain.length) postAlert(plain.map(xvalue.describe), 'Exchange value');
+    // each alert leads with its signal's record, graded where a subscriber gets filled
+    const withRec = (list, sig) => [execcheck.recordLine(sig, execOf(list[0]).rec), ...list.map(xvalue.describe)].filter(Boolean);
+    if (steamy.length) postAlert(withRec(steamy, 'steam'), 'Steam');
+    if (moved.length) postAlert(withRec(moved, 'line mover'), 'Line mover');
+    for (const sig of ['price gap', 'Kalshi price']) {
+      const list = plain.filter(e => bp.valueSignal(e) === sig);
+      if (list.length) postAlert(withRec(list, sig), 'Exchange value');
+    }
   }
   xvalueState.primed = true;
   return edges;
@@ -3922,7 +3932,7 @@ app.get('/api/exchange-value', async (req, res) => {
       ...withheldBody(withheldOf(lic, ['polymarket', 'kalshi'])) };
     if (!pro) return res.json({ ...base, edges: edges.map(e => ({ ev: e.ev, locked: true })) });
     res.json(regionSafe({ ...base, edges: edges.slice(0, Math.min(parseInt(req.query.limit) || 200, 500)), movers: moved, counts: xvalueState.counts,
-      settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS, steam: { ...steamWatch.opts, alertMin: STEAM_ALERT_MIN } } }));
+      settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS, steam: { ...steamWatch.opts, alertMin: STEAM_ALERT_MIN }, executable: { minDepthUsd: XVALUE_MIN_DEPTH, ...XVALUE_EXEC, lagMin: 2 } } }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The thresholds in force (defaults overridden by env), so the app can show

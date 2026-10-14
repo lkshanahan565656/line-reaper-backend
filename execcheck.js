@@ -11,7 +11,7 @@
 // at q is a YES ask at 1 − q.
 
 const KALSHI_BOOK_URL = t => `https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(t)}/orderbook`;
-const DEFAULTS = { minUsd: 100, lagMs: 2 * 60e3, maxReads: 20, ttlMs: 60e3 };
+const DEFAULTS = { minUsd: 100, lagMs: 2 * 60e3, maxReads: 20, ttlMs: 60e3, alertMinN: 15, alertMinClv: 0.01 };
 
 // [[price in dollars, contracts]] from either book shape (dollar strings or cents)
 function levels(ob, side) {
@@ -61,6 +61,26 @@ function createDepthCheck({ http, opts = {}, now = () => Date.now() } = {}) {
   return { check, opts: o };
 }
 
+// A signal alerts only once its own record, graded at the price 2 minutes
+// after each flag, beats the close by alertMinClv over alertMinN bets. A
+// replay of 4 days of Kalshi and Polymarket minute prices (10-14, 7,600
+// paired lines) found neither steam (131 bets, -2.2% at +2 min) nor standing
+// gaps (289, -4.1%) beat the close once a subscriber's delay is counted, so
+// nothing is assumed to pass: the live record has to show it.
+// plays: results.scoreboard plays → { pass, rec }
+function execPasses(plays = [], signal, { minN = DEFAULTS.alertMinN, minClv = DEFAULTS.alertMinClv } = {}) {
+  const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === signal) || null;
+  return { pass: !!(rec && rec.execN >= minN && rec.execClv >= minClv), rec };
+}
+// "Steam record: +2.1% CLV 2 min after the alert over 18 bets (+3.0% at the alert), 72% beat the close"
+function recordLine(signal, rec) {
+  if (!rec) return null;
+  const pc = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+  const name = signal.charAt(0).toUpperCase() + signal.slice(1);
+  if (rec.execN) return `${name} record: ${pc(rec.execClv)} CLV 2 min after the alert over ${rec.execN} bets (${pc(rec.avgClv)} at the alert), ${Math.round(rec.execBeatPct * 100)}% beat the close`;
+  return rec.avgClv != null ? `${name} record: ${pc(rec.avgClv)} CLV at the alert over ${rec.n} bets` : null;
+}
+
 const executable = (e, minUsd = DEFAULTS.minUsd) => !!(e?.depth && e.depth.usd >= minUsd);
 
-module.exports = { kalshiDepth, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };
+module.exports = { execPasses, recordLine, kalshiDepth, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };

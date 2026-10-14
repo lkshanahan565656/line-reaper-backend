@@ -5379,13 +5379,16 @@ function renderResults(d) {
       <div style="font-size:11px;color:var(--text2);letter-spacing:.05em">${escAttr(s.label.toUpperCase())}</div>
       <div style="font-size:18px;font-weight:700;margin:4px 0;color:${col(o.avgClv ?? o.roi)}">${o.avgClv != null ? `${pct(o.avgClv)} CLV` : o.roi != null ? `${pct(o.roi)} ROI` : '—'}</div>
       <div style="font-size:11px;color:var(--text2)">${o.n} graded · ${s.open} open${o.graded ? ` · ${o.wins}-${o.losses} · ${o.units > 0 ? '+' : ''}${o.units}u` : ''}${o.beatClosePct != null ? ` · beat close ${pct(o.beatClosePct, false)}` : ''}</div>
+      ${o.execN ? `<div style="font-size:11px;margin-top:3px">2 min after the alert: <b style="color:${col(o.execClv)}">${pct(o.execClv)} CLV</b> over ${o.execN}</div>` : ''}
     </div>`; }).join('');
+  const anyExec = (d.plays || []).some(p => p.execN);
   const plays = (d.plays || []).filter(p => p.play !== 'all');
   const rows = plays.map(p => { const [v, c] = VC[p.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span></td>
       <td>${escAttr(p.label)}</td><td>${escAttr(p.play)}</td><td style="text-align:right">${p.n}</td>
       <td style="text-align:right;color:${col(p.avgClv)}">${pct(p.avgClv)}</td>
       <td style="text-align:right">${p.beatClosePct != null ? pct(p.beatClosePct, false) : '—'}</td>
+      ${anyExec ? `<td style="text-align:right;color:${col(p.execClv)}" title="${p.execN || 0} bets graded 2 minutes after the alert">${p.execN ? pct(p.execClv) : '—'}</td>` : ''}
       <td style="text-align:right">${p.graded ? `${p.wins}-${p.losses}` : '—'}</td>
       <td style="text-align:right;color:${col(p.roi)}">${pct(p.roi)}</td>
       <td style="text-align:right;color:${col(p.units)}">${p.graded ? `${p.units > 0 ? '+' : ''}${p.units}u` : '—'}</td></tr>`; }).join('');
@@ -5396,9 +5399,9 @@ function renderResults(d) {
     <div style="display:flex;gap:8px;flex-wrap:wrap">${cards}</div>
     <h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:.05em;color:var(--text2)">PLAYS, BEST FIRST</h3>
     ${rows ? `<div style="overflow-x:auto"><table class="esm-table">
-      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th><th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
+      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
       <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">${kept}</div>`;
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each exchange bet at what it cost 2 minutes after the alert, the price a subscriber gets. Exchange alerts go out only for signals whose +2 min record beats the close. ${kept}</div>`;
 }
 
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
