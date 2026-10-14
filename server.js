@@ -4418,7 +4418,7 @@ function propsBoardRows() {
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
   const sportPlays = priceSportRows(rows);
-  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -4434,9 +4434,29 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
   minProbPts: process.env.SPORT_GAP_MIN_PTS != null ? parseFloat(process.env.SPORT_GAP_MIN_PTS) : sportProps.DEFAULTS.minProbPts };
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
-function sportFairAt(row, book, line) {
+function sportFairAt(row, book, line, kind) {
+  if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quoteFor(pinPropsIndex, row), o: SPORT_OPTS });
   return f ? f.p : null;
+}
+// The sharp consensus (sportprops.consensusFor): Pinnacle's prop, FanDuel's
+// and BetRivers' props for the same game, and Kalshi's ladder. Kind 'sharp'
+// in the record; it takes the leg over the older kinds when both flag it.
+const SHARP_OPTS = { ...sportProps.CONSENSUS, weights: sportProps.parseWeights(process.env.SPORT_SHARP_WEIGHTS),
+  minEv: process.env.SPORT_SHARP_MIN_EV != null ? parseFloat(process.env.SPORT_SHARP_MIN_EV) : sportProps.CONSENSUS.minEv };
+const consensusMoves = sportProps.createMoveTracker();
+let bookPropsIndex = new Map();
+function refreshBookPropsIndex() {
+  const sportOf = s => freebooks.LEAGUES[s]?.props || null;
+  bookPropsIndex = pinprops.indexProps(sportProps.bookPropQuotes(freeBooksState.games, sportOf, evScreen.canonName));
+}
+function sharpQuotes(row) {
+  const out = [];
+  const pin = pinprops.quoteFor(pinPropsIndex, row);
+  if (pin) out.push({ book: 'pinnacle', line: pin.line, pOver: pin.pOver });
+  // the books' props only while their read is fresh, like the +EV screen's
+  if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS) out.push(...sportProps.quotesFor(bookPropsIndex, row));
+  return out;
 }
 function priceSportRows(rows) {
   const flagged = [];
@@ -4446,6 +4466,23 @@ function priceSportRows(rows) {
     const pin = pinprops.quoteFor(pinPropsIndex, row);
     if (pin) row.pinnacle = { line: pin.line, over: pin.over, under: pin.under, pOver: +(pin.pOver * 100).toFixed(1) };
     const plays = sportProps.rowPlays(row, { kalshi, pin, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    // the sharp consensus first: Pinnacle, FanDuel, BetRivers and Kalshi together
+    const sharp = sharpQuotes(row);
+    const cplays = sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [];
+    if (cplays.length) {
+      consensusMoves.observe(row, cplays[0].mean);
+      row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
+    } else consensusMoves.observe(row, null);
+    const sharpTaken = new Set();
+    let sharpBest = null;
+    for (const p of cplays) {
+      const st = consensusMoves.stale(row, p.book, p.line, p.side);
+      if (st && st.pts >= 1) p.stale = st;
+      if (p.ev < SHARP_OPTS.minEv) continue;
+      flagged.push({ row, play: p, kind: 'sharp' });
+      sharpTaken.add(`${p.book}|${p.side}`);
+      if (!sharpBest) sharpBest = p;
+    }
     // lines apart but the payouts even it out (UD 249.5 at Higher 1.29x vs
     // PP 223.5): every book reads as the same median within a few points
     const means = Object.entries(row.books).map(([b, c]) => sportProps.meanFor(row.mkey, row.sport, c.line, sportProps.bookPOver(b, c) ?? NaN)).filter(m => m > 0);
@@ -4456,20 +4493,28 @@ function priceSportRows(rows) {
     }
     // a cell keeps a price only where a sharp price backs it or it's a gap
     for (const [book, c] of Object.entries(row.books)) {
-      const mine = plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
-      if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1) };
+      const cons = cplays.filter(p => p.book === book);
+      const mine = cons.length ? cons : plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
       else if (c.fair == null) delete c.ev;
     }
     let best = null;
     for (const p of plays) {
       const kind = sportProps.playKind(p, SPORT_OPTS);
-      if (!kind) continue;
+      if (!kind || sharpTaken.has(`${p.book}|${p.side}`)) continue;
       flagged.push({ row, play: p, kind });
       if (!best) best = { p, kind };
     }
     // a gap with no sharp price: both directions go in the record, neither on the board
-    if (!best) for (const x of sportProps.researchGap(plays, SPORT_OPTS)) flagged.push({ row, ...x, research: true });
-    if (best) {
+    if (!best && !sharpBest) for (const x of sportProps.researchGap(plays, SPORT_OPTS)) flagged.push({ row, ...x, research: true });
+    if (sharpBest) {
+      const p = sharpBest;
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: 'consensus', kind: 'sharp', n: p.n, mean: p.mean,
+        sources: p.sources, ...(p.entry ? { entry: p.entry, entries: p.entries } : {}), ...(p.stale ? { stale: p.stale } : {}) };
+    } else if (cplays.length && !best) {
+      const p = cplays[0];
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: 'consensus', kind: null, n: p.n, sources: p.sources };
+    } else if (best) {
       const { p, kind } = best;
       row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: p.sources.some(x => x.book === 'pinnacle') ? 'pinnacle' : p.sources.some(x => x.book === 'kalshi') ? 'kalshi' : 'gap', kind,
         n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
@@ -4504,7 +4549,7 @@ async function refreshFreeBooks() {
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache });
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) Object.assign(freeBooksState, { games, gamesAt: new Date().toISOString() });
+    if (pin.games.length) { Object.assign(freeBooksState, { games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
@@ -4534,7 +4579,7 @@ async function trackSportProps() {
     propsBoardCache.at = 0;
     const { rows, sportPlays } = propsBoardRows();
     const updated = { prizepicks: ppState.fullAt ? new Date(ppState.fullAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.research || x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
@@ -4545,7 +4590,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1' });
+  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1' });
   const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
   const offset = Math.max(0, parseInt(req.query.offset) || 0);
   let page = hits.slice(offset, offset + limit);
@@ -5103,6 +5148,7 @@ schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().cat
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
 schedule('20 */2 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
+schedule('40 */10 * * * *', () => consensusMoves.prune());
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)

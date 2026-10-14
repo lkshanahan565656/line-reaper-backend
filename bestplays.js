@@ -323,30 +323,33 @@ function dfsRows(rows, o, now, skip = new Set()) {
 // line priced on Pinnacle's devigged prop, Kalshi's ladder and the other apps,
 // the same plays the sports props record (sporttrack.js) follows and grades.
 // 1u each, as graded. flagged: [{ row, play, kind }] with kind 'gap' or 'ev'.
-const SOURCE_NAMES = { pinnacle: 'Pinnacle', kalshi: 'Kalshi', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
+const SOURCE_NAMES = { pinnacle: 'Pinnacle', kalshi: 'Kalshi', fanduel: 'FanDuel', betrivers: 'BetRivers', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
 const sportPropKey = (player, book, side, line) => `${canonName(player)}|${book}|${side}|${Number(line)}`;
 function boardPropRows(flagged, verdict, record, o, now) {
   const rows = [], dropped = [], seen = new Set();
   for (const { row, play: p, kind } of flagged) {
-    if (!row || !p || !['gap', 'ev'].includes(kind) || !(p.ev / 100 >= o.propMinEv)) continue;
+    if (!row || !p || !['sharp', 'gap', 'ev'].includes(kind) || !(p.ev / 100 >= o.propMinEv)) continue;
     const start = ms(row.startTime);
     if (start == null || start <= now) continue;
     const key = sportPropKey(row.player, p.book, p.side, p.line);
     if (seen.has(key)) continue;
     seen.add(key);
     const venue = SOURCE_NAMES[p.book] || bookName(p.book);
-    const labels = { kind: kind === 'gap' ? 'line gap' : 'sharp price', sport: row.sport, book: venue, stat: row.mkey };
+    const labels = { kind: kind === 'gap' ? 'line gap' : kind === 'sharp' ? 'sharp consensus' : 'sharp price', sport: row.sport, book: venue, stat: row.mkey };
     const vd = verdict('sportsProps', labels);
     const title = `${row.player}${row.team ? ` (${row.team})` : ''}`;
     if (vd.avoid) { dropped.push({ kind: 'sportsProp', title, play: vd.avoid.play }); continue; }
     // the sharp prices first: "Pinnacle 47% over 5.5, Underdog 6.5, Sleeper 6.5"
+    const sharpSrc = x => ['pinnacle', 'kalshi', 'fanduel', 'betrivers'].includes(x.book);
     const src = [...(p.sources || [])].sort((a, b) => (b.book === 'pinnacle') - (a.book === 'pinnacle') || (b.book === 'kalshi') - (a.book === 'kalshi'))
-      .map(x => (['pinnacle', 'kalshi'].includes(x.book) ? `${SOURCE_NAMES[x.book]} ${x.p}% over ${x.line}` : `${SOURCE_NAMES[x.book] || x.book} ${x.line}`));
+      .map(x => (sharpSrc(x) ? `${SOURCE_NAMES[x.book]} ${x.p}% over ${x.line}` : `${SOURCE_NAMES[x.book] || x.book} ${x.line}`));
     const why = [`fair ${(p.fair * 100).toFixed(1)}% to hit from ${src.join(', ')}`];
+    if (kind === 'sharp' && p.entry) why.push(`priced as a ${p.entry} leg (${p.entries?.length ? `clears ${p.entries.join(', ')}` : 'break-even'})`);
+    if (p.stale) why.push(`the books moved ${p.stale.pts} points our way while ${venue}'s line stood still`);
     if (kind === 'gap' && p.gap) why.unshift(`line gap: ${p.gap.vs.map(v => `${SOURCE_NAMES[v.book] || v.book} has ${v.line}`).join(', ')}`);
     why.push(vd.play ? evidence(vd.play) : record('sportsProps', labels));
     rows.push({
-      id: `sprop:${sportPropId(row, p)}`, kind: 'sportsProp', label: `${String(row.sport || '').toUpperCase()} ${kind === 'gap' ? 'line gap' : 'prop'}`, title,
+      id: `sprop:${sportPropId(row, p)}`, kind: 'sportsProp', label: `${String(row.sport || '').toUpperCase()} ${kind === 'gap' ? 'line gap' : kind === 'sharp' ? 'sharp consensus' : 'prop'}`, title,
       bet: dfsBet({ market: row.mkey, side: p.side, point: p.line }), venue, price: null, american: null, maxPrice: null,
       units: 1, ev: r4(p.ev / 100), verdict: vd.verdict, why, url: null, startsAt: row.startTime, at: null, warning: null,
     });

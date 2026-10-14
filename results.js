@@ -96,11 +96,12 @@ const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 
 // still up at the same line and payout two minutes after the flag
 const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
 const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale']);
+const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
   return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
-    labels: { kind: r.kind === 'gap' ? 'line gap' : 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
+    labels: { kind: SPORT_KIND[r.kind] || 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
 };
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,

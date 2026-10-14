@@ -210,7 +210,7 @@ function evOf(row, book) {
   const v = book ? row.books[book]?.ev?.ev : row.best?.ev;
   return v == null ? -1e9 : v;
 }
-function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false } = {}) {
+function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false } = {}) {
   const s = String(sport || '').toUpperCase();
   const needle = String(q || '').toLowerCase().trim();
   let out = rows;
@@ -221,6 +221,7 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
   if (multi) out = out.filter(r => r.nBooks > 1);
   if (priced) out = out.filter(r => (book ? r.books[book]?.ev : r.best));
   if (gaps) out = out.filter(r => r.best?.kind === 'gap' && (!book || r.best.book === book));
+  if (sharp) out = out.filter(r => r.best?.kind === 'sharp' && (!book || r.best.book === book));
   if (needle) out = out.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(needle));
   return [...out].sort((SORTS[sort] || SORTS.ev)(book));
 }
@@ -241,7 +242,7 @@ function counts(rows) {
 function redactRow(r) {
   const books = {};
   for (const [k, c] of Object.entries(r.books)) books[k] = { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen };
-  return { ...r, books, best: r.best ? { locked: true, ...(r.best.kind === 'gap' ? { kind: 'gap' } : {}) } : null, model: null, pinnacle: null };
+  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null };
 }
 
 module.exports = { boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, counts, redactRow, BOOKS };
