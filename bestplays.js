@@ -39,6 +39,7 @@ const DEFAULTS = {
   lineMaxEv: 0.15,            // past this it's nearly always a stale or wrong number
   lineMaxAgeMs: 45 * 60e3,    // book prices older than this have likely moved
   lineMinBooks: 3,            // a consensus price needs a few books behind it
+  lineNeedsAgree: true,       // a game line needs two sharp sources that agree (ev.js agree)
   edgeMaxUnits: 1,            // esports edges and exchange value until proven
   provenMaxUnits: 2,
   entryMinEv: 0.03,           // an Underdog entry: at least 3% EV on the whole entry
@@ -397,7 +398,7 @@ const BOOK_NAMES = {
   espnbet: 'ESPN Bet', fanatics: 'Fanatics', hardrockbet: 'Hard Rock', hard_rock_bet: 'Hard Rock', ballybet: 'Bally Bet', betparx: 'BetPARX',
   bovada: 'Bovada', betonlineag: 'BetOnline', lowvig: 'LowVig', mybookieag: 'MyBookie', betus: 'BetUS', betanysports: 'BetAnySports',
   prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper',
-  pinnacle: 'Pinnacle', novig: 'Novig', prophetx: 'ProphetX', kalshi: 'Kalshi', polymarket: 'Polymarket', fliff: 'Fliff', bet365: 'Bet365',
+  pinnacle: 'Pinnacle', novig: 'Novig', prophetx: 'ProphetX', kalshi: 'Kalshi', kalshi_mid: 'Kalshi', polymarket: 'Polymarket', fliff: 'Fliff', bet365: 'Bet365',
 };
 const bookName = k => BOOK_NAMES[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const LINE_MARKETS = { h2h: 'moneyline', spreads: 'spread', totals: 'total' };
@@ -406,6 +407,8 @@ function lineRows(lines, verdict, o, now) {
   for (const r of lines) {
     if (r.dfs || r.player || r.ev == null || r.ev / 100 < o.lineMinEv || r.ev / 100 > o.lineMaxEv) continue;
     if (!(r.decimal > 1) || !(r.fairProb > 0)) continue;
+    // two sharp sources (Pinnacle and Kalshi's mid) within a few points of each other
+    if (o.lineNeedsAgree && !r.agree) continue;
     const start = ms(r.start), seen = ms(r.updated);
     if (start == null || start <= now || seen == null || now - seen > o.lineMaxAgeMs) continue;
     if (r.source !== 'sharp' && !(r.books >= o.lineMinBooks)) continue;

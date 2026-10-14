@@ -1,6 +1,6 @@
 // ─── PINNACLE PLAYER PROPS: THE SHARP PRICE FOR PICK'EM LINES ────────────────
 // Pinnacle takes the sharpest action and posts both sides of its player props
-// (NFL, NBA, WNBA, NHL, MLB; no college) on the same guest feed its website
+// (NFL, NBA, WNBA, NHL, MLB, and college football's bigger games) on the same guest feed its website
 // reads (guest.api.arcadia.pinnacle.com). Each prop is a "special" matchup
 // ("C.J. Stroud Total Pass Completions") with Over and Under participants,
 // priced in the league's straight markets. The vig comes out (power method on
@@ -12,7 +12,8 @@
 const { canonName, canonMarket } = require('./ev');
 
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
-const LEAGUES = { NFL: 889, NBA: 487, WNBA: 578, NHL: 1456, MLB: 246 };
+// CFB: Pinnacle's NCAA football league (26 player props up 2026-10-14)
+const LEAGUES = { NFL: 889, NBA: 487, WNBA: 578, NHL: 1456, MLB: 246, CFB: 880 };
 
 // Pinnacle's stat words → the board's market keys (canonMarket), per sport
 const STAT = {
