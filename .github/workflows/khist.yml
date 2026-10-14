@@ -20,6 +20,7 @@ jobs:
           true
       - if: always()
         run: |
+          set +e
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-khist-out
