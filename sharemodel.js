@@ -189,7 +189,7 @@ function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Da
           kelly: r2(Math.max(0, (fair * d - 1) / (d - 1)) * 25),
           source: agree ? 'esbook-share' : 'esbook-share-only', esports: true, clears: agree, single: !agree, model: true, agree, spreadPts: pinFair != null ? r2(Math.abs(fair - pinFair) * 100) : null,
           sharpBooks: ['pinnacle'], share: { pct: r2(e.share * 100), pinTeamKills: r2(pin), mean, pinMean: e.booksPerMap > 0 ? r2(e.booksPerMap) : null },
-          sources: [{ book: 'kill share', p: r2(fair * 100), exact: false }, ...(pinFair != null ? [{ book: 'pinnacle', p: r2(pinFair * 100), exact: false }] : [])],
+          sources: [{ book: 'kill share', p: r2(fair * 100), exact: true }, ...(pinFair != null ? [{ book: 'pinnacle', p: r2(pinFair * 100), exact: true }] : [])],
         });
       }
     }
