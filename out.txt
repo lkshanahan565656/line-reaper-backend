@@ -1,0 +1,4 @@
+Wed Oct 14 13:03:03 UTC 2026
+waiting 3.111.0
+live 3.111.1
+{"rule":{"states":["CA","MA","MD","WA","MI","VA","TX","FL","MN","OH","TN","OR","NY","NJ","SC"],"minPrice":0.9,"maxPrice":0.98,"maxSpread":0.05,"fromHours":12,"toHours":19,"minDepthUsd":100},"backtest":{"from":"2026-08-26","to":"2026-10-14","outOfSample":{"method":"walk-forward","bets":1278,"losses":27,"roi":0.014,"from":"2026-09-07"},"allNights":{"bets":2482,"losses":45,"roi":0.0185},"otherStates":{"bets":1313,"losses":44,"roi":0.0029},"national":{"bets":969,"losses":41,"roi":0.0052},"worstNight":{"day":"2026-09-02","losses":8,"roi":-0.127}},"count":0,"errors":[],"counts":null}
