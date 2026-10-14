@@ -1,0 +1,18 @@
+name: gaslive
+on:
+  push:
+    branches: [diag-gaslive]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          npm ci --silent || npm install --silent
+          { date -u; node diag/gaslive.js; } > out.txt 2>&1; true
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-gaslive-out; git add -f out.txt; git commit -qm out; git push -f origin diag-gaslive-out
