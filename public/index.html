@@ -5641,7 +5641,7 @@ function renderBig() {
     body = plays.map(p => {
       const m = p.money, best = p.best;
       const vrow = v => {
-        const isBest = best && v.venue === best.venue && v.line === best.line;
+        const isBest = best && best.ev >= (p.minEv ?? 2) && v.venue === best.venue && v.line === best.line;
         const price = v.entry ? `${c(v.implied)} <span class="xa-sub">${escAttr(v.entry)}</span>` : v.american != null && !['kalshi', 'polymarketus'].includes(v.venue) ? am(v.american)
           : v.price != null ? `${c(v.price)} <span class="xa-sub">+ fee</span>` : `${c(v.implied)}${v.mult && v.mult !== 1 ? ` <span class="xa-sub">${v.mult}x</span>` : ''}`;
         const line = v.line == null ? '' : `${v.line}${v.sameLine === false ? ' <span style="color:#fbbf24;font-size:10px">OTHER LINE</span>' : ''}`;

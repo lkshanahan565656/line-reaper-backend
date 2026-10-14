@@ -184,7 +184,10 @@ function gameIndex(matches = [], freeGames = {}) {
       const ask = side === 'yes' ? m.row.yesAsk : m.row.noAsk;
       const cost = exchangeCost(m.row, ask);
       if (cost == null || cost >= 1) continue;
-      bet(key, m.game).venues.push({ venue: m.row.exchange, name: BOOK_NAMES[m.row.exchange], implied: cost, decimal: r4(1 / cost), price: ask,
+      const b = bet(key, m.game), had = b.venues.find(v => v.venue === m.row.exchange);
+      if (had && had.implied <= cost) continue;
+      if (had) b.venues.splice(b.venues.indexOf(had), 1);
+      b.venues.push({ venue: m.row.exchange, name: BOOK_NAMES[m.row.exchange], implied: cost, decimal: r4(1 / cost), price: ask,
         american: american(cost), url: m.row.url || null, marketId: m.row.id, side, mid: side === 'yes' ? midOf(m.row) : midOf(m.row) == null ? null : r4(1 - midOf(m.row)) });
     }
   }
@@ -216,7 +219,7 @@ function gameIndex(matches = [], freeGames = {}) {
 
 // ── player props ──
 // Kalshi ladder events (kprops.fetchEvents) → Map(ticker → rung): the player,
-// stat, the line its YES is the over of (strike K+ = over K − 0.5), the
+// stat, the line its YES is the over of ("K+" = over K − 0.5), the
 // game's start (Kalshi settles about 3 hours after it) and the rung's quote
 function rungIndex(events = [], { canonMarket, parseRung }) {
   const out = new Map();
@@ -226,7 +229,8 @@ function rungIndex(events = [], { canonMarket, parseRung }) {
       const strike = num(mk.floor_strike), settles = ms(mk.expected_expiration_time);
       const r = parseRung(mk.title || mk.yes_sub_title);
       if (strike == null || !r || settles == null) continue;
-      out.set(mk.ticker, { ticker: mk.ticker, league, player: r.player, mkey: canonMarket(r.stat), stat: r.stat, line: strike - 0.5,
+      // Kalshi lists "5+" with a floor of 4.5; a whole floor (5) is the same 4.5 line
+      out.set(mk.ticker, { ticker: mk.ticker, league, player: r.player, mkey: canonMarket(r.stat), stat: r.stat, line: Number.isInteger(strike) ? strike - 0.5 : strike,
         start: iso(settles - 3 * HOUR), yesBid: num(mk.yes_bid_dollars), yesAsk: num(mk.yes_ask_dollars), eventTicker: ev.event_ticker,
         url: `https://kalshi.com/markets/${String(ev.event_ticker || '').toLowerCase()}` });
     }

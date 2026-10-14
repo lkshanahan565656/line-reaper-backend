@@ -69,11 +69,16 @@ test('gameIndex: the exchanges\' asks and the books\' prices land on the same be
   assert.equal(fd.decimal, 1.9091);
   assert.ok(idx.bets.get('99|total|41.5|under').venues.some(v => v.venue === 'fanduel' && v.american === -112));
   assert.ok(idx.bets.get('99|ml|away').venues.some(v => v.venue === 'fanduel'));
+  // Cleveland's own contract asks the same bet as NO on the Jets: one Kalshi price, the cheaper
+  const two = B.gameIndex([...rows, krow({ id: 'KXNFLGAME-26OCT18CLENYJ-CLE', outcomeLabel: 'Cleveland', noLabel: 'New York J', yesAsk: 0.44, noAsk: 0.58 })].map(row => ({ row, game: PIN })), {});
+  const away = two.bets.get('99|ml|away').venues.filter(v => v.venue === 'kalshi');
+  assert.equal(away.length, 1);
+  assert.equal(away[0].price, 0.44);
   assert.equal(idx.rows.get('kalshi:KXNFLGAME-26OCT18CLENYJ-NYJ').league, 'nfl');
 });
 
 test('rungIndex: a Kalshi rung is the over of strike − 0.5', () => {
-  const ev = { event_ticker: 'KXNFLRECYDS-26OCT18CLENYJ', markets: [{ ticker: 'KXNFLRECYDS-26OCT18CLENYJ-GWILSON-50', strike_type: 'greater', floor_strike: 50,
+  const ev = { event_ticker: 'KXNFLRECYDS-26OCT18CLENYJ', markets: [{ ticker: 'KXNFLRECYDS-26OCT18CLENYJ-GWILSON-50', strike_type: 'greater', floor_strike: 49.5,
     title: 'Garrett Wilson: 50+ receiving yards', expected_expiration_time: '2026-10-18T20:00:00Z', yes_bid_dollars: '0.55', yes_ask_dollars: '0.57' }] };
   const idx = B.rungIndex([{ ev, league: 'NFL' }], { canonMarket, parseRung });
   const r = idx.get('KXNFLRECYDS-26OCT18CLENYJ-GWILSON-50');
@@ -81,6 +86,9 @@ test('rungIndex: a Kalshi rung is the over of strike − 0.5', () => {
   assert.equal(r.player, 'Garrett Wilson');
   assert.equal(r.start, '2026-10-18T17:00:00.000Z');
   assert.equal(r.mkey, canonMarket('receiving yards'));
+  // a whole-number floor means the same half line
+  ev.markets[0].floor_strike = 50;
+  assert.equal(B.rungIndex([{ ev, league: 'NFL' }], { canonMarket, parseRung }).get('KXNFLRECYDS-26OCT18CLENYJ-GWILSON-50').line, 49.5);
 });
 
 test('propVenues: same line priced at the money\'s chance, another line moved along the curve', () => {
