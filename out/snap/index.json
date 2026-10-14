@@ -1,0 +1,98 @@
+{
+ "/api/status": {
+  "st": 200,
+  "f": "_api_status.json",
+  "bytes": 13222,
+  "ms": 94
+ },
+ "/api/esports/picks?minEV=-100": {
+  "st": 200,
+  "f": "_api_esports_picks_minEV_100.json",
+  "bytes": 531948,
+  "ms": 129
+ },
+ "/api/esports/matches": {
+  "st": 200,
+  "f": "_api_esports_matches.json",
+  "bytes": 976492,
+  "ms": 147
+ },
+ "/api/esports/auto-slips": {
+  "st": 200,
+  "f": "_api_esports_auto_slips.json",
+  "bytes": 81280,
+  "ms": 100
+ },
+ "/api/esports/alerts?limit=30": {
+  "st": 200,
+  "f": "_api_esports_alerts_limit_30.json",
+  "bytes": 13,
+  "ms": 75
+ },
+ "/api/tracker/summary?": {
+  "st": 200,
+  "f": "_api_tracker_summary_.json",
+  "bytes": 17487,
+  "ms": 85
+ },
+ "/api/tracker/picks?status=review&limit=100": {
+  "st": 200,
+  "f": "_api_tracker_picks_status_review_limit_100.json",
+  "bytes": 12,
+  "ms": 94
+ },
+ "/api/tracker/picks?status=locked&limit=100": {
+  "st": 200,
+  "f": "_api_tracker_picks_status_locked_limit_100.json",
+  "bytes": 54802,
+  "ms": 83
+ },
+ "/api/props/board?sport=ESPORTS&sort=ev&limit=150": {
+  "st": 200,
+  "f": "_api_props_board_sport_ESPORTS_sort_ev_limit_150.json",
+  "bytes": 132571,
+  "ms": 689
+ },
+ "/api/props/board?sport=CS&sort=ev&limit=150": {
+  "st": 200,
+  "f": "_api_props_board_sport_CS_sort_ev_limit_150.json",
+  "bytes": 140700,
+  "ms": 87
+ },
+ "/api/props/board?sport=ESPORTS&sort=ev&limit=150&gaps=1": {
+  "st": 200,
+  "f": "_api_props_board_sport_ESPORTS_sort_ev_limit_150_gaps_1.json",
+  "bytes": 607,
+  "ms": 75
+ },
+ "/api/props/record": {
+  "st": 200,
+  "f": "_api_props_record.json",
+  "bytes": 3428,
+  "ms": 78
+ },
+ "/api/results": {
+  "st": 200,
+  "f": "_api_results.json",
+  "bytes": 32188,
+  "ms": 95
+ },
+ "/api/best?limit=500": {
+  "st": 200,
+  "f": "_api_best_limit_500.json",
+  "bytes": 8635,
+  "ms": 117
+ },
+ "/api/underdog": {
+  "st": 200,
+  "f": "_api_underdog.json",
+  "bytes": 1988564,
+  "ms": 164
+ },
+ "/api/prizepicks": {
+  "st": 200,
+  "f": "_api_prizepicks.json",
+  "bytes": 728924,
+  "ms": 189
+ }
+}
