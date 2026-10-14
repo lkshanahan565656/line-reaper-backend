@@ -1,0 +1,10 @@
+process.env.GAMEH = '0'; process.env.H = '60,180,360,720,1080,1440,2160,2880';
+const { bets, table } = require('./analyze.js');
+const fav = b => b.p >= 0.8;
+const sel = b => b.r.cat === 'Economics' && fav(b);
+table('econ favorites by series x side', b => `${b.r.s} ${b.side}`, sel, 50);
+table('econ favorites by horizon', b => `h${b.h} ${b.side}`, sel, 50);
+table('econ favorites by week', b => b.r.close.slice(0, 8) + (new Date(b.r.close).getUTCDate() < 16 ? 'a' : 'b'), sel, 50);
+table('all-cat favorites 80-99 by cat x side x horizon', b => `${b.r.cat} ${b.side} h${b.h}`, b => fav(b) && b.r.cat !== 'Crypto', 300);
+const ex = bets.filter(b => b.r.cat === 'Economics' && b.side === 'yes' && b.p >= 0.8 && b.p < 0.95).slice(0, 12);
+for (const b of ex) console.log(b.r.t, '|', b.r.title, '|', b.r.sub, 'p', b.p, 'win', b.win, 'h', b.h, 'close', b.r.close, 'exp', b.r.exp);
