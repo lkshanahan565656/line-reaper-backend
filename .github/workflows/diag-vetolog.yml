@@ -1,0 +1,18 @@
+name: diag-vetolog
+on:
+  push:
+    branches: [diag-vetolog]
+    paths: [diag/vetolog.js, .github/workflows/diag-vetolog.yml]
+permissions:
+  contents: write
+jobs:
+  vetolog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: RUN_MIN=330 timeout 20400 node diag/vetolog.js || true
