@@ -19,6 +19,7 @@ jobs:
             [ "$v" = "3.115.0" ] && break
             sleep 30
           done
+          sleep 900
           curl -s $U/api/status > out/status.json
           curl -s "$U/api/props/board?sport=ALL&book=underdog&priced=1&facets=1&sort=ev&limit=500" > out/lines_ud.json
           curl -s "$U/api/props/board?sport=ALL&book=prizepicks&priced=1&facets=1&sort=ev&limit=500" > out/lines_pp.json
