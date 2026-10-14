@@ -73,6 +73,9 @@ const CORR = {
 //   CS headshots: teammates φ +0.09, opponents +0.05.
 //   LoL (within a map count): kills teammates φ +0.23, opponents −0.06;
 //     assists teammates +0.50, opponents −0.13.
+//   Dota Maps 1+2 (274 OpenDota pro series, split by series): kills teammates
+//     φ +0.15 / +0.17, opponents −0.07 / −0.06; assists +0.50 / +0.55,
+//     −0.12 / −0.07. As in LoL, the side that wins takes the kills.
 // [α², β²] per side.
 const FACTORS = {
   cs: {
@@ -83,11 +86,16 @@ const FACTORS = {
     kills: { OVER: [0.13, 0.22], UNDER: [0.11, 0.18] },
     assists: { OVER: [0.25, 0.45], UNDER: [0.21, 0.38] },
   },
+  dota: {
+    kills: { OVER: [0.075, 0.175], UNDER: [0.064, 0.15] },
+    assists: { OVER: [0.27, 0.43], UNDER: [0.23, 0.37] },
+  },
 };
 function factorSport(sport) {
   const s = String(sport || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   if (s === 'cs' || s === 'cs2' || s === 'csgo' || s === 'counterstrike') return 'cs';
   if (s === 'lol' || s === 'leagueoflegends') return 'lol';
+  if (s === 'dota' || s === 'dota2') return 'dota';
   return null;
 }
 function legLoadings(leg) {
