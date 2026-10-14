@@ -1,14 +1,18 @@
 // ─── GAS LOCKS ────────────────────────────────────────────────────────────────
 // Kalshi's daily state gas markets ("Will the AAA average in CA be above
 // $4.65 on Oct 15?") settle on a number that barely moves overnight, and the
-// favourite side is still offered at 90-98¢ the evening before. A backtest of
-// every settled market from Aug 17 to Oct 14 2026 (taker at the ask, Kalshi's
-// fee in, 12 to 19 hours before expiry) found:
+// favourite is still offered at 90-98¢ the evening before. Rebuilt on every
+// settled market Aug 26 to Oct 14 2026 (taker at the hourly ask, books 5¢
+// wide or tighter, Kalshi's fee on a 100-contract order, first price 12 to 19
+// hours before expiry):
 //
-//   15 states picked on the first half (Aug 17 to Sep 26) went +1.5% a bet
-//   on the second half (Sep 27 to Oct 14): 1,541 bets, 2 losses, every day
-//   up. The other states (price-cycling Midwest ones, CO, AZ...) went +0.7%
-//   with 12 losses, so they're left out.
+//   the 15 states, all 50 nights: 2,482 bets, 45 losses, +1.85% a bet; the
+//   held-out weeks from Sep 27 were the calmest (+3.1%, 5 losses), the weeks
+//   before only +1.2%. Picking states each week from the weeks before went
+//   +1.4% a bet (1,278 bets, 27 losses, about two standard errors over zero).
+//   The other states went +0.3% (1,313 bets, 44 losses), and the same trade on
+//   Kalshi's national gas market (Mar to Oct 2026, 969 bets) +0.5%: no edge.
+//   Losses bunch: Sep 2 lost 8 bets in CA, NJ and TX, -13% of that night.
 //
 // Not risk-free: a refinery outage can jump a state's average past the
 // strike overnight, and one loss at 97¢ costs ~32 wins. Each play is logged
@@ -30,7 +34,7 @@ const DEFAULTS = {
   orderContracts: 100,                     // fee priced on an order this size (Kalshi rounds per order)
   maxBooks: 120,                           // order-book reads a scan
 };
-const BACKTEST = { from: '2026-08-17', to: '2026-10-14', outOfSample: { bets: 1541, losses: 2, roi: 0.0148, from: '2026-09-27' }, otherStates: { bets: 1156, losses: 12, roi: 0.0066 } };
+const BACKTEST = { from: '2026-08-26', to: '2026-10-14', outOfSample: { method: 'walk-forward', bets: 1278, losses: 27, roi: 0.014, from: '2026-09-07' }, allNights: { bets: 2482, losses: 45, roi: 0.0185 }, otherStates: { bets: 1313, losses: 44, roi: 0.0029 }, national: { bets: 969, losses: 41, roi: 0.0052 }, worstNight: { day: '2026-09-02', losses: 8, roi: -0.127 } };
 
 const num = v => (v == null || v === '' ? null : Number(v));
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
