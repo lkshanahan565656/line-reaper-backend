@@ -404,9 +404,10 @@ function parsePinnacle(matchups, markets) {
   const out = [];
   for (const m of byId.values()) {
     if (!m.markets.length) continue;
-    // a map-4 or map-5 price only exists in a best-of-5
     const teamKills = killsOf.has(m.id) ? pinTeamKills(markets, killsOf.get(m.id), m.game) : null;
-    out.push({ game: m.game, teams: m.teams, start: m.start, live: m.live, league: m.league, id: m.id, bestOf: m.maxPeriod >= 4 ? 5 : null, markets: m.markets, ...(teamKills ? { teamKills } : {}) });
+    // a map-4 price or a 3.5-map total only exists in a best-of-5
+    const bo5 = m.maxPeriod >= 4 || m.markets.some(k => k.kind === 'total' && k.line >= 3);
+    out.push({ game: m.game, teams: m.teams, start: m.start, live: m.live, league: m.league, id: m.id, bestOf: bo5 ? 5 : null, markets: m.markets, ...(teamKills ? { teamKills } : {}) });
   }
   return out;
 }

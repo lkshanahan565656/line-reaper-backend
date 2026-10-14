@@ -640,7 +640,7 @@ function calcBookEV(prob, book, mult = 1.00) {
 }
 
 const {
-  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
+  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, teamCode, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
 const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = require('./propstats');
@@ -1905,7 +1905,9 @@ async function generateEsportsPicks() {
     try {
       const span = parseMapSpan(lineObj.market);
       const maps = spanToMapList(span.label, span.count);
-      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null);
+      // PrizePicks titles a line by the opponent's code and the span: "BFX MAPS 1-3"
+      const ppOpp = /^(\S+)\s+MAPS?\s/i.exec(String(lineObj.matchTitle || ''))?.[1] || null;
+      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null) || ppOpp;
       const sides = splitMatchTitle(lineObj.matchTitle);
       const titleTeam = sides && opponent ? (sides[0] === opponent ? sides[1] : sides[1] === opponent ? sides[0] : null) : null;
       const ctxArgs = { sport: (lineObj.sport || '').toUpperCase(), opponent, maps }, ctxDeps = { oddsBook, elo: ratingsState.elo };
@@ -2138,7 +2140,7 @@ async function generateEsportsPicks() {
       const opp = g ? opponentFrom(p.team, p.matchTitle, null) : null;
       for (const m of g ? pinMatches : []) {
         if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(Date.parse(m.start) - t) > 12 * 3600e3)) continue;
-        const i = [0, 1].find(j => looseTeam(m.teams[j], p.team) && (!opp || looseTeam(m.teams[1 - j], opp)));
+        const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
         if (i != null) { hit = { m, i }; break; }
       }
       sides.set(p, hit);
@@ -2228,19 +2230,6 @@ async function generateEsportsPicks() {
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
-}
-
-// "BFX" is BNK FearX, "SLY" Solary, "C9" Cloud9: a short code whose letters
-// run in order through the full name, starting with its first letter
-function looseTeam(full, code) {
-  if (!full || !code) return false;
-  if (teamsMatch(full, code)) return true;
-  const a = String(full).toLowerCase().replace(/[^a-z0-9]/g, ''), b = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
-  const [long, short] = a.length >= b.length ? [a, b] : [b, a];
-  if (short.length < 2 || short.length > 4 || short[0] !== long[0]) return false;
-  let i = 0;
-  for (const ch of long) if (ch === short[i]) i++;
-  return i === short.length;
 }
 
 // If a book labels a 3-map prop "Kills on Maps 1+2", rewrite the label to what

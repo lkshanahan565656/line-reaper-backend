@@ -142,3 +142,14 @@ test('ratings refresh uses PandaScore for CS2 and CoD when a client is given', a
   assert.match(state.meta.COD.error, /no games/);
   assert.match(state.meta.LOL.error, /offline/);
 });
+
+test('Pinnacle: a 3.5-map series total marks a best-of-5', () => {
+  const F = require('../feeds');
+  const mu = [{ id: 7, league: { name: 'League of Legends - World Championship' }, participants: [{ alignment: 'home', name: 'FURIA' }, { alignment: 'away', name: 'MVK' }], startTime: '2026-10-15T18:00:00Z', type: 'matchup' }];
+  const mk = [
+    { matchupId: 7, period: 0, type: 'moneyline', prices: [{ designation: 'home', price: -355 }, { designation: 'away', price: 259 }] },
+    { matchupId: 7, period: 0, type: 'total', prices: [{ designation: 'over', points: 3.5, price: -248 }, { designation: 'under', points: 3.5, price: 173 }] },
+  ];
+  assert.equal(F.pinnacleMatchPrices(mu, mk)[0].bestOf, 5);
+  assert.equal(F.pinnacleMatchPrices(mu, mk.slice(0, 1))[0].bestOf, null);
+});
