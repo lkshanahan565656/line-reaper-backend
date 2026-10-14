@@ -1,0 +1,70 @@
+13:57:12 cs match page 0 2026-10-11T08:20:00.000+00:00
+13:57:12 KXVALORANTMAP live 1298 hist 5342 events 3160
+13:57:47 cs match page 50 2026-05-26T14:10:00.000+00:00
+13:58:31 KXCS2MAP live 9950 hist 13898 events 10984
+13:58:42 cs match page 100 2026-02-19T12:00:00.000+00:00
+13:59:02 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG130900BWSTA-1-STA/candlesticks?start_ts=1786622400&end_ts=1786621878&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+13:59:11 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG130900BWSTA-1-BW/candlesticks?start_ts=1786622400&end_ts=1786621878&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+13:59:30 cs match page 150 2025-10-08T13:35:02.000+00:00
+13:59:40 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300LVGTYLOO-2-TYLOO/candlesticks?start_ts=1786723200&end_ts=1786711573&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+13:59:45 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300LVGTYLOO-1-TYLOO/candlesticks?start_ts=1786723200&end_ts=1786708570&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+13:59:45 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300LVGTYLOO-1-LVG/candlesticks?start_ts=1786723200&end_ts=1786708570&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+13:59:45 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300LVGTYLOO-2-LVG/candlesticks?start_ts=1786723200&end_ts=1786711573&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:00:05 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG131000TSLG-1-TS/candlesticks?start_ts=1786626000&end_ts=1786621273&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:00:07 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG131000TSLG-1-LG/candlesticks?start_ts=1786626000&end_ts=1786621273&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:00:07 cs match page 200 2025-05-19T16:13:10.000+00:00
+14:00:15 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300NOIHON-2-NOI/candlesticks?start_ts=1786723200&end_ts=1786713696&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:00:15 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG141300NOIHON-2-HON/candlesticks?start_ts=1786723200&end_ts=1786713696&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:00:42 cs match page 250 2025-02-03T19:00:00.000+00:00
+14:01:18 cs match page 300 2024-09-25T09:00:00.000+00:00
+14:01:52 cs match page 350 2024-06-08T13:51:00.000+00:00
+14:02:27 cs match page 400 2024-02-25T15:00:00.000+00:00
+14:03:04 cs games chunks 50 / 708
+14:03:11 cs games chunks 100 / 708
+14:03:14 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG080900UNKBTF-1-UNK/candlesticks?start_ts=1786190400&end_ts=1786187200&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:03:16 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26AUG080900UNKBTF-1-BTF/candlesticks?start_ts=1786190400&end_ts=1786187200&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:03:16 cs games chunks 150 / 708
+14:03:22 cs games chunks 200 / 708
+14:03:27 cs games chunks 250 / 708
+14:03:32 cs games chunks 300 / 708
+14:03:38 cs games chunks 350 / 708
+14:03:43 cs games chunks 400 / 708
+14:03:48 cs games chunks 450 / 708
+14:03:48 KXVALORANTMAP events 500 / 3160 calls 5154 errs 12
+14:03:53 cs games chunks 500 / 708
+14:03:58 cs games chunks 550 / 708
+14:04:03 cs games chunks 600 / 708
+14:04:09 cs games chunks 650 / 708
+14:04:14 cs games chunks 700 / 708
+14:04:15 saved bo3-cs 42431
+14:06:07 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL080700FCYUNK-1-UNK/candlesticks?start_ts=1783504800&end_ts=1783501857&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:06:11 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL092100LYONBBB-1-LYON/candlesticks?start_ts=1783641600&end_ts=1783637134&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:06:12 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL092100LYONBBB-2-LYON/candlesticks?start_ts=1783641600&end_ts=1783641034&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:06:12 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL080700FCYUNK-1-FCY/candlesticks?start_ts=1783504800&end_ts=1783501857&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:06:12 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL092100LYONBBB-1-BBB/candlesticks?start_ts=1783641600&end_ts=1783637134&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:06:16 4xx 400 /trade-api/v2/historical/markets/KXVALORANTMAP-26JUL092100LYONBBB-2-BBB/candlesticks?start_ts=1783641600&end_ts=1783641034&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+14:07:33 KXCS2MAP events 500 / 10984 calls 7714 errs 35
+14:11:51 KXVALORANTMAP events 1000 / 3160 calls 10348 errs 69
+14:16:14 KXCS2MAP events 1000 / 10984 calls 12987 errs 85
+14:20:05 KXVALORANTMAP events 1500 / 3160 calls 15305 errs 89
+14:24:32 KXCS2MAP events 1500 / 10984 calls 17982 errs 111
+14:28:20 KXVALORANTMAP events 2000 / 3160 calls 20252 errs 116
+14:32:47 KXCS2MAP events 2000 / 10984 calls 22944 errs 145
+14:37:03 KXVALORANTMAP events 2500 / 3160 calls 25541 errs 187
+14:40:25 saved k-KXVALORANTMAP 2686
+14:40:30 KXCS2MAP events 2500 / 10984 calls 27653 errs 207
+14:44:41 KXCS2MAP events 3000 / 10984 calls 29605 errs 229
+14:48:50 KXCS2MAP events 3500 / 10984 calls 31549 errs 261
+14:53:01 KXCS2MAP events 4000 / 10984 calls 33504 errs 321
+14:57:10 KXCS2MAP events 4500 / 10984 calls 35445 errs 363
+15:01:20 KXCS2MAP events 5000 / 10984 calls 37357 errs 413
+15:05:31 KXCS2MAP events 5500 / 10984 calls 39300 errs 431
+15:09:41 KXCS2MAP events 6000 / 10984 calls 41243 errs 459
+15:13:50 KXCS2MAP events 6500 / 10984 calls 43207 errs 481
+15:18:00 KXCS2MAP events 7000 / 10984 calls 45169 errs 495
+15:22:10 KXCS2MAP events 7500 / 10984 calls 47122 errs 527
+15:26:20 KXCS2MAP events 8000 / 10984 calls 49079 errs 573
+15:30:30 KXCS2MAP events 8500 / 10984 calls 51035 errs 599
+15:34:41 KXCS2MAP events 9000 / 10984 calls 53003 errs 609
+15:37:17 saved k-KXCS2MAP 9310
+15:37:17 done calls 54198 errs 651
