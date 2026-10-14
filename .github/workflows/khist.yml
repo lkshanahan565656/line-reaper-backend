@@ -19,7 +19,7 @@ jobs:
       - run: |
           set +e
           SCRIPT=$(cat diag/RUN)
-          export MINVOL=0 CATS=Sports DAYS=24 PER_SERIES=120 HOURS=30 BUDGET_MIN=170
+          export MINVOL=0 CATS="Climate and Weather,Financials,Economics,Crypto,Politics,Entertainment,Companies,Elections,Science and Technology,Commodities,World" DAYS=40 PER_SERIES=120 HOURS=72 BUDGET_MIN=150
           { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
           true
       - if: always()
