@@ -1,0 +1,36 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-48pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-53pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-50pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-49pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-51pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-13pt5: Request failed with status code 429
+Polymarket US: book aec-cfb-kenest-msrst-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-57pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-54pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-6pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-60pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-4pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-clb-clt-2026-10-14-1pt5: Request failed with status code 429
