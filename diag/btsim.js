@@ -34,7 +34,12 @@ function run({ minMove = 0.03, windowMs = 20 * MIN, maxFollow = 0.4, minEv = 0.0
         if (!kind) continue;
         flagged.add(side);
         const cf = side === 'yes' ? close : 1 - close;
-        bets.push({ kind, id: x.id, side, league: x.league, market: x.market, ev, clv: cf / q.cost - 1, minsToStart: (x.start - t) / MIN, move: s?.move ?? null, cost: q.cost });
+        // executable: what the same side cost 1, 2 and 5 minutes after the alert, and how long the alerted price lasted
+        const costAt = u => { if (u >= x.start) return null; const kk = at(kh, u, 5 * MIN); if (!kk) return null; const pr = side === 'yes' ? kk[1] : 1 - kk[2]; return pr > 0 && pr < 1 ? pr + fee(pr) : null; };
+        const lag = {};
+        for (const L of [1, 2, 5]) { const c = costAt(t + L * MIN); lag[L] = c == null ? null : cf / c - 1; }
+        let lasted = 0; for (let u = 1; u <= 30; u++) { const c = costAt(t + u * MIN); if (c == null || c > q.cost + 1e-9) break; lasted = u; }
+        bets.push({ kind, id: x.id, side, league: x.league, market: x.market, ev, clv: cf / q.cost - 1, clv1: lag[1], clv2: lag[2], clv5: lag[5], lasted, minsToStart: (x.start - t) / MIN, move: s?.move ?? null, cost: q.cost });
       }
       w.observe(quotes, t);
     }
@@ -42,11 +47,17 @@ function run({ minMove = 0.03, windowMs = 20 * MIN, maxFollow = 0.4, minEv = 0.0
   return bets;
 }
 const stat = b => { const n = b.length; if (!n) return 'n 0'; const avg = b.reduce((a, x) => a + x.clv, 0) / n; const sd = Math.sqrt(b.reduce((a, x) => a + (x.clv - avg) ** 2, 0) / Math.max(1, n - 1)); return `n ${n} clv ${(avg * 100).toFixed(2)}% t ${(avg / (sd / Math.sqrt(n))).toFixed(2)} beat ${(100 * b.filter(x => x.clv > 0).length / n).toFixed(0)}% ev ${(100 * b.reduce((a, x) => a + x.ev, 0) / n).toFixed(2)}%`; };
+const exec = b => { const f = k => { const v = b.filter(x => x[k] != null); return v.length ? `${(100 * v.reduce((a, x) => a + x[k], 0) / v.length).toFixed(2)}% (${v.length})` : '—'; };
+  return `CLV at alert ${f('clv')}, +1m ${f('clv1')}, +2m ${f('clv2')}, +5m ${f('clv5')}; price still there after 2m ${b.length ? Math.round(100 * b.filter(x => x.lasted >= 2).length / b.length) : 0}%, median lasted ${b.length ? b.map(x => x.lasted).sort((a, c) => a - c)[b.length >> 1] : 0}m`; };
 const by = (b, f) => { const g = {}; for (const x of b) (g[f(x)] ||= []).push(x); return Object.entries(g).sort((a, c) => c[1].length - a[1].length).map(([k, v]) => `    ${k}: ${stat(v)}`).join('\n'); };
 console.log('pairs', D.list.length, 'with both histories', D.list.filter(x => pH.has(x.ref) && kH.has(x.id)).length);
 const base = run();
 const steam = base.filter(b => b.kind === 'steam'), gap = base.filter(b => b.kind === 'gap');
 console.log('DEFAULT steam', stat(steam)); console.log('DEFAULT gap', stat(gap));
+console.log('EXEC steam', exec(steam)); console.log('EXEC gap', exec(gap));
+for (const [nm, f] of [['league', b => b.league], ['market', b => b.market]]) { const g = {}; for (const x of steam) (g[f(x)] ||= []).push(x); for (const [k, v] of Object.entries(g)) if (v.length >= 5) console.log(`  EXEC steam ${nm} ${k}:`, exec(v)); }
+{ const g = {}; for (const x of gap) (g[x.league] ||= []).push(x); for (const [k, v] of Object.entries(g)) if (v.length >= 5) console.log(`  EXEC gap league ${k}:`, exec(v)); }
+{ const g = {}; for (const x of gap) (g[x.market] ||= []).push(x); for (const [k, v] of Object.entries(g)) if (v.length >= 5) console.log(`  EXEC gap market ${k}:`, exec(v)); }
 console.log('  steam by league\n' + by(steam, b => b.league)); console.log('  steam by market\n' + by(steam, b => b.market));
 console.log('  steam by EV\n' + by(steam, b => b.ev < 0.02 ? '1-2%' : b.ev < 0.04 ? '2-4%' : '4%+'));
 console.log('  steam by move\n' + by(steam, b => b.move < 0.04 ? '3-4c' : b.move < 0.06 ? '4-6c' : '6c+'));
