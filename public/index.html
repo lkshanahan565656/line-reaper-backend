@@ -1231,6 +1231,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('best',this)">BEST PLAYS</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
+    <button class="tab" onclick="showTab('gas',this)">GAS LOCKS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
     <button class="tab" onclick="showTab('results',this)">RESULTS</button>
     <button class="tab" onclick="showTab('betlog',this)">MY BETS</button>
@@ -1363,6 +1364,14 @@ body.no-help .clv-info { display:none; }
     <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
   </div>
   <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
+</div>
+
+<div class="page" id="page-gas">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">GAS LOCKS</strong> — Kalshi's daily state gas markets settle on the AAA average, which barely moves overnight, yet the favourite is still offered at 90-98¢ the evening before. Buy the side listed here on Kalshi, at or under the price shown.<br>
+    <span style="color:#94a3b8;font-size:11px">Not risk-free: a refinery outage can push a state's price past the line overnight, and one loss at 97¢ costs about 32 wins. Same plays for everyone; size each one so a loss is a small part of your bankroll.</span>
+  </div>
+  <div id="gasContent"></div>
 </div>
 
 <div class="page" id="page-arb">
@@ -1677,6 +1686,7 @@ function showTab(name, el) {
   if (tailActive) loadTail(); else clearTimeout(tailTimer);
   if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
   if (name === 'results') loadResults();
+  if (name === 'gas') loadGas(); else clearTimeout(gasUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
   if (name === 'betlog') mybOpen();
@@ -5406,6 +5416,57 @@ function renderXscreen() {
       : tailEmpty('NOTHING PRICED ON BOTH RIGHT NOW', 'Games show up here once both exchanges list them.')}`;
 }
 const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
+// ─── GAS LOCKS ────────────────────────────────────────────────────────────────
+// Tonight's favourites in Kalshi's daily state gas markets (gaslocks.js), the
+// live record and the backtest that picked the rule.
+const gasUi = { data: null, error: null, timer: null };
+async function loadGas() {
+  clearTimeout(gasUi.timer);
+  const el = document.getElementById('gasContent');
+  if (!gasUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { gasUi.data = await tailGet('/api/gas-locks'); gasUi.error = null; }
+  catch (e) { gasUi.error = e.old ? 'Gas locks need a newer backend.' : e.message; }
+  renderGas();
+  if (document.getElementById('page-gas')?.classList.contains('active')) gasUi.timer = setTimeout(loadGas, 120000);
+}
+function renderGas() {
+  const el = document.getElementById('gasContent'), d = gasUi.data;
+  if (gasUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(gasUi.error)); return; }
+  if (!d) return;
+  const pct = x => x == null ? '—' : `${x >= 0 ? '+' : ''}${Math.round(x * 1000) / 10}%`;
+  const c = p => `${Math.round(p * 100)}¢`;
+  const day = s => { const m = String(s || '').match(/^(\d{2})([A-Z]{3})(\d{2})$/); return m ? `${m[2].charAt(0)}${m[2].slice(1).toLowerCase()} ${+m[3]}` : (s || ''); };
+  const r = d.record || {}, bt = d.backtest || {}, oos = bt.outOfSample || {};
+  const tile = (label, val, sub, good) => `<div style="flex:1 1 140px;background:var(--surface,#0f172a);border:1px solid var(--border,#1e293b);border-radius:8px;padding:10px 12px">
+      <div style="font-size:10px;letter-spacing:1.5px;color:var(--text2)">${label}</div>
+      <div style="font-size:20px;font-weight:800;margin-top:2px;color:${good == null ? '#e8e8e8' : good ? 'var(--green)' : '#f87171'}">${val}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></div>`;
+  const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
+      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${pct(r.roi)} a bet · ${r.units >= 0 ? '+' : ''}${r.units}u` : `${r.open || 0} open, graded the morning after`, r.graded ? r.roi > 0 : null)}
+      ${tile('CLOSE OUR WAY', r.clvN ? pct(r.avgClv) : '—', r.clvN ? `average CLV over ${r.clvN}` : 'our side\'s last mid before trading stops', r.clvN ? r.avgClv > 0 : null)}
+      ${tile('BACKTEST (HELD OUT)', pct(oos.roi), `${(oos.bets || 0).toLocaleString()} bets, ${oos.losses} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}`, true)}
+    </div>`;
+  const rule = d.rule || {};
+  const note = `<div class="xa-sub" style="margin:0 0 10px">The rule: ${escAttr((rule.states || []).join(', '))}; the side asked ${c(rule.minPrice || 0.9)} to ${c(rule.maxPrice || 0.98)}, ${rule.fromHours || 12} to ${rule.toHours || 19} hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $${rule.minDepthUsd || 100}+ resting at the price. Picked on Aug 17 to Sep 26 and tested on the weeks after; the other states went +0.7% with 12 losses, so they're left out. Price includes Kalshi's fee on a 100-contract order.</div>`;
+  let plays;
+  if (d.off) plays = tailEmpty('GAS LOCKS ARE OFF', 'GAS_LOCKS=off is set on the server.');
+  else if (!d.pro) plays = tailLockBanner(`<b>${d.count || 0} gas lock${d.count === 1 ? '' : 's'} open right now.</b> <span style="color:#cbd5e1">Pro shows each one with its price and the dollars resting there.</span>`, 'Gas locks');
+  else if (d.withheld?.length) plays = tailEmpty('KALSHI DATA WITHHELD', escAttr(d.note || ''));
+  else if (!(d.plays || []).length) plays = tailEmpty('NO PLAYS RIGHT NOW', 'They show up the evening before each day\'s markets settle, about 3pm to 10pm Eastern.');
+  else {
+    const rows = d.plays.slice().sort((a, b) => a.price - b.price).map(p => `<tr>
+        <td><b>${tailLink(p.url, escAttr(p.state))}</b><div class="xa-sub">${escAttr(day(p.day))}</div></td>
+        <td>${p.side === 'yes' ? 'Above' : 'At or below'} $${Number(p.strike).toFixed(3)}<div class="xa-sub">buy ${p.side.toUpperCase()}</div></td>
+        <td class="xs-p"><b>${c(p.price)}</b><div class="xa-sub">${pct(1 / p.cost - 1)} if it wins</div></td>
+        <td class="xs-p">${p.depth ? `$${p.depth.usd.toLocaleString()}` : '<span style="color:var(--text2)">logged</span>'}</td></tr>`).join('');
+    plays = `<div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>State</th><th>Bet</th><th style="text-align:right">Price</th><th style="text-align:right">At the price</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  const recent = (d.recent || []).slice(0, 15).map(x => `<tr><td>${escAttr(x.state)} <span class="xa-sub">${escAttr(day(x.day))}</span></td><td>${x.side === 'yes' ? 'Above' : 'At or below'} $${Number(x.strike).toFixed(3)}</td><td class="xs-p">${c(x.price)}</td>
+      <td class="xs-p" style="color:${x.outcome === 'win' ? 'var(--green)' : '#f87171'}">${x.outcome === 'win' ? 'WON' : 'LOST'} ${pct(x.profit)}</td></tr>`).join('');
+  el.innerHTML = tiles + note + `<div class="arb-sec-head">TONIGHT</div>` + plays
+    + (recent ? `<div class="arb-sec-head" style="margin-top:14px">GRADED</div><div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>State</th><th>Bet</th><th style="text-align:right">Price</th><th style="text-align:right">Result</th></tr></thead><tbody>${recent}</tbody></table></div>` : '')
+    + (d.updated ? `<div class="xa-sub" style="margin-top:8px">Scanned ${escAttr(new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}, every 10 minutes.</div>` : '');
+}
 // ─── RESULTS ──────────────────────────────────────────────────────────────────
 const resultsUi = { days: 0 };
 function resultsDays(d) {

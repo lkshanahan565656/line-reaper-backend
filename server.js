@@ -3296,6 +3296,27 @@ const middleTracker = require('./middletrack').createMiddleTracker({
   http: upstream,
 });
 middleTracker.ready().catch(e => console.error('Middle tracker: store failed to initialise:', e.message));
+// Gas locks (gaslocks.js): Kalshi's daily state gas markets, the favourite at
+// 90-98¢ the evening before, logged and graded from the result. GAS_LOCKS=off
+// stops the scans; GAS_LOCK_ALERTS=off keeps them out of the webhook.
+const gaslocks = require('./gaslocks');
+const gasTracker = gaslocks.createGasTracker({
+  store: resultsBackup.wrap('gasLocks', createEvStoreFromEnv(process.env, { table: 'gas_locks', fileVar: 'GAS_LOCK_FILE', file: 'gas-locks.json' })),
+  http: upstream,
+});
+gasTracker.ready().catch(e => console.error('Gas locks: store failed to initialise:', e.message));
+const gasState = { plays: [], counts: null, errors: [], updated: null };
+async function scanGasLocks() {
+  if (process.env.GAS_LOCKS === 'off') return [];
+  const logged = new Set((await gasTracker.list()).map(r => r.id));
+  const out = await gaslocks.scan(upstream, { skip: logged });
+  const fresh = await gasTracker.record(out.plays);
+  await gasTracker.mark(out.rows);
+  await gasTracker.grade();
+  Object.assign(gasState, { plays: out.plays, counts: out.counts, errors: out.errors.slice(0, 5), updated: new Date().toISOString() });
+  if (fresh.length && process.env.GAS_LOCK_ALERTS !== 'off') postAlert(fresh.map(gaslocks.describe), 'Gas locks');
+  return fresh;
+}
 let middleGradedAt = 0;
 async function scanXarbs() {
   if (xarbState.running) return [];
@@ -3792,7 +3813,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.109.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.110.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4112,6 +4133,21 @@ app.get('/api/xscreen', (req, res) => {
   const base = { count: rows.length, updated: xarbState.updated, pro, region: TAIL_REGION };
   if (!pro) return res.json(base);
   res.json(regionSafe({ ...base, rows }));
+});
+// Gas locks (gaslocks.js): tonight's plays, the record and the backtest.
+// Free: the count and the record; the plays are Pro, and need Kalshi's licence.
+app.get('/api/gas-locks', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const record = await gasTracker.summary();
+    const recent = (await gasTracker.list()).filter(r => r.status === 'graded').sort((a, b) => (b.gradedAt || '').localeCompare(a.gradedAt || '')).slice(0, 50);
+    const plays = lic.kalshi ? gasState.plays : [];
+    const base = { count: plays.length, updated: gasState.updated, pro, record, backtest: gaslocks.BACKTEST,
+      rule: { states: gaslocks.DEFAULTS.states, minPrice: gaslocks.DEFAULTS.minPrice, maxPrice: gaslocks.DEFAULTS.maxPrice, fromHours: gaslocks.DEFAULTS.fromHours, toHours: gaslocks.DEFAULTS.toHours, minDepthUsd: gaslocks.DEFAULTS.minDepthUsd },
+      off: process.env.GAS_LOCKS === 'off', ...withheldBody(withheldOf(lic, ['kalshi'])) };
+    if (!pro) return res.json({ ...base, recent });
+    res.json({ ...base, plays, recent, counts: gasState.counts, errors: gasState.errors });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // Exchange value (xvalue.js): Kalshi and Polymarket US asks under Polymarket's
 // live mid, best first, plus how the flagged prices did against the close.
@@ -4879,9 +4915,9 @@ app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list()]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list()]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -4970,7 +5006,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.109.0',
+  version: '3.110.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5123,6 +5159,8 @@ schedule('10,40 * * * * *', () => Promise.all([runTailJob('whales', pollWhales),
 schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()));
 // Every open Kalshi and Polymarket event, once a minute (skipped while one is still running)
 schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
+// Kalshi's daily gas markets every 10 minutes (plays only exist the evening before expiry)
+schedule('35 3,13,23,33,43,53 * * * *', () => runTailJob('gas', scanGasLocks));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
@@ -5184,7 +5222,7 @@ module.exports = {
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile, bo3HeadshotPct,
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
-  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
+  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
 };
