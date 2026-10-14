@@ -1,0 +1,19 @@
+15:48:58 matches 7294
+15:49:18 games 16668
+15:50:28 stats 1000 / 16668 with 918 calls 1245 errs 0
+15:51:39 stats 2000 / 16668 with 1771 calls 2245 errs 0
+15:52:49 stats 3000 / 16668 with 2728 calls 3245 errs 0
+15:54:00 stats 4000 / 16668 with 3674 calls 4245 errs 0
+15:55:11 stats 5000 / 16668 with 4637 calls 5245 errs 0
+15:56:23 stats 6000 / 16668 with 5634 calls 6245 errs 0
+15:57:32 stats 7000 / 16668 with 6600 calls 7245 errs 0
+15:58:47 stats 8000 / 16668 with 7474 calls 8245 errs 0
+16:00:08 stats 9000 / 16668 with 8431 calls 9245 errs 0
+16:01:26 stats 10000 / 16668 with 9269 calls 10245 errs 0
+16:02:44 stats 11000 / 16668 with 10203 calls 11245 errs 0
+16:04:21 stats 12000 / 16668 with 11181 calls 12245 errs 0
+16:05:49 stats 13000 / 16668 with 12126 calls 13245 errs 0
+16:07:05 stats 14000 / 16668 with 12740 calls 14245 errs 0
+16:08:26 stats 15000 / 16668 with 13725 calls 15245 errs 0
+16:09:42 stats 16000 / 16668 with 14678 calls 16245 errs 0
+16:10:39 done 16668 with stats 15283 calls 16910 errs 0
