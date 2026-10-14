@@ -711,6 +711,8 @@ const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStor
 // the same way in a record of their own: the main-line record (and the books
 // it proves for the webhook) stays the main lines'
 const altTracker = createEvTracker({ store: resultsBackup.wrap('evAlt', createEvStoreFromEnv(process.env, { table: 'ev_alt_bets', fileVar: 'EV_ALT_TRACK_FILE', file: 'ev-alt-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// BetRivers' esports lines (esbooks.js), priced off Pinnacle and Kalshi: a record of their own too
+const esBookTracker = createEvTracker({ store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
@@ -3863,7 +3865,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.117.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.118.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3951,7 +3953,12 @@ app.get('/api/ev', (req, res) => {
   const alt = (runEvScreen().alt || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
   counts.alt = alt.length; counts.altClear = alt.filter(r => r.clears).length;
   const altOut = alt.slice(0, 300);
-  res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })), count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
+  // BetRivers' esports lines: their own list too (esbooks.js)
+  const es = (esBooksState.rows || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
+  counts.esports = es.length; counts.esportsClear = es.filter(r => r.clears).length;
+  const esOut = es.slice(0, 300);
+  res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })),
+    esports: pro ? esOut : redactEv(esOut).map(r => ({ ...r, esports: true })), esportsAt: esBooksState.screenedAt, count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
 // ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
@@ -3985,13 +3992,14 @@ app.get('/api/ev/record', async (req, res) => {
   if (out?.byBook) out.byBook = Object.fromEntries(Object.entries(out.byBook).filter(([book]) => ok({ book })));
   // the ladders' and alternate lines' record, apart from the main lines'
   out.alt = await altTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
+  out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   res.json(out);
 });
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
   const status = hasPro(req) ? req.query.status : 'closed';
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
-  const bets = (await (req.query.alt === '1' ? altTracker : evTracker).list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
+  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : evTracker).list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
 app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
@@ -4660,6 +4668,43 @@ async function refreshPinnacleProps() {
   for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
   Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
 }
+// ── ESPORTS AT BETRIVERS (esbooks.js) ──
+// BetRivers' esports lines (Kambi: match, maps, map handicap, total maps and
+// per-map kill and round lines) priced at their own numbers off Pinnacle's
+// esports feed and the esports board's Kalshi mids. Every two minutes, then
+// re-priced each minute against the newest Kalshi. Shown on the +EV tab
+// (ESPORTS) and graded against Pinnacle's close in their own record. No
+// alerts. ESPORTS_BOOKS=off stops it.
+const esbooks = require('./esbooks');
+const esBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_BOOKS || '').trim()),
+  books: [], pin: [], rows: [], summary: null, errors: [], updated: null, screenedAt: null, ms: null };
+let esBooksRunning = false;
+async function refreshEsBooks() {
+  if (!esBooksState.enabled || esBooksRunning || !licences.isOn('pinnacle')) return;
+  esBooksRunning = true;
+  const t0 = Date.now(), errors = [];
+  try {
+    const [kb, pin] = await Promise.all([
+      esbooks.fetchKambi(axios).catch(e => { errors.push(`betrivers ${e.message}`); return null; }),
+      esbooks.fetchPinnacle(axios, process.env.PINNACLE_GUEST_KEY || '').catch(e => { errors.push(`pinnacle ${e.message}`); return null; }),
+    ]);
+    if (kb) { esBooksState.books = kb.events; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
+    if (pin) esBooksState.pin = pin;
+    Object.assign(esBooksState, { errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
+    runEsBooksScreen();
+  } finally { esBooksRunning = false; }
+}
+function runEsBooksScreen() {
+  if (!esBooksState.enabled) return;
+  try {
+    const fairs = new Map(), costs = new Map();
+    const kalshi = esbooks.kalshiLadders(esportsBoard.state.matches || []);
+    const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, fairs, costs });
+    Object.assign(esBooksState, { rows: res.rows, summary: esbooks.summarize(esBooksState.books, res, fairs), screenedAt: new Date().toISOString() });
+    esBookTracker.recordBoard(res.rows, fairs, { costs }).catch(e => console.warn('Esports books tracker:', e.message));
+  } catch (e) { esBooksState.errors = [`screen ${e.message}`, ...esBooksState.errors].slice(0, 8); }
+}
+
 // ── BIG MONEY (bigmoney.js) ──
 // Big taker prints on Kalshi and Polymarket, the bet each one backed, and
 // that bet's price at the pick'em apps, FanDuel, BetRivers and the US
@@ -5377,7 +5422,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.117.0',
+  version: '3.118.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5408,7 +5453,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   tracker: trackerHealth,
   sharp: sharpTracker.state(),
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
-  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null },
+  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null,
+    esports: { enabled: esBooksState.enabled, updated: esBooksState.updated, screenedAt: esBooksState.screenedAt, ms: esBooksState.ms, summary: esBooksState.summary, errors: esBooksState.errors.slice(0, 5) } },
   // free: counts and timestamps only (see publicTailState)
   tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats(), polymarketUs: polymarketUs?.state() ?? null } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
@@ -5467,6 +5513,9 @@ schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().cat
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
 schedule('20 */2 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
+// read every other minute; between reads, re-price against the newest Kalshi
+// mids, so the record gets its +2 min price
+schedule('50 * * * * *', () => (new Date().getMinutes() % 2 ? refreshEsBooks().catch(e => { esBooksState.errors = [e.message]; }) : runEsBooksScreen()));
 schedule('40 */10 * * * *', () => consensusMoves.prune());
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
