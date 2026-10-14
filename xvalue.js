@@ -305,7 +305,16 @@ function trackRows(edges) {
     group: e.group, side: e.pick, book: e.venue, start: e.start, sport: e.league || e.category, event: e.title,
     market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100,
     source: e.mover ? 'mover' : e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'kalshiref' : 'xvalue',
+    depthUsd: e.depth?.usd ?? null,
   }));
+}
+
+// every paired side's cost now (group|pick → cost with fee): what a tracked
+// bet's execPrice is read from a couple of minutes after its flag
+function costsOf(quotes = new Map()) {
+  const out = new Map();
+  for (const [id, q] of quotes) if (q.pick && q.cost > 0) out.set(`${id.slice(0, id.lastIndexOf('|'))}|${q.pick}`, q.cost);
+  return out;
 }
 
 // "NBA · Lakers at Celtics: Celtics on Kalshi at 52¢ (53.1¢ with fee), Polymarket 56¢ (+5.5%) <link>"
@@ -314,7 +323,7 @@ function describe(e) {
   const c = x => `${Math.round(x * 1000) / 10}¢`;
   const ref = e.refName || 'Polymarket';
   const steam = e.steam ? `STEAM: ${moveText(e.steam, e.venueName, ref)}. ` : e.mover ? `LINE MOVER: ${moverText(e.mover)}. ` : '';
-  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (${e.ev >= 0 ? '+' : ''}${Math.round(e.ev * 1000) / 10}%)${e.url ? ` ${e.url}` : ''}`;
+  return `${steam}${(e.league || e.category || '').toUpperCase()} · ${e.title}${when ? ` (${when})` : ''}: ${e.pick} on ${e.venueName} at ${c(e.price)} (${c(e.cost)} with fee), ${ref} ${c(e.fair)} (${e.ev >= 0 ? '+' : ''}${Math.round(e.ev * 1000) / 10}%)${e.depth ? `, $${e.depth.usd.toLocaleString('en-US')} on the book at that price` : ''}${e.url ? ` ${e.url}` : ''}`;
 }
 
-module.exports = { leagueTag, planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };
+module.exports = { costsOf, leagueTag, planReads, dedupeEdges, findValue, screen, SCREEN, screenFairs, pairUs, refFair, trackRows, describe, optsFromEnv, DEFAULTS };

@@ -60,6 +60,9 @@ function score(bets) {
     avgClv: clvs.length ? r4(mean(clvs)) : null, beatClosePct: clvs.length ? r4(clvs.filter(v => v > 0).length / clvs.length) : null,
     clvN: clvs.length, clvT: tStat(clvs),
   };
+  // executable CLV: graded at what the bet cost a couple of minutes after the alert
+  const ex = bets.map(b => b.exec).filter(v => v != null && Number.isFinite(v));
+  if (ex.length) Object.assign(s, { execClv: r4(mean(ex)), execBeatPct: r4(ex.filter(v => v > 0).length / ex.length), execN: ex.length });
   s.verdict = verdictOf(s);
   return s;
 }
@@ -70,7 +73,7 @@ const tailBet = r => ({
   labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet', order: r.order === 'limit' ? 'limit bid' : 'take' },
 });
 // evtrack: CLV in percent, no win/loss
-const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
+const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },

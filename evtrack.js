@@ -92,7 +92,10 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
 
   // Feed every screen here: its rows, plus the fair price of every market
   // (ev.screen's `fairs` map) so a bet keeps tracking after its edge is gone.
-  async function recordBoard(rows, fairs = null) {
+  // costs (optional, market side → what the side costs now, fee included):
+  // the first one at least lagMs after a flag is the bet's execPrice, the
+  // price a subscriber acting on the alert gets; execClv grades it there
+  async function recordBoard(rows, fairs = null, { costs = null, lagMs = 2 * 60e3 } = {}) {
     await loaded;
     const t = now();
     const fairBySide = new Map();
@@ -111,6 +114,7 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         sport: r.sport, event: r.event, market: r.market, player: r.player || null, point: r.point ?? null,
         side: r.side, book: r.book, price: r.price, decimal: r.decimal, source: r.source,
         evAtFlag: r.ev, fairAtFlag: r.fairProb, closeFair: r.fairProb, closeAt: new Date(t).toISOString(),
+        ...(r.depthUsd != null ? { depthUsd: r.depthUsd } : {}),
       };
       open.set(id, b);
       writes.push(store.put(b));
@@ -120,13 +124,16 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
     for (const b of open.values()) {
       const started = b.start && Date.parse(b.start) <= t;
       if (!started) {
+        const ec = costs && b.execPrice == null && t - Date.parse(b.flaggedAt) >= lagMs ? costs.get(marketSide(b)) : null;
+        if (ec > 0 && ec < 1) { b.execPrice = ec; b.execAt = new Date(t).toISOString(); writes.push(store.put(b)); }
         const fp = fairBySide.get(marketSide(b));
         if (fp != null && fp !== b.closeFair) { b.closeFair = fp; b.closeAt = new Date(t).toISOString(); writes.push(store.put(b)); }
         continue;
       }
       b.status = 'closed';
       b.clv = r2((b.closeFair / 100) * b.decimal * 100 - 100);
-      b.fairMove = r2(b.closeFair - b.fairAtFlag);   // + means the market moved toward our side
+      b.fairMove = r2(b.closeFair - b.fairAtFlag);
+      if (b.execPrice) b.execClv = r2((b.closeFair / 100) / b.execPrice * 100 - 100);   // + means the market moved toward our side
       open.delete(b.id);
       writes.push(store.put(b));
     }
