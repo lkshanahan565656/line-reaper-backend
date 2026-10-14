@@ -671,7 +671,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-meter { width:64px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:12px; color:#e2e8f0; font-weight:700; }
 .es-meter i { display:block; height:4px; margin-top:4px; border-radius:2px; background:rgba(148,163,184,.15); overflow:hidden; }
 .es-meter i::after { content:''; display:block; height:100%; width:var(--p); background:linear-gradient(90deg, #10b981, #34d399); border-radius:2px; }
-.es-as-foot { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)) auto; gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-foot { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)) auto; gap:8px; align-items:center; padding:12px 16px 14px; }
 .es-as-stat { font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; text-transform:uppercase; }
 .es-as-stat b { display:block; font-family:'JetBrains Mono',monospace; font-size:15px; color:#f1f5f9; letter-spacing:0; margin-top:2px; }
 .es-as-load { cursor:pointer; border:0; border-radius:10px; padding:10px 16px; font-weight:800; font-size:12px; letter-spacing:.08em; color:#06110d; background:linear-gradient(180deg, #34d399, #10b981); }
@@ -750,7 +750,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
   .es-play { grid-template-columns:36px minmax(0,1fr) auto auto; gap:6px 10px; padding:11px 12px; }
   .es-play .mkcol, .es-play .es-meter { display:none; }
   .es-play .evbig { font-size:16px; }
-  .es-as-foot { grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .es-as-foot { grid-template-columns:repeat(2, minmax(0,1fr)); }
   .es-as-load { grid-column:1 / -1; padding:12px; }
   .es-as-ev { font-size:23px; }
   .es-strip b { font-size:16px; }
@@ -4650,7 +4650,7 @@ let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, books: new Set(saved.books || []) }); } catch {}
 const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions' };
+const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions', pass_comp:'Completions', pass_att:'Pass Att', pass_ints:'INTs', rush_att:'Rush Att', saves:'Saves', earned_runs:'Earned Runs', hits_allowed:'Hits Allowed' };
 const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
 
 function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, books: [...evState.books] })); } catch {} }
@@ -5426,16 +5426,19 @@ function renderResults(d) {
       <div style="font-size:11px;color:var(--text2);letter-spacing:.05em">${escAttr(s.label.toUpperCase())}</div>
       <div style="font-size:18px;font-weight:700;margin:4px 0;color:${col(o.avgClv ?? o.roi)}">${o.avgClv != null ? `${pct(o.avgClv)} CLV` : o.roi != null ? `${pct(o.roi)} ROI` : '—'}</div>
       <div style="font-size:11px;color:var(--text2)">${o.n} graded · ${s.open} open${o.graded ? ` · ${o.wins}-${o.losses} · ${o.units > 0 ? '+' : ''}${o.units}u` : ''}${o.beatClosePct != null ? ` · beat close ${pct(o.beatClosePct, false)}` : ''}</div>
-      ${o.execN ? `<div style="font-size:11px;margin-top:3px">2 min after the alert: <b style="color:${col(o.execClv)}">${pct(o.execClv)} CLV</b> over ${o.execN}</div>` : ''}
+      ${o.execN ? `<div style="font-size:11px;margin-top:3px">2 min after the alert: <b style="color:${col(o.execClv)}">${pct(o.execClv)} CLV</b> over ${o.execN}${o.execAlertClv != null ? ` (same bets at the alert ${pct(o.execAlertClv)})` : ''}</div>` : ''}
+      ${o.sizedN ? `<div style="font-size:11px;margin-top:2px">$100 through the book then: <b style="color:${col(o.sizedClv)}">${pct(o.sizedClv)} CLV</b> over ${o.sizedN}</div>` : ''}
     </div>`; }).join('');
   const anyExec = (d.plays || []).some(p => p.execN);
+  const anySized = (d.plays || []).some(p => p.sizedN);
   const plays = (d.plays || []).filter(p => p.play !== 'all');
   const rows = plays.map(p => { const [v, c] = VC[p.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span></td>
       <td>${escAttr(p.label)}</td><td>${escAttr(p.play)}</td><td style="text-align:right">${p.n}</td>
       <td style="text-align:right;color:${col(p.avgClv)}">${pct(p.avgClv)}</td>
       <td style="text-align:right">${p.beatClosePct != null ? pct(p.beatClosePct, false) : '—'}</td>
-      ${anyExec ? `<td style="text-align:right;color:${col(p.execClv)}" title="${p.execN || 0} bets graded 2 minutes after the alert">${p.execN ? pct(p.execClv) : '—'}</td>` : ''}
+      ${anyExec ? `<td style="text-align:right;color:${col(p.execClv)}" title="${p.execN || 0} bets graded 2 minutes after the alert${p.execAlertClv != null ? `; the same bets at the alert: ${pct(p.execAlertClv)}` : ''}">${p.execN ? pct(p.execClv) : '—'}</td>` : ''}
+      ${anySized ? `<td style="text-align:right;color:${col(p.sizedClv)}" title="${p.sizedN || 0} bets graded at what $100 cost through the book 2 minutes after the alert">${p.sizedN ? pct(p.sizedClv) : '—'}</td>` : ''}
       <td style="text-align:right">${p.graded ? `${p.wins}-${p.losses}` : '—'}</td>
       <td style="text-align:right;color:${col(p.roi)}">${pct(p.roi)}</td>
       <td style="text-align:right;color:${col(p.units)}">${p.graded ? `${p.units > 0 ? '+' : ''}${p.units}u` : '—'}</td></tr>`; }).join('');
@@ -5446,9 +5449,9 @@ function renderResults(d) {
     <div style="display:flex;gap:8px;flex-wrap:wrap">${cards}</div>
     <h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:.05em;color:var(--text2)">PLAYS, BEST FIRST</h3>
     ${rows ? `<div style="overflow-x:auto"><table class="esm-table">
-      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
+      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}${anySized ? '<th style="text-align:right">CLV $100</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
       <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each bet at what it cost 2 minutes after the alert, the price a subscriber gets (exchange value, esports exchange edges and the +EV screener). Once a play has 8 bets graded at +2 min, its verdict is judged on that grade. Exchange value alerts go out only for signals whose +2 min record beats the close. ${kept}</div>`;
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each bet at what it cost 2 minutes after the alert, the price a subscriber gets (exchange value, esports exchange edges and the +EV screener). CLV $100 grades it at what $100 cost walking the book at that moment, fee in (exchange value). Once a play has 8 bets graded at $100, its verdict is judged on that grade, else on the +2 min grade once it has 8. Exchange value alerts go out only for signals whose +2 min record (at $100 once 15 bets have that grade) beats the close. ${kept}</div>`;
 }
 
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
@@ -6215,7 +6218,30 @@ function esAutoSlipsHTML() {
     const legs = Object.values(d.pool || {}).reduce((a, b) => a + (b.plus || 0), 0);
     return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">BEST SLIPS</b> · no entry on PrizePicks, Underdog or Sleeper is within ${d.nearPct}% of break-even right now (${legs} +EV leg${legs === 1 ? '' : 's'} on the board).</div>`;
   }
-  const cards = d.slips.map((s, i) => {
+  const cards = d.slips.map((s, i) => esAsCard(s, i, d)).join('');
+  const rec = d.record;
+  const pct = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+  const recLine = !rec ? '' : rec.slips
+    ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
+    : `<span class="es-rec">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
+  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>${esStacksHTML(d)}`;
+}
+// ── MATCH STACKS: one match's overs (or unders) in one entry ──────────────
+// Legs from one CS or LoL match move together; the apps pay them as if they
+// didn't. The backend measured how much on finished series (slip.js FACTORS).
+function esStacksHTML(d) {
+  const list = d.stacks || [];
+  const rec = d.record?.stacks;
+  const pct = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+  const recLine = rec && rec.slips
+    ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
+    : `<span class="es-rec">Not graded yet: every stack shown is logged and graded${rec?.open ? `, ${rec.open} pending` : ''}</span>`;
+  const head = `<div class="es-hdr"><h3>MATCH STACKS</h3><span class="sub">One match, every leg the same way. When a match runs long, everyone's kills go over together; the apps pay these legs as if they were independent.</span>${recLine}</div>`;
+  if (!list.length) return head + `<div class="es-as-note" style="margin-bottom:12px">No same-match stack on PrizePicks, Underdog or Sleeper is +EV right now.</div>`;
+  return head + `<div class="es-autoslips">${list.map((s, i) => esAsCard(s, i, d)).join('')}</div>`;
+}
+function esAsCard(s, i, d) {
+    const stack = s.kind === 'stack';
     const key = ES_AS_KEY[s.book], B = ES_BOOKS[key], logo = logoSrc(key);
     const legs = s.picks.map(l => `<div class="es-as-leg">
       <span class="es-side ${l.side === 'OVER' ? 'over' : 'under'}">${esAsSide(l, s.book)}<em>${l.line}</em></span>
@@ -6223,32 +6249,27 @@ function esAutoSlipsHTML() {
       <div class="es-meter">${l.prob}%<i style="--p:${Math.max(0, Math.min(100, l.prob))}%"></i></div>
     </div>`).join('');
     const flex = /flex/.test(s.table);
-    const more = (d.books?.[s.book] || []).filter(o => o.legs !== s.legs && o.status === 'plus');
+    const more = stack ? [] : (d.books?.[s.book] || []).filter(o => o.legs !== s.legs && o.status === 'plus');
     return `<div class="es-as ${s.status}" style="--bk:${B?.color || '#8b5cf6'}">
       <div class="es-as-head">
         <span class="es-as-logo">${escEs(s.bookName[0])}${logo ? `<img src="${logo}" alt="" onerror="this.remove()">` : ''}</span>
-        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span></span></div>
+        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${stack && s.matchTitle ? escEs(s.matchTitle) + ' · ' : ''}${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span></span></div>
         <span class="es-as-ev" style="color:${esEvColor(s.ev)}">${s.ev > 0 ? '+' : ''}${s.ev.toFixed(1)}%<small>EXPECTED RETURN</small></span>
       </div>
       <div class="es-as-legs">${legs}</div>
       <div class="es-as-foot">
         <div class="es-as-stat">Hit all<b>${(s.probAll * 100).toFixed(1)}%</b></div>
         <div class="es-as-stat">Pays<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
+        <div class="es-as-stat">Needs<b>${s.breakEvenPays ? s.breakEvenPays + 'x' : '—'}</b></div>
         <div class="es-as-stat">¼ Kelly<b>${s.status === 'plus' && s.kelly > 0 ? (s.kelly * 25).toFixed(1) + '%' : '—'}</b></div>
-        <button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>
+        ${stack ? '' : `<button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>`}
       </div>
+      ${stack ? `<div class="es-as-note">Play it only if ${escEs(s.bookName)} shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b> for this lineup. ${s.book === 'PP' ? 'PrizePicks lowers the payout for several players from one team or game, so check the number on the entry screen.' : 'The app may lower the payout for players from one match, so check the number on the entry screen.'}</div>` : ''}
       ${flex && s.paysAll ? `<div class="es-as-note">Flex: pays on a miss too.</div>` : ''}
       ${more.length ? `<div class="es-as-note" style="padding-bottom:6px">Also +EV on ${escEs(s.bookName)} (this one grows a bankroll fastest):</div><div class="es-as-more">${more.map(o => `<span>${o.legs}-pick ${escEs(o.tableName)} <b>+${o.ev.toFixed(1)}%</b> · hits ${(o.probAll * 100).toFixed(1)}%</span>`).join('')}</div>` : ''}
       ${s.status === 'near' ? `<div class="es-as-note">Closest entry on ${escEs(s.bookName)}, ${Math.abs(s.ev).toFixed(1)}% short of break-even. Not a bet; it shows what's nearly there.</div>` : ''}
       ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}
     </div>`;
-  }).join('');
-  const rec = d.record;
-  const pct = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
-  const recLine = !rec ? '' : rec.slips
-    ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
-    : `<span class="es-rec">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
-  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>`;
 }
 function esLoadAutoSlip(i) {
   const s = esAsState.data?.slips?.[i];

@@ -34,9 +34,12 @@ function tStat(a) {
 // Once 8+ bets carry a grade at the price 2 minutes after the alert (execClv),
 // that grade is the CLV judged: a signal counts only at a price a subscriber
 // can still get, not at the alerted one.
+// Graded at $100 through the book (sizedClv) once 8 have that, which is
+// what a subscriber betting real size gets.
 const EXEC_MIN_N = 8;
 function verdictOf(s) {
-  if (s.execN >= EXEC_MIN_N) s = { ...s, avgClv: s.execClv, clvN: s.execN, clvT: s.execT ?? null };
+  if (s.sizedN >= EXEC_MIN_N) s = { ...s, avgClv: s.sizedClv, clvN: s.sizedN, clvT: s.sizedT ?? null };
+  else if (s.execN >= EXEC_MIN_N) s = { ...s, avgClv: s.execClv, clvN: s.execN, clvT: s.execT ?? null };
   const clvN = s.clvN ?? s.n, roiN = s.graded ?? s.n;
   // CLV leads once it has a sample; until then ROI does, when there is one
   const useClv = s.avgClv != null && (clvN >= 8 || s.roi == null);
@@ -67,8 +70,15 @@ function score(bets) {
     clvN: clvs.length, clvT: tStat(clvs),
   };
   // executable CLV: graded at what the bet cost a couple of minutes after the alert
-  const ex = bets.map(b => b.exec).filter(v => v != null && Number.isFinite(v));
-  if (ex.length) Object.assign(s, { execClv: r4(mean(ex)), execBeatPct: r4(ex.filter(v => v > 0).length / ex.length), execN: ex.length, execT: tStat(ex) });
+  // (execAlertClv: the same bets at the alert, so the two compare like for like)
+  const exB = bets.filter(b => b.exec != null && Number.isFinite(b.exec)), ex = exB.map(b => b.exec);
+  if (ex.length) {
+    const al = exB.map(b => b.clv).filter(v => v != null && Number.isFinite(v));
+    Object.assign(s, { execClv: r4(mean(ex)), execBeatPct: r4(ex.filter(v => v > 0).length / ex.length), execN: ex.length, execT: tStat(ex), execAlertClv: al.length ? r4(mean(al)) : null });
+  }
+  // at size: $100 walked through the book at that same moment
+  const sz = bets.map(b => b.sized).filter(v => v != null && Number.isFinite(v));
+  if (sz.length) Object.assign(s, { sizedClv: r4(mean(sz)), sizedN: sz.length, sizedT: tStat(sz) });
   s.verdict = verdictOf(s);
   return s;
 }
@@ -79,7 +89,8 @@ const tailBet = r => ({
   labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet', order: r.order === 'limit' ? 'limit bid' : 'take' },
 });
 // evtrack: CLV in percent, no win/loss
-const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
+const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null,
+  sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },

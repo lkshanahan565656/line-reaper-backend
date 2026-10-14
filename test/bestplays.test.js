@@ -125,9 +125,9 @@ test('esports props: the best Underdog entry from the prop plays, standard-price
   assert.doesNotMatch(entry.title, /boost|thin/, 'boosted legs and legs that are not plays stay out');
   assert.ok(entry.ev >= DEFAULTS.entryMinEv);
   assert.ok(entry.units > 0 && entry.units <= DEFAULTS.edgeMaxUnits);
-  // two independent 64% legs on a 3x payout: 0.64² × 3 − 1
+  // two independent 64% legs on a 3.5x payout: 0.64² × 3.5 − 1
   const two = bestPlays({ picks: [leg('a', 'A'), leg('b', 'B')] }, { now: NOW }).rows.find(r => r.id.startsWith('entry:'));
-  assert.ok(Math.abs(two.ev - (0.64 * 0.64 * 3 - 1)) < 0.01, `${two.ev}`);
+  assert.ok(Math.abs(two.ev - (0.64 * 0.64 * 3.5 - 1)) < 0.01, `${two.ev}`);
   // one leg is not an entry
   assert.equal(bestPlays({ picks: [leg('a', 'A')] }, { now: NOW }).rows.filter(r => r.id.startsWith('entry:')).length, 0);
 });

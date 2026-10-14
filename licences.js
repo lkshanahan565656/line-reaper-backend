@@ -32,6 +32,10 @@ const BLOCKED = [
     why: 'gol.gg pages are scraped; no data licence.' },
   { key: 'pinnacle', name: 'Pinnacle', flag: 'PINNACLE_DATA_OK', hosts: ['guest.api.arcadia.pinnacle.com'],
     why: 'Pinnacle closed its public API on 2025-07-23; the guest API is unofficial.' },
+  { key: 'fanduel', name: 'FanDuel', flag: 'FANDUEL_DATA_OK', hosts: ['sbapi.nj.sportsbook.fanduel.com'],
+    why: 'Prices read from the page JSON its site uses: no licence for a paid product.' },
+  { key: 'betrivers', name: 'BetRivers (Kambi)', flag: 'BETRIVERS_DATA_OK', hosts: ['eu-offering-api.kambicdn.com'],
+    why: 'Prices read from the Kambi offering API its site uses: no licence for a paid product.' },
 ];
 
 // Still on with the paywall on, but their terms need a read (or attribution)

@@ -10,12 +10,12 @@
 // just under break-even. That slip is still shown, marked 'near', so it's clear
 // which entry is closest and by how much it falls short.
 
-const { priceSlip, PAYOUTS } = require('./slip');
+const { priceSlip, PAYOUTS, factorSport } = require('./slip');
 
 const LEG_FLOOR = -6;      // % EV: legs further below their book's break-even never help a slip
 const POOL_MAX = 20;       // best legs per book the greedy search looks at
 const NEAR_PCT = 5;        // a slip within 5% of break-even is 'near'
-const MAX_LEGS = { PP: 6, UD: 5, SL: 6 };
+const MAX_LEGS = { PP: 6, UD: 6, SL: 6 };
 
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -66,8 +66,8 @@ function priceOn(book, legs) {
 // The choice at each step doesn't depend on the final size, so one pass gives
 // the best entry at every size. One pick per player, and the apps want at least
 // two teams in an entry.
-function buildForBook(pool, book, maxLegs) {
-  const rest = pool.slice().sort((a, b) => b.ev - a.ev).slice(0, POOL_MAX);
+function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX } = {}) {
+  const rest = pool.slice().sort((a, b) => b.ev - a.ev).slice(0, poolMax);
   const chosen = [];
   const sizes = [];
   while (chosen.length < maxLegs && rest.length) {
@@ -91,6 +91,66 @@ function buildForBook(pool, book, maxLegs) {
   return sizes.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
 }
 
+// ── SAME-MATCH STACKS ────────────────────────────────────────────────────────
+// Legs from one CS or LoL match move together (slip.js FACTORS, measured on
+// finished series): when the match runs long, everyone's kills go over. The
+// apps price an entry as if its legs were independent, so a stack of one
+// match's overs (or unders) can be +EV even when every leg alone is a little
+// short. PrizePicks says it lowers the payout for lineups with several players
+// from one team or game, so every stack carries the payout it needs
+// (breakEvenPays): play it only where the app shows at least that.
+const STACK_FLOOR = -15;   // % EV: a leg this far short still can't help a stack
+const STACK_POOL = 16;     // legs per match the search looks at
+const STACKS_PER_BOOK = 5;
+const PP_BREAK_EVEN = 0.5622;
+
+// PrizePicks takes either side of a standard line, so a leg's other side is a
+// candidate too (a stack wants every leg on the same side). Half lines only,
+// where the two sides cover every outcome.
+function otherSide(l) {
+  if (!(Math.abs(l.line % 1) === 0.5) || !(l.prob > 0 && l.prob < 1)) return null;
+  const prob = 1 - l.prob;
+  return { ...l, side: l.side === 'OVER' ? 'UNDER' : 'OVER', prob, ev: +((prob / PP_BREAK_EVEN - 1) * 100).toFixed(2), shift: -(l.shift || 0), flipped: true };
+}
+
+// One match's legs on BOOK → the best stack for each side pattern
+function stackForMatch(legs, book) {
+  const maxLegs = MAX_LEGS[book];
+  const cands = [];
+  for (const l of legs) {
+    cands.push(l);
+    if (book === 'PP') { const o = otherSide(l); if (o) cands.push(o); }
+  }
+  const out = [];
+  for (const want of ['OVER', 'UNDER']) {
+    const pool = cands.filter(l => l.side === want && l.ev >= STACK_FLOOR).sort((a, b) => b.ev - a.ev).slice(0, STACK_POOL);
+    if (new Set(pool.map(l => norm(l.team))).size < 2) continue;
+    for (const s of buildForBook(pool, book, maxLegs, { poolMax: STACK_POOL })) {
+      if (new Set(s.picks.map(l => norm(l.team))).size < 2) continue;   // the apps want two teams
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+function stacksForBook(legs, book) {
+  const games = new Map();
+  for (const l of legs) {
+    if (!l.gameId || !l.team || !factorSport(l.sport)) continue;
+    if (!games.has(l.gameId)) games.set(l.gameId, []);
+    games.get(l.gameId).push(l);
+  }
+  const best = [];
+  for (const g of games.values()) {
+    if (new Set(g.map(l => norm(l.team))).size < 2) continue;
+    // one leg per player: the board already holds one market per player per book
+    const sizes = stackForMatch(g, book).filter(s => s.ev > 0 && s.correlated);
+    sizes.sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev));
+    if (sizes.length) best.push(sizes[0]);
+  }
+  return best.sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev)).slice(0, STACKS_PER_BOOK);
+}
+
 const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
 const TABLE_NAMES = {
   prizepicks_power: 'Power', prizepicks_flex: 'Flex', underdog_standard: 'Standard', underdog_flex: 'Flex', sleeper: 'Picks',
@@ -98,7 +158,7 @@ const TABLE_NAMES = {
 
 const r1 = x => Math.round(x * 10) / 10;
 
-function present(book, s) {
+function present(book, s, kind = 'best') {
   const n = s.picks.length;
   const table = s.table;
   const prod = s.picks.reduce((m, l) => m * (l.mult || 1), 1);
@@ -107,8 +167,12 @@ function present(book, s) {
     : table === 'underdog_standard' ? PAYOUTS.underdog_standard[n][n] * prod
     : PAYOUTS[table]?.[n]?.[n] ?? null;
   return {
-    book, bookName: BOOK_NAMES[book], table, tableName: TABLE_NAMES[table] || table, legs: n,
+    book, bookName: BOOK_NAMES[book], table, tableName: TABLE_NAMES[table] || table, legs: n, kind,
     status: s.ev > 0 ? 'plus' : 'near',
+    // the sweep payout this entry needs to break even; an app that cuts the
+    // payout below it (correlated lineups) makes it a pass
+    breakEvenPays: pays != null && s.breakEvenScale != null ? +(pays * s.breakEvenScale).toFixed(2) : null,
+    matchTitle: kind === 'stack' ? [...new Set(s.picks.map(l => l.team).filter(Boolean))].join(' vs ') : undefined,
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
     paysAll: pays != null ? +pays.toFixed(2) : null,
     // what 1u returns on each hit count, for grading (sliptrack.js)
@@ -117,27 +181,30 @@ function present(book, s) {
     picks: s.picks.map(l => ({
       player: l.player, team: l.team, sport: l.sport, market: l.market, rawMarket: l.rawMarket, side: l.side, line: l.line,
       gameId: l.gameId, matchTitle: l.matchTitle,
-      prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime,
+      prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime, flipped: l.flipped || undefined,
     })),
   };
 }
 
 // picks: the esports board → { slips: [best per book, fastest growth first], books: { PP: [...every size] }, pool }
-function autoSlips(picks, { now = Date.now(), near = NEAR_PCT } = {}) {
+function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true } = {}) {
   const live = (picks || []).filter(p => {
     const t = Date.parse(p.startTime);
     return p.pricing && p.side && !(Number.isFinite(t) && t <= now);
   });
-  const books = {}, pool = {}, slips = [];
+  const books = {}, pool = {}, slips = [], stacks = {};
   for (const book of ['PP', 'UD', 'SL']) {
-    const legs = live.map(p => bookLeg(p, book)).filter(l => l && l.ev >= LEG_FLOOR);
+    const all = live.map(p => bookLeg(p, book)).filter(Boolean);
+    const legs = all.filter(l => l.ev >= LEG_FLOOR);
     pool[book] = { legs: legs.length, plus: legs.filter(l => l.ev > 0).length };
     const sizes = buildForBook(legs, book, MAX_LEGS[book]).filter(s => s.ev > -near).map(s => present(book, s));
     books[book] = sizes;
     if (sizes.length) slips.push(sizes[0]);
+    stacks[book] = withStacks ? stacksForBook(all, book).map(s => present(book, s, 'stack')) : [];
   }
   slips.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
-  return { slips, books, pool, nearPct: near };
+  const stackList = Object.values(stacks).flat().sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev));
+  return { slips, books, pool, nearPct: near, stacks: stackList, stacksByBook: stacks };
 }
 
 // One slip the user built, priced on each book that takes every leg, at that
@@ -154,4 +221,4 @@ function priceOnBooks(picks) {
   return out;
 }
 
-module.exports = { autoSlips, priceOnBooks, bookLeg, priceOn, buildForBook, LEG_FLOOR, NEAR_PCT };
+module.exports = { autoSlips, priceOnBooks, bookLeg, priceOn, buildForBook, stacksForBook, otherSide, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };
