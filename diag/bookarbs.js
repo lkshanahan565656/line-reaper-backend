@@ -15,7 +15,7 @@ const J = x => { try { return JSON.parse(x.tx); } catch { return {}; } };
     await wait(60e3);
     const st = J(await get(B + '/api/status'));
     const x = J(await get(B + '/api/xarbs'));
-    polls.push({ at: new Date().toISOString(), book: st.bookArbs, job: st.tailJobs?.bookArbs || st.jobs?.bookArbs, record: x.books?.record, fbAt: st.freeBooks?.gamesAt, xarbCounts: st.xarb?.counts && { kalshiMarkets: st.xarb.counts.kalshiMarkets, us: st.xarb.counts.polymarketUs?.rows } });
+    polls.push({ at: new Date().toISOString(), book: st.bookArbs, job: st.tail?.jobs?.bookArbs, record: x.books?.record, fbAt: st.freeBooks?.gamesAt, xarbCounts: st.xarb?.counts && { kalshiMarkets: st.xarb.counts.kalshiMarkets, us: st.xarb.counts.polymarketUs?.rows } });
     fs.writeFileSync('out/polls.json', JSON.stringify(polls, null, 1));
     if (i % 5 === 4) fs.writeFileSync(`out/xarbs-${String(i + 1).padStart(2, '0')}.json`, JSON.stringify(x.books || {}, null, 1));
   }
