@@ -3963,7 +3963,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.120.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.121.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4667,6 +4667,16 @@ function sportFairAt(row, book, line, kind) {
 // in the record; it takes the leg over the older kinds when both flag it.
 const SHARP_OPTS = { ...sportProps.CONSENSUS, weights: sportProps.parseWeights(process.env.SPORT_SHARP_WEIGHTS),
   minEv: process.env.SPORT_SHARP_MIN_EV != null ? parseFloat(process.env.SPORT_SHARP_MIN_EV) : sportProps.CONSENSUS.minEv };
+// a shadow book (DraftKings, BetMGM, … via Action Network) joins the consensus
+// once its own graded legs score at least as well as FanDuel's (promoteShadows);
+// SPORT_SHARP_WEIGHTS still sets the rest. Checked every 10 minutes.
+const SHARP_BASE_WEIGHTS = { ...SHARP_OPTS.weights };
+let sharpPromoted = [];
+async function refreshSharpPromotions() {
+  const { bySource } = await sportTracker.summary();
+  const { weights, promoted } = sportProps.promoteShadows(bySource, { ...SHARP_OPTS, weights: SHARP_BASE_WEIGHTS });
+  SHARP_OPTS.weights = weights; sharpPromoted = promoted;
+}
 const consensusMoves = sportProps.createMoveTracker();
 let bookPropsIndex = new Map();
 function refreshBookPropsIndex() {
@@ -4694,7 +4704,7 @@ function priceSportRows(rows) {
     const cplays = sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [];
     if (cplays.length) {
       consensusMoves.observe(row, cplays[0].mean);
-      row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
+      row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
     } else consensusMoves.observe(row, null);
     const sharpTaken = new Set();
     let sharpBest = null;
@@ -4762,6 +4772,24 @@ const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(Str
 let freeBooksRunning = false;
 let freeBooksPropsAt = 0;
 const freeBooksPropCache = new Map(), freeBooksLadderCache = new Map();
+// More books beside FanDuel and BetRivers (xbooks.js): Action Network's US
+// books (DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock, theScore)
+// as venues and comparison columns, Matchbook's exchange as a sharp source.
+// Read every other minute inside refreshFreeBooks. XBOOKS=off turns both off;
+// ACTION_NETWORK=off or MATCHBOOK=off one of them.
+const xbooks = require('./xbooks');
+const envOff = k => /^(off|0|false|no)$/i.test(String(process.env[k] || '').trim());
+const xbooksState = { enabled: !envOff('XBOOKS'), action: !envOff('ACTION_NETWORK'), matchbook: !envOff('MATCHBOOK'), books: {}, counts: {}, errors: [], at: 0, updated: null, ms: null };
+const XBOOKS_EVERY_MS = 110e3, XBOOKS_MAX_AGE_MS = 6 * 60e3;
+async function refreshExtraBooks() {
+  if (!xbooksState.enabled || Date.now() - xbooksState.at < XBOOKS_EVERY_MS) return;
+  const t0 = Date.now();
+  try {
+    const { books, counts, errors } = await xbooks.fetchExtraBooks(axios, { action: xbooksState.action && licences.isOn('actionnetwork'), matchbook: xbooksState.matchbook && licences.isOn('matchbook') });
+    if (counts.action + counts.matchbook > 0) Object.assign(xbooksState, { books, at: Date.now() });
+    Object.assign(xbooksState, { counts, errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { xbooksState.errors = [e.message]; }
+}
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
   freeBooksRunning = true;
@@ -4770,7 +4798,9 @@ async function refreshFreeBooks() {
     const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: FREE_BOOK_PIN_SPORTS });
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
-    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache });
+    await refreshExtraBooks();
+    const extra = Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {};
+    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
     if (fdProps) freeBooksPropsAt = Date.now();
     if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
@@ -4801,6 +4831,7 @@ async function refreshPinnacleProps() {
 // (ESPORTS) and graded against Pinnacle's close in their own record. No
 // alerts. ESPORTS_BOOKS=off stops it.
 const esbooks = require('./esbooks');
+const BOVADA_ESPORTS = /^(on|1|true|yes)$/i.test(String(process.env.BOVADA_ESPORTS || '').trim());
 const esBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_BOOKS || '').trim()),
   books: [], pin: [], rows: [], summary: null, errors: [], updated: null, screenedAt: null, ms: null };
 let esBooksRunning = false;
@@ -4809,11 +4840,14 @@ async function refreshEsBooks() {
   esBooksRunning = true;
   const t0 = Date.now(), errors = [];
   try {
-    const [kb, pin] = await Promise.all([
+    const [kb, pin, bv] = await Promise.all([
       esbooks.fetchKambi(axios).catch(e => { errors.push(`betrivers ${e.message}`); return null; }),
       esbooks.fetchPinnacle(axios, process.env.PINNACLE_GUEST_KEY || '').catch(e => { errors.push(`pinnacle ${e.message}`); return null; }),
+      // Bovada's esports (offshore: off unless BOVADA_ESPORTS=on) reach past tier one
+      BOVADA_ESPORTS && licences.isOn('bovada') ? esbooks.fetchBovada(axios).catch(e => { errors.push(`bovada ${e.message}`); return null; }) : null,
     ]);
-    if (kb) { esBooksState.books = kb.events; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
+    if (kb) { esBooksState.books = [...kb.events, ...(bv?.events || [])]; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
+    if (bv) errors.push(...bv.errors.slice(0, 3).map(e => `bovada ${e}`));
     if (pin) esBooksState.pin = pin;
     Object.assign(esBooksState, { errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
     runEsBooksScreen();
@@ -4824,7 +4858,8 @@ function runEsBooksScreen() {
   try {
     const fairs = new Map(), costs = new Map();
     const kalshi = esbooks.kalshiLadders(esportsBoard.state.matches || []);
-    const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, fairs, costs });
+    const poly = esbooks.kalshiLadders(esportsBoard.state.matches || [], esbooks.DEFAULTS, 'polymarket');
+    const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, poly, fairs, costs });
     // BetRivers' player kill ladders on the kill-share model (sharemodel.js)
     let shareSum = null;
     if (SHARE_ON && esportsCache.shareIndex?.size) {
@@ -5628,7 +5663,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.120.0',
+  version: '3.121.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5639,6 +5674,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
+  moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -5798,6 +5834,7 @@ schedule('35 3,13,23,33,43,53 * * * *', () => runTailJob('gas', scanGasLocks));
 schedule('45 * * * * *', () => runTailJob('bigMoney', scanBigMoney));
 // book arbs and middles: after the free books' refresh at :40 lands
 schedule('55 * * * * *', () => runTailJob('bookArbs', scanBookArbs));
+schedule('15 */10 * * * *', () => refreshSharpPromotions().catch(() => {}));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
