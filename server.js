@@ -697,6 +697,7 @@ const { createLicences, hideWallets, hiddenWallets, mentions } = require('./lice
 const legal = require('./legal');
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
+const bigMoney = require('./bigmoney');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
 // Every track record is backed up to the repo's results-data branch and
@@ -2486,6 +2487,8 @@ async function refreshKalshiProps() {
     // every book's line gets its own rung price, not only Underdog's
     const { games, counts } = kprops.buildGames(events, sportsPropLines());
     Object.assign(kpropsState, { games, counts: { events: events.length, ...counts }, errors: errors.slice(0, 5), updated: new Date().toISOString() });
+    // every rung by ticker, for BIG MONEY (a print on a rung is a bet on that player's line)
+    if (events.length) kpropsState.rungs = bigMoney.rungIndex(events, { canonMarket: evScreen.canonMarket, parseRung: kprops.parseRung });
   } catch (e) { kpropsState.errors = [e.message]; }
   finally { kpropsRunning = false; }
 }
@@ -3403,6 +3406,8 @@ async function scanXarbs() {
       try { screen = xvalue.screenFairs(screen, { usRows: us.rowList, polymarket, books: xvalueState.books, usMatches: us.matchList }); } catch (e) { console.warn('Exchange price screen fairs:', e.message); }
     }
     if (polymarket.length) xarbState.venues = xarb.venueIndex({ kalshi, polymarket, matches, games }, { ...XARB_OPTS, now });
+    // every row this scan read, for BIG MONEY's line shop (pingames.matchRows)
+    xarbState.rows = { kalshi: kalshi.length ? kalshi : xarbState.rows?.kalshi || [], polymarket: polymarket.length ? polymarket : xarbState.rows?.polymarket || [], us: us.rowList?.length ? us.rowList : xarbState.rows?.us || [], at: now };
     if (kalshi.length) {
       xarbState.kalshiTitles = new Map(kalshi.map(r => [r.id, {
         title: r.outcomeLabel && !r.title.toLowerCase().includes(r.outcomeLabel.toLowerCase()) ? `${r.title} · ${r.outcomeLabel}` : r.title,
@@ -3837,7 +3842,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.115.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.116.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4177,6 +4182,27 @@ app.get('/api/gas-locks', async (req, res) => {
       off: process.env.GAS_LOCKS === 'off', ...withheldBody(withheldOf(lic, ['kalshi'])) };
     if (!pro) return res.json({ ...base, recent });
     res.json({ ...base, plays, recent, counts: gasState.counts, errors: gasState.errors });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// BIG MONEY (bigmoney.js): big exchange prints and the same bet at every
+// venue. ?minUsd=2500 &mm=1 (market makers too) &kind=prop|game. Free: the count only.
+app.get('/api/big-money', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req), q = req.query;
+    const record = await bigTracker.summary();
+    const recent = (await bigTracker.list()).filter(r => r.status === 'graded').sort((a, b) => (b.gradedAt || '').localeCompare(a.gradedAt || '')).slice(0, 40)
+      .map(({ why, prop, game, ...r }) => r);
+    const minUsd = Number.isFinite(parseFloat(q.minUsd)) ? parseFloat(q.minUsd) : BIG_OPTS.minUsd;
+    const shown = p => (p.money.exchanges || [p.money.exchange]).every(x => (x === 'kalshi' ? lic.kalshi : x === 'polymarket' ? lic.polymarket : true));
+    let plays = bigState.plays.filter(p => shown(p) && p.money.usd >= minUsd - 1e-6 && (!q.kind || p.kind === q.kind));
+    const hiddenMm = plays.filter(p => p.flow === 'market maker').length;
+    if (!/^(1|true|on)$/i.test(String(q.mm || ''))) plays = plays.filter(p => p.flow !== 'market maker');
+    plays = plays.map(({ money: { wallets, ...m }, ...p }) => ({ ...p, money: { ...m, wallets: wallets?.length || 0 } }));
+    const base = { count: plays.length, flagged: plays.filter(p => p.flagged).length, hiddenMarketMakers: hiddenMm, updated: bigState.updated, pro, record,
+      settings: { minUsd: BIG_OPTS.minUsd, minEv: BIG_OPTS.minEv, twoWayShare: BIG_OPTS.twoWayShare, flowWindowMs: BIG_OPTS.flowWindowMs },
+      backtest: bigMoney.BACKTEST, off: process.env.BIG_MONEY === 'off', ...withheldBody(withheldOf(lic, ['kalshi', 'polymarket'])) };
+    if (!pro) return res.json({ ...base, recent });
+    res.json({ ...base, plays, recent, counts: bigState.counts, errors: bigState.errors });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // Exchange value (xvalue.js): Kalshi and Polymarket US asks under Polymarket's
@@ -4586,7 +4612,7 @@ async function refreshFreeBooks() {
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache });
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) { Object.assign(freeBooksState, { games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); }
+    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
@@ -4607,6 +4633,197 @@ async function refreshPinnacleProps() {
   for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
   Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
 }
+// ── BIG MONEY (bigmoney.js) ──
+// Big taker prints on Kalshi and Polymarket, the bet each one backed, and
+// that bet's price at the pick'em apps, FanDuel, BetRivers and the US
+// exchanges, with Pinnacle's no-vig price beside it. Prints come from the
+// whale watcher's polls; every minute the plays are rebuilt, the ones a
+// venue prices minEv under the money are logged, and the record is marked
+// and graded. No alerts (BIG_MONEY=off stops it all).
+const BIG_OPTS = { ...bigMoney.DEFAULTS, ...bigMoney.optsFromEnv() };
+const BIG_LEAGUE = { nfl: 'NFL', ncaaf: 'CFB', nba: 'NBA', wnba: 'WNBA', nhl: 'NHL', mlb: 'MLB' };
+const bigGrader = createSportsGrader({ http: axios });
+const bigTracker = bigMoney.createBigMoneyTracker({
+  store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
+  propGrader: bigGrader,
+  gameGrader: async (game, key) => { const sc = await bigGrader.gradeGame(game); return !sc || sc.pending ? sc : bigMoney.gameOutcome(key, sc); },
+});
+bigTracker.ready().catch(e => console.error('Big money: store failed to initialise:', e.message));
+const bigState = { store: new Map(), plays: [], updated: null, counts: null, errors: [], games: null, gamesKey: null };
+// the line shop's game index, rebuilt when the exchange scan or the books move
+function bigGames() {
+  const key = `${xarbState.rows?.at || 0}|${freeBooksState.gamesAt || ''}`;
+  if (bigState.gamesKey === key && bigState.games) return bigState.games;
+  const r = xarbState.rows || {};
+  // Polymarket's spreads and totals sit in a "-more-markets" event of their own: one game key
+  const pm = (r.polymarket || []).filter(x => x.category === 'sports').map(x => ({ ...x, eventKey: x.gameSlug ? `polymarket:${x.gameSlug}` : x.eventKey }));
+  let matches = [];
+  try { matches = pingames.matchRows([...(r.kalshi || []).filter(x => x.gameKey), ...pm, ...(r.us || [])], freeBooksState.pinGames || []); }
+  catch (e) { console.warn('Big money: game match:', e.message); }
+  bigState.games = bigMoney.gameIndex(matches, Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? freeBooksState.games : {});
+  bigState.gamesKey = key;
+  return bigState.games;
+}
+const bigRungMid = rung => (rung && rung.yesBid > 0 && rung.yesAsk < 1 && rung.yesAsk > rung.yesBid ? (rung.yesBid + rung.yesAsk) / 2 : null);
+const ladderKey = rung => `${rung.eventTicker}|${evScreen.canonName(rung.player)}|${rung.mkey}`;
+// a stored print → the bet it backed
+function bigResolve(p, games) {
+  if (p.exchange === 'kalshi') {
+    const rung = kpropsState.rungs?.get(p.market);
+    if (rung) {
+      const side = p.yes ? 'Over' : 'Under';
+      return { kind: 'prop', betKey: `prop|${rung.league}|${evScreen.canonName(rung.player)}|${rung.mkey}|${rung.line}|${side}`, sport: rung.league, player: rung.player,
+        mkey: rung.mkey, stat: rung.stat, line: rung.line, side, start: rung.start, ladder: ladderKey(rung), rung, title: `${rung.player} ${side} ${rung.line} ${rung.stat}`, backsRowYes: p.yes };
+    }
+  }
+  const id = p.exchange === 'polymarket' ? p.conditionId || p.market : p.market;
+  const g = games.rows.get(`${p.exchange}:${id}`);
+  if (!g) return null;
+  const rowYes = p.exchange === 'polymarket' ? (p.yes ? 0 : 1) === (g.row.yesIndex ?? 0) : p.yes;
+  const key = rowYes ? g.yes : g.no;
+  const b = key && games.bets.get(key);
+  if (!b || !g.league || !BIG_LEAGUE[g.league]) return null;
+  return { kind: 'game', betKey: key, sport: BIG_LEAGUE[g.league], title: b.label, matchup: `${g.game.away} @ ${g.game.home}`, side: key.split('|').pop(), start: g.game.start,
+    game: { league: BIG_LEAGUE[g.league], home: g.game.home, away: g.game.away, start: g.game.start }, backsRowYes: rowYes, row: g.row };
+}
+// the props board row for a player and stat, nearest the start
+function bigBoardRow(rows, sport, player, mkey, start) {
+  const t = Date.parse(start || '');
+  let best = null;
+  for (const r of rows.get(`${sport}|${evScreen.canonName(player)}|${mkey}`) || []) {
+    const d = Math.abs(Date.parse(r.startTime || '') - t);
+    if (Number.isFinite(d) && d <= 6 * 3600e3 && (!best || d < best.d)) best = { r, d };
+  }
+  return best?.r || null;
+}
+let bigBookProps = { at: null, idx: new Map() };
+function bigBookPropsFor(key, start) {
+  if (bigBookProps.at !== freeBooksState.gamesAt) bigBookProps = { at: freeBooksState.gamesAt, idx: bigMoney.bookPropIndex(freeBooksState.games, s => freebooks.LEAGUES[s]?.props || null) };
+  if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) >= FREE_BOOKS_MAX_AGE_MS) return [];
+  const t = Date.parse(start || '');
+  return (bigBookProps.idx.get(key) || []).filter(q => Math.abs(Date.parse(q.start) - t) <= 3 * 3600e3);
+}
+// a side's chance at a line from a P(over) quoted at another line
+const sideAt = (mkey, sport, fromLine, pOverAt, line, side) => { const p = bigMoney.atLine(mkey, sport, fromLine, pOverAt, line); return p == null ? null : side === 'Over' ? p : 1 - p; };
+// one grouped play → priced, with venues, best, Pinnacle and the flow label
+function bigPrice(play, ctx) {
+  const { games, boardRows, byMarket, byLadder } = ctx;
+  const fair = play.money.price;
+  let venues = [], pin = null, now = null, sharp = null, url = null;
+  if (play.kind === 'prop') {
+    const row = bigBoardRow(boardRows, play.sport, play.player, play.mkey, play.start);
+    const key = `${play.sport}|${evScreen.canonName(play.player)}|${play.mkey}`;
+    venues = bigMoney.propVenues({ sport: play.sport, mkey: play.mkey, line: play.line, side: play.side, fair }, { board: row, books: bigBookPropsFor(key, play.start), dfsEv: dfsLegEv, o: BIG_OPTS });
+    const rung = play.rung, mid = bigRungMid(rung);
+    if (mid != null) now = play.side === 'Over' ? mid : 1 - mid;
+    // Kalshi's own ask for the side now (the money's market)
+    const ask = play.side === 'Over' ? rung.yesAsk : rung.yesBid > 0 ? 1 - rung.yesBid : null;
+    const cost = ask > 0 && ask < 1 ? bigMoney.exchangeCost({ exchange: 'kalshi' }, ask) : null;
+    if (cost) venues.push({ venue: 'kalshi', name: 'Kalshi', line: play.line, sameLine: true, fair, implied: cost, decimal: +(1 / cost).toFixed(4), price: ask, american: bigMoney.american(cost), ev: +((fair / cost - 1) * 100).toFixed(2), own: true });
+    const pq = row || { key, startTime: play.start };
+    const pinQ = pinprops.quoteFor(pinPropsIndex, { ...pq, key });
+    if (pinQ) pin = sideAt(play.mkey, play.sport, pinQ.line, pinQ.pOver, play.line, play.side);
+    for (const v of venues) {
+      const pv = pinQ ? sideAt(play.mkey, play.sport, pinQ.line, pinQ.pOver, v.line, play.side) : null;
+      if (pv != null) { v.pin = +pv.toFixed(4); v.evPin = +((pv * v.decimal - 1) * 100).toFixed(2); }
+    }
+    if (row) {
+      const c = sportProps.consensusFor(row, play.line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
+      if (c) sharp = play.side === 'Over' ? c.p : 1 - c.p;
+    }
+    url = rung.url;
+    play.prop = { sport: play.sport, player: play.player, mkey: play.mkey, startTime: play.start, team: row?.team || '', matchTitle: row?.matchTitle || '' };
+  } else {
+    const b = games.bets.get(play.betKey);
+    pin = b?.pin ?? null;
+    sharp = pin;
+    for (const v of b?.venues || []) {
+      const own = v.venue === play.money.exchange && String(v.marketId) === String(play.money.market);
+      venues.push({ ...v, line: null, sameLine: true, fair, ev: +((fair * v.decimal - 1) * 100).toFixed(2), ...(own ? { own: true } : {}),
+        ...(pin != null ? { pin, evPin: +((pin * v.decimal - 1) * 100).toFixed(2) } : {}) });
+    }
+    const m = play.row ? (play.row.yesAsk > 0 && play.row.noAsk > 0 ? (play.row.yesAsk + 1 - play.row.noAsk) / 2 : null) : null;
+    if (m != null) now = play.backsRowYes ? m : 1 - m;
+    url = play.money.exchange === 'kalshi' ? play.row?.url || null : null;   // never a polymarket.com link
+  }
+  venues.sort((a, b) => b.ev - a.ev);
+  const best = bigMoney.pickBest(venues, BIG_OPTS);
+  const flow = bigMoney.flowOf({ ...play.money }, { market: byMarket.get(`${play.money.exchange}|${play.money.market}`) || [], ladder: play.ladder ? byLadder.get(play.ladder) || [] : [],
+    side: play.kind === 'prop' ? play.side : null, isMaker: w => !!tailEngine.trader(w)?.marketMaker, o: BIG_OPTS });
+  const { rung, row, ...rest } = play;
+  return { ...rest, id: play.betKey, url, venues, best, pinFair: pin == null ? null : +pin.toFixed(4), sharpFair: sharp == null ? null : +sharp.toFixed(4), now: now == null ? null : +now.toFixed(4),
+    flow: flow.flow, why: flow.why, minEv: BIG_OPTS.minEv, flagged: !!(best && best.ev >= BIG_OPTS.minEv) };
+}
+async function scanBigMoney() {
+  if (process.env.BIG_MONEY === 'off') return;
+  const t = Date.now();
+  for (const p of whaleWatcher.prints({ since: t - BIG_OPTS.keepMs, minUsd: BIG_OPTS.floorUsd })) {
+    const n = bigMoney.normPrint(p);
+    if (n) bigState.store.set(n.key, n);
+  }
+  for (const [k, p] of bigState.store) if (p.at < t - BIG_OPTS.keepMs) bigState.store.delete(k);
+  const store = [...bigState.store.values()].sort((a, b) => a.at - b.at);
+  const games = bigGames();
+  // prints by market, and Kalshi props by player ladder (the flow label reads these)
+  const byMarket = new Map(), byLadder = new Map();
+  for (const p of store) {
+    const k = `${p.exchange}|${p.market}`;
+    if (!byMarket.has(k)) byMarket.set(k, []);
+    byMarket.get(k).push(p);
+    const rung = p.exchange === 'kalshi' ? kpropsState.rungs?.get(p.market) : null;
+    if (rung) { const l = ladderKey(rung); if (!byLadder.has(l)) byLadder.set(l, []); byLadder.get(l).push(p); }
+  }
+  const boardRows = new Map();
+  for (const r of propsBoardRows().rows || []) {
+    if (r.esports) continue;
+    const k = r.key.replace(/\|\d{4}-\d{2}-\d{2}$/, '');
+    if (!boardRows.has(k)) boardRows.set(k, []);
+    boardRows.get(k).push(r);
+  }
+  const grouped = bigMoney.groupMoney(store, p => bigResolve(p, games), { now: t, o: BIG_OPTS });
+  const plays = [];
+  for (const g of grouped.slice(0, BIG_OPTS.maxPlays)) {
+    try { plays.push(bigPrice(g, { games, boardRows, byMarket, byLadder })); } catch (e) { bigState.errors = [e.message, ...bigState.errors].slice(0, 5); }
+  }
+  bigState.plays = plays;
+  bigState.updated = new Date(t).toISOString();
+  bigState.counts = { prints: store.length, big: store.filter(p => p.usd >= BIG_OPTS.minUsd && !p.block).length, plays: plays.length, flagged: plays.filter(p => p.flagged).length,
+    marketMaker: plays.filter(p => p.flow === 'market maker').length, props: plays.filter(p => p.kind === 'prop').length, games: plays.filter(p => p.kind === 'game').length,
+    rungs: kpropsState.rungs?.size || 0, gameRows: games.rows.size, bets: games.bets.size };
+  await bigTracker.record(plays.filter(p => p.flagged));
+  await bigTracker.mark(r => bigMarkLookup(r, { games, boardRows }));
+  if (t - (bigState.gradedAt || 0) > 10 * 60e3) { bigState.gradedAt = t; await bigTracker.grade(); }
+}
+// a logged row → the venue's price now, the money's market and the sharp fair at our line
+function bigMarkLookup(r, { games, boardRows }) {
+  if (r.kind === 'prop') {
+    const rung = kpropsState.rungs?.get(r.moneyMarket);
+    const row = bigBoardRow(boardRows, r.sport, r.prop?.player, r.prop?.mkey, r.start);
+    const mid = bigRungMid(rung);
+    const close = mid == null ? null : sideAt(r.prop.mkey, r.sport, r.moneyLine, mid, r.line, r.side);
+    let sharp = null, venue = null;
+    if (row) {
+      const c = sportProps.consensusFor(row, r.line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
+      if (c) sharp = r.side === 'Over' ? c.p : 1 - c.p;
+      const cell = row.books[r.venue];
+      if (cell && (r.side === 'Over' ? cell.overOpen : cell.underOpen)) { const pr = bigMoney.appPrice(r.venue, cell, r.side, r.fair, dfsLegEv); if (pr) venue = { line: cell.line, decimal: pr.decimal }; }
+    }
+    if (!venue && (r.venue === 'fanduel' || r.venue === 'betrivers')) {
+      const q = bigBookPropsFor(`${r.sport}|${evScreen.canonName(r.prop.player)}|${r.prop.mkey}`, r.start).find(x => x.book === r.venue && x.line === r.line);
+      const a = q && (r.side === 'Over' ? q.over : q.under);
+      if (a) venue = { line: q.line, decimal: a > 0 ? 1 + a / 100 : 1 + 100 / -a };
+    }
+    return { venue, close, sharp };
+  }
+  const b = games.bets.get(r.betKey);
+  const v = b?.venues.find(x => x.venue === r.venue);
+  const g = r.moneyExchange === 'polymarket' ? games.rows.get(`polymarket:${r.moneyMarket}`) : games.rows.get(`${r.moneyExchange}:${r.moneyMarket}`);
+  const row = g?.row;
+  const m = row && row.yesAsk > 0 && row.noAsk > 0 ? (row.yesAsk + 1 - row.noAsk) / 2 : null;
+  const yesKey = g?.yes;
+  return { venue: v ? { line: null, decimal: v.decimal } : null, close: m == null ? null : yesKey === r.betKey ? m : 1 - m, sharp: b?.pin ?? null };
+}
+
 // Every two minutes after the scrapes: flag, check two minutes on, keep the close
 let sportTrackRunning = false;
 async function trackSportProps() {
@@ -5040,9 +5257,9 @@ app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all)]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list()]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -5133,13 +5350,14 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.115.0',
+  version: '3.116.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
+  bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
   propsBoard: propsBoardCache.counts || null,
@@ -5292,6 +5510,8 @@ schedule('25 * * * * *', () => runTailJob('score', () => tailEngine.scoreBatch()
 schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
 // Kalshi's daily gas markets every 10 minutes (plays only exist the evening before expiry)
 schedule('35 3,13,23,33,43,53 * * * *', () => runTailJob('gas', scanGasLocks));
+// Big money: the last minute's prints, every venue's price for each bet, the record
+schedule('45 * * * * *', () => runTailJob('bigMoney', scanBigMoney));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));

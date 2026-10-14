@@ -108,6 +108,13 @@ const pickBet = r => ({
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
 });
 
+const BIG_VENUES = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', fanduel: 'FanDuel', betrivers: 'BetRivers' };
+const bigMoneyBet = r => {
+  const graded = r.status === 'graded' && r.outcome !== 'push';
+  const clv = r.closeEv != null ? r.closeEv / 100 : null;
+  return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
+    labels: { flow: r.flow || 'bettor', venue: BIG_VENUES[r.venue] || r.venue, kind: r.kind === 'prop' ? 'player prop' : 'game line', line: r.sameLine === false ? 'other line' : 'same line' } };
+};
 // A tail counts once it settles, or as CLV only (no profit yet) once its
 // close is in: a game's close is known at kick-off, hours before Polymarket
 // resolves it. A bid still waiting to fill isn't a bet.
@@ -142,6 +149,11 @@ const SOURCES = {
   sportsProps: { label: 'Sports props', done: r => !SPORT_RESEARCH.has(r.kind) && (r.status === 'graded' || r.status === 'locked'),
     open: r => !SPORT_RESEARCH.has(r.kind) && r.status === 'open', bet: sportPropBet,
     cuts: [['kind'], ['sport'], ['book'], ['kind', 'book'], ['sport', 'stat']] },
+  // big money: the bet a big exchange print backed, taken at a softer venue
+  // (bigmoney.js). CLV is our ticket's EV at the money's market close; the
+  // +2 min grade counts only plays still up at that venue's price two minutes on
+  bigMoney: { label: 'Big money', done: r => r.status === 'graded' || r.status === 'locked', open: r => r.status === 'open', bet: bigMoneyBet,
+    cuts: [['flow'], ['venue'], ['kind'], ['line'], ['flow', 'venue'], ['kind', 'flow']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
 };
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
