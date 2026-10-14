@@ -1,0 +1,19 @@
+name: diag-veto
+on:
+  push:
+    branches: [diag-veto]
+permissions:
+  contents: write
+jobs:
+  vetopull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          PARTS=${PARTS:-bo3cs,kcs,kval} timeout 220m node diag/vetopull.js 2>&1 | tee vetopull.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-veto-out; git add -f vetopull.txt data/*.json.gz; git commit -qm veto; git push -qf origin diag-veto-out
