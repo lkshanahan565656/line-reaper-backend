@@ -1,0 +1,29 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+Owls odds mma: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Tail: book 13262930035751293044299030051076946493579310948743085503128810162298115061024: connect ETIMEDOUT 172.64.153.51:443; connect ENETUNREACH 2606:4700:4408::ac40:9933:443 - Local (:::0); connect ETIMEDOUT 104.18.34.205:443; connect ENETUNREACH 2606:4700:440d::6812:22cd:443 - Local (:::0)

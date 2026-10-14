@@ -1,0 +1,202 @@
+{
+ "stale": [
+  {
+   "group": "stale-single|NFL|kennethwalker|rush_yds|2026-10-18|87.5",
+   "key": "NFL|kennethwalker|rush_yds|2026-10-18",
+   "x": 87.5,
+   "kind": "prop",
+   "venue": "betrivers",
+   "book": "betrivers",
+   "app": false,
+   "sport": "nfl",
+   "event": "Los Angeles Chargers @ Kansas City Chiefs",
+   "start": "2026-10-18T20:25:00.000Z",
+   "market": "rush_yds",
+   "marketLabel": "Rush Yards",
+   "player": "Kenneth Walker III",
+   "point": 87.5,
+   "side": "Over",
+   "sideIdx": 0,
+   "line": "87.5",
+   "price": -113,
+   "decimal": 1.885,
+   "mult": null,
+   "entry": null,
+   "entries": null,
+   "ev": 1.94,
+   "fairProb": 54.08,
+   "fairPrice": -118,
+   "preFair": 51.68,
+   "moveAt": "2026-10-14T22:46:21.237Z",
+   "mins": 0,
+   "venueSince": "2026-10-14T22:37:49.956Z",
+   "moveSourceAt": "2026-10-14T22:37:47.196Z",
+   "dPts": 2.4,
+   "pinPre": "o86.5 52.9%",
+   "pinPost": "o86.5 55.3%",
+   "pinNow": "o86.5 55.3%",
+   "confirmedBy": [],
+   "clears": false,
+   "single": true,
+   "source": "stale-single",
+   "sharpBooks": [
+    "pinnacle"
+   ],
+   "rowKey": "NFL|kennethwalker|rush_yds"
+  }
+ ],
+ "counts": {
+  "clear2": 17,
+  "agree2": 1,
+  "agree2Lines": 1,
+  "agree2Props": 0,
+  "alt": 314,
+  "altClear": 22,
+  "esports": 72,
+  "esportsClear": 19,
+  "stale": 1,
+  "staleClear": 0
+ },
+ "staleLag": {
+  "since": "2026-10-14T22:37:34.140Z",
+  "hours": 0.17,
+  "moves24h": 3,
+  "movesPerDay": 430,
+  "byKind": {
+   "prop": 3
+  },
+  "bySport": {
+   "NFL": 3
+  },
+  "lag": [
+   {
+    "venue": "fanduel",
+    "kind": "prop",
+    "moves": 3,
+    "followed": 0,
+    "led": 2,
+    "never": 0,
+    "open": 1,
+    "reverted": 0,
+    "started": 0,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "underdog",
+    "kind": "prop",
+    "moves": 3,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 3,
+    "reverted": 0,
+    "started": 0,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "sleeper",
+    "kind": "prop",
+    "moves": 3,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 3,
+    "reverted": 0,
+    "started": 0,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "betrivers",
+    "kind": "prop",
+    "moves": 2,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 2,
+    "reverted": 0,
+    "started": 0,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "prizepicks",
+    "kind": "prop",
+    "moves": 2,
+    "followed": 0,
+    "led": 1,
+    "never": 0,
+    "open": 1,
+    "reverted": 0,
+    "started": 0,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   }
+  ],
+  "cadence": {
+   "prizepicks": {
+    "reads": 1,
+    "medianGapMin": null,
+    "last": "2026-10-14T22:37:34.884Z"
+   },
+   "underdog": {
+    "reads": 8,
+    "medianGapMin": 1.9,
+    "last": "2026-10-14T22:46:02.629Z"
+   },
+   "sleeper": {
+    "reads": 6,
+    "medianGapMin": 2,
+    "last": "2026-10-14T22:46:09.425Z"
+   },
+   "pinnacle-props": {
+    "reads": 7,
+    "medianGapMin": 2,
+    "last": "2026-10-14T22:46:22.016Z"
+   },
+   "books": {
+    "reads": 10,
+    "medianGapMin": 1,
+    "last": "2026-10-14T22:46:49.008Z"
+   },
+   "kalshi-props": {
+    "reads": 1,
+    "medianGapMin": null,
+    "last": "2026-10-14T22:41:41.658Z"
+   }
+  },
+  "subjects": 8162,
+  "openMoves": 3,
+  "movesSeen": 3,
+  "thresholds": {
+   "moveProbPts": 2,
+   "lineMovePts": 1,
+   "followFrac": 0.5,
+   "minFollowPts": 1,
+   "windowMin": 60,
+   "minEv": 2
+  }
+ }
+}
