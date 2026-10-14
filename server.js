@@ -205,9 +205,10 @@ async function fetchOddsApiProps(sportKey) {
 }
 
 // ─── DFS SCRAPERS ─────────────────────────────────────────────────────────────
-// PP gets blocked (403) from datacenter IPs — when that happens, back off to
-// 30-minute retries instead of hammering every 2 min. Esports runs on UD anyway.
-let ppFail = { count: 0, until: 0 };
+// PP answers 403/429 when pushed: back off from the first one (see the catch
+// in scrapePrizePicks). Esports keeps running on Underdog and Sleeper.
+let ppFail = { count: 0, until: 0, limited: 0 };
+const PP_BACKOFF_MS = 4 * 60 * 1000, PP_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
 // the last failure of each DFS scrape, for /api/status (cleared on success)
 const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
@@ -217,12 +218,12 @@ const propsBoard = require('./propsboard');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
 // 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
-// every 20 minutes; the esports leagues (ids learned from the whole board)
-// are re-pulled on their own every 6, a few seconds apart. Polling the four
-// leagues every 2 minutes drew 429s.
+// every 20 minutes; between those, one esports league (ids learned from the
+// whole board) is re-pulled each 2-minute cycle, in turn.
 const PRIZEPICKS_URL = process.env.PRIZEPICKS_URL || 'https://partner-api.prizepicks.com/projections';
-const PP_FULL_MS = 20 * 60 * 1000, PP_ESPORTS_MS = 6 * 60 * 1000;
-const ppState = { fullAt: 0, esportsAt: 0, esportsLeagues: [] };
+const PP_FULL_MS = 20 * 60 * 1000;
+// fullAt: last full try; fullOkAt and leagueOkAt[id]: last pulls that answered
+const ppState = { fullAt: 0, esportsLeagues: [], next: 0, fullOkAt: 0, leagueOkAt: {} };
 const PP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   'Accept': 'application/json', 'Origin': 'https://app.prizepicks.com', 'Referer': 'https://app.prizepicks.com/',
@@ -232,43 +233,69 @@ async function scrapePrizePicks() {
   if (Date.now() < ppFail.until) return;
   try {
     const full = Date.now() - ppState.fullAt > PP_FULL_MS || !ppState.esportsLeagues.length;
-    if (!full && Date.now() - ppState.esportsAt < PP_ESPORTS_MS) return;
-    let allLines;
+    let allLines, league = null;
     if (full) {
+      ppState.fullAt = Date.now();
       const res = await axios.get(PRIZEPICKS_URL, { params: { per_page: 10000, single_stat: true }, headers: PP_HEADERS, timeout: 30000, maxContentLength: 80e6 });
       const { lines, leagues } = parsePrizePicksPayload(res.data);
       allLines = lines;
       ppState.esportsLeagues = Object.entries(leagues).filter(([, name]) => isEsports(name)).map(([id]) => id);
       if (!ppState.esportsLeagues.length) ppState.esportsLeagues = [...new Set(lines.filter(l => isEsports(l.sport) && l.leagueId).map(l => l.leagueId))];
-      ppState.fullAt = ppState.esportsAt = Date.now();
     } else {
-      ppState.esportsAt = Date.now();
-      const fresh = [];
-      for (const [i, id] of ppState.esportsLeagues.entries()) {
-        if (i) await new Promise(r => setTimeout(r, 3000));
-        const res = await axios.get(PRIZEPICKS_URL, { params: { league_id: id, per_page: 1000, single_stat: true }, headers: PP_HEADERS, timeout: 15000 });
-        fresh.push(...parsePrizePicksPayload(res.data).lines);
-      }
-      allLines = [...(cache.prizepicks.data || []).filter(l => !isEsports(l.sport)), ...fresh];
+      // one esports league a cycle, in turn: Cloudflare 429s a few requests
+      // inside a minute (probed 10-14: the third of three 5 s apart), and a
+      // cycle that pulled all four 3 s apart failed every time and kept none
+      league = ppState.esportsLeagues[ppState.next++ % ppState.esportsLeagues.length];
+      const res = await axios.get(PRIZEPICKS_URL, { params: { league_id: league, per_page: 1000, single_stat: true }, headers: PP_HEADERS, timeout: 15000 });
+      const fresh = parsePrizePicksPayload(res.data).lines;
+      allLines = [...(cache.prizepicks.data || []).filter(l => String(l.leagueId) !== String(league)), ...fresh];
     }
+    const t = Date.now();
+    if (full) { ppState.fullOkAt = t; for (const id of ppState.esportsLeagues) ppState.leagueOkAt[id] = t; }
+    else ppState.leagueOkAt[league] = t;
+    ppFail = { count: 0, until: 0, limited: 0 };
+    dfsError.prizepicks = null;
     if (allLines.length > 0) {
-      cache.prizepicks = { data: allLines, updated: new Date().toISOString() };
-      ppFail = { count: 0, until: 0 };
-      dfsError.prizepicks = null;
+      cache.prizepicks = { data: allLines, updated: new Date(t).toISOString() };
       cache.ppLeagueLabels = [...new Set(allLines.map(l => l.sport))].slice(0, 20);
-      console.log(`PP${full ? '' : ' esports'}: ${allLines.length} lines (${allLines.filter(l => isEsports(l.sport)).length} esports) · leagues: ${cache.ppLeagueLabels.slice(0, 12).join(', ')}`);
+      console.log(`PP${full ? '' : ' league ' + league}: ${allLines.length} lines (${allLines.filter(l => isEsports(l.sport)).length} esports) · leagues: ${cache.ppLeagueLabels.slice(0, 12).join(', ')}`);
     }
   } catch(e) {
     const s = e.response?.status;
     noteDfsError('prizepicks', e);
     ppFail.count++;
-    if ((s === 403 || s === 429) && ppFail.count >= 3) {
-      ppFail.until = Date.now() + 30 * 60 * 1000;
-      if (ppFail.count === 3) console.warn(`PP blocked (${s}) — backing off to 30-min retries; esports keeps running on Underdog`);
+    if (s === 403 || s === 429) {
+      // A 429 is a rate limit: every request inside it extends it. Back off
+      // from the first one, longer each time, and never sooner than its
+      // Retry-After. (10-14: retrying each cycle kept the block up for hours.)
+      ppFail.limited = (ppFail.limited || 0) + 1;
+      const wait = Math.max(ppRetryAfterMs(e.response?.headers), Math.min(PP_BACKOFF_MAX_MS, PP_BACKOFF_MS * 2 ** (ppFail.limited - 1)));
+      ppFail.until = Date.now() + wait;
+      console.warn(`PP blocked (${s}): next try in ${Math.round(wait / 60000)} min; esports keeps running on Underdog and Sleeper`);
     } else {
       console.error('PP error:', e.message, s);
     }
   }
+}
+// Retry-After: seconds, or an HTTP date
+function ppRetryAfterMs(headers) {
+  const v = headers?.['retry-after'] ?? headers?.get?.('retry-after');
+  if (v == null || v === '') return 0;
+  const n = Number(v);
+  if (Number.isFinite(n)) return Math.max(0, n * 1000);
+  const t = Date.parse(v);
+  return Number.isFinite(t) ? Math.max(0, t - Date.now()) : 0;
+}
+// PrizePicks lines the board may still price: a book that stops answering
+// leaves its last lines cached, and lines that old may no longer be on the
+// app. Each esports league refreshes about every 8 min, the rest every 20,
+// so about two missed pulls and they're out.
+const PP_ES_STALE_MS = 18 * 60 * 1000, PP_SPORT_STALE_MS = 45 * 60 * 1000;
+function ppLinesNow(now = Date.now()) {
+  if (!ppState.fullOkAt) return cache.prizepicks.data || [];   // never pulled: nothing cached but a test's
+  const sportOk = now - ppState.fullOkAt <= PP_SPORT_STALE_MS;
+  return (cache.prizepicks.data || []).filter(l => (isEsports(l.sport)
+    ? now - (ppState.leagueOkAt[l.leagueId] || ppState.fullOkAt) <= PP_ES_STALE_MS : sportOk));
 }
 
 // Pure parser so the UD payload handling is testable and survives shape changes.
@@ -423,7 +450,7 @@ async function scrapeSleeper() {
 // leagues folded into their sport, Sleeper given start times from the others
 function sportsPropLines() {
   const ud = (cache.underdog.data || []).filter(l => !isEsports(l.sport));
-  const pp = (cache.prizepicks.data || []).filter(l => !isEsports(l.sport));
+  const pp = ppLinesNow().filter(l => !isEsports(l.sport));
   const sl = propsBoard.borrowStarts(cache.sleeperSports.data || [], [...ud, ...pp]);
   return [...ud, ...pp, ...sl].map(propsBoard.normLine).filter(l => !l.esports);
 }
@@ -1648,7 +1675,7 @@ function isEsports(s) {
 }
 
 async function generateEsportsPicks() {
-  const ppLines = cache.prizepicks.data || [];
+  const ppLines = ppLinesNow();
   const udLines = cache.underdog.data || [];
 
   // a started match's lines can't be played; a blocked book's cache keeps them
@@ -3765,7 +3792,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.108.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.109.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4342,7 +4369,7 @@ let propsBoardCache = { at: 0, rows: [] };
 function propsBoardRows() {
   if (Date.now() - propsBoardCache.at < 60000) return propsBoardCache;
   const es = l => isEsports(l.sport);
-  const esLines = [...(cache.underdog.data || []).filter(es), ...(cache.prizepicks.data || []).filter(es), ...(cache.sleeper.data || [])];
+  const esLines = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || [])];
   const esKey = (sport, market) => normalizeMarket(market);
   const rows = propsBoard.buildRows([...sportsPropLines(), ...esLines], { esKey });
   const esPicks = new Map();
@@ -4516,7 +4543,7 @@ app.get('/api/props/:sport', async (req, res) => {
   // FALLBACK: if nothing from Owls or Odds API, build from PP/UD data
   if (!merged.length) {
     const sportUpper = sport.toUpperCase();
-    const ppLines = (cache.prizepicks.data || []).filter(l =>
+    const ppLines = ppLinesNow().filter(l =>
       l.sport && l.sport.toLowerCase().includes(sport.toLowerCase()) ||
       (sport === 'nba' && l.sport === 'NBA') ||
       (sport === 'mlb' && l.sport === 'MLB') ||
@@ -4943,9 +4970,9 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.108.0',
+  version: '3.109.0',
   modelWeight: MODEL_WEIGHT,
-  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
+  prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
@@ -4957,7 +4984,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   esports: {
     picks: esportsCache.picks.length,
     updated: esportsCache.lastUpdated,
-    ppEsportsLines: (cache.prizepicks.data||[]).filter(l => isEsports(l.sport)).length,
+    ppEsportsLines: ppLinesNow().filter(l => isEsports(l.sport)).length,
     udEsportsLines: (cache.underdog.data||[]).filter(l => isEsports(l.sport)).length,
     sleeperEsportsLines: (cache.sleeper.data||[]).length,
     ppEsportsLeagues: ppState.esportsLeagues,
@@ -5037,7 +5064,7 @@ schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps()
 let esLinesSig = '';
 function esportsLinesSig() {
   const sig = l => `${l.book}|${l.player}|${l.market}|${l.line}|${l.overMultiplier ?? ''}|${l.underMultiplier ?? ''}|${l.overOpen !== false ? 1 : 0}${l.underOpen !== false ? 1 : 0}`;
-  return [...(cache.prizepicks.data || []), ...(cache.underdog.data || []), ...(cache.sleeper.data || [])]
+  return [...ppLinesNow(), ...(cache.underdog.data || []), ...(cache.sleeper.data || [])]
     .filter(l => isEsports(l.sport)).map(sig).sort().join('\n');
 }
 schedule('*/2 * * * *', async () => {
@@ -5147,7 +5174,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, slipTracker, cache, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, slipTracker, cache, ppState, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
