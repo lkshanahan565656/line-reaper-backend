@@ -1,0 +1,31 @@
+name: bmdiag
+on:
+  push:
+    branches: [diag-bigmoney]
+concurrency:
+  group: bmdiag
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          set +e
+          SCRIPT=$(cat diag/RUN)
+          { date -u; env $(cat diag/ENV 2>/dev/null) node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-bigmoney-out
+          git add -f out.txt; git add -f data/*.json.gz 2>/dev/null; git add -f data/*.json 2>/dev/null
+          git commit -qm "bigmoney output" ; git push -f origin diag-bigmoney-out
