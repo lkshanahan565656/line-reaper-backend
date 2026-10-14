@@ -1,0 +1,748 @@
+{
+ "arbCount": 4,
+ "middleCount": 5,
+ "updated": "2026-10-14T21:24:55.421Z",
+ "record": {
+  "open": 0,
+  "checked": 8,
+  "ok": 8,
+  "okRate": 1,
+  "late": 0,
+  "proven": false,
+  "provenN": 50,
+  "byType": {
+   "middle": {
+    "n": 4,
+    "ok": 4,
+    "execN": 4,
+    "okRate": 1,
+    "avgShown": 4.85,
+    "avgExecMargin": -10.17
+   },
+   "arb": {
+    "n": 4,
+    "ok": 4,
+    "execN": 4,
+    "okRate": 1,
+    "avgShown": 0.23,
+    "avgExecMargin": 0.23
+   }
+  },
+  "byPair": {
+   "middle:betrivers+fanduel": {
+    "n": 2,
+    "ok": 2,
+    "execN": 2,
+    "okRate": 1,
+    "avgShown": 5.47,
+    "avgExecMargin": -8.56
+   },
+   "arb:betrivers+kalshi": {
+    "n": 4,
+    "ok": 4,
+    "execN": 4,
+    "okRate": 1,
+    "avgShown": 0.23,
+    "avgExecMargin": 0.23
+   },
+   "middle:betrivers+kalshi": {
+    "n": 1,
+    "ok": 1,
+    "execN": 1,
+    "okRate": 1,
+    "avgShown": 4.31,
+    "avgExecMargin": -11.72
+   },
+   "middle:fanduel+kalshi": {
+    "n": 1,
+    "ok": 1,
+    "execN": 1,
+    "okRate": 1,
+    "avgShown": 4.16,
+    "avgExecMargin": -11.84
+   }
+  },
+  "reasons": {}
+ },
+ "arbs": [
+  {
+   "id": "bookarb:arb:1637637788|prop|davisallen|anytime_td|betrivers|up|0.5+1637637788|prop|davisallen|anytime_td|kalshi|down|0.5",
+   "type": "arb",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Arizona Cardinals @ Los Angeles Rams",
+   "start": "2026-10-18T20:05:00.000Z",
+   "subject": "Davis Allen anytime td",
+   "player": "Davis Allen",
+   "mkey": "anytime_td",
+   "low": 0.5,
+   "high": 0.5,
+   "gap": 0,
+   "window": null,
+   "windowText": null,
+   "hitProb": null,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Davis Allen over 0.5 anytime td",
+     "dir": "up",
+     "at": 0.5,
+     "cost": 0.08,
+     "pct": 8.03,
+     "american": 1150,
+     "url": null,
+     "qkey": "1637637788|prop|davisallen|anytime_td|betrivers|up|0.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "Davis Allen under 0.5 anytime td",
+     "dir": "down",
+     "at": 0.5,
+     "cost": 0.9158,
+     "pct": 91.97,
+     "price": 0.91,
+     "url": "https://kalshi.com/markets/kxnfltd-26oct18arilar",
+     "marketId": "KXNFLTD-26OCT18ARILAR-LARDALLEN87-1",
+     "side": "no",
+     "qkey": "1637637788|prop|davisallen|anytime_td|kalshi|down|0.5",
+     "fill": {
+      "atPrice": 40,
+      "contracts": 40,
+      "maxStake": 40
+     }
+    }
+   ],
+   "totalCost": 0.9958,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 8.03
+     },
+     {
+      "pct": 91.97
+     }
+    ]
+   },
+   "profitPct": 0.42,
+   "missPct": 0.42,
+   "hitPct": null,
+   "evPct": 0.42,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": 40
+  },
+  {
+   "id": "bookarb:arb:1637608815|prop|samroush|anytime_td|betrivers|up|1.5+1637608815|prop|samroush|anytime_td|kalshi|down|1.5",
+   "type": "arb",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Chicago Bears @ Atlanta Falcons",
+   "start": "2026-10-18T17:00:00.000Z",
+   "subject": "Sam Roush anytime td",
+   "player": "Sam Roush",
+   "mkey": "anytime_td",
+   "low": 1.5,
+   "high": 1.5,
+   "gap": 0,
+   "window": null,
+   "windowText": null,
+   "hitProb": null,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Sam Roush over 1.5 anytime td",
+     "dir": "up",
+     "at": 1.5,
+     "cost": 0.0071,
+     "pct": 0.71,
+     "american": 14000,
+     "url": null,
+     "qkey": "1637608815|prop|samroush|anytime_td|betrivers|up|1.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "Sam Roush under 1.5 anytime td",
+     "dir": "down",
+     "at": 1.5,
+     "cost": 0.9907,
+     "pct": 99.29,
+     "price": 0.99,
+     "url": "https://kalshi.com/markets/kxnfltd-26oct18chiatl",
+     "marketId": "KXNFLTD-26OCT18CHIATL-CHISROUSH87-2",
+     "side": "no",
+     "qkey": "1637608815|prop|samroush|anytime_td|kalshi|down|1.5",
+     "fill": {
+      "atPrice": 166,
+      "contracts": 166,
+      "maxStake": 166
+     }
+    }
+   ],
+   "totalCost": 0.9978,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 0.71
+     },
+     {
+      "pct": 99.29
+     }
+    ]
+   },
+   "profitPct": 0.22,
+   "missPct": 0.22,
+   "hitPct": null,
+   "evPct": 0.22,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": 166
+  },
+  {
+   "id": "bookarb:arb:1637607114|prop|lequintallen|anytime_td|betrivers|up|1.5+1637607114|prop|lequintallen|anytime_td|kalshi|down|1.5",
+   "type": "arb",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Houston Texans @ Jacksonville Jaguars",
+   "start": "2026-10-18T13:30:00.000Z",
+   "subject": "LeQuint Allen Jr. anytime td",
+   "player": "LeQuint Allen Jr.",
+   "mkey": "anytime_td",
+   "low": 1.5,
+   "high": 1.5,
+   "gap": 0,
+   "window": null,
+   "windowText": null,
+   "hitProb": null,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "LeQuint Allen over 1.5 anytime td",
+     "dir": "up",
+     "at": 1.5,
+     "cost": 0.0076,
+     "pct": 0.76,
+     "american": 13000,
+     "url": null,
+     "qkey": "1637607114|prop|lequintallen|anytime_td|betrivers|up|1.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "LeQuint Allen Jr. under 1.5 anytime td",
+     "dir": "down",
+     "at": 1.5,
+     "cost": 0.9907,
+     "pct": 99.24,
+     "price": 0.99,
+     "url": "https://kalshi.com/markets/kxnfltd-26oct18houjac",
+     "marketId": "KXNFLTD-26OCT18HOUJAC-JACLALLEN5-2",
+     "side": "no",
+     "qkey": "1637607114|prop|lequintallen|anytime_td|kalshi|down|1.5",
+     "fill": {
+      "atPrice": 300,
+      "contracts": 300,
+      "maxStake": 299
+     }
+    }
+   ],
+   "totalCost": 0.9983,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 0.76
+     },
+     {
+      "pct": 99.24
+     }
+    ]
+   },
+   "profitPct": 0.17,
+   "missPct": 0.17,
+   "hitPct": null,
+   "evPct": 0.17,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": 299
+  },
+  {
+   "id": "bookarb:arb:1637637788|prop|davisallen|anytime_td|betrivers|up|1.5+1637637788|prop|davisallen|anytime_td|kalshi|down|1.5",
+   "type": "arb",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Arizona Cardinals @ Los Angeles Rams",
+   "start": "2026-10-18T20:05:00.000Z",
+   "subject": "Davis Allen anytime td",
+   "player": "Davis Allen",
+   "mkey": "anytime_td",
+   "low": 1.5,
+   "high": 1.5,
+   "gap": 0,
+   "window": null,
+   "windowText": null,
+   "hitProb": null,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Davis Allen over 1.5 anytime td",
+     "dir": "up",
+     "at": 1.5,
+     "cost": 0.0083,
+     "pct": 0.83,
+     "american": 12000,
+     "url": null,
+     "qkey": "1637637788|prop|davisallen|anytime_td|betrivers|up|1.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "Davis Allen under 1.5 anytime td",
+     "dir": "down",
+     "at": 1.5,
+     "cost": 0.9907,
+     "pct": 99.17,
+     "price": 0.99,
+     "url": "https://kalshi.com/markets/kxnfltd-26oct18arilar",
+     "marketId": "KXNFLTD-26OCT18ARILAR-LARDALLEN87-2",
+     "side": "no",
+     "qkey": "1637637788|prop|davisallen|anytime_td|kalshi|down|1.5",
+     "fill": {
+      "atPrice": 343,
+      "contracts": 343,
+      "maxStake": 343
+     }
+    }
+   ],
+   "totalCost": 0.999,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 0.83
+     },
+     {
+      "pct": 99.17
+     }
+    ]
+   },
+   "profitPct": 0.1,
+   "missPct": 0.1,
+   "hitPct": null,
+   "evPct": 0.1,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": 343
+  }
+ ],
+ "middles": [
+  {
+   "id": "bookarb:middle:1637351093|prop|jmariyaerobinson|rec_yds|betrivers|up|39.5+1637351093|prop|jmariyaerobinson|rec_yds|fanduel|down|47.5",
+   "type": "middle",
+   "kind": "prop",
+   "sport": "ncaaf",
+   "league": "CFB",
+   "title": "Kennesaw State @ Missouri State",
+   "start": "2026-10-14T23:30:00.000Z",
+   "subject": "Jmariyae Robinson rec yds",
+   "player": "Jmariyae Robinson",
+   "mkey": "rec_yds",
+   "low": 39.5,
+   "high": 47.5,
+   "gap": 8,
+   "window": {
+    "lo": 40,
+    "hi": 47
+   },
+   "windowText": "Jmariyae Robinson gets 40 to 47 rec yds",
+   "hitProb": 0.1218,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Jmariyae Robinson over 39.5 rec yds",
+     "dir": "up",
+     "at": 39.5,
+     "cost": 0.5327,
+     "pct": 50.21,
+     "american": -114,
+     "url": null,
+     "qkey": "1637351093|prop|jmariyaerobinson|rec_yds|betrivers|up|39.5"
+    },
+    {
+     "venue": "fanduel",
+     "venueTitle": "FanDuel",
+     "pick": "Jmariyae Robinson under 47.5 rec yds",
+     "dir": "down",
+     "at": 47.5,
+     "cost": 0.5283,
+     "pct": 49.79,
+     "american": -112,
+     "url": null,
+     "qkey": "1637351093|prop|jmariyaerobinson|rec_yds|fanduel|down|47.5"
+    }
+   ],
+   "totalCost": 1.061,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 50.21
+     },
+     {
+      "pct": 49.79
+     }
+    ]
+   },
+   "profitPct": null,
+   "missPct": -5.75,
+   "hitPct": 88.5,
+   "evPct": 5.73,
+   "pair": "betrivers+fanduel",
+   "books": 2,
+   "warnings": [],
+   "maxStake": null
+  },
+  {
+   "id": "bookarb:middle:1637351093|prop|jmariyaerobinson|rec_yds|betrivers|up|34.5+1637351093|prop|jmariyaerobinson|rec_yds|fanduel|down|47.5",
+   "type": "middle",
+   "kind": "prop",
+   "sport": "ncaaf",
+   "league": "CFB",
+   "title": "Kennesaw State @ Missouri State",
+   "start": "2026-10-14T23:30:00.000Z",
+   "subject": "Jmariyae Robinson rec yds",
+   "player": "Jmariyae Robinson",
+   "mkey": "rec_yds",
+   "low": 34.5,
+   "high": 47.5,
+   "gap": 13,
+   "window": {
+    "lo": 35,
+    "hi": 47
+   },
+   "windowText": "Jmariyae Robinson gets 35 to 47 rec yds",
+   "hitProb": 0.1929,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Jmariyae Robinson over 34.5 rec yds",
+     "dir": "up",
+     "at": 34.5,
+     "cost": 0.6,
+     "pct": 53.18,
+     "american": -150,
+     "url": null,
+     "qkey": "1637351093|prop|jmariyaerobinson|rec_yds|betrivers|up|34.5"
+    },
+    {
+     "venue": "fanduel",
+     "venueTitle": "FanDuel",
+     "pick": "Jmariyae Robinson under 47.5 rec yds",
+     "dir": "down",
+     "at": 47.5,
+     "cost": 0.5283,
+     "pct": 46.82,
+     "american": -112,
+     "url": null,
+     "qkey": "1637351093|prop|jmariyaerobinson|rec_yds|fanduel|down|47.5"
+    }
+   ],
+   "totalCost": 1.1283,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 53.18
+     },
+     {
+      "pct": 46.82
+     }
+    ]
+   },
+   "profitPct": null,
+   "missPct": -11.37,
+   "hitPct": 77.26,
+   "evPct": 5.73,
+   "pair": "betrivers+fanduel",
+   "books": 2,
+   "warnings": [],
+   "maxStake": null
+  },
+  {
+   "id": "bookarb:middle:1637497657|prop|georgeholani|rush_yds|betrivers|up|19.5+1637497657|prop|georgeholani|rush_yds|kalshi|down|24.5",
+   "type": "middle",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Seattle Seahawks @ Denver Broncos",
+   "start": "2026-10-16T00:15:00.000Z",
+   "subject": "George Holani rush yds",
+   "player": "George Holani",
+   "mkey": "rush_yds",
+   "low": 19.5,
+   "high": 24.5,
+   "gap": 5,
+   "window": {
+    "lo": 20,
+    "hi": 24
+   },
+   "windowText": "George Holani gets 20 to 24 rush yds",
+   "hitProb": 0.1252,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "George Holani over 19.5 rush yds",
+     "dir": "up",
+     "at": 19.5,
+     "cost": 0.3333,
+     "pct": 30.13,
+     "american": 200,
+     "url": null,
+     "qkey": "1637497657|prop|georgeholani|rush_yds|betrivers|up|19.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "George Holani under 24.5 rush yds",
+     "dir": "down",
+     "at": 24.5,
+     "cost": 0.7728,
+     "pct": 69.87,
+     "price": 0.76,
+     "url": "https://kalshi.com/markets/kxnflrshyds-26oct15seaden",
+     "marketId": "KXNFLRSHYDS-26OCT15SEADEN-SEAGHOLANI36-25",
+     "side": "no",
+     "qkey": "1637497657|prop|georgeholani|rush_yds|kalshi|down|24.5",
+     "fill": {
+      "atPrice": 17,
+      "contracts": 17,
+      "maxStake": 19
+     }
+    }
+   ],
+   "totalCost": 1.1061,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 30.13
+     },
+     {
+      "pct": 69.87
+     }
+    ]
+   },
+   "profitPct": null,
+   "missPct": -9.59,
+   "hitPct": 80.82,
+   "evPct": 1.73,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": null
+  },
+  {
+   "id": "bookarb:middle:1637497657|prop|jaxonsmithnjigba|rec_yds|fanduel|up|109.5+1637497657|prop|jaxonsmithnjigba|rec_yds|kalshi|down|119.5",
+   "type": "middle",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Seattle Seahawks @ Denver Broncos",
+   "start": "2026-10-16T00:15:00.000Z",
+   "subject": "Jaxon Smith-Njigba rec yds",
+   "player": "Jaxon Smith-Njigba",
+   "mkey": "rec_yds",
+   "low": 109.5,
+   "high": 119.5,
+   "gap": 10,
+   "window": {
+    "lo": 110,
+    "hi": 119
+   },
+   "windowText": "Jaxon Smith-Njigba gets 110 to 119 rec yds",
+   "hitProb": 0.0905,
+   "legs": [
+    {
+     "venue": "fanduel",
+     "venueTitle": "FanDuel",
+     "pick": "Jaxon Smith-Njigba over 109.5 rec yds",
+     "dir": "up",
+     "at": 109.5,
+     "cost": 0.3731,
+     "pct": 34.61,
+     "american": 168,
+     "url": null,
+     "qkey": "1637497657|prop|jaxonsmithnjigba|rec_yds|fanduel|up|109.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "Jaxon Smith-Njigba under 119.5 rec yds",
+     "dir": "down",
+     "at": 119.5,
+     "cost": 0.705,
+     "pct": 65.39,
+     "price": 0.69,
+     "url": "https://kalshi.com/markets/kxnflrecyds-26oct15seaden",
+     "marketId": "KXNFLRECYDS-26OCT15SEADEN-SEAJSMITHNJIGBA11-120",
+     "side": "no",
+     "qkey": "1637497657|prop|jaxonsmithnjigba|rec_yds|kalshi|down|119.5",
+     "fill": {
+      "atPrice": 91,
+      "contracts": 91,
+      "maxStake": 98
+     }
+    }
+   ],
+   "totalCost": 1.0781,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 34.61
+     },
+     {
+      "pct": 65.39
+     }
+    ]
+   },
+   "profitPct": null,
+   "missPct": -7.24,
+   "hitPct": 85.51,
+   "evPct": 1.15,
+   "pair": "fanduel+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": null
+  },
+  {
+   "id": "bookarb:middle:1637637788|prop|blakecorum|rush_yds|betrivers|up|59.5+1637637788|prop|blakecorum|rush_yds|kalshi|down|69.5",
+   "type": "middle",
+   "kind": "prop",
+   "sport": "nfl",
+   "league": "NFL",
+   "title": "Arizona Cardinals @ Los Angeles Rams",
+   "start": "2026-10-18T20:05:00.000Z",
+   "subject": "Blake Corum rush yds",
+   "player": "Blake Corum",
+   "mkey": "rush_yds",
+   "low": 59.5,
+   "high": 69.5,
+   "gap": 10,
+   "window": {
+    "lo": 60,
+    "hi": 69
+   },
+   "windowText": "Blake Corum gets 60 to 69 rush yds",
+   "hitProb": 0.1138,
+   "legs": [
+    {
+     "venue": "betrivers",
+     "venueTitle": "BetRivers",
+     "pick": "Blake Corum over 59.5 rush yds",
+     "dir": "up",
+     "at": 59.5,
+     "cost": 0.2532,
+     "pct": 22.96,
+     "american": 295,
+     "url": null,
+     "qkey": "1637637788|prop|blakecorum|rush_yds|betrivers|up|59.5"
+    },
+    {
+     "venue": "kalshi",
+     "venueTitle": "Kalshi",
+     "pick": "Blake Corum under 69.5 rush yds",
+     "dir": "down",
+     "at": 69.5,
+     "cost": 0.8495,
+     "pct": 77.04,
+     "price": 0.84,
+     "url": "https://kalshi.com/markets/kxnflrshyds-26oct18arilar",
+     "marketId": "KXNFLRSHYDS-26OCT18ARILAR-LARBCORUM24-70",
+     "side": "no",
+     "qkey": "1637637788|prop|blakecorum|rush_yds|kalshi|down|69.5",
+     "fill": {
+      "atPrice": 25,
+      "contracts": 25,
+      "maxStake": 28
+     }
+    }
+   ],
+   "totalCost": 1.1027,
+   "stakes": {
+    "legs": [
+     {
+      "pct": 22.96
+     },
+     {
+      "pct": 77.04
+     }
+    ]
+   },
+   "profitPct": null,
+   "missPct": -9.31,
+   "hitPct": 81.37,
+   "evPct": 1.01,
+   "pair": "betrivers+kalshi",
+   "books": 1,
+   "warnings": [
+    "inactive"
+   ],
+   "maxStake": null
+  }
+ ],
+ "counts": {
+  "subjects": 2319,
+  "quotes": 26494,
+  "pairs": 108412,
+  "arbs": 4,
+  "middles": 5,
+  "tooGood": 0,
+  "byVenue": {
+   "fanduel": 9279,
+   "betrivers": 10119,
+   "kalshi": 5376,
+   "polymarketus": 1720
+  },
+  "arbPairs": {
+   "betrivers+kalshi": 4
+  },
+  "middlePairs": {
+   "betrivers+fanduel": 2,
+   "betrivers+kalshi": 2,
+   "fanduel+kalshi": 1
+  },
+  "arbKinds": {
+   "prop": 4
+  },
+  "middleKinds": {
+   "prop": 5
+  },
+  "medianArbPct": 0.22,
+  "medianMiddleEv": 1.73,
+  "medianMiddleMiss": -9.31,
+  "stale": 7
+ }
+}

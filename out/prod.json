@@ -1,0 +1,990 @@
+[
+ {
+  "at": "2026-10-14T21:14:32.695Z",
+  "v": "3.118.1"
+ },
+ {
+  "at": "2026-10-14T21:15:03.238Z",
+  "v": "3.118.1"
+ },
+ {
+  "at": "2026-10-14T21:16:33.483Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:15:55.794Z",
+   "dataAt": "2026-10-14T21:15:49.962Z",
+   "reads": 0,
+   "counts": {
+    "subjects": 2241,
+    "quotes": 19198,
+    "pairs": 46597,
+    "arbs": 0,
+    "middles": 2,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9075,
+     "betrivers": 10123
+    },
+    "arbPairs": {},
+    "middlePairs": {
+     "betrivers+fanduel": 2
+    },
+    "arbKinds": {},
+    "middleKinds": {
+     "prop": 2
+    },
+    "medianArbPct": null,
+    "medianMiddleEv": 5.54,
+    "medianMiddleMiss": -5.75,
+    "stale": 0
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:15:56.006Z",
+   "ms": 212,
+   "error": null
+  },
+  "rec": {
+   "open": 2,
+   "checked": 0,
+   "ok": 0,
+   "okRate": null,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {},
+   "byPair": {},
+   "reasons": {}
+  },
+  "n": [
+   0,
+   2
+  ]
+ },
+ {
+  "at": "2026-10-14T21:17:33.652Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:16:55.835Z",
+   "dataAt": "2026-10-14T21:16:46.596Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 25317,
+    "pairs": 89004,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9075,
+     "betrivers": 10123,
+     "polymarketus": 1718,
+     "kalshi": 4401
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:17:06.124Z",
+   "ms": 10289,
+   "error": null
+  },
+  "rec": {
+   "open": 8,
+   "checked": 0,
+   "ok": 0,
+   "okRate": null,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {},
+   "byPair": {},
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:18:33.843Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:17:56.628Z",
+   "dataAt": "2026-10-14T21:17:51.638Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 26045,
+    "pairs": 107286,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9075,
+     "betrivers": 10123,
+     "kalshi": 5129,
+     "polymarketus": 1718
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:18:08.881Z",
+   "ms": 12253,
+   "error": null
+  },
+  "rec": {
+   "open": 6,
+   "checked": 2,
+   "ok": 2,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:19:34.026Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:18:55.383Z",
+   "dataAt": "2026-10-14T21:18:49.470Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 26277,
+    "pairs": 108317,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9075,
+     "betrivers": 10121,
+     "kalshi": 5363,
+     "polymarketus": 1718
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:19:06.427Z",
+   "ms": 11044,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:20:34.212Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:19:55.441Z",
+   "dataAt": "2026-10-14T21:19:46.699Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 26279,
+    "pairs": 108331,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9075,
+     "betrivers": 10121,
+     "kalshi": 5363,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:20:09.746Z",
+   "ms": 14305,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:21:34.403Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:20:55.789Z",
+   "dataAt": "2026-10-14T21:20:49.433Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2319,
+    "quotes": 26482,
+    "pairs": 108331,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9278,
+     "betrivers": 10121,
+     "kalshi": 5363,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:21:07.337Z",
+   "ms": 11548,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:22:34.591Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:21:55.926Z",
+   "dataAt": "2026-10-14T21:21:45.665Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2319,
+    "quotes": 26495,
+    "pairs": 108422,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9278,
+     "betrivers": 10121,
+     "kalshi": 5376,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:22:09.307Z",
+   "ms": 13381,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:23:34.765Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:22:55.454Z",
+   "dataAt": "2026-10-14T21:22:49.413Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 26291,
+    "pairs": 108422,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9074,
+     "betrivers": 10121,
+     "kalshi": 5376,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:23:05.179Z",
+   "ms": 9725,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:24:34.960Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:23:55.281Z",
+   "dataAt": "2026-10-14T21:23:47.273Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2244,
+    "quotes": 26291,
+    "pairs": 108422,
+    "arbs": 4,
+    "middles": 8,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9074,
+     "betrivers": 10121,
+     "kalshi": 5376,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 4,
+     "fanduel+kalshi": 2
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 8
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 4.16,
+    "medianMiddleMiss": -9.59,
+    "stale": 3
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:24:06.443Z",
+   "ms": 11162,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   8
+  ]
+ },
+ {
+  "at": "2026-10-14T21:25:35.202Z",
+  "v": "3.119.0",
+  "book": {
+   "updated": "2026-10-14T21:24:55.421Z",
+   "dataAt": "2026-10-14T21:24:49.938Z",
+   "reads": 12,
+   "counts": {
+    "subjects": 2319,
+    "quotes": 26494,
+    "pairs": 108412,
+    "arbs": 4,
+    "middles": 5,
+    "tooGood": 0,
+    "byVenue": {
+     "fanduel": 9279,
+     "betrivers": 10119,
+     "kalshi": 5376,
+     "polymarketus": 1720
+    },
+    "arbPairs": {
+     "betrivers+kalshi": 4
+    },
+    "middlePairs": {
+     "betrivers+fanduel": 2,
+     "betrivers+kalshi": 2,
+     "fanduel+kalshi": 1
+    },
+    "arbKinds": {
+     "prop": 4
+    },
+    "middleKinds": {
+     "prop": 5
+    },
+    "medianArbPct": 0.22,
+    "medianMiddleEv": 1.73,
+    "medianMiddleMiss": -9.31,
+    "stale": 7
+   }
+  },
+  "job": {
+   "lastRun": "2026-10-14T21:25:07.028Z",
+   "ms": 11607,
+   "error": null
+  },
+  "rec": {
+   "open": 0,
+   "checked": 8,
+   "ok": 8,
+   "okRate": 1,
+   "late": 0,
+   "proven": false,
+   "provenN": 50,
+   "byType": {
+    "middle": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 4.85,
+     "avgExecMargin": -10.17
+    },
+    "arb": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    }
+   },
+   "byPair": {
+    "middle:betrivers+fanduel": {
+     "n": 2,
+     "ok": 2,
+     "execN": 2,
+     "okRate": 1,
+     "avgShown": 5.47,
+     "avgExecMargin": -8.56
+    },
+    "arb:betrivers+kalshi": {
+     "n": 4,
+     "ok": 4,
+     "execN": 4,
+     "okRate": 1,
+     "avgShown": 0.23,
+     "avgExecMargin": 0.23
+    },
+    "middle:betrivers+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.31,
+     "avgExecMargin": -11.72
+    },
+    "middle:fanduel+kalshi": {
+     "n": 1,
+     "ok": 1,
+     "execN": 1,
+     "okRate": 1,
+     "avgShown": 4.16,
+     "avgExecMargin": -11.84
+    }
+   },
+   "reasons": {}
+  },
+  "n": [
+   4,
+   5
+  ]
+ }
+]
