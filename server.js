@@ -4274,7 +4274,7 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
 function sportFairAt(row, book, line) {
-  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), o: SPORT_OPTS });
+  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinPropsIndex.get(row.key), o: SPORT_OPTS });
   return f ? f.p : null;
 }
 function priceSportRows(rows) {
@@ -4282,7 +4282,9 @@ function priceSportRows(rows) {
   for (const row of rows) {
     if (row.esports) continue;
     const kalshi = rowKalshi(row);
-    const plays = sportProps.rowPlays(row, { kalshi, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    const pin = pinPropsIndex.get(row.key);
+    if (pin) row.pinnacle = { line: pin.line, over: pin.over, under: pin.under, pOver: +(pin.pOver * 100).toFixed(1) };
+    const plays = sportProps.rowPlays(row, { kalshi, pin, dfsEv: dfsLegEv, o: SPORT_OPTS });
     // lines apart but the payouts even it out (UD 249.5 at Higher 1.29x vs
     // PP 223.5): every book reads as the same median within a few points
     const means = Object.entries(row.books).map(([b, c]) => sportProps.meanFor(row.mkey, row.sport, c.line, sportProps.bookPOver(b, c) ?? NaN)).filter(m => m > 0);
@@ -4291,9 +4293,9 @@ function priceSportRows(rows) {
       row.medianGap = +(hi - lo).toFixed(2);
       row.gapPriced = sportProps.pOver(row.mkey, row.sport, hi, lo) - 0.5 < SPORT_OPTS.minProbPts / 100;
     }
-    // a cell keeps a price only where Kalshi backs it or it's a gap
+    // a cell keeps a price only where a sharp price backs it or it's a gap
     for (const [book, c] of Object.entries(row.books)) {
-      const mine = plays.filter(p => p.book === book && (c.fair != null || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      const mine = plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
       if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1) };
       else if (c.fair == null) delete c.ev;
     }
@@ -4306,15 +4308,28 @@ function priceSportRows(rows) {
     }
     if (best) {
       const { p, kind } = best;
-      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: kind === 'gap' ? 'gap' : 'kalshi', kind,
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: kind === 'gap' ? 'gap' : pin ? 'pinnacle' : 'kalshi', kind,
         n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
-    } else if (row.best && row.best.source === 'kalshi') {
-      // Kalshi's price alone, now blended with the other books
-      const top = plays.find(p => row.books[p.book]?.fair != null);
-      row.best = top ? { book: top.book, side: top.side, ev: top.ev, fair: +(top.fair * 100).toFixed(1), line: top.line, source: 'kalshi', kind: null, n: top.n } : null;
+    } else if (pin || (row.best && row.best.source === 'kalshi')) {
+      // a sharp price, blended with the other books: the row's best, +EV or not
+      const top = plays.find(p => pin || row.books[p.book]?.fair != null);
+      row.best = top ? { book: top.book, side: top.side, ev: top.ev, fair: +(top.fair * 100).toFixed(1), line: top.line, source: pin ? 'pinnacle' : 'kalshi', kind: null, n: top.n } : null;
     }
   }
   return flagged;
+}
+// Pinnacle's player props (pinprops.js): on with PINNACLE_GUEST_KEY set, and
+// behind the pinnacle licence like its esports prices. Every 5 minutes.
+const pinprops = require('./pinprops');
+const pinPropsState = { enabled: !!process.env.PINNACLE_GUEST_KEY, props: 0, bySport: {}, updated: null, errors: [] };
+let pinPropsIndex = new Map();
+async function refreshPinnacleProps() {
+  if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
+  const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
+  if (props.length || !errors.length) pinPropsIndex = pinprops.indexProps(props);
+  const bySport = {};
+  for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
+  Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
 }
 // Every two minutes after the scrapes: flag, check two minutes on, keep the close
 let sportTrackRunning = false;
@@ -4811,6 +4826,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
+  pinnacleProps: pinPropsState,
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -4885,6 +4901,7 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('2,7,12,17,22,27,32,37,42,47,52,57 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
@@ -4982,6 +4999,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
       delay += 4000;
     }
     setTimeout(() => pollSportsbooks(), 6000);
+    setTimeout(() => refreshPinnacleProps().catch(() => {}), 9000);
     // Generate esports picks once UD is loaded
     setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
     // LoL dataset download (~1 min); regenerates picks when done

@@ -214,7 +214,7 @@ function counts(rows) {
 function redactRow(r) {
   const books = {};
   for (const [k, c] of Object.entries(r.books)) books[k] = { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen };
-  return { ...r, books, best: r.best ? { locked: true, ...(r.best.kind === 'gap' ? { kind: 'gap' } : {}) } : null, model: null };
+  return { ...r, books, best: r.best ? { locked: true, ...(r.best.kind === 'gap' ? { kind: 'gap' } : {}) } : null, model: null, pinnacle: null };
 }
 
 module.exports = { boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, counts, redactRow, BOOKS };

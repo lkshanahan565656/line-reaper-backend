@@ -72,6 +72,7 @@ function bookPOver(book, c) {
 const DEFAULTS = {
   weights: { prizepicks: 1, underdog: 1, sleeper: 1 },
   kalshiWeight: 2,        // Kalshi's ladder counts as this many books
+  pinWeight: 3,           // Pinnacle's devigged prop counts as this many books
   minProbPts: 6,          // a gap worth this many points of win chance on our side
   minEv: 2,               // a play needs this much EV at its book (percent)
   minOthers: 1,           // other books (Kalshi counts) behind the fair
@@ -85,7 +86,7 @@ const DEFAULTS = {
 // the other books' lines read as means on the stat's curve, and Kalshi's own
 // price at that line (kalshi: line → P(over), from the board's cells).
 // → { p, mean, n, sources: [{ book, line, p }] } or null
-function fairFor(row, book, line, { kalshi = null, o = DEFAULTS } = {}) {
+function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = {}) {
   const means = [];
   const sources = [];
   for (const [b, c] of Object.entries(row.books || {})) {
@@ -108,6 +109,11 @@ function fairFor(row, book, line, { kalshi = null, o = DEFAULTS } = {}) {
       if (m != null) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
     }
   }
+  // Pinnacle: its own line and devigged price, read as a mean on the curve
+  if (pin && pin.line != null && pin.pOver > 0 && pin.pOver < 1) {
+    const m = meanFor(row.mkey, row.sport, pin.line, pin.pOver);
+    if (m != null) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
+  }
   if (means.length < o.minOthers) return null;
   const w = means.reduce((a, [, x]) => a + x, 0);
   const mean = means.reduce((a, [m, x]) => a + m * x, 0) / w;
@@ -117,11 +123,11 @@ function fairFor(row, book, line, { kalshi = null, o = DEFAULTS } = {}) {
 // Every side of every book on a sports row, priced on the others. dfsEv(p,
 // book, mult, cell, side) is the server's dfsLegEv. → plays, best first:
 // { book, side, line, mult, fair (0-1), ev, gap: { vs, pts, probPts } | null }
-function rowPlays(row, { kalshi = null, dfsEv, o = DEFAULTS } = {}) {
+function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) {
   if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
   const out = [];
   for (const [book, c] of Object.entries(row.books || {})) {
-    const f = fairFor(row, book, c.line, { kalshi, o });
+    const f = fairFor(row, book, c.line, { kalshi, pin, o });
     if (!f) continue;
     for (const side of ['Over', 'Under']) {
       if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
@@ -149,8 +155,8 @@ function rowPlays(row, { kalshi = null, dfsEv, o = DEFAULTS } = {}) {
 function playKind(p, o = DEFAULTS) {
   if (!p || p.ev < o.minEv) return null;
   if (p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources) return 'gap';
-  // no gap: only Kalshi's own price at this line says anything
-  return p.sources.some(s => s.book === 'kalshi' && s.line === p.line) ? 'ev' : null;   // no gap and no Kalshi: just the books' noise
+  // no gap: a sharp price says it, Pinnacle at any line or Kalshi at this one
+  return p.sources.some(s => s.book === 'pinnacle' || (s.book === 'kalshi' && s.line === p.line)) ? 'ev' : null;   // no gap and no Kalshi: just the books' noise
 }
 
 module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, DEFAULTS };
