@@ -364,3 +364,18 @@ test('Underdog sanity check is one-sided: a bad Underdog price shows its EV, a f
   assert.strictEqual(fake.flag, 'price-mismatch');
   assert.strictEqual(fake.ev, null);
 });
+
+test('share card, robots and sitemap; the sales page carries its origin', async () => {
+  const og = await fetch(base + '/og.png');
+  assert.equal(og.status, 200);
+  assert.match(og.headers.get('content-type'), /image\/png/);
+  const robots = await (await fetch(base + '/robots.txt')).text();
+  assert.match(robots, /Disallow: \/api\//);
+  assert.match(robots, /Sitemap: https:\/\/127\.0\.0\.1:\d+\/sitemap\.xml/);
+  const map = await (await fetch(base + '/sitemap.xml')).text();
+  for (const u of ['/</loc>', '/terms</loc>', '/privacy</loc>', '/refunds</loc>']) assert.ok(map.includes(u), u);
+  const page = S.landingHtml({ env: { LEGAL_EMAIL: 'help@example.com' }, origin: 'https://linereaper.example' });
+  assert.ok(page.includes('content="https://linereaper.example/og.png"'));
+  assert.ok(page.includes('href="mailto:help@example.com"'));
+  assert.ok(S.landingHtml({ env: {} }).includes('href="/legal#contact"'));
+});
