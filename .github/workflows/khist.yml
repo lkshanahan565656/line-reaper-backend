@@ -2,6 +2,9 @@ name: khist
 on:
   push:
     branches: [diag-khist]
+concurrency:
+  group: khist
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:

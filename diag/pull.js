@@ -51,6 +51,10 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
   const cat = x => x.e.category || sMeta.get(x.e.series_ticker)?.cat || '?';
   todo.sort((a, b) => (PRI[cat(a)] ?? 9) - (PRI[cat(b)] ?? 9) || Math.random() - 0.5);
   const cc = {}; for (const x of todo) cc[cat(x)] = (cc[cat(x)] || 0) + 1; log('todo events', todo.length, JSON.stringify(cc));
+  let useBatch = true;
+  { const x = todo[0], m = x.ms[0], ct = Date.parse(m.close_time);
+    const d = await get('/markets/candlesticks', { market_tickers: m.ticker, start_ts: Math.floor(ct / 1000) - 7200, end_ts: Math.floor(ct / 1000), period_interval: 60 });
+    log('batch probe', JSON.stringify(d).slice(0, 600)); useBatch = !!d?.markets?.length; log('useBatch', useBatch); }
   const out = []; let done = 0, nocandle = 0;
   await pool(todo, 10, async ({ e, ms }) => {
     const meta = sMeta.get(e.series_ticker) || {};
@@ -59,8 +63,12 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
       const close = Math.max(...grp.map(m => Date.parse(m.close_time)));
       const open = Math.min(...grp.map(m => Date.parse(m.open_time)));
       const st = Math.max(open, close - HOURS * 3600e3);
-      const d = await get('/markets/candlesticks', { market_tickers: grp.map(m => m.ticker).join(','), start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 });
-      const arr = d?.markets || [];
+      let arr = [];
+      if (useBatch) { const d = await get('/markets/candlesticks', { market_tickers: grp.map(m => m.ticker).join(','), start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 }); arr = d?.markets || []; }
+      if (!arr.length) {
+        const d = await get(`/series/${e.series_ticker}/events/${e.event_ticker}/candlesticks`, { start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 });
+        arr = (d?.market_tickers || []).map((t, j) => ({ market_ticker: t, candlesticks: d.market_candlesticks?.[j] || [] }));
+      }
       if (!arr.length) nocandle++;
       for (const m of grp) {
         const cs = (arr.find(x => x.market_ticker === m.ticker)?.candlesticks) || [];
