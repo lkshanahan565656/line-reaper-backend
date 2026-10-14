@@ -1,0 +1,30 @@
+name: gasf
+on:
+  push:
+    branches: [diag-gasf]
+concurrency:
+  group: gasf
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          set +e
+          { date -u; node diag/wholesale.js; node --max-old-space-size=6000 diag/pullgas.js; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-gasf-out
+          git add -f out.txt; git add -f data/* 2>/dev/null
+          git commit -qm "gasf output" ; git push -f origin diag-gasf-out
