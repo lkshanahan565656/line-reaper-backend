@@ -40,8 +40,9 @@ async function anBooks() {
   // every FanDuel and BetRivers id Action Network lists, as fanduel_an_<id>
   for (const b of books) {
     const n = String(b.display_name || b.name || '');
-    if (/fanduel/i.test(n) && !/dfs|fantasy|racing/i.test(n)) xbooks.AN_BOOKS[b.id] = { key: `fanduel_an_${b.id}`, title: n };
-    if (/betrivers|rivers/i.test(n)) xbooks.AN_BOOKS[b.id] = { key: `betrivers_an_${b.id}`, title: n };
+    // NJ only, the state freebooks reads directly (every state at once made Action time out)
+    if (/^fanduel nj$/i.test(n)) xbooks.AN_BOOKS[b.id] = { key: `fanduel_an_${b.id}`, title: n };
+    if (/^betrivers nj$/i.test(n)) xbooks.AN_BOOKS[b.id] = { key: `betrivers_an_${b.id}`, title: n };
   }
   if (!Object.values(xbooks.AN_BOOKS).some(b => /^fanduel_an/.test(b.key))) { xbooks.AN_BOOKS[69] = { key: 'fanduel_an_69', title: 'FanDuel?' }; xbooks.AN_BOOKS[71] = { key: 'betrivers_an_71', title: 'BetRivers?' }; }
   log('an books', JSON.stringify(xbooks.AN_BOOKS));
