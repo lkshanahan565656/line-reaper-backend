@@ -1,7 +1,8 @@
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
 // One ranked list of what's worth betting right now, across the app: Sharp
-// Tail entries, esports exchange edges, esports props, exchange value and
-// exchange arbs. Each
+// Tail entries, esports exchange edges, esports props, sports props (the PROPS
+// board's sharp-priced pick'em plays), sportsbook lines and player props,
+// exchange value and exchange arbs. Each
 // row says what to bet, where, at what price, how many units and why.
 //
 // The ranking leans on the RESULTS scoreboard (results.js): every live play is
@@ -21,6 +22,8 @@
 const { sportKey, statKind } = require('./tracker');
 const { moveText } = require('./steam');
 const { moverText } = require('./movers');
+const { canonName } = require('./ev');
+const { idOf: sportPropId } = require('./sporttrack');
 
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -88,6 +91,32 @@ function evidence(p) {
   const name = p.play === 'all' ? `every ${p.label} play` : `${p.label}: ${p.play}`;
   const stat = p.avgClv != null ? `${p.avgClv > 0 ? '+' : ''}${(p.avgClv * 100).toFixed(1)}% CLV` : p.roi != null ? `${p.roi > 0 ? '+' : ''}${(p.roi * 100).toFixed(1)}% ROI` : null;
   return `${p.verdict} (${name}${stat ? `, ${stat}` : ''} over ${p.n} bets)`;
+}
+
+// What a play type's record says so far, at any verdict, from its most
+// specific cut with a graded bet: "record so far (Sports props: NFL): 3-2,
+// +1.4% CLV over 5" or, with nothing graded, "not graded yet".
+function recordIndex(plays = []) {
+  const by = new Map();
+  for (const p of plays) by.set(`${p.source}|${p.by || 'all'}|${p.play}`, p);
+  const SOURCES = require('./results').SOURCES;
+  return (source, labels) => {
+    const def = SOURCES[source];
+    const found = [];
+    for (const cut of def ? def.cuts : []) {
+      const vals = cut.map(k => labels[k]);
+      if (vals.some(v => v == null || v === '')) continue;
+      const p = by.get(`${source}|${cut.join('+')}|${vals.join(' · ')}`);
+      if (p) found.push(p);
+    }
+    const p = found.sort((a, b) => b.by.split('+').length - a.by.split('+').length || b.n - a.n)[0] || by.get(`${source}|all|all`);
+    if (!p || !(p.graded > 0 || p.clvN > 0)) return 'not graded yet';
+    const name = p.play === 'all' ? p.label : `${p.label}: ${p.play}`;
+    const parts = [];
+    if (p.graded) parts.push(`${p.wins}-${p.losses}${p.units != null ? ` (${p.units > 0 ? '+' : ''}${p.units}u)` : ''}`);
+    if (p.avgClv != null) parts.push(`${p.avgClv > 0 ? '+' : ''}${(p.avgClv * 100).toFixed(1)}% CLV over ${p.clvN}`);
+    return `record so far (${name}): ${parts.join(', ')}`;
+  };
 }
 
 // ¼ Kelly on a binary contract that costs c and wins with probability p
@@ -270,10 +299,12 @@ function dfsBet(r) {
   if (r.market === 'anytime_td' && r.point === 0.5) return r.side === 'Over' ? 'Scores a touchdown' : 'No touchdown';
   return `${r.side === 'Over' ? 'More' : 'Less'} than ${r.point} ${propName(r.market)}`;
 }
-function dfsRows(rows, o, now) {
+function dfsRows(rows, o, now, skip = new Set()) {
   const out = [];
   for (const r of rows) {
     if (!r.dfs || r.ev == null || r.ev / 100 < o.propMinEv) continue;
+    // the PROPS board's play on the same leg carries the record: it goes in instead
+    if (skip.has(sportPropKey(r.player, r.book, r.side, r.point))) continue;
     const start = ms(r.start);
     if (start == null || start <= now) continue;
     const book = r.book === 'underdog' ? 'Underdog' : r.book === 'prizepicks' ? 'PrizePicks' : r.book === 'sleeper' ? 'Sleeper' : r.book;
@@ -288,12 +319,77 @@ function dfsRows(rows, o, now) {
   return out;
 }
 
+// The PROPS board's flagged sports plays (sportprops.js): each pick'em book's
+// line priced on Pinnacle's devigged prop, Kalshi's ladder and the other apps,
+// the same plays the sports props record (sporttrack.js) follows and grades.
+// 1u each, as graded. flagged: [{ row, play, kind }] with kind 'gap' or 'ev'.
+const SOURCE_NAMES = { pinnacle: 'Pinnacle', kalshi: 'Kalshi', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
+const sportPropKey = (player, book, side, line) => `${canonName(player)}|${book}|${side}|${Number(line)}`;
+function boardPropRows(flagged, verdict, record, o, now) {
+  const rows = [], dropped = [], seen = new Set();
+  for (const { row, play: p, kind } of flagged) {
+    if (!row || !p || !['gap', 'ev'].includes(kind) || !(p.ev / 100 >= o.propMinEv)) continue;
+    const start = ms(row.startTime);
+    if (start == null || start <= now) continue;
+    const key = sportPropKey(row.player, p.book, p.side, p.line);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const venue = SOURCE_NAMES[p.book] || bookName(p.book);
+    const labels = { kind: kind === 'gap' ? 'line gap' : 'sharp price', sport: row.sport, book: venue, stat: row.mkey };
+    const vd = verdict('sportsProps', labels);
+    const title = `${row.player}${row.team ? ` (${row.team})` : ''}`;
+    if (vd.avoid) { dropped.push({ kind: 'sportsProp', title, play: vd.avoid.play }); continue; }
+    // the sharp prices first: "Pinnacle 47% over 5.5, Underdog 6.5, Sleeper 6.5"
+    const src = [...(p.sources || [])].sort((a, b) => (b.book === 'pinnacle') - (a.book === 'pinnacle') || (b.book === 'kalshi') - (a.book === 'kalshi'))
+      .map(x => (['pinnacle', 'kalshi'].includes(x.book) ? `${SOURCE_NAMES[x.book]} ${x.p}% over ${x.line}` : `${SOURCE_NAMES[x.book] || x.book} ${x.line}`));
+    const why = [`fair ${(p.fair * 100).toFixed(1)}% to hit from ${src.join(', ')}`];
+    if (kind === 'gap' && p.gap) why.unshift(`line gap: ${p.gap.vs.map(v => `${SOURCE_NAMES[v.book] || v.book} has ${v.line}`).join(', ')}`);
+    why.push(vd.play ? evidence(vd.play) : record('sportsProps', labels));
+    rows.push({
+      id: `sprop:${sportPropId(row, p)}`, kind: 'sportsProp', label: `${String(row.sport || '').toUpperCase()} ${kind === 'gap' ? 'line gap' : 'prop'}`, title,
+      bet: dfsBet({ market: row.mkey, side: p.side, point: p.line }), venue, price: null, american: null, maxPrice: null,
+      units: 1, ev: r4(p.ev / 100), verdict: vd.verdict, why, url: null, startsAt: row.startTime, at: null, warning: null,
+    });
+  }
+  return { rows, dropped, keys: seen };
+}
+
+// sportsbook player props the EV screen prices above fair: FanDuel's and
+// BetRivers' props against Pinnacle's devigged prop (freebooks.js), judged on
+// the +EV screener's own record. Sized like a game line.
+function bookPropRows(lines, verdict, record, o, now) {
+  const rows = [], dropped = [];
+  for (const r of lines) {
+    if (r.dfs || !r.player || r.ev == null || r.ev / 100 < o.lineMinEv || r.ev / 100 > o.lineMaxEv) continue;
+    if (!(r.decimal > 1) || !(r.fairProb > 0) || r.point == null) continue;
+    const start = ms(r.start), seen = ms(r.updated);
+    if (start == null || start <= now || seen == null || now - seen > o.lineMaxAgeMs) continue;
+    if (r.source !== 'sharp' && !(r.books >= o.lineMinBooks)) continue;
+    const labels = { sport: r.sport, book: r.book, market: r.market };
+    const vd = verdict('ev', labels);
+    if (vd.avoid) { dropped.push({ kind: 'bookProp', title: r.player, play: vd.avoid.play }); continue; }
+    const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
+    const units = kellyUnits(r.fairProb / 100, 1 / r.decimal, cap, o);
+    if (!(units > 0)) continue;
+    const ref = (r.sharpBooks || []).length ? r.sharpBooks.map(bookName).join(', ') : `${r.books} books`;
+    const why = [`fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice} (${r.fairProb}%) from ${ref}, ${bookName(r.book)} pays ${r.price > 0 ? '+' : ''}${r.price}`];
+    why.push(vd.play ? evidence(vd.play) : record('ev', labels));
+    rows.push({
+      id: `bprop:${r.group}|${r.side}|${r.book}`, kind: 'bookProp', label: `${String(r.sport || '').toUpperCase()} player prop`, title: `${r.player}${r.event ? ` · ${r.event}` : ''}`,
+      bet: dfsBet({ market: r.market, side: r.side, point: r.point }), venue: bookName(r.book), price: null, american: r.price, maxPrice: null,
+      units, ev: r4(r.ev / 100), verdict: vd.verdict, why, url: null, startsAt: r.start, at: r.updated, warning: null,
+    });
+  }
+  return { rows, dropped };
+}
+
 // sportsbook game lines the EV screen (ev.js) prices above fair, from the
 // Odds API. Sized like an esports edge: ¼ Kelly, capped until proven.
 const BOOK_NAMES = {
   draftkings: 'DraftKings', fanduel: 'FanDuel', betmgm: 'BetMGM', williamhill_us: 'Caesars', caesars: 'Caesars', betrivers: 'BetRivers',
   espnbet: 'ESPN Bet', fanatics: 'Fanatics', hardrockbet: 'Hard Rock', hard_rock_bet: 'Hard Rock', ballybet: 'Bally Bet', betparx: 'BetPARX',
   bovada: 'Bovada', betonlineag: 'BetOnline', lowvig: 'LowVig', mybookieag: 'MyBookie', betus: 'BetUS', betanysports: 'BetAnySports',
+  prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper',
   pinnacle: 'Pinnacle', novig: 'Novig', prophetx: 'ProphetX', kalshi: 'Kalshi', polymarket: 'Polymarket', fliff: 'Fliff', bet365: 'Bet365',
 };
 const bookName = k => BOOK_NAMES[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -427,19 +523,21 @@ function entryRows(picks, propRowIds, o, now) {
 }
 
 // { signals, matches, picks, arbs, plays } → { rows (ranked), dropped, counts }
-function bestPlays({ signals = [], matches = [], picks = [], props = [], lines = [], arbs = [], value = [], middles = [], plays = [] } = {}, opts = {}) {
+function bestPlays({ signals = [], matches = [], picks = [], props = [], sportProps = [], lines = [], arbs = [], value = [], middles = [], plays = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const now = o.now ?? Date.now();
-  const verdict = verdictIndex(plays);
+  const verdict = verdictIndex(plays), record = recordIndex(plays);
   const esArbs = [];
   for (const m of matches) {
     const start = ms(m.start);
     if (m.live || (start != null && start <= now)) continue;
     for (const a of m.arbs || []) esArbs.push({ match: m, arb: a });
   }
-  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now), middleRows(middles, verdict, o, now)];
+  const board = boardPropRows(sportProps, verdict, record, o, now);
+  const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now), middleRows(middles, verdict, o, now),
+    board, bookPropRows(lines, verdict, record, o, now)];
   const propIds = new Set(parts[2].rows.map(r => r.id));
-  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now), ...arbRows(arbs, esArbs, o)];
+  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now, board.keys), ...arbRows(arbs, esArbs, o)];
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};
@@ -447,4 +545,4 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], lines =
   return { rows: rows.slice(0, o.limit), total: rows.length, counts, dropped: parts.flatMap(p => p.dropped) };
 }
 
-module.exports = { bestPlays, verdictIndex, valueSignal, kellyUnits, DEFAULTS };
+module.exports = { bestPlays, verdictIndex, recordIndex, valueSignal, kellyUnits, DEFAULTS };

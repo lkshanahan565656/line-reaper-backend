@@ -200,3 +200,64 @@ test('a narrower cut that beats the close lifts an avoid on its parent cut, neve
   const all = require("../bestplays").verdictIndex([{ source: 'exchangeValue', play: 'all', verdict: 'avoid', n: 30 }, play('sport', 'afccl', 'promising')]);
   assert.ok(all('exchangeValue', { signal: 'steam', sport: 'afccl' }).avoid);
 });
+
+test("the PROPS board's sharp-priced plays: in Best Plays, ranked by their record, one row per leg", () => {
+  const start = iso(3 * 3600e3);
+  const boardRow = (player, o = {}) => ({ key: `NFL|${player}|rec_yds`, sport: 'NFL', player, team: 'LV', mkey: 'rec_yds', market: 'Receiving Yards', startTime: start, books: {}, ...o });
+  const play = (o = {}) => ({ book: 'prizepicks', side: 'Over', line: 5.5, mult: 1, fair: 0.6, ev: 6.7, n: 2,
+    sources: [{ book: 'underdog', line: 6.5, p: 50 }, { book: 'pinnacle', line: 6.5, p: 52.1 }], gap: null, ...o });
+  const flagged = [
+    { row: boardRow('Tory Horton'), play: play(), kind: 'ev' },
+    // the same leg twice (two kinds): one row
+    { row: boardRow('Tory Horton'), play: play(), kind: 'gap' },
+    { row: boardRow('Brock Bowers'), play: play({ book: 'underdog', side: 'Under', line: 60.5, ev: 3, gap: { vs: [{ book: 'sleeper', line: 58.5 }], pts: 2, probPts: 7 } }), kind: 'gap' },
+    { row: boardRow('Thin'), play: play({ ev: 1 }), kind: 'ev' },
+    { row: boardRow('Started', { startTime: iso(-60e3) }), play: play(), kind: 'ev' },
+    { row: boardRow('Research'), play: play(), kind: 'gap-odd' },
+  ];
+  // the same Horton leg off the EV screen's exact-line match: the board's play stands in for it
+  const dfs = { dfs: true, ev: 5, start, book: 'prizepicks', sharpBooks: ['pinnacle'], group: 'g', side: 'Over', point: 5.5, market: 'rec_yds', sport: 'nfl', player: 'Tory Horton', fairProb: 60 };
+  const out = bestPlays({ sportProps: flagged, props: [dfs] }, { now: NOW });
+  const rows = out.rows.filter(r => r.kind === 'sportsProp');
+  assert.deepEqual(rows.map(r => r.title), ['Tory Horton (LV)', 'Brock Bowers (LV)']);
+  const [h, b] = rows;
+  assert.equal(h.bet, 'More than 5.5 receiving yards');
+  assert.equal(h.venue, 'PrizePicks');
+  assert.equal(h.units, 1);
+  assert.equal(h.ev, 0.067);
+  assert.equal(h.verdict, 'early');
+  assert.match(h.why[0], /fair 60.0% to hit from Pinnacle 52.1% over 6.5, Underdog 6.5/);
+  assert.equal(h.why.at(-1), 'not graded yet');
+  assert.match(b.why[0], /line gap: Sleeper has 58.5/);
+  assert.equal(b.label, 'NFL line gap');
+
+  // with a record: its verdict and numbers show, and an early one still shows what it has
+  const rec = (i, o = {}) => ({ id: `s${i}`, kind: 'gap', status: 'graded', outcome: i < 7 ? 'win' : 'loss', profit: i < 7 ? 0.78 : -1, closeEv: 4, execOk: true, sport: 'NFL', signalBook: 'UD', mkey: 'rec_yds', startTime: iso(-86400e3), ...o });
+  const { plays } = scoreboard({ sportsProps: [...Array.from({ length: 9 }, (_, i) => rec(i)), rec('r', { kind: 'gap-odd' })] });
+  const ranked = bestPlays({ sportProps: flagged, plays }, { now: NOW }).rows.filter(r => r.kind === 'sportsProp');
+  assert.deepEqual(ranked.map(r => r.verdict), ['promising', 'promising']);
+  assert.match(ranked[1].why.at(-1), /^promising \(Sports props: NFL · rec_yds, \+4.0% CLV over 9 bets\)/);
+  const few = scoreboard({ sportsProps: Array.from({ length: 4 }, (_, i) => rec(i)) }).plays;
+  const early = bestPlays({ sportProps: flagged, plays: few }, { now: NOW }).rows.filter(r => r.kind === 'sportsProp');
+  assert.match(early[1].why.at(-1), /^record so far \(Sports props: line gap · Underdog\): 4-0 \(\+3.12u\), \+4.0% CLV over 4/);
+  assert.equal(scoreboard({ sportsProps: [rec('x', { kind: 'gap-stale' })] }).sources.sportsProps.overall.n, 0, 'research rows are not plays');
+});
+
+test('sportsbook player props: priced off Pinnacle, sized like a line, on their own chip', () => {
+  const prop = (id, o = {}) => ({
+    group: `g${id}|rec_yds|davante adams|64.5`, sport: 'nfl', event: 'Raiders @ Chiefs', start: iso(3 * 3600e3), market: 'rec_yds', player: 'Davante Adams', point: 64.5,
+    side: 'Over', book: 'betrivers', price: -105, decimal: 1.952, fairProb: 54, fairPrice: -117, ev: 5.4, source: 'sharp',
+    sharpBooks: ['pinnacle'], books: 2, updated: iso(-60e3), ...o,
+  });
+  const { rows, counts } = bestPlays({ lines: [prop('ok'), prop('thin', { ev: 1 }), prop('stale', { updated: iso(-2 * 3600e3) }), prop('started', { start: iso(-60e3) })] }, { now: NOW });
+  assert.equal(counts.bookProp, 1);
+  assert.equal(counts.bookLine, undefined, 'a player prop is not a game line');
+  const [r] = rows;
+  assert.equal(r.bet, 'More than 64.5 receiving yards');
+  assert.equal(r.title, 'Davante Adams · Raiders @ Chiefs');
+  assert.equal(r.venue, 'BetRivers');
+  assert.equal(r.american, -105);
+  assert.ok(r.units > 0 && r.units <= 1);
+  assert.match(r.why[0], /fair -117 \(54%\) from Pinnacle, BetRivers pays -105/);
+  assert.equal(r.why.at(-1), 'not graded yet');
+});
