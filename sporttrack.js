@@ -1,0 +1,173 @@
+// ─── SPORTS PROPS RECORD ──────────────────────────────────────────────────────
+// Every sports pick'em play sportprops.js flags is logged once, at the line
+// and payout shown, and followed to the end:
+//
+//   exec   the first read of that book at least lagMs after the flag: was the
+//          same line and side still up at the same payout or better? A play
+//          that was gone by then was never something a subscriber could take.
+//   close  until the game starts, each read keeps the books' lines and the
+//          fair (the other books and Kalshi) at OUR signal line, so CLV is
+//          the chance our ticket wins as the market stood at the start.
+//   grade  ESPN's box score settles it (sportgrade.js). A player who didn't
+//          play, or a box that never shows him, is void after voidAfterMs.
+//
+// Rows: open → locked (game started) → graded | void.
+
+const { canonName } = require('./ev');
+const { gapOutcome } = require('./esgaps');
+
+const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35;
+const r2 = x => Math.round(x * 100) / 100;
+const r4 = x => Math.round(x * 1e4) / 1e4;
+
+// What one leg pays per unit if it wins, as decimal odds: the book's own
+// per-leg price (PrizePicks legs are priced at
+// the 56.22% breakeven the app's EV math uses, 1.78 a leg).
+function legDecimal(book, mult) {
+  const m = Number(mult) || 1;
+  if (book === 'prizepicks') return 1 / PP_IMPLIED;
+  if (book === 'underdog') return m > UD_DECIMAL ? m : m / UD_IMPLIED;
+  return m;
+}
+
+const idOf = (row, p) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}`;
+const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
+
+function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
+  const ready = store.init();
+  const open = new Map();
+  const loaded = ready.then(async () => { for (const b of await store.all()) if (b.status === 'open' || b.status === 'locked') open.set(b.id, b); });
+  const put = b => store.put(b).catch(e => log.warn?.(`Sports record: ${e.message}`));
+
+  // rows: the props board's sports rows. flagged: [{ row, play, kind }].
+  // fairAt(row, book, line) → P(over) on the other sources now, or null.
+  // updated: { prizepicks: iso, ... } when each book's lines were last read.
+  async function record({ rows = [], flagged = [], fairAt, updated = {} } = {}) {
+    await loaded;
+    const t = now();
+    const writes = [];
+    for (const { row, play, kind } of flagged) {
+      const id = idOf(row, play);
+      if (open.has(id)) continue;
+      const start = Date.parse(row.startTime || '');
+      if (!(start > t)) continue;
+      const decimal = legDecimal(play.book, play.mult);
+      const b = {
+        id, status: 'open', kind, sport: row.sport, player: row.player, team: row.team || '', matchTitle: row.matchTitle || '',
+        market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
+        signalAt: new Date(t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
+        signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
+        signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
+        gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
+        closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(),
+      };
+      open.set(id, b);
+      writes.push(put(b));
+    }
+    const byKey = new Map(rows.map(r => [r.key, r]));
+    for (const b of open.values()) {
+      if (b.status !== 'open') continue;
+      const start = Date.parse(b.start);
+      const row = byKey.get(b.rowKey);
+      if (t < start) {
+        if (!row) continue;
+        let dirty = false;
+        const cell = row.books?.[b.book];
+        // the executable check, on the first fresh read of the book lagMs on
+        const read = Date.parse(updated[b.book] || '');
+        if (b.execOk == null && read >= Date.parse(b.signalAt) + lagMs) {
+          const sideOpen = cell && (b.signalSide === 'Over' ? cell.overOpen : cell.underOpen);
+          const mult = cell ? (b.signalSide === 'Over' ? cell.over : cell.under) ?? 1 : null;
+          b.execOk = !!(cell && sideOpen && cell.line === b.signalLine && mult >= b.signalMult - 0.005);
+          b.execAt = new Date(read).toISOString();
+          b.execLine = cell?.line ?? null;
+          dirty = true;
+        }
+        const lines = linesOf(row);
+        if (JSON.stringify(lines) !== JSON.stringify(b.closeLines)) { b.closeLines = lines; dirty = true; }
+        const pOver = fairAt ? fairAt(row, b.book, b.signalLine) : null;
+        if (pOver != null) {
+          const fair = r4(b.signalSide === 'Over' ? pOver : 1 - pOver);
+          if (fair !== b.closeFair) { b.closeFair = fair; dirty = true; }
+        }
+        if (dirty) { b.closeAt = new Date(t).toISOString(); writes.push(put(b)); }
+        continue;
+      }
+      // the game started: freeze the close
+      b.status = 'locked';
+      b.lockedAt = new Date(t).toISOString();
+      b.closeEv = r2((b.closeFair * b.signalDecimal - 1) * 100);
+      b.fairMove = r2((b.closeFair - b.signalFair) * 100);
+      b.gapOutcome = gapOutcome({ gapVs: b.gapVs, signalLine: b.signalLine, signalBook: b.signalBook, closeLines: b.closeLines });
+      writes.push(put(b));
+    }
+    await Promise.all(writes);
+  }
+
+  // Locked rows a few hours past the start go to the grader
+  async function grade({ afterMs = 3.5 * 3600e3, max = 60 } = {}) {
+    await loaded;
+    if (!grader) return { graded: 0 };
+    const t = now();
+    let graded = 0, voided = 0, tried = 0;
+    for (const b of [...open.values()]) {
+      if (b.status !== 'locked' || t - Date.parse(b.start) < afterMs) continue;
+      if (tried++ >= max) break;
+      let g = null;
+      try { g = await grader.grade(b); } catch (e) { log.warn?.(`Sports grader: ${e.message}`); continue; }
+      if (g && !g.pending && g.outcome) {
+        Object.assign(b, { status: 'graded', result: g.result, outcome: g.outcome, eventId: g.eventId || null, gradedAt: new Date(t).toISOString(),
+          profit: g.outcome === 'win' ? r4(b.signalDecimal - 1) : g.outcome === 'loss' ? -1 : 0 });
+        open.delete(b.id); graded++;
+        await put(b);
+      } else if (t - Date.parse(b.start) > voidAfterMs) {
+        Object.assign(b, { status: 'void', voidReason: g?.pending ? 'never final' : 'no box score line', gradedAt: new Date(t).toISOString() });
+        open.delete(b.id); voided++;
+        await put(b);
+      }
+    }
+    return { graded, voided };
+  }
+
+  function stats(list) {
+    const execd = list.filter(b => b.execOk != null);
+    const live = list.filter(b => b.status !== 'open');
+    const g = list.filter(b => b.status === 'graded' && b.outcome !== 'push');
+    const wins = g.filter(b => b.outcome === 'win').length;
+    const units = g.reduce((a, b) => a + (b.profit || 0), 0);
+    const exec = g.filter(b => b.execOk === true);
+    const avg = (l, f) => (l.length ? r2(l.reduce((a, b) => a + f(b), 0) / l.length) : null);
+    return {
+      signals: list.length, open: list.filter(b => b.status === 'open').length,
+      execChecked: execd.length, execShare: execd.length ? r2(execd.filter(b => b.execOk).length / execd.length) : null,
+      closed: live.length, closeEvAvg: avg(live, b => b.closeEv ?? 0), fairMoveAvg: avg(live, b => b.fairMove ?? 0),
+      movedOurWay: live.filter(b => b.fairMove > 0.5).length, movedAgainst: live.filter(b => b.fairMove < -0.5).length,
+      graded: g.length, wins, losses: g.length - wins, hitRate: g.length ? r4(wins / g.length) : null,
+      breakeven: g.length ? r4(g.length / g.reduce((a, b) => a + b.signalDecimal, 0)) : null,
+      units: r2(units), roi: g.length ? r4(units / g.length) : null, avgEv: avg(list, b => b.signalEv),
+      // the record that counts: only plays still up at the next read
+      execGraded: exec.length, execUnits: r2(exec.reduce((a, b) => a + (b.profit || 0), 0)), execRoi: exec.length ? r4(exec.reduce((a, b) => a + (b.profit || 0), 0) / exec.length) : null,
+      gapOutcomes: list.reduce((a, b) => { if (b.gapOutcome) a[b.gapOutcome] = (a[b.gapOutcome] || 0) + 1; return a; }, {}),
+    };
+  }
+  async function summary({ sinceDays } = {}) {
+    await loaded;
+    const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
+    const all = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
+    const by = f => {
+      const m = {};
+      for (const b of all) (m[f(b)] ||= []).push(b);
+      return Object.fromEntries(Object.entries(m).map(([k, l]) => [k, stats(l)]).sort((a, b) => b[1].signals - a[1].signals));
+    };
+    return { overall: stats(all), byKind: by(b => b.kind), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
+      voided: (await store.all()).filter(b => b.status === 'void').length };
+  }
+  async function list({ status, limit = 100 } = {}) {
+    await loaded;
+    return (await store.all()).filter(b => !status || b.status === status).sort((a, b) => Date.parse(b.signalAt) - Date.parse(a.signalAt)).slice(0, limit);
+  }
+  return { record, grade, summary, list, ready: () => loaded, store };
+}
+
+module.exports = { createSportTracker, legDecimal, idOf, CODE };

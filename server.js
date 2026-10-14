@@ -645,6 +645,9 @@ const { sportKey: trackerSportKey, statKind: trackerStatKind, clvKind } = requir
 const escal = require('./escal');
 const esmarket = require('./esmarket');
 const esgaps = require('./esgaps');
+const sportProps = require('./sportprops');
+const { createSportTracker } = require('./sporttrack');
+const { createSportsGrader } = require('./sportgrade');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
@@ -665,6 +668,12 @@ const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
+const sportTracker = createSportTracker({
+  store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
+  grader: createSportsGrader({ http: axios }),
+});
+sportTracker.ready().catch(e => console.error('Sports props tracker: store failed to initialise:', e.message));
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -4244,8 +4253,70 @@ function propsBoardRows() {
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
-  propsBoardCache = { at: Date.now(), rows, counts: propsBoard.counts(rows) };
+  const sportPlays = priceSportRows(rows);
+  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length }, sportPlays };
   return propsBoardCache;
+}
+
+// ── SPORTS PROPS: the other books and Kalshi as the fair (sportprops.js) ──
+// Kalshi's price alone was the fair before; now each book's line is priced on
+// every other source on the row, Kalshi counting as two books. A play is
+// flagged only where something says more than two books' noise: Kalshi's own
+// price at that line ('ev'), or the book sitting off two or more others that
+// agree ('gap'). Flagged plays are tracked (sporttrack.js) and graded off
+// ESPN's box scores (sportgrade.js).
+const SPORT_OPTS = { ...sportProps.DEFAULTS,
+  minEv: process.env.SPORT_PROPS_MIN_EV != null ? parseFloat(process.env.SPORT_PROPS_MIN_EV) : sportProps.DEFAULTS.minEv,
+  minProbPts: process.env.SPORT_GAP_MIN_PTS != null ? parseFloat(process.env.SPORT_GAP_MIN_PTS) : sportProps.DEFAULTS.minProbPts };
+// Kalshi's P(over) at each book line on the row, from priceRows' c.fair
+const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
+function sportFairAt(row, book, line) {
+  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), o: SPORT_OPTS });
+  return f ? f.p : null;
+}
+function priceSportRows(rows) {
+  const flagged = [];
+  for (const row of rows) {
+    if (row.esports) continue;
+    const kalshi = rowKalshi(row);
+    const plays = sportProps.rowPlays(row, { kalshi, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    // a cell keeps a price only where Kalshi backs it or it's a gap
+    for (const [book, c] of Object.entries(row.books)) {
+      const mine = plays.filter(p => p.book === book && (c.fair != null || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1) };
+      else if (c.fair == null) delete c.ev;
+    }
+    let best = null;
+    for (const p of plays) {
+      const kind = sportProps.playKind(p, SPORT_OPTS);
+      if (!kind) continue;
+      flagged.push({ row, play: p, kind });
+      if (!best) best = { p, kind };
+    }
+    if (best) {
+      const { p, kind } = best;
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: kind === 'gap' ? 'gap' : 'kalshi', kind,
+        n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
+    } else if (row.best && row.best.source === 'kalshi') {
+      // Kalshi's price alone, now blended with the other books
+      const top = plays.find(p => row.books[p.book]?.fair != null);
+      row.best = top ? { book: top.book, side: top.side, ev: top.ev, fair: +(top.fair * 100).toFixed(1), line: top.line, source: 'kalshi', kind: null, n: top.n } : null;
+    }
+  }
+  return flagged;
+}
+// Every two minutes after the scrapes: flag, check two minutes on, keep the close
+let sportTrackRunning = false;
+async function trackSportProps() {
+  if (sportTrackRunning) return;
+  sportTrackRunning = true;
+  try {
+    propsBoardCache.at = 0;
+    const { rows, sportPlays } = propsBoardRows();
+    const updated = { prizepicks: ppState.fullAt ? new Date(ppState.fullAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
+  } catch (e) { console.warn('Sports props record:', e.message); }
+  finally { sportTrackRunning = false; }
 }
 app.get('/api/props/board', (req, res) => {
   const { rows, counts } = propsBoardRows();
@@ -4254,7 +4325,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1' });
+  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1' });
   const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
   const offset = Math.max(0, parseInt(req.query.offset) || 0);
   let page = hits.slice(offset, offset + limit);
@@ -4264,6 +4335,16 @@ app.get('/api/props/board', (req, res) => {
     rows: page, total: hits.length, offset, limit, pro, counts,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// The sports props record: free to see, like every other record. Open legs
+// are today's plays, so only finished ones are free.
+app.get('/api/props/record', async (req, res) => {
+  res.json({ ...(await sportTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), minEv: SPORT_OPTS.minEv, gapMinPts: SPORT_OPTS.minProbPts });
+});
+app.get('/api/props/record/picks', async (req, res) => {
+  const status = hasPro(req) ? req.query.status : (['locked', 'graded'].includes(req.query.status) ? req.query.status : 'graded');
+  res.json({ picks: await sportTracker.list({ status, limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
 });
 
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
@@ -4791,6 +4872,8 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// Sports props record: grade locked legs off ESPN box scores
+schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
@@ -4804,6 +4887,7 @@ function esportsLinesSig() {
 }
 schedule('*/2 * * * *', async () => {
   await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
+  trackSportProps().catch(() => {});
   const sig = esportsLinesSig();
   if (esLinesSig && sig !== esLinesSig) esPicksOnce().catch(() => {});
   esLinesSig = sig;
