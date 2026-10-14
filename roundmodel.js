@@ -16,8 +16,9 @@
 //
 // Fit on 16,021 bo3.gg CS2 maps (test Apr-Oct 2026, 67,204 player maps):
 // with the rounds known, RMSE 4.05 kills a map against 5.45 for the
-// player's own kills a map; calibrated within 2-4 points a band. Valorant
-// fit on vlr.gg maps (see VAL below). Untested: how close Pinnacle's
+// player's own kills a map; calibrated within 2-4 points a band. Valorant,
+// 9,465 vlr.gg maps Jul 2025-Oct 2026 (test Mar-Oct 2026, 43,375 player
+// maps): 4.13 against 5.19, within about 2 points a band. Untested: how close Pinnacle's
 // pregame rounds sit to the rounds played (no Pinnacle history); the spread of
 // q around q0 is read off the shape of Pinnacle's own ladders.
 //
@@ -40,17 +41,19 @@ const DEFAULTS = {
   // no pregame strength the bo3.gg maps want 16-20: that spread is partly
   // which team is better, which Pinnacle's q0 already carries.
   kappa: { CS2: 35, VAL: 35 },
-  // a winning team's players take more of the kills a round: fit 0.9 (RMSE 4.40 → 4.05)
+  // a winning team's players take more of the kills a round: fit 0.9 in both
+  // (CS2 RMSE 4.40 → 4.05, Valorant 4.47 → 4.13)
   beta: { CS2: 0.9, VAL: 0.9 },
-  // variance over mean of a player's kills with the rounds known
-  nbk: { CS2: 1.13, VAL: 1.13 },
-  kpr0: { CS2: 0.667, VAL: 0.72 },
+  // variance over mean of a player's kills with the rounds known (Valorant
+  // 1.14 by moments, 1.3 calibrates its bands within about 2 points)
+  nbk: { CS2: 1.13, VAL: 1.3 },
+  kpr0: { CS2: 0.667, VAL: 0.697 },
   // both teams' kills a round add to a near-constant (CS2 6.66, sd 0.59 a
-  // map over 16,021 maps; s-tier 6.55): with both lineups known the ten
-  // players' rates are scaled to it, so a profile source that runs hot or
-  // cold across the board doesn't tilt every line one way
-  matchKpr: { CS2: 6.6, VAL: 7.2 },
-  avgRounds: { CS2: 21.5, VAL: 22.0 },
+  // map over 16,021 maps, s-tier 6.55; Valorant 6.96, sd 0.32 over 9,465):
+  // with both lineups known the ten players' rates are scaled to it, so a
+  // profile source that runs hot or cold doesn't tilt every line one way
+  matchKpr: { CS2: 6.6, VAL: 6.95 },
+  avgRounds: { CS2: 21.4, VAL: 21.0 },
   shrinkMaps: 8,     // maps of the game's average kills a round mixed into a player's
   minMaps: 6,        // fewer and his kills a round is a guess
   need: 5,           // a team's players with a rate before its lineup counts as known
