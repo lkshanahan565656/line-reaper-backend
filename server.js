@@ -3302,7 +3302,12 @@ const ESPORTS_OPTS = {
 };
 const ESPORTS_ALERT_MIN = parseFloat(process.env.ESPORTS_ALERT_MIN || '0.04');
 const ESPORTS_REALERT_MS = 6 * 3600e3;
-const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS });
+// Pinnacle's guest feed is the sharp fair for esports exchange bets: one switch,
+// PINNACLE=on, covers it with the player-props fair (PINNACLE_PROPS=on and a
+// PINNACLE_GUEST_KEY also count). Not a licensed feed: with PAYWALL=on it
+// pauses until PINNACLE_DATA_OK (licences.js).
+const pinnacleOn = () => !!process.env.PINNACLE_GUEST_KEY || ['PINNACLE', 'PINNACLE_PROPS'].some(k => /^(on|1|true|yes)$/i.test(String(process.env[k] || '').trim()));
+const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS, pinnacle: () => ({ on: pinnacleOn(), key: process.env.PINNACLE_GUEST_KEY || '' }) });
 const esportsEdgeSeen = new Map();
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
@@ -3330,7 +3335,7 @@ function esportsEdgeRows(matches, venueOk = () => true) {
       if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
       rows.push({
         group: `${m.id}|${e.market}|${e.venue}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
-        market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'esboard',
+        market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: e.refSource === 'pinnacle' ? 'esboard-pin' : 'esboard',
       });
     }
   }

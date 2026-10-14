@@ -1475,7 +1475,7 @@ body.no-help .clv-info { display:none; }
   </div>
 
   <div id="esMatchesPane">
-    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources.</div>
+    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources.</div>
     <div class="esm-bar" id="esmGames"></div>
     <div class="esm-bar" id="esmToggles"></div>
     <div id="esmSummary" class="esm-summary"></div>
@@ -4085,16 +4085,16 @@ function esmMatchCard(m) {
       <div class="esm-row">${esmAvatar(oc.name)}
         <div class="esm-name"><b>${escEs(oc.name)}</b>${form(i)}</div>
         <div class="esm-fair ${oc.fair != null && oc.fair === fav ? 'fav' : ''}">${oc.fair != null ? `<b>${esmPct(oc.fair)}</b><small>FAIR</small>` : ''}</div>
-        <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}</div>
+        <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}${oc.quotes.pinnacle ? `<span class="esm-px ref"><small>Pinnacle</small>${esmPct(oc.quotes.pinnacle.prob)}</span>` : ''}</div>
       </div>`).join('') : m.teams.map((t, i) => `<div class="esm-row">${esmAvatar(t)}<div class="esm-name"><b>${escEs(t)}</b>${form(i)}</div><div></div><div class="esm-prices">${i === 0 ? '<span class="esm-sub" style="margin:0">No match price yet</span>' : ''}</div></div>`).join('');
   const f0 = main && main.outcomes[0].fair != null ? Math.round(main.outcomes[0].fair * 100) : null;
   const meter = f0 != null ? `<div class="esm-split" title="Fair: ${escEs(main.outcomes[0].name)} ${f0}%, ${escEs(main.outcomes[1]?.name || '')} ${100 - f0}%"><i style="width:${f0}%"></i><i style="flex:1"></i></div>` : '';
-  const detail = open ? `<div class="esm-table-wrap"><table class="esm-table"><tr><th>Market</th><th>Pick</th><th>Kalshi</th><th>Polymarket</th><th>Book</th><th>Fair</th><th>Ratings</th></tr>${
+  const detail = open ? `<div class="esm-table-wrap"><table class="esm-table"><tr><th>Market</th><th>Pick</th><th>Kalshi</th><th>Polymarket</th><th>Book</th><th>Pinnacle</th><th>Fair</th><th>Ratings</th></tr>${
     m.markets.map(mk => mk.outcomes.map((oc, i) => `<tr>
       <td>${i === 0 ? esmMarketName(mk) : ''}</td><td>${escEs(oc.name)}</td>
       <td class="${oc.quotes.kalshi?.edge ? 'good' : ''}">${oc.quotes.kalshi?.ask != null ? esmCents(oc.quotes.kalshi.cost) : '—'}</td>
       <td class="${oc.quotes.polymarket?.edge ? 'good' : ''}">${oc.quotes.polymarket?.ask != null ? esmCents(oc.quotes.polymarket.cost) : '—'}</td>
-      <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
+      <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${oc.quotes.pinnacle ? esmPct(oc.quotes.pinnacle.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
   }</table></div>${esmH2hDetail(m)}${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps)${m.rating.scale != null && m.rating.scale !== 1 ? `, calibrated to the market (gap x${m.rating.scale.toFixed(2)})` : ''}. Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
   return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
