@@ -1,0 +1,4 @@
+Wed Oct 14 03:26:05 UTC 2026
+03:26:05 already listed (not timed): 4 updated 2026-10-14T03:25:13.203Z counts {"pairs":6171,"kalshiPriced":1611,"screened":177,"books":119,"read":30,"edges":4,"steaming":0,"steam":0,"watched":6627,"steamPoints":114364,"steamRestored":6699,"moverBets":0,"depthReads":4,"depthChecked":{"kalshi":3,"polymarketus":1},"executable":2}
+
+=== polls 18, failed 0, flags timed 0
