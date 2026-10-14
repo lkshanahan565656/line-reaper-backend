@@ -80,6 +80,10 @@ const DEFAULTS = {
   // prices UD's over and PP's under as edges alike). A gap play needs the odd
   // book against at least two other sources.
   gapMinSources: 2,
+  // A gap wider than this many points of win chance is two different games or
+  // markets merged on one row (a preseason line next to opening night's), not
+  // a soft book (2026-10-14: PrizePicks 17.5 vs 26.5 on Tatum read as 36).
+  maxProbPts: 25,
 };
 
 // Fair P(over) at `line` for one book, from every OTHER source on the row:
@@ -161,6 +165,7 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
 const hasSharp = p => p.sources.some(s => s.book === 'pinnacle' || s.book === 'kalshi');
 function playKind(p, o = DEFAULTS) {
   if (!p || p.ev < o.minEv) return null;
+  if (p.gap && p.gap.probPts > o.maxProbPts) return null;
   const gap = p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources;
   if (gap && hasSharp(p)) return 'gap';
   // no gap: a sharp price says it, Pinnacle at any line or Kalshi at this one
@@ -171,7 +176,7 @@ function playKind(p, o = DEFAULTS) {
 // the odd book's soft side ('gap-odd') and the opposite side at the stale
 // books' line ('gap-stale'). plays: rowPlays output for the row.
 function researchGap(plays, o = DEFAULTS) {
-  const odd = plays.find(p => p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources && !hasSharp(p));
+  const odd = plays.find(p => p.gap && p.gap.probPts >= o.minProbPts && p.gap.probPts <= o.maxProbPts && p.n >= o.gapMinSources && !hasSharp(p));
   if (!odd) return [];
   const flip = odd.side === 'Over' ? 'Under' : 'Over';
   const stale = plays.filter(p => p.book !== odd.book && p.side === flip && odd.gap.vs.some(v => v.book === p.book)).sort((a, b) => b.ev - a.ev)[0];

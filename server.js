@@ -4278,7 +4278,7 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
 function sportFairAt(row, book, line) {
-  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinPropsIndex.get(row.key), o: SPORT_OPTS });
+  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quoteFor(pinPropsIndex, row), o: SPORT_OPTS });
   return f ? f.p : null;
 }
 function priceSportRows(rows) {
@@ -4286,7 +4286,7 @@ function priceSportRows(rows) {
   for (const row of rows) {
     if (row.esports) continue;
     const kalshi = rowKalshi(row);
-    const pin = pinPropsIndex.get(row.key);
+    const pin = pinprops.quoteFor(pinPropsIndex, row);
     if (pin) row.pinnacle = { line: pin.line, over: pin.over, under: pin.under, pOver: +(pin.pOver * 100).toFixed(1) };
     const plays = sportProps.rowPlays(row, { kalshi, pin, dfsEv: dfsLegEv, o: SPORT_OPTS });
     // lines apart but the payouts even it out (UD 249.5 at Higher 1.29x vs
@@ -4314,7 +4314,7 @@ function priceSportRows(rows) {
     if (!best) for (const x of sportProps.researchGap(plays, SPORT_OPTS)) flagged.push({ row, ...x, research: true });
     if (best) {
       const { p, kind } = best;
-      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: kind === 'gap' ? 'gap' : pin ? 'pinnacle' : 'kalshi', kind,
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: p.sources.some(x => x.book === 'pinnacle') ? 'pinnacle' : p.sources.some(x => x.book === 'kalshi') ? 'kalshi' : 'gap', kind,
         n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
     } else if (pin || (row.best && row.best.source === 'kalshi')) {
       // a sharp price, blended with the other books: the row's best, +EV or not

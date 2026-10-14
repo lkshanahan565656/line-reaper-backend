@@ -41,3 +41,28 @@ test("Pinnacle's price counts as three books and makes a play on its own", () =>
   const off = sp.fairFor({ ...row, books: { prizepicks: { line: 4.5, overOpen: true, underOpen: true } } }, 'prizepicks', 4.5, { pin: { line: 3.5, pOver: 0.62 } });
   assert.ok(off.p < 0.5 && off.p > 0.4);
 });
+
+test('a Pinnacle quote only prices the same game', () => {
+  const q = (start, line) => ({ key: 'NBA|jaysontatum|points', line, pOver: 0.51, start });
+  const idx = pin.indexProps([q('2026-10-20T19:00:00Z', 26.5), q('2026-10-14T23:30:00Z', 18.5)]);
+  const row = t => ({ key: 'NBA|jaysontatum|points', startTime: t });
+  assert.equal(pin.quoteFor(idx, row('2026-10-14T19:30:00.000-04:00')).line, 18.5);
+  assert.equal(pin.quoteFor(idx, row('2026-10-20T15:00:00.000-04:00')).line, 26.5);
+  // tonight's preseason game, Pinnacle only up for opening night: no quote
+  const only = pin.indexProps([q('2026-10-20T19:00:00Z', 26.5)]);
+  assert.equal(pin.quoteFor(only, row('2026-10-14T19:30:00.000-04:00')), null);
+  assert.equal(pin.quoteFor(only, row('')), null);
+});
+
+test('a gap too wide to be one game is never a play', () => {
+  const dfsEv = (p, book) => (book === 'prizepicks' ? (p / 0.5622 - 1) * 100 : (p * 1.8 - 1) * 100);
+  const row = { sport: 'NBA', mkey: 'points', player: 'Jayson Tatum', books: {
+    prizepicks: { line: 17.5, over: null, under: null, overOpen: true, underOpen: true },
+    sleeper: { line: 26.5, over: 1.8, under: 1.76, overOpen: true, underOpen: true } } };
+  const plays = sp.rowPlays(row, { pin: { line: 26.5, pOver: 0.513 }, dfsEv });
+  const top = plays[0];
+  assert.equal(top.book, 'prizepicks');
+  assert.ok(top.gap.probPts > 25);
+  assert.equal(sp.playKind(top), null);
+  assert.deepEqual(sp.researchGap(plays), []);
+});

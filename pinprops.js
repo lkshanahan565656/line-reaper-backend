@@ -86,7 +86,28 @@ async function fetchPinnacleProps(http, key = '', leagues = LEAGUES) {
   return { props, errors };
 }
 
-// board row key → the Pinnacle quote for it
-const indexProps = props => new Map((props || []).map(p => [p.key, p]));
+// board row key → every Pinnacle quote for it (a player can have props up for
+// two games at once)
+function indexProps(props) {
+  const idx = new Map();
+  for (const p of props || []) { if (!idx.has(p.key)) idx.set(p.key, []); idx.get(p.key).push(p); }
+  return idx;
+}
+// The quote for one board row: the same game only. Pinnacle posts opening
+// night while the pick'em apps still list tonight's preseason game (Tatum 17.5
+// points on PrizePicks vs 26.5 at Pinnacle, 2026-10-14), so a quote more than
+// slackMs from the row's start is a different game, never a fair.
+function quoteFor(idx, row, slackMs = 3 * 3600e3) {
+  const list = idx?.get(row?.key);
+  if (!list?.length) return null;
+  const t = Date.parse(row.startTime || '');
+  if (!t) return null;
+  let best = null;
+  for (const q of list) {
+    const d = Math.abs(Date.parse(q.start) - t);
+    if (d <= slackMs && (!best || d < best.d)) best = { q, d };
+  }
+  return best ? best.q : null;
+}
 
-module.exports = { LEAGUES, STAT, parseDescription, devigPower, parseLeague, fetchPinnacleProps, indexProps };
+module.exports = { LEAGUES, STAT, parseDescription, devigPower, parseLeague, fetchPinnacleProps, indexProps, quoteFor };
