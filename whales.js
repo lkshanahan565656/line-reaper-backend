@@ -686,6 +686,18 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
     return rows;
   }
 
+  // every stored print (both exchanges, taker side), oldest first: since (ms)
+  // and minUsd filter; copies without the whale event
+  function printList({ since = null, minUsd = 0 } = {}) {
+    const out = [];
+    for (const p of prints.values()) {
+      if ((since != null && p.at < since) || !(p.notional >= minUsd - EPS)) continue;
+      const { event, tradeIds, ...rest } = p;
+      out.push(rest);
+    }
+    return out.sort((a, b) => a.at - b.at);
+  }
+
   function state() {
     const t = now(), start = t - o.windowMs;
     const recent = feed.filter(e => Date.parse(e.at) >= start);
@@ -698,7 +710,7 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
     };
   }
 
-  return { poll, pollKalshi, pollPolymarket, ingestKalshi, ingestPolymarket, events, flow, state, settings: () => o };
+  return { poll, pollKalshi, pollPolymarket, ingestKalshi, ingestPolymarket, events, flow, prints: printList, state, settings: () => o };
 }
 
 module.exports = {

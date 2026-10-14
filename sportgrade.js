@@ -159,7 +159,31 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     const g = gradeLeg(pick, await box(pick.sport, ev.id));
     return g ? { ...g, eventId: ev.id } : null;
   }
-  return { grade };
+  // a game's final score: game { league (board key: NFL, CFB, ...), home,
+  // away, start } → { home, away } (points) | { pending: true } | null
+  async function gradeGame(game) {
+    if (!LEAGUES[game.league]) return null;
+    const t = Date.parse(game.start || '');
+    if (!t) return null;
+    const pick = { startTime: game.start, team: game.home, matchTitle: `${game.away} @ ${game.home}` };
+    let ev = null;
+    for (const d of new Set([ymd(t), ymd(t + 6 * 3600e3)])) { ev = findEvent(await board(game.league, d), pick); if (ev) break; }
+    if (!ev) return null;
+    if (!ev.status?.type?.completed) return { pending: true };
+    return scoreOf(ev, game);
+  }
+  return { grade, gradeGame };
 }
 
-module.exports = { LEAGUES, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd };
+// ESPN's competitors → our home and away points, each side found by name
+// (a neutral site can list our home team as away)
+function scoreOf(ev, game) {
+  const comps = ev?.competitions?.[0]?.competitors || [];
+  const find = name => comps.find(c => eventHasTeam({ competitions: [{ competitors: [c] }] }, [name]));
+  const h = find(game.home), a = find(game.away);
+  if (!h || !a || h === a) return null;
+  const hp = parseFloat(h.score), ap = parseFloat(a.score);
+  return Number.isFinite(hp) && Number.isFinite(ap) ? { home: hp, away: ap } : null;
+}
+
+module.exports = { LEAGUES, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };
