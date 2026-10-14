@@ -1,0 +1,24 @@
+name: diag-esgrade
+on:
+  push:
+    branches: [diag-esgrade]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: timeout 1500 node diag/probe.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-esgrade-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-esgrade-out
