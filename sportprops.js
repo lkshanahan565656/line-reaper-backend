@@ -151,12 +151,31 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
 }
 
 // A play worth flagging: +EV at its book by minEv, and a gap of minProbPts
-// when it's a gap play. kind 'gap' (its book off the others) or 'ev'.
+// when it's a gap play. kind 'gap' (its book off the others, with a sharp
+// price behind the fair) or 'ev' (a sharp price alone says it).
+//
+// Without a sharp price a sports gap doesn't say which side is soft: in the
+// 2026-10-14 lifetime study the other apps usually moved TO the odd one, so
+// the odd line was often the right one. Those gaps aren't plays; researchGap
+// tracks both directions until the record says which beats the close.
+const hasSharp = p => p.sources.some(s => s.book === 'pinnacle' || s.book === 'kalshi');
 function playKind(p, o = DEFAULTS) {
   if (!p || p.ev < o.minEv) return null;
-  if (p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources) return 'gap';
+  const gap = p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources;
+  if (gap && hasSharp(p)) return 'gap';
   // no gap: a sharp price says it, Pinnacle at any line or Kalshi at this one
-  return p.sources.some(s => s.book === 'pinnacle' || (s.book === 'kalshi' && s.line === p.line)) ? 'ev' : null;   // no gap and no Kalshi: just the books' noise
+  return p.sources.some(s => s.book === 'pinnacle' || (s.book === 'kalshi' && s.line === p.line)) ? 'ev' : null;
 }
 
-module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, DEFAULTS };
+// An unpriced gap (no sharp source) → its two directions to track, not to show:
+// the odd book's soft side ('gap-odd') and the opposite side at the stale
+// books' line ('gap-stale'). plays: rowPlays output for the row.
+function researchGap(plays, o = DEFAULTS) {
+  const odd = plays.find(p => p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources && !hasSharp(p));
+  if (!odd) return [];
+  const flip = odd.side === 'Over' ? 'Under' : 'Over';
+  const stale = plays.filter(p => p.book !== odd.book && p.side === flip && odd.gap.vs.some(v => v.book === p.book)).sort((a, b) => b.ev - a.ev)[0];
+  return [{ play: odd, kind: 'gap-odd' }, ...(stale ? [{ play: stale, kind: 'gap-stale' }] : [])];
+}
+
+module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS };

@@ -17,6 +17,7 @@ const { canonName } = require('./ev');
 const { gapOutcome } = require('./esgaps');
 
 const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+const RESEARCH = new Set(['gap-odd', 'gap-stale']);
 const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35;
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -154,13 +155,17 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   async function summary({ sinceDays } = {}) {
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
-    const all = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
+    const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
+    // research rows (gap-odd, gap-stale) are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
       return Object.fromEntries(Object.entries(m).map(([k, l]) => [k, stats(l)]).sort((a, b) => b[1].signals - a[1].signals));
     };
-    return { overall: stats(all), byKind: by(b => b.kind), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
+    const byKind = {};
+    for (const b of every) (byKind[b.kind] ||= []).push(b);
+    return { overall: stats(all), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
       voided: (await store.all()).filter(b => b.status === 'void').length };
   }
   async function list({ status, limit = 100 } = {}) {

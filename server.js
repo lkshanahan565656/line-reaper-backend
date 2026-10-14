@@ -4257,7 +4257,7 @@ function propsBoardRows() {
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
   const sportPlays = priceSportRows(rows);
-  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -4306,6 +4306,8 @@ function priceSportRows(rows) {
       flagged.push({ row, play: p, kind });
       if (!best) best = { p, kind };
     }
+    // a gap with no sharp price: both directions go in the record, neither on the board
+    if (!best) for (const x of sportProps.researchGap(plays, SPORT_OPTS)) flagged.push({ row, ...x, research: true });
     if (best) {
       const { p, kind } = best;
       row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: kind === 'gap' ? 'gap' : pin ? 'pinnacle' : 'kalshi', kind,
@@ -4341,7 +4343,7 @@ async function trackSportProps() {
     propsBoardCache.at = 0;
     const { rows, sportPlays } = propsBoardRows();
     const updated = { prizepicks: ppState.fullAt ? new Date(ppState.fullAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.research || x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }

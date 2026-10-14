@@ -3366,7 +3366,8 @@ function renderPropsRecord() {
   const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
   const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
   const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
-  const kinds = ['gap', 'ev'].filter(x => k[x]).map(x => `${x === 'gap' ? 'Line gaps' : 'Kalshi-priced'} ${k[x].signals} flagged, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
+  const KN = { gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side' };
+  const kinds = ['gap', 'ev', 'gap-odd', 'gap-stale'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
     ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;

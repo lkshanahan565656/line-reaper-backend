@@ -32,7 +32,15 @@ test('the odd book out is the soft side, priced on the others', () => {
   assert.ok(best.fair > 0.58 && best.ev > 2);
   assert.ok(best.gap.probPts >= 8);
   assert.deepStrictEqual(best.gap.vs.map(v => v.book).sort(), ['prizepicks', 'sleeper']);
-  assert.strictEqual(sp.playKind(best), 'gap');
+  // with no sharp price the odd line may be the right one: tracked both ways, not a play
+  assert.strictEqual(sp.playKind(best), null);
+  const research = sp.researchGap(plays);
+  assert.deepStrictEqual(research.map(x => [x.kind, x.play.book, x.play.side]).sort(), [['gap-odd', 'underdog', 'Over'], ['gap-stale', research[1].play.book, 'Under']].sort());
+  assert.ok(['prizepicks', 'sleeper'].includes(research[1].play.book));
+  // Kalshi agreeing with the two books makes it a play
+  const k = row({ prizepicks: cell(54.5, null, null), underdog: { ...cell(48.5, 1, 1), fair: 58 }, sleeper: cell(54.5, 1.85, 1.85) });
+  const kp = sp.rowPlays(k, { kalshi: new Map([[48.5, 0.58]]), dfsEv: ev }).find(p => p.book === 'underdog' && p.side === 'Over');
+  assert.strictEqual(sp.playKind(kp), 'gap');
   // books that agree have no gap, and with no Kalshi there's no play
   const flat = sp.rowPlays(row({ prizepicks: cell(54.5), underdog: cell(54.5, 1, 1) }), { dfsEv: ev });
   assert.ok(flat.every(p => !p.gap && sp.playKind(p) == null));
