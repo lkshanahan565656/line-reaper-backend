@@ -15,6 +15,10 @@
 // Same-series pairs with a team get a correlation term on top. Legs from different matches
 // stay independent, which they are.
 //
+// For CS and LoL the within-outcome link is measured, not guessed (FACTORS
+// below): a two-factor latent model fitted to 1,867 finished CS series and
+// ~600 LoL games. Other sports keep the pairwise CORR starting points.
+//
 // Payout tables are the defaults the apps publish. They move, so they are data,
 // not logic, and the caller can pass its own.
 
@@ -22,10 +26,14 @@ const { propProb } = require('./dist');
 
 // payout[legs][hits] = multiplier on the stake. Power plays pay only on a sweep.
 const PAYOUTS = {
-  prizepicks_power: { 2: { 2: 3 }, 3: { 3: 5 }, 4: { 4: 10 }, 5: { 5: 20 }, 6: { 6: 37.5 } },
+  // PrizePicks' minimum-guarantee table (help center "Potential outcomes",
+  // updated 2026-09-09). It lowers these for lineups with several players from
+  // one team or game, so a same-match entry is only worth it at the payout the
+  // app actually shows (breakEvenPays on each priced slip).
+  prizepicks_power: { 2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 20 }, 6: { 6: 37.5 } },
   prizepicks_flex: {
-    3: { 3: 2.25, 2: 1.25 },
-    4: { 4: 5, 3: 1.5 },
+    3: { 3: 3, 2: 1 },
+    4: { 4: 6, 3: 1.5 },
     5: { 5: 10, 4: 2, 3: 0.4 },
     6: { 6: 25, 5: 2, 4: 0.4 },
   },
@@ -43,6 +51,93 @@ const CORR = {
   sameTeam: { kills: -0.12, assists: 0.10, headshots: -0.08 },   // teammates split a fixed pie of kills
   opposingTeam: { kills: -0.05, assists: -0.03, headshots: -0.04 },
 };
+
+// ── measured same-match link (CS, LoL) ───────────────────────────────────────
+// Each leg hits when its latent y = α·M + β·s·D + noise clears its threshold:
+// M is the match (more rounds, a longer game: everyone's numbers go up), D is
+// which side dominates (s = +1 for one team, −1 for the other). Teammates then
+// correlate α²+β², opponents α²−β². An UNDER hits on the low side, so its
+// loadings flip sign. The marginals stay exactly the legs' own probabilities.
+//
+// Fitted on finished series (diag-corr, 2026-10-14), each player's over/under
+// against his own trailing 10-series average, the first half of the sample to
+// fit and the second to check:
+//   CS Maps 1-2 kills: teammates φ +0.23 / +0.19, opponents +0.13 / +0.10;
+//     a 3+3 six-pick of overs hit 6.7% / 6.4% against 1.1% independent. The
+//     fit below says 5.2%, so it under-calls big stacks rather than over-calls.
+//     Unders are a little weaker (overtime gives kills a long upper tail).
+//   CS headshots: teammates φ +0.09, opponents +0.05.
+//   LoL (within a map count): kills teammates φ +0.23, opponents −0.06;
+//     assists teammates +0.50, opponents −0.13.
+// [α², β²] per side.
+const FACTORS = {
+  cs: {
+    kills: { OVER: [0.24, 0.07], UNDER: [0.18, 0.05] },
+    headshots: { OVER: [0.11, 0.03], UNDER: [0.09, 0.02] },
+  },
+  lol: {
+    kills: { OVER: [0.13, 0.22], UNDER: [0.11, 0.18] },
+    assists: { OVER: [0.25, 0.45], UNDER: [0.21, 0.38] },
+  },
+};
+function factorSport(sport) {
+  const s = String(sport || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (s === 'cs' || s === 'cs2' || s === 'csgo' || s === 'counterstrike') return 'cs';
+  if (s === 'lol' || s === 'leagueoflegends') return 'lol';
+  return null;
+}
+function legLoadings(leg) {
+  const f = FACTORS[factorSport(leg.sport)]?.[leg.stat || 'kills'];
+  const side = String(leg.side || '').toUpperCase() === 'UNDER' ? 'UNDER' : 'OVER';
+  if (!f || !leg.team) return null;
+  const [a2, b2] = f[side];
+  const sign = side === 'UNDER' ? -1 : 1;
+  return { a: sign * Math.sqrt(a2), b: sign * Math.sqrt(b2) };
+}
+
+// standard normal cdf and its inverse (bisection is plenty here)
+function phiCdf(x) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989422804014327 * Math.exp(-x * x / 2);
+  const p = d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return x >= 0 ? 1 - p : p;
+}
+function phiInv(p) {
+  let lo = -9, hi = 9;
+  for (let i = 0; i < 70; i++) { const m = (lo + hi) / 2; if (phiCdf(m) < p) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+// Midpoint grid over a standard normal: 32 nodes on [-5, 5]
+const GRID = (() => {
+  const n = 32, out = [];
+  let tot = 0;
+  for (let i = 0; i < n; i++) { const x = -5 + 10 * (i + 0.5) / n; const w = Math.exp(-x * x / 2); out.push([x, w]); tot += w; }
+  return out.map(([x, w]) => [x, w / tot]);
+})();
+
+// P(exactly h hit) for legs sharing a match, under the factor model. Legs
+// without loadings (no team, an unmeasured stat) ride along independent.
+function factorHitsDistribution(probs, loads, teams) {
+  const n = probs.length;
+  const t0 = teams.find(Boolean);
+  const s = teams.map(t => (t && t === t0 ? 1 : -1));
+  const c = probs.map(p => phiInv(1 - Math.min(1 - 1e-9, Math.max(1e-9, p))));
+  const sd = loads.map(l => (l ? Math.sqrt(Math.max(1e-9, 1 - l.a * l.a - l.b * l.b)) : 1));
+  const out = new Array(n + 1).fill(0);
+  for (const [m, wm] of GRID) for (const [d, wd] of GRID) {
+    let dist = [1];
+    for (let i = 0; i < n; i++) {
+      const l = loads[i];
+      const q = l ? 1 - phiCdf((c[i] - l.a * m - l.b * s[i] * d) / sd[i]) : probs[i];
+      const next = new Array(dist.length + 1).fill(0);
+      for (let h = 0; h < dist.length; h++) { next[h] += dist[h] * (1 - q); next[h + 1] += dist[h] * q; }
+      dist = next;
+    }
+    const w = wm * wd;
+    for (let h = 0; h <= n; h++) out[h] += w * dist[h];
+  }
+  return out;
+}
 
 // Legs: { prob, scenarios?, meanPerMap?, k?, stat?, line?, side?, gameId?, team?, player? }
 // A leg with scenarios/meanPerMap/k is re-priced per scenario; one with only
@@ -222,6 +317,8 @@ function hitsDistribution(groupLegs, mapsOf) {
     }
     return dist;
   }
+  const loads = groupLegs.map(legLoadings);
+  if (n > 1 && loads.some(Boolean)) return factorHitsDistribution(probs, loads, groupLegs.map(l => legPlayer({ player: l.team }) || null));
   const w = patternDistribution(probs, (i, j) => pairRho(groupLegs[i], groupLegs[j]));
   const dist = new Array(n + 1).fill(0);
   for (let x = 0; x < w.length; x++) {
@@ -313,6 +410,9 @@ function priceSlip(legs, tableName, payouts = PAYOUTS) {
     ev: +(ev * 100).toFixed(2),
     evIndependent: +(evFromDistribution(indep, table) * 100).toFixed(2),
     kelly: +kelly(dist, table).toFixed(4),
+    // the payout scale at which this entry only breaks even: an app that pays
+    // less than breakEvenScale × the table (a correlated-lineup cut) is -EV
+    breakEvenScale: +(1 / (ev + 1)).toFixed(4),
     // 0.1 points of probability is the floor for calling a slip correlated;
     // below that it's float noise from averaging scenarios.
     correlated: legs.length > 1 && Math.abs((dist[legs.length] ?? 0) - (indep[legs.length] ?? 0)) > 1e-3,
@@ -361,7 +461,7 @@ function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
 }
 
 module.exports = {
-  PAYOUTS, CORR, priceSlip, priceAll, bestSlips, slipHitsDistribution,
+  PAYOUTS, CORR, FACTORS, priceSlip, priceAll, bestSlips, slipHitsDistribution,
   independentHitsDistribution, kelly, evFromDistribution, groupBySeries, pairRho, adjustJoint,
-  hitsDistribution, patternDistribution, seriesLatents, legProbIn,
+  hitsDistribution, patternDistribution, seriesLatents, legProbIn, factorHitsDistribution, legLoadings, factorSport,
 };

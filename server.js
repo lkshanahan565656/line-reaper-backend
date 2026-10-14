@@ -2186,7 +2186,7 @@ async function generateEsportsPicks() {
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
-  try { slipTracker.record(autoSlips(picks).slips).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
+  try { const built = autoSlips(picks); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
@@ -3714,7 +3714,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.99.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.100.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4860,7 +4860,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.99.0',
+  version: '3.100.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

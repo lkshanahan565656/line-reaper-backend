@@ -129,8 +129,8 @@ test('slip EV, payout tables and leg counts', () => {
   assert.ok(S.priceSlip([leg(0.52), leg(0.52)], 'prizepicks_power').ev < 0);
 
   // flex pays something on a near miss, so it survives a weak leg better
-  const three = [leg(0.58), leg(0.58), leg(0.45)];
-  assert.ok(S.priceSlip(three, 'prizepicks_flex').ev > S.priceSlip(three, 'prizepicks_power').ev);
+  const four = [leg(0.58), leg(0.58), leg(0.58), leg(0.40)];
+  assert.ok(S.priceSlip(four, 'prizepicks_flex').ev > S.priceSlip(four, 'prizepicks_power').ev);
 
   assert.equal(S.priceSlip([leg(0.6)], 'prizepicks_power'), null, 'no 1-leg table');
   assert.equal(S.priceSlip([leg(0.6), leg(0.6)], 'nonsense'), null);
