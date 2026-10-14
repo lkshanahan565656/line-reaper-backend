@@ -1,0 +1,30 @@
+name: diag-h2hbr
+on:
+  push:
+    branches: [diag-h2hbr]
+concurrency:
+  group: diag-h2hbr
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/h2h-kill-model-atngil, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
+      - run: MINS=22 timeout 2700 node diag/branch.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-h2hbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-h2hbr-out
