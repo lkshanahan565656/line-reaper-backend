@@ -41,6 +41,7 @@ test('factor model: LoL opponents pull apart on kills, teammates together', () =
 
 test('factor model: unmeasured sports and different matches stay as before', () => {
   const val = [csLeg('A', 0), csLeg('B', 0)].map(l => ({ ...l, sport: 'VAL' }));
+  assert.ok(S.legLoadings({ ...csLeg('A', 0), sport: 'DOTA' }), 'Dota is measured');
   assert.equal(S.legLoadings(val[0]), null);
   const two = S.priceSlip([csLeg('A', 0), { ...csLeg('A', 1), gameId: 'M2' }], 'prizepicks_power');
   close(two.probAll, 0.475 * 0.475, 1e-4);
@@ -96,4 +97,11 @@ test('stack record: one row per match, book and side', async () => {
   const sum = await t.summary();
   assert.equal(sum.stacks.open, 1);
   assert.equal(sum.open, 0, 'Best Slips record untouched');
+});
+
+test('factor model: Dota teammates hit together, opponents a little less often', () => {
+  const dota = (team, i) => ({ ...csLeg(team, i, 'OVER', 0.5), sport: 'DOTA' });
+  const mates = S.slipHitsDistribution([dota('A', 0), dota('A', 1)])[2];
+  const foes = S.slipHitsDistribution([dota('A', 0), dota('B', 0)])[2];
+  assert.ok(mates > 0.27 && foes < 0.25, `${mates} ${foes}`);
 });
