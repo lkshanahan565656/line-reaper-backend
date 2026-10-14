@@ -37,11 +37,15 @@ const PAYOUTS = {
     5: { 5: 10, 4: 2, 3: 0.4 },
     6: { 6: 25, 5: 2, 4: 0.4 },
   },
-  underdog_standard: { 2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 20 } },
+  // Underdog's help center ("Pick'em Standard & Flex Entry Payouts"). Underdog
+  // also moves the multiplier for correlated picks, and shows the new number
+  // while the entry is built.
+  underdog_standard: { 2: { 2: 3.5 }, 3: { 3: 6.5 }, 4: { 4: 12 }, 5: { 5: 20 }, 6: { 6: 35 } },
   underdog_flex: {
-    3: { 3: 3, 2: 1 },
-    4: { 4: 6, 3: 1.5 },
-    5: { 5: 10, 4: 2.5, 3: 0.4 },
+    3: { 3: 3.25, 2: 1.09 },
+    4: { 4: 6, 3: 1.4 },
+    5: { 5: 10, 4: 2.5 },
+    6: { 6: 25, 5: 2.6, 4: 0.25 },
   },
 };
 
