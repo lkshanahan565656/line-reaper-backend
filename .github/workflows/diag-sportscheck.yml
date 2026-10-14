@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-      - run: N=12 timeout 2000 node diag/sports.js || true
+      - run: WAITVER=3.111.0 SETTLE=3 N=4 timeout 2300 node diag/sports.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com

@@ -28,6 +28,8 @@ async function udIndex() {
 (async () => {
   fs.mkdirSync('out', { recursive: true });
   const N = +(process.env.N || 15);
+  for (let i = 0; i < 30 && process.env.WAITVER; i++) { const s = await get('/api/status'); if (s.j?.version === process.env.WAITVER) break; await wait(60e3); }
+  await wait(+(process.env.SETTLE || 0) * 60e3);
   for (let i = 0; i < N; i++) {
     const at = new Date().toISOString();
     const [R, fresh] = await Promise.all([Promise.all(EP.slice(0, 4).map(get)), (async () => {
