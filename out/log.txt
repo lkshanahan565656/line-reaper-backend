@@ -1,0 +1,41 @@
+2026-10-14T04:31:41.220Z cycle 0 pin 200 43 kal 729 took 19923
+2026-10-14T04:33:41.281Z cycle 1 pin 200 43 kal 510 took 14795
+2026-10-14T04:35:41.286Z cycle 2 pin 200 43 kal 238 took 7863
+2026-10-14T04:37:41.357Z cycle 3 pin 200 43 kal 699 took 18394
+2026-10-14T04:39:41.390Z cycle 4 pin 200 43 kal 729 took 19097
+2026-10-14T04:41:41.416Z cycle 5 pin 200 43 kal 616 took 17303
+2026-10-14T04:43:41.497Z cycle 6 pin 200 43 kal 435 took 11484
+2026-10-14T04:45:41.534Z cycle 7 pin 200 43 kal 729 took 16978
+2026-10-14T04:47:41.590Z cycle 8 pin 200 43 kal 646 took 20231
+2026-10-14T04:49:41.633Z cycle 9 pin 200 43 kal 238 took 7814
+2026-10-14T04:51:41.642Z cycle 10 pin 200 43 kal 236 took 7076
+2026-10-14T04:53:41.646Z cycle 11 pin 200 43 kal 236 took 7074
+2026-10-14T04:55:41.714Z cycle 12 pin 200 43 kal 522 took 15220
+2026-10-14T04:57:41.774Z cycle 13 pin 200 43 kal 522 took 15586
+2026-10-14T04:59:41.806Z cycle 14 pin 200 43 kal 522 took 15378
+2026-10-14T05:01:41.838Z cycle 15 pin 200 43 kal 636 took 17283
+2026-10-14T05:03:41.902Z cycle 16 pin 200 43 kal 695 took 18422
+2026-10-14T05:05:41.954Z cycle 17 pin 200 43 kal 301 took 6716
+2026-10-14T05:07:42.026Z cycle 18 pin 200 43 kal 238 took 6955
+2026-10-14T05:09:42.050Z cycle 19 pin 200 43 kal 364 took 10754
+2026-10-14T05:11:42.094Z cycle 20 pin 200 43 kal 729 took 58952
+2026-10-14T05:13:42.094Z cycle 21 pin 200 43 kal 512 took 14828
+2026-10-14T05:15:42.173Z cycle 22 pin 200 43 kal 524 took 15464
+2026-10-14T05:17:42.173Z cycle 23 pin 200 43 kal 709 took 16953
+2026-10-14T05:19:42.253Z cycle 24 pin 200 43 kal 646 took 18008
+2026-10-14T05:21:42.278Z cycle 25 pin 200 43 kal 727 took 18739
+2026-10-14T05:23:42.302Z cycle 26 pin 200 43 kal 666 took 18610
+2026-10-14T05:25:42.326Z cycle 27 pin 200 43 kal 620 took 18302
+2026-10-14T05:27:42.358Z cycle 28 pin 200 43 kal 354 took 10316
+2026-10-14T05:29:42.386Z cycle 29 pin 200 43 kal 510 took 14864
+2026-10-14T05:31:42.443Z cycle 30 pin 200 43 kal 510 took 15410
+2026-10-14T05:33:42.503Z cycle 31 pin 200 43 kal 522 took 17439
+/home/runner/work/line-reaper-backend/line-reaper-backend/diag/eslog.js:17
+    const ms = (mu.j || []).filter(m => m.type === 'matchup');
+                            ^
+
+TypeError: (mu.j || []).filter is not a function
+    at /home/runner/work/line-reaper-backend/line-reaper-backend/diag/eslog.js:17:29
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v20.20.2
