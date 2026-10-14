@@ -38,7 +38,8 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
     for (const e of d.events || []) {
       if (/^KXMVE/.test(e.event_ticker)) continue;
       const ms = (e.markets || []).filter(m => (num(m.volume_fp) ?? m.volume ?? 0) >= MINVOL && (m.result === 'yes' || m.result === 'no' || num(m.settlement_value_dollars) != null));
-      if (ms.length) events.push({ e, ms });
+      const slim = m => ({ ticker: m.ticker, title: m.title, yes_sub_title: m.yes_sub_title, close_time: m.close_time, open_time: m.open_time, expected_expiration_time: m.expected_expiration_time, occurrence_datetime: m.occurrence_datetime, latest_expiration_time: m.latest_expiration_time, settlement_value_dollars: m.settlement_value_dollars, result: m.result, volume_fp: m.volume_fp, strike_type: m.strike_type });
+      if (ms.length) events.push({ e: { event_ticker: e.event_ticker, series_ticker: e.series_ticker, category: e.category, title: e.title, mutually_exclusive: e.mutually_exclusive, markets: { length: (e.markets || []).length }, fee_type_override: e.fee_type_override, fee_multiplier_override: e.fee_multiplier_override }, ms: ms.map(slim) });
     }
     cursor = d.cursor; if (!cursor || !(d.events || []).length) break;
     if (pages % 50 === 0) log('pages', pages, 'events kept', events.length, 'oldest', (d.events || []).slice(-1)[0]?.markets?.[0]?.close_time);
