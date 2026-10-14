@@ -450,8 +450,19 @@ function findMatch(list, game, teams, start, o) {
   return best;
 }
 
+// the same teams' next match within 36 hours after `start`, soonest first
+function findLater(list, game, teams, start, now) {
+  let best = null;
+  for (const m of list) {
+    if (m.game !== game || m.start == null || m.start <= start || m.start > start + 36 * 3600e3) continue;
+    const or = orient(m.teams, teams);
+    if (or && (!best || m.start < best.m.start)) best = { m, or, gap: m.start - start };
+  }
+  return best;
+}
+
 // pm: parsed Polymarket events; kalshi: parsed Kalshi events with .game; book: parsed bo3 matches with .game
-function mergeSources({ pm = [], kalshi = [], book = [], sharp = [] } = {}, opts = {}) {
+function mergeSources({ pm = [], kalshi = [], book = [], sharp = [] } = {}, opts = {}, now = Date.now()) {
   const o = { ...DEFAULTS, ...opts };
   const list = [];
   for (const p of pm) {
@@ -473,7 +484,13 @@ function mergeSources({ pm = [], kalshi = [], book = [], sharp = [] } = {}, opts
   }
   for (const g of groups.values()) {
     const lead = g.parts.find(x => x.markets.some(m => m.kind === 'match')) || g.parts[0];
-    const hit = findMatch(list, g.game, lead.teams, lead.start, o);
+    // A Kalshi ticker keeps the date it was listed with when the match moves
+    // (Solary v Anubis: ticker 13 Oct, played 14 Oct, still open). Past the
+    // lookback it joins the same teams' next match, or leaves the board rather
+    // than show as live for a day.
+    const stale = lead.start != null && lead.start < now - o.lookbackHours * 3600e3;
+    const hit = stale ? findLater(list, g.game, lead.teams, lead.start, now) : findMatch(list, g.game, lead.teams, lead.start, o);
+    if (stale && !hit) continue;
     const match = hit ? hit.m : blankMatch(g.game, { teams: lead.teams, start: lead.start });
     if (!hit) list.push(match);
     match.links.kalshi = lead.url;
@@ -842,7 +859,7 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
       const pin = pinnacle() || {};
       const sharpJob = pin.on ? fetchPinnacle(http, pin.key).catch(e => { errors.push({ source: 'pinnacle', key: 'esports', message: e.message }); return []; }) : Promise.resolve([]);
       const [pm, kalshi, book, sharp] = await Promise.all([Promise.all(pmJobs).then(x => x.flat()), Promise.all(kalshiJobs).then(x => x.flat()), bookJob, sharpJob]);
-      const merged = mergeSources({ pm, kalshi, book, sharp }, o);
+      const merged = mergeSources({ pm, kalshi, book, sharp }, o, t0);
       const matches = buildBoard(merged, { elo: ratings() || {}, moves, now: t0, opts: o, calib: state.calibration });
       const byGame = {};
       for (const m of matches) byGame[m.game] = (byGame[m.game] || 0) + 1;

@@ -1507,6 +1507,7 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip active" data-sport="COD" onclick="toggleEsportsSport('COD',this)">COD</button>
     <button class="sport-chip active" data-sport="DOTA" onclick="toggleEsportsSport('DOTA',this)">DOTA</button>
     <button class="sport-chip active" data-sport="LOL" onclick="toggleEsportsSport('LOL',this)">LOL</button>
+    <button class="sport-chip active" data-sport="R6" onclick="toggleEsportsSport('R6',this)">R6</button>
     <button class="sport-chip" onclick="loadEsports()" style="margin-left:auto;background:rgba(139,92,246,.1);border-color:#8b5cf6;color:#a78bfa">REFRESH</button>
   </div>
 
@@ -4189,8 +4190,9 @@ function renderEsMatches() {
 }
 
 // ─── ESPORTS ─────────────────────────────────────────────────────────────────
+const ES_SPORTS = ['CS', 'VAL', 'COD', 'DOTA', 'LOL', 'R6'];
 let esportsState = {
-  sports: new Set(['CS', 'VAL', 'COD', 'DOTA', 'LOL']),  // multi-select, all on by default
+  sports: new Set(ES_SPORTS),  // multi-select, all on by default
   minEV: 0,
   picks: [],
   search: '',
@@ -4246,15 +4248,15 @@ const esBestEv = p => {
 // be toggles that all started ON, so tapping CS2 removed CS — backwards.)
 function toggleEsportsSport(sport, el) {
   if (sport === 'all') {
-    esportsState.sports = new Set(['CS', 'VAL', 'COD', 'DOTA', 'LOL']);
+    esportsState.sports = new Set(ES_SPORTS);
   } else if (esportsState.sports.size === 1 && esportsState.sports.has(sport)) {
-    esportsState.sports = new Set(['CS', 'VAL', 'COD', 'DOTA', 'LOL']);   // tap again to clear
+    esportsState.sports = new Set(ES_SPORTS);   // tap again to clear
   } else {
     esportsState.sports = new Set([sport]);
   }
   document.querySelectorAll('#esportsSportRow .sport-chip').forEach(c => {
     const s = c.getAttribute('data-sport');
-    if (s === 'all') c.classList.toggle('active', esportsState.sports.size === 5);
+    if (s === 'all') c.classList.toggle('active', esportsState.sports.size === ES_SPORTS.length);
     else if (s) c.classList.toggle('active', esportsState.sports.has(s));
   });
   renderEsports();
@@ -4560,7 +4562,7 @@ function renderSportCounts() {
   document.querySelectorAll('#esportsSportRow .sport-chip[data-sport]').forEach(c => {
     const s = c.dataset.sport;
     const n = s === 'all' ? all.length : all.filter(p => (p.sport || '').toUpperCase().includes(s)).length;
-    const base = { all: 'ALL', CS: 'CS2', VAL: 'VALORANT', COD: 'COD', DOTA: 'DOTA', LOL: 'LOL' }[s] || s;
+    const base = { all: 'ALL', CS: 'CS2', VAL: 'VALORANT', COD: 'COD', DOTA: 'DOTA', LOL: 'LOL', R6: 'R6' }[s] || s;
     c.textContent = n ? `${base} ${n}` : base;
     c.style.opacity = n ? '1' : '.35';
     c.title = n ? `${n} picks` : 'No lines for this sport right now';

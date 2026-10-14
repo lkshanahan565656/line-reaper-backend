@@ -155,6 +155,7 @@ function mixtureProb(line, side, scenarios, meanPerMap, k, normalCDF) {
 // "academy" is NOT stripped: T1 Academy is a different team from T1.
 function teamKey(n) {
   return (n || '').toLowerCase()
+    .replace(/['’]s\b/g, '')   // "Yakult's Brothers" is "Yakult Brothers"
     .replace(/\b(team|esports?|gaming|club)\b/g, '')
     .replace(/[^a-z0-9]/g, '');
 }

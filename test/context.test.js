@@ -238,3 +238,9 @@ test('team codes: PrizePicks codes find the one priced team they abbreviate', ()
   book.set({ sport: 'LOL', teamA: 'KT Challengers', teamB: 'Gen.G Global', pA: 0.5, bestOf: 3, source: 'exchanges' });
   assert.equal(book.lookup('LoL', 'KT', null), null);
 });
+
+test('teamsMatch: a possessive is the same team', () => {
+  const { teamsMatch } = require('../context');
+  assert.ok(teamsMatch("Yakult's Brothers", 'Yakult Brothers'));
+  assert.ok(teamsMatch('Yakult’s Brothers', 'Yakult Brothers'));
+});
