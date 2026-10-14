@@ -114,12 +114,6 @@ function parseSleeperLines(rows, players = {}, { sports = false } = {}) {
   return lines;
 }
 
-// Esports sports Sleeper lists, for fetching only the player tables needed
-function sleeperEsportsKeys(rows) {
-  const s = new Set();
-  for (const r of Array.isArray(rows) ? rows : []) if (SLEEPER_ESPORTS[String(r.sport || '').toLowerCase()]) s.add(String(r.sport).toLowerCase());
-  return [...s];
-}
 // Every sport key with lines, esports and sports
 function sleeperSportKeys(rows) {
   const s = new Set();
@@ -166,4 +160,4 @@ function sleeperPricing(prob, mult, otherMult) {
   return { ev: flag ? null : (p * mult - 1) * 100, implied: implied * 100, flag, gap: gap * 100 };
 }
 
-module.exports = { parsePrizePicksPayload, parseSleeperLines, sleeperEsportsKeys, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
+module.exports = { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };

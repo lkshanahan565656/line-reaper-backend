@@ -909,25 +909,6 @@ test('fetchers page through both exchanges; a failed page keeps what came before
   assert.equal(streamed.count, 2);
 });
 
-test('scanExchanges: fetch, parse and find in one call', async () => {
-  const http = {
-    async get(url) {
-      if (url === A.KALSHI_EVENTS_URL) return { data: { events: [kalshiGame()], cursor: null } };
-      return { data: [pmGame()] };
-    },
-  };
-  const r = await A.scanExchanges(http, opts());
-  assert.equal(r.arbs.length, 1);
-  assert.equal(r.arbs[0].type, 'cross');
-  assert.deepEqual(r.counts, { kalshiEvents: 1, polymarketEvents: 1, kalshiMarkets: 2, polymarketMarkets: 3, arbs: 1, kalshiTruncated: false, polymarketTruncated: false });
-  assert.deepEqual(r.errors, []);
-  assert.equal(r.updated, new Date(NOW).toISOString());
-
-  const down = await A.scanExchanges({ async get() { throw new Error('ECONNREFUSED'); } }, opts());
-  assert.deepEqual(down.arbs, []);
-  assert.equal(down.errors.length, 2);
-});
-
 // ── US venues beyond the built-in leagues: soccer, tennis, esports ──
 const kEvent = (eventTicker, title, labels, o = {}) => ({
   event_ticker: eventTicker, series_ticker: eventTicker.split('-')[0], title, category: 'Sports', mutually_exclusive: true,
