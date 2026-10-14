@@ -63,3 +63,39 @@ test('mergeGames + ev.screen: the books score against Pinnacle in one market', (
 test('bookmakerFor: a game whose teams do not both land is left out', () => {
   assert.equal(fb.bookmakerFor({ book: 'fanduel', home: 'New York Yankees', away: 'Boston Red Sox', h2h: [{ name: 'x', price: 100 }], spreads: [], totals: [] }, pinGame), null);
 });
+
+test('player props: FanDuel and Kambi parse, Pinnacle joins, ev.screen prices them', () => {
+  const hr = (type, name, odds, handicap) => ({ ...runner(type, name, odds, handicap), runnerStatus: 'ACTIVE' });
+  const fdEv = { attachments: { markets: {
+    p: { bettingType: 'MOVING_HANDICAP', marketStatus: 'OPEN', marketName: 'Shohei Ohtani - Total Bases', runners: [hr('OVER', 'Shohei Ohtani Over', 120, 1.5), hr('UNDER', 'Shohei Ohtani Under', -150, 1.5)] },
+    q: { bettingType: 'MOVING_HANDICAP', marketStatus: 'OPEN', marketName: 'Shohei Ohtani - 1st Inning Hits', runners: [hr('OVER', 'Shohei Ohtani Over', 300, 0.5), hr('UNDER', 'Shohei Ohtani Under', -500, 0.5)] },
+    r: { bettingType: 'MOVING_HANDICAP', marketStatus: 'OPEN', marketName: 'Freddy Peralta - Total Receptions', runners: [hr('OVER', 'Freddy Peralta Over', -110, 3.5), hr('UNDER', 'Freddy Peralta Under', -110, 3.5)] },
+  } } };
+  const fd = fb.parseFanDuelProps(fdEv);
+  assert.deepEqual(fd.map(p => [p.player, p.mkey, p.line]), [['Shohei Ohtani', 'total_bases', 1.5], ['Freddy Peralta', 'receptions', 3.5]]);
+  const kb = fb.kambiProps({ betOffers: [
+    { criterion: { englishLabel: 'Total Bases by the Player - Including Extra Innings' }, outcomes: [
+      { type: 'OT_OVER', participant: 'Ohtani, Shohei', line: 1500, oddsAmerican: '105', status: 'OPEN' },
+      { type: 'OT_UNDER', participant: 'Ohtani, Shohei', line: 1500, oddsAmerican: '-135', status: 'OPEN' }] },
+    { criterion: { englishLabel: 'Total Hits by the Player - Inning 1' }, outcomes: [
+      { type: 'OT_OVER', participant: 'Ohtani, Shohei', line: 500, oddsAmerican: '300', status: 'OPEN' },
+      { type: 'OT_UNDER', participant: 'Ohtani, Shohei', line: 500, oddsAmerican: '-500', status: 'OPEN' }] },
+  ] });
+  assert.deepEqual(kb, [{ player: 'Shohei Ohtani', mkey: 'total_bases', line: 1.5, over: 105, under: -135 }]);
+  const fdGame = { ...fb.parseFanDuel(fdPage, NOW)[0], props: fd };
+  const kbGame = { ...fb.parseKambiEvent(kbEvent, NOW), props: kb };
+  const pinProps = [
+    { sport: 'MLB', player: 'Shohei Ohtani', mkey: 'total_bases', line: 1.5, over: 110, under: -130, start: '2026-10-15T00:00:00.000Z' },
+    { sport: 'MLB', player: 'Shohei Ohtani', mkey: 'total_bases', line: 1.5, over: 110, under: -130, start: '2026-10-18T00:00:00.000Z' },   // another game
+    { sport: 'MLB', player: 'Aaron Judge', mkey: 'total_bases', line: 1.5, over: 110, under: -130, start: '2026-10-15T00:00:00.000Z' },     // no book prices him
+  ];
+  const games = fb.mergeGames('mlb', [pinGame], [fdGame, kbGame], { pinProps });
+  const pinTb = games[0].bookmakers[0].markets.find(m => m.key === 'total_bases');
+  assert.equal(pinTb.outcomes.length, 2);
+  const rows = ev.screen({ feeds: [{ sport: 'mlb', games }], now: NOW, minEv: -100 });
+  const over = rows.find(r => r.book === 'fanduel' && r.player === 'Shohei Ohtani' && r.side === 'Over');
+  assert.equal(over.source, 'sharp');
+  assert.ok(over.ev > 0);   // +120 against Pinnacle's +110 / -130
+  assert.ok(rows.find(r => r.book === 'betrivers' && r.player === 'Shohei Ohtani' && r.side === 'Over').ev < 0);
+  assert.ok(!rows.some(r => r.player === 'Freddy Peralta'));   // no Pinnacle price, no fair
+});

@@ -3720,7 +3720,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.103.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.104.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4353,13 +4353,18 @@ const freebooks = require('./freebooks');
 const FREE_BOOK_PIN_SPORTS = { football: pingames.SPORTS.football, basketball: pingames.SPORTS.basketball, hockey: pingames.SPORTS.hockey, baseball: pingames.SPORTS.baseball };
 const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.FREE_BOOKS || '').trim()), games: {}, counts: {}, errors: [], updated: null, ms: null };
 let freeBooksRunning = false;
+let freeBooksPropsAt = 0;
+const freeBooksPropCache = new Map();
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
   freeBooksRunning = true;
   const t0 = Date.now();
   try {
     const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: FREE_BOOK_PIN_SPORTS });
-    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games);
+    // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
+    const fdProps = Date.now() - freeBooksPropsAt > 110e3;
+    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache });
+    if (fdProps) freeBooksPropsAt = Date.now();
     if (pin.games.length) freeBooksState.games = games;
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
@@ -4866,7 +4871,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.103.0',
+  version: '3.104.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
