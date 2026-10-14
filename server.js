@@ -2422,6 +2422,8 @@ function evFeeds() {
   };
   // Kalshi player ladders price the pick'em lines (kprops.js); sport comes per game
   if (kpropsState.games.length) feeds.push({ sport: null, label: 'kalshi-props', games: kpropsState.games, updated: kpropsState.updated });
+  // Pinnacle + FanDuel + BetRivers game lines (refreshFreeBooks)
+  for (const [s, games] of Object.entries(freeBooksState.games)) add(s, 'free-odds', { data: games, updated: freeBooksState.updated });
   for (const [s, key] of Object.entries(EV_SPORTS)) {
     add(s, 'owls-odds', cache.owlsOdds[s]);
     add(s, 'owls-props', cache.owlsProps[s]);
@@ -2436,6 +2438,15 @@ const EV_ALERT_MIN = process.env.EV_ALERT_MIN != null ? parseFloat(process.env.E
 const evListeners = new Set();
 const evSeen = new Map();
 let evRecent = [];
+// Books whose +EV record has earned the webhook: EV_PROVEN_N closed bets with
+// a two-minute price, beating the close by EV_PROVEN_CLV % on average there.
+// Refreshed every 5 minutes from the tracker; empty until a book proves out.
+const EV_PROVEN_N = parseInt(process.env.EV_PROVEN_N) || 50, EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
+let evBookProven = new Set();
+async function refreshEvProof() {
+  const { byBook } = await evTracker.summary();
+  evBookProven = new Set(Object.entries(byBook || {}).filter(([, x]) => x.execN >= EV_PROVEN_N && x.avgExecClv >= EV_PROVEN_CLV).map(([b]) => b));
+}
 function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
@@ -2452,7 +2463,9 @@ function runEvScreen(force = false) {
       evRecent = [...fresh, ...evRecent].slice(0, 200);
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
-      const posted = fresh.filter(evRowOk(webhookLicence()));
+      // and only from a book whose own record, graded two minutes after each
+      // flag, beats Pinnacle's close (evBookProven)
+      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => r.dfs || evBookProven.has(r.book));
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
@@ -3701,7 +3714,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.98.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.99.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4324,6 +4337,28 @@ function priceSportRows(rows) {
   }
   return flagged;
 }
+// Free game lines (freebooks.js): Pinnacle's no-vig fair plus FanDuel's and
+// BetRivers' prices for NFL, college football, NBA, WNBA, NHL and MLB, in the
+// Odds API's shape, so the +EV screener and its CLV tracker run without an
+// Odds API key (the exchanges attach to them like any game-line feed). On with
+// PINNACLE=on; FREE_BOOKS=off turns the books off. Every minute.
+const pingames = require('./pingames');
+const freebooks = require('./freebooks');
+const FREE_BOOK_PIN_SPORTS = { football: pingames.SPORTS.football, basketball: pingames.SPORTS.basketball, hockey: pingames.SPORTS.hockey, baseball: pingames.SPORTS.baseball };
+const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.FREE_BOOKS || '').trim()), games: {}, counts: {}, errors: [], updated: null, ms: null };
+let freeBooksRunning = false;
+async function refreshFreeBooks() {
+  if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
+  freeBooksRunning = true;
+  const t0 = Date.now();
+  try {
+    const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: FREE_BOOK_PIN_SPORTS });
+    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games);
+    if (pin.games.length) freeBooksState.games = games;
+    Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { freeBooksState.errors = [e.message]; }
+  finally { freeBooksRunning = false; }
+}
 // Pinnacle's player props (pinprops.js): on with PINNACLE=on (PINNACLE_ON),
 // behind the pinnacle licence like its esports prices. Every 5 minutes.
 const pinprops = require('./pinprops');
@@ -4825,7 +4860,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.98.0',
+  version: '3.99.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -4833,6 +4868,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   pinnacleProps: pinPropsState,
+  freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, ms: freeBooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -4907,6 +4943,8 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
+schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 schedule('2,7,12,17,22,27,32,37,42,47,52,57 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));

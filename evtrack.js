@@ -152,7 +152,10 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       const n = list.length;
       if (!n) return { n: 0 };
       const avg = f => r2(list.reduce((a, b) => a + f(b), 0) / n);
-      return { n, avgEvAtFlag: avg(b => b.evAtFlag), avgClv: avg(b => b.clv), beatClosePct: r2(100 * list.filter(b => b.clv > 0).length / n) };
+      // graded again at the price two minutes after the flag (execClv), where a subscriber gets in
+      const ex = list.filter(b => b.execClv != null);
+      const exec = ex.length ? { execN: ex.length, avgExecClv: r2(ex.reduce((a, b) => a + b.execClv, 0) / ex.length), execBeatPct: r2(100 * ex.filter(b => b.execClv > 0).length / ex.length) } : { execN: 0 };
+      return { n, avgEvAtFlag: avg(b => b.evAtFlag), avgClv: avg(b => b.clv), beatClosePct: r2(100 * list.filter(b => b.clv > 0).length / n), ...exec };
     };
     const by = key => {
       const g = {};
