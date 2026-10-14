@@ -14,7 +14,7 @@ for (const r of rows) {
   if (!(r.pay === 0 || r.pay === 1)) continue;
   const ct = Date.parse(r.close);
   // anchor: scheduled start (expected expiration - GAMEH), independent of the outcome
-  const anchor = ANCHOR === 'close' ? ct : Date.parse(r.exp) - GAMEH * 3600e3;
+  const anchor = ANCHOR === "close" ? ct : Date.parse(r.exp) - GAMEH * 3600e3;
   if (!Number.isFinite(anchor)) continue;
   const c = r.c.map(x => [Math.round((anchor - (ct - x[0] * 60e3)) / 60e3), ...x.slice(1)]).sort((a, b) => a[0] - b[0]); // minutes before anchor
   for (const h of H) {
