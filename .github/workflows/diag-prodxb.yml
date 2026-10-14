@@ -1,17 +1,21 @@
-name: diag-mb
+name: diag-prodxb2
 on:
   push:
-    branches: [diag-mb]
+    branches: [diag-prodxb2]
 permissions:
   contents: write
 jobs:
   diag:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - run: |
+          U=https://line-reaper-backend-production.up.railway.app
           mkdir out
-          for id in 1 4 6; do curl -s -A "Mozilla/5.0" -H "Accept: application/json" "https://api.matchbook.com/edge/rest/events?sport-ids=$id&per-page=300&include-prices=true&price-depth=3&states=open&odds-type=DECIMAL" > out/mb-$id.json; done
-          curl -s -A "Mozilla/5.0" "https://api.matchbook.com/edge/rest/lookups/sports?per-page=100" > out/sports.json
+          for i in $(seq 1 60); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.121.1" ] && break; sleep 20; done
+          sleep 300
+          curl -s $U/api/status > out/status.json
+          curl -s "$U/api/ev" > out/ev.json
           git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -q -b diag-mb-out; git add out; git commit -qm out
-          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-mb-out
+          git checkout -q -b diag-prodxb2-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-prodxb2-out
