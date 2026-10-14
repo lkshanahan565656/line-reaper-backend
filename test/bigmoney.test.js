@@ -204,3 +204,9 @@ test('tracker: logged once, checked two minutes on, closed at the start, graded'
   assert.equal(board.sources.bigMoney.overall.graded, 1);
   assert.ok(board.plays.some(p => p.source === 'bigMoney' && p.play === 'all'));
 });
+
+test('BACKTEST carries the summary the BIG MONEY tab shows', () => {
+  const { BACKTEST } = require('../bigmoney');
+  assert.ok(BACKTEST && typeof BACKTEST.summary === 'string' && BACKTEST.summary.length > 50);
+  assert.ok(BACKTEST.all.roiAfterFee < 0);
+});

@@ -523,7 +523,19 @@ function gameOutcome(key, score) {
   return { outcome: margin > 0 ? 'win' : margin < 0 ? 'loss' : 'push', result: `${a}-${h}` };
 }
 
-const BACKTEST = null;
+// Every pregame Kalshi taker print of $1,000+ (blocks out) on 42,874 settled sports
+// game and prop markets, Sep 18 to Oct 14 2026 (diag-bigmoney). Win rate vs the price
+// paid, errors clustered by game. Big money alone doesn't beat its price, so the edge
+// has to come from the gap to the app or book; the two-way (market maker) money did
+// no worse than one-way money.
+const BACKTEST = {
+  from: '2026-09-18', to: '2026-10-14', markets: 42874, prints: 61179, games: 2291,
+  all: { winVsPrice: -0.9, se: 1.1, roiAfterFee: -2.9, roiAt2m: -3.0, clv: 0.4 },
+  byFlow: { twoWay: { prints: 16862, winVsPrice: 2.1, se: 0.8 }, oneWay: { prints: 44317, winVsPrice: -2.1, se: 1.6 } },
+  bySize: { over25k: { prints: 1091, winVsPrice: -4.2, se: 2.3 } },
+  props: { prints: 11342, winVsPrice: 1.5, se: 0.9 },
+  summary: 'Backtest, every $1,000+ Kalshi taker print before 2,291 games (Sep 18 to Oct 14): the money won 0.9 points less often than the price it paid (±1.1), -2.9% a bet after the fee, and $25K+ prints did worst. So the money only tells you a fair-ish price; the edge is the gap to the app or book. Money on a market where the other side also traded (the market-maker label) did no worse than one-way money, so it is shown by default.',
+};
 
 module.exports = {
   DEFAULTS, BACKTEST, BOOK_NAMES, optsFromEnv, american, normPrint, rowBets, flipKey, betLabel, pinFair, exchangeCost, gameIndex, rungIndex, bookPropIndex, atLine, appPrice,

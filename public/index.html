@@ -5640,8 +5640,8 @@ function renderXscreen() {
 const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
 // ─── BIG MONEY ────────────────────────────────────────────────────────────────
 // Big exchange prints and the same bet at every venue (bigmoney.js).
-const bigUi = { data: null, error: null, timer: null, minUsd: 1000, kind: '', mm: false };
-try { const v = JSON.parse(localStorage.getItem('lrBigUi') || '{}'); Object.assign(bigUi, { minUsd: v.minUsd || 1000, kind: v.kind || '', mm: !!v.mm }); } catch { /* defaults */ }
+const bigUi = { data: null, error: null, timer: null, minUsd: 1000, kind: '', mm: true };
+try { const v = JSON.parse(localStorage.getItem('lrBigUi') || '{}'); Object.assign(bigUi, { minUsd: v.minUsd || 1000, kind: v.kind || '', mm: v.mm === undefined ? true : !!v.mm }); } catch { /* defaults */ }
 function bigSet(k, v) {
   bigUi[k] = v;
   try { localStorage.setItem('lrBigUi', JSON.stringify({ minUsd: bigUi.minUsd, kind: bigUi.kind, mm: bigUi.mm })); } catch { /* fine */ }
@@ -5663,7 +5663,7 @@ function renderBigControls() {
   document.getElementById('bigControls').innerHTML = [1000, 2500, 5000, 10000].map(v => chip(bigUi.minUsd === v, `$${v / 1000}K+`, `bigSet('minUsd',${v})`)).join('')
     + '<span class="tab-sep" style="margin:0 2px"></span>'
     + [['', 'All'], ['prop', 'Props'], ['game', 'Game lines']].map(([k, l]) => chip(bigUi.kind === k, l, `bigSet('kind','${k}')`)).join('')
-    + chip(bigUi.mm, bigUi.mm ? 'Market makers shown' : 'Show market makers', `bigSet('mm',${!bigUi.mm})`);
+    + chip(!bigUi.mm, bigUi.mm ? 'Hide market makers' : 'Market makers hidden', `bigSet('mm',${!bigUi.mm})`);
 }
 function renderBig() {
   const el = document.getElementById('bigContent'), d = bigUi.data;
