@@ -24,6 +24,8 @@ const K = {
   receptions: 1.3, targets: 1.5, pass_comp: 1.3, pass_att: 1.3, rush_att: 1.5, pass_tds: 1.2, pass_ints: 1.1,
   points: 2.6, rebounds: 1.6, assists: 1.6, threes: 1.3, pra: 3.2, pts_rebs: 2.9, pts_asts: 2.9, rebs_asts: 1.9, steals: 1.1, blocks: 1.2, stocks: 1.2, turnovers: 1.2, ftm: 1.5,
   strikeouts: 1.3, pitcher_outs: 1.6, hits_allowed: 1.3, earned_runs: 1.6, hits: 1.05, total_bases: 1.6, runs: 1.05, rbis: 1.4, hits_runs_rbis: 1.6,
+  // touchdowns: near Poisson (a k of 1.5 put 2+ TDs at 17% for a 13% bet)
+  anytime_td: 1.05,
   shots_on_goal: 1.2, saves: 1.6, goals: 1.05, points_nhl: 1.1, kicking_points: 1.6, fg_made: 1.2,
 };
 const kFor = (mkey, sport) => K[sport === 'NHL' && mkey === 'points' ? 'points_nhl' : mkey] ?? 1.5;

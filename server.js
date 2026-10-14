@@ -698,6 +698,7 @@ const legal = require('./legal');
 const { createBilling, verifyWebhook } = require('./billing');
 const evScreen = require('./ev');
 const bigMoney = require('./bigmoney');
+const altLines = require('./altlines');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
 // Every track record is backed up to the repo's results-data branch and
@@ -706,6 +707,10 @@ const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
+// the same way in a record of their own: the main-line record (and the books
+// it proves for the webhook) stays the main lines'
+const altTracker = createEvTracker({ store: resultsBackup.wrap('evAlt', createEvStoreFromEnv(process.env, { table: 'ev_alt_bets', fileVar: 'EV_ALT_TRACK_FILE', file: 'ev-alt-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
@@ -2551,7 +2556,8 @@ function runEvScreen(force = false) {
   const fairs = new Map(), costs = new Map();
   const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, weights: EV_WEIGHTS });
   const prev = evCache.at ? evCache.rows : null;
-  evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
+  const alt = runAltScreen(kmid);
+  evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
@@ -2573,6 +2579,21 @@ function runEvScreen(force = false) {
     for (const r of rows) if (r.ev >= EV_ALERT_MIN) evSeen.set(evScreen.rowKey(r), Date.now());
   }
   return evCache;
+}
+// Ladders and alternate lines off Pinnacle's ladder and Kalshi's exact lines
+// (altlines.js). Kept out of evCache.rows, so they never alert, never reach
+// Best Plays and never count toward a book's proof: until their own record
+// beats the close over 50 bets they're a board to watch.
+function runAltScreen(kmid = []) {
+  if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) >= FREE_BOOKS_MAX_AGE_MS) return { rows: [], summary: null };
+  try {
+    const fairs = new Map(), costs = new Map();
+    const kalshiGame = kmid.length ? pingames.kalshiMidBooks(kmid, Object.values(freeBooksState.games).flat()) : new Map();
+    const rows = altLines.screen({ gamesBySport: freeBooksState.games, kalshiGame, kalshiRungs: kpropsState.rungs || null,
+      leagueOf: s => freebooks.LEAGUES[s]?.props || s.toUpperCase(), fairs, costs });
+    altTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('Alt tracker:', e.message));
+    return { rows, summary: altLines.summarize(freeBooksState.games, rows, fairs) };
+  } catch (e) { console.warn('Alt lines:', e.message); return { rows: [], summary: { error: e.message } }; }
 }
 function redactEv(rows) {
   return rows.map(r => ({ sport: r.sport, event: r.event, start: r.start, market: r.market, dfs: !!r.dfs, prop: !!r.player,
@@ -3842,7 +3863,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.116.2', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.117.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3926,7 +3947,11 @@ app.get('/api/ev', (req, res) => {
   const counts = { clear2: clear.length, agree2: clear.filter(r => r.agree).length,
     agree2Lines: clear.filter(r => r.agree && !r.player).length, agree2Props: clear.filter(r => r.agree && r.player).length };
   out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
-  res.json({ rows: pro ? out : redactEv(out), count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
+  // ladders and alternate lines: their own list (clearing rungs first)
+  const alt = (runEvScreen().alt || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
+  counts.alt = alt.length; counts.altClear = alt.filter(r => r.clears).length;
+  const altOut = alt.slice(0, 300);
+  res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })), count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
 // ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
@@ -3958,13 +3983,15 @@ app.get('/api/ev/record', async (req, res) => {
   // an exchange's own line in the by-book table needs its licence
   const ok = evRowOk(licenceOf(req));
   if (out?.byBook) out.byBook = Object.fromEntries(Object.entries(out.byBook).filter(([book]) => ok({ book })));
+  // the ladders' and alternate lines' record, apart from the main lines'
+  out.alt = await altTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   res.json(out);
 });
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
   const status = hasPro(req) ? req.query.status : 'closed';
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
-  const bets = (await evTracker.list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
+  const bets = (await (req.query.alt === '1' ? altTracker : evTracker).list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
 app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
@@ -4601,7 +4628,7 @@ const FREE_BOOKS_MAX_AGE_MS = 5 * 60e3;
 const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.FREE_BOOKS || '').trim()), games: {}, counts: {}, errors: [], updated: null, ms: null };
 let freeBooksRunning = false;
 let freeBooksPropsAt = 0;
-const freeBooksPropCache = new Map();
+const freeBooksPropCache = new Map(), freeBooksLadderCache = new Map();
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
   freeBooksRunning = true;
@@ -4610,7 +4637,7 @@ async function refreshFreeBooks() {
     const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: FREE_BOOK_PIN_SPORTS });
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
-    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache });
+    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache });
     if (fdProps) freeBooksPropsAt = Date.now();
     if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
@@ -5350,7 +5377,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.116.2',
+  version: '3.117.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5381,7 +5408,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   tracker: trackerHealth,
   sharp: sharpTracker.state(),
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
-  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds },
+  ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null },
   // free: counts and timestamps only (see publicTailState)
   tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats(), polymarketUs: polymarketUs?.state() ?? null } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
