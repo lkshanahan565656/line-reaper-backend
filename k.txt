@@ -1,0 +1,80 @@
+11:24:54 cutoff {"market_positions_last_updated_ts":"2026-08-15T00:00:00Z","market_settled_ts":"2026-08-15T00:00:00Z","orders_updated_ts":"2026-09-30T00:00:00Z","trades_created_ts":"2026-08-15T00:00:00Z"}
+11:24:57 KXCS2GAME live 6482 hist 8271 events 6592 sample {"can_close_early":true,"close_time":"2026-10-14T10:59:40Z","created_time":"2026-10-13T11:50:45.867973Z","custom_strike":{"esports_competitor":"2d016685-7156-4246-8125-03ad0b4d493f"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXCS2GAME-26OCT140500RSTRMANDL","exchange_index":0,"expected_expiration_time":"2026-10-14T13:00:00Z","expiration_time":"2026-10-16T09:00:00Z","expiration_value":"Rooster","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-16T09:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Rooster","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-14T13:00:00Z","open_interest_fp":"2957.07","open_time":"2026-10-13T11:55:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If Rooster wins the ESL Challenger League Oceania Cup #3 2026: Rooster vs. MARKandLARRY CS2 match originally scheduled for Oct 14, 2026 at 5:00 AM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the ESL Challenger League Oceania Cup #3 2026: Rooster vs. MARKandLARRY CS2 match originally scheduled for Oct 14, 2026 at 5:00 AM EDT\nIf the relevant match is postponed and not started within 48 hours of its originally sch
+11:24:58 KXLOLGAME live 1752 hist 4424 events 2851 sample {"can_close_early":true,"close_time":"2026-10-13T16:00:08Z","created_time":"2026-10-12T17:50:37.735866Z","custom_strike":{"esports_competitor":"48b9eebe-c67d-4ed4-91eb-ab9261833c76"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXLOLGAME-26OCT130800ESSENH","exchange_index":0,"expected_expiration_time":"2026-10-13T16:00:00Z","expiration_time":"2026-10-15T12:00:00Z","expiration_value":"Nothin'Here","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-15T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Nothin'Here","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-13T16:00:00Z","open_interest_fp":"17431.60","open_time":"2026-10-12T17:55:00Z","previous_price_dollars":"0.5700","previous_yes_ask_dollars":"0.5700","previous_yes_bid_dollars":"0.5500","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If Nothin'Here wins the LCP Promotion: Wild Card 2027: essences vs. Nothin'Here League of Legends match originally scheduled for Oct 13, 2026 at 8:00 AM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the LCP Promotion: Wild Card 2027: essences vs. Nothin'Here League of Legends match originally scheduled for Oct 13, 2026 at 8:00 AM EDT\nIf the relevant match is postponed and not started within 48 hours of its 
+11:24:59 KXVALORANTGAME live 640 hist 2753 events 1595 sample {"can_close_early":true,"close_time":"2026-10-11T11:29:23Z","created_time":"2026-10-10T16:20:31.102594Z","custom_strike":{"esports_competitor":"7200769b-152a-40a6-90fd-bd9566c8293f"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXVALORANTGAME-26OCT110800NRG100T","exchange_index":0,"expected_expiration_time":"2026-10-11T16:00:00Z","expiration_time":"2026-10-13T12:00:00Z","expiration_value":"100 Thieves","last_price_dollars":"0.0100","latest_expiration_time":"2026-10-13T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"NRG","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-11T16:00:00Z","open_interest_fp":"170366.08","open_time":"2026-10-10T16:25:00Z","previous_price_dollars":"0.0100","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"no","rules_primary":"If NRG wins the VCT Champions 2026: NRG vs. 100 Thieves Valorant match originally scheduled for Oct 11, 2026 at 8:00 AM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the VCT Champions 2026: NRG vs. 100 Thieves Valorant match originally scheduled for Oct 11, 2026 at 8:00 AM EDT\nIf the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to 
+11:25:00 KXDOTA2GAME live 1016 hist 2583 events 1588 sample {"can_close_early":true,"close_time":"2026-10-14T10:49:44Z","created_time":"2026-10-14T05:00:47.228886Z","custom_strike":{"esports_competitor":"47817e3e-2754-4617-9046-8ecfdb6c60ef"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXDOTA2GAME-26OCT140400CLORG","exchange_index":0,"expected_expiration_time":"2026-10-14T12:00:00Z","expiration_time":"2026-10-16T08:00:00Z","expiration_value":"Cloud Dawning","last_price_dollars":"0.0100","latest_expiration_time":"2026-10-16T08:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Resp Gaming","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-14T12:00:00Z","open_interest_fp":"759.25","open_time":"2026-10-14T05:05:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"no","rules_primary":"If Resp Gaming wins the DreamLeague China Closed Qualifier 2026: Cloud Dawning vs. Resp Gaming Dota 2 match originally scheduled for Oct 14, 2026 at 4:00 AM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the DreamLeague China Closed Qualifier 2026: Cloud Dawning vs. Resp Gaming Dota 2 match originally scheduled for Oct 14, 2026 at 4:00 AM EDT\nIf the relevant match is postponed and not started within 48 hours
+11:25:00 KXR6GAME live 560 hist 888 events 692 sample {"can_close_early":true,"close_time":"2026-10-14T00:09:22Z","created_time":"2026-10-13T16:01:08.430777Z","custom_strike":{"esports_competitor":"e7de87e2-5742-45ee-a1cd-317282e779e2"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXR6GAME-26OCT131600SRSSG","exchange_index":0,"expected_expiration_time":"2026-10-14T00:00:00Z","expiration_time":"2026-10-15T20:00:00Z","expiration_value":"Spacestation Gaming","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-15T20:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Spacestation Gaming","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-14T00:00:00Z","open_interest_fp":"16623.47","open_time":"2026-10-13T16:06:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If Spacestation Gaming wins the North America League Stage 2 2026: Shopify Rebellion vs. Spacestation Gaming R6 match originally scheduled for Oct 13, 2026 at 4:00 PM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the North America League Stage 2 2026: Shopify Rebellion vs. Spacestation Gaming R6 match originally scheduled for Oct 13, 2026 at 4:00 PM EDT\nIf the relevant match is postponed and n
+11:25:00 KXCODGAME live 44 hist 606 events 303 sample {"can_close_early":true,"close_time":"2026-08-09T22:19:28Z","created_time":"2026-08-09T17:10:24.503091Z","custom_strike":{"esports_competitor":"f0ccadd8-0367-473e-8e56-8f1e600f14d2"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXCODGAME-26AUG091500OGHTCS","exchange_index":0,"expected_expiration_time":"2026-08-09T23:00:00Z","expiration_time":"2026-08-23T19:00:00Z","expiration_value":"OpTic Gaming","last_price_dollars":"0.9900","latest_expiration_time":"2026-08-23T19:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"OpTic Gaming","notional_value_dollars":"1.0000","occurrence_datetime":"2026-08-09T23:00:00Z","open_interest_fp":"102230.09","open_time":"2026-08-09T17:11:00Z","previous_price_dollars":"0.9900","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If OpTic Gaming wins the Esports World Cup 2026: OpTic Gaming vs. Team Heretics Call of Duty match originally scheduled for Aug 9, 2026 at 3:00 PM EDT, then the market resolves to Yes.","rules_secondary":"Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.","settlement_bounds_type":"default","settlement_timer_s
+11:25:01 KXOWGAME live 178 hist 624 events 399 sample {"can_close_early":true,"close_time":"2026-10-14T10:59:21Z","created_time":"2026-10-11T10:40:45.700536Z","custom_strike":{"esports_competitor":"11aefedd-0604-4bee-9d20-a895bda2030f"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXOWGAME-26OCT140630MGREV","exchange_index":0,"expected_expiration_time":"2026-10-14T14:30:00Z","expiration_time":"2026-10-16T10:30:00Z","expiration_value":"MURASH GAMING","last_price_dollars":"0.0100","latest_expiration_time":"2026-10-16T10:30:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"REVATI","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-14T14:30:00Z","open_interest_fp":"767.38","open_time":"2026-10-11T10:45:00Z","previous_price_dollars":"0.9500","previous_yes_ask_dollars":"0.3700","previous_yes_bid_dollars":"0.0600","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"no","rules_primary":"If REVATI wins the OCS Japan Stage 3 2026: MURASH GAMING vs. REVATI Overwatch match originally scheduled for Oct 14, 2026, then the market resolves to Yes.","rules_secondary":"The following market refers to the full match in the OCS Japan Stage 3 2026: MURASH GAMING vs. REVATI Overwatch match originally scheduled for Oct 14, 2026\nIf the relevant match is postponed and not started within 48 hours of its originally scheduled start time, the market will resolve to the fair mark
+11:25:08 events total 14020
+11:26:46 events 200 / 14020 calls 938 errs 0
+11:28:25 events 400 / 14020 calls 1798 errs 2
+11:30:05 events 600 / 14020 calls 2695 errs 2
+11:31:45 events 800 / 14020 calls 3575 errs 2
+11:33:26 events 1000 / 14020 calls 4467 errs 2
+11:35:06 events 1200 / 14020 calls 5349 errs 2
+11:36:45 events 1400 / 14020 calls 6214 errs 2
+11:38:25 events 1600 / 14020 calls 7096 errs 3
+11:40:05 events 1800 / 14020 calls 7996 errs 3
+11:41:46 events 2000 / 14020 calls 8876 errs 3
+11:43:25 events 2200 / 14020 calls 9727 errs 3
+11:45:06 events 2400 / 14020 calls 10607 errs 3
+11:46:45 events 2600 / 14020 calls 11484 errs 3
+11:48:26 events 2800 / 14020 calls 12373 errs 3
+11:50:06 events 3000 / 14020 calls 13252 errs 3
+11:51:46 events 3200 / 14020 calls 14149 errs 3
+11:53:26 events 3400 / 14020 calls 15021 errs 3
+11:55:05 events 3600 / 14020 calls 15889 errs 3
+11:56:45 events 3800 / 14020 calls 16766 errs 3
+11:58:26 events 4000 / 14020 calls 17644 errs 3
+12:00:06 events 4200 / 14020 calls 18518 errs 4
+12:01:45 events 4400 / 14020 calls 19395 errs 4
+12:03:26 events 4600 / 14020 calls 20287 errs 4
+12:05:06 events 4800 / 14020 calls 21174 errs 4
+12:06:45 events 5000 / 14020 calls 22037 errs 5
+12:08:25 events 5200 / 14020 calls 22909 errs 5
+12:10:06 events 5400 / 14020 calls 23790 errs 5
+12:11:45 events 5600 / 14020 calls 24678 errs 5
+12:13:25 events 5800 / 14020 calls 25570 errs 5
+12:15:06 events 6000 / 14020 calls 26469 errs 5
+12:16:45 events 6200 / 14020 calls 27357 errs 5
+12:18:26 events 6400 / 14020 calls 28255 errs 5
+12:20:06 events 6600 / 14020 calls 29124 errs 5
+12:21:45 events 6800 / 14020 calls 30005 errs 5
+12:23:26 events 7000 / 14020 calls 30899 errs 5
+12:25:06 events 7200 / 14020 calls 31772 errs 5
+12:26:45 events 7400 / 14020 calls 32650 errs 5
+12:28:26 events 7600 / 14020 calls 33545 errs 5
+12:30:07 events 7800 / 14020 calls 34424 errs 5
+12:31:46 events 8000 / 14020 calls 35279 errs 5
+12:33:26 events 8200 / 14020 calls 36174 errs 6
+12:35:06 events 8400 / 14020 calls 37068 errs 6
+12:36:47 events 8600 / 14020 calls 37968 errs 6
+12:38:26 events 8800 / 14020 calls 38861 errs 6
+12:40:06 events 9000 / 14020 calls 39741 errs 6
+12:41:46 events 9200 / 14020 calls 40622 errs 6
+12:43:27 events 9400 / 14020 calls 41522 errs 6
+12:45:06 events 9600 / 14020 calls 42397 errs 6
+12:46:46 events 9800 / 14020 calls 43280 errs 6
+12:48:26 events 10000 / 14020 calls 44169 errs 6
+12:50:07 events 10200 / 14020 calls 45051 errs 6
+12:51:46 events 10400 / 14020 calls 45936 errs 6
+12:53:26 events 10600 / 14020 calls 46807 errs 6
+12:55:06 events 10800 / 14020 calls 47689 errs 6
+12:56:46 events 11000 / 14020 calls 48537 errs 6
+12:58:26 events 11200 / 14020 calls 49427 errs 6
+13:00:07 events 11400 / 14020 calls 50326 errs 6
+13:01:46 events 11600 / 14020 calls 51230 errs 6
+13:03:27 events 11800 / 14020 calls 52121 errs 6
+13:05:06 events 12000 / 14020 calls 52986 errs 6
+13:06:47 events 12200 / 14020 calls 53879 errs 6
+13:08:25 events 12400 / 14020 calls 54761 errs 6
+13:10:07 events 12600 / 14020 calls 55638 errs 6
+13:11:45 events 12800 / 14020 calls 56496 errs 7
+13:13:26 events 13000 / 14020 calls 57407 errs 7
+13:15:07 events 13200 / 14020 calls 58300 errs 7
+13:16:47 events 13400 / 14020 calls 59163 errs 7
+13:18:26 events 13600 / 14020 calls 60067 errs 7
+13:20:06 events 13800 / 14020 calls 60923 errs 8
+13:21:46 events 14000 / 14020 calls 61782 errs 9
+13:21:55 saved 14020 events; calls 61845 errs 9
