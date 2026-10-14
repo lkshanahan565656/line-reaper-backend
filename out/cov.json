@@ -1,0 +1,2353 @@
+{
+ "fd_nba": [
+  {
+   "name": "Charlotte Hornets @ Boston Celtics",
+   "open": "2026-10-14T23:40:00.000Z",
+   "titles": [
+    "1st Quarter",
+    "4th Quarter",
+    "Total Parlays",
+    "Team Props",
+    "Margin",
+    "Popular",
+    "Same Game Parlay™",
+    "Odd/Even"
+   ],
+   "tabs": {
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "total-parlays": {
+     "title": "Total Parlays",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_/_TOTAL_DOUBLE": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "LINE_/_TOTAL_DOUBLE": 1
+     },
+     "twoWayOdds": []
+    },
+    "team-props": {
+     "title": "Team Props",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "margin": {
+     "title": "Margin",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "popular": {
+     "title": "Popular",
+     "markets": 3,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_ODD/EVEN": 1
+     },
+     "twoWayOdds": []
+    },
+    "odd-even": {
+     "title": "Odd/Even",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_ODD/EVEN": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  },
+  {
+   "name": "Brooklyn Nets @ Miami Heat",
+   "open": "2026-10-14T23:40:00.000Z",
+   "titles": [
+    "1st Quarter",
+    "4th Quarter",
+    "Total Parlays",
+    "Team Props",
+    "Margin",
+    "Popular",
+    "Same Game Parlay™",
+    "Odd/Even"
+   ],
+   "tabs": {
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "total-parlays": {
+     "title": "Total Parlays",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "LINE_/_TOTAL_DOUBLE": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "MATCH_/_TOTAL_DOUBLE": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "team-props": {
+     "title": "Team Props",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "margin": {
+     "title": "Margin",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "popular": {
+     "title": "Popular",
+     "markets": 3,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_ODD/EVEN": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "odd-even": {
+     "title": "Odd/Even",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_ODD/EVEN": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  }
+ ],
+ "fd_nhl": [
+  {
+   "name": "Montreal Canadiens @ Washington Capitals",
+   "open": "2026-10-14T23:40:00.000Z",
+   "titles": [
+    "Popular",
+    "2nd Period",
+    "1st Period",
+    "3rd Period",
+    "Goals",
+    "Points/Assists",
+    "Goalies",
+    "Shots",
+    "Period Player Props",
+    "Quick Hits",
+    "Overtime",
+    "Game Props",
+    "Game Specials",
+    "Same Game Parlay™"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 72,
+     "parsed": 0,
+     "ouTypes": {
+      "HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "MONEY_LINE_/_TOTAL_DOUBLE": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_TOTAL_GOALS": 1,
+      "HOME_TOTAL_GOALS": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "3RD_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "AWAY_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-period": {
+     "title": "2nd Period",
+     "markets": 25,
+     "parsed": 0,
+     "ouTypes": {
+      "2ND_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_TOTAL_GOALS": 1,
+      "2ND_PERIOD_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_PERIOD_AWAY_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "2ND_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_HOME_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-period": {
+     "title": "1st Period",
+     "markets": 24,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_PERIOD_HANDICAP": 1,
+      "1ST_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_PERIOD_AWAY_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HOME_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-period": {
+     "title": "3rd Period",
+     "markets": 25,
+     "parsed": 0,
+     "ouTypes": {
+      "3RD_PERIOD_TOTAL_GOALS": 1,
+      "3RD_PERIOD_HOME_TOTAL": 1,
+      "3RD_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "3RD_PERIOD_AWAY_TOTAL": 1,
+      "3RD_PERIOD_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "3RD_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "3RD_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "goals": {
+     "title": "Goals",
+     "markets": 25,
+     "parsed": 7,
+     "ouTypes": {
+      "PLAYER_TOTAL_GOALS": 7,
+      "OVERTIME_GOAL_SCORER": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "points-assists": {
+     "title": "Points/Assists",
+     "markets": 13,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "goalies": {
+     "title": "Goalies",
+     "markets": 14,
+     "parsed": 2,
+     "ouTypes": {
+      "PLAYER_TOTAL_SAVES": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "shots": {
+     "title": "Shots",
+     "markets": 30,
+     "parsed": 9,
+     "ouTypes": {
+      "PLAYER_TOTAL_SHOTS": 9,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "period-player-props": {
+     "title": "Period Player Props",
+     "markets": 28,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-hits": {
+     "title": "Quick Hits",
+     "markets": 11,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "overtime": {
+     "title": "Overtime",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "WILL_THERE_BE_OVERTIME": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-props": {
+     "title": "Game Props",
+     "markets": 19,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "TOTAL_GOALS_(FLAT_LINE)": 1,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "HOME_TOTAL_GOALS": 1,
+      "AWAY_TOTAL_GOALS": 1,
+      "ALTERNATE_TOTAL_GOALS": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-specials": {
+     "title": "Game Specials",
+     "markets": 8,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "WILL_THERE_BE_OVERTIME": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  },
+  {
+   "name": "Dallas Stars @ Colorado Avalanche",
+   "open": "2026-10-15T01:40:00.000Z",
+   "titles": [
+    "Popular",
+    "2nd Period",
+    "1st Period",
+    "3rd Period",
+    "Goals",
+    "Points/Assists",
+    "Shots",
+    "Period Player Props",
+    "Quick Hits",
+    "Overtime",
+    "Game Props",
+    "Game Specials",
+    "Same Game Parlay™"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 68,
+     "parsed": 0,
+     "ouTypes": {
+      "3RD_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MONEY_LINE_/_TOTAL_DOUBLE": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "1ST_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "HOME_TOTAL_GOALS": 1,
+      "HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "1ST_PERIOD_TOTAL_GOALS": 1,
+      "AWAY_TOTAL_GOALS": 1,
+      "ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_ALTERNATE_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-period": {
+     "title": "2nd Period",
+     "markets": 24,
+     "parsed": 0,
+     "ouTypes": {
+      "2ND_PERIOD_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "2ND_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_HOME_TOTAL": 1,
+      "2ND_PERIOD_AWAY_TOTAL": 1,
+      "2ND_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "2ND_PERIOD_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-period": {
+     "title": "1st Period",
+     "markets": 23,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_PERIOD_HOME_TOTAL": 1,
+      "1ST_PERIOD_AWAY_TOTAL": 1,
+      "1ST_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_PERIOD_TOTAL_GOALS": 1,
+      "1ST_PERIOD_HANDICAP": 1,
+      "1ST_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-period": {
+     "title": "3rd Period",
+     "markets": 24,
+     "parsed": 0,
+     "ouTypes": {
+      "3RD_PERIOD_HANDICAP": 1,
+      "3RD_PERIOD_ALTERNATE_TOTAL_GOALS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "3RD_PERIOD_AWAY_TOTAL": 1,
+      "3RD_PERIOD_AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "3RD_PERIOD_TOTAL_GOALS": 1,
+      "3RD_PERIOD_HOME_TOTAL": 1,
+      "3RD_PERIOD_HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "goals": {
+     "title": "Goals",
+     "markets": 24,
+     "parsed": 6,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_TOTAL_GOALS": 6,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "OVERTIME_GOAL_SCORER": 1
+     },
+     "twoWayOdds": []
+    },
+    "points-assists": {
+     "title": "Points/Assists",
+     "markets": 13,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "shots": {
+     "title": "Shots",
+     "markets": 32,
+     "parsed": 11,
+     "ouTypes": {
+      "PLAYER_TOTAL_SHOTS": 11,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "period-player-props": {
+     "title": "Period Player Props",
+     "markets": 25,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-hits": {
+     "title": "Quick Hits",
+     "markets": 11,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "overtime": {
+     "title": "Overtime",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "WILL_THERE_BE_OVERTIME": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-props": {
+     "title": "Game Props",
+     "markets": 19,
+     "parsed": 0,
+     "ouTypes": {
+      "AWAY_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "HOME_TOTAL_GOALS": 1,
+      "AWAY_TOTAL_GOALS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "HOME_TEAM_ALTERNATE_TOTAL_GOALS": 1,
+      "TOTAL_GOALS_(FLAT_LINE)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "ALTERNATE_TOTAL_GOALS": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-specials": {
+     "title": "Game Specials",
+     "markets": 7,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "WILL_THERE_BE_OVERTIME": 1,
+      "OVERTIME_GOAL_SCORER": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  }
+ ],
+ "fd_ncaaf": [
+  {
+   "name": "Kennesaw State @ Missouri State",
+   "open": "2026-10-14T23:30:00.000Z",
+   "titles": [
+    "Popular",
+    "1st Half",
+    "1st Quarter",
+    "2nd Quarter",
+    "3rd Quarter",
+    "4th Quarter",
+    "Parlays",
+    "Same Game Parlay™",
+    "Scoring",
+    "Passing Props",
+    "Receiving Props",
+    "Rushing Props",
+    "TD Scorer Props",
+    "Team Yards"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 41,
+     "parsed": 14,
+     "ouTypes": {
+      "FIRST_HALF_TOTAL": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "PLAYER_LOW_RUSHING_YARDS_CFB": 1,
+      "PLAYER_LOW_RECEPTIONS_CFB": 4,
+      "AWAY_TEAM_TOTAL_POINTS": 1,
+      "PLAYER_MEDIUM_RUSHING_YARDS_CFB": 2,
+      "AWAY_TEAM_ALTERNATE_TOTAL": 1,
+      "PLAYER_LOW_RECEIVING_YARDS_CFB": 2,
+      "PLAYER_MEDIUM_RECEIVING_YARDS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_HIGH_RUSHING_YARDS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "HOME_TEAM_TOTAL_POINTS": 1,
+      "ALTERNATE_TOTAL": 1,
+      "3RD_QUARTER_HANDICAP": 1,
+      "PLAYER_MEDIUM_PASSING_YARDS_CFB": 1,
+      "PLAYER_LOW_PASSING_TOUCHDOWNS_CFB": 1,
+      "HOME_TEAM_ALTERNATE_TOTAL": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "1ST_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-half": {
+     "title": "1st Half",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "FIRST_HALF_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_QUARTER_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-quarter": {
+     "title": "2nd Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_QUARTER_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "2ND_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-quarter": {
+     "title": "3rd Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "3RD_QUARTER_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "3RD_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "parlays": {
+     "title": "Parlays",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_/_TOTAL_POINTS_DOUBLE.": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "scoring": {
+     "title": "Scoring",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "passing-props": {
+     "title": "Passing Props",
+     "markets": 7,
+     "parsed": 2,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_MEDIUM_PASSING_YARDS_CFB": 1,
+      "PLAYER_LOW_PASSING_TOUCHDOWNS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "receiving-props": {
+     "title": "Receiving Props",
+     "markets": 15,
+     "parsed": 8,
+     "ouTypes": {
+      "PLAYER_MEDIUM_RECEIVING_YARDS_CFB": 2,
+      "PLAYER_LOW_RECEPTIONS_CFB": 4,
+      "PLAYER_LOW_RECEIVING_YARDS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "rushing-props": {
+     "title": "Rushing Props",
+     "markets": 15,
+     "parsed": 6,
+     "ouTypes": {
+      "PLAYER_MEDIUM_RUSHING_YARDS_CFB": 2,
+      "AWAY_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "PLAYER_LOW_RUSHING_YARDS_CFB": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_HIGH_RUSHING_YARDS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "HOME_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "HOME_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "AWAY_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1
+     },
+     "twoWayOdds": []
+    },
+    "td-scorer-props": {
+     "title": "TD Scorer Props",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "team-yards": {
+     "title": "Team Yards",
+     "markets": 11,
+     "parsed": 4,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "AWAY_ALT_TOTAL_YARDS_CFB": 1,
+      "AWAY_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "HOME_TOTAL_YARDS_-_O/U_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "HOME_ALT_TOTAL_YARDS_CFB": 1,
+      "HOME_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "HOME_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "AWAY_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "AWAY_TOTAL_YARDS_-_O/U_CFB": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  },
+  {
+   "name": "Western Kentucky @ Sam Houston State",
+   "open": "2026-10-15T00:00:00.000Z",
+   "titles": [
+    "Popular",
+    "1st Half",
+    "1st Quarter",
+    "2nd Quarter",
+    "3rd Quarter",
+    "4th Quarter",
+    "Parlays",
+    "Same Game Parlay™",
+    "Scoring",
+    "Passing Props",
+    "Receiving Props",
+    "Rushing Props",
+    "TD Scorer Props",
+    "Team Yards"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 44,
+     "parsed": 14,
+     "ouTypes": {
+      "4TH_QUARTER_HANDICAP": 1,
+      "HOME_TEAM_TOTAL_POINTS": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "HOME_TEAM_ALTERNATE_TOTAL": 1,
+      "PLAYER_MEDIUM_RECEIVING_YARDS_CFB": 4,
+      "PLAYER_MEDIUM_RUSHING_YARDS_CFB": 1,
+      "PLAYER_LOW_RUSHING_YARDS_CFB": 2,
+      "PLAYER_MEDIUM_PASSING_TOUCHDOWNS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_MEDIUM_PASSING_YARDS_CFB": 2,
+      "PLAYER_LOW_RECEPTIONS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_QUARTER_HANDICAP": 1,
+      "AWAY_TEAM_TOTAL_POINTS": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "ALTERNATE_TOTAL": 1,
+      "PLAYER_LOW_RECEIVING_YARDS_CFB": 2,
+      "3RD_QUARTER_HANDICAP": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-half": {
+     "title": "1st Half",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_QUARTER_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-quarter": {
+     "title": "2nd Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_QUARTER_TOTAL": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-quarter": {
+     "title": "3rd Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "3RD_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "3RD_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "4TH_QUARTER_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "parlays": {
+     "title": "Parlays",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_/_TOTAL_POINTS_DOUBLE.": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "4TH_QUARTER_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "scoring": {
+     "title": "Scoring",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "passing-props": {
+     "title": "Passing Props",
+     "markets": 11,
+     "parsed": 4,
+     "ouTypes": {
+      "PLAYER_MEDIUM_PASSING_TOUCHDOWNS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_MEDIUM_PASSING_YARDS_CFB": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "receiving-props": {
+     "title": "Receiving Props",
+     "markets": 16,
+     "parsed": 7,
+     "ouTypes": {
+      "PLAYER_MEDIUM_RECEIVING_YARDS_CFB": 4,
+      "PLAYER_LOW_RECEIVING_YARDS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_LOW_RECEPTIONS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "rushing-props": {
+     "title": "Rushing Props",
+     "markets": 13,
+     "parsed": 5,
+     "ouTypes": {
+      "HOME_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "HOME_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "AWAY_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "PLAYER_MEDIUM_RUSHING_YARDS_CFB": 1,
+      "PLAYER_LOW_RUSHING_YARDS_CFB": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "AWAY_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "td-scorer-props": {
+     "title": "TD Scorer Props",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "team-yards": {
+     "title": "Team Yards",
+     "markets": 11,
+     "parsed": 4,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "HOME_TOTAL_YARDS_-_O/U_CFB": 1,
+      "HOME_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "HOME_ALT_TOTAL_YARDS_CFB": 1,
+      "AWAY_ALT_TOTAL_YARDS_CFB": 1,
+      "HOME_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "AWAY_TOTAL_YARDS_-_O/U_CFB": 1,
+      "AWAY_TOTAL_RUSHING_YARDS_-_O/U_CFB": 1,
+      "AWAY_ALT_TOTAL_RUSHING_YARDS_CFB": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  }
+ ],
+ "fd_mlb": [
+  {
+   "name": "Milwaukee Brewers (R Gasser) @ Los Angeles Dodgers (B Snell)",
+   "open": "2026-10-15T00:00:00.000Z",
+   "titles": [
+    "Popular",
+    "First 5 Innings",
+    "Innings",
+    "Hits & Runs",
+    "Same Game Parlay™",
+    "Pitcher Props",
+    "Batter Props",
+    "Quick Bets",
+    "Lasers",
+    "Moonshots"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 42,
+     "parsed": 4,
+     "ouTypes": {
+      "ALTERNATE_TOTAL_RUNS": 1,
+      "AWAY_TOTAL_RUNS": 1,
+      "TO_RECORD_2+_TOTAL_BASES": 1,
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "TO_RECORD_3+_TOTAL_BASES": 1,
+      "HOME_TOTAL_RUNS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PITCHER_E_TOTAL_STRIKEOUTS": 1,
+      "1ST_HALF_RUN_LINE": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PITCHER_C_TOTAL_STRIKEOUTS": 1,
+      "1ST_HALF_TOTAL_RUNS": 1
+     },
+     "twoWayOdds": []
+    },
+    "first-5-innings": {
+     "title": "First 5 Innings",
+     "markets": 13,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_HALF_ALTERNATE_TOTAL_RUNS": 1,
+      "1ST_HALF_RUN_LINE": 1,
+      "1ST_HALF_RUN_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_HALF_TOTAL_RUNS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "innings": {
+     "title": "Innings",
+     "markets": 97,
+     "parsed": 0,
+     "ouTypes": {
+      "***OVER/UNDER_1.5_RUNS_2ND_INNINGS": 1,
+      "5TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_7TH_INNINGS": 1,
+      "3_INNINGS_LINE": 1,
+      "***OVER/UNDER_1.5_RUNS_4TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_4TH_INNINGS": 1,
+      "4TH_INNING_TOTAL_RUNS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "6TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "3_INNINGS_TOTAL_RUNS": 1,
+      "7_INNINGS_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "***OVER/UNDER_1.5_RUNS_5TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_6TH_INNINGS": 1,
+      "8TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_5TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_7TH_INNINGS": 1,
+      "3RD_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_9TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_2ND_INNINGS": 1,
+      "7_INNINGS_LINE": 1,
+      "7TH_INNING_TOTAL_RUNS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_INNING_TOTAL_RUNS": 1
+     },
+     "twoWayOdds": []
+    },
+    "hits-runs": {
+     "title": "Hits & Runs",
+     "markets": 30,
+     "parsed": 2,
+     "ouTypes": {
+      "TOTAL_RUNS_(BANDS)": 1,
+      "RUN_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "MONEY_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "AWAY_TOTAL_RUNS": 1,
+      "HOME_TOTAL_RUNS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_RUNS_ODD/EVEN": 1,
+      "AWAY_TOTAL_RUNS_ODD/EVEN": 1,
+      "HOME_TOTAL_RUNS_ODD/EVEN": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 97,
+     "parsed": 0,
+     "ouTypes": {
+      "***OVER/UNDER_1.5_RUNS_2ND_INNINGS": 1,
+      "5TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_7TH_INNINGS": 1,
+      "3_INNINGS_LINE": 1,
+      "***OVER/UNDER_1.5_RUNS_4TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_4TH_INNINGS": 1,
+      "4TH_INNING_TOTAL_RUNS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "6TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "3_INNINGS_TOTAL_RUNS": 1,
+      "7_INNINGS_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "***OVER/UNDER_1.5_RUNS_5TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_6TH_INNINGS": 1,
+      "8TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_5TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_7TH_INNINGS": 1,
+      "3RD_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_9TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_2ND_INNINGS": 1,
+      "7_INNINGS_LINE": 1,
+      "7TH_INNING_TOTAL_RUNS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_INNING_TOTAL_RUNS": 1
+     },
+     "twoWayOdds": []
+    },
+    "pitcher-props": {
+     "title": "Pitcher Props",
+     "markets": 13,
+     "parsed": 2,
+     "ouTypes": {
+      "PITCHER_E_TOTAL_STRIKEOUTS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PITCHER_C_TOTAL_STRIKEOUTS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": [
+      [
+       "PITCHER_B_OUTS_RECORDED_SB",
+       "Robert Gasser Outs Recorded",
+       [
+        "Robert Gasser Over 11.5 -136",
+        "Robert Gasser Under 11.5 100"
+       ]
+      ],
+      [
+       "PITCHER_A_OUTS_RECORDED_SB",
+       "Blake Snell Outs Recorded",
+       [
+        "Blake Snell Over 14.5 -172",
+        "Blake Snell Under 14.5 126"
+       ]
+      ]
+     ]
+    },
+    "batter-props": {
+     "title": "Batter Props",
+     "markets": 30,
+     "parsed": 0,
+     "ouTypes": {
+      "TO_RECORD_5+_TOTAL_BASES": 1,
+      "TO_RECORD_2+_TOTAL_BASES": 1,
+      "TO_RECORD_3+_TOTAL_BASES": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TO_RECORD_4+_TOTAL_BASES": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-bets": {
+     "title": "Quick Bets",
+     "markets": 19,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    },
+    "lasers": {
+     "title": "Lasers",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "moonshots": {
+     "title": "Moonshots",
+     "markets": 4,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  },
+  {
+   "name": "Tampa Bay Rays (G Jax) @ Cleveland Guardians (G Williams)",
+   "open": "2026-10-15T17:00:00.000Z",
+   "titles": [
+    "Popular",
+    "First 5 Innings",
+    "Innings",
+    "Hits & Runs",
+    "Same Game Parlay™",
+    "Pitcher Props",
+    "Batter Props",
+    "Quick Bets"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 36,
+     "parsed": 4,
+     "ouTypes": {
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "1ST_HALF_RUN_LINE": 1,
+      "1ST_HALF_TOTAL_RUNS": 1,
+      "TO_RECORD_2+_TOTAL_BASES": 1,
+      "AWAY_TOTAL_RUNS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PITCHER_C_TOTAL_STRIKEOUTS": 1,
+      "ALTERNATE_TOTAL_RUNS": 1,
+      "TO_RECORD_3+_TOTAL_BASES": 1,
+      "HOME_TOTAL_RUNS": 1,
+      "PITCHER_E_TOTAL_STRIKEOUTS": 1
+     },
+     "twoWayOdds": []
+    },
+    "first-5-innings": {
+     "title": "First 5 Innings",
+     "markets": 12,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_HALF_RUN_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "1ST_HALF_RUN_LINE": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_HALF_TOTAL_RUNS": 1,
+      "1ST_HALF_ALTERNATE_TOTAL_RUNS": 1
+     },
+     "twoWayOdds": []
+    },
+    "innings": {
+     "title": "Innings",
+     "markets": 97,
+     "parsed": 0,
+     "ouTypes": {
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_5TH_INNINGS": 1,
+      "5TH_INNING_TOTAL_RUNS": 1,
+      "7_INNINGS_TOTAL_RUNS": 1,
+      "7_INNINGS_LINE": 1,
+      "***OVER/UNDER_0.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_4TH_INNINGS": 1,
+      "2ND_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_2ND_INNINGS": 1,
+      "8TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_2ND_INNINGS": 1,
+      "7TH_INNING_TOTAL_RUNS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_7TH_INNINGS": 1,
+      "3RD_INNING_TOTAL_RUNS": 1,
+      "6TH_INNING_TOTAL_RUNS": 1,
+      "4TH_INNING_TOTAL_RUNS": 1,
+      "3_INNINGS_LINE": 1,
+      "***OVER/UNDER_1.5_RUNS_7TH_INNINGS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "***OVER/UNDER_1.5_RUNS_9TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_5TH_INNINGS": 1,
+      "3_INNINGS_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_4TH_INNINGS": 1
+     },
+     "twoWayOdds": []
+    },
+    "hits-runs": {
+     "title": "Hits & Runs",
+     "markets": 30,
+     "parsed": 2,
+     "ouTypes": {
+      "RUN_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "TOTAL_RUNS_ODD/EVEN": 1,
+      "AWAY_TOTAL_RUNS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "MONEY_LINE_/_TOTAL_RUNS_DOUBLE": 1,
+      "TOTAL_RUNS_(BANDS)": 1,
+      "HOME_TOTAL_RUNS": 1,
+      "AWAY_TOTAL_RUNS_ODD/EVEN": 1,
+      "HOME_TOTAL_RUNS_ODD/EVEN": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 97,
+     "parsed": 0,
+     "ouTypes": {
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_5TH_INNINGS": 1,
+      "5TH_INNING_TOTAL_RUNS": 1,
+      "7_INNINGS_TOTAL_RUNS": 1,
+      "7_INNINGS_LINE": 1,
+      "***OVER/UNDER_0.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_4TH_INNINGS": 1,
+      "2ND_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_2ND_INNINGS": 1,
+      "8TH_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_1.5_RUNS_8TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_2ND_INNINGS": 1,
+      "7TH_INNING_TOTAL_RUNS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_7TH_INNINGS": 1,
+      "3RD_INNING_TOTAL_RUNS": 1,
+      "6TH_INNING_TOTAL_RUNS": 1,
+      "4TH_INNING_TOTAL_RUNS": 1,
+      "3_INNINGS_LINE": 1,
+      "***OVER/UNDER_1.5_RUNS_7TH_INNINGS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "***OVER/UNDER_1.5_RUNS_9TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_6TH_INNINGS": 1,
+      "***OVER/UNDER_1.5_RUNS_5TH_INNINGS": 1,
+      "3_INNINGS_TOTAL_RUNS": 1,
+      "***OVER/UNDER_0.5_RUNS_3RD_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_4TH_INNINGS": 1
+     },
+     "twoWayOdds": []
+    },
+    "pitcher-props": {
+     "title": "Pitcher Props",
+     "markets": 9,
+     "parsed": 2,
+     "ouTypes": {
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PITCHER_E_TOTAL_STRIKEOUTS": 1,
+      "PITCHER_C_TOTAL_STRIKEOUTS": 1
+     },
+     "twoWayOdds": [
+      [
+       "PITCHER_A_OUTS_RECORDED_SB",
+       "Gavin Williams Outs Recorded",
+       [
+        "Gavin Williams Over 16.5 -118",
+        "Gavin Williams Under 16.5 -114"
+       ]
+      ]
+     ]
+    },
+    "batter-props": {
+     "title": "Batter Props",
+     "markets": 25,
+     "parsed": 0,
+     "ouTypes": {
+      "TO_RECORD_2+_TOTAL_BASES": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TO_RECORD_4+_TOTAL_BASES": 1,
+      "TO_RECORD_3+_TOTAL_BASES": 1,
+      "TO_RECORD_5+_TOTAL_BASES": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-bets": {
+     "title": "Quick Bets",
+     "markets": 17,
+     "parsed": 0,
+     "ouTypes": {
+      "***OVER/UNDER_1.5_RUNS_1ST_INNINGS": 1,
+      "***OVER/UNDER_0.5_RUNS_1ST_INNINGS": 1,
+      "1ST_INNING_TOTAL_RUNS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  }
+ ],
+ "fd_nfl": [
+  {
+   "name": "Seattle Seahawks @ Denver Broncos",
+   "open": "2026-10-16T00:16:00.000Z",
+   "titles": [
+    "Popular",
+    "1st Half",
+    "1st Quarter",
+    "2nd Quarter",
+    "3rd Quarter",
+    "4th Quarter",
+    "Same Game Parlay™",
+    "2nd Half",
+    "Scoring",
+    "D/ST",
+    "Passing Props",
+    "Receiving Props",
+    "Rushing Props",
+    "TD Scorer Props",
+    "Game Specials",
+    "Quick Bets",
+    "Quarter Props"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 123,
+     "parsed": 36,
+     "ouTypes": {
+      "ALTERNATE_TOTAL": 1,
+      "PLAYER_X_RECEIVING_YARDS_MEDIUM": 7,
+      "PLAYER_X_RECEPTIONS_MEDIUM": 7,
+      "PLAYER_X_RUSHING_YARDS_MEDIUM": 3,
+      "PLAYER_X_PASSING_TOUCHDOWNS_HIGH": 2,
+      "PLAYER_X_PASSING_YARDS_HIGH": 2,
+      "HOME_TEAM_TOTAL_POINTS": 1,
+      "PLAYER_X_RECEPTIONS_LOW": 4,
+      "PLAYER_X_RECEIVING_YARDS_LOW": 4,
+      "HOME_TEAM_ALTERNATE_TOTAL": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "PLAYER_X_RECEPTIONS_HIGH": 2,
+      "PLAYER_X_RUSHING_YARDS_HIGH": 2,
+      "4TH_QUARTER_HANDICAP": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL": 1,
+      "PLAYER_X_RECEIVING_YARDS_HIGH": 2,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_QUARTER_HANDICAP": 1,
+      "3RD_QUARTER_HANDICAP": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "AWAY_TEAM_TOTAL_POINTS": 1,
+      "PLAYER_X_RUSHING_YARDS_LOW": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-half": {
+     "title": "1st Half",
+     "markets": 18,
+     "parsed": 0,
+     "ouTypes": {
+      "FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "AWAY_-_FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_HALF_HOME_TEAM_TOTAL_POINTS": 1,
+      "HOME_-_FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "1ST_HALF_TOTAL_TOUCHDOWNS_-_HOME_TEAM": 1,
+      "1ST_HALF_AWAY_TEAM_TOTAL_POINTS": 1,
+      "TOTAL_TOUCHDOWNS_1ST_HALF": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "1ST_HALF_TOTAL_TOUCHDOWNS_-_AWAY_TEAM": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 11,
+     "parsed": 0,
+     "ouTypes": {
+      "1ST_QUARTER_TOTAL_POINTS_ODD/EVEN": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_QUARTER_HANDICAP": 1,
+      "1ST_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-quarter": {
+     "title": "2nd Quarter",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "2ND_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-quarter": {
+     "title": "3rd Quarter",
+     "markets": 10,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "3RD_QUARTER_TOTAL": 1,
+      "3RD_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "4TH_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "4TH_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-half": {
+     "title": "2nd Half",
+     "markets": 13,
+     "parsed": 0,
+     "ouTypes": {
+      "2ND_HALF_HOME_TEAM_TOTAL_POINTS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_HALF_AWAY_TEAM_TOTAL_POINTS": 1,
+      "AWAY_-_SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "SECOND_HALF_TOTAL": 1,
+      "HOME_-_SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "SECOND_HALF_HANDICAP": 1,
+      "SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1
+     },
+     "twoWayOdds": []
+    },
+    "scoring": {
+     "title": "Scoring",
+     "markets": 27,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "TOTAL_TOUCHDOWNS_-_AWAY_TEAM": 1,
+      "TOTAL_TOUCHDOWNS_SCORED": 1,
+      "TOTAL_TOUCHDOWNS_-_HOME_TEAM": 1
+     },
+     "twoWayOdds": []
+    },
+    "d-st": {
+     "title": "D/ST",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "passing-props": {
+     "title": "Passing Props",
+     "markets": 13,
+     "parsed": 4,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_PASSING_TOUCHDOWNS_HIGH": 2,
+      "PLAYER_X_PASSING_YARDS_HIGH": 2
+     },
+     "twoWayOdds": []
+    },
+    "receiving-props": {
+     "title": "Receiving Props",
+     "markets": 66,
+     "parsed": 29,
+     "ouTypes": {
+      "PLAYER_X_RUSHING_+_RECEIVING_YARDS": 3,
+      "PLAYER_X_RECEPTIONS_HIGH": 2,
+      "PLAYER_X_RECEIVING_YARDS_MEDIUM": 7,
+      "PLAYER_X_RECEPTIONS_MEDIUM": 7,
+      "PLAYER_X_RECEIVING_YARDS_LOW": 4,
+      "PLAYER_X_RECEPTIONS_LOW": 4,
+      "PLAYER_X_RECEIVING_YARDS_HIGH": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "rushing-props": {
+     "title": "Rushing Props",
+     "markets": 20,
+     "parsed": 9,
+     "ouTypes": {
+      "PLAYER_X_RUSHING_+_RECEIVING_YARDS": 3,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_RUSHING_YARDS_MEDIUM": 3,
+      "PLAYER_X_RUSHING_YARDS_HIGH": 2,
+      "PLAYER_X_RUSHING_YARDS_LOW": 1
+     },
+     "twoWayOdds": []
+    },
+    "td-scorer-props": {
+     "title": "TD Scorer Props",
+     "markets": 22,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-specials": {
+     "title": "Game Specials",
+     "markets": 10,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-bets": {
+     "title": "Quick Bets",
+     "markets": 26,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quarter-props": {
+     "title": "Quarter Props",
+     "markets": 65,
+     "parsed": 0,
+     "ouTypes": {
+      "PLAYER_X_1ST_QUARTER_RECEIVING_YARDS": 9,
+      "PLAYER_X_1ST_QUARTER_PASSING_YARDS": 2,
+      "PLAYER_X_2ND_QUARTER_RECEIVING_YARDS": 10,
+      "PLAYER_X_4TH_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_3RD_QUARTER_RECEIVING_YARDS": 9,
+      "PLAYER_X_4TH_QUARTER_PASSING_YARDS": 2,
+      "PLAYER_X_4TH_QUARTER_RECEIVING_YARDS": 10,
+      "PLAYER_X_3RD_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_2ND_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_1ST_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_3RD_QUARTER_PASSING_YARDS": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_2ND_QUARTER_PASSING_YARDS": 2
+     },
+     "twoWayOdds": []
+    }
+   }
+  },
+  {
+   "name": "Houston Texans @ Jacksonville Jaguars",
+   "open": "2026-10-18T13:30:00.000Z",
+   "titles": [
+    "Popular",
+    "1st Half",
+    "1st Quarter",
+    "2nd Quarter",
+    "3rd Quarter",
+    "4th Quarter",
+    "Parlays",
+    "Same Game Parlay™",
+    "2nd Half",
+    "Scoring",
+    "D/ST",
+    "Passing Props",
+    "Receiving Props",
+    "Rushing Props",
+    "TD Scorer Props",
+    "Game Specials",
+    "Quick Bets",
+    "Quarter Props"
+   ],
+   "tabs": {
+    "popular": {
+     "title": "Popular",
+     "markets": 93,
+     "parsed": 33,
+     "ouTypes": {
+      "PLAYER_X_RECEIVING_YARDS_LOW": 4,
+      "PLAYER_X_RUSHING_YARDS_HIGH": 1,
+      "PLAYER_X_RECEIVING_YARDS_MEDIUM": 6,
+      "AWAY_TEAM_TOTAL_POINTS": 1,
+      "PLAYER_X_RECEPTIONS_HIGH": 2,
+      "PLAYER_X_PASSING_YARDS_HIGH": 2,
+      "HOME_TEAM_ALTERNATE_TOTAL": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "WILL_THERE_BE_OVERTIME": 1,
+      "PLAYER_X_RUSHING_YARDS_LOW": 3,
+      "PLAYER_X_PASSING_TOUCHDOWNS_HIGH": 2,
+      "PLAYER_X_RECEPTIONS_MEDIUM": 6,
+      "ALTERNATE_TOTAL": 1,
+      "2ND_QUARTER_HANDICAP": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_RECEIVING_YARDS_HIGH": 2,
+      "PLAYER_X_RECEPTIONS_LOW": 4,
+      "1ST_QUARTER_HANDICAP": 1,
+      "3RD_QUARTER_HANDICAP": 1,
+      "AWAY_TEAM_ALTERNATE_TOTAL": 1,
+      "HOME_TEAM_TOTAL_POINTS": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "PLAYER_X_RUSHING_YARDS_MEDIUM": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-half": {
+     "title": "1st Half",
+     "markets": 18,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_TOUCHDOWNS_1ST_HALF": 1,
+      "1ST_HALF_TOTAL_TOUCHDOWNS_-_HOME_TEAM": 1,
+      "FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "AWAY_-_FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "FIRST_HALF_TOTAL": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_HALF_AWAY_TEAM_TOTAL_POINTS": 1,
+      "FIRST_HALF_HANDICAP": 1,
+      "1ST_HALF_TOTAL_TOUCHDOWNS_-_AWAY_TEAM": 1,
+      "1ST_HALF_HOME_TEAM_TOTAL_POINTS": 1,
+      "HOME_-_FIRST_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "1st-quarter": {
+     "title": "1st Quarter",
+     "markets": 11,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "1ST_QUARTER_HANDICAP": 1,
+      "1ST_QUARTER_TOTAL_POINTS_ODD/EVEN": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "1ST_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-quarter": {
+     "title": "2nd Quarter",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "2ND_QUARTER_TOTAL": 1,
+      "2ND_QUARTER_HANDICAP": 1
+     },
+     "twoWayOdds": []
+    },
+    "3rd-quarter": {
+     "title": "3rd Quarter",
+     "markets": 10,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "3RD_QUARTER_HANDICAP": 1,
+      "3RD_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "4th-quarter": {
+     "title": "4th Quarter",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "4TH_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "parlays": {
+     "title": "Parlays",
+     "markets": 14,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_/_TOTAL_POINTS_DOUBLE_2.": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_7": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_5": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_6": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_2": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_3": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_8": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "LINE_/_TOTAL_POINTS_DOUBLE_4": 1,
+      "MATCH_/_TOTAL_POINTS_DOUBLE_1.": 1,
+      "MATCH_/_TOTAL_POINTS_DOUBLE.": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "same-game-parlay": {
+     "title": "Same Game Parlay™",
+     "markets": 9,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "4TH_QUARTER_HANDICAP": 1,
+      "4TH_QUARTER_TOTAL": 1
+     },
+     "twoWayOdds": []
+    },
+    "2nd-half": {
+     "title": "2nd Half",
+     "markets": 13,
+     "parsed": 0,
+     "ouTypes": {
+      "AWAY_-_SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "HOME_-_SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "SECOND_HALF_TOTAL": 1,
+      "SECOND_HALF_HANDICAP": 1,
+      "2ND_HALF_AWAY_TEAM_TOTAL_POINTS": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "2ND_HALF_HOME_TEAM_TOTAL_POINTS": 1,
+      "SECOND_HALF_ALTERNATE_TOTAL_POINTS": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "scoring": {
+     "title": "Scoring",
+     "markets": 27,
+     "parsed": 0,
+     "ouTypes": {
+      "TOTAL_TOUCHDOWNS_-_AWAY_TEAM": 1,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_TOUCHDOWNS_SCORED": 1,
+      "TOTAL_TOUCHDOWNS_-_HOME_TEAM": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "d-st": {
+     "title": "D/ST",
+     "markets": 5,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "passing-props": {
+     "title": "Passing Props",
+     "markets": 12,
+     "parsed": 4,
+     "ouTypes": {
+      "PLAYER_X_PASSING_TOUCHDOWNS_HIGH": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PLAYER_X_PASSING_YARDS_HIGH": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "receiving-props": {
+     "title": "Receiving Props",
+     "markets": 58,
+     "parsed": 26,
+     "ouTypes": {
+      "PLAYER_X_RECEIVING_YARDS_LOW": 4,
+      "PLAYER_X_RECEIVING_YARDS_MEDIUM": 6,
+      "PLAYER_X_RUSHING_+_RECEIVING_YARDS": 2,
+      "PLAYER_X_RECEPTIONS_HIGH": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PLAYER_X_RECEPTIONS_MEDIUM": 6,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_RECEIVING_YARDS_HIGH": 2,
+      "PLAYER_X_RECEPTIONS_LOW": 4
+     },
+     "twoWayOdds": []
+    },
+    "rushing-props": {
+     "title": "Rushing Props",
+     "markets": 16,
+     "parsed": 7,
+     "ouTypes": {
+      "PLAYER_X_RUSHING_YARDS_HIGH": 1,
+      "PLAYER_X_RUSHING_+_RECEIVING_YARDS": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PLAYER_X_RUSHING_YARDS_LOW": 3,
+      "TOTAL_POINTS_(OVER/UNDER)": 1,
+      "PLAYER_X_RUSHING_YARDS_MEDIUM": 1
+     },
+     "twoWayOdds": []
+    },
+    "td-scorer-props": {
+     "title": "TD Scorer Props",
+     "markets": 16,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "game-specials": {
+     "title": "Game Specials",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quick-bets": {
+     "title": "Quick Bets",
+     "markets": 6,
+     "parsed": 0,
+     "ouTypes": {
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    },
+    "quarter-props": {
+     "title": "Quarter Props",
+     "markets": 68,
+     "parsed": 0,
+     "ouTypes": {
+      "PLAYER_X_2ND_QUARTER_RECEIVING_YARDS": 11,
+      "PLAYER_X_1ST_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_3RD_QUARTER_RECEIVING_YARDS": 10,
+      "PLAYER_X_1ST_QUARTER_RECEIVING_YARDS": 10,
+      "PLAYER_X_4TH_QUARTER_RECEIVING_YARDS": 10,
+      "PLAYER_X_4TH_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_2ND_QUARTER_PASSING_YARDS": 2,
+      "PLAYER_X_1ST_QUARTER_PASSING_YARDS": 2,
+      "PLAYER_X_4TH_QUARTER_PASSING_YARDS": 2,
+      "MATCH_HANDICAP_(2-WAY)": 1,
+      "PLAYER_X_2ND_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_3RD_QUARTER_RUSHING_YARDS": 4,
+      "PLAYER_X_3RD_QUARTER_PASSING_YARDS": 2,
+      "TOTAL_POINTS_(OVER/UNDER)": 1
+     },
+     "twoWayOdds": []
+    }
+   }
+  }
+ ],
+ "pin_NCAA": {
+  "specials": 26,
+  "parsed": 26,
+  "marketTypes": {
+   "moneyline|0": 64,
+   "team_total|0": 114,
+   "spread|0": 513,
+   "total|0": 539,
+   "moneyline|1": 6,
+   "team_total|1": 12,
+   "spread|1": 54,
+   "total|1": 6,
+   "moneyline|3": 5,
+   "team_total|3": 12,
+   "spread|3": 6,
+   "total|3": 6
+  },
+  "unparsedDesc": [],
+  "stats": {
+   "pass_tds": 2,
+   "rec_yds": 10,
+   "receptions": 4,
+   "rush_yds": 7,
+   "pass_yds": 3
+  },
+  "unpriced": [],
+  "sample": [
+   {
+    "sport": "NCAA",
+    "player": "Landyn Locke",
+    "mkey": "pass_tds",
+    "key": "NCAA|landynlocke|pass_tds",
+    "line": 1.5,
+    "pOver": 0.5357,
+    "over": -132,
+    "under": 100,
+    "start": "2026-10-15T00:00:00.000Z"
+   },
+   {
+    "sport": "NCAA",
+    "player": "Chris Reed",
+    "mkey": "rec_yds",
+    "key": "NCAA|chrisreed|rec_yds",
+    "line": 51.5,
+    "pOver": 0.481,
+    "over": -107,
+    "under": -124,
+    "start": "2026-10-15T00:00:00.000Z"
+   },
+   {
+    "sport": "NCAA",
+    "player": "Javon Rogers",
+    "mkey": "receptions",
+    "key": "NCAA|javonrogers|receptions",
+    "line": 2.5,
+    "pOver": 0.4843,
+    "over": -108,
+    "under": -122,
+    "start": "2026-10-14T23:30:00.000Z"
+   }
+  ]
+ },
+ "pin_MLB": {
+  "specials": 89,
+  "parsed": 89,
+  "marketTypes": {
+   "total|0": 103,
+   "moneyline|0": 19,
+   "moneyline|1": 9,
+   "team_total|0": 12,
+   "spread|0": 14,
+   "team_total|1": 4,
+   "spread|1": 10,
+   "total|1": 10,
+   "moneyline|3": 2,
+   "spread|3": 2,
+   "total|3": 2
+  },
+  "unparsedDesc": [],
+  "stats": {
+   "home_runs": 37,
+   "total_bases": 36,
+   "hits_allowed": 4,
+   "earned_runs": 4,
+   "pitcher_outs": 4,
+   "strikeouts": 4
+  },
+  "unpriced": [],
+  "sample": [
+   {
+    "sport": "MLB",
+    "player": "Kyle Tucker",
+    "mkey": "home_runs",
+    "key": "MLB|kyletucker|home_runs",
+    "line": 0.5,
+    "pOver": 0.0821,
+    "over": 746,
+    "under": -1317,
+    "start": "2026-10-15T00:00:00.000Z"
+   },
+   {
+    "sport": "MLB",
+    "player": "Luis Lara",
+    "mkey": "total_bases",
+    "key": "MLB|luislara|total_bases",
+    "line": 0.5,
+    "pOver": 0.5139,
+    "over": -116,
+    "under": -104,
+    "start": "2026-10-15T00:00:00.000Z"
+   },
+   {
+    "sport": "MLB",
+    "player": "Junior Caminero",
+    "mkey": "home_runs",
+    "key": "MLB|juniorcaminero|home_runs",
+    "line": 0.5,
+    "pOver": 0.1625,
+    "over": 413,
+    "under": -578,
+    "start": "2026-10-15T17:00:00.000Z"
+   }
+  ]
+ },
+ "pin_NHL": {
+  "specials": 108,
+  "parsed": 108,
+  "marketTypes": {
+   "total|0": 119,
+   "moneyline|0": 22,
+   "moneyline|1": 2,
+   "team_total|1": 4,
+   "spread|1": 4,
+   "total|1": 8,
+   "moneyline|2": 2,
+   "team_total|2": 4,
+   "spread|2": 6,
+   "total|2": 6,
+   "moneyline|3": 2,
+   "team_total|3": 4,
+   "spread|3": 6,
+   "total|3": 6,
+   "team_total|0": 12,
+   "spread|0": 8,
+   "moneyline|6": 2,
+   "team_total|6": 10,
+   "spread|6": 9,
+   "total|6": 2
+  },
+  "unparsedDesc": [],
+  "stats": {
+   "assists": 28,
+   "shots_on_goal": 28,
+   "goals": 24,
+   "points": 28
+  },
+  "unpriced": [],
+  "sample": [
+   {
+    "sport": "NHL",
+    "player": "Alex Ovechkin",
+    "mkey": "assists",
+    "key": "NHL|alexovechkin|assists",
+    "line": 0.5,
+    "pOver": 0.3141,
+    "over": 181,
+    "under": -250,
+    "start": "2026-10-14T23:37:00.000Z"
+   },
+   {
+    "sport": "NHL",
+    "player": "Ryan Leonard",
+    "mkey": "shots_on_goal",
+    "key": "NHL|ryanleonard|shots_on_goal",
+    "line": 2.5,
+    "pOver": 0.3955,
+    "over": 130,
+    "under": -175,
+    "start": "2026-10-14T23:37:00.000Z"
+   },
+   {
+    "sport": "NHL",
+    "player": "Brock Nelson",
+    "mkey": "goals",
+    "key": "NHL|brocknelson|goals",
+    "line": 0.5,
+    "pOver": 0.2177,
+    "over": 280,
+    "under": -417,
+    "start": "2026-10-15T00:37:00.000Z"
+   }
+  ]
+ },
+ "pin_NBA": {
+  "specials": 30,
+  "parsed": 30,
+  "marketTypes": {
+   "moneyline|0": 48,
+   "team_total|0": 120,
+   "spread|0": 132,
+   "total|0": 192
+  },
+  "unparsedDesc": [],
+  "stats": {
+   "points": 6,
+   "pra": 6,
+   "assists": 6,
+   "threes": 6,
+   "rebounds": 6
+  },
+  "unpriced": [],
+  "sample": [
+   {
+    "sport": "NBA",
+    "player": "Cade Cunningham",
+    "mkey": "points",
+    "key": "NBA|cadecunningham|points",
+    "line": 24.5,
+    "pOver": 0.5212,
+    "over": -125,
+    "under": -106,
+    "start": "2026-10-20T19:00:00.000Z"
+   },
+   {
+    "sport": "NBA",
+    "player": "Jayson Tatum",
+    "mkey": "pra",
+    "key": "NBA|jaysontatum|pra",
+    "line": 42.5,
+    "pOver": 0.4843,
+    "over": -108,
+    "under": -122,
+    "start": "2026-10-20T19:00:00.000Z"
+   },
+   {
+    "sport": "NBA",
+    "player": "LeBron James",
+    "mkey": "assists",
+    "key": "NBA|lebronjames|assists",
+    "line": 7.5,
+    "pOver": 0.5,
+    "over": -115,
+    "under": -115,
+    "start": "2026-10-20T23:00:00.000Z"
+   }
+  ]
+ },
+ "pin_NFL": {
+  "specials": 311,
+  "parsed": 311,
+  "marketTypes": {
+   "total|0": 493,
+   "moneyline|0": 87,
+   "moneyline|1": 56,
+   "moneyline|3": 32,
+   "team_total|1": 28,
+   "spread|1": 126,
+   "total|1": 126,
+   "team_total|3": 28,
+   "spread|3": 41,
+   "total|3": 42,
+   "team_total|0": 28,
+   "spread|0": 183
+  },
+  "unparsedDesc": [],
+  "stats": {
+   "pass_yds": 22,
+   "receptions": 80,
+   "pass_comp": 14,
+   "rec_yds": 80,
+   "anytime_td": 11,
+   "pass_ints": 21,
+   "pass_tds": 22,
+   "rush_yds": 40,
+   "pass_att": 14,
+   "rush_att": 5,
+   "field_goals": 2
+  },
+  "unpriced": [],
+  "sample": [
+   {
+    "sport": "NFL",
+    "player": "Sam Darnold",
+    "mkey": "pass_yds",
+    "key": "NFL|samdarnold|pass_yds",
+    "line": 220.5,
+    "pOver": 0.5,
+    "over": -112,
+    "under": -112,
+    "start": "2026-10-16T00:15:00.000Z"
+   },
+   {
+    "sport": "NFL",
+    "player": "Evan Engram",
+    "mkey": "receptions",
+    "key": "NFL|evanengram|receptions",
+    "line": 2.5,
+    "pOver": 0.5783,
+    "over": -153,
+    "under": 121,
+    "start": "2026-10-16T00:15:00.000Z"
+   },
+   {
+    "sport": "NFL",
+    "player": "Bo Nix",
+    "mkey": "pass_comp",
+    "key": "NFL|bonix|pass_comp",
+    "line": 21.5,
+    "pOver": 0.484,
+    "over": -105,
+    "under": -119,
+    "start": "2026-10-16T00:15:00.000Z"
+   }
+  ]
+ }
+}
