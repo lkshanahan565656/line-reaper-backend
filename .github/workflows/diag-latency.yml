@@ -1,7 +1,7 @@
 name: diag-latency
 on:
   push:
-    branches: [diag-latency]
+    branches: [diag-latency-smoke]
 permissions:
   contents: write
 jobs:
@@ -15,12 +15,12 @@ jobs:
       - run: |
           set +e
           npm i axios --no-audit --no-fund 2>&1 | tail -1
-          { date -u; DUR_MIN=100 node diag/latency.js; } 2>&1 | tee latency-out.txt || true
+          { date -u; DUR_MIN=3 node diag/latency.js; } 2>&1 | tee latency-out.txt || true
       - if: always()
         run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-latency-out
+          git checkout -B diag-latency-smoke-out
           git add -f latency-out.txt; git add -f latency-out.json || true
           git commit -m "diag latency output"
-          git push -f origin diag-latency-out
+          git push -f origin diag-latency-smoke-out
