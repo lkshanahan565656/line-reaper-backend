@@ -1,16 +1,16 @@
-name: diag-h2h
+name: diag-h2h3
 on:
   push:
-    branches: [diag-h2h]
+    branches: [diag-h2h3]
 concurrency:
-  group: diag-h2h
+  group: diag-h2h3
   cancel-in-progress: true
 permissions:
   contents: write
 jobs:
   pull:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,25 +19,14 @@ jobs:
       - run: |
           set +e
           mkdir -p out
-          node diag/h2hpull.js probes 2>&1 | tee out/probes.txt
-          git config user.name diag-bot
-          git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-h2h-out
-          git add -f out
-          git commit -qm "h2h probes" ; git push -f origin diag-h2h-out
-          cp -r out /tmp/probes
-          git checkout -q diag-h2h
-          mkdir -p out
-          (timeout 95m node diag/h2hpull.js dota 2>&1 | tee out/dota.txt) &
-          (SINCE=2025-09-01 MINUTES=90 node diag/vlrmaps.js 2>&1 | tee out/vlr.txt; cp data/vlrmaps.json.gz out/ ) &
-          wait
-          cp -n /tmp/probes/* out/
+          SINCE=2025-12-01 MINUTES=80 node diag/vlrmaps.js 2>&1 | tee out/vlr.txt
+          cp data/vlrmaps.json.gz out/
           true
       - if: always()
         run: |
           set +e
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-h2h-out
+          git checkout -B diag-h2h3-out
           git add -f out
-          git commit -qm "h2h output" ; git push -f origin diag-h2h-out
+          git commit -qm "vlr maps" ; git push -f origin diag-h2h3-out
