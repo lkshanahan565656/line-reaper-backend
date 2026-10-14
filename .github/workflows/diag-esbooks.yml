@@ -10,13 +10,17 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/esports-book-lines-5fioit, path: app }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
+      - run: cd app && (npm ci --no-audit --no-fund || npm install --no-audit --no-fund)
       - run: timeout 1500 node diag/probe.js || true
+      - run: MINS=14 timeout 1500 node diag/branch.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          gzip -9 out/*.json
+          rm -rf app
           git checkout --orphan diag-esbooks-out
           git rm -rq --cached . || true
           git add -f out
