@@ -1,0 +1,27 @@
+04:36:09 prod saved 3.97.0
+04:36:29 ud 6587 pp 3171 sl 1941 kalshi null
+04:36:49 ud 6587 pp 3171 sl 1941 kalshi null
+04:37:09 ud 6587 pp 3171 sl 1941 kalshi null
+04:37:29 ud 6587 pp 3171 sl 1941 kalshi null
+04:37:49 ud 6587 pp 3171 sl 1941 kalshi null
+04:38:09 ud 6586 pp 3171 sl 1940 kalshi null
+04:38:29 ud 6586 pp 3171 sl 1940 kalshi null
+04:38:49 ud 6586 pp 3171 sl 1940 kalshi null
+04:39:09 ud 6586 pp 3171 sl 1940 kalshi null
+04:39:29 ud 6586 pp 3171 sl 1940 kalshi null
+04:39:50 ud 6586 pp 3171 sl 1940 kalshi null
+04:40:10 ud 6586 pp 3171 sl 1940 kalshi null
+04:40:30 ud 6586 pp 3171 sl 1940 kalshi null
+04:40:50 ud 6586 pp 3171 sl 1940 kalshi null
+04:41:10 ud 6586 pp 3171 sl 1940 kalshi null
+04:41:32 ud 6586 pp 3171 sl 1940 kalshi null
+04:41:52 ud 6586 pp 3171 sl 1940 kalshi {"events":70,"ladders":348,"matched":508,"interpolated":81}
+04:42:14 ud 6586 pp 3171 sl 1944 kalshi {"events":70,"ladders":348,"matched":508,"interpolated":81}
+04:42:15 snap 0 rows 8477 multi 2011 gap>0 473 priced 396 ev 0
+04:45:21 snap 1 rows 8477 multi 2011 gap>0 472 priced 396 ev 0
+04:48:22 snap 2 rows 8478 multi 2016 gap>0 475 priced 401 ev 0
+04:51:24 snap 3 rows 8470 multi 2026 gap>0 479 priced 401 ev 0
+04:54:29 snap 4 rows 8468 multi 2030 gap>0 480 priced 402 ev 0
+04:57:30 snap 5 rows 8450 multi 2032 gap>0 483 priced 402 ev 0
+05:00:31 snap 6 rows 8438 multi 2032 gap>0 487 priced 402 ev 0
+05:03:32 snap 7 rows 8439 multi 2033 gap>0 487 priced 404 ev 0
