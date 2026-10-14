@@ -45,3 +45,14 @@ test('days filter drops old records', () => {
   const b = scoreboard({ tail: [old] }, { sinceMs: Date.now() - 86400e3 });
   assert.equal(b.sources.tail.overall.n, 0);
 });
+
+test('exchange value: the delayed grade is compared with the same bets at the alert, and $100 through the book decides once it has 8', () => {
+  const b = i => ({ id: `x${i}`, status: 'closed', flaggedAt: new Date().toISOString(), source: 'xvalue', sport: 'nfl', book: 'kalshi', market: 'moneyline',
+    clv: i < 10 ? 3 : -9, ...(i < 10 ? { execClv: 2.5, execSizedClv: -1 + (i % 3) * 0.1 } : {}) });
+  const s = scoreboard({ exchangeValue: Array.from({ length: 14 }, (_, i) => b(i)) }).sources.exchangeValue.overall;
+  assert.equal(s.execN, 10);
+  assert.equal(s.execAlertClv, 0.03, 'only the 10 graded at +2 min');
+  assert.equal(s.sizedN, 10);
+  assert.ok(s.sizedClv < 0);
+  assert.equal(s.verdict, 'avoid', 'the $100 grade decides, not the +2.5% at the best price');
+});

@@ -51,6 +51,29 @@ function pmusDepth(book, buy, maxPrice) {
   return { contracts: Math.round(contracts), usd: Math.round(usd), best };
 }
 
+// What `usd` buys walking a venue's asks cheapest first, taker fee in:
+// { cost (all-in per contract), usd (spent, short of `usd` when the book
+// holds less), contracts } or null on an empty book.
+// asks: [[price, contracts]]; feeRate: Kalshi 0.07, Polymarket US 0.0695 (× p(1 − p))
+function walkCost(asks = [], usd = DEFAULTS.minUsd, feeRate = 0.07) {
+  let spent = 0, n = 0;
+  for (const [p, q] of [...asks].sort((a, b) => a[0] - b[0])) {
+    if (!(p > 0 && p < 1 && q > 0) || spent >= usd - 1e-9) continue;
+    const c = p + feeRate * p * (1 - p), take = Math.min(q, (usd - spent) / c);
+    spent += take * c; n += take;
+  }
+  return n > 0 ? { cost: Math.round(spent / n * 1e4) / 1e4, usd: Math.round(spent), contracts: Math.round(n) } : null;
+}
+// a venue's asks for buying `side`: Kalshi from the opposite side's bids,
+// Polymarket US from the long side's offers or (short) 1 − its bids
+function kalshiAsks(payload, side) {
+  const ob = payload?.orderbook_fp || payload?.orderbook || payload || {};
+  return levels(ob, side === 'yes' ? 'no' : 'yes').map(([q, n]) => [Math.round((1 - q) * 1e4) / 1e4, n]);
+}
+function pmusAsks(book, buy) {
+  return buy === 'long' ? (book?.offers || []).map(([p, n]) => [p, n]) : (book?.bids || []).map(([p, n]) => [Math.round((1 - p) * 1e4) / 1e4, n]);
+}
+
 // Reads each Kalshi edge's book, and each Polymarket US edge's when a pmus
 // client is given (at most maxReads a scan, a read kept ttlMs), and sets
 // e.depth. Other venues are left without one: unchecked.
@@ -81,7 +104,27 @@ function createDepthCheck({ http, pmus = null, opts = {}, now = () => Date.now()
     for (const [k, c] of cache) if (t - c.at > 10 * o.ttlMs) cache.delete(k);
     return reads;
   }
-  return { check, opts: o };
+  // The +2 min grade at size: for each tracked bet due its delayed price
+  // ({ id, venue, marketId, contract: 'yes'|'no', yesSide }), a fresh read of
+  // its book walked for minUsd → Map bet id → walkCost. A bet whose book
+  // can't be read is left out (it keeps the top-of-book grade only).
+  async function sized(bets = [], { usd = o.minUsd, kalshiFeeRate = 0.07, pmusFeeRate = 0.0695 } = {}) {
+    const out = new Map();
+    for (const b of bets.slice(0, o.maxReads)) {
+      const us = b.venue === 'polymarketus' && pmus && (b.yesSide === 'long' || b.yesSide === 'short');
+      if (!b.marketId || !(b.contract === 'yes' || b.contract === 'no') || !(b.venue === 'kalshi' || us)) continue;
+      try {
+        const payload = await read({ venue: b.venue, marketId: b.marketId });
+        if (payload == null) continue;
+        let w;
+        if (!us) w = walkCost(kalshiAsks(payload, b.contract), usd, kalshiFeeRate);
+        else if (payload.open !== false) w = walkCost(pmusAsks(payload, b.contract === 'yes' ? b.yesSide : b.yesSide === 'long' ? 'short' : 'long'), usd, pmusFeeRate);
+        if (w) out.set(b.id, w);
+      } catch { /* unread: no sized grade */ }
+    }
+    return out;
+  }
+  return { check, sized, opts: o };
 }
 
 // A signal alerts only once its own record, graded at the price 2 minutes
@@ -93,6 +136,8 @@ function createDepthCheck({ http, pmus = null, opts = {}, now = () => Date.now()
 // plays: results.scoreboard plays → { pass, rec }
 function execPasses(plays = [], signal, { minN = DEFAULTS.alertMinN, minClv = DEFAULTS.alertMinClv } = {}) {
   const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === signal) || null;
+  // at $100 through the book once that has the sample, else at the top of the book
+  if (rec && rec.sizedN >= minN) return { pass: rec.sizedClv >= minClv, rec };
   return { pass: !!(rec && rec.execN >= minN && rec.execClv >= minClv), rec };
 }
 // "Steam record: +2.1% CLV 2 min after the alert over 18 bets (+3.0% at the alert), 72% beat the close"
@@ -100,10 +145,11 @@ function recordLine(signal, rec) {
   if (!rec) return null;
   const pc = x => `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
   const name = signal.charAt(0).toUpperCase() + signal.slice(1);
+  if (rec.sizedN >= DEFAULTS.alertMinN) return `${name} record: ${pc(rec.sizedClv)} CLV for $${DEFAULTS.minUsd} 2 min after the alert over ${rec.sizedN} bets (${pc(rec.execClv)} at the best price)`;
   if (rec.execN) return `${name} record: ${pc(rec.execClv)} CLV 2 min after the alert over ${rec.execN} bets (${pc(rec.avgClv)} at the alert), ${Math.round(rec.execBeatPct * 100)}% beat the close`;
   return rec.avgClv != null ? `${name} record: ${pc(rec.avgClv)} CLV at the alert over ${rec.n} bets` : null;
 }
 
 const executable = (e, minUsd = DEFAULTS.minUsd) => !!(e?.depth && e.depth.usd >= minUsd);
 
-module.exports = { execPasses, recordLine, kalshiDepth, pmusDepth, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };
+module.exports = { execPasses, recordLine, kalshiDepth, pmusDepth, walkCost, kalshiAsks, pmusAsks, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };

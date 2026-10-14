@@ -114,3 +114,35 @@ test('verdicts judge the 2-minute grade once 8 bets carry one', () => {
   assert.equal(few.execN, 5);
   assert.equal(few.verdict, 'proven', 'under 8 delayed grades: the alert-time CLV still decides');
 });
+
+test('walkCost: $100 walked up the asks with the taker fee, short when the book is thin', () => {
+  const w = X.walkCost([[0.5, 100], [0.4, 100], [0.6, 1000]], 100, 0.07);
+  // 0.40 + fee 0.0168 = 0.4168 × 100 = 41.68; 0.50 + 0.0175 = 0.5175 × 100 = 51.75; the last 6.57 at 0.6168
+  assert.equal(w.usd, 100);
+  assert.equal(w.contracts, Math.round(200 + 6.57 / 0.6168));
+  assert.ok(Math.abs(w.cost - 100 / (200 + 6.57 / 0.6168)) < 1e-3);
+  assert.deepEqual(X.walkCost([[0.5, 10]], 100, 0), { cost: 0.5, usd: 5, contracts: 10 });
+  assert.equal(X.walkCost([], 100), null);
+});
+
+test('sized: reads each due bet\'s book fresh and walks it for $100', async () => {
+  const http = { get: async () => ({ data: { orderbook: { no: [[48, 50], [45, 1000]] } } }) };
+  const pmus = { book: async () => ({ open: true, offers: [[0.3, 1000]], bids: [[0.6, 1000]] }) };
+  const dc = X.createDepthCheck({ http, pmus });
+  const out = await dc.sized([
+    { id: 'k', venue: 'kalshi', marketId: 'KX-A', contract: 'yes' },
+    { id: 'u', venue: 'polymarketus', marketId: 'slug', contract: 'no', yesSide: 'long' },
+    { id: 'skip', venue: 'kalshi', marketId: 'KX-B' },
+  ], { kalshiFeeRate: 0, pmusFeeRate: 0 });
+  // YES asks 0.52 × 50 = $26, then 0.55 for the other $74
+  assert.ok(Math.abs(out.get('k').cost - 100 / (50 + 74 / 0.55)) < 1e-3);
+  assert.equal(out.get('u').cost, 0.4, 'NO on a long-YES market sells into the bids at 1 − 0.6');
+  assert.equal(out.has('skip'), false, 'no contract side: not read');
+});
+
+test('once 15 bets carry the $100 grade, alerts go by it', () => {
+  const play = o => ({ source: 'exchangeValue', by: 'signal', play: 'steam', n: 23, avgClv: 0.041, execN: 20, execClv: 0.021, ...o });
+  assert.equal(X.execPasses([play({ sizedN: 16, sizedClv: -0.01 })], 'steam').pass, false);
+  assert.equal(X.execPasses([play({ sizedN: 16, sizedClv: 0.012 })], 'steam').pass, true);
+  assert.equal(X.execPasses([play({ sizedN: 5, sizedClv: -0.05 })], 'steam').pass, true, 'too few at size: the +2 min grade decides');
+});

@@ -81,3 +81,28 @@ test('summary grades the two-minute price too', async () => {
   assert.equal(s.byBook.fanduel.execN, 1);
   assert.ok(Math.abs(s.byBook.fanduel.avgExecClv - 1.4) < 0.1);
 });
+
+test('the +2 min grade at $100 rides along, and the summary compares like for like', async () => {
+  let t = Date.parse('2026-10-14T12:00:00Z');
+  const tr = createEvTracker({ now: () => t, minEv: 0 });
+  const r = { group: 'kalshi|KX-A', sport: 'nfl', event: 'A @ B', start: '2026-10-14T13:00:00Z', market: 'moneyline', side: 'A', book: 'kalshi',
+    price: 0.5, decimal: 2, fairProb: 52, ev: 4, source: 'xvalue', contract: 'yes', marketId: 'KX-A' };
+  await tr.recordBoard([r]);
+  await tr.recordBoard([r, { ...r, group: 'kalshi|KX-B', marketId: 'KX-B', side: 'B' }]);
+  assert.deepEqual(await tr.dueForExec(), [], 'not due yet');
+  t += 2 * 60e3;
+  const due = await tr.dueForExec();
+  assert.deepEqual(due.map(b => [b.id, b.venue, b.marketId, b.contract]), [['kalshi|KX-A|A|kalshi', 'kalshi', 'KX-A', 'yes'], ['kalshi|KX-B|B|kalshi', 'kalshi', 'KX-B', 'yes']]);
+  await tr.recordBoard([], null, { costs: new Map([['kalshi|KX-A|A', 0.5], ['kalshi|KX-B|B', 0.5]]), sized: new Map([['kalshi|KX-A|A|kalshi', { cost: 0.52, usd: 100 }]]) });
+  assert.deepEqual(await tr.dueForExec(), [], 'graded: no longer due');
+  t = Date.parse('2026-10-14T13:00:01Z');
+  await tr.recordBoard([]);
+  const [a] = (await tr.list()).filter(b => b.marketId === 'KX-A');
+  assert.equal(a.execSized, 0.52);
+  assert.equal(a.execSizedClv, 0);
+  const s = await tr.summary();
+  assert.equal(s.overall.execN, 2);
+  assert.equal(s.overall.execAlertClv, 4);
+  assert.equal(s.overall.sizedN, 1);
+  assert.equal(s.overall.avgSizedClv, 0);
+});

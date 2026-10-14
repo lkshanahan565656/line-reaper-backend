@@ -5425,16 +5425,19 @@ function renderResults(d) {
       <div style="font-size:11px;color:var(--text2);letter-spacing:.05em">${escAttr(s.label.toUpperCase())}</div>
       <div style="font-size:18px;font-weight:700;margin:4px 0;color:${col(o.avgClv ?? o.roi)}">${o.avgClv != null ? `${pct(o.avgClv)} CLV` : o.roi != null ? `${pct(o.roi)} ROI` : '—'}</div>
       <div style="font-size:11px;color:var(--text2)">${o.n} graded · ${s.open} open${o.graded ? ` · ${o.wins}-${o.losses} · ${o.units > 0 ? '+' : ''}${o.units}u` : ''}${o.beatClosePct != null ? ` · beat close ${pct(o.beatClosePct, false)}` : ''}</div>
-      ${o.execN ? `<div style="font-size:11px;margin-top:3px">2 min after the alert: <b style="color:${col(o.execClv)}">${pct(o.execClv)} CLV</b> over ${o.execN}</div>` : ''}
+      ${o.execN ? `<div style="font-size:11px;margin-top:3px">2 min after the alert: <b style="color:${col(o.execClv)}">${pct(o.execClv)} CLV</b> over ${o.execN}${o.execAlertClv != null ? ` (same bets at the alert ${pct(o.execAlertClv)})` : ''}</div>` : ''}
+      ${o.sizedN ? `<div style="font-size:11px;margin-top:2px">$100 through the book then: <b style="color:${col(o.sizedClv)}">${pct(o.sizedClv)} CLV</b> over ${o.sizedN}</div>` : ''}
     </div>`; }).join('');
   const anyExec = (d.plays || []).some(p => p.execN);
+  const anySized = (d.plays || []).some(p => p.sizedN);
   const plays = (d.plays || []).filter(p => p.play !== 'all');
   const rows = plays.map(p => { const [v, c] = VC[p.verdict] || VC.early; return `<tr>
       <td><span style="color:${c};font-weight:700;font-size:11px">${v}</span></td>
       <td>${escAttr(p.label)}</td><td>${escAttr(p.play)}</td><td style="text-align:right">${p.n}</td>
       <td style="text-align:right;color:${col(p.avgClv)}">${pct(p.avgClv)}</td>
       <td style="text-align:right">${p.beatClosePct != null ? pct(p.beatClosePct, false) : '—'}</td>
-      ${anyExec ? `<td style="text-align:right;color:${col(p.execClv)}" title="${p.execN || 0} bets graded 2 minutes after the alert">${p.execN ? pct(p.execClv) : '—'}</td>` : ''}
+      ${anyExec ? `<td style="text-align:right;color:${col(p.execClv)}" title="${p.execN || 0} bets graded 2 minutes after the alert${p.execAlertClv != null ? `; the same bets at the alert: ${pct(p.execAlertClv)}` : ''}">${p.execN ? pct(p.execClv) : '—'}</td>` : ''}
+      ${anySized ? `<td style="text-align:right;color:${col(p.sizedClv)}" title="${p.sizedN || 0} bets graded at what $100 cost through the book 2 minutes after the alert">${p.sizedN ? pct(p.sizedClv) : '—'}</td>` : ''}
       <td style="text-align:right">${p.graded ? `${p.wins}-${p.losses}` : '—'}</td>
       <td style="text-align:right;color:${col(p.roi)}">${pct(p.roi)}</td>
       <td style="text-align:right;color:${col(p.units)}">${p.graded ? `${p.units > 0 ? '+' : ''}${p.units}u` : '—'}</td></tr>`; }).join('');
@@ -5445,9 +5448,9 @@ function renderResults(d) {
     <div style="display:flex;gap:8px;flex-wrap:wrap">${cards}</div>
     <h3 style="margin:16px 0 8px;font-size:13px;letter-spacing:.05em;color:var(--text2)">PLAYS, BEST FIRST</h3>
     ${rows ? `<div style="overflow-x:auto"><table class="esm-table">
-      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
+      <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}${anySized ? '<th style="text-align:right">CLV $100</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
       <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each bet at what it cost 2 minutes after the alert, the price a subscriber gets (exchange value, esports exchange edges and the +EV screener). Once a play has 8 bets graded at +2 min, its verdict is judged on that grade. Exchange value alerts go out only for signals whose +2 min record beats the close. ${kept}</div>`;
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each bet at what it cost 2 minutes after the alert, the price a subscriber gets (exchange value, esports exchange edges and the +EV screener). CLV $100 grades it at what $100 cost walking the book at that moment, fee in (exchange value). Once a play has 8 bets graded at $100, its verdict is judged on that grade, else on the +2 min grade once it has 8. Exchange value alerts go out only for signals whose +2 min record (at $100 once 15 bets have that grade) beats the close. ${kept}</div>`;
 }
 
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
