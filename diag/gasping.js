@@ -1,0 +1,1 @@
+(async () => { const g = await (await fetch('https://line-reaper-backend-production.up.railway.app/api/gas-locks')).json(); console.log(JSON.stringify({ updated: g.updated, count: g.count, counts: g.counts, errors: g.errors, record: g.record })); })();
