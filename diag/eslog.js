@@ -23,12 +23,13 @@ let cycle = 0; const t0 = Date.now(); const seen = new Set();
       mk: (mk.j || []).filter(k => ids.has(k.matchupId)).map(k => ({ m: k.matchupId, k: k.key, per: k.period, t: k.type, alt: k.isAlternate ? 1 : 0, lim: k.limits?.[0]?.amount, s: k.status, pr: (k.prices || []).map(p => [p.designation, p.points, p.price]) })) });
     const kal = {};
     for (const s of SERIES) {
-      const a = await get(`${KAL}/markets?series_ticker=${s}&status=open&limit=1000`);
+      let a = await get(`${KAL}/markets?series_ticker=${s}&status=open&limit=1000`);
+      if (a.status === 429) { await new Promise(r => setTimeout(r, 2000)); a = await get(`${KAL}/markets?series_ticker=${s}&status=open&limit=1000`); }
       const list = (a.j?.markets || []);
       kal[s] = { st: a.status, m: [] };
       for (const m of list) {
-        const row = { t: m.ticker, e: m.event_ticker, y: m.yes_sub_title, ya: m.yes_ask, yb: m.yes_bid, na: m.no_ask, nb: m.no_bid, v: m.volume, oi: m.open_interest, ft: m.floor_strike, exp: m.expected_expiration_time, close: m.close_time };
-        if (/GAME$|MAP$/.test(s)) { const b = await get(`${KAL}/markets/${m.ticker}/orderbook?depth=8`); row.ob = b.j?.orderbook || null; }
+        const row = { t: m.ticker, e: m.event_ticker, ti: m.title, y: m.yes_sub_title, ya: m.yes_ask_dollars ?? m.yes_ask, yb: m.yes_bid_dollars ?? m.yes_bid, yas: m.yes_ask_size_fp, ybs: m.yes_bid_size_fp, lp: m.last_price_dollars, v: m.volume_fp ?? m.volume, st: m.status, ft: m.floor_strike, ex: m.custom_strike, exp: m.expected_expiration_time, close: m.close_time };
+        if (/GAME$/.test(s) && Date.parse(m.expected_expiration_time || 0) - Date.now() < 30 * 3600e3) { await new Promise(r => setTimeout(r, 80)); const b = await get(`${KAL}/markets/${m.ticker}/orderbook?depth=8`); row.ob = b.j?.orderbook_fp || b.j?.orderbook || b.status; }
         kal[s].m.push(row);
       }
     }

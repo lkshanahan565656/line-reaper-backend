@@ -20,7 +20,7 @@ jobs:
           MINUTES=330 node diag/eslog.js > out/log.txt 2>&1 &
           PID=$!
           push() {
-            rm -rf /tmp/pub && mkdir -p /tmp/pub && cp -r out /tmp/pub/ && cd /tmp/pub && git init -q && git checkout -q -b diag-espin-out && git add -f out && git commit -qm "diag output $(date -u +%H:%M)" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-espin-out; cd - >/dev/null
+            rm -rf /tmp/pub && mkdir -p /tmp/pub && cp -r out /tmp/pub/ && cd /tmp/pub && git init -q && git checkout -q -b diag-espin-log && git add -f out && git commit -qm "diag output $(date -u +%H:%M)" && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-espin-log; cd - >/dev/null
           }
           sleep 240; push
           while kill -0 $PID 2>/dev/null; do sleep 900; push || true; done
