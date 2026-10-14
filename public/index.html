@@ -539,6 +539,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .ln-prop { color: #cbd5e1; font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ln-badge { position: relative; display: inline-block; min-width: 46px; padding: 4px 6px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13px; color: #0b1220; background: var(--bk); }
 .ln-badge.model { color: #e0e7ff; background: #1d4ed8; }
+.ln-pin { display: inline-block; margin-left: 3px; padding: 1px 3px; border-radius: 4px; font: 700 8px/1.2 'JetBrains Mono', monospace; color: #fbbf24; border: 1px solid #fbbf2466; vertical-align: middle; }
 .ln-badge.none { color: #475569; background: rgba(148,163,184,.1); font-weight: 600; }
 .ln-badge i { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; border: 2px solid var(--card); }
 .ln-lean { font-weight: 800; font-size: 12px; letter-spacing: .04em; }
@@ -558,6 +559,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
   .ln-row > .c::before { content: attr(data-l); display: block; font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #475569; margin-bottom: 3px; }
   .ln-row > .ln-usedc::before { content: none; }
   .ln-badge { min-width: 0; width: 100%; font-size: 12px; padding: 4px 2px; }
+  .ln-pin { display: table; margin: 2px auto 0; }
 }
 .pb-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
 .pb-stat { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.18)); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
@@ -3483,13 +3485,14 @@ function lnRow(r, book) {
   const prob = ev?.fair ?? (r.esports && r.model?.prob != null ? r.model.prob : null);
   const minEv = pbState.data?.lines?.minEv ?? 2;
   // green only on a sharp price (the books' consensus, or the esports model) with the side open
-  const sharp = !!ev && (r.esports || ev.consensus);
+  // a kill-share price (Pinnacle's team kills × the player's share) is sharp only where it clears
+  const sharp = !!ev && (ev.share ? !!ev.clears : (r.esports || ev.consensus));
   const open = ev && (ev.side === 'Over' ? c.overOpen !== false : c.underOpen !== false);
   const go = sharp && open && ev.ev >= minEv;
   const evCls = ev == null ? '' : go ? 'good' : ev.ev > 0 ? 'thin' : 'bad';
   const mult = book === 'prizepicks' ? null : ev ? (ev.side === 'Over' ? c.over : c.under) : null;
   const multTxt = book === 'prizepicks' ? 'Std' : mult != null ? `${(+mult).toFixed(2)}x` : '—';
-  const src = r.esports ? 'our esports model' : (r.consensus?.sources || []).map(x => PB_SRC[x.book] || x.book).join(' + ') || (c.fair != null ? 'Kalshi' : 'the other apps');
+  const src = r.model?.share ? `Pinnacle team kills ${(r.model.share.pinPerMap || []).join(' + ')} × his ${r.model.share.pct}% kill share` : r.esports ? 'our esports model' : (r.consensus?.sources || []).map(x => PB_SRC[x.book] || x.book).join(' + ') || (c.fair != null ? 'Kalshi' : 'the other apps');
   const key = `${r.key}|${book}|${c.line}`;
   const used = lnUsed.keys.has(key);
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
@@ -3499,7 +3502,7 @@ function lnRow(r, book) {
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
     <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
-    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
+    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${r.model?.share ? '<span class="ln-pin" title="Pinnacle-backed: Pinnacle\'s team kills × his share of them">PIN</span>' : ''}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
@@ -3540,9 +3543,9 @@ function renderPropsBoard() {
     const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
     const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
     const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
-      : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
+      : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? 'Pinnacle kill share' : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
     const am = v => (v > 0 ? `+${v}` : `${v}`);
-    const proj = r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${r.consensus.sources.map(x => `${PB_SRC[x.book] || x.book} ${x.line} ${x.p.toFixed(0)}% O`).join(' · ')}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
+    const proj = r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${r.consensus.sources.map(x => `${PB_SRC[x.book] || x.book} ${x.line} ${x.p.toFixed(0)}% O`).join(' · ')}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
     const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
