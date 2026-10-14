@@ -5,7 +5,8 @@ const K = 'https://api.elections.kalshi.com/trade-api/v2';
 const BUDGET = Number(process.env.BUDGET_MIN || 270) * 60e3, T0 = Date.now();
 const MINVOL = Number(process.env.MINVOL || 300);
 const PER_SERIES = Number(process.env.PER_SERIES || 500);
-const HOURS = 72;
+const HOURS = Number(process.env.HOURS || 72);
+const CATS = process.env.CATS ? process.env.CATS.split(',') : null, DAYS = Number(process.env.DAYS || 999);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 let calls = 0, errs = 0;
@@ -35,8 +36,11 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
   while (pages < 3000) {
     const d = await get('/events', { status: 'settled', with_nested_markets: true, limit: 200, cursor });
     if (!d) break; pages++;
+    const oldest = Date.parse((d.events || []).slice(-1)[0]?.markets?.[0]?.close_time || 0);
+    if (oldest && oldest < Date.now() - DAYS * 86400e3) { log('reached DAYS'); break; }
     for (const e of d.events || []) {
       if (/^KXMVE/.test(e.event_ticker)) continue;
+      if (CATS && !CATS.includes(e.category || sMeta.get(e.series_ticker)?.cat)) continue;
       const ms = (e.markets || []).filter(m => (num(m.volume_fp) ?? m.volume ?? 0) >= MINVOL && (m.result === 'yes' || m.result === 'no' || num(m.settlement_value_dollars) != null));
       const slim = m => ({ ticker: m.ticker, title: m.title, yes_sub_title: m.yes_sub_title, close_time: m.close_time, open_time: m.open_time, expected_expiration_time: m.expected_expiration_time, occurrence_datetime: m.occurrence_datetime, latest_expiration_time: m.latest_expiration_time, settlement_value_dollars: m.settlement_value_dollars, result: m.result, volume_fp: m.volume_fp, strike_type: m.strike_type });
       if (ms.length) events.push({ e: { event_ticker: e.event_ticker, series_ticker: e.series_ticker, category: e.category, title: e.title, mutually_exclusive: e.mutually_exclusive, markets: { length: (e.markets || []).length }, fee_type_override: e.fee_type_override, fee_multiplier_override: e.fee_multiplier_override }, ms: ms.map(slim) });
