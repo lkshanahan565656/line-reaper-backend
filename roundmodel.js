@@ -16,9 +16,10 @@
 //
 // Fit on 16,021 bo3.gg CS2 maps (test Apr-Oct 2026, 67,204 player maps):
 // with the rounds known, RMSE 4.05 kills a map against 5.45 for the
-// player's own kills a map; calibrated within 2-4 points a band. Valorant,
+// player's own kills a map; with the ten rates scaled (matchScale) calibrated
+// within 1-2 points a band. Valorant,
 // 9,465 vlr.gg maps Jul 2025-Oct 2026 (test Mar-Oct 2026, 43,375 player
-// maps): 4.13 against 5.19, within about 2 points a band. Untested: how close Pinnacle's
+// maps): 4.13 against 5.19, within 1-2 points a band. Untested: how close Pinnacle's
 // pregame rounds sit to the rounds played (no Pinnacle history); the spread of
 // q around q0 is read off the shape of Pinnacle's own ladders.
 //
