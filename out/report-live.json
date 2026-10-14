@@ -1,0 +1,236 @@
+{
+ "live/phone/best": {
+  "textLen": 2088,
+  "height": 1069,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/big": {
+  "textLen": 1247,
+  "height": 724,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/lines": {
+  "textLen": 190,
+  "height": 440,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/props": {
+  "textLen": 17375,
+  "height": 15205,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/sharp": {
+  "textLen": 2258,
+  "height": 1632,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/esports": {
+  "textLen": 35550,
+  "height": 56665,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/ev": {
+  "textLen": 6869,
+  "height": 7288,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/tail": {
+  "textLen": 924,
+  "height": 709,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/arb": {
+  "textLen": 3746,
+  "height": 2796,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/results": {
+  "textLen": 8984,
+  "height": 5651,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/gas": {
+  "textLen": 1401,
+  "height": 747,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/tools": {
+  "textLen": 943,
+  "height": 917,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/betlog": {
+  "textLen": 708,
+  "height": 881,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/clv": {
+  "textLen": 361,
+  "height": 403,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/shop": {
+  "textLen": 439,
+  "height": 475,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/phone/errors": [
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()"
+ ],
+ "live/desktop/best": {
+  "textLen": 2288,
+  "height": 665,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/big": {
+  "textLen": 1247,
+  "height": 463,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/lines": {
+  "textLen": 190,
+  "height": 389,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/props": {
+  "textLen": 17314,
+  "height": 8301,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/sharp": {
+  "textLen": 2231,
+  "height": 1374,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/esports": {
+  "textLen": 35619,
+  "height": 37354,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/ev": {
+  "textLen": 6869,
+  "height": 3324,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/tail": {
+  "textLen": 924,
+  "height": 440,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/arb": {
+  "textLen": 5318,
+  "height": 2803,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/results": {
+  "textLen": 8984,
+  "height": 3611,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/gas": {
+  "textLen": 1401,
+  "height": 480,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/tools": {
+  "textLen": 1160,
+  "height": 722,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/betlog": {
+  "textLen": 708,
+  "height": 454,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/clv": {
+  "textLen": 361,
+  "height": 384,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/shop": {
+  "textLen": 439,
+  "height": 422,
+  "deadHits": [],
+  "version": "LINE REAPER"
+ },
+ "live/desktop/errors": [
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()",
+  "console: Failed to load resource: the server responded with a status of 503 ()"
+ ]
+}
