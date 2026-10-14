@@ -22,7 +22,12 @@ function legKey(l) {
   const day = l.startTime ? String(l.startTime).slice(0, 10) : 'nostart';
   return [sportKey(l.sport), norm(l.player), norm(l.rawMarket || l.market), l.line, l.side, l.gameId ?? day].join('|');
 }
-const slipId = s => `${s.book}|${s.table}|${s.picks.map(legKey).sort().join('+')}`;
+// A same-match stack is logged once per match, book and side: the board
+// rebuilds every few minutes and the best stack's legs shift as lines move,
+// and counting each version would weigh one match many times.
+const slipId = s => (s.kind === 'stack'
+  ? `${s.book}|stack|${s.picks[0]?.gameId ?? legKey(s.picks[0])}|${s.picks[0]?.side}`
+  : `${s.book}|${s.table}|${s.picks.map(legKey).sort().join('+')}`);
 
 // a slip's payout on h hits, 1u staked
 function payout(row, hits) {

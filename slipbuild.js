@@ -172,7 +172,7 @@ function present(book, s, kind = 'best') {
     // the sweep payout this entry needs to break even; an app that cuts the
     // payout below it (correlated lineups) makes it a pass
     breakEvenPays: pays != null && s.breakEvenScale != null ? +(pays * s.breakEvenScale).toFixed(2) : null,
-    matchTitle: kind === 'stack' ? (s.picks[0]?.matchTitle || '') : undefined,
+    matchTitle: kind === 'stack' ? [...new Set(s.picks.map(l => l.team).filter(Boolean))].join(' vs ') : undefined,
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
     paysAll: pays != null ? +pays.toFixed(2) : null,
     // what 1u returns on each hit count, for grading (sliptrack.js)

@@ -82,3 +82,18 @@ test('stacks: nothing across matches, nothing for unmeasured sports', () => {
   const val = ['A', 'B'].flatMap(t => [0, 1, 2].map(i => ({ ...boardPick(t, i, 'OVER', 0.5), sport: 'VAL' })));
   assert.equal(B.autoSlips(val, { now: 0 }).stacks.length, 0);
 });
+
+test('stack record: one row per match, book and side', async () => {
+  const { createSlipTracker } = require('../sliptrack');
+  const t = createSlipTracker({ now: () => 0 });
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.52)));
+  const first = B.autoSlips(picks, { now: 0 }).stacks;
+  const moved = B.autoSlips(picks.map(p => ({ ...p, pricing: { ...p.pricing, books: { PP: { line: 30.5, prob: 0.53 } } } })), { now: 0 }).stacks;
+  assert.ok(first.length && moved.length);
+  assert.ok([...first, ...moved].every(x => x.picks.every(l => l.side === 'OVER')));
+  assert.equal(first[0].matchTitle, 'A vs B');
+  await t.record([...first, ...moved]);
+  const sum = await t.summary();
+  assert.equal(sum.stacks.open, 1);
+  assert.equal(sum.open, 0, 'Best Slips record untouched');
+});
