@@ -641,7 +641,7 @@ const {
 const { refreshRatings } = require('./ratings');
 const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = require('./propstats');
 const { propProb } = require('./dist');
-const { sportKey: trackerSportKey, statKind: trackerStatKind } = require('./tracker');
+const { sportKey: trackerSportKey, statKind: trackerStatKind, clvKind } = require('./tracker');
 const escal = require('./escal');
 const esmarket = require('./esmarket');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
@@ -767,6 +767,22 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
     pushProb: r.push > 0 ? +(r.push * 100).toFixed(2) : 0,
     meanPerMap, scenarios, stat,
   };
+}
+
+// The books' consensus chance (0-1) that `side` wins at `line`, on the board's
+// own curve: the consensus mean (marketPred, before any model nudge) with the
+// curve's skew taken out, exactly as esmarket prices each quote. The tracker
+// prices a pick's signal ticket with it at signal and again at lock (market CLV).
+const pickCtx = new WeakMap();
+const CLV_WARN_N = parseInt(process.env.CLV_WARN_N || '20');
+const CLV_WARN_SHARE = parseFloat(process.env.CLV_WARN_SHARE || '0.4');
+function marketFairProb(p, line, side) {
+  if (!p || p.marketPred == null || !(line > 0) || (side !== 'OVER' && side !== 'UNDER')) return null;
+  const opts = pickCtx.get(p) || { context: null };
+  const r = calcEsportsEV(line, p.marketPred, side, p.sport, p.market, opts);
+  if (!r) return null;
+  const skew = lineSkew(line, p.sport, p.market, opts);
+  return Math.max(0.001, Math.min(0.999, (r.prob + (side === 'OVER' ? skew : -skew)) / 100));
 }
 
 // Points the curve's shape alone takes off the over when the projection sits
@@ -1889,6 +1905,7 @@ async function generateEsportsPicks() {
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for input
 
     const ctxOpts = { context: g.context || null };
+    pickCtx.set(pick, ctxOpts);   // the tracker prices CLV on the same curve
     // The book hangs its line where it sees 50/50, the median. Kill counts are
     // right-skewed, so a projection sitting right on the line still prices the
     // under at 55 to 62%: a lean that comes from the curve's shape, not from
@@ -2061,13 +2078,28 @@ async function generateEsportsPicks() {
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
+  // Closing-line value by kind of pick (sport, stat, book, side): each play
+  // carries how its kind's signals have done against the close. A kind whose
+  // signals keep losing the close (CLV_WARN_N moves, under CLV_WARN_SHARE our
+  // way) stays on the board but leaves Best Plays and alerts.
+  try {
+    const kinds = await tracker.clvByKind();
+    for (const p of picks) {
+      if (!p.side) continue;
+      const k = kinds[clvKind(p)];
+      if (!k || !k.mktClvSample) continue;
+      p.clvRecord = { n: k.mktClvSample, moved: k.mktMoved, beat: k.mktBeat, share: k.mktBeatShare, closeEv: k.closeEvAvg };
+      if (k.mktMoved >= CLV_WARN_N && k.mktBeatShare < CLV_WARN_SHARE) p.clvWarn = true;
+    }
+  } catch (e) { console.warn('Esports: CLV by kind unavailable:', e.message); }
+
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
   try { slipTracker.record(autoSlips(picks).slips).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
-  alerter.onBoard(picks).catch(e => console.warn('Alerts: failed:', e.message));
+  alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
 }
@@ -2166,7 +2198,7 @@ const tracker = createTracker({
     LOL: createLoLGraderChain(createLoLesportsGrader(axios), createLoLGrader(axios)), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
     ...(panda ? { VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
   },
-  normalizeName, normalizeMarket, parseMapSpan,
+  normalizeName, normalizeMarket, parseMapSpan, fairProb: marketFairProb,
 });
 // every +EV Best Slip, graded from the same match stats (sliptrack.js)
 const slipTracker = require('./sliptrack').createSlipTracker({
