@@ -224,7 +224,9 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
 // line and side let it check a two-sided price like Sleeper's for vig)
 // fairs (optional Map) is filled with `${group}|${side}` → fair prob % for every
 // market priced, +EV or not, so a tracker can follow a price to the close.
-function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null } = {}) {
+// costs (optional Map) gets `${group}|${side}|${book}` → 1 / decimal for every
+// book's best price, so a tracker can grade a bet at what it cost later.
+function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null } = {}) {
   const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
   const groups = new Map();
   for (const q of quotes) {
@@ -252,6 +254,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         if (d && (!best.has(q.book) || d > best.get(q.book).d)) best.set(q.book, { d, q });
       }
       for (const [book, { d, q }] of best) {
+        if (costs) costs.set(`${group}|${side}|${book}`, round(1 / d, 4));
         const ev = (fp * d - 1) * 100;
         if (ev < minEv) continue;
         rows.push({

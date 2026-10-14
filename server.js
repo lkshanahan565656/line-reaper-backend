@@ -2400,11 +2400,11 @@ function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
   const dfsLines = sportsPropLines();
-  const fairs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs });
+  const fairs = new Map(), costs = new Map();
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs });
   const prev = evCache.at ? evCache.rows : null;
   evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
-  evTracker.recordBoard(rows, fairs).catch(e => console.warn('EV tracker:', e.message));
+  evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen });
@@ -3046,11 +3046,11 @@ const xvalueState = { edges: [], movers: [], moverBets: [], updated: null, count
 // line movers are bets once their book is read; their alerts wait on the record
 const MOVER_ALERT_MIN = Number.isFinite(parseFloat(process.env.MOVER_ALERT_MIN)) ? parseFloat(process.env.MOVER_ALERT_MIN) : 0.02;
 // executable (execcheck.js): an alert needs XVALUE_MIN_DEPTH_USD resting on
-// Kalshi's book at the alerted price, and every bet is also graded at the
+// the venue's book (Kalshi or Polymarket US) at the alerted price, and every bet is also graded at the
 // price a subscriber got 2 minutes after the flag
 const execcheck = require('./execcheck');
 const XVALUE_MIN_DEPTH = Number.isFinite(parseFloat(process.env.XVALUE_MIN_DEPTH_USD)) ? parseFloat(process.env.XVALUE_MIN_DEPTH_USD) : execcheck.DEFAULTS.minUsd;
-const depthCheck = execcheck.createDepthCheck({ http: upstream });
+const depthCheck = execcheck.createDepthCheck({ http: upstream, pmus: polymarketUs });
 const envNum = (k, d) => Number.isFinite(parseFloat(process.env[k])) ? parseFloat(process.env[k]) : d;
 const XVALUE_EXEC = { minN: envNum('XVALUE_EXEC_MIN_N', execcheck.DEFAULTS.alertMinN), minClv: envNum('XVALUE_EXEC_MIN_CLV', execcheck.DEFAULTS.alertMinClv) };
 const xvalueSeen = new Map();     // edge id → last alert (ms)
@@ -3110,7 +3110,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   let depthReads = 0;
   try { depthReads = await depthCheck.check([...edges, ...moverBets]); } catch (e) { console.warn('Exchange value: depth:', e.message); }
   await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs, { costs: xvalue.costsOf(scr.quotes) }).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), steamPoints: steamWatch.points(), steamRestored: steamWatch.restored(), moverBets: moverBets.length, depthReads, executable: [...edges, ...moverBets].filter(e => execcheck.executable(e, XVALUE_MIN_DEPTH)).length } });
+  Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), steamPoints: steamWatch.points(), steamRestored: steamWatch.restored(), moverBets: moverBets.length, depthReads, depthChecked: [...edges, ...moverBets].reduce((a, e) => (e.depth ? { ...a, [e.venue]: (a[e.venue] || 0) + 1 } : a), {}), executable: [...edges, ...moverBets].filter(e => execcheck.executable(e, XVALUE_MIN_DEPTH)).length } });
   const lic = webhookLicence();
   // alerts follow the record the way Best Plays does: a signal, league or
   // market the results call "avoid" (standing price gaps, -0.6% CLV over 32
@@ -3287,17 +3287,20 @@ const esportsEdgeTracker = createEvTracker({
   minEv: 0,
 });
 esportsEdgeTracker.ready().catch(e => console.error('Esports edge tracker: store failed to initialise:', e.message));
-// board → evtrack rows (ev and fair in percent) and the fair of every outcome
+// board → evtrack rows (ev and fair in percent), the fair of every outcome and
+// what each venue's side costs now, so every edge is also graded at the price
+// a subscriber got 2 minutes after the flag (execClv, like exchange value)
 function esportsEdgeRows(matches, venueOk = () => true) {
-  const rows = [], fairs = new Map();
+  const rows = [], fairs = new Map(), costs = new Map();
   for (const m of matches) {
     if (!m.start || m.live) continue;
     // An edge is flagged against the fair price from the OTHER sources, so the
     // close is read the same way, per venue. Closing on the all-source fair
     // folded the venue's own mid back in and cut every CLV toward zero.
     for (const mk of m.markets) for (const oc of mk.outcomes) for (const v of ['kalshi', 'polymarket']) {
-      const ref = oc.quotes?.[v]?.ref;
+      const ref = oc.quotes?.[v]?.ref, cost = oc.quotes?.[v]?.cost;
       if (ref != null) fairs.set(`${m.id}|${mk.key}|${v}|${oc.name}`, ref * 100);
+      if (cost > 0 && cost < 1) costs.set(`${m.id}|${mk.key}|${v}|${oc.name}|${v}`, cost);
     }
     for (const e of m.edges) {
       if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
@@ -3307,7 +3310,7 @@ function esportsEdgeRows(matches, venueOk = () => true) {
       });
     }
   }
-  return { rows, fairs };
+  return { rows, fairs, costs };
 }
 // US mode: Polymarket International can't be traded from the US (and Polymarket
 // US lists no esports), so its prices stay as a reference but its edges and
@@ -3353,9 +3356,9 @@ function esportsBidFills(matches, venueOk = () => true, now = Date.now()) {
 async function scanEsportsBoard() {
   const st = await esportsBoard.scan();
   const now = Date.now();
-  const { rows: edgeRows, fairs: edgeFairs } = esportsEdgeRows(st.matches, tradableVenue);
+  const { rows: edgeRows, fairs: edgeFairs, costs: edgeCosts } = esportsEdgeRows(st.matches, tradableVenue);
   edgeRows.push(...esportsBidFills(st.matches, tradableVenue, now));
-  esportsEdgeTracker.recordBoard(edgeRows, edgeFairs).catch(e => console.warn('Esports edge tracker:', e.message));
+  esportsEdgeTracker.recordBoard(edgeRows, edgeFairs, { costs: edgeCosts }).catch(e => console.warn('Esports edge tracker:', e.message));
   // the exchanges' match prices are the match context for player props
   for (const m of st.matches) {
     const main = m.markets.find(mk => mk.kind === 'match');
@@ -3366,16 +3369,29 @@ async function scanEsportsBoard() {
     } catch { /* a 0 or 1 price: skip */ }
   }
   const lic = webhookLicence();
-  const fresh = [];
+  const want = [];
   for (const m of st.matches) {
     for (const e of m.edges) {
       if (!tradableVenue(e.venue) || !lic[e.venue] || e.ev < ESPORTS_ALERT_MIN) continue;
       const key = `${m.id}|${e.market}|${e.outcome}|${e.venue}`;
       if (esportsEdgeSeen.has(key) && now - esportsEdgeSeen.get(key) < ESPORTS_REALERT_MS) continue;
-      esportsEdgeSeen.set(key, now);
-      fresh.push({ m, e });
+      want.push({ m, e, key });
     }
   }
+  // like exchange value, a Kalshi edge alerts only with XVALUE_MIN_DEPTH_USD
+  // resting at its price (the book is read when the edge is flagged)
+  const probes = want.map(({ m, e }) => {
+    const q = m.markets.find(mk => mk.key === e.market)?.outcomes.find(oc => oc.name === e.outcome)?.quotes?.[e.venue];
+    return { venue: e.venue, marketId: q?.ticker || null, side: q?.side || 'yes', price: q?.ask };
+  });
+  try { await depthCheck.check(probes.filter(p => p.marketId && p.price > 0)); } catch (err) { console.warn('Esports edges: depth:', err.message); }
+  const fresh = [];
+  want.forEach(({ m, e, key }, i) => {
+    if (e.venue === 'kalshi' && !execcheck.executable(probes[i], XVALUE_MIN_DEPTH)) return;
+    if (probes[i].depth) e.depth = probes[i].depth;
+    esportsEdgeSeen.set(key, now);
+    fresh.push({ m, e });
+  });
   for (const [k, at] of esportsEdgeSeen) if (now - at > 2 * 86400e3) esportsEdgeSeen.delete(k);
   // the first scan after a restart only primes (every edge would look new)
   if (fresh.length && esportsBoard.primed) {
@@ -3391,7 +3407,7 @@ function describeEsportsEdge(m, e) {
   const what = e.kind === 'map' ? `${e.outcome} to win map ${mk?.n}` : e.kind === 'total' ? `${e.outcome} ${mk?.line} maps` : e.kind === 'spread' ? `${e.outcome} maps` : `${e.outcome} to win`;
   const when = m.start ? new Date(m.start).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' ET' : 'time TBD';
   const link = e.venue === 'kalshi' ? m.links.kalshi : TAIL_REGION === 'us' ? null : m.links.polymarket;
-  return `${m.label} · ${m.teams.join(' vs ')} (${m.bestOf ? `Bo${m.bestOf}, ` : ''}${when}): ${what} on ${e.venue === 'kalshi' ? 'Kalshi' : 'Polymarket'} at ${cents(e.cost)}, fair ${cents(e.fair)} (+${(e.ev * 100).toFixed(1)}%)${link ? ` <${link}>` : ''}`;
+  return `${m.label} · ${m.teams.join(' vs ')} (${m.bestOf ? `Bo${m.bestOf}, ` : ''}${when}): ${what} on ${e.venue === 'kalshi' ? 'Kalshi' : 'Polymarket'} at ${cents(e.cost)}, fair ${cents(e.fair)} (+${(e.ev * 100).toFixed(1)}%)${e.depth ? `, $${e.depth.usd.toLocaleString('en-US')} on the book at that price` : ''}${link ? ` <${link}>` : ''}`;
 }
 // What one viewer may see of the board: venues they're licensed for, edges
 // only on venues they can trade, and Pro for the edges themselves.
@@ -3645,7 +3661,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.95.2', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.96.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4672,7 +4688,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.95.2',
+  version: '3.96.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

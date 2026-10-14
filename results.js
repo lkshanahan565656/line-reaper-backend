@@ -6,6 +6,7 @@
 // every play gets a verdict from its own sample:
 //
 //   proven     20+ bets and a t-stat of 2+ on CLV or on ROI, with it positive
+//              (CLV here is the 2-minute grade once 8+ bets have one)
 //   promising  8+ bets, beating the close (or in profit when there's no CLV)
 //   avoid      8+ bets, losing to the close and losing money (or a t of -2)
 //   early      everything else
@@ -30,7 +31,12 @@ function tStat(a) {
   return sd > 0 ? r2(m / (sd / Math.sqrt(a.length))) : null;
 }
 
+// Once 8+ bets carry a grade at the price 2 minutes after the alert (execClv),
+// that grade is the CLV judged: a signal counts only at a price a subscriber
+// can still get, not at the alerted one.
+const EXEC_MIN_N = 8;
 function verdictOf(s) {
+  if (s.execN >= EXEC_MIN_N) s = { ...s, avgClv: s.execClv, clvN: s.execN, clvT: s.execT ?? null };
   const clvN = s.clvN ?? s.n, roiN = s.graded ?? s.n;
   // CLV leads once it has a sample; until then ROI does, when there is one
   const useClv = s.avgClv != null && (clvN >= 8 || s.roi == null);
@@ -62,7 +68,7 @@ function score(bets) {
   };
   // executable CLV: graded at what the bet cost a couple of minutes after the alert
   const ex = bets.map(b => b.exec).filter(v => v != null && Number.isFinite(v));
-  if (ex.length) Object.assign(s, { execClv: r4(mean(ex)), execBeatPct: r4(ex.filter(v => v > 0).length / ex.length), execN: ex.length });
+  if (ex.length) Object.assign(s, { execClv: r4(mean(ex)), execBeatPct: r4(ex.filter(v => v > 0).length / ex.length), execN: ex.length, execT: tStat(ex) });
   s.verdict = verdictOf(s);
   return s;
 }
@@ -134,4 +140,4 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   return { sources, plays };
 }
 
-module.exports = { scoreboard, score, tStat, verdictOf, SOURCES };
+module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N };

@@ -47,6 +47,7 @@ const kalshiGame = () => ({
   ],
 });
 const posts = [];
+const book = { thin: false };
 const axios = require('axios');
 axios.get = async (url, cfg = {}) => {
   const p = cfg.params || {};
@@ -55,6 +56,11 @@ axios.get = async (url, cfg = {}) => {
   else if (url === 'https://gamma-api.polymarket.com/events' && p.series_id === 10369) data = [pmEvent()];
   else if (url === 'https://gamma-api.polymarket.com/events') data = [];
   else if (url === 'https://api.elections.kalshi.com/trade-api/v2/events') data = { events: p.series_ticker === 'KXVALORANTGAME' ? [kalshiGame()] : [] };
+  else if (url.startsWith('https://api.elections.kalshi.com/trade-api/v2/markets/') && url.endsWith('/orderbook')) {
+    // what a YES buyer can take: 1 − each NO bid (book.thin: only $15 resting)
+    const team = url.includes(`-${TAIL}-T1/`) ? 't1' : 'g2';
+    data = { orderbook_fp: { yes_dollars: [], no_dollars: [[(1 - Number(fx[team].ask)).toFixed(4), book.thin ? '50' : '1000']] } };
+  }
   else if (url.startsWith('https://api.bo3.gg/')) data = { results: [] };
   else throw Object.assign(new Error(`offline: ${url}`), { code: 'ENOTFOUND' });
   return { status: 200, headers: {}, data: JSON.parse(JSON.stringify(data)) };
@@ -83,14 +89,19 @@ test('scan: one match from both exchanges, its price handed to the props model',
   assert.equal(posts.length, 0, 'the first scan only primes');
 });
 
-test('a new edge alerts once, Kalshi only in US mode', async () => {
-  // T1 drops to 30¢ on Kalshi (Polymarket still has it at 44-45¢)
+test('a new edge alerts once, Kalshi only in US mode, and only with size on the book', async () => {
+  // T1 drops to 30¢ on Kalshi (Polymarket still has it at 44-45¢), but only $15 rests there
   Object.assign(fx, { t1: { bid: '0.2800', ask: '0.3000' }, g2: { bid: '0.6900', ask: '0.7100' } });
+  book.thin = true;
   tick();
+  await S.scanEsportsBoard();
+  assert.equal(posts.length, 0, 'a thin book holds the alert');
+  book.thin = false;
+  tick(90e3);
   await S.scanEsportsBoard();
   assert.equal(posts.length, 1);
   const text = posts[0].body.content;
-  assert.match(text, /Valorant · G2 Esports vs T1 \(Bo3, .* ET\): T1 to win on Kalshi at \d+(\.\d)?¢, fair 44\.5¢ \(\+\d+\.\d%\)/);
+  assert.match(text, /Valorant · G2 Esports vs T1 \(Bo3, .* ET\): T1 to win on Kalshi at \d+(\.\d)?¢, fair 44\.5¢ \(\+\d+\.\d%\), \$300 on the book at that price/);
   assert.match(text, /kalshi\.com\/markets\/kxvalorantgame-/);
   assert.ok(!/Polymarket at/.test(text), 'no Polymarket edges in US mode');
   tick();
@@ -106,6 +117,13 @@ test('the Kalshi edge is logged for the results board, graded on the close at th
   assert.ok(!open.some(b => b.book === 'polymarket'), 'US mode: no Polymarket International edges');
   assert.ok(bet.evAtFlag >= 2 && bet.decimal > 3);
   assert.equal(bet.closeFair, bet.fairAtFlag, 'the close is read against the same other-source fair the edge was flagged on');
+  // 2 minutes on, the side costs 2¢ more: that is the price a subscriber got
+  Object.assign(fx, { t1: { bid: '0.3000', ask: '0.3200' }, g2: { bid: '0.6700', ask: '0.6900' } });
+  tick(130e3);
+  await S.scanEsportsBoard();
+  await S.esportsEdgeTracker.recordBoard([], new Map());
+  const later = (await S.esportsEdgeTracker.list({ status: 'open' })).find(b => b.id === bet.id);
+  assert.ok(later.execPrice > 0.32 && later.execPrice < 0.34, `exec price ${later.execPrice} is the ask 2 minutes on, fee included`);
   // past the start: closed with CLV against the last fair
   const rows = await S.esportsEdgeTracker.list({});
   tick(7 * 3600e3);

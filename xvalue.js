@@ -220,6 +220,7 @@ function findValue({ matches = [], kalshi = [], usRows = [], polymarket = [], us
         ref: { venue: refVenue, mid: r4(ref.fair), spread: r4(ref.spread), liquidity: ref.liquidity, source: ref.source, url: p.url },
         start: new Date(start).toISOString(), url: t.url || null, rules: t.rules || null,
         steam: steam || null,
+        ...(t.yesSide ? { yesSide: t.yesSide } : {}),   // Polymarket US: which side of the market's book YES is
       };
       // one bet per contract side
       if (!best.has(e.id) || best.get(e.id).ev < e.ev) best.set(e.id, e);

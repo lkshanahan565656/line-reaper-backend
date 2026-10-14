@@ -62,3 +62,55 @@ test('a signal alerts only once its record 2 minutes after the alert beats the c
   assert.equal(X.recordLine('steam', play({ execN: 18, execClv: 0.021, execBeatPct: 0.72 })), 'Steam record: +2.1% CLV 2 min after the alert over 18 bets (+4.1% at the alert), 72% beat the close');
   assert.equal(X.recordLine('steam', play({})), 'Steam record: +4.1% CLV at the alert over 23 bets');
 });
+
+test('Polymarket US depth: buying long takes the offers, buying short sells into the bids', () => {
+  const book = { open: true, offers: [[0.52, 100], [0.53, 200], [0.55, 900]], bids: [[0.5, 300], [0.49, 100], [0.45, 50]] };
+  assert.deepEqual(X.pmusDepth(book, 'long', 0.53), { contracts: 300, usd: Math.round(100 * 0.52 + 200 * 0.53), best: 0.52 });
+  // short at 1 − bid: 0.50 → 50¢, 0.49 → 51¢, 0.45 → 55¢
+  assert.deepEqual(X.pmusDepth(book, 'short', 0.51), { contracts: 400, usd: Math.round(300 * 0.5 + 100 * 0.51), best: 0.5 });
+  assert.equal(X.pmusDepth({}, 'long', 0.6).contracts, 0);
+});
+
+test('depth check reads Polymarket US edges through the pmus client, YES mapped to its side of the book', async () => {
+  let reads = 0;
+  const pmus = { book: async slug => { reads++; return slug === 'shut' ? { open: false, offers: [[0.4, 1000]], bids: [] } : { open: true, offers: [[0.4, 1000]], bids: [[0.55, 400]] }; } };
+  const c = X.createDepthCheck({ http: { get: async () => { throw new Error('no kalshi here'); } }, pmus, now: () => 0 });
+  const edges = [
+    { venue: 'polymarketus', marketId: 'aec-nba-a-b', side: 'yes', yesSide: 'long', price: 0.4 },
+    { venue: 'polymarketus', marketId: 'aec-nba-a-b', side: 'no', yesSide: 'long', price: 0.45 },
+    { venue: 'polymarketus', marketId: 'asc-nba-a-b', side: 'yes', yesSide: 'short', price: 0.45 },
+    { venue: 'polymarketus', marketId: 'shut', side: 'yes', yesSide: 'long', price: 0.4 },
+    { venue: 'polymarketus', marketId: 'x', side: 'yes', price: 0.4 },
+  ];
+  await c.check(edges);
+  assert.equal(reads, 3, 'one read a market; an edge without yesSide is not checked');
+  assert.equal(edges[0].depth.usd, 400);
+  assert.deepEqual(edges[1].depth, { contracts: 400, usd: 180, best: 0.45 }, 'NO of a long-YES market sells into the bids');
+  assert.equal(edges[2].depth.contracts, 400, 'YES on the short side of the book');
+  assert.equal(edges[3].depth, undefined, 'a closed book gives no depth');
+  assert.equal(edges[4].depth, undefined);
+  assert.equal(X.executable(edges[0], 100), true);
+});
+
+test('evtrack: costs keyed by bet id grade one book of many; a scan a few seconds early still counts', async () => {
+  let t = Date.parse('2026-10-14T00:00:00Z');
+  const tr = createEvTracker({ minEv: 0, now: () => t });
+  const rows = ['kalshi', 'fanduel'].map(book => ({ group: 'nba|g1|ml', side: 'Boston', book, start: '2026-10-14T01:00:00Z', sport: 'nba', event: 'x', market: 'moneyline', price: 100, decimal: 2, ev: 4, fairProb: 52, source: 'consensus' }));
+  await tr.recordBoard(rows, null);
+  t += 110e3;
+  await tr.recordBoard([], null, { costs: new Map([['nba|g1|ml|Boston|kalshi', 0.505], ['nba|g1|ml|Boston|fanduel', 0.52]]) });
+  const by = Object.fromEntries((await tr.list()).map(b => [b.book, b.execPrice]));
+  assert.deepEqual(by, { kalshi: 0.505, fanduel: 0.52 });
+});
+
+test('verdicts judge the 2-minute grade once 8 bets carry one', () => {
+  const bet = (clv, exec) => ({ id: Math.random().toString(36), status: 'closed', flaggedAt: '2026-10-14T00:00:00Z', source: 'steam', sport: 'nba', book: 'kalshi', market: 'moneyline', clv, execClv: exec });
+  const good = Array.from({ length: 24 }, (_, i) => bet(3 + (i % 3), exec(i)));
+  function exec(i) { return -2 + (i % 3) * 0.5; }
+  const s = R.scoreboard({ exchangeValue: good }).sources.exchangeValue.overall;
+  assert.ok(s.avgClv > 0.03 && s.execClv < 0);
+  assert.equal(s.verdict, 'avoid', 'beats the close at the alert, loses to it 2 minutes on');
+  const few = R.scoreboard({ exchangeValue: good.map((b, i) => (i < 5 ? b : { ...b, execClv: undefined })) }).sources.exchangeValue.overall;
+  assert.equal(few.execN, 5);
+  assert.equal(few.verdict, 'proven', 'under 8 delayed grades: the alert-time CLV still decides');
+});

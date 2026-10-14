@@ -3,7 +3,8 @@
 // real size, on a venue US users can use. Two checks:
 //
 //   depth  the contracts and dollars resting at or under the alerted price on
-//          Kalshi's order book when the edge is flagged (alerts need minUsd)
+//          the venue's order book (Kalshi, Polymarket US) when the edge is
+//          flagged (alerts need minUsd)
 //   delay  the price a subscriber gets lagMs after the flag (evtrack records
 //          it as execPrice; execClv grades the bet at that price)
 //
@@ -36,24 +37,46 @@ function kalshiDepth(payload, side, maxPrice) {
   return { contracts: Math.round(contracts), usd: Math.round(usd), best };
 }
 
-// Reads each Kalshi edge's book (at most maxReads a scan, a read kept ttlMs)
-// and sets e.depth. Other venues are left without one: unchecked.
-function createDepthCheck({ http, opts = {}, now = () => Date.now() } = {}) {
+// Polymarket US: a market's book is its long side's (pmus.parseBook). Buying
+// long takes the offers; buying short sells into the bids, at 1 − the bid.
+// book: pmus.parseBook output; buy: 'long' | 'short' → { contracts, usd, best }
+function pmusDepth(book, buy, maxPrice) {
+  let contracts = 0, usd = 0, best = null;
+  const lv = buy === 'long' ? (book?.offers || []).map(([p, n]) => [p, n]) : (book?.bids || []).map(([p, n]) => [Math.round((1 - p) * 1e4) / 1e4, n]);
+  for (const [ask, n] of lv) {
+    if (!(ask > 0 && ask < 1 && n > 0) || ask > maxPrice + 1e-9) continue;
+    contracts += n; usd += n * ask;
+    if (best == null || ask < best) best = ask;
+  }
+  return { contracts: Math.round(contracts), usd: Math.round(usd), best };
+}
+
+// Reads each Kalshi edge's book, and each Polymarket US edge's when a pmus
+// client is given (at most maxReads a scan, a read kept ttlMs), and sets
+// e.depth. Other venues are left without one: unchecked.
+function createDepthCheck({ http, pmus = null, opts = {}, now = () => Date.now() } = {}) {
   const o = { ...DEFAULTS, ...opts };
-  const cache = new Map();   // ticker → { at, payload }
+  const cache = new Map();   // venue:market → { at, payload }
+  const read = e => (e.venue === 'kalshi' ? http.get(KALSHI_BOOK_URL(e.marketId), { timeout: 10000 }).then(r => r?.data) : pmus.book(e.marketId));
   async function check(edges = []) {
     const t = now();
     let reads = 0;
     for (const e of edges) {
-      if (e.venue !== 'kalshi' || !e.marketId) continue;
-      let c = cache.get(e.marketId);
+      const us = e.venue === 'polymarketus' && pmus && (e.yesSide === 'long' || e.yesSide === 'short');
+      if (!e.marketId || !(e.venue === 'kalshi' || us)) continue;
+      const k = `${e.venue}:${e.marketId}`;
+      let c = cache.get(k);
       if (!c || t - c.at > o.ttlMs) {
         if (reads >= o.maxReads) continue;
         reads++;
-        try { c = { at: t, payload: (await http.get(KALSHI_BOOK_URL(e.marketId), { timeout: 10000 }))?.data }; cache.set(e.marketId, c); }
+        try { c = { at: t, payload: await read(e) }; if (c.payload == null) continue; cache.set(k, c); }
         catch { continue; }
       }
-      e.depth = kalshiDepth(c.payload, e.side, e.price);
+      if (!us) e.depth = kalshiDepth(c.payload, e.side, e.price);
+      else if (c.payload.open !== false) {
+        const buy = e.side === 'yes' ? e.yesSide : e.yesSide === 'long' ? 'short' : 'long';
+        e.depth = pmusDepth(c.payload, buy, e.price);
+      }
     }
     for (const [k, c] of cache) if (t - c.at > 10 * o.ttlMs) cache.delete(k);
     return reads;
@@ -83,4 +106,4 @@ function recordLine(signal, rec) {
 
 const executable = (e, minUsd = DEFAULTS.minUsd) => !!(e?.depth && e.depth.usd >= minUsd);
 
-module.exports = { execPasses, recordLine, kalshiDepth, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };
+module.exports = { execPasses, recordLine, kalshiDepth, pmusDepth, createDepthCheck, executable, levels, KALSHI_BOOK_URL, DEFAULTS };
