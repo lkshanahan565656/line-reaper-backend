@@ -1,0 +1,3249 @@
+[
+ {
+  "at": "2026-10-14T19:03:36.055Z",
+  "alt": {
+   "ladders": 5721,
+   "altLines": 1477,
+   "priced": 3910,
+   "shown": 164,
+   "clear": 0,
+   "byBook": {
+    "betrivers": 128,
+    "fanduel": 36
+   },
+   "bySport": {
+    "ncaaf": 115,
+    "nfl": 31,
+    "nhl": 8,
+    "mlb": 4,
+    "wnba": 6
+   },
+   "byMarket": {
+    "spreads": 136,
+    "totals": 28
+   }
+  },
+  "counts": {
+   "clear2": 27,
+   "agree2": 0,
+   "agree2Lines": 0,
+   "agree2Props": 0,
+   "alt": 164,
+   "altClear": 0
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:02:47.572Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 39,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 79,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 0,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 0,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:04:36.092Z",
+  "alt": {
+   "ladders": 5721,
+   "altLines": 1477,
+   "priced": 5803,
+   "shown": 352,
+   "clear": 0,
+   "byBook": {
+    "betrivers": 246,
+    "fanduel": 106
+   },
+   "bySport": {
+    "nfl": 148,
+    "nhl": 41,
+    "ncaaf": 153,
+    "mlb": 4,
+    "wnba": 6
+   },
+   "byMarket": {
+    "pass_tds": 20,
+    "receptions": 79,
+    "assists": 24,
+    "spreads": 138,
+    "totals": 28,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "points": 1,
+    "pass_comp": 3,
+    "rush_yds": 17,
+    "pass_yds": 9,
+    "rec_yds": 18,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 26,
+   "agree2": 0,
+   "agree2Lines": 0,
+   "agree2Props": 0,
+   "alt": 352,
+   "altClear": 0
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:03:45.243Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 286,
+      "fanduel": 39,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 34,
+       "betrivers": 78
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 79,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 0,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 0,
+      "fanduel": 0,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 0,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:05:36.113Z",
+  "alt": {
+   "ladders": 7792,
+   "altLines": 3605,
+   "priced": 7373,
+   "shown": 404,
+   "clear": 21,
+   "byBook": {
+    "fanduel": 167,
+    "betrivers": 237
+   },
+   "bySport": {
+    "nfl": 216,
+    "nhl": 37,
+    "wnba": 13,
+    "ncaaf": 136,
+    "mlb": 2
+   },
+   "byMarket": {
+    "spreads": 142,
+    "totals": 22,
+    "receptions": 102,
+    "assists": 29,
+    "pass_tds": 42,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "points": 1,
+    "rush_yds": 17,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 19,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 20,
+   "agree2": 0,
+   "agree2Lines": 0,
+   "agree2Props": 0,
+   "alt": 404,
+   "altClear": 21
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:04:47.219Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 77
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:06:36.150Z",
+  "alt": {
+   "ladders": 7792,
+   "altLines": 3605,
+   "priced": 7415,
+   "shown": 382,
+   "clear": 39,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 162
+   },
+   "bySport": {
+    "ncaaf": 116,
+    "nfl": 216,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "spreads": 120,
+    "totals": 22,
+    "receptions": 102,
+    "assists": 29,
+    "pass_tds": 42,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "points": 1,
+    "rush_yds": 17,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 19,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 21,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 382,
+   "altClear": 39
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:05:44.637Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 77
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:07:36.170Z",
+  "alt": {
+   "ladders": 7794,
+   "altLines": 3605,
+   "priced": 7920,
+   "shown": 380,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 218,
+    "fanduel": 162
+   },
+   "bySport": {
+    "nfl": 213,
+    "ncaaf": 116,
+    "nhl": 38,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 120,
+    "rush_yds": 17,
+    "assists": 30,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 14,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 20,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 380,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:06:46.943Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:08:36.193Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3605,
+   "priced": 7920,
+   "shown": 382,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 162
+   },
+   "bySport": {
+    "nfl": 213,
+    "ncaaf": 118,
+    "nhl": 38,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 120,
+    "rush_yds": 17,
+    "assists": 30,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 20,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 382,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:07:44.745Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:09:36.583Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3605,
+   "priced": 7920,
+   "shown": 382,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 162
+   },
+   "bySport": {
+    "nfl": 213,
+    "ncaaf": 118,
+    "nhl": 38,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 120,
+    "rush_yds": 17,
+    "assists": 30,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 20,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 382,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:08:46.704Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:10:36.605Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3605,
+   "priced": 7920,
+   "shown": 382,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 162
+   },
+   "bySport": {
+    "nfl": 213,
+    "ncaaf": 118,
+    "nhl": 38,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 120,
+    "rush_yds": 17,
+    "assists": 30,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 20,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 382,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:09:44.778Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:11:36.625Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3605,
+   "priced": 7919,
+   "shown": 381,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 219,
+    "fanduel": 162
+   },
+   "bySport": {
+    "nfl": 213,
+    "ncaaf": 117,
+    "nhl": 38,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 119,
+    "rush_yds": 17,
+    "assists": 30,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 381,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:10:46.713Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:12:36.657Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3605,
+   "priced": 7921,
+   "shown": 378,
+   "clear": 63,
+   "byBook": {
+    "betrivers": 218,
+    "fanduel": 160
+   },
+   "bySport": {
+    "nfl": 211,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 94,
+    "pass_tds": 41,
+    "spreads": 119,
+    "rush_yds": 17,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 378,
+   "altClear": 63
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:11:44.570Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:13:36.680Z",
+  "alt": {
+   "ladders": 7795,
+   "altLines": 3605,
+   "priced": 7921,
+   "shown": 378,
+   "clear": 63,
+   "byBook": {
+    "betrivers": 218,
+    "fanduel": 160
+   },
+   "bySport": {
+    "nfl": 211,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 94,
+    "pass_tds": 41,
+    "spreads": 119,
+    "rush_yds": 17,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 378,
+   "altClear": 63
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:12:46.906Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:14:36.695Z",
+  "alt": {
+   "ladders": 7794,
+   "altLines": 3605,
+   "priced": 7921,
+   "shown": 378,
+   "clear": 63,
+   "byBook": {
+    "betrivers": 218,
+    "fanduel": 160
+   },
+   "bySport": {
+    "nfl": 211,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 94,
+    "pass_tds": 41,
+    "spreads": 119,
+    "rush_yds": 17,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "pass_ints": 1,
+    "rebounds": 2
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 378,
+   "altClear": 63
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:13:45.012Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 220,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:15:36.716Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3606,
+   "priced": 7922,
+   "shown": 376,
+   "clear": 63,
+   "byBook": {
+    "betrivers": 219,
+    "fanduel": 157
+   },
+   "bySport": {
+    "nfl": 210,
+    "ncaaf": 116,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 116,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 376,
+   "altClear": 63
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:14:46.677Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:16:36.736Z",
+  "alt": {
+   "ladders": 7795,
+   "altLines": 3606,
+   "priced": 7926,
+   "shown": 377,
+   "clear": 64,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 157
+   },
+   "bySport": {
+    "nfl": 210,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 117,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 377,
+   "altClear": 64
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:15:44.621Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:17:36.757Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3610,
+   "priced": 7926,
+   "shown": 377,
+   "clear": 64,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 157
+   },
+   "bySport": {
+    "nfl": 210,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "pass_tds": 42,
+    "spreads": 117,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 377,
+   "altClear": 64
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:16:47.262Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:18:36.793Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3610,
+   "priced": 7926,
+   "shown": 377,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 157
+   },
+   "bySport": {
+    "nfl": 210,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "spreads": 117,
+    "pass_tds": 42,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 377,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:17:44.477Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:19:36.810Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3610,
+   "priced": 7924,
+   "shown": 378,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 220,
+    "fanduel": 158
+   },
+   "bySport": {
+    "nfl": 211,
+    "ncaaf": 117,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "spreads": 117,
+    "pass_tds": 42,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 10,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 378,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:18:46.500Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:20:36.830Z",
+  "alt": {
+   "ladders": 7797,
+   "altLines": 3610,
+   "priced": 7926,
+   "shown": 382,
+   "clear": 65,
+   "byBook": {
+    "betrivers": 224,
+    "fanduel": 158
+   },
+   "bySport": {
+    "nfl": 211,
+    "ncaaf": 121,
+    "nhl": 37,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "receptions": 95,
+    "spreads": 121,
+    "pass_tds": 42,
+    "rush_yds": 16,
+    "assists": 29,
+    "totals": 22,
+    "points": 1,
+    "anytime_td": 10,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 18,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 382,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:19:44.572Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 223,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:21:36.871Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3610,
+   "priced": 7925,
+   "shown": 384,
+   "clear": 65,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 224
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 214,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "spreads": 121,
+    "pass_tds": 42,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "anytime_td": 10,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 384,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:20:45.794Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:22:36.888Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3610,
+   "priced": 7928,
+   "shown": 383,
+   "clear": 65,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 223
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 213,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "spreads": 121,
+    "pass_tds": 42,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 383,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:21:46.829Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:23:36.913Z",
+  "alt": {
+   "ladders": 7796,
+   "altLines": 3610,
+   "priced": 7928,
+   "shown": 383,
+   "clear": 64,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 223
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 213,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "pass_tds": 42,
+    "spreads": 121,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "pass_yds": 10,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 383,
+   "altClear": 64
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:22:47.363Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 248,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:24:37.250Z",
+  "alt": {
+   "ladders": 7969,
+   "altLines": 3610,
+   "priced": 7928,
+   "shown": 384,
+   "clear": 65,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 224
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 214,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "pass_tds": 42,
+    "spreads": 121,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "pass_yds": 11,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 384,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:23:44.642Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 266,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:25:37.358Z",
+  "alt": {
+   "ladders": 7968,
+   "altLines": 3610,
+   "priced": 7928,
+   "shown": 384,
+   "clear": 65,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 224
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 214,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "pass_tds": 42,
+    "spreads": 121,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "pass_yds": 11,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 384,
+   "altClear": 65
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:24:49.003Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 266,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "at": "2026-10-14T19:26:37.383Z",
+  "alt": {
+   "ladders": 7968,
+   "altLines": 3610,
+   "priced": 7930,
+   "shown": 384,
+   "clear": 64,
+   "byBook": {
+    "fanduel": 160,
+    "betrivers": 224
+   },
+   "bySport": {
+    "nhl": 36,
+    "nfl": 214,
+    "ncaaf": 121,
+    "wnba": 11,
+    "mlb": 2
+   },
+   "byMarket": {
+    "assists": 29,
+    "receptions": 98,
+    "pass_tds": 42,
+    "spreads": 121,
+    "rush_yds": 16,
+    "totals": 21,
+    "points": 1,
+    "pass_yds": 11,
+    "anytime_td": 9,
+    "pass_att": 6,
+    "shots_on_goal": 8,
+    "pass_comp": 3,
+    "rec_yds": 16,
+    "rebounds": 2,
+    "pass_ints": 1
+   }
+  },
+  "counts": {
+   "clear2": 19,
+   "agree2": 2,
+   "agree2Lines": 2,
+   "agree2Props": 0,
+   "alt": 384,
+   "altClear": 64
+  },
+  "fb": {
+   "gamesAt": "2026-10-14T19:25:46.800Z",
+   "errors": [],
+   "counts": {
+    "nfl": {
+     "pinnacle": 14,
+     "fanduel": 14,
+     "betrivers": 14,
+     "props": {
+      "pinnacle": 302,
+      "fanduel": 323,
+      "betrivers": 266,
+      "matched": {
+       "fanduel": 222,
+       "betrivers": 80
+      }
+     }
+    },
+    "ncaaf": {
+     "pinnacle": 57,
+     "fanduel": 53,
+     "betrivers": 51,
+     "props": {
+      "pinnacle": 26,
+      "fanduel": 32,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 23,
+       "betrivers": 0
+      }
+     }
+    },
+    "nba": {
+     "pinnacle": 12,
+     "fanduel": 12,
+     "betrivers": 12,
+     "props": {
+      "pinnacle": 10,
+      "fanduel": 16,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 9,
+       "betrivers": 0
+      }
+     }
+    },
+    "wnba": {
+     "pinnacle": 1,
+     "fanduel": 1,
+     "betrivers": 1,
+     "props": {
+      "pinnacle": 81,
+      "fanduel": 36,
+      "betrivers": 0,
+      "matched": {
+       "fanduel": 33,
+       "betrivers": 0
+      }
+     }
+    },
+    "nhl": {
+     "pinnacle": 3,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 103,
+      "fanduel": 36,
+      "betrivers": 38,
+      "matched": {
+       "fanduel": 18,
+       "betrivers": 27
+      }
+     }
+    },
+    "mlb": {
+     "pinnacle": 2,
+     "fanduel": 2,
+     "betrivers": 2,
+     "props": {
+      "pinnacle": 16,
+      "fanduel": 11,
+      "betrivers": 2,
+      "matched": {
+       "fanduel": 7,
+       "betrivers": 2
+      }
+     }
+    }
+   }
+  }
+ }
+]
