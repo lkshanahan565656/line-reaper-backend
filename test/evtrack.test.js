@@ -106,3 +106,32 @@ test('the +2 min grade at $100 rides along, and the summary compares like for li
   assert.equal(s.overall.sizedN, 1);
   assert.equal(s.overall.avgSizedClv, 0);
 });
+
+test('a +2 min price read long after the flag is not a +2 min price: never taken, and dropped from history', async () => {
+  const { createMemoryStore } = require('../evtrack');
+  // as stored before the bound: flagged 00:50, "+2 min" price read at the 01:37 deploy
+  const store = createMemoryStore();
+  await store.init();
+  await store.put({ id: 'kalshi|KX-P|Portland|kalshi', group: 'kalshi|KX-P', side: 'Portland', book: 'kalshi', status: 'closed', flaggedAt: '2026-10-14T00:50:49Z',
+    start: '2026-10-14T02:00:00Z', price: 0.607, decimal: 1 / 0.607, clv: 12.85, closeFair: 68.5, execPrice: 0.7147, execAt: '2026-10-14T01:37:35Z', execClv: -4.16 });
+  await store.put({ id: 'kalshi|KX-Q|Q|kalshi', group: 'kalshi|KX-Q', side: 'Q', book: 'kalshi', status: 'closed', flaggedAt: '2026-10-14T04:50:48Z',
+    start: '2026-10-14T04:55:00Z', price: 0.3762, decimal: 1 / 0.3762, clv: 1.01, closeFair: 38, execPrice: 0.3762, execAt: '2026-10-14T04:53:49Z', execClv: 1.01 });
+  const tr = createEvTracker({ store, now: () => Date.parse('2026-10-14T09:00:00Z') });
+  const [late, ok] = await tr.list({ limit: 10 }).then(l => [l.find(b => b.group === 'kalshi|KX-P'), l.find(b => b.group === 'kalshi|KX-Q')]);
+  assert.equal(late.execPrice, undefined);
+  assert.equal(late.execClv, undefined);
+  assert.equal(late.execDropped, 'late');
+  assert.equal(late.clv, 12.85, 'the grade at the alert stays');
+  assert.equal(ok.execClv, 1.01, 'read 3 min after the flag: kept');
+  assert.equal((await tr.summary()).overall.execN, 1);
+
+  // live: a cost first seen 10 minutes after the flag isn't taken
+  let t = Date.parse('2026-10-14T12:00:00Z');
+  const tr2 = createEvTracker({ now: () => t, minEv: 0 });
+  const r = { group: 'kalshi|KX-A', sport: 'nfl', event: 'A @ B', start: '2026-10-14T13:00:00Z', market: 'moneyline', side: 'A', book: 'kalshi', price: 0.5, decimal: 2, fairProb: 52, ev: 4, source: 'xvalue', contract: 'yes', marketId: 'KX-A' };
+  await tr2.recordBoard([r]);
+  t += 10 * 60e3;
+  assert.deepEqual(await tr2.dueForExec(), []);
+  await tr2.recordBoard([], null, { costs: new Map([['kalshi|KX-A|A', 0.55]]) });
+  assert.equal((await tr2.list())[0].execPrice, undefined);
+});
