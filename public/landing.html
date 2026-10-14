@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Line Reaper: graded edges on Kalshi, Polymarket US and esports</title>
-<meta name="description" content="Line Reaper prices Kalshi and Polymarket US against the deepest book in the world, flags the lines that lag, and grades every alert against the closing line in public.">
+<title>Line Reaper: every alert graded on whether you could get the price</title>
+<meta name="description" content="Line Reaper grades every alert on whether you could still get the price two minutes later, by signal and venue, with the whole record public, losers included.">
 <meta property="og:title" content="Line Reaper">
-<meta property="og:description" content="Made for sharps, by sharps. Exchange value, arbs, middles, Sharp Tail and esports props, every alert graded against the close.">
+<meta property="og:description" content="Made for sharps, by sharps. Exchanges, arbs, middles, Sharp Tail and esports props. Every alert graded on whether you could still get the price, losers included.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="{{ORIGIN}}/og.png">
 <meta property="og:url" content="{{ORIGIN}}/">
@@ -224,7 +224,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     <div>
       <div class="eyebrow">Kalshi, Polymarket US and esports</div>
       <h1>Made for sharps,<br>by sharps.</h1>
-      <p class="lede">Line Reaper prices every game on Kalshi and Polymarket US against the deepest book in the world and flags the lines that lag behind it. Every alert is graded against the closing line in public, and the plays that stop working get cut.</p>
+      <p class="lede">A price that moved before you could click is not an edge. Line Reaper grades every alert on whether you could still get the price two minutes after it fired, by signal and venue, and keeps the whole record public, losers included. Signals that fail the test stop alerting.</p>
       <div class="cta-row">
         <a class="btn primary" href="/app?start=signup">{{SIGNUP_LABEL}}</a>
         <a class="btn" href="#record">See the record</a>
@@ -256,14 +256,14 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     </div>
     <div class="features">
       <div class="feat wide dark">
-        <div class="tag">EXCHANGE VALUE</div>
-        <h3>Take the price before it moves.</h3>
-        <p>When news or big money hits, Polymarket's international book moves first and Kalshi and Polymarket US often trail it by a few cents. Line Reaper reads the deep book's fair price, adds each venue's fee, and flags the US price that is still cheap.</p>
+        <div class="tag">EXCHANGE EDGES</div>
+        <h3>Graded on the price you could actually get.</h3>
+        <p>Line Reaper reads the deep book's fair price, adds each venue's fee, and flags Kalshi and Polymarket US prices that lag it. Most screeners stop there. We then check the price one, two and five minutes after the alert, because that is what a subscriber really gets.</p>
         <ul>
-          <li>Fair price from a tight, deep book, never a thin one</li>
-          <li>Steam: US prices that haven't followed a big move yet</li>
-          <li>Every alert graded on its closing line at the start of the game</li>
-          <li>Leagues and signals with a losing record are cut automatically</li>
+          <li>Every alert graded at the moment it fired and again two minutes later</li>
+          <li>Record cut by signal and venue, losers included, all public</li>
+          <li>A signal alerts only after its own two-minute record is positive</li>
+          <li>Signals that don't hold up are held back and say so</li>
         </ul>
       </div>
       <div class="feat">
@@ -304,7 +304,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       <div class="feat full">
         <div class="tag">RESULTS</div>
         <h3>A public record of every alert.</h3>
-        <p>Each tool keeps its own record: closing line value, wins, losses, units and return, cut by league, venue and signal. Every play is marked proven, promising, early or avoid from its own sample, so you can see what works before you trust it.</p>
+        <p>Each tool keeps its own record: closing line value at the alert and two minutes later, wins, losses, units and return, cut by league, venue and signal. Every play is marked proven, promising, early or avoid from its own sample, so you can see what works before you trust it.</p>
       </div>
     </div>
   </div>
@@ -328,17 +328,17 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
   <div class="wrap track-wrap">
     <div class="sec-head">
       <div class="num">03 / LIVE RECORD</div>
-      <h2>We grade every alert against the close.</h2>
-      <p>Closing line value is the honest test of an edge: if you keep getting a better price than the market settles on, you win over time. It settles at kick-off, long before profit does, so it shows what works weeks sooner.</p>
+      <h2>We grade every alert twice.</h2>
+      <p>First against the close: if you keep getting a better price than the market settles on, you win over time. Then against the price two minutes after the alert, because an edge that is gone by the time you click is not one you can bet. Exchange signals have to pass both before they alert.</p>
       <div class="rec-stats" id="recStats"></div>
     </div>
     <div>
       <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:16px">WHAT THE RECORD BACKS RIGHT NOW</div>
       <table id="trackTable" class="backed" aria-label="Plays the live record backs">
-        <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge</th><th class="n">Status</th></tr></thead>
-        <tbody><tr><td colspan="5" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
+        <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge at alert</th><th class="n">After 2 min</th><th class="n">Status</th></tr></thead>
+        <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">Read live from the app's tracker. Edge is the average closing line value, or return on stake where a play has no closing price. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
+      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; "not graded yet" means that play has no two-minute grade so far. Exchange value plays are listed only once their two-minute record has 8 bets and is positive. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
     </div>
   </div>
 </section>
@@ -358,7 +358,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p class="pdesc">See how it works and follow the record before you pay anything.</p>
         <ul>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Top 3 Best Plays</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>How many exchange value edges are open, and how big</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>How many exchange edges are open, and how big</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Sharp Tail alerts on a 30 minute delay</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The profit on every open arb</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Esports match boards</li>
@@ -373,7 +373,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p class="pdesc">Every play, the moment it qualifies.</p>
         <ul>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every Best Play, ranked by its record</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Exchange value and steam edges the moment they post</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Exchange alerts for signals that pass the two-minute test</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Real-time Sharp Tail alerts with the trader, price and units</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every arb and middle with its legs, prices and stakes</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Esports prop picks with the side, the EV and the best slips</li>
@@ -395,6 +395,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     <div class="faq">
       <details><summary>What is a betting exchange?</summary><div class="a"><p>Kalshi and Polymarket let you buy Yes or No on an outcome at a price between 1 and 99 cents. If you're right, each contract pays $1. Prices are set by other traders rather than a sportsbook, so they can be slow to react, and that lag is the edge Line Reaper looks for.</p></div></details>
       <details><summary>What is closing line value, and why does it matter?</summary><div class="a"><p>The closing line is the last price before a game starts, when the market knows the most. If you bought at 52 cents and it closed at 56, you beat the close by about 8%. Bettors who beat the close consistently win over time, and it shows up after dozens of bets instead of hundreds, which is why every Line Reaper alert is graded on it.</p></div></details>
+      <details><summary>What does "graded two minutes later" mean?</summary><div class="a"><p>A price at the moment an alert fires only helps if you can still buy it. On exchanges prices often move back before you can act, so we also record the price two minutes after each alert and grade that against the close. A signal only alerts once its own two-minute record is positive. Where a play has no two-minute grade yet, the record says "not graded yet" instead of a number.</p></div></details>
       <details><summary>Do I need to be a professional to use this?</summary><div class="a"><p>No. Every play tells you where to bet, the price to take and how many units to stake. A unit is just the amount you choose to risk on a standard bet; most people set it at 1% of their bankroll. The Tools tab explains the math behind each number if you want it.</p></div></details>
       <details><summary>Does Line Reaper place bets for me?</summary><div class="a"><p>No. We never hold your money, connect to your betting accounts or place bets. You read the alert and decide whether to place it yourself.</p></div></details>
       <details><summary>Is the advice personalised?</summary><div class="a"><p>No. Everyone gets the same alert with the same suggested size in units. You choose what a unit is worth to you, and the app can track your own stakes, but it never tailors a bet to your situation.</p></div></details>
@@ -410,7 +411,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
 
 <section class="closing">
   <div class="wrap">
-    <h2>See what the sharp money is doing right now.</h2>
+    <h2>See which edges are still there when you click.</h2>
     <div class="cta-row">
       <a class="btn primary" href="/app?start=signup">{{SIGNUP_LABEL}}</a>
       <a class="btn" href="/app?start=app">Open the app</a>
@@ -451,11 +452,12 @@ const RANK = { proven: 0, promising: 1 };
 
 fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const src = d.sources || {};
-  let graded = 0, clvN = 0, beat = 0;
+  let graded = 0, clvN = 0, beat = 0, execN = 0, execBeat = 0;
   for (const s of Object.values(src)) {
     const o = s.overall || {};
     graded += Math.max(o.clvN || 0, o.graded || 0);
     if (o.clvN && o.beatClosePct != null) { clvN += o.clvN; beat += o.beatClosePct * o.clvN; }
+    if (o.execN && o.execBeatPct != null) { execN += o.execN; execBeat += o.execBeatPct * o.execN; }
   }
   document.getElementById('liveTracked').textContent = graded.toLocaleString();
   // plays the record backs: proven or promising with a real sample, a positive
@@ -463,7 +465,7 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const seen = new Set(), rows = [];
   const plays = (d.plays || []).filter(p => RANK[p.verdict] != null && p.n >= 8)
     .map(p => ({ ...p, edge: p.avgClv != null ? p.avgClv : p.roi, kind: p.avgClv != null ? 'CLV' : 'ROI' }))
-    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0))
+    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0)) && !(p.source === 'exchangeValue' && !(p.execN >= 8)))
     .sort((a, b) => RANK[a.verdict] - RANK[b.verdict] || b.n - a.n);
   const backed = plays.filter(p => { const k = `${p.source}|${p.n}|${p.edge}`; return !seen.has(k) && seen.add(k); });
   for (const p of backed) {
@@ -472,17 +474,20 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       + `<td class="n">${p.n}</td>`
       + `<td class="n hide-sm">${p.beatClosePct != null ? Math.round(p.beatClosePct * 100) + '%' : '-'}</td>`
       + `<td class="n up">${pct(p.edge)} <span style="color:var(--muted);font-size:11px">${p.kind}</span></td>`
+      + `<td class="n ${p.execClv > 0 ? 'up' : ''}">${p.execClv != null ? pct(p.execClv) : '<span style="color:var(--muted);font-size:11px">not graded yet</span>'}</td>`
       + `<td class="n"><span class="verdict v-${esc(p.verdict)}">${esc(p.verdict)}</span></td></tr>`);
     if (rows.length >= 7) break;
   }
   document.querySelector('#trackTable tbody').innerHTML = rows.join('')
-    || '<tr><td colspan="5" style="color:var(--muted)">No play has a big enough sample yet. They appear here as alerts settle.</td></tr>';
+    || '<tr><td colspan="6" style="color:var(--muted)">No play has a big enough sample yet. They appear here as alerts settle.</td></tr>';
   const stats = [[graded.toLocaleString(), 'App alerts graded so far']];
-  if (clvN) stats.push([Math.round(beat / clvN * 100) + '%', 'Of alerts with a closing price beat it']);
+  if (clvN) stats.push([Math.round(beat / clvN * 100) + '%', 'Beat the close at the alert']);
+  if (execN) stats.push([Math.round(execBeat / execN * 100) + '%', 'Still beat it 2 minutes later']);
   stats.push([String(backed.length), 'Plays the record backs today']);
+  document.getElementById('recStats').style.gridTemplateColumns = `repeat(${stats.length},1fr)`;
   document.getElementById('recStats').innerHTML = stats.map(([v, k]) => `<div><b>${v}</b>${k}</div>`).join('');
 }).catch(() => {
-  document.querySelector('#trackTable tbody').innerHTML = '<tr><td colspan="5" style="color:var(--muted)">The live record is loading slowly. <a href="/app?start=results">See it in the app</a>.</td></tr>';
+  document.querySelector('#trackTable tbody').innerHTML = '<tr><td colspan="6" style="color:var(--muted)">The live record is loading slowly. <a href="/app?start=results">See it in the app</a>.</td></tr>';
   document.getElementById('liveTracked').textContent = '-';
 });
 
