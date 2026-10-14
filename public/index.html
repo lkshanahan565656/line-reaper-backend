@@ -3151,6 +3151,21 @@ function welcomeInit() {
     if (!acct.token && (start === 'signup' || start === 'login')) {
       fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => { if (s.accounts?.authSecretSet) acctOpen(start); }).catch(() => {});
     }
+    // "Get Pro": signed in goes to checkout; signed out signs up first, and a
+    // new account goes on to checkout from acctSubmit
+    if (start === 'pro') {
+      fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(async s => {
+        if (!s.accounts?.authSecretSet) return;
+        if (!acct.token) return acctOpen('signup', s.accounts.billing ? 'Create your account, then checkout opens for Pro.' : '');
+        if (!s.accounts.billing) return;
+        acct.billing = true;
+        await acctRefresh();
+        if (acct.user && !acct.user.isPro) acctUpgrade();
+      }).catch(() => {});
+    }
+    // a tab by name, e.g. ?start=results from the sales page's record
+    const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${start.replace(/[^a-z]/g, '')}',this)`);
+    if (tabBtn) tabBtn.click();
     return;
   }
   if (acct.token || ssGet('lr_welcomed')) return;

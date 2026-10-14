@@ -46,6 +46,8 @@ test('sales page: no emoji, legal links, links into the app', () => {
   assert.deepStrictEqual(page.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => pict.test(l)).map(b => b[0]), []);
   for (const href of ['/terms', '/privacy', '/refunds', '/app?start=signup', '/app?start=app']) assert.ok(page.includes(`href="${href}"`), href);
   assert.ok(html.includes("get('start')"), 'the app reads ?start= from the sales page links');
+  assert.ok(page.includes('href="/app?start=pro"') && html.includes("start === 'pro'"), 'Get Pro goes to checkout');
+  assert.ok(page.includes('href="/app?start=results"'), 'the record links to the full Results tab');
 
 });
 

@@ -3,10 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Line Reaper: sharp money tracking for exchange and esports bettors</title>
-<meta name="description" content="Line Reaper follows the exchange accounts that win, prices arbs and edges across Kalshi and Polymarket, and models esports props. Every alert is graded in public.">
+<title>Line Reaper: graded edges on Kalshi, Polymarket US and esports</title>
+<meta name="description" content="Line Reaper prices Kalshi and Polymarket US against the deepest book in the world, flags the lines that lag, and grades every alert against the closing line in public.">
 <meta property="og:title" content="Line Reaper">
-<meta property="og:description" content="Made for sharps, by sharps. Sharp Tail, exchange arbs, esports props and a public track record.">
+<meta property="og:description" content="Made for sharps, by sharps. Exchange value, arbs, middles, Sharp Tail and esports props, every alert graded against the close.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{ORIGIN}}/og.png">
+<meta property="og:url" content="{{ORIGIN}}/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="{{ORIGIN}}/">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#080b10">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,9 +120,6 @@ td.name { color:var(--text); font-weight:500; }
 .verdict.v-proven, .verdict.v-promising { color:var(--green2); }
 .verdict.v-avoid { color:var(--red); }
 .track-note { font-size:13px; color:var(--muted); margin-top:16px; line-height:1.55; }
-.board-now { margin-top:28px; display:flex; gap:28px; flex-wrap:wrap; }
-.board-now div { font-size:13px; color:var(--text2); }
-.board-now b { display:block; font-family:var(--mono); font-size:26px; color:var(--text); font-weight:600; }
 
 /* pricing */
 .plans { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--border2); border-radius:10px; overflow:hidden; max-width:900px; }
@@ -187,9 +190,20 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
   td, th { padding-left:6px; padding-right:6px; }
   .faq .a { padding-right:0; }
 }
+.feat.full { grid-column:span 3; }
+.backed td.play { color:var(--text); font-weight:500; }
+.backed td.play small { display:block; font-weight:400; color:var(--muted); font-size:12px; margin-top:2px; }
+.rec-stats { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border2); border-bottom:1px solid var(--border2); margin:30px 0 0; }
+.rec-stats div { padding:18px 16px 16px 0; font-size:13px; color:var(--text2); line-height:1.4; }
+.rec-stats div + div { padding-left:16px; border-left:1px solid var(--border); }
+.rec-stats b { display:block; font-family:var(--mono); font-size:26px; font-weight:600; color:var(--text); letter-spacing:-.5px; margin-bottom:4px; font-variant-numeric:tabular-nums; }
+.textlink { color:var(--text); text-underline-offset:3px; }
+@media (max-width:960px) { .feat.full { grid-column:span 2; } }
+@media (max-width:680px) { .feat.full { grid-column:auto; } .rec-stats b { font-size:20px; } .rec-stats div { padding-right:10px; } .rec-stats div + div { padding-left:10px; } }
 </style>
 </head>
 <body>
+
 
 <nav class="nav">
   <div class="wrap">
@@ -204,15 +218,16 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
   </div>
 </nav>
 
+
 <header class="hero">
   <div class="wrap">
     <div>
-      <div class="eyebrow">Exchange and esports betting tools</div>
+      <div class="eyebrow">Kalshi, Polymarket US and esports</div>
       <h1>Made for sharps,<br>by sharps.</h1>
-      <p class="lede">Line Reaper follows the exchange accounts that keep winning, prices arbitrage across Kalshi and Polymarket, and models esports props. Every alert is graded in public, win or lose.</p>
+      <p class="lede">Line Reaper prices every game on Kalshi and Polymarket US against the deepest book in the world and flags the lines that lag behind it. Every alert is graded against the closing line in public, and the plays that stop working get cut.</p>
       <div class="cta-row">
         <a class="btn primary" href="/app?start=signup">{{SIGNUP_LABEL}}</a>
-        <a class="btn" href="/app?start=app">Open the app</a>
+        <a class="btn" href="#record">See the record</a>
       </div>
       <p class="hero-fine">No card needed for the free plan. 21+ where legal.</p>
     </div>
@@ -225,7 +240,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       </div>
       <div class="panel-rows">
         <div class="prow"><span class="l"><span class="dot"></span>Plays on the board right now</span><span class="r" id="liveTotal">&nbsp;</span></div>
-        <div class="prow"><span class="l">Alerts tracked by the app</span><span class="r" id="liveTracked">&nbsp;</span></div>
+        <div class="prow"><span class="l">App alerts graded so far</span><span class="r" id="liveTracked">&nbsp;</span></div>
       </div>
       <div class="panel-foot">Profit and ROI are our own bets on Pikkit. The two live rows read straight from the app.</div>
     </div>
@@ -241,45 +256,55 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     </div>
     <div class="features">
       <div class="feat wide dark">
-        <div class="tag">SHARP TAIL</div>
-        <h3>Follow the accounts that actually win.</h3>
-        <p>Polymarket trades are public, so we grade active accounts on return, sample size and whether its results could be luck. When an A or B grade account makes a bet, you get an alert with the market, their price and a suggested size in units.</p>
+        <div class="tag">EXCHANGE VALUE</div>
+        <h3>Take the price before it moves.</h3>
+        <p>When news or big money hits, Polymarket's international book moves first and Kalshi and Polymarket US often trail it by a few cents. Line Reaper reads the deep book's fair price, adds each venue's fee, and flags the US price that is still cheap.</p>
         <ul>
-          <li>Grades from ROI, a luck test, sample size and market-maker filtering</li>
-          <li>Kalshi whale flow, so you see big money even where accounts are anonymous</li>
-          <li>Every alert is checked against the closing line and graded when it settles</li>
-          <li>Limit-bid prices when the edge only works at a better number</li>
+          <li>Fair price from a tight, deep book, never a thin one</li>
+          <li>Steam: US prices that haven't followed a big move yet</li>
+          <li>Every alert graded on its closing line at the start of the game</li>
+          <li>Leagues and signals with a losing record are cut automatically</li>
         </ul>
       </div>
       <div class="feat">
         <div class="tag">BEST PLAYS</div>
         <h3>One ranked list.</h3>
-        <p>The strongest plays across every tool, ranked by what the track record says is working. Plays the record says to avoid are dropped automatically.</p>
+        <p>The strongest plays across every tool, ranked by what the track record says is working. Plays the record says to avoid never make the list.</p>
       </div>
       <div class="feat">
-        <div class="tag">EXCHANGE ARBS</div>
+        <div class="tag">ARBS AND MIDDLES</div>
         <h3>Locked profit, fees included.</h3>
-        <p>Cross-exchange, multi-outcome and exchange-versus-sportsbook arbitrage, with each exchange's fees already counted.</p>
+        <p>Cross-exchange and multi-outcome arbitrage, middles on totals and spreads, and bid-then-hedge plans that turn a resting order into an arb.</p>
+      </div>
+      <div class="feat">
+        <div class="tag">PRICES</div>
+        <h3>An odds screen for the exchanges.</h3>
+        <p>Kalshi and Polymarket side by side with a fair price and the EV of every side, plus a combo builder that shows the most a Kalshi quote is worth.</p>
+      </div>
+      <div class="feat">
+        <div class="tag">SHARP TAIL</div>
+        <h3>See what the best accounts bet.</h3>
+        <p>Polymarket trades are public, so we grade accounts on return, sample size and a luck test, and watch Kalshi for whale-sized orders. Its alerts are graded like everything else.</p>
       </div>
       <div class="feat">
         <div class="tag">ESPORTS</div>
         <h3>Props priced by a model.</h3>
-        <p>CS2, League of Legends, Valorant and Dota 2. Kills, headshots and map props priced from each player's own history, the matchup and the chance a map is played.</p>
+        <p>CS2, League of Legends, Valorant and Dota 2 props across the major pick'em apps, priced from the books' consensus and each player's history, with the best slip for each app.</p>
       </div>
       <div class="feat">
-        <div class="tag">TOOLS</div>
+        <div class="tag">TOOLS AND MY BETS</div>
         <h3>The math, done for you.</h3>
-        <p>Twelve calculators: EV and Kelly, no-vig fair odds, arbitrage, hedges, middles, parlays, free bets, boosts, CLV and exchange fees. Plus a bankroll page where you set what one unit is worth.</p>
-      </div>
-      <div class="feat wide">
-        <div class="tag">RESULTS</div>
-        <h3>A public record of every alert.</h3>
-        <p>Each tool keeps its own record: wins, losses, units, return and closing line value. Plays are marked proven, promising, early or avoid from their own sample, so you can see what works before you trust it.</p>
+        <p>Twelve calculators: EV and Kelly, no-vig, arbs, hedges, middles, parlays, free bets, boosts, CLV and exchange fees. Log your own bets and see your CLV.</p>
       </div>
       <div class="feat dark">
         <div class="tag">ALERTS</div>
-        <h3>The moment it qualifies.</h3>
-        <p>Live alerts in the app and browser notifications, so you see the price before the market moves.</p>
+        <h3>On your phone.</h3>
+        <p>Add Line Reaper to your home screen and turn on push alerts, so a play reaches you before the market moves. Desktop notifications too.</p>
+      </div>
+      <div class="feat full">
+        <div class="tag">RESULTS</div>
+        <h3>A public record of every alert.</h3>
+        <p>Each tool keeps its own record: closing line value, wins, losses, units and return, cut by league, venue and signal. Every play is marked proven, promising, early or avoid from its own sample, so you can see what works before you trust it.</p>
       </div>
     </div>
   </div>
@@ -303,16 +328,17 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
   <div class="wrap track-wrap">
     <div class="sec-head">
       <div class="num">03 / LIVE RECORD</div>
-      <h2>We grade ourselves in public.</h2>
-      <p>These numbers load live from the app's tracker. Nothing is hand-picked: losing tools show up here too, and the app stops ranking a play once its record says to avoid it.</p>
-      <div class="board-now" id="boardNow"></div>
+      <h2>We grade every alert against the close.</h2>
+      <p>Closing line value is the honest test of an edge: if you keep getting a better price than the market settles on, you win over time. It settles at kick-off, long before profit does, so it shows what works weeks sooner.</p>
+      <div class="rec-stats" id="recStats"></div>
     </div>
     <div>
-      <table id="trackTable" aria-label="Live track record by tool">
-        <thead><tr><th>Tool</th><th class="n">Graded</th><th class="n hide-sm">W-L</th><th class="n">Units</th><th class="n">Avg CLV</th><th class="n hide-sm">Status</th></tr></thead>
-        <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
+      <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:16px">WHAT THE RECORD BACKS RIGHT NOW</div>
+      <table id="trackTable" class="backed" aria-label="Plays the live record backs">
+        <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge</th><th class="n">Status</th></tr></thead>
+        <tbody><tr><td colspan="5" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">CLV is how much better the alert's price was than the final price before the event started. It is the fastest honest test of an edge, because it settles long before profit does. The live tracker began in October 2026, so most samples are still small.</p>
+      <p class="track-note">Read live from the app's tracker. Edge is the average closing line value, or return on stake where a play has no closing price. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
     </div>
   </div>
 </section>
@@ -332,10 +358,11 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p class="pdesc">See how it works and follow the record before you pay anything.</p>
         <ul>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Top 3 Best Plays</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>How many exchange value edges are open, and how big</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Sharp Tail alerts on a 30 minute delay</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The profit on every open arb</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Esports match boards</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>All calculators and the full public record</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>All calculators, My Bets and the full public record</li>
         </ul>
         <a class="btn" href="/app?start=signup">{{SIGNUP_LABEL}}</a>
       </div>
@@ -345,16 +372,17 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <div class="intro" style="visibility:{{INTRO_VISIBILITY}}">${{INTRO_PRICE}} a month for the first {{INTRO_SEATS}} members</div>
         <p class="pdesc">Every play, the moment it qualifies.</p>
         <ul>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every Best Play, ranked</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every Best Play, ranked by its record</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Exchange value and steam edges the moment they post</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Real-time Sharp Tail alerts with the trader, price and units</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every arb with its legs, prices and stakes</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Esports prop picks with the side and expected value</li>
-          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Correlated slip pricing and live alerts</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every arb and middle with its legs, prices and stakes</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Esports prop picks with the side, the EV and the best slips</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Phone push alerts for every play that qualifies</li>
         </ul>
-        <a class="btn primary" href="/app?start=signup">Get Pro</a>
+        <a class="btn primary" href="/app?start=pro">Get Pro</a>
       </div>
     </div>
-    <p class="price-fine">Billed monthly. Cancel any time from your account. See the <a href="/refunds">refund policy</a>.</p>
+    <p class="price-fine">Billed monthly through Stripe. Cancel any time from your account. See the <a href="/refunds">refund policy</a>.</p>
   </div>
 </section>
 
@@ -365,13 +393,15 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       <h2>Questions, answered plainly.</h2>
     </div>
     <div class="faq">
-      <details><summary>What is a betting exchange?</summary><div class="a"><p>Kalshi and Polymarket let you buy Yes or No on an outcome at a price between 1 and 99 cents. If you're right, each contract pays $1. Prices are set by other traders rather than a sportsbook, so the people with an edge leave a trail, and that trail is what Sharp Tail follows.</p></div></details>
+      <details><summary>What is a betting exchange?</summary><div class="a"><p>Kalshi and Polymarket let you buy Yes or No on an outcome at a price between 1 and 99 cents. If you're right, each contract pays $1. Prices are set by other traders rather than a sportsbook, so they can be slow to react, and that lag is the edge Line Reaper looks for.</p></div></details>
+      <details><summary>What is closing line value, and why does it matter?</summary><div class="a"><p>The closing line is the last price before a game starts, when the market knows the most. If you bought at 52 cents and it closed at 56, you beat the close by about 8%. Bettors who beat the close consistently win over time, and it shows up after dozens of bets instead of hundreds, which is why every Line Reaper alert is graded on it.</p></div></details>
       <details><summary>Do I need to be a professional to use this?</summary><div class="a"><p>No. Every play tells you where to bet, the price to take and how many units to stake. A unit is just the amount you choose to risk on a standard bet; most people set it at 1% of their bankroll. The Tools tab explains the math behind each number if you want it.</p></div></details>
       <details><summary>Does Line Reaper place bets for me?</summary><div class="a"><p>No. We never hold your money, connect to your betting accounts or place bets. You read the alert and decide whether to place it yourself.</p></div></details>
       <details><summary>Is the advice personalised?</summary><div class="a"><p>No. Everyone gets the same alert with the same suggested size in units. You choose what a unit is worth to you, and the app can track your own stakes, but it never tailors a bet to your situation.</p></div></details>
-      <details><summary>Will I win?</summary><div class="a"><p>Not every bet, and nobody can promise you a profit. Even a real edge loses often in the short run. What we can promise is the record: every alert is graded in public, including the losers, so you can judge each tool on its own results.</p></div></details>
-      <details><summary>Where can I use it?</summary><div class="a"><p>Anywhere the app loads, but you must be 21 or older and follow the laws where you live. Sharp Tail points US users only to US-regulated venues. Exchange and sportsbook availability varies by state.</p></div></details>
-      <details><summary>What do I need to get started?</summary><div class="a"><p>An account on at least one exchange such as Kalshi, and a bankroll you can afford to lose. For esports props, an account on a supported pick'em app. The free plan needs no card.</p></div></details>
+      <details><summary>Will I win?</summary><div class="a"><p>Not every bet, and nobody can promise you a profit. Even a real edge loses often in the short run, and some of our tools are still losing while their samples grow. What we can promise is the record: every alert is graded in public, including the losers, and plays that stop working are cut.</p></div></details>
+      <details><summary>Where can I use it?</summary><div class="a"><p>Anywhere the app loads, but you must be 21 or older and follow the laws where you live. Alerts point US users only to US-regulated venues. Exchange and pick'em availability varies by state.</p></div></details>
+      <details><summary>What do I need to get started?</summary><div class="a"><p>An account on at least one exchange such as Kalshi, and a bankroll you can afford to lose. For esports props, an account on a pick'em app. The free plan needs no card.</p></div></details>
+      <details><summary>Can I get alerts on my phone?</summary><div class="a"><p>Yes. Open the app on your phone, add it to your home screen, and turn on alerts. Pro plays then arrive as push notifications.</p></div></details>
       <details><summary>Can I cancel?</summary><div class="a"><p>Yes, any time, from your account. Details are in our <a href="/refunds">refund policy</a>.</p></div></details>
       <details><summary>Who builds it?</summary><div class="a"><p>A bettor who bets the exchanges every day and built this to do it better. The record at the top of this page is our own, tracked on Pikkit.</p></div></details>
     </div>
@@ -398,6 +428,8 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <a href="/terms">Terms</a>
         <a href="/privacy">Privacy</a>
         <a href="/refunds">Refunds</a>
+        <a href="/responsible-gambling">Responsible gambling</a>
+        <a href="{{CONTACT_HREF}}">Contact</a>
       </div>
     </div>
     <div class="legal">
@@ -411,42 +443,51 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
 
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
-const fmtU = u => (u > 0 ? '+' : '') + u.toFixed(2) + 'u';
-const fmtPct = x => (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%';
-const cls = x => x > 0 ? 'up' : x < 0 ? 'down' : '';
+const pct = x => (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const ORDER = ['tail', 'fresh', 'exchangeValue', 'esportsEdges', 'esportsPicks', 'ev'];
+const WORD = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US', moneyline: 'Moneyline', steam: 'Steam moves', sports: 'Sports', over: 'Over', under: 'Under' };
+const nice = k => String(k).split(' · ').map(w => WORD[w.toLowerCase()] || (/^[a-z0-9]{2,5}$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(', ');
+const RANK = { proven: 0, promising: 1 };
 
 fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const src = d.sources || {};
-  const keys = ORDER.filter(k => src[k]).concat(Object.keys(src).filter(k => !ORDER.includes(k)));
-  let tracked = 0;
-  const rows = [];
-  for (const k of keys) {
-    const s = src[k], o = s.overall || {};
-    tracked += (o.n || 0) + (s.open || 0);
-    if (!o.n) continue;
-    rows.push(`<tr><td class="name">${esc(s.label)}</td>`
-      + `<td class="n">${o.graded}</td>`
-      + `<td class="n hide-sm">${o.wins}-${o.losses}</td>`
-      + `<td class="n ${o.graded ? cls(o.units) : ''}">${o.graded ? fmtU(o.units) : '-'}</td>`
-      + `<td class="n ${o.avgClv != null ? cls(o.avgClv) : ''}">${o.avgClv != null ? fmtPct(o.avgClv) : '-'}</td>`
-      + `<td class="n hide-sm"><span class="verdict v-${esc(o.verdict)}">${esc(o.verdict || '')}</span></td></tr>`);
+  let graded = 0, clvN = 0, beat = 0;
+  for (const s of Object.values(src)) {
+    const o = s.overall || {};
+    graded += Math.max(o.clvN || 0, o.graded || 0);
+    if (o.clvN && o.beatClosePct != null) { clvN += o.clvN; beat += o.beatClosePct * o.clvN; }
+  }
+  document.getElementById('liveTracked').textContent = graded.toLocaleString();
+  // plays the record backs: proven or promising with a real sample, a positive
+  // edge, one row per distinct result (a cut that equals its parent is skipped)
+  const seen = new Set(), rows = [];
+  const plays = (d.plays || []).filter(p => RANK[p.verdict] != null && p.n >= 8)
+    .map(p => ({ ...p, edge: p.avgClv != null ? p.avgClv : p.roi, kind: p.avgClv != null ? 'CLV' : 'ROI' }))
+    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0))
+    .sort((a, b) => RANK[a.verdict] - RANK[b.verdict] || b.n - a.n);
+  const backed = plays.filter(p => { const k = `${p.source}|${p.n}|${p.edge}`; return !seen.has(k) && seen.add(k); });
+  for (const p of backed) {
+    const label = src[p.source]?.label || p.label || p.source;
+    rows.push(`<tr><td class="play">${esc(label)}<small>${p.play === 'all' ? 'Every alert' : esc(nice(p.play))}</small></td>`
+      + `<td class="n">${p.n}</td>`
+      + `<td class="n hide-sm">${p.beatClosePct != null ? Math.round(p.beatClosePct * 100) + '%' : '-'}</td>`
+      + `<td class="n up">${pct(p.edge)} <span style="color:var(--muted);font-size:11px">${p.kind}</span></td>`
+      + `<td class="n"><span class="verdict v-${esc(p.verdict)}">${esc(p.verdict)}</span></td></tr>`);
+    if (rows.length >= 7) break;
   }
   document.querySelector('#trackTable tbody').innerHTML = rows.join('')
-    || '<tr><td colspan="6" style="color:var(--muted)">No graded alerts yet. They appear here as they settle.</td></tr>';
-  document.getElementById('liveTracked').textContent = tracked.toLocaleString();
+    || '<tr><td colspan="5" style="color:var(--muted)">No play has a big enough sample yet. They appear here as alerts settle.</td></tr>';
+  const stats = [[graded.toLocaleString(), 'App alerts graded so far']];
+  if (clvN) stats.push([Math.round(beat / clvN * 100) + '%', 'Of alerts with a closing price beat it']);
+  stats.push([String(backed.length), 'Plays the record backs today']);
+  document.getElementById('recStats').innerHTML = stats.map(([v, k]) => `<div><b>${v}</b>${k}</div>`).join('');
 }).catch(() => {
-  document.querySelector('#trackTable tbody').innerHTML = '<tr><td colspan="6" style="color:var(--muted)">The live record is loading slowly. <a href="/app?start=app">See it in the app</a>.</td></tr>';
+  document.querySelector('#trackTable tbody').innerHTML = '<tr><td colspan="5" style="color:var(--muted)">The live record is loading slowly. <a href="/app?start=results">See it in the app</a>.</td></tr>';
   document.getElementById('liveTracked').textContent = '-';
 });
 
-const KIND = { arb: 'Arbs', tail: 'Sharp Tail', exchangeValue: 'Exchange value', esportsEdge: 'Esports edges', esportsProp: 'Esports props', sportsProp: 'Sports props' };
 fetch('/api/best?limit=1').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   document.getElementById('liveTotal').textContent = (d.total || 0).toLocaleString();
-  const parts = Object.entries(d.counts || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
-    .map(([k, n]) => `<div><b>${n}</b>${esc(KIND[k] || k)} live now</div>`);
-  document.getElementById('boardNow').innerHTML = parts.join('');
 }).catch(() => { document.getElementById('liveTotal').textContent = '-'; });
 </script>
 </body>
