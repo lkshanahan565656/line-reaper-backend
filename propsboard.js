@@ -157,12 +157,15 @@ function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null
     };
     if (row.esports) {
       const p = esPicks.get(row.key);
-      const sp = p?.share?.priced;
+      // the kill-share model (LoL, Dota) or the round model (CS2, Valorant), both on Pinnacle
+      const sp = p?.share?.priced || p?.rounds?.priced;
       if (sp) {
         // Pinnacle's team kills × the player's share (sharemodel.js): its own
         // fair at each app's own line, green only where it clears
         const SB = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
-        row.model = { proj: p.share.mean, side: sp.side, prob: sp.prob, share: { pct: r2(p.share.share * 100), pinPerMap: p.share.pinPerMap, pinMean: p.share.pinMean }, stat: p.statLine || null };
+        row.model = p.share?.priced
+          ? { proj: p.share.mean, side: sp.side, prob: sp.prob, share: { pct: r2(p.share.share * 100), pinPerMap: p.share.pinPerMap, pinMean: p.share.pinMean }, stat: p.statLine || null }
+          : { proj: p.rounds.mean, side: sp.side, prob: sp.prob, share: { rounds: p.rounds.roundsPerMap, kpr: p.rounds.kpr, pinMean: p.rounds.pinMean, lineup: p.rounds.lineup }, stat: p.statLine || null };
         for (const [ab, cell] of Object.entries(sp.cells || {})) {
           const c = row.books[SB[ab]];
           if (!c) continue;

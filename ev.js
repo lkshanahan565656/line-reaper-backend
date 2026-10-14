@@ -32,6 +32,20 @@ const SELF_SOURCES = { kalshi: ['kalshi_mid', 'kalshi_props'] };
 // Two sharp sources agree when their no-vig chances on a side sit within this
 // many points: a play the screen calls 'agree' has two or more such sources.
 const AGREE_MAX_PTS = 5;
+// Books we read second-hand through Action Network. Its Hard Rock college
+// lines were placeholders (-120 both sides on a -340 favourite, 2026-10-14),
+// so a quote from these books that sits more than OUTLIER_PTS from the
+// median of 3+ other books is left off the board as unverified.
+const RELAYED_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore']);
+const OUTLIER_PTS = 6;
+function isOutlier(g, book, side) {
+  if (!RELAYED_BOOKS.has(book) || !g.all || !g.all[book]) return false;
+  const i = g.sides.indexOf(side);
+  const rest = Object.entries(g.all).filter(([b]) => b !== book).map(([, p]) => p[i]).sort((x, y) => x - y);
+  if (rest.length < 3) return false;
+  const mid = rest.length % 2 ? rest[rest.length >> 1] : (rest[rest.length / 2 - 1] + rest[rest.length / 2]) / 2;
+  return Math.abs(g.all[book][i] - mid) * 100 > OUTLIER_PTS;
+}
 const DFS_BOOKS = new Set(['prizepicks', 'underdog', 'sleeper', 'pick6', 'betr', 'parlayplay']);
 const MIN_CONSENSUS_BOOKS = 4;
 
@@ -215,7 +229,10 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
     const W = sharp.reduce((a, x) => a + weights[x.book], 0);
     const fair = {};
     sides.forEach((s, i) => { fair[s] = sharp.reduce((a, x) => a + weights[x.book] * x.p[i], 0) / W; });
-    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])) };
+    // every book's own no-vig, sharp or not: the cross-comparison columns and
+    // what the tracker scores each source on against the close
+    const all = Object.fromEntries(complete.map(novig).filter(x => x.p).map(x => [x.book, x.p]));
+    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])), all };
   }
   if (complete.length >= minConsensus) {
     const all = complete.map(novig).filter(x => x.p);
@@ -256,6 +273,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   }
 
   const rows = [];
+  const suspect = new Set();
   const propFair = new Map();   // player|market|line → fair, for DFS legs
   for (const [group, qs] of groups) {
     const f = fairForGroup(qs, { method, weights });
@@ -284,6 +302,8 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         if (!g || g.fair[side] == null) continue;
         const gp = g.fair[side];
         const ev = (gp * d - 1) * 100;
+        // one placeholder line means that book's whole event is suspect
+        if (isOutlier(g, book, side)) { suspect.add(`${book}|${q.event}`); continue; }
         if (ev < minEv) continue;
         const a = agreement(g, side, agreeMaxPts);
         rows.push({
@@ -291,10 +311,15 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
           side, book, price: q.price, decimal: round(d, 3), fairProb: round(gp * 100, 2), fairPrice: probToAmerican(gp),
           ev: round(ev, 2), kelly: round(Math.max(0, (gp * d - 1) / (d - 1)) * kellyFraction * 100, 2),
           source: g.source, sharpBooks: g.sharpBooks, agree: a.agree, spreadPts: a.spreadPts, books: best.size, updated: q.updated,
+          // the same side at every other book, best first, and each book's no-vig chance of it
+          others: [...best].filter(([b]) => b !== book).sort((x, y) => y[1].d - x[1].d).slice(0, 10).map(([b, x]) => ({ book: b, price: x.q.price })),
+          srcP: Object.fromEntries(Object.entries(g.all || {}).map(([b, p]) => [b, round(p[g.sides.indexOf(side)] * 100, 1)])),
         });
       }
     }
   }
+
+  if (suspect.size) for (let i = rows.length - 1; i >= 0; i--) if (suspect.has(`${rows[i].book}|${rows[i].event}`)) rows.splice(i, 1);
 
   // DFS legs at exactly a line the books price. Different line → skipped:
   // moving a fair price across lines needs a distribution we don't have here.
@@ -355,5 +380,5 @@ function describeEv(r) {
 
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, SELF_SOURCES, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
 };

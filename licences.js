@@ -36,6 +36,12 @@ const BLOCKED = [
     why: 'Prices read from the page JSON its site uses: no licence for a paid product.' },
   { key: 'betrivers', name: 'BetRivers (Kambi)', flag: 'BETRIVERS_DATA_OK', hosts: ['eu-offering-api.kambicdn.com'],
     why: 'Prices read from the Kambi offering API its site uses: no licence for a paid product.' },
+  { key: 'actionnetwork', name: 'Action Network', flag: 'ACTIONNETWORK_DATA_OK', hosts: ['api.actionnetwork.com'],
+    why: 'DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock and theScore prices read from the JSON its odds pages use: no licence for a paid product.' },
+  { key: 'matchbook', name: 'Matchbook', flag: 'MATCHBOOK_DATA_OK', hosts: ['api.matchbook.com'],
+    why: "Matchbook's public REST prices; its API terms cover account holders, not a redistributed feed." },
+  { key: 'bovada', name: 'Bovada', flag: 'BOVADA_DATA_OK', hosts: ['www.bovada.lv', 'bovada.lv'],
+    why: 'Prices read from the JSON its site uses; an offshore book, never a venue for US subscribers.' },
 ];
 
 // Still on with the paywall on, but their terms need a read (or attribution)
