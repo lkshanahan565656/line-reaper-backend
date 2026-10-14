@@ -333,3 +333,16 @@
 15:55:24 tick 620: pin 1492 games, kalshi 10034 rows / pmus 7949, matched 4113, sides 8204, ev>=thr 52, new 2, eps 799
 15:56:25 tick 621: pin 1492 games, kalshi 10034 rows / pmus 7949, matched 4113, sides 8203, ev>=thr 54, new 1, eps 800
 15:56:31 pinnacle errors soccer: 401
+15:57:22 tick 622: pin 622 games, kalshi 10034 rows / pmus 7949, matched 1691, sides 3378, ev>=thr 36, new 1, eps 801
+15:58:23 tick 623: pin 1493 games, kalshi 10034 rows / pmus 7949, matched 4113, sides 8205, ev>=thr 55, new 1, eps 802
+15:59:26 tick 624: pin 1493 games, kalshi 10034 rows / pmus 7949, matched 4113, sides 8205, ev>=thr 54, new 0, eps 802
+16:00:24 tick 625: pin 1495 games, kalshi 10034 rows / pmus 7949, matched 4115, sides 8105, ev>=thr 48, new 0, eps 802
+16:01:25 tick 626: pin 1431 games, kalshi 10034 rows / pmus 7949, matched 4064, sides 8109, ev>=thr 50, new 2, eps 804
+16:02:24 tick 627: pin 1431 games, kalshi 10031 rows / pmus 7949, matched 4064, sides 8110, ev>=thr 51, new 1, eps 805
+16:03:25 tick 628: pin 1431 games, kalshi 10027 rows / pmus 7949, matched 4062, sides 8105, ev>=thr 47, new 0, eps 805
+16:04:25 tick 629: pin 1431 games, kalshi 10025 rows / pmus 7949, matched 4062, sides 8105, ev>=thr 47, new 0, eps 805
+16:05:25 tick 630: pin 1432 games, kalshi 10025 rows / pmus 7949, matched 4064, sides 8109, ev>=thr 46, new 0, eps 805
+16:05:26 settle: 29 due, 4 settled
+16:06:26 tick 631: pin 1429 games, kalshi 10027 rows / pmus 7949, matched 4064, sides 8109, ev>=thr 47, new 1, eps 806
+16:07:25 tick 632: pin 1428 games, kalshi 10027 rows / pmus 7949, matched 4064, sides 8109, ev>=thr 50, new 3, eps 809
+16:07:31 done 809 episodes
