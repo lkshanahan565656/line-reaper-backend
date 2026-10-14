@@ -1,0 +1,1088 @@
+{
+ "polls": [
+  {
+   "at": "2026-10-14T12:38:09.666Z",
+   "fb": {
+    "updated": "2026-10-14T12:37:46.169Z",
+    "gamesAt": "2026-10-14T12:37:46.169Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:37:28.172Z",
+    "props": 345
+   },
+   "evCount": 101,
+   "byBook": {
+    "betrivers": 71,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T12:39:13.828Z",
+   "fb": {
+    "updated": "2026-10-14T12:38:44.442Z",
+    "gamesAt": "2026-10-14T12:38:44.442Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:38:20.755Z",
+    "props": 345
+   },
+   "evCount": 101,
+   "byBook": {
+    "betrivers": 71,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T12:40:17.980Z",
+   "fb": {
+    "updated": "2026-10-14T12:39:44.933Z",
+    "gamesAt": "2026-10-14T12:39:44.933Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:38:20.755Z",
+    "props": 345
+   },
+   "evCount": 101,
+   "byBook": {
+    "betrivers": 71,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T12:41:18.005Z",
+   "fb": {
+    "updated": "2026-10-14T12:40:44.769Z",
+    "gamesAt": "2026-10-14T12:40:44.769Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:40:21.423Z",
+    "props": 345
+   },
+   "evCount": 101,
+   "byBook": {
+    "betrivers": 71,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T12:42:20.980Z",
+   "fb": {
+    "updated": "2026-10-14T12:41:45.145Z",
+    "gamesAt": "2026-10-14T12:41:45.145Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:40:21.423Z",
+    "props": 345
+   },
+   "evCount": 102,
+   "byBook": {
+    "betrivers": 71,
+    "fanduel": 30,
+    "dfs prizepicks": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:43:21.813Z",
+   "fb": {
+    "updated": "2026-10-14T12:42:44.484Z",
+    "gamesAt": "2026-10-14T12:42:44.484Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:42:21.164Z",
+    "props": 345
+   },
+   "evCount": 107,
+   "byBook": {
+    "betrivers": 76,
+    "fanduel": 30,
+    "dfs prizepicks": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:44:23.949Z",
+   "fb": {
+    "updated": "2026-10-14T12:43:45.183Z",
+    "gamesAt": "2026-10-14T12:43:45.183Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:44:20.190Z",
+    "props": 345
+   },
+   "evCount": 107,
+   "byBook": {
+    "betrivers": 76,
+    "fanduel": 30,
+    "dfs prizepicks": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:45:25.201Z",
+   "fb": {
+    "updated": "2026-10-14T12:44:45.207Z",
+    "gamesAt": "2026-10-14T12:44:45.207Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:44:24.065Z",
+    "props": 345
+   },
+   "evCount": 107,
+   "byBook": {
+    "betrivers": 76,
+    "fanduel": 30,
+    "dfs prizepicks": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:46:25.220Z",
+   "fb": {
+    "updated": "2026-10-14T12:45:44.878Z",
+    "gamesAt": "2026-10-14T12:45:44.878Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:46:23.784Z",
+    "props": 345
+   },
+   "evCount": 107,
+   "byBook": {
+    "betrivers": 74,
+    "fanduel": 32,
+    "dfs prizepicks": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:47:25.241Z",
+   "fb": {
+    "updated": "2026-10-14T12:46:45.125Z",
+    "gamesAt": "2026-10-14T12:46:45.125Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:46:23.784Z",
+    "props": 345
+   },
+   "evCount": 109,
+   "byBook": {
+    "betrivers": 74,
+    "fanduel": 32,
+    "dfs prizepicks": 2,
+    "dfs underdog": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:48:25.405Z",
+   "fb": {
+    "updated": "2026-10-14T12:47:45.352Z",
+    "gamesAt": "2026-10-14T12:47:45.352Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:48:21.615Z",
+    "props": 345
+   },
+   "evCount": 109,
+   "byBook": {
+    "betrivers": 74,
+    "fanduel": 32,
+    "dfs prizepicks": 2,
+    "dfs underdog": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:49:25.422Z",
+   "fb": {
+    "updated": "2026-10-14T12:48:44.661Z",
+    "gamesAt": "2026-10-14T12:48:44.661Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:48:21.615Z",
+    "props": 345
+   },
+   "evCount": 109,
+   "byBook": {
+    "betrivers": 74,
+    "fanduel": 32,
+    "dfs prizepicks": 2,
+    "dfs underdog": 1
+   }
+  },
+  {
+   "at": "2026-10-14T12:50:25.894Z",
+   "fb": {
+    "updated": "2026-10-14T12:49:44.241Z",
+    "gamesAt": "2026-10-14T12:49:44.241Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T12:50:21.446Z",
+    "props": 345
+   },
+   "evCount": 109,
+   "byBook": {
+    "betrivers": 74,
+    "fanduel": 32,
+    "dfs prizepicks": 2,
+    "dfs underdog": 1
+   }
+  }
+ ],
+ "check": [
+  [
+   "arizonacardinals@losangelesrams|2026-10-18|pass_tds|matthewstafford|2.5|Over|betrivers",
+   8.85,
+   130,
+   47.33,
+   130,
+   47.33
+  ],
+  [
+   "milwaukeebucks@washingtonwizards|2026-10-21|h2h|Washington Wizards|fanduel",
+   3.12,
+   -198,
+   68.51,
+   -198,
+   68.51
+  ],
+  [
+   "minnesotatimberwolves@miamiheat|2026-10-21|totals|243.5|Under|fanduel",
+   2.92,
+   -110,
+   53.91,
+   -110,
+   53.91
+  ],
+  [
+   "atlantahawks@orlandomagic|2026-10-21|spreads|-2|Orlando Magic -2|betrivers",
+   2.5,
+   -118,
+   55.48,
+   -118,
+   55.48
+  ],
+  [
+   "dallasmavericks@houstonrockets|2026-10-22|totals|230.5|Under|fanduel",
+   2.5,
+   -110,
+   53.69,
+   -110,
+   53.69
+  ],
+  [
+   "atlantadream@goldenstatevalkyries|2026-10-17|rebounds|kaylathornton|4.5|Under|fanduel",
+   2.36,
+   102,
+   50.67,
+   102,
+   50.67
+  ],
+  [
+   "philadelphia76ers@newyorkknicks|2026-10-20|totals|232|Under|betrivers",
+   2.32,
+   -109,
+   53.37,
+   -109,
+   53.37
+  ],
+  [
+   "philadelphia76ers@newyorkknicks|2026-10-20|totals|232.5|Under|fanduel",
+   2.19,
+   -114,
+   54.44,
+   -114,
+   54.44
+  ],
+  [
+   "philadelphia76ers@newyorkknicks|2026-10-20|totals|232.5|Under|betrivers",
+   2.19,
+   -114,
+   54.44,
+   -114,
+   54.44
+  ],
+  [
+   "charlottehornets@brooklynnets|2026-10-21|totals|220.5|Over|fanduel",
+   2.08,
+   -110,
+   53.47,
+   -110,
+   53.47
+  ],
+  [
+   "coloradostate@texasstate|2026-10-16|spreads|-12|Texas State -12|betrivers",
+   2.04,
+   -139,
+   59.34,
+   -139,
+   59.34
+  ],
+  [
+   "appalachianstate@coastalcarolina|2026-10-17|spreads|-2.5|Coastal Carolina -2.5|betrivers",
+   1.94,
+   132,
+   43.94,
+   132,
+   43.94
+  ],
+  [
+   "pittsburghsteelers@tampabaybuccaneers|2026-10-18|totals|32.5|Under|betrivers",
+   1.87,
+   235,
+   30.41,
+   235,
+   30.41
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|totals|51.5|Over|betrivers",
+   1.82,
+   -124,
+   56.36,
+   -124,
+   56.36
+  ],
+  [
+   "coloradostate@texasstate|2026-10-16|spreads|-12.5|Texas State -12.5|betrivers",
+   1.82,
+   -134,
+   58.31,
+   -134,
+   58.31
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|45.5|Under|betrivers",
+   1.76,
+   -137,
+   58.83,
+   -137,
+   58.83
+  ],
+  [
+   "minnesotatimberwolves@miamiheat|2026-10-21|totals|243|Under|betrivers",
+   1.68,
+   -108,
+   52.8,
+   -108,
+   52.8
+  ],
+  [
+   "atlantahawks@orlandomagic|2026-10-21|h2h|Orlando Magic|betrivers",
+   1.63,
+   -137,
+   58.75,
+   -137,
+   58.75
+  ],
+  [
+   "goldenstatewarriors@losangeleslakers|2026-10-22|h2h|Los Angeles Lakers|fanduel",
+   1.63,
+   -196,
+   67.29,
+   -196,
+   67.29
+  ],
+  [
+   "dallascowboys@greenbaypackers|2026-10-19|receptions|jakeferguson|3.5|Over|fanduel",
+   1.62,
+   106,
+   49.33,
+   106,
+   49.33
+  ],
+  [
+   "minnesotatimberwolves@miamiheat|2026-10-21|totals|243.5|Under|betrivers",
+   1.61,
+   -113,
+   53.91,
+   -113,
+   53.91
+  ],
+  [
+   "seattleseahawks@denverbroncos|2026-10-16|receptions|toryhorton|0.5|Under|fanduel",
+   1.55,
+   126,
+   44.93,
+   126,
+   44.93
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|45|Under|betrivers",
+   1.53,
+   -130,
+   57.39,
+   -130,
+   57.39
+  ],
+  [
+   "atlantahawks@orlandomagic|2026-10-21|spreads|-2.5|Orlando Magic -2.5|betrivers",
+   1.45,
+   -112,
+   53.59,
+   -112,
+   53.59
+  ],
+  [
+   "tennesseetitans@indianapoliscolts|2026-10-18|totals|37.5|Over|betrivers",
+   1.44,
+   -230,
+   70.7,
+   -230,
+   70.7
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|43|Under|betrivers",
+   1.39,
+   100,
+   50.7,
+   100,
+   50.7
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|totals|51|Over|betrivers",
+   1.36,
+   -134,
+   58.04,
+   -134,
+   58.04
+  ],
+  [
+   "chicagobears@atlantafalcons|2026-10-18|spreads|3|Atlanta Falcons +3|fanduel",
+   1.34,
+   -105,
+   51.91,
+   -105,
+   51.91
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|44|Under|betrivers",
+   1.34,
+   -114,
+   53.99,
+   -114,
+   53.99
+  ],
+  [
+   "oklahomastate@houston|2026-10-17|spreads|-2.5|Houston -2.5|betrivers",
+   1.19,
+   -155,
+   61.51,
+   -155,
+   61.51
+  ],
+  [
+   "nebraska@oregon|2026-10-18|totals|51.5|Over|fanduel",
+   1.17,
+   -110,
+   53,
+   -110,
+   53
+  ],
+  [
+   "eastcarolina@uab|2026-10-15|spreads|5.5|UAB +5.5|betrivers",
+   1.17,
+   -115,
+   54.11,
+   -115,
+   54.11
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|pass_att|kirkcousins|36.5|Under|betrivers",
+   1.15,
+   -104,
+   51.57,
+   -104,
+   51.57
+  ],
+  [
+   "arizonacardinals@losangelesrams|2026-10-18|h2h|Los Angeles Rams|betrivers",
+   1.13,
+   -715,
+   88.72,
+   -715,
+   88.72
+  ],
+  [
+   "dallasstars@coloradoavalanche|2026-10-15|spreads|-1.5|Dallas Stars +1.5|fanduel",
+   1.12,
+   -180,
+   65,
+   -180,
+   65
+  ],
+  [
+   "coloradostate@texasstate|2026-10-16|spreads|-13|Texas State -13|betrivers",
+   1.06,
+   -129,
+   56.93,
+   -129,
+   56.93
+  ],
+  [
+   "goldenstatewarriors@losangeleslakers|2026-10-22|totals|235.5|Under|fanduel",
+   1.06,
+   -105,
+   51.76,
+   -105,
+   51.76
+  ],
+  [
+   "georgiatech@virginiatech|2026-10-17|totals|55|Over|betrivers",
+   1.05,
+   -129,
+   56.92,
+   -129,
+   56.92
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|43.5|Under|betrivers",
+   1.04,
+   -108,
+   52.46,
+   -108,
+   52.46
+  ],
+  [
+   "charlotte@temple|2026-10-17|spreads|-21.5|Charlotte +21.5|fanduel",
+   1,
+   -110,
+   52.9,
+   -110,
+   52.9
+  ],
+  [
+   "eastcarolina@uab|2026-10-15|spreads|5|UAB +5|betrivers",
+   1,
+   -110,
+   52.9,
+   -110,
+   52.9
+  ],
+  [
+   "georgiastate@jamesmadison|2026-10-17|h2h|James Madison|fanduel",
+   0.99,
+   -430,
+   81.94,
+   -430,
+   81.94
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|totals|52|Over|betrivers",
+   0.96,
+   -118,
+   54.65,
+   -118,
+   54.65
+  ],
+  [
+   "tcu@baylor|2026-10-17|h2h|Baylor|fanduel",
+   0.95,
+   -205,
+   67.85,
+   -205,
+   67.85
+  ],
+  [
+   "eastcarolina@uab|2026-10-15|spreads|6|UAB +6|betrivers",
+   0.91,
+   -125,
+   56.06,
+   -125,
+   56.06
+  ],
+  [
+   "appalachianstate@coastalcarolina|2026-10-17|spreads|-2|Coastal Carolina -2|betrivers",
+   0.9,
+   125,
+   44.84,
+   125,
+   44.84
+  ],
+  [
+   "tennesseetitans@indianapoliscolts|2026-10-18|totals|41.5|Over|betrivers",
+   0.85,
+   -141,
+   59.01,
+   -141,
+   59.01
+  ],
+  [
+   "florida@texas|2026-10-17|spreads|-10|Texas -10|betrivers",
+   0.74,
+   -121,
+   55.16,
+   -121,
+   55.16
+  ],
+  [
+   "memphis@tulane|2026-10-16|spreads|7.5|Tulane +7.5|betrivers",
+   0.74,
+   -122,
+   55.36,
+   -122,
+   55.36
+  ],
+  [
+   "coloradostate@texasstate|2026-10-16|spreads|-13.5|Texas State -13.5|betrivers",
+   0.74,
+   -121,
+   55.16,
+   -121,
+   55.16
+  ],
+  [
+   "seattleseahawks@denverbroncos|2026-10-16|pass_tds|bonix|1.5|Under|fanduel",
+   0.73,
+   -230,
+   70.2,
+   -230,
+   70.2
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|44.5|Under|betrivers",
+   0.72,
+   -122,
+   55.35,
+   -122,
+   55.35
+  ],
+  [
+   "ohio@sacramentostate|2026-10-18|totals|50.5|Under|betrivers",
+   0.71,
+   -130,
+   56.92,
+   -130,
+   56.92
+  ],
+  [
+   "eastcarolina@uab|2026-10-15|totals|49.5|Under|betrivers",
+   0.71,
+   -130,
+   56.92,
+   -130,
+   56.92
+  ],
+  [
+   "kentucky@oklahoma|2026-10-17|spreads|-5|Oklahoma -5|betrivers",
+   0.7,
+   -141,
+   58.92,
+   -141,
+   58.92
+  ],
+  [
+   "notredame@byu|2026-10-17|h2h|Notre Dame|fanduel",
+   0.67,
+   -385,
+   79.92,
+   -385,
+   79.92
+  ],
+  [
+   "charlottehornets@brooklynnets|2026-10-21|spreads|1.5|Charlotte Hornets -1.5|fanduel",
+   0.61,
+   -110,
+   52.7,
+   -110,
+   52.7
+  ],
+  [
+   "dallascowboys@greenbaypackers|2026-10-19|totals|51.5|Over|betrivers",
+   0.57,
+   -122,
+   55.27,
+   -122,
+   55.27
+  ],
+  [
+   "neworleanssaints@newyorkgiants|2026-10-18|totals|44.5|Over|betrivers",
+   0.57,
+   -122,
+   55.27,
+   -122,
+   55.27
+  ],
+  [
+   "florida@texas|2026-10-17|spreads|-10.5|Texas -10.5|fanduel",
+   0.57,
+   -110,
+   52.68,
+   -110,
+   52.68
+  ],
+  [
+   "florida@texas|2026-10-17|spreads|-10.5|Texas -10.5|betrivers",
+   0.57,
+   -110,
+   52.68,
+   -110,
+   52.68
+  ],
+  [
+   "tulsa@rice|2026-10-17|spreads|5|Rice +5|betrivers",
+   0.57,
+   -110,
+   52.68,
+   -110,
+   52.68
+  ],
+  [
+   "milwaukeebucks@washingtonwizards|2026-10-21|totals|239.5|Under|fanduel",
+   0.57,
+   -115,
+   53.79,
+   -115,
+   53.79
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|spreads|-3.5|Buffalo Bills +3.5|betrivers",
+   0.55,
+   -375,
+   79.38,
+   -375,
+   79.38
+  ],
+  [
+   "memphis@tulane|2026-10-16|spreads|8|Tulane +8|betrivers",
+   0.55,
+   -127,
+   56.26,
+   -127,
+   56.26
+  ],
+  [
+   "tulsa@rice|2026-10-17|spreads|5.5|Rice +5.5|betrivers",
+   0.55,
+   -115,
+   53.78,
+   -115,
+   53.78
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|h2h|Las Vegas Raiders|betrivers",
+   0.54,
+   210,
+   32.43,
+   210,
+   32.43
+  ],
+  [
+   "floridaatlantic@army|2026-10-17|totals|57.5|Under|betrivers",
+   0.54,
+   -136,
+   57.94,
+   -136,
+   57.94
+  ],
+  [
+   "washington@purdue|2026-10-17|totals|54.5|Under|betrivers",
+   0.54,
+   -136,
+   57.94,
+   -136,
+   57.94
+  ],
+  [
+   "georgiatech@virginiatech|2026-10-17|totals|55.5|Over|betrivers",
+   0.54,
+   -121,
+   55.05,
+   -121,
+   55.05
+  ],
+  [
+   "akron@miamiohio|2026-10-17|spreads|-7.5|Akron +7.5|betrivers",
+   0.52,
+   117,
+   46.32,
+   117,
+   46.32
+  ],
+  [
+   "nebraska@oregon|2026-10-18|h2h|Oregon|fanduel",
+   0.49,
+   -275,
+   73.69,
+   -275,
+   73.69
+  ],
+  [
+   "notredame@byu|2026-10-17|spreads|10.5|Notre Dame -10.5|fanduel",
+   0.47,
+   100,
+   50.24,
+   100,
+   50.24
+  ],
+  [
+   "northcarolina@duke|2026-10-17|h2h|Duke|fanduel",
+   0.42,
+   -150,
+   60.25,
+   -150,
+   60.25
+  ],
+  [
+   "chicagobears@atlantafalcons|2026-10-18|totals|47.5|Over|betrivers",
+   0.41,
+   -136,
+   57.86,
+   -136,
+   57.86
+  ],
+  [
+   "atlantadream@goldenstatevalkyries|2026-10-17|points|nazhillmon|6.5|Under|fanduel",
+   0.41,
+   -118,
+   54.35,
+   -118,
+   54.35
+  ],
+  [
+   "florida@texas|2026-10-17|spreads|-9.5|Texas -9.5|betrivers",
+   0.39,
+   -132,
+   57.12,
+   -132,
+   57.12
+  ],
+  [
+   "neworleanssaints@newyorkgiants|2026-10-18|totals|45|Over|betrivers",
+   0.38,
+   -115,
+   53.69,
+   -115,
+   53.69
+  ],
+  [
+   "milwaukeebucks@washingtonwizards|2026-10-21|spreads|-5.5|Washington Wizards -5.5|fanduel",
+   0.38,
+   -110,
+   52.58,
+   -110,
+   52.58
+  ],
+  [
+   "oklahomacitythunder@sanantoniospurs|2026-10-21|totals|230.5|Over|betrivers",
+   0.37,
+   -112,
+   53.02,
+   -112,
+   53.02
+  ],
+  [
+   "charlottehornets@brooklynnets|2026-10-21|totals|220.5|Over|betrivers",
+   0.37,
+   -114,
+   53.47,
+   -114,
+   53.47
+  ],
+  [
+   "neworleanssaints@newyorkgiants|2026-10-18|receptions|maliknabers|5.5|Under|fanduel",
+   0.35,
+   -102,
+   50.67,
+   -102,
+   50.67
+  ],
+  [
+   "ohio@sacramentostate|2026-10-18|totals|49.5|Under|betrivers",
+   0.34,
+   -117,
+   54.1,
+   -117,
+   54.1
+  ],
+  [
+   "washingtoncommanders@sanfrancisco49ers|2026-10-20|totals|48|Over|betrivers",
+   0.27,
+   -143,
+   59.01,
+   -143,
+   59.01
+  ],
+  [
+   "neworleanssaints@newyorkgiants|2026-10-18|totals|43.5|Over|betrivers",
+   0.26,
+   -141,
+   58.66,
+   -141,
+   58.66
+  ],
+  [
+   "neworleanssaints@newyorkgiants|2026-10-18|totals|44|Over|betrivers",
+   0.24,
+   -132,
+   57.03,
+   -132,
+   57.03
+  ],
+  [
+   "buffalobills@lasvegasraiders|2026-10-18|spreads|6.5|Las Vegas Raiders +6.5|betrivers",
+   0.23,
+   -129,
+   56.46,
+   -129,
+   56.46
+  ],
+  [
+   "massachusetts@buffalo|2026-10-17|totals|43.5|Under|betrivers",
+   0.23,
+   -136,
+   57.76,
+   -136,
+   57.76
+  ],
+  [
+   "washington@purdue|2026-10-17|totals|54|Under|betrivers",
+   0.21,
+   -130,
+   56.64,
+   -130,
+   56.64
+  ],
+  [
+   "atlantahawks@orlandomagic|2026-10-21|spreads|-2.5|Orlando Magic -2.5|fanduel",
+   0.2,
+   -115,
+   53.59,
+   -115,
+   53.59
+  ],
+  [
+   "memphis@tulane|2026-10-16|totals|53.5|Over|betrivers",
+   0.19,
+   -127,
+   56.05,
+   -127,
+   56.05
+  ],
+  [
+   "charlottehornets@brooklynnets|2026-10-21|totals|221|Over|betrivers",
+   0.15,
+   -109,
+   52.23,
+   -109,
+   52.23
+  ],
+  [
+   "charlotte@temple|2026-10-17|spreads|-21.5|Charlotte +21.5|betrivers",
+   0.14,
+   -112,
+   52.9,
+   -112,
+   52.9
+  ],
+  [
+   "nevada@northdakotastate|2026-10-17|spreads|-17.5|Nevada +17.5|betrivers",
+   0.14,
+   -148,
+   59.76,
+   -148,
+   59.76
+  ],
+  [
+   "washingtoncommanders@sanfrancisco49ers|2026-10-20|spreads|-14.5|Washington Commanders +14.5|betrivers",
+   0.13,
+   -265,
+   72.69,
+   -265,
+   72.69
+  ],
+  [
+   "tulsa@rice|2026-10-17|spreads|4.5|Rice +4.5|betrivers",
+   0.12,
+   -105,
+   51.28,
+   -105,
+   51.28
+  ],
+  [
+   "atlantahawks@orlandomagic|2026-10-21|h2h|Orlando Magic|fanduel",
+   0.12,
+   -142,
+   58.75,
+   -142,
+   58.75
+  ],
+  [
+   "wisconsin@ucla|2026-10-17|totals|42.5|Under|betrivers",
+   0.11,
+   104,
+   49.07,
+   104,
+   49.07
+  ],
+  [
+   "philadelphia76ers@newyorkknicks|2026-10-20|h2h|New York Knicks|fanduel",
+   0.09,
+   -198,
+   66.51,
+   -198,
+   66.51
+  ],
+  [
+   "montrealcanadiens@washingtoncapitals|2026-10-14|spreads|-1.5|Montreal Canadiens +1.5|fanduel",
+   0.07,
+   -215,
+   68.3,
+   -215,
+   68.3
+  ],
+  [
+   "tulsa@rice|2026-10-17|spreads|4|Rice +4|betrivers",
+   0.06,
+   102,
+   49.53,
+   102,
+   49.53
+  ],
+  [
+   "eastcarolina@uab|2026-10-15|spreads|4|UAB +4|betrivers",
+   0.04,
+   102,
+   49.53,
+   102,
+   49.53
+  ],
+  [
+   "dallasmavericks@houstonrockets|2026-10-22|h2h|Houston Rockets|fanduel",
+   0.04,
+   -300,
+   75.03,
+   -300,
+   75.03
+  ],
+  [
+   "ballstate@bowlinggreen|2026-10-17|spreads|-7.5|Ball State +7.5|betrivers",
+   0.03,
+   -127,
+   55.96,
+   -127,
+   55.96
+  ],
+  [
+   "kentucky@oklahoma|2026-10-17|spreads|-6|Oklahoma -6|betrivers",
+   0.03,
+   -127,
+   55.96,
+   -127,
+   55.96
+  ],
+  [
+   "kentstate@southflorida|2026-10-17|spreads|-19.5|South Florida -19.5|betrivers",
+   0.01,
+   -124,
+   55.36,
+   -124,
+   55.36
+  ]
+ ]
+}

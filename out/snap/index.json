@@ -1,0 +1,47 @@
+{
+ "/api/status": {
+  "st": 200,
+  "f": "_api_status.json",
+  "bytes": 12685
+ },
+ "/api/ev?limit=1000": {
+  "st": 200,
+  "f": "_api_ev_limit_1000.json",
+  "bytes": 44996
+ },
+ "/api/props/board?sport=SPORTS&sort=ev&limit=500&priced=1": {
+  "st": 200,
+  "f": "_api_props_board_sport_SPORTS_sort_ev_limit_500_priced_1.json",
+  "bytes": 352521
+ },
+ "/api/props/board?sport=SPORTS&sort=ev&limit=150": {
+  "st": 200,
+  "f": "_api_props_board_sport_SPORTS_sort_ev_limit_150.json",
+  "bytes": 112631
+ },
+ "/api/best?limit=500": {
+  "st": 200,
+  "f": "_api_best_limit_500.json",
+  "bytes": 103634
+ },
+ "/api/props/record": {
+  "st": 200,
+  "f": "_api_props_record.json",
+  "bytes": 2822
+ },
+ "/api/ev/record": {
+  "st": 200,
+  "f": "_api_ev_record.json",
+  "bytes": 82
+ },
+ "/api/ev/record/bets?status=closed&limit=50": {
+  "st": 200,
+  "f": "_api_ev_record_bets_status_closed_limit_50.json",
+  "bytes": 11
+ },
+ "/api/results": {
+  "st": 200,
+  "f": "_api_results.json",
+  "bytes": 2168
+ }
+}
