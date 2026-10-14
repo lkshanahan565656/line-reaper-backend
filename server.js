@@ -775,10 +775,11 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 // prices a pick's signal ticket with it at signal and again at lock (market CLV).
 const pickCtx = new WeakMap();
 const CLV_WARN_N = parseInt(process.env.CLV_WARN_N || '20');
+const MATCHUP_PROVEN_N = parseInt(process.env.MATCHUP_PROVEN_N || '20');
 const CLV_WARN_SHARE = parseFloat(process.env.CLV_WARN_SHARE || '0.4');
-function marketFairProb(p, line, side) {
+function marketFairProb(p, line, side, ctx) {
   if (!p || p.marketPred == null || !(line > 0) || (side !== 'OVER' && side !== 'UNDER')) return null;
-  const opts = pickCtx.get(p) || { context: null };
+  const opts = ctx || pickCtx.get(p) || { context: null };
   const r = calcEsportsEV(line, p.marketPred, side, p.sport, p.market, opts);
   if (!r) return null;
   const skew = lineSkew(line, p.sport, p.market, opts);
@@ -1717,7 +1718,7 @@ async function generateEsportsPicks() {
     return {
       ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',
       market: { mean: cons.mean, quotes: cons.quotes, modelWeight: +w.toFixed(3), raw: raw != null ? +raw.toFixed(2) : null },
-      matchupInfo: mu ? { source: mu.source, opponent: mu.opponent, pMap: +mu.pMap.toFixed(3), factor: +mu.factor.toFixed(4), weight: +muW.toFixed(3), adj: +muAdj.toFixed(4), h2h: mu.h2h || null } : null,
+      matchupInfo: mu ? { source: mu.source, opponent: mu.opponent, pMap: +mu.pMap.toFixed(3), factor: +mu.factor.toFixed(4), weight: +muW.toFixed(3), adj: +muAdj.toFixed(4), baseMean: +esmarket.blend(cons.mean, raw, w).toFixed(3), h2h: mu.h2h || null } : null,
       statLine: [g.statLine, note].filter(Boolean).join(' · '),
     };
   }
@@ -2102,6 +2103,28 @@ async function generateEsportsPicks() {
   esportsCache.marketCounts = marketCounts;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
+
+  // Matchup-led plays: +EV only because the matchup moved the number. The
+  // matchup's weight is a prior until graded picks set it, so these stay on
+  // the board (and in the record, BY MATCHUP) but leave Best Plays and alerts
+  // until matchup-moved picks beat the close: MATCHUP_PROVEN_N moves, half or
+  // more our way.
+  let matchupProven = false;
+  try {
+    const mm = (await tracker.summary()).byMatchup?.['matchup-led (no edge without it)'];
+    matchupProven = !!mm && mm.mktMoved >= MATCHUP_PROVEN_N && mm.mktBeatShare >= 0.5;
+  } catch { /* unproven */ }
+  esportsCache.matchupProven = matchupProven;
+  for (const p of picks) {
+    const m = p.matchup;
+    if (!m || m.baseMean == null || !p.side || !(p.bestEv > 0) || !(p.prob > 0) || p.ppLine == null) continue;
+    const at = mean => marketFairProb({ ...p, marketPred: mean }, p.ppLine, p.side, pickCtx.get(p));
+    const withMu = at(p.modelPred), without = at(m.baseMean);
+    if (withMu == null || without == null) continue;
+    const d = (p.bestEv / 100 + 1) / (p.prob / 100);
+    const evWithout = p.bestEv - (withMu - without) * d * 100;
+    if (evWithout <= 0) { p.matchupLed = +evWithout.toFixed(2); if (!matchupProven) p.clvWarn = true; }
+  }
 
   // Closing-line value by kind of pick (sport, stat, book, side): each play
   // carries how its kind's signals have done against the close. A kind whose
@@ -3603,7 +3626,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.93.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.94.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4630,7 +4653,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.93.0',
+  version: '3.94.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

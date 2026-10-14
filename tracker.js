@@ -278,7 +278,7 @@ function createTracker({
           context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,
           // the matchup the market price was moved by (server marketize), for its weight and record
           ctxFactor: p.matchup?.factor ?? null, matchupSrc: p.matchup?.source || null, matchupAdj: p.matchup?.adj ?? null,
-          matchupPMap: p.matchup?.pMap ?? null, h2h: p.matchup?.h2h ? `${p.matchup.h2h.w}-${p.matchup.h2h.l}` : null,
+          matchupPMap: p.matchup?.pMap ?? null, matchupLed: p.matchupLed != null, h2h: p.matchup?.h2h ? `${p.matchup.h2h.w}-${p.matchup.h2h.l}` : null,
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),
           // the market's chance of this exact ticket at signal; closeFair follows it to lock
           signalFair: fairOf(p, signalLine, p.side), closeFair: null,
@@ -527,7 +527,7 @@ function createTracker({
       byContext: groupBy(r => r.context || 'none'),
       byBook: groupBy(r => r.signalBook || 'n/a'),
       // picks the matchup moved by 2%+ vs the rest, once matchup pricing runs
-      byMatchup: groupBy(r => r.ctxFactor == null ? (r.matchupAdj === undefined ? 'before matchup pricing' : 'no match price') : Math.abs((r.matchupAdj ?? 1) - 1) >= 0.02 ? 'matchup moved price 2%+' : 'even-ish matchup'),
+      byMatchup: groupBy(r => r.matchupLed ? 'matchup-led (no edge without it)' : r.ctxFactor == null ? (r.matchupAdj === undefined ? 'before matchup pricing' : 'no match price') : Math.abs((r.matchupAdj ?? 1) - 1) >= 0.02 ? 'matchup moved price 2%+' : 'even-ish matchup'),
       // market CLV pooled by kind (sport|stat|book|side), picks signaled since it was measured
       byKind: Object.fromEntries(Object.entries(rows.filter(r => r.signalFair != null).reduce((g, r) => ((g[clvKind(r)] ||= []).push(r), g), {})).map(([k, v]) => [k, aggregate(v)])),
       counts: {

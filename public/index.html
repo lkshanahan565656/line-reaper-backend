@@ -725,7 +725,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-ldiff { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.03em; color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; vertical-align:1px; }
 .es-play .es-ldiff { display:block; width:max-content; margin:4px auto 0; }
 .es-mu { font-size:10.5px; color:#94a3b8; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.es-mu b { font-weight:700; } .es-mu b.up { color:#34d399; } .es-mu b.dn { color:#f87171; }
+.es-mu b { font-weight:700; } .es-mu b.up { color:#34d399; } .es-mu b.dn { color:#f87171; } .es-mu b.led { color:#fbbf24; }
 .es-clv { display:block; width:max-content; margin:4px auto 0; font-size:9.5px; font-weight:800; letter-spacing:.03em; padding:1px 6px; border-radius:5px; white-space:nowrap; }
 .es-clv.good { color:#34d399; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.35); }
 .es-clv.bad { color:#f87171; background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); }
@@ -6004,7 +6004,8 @@ function esMatchupLine(p) {
   const bits = [`${p.team ? escEs(p.team) + ' ' : ''}${Math.round(m.pMap * 100)}% per map${m.opponent ? ' vs ' + escEs(m.opponent) : ''} (${ES_MU_SRC[m.source] || escEs(m.source)})`];
   if (m.h2h?.n) bits.push(`H2H ${m.h2h.w}-${m.h2h.l}`);
   if (Math.abs(move) >= 0.5) bits.push(`<b class="${move > 0 ? 'up' : 'dn'}">${move > 0 ? '+' : ''}${move.toFixed(1)}% kills</b>`);
-  return `<div class="es-mu" title="Matchup: the market's number is moved by how favoured this team is tonight against its usual opponent, at ${Math.round((m.weight ?? 0) * 100)}% weight (the graded record sets it).">${bits.join(' · ')}</div>`;
+  if (p.matchupLed != null) bits.push(`<b class="led">matchup-led</b>`);
+  return `<div class="es-mu" title="Matchup: the market's number is moved by how favoured this team is tonight against its usual opponent, at ${Math.round((m.weight ?? 0) * 100)}% weight (the graded record sets it).${p.matchupLed != null && p.clvWarn ? ` Without the matchup this play would be ${p.matchupLed.toFixed(1)}% EV, so it stays out of Best Plays and alerts until matchup-led picks beat the closing line.` : ''}">${bits.join(' · ')}</div>`;
 }
 function esLineRow(p, key) {
   const B = key ? ES_BOOKS[key] : null;
