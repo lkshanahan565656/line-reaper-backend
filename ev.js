@@ -255,6 +255,9 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
       }
       for (const [book, { d, q }] of best) {
         if (costs) costs.set(`${group}|${side}|${book}`, round(1 / d, 4));
+        // a sharp book scored on a fair made from its own price says nothing:
+        // Kalshi's ladders filled the +EV tab with 856 such rows (2026-10-14)
+        if (f.sharpBooks.includes(book)) continue;
         const ev = (fp * d - 1) * 100;
         if (ev < minEv) continue;
         rows.push({
