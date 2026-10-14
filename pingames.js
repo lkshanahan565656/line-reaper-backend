@@ -263,11 +263,27 @@ function kalshiMidBooks(rows, games, o = KALSHI_MID) {
   }
   return out;
 }
-// games (one feed's) + the Kalshi mids → the same games with a 'kalshi_mid' bookmaker added
+// games (one feed's) + the Kalshi mids → the same games with a 'kalshi_mid'
+// bookmaker added, holding only the markets and lines Pinnacle also prices on
+// that game: Kalshi is the second source, never the only one. Alone at its own
+// lines it priced a 20.5 "total" (not the game's) and 11.5-point alternates
+// nobody else had (live run, 2026-10-14).
 function withKalshiMid(games, rows, o = KALSHI_MID) {
   const books = kalshiMidBooks(rows, games, o);
   if (!books.size) return games;
-  return games.map(g => (books.has(g.id) ? { ...g, bookmakers: [...(g.bookmakers || []), books.get(g.id)] } : g));
+  return games.map(g => {
+    const bm = books.get(g.id);
+    const pin = (g.bookmakers || []).find(b => b.key === 'pinnacle');
+    if (!bm || !pin) return g;
+    const has = (key, o2) => (pin.markets || []).some(m => m.key === key && m.outcomes.some(x => x.name === o2.name && (key === 'h2h' || x.point === o2.point)));
+    const markets = bm.markets.map(m => ({ ...m, outcomes: m.outcomes.filter(x => has(m.key, x)) }))
+      .map(m => ({ ...m, outcomes: m.key === 'h2h' ? (m.outcomes.length === 2 ? m.outcomes : []) : m.outcomes }))
+      .filter(m => m.outcomes.length);
+    // a spread or total line keeps both its sides or neither
+    for (const m of markets) if (m.key !== 'h2h') m.outcomes = m.outcomes.filter(x => m.outcomes.filter(y => Math.abs(y.point) === Math.abs(x.point)).length === 2);
+    const kept = markets.filter(m => m.outcomes.length);
+    return kept.length ? { ...g, bookmakers: [...g.bookmakers, { ...bm, markets: kept }] } : g;
+  });
 }
 
 // Fetch every sport → { games, errors }. The feed answered without a key from
