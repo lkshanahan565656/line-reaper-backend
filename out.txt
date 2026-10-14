@@ -1,0 +1,3 @@
+Wed Oct 14 12:25:34 UTC 2026
+{"updated":"2026-10-14T12:23:38.806Z","count":0,"counts":{"markets":255,"candidates":0,"books":0,"plays":0},"errors":[],"record":{"open":0,"graded":0,"wins":0,"losses":0,"units":0,"roi":null,"avgClv":null,"clvN":0}}
+Wed Oct 14 12:25:34 UTC 2026
