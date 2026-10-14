@@ -1,0 +1,23 @@
+name: diag-mapstats
+on:
+  push:
+    branches: [diag-mapstats]
+    paths: [diag/mapstats.js, .github/workflows/diag-mapstats.yml]
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          git show origin/diag-veto-out:data/bo3-cs.json.gz > /tmp/bo3-cs.json.gz
+          mkdir -p data
+          timeout 280m node diag/mapstats.js 2>&1 | tee mapstats.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-mapstats-out; git add -f mapstats.txt data/; git commit -qm mapstats; git push -qf origin diag-mapstats-out
