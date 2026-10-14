@@ -12,6 +12,11 @@ const xarb = require(APP + '/xarb');
 const pmus = require(APP + '/pmus');
 const DUR = Number(process.env.DUR_MIN || 50) * 60e3, EVERY = Number(process.env.EVERY_S || 20) * 1e3;
 const http = axios.create({ timeout: 15000, headers: { 'user-agent': 'line-reaper-diag' } });
+http.interceptors.response.use(null, async e => {
+  const c = e.config || {};
+  if (e.response?.status === 429 && (c.__tries || 0) < 3) { c.__tries = (c.__tries || 0) + 1; await new Promise(r => setTimeout(r, 800 * c.__tries)); return http(c); }
+  throw e;
+});
 const K = 'https://api.elections.kalshi.com/trade-api/v2';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -127,11 +132,11 @@ function fill(books, legs) {
   const seen = new Map();     // arb key → tracking
   const cycles = [];
   const bestHist = {};        // bucket of each matched pair's best all-in %
-  let rot = 0, cycle = 0, kErr = 0;
+  let rot = 0, cycle = 0, kErr = 0; const kMsg = {};
   while (Date.now() - t0 < DUR) {
     const c0 = Date.now(); cycle++; kErr = 0;
     const batch = [...prio, ...rest.slice(rot, rot + 25)]; rot = rest.length ? (rot + 25) % rest.length : 0;
-    await pool(batch, 6, async s => { const rows = []; const r = await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); if (r.errors.length) kErr++; else kCache.set(s, rows); });
+    await pool(batch, 3, async s => { const rows = []; const r = await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); if (r.errors.length) { kErr++; kMsg[r.errors[0].message] = (kMsg[r.errors[0].message] || 0) + 1; } else kCache.set(s, rows); });
     const kalshi = [...kCache.values()].flat();
     let us = [];
     try { us = await pm.arbRows({}); } catch (e) { console.log('pmus failed', e.message); }
@@ -176,6 +181,7 @@ function fill(books, legs) {
     if (wait > 0) await sleep(wait);
   }
   const list = [...seen.values()].map(s => ({ ...s, lastedSec: Math.round((s.last - s.first) / 1000) })).sort((a, b) => b.bestProfit - a.bestProfit);
+  console.log('kalshi errors', JSON.stringify(kMsg));
   console.log('\n=== best all-in % per matched pair, per cycle (floor bucket: count) ===');
   console.log(JSON.stringify(Object.fromEntries(Object.entries(bestHist).sort((a, b) => a[0] - b[0]))));
   console.log(`\n=== fillable arbs (book depth > 0): ${list.length} distinct ===`);
