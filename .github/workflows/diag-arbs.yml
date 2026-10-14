@@ -1,7 +1,7 @@
 name: diag-arbs
 on:
   push:
-    branches: [diag-arbs]
+    branches: [diag-arbs-smoke]
 permissions:
   contents: write
 jobs:
@@ -15,12 +15,12 @@ jobs:
       - run: |
           set +e
           npm ci --omit=dev --no-audit --no-fund 2>&1 | tail -3; node -e "require('axios')" || npm i axios --no-audit --no-fund 2>&1 | tail -2
-          { date -u; DUR_MIN=${DUR_MIN:-55} EVERY_S=20 node diag/fastarbs.js; } 2>&1 | tee diag-arbs-out.txt || true
+          { date -u; DUR_MIN=${DUR_MIN:-3} EVERY_S=20 node diag/fastarbs.js; } 2>&1 | tee diag-arbs-out.txt || true
       - if: always()
         run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-arbs-out
+          git checkout -B diag-arbs-smoke-out
           git add -f diag-arbs-out.txt; git add -f fastarbs-out.json || true
           git commit -m "diag arbs output"
-          git push -f origin diag-arbs-out
+          git push -f origin diag-arbs-smoke-out
