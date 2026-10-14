@@ -15,7 +15,7 @@ const EP = ['/api/status', '/api/esports/picks?minEV=-100', '/api/esports/matche
     const at = new Date().toISOString();
     const R = await Promise.all(EP.slice(0, 5).map(get));
     const [st, pk, mt, sl, al] = R;
-    const row = { at, st: R.map(r => r.st), ms: R.map(r => r.ms), len: R.map(r => r.len), ver: st.j?.version, updated: pk.j?.updated, mUpdated: mt.j?.updated, slUpdated: sl.j?.updated,
+    const row = { at, st: R.map(r => r.st), ms: R.map(r => r.ms), len: R.map(r => r.len), ver: st.j?.version, pp: st.j?.prizepicks, ppEs: st.j?.esports?.ppEsportsLines, updated: pk.j?.updated, mUpdated: mt.j?.updated, slUpdated: sl.j?.updated,
       picks: (pk.j?.picks || []).map(p => [p.sport, p.player, p.market, p.ppLine, p.udLine, p.sleeperLine, p.side, p.bestBook, p.bestEv, p.prob, p.startTime, p.matchTitle]),
       matches: (mt.j?.matches || []).map(m => [m.id, m.live ? 1 : 0, m.start, (m.edges || []).length, (m.markets || []).length, m.pin ? 1 : 0]),
       slips: Array.isArray(sl.j?.slips) ? sl.j.slips.map(s => [s.book, s.legs, s.status, s.ev]) : sl.j?.error || null,
