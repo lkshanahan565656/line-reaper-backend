@@ -136,12 +136,13 @@ function fingerprint(q) {
 
 // Odds API game (freebooks / kalshiMidBooks shape) → [{ key, source, q, meta }]
 // for Pinnacle, FanDuel, BetRivers and Kalshi's mids. feedSport: 'nfl', …
-function gameQuotes(games, feedSport, { sources = ['pinnacle', 'fanduel', 'betrivers', 'kalshi_mid'] } = {}) {
+// league: the board's name for the sport ('NFL', 'CFB'), shown on the rows
+function gameQuotes(games, feedSport, { sources = ['pinnacle', 'fanduel', 'betrivers', 'kalshi_mid'], league = null } = {}) {
   const out = [];
   const sd = SD[feedSport] || null;
   for (const g of games || []) {
     const home = g.home_team, away = g.away_team;
-    const base = { sport: feedSport, event: `${away} @ ${home}`, home, away, start: g.commence_time, gameId: g.id };
+    const base = { sport: league || feedSport, event: `${away} @ ${home}`, home, away, start: g.commence_time, gameId: g.id };
     for (const bm of g.bookmakers || []) {
       if (!sources.includes(bm.key)) continue;
       const source = bm.key === 'kalshi_mid' ? 'kalshi' : bm.key;
