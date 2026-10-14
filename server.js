@@ -644,6 +644,7 @@ const { propProb } = require('./dist');
 const { sportKey: trackerSportKey, statKind: trackerStatKind, clvKind } = require('./tracker');
 const escal = require('./escal');
 const esmarket = require('./esmarket');
+const esgaps = require('./esgaps');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
@@ -776,6 +777,8 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 const pickCtx = new WeakMap();
 const CLV_WARN_N = parseInt(process.env.CLV_WARN_N || '20');
 const MATCHUP_PROVEN_N = parseInt(process.env.MATCHUP_PROVEN_N || '20');
+// points of win chance a line gap must be worth on our side (esgaps.js)
+const GAP_MIN_PTS = parseFloat(process.env.GAP_MIN_PTS || String(esgaps.DEFAULTS.minProbPts));
 const CLV_WARN_SHARE = parseFloat(process.env.CLV_WARN_SHARE || '0.4');
 function marketFairProb(p, line, side, ctx) {
   if (!p || p.marketPred == null || !(line > 0) || (side !== 'OVER' && side !== 'UNDER')) return null;
@@ -2104,15 +2107,26 @@ async function generateEsportsPicks() {
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
+  // Line gaps: the book a pick is played at sits on the soft side of another
+  // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
+  // GAP_MIN_PTS points of win chance on the consensus or it's just noise.
+  for (const p of picks) {
+    if (!p.side || p.bestBook == null || p.marketPred == null) continue;
+    const g = esgaps.lineGap(p, l => marketFairProb(p, l, p.side, pickCtx.get(p)), { minProbPts: GAP_MIN_PTS });
+    if (g) p.lineGap = g;
+  }
+
   // Matchup-led plays: +EV only because the matchup moved the number. The
   // matchup's weight is a prior until graded picks set it, so these stay on
   // the board (and in the record, BY MATCHUP) but leave Best Plays and alerts
   // until matchup-moved picks beat the close: MATCHUP_PROVEN_N moves, half or
   // more our way.
-  let matchupProven = false;
+  let matchupProven = false, gapRecord = null;
   try {
-    const mm = (await tracker.summary()).byMatchup?.['matchup-led (no edge without it)'];
+    const sum = await tracker.summary();
+    const mm = sum.byMatchup?.['matchup-led (no edge without it)'];
     matchupProven = !!mm && mm.mktMoved >= MATCHUP_PROVEN_N && mm.mktBeatShare >= 0.5;
+    gapRecord = sum.byGap?.['line gap'] || null;
   } catch { /* unproven */ }
   esportsCache.matchupProven = matchupProven;
   for (const p of picks) {
@@ -2134,6 +2148,16 @@ async function generateEsportsPicks() {
     const kinds = await tracker.clvByKind();
     for (const p of picks) {
       if (!p.side) continue;
+      // a line gap is judged on the gaps' own record against the close, not
+      // on its sport and stat's: a book off the others is a different bet
+      if (p.lineGap) {
+        const k = gapRecord;
+        if (k && k.mktClvSample) {
+          p.clvRecord = { n: k.mktClvSample, moved: k.mktMoved, beat: k.mktBeat, share: k.mktBeatShare, closeEv: k.closeEvAvg, gap: true };
+          if (k.mktMoved >= CLV_WARN_N && k.mktBeatShare < CLV_WARN_SHARE) p.clvWarn = true;
+        }
+        continue;
+      }
       const k = kinds[clvKind(p)];
       if (!k || !k.mktClvSample) continue;
       p.clvRecord = { n: k.mktClvSample, moved: k.mktMoved, beat: k.mktBeat, share: k.mktBeatShare, closeEv: k.closeEvAvg };
@@ -4770,7 +4794,20 @@ schedule('*/5 * * * *', async () => {
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
-schedule('*/2 * * * *', async () => { await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]); });
+// When an esports line moved, the board rebuilds right away rather than on its
+// five-minute tick: a line gap closes when the odd book fixes its number.
+let esLinesSig = '';
+function esportsLinesSig() {
+  const sig = l => `${l.book}|${l.player}|${l.market}|${l.line}|${l.overMultiplier ?? ''}|${l.underMultiplier ?? ''}|${l.overOpen !== false ? 1 : 0}${l.underOpen !== false ? 1 : 0}`;
+  return [...(cache.prizepicks.data || []), ...(cache.underdog.data || []), ...(cache.sleeper.data || [])]
+    .filter(l => isEsports(l.sport)).map(sig).sort().join('\n');
+}
+schedule('*/2 * * * *', async () => {
+  await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
+  const sig = esportsLinesSig();
+  if (esLinesSig && sig !== esLinesSig) esPicksOnce().catch(() => {});
+  esLinesSig = sig;
+});
 
 // Owls — fully skipped once the breaker trips
 schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
@@ -4796,7 +4833,7 @@ schedule('7,17,27,37,47,57 * * * *', () => pollSportsbooks());
 // Esports: refresh picks every 5 min (runs off UD, PP joins when unblocked)
 // Esports match prices and schedules a minute before picks rebuild.
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
-schedule('*/5 * * * *', () => generateEsportsPicks().catch(()=>{}));
+schedule('*/5 * * * *', () => esPicksOnce().catch(()=>{}));
 
 // Profile warmer: every minute, fill a few more players' stats until the whole
 // board is priced. Self-limiting — it stops when the queue empties.

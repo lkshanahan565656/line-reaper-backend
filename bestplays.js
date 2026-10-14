@@ -239,10 +239,13 @@ function propRows(picks, verdict, o, now) {
     const book = p.bestBook === 'UD' ? 'Underdog' : p.bestBook === 'SL' ? 'Sleeper' : 'PrizePicks';
     const line = p.bestBook === 'UD' && p.udLine != null ? p.udLine : p.bestBook === 'SL' && p.sleeperLine != null ? p.sleeperLine : p.ppLine ?? p.udLine;
     const why = [`model ${p.modelPred} vs line ${line}, ${p.prob}% to hit`];
+    // a line gap: the other books' numbers, so the bettor sees why and checks the line before playing
+    const gapNames = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
+    if (p.lineGap) why.unshift(`line gap: ${p.lineGap.vs.map(v => `${gapNames[v.book] || v.book} has ${v.line}`).join(', ')}`);
     if (p.sampleSize) why.push(`${p.sampleSize} maps of history`);
     if (vd.play) why.push(evidence(vd.play));
     rows.push({
-      id: `prop:${p.sport}|${p.player}|${p.market}`, kind: 'esportsProp', label: `${labels.sport} prop`, title,
+      id: `prop:${p.sport}|${p.player}|${p.market}`, kind: 'esportsProp', label: `${labels.sport} ${p.lineGap ? 'line gap' : 'prop'}`, title,
       bet: `${p.side === 'OVER' ? 'More' : 'Less'} than ${line} ${p.displayMarket || p.market}`, venue: book, price: null, american: null, maxPrice: null,
       units: 1, ev: r4(p.bestEv / 100), verdict: vd.verdict, why, url: null, startsAt: p.startTime, at: null, warning: null,
       // what MY BETS sends back to settle a logged bet from the pick tracker
