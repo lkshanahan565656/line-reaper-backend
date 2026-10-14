@@ -1,0 +1,138 @@
+{
+ "version": "3.112.0",
+ "polls": [
+  {
+   "at": "2026-10-14T13:31:27.433Z",
+   "st": 200,
+   "total": 16,
+   "counts": {
+    "arb": 1,
+    "middle": 1,
+    "bookProp": 1,
+    "sportsProp": 3,
+    "bookLine": 10
+   },
+   "pro": true
+  },
+  {
+   "at": "2026-10-14T13:32:27.646Z",
+   "st": 200,
+   "total": 16,
+   "counts": {
+    "arb": 1,
+    "middle": 1,
+    "bookProp": 1,
+    "sportsProp": 3,
+    "bookLine": 10
+   },
+   "pro": true
+  },
+  {
+   "at": "2026-10-14T13:33:28.888Z",
+   "st": 200,
+   "total": 16,
+   "counts": {
+    "arb": 1,
+    "middle": 1,
+    "bookProp": 1,
+    "sportsProp": 3,
+    "bookLine": 10
+   },
+   "pro": true
+  },
+  {
+   "at": "2026-10-14T13:34:30.577Z",
+   "st": 200,
+   "total": 17,
+   "counts": {
+    "arb": 1,
+    "middle": 1,
+    "bookProp": 1,
+    "sportsProp": 3,
+    "bookLine": 11
+   },
+   "pro": true
+  }
+ ],
+ "counts": {
+  "arb": 1,
+  "middle": 1,
+  "bookProp": 1,
+  "sportsProp": 3,
+  "bookLine": 11
+ },
+ "rows": [
+  {
+   "kind": "bookProp",
+   "id": "bprop:arizonacardinals@losangelesrams|2026-10-18|pass_tds|matthewstafford|2.5|Over|betrivers",
+   "bet": "More than 2.5 passing TDs",
+   "title": "Matthew Stafford · Arizona Cardinals @ Los Angeles Rams",
+   "venue": "BetRivers",
+   "ev": 0.0885,
+   "verdict": "early",
+   "why": [
+    "fair +111 (47.33%) from Pinnacle, BetRivers pays +130",
+    "not graded yet"
+   ]
+  },
+  {
+   "kind": "sportsProp",
+   "id": "sprop:NBA|lebronjames|assists|prizepicks|Under|7.5|2026-10-20",
+   "bet": "Less than 7.5 assists",
+   "title": "LeBron James (PHI)",
+   "venue": "PrizePicks",
+   "ev": 0.0316,
+   "verdict": "early",
+   "why": [
+    "fair 58.0% to hit from Pinnacle 53.8% over 6.5",
+    "not graded yet"
+   ]
+  },
+  {
+   "kind": "sportsProp",
+   "id": "sprop:NFL|dakprescott|pass_att|underdog|Under|36.5|2026-10-19",
+   "bet": "Less than 36.5 pass attempts",
+   "title": "Dak Prescott (Dallas Cowboys)",
+   "venue": "Underdog",
+   "ev": 0.03,
+   "verdict": "early",
+   "why": [
+    "fair 57.9% to hit from Pinnacle 51.6% over 34.5, PrizePicks 36, Sleeper 35.5",
+    "not graded yet"
+   ]
+  },
+  {
+   "kind": "sportsProp",
+   "id": "sprop:NFL|joshallen|pass_comp|prizepicks|Under|21.5|2026-10-18",
+   "bet": "Less than 21.5 completions",
+   "title": "Josh Allen (BUF)",
+   "venue": "PrizePicks",
+   "ev": 0.0251,
+   "verdict": "early",
+   "why": [
+    "fair 57.6% to hit from Pinnacle 48.4% over 20.5, Sleeper 21.5",
+    "not graded yet"
+   ]
+  }
+ ],
+ "results": 200,
+ "sportsProps": {
+  "label": "Sports props",
+  "open": 7,
+  "overall": {
+   "n": 0,
+   "graded": 0,
+   "wins": 0,
+   "losses": 0,
+   "staked": 0,
+   "units": 0,
+   "roi": null,
+   "roiT": null,
+   "avgClv": null,
+   "beatClosePct": null,
+   "clvN": 0,
+   "clvT": null,
+   "verdict": "early"
+  }
+ }
+}
