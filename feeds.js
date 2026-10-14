@@ -199,7 +199,7 @@ function pinnacleMatchPrices(matchups, markets) {
 }
 
 async function fetchPinnacleEsports(http, key) {
-  const headers = { 'X-API-Key': key, Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
+  const headers = { ...(key ? { 'X-API-Key': key } : {}), Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
   const [mu, mk] = await Promise.all([
     http.get(`${PIN}/sports/${PIN_ESPORTS}/matchups`, { headers, timeout: 20000 }),
     http.get(`${PIN}/sports/${PIN_ESPORTS}/markets/straight`, { headers, timeout: 20000 }),

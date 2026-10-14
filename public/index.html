@@ -577,6 +577,14 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .pb-sport.es { color: #c4b5fd; background: rgba(139,92,246,.14); border-color: rgba(139,92,246,.3); }
 .pb-mk { color: #cbd5e1; font-size: 12.5px; margin: 3px 0 2px; }
 .pb-gap { display: inline-block; color: #fbbf24; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.25); font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 1px 6px; border-radius: 10px; margin-left: 6px; vertical-align: 1px; }
+.pb-gap.dim { color: #94a3b8; background: rgba(148,163,184,.08); border-color: rgba(148,163,184,.18); }
+.pb-gap.lg { color: #052e1f; background: #34d399; border-color: #34d399; }
+.pb-recwrap { margin: 0 0 4px; }
+.pb-rechead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin: 0 0 8px; }
+.pb-stat b i { font-style: normal; font-size: 12px; color: #94a3b8; font-family: inherit; }
+@media (max-width: 520px) { .pb-recsum .pb-stat b i { font-size: 10px; white-space: normal; } }
+.pb-rechead b { font-size: 11px; letter-spacing: .12em; color: #e2e8f0; }
+.pb-rechead span { font-size: 11px; color: #64748b; }
 .pb-meta { color: #64748b; font-size: 11px; line-height: 1.45; }
 .pb-books { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .pb-bk { position: relative; min-width: 0; padding: 7px 8px 8px; border-radius: 10px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.05); text-align: center; }
@@ -598,6 +606,8 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 @media (max-width: 760px) {
   .pb-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .pb-chips .sport-chip { flex: 0 0 auto; }
   .pb-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pb-sum.pb-recsum { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .pb-recsum .pb-stat { padding: 8px; } .pb-recsum .pb-stat b { font-size: 15px; } .pb-recsum .pb-stat span { font-size: 8.5px; letter-spacing: .06em; white-space: normal; }
   .pb-card { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 10px; padding: 12px; }
   .pb-books { grid-column: 1 / -1; grid-row: 2; }
   .pb-play { grid-column: 2; grid-row: 1; align-self: start; }
@@ -1403,15 +1413,16 @@ body.no-help .clv-info { display:none; }
 <div class="page" id="page-props">
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
-    <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line: sports off Kalshi's player ladders (no sportsbook vig), esports off our model. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines on the same stat.</span>
+    <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
   </div>
   <div class="pb-chips" id="pbSports" style="margin:12px 0 8px"></div>
   <div class="pb-chips" id="pbBooks" style="margin:0 0 10px"></div>
   <div style="display:flex;margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
     <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
-    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option></select></label>
+    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option><option value="gaps">Line gaps</option></select></label>
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
+  <div id="pbRecord"></div>
   <div id="pbContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every book...</div></div></div>
 </div>
 
@@ -3309,7 +3320,7 @@ function updateWSStatus(active, mode='POLLING') {
 }
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
-const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', limit: 150, data: null, seq: 0 };
+const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0 };
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL']];
 const PB_SPORT_ORDER = ['NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
 let pbTimer = null;
@@ -3322,6 +3333,8 @@ async function loadPropsBoard() {
   if (pbState.q) qs.set('q', pbState.q);
   if (pbState.show === 'multi') qs.set('multi', '1');
   if (pbState.show === 'priced') qs.set('priced', '1');
+  if (pbState.show === 'gaps') qs.set('gaps', '1');
+  if (!pbState.record || Date.now() - pbState.recordAt > 120000) loadPropsRecord();
   try {
     const r = await fetch(`${BACKEND_URL}/api/props/board?${qs}`);
     if (!r.ok) throw new Error(r.status);
@@ -3333,6 +3346,32 @@ async function loadPropsBoard() {
     const el = document.getElementById('pbContent');
     if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">Couldn't load the board (${escAttr(e.message)}). Try again in a minute.</div></div>`;
   }
+}
+// The sports props record (/api/props/record): every flagged leg, checked at
+// the next read two minutes on, priced at the close and graded off ESPN
+async function loadPropsRecord() {
+  pbState.recordAt = Date.now();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/record`);
+    if (!r.ok) return;
+    pbState.record = await r.json();
+    renderPropsRecord();
+  } catch (e) { /* the board still works */ }
+}
+function renderPropsRecord() {
+  const el = document.getElementById('pbRecord'), d = pbState.record;
+  if (!el || !d?.overall) return;
+  const o = d.overall, k = d.byKind || {};
+  const pct = v => (v == null ? '—' : `${Math.round(v * 100)}%`);
+  const sgn = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+  const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
+  const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
+  const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
+  const KN = { gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side' };
+  const kinds = ['gap', 'ev', 'gap-odd', 'gap-stale'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
+  el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
+    <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
+    ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;
 }
 function pbChips() {
   const d = pbState.data, c = d?.counts || { sports: {}, books: {} };
@@ -3384,10 +3423,13 @@ function renderPropsBoard() {
   const body = rows.map(r => {
     const b = r.best;
     const plus = b && !b.locked && b.ev > 0;
+    const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+    const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
     const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
-      : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'model' ? 'model' : 'Kalshi'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>`;
-    const proj = r.model?.proj != null ? ` · proj ${r.model.proj}` : '';
-    const gap = r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
+      : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'model' ? 'model' : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${gapTxt}`;
+    const am = v => (v > 0 ? `+${v}` : `${v}`);
+    const proj = r.model?.proj != null ? ` · proj ${r.model.proj}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
+    const gap = b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
     const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
       <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-meta">${meta}${proj}</div></div>
