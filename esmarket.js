@@ -206,4 +206,39 @@ function blend(marketMean, rawPred, weight) {
   return marketMean + weight * (rawPred - marketMean);
 }
 
-module.exports = { DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, lineBias, matchupWeights, blend, weightedMedian };
+
+// Pinnacle prices each team's kills on each map (LoL and Dota). The pick'em
+// books hang one kills line per player; their consensus means, summed over a
+// team's five players, are the books' number for the team. On 10-14 the two
+// sat within 0-10% of each other (Anubis: books 40.9 kills over three maps,
+// Pinnacle 37.2). Where they part, one of them has the team's night wrong, and
+// Pinnacle takes the sharper money. This measures it; pricing waits on the
+// record (tracker byPinTeam).
+// picks: board picks; perMap(p) → the player's consensus kills a map (or null);
+// teamOf(p) → a key for the player's team in this match (or null);
+// pinFor(p) → Pinnacle's kills a map for that team (or null).
+function teamKillBudget(picks, { perMap, teamOf, pinFor, need = 5 } = {}) {
+  const groups = new Map();
+  for (const p of picks || []) {
+    const k = teamOf(p);
+    const v = k ? perMap(p) : null;
+    if (!k || !(v > 0)) continue;
+    const g = groups.get(k) || groups.set(k, { players: new Map(), picks: [] }).get(k);
+    const name = String(p.player || '').toLowerCase();
+    if (!g.players.has(name)) g.players.set(name, v);
+    g.picks.push(p);
+  }
+  let n = 0;
+  for (const g of groups.values()) {
+    if (g.players.size < need) continue;
+    const pin = pinFor(g.picks[0]);
+    if (!(pin > 0)) continue;
+    const books = [...g.players.values()].reduce((a, x) => a + x, 0);
+    const factor = pin / books;
+    for (const p of g.picks) p.pinTeam = { pin: +pin.toFixed(2), books: +books.toFixed(2), factor: +factor.toFixed(4), players: g.players.size };
+    n++;
+  }
+  return n;
+}
+
+module.exports = { teamKillBudget, DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, lineBias, matchupWeights, blend, weightedMedian };

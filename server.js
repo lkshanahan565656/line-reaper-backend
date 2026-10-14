@@ -2107,6 +2107,43 @@ async function generateEsportsPicks() {
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
 
+  // Pinnacle's team kills against the books' five players (esmarket.teamKillBudget):
+  // measured and tracked (byPinTeam), not priced until the record says so
+  esportsCache.pinTeams = 0;
+  try {
+    const pinMatches = (esportsBoard.state.matches || []).filter(m => m.pinTeamKills && !m.live);
+    const fam = p => { const s = trackerSportKey(p.sport); return s === 'LOL' || s === 'DOTA' ? s : null; };
+    const sides = new Map();
+    const sideOf = p => {
+      if (sides.has(p)) return sides.get(p);
+      let hit = null;
+      const g = fam(p), t = Date.parse(p.startTime || '');
+      const opp = g ? opponentFrom(p.team, p.matchTitle, null) : null;
+      for (const m of g ? pinMatches : []) {
+        if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(Date.parse(m.start) - t) > 12 * 3600e3)) continue;
+        const i = [0, 1].find(j => looseTeam(m.teams[j], p.team) && (!opp || looseTeam(m.teams[1 - j], opp)));
+        if (i != null) { hit = { m, i }; break; }
+      }
+      sides.set(p, hit);
+      return hit;
+    };
+    if (pinMatches.length) {
+      esportsCache.pinTeams = esmarket.teamKillBudget(picks, {
+        perMap: p => (fam(p) && normalizeMarket(p.market).split('|')[0] === 'k' && p.marketPred != null ? (p.matchup?.baseMean ?? p.marketPred) / parseMapCount(p.market) : null),
+        teamOf: p => { const s = sideOf(p); return s ? `${s.m.id}|${s.i}` : null; },
+        pinFor: p => {
+          const s = sideOf(p);
+          const v = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market)).map(n => s?.m.pinTeamKills[n]?.[s.i]).filter(x => x > 0);
+          return v.length ? v.reduce((a, x) => a + x, 0) / v.length : null;
+        },
+      });
+      for (const p of picks) if (p.pinTeam) {
+        const f = p.pinTeam.factor;
+        p.statLine = [p.statLine, `Pinnacle team kills ${p.pinTeam.pin.toFixed(1)} a map vs the books' ${p.pinTeam.books.toFixed(1)} (x${f.toFixed(2)})`].filter(Boolean).join(' · ');
+      }
+    }
+  } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
+
   // Line gaps: the book a pick is played at sits on the soft side of another
   // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
   // GAP_MIN_PTS points of win chance on the consensus or it's just noise.
@@ -2174,6 +2211,19 @@ async function generateEsportsPicks() {
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
+}
+
+// "BFX" is BNK FearX, "SLY" Solary, "C9" Cloud9: a short code whose letters
+// run in order through the full name, starting with its first letter
+function looseTeam(full, code) {
+  if (!full || !code) return false;
+  if (teamsMatch(full, code)) return true;
+  const a = String(full).toLowerCase().replace(/[^a-z0-9]/g, ''), b = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const [long, short] = a.length >= b.length ? [a, b] : [b, a];
+  if (short.length < 2 || short.length > 4 || short[0] !== long[0]) return false;
+  let i = 0;
+  for (const ch of long) if (ch === short[i]) i++;
+  return i === short.length;
 }
 
 // If a book labels a 3-map prop "Kills on Maps 1+2", rewrite the label to what

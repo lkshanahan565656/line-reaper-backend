@@ -326,9 +326,49 @@ function devigPower(a, b) {
   for (let i = 0; i < 50; i++) { const k = (lo + hi) / 2; if (pa ** k + pb ** k > 1) lo = k; else hi = k; }
   return pa ** ((lo + hi) / 2);
 }
+// standard normal quantile (Acklam's approximation, |error| < 1.2e-9)
+function probit(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const q = p - 0.5;
+  if (Math.abs(q) <= 0.425) { const r = q * q; return q * (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  const r = Math.sqrt(-Math.log(q < 0 ? p : 1 - p));
+  const x = (((((c[0] * r + c[1]) * r + c[2]) * r + c[3]) * r + c[4]) * r + c[5]) / ((((d[0] * r + d[1]) * r + d[2]) * r + d[3]) * r + 1);
+  return q < 0 ? x : -x;
+}
+// a team's kills on one map, by game: spread of the count around its mean
+const KILL_SD = { LOL: 6, DOTA: 8 };
+// Pinnacle's team kill totals ("Kills" child matchups, one team_total per team
+// per map, main and alternate lines) → the mean each line implies: line +
+// sd × z(P over), averaged over the lines that aren't lopsided.
+function pinTeamKills(markets, childId, game) {
+  const sd = KILL_SD[game];
+  if (!sd) return null;
+  const acc = {};
+  for (const k of markets || []) {
+    if (k.matchupId !== childId || k.type !== 'team_total' || !(k.period > 0) || (k.status && k.status !== 'open')) continue;
+    const side = /;(home|away)$/.exec(k.key || '')?.[1];
+    const o = k.prices?.find(p => p.designation === 'over'), u = k.prices?.find(p => p.designation === 'under');
+    if (!side || !o || !u || o.points == null) continue;
+    const p = devigPower(o.price, u.price);
+    if (!(p >= 0.15 && p <= 0.85)) continue;
+    const a = ((acc[k.period] ??= { home: [], away: [] })[side]);
+    a.push(num(o.points) + sd * probit(p));
+  }
+  const out = {};
+  for (const [per, v] of Object.entries(acc)) {
+    if (!v.home.length || !v.away.length) continue;
+    const avg = xs => r4(xs.reduce((x, y) => x + y, 0) / xs.length);
+    out[per] = [avg(v.home), avg(v.away)];
+  }
+  return Object.keys(out).length ? out : null;
+}
 function parsePinnacle(matchups, markets) {
-  const byId = new Map();
+  const byId = new Map(), killsOf = new Map();
   for (const m of matchups || []) {
+    if (m.type === 'matchup' && m.parentId != null && m.units === 'Kills') { killsOf.set(m.parentId, m.id); continue; }
     if (m.type !== 'matchup' || m.parentId != null || (m.units && m.units !== 'Regular')) continue;
     const game = pinGame(m.league?.name);
     const home = m.participants?.find(p => p.alignment === 'home')?.name, away = m.participants?.find(p => p.alignment === 'away')?.name;
@@ -365,7 +405,8 @@ function parsePinnacle(matchups, markets) {
   for (const m of byId.values()) {
     if (!m.markets.length) continue;
     // a map-4 or map-5 price only exists in a best-of-5
-    out.push({ game: m.game, teams: m.teams, start: m.start, live: m.live, league: m.league, id: m.id, bestOf: m.maxPeriod >= 4 ? 5 : null, markets: m.markets });
+    const teamKills = killsOf.has(m.id) ? pinTeamKills(markets, killsOf.get(m.id), m.game) : null;
+    out.push({ game: m.game, teams: m.teams, start: m.start, live: m.live, league: m.league, id: m.id, bestOf: m.maxPeriod >= 4 ? 5 : null, markets: m.markets, ...(teamKills ? { teamKills } : {}) });
   }
   return out;
 }
@@ -466,6 +507,8 @@ function mergeSources({ pm = [], kalshi = [], book = [], sharp = [] } = {}, opts
     if (!hit.m.bestOf && p.bestOf) hit.m.bestOf = p.bestOf;
     if (p.live) hit.m.live = true;
     hit.m.links.pinnacle = p.id;
+    // per-map team kills, in the board's team order
+    if (p.teamKills) hit.m.pinTeamKills = Object.fromEntries(Object.entries(p.teamKills).map(([n, v]) => [n, hit.or === 'same' ? v : [v[1], v[0]]]));
     for (const raw of p.markets) {
       const mk = alignMarket({ ...raw, book: [raw.prob, 1 - raw.prob], price: raw.price }, hit.or);
       if (!hit.m.markets.has(mk.key)) continue;
@@ -653,6 +696,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       live: !!m.live || (m.start != null && m.start <= now), bestOf: m.bestOf, tournament: m.tournament, links: m.links, slug: m.slug || null,
       volume: m.volume, rating: ratingInfo, markets, edges, bids, arbs: markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })),
       fair: main ? main.outcomes.map(oc => oc.fair) : null, move: main?.move || null,
+      ...(m.pinTeamKills ? { pinTeamKills: m.pinTeamKills } : {}),
     });
   }
   calibrate(rated, { elo, calib });
@@ -818,6 +862,6 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
 module.exports = {
   bidPlan,
   GAMES, DEFAULTS, cleanName, sameTeam, orient, parsePmTitle, seriesScores, modelFor,
-  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, parsePinnacle, devigPower, fetchPinnacle, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
+  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, parsePinnacle, pinTeamKills, probit, devigPower, fetchPinnacle, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
   createEsportsBoard, fetchPmSeries, PM_SERIES_FALLBACK,
 };
