@@ -1,0 +1,1413 @@
+[
+ {
+  "t": "2026-10-14T22:49:54.910Z",
+  "rounds": {
+   "now": null,
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 0
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:50:24.945Z",
+  "rounds": {
+   "now": null,
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 0
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:50:55.032Z",
+  "rounds": {
+   "now": {
+    "matches": 5,
+    "teams": 4,
+    "unknownLineup": 17,
+    "priced": 41,
+    "clear": 0,
+    "byGame": {
+     "CS2": 41
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 41
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:51:25.810Z",
+  "rounds": {
+   "now": {
+    "matches": 5,
+    "teams": 4,
+    "unknownLineup": 17,
+    "priced": 41,
+    "clear": 0,
+    "byGame": {
+     "CS2": 41
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 41
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:51:55.839Z",
+  "rounds": {
+   "now": {
+    "matches": 5,
+    "teams": 4,
+    "unknownLineup": 17,
+    "priced": 41,
+    "clear": 0,
+    "byGame": {
+     "CS2": 41
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 41
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:52:26.890Z",
+  "rounds": {
+   "now": {
+    "matches": 5,
+    "teams": 4,
+    "unknownLineup": 17,
+    "priced": 41,
+    "clear": 0,
+    "byGame": {
+     "CS2": 41
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 41
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:52:56.930Z",
+  "rounds": {
+   "now": {
+    "matches": 7,
+    "teams": 11,
+    "unknownLineup": 10,
+    "priced": 90,
+    "clear": 3,
+    "byGame": {
+     "CS2": 90
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 90
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:53:26.966Z",
+  "rounds": {
+   "now": {
+    "matches": 7,
+    "teams": 11,
+    "unknownLineup": 10,
+    "priced": 90,
+    "clear": 3,
+    "byGame": {
+     "CS2": 90
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 90
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:53:57.004Z",
+  "rounds": {
+   "now": {
+    "matches": 7,
+    "teams": 11,
+    "unknownLineup": 10,
+    "priced": 90,
+    "clear": 3,
+    "byGame": {
+     "CS2": 90
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 90
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:54:27.551Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:54:57.591Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:55:27.633Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:55:57.673Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:56:27.712Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 16,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:56:57.753Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 16,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:57:27.792Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 16,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:57:57.818Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 16,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:58:27.851Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:58:58.115Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:59:28.134Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T22:59:58.162Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 16,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:00:29.241Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:00:59.279Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:01:32.662Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:02:03.465Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:02:33.510Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:03:03.549Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:03:33.615Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:04:04.495Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:04:34.532Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:05:04.571Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:05:34.603Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:06:04.642Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:06:34.681Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:07:04.715Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:07:34.738Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:08:04.778Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:08:34.819Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:09:04.884Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:09:34.923Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:10:06.625Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:10:36.939Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:11:06.978Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:11:37.004Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 6,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:12:08.620Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:12:38.635Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:13:08.677Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:13:38.716Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:14:08.756Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:14:38.808Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:15:08.849Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:15:38.888Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "CS2": 98,
+     "VAL": 20
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:16:08.929Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:16:38.970Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:17:09.010Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:17:39.933Z",
+  "rounds": {
+   "now": {
+    "matches": 10,
+    "teams": 14,
+    "unknownLineup": 5,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:18:09.956Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:18:39.996Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:19:10.030Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ },
+ {
+  "t": "2026-10-14T23:19:40.069Z",
+  "rounds": {
+   "now": {
+    "matches": 11,
+    "teams": 14,
+    "unknownLineup": 7,
+    "priced": 118,
+    "clear": 4,
+    "byGame": {
+     "VAL": 20,
+     "CS2": 98
+    },
+    "noRounds": 0
+   },
+   "books": {
+    "shown": 2,
+    "clear": 2,
+    "bothSources": 2
+   },
+   "priced": 118
+  },
+  "warmer": null
+ }
+]
