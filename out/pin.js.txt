@@ -1,0 +1,48 @@
+no key /sports 200 [
+  {
+    "featureOrder": -1,
+    "id": 1,
+    "isFeatured": false,
+    "isHidden": false,
+    "isSticky": false,
+    "matchupCount": 0,
+    "matchupCountSE": 0,
+    "name": "Badminton",
+    "primaryM
+home 200 6394
+scripts 3
+key not found in site scripts; trying the published guest key
+/sports with key 200 [
+  {
+    "featureOrder": -1,
+    "id": 1,
+    "isFeatured": false,
+    "isHidden": false,
+    "isSticky": false,
+    "m
+NFL matchups 200 220 specials 206 {"Game Props":86,"Player Props":89,"Team to Make Playoffs":16,"Futures":15} player props 89 priced 89 markets 200
+   C.J. Stroud Total Pass Completions | Over:1638301778,Under:1638301779 | [{"participantId":1638301778,"points":22.5,"price":-114},{"participantId":1638301779,"points":22.5,"price":-114}]
+   Dalton Schultz Total Receptions | Over:1638301799,Under:1638301800 | [{"participantId":1638301799,"points":3.5,"price":-100},{"participantId":1638301800,"points":3.5,"price":-132}]
+   Jordan Love Total Pass Completions | Over:1638301862,Under:1638301863 | [{"participantId":1638301862,"points":21.5,"price":-116},{"participantId":1638301863,"points":21.5,"price":-114}]
+   Matthew Golden Total Receptions | Over:1638301889,Under:1638301890 | [{"participantId":1638301889,"points":4.5,"price":-148},{"participantId":1638301890,"points":4.5,"price":112}]
+CFB matchups 200 64 specials 7 {"To Make the Playoffs":7} player props 0 priced 0 markets 200
+NBA matchups 200 108 specials 96 {"Regular Season Wins":30,"Futures":6,"Player Props":30,"To Make the Playoffs":30} player props 30 priced 30 markets 200
+   LeBron James Total Rebounds | Over:1637629223,Under:1637629224 | [{"participantId":1637629223,"points":6.5,"price":116},{"participantId":1637629224,"points":6.5,"price":-154}]
+   Shai Gilgeous-Alexander Total Assists | Over:1637629199,Under:1637629200 | [{"participantId":1637629199,"points":5.5,"price":-116},{"participantId":1637629200,"points":5.5,"price":-114}]
+   Jalen Brunson Total Assists | Over:1637629168,Under:1637629169 | [{"participantId":1637629168,"points":6.5,"price":-114},{"participantId":1637629169,"points":6.5,"price":-114}]
+   Jayson Tatum Total Points | Over:1637629138,Under:1637629139 | [{"participantId":1637629138,"points":26.5,"price":-122},{"participantId":1637629139,"points":26.5,"price":-110}]
+WNBA matchups 200 84 specials 83 {"Player Props":81,"Futures":1,"Series Prices":1} player props 81 priced 81 markets 200
+   DeWanna Bonner Total Points | Over:1638232328,Under:1638232329 | [{"participantId":1638232328,"points":8.5,"price":-104},{"participantId":1638232329,"points":8.5,"price":-122}]
+   Gabby Williams Total Threes Made | Over:1638232334,Under:1638232335 | [{"participantId":1638232334,"points":2.5,"price":152},{"participantId":1638232335,"points":2.5,"price":-205}]
+   Veronica Burton Total Threes Made | Over:1638232472,Under:1638232473 | [{"participantId":1638232472,"points":1.5,"price":178},{"participantId":1638232473,"points":1.5,"price":-245}]
+   Cecilia Zandalasini Total Threes Made | Over:1638272408,Under:1638272409 | [{"participantId":1638272408,"points":0.5,"price":-245},{"participantId":1638272409,"points":0.5,"price":178}]
+NHL matchups 200 493 specials 489 {"Player Props":462,"Game Props":24,"Futures":3} player props 462 priced 420 markets 200
+   Tommy Novak Total Points | Over:1638335135,Under:1638335136 | [{"participantId":1638335135,"points":0.5,"price":115},{"participantId":1638335136,"points":0.5,"price":-160}]
+   Matvei Gridin Total Goals | Over:1638328639,Under:1638328640 | [{"participantId":1638328639,"points":0.5,"price":305},{"participantId":1638328640,"points":0.5,"price":-465}]
+   Casey Mittelstadt Total Shots On Goal | Over:1638336560,Under:1638336561 | [{"participantId":1638336560,"points":1.5,"price":147},{"participantId":1638336561,"points":1.5,"price":-198}]
+   Ivan Barbashev Total Assists | Over:1638328295,Under:1638328296 | [{"participantId":1638328295,"points":0.5,"price":215},{"participantId":1638328296,"points":0.5,"price":-310}]
+MLB matchups 200 66 specials 64 {"Player Props":39,"Exact Scores":19,"Futures":2,"Double Result":1,"Next Run":2,"Series Prices":1} player props 39 priced 39 markets 200
+   Tommy Edman Total Bases | Over:1638326445,Under:1638326446 | [{"participantId":1638326445,"points":0.5,"price":-149},{"participantId":1638326446,"points":0.5,"price":118}]
+   Miguel Rojas Total Bases | Over:1638326433,Under:1638326434 | [{"participantId":1638326433,"points":0.5,"price":-130},{"participantId":1638326434,"points":0.5,"price":103}]
+   Jackson Chourio Total Home Runs | Over:1638326301,Under:1638326302 | [{"participantId":1638326301,"points":0.5,"price":595},{"participantId":1638326302,"points":0.5,"price":-1045}]
+   Enrique Hernandez Total Home Runs | Over:1638326286,Under:1638326287 | [{"participantId":1638326286,"points":0.5,"price":720},{"participantId":1638326287,"points":0.5,"price":-1431}]
