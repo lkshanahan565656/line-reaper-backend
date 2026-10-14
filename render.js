@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const U = 'https://line-reaper-backend-production.up.railway.app';
-const TABS = ['best','lines','props','sharp','esports','ev','tail','arb','results','gas','tools','betlog','clv','shop'];
+const TABS = ['best','big','lines','props','sharp','esports','ev','tail','arb','results','gas','tools','betlog','clv','shop'];
 const DEAD = ['bet-action-btn','bet-actions','bet-log-form','bet-result','es-bookev','es-lean','es-num','es-pill','es-plays','esm-bet','esm-meter','esm-team','esm-teams','form-grid','form-group','form-input','form-label','form-select','form-title','log-btn'];
 const mode = process.argv[2]; // 'swap' (before/after html) or 'live'
 (async () => {
