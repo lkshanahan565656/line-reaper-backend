@@ -184,7 +184,7 @@ function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Da
         const agree = pinFair != null && Math.abs(fair - pinFair) * 100 <= o.agreePts && pinFair * d > 1;
         rows.push({
           sport: g.game.toLowerCase(), game: g.game, gameLabel: g.game === 'LOL' ? 'LoL' : 'Dota 2', league: g.league, event: `${g.teams[0]} vs ${g.teams[1]}`, start: new Date(start).toISOString(),
-          group, market: `kills|${l.period}|player`, marketLabel: `Map ${l.period} player kills`, player: l.player, point: l.line,
+          group, market: `kills|${l.period}|player`, marketLabel: `Map ${l.period} player kills`, player: l.player, team: e.teamName, point: l.line,
           side: sideLabel, book: 'betrivers', price: l.prices[i], decimal: Math.round(d * 1000) / 1000, fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), ev: r2(ev),
           kelly: r2(Math.max(0, (fair * d - 1) / (d - 1)) * 25),
           source: agree ? 'esbook-share' : 'esbook-share-only', esports: true, clears: agree, single: !agree, model: true, agree, spreadPts: pinFair != null ? r2(Math.abs(fair - pinFair) * 100) : null,
@@ -194,7 +194,14 @@ function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Da
       }
     }
   }
-  return { rows, priced };
+  // one play per player and map: the rungs of one ladder are the same bet
+  const best = new Map();
+  for (const r of rows) {
+    const k = `${r.group.split('|').slice(0, 5).join('|')}`;
+    const b = best.get(k);
+    if (!b || (r.clears - b.clears || r.ev - b.ev) > 0) best.set(k, r);
+  }
+  return { rows: [...best.values()], priced, teams: new Set([...best.values()].filter(r => r.clears).map(r => `${r.event}|${r.team}`)).size };
 }
 
 // Graded rows → record: overall, by side, by app, and by team (five players on

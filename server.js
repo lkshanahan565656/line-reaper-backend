@@ -4819,7 +4819,7 @@ function runEsBooksScreen() {
         toDecimal: evScreen.americanToDecimal, fairs, costs, o: SHARE_OPTS });
       res.rows.push(...sr.rows);
       res.rows.sort((a, b) => (b.clears - a.clears) || b.ev - a.ev);
-      shareSum = { priced: sr.priced, shown: sr.rows.length, clear: sr.rows.filter(r => r.clears).length };
+      shareSum = { priced: sr.priced, shown: sr.rows.length, clear: sr.rows.filter(r => r.clears).length, teams: sr.teams };
     }
     Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum }, screenedAt: new Date().toISOString() });
     esBookTracker.recordBoard(res.rows, fairs, { costs }).catch(e => console.warn('Esports books tracker:', e.message));

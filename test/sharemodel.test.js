@@ -117,3 +117,13 @@ test('priceBookPlayers prices BetRivers player kill rungs on the share', () => {
   assert.equal(over.clears, true);
   assert.ok(fairs.size === 2);
 });
+
+test('priceBookPlayers keeps one rung per player and map', () => {
+  const index = new Map([['LOL|caliste', { share: 0.3, teamName: 'KC', start: Date.parse('2030-01-01T18:00:00Z'), pinByMap: { 1: 16 }, booksPerMap: 4.6 }]]);
+  const books = [{ game: 'LOL', teams: ['C9', 'KC'], start: Date.parse('2030-01-01T18:00:00Z'),
+    players: [2.5, 3.5, 4.5].map(line => ({ period: 1, player: 'Caliste', team: 1, line, prices: [150, -200] })) }];
+  const r = sm.priceBookPlayers(books, index, { nameKey: n => n.toLowerCase(), sameTeam: (a, b) => a === b, toDecimal: a => (a > 0 ? 1 + a / 100 : 1 + 100 / -a), now: Date.parse('2029-12-31T00:00:00Z') });
+  assert.equal(r.priced, 3);
+  assert.equal(r.rows.length, 1);
+  assert.equal(r.teams, r.rows[0].clears ? 1 : 0);
+});
