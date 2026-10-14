@@ -34,7 +34,12 @@ function ladderEvents(rows) {
   for (const [g, rs] of games) {
     const ml = rs.filter(r => r.kind === 'teams');
     const teams = [...new Set(ml.flatMap(r => [r.outcomeLabel, r.noLabel]).filter(Boolean))].slice(0, 2);
-    const teamIx = name => teams.findIndex(t => norm(t) === norm(name) || xarb.nameMatch(t, name));
+    const teamIx = name => {
+      const exact = teams.findIndex(t => norm(t) === norm(name));
+      if (exact >= 0) return exact;
+      const fuzzy = teams.map((t, i) => (xarb.nameMatch(t, name) ? i : -1)).filter(i => i >= 0);
+      return fuzzy.length === 1 ? fuzzy[0] : -2;
+    };
     const ev = [];
     const add = (r, subject, t, flip) => {
       const yes = { price: r.yesAsk, side: 'yes' }, no = { price: r.noAsk, side: 'no' };
@@ -49,7 +54,7 @@ function ladderEvents(rows) {
         const i = teamIx(team);
         if (i === 1 && (r.kind === 'spread' || r.noLabel)) add(r, 'margin:' + teams[0], -t, true);   // B by > t == not(A margin > -t)
         else if (i === 0) add(r, 'margin:' + teams[0], t, false);
-        else add(r, 'margin:' + team, t, false);
+        else if (i === -1) add(r, 'margin:' + team, t, false);   // no moneyline in this game: its own ladder
         // a two-way moneyline row is also the other team's (no draw): A wins == not(B wins)
       }
     }
@@ -95,17 +100,16 @@ async function usAsks(slug, side, yesSide) {
   return (d.bids || []).map(l => ({ p: r4(1 - px(l)), q: Number(l.qty) })).filter(l => l.p > 0 && l.p < 1 && l.q > 0).sort((a, b) => a.p - b.p);
 }
 const asksOf = l => (l.venue === 'kalshi' ? kalshiAsks(l.id, l.side) : usAsks(l.id, l.side, l.row?.yesSide));
-// walk both books while one more pair still costs under $1 all-in
-function fill(a, b, legs) {
-  let i = 0, j = 0, qa = a[0]?.q || 0, qb = b[0]?.q || 0, n = 0, spent = 0;
-  while (i < a.length && j < b.length) {
-    const pa = a[i].p, pb = b[j].p;
-    const c = pa + feeOf(legs[0].venue, pa, legs[0].row?.feeSchedule?.rate) + pb + feeOf(legs[1].venue, pb, legs[1].row?.feeSchedule?.rate);
+// walk every leg's book while one more set still costs under $1 all-in
+function fill(books, legs) {
+  const ix = books.map(() => 0), left = books.map(b => b[0]?.q || 0);
+  let n = 0, spent = 0;
+  while (books.every((b, k) => ix[k] < b.length)) {
+    const c = books.reduce((s, b, k) => { const p = b[ix[k]].p; return s + p + feeOf(legs[k].venue, p, legs[k].row?.feeSchedule?.rate); }, 0);
     if (c >= 1) break;
-    const take = Math.min(qa, qb);
-    n += take; spent += take * c; qa -= take; qb -= take;
-    if (qa <= 0) { i++; qa = a[i]?.q || 0; }
-    if (qb <= 0) { j++; qb = b[j]?.q || 0; }
+    const take = Math.min(...left);
+    n += take; spent += take * c;
+    for (let k = 0; k < books.length; k++) { left[k] -= take; if (left[k] <= 0) { ix[k]++; left[k] = books[k][ix[k]]?.q || 0; } }
   }
   return { contracts: Math.floor(n), cost: Math.round(spent * 100) / 100, profit: Math.round((n - spent) * 100) / 100 };
 }
@@ -123,11 +127,11 @@ function fill(a, b, legs) {
   const seen = new Map();     // arb key → tracking
   const cycles = [];
   const bestHist = {};        // bucket of each matched pair's best all-in %
-  let rot = 0, cycle = 0;
+  let rot = 0, cycle = 0, kErr = 0;
   while (Date.now() - t0 < DUR) {
-    const c0 = Date.now(); cycle++;
+    const c0 = Date.now(); cycle++; kErr = 0;
     const batch = [...prio, ...rest.slice(rot, rot + 25)]; rot = rest.length ? (rot + 25) % rest.length : 0;
-    await pool(batch, 6, async s => { const rows = []; await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); kCache.set(s, rows); });
+    await pool(batch, 6, async s => { const rows = []; const r = await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); if (r.errors.length) kErr++; else kCache.set(s, rows); });
     const kalshi = [...kCache.values()].flat();
     let us = [];
     try { us = await pm.arbRows({}); } catch (e) { console.log('pmus failed', e.message); }
@@ -149,23 +153,23 @@ function fill(a, b, legs) {
     cands.sort((a, b) => b.pct - a.pct);
     const deep = cands.slice(0, 40);
     await pool(deep, 6, async a => {
-      const [x, y] = await Promise.all(a.legs.map(asksOf));
-      a.depth = fill(x, y, a.legs);
-      a.top = [x[0] || null, y[0] || null];
+      const books = await Promise.all(a.legs.map(asksOf));
+      a.depth = fill(books, a.legs);
+      a.top = books.map(b => b[0] || null);
     });
     let live = 0;
     for (const a of deep) {
       if (!a.depth || a.depth.contracts <= 0) continue;
       live++;
       const key = a.type + '|' + a.legs.map(l => `${l.venue}:${l.id}:${l.side}`).join('+');
-      const s = seen.get(key) || { key, type: a.type, title: a.title, subject: a.subject, middle: !!a.middle, first: now, last: now, cycles: 0, gaps: 0, bestPct: -99, bestContracts: 0, bestProfit: 0, startTime: a.startTime, legs: a.legs.map(l => `${l.venue} ${l.side} ${l.id}`) };
+      const s = seen.get(key) || { key, type: a.type, title: a.title, subject: a.subject, middle: !!a.middle, first: now, last: now, cycles: 0, gaps: 0, bestPct: -99, bestContracts: 0, bestProfit: 0, startTime: a.startTime, legs: a.legs.map(l => `${l.venue} ${l.side} ${l.id} @${l.price}`), suspect: a.pct > 15 };
       if (s.lastCycle != null && s.lastCycle !== cycle - 1) s.gaps++;
       s.last = now; s.lastCycle = cycle; s.cycles++;
       s.bestPct = Math.max(s.bestPct, a.pct); s.bestContracts = Math.max(s.bestContracts, a.depth.contracts); s.bestProfit = Math.max(s.bestProfit, a.depth.profit);
       seen.set(key, s);
     }
     const row = { cycle, at: new Date(now).toISOString(), kalshiRows: kalshi.length, usRows: us.length, matches: matches.length, pairs: near.length,
-      snapCross: cands.filter(a => a.type === 'cross' && a.pct > 0).length, snapLadder: cands.filter(a => a.type !== 'cross' && a.pct > 0).length, live, ms: Date.now() - c0 };
+      snapCross: cands.filter(a => a.type === 'cross' && a.pct > 0).length, snapLadder: cands.filter(a => a.type !== 'cross' && a.pct > 0).length, live, kalshiErrors: kErr, ms: Date.now() - c0 };
     cycles.push(row);
     console.log(JSON.stringify(row));
     const wait = EVERY - (Date.now() - c0);
