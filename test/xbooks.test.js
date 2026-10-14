@@ -131,3 +131,10 @@ test('EV record scores every book against the close', async () => {
   assert.strictEqual(s.bySourceClose.draftkings.n, 1);
   assert.ok(s.bySourceClose.draftkings.mse > s.bySourceClose.pinnacle.mse);
 });
+
+test('a relayed book far from the other books is left off as unverified', () => {
+  const g = { sides: ['A', 'B'], all: { pinnacle: [0.756, 0.244], fanduel: [0.761, 0.239], draftkings: [0.757, 0.243], hardrock: [0.5, 0.5], betmgm: [0.73, 0.27] } };
+  assert.ok(ev.isOutlier(g, 'hardrock', 'A'), 'a -120/-120 placeholder on a -340 favourite');
+  assert.ok(!ev.isOutlier(g, 'betmgm', 'A'), 'a few points off is a real price');
+  assert.ok(!ev.isOutlier({ ...g, all: { pinnacle: [0.76, 0.24], fanduel: [0.5, 0.5] } }, 'fanduel', 'A'), 'books we read directly are never dropped');
+});
