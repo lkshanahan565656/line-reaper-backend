@@ -1,0 +1,163 @@
+Wed Oct 14 01:54:04 UTC 2026
+01:54:05 series 59 KXUCLTOTAL KXATPGAME KXUFCFIGHT KXNCAAFGAME KXNFLSPREAD KXNCAAFTOTAL KXNFLTOTAL KXEPLTOTAL KXNCAAWBTOTAL KXNCAAMBTOTAL KXVALORANTGAME KXSERIEASPREAD KXCS2SPREAD KXLALIGATOTAL KXNBASPREAD KXMLSSPREAD KXWTAMATCH KXSERIEATOTAL KXBUNDESLIGASPREAD KXCODSPREAD KXLOLSPREAD KXNHLSPREAD KXATPMATCH KXWNBASPREAD KXNHLGAME KXUCLGAME KXCODGAME KXLIGUE1TOTAL KXLIGUE1GAME KXMLSGAME KXLOLTOTAL KXWNBAGAME KXBUNDESLIGATOTAL KXNCAAMBGAME KXNFLGAME KXNCAAWBGAME KXNHLTOTAL KXMLBGAME KXEPLGAME KXMLBTOTAL KXNCAAWBSPREAD KXUCLSPREAD KXEPLSPREAD KXNCAAMBSPREAD KXBUNDESLIGAGAME KXVALORANTSPREAD KXCS2GAME KXMLBSPREAD KXMLSTOTAL KXLALIGASPREAD KXNCAAFSPREAD KXNBAGAME KXWNBATOTAL KXWTAGAME KXNBATOTAL KXLALIGAGAME KXLIGUE1SPREAD KXSERIEAGAME KXLOLGAME
+01:54:22 settled events 7253
+02:23:12 rows 36988 no start 0 no candles 0 market_tickers field 6920
+
+=== all bets {"n":62827,"games":4305,"roi":-6.99,"se":2.09,"half1":-7.34,"half2":-6.75}
+
+=== by kind x price bucket (taker ROI %, se clustered by game, first/second half)
+{"k":"moneyline 70-80c","n":910,"games":523,"roi":0.02,"se":2.48,"half1":3.08,"half2":-1.95}
+{"k":"spread 90-100c","n":2794,"games":814,"roi":-0.15,"se":0.95,"half1":-0.5,"half2":0.14}
+{"k":"total 90-100c","n":2136,"games":841,"roi":-0.33,"se":0.95,"half1":-0.75,"half2":0.03}
+{"k":"spread 80-90c","n":3650,"games":870,"roi":-0.93,"se":1.42,"half1":0.91,"half2":-2.2}
+{"k":"moneyline 90-100c","n":413,"games":226,"roi":-1.01,"se":1.82,"half1":0.06,"half2":-2.18}
+{"k":"total 80-90c","n":2695,"games":900,"roi":-1.63,"se":1.42,"half1":-2.81,"half2":-0.93}
+{"k":"moneyline 80-90c","n":664,"games":384,"roi":-1.76,"se":2.2,"half1":-0.42,"half2":-2.68}
+{"k":"total 70-80c","n":2225,"games":865,"roi":-1.98,"se":1.95,"half1":-1.31,"half2":-2.4}
+{"k":"spread 30-40c","n":2778,"games":816,"roi":-2.28,"se":4.67,"half1":-4.27,"half2":-0.96}
+{"k":"total 60-70c","n":2436,"games":887,"roi":-2.73,"se":2.46,"half1":-4.22,"half2":-1.7}
+{"k":"moneyline 50-60c","n":1176,"games":603,"roi":-2.8,"se":3.52,"half1":-2.19,"half2":-3.19}
+{"k":"moneyline 60-70c","n":1142,"games":669,"roi":-3.01,"se":2.78,"half1":-1.69,"half2":-3.98}
+{"k":"moneyline 10-20c","n":640,"games":383,"roi":-3.24,"se":11.72,"half1":-7.9,"half2":0.29}
+{"k":"spread 50-60c","n":2638,"games":786,"roi":-3.59,"se":3.16,"half1":-1.47,"half2":-4.97}
+{"k":"spread 60-70c","n":2788,"games":809,"roi":-3.73,"se":2.57,"half1":-4.09,"half2":-3.49}
+{"k":"spread 70-80c","n":3130,"games":816,"roi":-3.84,"se":2.05,"half1":-2.82,"half2":-4.5}
+{"k":"total 50-60c","n":3225,"games":976,"roi":-4.24,"se":2.84,"half1":-5.44,"half2":-3.35}
+{"k":"total 40-50c","n":3242,"games":986,"roi":-5.06,"se":3.43,"half1":-2.82,"half2":-6.7}
+{"k":"spread 40-50c","n":2813,"games":788,"roi":-7.08,"se":3.84,"half1":-8.9,"half2":-5.92}
+{"k":"moneyline 40-50c","n":1279,"games":731,"roi":-7.28,"se":3.89,"half1":-10.31,"half2":-5.18}
+{"k":"spread 20-30c","n":3135,"games":797,"roi":-7.36,"se":5.91,"half1":-11.44,"half2":-4.72}
+{"k":"total 20-30c","n":2191,"games":891,"roi":-7.93,"se":5.57,"half1":-9.33,"half2":-7.07}
+{"k":"total 30-40c","n":2277,"games":853,"roi":-8.24,"se":4.46,"half1":-6.52,"half2":-9.42}
+{"k":"total 10-20c","n":2857,"games":902,"roi":-12.74,"se":7.5,"half1":-10.37,"half2":-14.4}
+{"k":"moneyline 30-40c","n":1072,"games":626,"roi":-13.08,"se":5.06,"half1":-13.64,"half2":-12.67}
+{"k":"moneyline 20-30c","n":802,"games":484,"roi":-13.09,"se":7.33,"half1":-21.34,"half2":-7.98}
+{"k":"spread 10-20c","n":3894,"games":891,"roi":-15.23,"se":7.51,"half1":-21.03,"half2":-11.1}
+{"k":"total 0-10c","n":1578,"games":795,"roi":-32.51,"se":10.76,"half1":-25.85,"half2":-36.81}
+{"k":"spread 0-10c","n":1923,"games":747,"roi":-35.23,"se":10.43,"half1":-27.33,"half2":-41.77}
+{"k":"moneyline 0-10c","n":324,"games":180,"roi":-39.39,"se":19.62,"half1":-58.14,"half2":-18.18}
+
+=== by league x kind
+{"k":"KXEPL spread","n":146,"games":21,"roi":22.99,"se":63.53,"half1":11.72,"half2":34.26}
+{"k":"KXBUNDESLIGA total","n":205,"games":18,"roi":5.06,"se":50.48,"half1":19.98,"half2":-10.02}
+{"k":"KXLALIGA total","n":339,"games":29,"roi":-0.17,"se":33.79,"half1":-15.96,"half2":29.79}
+{"k":"nba moneyline","n":172,"games":43,"roi":-0.29,"se":17.14,"half1":null,"half2":-0.29}
+{"k":"nfl moneyline","n":312,"games":78,"roi":-1.47,"se":12.98,"half1":0.81,"half2":-3.14}
+{"k":"wnba spread","n":950,"games":46,"roi":-2.07,"se":20.69,"half1":-3.14,"half2":0.21}
+{"k":"nfl spread","n":4030,"games":79,"roi":-3.05,"se":16.9,"half1":9.66,"half2":-12.22}
+{"k":"KXEPL moneyline","n":60,"games":10,"roi":-4.63,"se":35.67,"half1":null,"half2":-4.63}
+{"k":"KXEPL total","n":240,"games":20,"roi":-4.83,"se":36.98,"half1":6.1,"half2":-15.75}
+{"k":"nba spread","n":1768,"games":43,"roi":-5.34,"se":20.6,"half1":null,"half2":-5.34}
+{"k":"nhl spread","n":904,"games":137,"roi":-5.41,"se":11.18,"half1":-13.42,"half2":-3.9}
+{"k":"ncaaf moneyline","n":1958,"games":499,"roi":-5.98,"se":6.44,"half1":-15.37,"half2":-0.01}
+{"k":"ncaaf total","n":15926,"games":565,"roi":-6.1,"se":5.66,"half1":-6.04,"half2":-6.15}
+{"k":"KXLOL moneyline","n":1058,"games":279,"roi":-6.58,"se":7.84,"half1":-10.92,"half2":-3.19}
+{"k":"nhl total","n":1668,"games":134,"roi":-7.24,"se":15.81,"half1":-1.31,"half2":-8.01}
+{"k":"mls spread","n":383,"games":51,"roi":-7.27,"se":25.84,"half1":-20,"half2":0.23}
+{"k":"nhl moneyline","n":606,"games":152,"roi":-7.43,"se":7.97,"half1":-10.47,"half2":-6.08}
+{"k":"nba total","n":1546,"games":43,"roi":-7.5,"se":18.45,"half1":null,"half2":-7.5}
+{"k":"KXCS2 moneyline","n":3334,"games":972,"roi":-7.71,"se":3.61,"half1":-5.32,"half2":-10.21}
+{"k":"ncaaf spread","n":20658,"games":567,"roi":-8.29,"se":5.7,"half1":-11.16,"half2":-6.09}
+{"k":"wnba total","n":828,"games":46,"roi":-8.35,"se":15.36,"half1":-7.44,"half2":-10.06}
+{"k":"nfl total","n":3000,"games":79,"roi":-8.67,"se":15.11,"half1":-5.55,"half2":-10.91}
+{"k":"mls moneyline","n":198,"games":33,"roi":-8.75,"se":19.63,"half1":-28.28,"half2":-8.14}
+{"k":"mls total","n":561,"games":48,"roi":-9.83,"se":22.72,"half1":3.06,"half2":-16.27}
+{"k":"wnba moneyline","n":184,"games":46,"roi":-11,"se":16.87,"half1":-14.72,"half2":-4.05}
+{"k":"KXUCL total","n":100,"games":9,"roi":-11.01,"se":45.37,"half1":null,"half2":-11.01}
+{"k":"KXSERIEA moneyline","n":78,"games":13,"roi":-11.34,"se":31.11,"half1":-8,"half2":-12.35}
+{"k":"KXVALORANT moneyline","n":212,"games":57,"roi":-13.27,"se":13.63,"half1":-11.31,"half2":-15.81}
+{"k":"KXLALIGA moneyline","n":72,"games":12,"roi":-13.27,"se":26.55,"half1":3.63,"half2":-16.65}
+{"k":"KXLALIGA spread","n":212,"games":32,"roi":-14.87,"se":26.8,"half1":-7.69,"half2":-30.08}
+{"k":"KXLIGUE1 total","n":213,"games":18,"roi":-20.05,"se":28.24,"half1":-30.06,"half2":-9.94}
+{"k":"KXLIGUE1 spread","n":129,"games":19,"roi":-20.66,"se":28.99,"half1":-22.52,"half2":-18.51}
+{"k":"KXSERIEA spread","n":146,"games":22,"roi":-20.95,"se":32.8,"half1":-12.11,"half2":-31.97}
+{"k":"KXSERIEA total","n":236,"games":20,"roi":-22.32,"se":32.12,"half1":-31.16,"half2":-13.49}
+{"k":"KXBUNDESLIGA spread","n":149,"games":21,"roi":-23.93,"se":25.91,"half1":-21.67,"half2":-27.2}
+
+=== by league x kind x fav/dog
+{"k":"KXEPL spread dog","n":76,"games":21,"roi":49.8,"se":87.32,"half1":23.59,"half2":76}
+{"k":"KXBUNDESLIGA total dog","n":105,"games":18,"roi":19.76,"se":69.16,"half1":52.27,"half2":-13.37}
+{"k":"nba moneyline dog","n":79,"games":40,"roi":15.82,"se":22.11,"half1":null,"half2":15.82}
+{"k":"KXLIGUE1 total fav","n":108,"games":18,"roi":8.52,"se":11.89,"half1":14.22,"half2":2.6}
+{"k":"wnba moneyline fav","n":93,"games":46,"roi":7.58,"se":9.34,"half1":8.53,"half2":5.85}
+{"k":"KXSERIEA total fav","n":117,"games":20,"roi":6.66,"se":10.85,"half1":7.65,"half2":5.65}
+{"k":"KXVALORANT moneyline fav","n":109,"games":57,"roi":6.48,"se":8.58,"half1":2.33,"half2":11.55}
+{"k":"KXBUNDESLIGA spread fav","n":75,"games":21,"roi":4.75,"se":9.41,"half1":5.64,"half2":3.49}
+{"k":"mls moneyline fav","n":101,"games":33,"roi":4.54,"se":11.21,"half1":43.45,"half2":3.35}
+{"k":"nhl moneyline fav","n":325,"games":152,"roi":2.5,"se":6.41,"half1":6.18,"half2":0.92}
+{"k":"nba total fav","n":790,"games":43,"roi":2.27,"se":9.77,"half1":null,"half2":2.27}
+{"k":"KXLALIGA total dog","n":168,"games":29,"roi":2.23,"se":46.91,"half1":-34.96,"half2":74.64}
+{"k":"wnba spread dog","n":466,"games":46,"roi":2.13,"se":27.84,"half1":-1.26,"half2":9.35}
+{"k":"wnba total fav","n":428,"games":46,"roi":2.03,"se":10.36,"half1":-0.83,"half2":7.39}
+{"k":"nfl moneyline dog","n":154,"games":77,"roi":1.78,"se":16.6,"half1":-2.97,"half2":5.35}
+{"k":"KXLIGUE1 spread fav","n":62,"games":19,"roi":1.48,"se":10.44,"half1":3.94,"half2":-1.33}
+{"k":"KXLALIGA spread fav","n":104,"games":32,"roi":1.39,"se":7.8,"half1":1.37,"half2":1.43}
+{"k":"mls total fav","n":277,"games":48,"roi":0.09,"se":8.16,"half1":-2.16,"half2":1.22}
+{"k":"KXEPL total fav","n":121,"games":20,"roi":-1.4,"se":12.46,"half1":-6.31,"half2":3.43}
+{"k":"KXCS2 moneyline fav","n":1720,"games":970,"roi":-1.63,"se":2.17,"half1":-3.91,"half2":0.79}
+{"k":"ncaaf spread fav","n":10514,"games":566,"roi":-1.7,"se":2.53,"half1":0.39,"half2":-3.31}
+{"k":"nhl total fav","n":825,"games":134,"roi":-1.74,"se":5.15,"half1":-10.73,"half2":-0.53}
+{"k":"KXLALIGA total fav","n":171,"games":29,"roi":-2.53,"se":10.4,"half1":3.03,"half2":-12.8}
+{"k":"nfl total fav","n":1537,"games":79,"roi":-2.68,"se":7.16,"half1":-0.99,"half2":-3.89}
+{"k":"KXSERIEA spread fav","n":70,"games":22,"roi":-2.85,"se":9.48,"half1":-2.33,"half2":-3.5}
+{"k":"nfl spread fav","n":2037,"games":79,"roi":-2.9,"se":6.83,"half1":-10.41,"half2":2.52}
+{"k":"nfl spread dog","n":1993,"games":79,"roi":-3.19,"se":23.02,"half1":30.21,"half2":-27.28}
+{"k":"ncaaf total fav","n":8193,"games":565,"roi":-3.27,"se":2.75,"half1":-3.93,"half2":-2.72}
+{"k":"ncaaf moneyline fav","n":972,"games":483,"roi":-3.58,"se":2.81,"half1":2.3,"half2":-7.27}
+{"k":"KXLOL moneyline fav","n":536,"games":278,"roi":-4.37,"se":3.73,"half1":0.79,"half2":-8.37}
+{"k":"nfl moneyline fav","n":158,"games":78,"roi":-4.64,"se":8.27,"half1":4.58,"half2":-11.26}
+{"k":"nba spread dog","n":862,"games":43,"roi":-4.79,"se":27.58,"half1":null,"half2":-4.79}
+{"k":"nhl spread fav","n":460,"games":137,"roi":-5.38,"se":5.13,"half1":-2.33,"half2":-6}
+{"k":"nhl spread dog","n":444,"games":136,"roi":-5.45,"se":15.14,"half1":-26.16,"half2":-1.77}
+{"k":"nba spread fav","n":906,"games":43,"roi":-5.87,"se":10.24,"half1":null,"half2":-5.87}
+{"k":"mls spread fav","n":186,"games":51,"roi":-5.9,"se":6.6,"half1":-2.71,"half2":-7.7}
+{"k":"wnba spread fav","n":484,"games":46,"roi":-6.11,"se":9.69,"half1":-4.95,"half2":-8.59}
+{"k":"KXEPL spread fav","n":70,"games":21,"roi":-6.12,"se":10.7,"half1":-1.18,"half2":-11.07}
+{"k":"KXEPL total dog","n":119,"games":20,"roi":-8.32,"se":51.09,"half1":18.51,"half2":-35.59}
+{"k":"ncaaf moneyline dog","n":986,"games":495,"roi":-8.35,"se":8.69,"half1":-32.53,"half2":7.21}
+{"k":"mls spread dog","n":197,"games":51,"roi":-8.57,"se":35.5,"half1":-35.45,"half2":7.95}
+{"k":"KXLOL moneyline dog","n":522,"games":275,"roi":-8.85,"se":10.59,"half1":-22.84,"half2":2.17}
+{"k":"ncaaf total dog","n":7733,"games":561,"roi":-9.09,"se":7.64,"half1":-8.27,"half2":-9.79}
+{"k":"KXBUNDESLIGA total fav","n":100,"games":18,"roi":-10.39,"se":14.15,"half1":-14.23,"half2":-6.54}
+{"k":"nhl total dog","n":843,"games":130,"roi":-12.61,"se":21.97,"half1":8.4,"half2":-15.28}
+{"k":"nba moneyline fav","n":93,"games":43,"roi":-13.97,"se":12.28,"half1":null,"half2":-13.97}
+{"k":"KXCS2 moneyline dog","n":1614,"games":949,"roi":-14.19,"se":4.73,"half1":-6.85,"half2":-21.74}
+{"k":"nfl total dog","n":1463,"games":79,"roi":-14.97,"se":20.33,"half1":-10.37,"half2":-18.26}
+{"k":"ncaaf spread dog","n":10144,"games":563,"roi":-15.12,"se":7.74,"half1":-23.18,"half2":-8.97}
+{"k":"nba total dog","n":756,"games":43,"roi":-17.72,"se":24.33,"half1":null,"half2":-17.72}
+{"k":"nhl moneyline dog","n":281,"games":142,"roi":-18.91,"se":9.7,"half1":-29.01,"half2":-14.31}
+{"k":"wnba total dog","n":400,"games":46,"roi":-19.46,"se":19.2,"half1":-14.51,"half2":-28.76}
+{"k":"mls total dog","n":284,"games":48,"roi":-19.5,"se":30.87,"half1":8.23,"half2":-33.22}
+{"k":"mls moneyline dog","n":97,"games":33,"roi":-22.59,"se":25.46,"half1":-100,"half2":-20.12}
+{"k":"wnba moneyline dog","n":91,"games":46,"roi":-30,"se":21.76,"half1":-37.96,"half2":-14.59}
+{"k":"KXLALIGA spread dog","n":108,"games":32,"roi":-30.52,"se":36.64,"half1":-16.02,"half2":-63.49}
+{"k":"KXVALORANT moneyline dog","n":103,"games":56,"roi":-34.16,"se":17.22,"half1":-24.96,"half2":-46.99}
+{"k":"KXSERIEA spread dog","n":76,"games":22,"roi":-37.62,"se":44.4,"half1":-21.19,"half2":-57.92}
+{"k":"KXLIGUE1 spread dog","n":67,"games":19,"roi":-41.14,"se":38.5,"half1":-46.77,"half2":-34.59}
+{"k":"KXLIGUE1 total dog","n":105,"games":18,"roi":-49.43,"se":37.21,"half1":-76.91,"half2":-22.48}
+{"k":"KXSERIEA total dog","n":119,"games":20,"roi":-50.82,"se":43.08,"half1":-69.97,"half2":-31.98}
+{"k":"KXBUNDESLIGA spread dog","n":74,"games":21,"roi":-53,"se":34.49,"half1":-48.97,"half2":-58.91}
+
+=== totals: over vs under by league
+{"k":"mls over","n":275,"games":48,"roi":9.37,"se":20.66,"half1":3.67,"half2":12.24}
+{"k":"KXBUNDESLIGA over","n":100,"games":18,"roi":9.36,"se":36.43,"half1":3.98,"half2":14.73}
+{"k":"KXLALIGA over","n":169,"games":29,"roi":8.79,"se":37.39,"half1":-14.99,"half2":54.29}
+{"k":"nba over","n":773,"games":43,"roi":8.09,"se":18.49,"half1":null,"half2":8.09}
+{"k":"KXBUNDESLIGA under","n":105,"games":18,"roi":0.96,"se":61.1,"half1":35.08,"half2":-33.82}
+{"k":"KXEPL over","n":120,"games":20,"roi":0.55,"se":36.07,"half1":-16,"half2":17.09}
+{"k":"ncaaf over","n":7962,"games":565,"roi":-1.92,"se":6,"half1":3.71,"half2":-6.66}
+{"k":"nfl over","n":1500,"games":79,"roi":-2.18,"se":15.6,"half1":-11.44,"half2":4.46}
+{"k":"nhl under","n":860,"games":134,"roi":-2.7,"se":18.72,"half1":22.2,"half2":-6.01}
+{"k":"KXSERIEA under","n":118,"games":20,"roi":-3.35,"se":41.75,"half1":-15.08,"half2":8.38}
+{"k":"wnba over","n":414,"games":46,"roi":-4.44,"se":14.71,"half1":-6.44,"half2":-0.7}
+{"k":"KXLIGUE1 over","n":106,"games":18,"roi":-7.61,"se":34.41,"half1":-19.84,"half2":4.63}
+{"k":"KXLALIGA under","n":170,"games":29,"roi":-9.08,"se":29.8,"half1":-16.94,"half2":5.71}
+{"k":"KXEPL under","n":120,"games":20,"roi":-10.2,"se":37.97,"half1":28.2,"half2":-48.6}
+{"k":"ncaaf under","n":7964,"games":565,"roi":-10.28,"se":5.29,"half1":-15.78,"half2":-5.65}
+{"k":"nhl over","n":808,"games":134,"roi":-12.07,"se":11.94,"half1":-27.13,"half2":-10.13}
+{"k":"wnba under","n":414,"games":46,"roi":-12.26,"se":15.97,"half1":-8.45,"half2":-19.42}
+{"k":"nfl under","n":1500,"games":79,"roi":-15.17,"se":14.57,"half1":0.32,"half2":-26.29}
+{"k":"nba under","n":773,"games":43,"roi":-23.1,"se":18.11,"half1":null,"half2":-23.1}
+{"k":"mls under","n":286,"games":48,"roi":-28.29,"se":24.29,"half1":2.47,"half2":-43.59}
+{"k":"KXLIGUE1 under","n":107,"games":18,"roi":-32.38,"se":20.13,"half1":-40.1,"half2":-24.51}
+{"k":"KXSERIEA over","n":118,"games":20,"roi":-41.3,"se":17.09,"half1":-47.24,"half2":-35.35}
