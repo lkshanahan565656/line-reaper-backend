@@ -498,3 +498,33 @@ fee mult {"KXCS2GAME":1,"KXLOLGAME":1,"KXVALORANTGAME":1,"KXDOTA2GAME":1,"KXCODG
 16:40:26 ev 315 two 315 pre 277 live 38 near 2 books 2 fillable 0 err 0 took 2s
 16:40:46 ev 315 two 315 pre 277 live 38 near 2 books 2 fillable 0 err 0 took 2s
 16:41:06 ev 315 two 315 pre 277 live 38 near 2 books 2 fillable 0 err 0 took 2s
+16:41:26 ev 315 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:41:46 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:42:06 ev 313 two 313 pre 277 live 36 near 3 books 3 fillable 0 err 0 took 2s
+16:42:26 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:42:46 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:43:06 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:43:26 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:43:46 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:44:06 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:44:26 ev 313 two 313 pre 277 live 36 near 2 books 2 fillable 0 err 0 took 2s
+16:44:46 ev 313 two 313 pre 277 live 36 near 3 books 3 fillable 0 err 0 took 2s
+
+SUMMARY events with screen sum<1: 17 ever fillable: 0
+KXCS2GAME-26OCT141800ANAJDT KXCS2GAME start 2026-10-14T22:00:00.000Z seen 362 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2MAP-26OCT141000NICYL-2 KXCS2MAP start 2026-10-14T14:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT141000RYVWRA KXCS2GAME start 2026-10-14T14:00:00.000Z seen 3 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXVALORANTMAP-26OCT160200VITLOUD-2 KXVALORANTMAP start 2026-10-16T06:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2MAP-26OCT141000RYVWRA-1 KXCS2MAP start 2026-10-14T14:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT140900AELVG KXCS2GAME start 2026-10-14T13:00:00.000Z seen 2 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2MAP-26OCT140900AELVG-2 KXCS2MAP start 2026-10-14T13:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT141000TLRG2A KXCS2GAME start 2026-10-14T14:00:00.000Z seen 5 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT161000RGGPHA KXCS2GAME start 2026-10-16T14:00:00.000Z seen 344 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT140900ASTHOTU KXCS2GAME start 2026-10-14T13:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2MAP-26OCT141000TLRG2A-2 KXCS2MAP start 2026-10-14T14:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXLOLGAME-26OCT151400MVKFUR KXLOLGAME start 2026-10-15T18:00:00.000Z seen 185 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2GAME-26OCT141000FORZERUNK KXCS2GAME start 2026-10-14T14:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXCS2MAP-26OCT141000FORZERUNK-2 KXCS2MAP start 2026-10-14T14:00:00.000Z seen 3 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXVALORANTMAP-26OCT160500G2100T-2 KXVALORANTMAP start 2026-10-16T09:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXDOTA2GAME-26OCT140900NIXZXC KXDOTA2GAME start 2026-10-14T13:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
+KXVALORANTGAME-26OCT160500G2100T KXVALORANTGAME start 2026-10-16T09:00:00.000Z seen 1 fillable 0 maxN 0 max$ 0 undefined -> undefined
