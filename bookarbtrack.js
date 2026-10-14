@@ -116,8 +116,10 @@ function createBookArbTracker({ store = createMemoryStore(), now = () => Date.no
     const ok = checked.filter(r => r.exec.ok).length;
     const reasons = {};
     for (const r of checked) for (const l of r.exec.legs) if (l.reason) reasons[l.reason] = (reasons[l.reason] || 0) + 1;
+    const byType = cut(r => r.type);
+    // alerts wait on arbs whose two legs were both still there, not middles
     return { open: open.size, checked: checked.length, ok, okRate: checked.length ? r2(ok / checked.length) : null, late: all.filter(r => r.status === 'late').length,
-      proven: ok >= o.provenN, provenN: o.provenN, byType: cut(r => r.type), byPair: cut(r => `${r.type}:${r.pair}`), reasons };
+      proven: (byType.arb?.ok || 0) >= o.provenN, provenN: o.provenN, byType, byPair: cut(r => `${r.type}:${r.pair}`), reasons };
   }
   async function list({ limit = 200 } = {}) { await loaded; return (await store.all()).sort((a, b) => ms(b.flaggedAt) - ms(a.flaggedAt)).slice(0, limit); }
   return { record, due, check, summary, list, ready: () => loaded, store, opts: o };

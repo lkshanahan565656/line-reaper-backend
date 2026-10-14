@@ -4753,7 +4753,8 @@ async function scanBookArbs() {
     const c = bookArbBooks.get(`${l.venue}:${l.marketId}`);
     if (!c || t - c.at > 60e3) continue;
     l.fill = bookArbs.fillable(r, l, bookArbAsks(l, c.payload));
-    if (!(l.fill.atPrice > 0) && !(l.fill.contracts > 0)) gone.add(r.id);
+    // under $10 of size isn't a bet anyone can place: off the list
+    if (r.type === 'arb' ? !(l.fill.maxStake >= 10) : !(l.fill.atPrice >= 10)) gone.add(r.id);
   }
   for (const r of rows) {
     const fills = r.legs.filter(l => l.fill).map(l => l.fill);
