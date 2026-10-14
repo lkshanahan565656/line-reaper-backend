@@ -67,9 +67,15 @@ test('a Pinnacle move leaves FanDuel stale: priced at the post-move fair, single
   assert.equal(br.medianMin, 1);
   assert.equal(lag.moves24h, 1);
   // the tracker's marks: the close fair on both sides, FanDuel's price now
-  const { fairs, costs } = eng.marks(new Map([[fd2.group, { key: fd2.key, x: -3, venue: 'fanduel' }]]));
+  // single-source and cleared rows are separate bets
+  assert.notEqual(fd2.group, fd.group);
+  const { fairs, costs } = eng.marks(new Map([['a', { group: fd2.group, key: fd2.key, x: -3, venue: 'fanduel' }], ['b', { group: fd2.group, key: fd2.key, x: -3, venue: 'betrivers' }]]), min(2));
   assert.ok(Math.abs(fairs.get(`${fd2.group}|Kansas City Chiefs`) - fd2.fairProb) < 0.01);
   assert.ok(Math.abs(costs.get(`${fd2.group}|Kansas City Chiefs|fanduel`) - 110 / 210) < 1e-6);
+  // a second book on the same group gets its own price (BetRivers has moved off -3, so none)
+  assert.equal(costs.has(`${fd2.group}|Kansas City Chiefs|betrivers`), false);
+  assert.equal(eng.fairAt(fd2.key, -3, min(2)) * 100 > 53, true);
+  assert.equal(eng.fairAt(fd2.key, -3, min(30)), null);   // Pinnacle unread for half an hour: no fair
   // FanDuel moves: the row is gone
   eng.observe(S.gameQuotes([game([pinAfter, book('fanduel', [[-3.5, -110, -110]]), brNew])], 'nfl'), min(4), 'books');
   eng.step(min(4));
@@ -145,4 +151,62 @@ test('dayOf keeps one player\'s two games apart and one game on one day', () => 
   assert.equal(S.dayOf('2026-10-15T00:20:00Z'), '2026-10-14');
   assert.equal(S.dayOf('2026-10-14T17:00:00Z'), '2026-10-14');
   assert.notEqual(S.dayOf('2026-10-16T00:20:00Z'), S.dayOf('2026-10-15T00:20:00Z'));
+});
+
+test('a juice change that isn\'t a follow keeps the row, priced at the venue\'s quote now; a stale Pinnacle read drops it', () => {
+  const eng = S.createStaleLines();
+  eng.observe(S.gameQuotes([game([pinBefore, book('fanduel', [[-3, -110, -110]])])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pinAfter, book('fanduel', [[-3, -110, -110]])])], 'nfl'), min(1));
+  eng.observe(S.gameQuotes([game([pinAfter, book('fanduel', [[-3, -108, -112]])])], 'nfl'), min(2));
+  eng.step(min(2));
+  const r = eng.rows(min(2)).find(x => x.venue === 'fanduel');
+  assert.equal(r.price, -108);
+  // FanDuel keeps being read, Pinnacle doesn't: past five minutes it isn't the fair
+  eng.observe(S.gameQuotes([game([book('fanduel', [[-3, -108, -112]])])], 'nfl'), min(9));
+  eng.step(min(9));
+  assert.equal(eng.rows(min(9)).length, 0);
+});
+
+test('Pinnacle turning back marks the first move reverted, not never followed; a venue already at the new price is ahead', () => {
+  const eng = S.createStaleLines();
+  const fd = book('fanduel', [[-3, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pinBefore, fd])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(1));
+  eng.observe(S.gameQuotes([game([pinBefore, fd])], 'nfl'), min(3));
+  eng.step(min(3));
+  eng.step(min(70));
+  eng.observe(S.gameQuotes([game([pinBefore, fd])], 'nfl'), min(70));
+  eng.step(min(70));
+  const c = eng.lagSummary(min(70)).lag.find(x => x.venue === 'fanduel');
+  assert.equal(c.reverted, 1);
+  assert.equal(c.led, 1);      // back at -3 50%: FanDuel was already there
+  assert.equal(c.never, 0);
+});
+
+test('an app read taken before Pinnacle\'s move but landing after it counts as ahead, not stale', () => {
+  const eng = S.createStaleLines();
+  const pin = line => [{ sport: 'NFL', player: 'Josh Allen', mkey: 'pass_yds', line, pOver: 0.5, over: -110, under: -110, start: START }];
+  const row = { key: 'NFL|joshallen|pass_yds', sport: 'NFL', player: 'Josh Allen', mkey: 'pass_yds', startTime: START, books: { underdog: { line: 245.5, over: 1, under: 1, overOpen: true, underOpen: true } } };
+  eng.observe(S.pinPropQuotes(pin(245.5)), min(0));
+  eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(0));
+  eng.observe(S.pinPropQuotes(pin(256.5)), min(4));
+  row.books.underdog.line = 255.5;
+  eng.observe(S.appQuotes([row], { pOverOf: () => 0.5 }), min(3));   // read at 3, observed after Pinnacle's move at 4
+  eng.step(min(5));
+  assert.equal(eng.rows(min(5), { priceApp: () => ({ ev: 9, decimal: 1.8 }) }).length, 0);
+  assert.equal(eng.lagSummary(min(5)).lag.find(c => c.venue === 'underdog').led, 1);
+});
+
+test('lag stats: a true median, and open moves past the mark count against "within"', () => {
+  const eng = S.createStaleLines();
+  eng.observe(S.gameQuotes([game([pinBefore, book('fanduel', [[-3, -110, -110]]), book('betrivers', [[-3, -110, -110]])])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pinAfter, book('fanduel', [[-3, -110, -110]]), book('betrivers', [[-3, -110, -110]])])], 'nfl'), min(1));
+  eng.observe(S.gameQuotes([game([pinAfter, book('fanduel', [[-3.5, -110, -110]]), book('betrivers', [[-3, -110, -110]])])], 'nfl'), min(2));
+  eng.step(min(20));
+  const fd = eng.lagSummary(min(20)).lag.find(c => c.venue === 'fanduel'), br = eng.lagSummary(min(20)).lag.find(c => c.venue === 'betrivers');
+  assert.equal(fd.medianMin, 1);
+  assert.equal(fd.within2, 100);
+  assert.equal(br.open, 1);
+  assert.equal(br.within15, 0);   // 19 minutes open: it did not follow within 15
+  assert.equal(br.within2, 0);
 });

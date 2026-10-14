@@ -4101,8 +4101,9 @@ app.get('/api/ev/record', async (req, res) => {
   out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   // stale lines: the books' rows here, the apps' legs from the props record
   out.stale = await staleTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
-  const kinds = (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
-  out.staleApps = { stale: kinds.stale || null, single: kinds['stale-single'] || null };
+  // the props record has no sport cut: with one asked for, the apps' lines stay off
+  const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
+  out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
   res.json(out);
 });
 app.get('/api/ev/record/bets', async (req, res) => {
@@ -4113,7 +4114,13 @@ app.get('/api/ev/record/bets', async (req, res) => {
   res.json({ bets });
 });
 // one subject's line history on every source (stale lines), e.g. ?key=pin-123|spread
-app.get('/api/stale/history', requirePro, (req, res) => res.json(staleState.engine.history(String(req.query.key || '')) || { error: 'no such subject' }));
+app.get('/api/stale/history', requirePro, (req, res) => {
+  const h = staleState.engine.history(String(req.query.key || ''));
+  if (!h) return res.json({ error: 'no such subject' });
+  // Kalshi's prices need its licence, as on /api/ev
+  if (!licenceOf(req).kalshi) delete h.sources.kalshi;
+  res.json(h);
+});
 app.get('/api/ev/alerts', requirePro, (req, res) => res.json({ alerts: evRecent.filter(evRowOk(licenceOf(req))).slice(0, parseInt(req.query.limit) || 50), minEv: EV_ALERT_MIN }));
 app.get('/api/ev/stream', requirePro, (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
@@ -4673,10 +4680,9 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
 function sportFairAt(row, book, line, kind) {
-  if (kind === 'sharp' || kind === 'stale' || kind === 'stale-single') {
-    const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
-    if (f || kind === 'sharp') return f ? f.p : null;
-  }
+  if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
+  // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
+  if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
   const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quoteFor(pinPropsIndex, row), o: SPORT_OPTS });
   return f ? f.p : null;
 }
@@ -4868,10 +4874,13 @@ function runEsBooksScreen() {
 // in their own +EV record (ev-stale-bets), apps in the props record (kinds
 // 'stale' and 'stale-single'). No alerts. STALE_LINES=off stops it.
 const staleLines = require('./stalelines');
+// rows carry the +EV tab's sport keys ('nfl', 'ncaaf'); props come in as the board's ('NFL', 'CFB')
+const STALE_SPORT = Object.fromEntries(Object.entries(freebooks.LEAGUES).map(([k, l]) => [l.props, k]));
 const staleState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.STALE_LINES || '').trim()),
-  engine: staleLines.createStaleLines(), rows: [], screenedAt: null, errors: [] };
-// every group the books' stale record holds, so it keeps a close and a +2 min price
-const staleGroups = new Map();
+  engine: staleLines.createStaleLines({ sportKey: x => STALE_SPORT[x] || String(x || '').toLowerCase() }), rows: [], screenedAt: null, errors: [] };
+// every bet the books' stale record holds (by bet id), so each keeps a close and a +2 min price
+const staleBets = new Map();
+const STALE_TRACK_MIN = process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2;
 function observeStale(quotes, t, kind, screen = true) {
   if (!staleState.enabled || !quotes?.length) return;
   try { staleState.engine.observe(quotes, t, kind); if (screen) runStaleScreen(); }
@@ -4889,7 +4898,7 @@ function observeStaleBooks(gamesBySport, fdPropsRead) {
   catch (e) { staleState.errors = [`kalshi mids ${e.message}`, ...staleState.errors].slice(0, 5); }
   for (const [s, games] of Object.entries(gamesBySport)) {
     const withK = games.map(g => (kbooks.has(g.id) ? { ...g, bookmakers: [...g.bookmakers, kbooks.get(g.id)] } : g));
-    quotes.push(...staleLines.gameQuotes(withK, s, { league: freebooks.LEAGUES[s]?.props || s.toUpperCase() }));
+    quotes.push(...staleLines.gameQuotes(withK, s));
     quotes.push(...staleLines.bookPropQuotes(games, s, x => freebooks.LEAGUES[x]?.props || null, { books: fdPropsRead ? ['fanduel', 'betrivers'] : ['betrivers'] }));
   }
   observeStale(quotes, t, 'books');
@@ -4929,9 +4938,12 @@ function runStaleScreen() {
   staleState.screenedAt = new Date(t).toISOString();
   // the books' rows go in their own +EV record (its minEv keeps the 2%+ ones)
   const books = rows.filter(r => !r.app);
-  for (const r of books) if (r.ev >= 2 && !staleGroups.has(r.group)) staleGroups.set(r.group, { key: r.key, x: r.kind === 'ml' ? null : Number(r.group.split('|').pop()), venue: r.venue, at: t });
-  for (const [g, v] of staleGroups) if (t - v.at > 3 * 86400e3) staleGroups.delete(g);
-  const { fairs, costs } = staleState.engine.marks(staleGroups);
+  for (const r of books) {
+    const id = `${r.group}|${r.side}|${r.venue}`;
+    if (r.ev >= STALE_TRACK_MIN && !staleBets.has(id)) staleBets.set(id, { group: r.group, key: r.key, x: r.x, venue: r.venue, at: t });
+  }
+  for (const [id, v] of staleBets) if (t - v.at > 3 * 86400e3) staleBets.delete(id);
+  const { fairs, costs } = staleState.engine.marks(staleBets, t);
   staleTracker.recordBoard(books, fairs, { costs }).catch(e => console.warn('Stale lines tracker:', e.message));
 }
 // the apps' stale rows as props-record legs (kinds 'stale' and 'stale-single')

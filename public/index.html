@@ -4763,7 +4763,7 @@ function renderEsports() {
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
-const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
+const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
 const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
@@ -5009,7 +5009,7 @@ function evStaleRecord(a, apps) {
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}
-    ${app(apps?.stale, "Pick'em apps, cleared")}${app(apps?.single, "Pick'em apps, single-source")}</div>`;
+    ${apps ? app(apps.stale, "Pick'em apps, cleared") + app(apps.single, "Pick'em apps, single-source") : ''}</div>`;
 }
 function evStaleLag(L) {
   if (!L) return '';
@@ -5017,11 +5017,11 @@ function evStaleLag(L) {
   const cad = L.cadence || {};
   const gap = k => cad[k]?.medianGapMin != null ? `${cad[k].medianGapMin} min` : '—';
   const pctOr = v => v == null ? '—' : `${Math.round(v)}%`;
-  return `<details style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
-    <summary style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;cursor:pointer">HOW FAST EACH VENUE FOLLOWS PINNACLE · ${L.moves24h} MOVES IN ${L.hours >= 23.9 ? '24 H' : L.hours + ' H'}</summary>
-    <div style="font-size:11px;color:#64748b;padding:0 14px 8px">A move is Pinnacle's chance at its old number shifting ${L.thresholds?.moveProbPts} points, or its number moving half a point with ${L.thresholds?.lineMovePts} point of chance. A venue follows when it moves half as far the same way. Reads: Pinnacle and the books' game lines every ${gap('books')}, Pinnacle's props every ${gap('pinnacle-props')}, PrizePicks every ${gap('prizepicks')}, Underdog every ${gap('underdog')}, Sleeper every ${gap('sleeper')}; a lag under one read shows as 0.</div>
+  return `<details ${evState.staleLagOpen ? 'open' : ''} ontoggle="evState.staleLagOpen=this.open" style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+    <summary style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;cursor:pointer">HOW FAST EACH VENUE FOLLOWS PINNACLE · ${L.moves24h} MOVES IN ${L.hours >= 23.9 ? '24 H' : (L.hours < 1 ? Math.round(L.hours * 60) + ' MIN' : Math.round(L.hours * 10) / 10 + ' H')}</summary>
+    <div style="font-size:11px;color:#64748b;padding:0 14px 8px">A move is Pinnacle's chance at its old number shifting ${L.thresholds?.moveProbPts} points, or its number moving half a point with ${L.thresholds?.lineMovePts} point of chance. A venue follows when it moves half as far the same way. AHEAD: it moved first, or was already at Pinnacle's new price. Reads: Pinnacle and the books' game lines every ${gap('books')}, Pinnacle's props every ${gap('pinnacle-props')}, PrizePicks every ${gap('prizepicks')}, Underdog every ${gap('underdog')}, Sleeper every ${gap('sleeper')}; a lag under one read shows as 0.</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;min-width:520px">
-      <tr style="color:#64748b;text-align:right"><th style="text-align:left;padding:5px 14px">VENUE</th><th>MARKET</th><th>MOVES</th><th>LED</th><th>MEDIAN LAG</th><th>≤2 MIN</th><th>≤15 MIN</th><th style="padding-right:14px">NOT IN 1 H</th></tr>
+      <tr style="color:#64748b;text-align:right"><th style="text-align:left;padding:5px 14px">VENUE</th><th>MARKET</th><th>MOVES</th><th>AHEAD</th><th>MEDIAN LAG</th><th>≤2 MIN</th><th>≤15 MIN</th><th style="padding-right:14px">NOT IN 1 H</th></tr>
       ${cells.map(c => `<tr style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:#cbd5e1"><td style="text-align:left;padding:5px 14px;color:#f1f5f9">${escAttr(EV_STALE_VENUE[c.venue] || c.venue)}</td><td>${escAttr(EV_STALE_KIND[c.kind] || c.kind)}</td><td>${c.moves}</td><td>${c.led}</td><td>${c.medianMin == null ? '—' : c.medianMin + ' min'}</td><td>${pctOr(c.within2)}</td><td>${pctOr(c.within15)}</td><td style="padding-right:14px">${pctOr(c.neverPct)}</td></tr>`).join('') || `<tr><td colspan="8" style="padding:8px 14px;color:#64748b">No Pinnacle moves seen since the server started.</td></tr>`}
     </table></div></details>`;
 }
@@ -5034,11 +5034,11 @@ function renderEvStale(el) {
     `<button class="sport-chip ${evState.sport === s ? 'active' : ''}" onclick="evSet('sport','${escAttr(s)}')">${s === 'all' ? 'ALL' : escAttr(s.toUpperCase())} ${s === 'all' ? list.length : list.filter(r => r.sport === s).length}</button>`).join('');
   const all = list.filter(r => (evState.sport === 'all' || !sports.includes(evState.sport) || r.sport === evState.sport) && (r.locked || r.ev >= evState.minEv) &&
     (!evState.search || `${r.event} ${r.player || ''} ${r.side || ''} ${r.book || ''}`.toLowerCase().includes(evState.search)));
-  const clear = all.filter(r => r.clears || r.locked), single = all.filter(r => !r.clears && !r.locked);
-  const rows = evState.staleSingle ? [...clear, ...single] : clear;
+  const clear = all.filter(r => r.clears), locked = all.filter(r => r.locked), single = all.filter(r => !r.clears && !r.locked);
+  const rows = evState.staleSingle ? [...clear, ...locked, ...single] : [...clear, ...locked];
   const when = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
   const head = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:12px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
-      <span style="color:#f1f5f9;font-weight:700">${clear.length} CLEAR</span><span>${single.length} SINGLE-SOURCE</span>
+      ${locked.length ? `<span style="color:#f1f5f9;font-weight:700">${locked.length} STALE (PRO)</span>` : `<span style="color:#f1f5f9;font-weight:700">${clear.length} CLEAR</span><span>${single.length} SINGLE-SOURCE</span>`}
       <label style="display:flex;gap:4px;align-items:center;letter-spacing:0;font-family:inherit;margin-left:auto"><input type="checkbox" ${evState.staleSingle ? 'checked' : ''} onchange="evState.staleSingle=this.checked;renderEv()"> show single-source</label></div>
     <div style="font-size:11px;color:#64748b;margin:-4px 0 12px">FanDuel, BetRivers and the pick'em apps still showing the number Pinnacle just moved off, priced at Pinnacle's new fair at the venue's own number. A row clears at +2% when Kalshi, FanDuel or BetRivers moved the same way too; a Pinnacle-only move is single-source and doesn't count. Not graded yet: tracked against the close in their own record (TRACK RECORD), with no alerts until that record beats the close over 50 bets.</div>
     ${evStaleLag(evState.staleLag)}`;

@@ -49,6 +49,10 @@ const DEFAULTS = {
   logMs: 2 * 86400e3,      // closed moves kept for the lag table
   logCap: 20000,
   venueMaxAgeMs: { fanduel: 6 * 60e3, betrivers: 6 * 60e3, prizepicks: 25 * 60e3, underdog: 20 * 60e3, sleeper: 20 * 60e3 },
+  // Pinnacle's quote stops being the fair this long after its last read, as on
+  // the +EV board (game lines 5 minutes, props 10)
+  pinMaxAgeMs: { game: 5 * 60e3, prop: 10 * 60e3 },
+  sportKey: null,          // the board's sport name → the key rows carry ('NFL' → 'nfl')
 };
 const BOOK_VENUES = ['fanduel', 'betrivers'];
 const APP_VENUES = ['prizepicks', 'underdog', 'sleeper'];
@@ -62,6 +66,8 @@ const ms = t => { const x = typeof t === 'number' ? t : Date.parse(t || ''); ret
 // the game's day on the US clock (6 hours behind UTC), so one player's two games stay apart
 const dayOf = t => { const x = ms(t); return x == null ? '' : new Date(x - 6 * 3600e3).toISOString().slice(0, 10); };
 const zToP = z => normalCdf(z, 0, 1);
+// one player's stat in one game, the same from every source
+const propKey = (sport, player, mkey, start) => `${sport}|${canonName(player)}|${mkey}|${dayOf(start)}`;
 const toP = d => (d > 1 ? 1 / d : null);
 
 // power devig of a two-way pair of decimals → P(first side)
@@ -199,7 +205,7 @@ function bookPropQuotes(games, feedSport, sportOf, { books = BOOK_VENUES } = {})
         const pts = [];
         for (const [x, d] of v.lines) { const p = devig2(d.d0, d.d1); if (p != null) pts.push({ x: Number(x), p: r4(p), d0: d.d0, d1: d.d1 }); }
         if (!pts.length) continue;
-        out.push({ key: `${sport}|${k}|${dayOf(g.commence_time)}`, source: bm.key, q: { kind: 'prop', mkey: v.mkey, sport, pts },
+        out.push({ key: propKey(sport, v.player, v.mkey, g.commence_time), source: bm.key, q: { kind: 'prop', mkey: v.mkey, sport, pts },
           meta: { sport, kind: 'prop', market: v.mkey, player: v.player, event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time } });
       }
     }
@@ -208,7 +214,7 @@ function bookPropQuotes(games, feedSport, sportOf, { books = BOOK_VENUES } = {})
 }
 // pinprops rows → Pinnacle prop quotes
 function pinPropQuotes(props) {
-  return (props || []).map(p => ({ key: `${p.sport}|${canonName(p.player)}|${p.mkey}|${dayOf(p.start)}`, source: 'pinnacle',
+  return (props || []).map(p => ({ key: propKey(p.sport, p.player, p.mkey, p.start), source: 'pinnacle',
     q: { kind: 'prop', mkey: p.mkey, sport: p.sport, pts: [{ x: p.line, p: p.pOver, d0: americanToDecimal(p.over), d1: americanToDecimal(p.under) }] },
     meta: { sport: p.sport, kind: 'prop', market: p.mkey, player: p.player, start: p.start } }));
 }
@@ -219,7 +225,7 @@ function appQuotes(rows, { pOverOf, kalshiOf = null } = {}) {
   const out = [];
   for (const row of rows || []) {
     if (row.esports || !row.mkey || String(row.mkey).includes('|') || !row.startTime) continue;
-    const key = `${row.sport}|${canonName(row.player)}|${row.mkey}|${dayOf(row.startTime)}`;
+    const key = propKey(row.sport, row.player, row.mkey, row.startTime);
     const meta = { sport: row.sport, kind: 'prop', market: row.mkey, marketLabel: row.market, player: row.player, event: row.matchTitle || '', start: row.startTime, row };
     for (const [book, c] of Object.entries(row.books || {})) {
       if (!APP_VENUES.includes(book) || c.line == null) continue;
@@ -243,6 +249,8 @@ function numberLabel(q, meta) {
   if (q.kind === 'total') return `o${-m.x} ${pct}`;
   return `o${m.x} ${pct}`;
 }
+// 'pass_yds' → 'Pass Yds' when no app named the stat
+const propLabel = m => String(m || '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const sideName = (kind, meta, s) => (kind === 'ml' || kind === 'spread' ? (s === 0 ? meta.home : meta.away) : s === 0 ? 'Over' : 'Under');
 // the venue's number on a side, as people read it
 function lineText(kind, x, s) {
@@ -254,7 +262,7 @@ function lineText(kind, x, s) {
 
 // ── THE ENGINE ──
 function createStaleLines(opts = {}) {
-  const o = { ...DEFAULTS, ...opts, venueMaxAgeMs: { ...DEFAULTS.venueMaxAgeMs, ...(opts.venueMaxAgeMs || {}) } };
+  const o = { ...DEFAULTS, ...opts, venueMaxAgeMs: { ...DEFAULTS.venueMaxAgeMs, ...(opts.venueMaxAgeMs || {}) }, pinMaxAgeMs: { ...DEFAULTS.pinMaxAgeMs, ...(opts.pinMaxAgeMs || {}) } };
   const subjects = new Map();   // key → { meta, src: { source: [{ t, seenAt, q, fp }] }, anchor, moves: [] }
   const log = [];               // closed moves, for the lag table
   const reads = {};             // source kind → read times
@@ -286,13 +294,17 @@ function createStaleLines(opts = {}) {
   function observe(quotes, t, kind = null) {
     if (kind) noteRead(kind, t);
     // Pinnacle first: it's read first in each pass, so a venue that moved in
-    // the same pass followed with a lag under a minute, it didn't lead
-    const ordered = [...(quotes || [])].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'));
+    // the same pass followed with a lag under a minute, it didn't lead. One
+    // quote per subject and source a batch (an MLB doubleheader on one day
+    // would flip between its two games' lines every read).
+    const seen = new Set();
+    const ordered = [...(quotes || [])].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'))
+      .filter(x => { const k = `${x.key}|${x.source}`; return seen.has(k) ? false : seen.add(k); });
     for (const { key, source, q, meta } of ordered) {
       let s = subjects.get(key);
       if (!s) { s = { meta, src: {}, anchor: null, moves: [] }; subjects.set(key, s); }
-      if (source === 'pinnacle' || !s.meta.home) s.meta = { ...s.meta, ...meta, row: meta.row || s.meta.row };
-      else if (meta.row) s.meta.row = meta.row;
+      if (source === 'pinnacle' || !s.meta.home) s.meta = { ...s.meta, ...meta, row: meta.row || s.meta.row, marketLabel: meta.marketLabel || s.meta.marketLabel };
+      else if (meta.row) s.meta = { ...s.meta, row: meta.row, marketLabel: meta.marketLabel || s.meta.marketLabel };
       const l = (s.src[source] ||= []);
       const fp = fingerprint(q);
       const last = l[l.length - 1];
@@ -303,10 +315,15 @@ function createStaleLines(opts = {}) {
       if (source === 'pinnacle') checkMove(key, s, t);
     }
   }
+  const fresh = (v, e, t) => !!e && t - e.seenAt <= (o.venueMaxAgeMs[v] ?? 6 * 60e3);
+  const pinFresh = (s, e, t) => !!e && t - e.seenAt <= (s.meta.kind === 'prop' ? o.pinMaxAgeMs.prop : o.pinMaxAgeMs.game);
 
   function checkMove(key, s, t) {
     const cur = latest(s, 'pinnacle');
-    if (!s.anchor) { s.anchor = cur; return; }
+    // the move is measured from Pinnacle's last move, or from where it stood
+    // an hour ago: slow drift over a day is not a move
+    if (s.anchor && t - s.anchor.t > o.windowMs) s.anchor = at(s, 'pinnacle', t - o.windowMs);
+    if (!s.anchor || s.anchor === cur) { s.anchor = cur; return; }
     const from = s.anchor.q, to = cur.q;
     const fm = mainOf(from), tm = mainOf(to);
     if (!fm || !tm) return;
@@ -317,14 +334,21 @@ function createStaleLines(opts = {}) {
     const numberMoved = oldX != null && tm.x != null && Math.abs(tm.x - oldX) >= 0.5 - 1e-9;
     if (!(Math.abs(d) >= o.moveProbPts / 100 - 1e-9 || (numberMoved && Math.abs(d) >= o.lineMovePts / 100 - 1e-9))) return;
     const mv = { id: ++seq, key, t, from, to, fromAt: s.anchor.t, oldX, newX: tm.x, d, dir: Math.sign(d), venues: {} };
+    // Pinnacle turned back: the earlier move's open venues were right to sit still
+    for (const prev of s.moves) if (prev.dir !== mv.dir) for (const st of Object.values(prev.venues)) if (st.status === 'open') st.status = 'reverted';
+    const pNew = pAt(to, oldX);
     for (const v of VENUES) {
       const e = latest(s, v);
-      if (!e) continue;
-      // a venue that moved Pinnacle's way in the ledMs before led the move
+      if (!fresh(v, e, t)) continue;   // not quoting the subject now: nothing to follow
+      const snap = { snapE: e, snapFp: e.fp, snapQ: e.q, snapAt: e.t };
+      // a venue that moved Pinnacle's way in the ledMs before led the move;
+      // one already at (or past) Pinnacle's new price was never behind it
       const before = at(s, v, t - o.ledMs);
       const m = before && before !== e ? moved(mv, before, e) : 0;
-      mv.venues[v] = m != null && m >= need(mv) ? { status: 'led', snapFp: e.fp, snapQ: e.q, snapAt: e.t, ledMs: t - e.t }
-        : { status: 'open', snapFp: e.fp, snapQ: e.q, snapAt: e.t };
+      const sv = shiftedAt(e.q, to, oldX);
+      if (m != null && m >= need(mv)) mv.venues[v] = { status: 'led', how: 'moved', ledMs: t - e.t, ...snap };
+      else if (sv != null && pNew != null && (sv - pNew) * mv.dir >= -need(mv) / 2) mv.venues[v] = { status: 'led', how: 'already', ...snap };
+      else mv.venues[v] = { status: 'open', ...snap };
     }
     s.moves.push(mv);
     movesSeen++;
@@ -339,18 +363,24 @@ function createStaleLines(opts = {}) {
         for (const [v, st] of Object.entries(mv.venues)) {
           if (st.status !== 'open') continue;
           const l = s.src[v] || [];
-          for (const e of l) {
-            if (e.t < mv.t || e.fp === st.snapFp) continue;
+          const i = l.indexOf(st.snapE);
+          const later = i >= 0 ? l.slice(i + 1) : l.filter(e => e.t >= st.snapAt && e !== st.snapE);
+          for (const e of later) {
             const m = moved(mv, { q: st.snapQ }, e);
-            if (m != null && m >= need(mv)) { st.status = 'followed'; st.lagMs = Math.max(0, e.t - mv.t); st.followAt = e.t; break; }
+            if (m == null || m < need(mv)) continue;
+            // a read taken before Pinnacle's move that landed after it: the venue was first
+            if (e.t < mv.t) { st.status = 'led'; st.how = 'moved'; st.ledMs = mv.t - e.t; }
+            else { st.status = 'followed'; st.lagMs = e.t - mv.t; st.followAt = e.t; }
+            break;
           }
         }
       }
       const keep = [];
       for (const mv of s.moves) {
-        if (t - mv.t > o.windowMs || (start != null && t >= start)) {
-          for (const st of Object.values(mv.venues)) if (st.status === 'open') st.status = 'never';
-          log.push({ id: mv.id, t: mv.t, kind: s.meta.kind, sport: s.meta.sport, dPts: r1(mv.d * 100),
+        const started = start != null && t >= start && start - mv.t < o.windowMs;
+        if (t - mv.t > o.windowMs || started) {
+          for (const st of Object.values(mv.venues)) if (st.status === 'open') st.status = started ? 'started' : 'never';
+          log.push({ id: mv.id, t: mv.t, kind: s.meta.kind, sport: s.meta.sport, dPts: r1(mv.d * 100), closedAt: t,
             venues: Object.fromEntries(Object.entries(mv.venues).map(([v, st]) => [v, { status: st.status, lagMs: st.lagMs ?? null, ledMs: st.ledMs ?? null }])) });
         } else keep.push(mv);
       }
@@ -377,8 +407,9 @@ function createStaleLines(opts = {}) {
     return out;
   }
 
-  // the board: every venue still on its pre-move quote, priced against
-  // Pinnacle's post-move fair at the venue's own number.
+  // the board: every venue that hasn't followed Pinnacle's latest move on a
+  // subject, priced at its quote now against Pinnacle's post-move fair at the
+  // venue's own number. Pinnacle's quote must be fresh (pinMaxAgeMs).
   // priceApp(book, fair, cell, side) → { ev (%), decimal, entry?, entries? } | null
   function rows(t, { priceApp = null } = {}) {
     const out = [];
@@ -388,12 +419,11 @@ function createStaleLines(opts = {}) {
       const start = ms(s.meta.start);
       if (start != null && t >= start) continue;
       const pin = latest(s, 'pinnacle');
-      if (!pin) continue;
+      if (!pinFresh(s, pin, t)) continue;
       for (const [v, st] of Object.entries(mv.venues)) {
         if (st.status !== 'open') continue;
         const e = latest(s, v);
-        if (!e || e.fp !== st.snapFp) continue;   // its quote changed: no longer the pre-move number
-        if (t - e.seenAt > (o.venueMaxAgeMs[v] ?? 6 * 60e3)) continue;   // not read lately
+        if (!fresh(v, e, t)) continue;   // not read lately
         const vm = mainOf(e.q);
         if (!vm) continue;
         const x = vm.x;
@@ -419,12 +449,16 @@ function createStaleLines(opts = {}) {
         const conf = confirmedBy(s, mv, v);
         const clears = conf.length > 0 && ev >= o.minEv;
         const kind = s.meta.kind;
-        const group = `stale|${key}|${x ?? 'ml'}`;
+        // single-source and confirmed rows are separate bets in the record:
+        // each is graded as of the moment it showed in its own bucket
+        const source = conf.length ? 'stale' : 'stale-single';
+        const group = `${source}|${key}|${x ?? 'ml'}`;
         const sideLabel = sideName(kind, s.meta, side);
         out.push({
-          group, key, kind, venue: v, book: v, app: APP_VENUES.includes(v), sport: s.meta.sport, event: s.meta.event || '', start: s.meta.start || null,
+          group, key, x, kind, venue: v, book: v, app: APP_VENUES.includes(v), sport: o.sportKey ? o.sportKey(s.meta.sport) : s.meta.sport,
+          event: s.meta.event || '', start: s.meta.start || null,
           market: kind === 'prop' ? s.meta.market : kind === 'ml' ? 'h2h' : kind === 'spread' ? 'spreads' : 'totals',
-          marketLabel: kind === 'prop' ? (s.meta.marketLabel || s.meta.market) : kind === 'ml' ? 'Moneyline' : kind === 'spread' ? 'Spread' : 'Total',
+          marketLabel: kind === 'prop' ? (s.meta.marketLabel || propLabel(s.meta.market)) : kind === 'ml' ? 'Moneyline' : kind === 'spread' ? 'Spread' : 'Total',
           player: s.meta.player || null, point: x == null ? null : kind === 'spread' ? (side === 0 ? x : -x) : kind === 'total' ? -x : x,
           side: sideLabel, sideIdx: side, line: lineText(kind, x, side),
           price: decimal ? probToAmerican(1 / decimal) : null, decimal: r4(decimal), mult, entry, entries,
@@ -432,8 +466,7 @@ function createStaleLines(opts = {}) {
           moveAt: new Date(mv.t).toISOString(), mins: Math.floor((t - mv.t) / 60e3), venueSince: new Date(e.t).toISOString(),
           moveSourceAt: new Date(mv.fromAt).toISOString(), dPts: r1(Math.abs(mv.d) * 100),
           pinPre: numberLabel(mv.from, s.meta), pinPost: numberLabel(mv.to, s.meta), pinNow: numberLabel(pin.q, s.meta),
-          confirmedBy: conf, clears, single: conf.length === 0,
-          source: conf.length ? 'stale' : 'stale-single',
+          confirmedBy: conf, clears, single: conf.length === 0, source,
           sharpBooks: ['pinnacle', ...conf.map(c => (c === 'kalshi' ? (kind === 'prop' ? 'kalshi_props' : 'kalshi_mid') : c))],
           ...(s.meta.row ? { rowKey: s.meta.row.key } : {}),
         });
@@ -442,52 +475,63 @@ function createStaleLines(opts = {}) {
     return out.sort((a, b) => (b.clears - a.clears) || b.ev - a.ev);
   }
 
-  // close-of-market fairs and the venues' prices now, for every group a
-  // tracker holds: groups → Map(group → { key, x, venue })
-  function marks(groups) {
+  // Pinnacle's chance of side 0 at x on a subject now, or null when its quote
+  // isn't fresh: the close for a tracked leg is graded on the same fair it was
+  // flagged on
+  function fairAt(key, x, t = Date.now()) {
+    const s = subjects.get(key);
+    const pin = s && latest(s, 'pinnacle');
+    return s && pinFresh(s, pin, t) ? pAt(pin.q, x) : null;
+  }
+
+  // close-of-market fairs and the venues' prices now, for every bet a tracker
+  // holds: bets → Map(id → { group, key, x, venue })
+  function marks(bets, t = Date.now()) {
     const fairs = new Map(), costs = new Map();
-    for (const [group, g] of groups) {
+    for (const g of bets.values()) {
       const s = subjects.get(g.key);
       if (!s) continue;
-      const pin = latest(s, 'pinnacle');
-      const p0 = pin ? pAt(pin.q, g.x) : null;
-      if (p0 != null) { fairs.set(`${group}|${sideName(s.meta.kind, s.meta, 0)}`, r2(p0 * 100)); fairs.set(`${group}|${sideName(s.meta.kind, s.meta, 1)}`, r2((1 - p0) * 100)); }
+      const p0 = fairAt(g.key, g.x, t);
+      if (p0 != null) { fairs.set(`${g.group}|${sideName(s.meta.kind, s.meta, 0)}`, r2(p0 * 100)); fairs.set(`${g.group}|${sideName(s.meta.kind, s.meta, 1)}`, r2((1 - p0) * 100)); }
       const e = latest(s, g.venue);
-      if (!e || APP_VENUES.includes(g.venue)) continue;
+      if (!e || APP_VENUES.includes(g.venue) || !fresh(g.venue, e, t)) continue;
       const pt = e.q.kind === 'ml' ? e.q : (e.q.pts || []).find(a => Math.abs(a.x - g.x) < 1e-9);
       if (!pt) continue;
-      for (const side of [0, 1]) { const d = side === 0 ? pt.d0 : pt.d1; if (d > 1) costs.set(`${group}|${sideName(s.meta.kind, s.meta, side)}|${g.venue}`, 1 / d); }
+      for (const side of [0, 1]) { const d = side === 0 ? pt.d0 : pt.d1; if (d > 1) costs.set(`${g.group}|${sideName(s.meta.kind, s.meta, side)}|${g.venue}`, 1 / d); }
     }
     return { fairs, costs };
   }
 
-  // the lag table: by venue and market kind, over closed moves and open ones
+  // the lag table: by venue and market kind, over the last 24 hours of moves
   function lagSummary(t = Date.now()) {
     const all = [...log];
     for (const s of subjects.values()) for (const mv of s.moves)
       all.push({ t: mv.t, kind: s.meta.kind, sport: s.meta.sport, dPts: r1(mv.d * 100), venues: Object.fromEntries(Object.entries(mv.venues).map(([v, st]) => [v, { status: st.status, lagMs: st.lagMs ?? null }])) });
     const day = all.filter(m => t - m.t <= 86400e3);
     const hours = Math.max(1 / 60, Math.min(24, (t - Math.max(startedAt, t - 86400e3)) / 3600e3));
-    const byKind = {};
-    for (const m of day) byKind[m.kind] = (byKind[m.kind] || 0) + 1;
-    const bySport = {};
-    for (const m of day) bySport[m.sport] = (bySport[m.sport] || 0) + 1;
+    const byKind = {}, bySport = {};
+    for (const m of day) { byKind[m.kind] = (byKind[m.kind] || 0) + 1; bySport[m.sport] = (bySport[m.sport] || 0) + 1; }
     const cells = {};
-    for (const m of all) for (const [v, st] of Object.entries(m.venues)) {
-      const c = (cells[`${v}|${m.kind}`] ||= { venue: v, kind: m.kind, moves: 0, followed: 0, led: 0, never: 0, open: 0, lags: [] });
+    for (const m of day) for (const [v, st] of Object.entries(m.venues)) {
+      const c = (cells[`${v}|${m.kind}`] ||= { venue: v, kind: m.kind, moves: 0, followed: 0, led: 0, never: 0, open: 0, reverted: 0, started: 0, lags: [], openAges: [] });
       c.moves++;
-      if (st.status === 'followed') { c.followed++; c.lags.push(st.lagMs / 60e3); } else if (st.status === 'led') c.led++; else if (st.status === 'never') c.never++; else c.open++;
+      if (st.status === 'followed') { c.followed++; c.lags.push(st.lagMs / 60e3); }
+      else if (st.status === 'open') { c.open++; c.openAges.push((t - m.t) / 60e3); }
+      else c[st.status] = (c[st.status] || 0) + 1;
     }
-    const q = (l, f) => { if (!l.length) return null; const s = [...l].sort((a, b) => a - b); return r1(s[Math.min(s.length - 1, Math.floor(f * s.length))]); };
+    const median = l => { if (!l.length) return null; const s = [...l].sort((a, b) => a - b), h = s.length / 2; return r1(s.length % 2 ? s[Math.floor(h)] : (s[h - 1] + s[h]) / 2); };
+    const pctl = (l, f) => { if (!l.length) return null; const s = [...l].sort((a, b) => a - b); return r1(s[Math.min(s.length - 1, Math.floor(f * s.length))]); };
     const lag = Object.values(cells).map(c => {
-      const done = c.followed + c.never;   // moves with an answer
-      const within = m => (done ? r2(100 * c.lags.filter(x => x <= m).length / done) : null);
-      return { venue: c.venue, kind: c.kind, moves: c.moves, followed: c.followed, led: c.led, never: c.never, open: c.open,
-        medianMin: q(c.lags, 0.5), p75Min: q(c.lags, 0.75), within2: within(2), within5: within(5), within15: within(15), neverPct: done ? r2(100 * c.never / done) : null };
+      // within m minutes: of the moves whose answer at m is known (followed,
+      // gone the hour unfollowed, or still open past m)
+      const within = m => { const n = c.followed + c.never + c.openAges.filter(a => a > m).length; return n ? r2(100 * c.lags.filter(x => x <= m).length / n) : null; };
+      const done = c.followed + c.never;
+      return { venue: c.venue, kind: c.kind, moves: c.moves, followed: c.followed, led: c.led, never: c.never, open: c.open, reverted: c.reverted, started: c.started,
+        medianMin: median(c.lags), p75Min: pctl(c.lags, 0.75), within2: within(2), within5: within(5), within15: within(15), neverPct: done ? r2(100 * c.never / done) : null };
     }).sort((a, b) => b.moves - a.moves);
     const cadence = Object.fromEntries(Object.entries(reads).map(([k, l]) => {
       const gaps = l.slice(1).map((x, i) => (x - l[i]) / 60e3);
-      return [k, { reads: l.length, medianGapMin: q(gaps, 0.5), last: l.length ? new Date(l[l.length - 1]).toISOString() : null }];
+      return [k, { reads: l.length, medianGapMin: median(gaps), last: l.length ? new Date(l[l.length - 1]).toISOString() : null }];
     }));
     return { since: new Date(Math.max(startedAt, t - 86400e3)).toISOString(), hours: r2(hours), moves24h: day.length, movesPerDay: Math.round(day.length * 24 / hours),
       byKind, bySport, lag, cadence, subjects: subjects.size, openMoves: [...subjects.values()].reduce((a, s) => a + s.moves.length, 0), movesSeen,
@@ -502,7 +546,7 @@ function createStaleLines(opts = {}) {
       sources: Object.fromEntries(Object.entries(s.src).map(([k, l]) => [k, l.map(e => ({ t: new Date(e.t).toISOString(), number: numberLabel(e.q, s.meta) }))])) };
   }
 
-  return { observe, step, rows, marks, lagSummary, history, size: () => subjects.size, opts: o };
+  return { observe, step, rows, fairAt, marks, lagSummary, history, size: () => subjects.size, opts: o };
 }
 
-module.exports = { DEFAULTS, VENUES, BOOK_VENUES, APP_VENUES, CONFIRM, devig2, pAt, shiftedAt, mainOf, fingerprint, dayOf, gameQuotes, bookPropQuotes, pinPropQuotes, appQuotes, numberLabel, createStaleLines };
+module.exports = { DEFAULTS, VENUES, BOOK_VENUES, APP_VENUES, CONFIRM, devig2, pAt, shiftedAt, mainOf, fingerprint, dayOf, propKey, gameQuotes, bookPropQuotes, pinPropQuotes, appQuotes, numberLabel, createStaleLines };
