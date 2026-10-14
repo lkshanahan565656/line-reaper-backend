@@ -37,7 +37,9 @@ const DEFAULTS = {
   maxArbPct: 12,      // past this a "locked" return is a bad match or a stale line, not money
   minMiddleEv: 1,     // percent, average return on a middle
   maxMiddleEv: 25,
-  maxGapSd: 0.6,      // a middle's window at most this many of the sport's sd wide
+  maxGapSd: 0.6,      // a middle's window at most this many of the stat's sd wide
+  minMissPct: -12,    // and its worst case no worse than this: past it the pair is two
+                      // bets priced on the curve's tails, not a middle
   perSubject: 2,      // rows kept per game line or player stat, of each type
   max: 120,
   matchMs: 6 * 3600e3,   // a Kalshi prop rung's game starts within this of the books'
@@ -48,7 +50,9 @@ const BOOKS = new Set(['fanduel', 'betrivers']);
 const EXCHANGES = new Set(['kalshi', 'polymarketus']);
 const NAMES = { fanduel: 'FanDuel', betrivers: 'BetRivers', kalshi: 'Kalshi', polymarketus: 'Polymarket US' };
 // a stat's player-prop sd, for how wide a middle may be (else the sport's game sd)
-const PROP_SD = { player_pass_yds: 45, player_rush_yds: 22, player_reception_yds: 22, player_receptions: 1.8, player_points: 6, player_rebounds: 2.8, player_assists: 2.2 };
+// (freebooks' stat keys; a stat not listed gets no middles)
+const PROP_SD = { pass_yds: 45, rush_yds: 22, rec_yds: 22, rush_rec_yds: 25, pass_rush_yds: 45, receptions: 1.8, pass_completions: 4, pass_attempts: 5,
+  points: 6, rebounds: 2.8, assists: 2.2, threes: 1.3, pra: 8, shots_on_goal: 1.3, saves: 5, strikeouts: 1.8, hits: 0.9, total_bases: 1.4 };
 
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -214,7 +218,7 @@ function pairRow(entry, up, down, above, o) {
   if (type === 'arb' && missPct > o.maxArbPct) return null;
   if (type === 'middle') {
     const sd = widthSd(s);
-    if (!window || hitProb == null || evPct == null || evPct < o.minMiddleEv || evPct > o.maxMiddleEv || (sd && gap > o.maxGapSd * sd)) return null;
+    if (!window || hitProb == null || evPct == null || evPct < o.minMiddleEv || evPct > o.maxMiddleEv || !sd || gap > o.maxGapSd * sd || missPct < o.minMissPct) return null;
   }
   const legs = [up, down].map(q => ({
     venue: q.venue, venueTitle: NAMES[q.venue] || q.venue, pick: q.label, dir: q.dir, at: q.at, cost: q.cost, pct: r2((q.cost / cost) * 100),

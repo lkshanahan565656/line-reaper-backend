@@ -6118,7 +6118,7 @@ function renderXarbs() {
   const controls = `<div class="xa-controls">
     <label class="xa-stake">YOUR STAKE $<input type="number" min="1" step="1" inputmode="decimal" value="${arbState.stake}" oninput="xarbRestake(this.value)"></label>
     ${cats.length > 1 ? `<div class="xa-chips">${['all', ...cats].map(chip).join('')}</div>` : ''}
-    ${d.books ? `<div class="xa-chips">${[['all', 'ALL VENUES'], ['books', 'SPORTSBOOKS'], ['exchanges', 'EXCHANGES ONLY']].map(([k, n]) => `<button class="sport-chip ${xarbUi.venues === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('venues','${k}')">${n}</button>`).join('')}</div>` : ''}
+    ${d.books ? `<div class="xa-chips">${[['all', 'ALL VENUES'], ['books', 'WITH A SPORTSBOOK'], ['exchanges', 'EXCHANGES ONLY']].map(([k, n]) => `<button class="sport-chip ${xarbUi.venues === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('venues','${k}')">${n}</button>`).join('')}</div>` : ''}
   </div>`;
   const sec = (title, sub, body) => `<div class="xa-sec"><div class="xa-sec-head">${title}<span>${sub}</span></div>${body}</div>`;
   const nearList = xarbUi.allNear ? near : nearSimple;
