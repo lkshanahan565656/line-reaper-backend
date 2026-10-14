@@ -132,7 +132,7 @@ function quotesFromGames(games, { sport } = {}) {
     // keyed by teams and day, not feed id, so Owls and the Odds API merge into one market
     const day = g.commence_time ? String(g.commence_time).slice(0, 10) : '';
     const eventId = g.home_team ? `${canonName(g.away_team)}@${canonName(g.home_team)}|${day}` : g.id;
-    const base = { eventId, sport: sport || g.sport_key || g.sport || '', event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time || null };
+    const base = { eventId, sport: String(sport || g.sport_key || g.sport || '').toLowerCase(), event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time || null };
     // Odds API / Owls game-line shape
     for (const bm of g.bookmakers || []) {
       const book = String(bm.key || bm.title || '').toLowerCase();
@@ -286,7 +286,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         const ev = dfsEv(fp, l.book, mult ?? 1, l, side);
         if (ev == null || ev < minEv) continue;
         rows.push({
-          group: head.group, sport: head.sport || l.sport, event: head.event, start: head.start || l.startTime,
+          group: head.group, sport: head.sport || String(l.sport || '').toLowerCase(), event: head.event, start: head.start || l.startTime,
           market: head.market, player: l.player, point: Number(l.line), side, book: l.book, price: null,
           multiplier: mult ?? null, fairProb: round(fp * 100, 2), fairPrice: probToAmerican(fp), ev: round(ev, 2),
           kelly: null, source: f.source, sharpBooks: f.sharpBooks, dfs: true, updated: head.updated,

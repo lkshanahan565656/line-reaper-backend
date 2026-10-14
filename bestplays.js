@@ -279,7 +279,7 @@ function dfsRows(rows, o, now) {
     const book = r.book === 'underdog' ? 'Underdog' : r.book === 'prizepicks' ? 'PrizePicks' : r.book === 'sleeper' ? 'Sleeper' : r.book;
     const ref = (r.sharpBooks || []).map(b => (b === 'kalshi_props' ? 'Kalshi' : b)).join(', ') || 'consensus';
     out.push({
-      id: `dfs:${r.group}|${r.side}|${r.book}`, kind: 'sportsProp', label: `${r.sport} prop`, title: r.player,
+      id: `dfs:${r.group}|${r.side}|${r.book}`, kind: 'sportsProp', label: `${String(r.sport || '').toUpperCase()} prop`, title: r.player,
       bet: dfsBet(r), venue: book, price: null, american: null, maxPrice: null,
       units: 1, ev: r4(r.ev / 100), verdict: 'early', why: [`${ref} prices it at ${r.fairProb}% to hit`],
       url: null, startsAt: r.start, at: null, warning: null,
