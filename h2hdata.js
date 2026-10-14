@@ -22,6 +22,24 @@ const path = require('path');
 const { teamsMatch, teamCode } = require('./context');
 
 const sq = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+// a name without the words teams add and drop ("9Z Team" ↔ "9z", "Team Envy"
+// ↔ "Envy", "MVK Esports" ↔ "MVK")
+const core = s => sq(s).replace(/^team(?=..)/, '').replace(/(?<=..)(team|esports?|gaming|clan|club)$/, '');
+const initials = s => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(w => w[0]).join('');
+// how well a stored name fits an app's name: 1 same core, 2 one name starts
+// the other ("FURIA" ↔ "FURIA Esports"), 3 a code ("KC" ↔ "Karmine Corp",
+// "EAC" ↔ "Esport Academy Copenhagen"), 4 one contains the other; 0 no fit.
+// A full name always beats a code, so "MVK" never takes Movistar KOI when the
+// store also has MVK Esports.
+function nameTier(stored, name) {
+  const a = core(stored), b = core(name);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (teamsMatch(stored, name)) return 2;
+  if ((b.length <= 4 && teamCode(stored, name)) || (a.length <= 4 && initials(name) === sq(stored))) return 3;
+  if (Math.min(a.length, b.length) >= 5 && (a.includes(b) || b.includes(a))) return 4;
+  return 0;
+}
 const ROUNDS_PER_MAP = 21.3;
 
 // ── running state (Dota, CS2) ──
@@ -52,16 +70,16 @@ function wrapStore(s, dec = Math.pow(0.5, 1 / s.hl)) {
     s.lastT = m.t; s.maps++;
     return true;
   }
-  // a team by name: its exact key, a name or tag it went by, then a code or
-  // prefix match ("FURIA" ↔ "FURIA Esports"); the most-played wins a tie
+  // a team by name: its exact key, then the best tier of nameTier (most
+  // maps wins a tie)
   function findTeam(name) {
     const k = sq(name);
     if (!k) return null;
     if (s.teamNames[k]) return s.teamNames[k];
-    let best = null;
+    let best = null, bt = 0;
     for (const [nm, key] of Object.entries(s.teamNames)) {
-      const ok = teamsMatch(nm, k) || (k.length <= 4 && teamCode(nm, k)) || (Math.min(nm.length, k.length) >= 5 && (nm.includes(k) || k.includes(nm)));
-      if (ok && (!best || (s.teams[key]?.n || 0) > (s.teams[best]?.n || 0))) best = key;
+      const t = nameTier(nm, name);
+      if (t && (!best || t < bt || (t === bt && (s.teams[key]?.n || 0) > (s.teams[best]?.n || 0)))) { best = key; bt = t; }
     }
     return best;
   }
@@ -244,10 +262,10 @@ function findGolTeam(teams, name) {
   const k = sq(name);
   if (!k) return null;
   if (teams[k]) return teams[k];
-  let best = null;
+  let best = null, bt = 0;
   for (const t of Object.values(teams)) {
-    const ok = teamsMatch(t.name, name) || (k.length <= 4 && teamCode(t.name, name)) || (Math.min(sq(t.name).length, k.length) >= 5 && (sq(t.name).includes(k) || k.includes(sq(t.name))));
-    if (ok && (!best || t.games > best.games)) best = t;
+    const r = nameTier(t.name, name);
+    if (r && (!best || r < bt || (r === bt && t.games > best.games))) { best = t; bt = r; }
   }
   return best;
 }
@@ -264,4 +282,4 @@ function golInputs(teams, player, team, opp, { minGames = 6, minTeamGames = 3 } 
     team: { kf: ta.kpg, n: ta.games }, opp: { ka: tb.dpg, n: tb.games }, teamKey: ta.name, oppKey: tb.name, teamKpg: ta.kpg };
 }
 
-module.exports = { createStore, wrapStore, loadStore, saveStore, bo3Map, fetchCsMaps, dotaSql, dotaMaps, fetchDotaMaps, parseGolTeams, fetchGolTeams, findGolTeam, golInputs, ROUNDS_PER_MAP };
+module.exports = { createStore, wrapStore, loadStore, saveStore, bo3Map, fetchCsMaps, dotaSql, dotaMaps, fetchDotaMaps, parseGolTeams, fetchGolTeams, findGolTeam, golInputs, nameTier, ROUNDS_PER_MAP };

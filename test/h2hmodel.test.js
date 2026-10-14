@@ -164,3 +164,16 @@ test('the seeds load and price a known matchup', () => {
     assert.ok(s.state.lastT > Date.parse('2026-10-01'), t);
   }
 });
+
+test('team names: a full name beats a code, words teams drop are ignored', () => {
+  const { nameTier, findGolTeam } = require('../h2hdata');
+  assert.equal(nameTier('MVK Esports', 'MVK'), 1);
+  assert.ok(nameTier('Movistar KOI', 'MVK') > 1);
+  assert.equal(nameTier('9z', '9Z Team'), 1);
+  assert.equal(nameTier('Team Envy', 'Envy'), 1);
+  assert.equal(nameTier('eac', 'Esport Academy Copenhagen'), 3);
+  assert.equal(nameTier('mira', 'Mindfreak'), 0);
+  assert.equal(nameTier('MOUZ NXT', 'MOUZ'), 0);
+  const teams = { movistarkoi: { name: 'Movistar KOI', games: 40 }, mvkesports: { name: 'MVK Esports', games: 10 } };
+  assert.equal(findGolTeam(teams, 'MVK').name, 'MVK Esports');
+});

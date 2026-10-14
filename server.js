@@ -2535,12 +2535,31 @@ function appBooksFor(p) {
     evAt: (prob, side) => sleeperPricing(prob, side === 'OVER' ? sl.over : sl.under, side === 'OVER' ? sl.under : sl.over).ev });
   return books;
 }
+// PrizePicks names teams by code ("MVK", "BRO"), which can fit the wrong team
+// ("MVK" is MVK Esports, not Movistar KOI). Another app's "A vs B" title for
+// the same match, within two hours, gives both full names.
+function h2hTitles(picks) {
+  const out = [];
+  for (const p of picks) {
+    const sides = splitMatchTitle(p.matchTitle);
+    if (sides) out.push({ sport: trackerSportKey(p.sport), sides, t: Date.parse(p.startTime || '') || 0 });
+  }
+  return out;
+}
+function h2hFullNames(game, team, opp, t, titles) {
+  const fits = (full, n) => teamsMatch(full, n) || teamCode(full, n) || h2hdata.nameTier(full, n) > 0;
+  for (const x of titles) {
+    if (x.sport !== game || (t && x.t && Math.abs(x.t - t) > 2 * 3600e3)) continue;
+    for (const [a, b] of [x.sides, [x.sides[1], x.sides[0]]]) if (fits(a, team) && fits(b, opp)) return [a, b];
+  }
+  return [team, opp];
+}
 // The model's inputs for one pick → p.h2h, or why not (counted in st.why)
-function h2hInputs(p, game, opp) {
+function h2hInputs(p, game, team, opp) {
   if (game === 'LOL') {
     if (!h2hState.gol) return { why: 'no gol.gg table' };
     const lp = lolPlayer(p.player);
-    const inp = h2hdata.golInputs(h2hState.gol, lp ? { kpg: lp.kpg, games: lp.games } : null, p.team, opp);
+    const inp = h2hdata.golInputs(h2hState.gol, lp ? { kpg: lp.kpg, games: lp.games } : null, team, opp);
     if (inp.why) return inp;
     const sh = h2hmodel.playerShare('LOL', inp.rate, inp.games, inp.teamKpg);
     if (!sh) return { why: 'share' };
@@ -2548,7 +2567,7 @@ function h2hInputs(p, game, opp) {
     return { ...inp, share: sh.share };
   }
   const store = h2hState.stores[game];
-  return store ? store.inputs(p.player, p.team, opp, { shareGames: h2hmodel.TITLES[game].shareGames }) : { why: 'title' };
+  return store ? store.inputs(p.player, team, opp, { shareGames: h2hmodel.TITLES[game].shareGames }) : { why: 'title' };
 }
 function priceH2HKills(picks) {
   const st = { priced: 0, clear: 0, modelOnly: 0, byGame: {}, why: {}, stores: {} };
@@ -2558,13 +2577,15 @@ function priceH2HKills(picks) {
   if (!H2H_ON) return st;
   const plays = [];
   const miss = w => { st.why[w] = (st.why[w] || 0) + 1; };
+  const titles = h2hTitles(picks);
   for (const p of picks) {
     const game = trackerSportKey(p.sport);
     if (!['LOL', 'DOTA', 'CS'].includes(game) || normalizeMarket(p.market).split('|')[0] !== 'k') continue;
     if (Date.parse(p.startTime || '') <= Date.now()) continue;
     const opp = h2hOpponent(p);
     if (!opp) { miss('opponent'); continue; }
-    const inp = h2hInputs(p, game, opp);
+    const [team, vs] = h2hFullNames(game, p.team, opp, Date.parse(p.startTime || ''), titles);
+    const inp = h2hInputs(p, game, team, vs);
     if (inp.why) { miss(inp.why); continue; }
     const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
     // the series length only from a real match price; a guessed one ('even')
