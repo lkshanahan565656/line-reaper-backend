@@ -21,6 +21,6 @@ jobs:
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-arbs-smoke-out
-          git add -f diag-arbs-out.txt; git add -f fastarbs-out.json calib-rows.json || true
+          git add -f diag-arbs-out.txt; git add -f fastarbs-out.json || true; git add -f calib-rows.json || true
           git commit -m "diag arbs output"
           git push -f origin diag-arbs-smoke-out
