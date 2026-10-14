@@ -4318,10 +4318,11 @@ function priceSportRows(rows) {
   }
   return flagged;
 }
-// Pinnacle's player props (pinprops.js): on with PINNACLE_GUEST_KEY set, and
-// behind the pinnacle licence like its esports prices. Every 5 minutes.
+// Pinnacle's player props (pinprops.js): on with PINNACLE_PROPS=on (the guest
+// feed needs no key; PINNACLE_GUEST_KEY is sent when set, and turns it on
+// too), behind the pinnacle licence like its esports prices. Every 5 minutes.
 const pinprops = require('./pinprops');
-const pinPropsState = { enabled: !!process.env.PINNACLE_GUEST_KEY, props: 0, bySport: {}, updated: null, errors: [] };
+const pinPropsState = { enabled: !!process.env.PINNACLE_GUEST_KEY || /^(on|1|true|yes)$/i.test(String(process.env.PINNACLE_PROPS || '').trim()), props: 0, bySport: {}, updated: null, errors: [] };
 let pinPropsIndex = new Map();
 async function refreshPinnacleProps() {
   if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
