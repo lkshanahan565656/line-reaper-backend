@@ -1,7 +1,7 @@
-name: diag-pacc2
+name: diag-pin
 on:
   push:
-    branches: [diag-pacc2]
+    branches: [diag-pin]
 permissions:
   contents: write
 jobs:
@@ -24,9 +24,9 @@ jobs:
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-pacc2-out
+          git checkout --orphan diag-pin-out
           git rm -rq --cached . || true
           gzip -f out/*.json || true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-pacc2-out
+          git push -f origin diag-pin-out
