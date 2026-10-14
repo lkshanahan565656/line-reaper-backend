@@ -5001,11 +5001,11 @@ function evStaleRecord(a, apps) {
   if (!a && !apps) return '';
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
   const src = a?.bySource || {};
-  const row = (label, n, val, good) => `<div style="display:flex;gap:10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
-      <span style="flex:1;color:#e2e8f0;font-family:inherit">${label}</span><span style="color:#64748b">${n} graded</span>
+  const row = (label, n, val, good, unit = 'graded') => `<div style="display:flex;gap:10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
+      <span style="flex:1;color:#e2e8f0;font-family:inherit">${label}</span><span style="color:#64748b">${n} ${unit}</span>
       <span style="min-width:110px;text-align:right;color:${!n ? '#64748b' : good ? '#10b981' : '#f87171'}">${n ? val : 'not graded yet'}</span></div>`;
   const book = (k, label) => { const v = src[k]; return row(label, v?.n || 0, 'CLV ' + pct(v?.avgClv), v?.avgClv > 0); };
-  const app = (v, label) => row(label, v?.closed || 0, 'close EV ' + pct(v?.closeEvAvg), v?.closeEvAvg > 0);
+  const app = (v, label) => row(label, v?.closed || 0, 'close EV ' + pct(v?.closeEvAvg), v?.closeEvAvg > 0, 'closed');
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}

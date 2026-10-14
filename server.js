@@ -4884,10 +4884,12 @@ function observeStaleBooks(gamesBySport, fdPropsRead) {
   if (!staleState.enabled) return;
   const t = Date.now(), quotes = [];
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
-  const kbooks = kmid.length ? pingames.kalshiMidBooks(kmid, Object.values(gamesBySport).flat()) : new Map();
+  let kbooks = new Map();
+  try { if (kmid.length) kbooks = pingames.kalshiMidBooks(kmid, Object.values(gamesBySport).flat()); }
+  catch (e) { staleState.errors = [`kalshi mids ${e.message}`, ...staleState.errors].slice(0, 5); }
   for (const [s, games] of Object.entries(gamesBySport)) {
     const withK = games.map(g => (kbooks.has(g.id) ? { ...g, bookmakers: [...g.bookmakers, kbooks.get(g.id)] } : g));
-    quotes.push(...staleLines.gameQuotes(withK, s));
+    quotes.push(...staleLines.gameQuotes(withK, s, { league: freebooks.LEAGUES[s]?.props || s.toUpperCase() }));
     quotes.push(...staleLines.bookPropQuotes(games, s, x => freebooks.LEAGUES[x]?.props || null, { books: fdPropsRead ? ['fanduel', 'betrivers'] : ['betrivers'] }));
   }
   observeStale(quotes, t, 'books');
