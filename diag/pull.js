@@ -64,7 +64,7 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
       const open = Math.min(...grp.map(m => Date.parse(m.open_time)));
       const st = Math.max(open, close - HOURS * 3600e3);
       let arr = [];
-      if (useBatch) { const d = await get('/markets/candlesticks', { market_tickers: grp.map(m => m.ticker).join(','), start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 }); arr = d?.markets || []; }
+      if (useBatch) { const d = await get('/markets/candlesticks', { market_tickers: grp.map(m => m.ticker).join(','), start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 }); arr = (d?.markets || []).map((x, j) => ({ market_ticker: x.market_ticker || x.ticker || grp[j].ticker, candlesticks: x.candlesticks || [] })); }
       if (!arr.length) {
         const d = await get(`/series/${e.series_ticker}/events/${e.event_ticker}/candlesticks`, { start_ts: Math.floor(st / 1000), end_ts: Math.ceil(close / 1000) + 3600, period_interval: 60 });
         arr = (d?.market_tickers || []).map((t, j) => ({ market_ticker: t, candlesticks: d.market_candlesticks?.[j] || [] }));
