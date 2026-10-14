@@ -54,7 +54,7 @@ test('parse: full-game markets only, long side first, the book of the long side'
   assert.equal(P.parseMarket(moneyline({ status: 'MARKET_STATUS_RESOLVED' })).open, false);
   assert.equal(P.parseMarket(moneyline({ marketSides: [] })), null, 'no teams: nothing to match');
   assert.deepEqual(P.parseBook({ marketData: { bids: [{ px: usd('0.4375'), qty: '5' }, { px: usd('0.4400'), qty: '1168279.94' }], offers: [{ px: usd('0.4425'), qty: '1209642.73' }], state: 'MARKET_STATE_OPEN' } }),
-    { bid: 0.44, ask: 0.4425, bidSize: 1168279.94, askSize: 1209642.73, open: true });
+    { bid: 0.44, ask: 0.4425, bidSize: 1168279.94, askSize: 1209642.73, open: true, bids: [[0.44, 1168279.94], [0.4375, 5]], offers: [[0.4425, 1209642.73]] });
   assert.equal(P.parseBook({ marketData: { bids: [], offers: [], state: 'MARKET_STATE_HALTED' } }).open, false);
   assert.equal(P.parseBook({ nope: 1 }), null);
 });

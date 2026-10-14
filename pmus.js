@@ -92,7 +92,9 @@ function parseEvent(payload) {
   return { slug: e.slug, title: e.title || '', league: String(e.slug).split('-')[0] || null, markets };
 }
 
-// GET /v1/markets/{slug}/book payload → { bid, ask, bidSize, askSize, open } | null
+// GET /v1/markets/{slug}/book payload → { bid, ask, bidSize, askSize, open,
+// bids, offers } | null; bids and offers are every level as [price, qty],
+// best first (what a size check walks)
 function parseBook(payload) {
   const d = payload?.marketData || payload;
   if (!d || typeof d !== 'object' || (!Array.isArray(d.bids) && !Array.isArray(d.offers))) return null;
@@ -104,6 +106,7 @@ function parseBook(payload) {
     bid: bids.length ? px(bids[0]) : null, ask: offers.length ? px(offers[0]) : null,
     bidSize: bids.length ? num(bids[0].qty) : null, askSize: offers.length ? num(offers[0].qty) : null,
     open: !state || state === 'market_state_open',
+    bids: bids.map(l => [px(l), num(l.qty) || 0]), offers: offers.map(l => [px(l), num(l.qty) || 0]),
   };
 }
 

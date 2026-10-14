@@ -123,3 +123,11 @@ test('screen reports the fair price of every market through `fairs`', () => {
   assert.equal(vals.length, 2, 'both sides, though nothing is +EV');
   assert.ok(Math.abs(vals[0] + vals[1] - 100) < 0.02);
 });
+
+test('screen reports what every book charges through `costs`, +EV or not', () => {
+  const costs = new Map();
+  E.screen({ now: NOW, costs, feeds: [{ games: [game([h2h('pinnacle', -150, 130), h2h('fanduel', -170, 110)])] }] });
+  const fd = [...costs].filter(([k]) => k.endsWith('|fanduel')).map(([, v]) => v).sort();
+  assert.equal(fd.length, 2);
+  assert.deepEqual(fd, [Math.round(1 / 2.1 * 1e4) / 1e4, Math.round(1 / (1 + 100 / 170) * 1e4) / 1e4].sort());
+});

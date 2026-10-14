@@ -5405,7 +5405,7 @@ function renderResults(d) {
     ${rows ? `<div style="overflow-x:auto"><table class="esm-table">
       <thead><tr><th></th><th>Source</th><th>Play</th><th style="text-align:right">Bets</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat close</th>${anyExec ? '<th style="text-align:right">CLV +2 min</th>' : ''}<th style="text-align:right">W-L</th><th style="text-align:right">ROI</th><th style="text-align:right">Units</th></tr></thead>
       <tbody>${rows}</tbody></table></div>` : tailEmpty('NO GRADED PLAYS YET', 'A play shows up here once 3 of its bets are graded.')}
-    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each exchange bet at what it cost 2 minutes after the alert, the price a subscriber gets. Exchange alerts go out only for signals whose +2 min record beats the close. ${kept}</div>`;
+    <div style="font-size:11px;color:var(--text2);margin-top:10px">CLV +2 min grades each bet at what it cost 2 minutes after the alert, the price a subscriber gets (exchange value, esports exchange edges and the +EV screener). Once a play has 8 bets graded at +2 min, its verdict is judged on that grade. Exchange value alerts go out only for signals whose +2 min record beats the close. ${kept}</div>`;
 }
 
 // ─── BEST PLAYS ───────────────────────────────────────────────────────────────
