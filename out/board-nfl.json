@@ -1,0 +1,178 @@
+[
+  {
+    "player": "Tory Horton",
+    "mkey": "rec_yds",
+    "pinnacle": {
+      "line": 5.5,
+      "over": -104,
+      "under": -128,
+      "pOver": 47.3
+    },
+    "best": {
+      "book": "prizepicks",
+      "side": "Over",
+      "ev": 5.54,
+      "fair": 59.3,
+      "line": 5.5,
+      "source": "pinnacle",
+      "kind": "ev",
+      "n": 2,
+      "mean": 8
+    }
+  },
+  {
+    "player": "Trey McBride",
+    "mkey": "rec_yds",
+    "pinnacle": {
+      "line": 66.5,
+      "over": -114,
+      "under": -114,
+      "pOver": 50
+    },
+    "best": {
+      "book": "prizepicks",
+      "side": "Under",
+      "ev": 2.3,
+      "fair": 57.5,
+      "line": 72.5,
+      "source": "pinnacle",
+      "kind": "gap",
+      "n": 3,
+      "mean": 66.71,
+      "gap": {
+        "vs": [
+          {
+            "book": "underdog",
+            "line": 69.5
+          },
+          {
+            "book": "sleeper",
+            "line": 67.5
+          }
+        ],
+        "pts": 5,
+        "probPts": 6.5
+      }
+    }
+  },
+  {
+    "player": "Caleb Williams",
+    "mkey": "pass_comp",
+    "pinnacle": {
+      "line": 19.5,
+      "over": 100,
+      "under": -132,
+      "pOver": 46.4
+    },
+    "best": {
+      "book": "underdog",
+      "side": "Under",
+      "ev": -0.71,
+      "fair": 52.7,
+      "line": 19.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 2
+    }
+  },
+  {
+    "player": "Michael Wilson",
+    "mkey": "rec_yds",
+    "pinnacle": {
+      "line": 59.5,
+      "over": -114,
+      "under": -114,
+      "pOver": 50
+    },
+    "best": {
+      "book": "prizepicks",
+      "side": "Under",
+      "ev": -1.76,
+      "fair": 55.2,
+      "line": 63.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 3
+    }
+  },
+  {
+    "player": "Dak Prescott",
+    "mkey": "pass_comp",
+    "pinnacle": {
+      "line": 23.5,
+      "over": -110,
+      "under": -120,
+      "pOver": 48.9
+    },
+    "best": {
+      "book": "prizepicks",
+      "side": "Over",
+      "ev": -2.21,
+      "fair": 55,
+      "line": 22.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 3
+    }
+  },
+  {
+    "player": "Woody Marks",
+    "mkey": "rec_yds",
+    "pinnacle": {
+      "line": 12.5,
+      "over": -115,
+      "under": -115,
+      "pOver": 50
+    },
+    "best": {
+      "book": "underdog",
+      "side": "Under",
+      "ev": -2.54,
+      "fair": 54.8,
+      "line": 14.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 3
+    }
+  },
+  {
+    "player": "Bo Nix",
+    "mkey": "rush_yds",
+    "pinnacle": {
+      "line": 13.5,
+      "over": -122,
+      "under": -108,
+      "pOver": 51.6
+    },
+    "best": {
+      "book": "underdog",
+      "side": "Under",
+      "ev": -2.83,
+      "fair": 51.5,
+      "line": 14.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 3
+    }
+  },
+  {
+    "player": "Kendrick Bourne",
+    "mkey": "rec_yds",
+    "pinnacle": {
+      "line": 37.5,
+      "over": -114,
+      "under": -114,
+      "pOver": 50
+    },
+    "best": {
+      "book": "underdog",
+      "side": "Under",
+      "ev": -2.88,
+      "fair": 54.6,
+      "line": 39.5,
+      "source": "pinnacle",
+      "kind": null,
+      "n": 3
+    }
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "version": "3.98.0",
+  "pinnacleProps": {
+    "enabled": true,
+    "props": 345,
+    "bySport": {
+      "NFL": 177,
+      "NBA": 30,
+      "WNBA": 81,
+      "NHL": 18,
+      "MLB": 39
+    },
+    "updated": "2026-10-14T05:12:01.567Z",
+    "errors": []
+  },
+  "feeds": {
+    "pandascore": false,
+    "pinnacle": true,
+    "pinnacleMatches": 23
+  }
+}
