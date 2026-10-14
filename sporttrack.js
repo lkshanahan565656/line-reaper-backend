@@ -33,7 +33,10 @@ function legDecimal(book, mult) {
   return m;
 }
 
-const idOf = (row, p) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}`;
+// a stale-line leg keeps its own id, so the same leg flagged on the consensus
+// and as stale lands in both records
+const STALE = new Set(['stale', 'stale-single']);
+const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${STALE.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
 function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
@@ -50,7 +53,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const t = now();
     const writes = [];
     for (const { row, play, kind } of flagged) {
-      const id = idOf(row, play);
+      const id = idOf(row, play, kind);
       if (open.has(id)) continue;
       const start = Date.parse(row.startTime || '');
       if (!(start > t)) continue;
@@ -64,6 +67,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
         ...(kind === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
         closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(),
       };
       open.set(id, b);
@@ -173,8 +177,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
-    // research rows (gap-odd, gap-stale) are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind));
+    // research rows (gap-odd, gap-stale) and the stale-line legs (stalelines.js)
+    // are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
