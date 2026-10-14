@@ -1214,6 +1214,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('best',this)">BEST PLAYS</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
+    <button class="tab" onclick="showTab('big',this)">BIG MONEY</button>
     <button class="tab" onclick="showTab('gas',this)">GAS LOCKS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
     <button class="tab" onclick="showTab('results',this)">RESULTS</button>
@@ -1348,6 +1349,15 @@ body.no-help .clv-info { display:none; }
     <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
   </div>
   <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
+</div>
+
+<div class="page" id="page-big">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">BIG MONEY</strong> — When a big order hits a bet on Kalshi or Polymarket, the price it paid is what real money thinks the bet is worth. This finds the same bet at the pick'em apps, FanDuel, BetRivers and the US exchanges, and shows where it's cheaper.<br>
+    <span style="color:#94a3b8;font-size:11px">Market makers pay to rebalance, not because they know something, so money that worked both sides of a market, hedged on the player's other lines, or came from a market-maker wallet is labelled and hidden unless you show it. Same plays for everyone; every play is logged and graded, and none of this is proven yet.</span>
+  </div>
+  <div class="sport-row" id="bigControls"></div>
+  <div id="bigContent"></div>
 </div>
 
 <div class="page" id="page-gas">
@@ -1674,6 +1684,7 @@ function showTab(name, el) {
   if (name === 'arb') arbShow(); else clearTimeout(xarbUi.timer);
   if (name === 'results') loadResults();
   if (name === 'gas') loadGas(); else clearTimeout(gasUi.timer);
+  if (name === 'big') loadBig(); else clearTimeout(bigUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
   if (name === 'betlog') mybOpen();
@@ -5507,6 +5518,95 @@ function renderXscreen() {
       : tailEmpty('NOTHING PRICED ON BOTH RIGHT NOW', 'Games show up here once both exchanges list them.')}`;
 }
 const xarbShowing = () => document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'exchanges';
+// ─── BIG MONEY ────────────────────────────────────────────────────────────────
+// Big exchange prints and the same bet at every venue (bigmoney.js).
+const bigUi = { data: null, error: null, timer: null, minUsd: 1000, kind: '', mm: false };
+try { const v = JSON.parse(localStorage.getItem('lrBigUi') || '{}'); Object.assign(bigUi, { minUsd: v.minUsd || 1000, kind: v.kind || '', mm: !!v.mm }); } catch { /* defaults */ }
+function bigSet(k, v) {
+  bigUi[k] = v;
+  try { localStorage.setItem('lrBigUi', JSON.stringify({ minUsd: bigUi.minUsd, kind: bigUi.kind, mm: bigUi.mm })); } catch { /* fine */ }
+  bigUi.data = null;
+  loadBig();
+}
+async function loadBig() {
+  clearTimeout(bigUi.timer);
+  const el = document.getElementById('bigContent');
+  renderBigControls();
+  if (!bigUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { bigUi.data = await tailGet(`/api/big-money?minUsd=${bigUi.minUsd}${bigUi.kind ? `&kind=${bigUi.kind}` : ''}${bigUi.mm ? '&mm=1' : ''}`); bigUi.error = null; }
+  catch (e) { bigUi.error = e.old ? 'Big money needs a newer backend.' : e.message; }
+  renderBig();
+  if (document.getElementById('page-big')?.classList.contains('active')) bigUi.timer = setTimeout(loadBig, 60000);
+}
+function renderBigControls() {
+  const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
+  document.getElementById('bigControls').innerHTML = [1000, 2500, 5000, 10000].map(v => chip(bigUi.minUsd === v, `$${v / 1000}K+`, `bigSet('minUsd',${v})`)).join('')
+    + '<span class="tab-sep" style="margin:0 2px"></span>'
+    + [['', 'All'], ['prop', 'Props'], ['game', 'Game lines']].map(([k, l]) => chip(bigUi.kind === k, l, `bigSet('kind','${k}')`)).join('')
+    + chip(bigUi.mm, bigUi.mm ? 'Market makers shown' : 'Show market makers', `bigSet('mm',${!bigUi.mm})`);
+}
+function renderBig() {
+  const el = document.getElementById('bigContent'), d = bigUi.data;
+  if (bigUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(bigUi.error)); return; }
+  if (!d) return;
+  const pct = x => x == null ? '—' : `${x >= 0 ? '+' : ''}${(Math.round(x * 10) / 10).toFixed(1)}%`;
+  const c = p => p == null ? '—' : `${Math.round(p * 1000) / 10}¢`;
+  const am = a => a == null ? '' : a > 0 ? `+${a}` : `${a}`;
+  const usd = x => `$${Math.round(x).toLocaleString()}`;
+  const ago = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`; };
+  const until = t => { const m = Math.round((Date.parse(t) - Date.now()) / 60000); return m <= 0 ? 'starting' : m < 60 ? `in ${m} min` : m < 1440 ? `in ${Math.floor(m / 60)}h ${m % 60}m` : new Date(t).toLocaleDateString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
+  const ex = x => ({ kalshi: 'Kalshi', polymarket: 'Polymarket' }[x] || x);
+  const r = d.record?.overall || {}, flow = d.record?.byFlow || {};
+  const tile = (label, val, sub, good) => `<div style="flex:1 1 140px;background:var(--surface,#0f172a);border:1px solid var(--border,#1e293b);border-radius:8px;padding:10px 12px">
+      <div style="font-size:10px;letter-spacing:1.5px;color:var(--text2)">${label}</div>
+      <div style="font-size:20px;font-weight:800;margin-top:2px;color:${good == null ? '#e8e8e8' : good ? 'var(--green)' : '#f87171'}">${val}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${sub}</div></div>`;
+  const fr = (k, label) => { const f = flow[k]; return f?.graded ? `${label} ${f.wins}-${f.losses} (${pct(f.roi * 100)})` : f?.n ? `${label}: ${f.n} logged, not graded yet` : `${label}: none yet`; };
+  const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px">
+      ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'Not graded yet', r.graded ? `${pct(r.roi * 100)} a bet · ${r.units >= 0 ? '+' : ''}${r.units}u` : `${(d.record?.open || 0) + (d.record?.locked || 0)} logged, graded after each game`, r.graded ? r.roi > 0 : null)}
+      ${tile('AT THE CLOSE', r.closeN ? pct(r.avgCloseEv) : '—', r.closeN ? `our ticket's edge at the money's market close, over ${r.closeN}` : 'the money’s market at the start, our price', r.closeN ? r.avgCloseEv > 0 : null)}
+      ${tile('STILL THERE 2 MIN ON', r.execN ? pct(r.execOkPct * 100).replace('+', '') : '—', r.execN ? `of ${r.execN} plays, same line and price` : 'checked two minutes after each play', null)}
+      ${tile('BETTORS VS MARKET MAKERS', '', `${fr('bettor', 'Bettors')}<br>${fr('market maker', 'Market makers')}`, null)}
+    </div>`;
+  const bt = d.backtest;
+  const note = `<div class="xa-sub" style="margin:0 0 10px">Money is a taker order of ${usd(d.settings?.minUsd || 1000)} or more before the game, summed per bet. A play is a pick'em app or sportsbook pricing the bet ${d.settings?.minEv ?? 2}% or more under what the money paid, at the same line. PrizePicks is priced at its 3-pick power break-even (55%), Underdog and Sleeper at their payouts, books at their odds, the exchanges at the ask plus fee. Another line is moved along the stat's curve and shown as a different line, not the same play. Buying the exchange itself after the money is steam, which lost in our tests, so the exchanges are shown but never the play.${bt?.summary ? ` ${escAttr(bt.summary)}` : ''}</div>`;
+  let body;
+  if (d.off) body = tailEmpty('BIG MONEY IS OFF', 'BIG_MONEY=off is set on the server.');
+  else if (!d.pro) body = tailLockBanner(`<b>${d.count || 0} bet${d.count === 1 ? '' : 's'} with big money right now${d.flagged ? `, ${d.flagged} cheaper somewhere else` : ''}.</b> <span style="color:#cbd5e1">Pro shows each one, the money behind it and every venue's price.</span>`, 'Big money');
+  else if (d.withheld?.length === 2) body = tailEmpty('EXCHANGE DATA WITHHELD', escAttr(d.note || ''));
+  else if (!(d.plays || []).length) body = tailEmpty('NO BIG MONEY RIGHT NOW', `Bets show up here when ${usd(bigUi.minUsd)}+ hits a game or player line before it starts.${d.hiddenMarketMakers ? ` ${d.hiddenMarketMakers} market-maker bet${d.hiddenMarketMakers === 1 ? ' is' : 's are'} hidden.` : ''}`);
+  else {
+    const plays = d.plays.slice().sort((a, b) => (b.flagged - a.flagged) || ((b.best?.ev ?? -99) - (a.best?.ev ?? -99)) || (b.money.usd - a.money.usd));
+    body = plays.map(p => {
+      const m = p.money, best = p.best;
+      const vrow = v => {
+        const isBest = best && best.ev >= (p.minEv ?? 2) && v.venue === best.venue && v.line === best.line;
+        const price = v.entry ? `${c(v.implied)} <span class="xa-sub">${escAttr(v.entry)}</span>` : v.american != null && !['kalshi', 'polymarketus'].includes(v.venue) ? am(v.american)
+          : v.price != null ? `${c(v.price)} <span class="xa-sub">+ fee</span>` : `${c(v.implied)}${v.mult && v.mult !== 1 ? ` <span class="xa-sub">${v.mult}x</span>` : ''}`;
+        const line = v.line == null ? '' : `${v.line}${v.sameLine === false ? ' <span style="color:#fbbf24;font-size:10px">OTHER LINE</span>' : ''}`;
+        return `<tr style="${isBest ? 'background:rgba(16,185,129,.08)' : ''}"><td>${v.url ? tailLink(v.url, escAttr(v.name)) : escAttr(v.name)}${v.own ? ' <span class="xa-sub">(the money’s market)</span>' : ''}</td><td class="xs-p">${line}</td><td class="xs-p">${price}</td>
+          <td class="xs-p" style="color:${v.ev > 0 ? 'var(--green)' : 'var(--text2)'};font-weight:${isBest ? 800 : 500}">${pct(v.ev)}</td><td class="xs-p" style="color:var(--text2)">${v.evPin != null ? pct(v.evPin) : '—'}</td></tr>`;
+      };
+      const mm = p.flow === 'market maker';
+      const head = `<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div><div class="xa-sub">${escAttr(p.sport)} · ${p.kind === 'prop' ? 'player prop' : escAttr(p.matchup || 'game line')} · ${escAttr(until(p.start))}</div>
+          <div style="font-size:15px;font-weight:800;margin-top:2px">${escAttr(p.title)}</div></div>
+          <span style="flex:0 0 auto;font-size:10px;letter-spacing:1px;font-weight:800;padding:3px 8px;border-radius:12px;border:1px solid ${mm ? '#f8717188' : '#34d39988'};color:${mm ? '#f87171' : '#34d399'}">${mm ? 'MARKET MAKER' : 'BETTOR'}</span></div>`;
+      const money = `<div style="font-size:12px;margin:6px 0 4px"><b>${usd(m.usd)}</b> on ${escAttr(m.exchanges.map(ex).join(' + '))} at <b>${c(m.price)}</b> (${am(m.american)}) · ${p.prints} print${p.prints === 1 ? '' : 's'}, biggest ${usd(m.biggest.usd)} · ${escAttr(ago(m.biggest.at))}${p.now != null ? ` · now ${c(p.now)}` : ''}${p.pinFair != null ? ` · Pinnacle ${c(p.pinFair)}` : ''}</div>`;
+      const why = p.why?.length ? `<div class="xa-sub" style="color:#fca5a5;margin-bottom:4px">${p.why.map(escAttr).join(' · ')}</div>` : '';
+      const verdict = best && best.ev >= (p.minEv ?? 2) ? `<div style="font-size:12px;margin:4px 0;color:var(--green)"><b>${escAttr(best.name)} ${escAttr(p.side === 'Over' || p.side === 'Under' ? `${p.side} ${best.line}` : '')}</b> is ${pct(best.ev)} under the money's price${best.evPin != null ? ` (${pct(best.evPin)} on Pinnacle's)` : ''}.</div>`
+        : `<div class="xa-sub" style="margin:4px 0">No app or book has it cheaper at the same line right now.</div>`;
+      const table = (p.venues || []).length ? `<div style="overflow-x:auto"><table class="esm-table xs-table" style="margin-top:4px"><thead><tr><th>Venue</th><th style="text-align:right">Line</th><th style="text-align:right">Price</th><th style="text-align:right">vs money</th><th style="text-align:right">vs Pinnacle</th></tr></thead><tbody>${p.venues.map(vrow).join('')}</tbody></table></div>`
+        : '<div class="xa-sub">No other venue lists this bet right now.</div>';
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;${mm ? 'opacity:.75' : ''}">${head}${money}${why}${verdict}${table}</div>`;
+    }).join('');
+  }
+  const recent = (d.recent || []).slice(0, 15).map(x => `<tr><td>${escAttr(x.title)}<div class="xa-sub">${escAttr(x.venue)} ${x.line ?? ''} · ${escAttr(x.flow)}</div></td><td class="xs-p">${pct(x.ev)}</td>
+      <td class="xs-p" style="color:${x.outcome === 'win' ? 'var(--green)' : x.outcome === 'loss' ? '#f87171' : 'var(--text2)'}">${String(x.outcome || '').toUpperCase()} ${x.profit != null ? `${x.profit > 0 ? '+' : ''}${x.profit.toFixed(2)}u` : ''}</td></tr>`).join('');
+  el.innerHTML = tiles + note + (d.hiddenMarketMakers && !bigUi.mm ? `<div class="xa-sub" style="margin:0 0 8px">${d.hiddenMarketMakers} market-maker bet${d.hiddenMarketMakers === 1 ? '' : 's'} hidden.</div>` : '') + body
+    + (recent ? `<div class="arb-sec-head" style="margin-top:14px">GRADED</div><div style="overflow-x:auto"><table class="esm-table xs-table"><thead><tr><th>Play</th><th style="text-align:right">Edge</th><th style="text-align:right">Result</th></tr></thead><tbody>${recent}</tbody></table></div>` : '')
+    + (d.updated ? `<div class="xa-sub" style="margin-top:8px">Updated ${escAttr(new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}, every minute.</div>` : '');
+}
 // ─── GAS LOCKS ────────────────────────────────────────────────────────────────
 // Tonight's favourites in Kalshi's daily state gas markets (gaslocks.js), the
 // live record and the backtest that picked the rule.

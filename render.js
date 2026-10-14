@@ -10,6 +10,7 @@ const mode = process.argv[2]; // 'swap' (before/after html) or 'live'
   const variants = mode === 'live' ? ['live'] : ['before', 'after'];
   for (const v of variants) for (const [w, h, tag] of [[390, 844, 'phone'], [1280, 900, 'desktop']]) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+    await ctx.addInitScript(() => { try { sessionStorage.setItem('lr_welcomed', '1'); } catch {} });
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push('pageerror: ' + e.message));
@@ -26,7 +27,7 @@ const mode = process.argv[2]; // 'swap' (before/after html) or 'live'
         const deadHits = DEAD.filter(c => document.getElementsByClassName(c).length);
         return { textLen: pg ? pg.innerText.trim().length : -1, height: pg ? pg.scrollHeight : -1, deadHits, version: document.title };
       }, { t, DEAD });
-      await page.screenshot({ path: `out/${v}-${t}-${tag}.png`, fullPage: false });
+      await page.screenshot({ path: `out/${v}-${t}-${tag}.png`, fullPage: false, clip: undefined });
       report[`${v}/${tag}/${t}`] = r;
     }
     report[`${v}/${tag}/errors`] = errors;
