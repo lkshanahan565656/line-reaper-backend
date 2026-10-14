@@ -1,0 +1,30 @@
+23:52:05 snapshots 147 rows 79
+Pinnacle totals: DOTA|1638241324: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638273152: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638339173: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638273299: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638339151: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638273151: timeout of 20000ms exceeded
+23:54:08 sweep 0 {"looked":14,"graded":14,"notPlayed":2,"ungradable":0,"errors":6,"changed":16}
+Pinnacle totals: DOTA|1638241324: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638273152: timeout of 20000ms exceeded
+Pinnacle totals: DOTA|1638339173: timeout of 20000ms exceeded
+23:55:09 sweep 1 {"looked":8,"graded":9,"notPlayed":0,"ungradable":0,"errors":3,"changed":9}
+23:55:10 sweep 2 {"looked":5,"graded":7,"notPlayed":2,"ungradable":0,"errors":0,"changed":9}
+23:55:10 sweep 3 {"looked":2,"graded":0,"notPlayed":0,"ungradable":0,"errors":0,"changed":0}
+23:55:10 totals done {"LOL graded":6,"DOTA graded":16,"DOTA not played":2,"CS2 open":24,"VAL open":6,"CS2 graded":8,"CS2 not played":2,"LOL open":9,"DOTA open":6}
+23:55:14 val 766310 FlyQuest RED vs MIBR GC 10
+23:55:15 val 766309 FlyQuest RED vs Akave Esports GC 10
+23:55:17 val 762036 BBL Esports vs Misa Esports 10
+23:55:19 val 754741 G2 Esports vs T1 10
+23:55:22 val 754740 NRG vs 100 Thieves 10
+23:55:23 val 754734 G2 Esports vs Team Vitality 10
+23:55:24 val 754735 NRG vs LOUD 10
+23:55:27 val 754738 100 Thieves vs Nongshim RedForce 10
+23:55:29 val 754739 T1 vs Paper Rex 10
+23:55:30 val 754731 Team Vitality vs Nongshim RedForce 10
+23:55:31 val 754730 100 Thieves vs G2 Esports 10
+23:55:32 val 754733 Paper Rex vs LOUD 10
+23:55:34 val 754732 NRG vs T1 10
+23:55:36 val 753448 FUT Esports vs T1 10
+23:55:36 val done 14 140 140 140 0 0 0

@@ -1,0 +1,203 @@
+{
+ "matches": 14,
+ "picks": 140,
+ "graded": 140,
+ "agree": 140,
+ "disagree": [],
+ "ungradable": [],
+ "nothing": [],
+ "negatives": {
+  "ghost": [
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable"
+  ],
+  "wrongTeam": [
+   "ungradable",
+   "nothing",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable"
+  ],
+  "dayOff": [
+   "nothing",
+   "nothing",
+   "nothing",
+   "nothing",
+   "nothing",
+   "GRADED (bad)",
+   "GRADED (bad)",
+   "nothing",
+   "nothing",
+   "nothing",
+   "GRADED (bad)",
+   "nothing",
+   "nothing",
+   "nothing"
+  ],
+  "headshots": [
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable",
+   "ungradable"
+  ]
+ },
+ "perMatch": [
+  {
+   "id": "766310",
+   "teams": [
+    "FlyQuest RED",
+    "MIBR GC"
+   ],
+   "start": "2026-10-14T17:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "766309",
+   "teams": [
+    "FlyQuest RED",
+    "Akave Esports GC"
+   ],
+   "start": "2026-10-14T14:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "762036",
+   "teams": [
+    "BBL Esports",
+    "Misa Esports"
+   ],
+   "start": "2026-10-12T10:30:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754741",
+   "teams": [
+    "G2 Esports",
+    "T1"
+   ],
+   "start": "2026-10-11T07:15:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754740",
+   "teams": [
+    "NRG",
+    "100 Thieves"
+   ],
+   "start": "2026-10-11T05:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754734",
+   "teams": [
+    "G2 Esports",
+    "Team Vitality"
+   ],
+   "start": "2026-10-10T08:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754735",
+   "teams": [
+    "NRG",
+    "LOUD"
+   ],
+   "start": "2026-10-10T05:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754738",
+   "teams": [
+    "100 Thieves",
+    "Nongshim RedForce"
+   ],
+   "start": "2026-10-09T08:10:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754739",
+   "teams": [
+    "T1",
+    "Paper Rex"
+   ],
+   "start": "2026-10-09T05:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754731",
+   "teams": [
+    "Team Vitality",
+    "Nongshim RedForce"
+   ],
+   "start": "2026-10-08T07:20:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754730",
+   "teams": [
+    "100 Thieves",
+    "G2 Esports"
+   ],
+   "start": "2026-10-08T05:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754733",
+   "teams": [
+    "Paper Rex",
+    "LOUD"
+   ],
+   "start": "2026-10-07T07:30:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "754732",
+   "teams": [
+    "NRG",
+    "T1"
+   ],
+   "start": "2026-10-07T05:00:00.000Z",
+   "graded": 10
+  },
+  {
+   "id": "753448",
+   "teams": [
+    "FUT Esports",
+    "T1"
+   ],
+   "start": "2026-10-04T07:25:00.000Z",
+   "graded": 10
+  }
+ ]
+}

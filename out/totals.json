@@ -1,0 +1,2600 @@
+{
+ "total": {
+  "looked": 29,
+  "graded": 30,
+  "notPlayed": 4,
+  "ungradable": 0,
+  "errors": 9
+ },
+ "byStatus": {
+  "LOL graded": 6,
+  "DOTA graded": 16,
+  "DOTA not played": 2,
+  "CS2 open": 24,
+  "VAL open": 6,
+  "CS2 graded": 8,
+  "CS2 not played": 2,
+  "LOL open": 9,
+  "DOTA open": 6
+ },
+ "close": {
+  "LOL": {
+   "maps": 6,
+   "open": 9,
+   "notPlayed": 0,
+   "ungradable": 0,
+   "total": {
+    "n": 6,
+    "mean": 2.63,
+    "sd": 4.62,
+    "rmse": 4.97
+   },
+   "overShare": 83.33,
+   "pinOverShare": 50.19,
+   "teams": {
+    "n": 12,
+    "mean": 1.06,
+    "sd": 7.53,
+    "rmse": 7.29
+   }
+  },
+  "DOTA": {
+   "maps": 16,
+   "open": 6,
+   "notPlayed": 2,
+   "ungradable": 0,
+   "total": {
+    "n": 16,
+    "mean": 0.02,
+    "sd": 13.13,
+    "rmse": 12.71
+   },
+   "overShare": 37.5,
+   "pinOverShare": 50.11,
+   "teams": {
+    "n": 32,
+    "mean": -0.03,
+    "sd": 13.23,
+    "rmse": 13.02
+   }
+  },
+  "CS2": {
+   "maps": 8,
+   "open": 24,
+   "notPlayed": 2,
+   "ungradable": 0,
+   "total": {
+    "n": 8,
+    "mean": 0.82,
+    "sd": 4.3,
+    "rmse": 4.11
+   },
+   "overShare": 62.5,
+   "pinOverShare": 49.27,
+   "teams": {
+    "n": 16,
+    "mean": -0.75,
+    "sd": 3.86,
+    "rmse": 3.81
+   },
+   "model": {
+    "n": 8,
+    "mean": 0.26,
+    "sd": 4.34,
+    "rmse": 4.07
+   }
+  },
+  "VAL": {
+   "maps": 0,
+   "open": 6,
+   "notPlayed": 0,
+   "ungradable": 0,
+   "total": null,
+   "overShare": null,
+   "pinOverShare": null,
+   "teams": null
+  }
+ },
+ "signal": {
+  "LOL": {
+   "maps": 6,
+   "open": 9,
+   "notPlayed": 0,
+   "ungradable": 0,
+   "total": {
+    "n": 6,
+    "mean": 2.63,
+    "sd": 4.62,
+    "rmse": 4.97
+   },
+   "overShare": 83.33,
+   "pinOverShare": 50.19,
+   "teams": {
+    "n": 12,
+    "mean": 1.06,
+    "sd": 7.53,
+    "rmse": 7.29
+   }
+  },
+  "DOTA": {
+   "maps": 16,
+   "open": 6,
+   "notPlayed": 2,
+   "ungradable": 0,
+   "total": {
+    "n": 16,
+    "mean": 0.02,
+    "sd": 13.13,
+    "rmse": 12.71
+   },
+   "overShare": 37.5,
+   "pinOverShare": 50.11,
+   "teams": {
+    "n": 32,
+    "mean": -0.03,
+    "sd": 13.23,
+    "rmse": 13.02
+   }
+  },
+  "CS2": {
+   "maps": 8,
+   "open": 24,
+   "notPlayed": 2,
+   "ungradable": 0,
+   "total": {
+    "n": 8,
+    "mean": 0.82,
+    "sd": 4.3,
+    "rmse": 4.11
+   },
+   "overShare": 62.5,
+   "pinOverShare": 49.27,
+   "teams": {
+    "n": 16,
+    "mean": -0.75,
+    "sd": 3.86,
+    "rmse": 3.81
+   },
+   "model": {
+    "n": 8,
+    "mean": 0.26,
+    "sd": 4.34,
+    "rmse": 4.07
+   }
+  },
+  "VAL": {
+   "maps": 0,
+   "open": 6,
+   "notPlayed": 0,
+   "ungradable": 0,
+   "total": null,
+   "overShare": null,
+   "pinOverShare": null,
+   "teams": null
+  }
+ },
+ "fit": {
+  "LOL": {
+   "teamSd": 6,
+   "n": 6,
+   "source": "assumed"
+  },
+  "DOTA": {
+   "teamSd": 8,
+   "n": 16,
+   "source": "assumed"
+  },
+  "CS2": {
+   "kappa": 35,
+   "n": 8,
+   "source": "assumed"
+  },
+  "VAL": {
+   "kappa": 35,
+   "n": 0,
+   "source": "assumed"
+  }
+ },
+ "missed": {
+  "CS2|1638111787": "FURIA vs BB Team 2026-10-14T16:00:00.000Z CS2 - TP World Championship",
+  "CS2|1638111786": "Legacy vs PVISION 2026-10-14T13:30:00.000Z CS2 - TP World Championship"
+ },
+ "rows": [
+  {
+   "id": "LOL|1638305901|1",
+   "game": "LOL",
+   "pinId": 1638305901,
+   "league": "League of Legends - Demacia Cup",
+   "teams": [
+    "BNK FearX",
+    "KT Rolster"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5,
+     "median": 27.5,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5212,
+      "median": 12.82,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4933,
+      "median": 15.4,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5,
+     "median": 27.5,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5212,
+      "median": 12.82,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4933,
+      "median": 15.4,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 30,
+    "teams": [
+     22,
+     8
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117133830110912117",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "LOL|1638305901|2",
+   "game": "LOL",
+   "pinId": 1638305901,
+   "league": "League of Legends - Demacia Cup",
+   "teams": [
+    "BNK FearX",
+    "KT Rolster"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5067,
+     "median": 27.63,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 13.5,
+      "p": 0.481,
+      "median": 13.21,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4933,
+      "median": 15.4,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5067,
+     "median": 27.63,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 13.5,
+      "p": 0.481,
+      "median": 13.21,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4933,
+      "median": 15.4,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 30,
+    "teams": [
+     8,
+     22
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117133830110912117",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "LOL|1638305901|3",
+   "game": "LOL",
+   "pinId": 1638305901,
+   "league": "League of Legends - Demacia Cup",
+   "teams": [
+    "BNK FearX",
+    "KT Rolster"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5,
+     "median": 27.5,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5157,
+      "median": 12.74,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4955,
+      "median": 15.43,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 27.5,
+     "p": 0.5,
+     "median": 27.5,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5157,
+      "median": 12.74,
+      "points": 1
+     },
+     {
+      "line": 15.5,
+      "p": 0.4955,
+      "median": 15.43,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 34,
+    "teams": [
+     23,
+     11
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117133830110912117",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "DOTA|1638241324|1",
+   "game": "DOTA",
+   "pinId": 1638241324,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Lynx",
+    "Puckchamp"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 33.5,
+      "p": 0.5198,
+      "median": 33.9,
+      "points": 1
+     },
+     {
+      "line": 18.5,
+      "p": 0.5088,
+      "median": 18.68,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 33.5,
+      "p": 0.5198,
+      "median": 33.9,
+      "points": 1
+     },
+     {
+      "line": 18.5,
+      "p": 0.5088,
+      "median": 18.68,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 43,
+    "teams": [
+     30,
+     13
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154545,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638241324|2",
+   "game": "DOTA",
+   "pinId": 1638241324,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Lynx",
+    "Puckchamp"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 33.5,
+      "p": 0.5198,
+      "median": 33.9,
+      "points": 1
+     },
+     {
+      "line": 18.5,
+      "p": 0.5088,
+      "median": 18.68,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 33.5,
+      "p": 0.5198,
+      "median": 33.9,
+      "points": 1
+     },
+     {
+      "line": 18.5,
+      "p": 0.5088,
+      "median": 18.68,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 44,
+    "teams": [
+     30,
+     14
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154545,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638241324|3",
+   "game": "DOTA",
+   "pinId": 1638241324,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Lynx",
+    "Puckchamp"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5,
+     "median": 53.5,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 32.5,
+      "p": 0.5186,
+      "median": 32.87,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.511,
+      "median": 19.72,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5,
+     "median": 53.5,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 32.5,
+      "p": 0.5186,
+      "median": 32.87,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.511,
+      "median": 19.72,
+      "points": 1
+     }
+    ]
+   },
+   "status": "not played",
+   "actual": null,
+   "source": "opendota",
+   "matchId": 1154545,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638273152|1",
+   "game": "DOTA",
+   "pinId": 1638273152,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Nemiga",
+    "salamit"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.4978,
+     "median": 53.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 24.5,
+      "p": 0.511,
+      "median": 24.72,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.4978,
+      "median": 29.46,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.4978,
+     "median": 53.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 24.5,
+      "p": 0.511,
+      "median": 24.72,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.4978,
+      "median": 29.46,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 78,
+    "teams": [
+     43,
+     35
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154633,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638273152|2",
+   "game": "DOTA",
+   "pinId": 1638273152,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Nemiga",
+    "salamit"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.4978,
+     "median": 53.43,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.4978,
+      "median": 25.46,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.4858,
+      "median": 29.21,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.4978,
+     "median": 53.43,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.4978,
+      "median": 25.46,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.4858,
+      "median": 29.21,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 36,
+    "teams": [
+     8,
+     28
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154633,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638273152|3",
+   "game": "DOTA",
+   "pinId": 1638273152,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Nemiga",
+    "salamit"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.4956,
+      "median": 25.41,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.491,
+      "median": 29.32,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 53.5,
+     "p": 0.5022,
+     "median": 53.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.4956,
+      "median": 25.41,
+      "points": 1
+     },
+     {
+      "line": 29.5,
+      "p": 0.491,
+      "median": 29.32,
+      "points": 1
+     }
+    ]
+   },
+   "status": "not played",
+   "actual": null,
+   "source": "opendota",
+   "matchId": 1154633,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638339173|1",
+   "game": "DOTA",
+   "pinId": 1638339173,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "Nemiga",
+    "Kalmychata"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.4868,
+     "median": 55.04,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.5022,
+      "median": 25.54,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.4978,
+      "median": 30.46,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.4868,
+     "median": 55.04,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.5022,
+      "median": 25.54,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.4978,
+      "median": 30.46,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 47,
+    "teams": [
+     40,
+     7
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154536,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638339173|2",
+   "game": "DOTA",
+   "pinId": 1638339173,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "Nemiga",
+    "Kalmychata"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.4978,
+     "median": 55.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.512,
+      "median": 25.74,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.5,
+      "median": 30.5,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.4978,
+     "median": 55.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 25.5,
+      "p": 0.512,
+      "median": 25.74,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.5,
+      "median": 30.5,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 52,
+    "teams": [
+     26,
+     26
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154536,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "DOTA|1638339173|3",
+   "game": "DOTA",
+   "pinId": 1638339173,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "Nemiga",
+    "Kalmychata"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.5022,
+     "median": 55.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 26.5,
+      "p": 0.5,
+      "median": 26.5,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.49,
+      "median": 30.3,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 55.5,
+     "p": 0.5022,
+     "median": 55.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 26.5,
+      "p": 0.5,
+      "median": 26.5,
+      "points": 1
+     },
+     {
+      "line": 30.5,
+      "p": 0.49,
+      "median": 30.3,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 54,
+    "teams": [
+     21,
+     33
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154536,
+   "gradedAt": "2026-10-14T23:55:09.408Z"
+  },
+  {
+   "id": "LOL|1638183197|1",
+   "game": "LOL",
+   "pinId": 1638183197,
+   "league": "League of Legends - EMEA Masters",
+   "teams": [
+    "Solary",
+    "Anubis"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.4978,
+     "median": 33.46,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.4888,
+      "median": 21.33,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.491,
+      "median": 12.37,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.4978,
+     "median": 33.46,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.4888,
+      "median": 21.33,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.491,
+      "median": 12.37,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 42,
+    "teams": [
+     24,
+     18
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117173205319911429",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "LOL|1638183197|2",
+   "game": "LOL",
+   "pinId": 1638183197,
+   "league": "League of Legends - EMEA Masters",
+   "teams": [
+    "Solary",
+    "Anubis"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.5033,
+     "median": 33.57,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.491,
+      "median": 21.37,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.4933,
+      "median": 12.4,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.5033,
+     "median": 33.57,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.491,
+      "median": 21.37,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.4933,
+      "median": 12.4,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 34,
+    "teams": [
+     12,
+     22
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117173205319911429",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "LOL|1638183197|3",
+   "game": "LOL",
+   "pinId": 1638183197,
+   "league": "League of Legends - EMEA Masters",
+   "teams": [
+    "Solary",
+    "Anubis"
+   ],
+   "start": "2026-10-14T16:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.5033,
+     "median": 33.57,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.491,
+      "median": 21.37,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.4933,
+      "median": 12.4,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 33.5,
+     "p": 0.5033,
+     "median": 33.57,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 21.5,
+      "p": 0.491,
+      "median": 21.37,
+      "points": 1
+     },
+     {
+      "line": 12.5,
+      "p": 0.4933,
+      "median": 12.4,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 29,
+    "teams": [
+     25,
+     4
+    ]
+   },
+   "source": "lolesports",
+   "matchId": "117173205319911429",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "DOTA|1638273299|1",
+   "game": "DOTA",
+   "pinId": 1638273299,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Zero Tenacity",
+    "Mena Warriors"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.5022,
+     "median": 57.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.5,
+      "median": 34.5,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5098,
+      "median": 22.7,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.5022,
+     "median": 57.58,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.5,
+      "median": 34.5,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5098,
+      "median": 22.7,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 82,
+    "teams": [
+     48,
+     34
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154721,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638273299|2",
+   "game": "DOTA",
+   "pinId": 1638273299,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Zero Tenacity",
+    "Mena Warriors"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.5,
+     "median": 57.5,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.5,
+      "median": 34.5,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5066,
+      "median": 22.63,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.5,
+     "median": 57.5,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.5,
+      "median": 34.5,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5066,
+      "median": 22.63,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 65,
+    "teams": [
+     18,
+     47
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154721,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638273299|3",
+   "game": "DOTA",
+   "pinId": 1638273299,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Zero Tenacity",
+    "Mena Warriors"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.4978,
+     "median": 57.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4956,
+      "median": 34.41,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5088,
+      "median": 22.68,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 57.5,
+     "p": 0.4978,
+     "median": 57.42,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4956,
+      "median": 34.41,
+      "points": 1
+     },
+     {
+      "line": 22.5,
+      "p": 0.5088,
+      "median": 22.68,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 51,
+    "teams": [
+     16,
+     35
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154721,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "CS2|1638305917|1",
+   "game": "CS2",
+   "pinId": 1638305917,
+   "league": "CS2 - European Pro League",
+   "teams": [
+    "EAC Extra",
+    "Bread Eaters"
+   ],
+   "start": "2026-10-14T10:30:00.000Z",
+   "map": 1,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5,
+     "median": 21.5,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6378,
+      "median": 12.71,
+      "points": 2
+     },
+     {
+      "line": 11.5,
+      "p": 0.4877,
+      "median": 11.33,
+      "points": 3
+     }
+    ],
+    "q0": 0.525,
+    "modelRounds": 22.02
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5,
+     "median": 21.5,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6378,
+      "median": 12.71,
+      "points": 2
+     },
+     {
+      "line": 11.5,
+      "p": 0.4877,
+      "median": 11.33,
+      "points": 3
+     }
+    ],
+    "q0": 0.525,
+    "modelRounds": 22.02
+   },
+   "status": "graded",
+   "actual": {
+    "total": 24,
+    "teams": [
+     11,
+     13
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "eac-extra-vs-bread-eaters-esports-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1638305917|2",
+   "game": "CS2",
+   "pinId": 1638305917,
+   "league": "CS2 - European Pro League",
+   "teams": [
+    "EAC Extra",
+    "Bread Eaters"
+   ],
+   "start": "2026-10-14T10:30:00.000Z",
+   "map": 2,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5,
+     "median": 21.5,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6378,
+      "median": 12.71,
+      "points": 2
+     },
+     {
+      "line": 11.5,
+      "p": 0.4877,
+      "median": 11.33,
+      "points": 3
+     }
+    ],
+    "q0": 0.525,
+    "modelRounds": 22.02
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5,
+     "median": 21.5,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6378,
+      "median": 12.71,
+      "points": 2
+     },
+     {
+      "line": 11.5,
+      "p": 0.4877,
+      "median": 11.33,
+      "points": 3
+     }
+    ],
+    "q0": 0.525,
+    "modelRounds": 22.02
+   },
+   "status": "graded",
+   "actual": {
+    "total": 21,
+    "teams": [
+     8,
+     13
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "eac-extra-vs-bread-eaters-esports-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1638305917|3",
+   "game": "CS2",
+   "pinId": 1638305917,
+   "league": "CS2 - European Pro League",
+   "teams": [
+    "EAC Extra",
+    "Bread Eaters"
+   ],
+   "start": "2026-10-14T10:30:00.000Z",
+   "map": 3,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5022,
+     "median": 21.52,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6258,
+      "median": 12.7,
+      "points": 3
+     },
+     {
+      "line": 11.5,
+      "p": 0.5,
+      "median": 11.5,
+      "points": 3
+     }
+    ],
+    "q0": 0.52,
+    "modelRounds": 22.04
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5022,
+     "median": 21.52,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.6258,
+      "median": 12.7,
+      "points": 3
+     },
+     {
+      "line": 11.5,
+      "p": 0.5,
+      "median": 11.5,
+      "points": 3
+     }
+    ],
+    "q0": 0.52,
+    "modelRounds": 22.04
+   },
+   "status": "not played",
+   "actual": null,
+   "source": "bo3.gg",
+   "matchId": "eac-extra-vs-bread-eaters-esports-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1637867148|1",
+   "game": "CS2",
+   "pinId": 1637867148,
+   "league": "CS2 - STK Pulse Beat",
+   "teams": [
+    "HOTU",
+    "fnatic"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 1,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5134,
+      "median": 12.52,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.6036,
+      "median": 12.67,
+      "points": 3
+     }
+    ],
+    "q0": 0.485,
+    "modelRounds": 22.06
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5134,
+      "median": 12.52,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.6036,
+      "median": 12.67,
+      "points": 3
+     }
+    ],
+    "q0": 0.485,
+    "modelRounds": 22.06
+   },
+   "status": "graded",
+   "actual": {
+    "total": 23,
+    "teams": [
+     13,
+     10
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "hotu-vs-fnatic-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1637867148|2",
+   "game": "CS2",
+   "pinId": 1637867148,
+   "league": "CS2 - STK Pulse Beat",
+   "teams": [
+    "HOTU",
+    "fnatic"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 2,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5567,
+      "median": 12.6,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.5617,
+      "median": 12.61,
+      "points": 3
+     }
+    ],
+    "q0": 0.5,
+    "modelRounds": 22.09
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5567,
+      "median": 12.6,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.5617,
+      "median": 12.61,
+      "points": 3
+     }
+    ],
+    "q0": 0.5,
+    "modelRounds": 22.09
+   },
+   "status": "graded",
+   "actual": {
+    "total": 23,
+    "teams": [
+     13,
+     10
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "hotu-vs-fnatic-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1637867148|3",
+   "game": "CS2",
+   "pinId": 1637867148,
+   "league": "CS2 - STK Pulse Beat",
+   "teams": [
+    "HOTU",
+    "fnatic"
+   ],
+   "start": "2026-10-14T10:00:00.000Z",
+   "map": 3,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5389,
+      "median": 12.57,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.5797,
+      "median": 12.63,
+      "points": 3
+     }
+    ],
+    "q0": 0.4925,
+    "modelRounds": 22.08
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.5067,
+     "median": 21.55,
+     "points": 3
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.5389,
+      "median": 12.57,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.5797,
+      "median": 12.63,
+      "points": 3
+     }
+    ],
+    "q0": 0.4925,
+    "modelRounds": 22.08
+   },
+   "status": "not played",
+   "actual": null,
+   "source": "bo3.gg",
+   "matchId": "hotu-vs-fnatic-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1638111785|1",
+   "game": "CS2",
+   "pinId": 1638111785,
+   "league": "CS2 - TP World Championship",
+   "teams": [
+    "9z",
+    "Aurora"
+   ],
+   "start": "2026-10-14T08:30:00.000Z",
+   "map": 1,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4637,
+     "median": 21.19,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 9.5,
+      "p": 0.524,
+      "median": 9.83,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.7391,
+      "median": 12.82,
+      "points": 3
+     }
+    ],
+    "q0": 0.44,
+    "modelRounds": 21.7
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4637,
+     "median": 21.19,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 9.5,
+      "p": 0.524,
+      "median": 9.83,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.7391,
+      "median": 12.82,
+      "points": 3
+     }
+    ],
+    "q0": 0.44,
+    "modelRounds": 21.7
+   },
+   "status": "graded",
+   "actual": {
+    "total": 24,
+    "teams": [
+     13,
+     11
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "9z-vs-aurora-gaming-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1638111785|2",
+   "game": "CS2",
+   "pinId": 1638111785,
+   "league": "CS2 - TP World Championship",
+   "teams": [
+    "9z",
+    "Aurora"
+   ],
+   "start": "2026-10-14T08:30:00.000Z",
+   "map": 2,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4704,
+     "median": 21.24,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 10.5,
+      "p": 0.4977,
+      "median": 10.47,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.6904,
+      "median": 12.77,
+      "points": 3
+     }
+    ],
+    "q0": 0.455,
+    "modelRounds": 21.86
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4704,
+     "median": 21.24,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 10.5,
+      "p": 0.4977,
+      "median": 10.47,
+      "points": 3
+     },
+     {
+      "line": 12.5,
+      "p": 0.6904,
+      "median": 12.77,
+      "points": 3
+     }
+    ],
+    "q0": 0.455,
+    "modelRounds": 21.86
+   },
+   "status": "graded",
+   "actual": {
+    "total": 14,
+    "teams": [
+     13,
+     1
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "9z-vs-aurora-gaming-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "DOTA|1638339151|1",
+   "game": "DOTA",
+   "pinId": 1638339151,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "The Warriors",
+    "Shadow Dance"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.67,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4934,
+      "median": 34.37,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5022,
+      "median": 19.54,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.67,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4934,
+      "median": 34.37,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5022,
+      "median": 19.54,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 68,
+    "teams": [
+     40,
+     28
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154541,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638339151|2",
+   "game": "DOTA",
+   "pinId": 1638339151,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "The Warriors",
+    "Shadow Dance"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.67,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4923,
+      "median": 34.35,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5022,
+      "median": 19.54,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.67,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.4923,
+      "median": 34.35,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5022,
+      "median": 19.54,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 63,
+    "teams": [
+     22,
+     41
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154541,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638339151|3",
+   "game": "DOTA",
+   "pinId": 1638339151,
+   "league": "Dota 2 - DreamLeague: Eastern Europe Qualifier",
+   "teams": [
+    "The Warriors",
+    "Shadow Dance"
+   ],
+   "start": "2026-10-14T09:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.66,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.488,
+      "median": 34.26,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5044,
+      "median": 19.59,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 54.5,
+     "p": 0.5044,
+     "median": 54.66,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 34.5,
+      "p": 0.488,
+      "median": 34.26,
+      "points": 1
+     },
+     {
+      "line": 19.5,
+      "p": 0.5044,
+      "median": 19.59,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 65,
+    "teams": [
+     18,
+     47
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154541,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "CS2|1638111674|1",
+   "game": "CS2",
+   "pinId": 1638111674,
+   "league": "CS2 - TP World Championship",
+   "teams": [
+    "Falcons",
+    "Ninjas In Pyjamas"
+   ],
+   "start": "2026-10-14T11:00:00.000Z",
+   "map": 1,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4659,
+     "median": 21.2,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.7255,
+      "median": 12.81,
+      "points": 2
+     },
+     {
+      "line": 9.5,
+      "p": 0.5319,
+      "median": 9.94,
+      "points": 3
+     }
+    ],
+    "q0": 0.5575,
+    "modelRounds": 21.73
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 21.5,
+     "p": 0.4659,
+     "median": 21.2,
+     "points": 9
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.7255,
+      "median": 12.81,
+      "points": 2
+     },
+     {
+      "line": 9.5,
+      "p": 0.5319,
+      "median": 9.94,
+      "points": 3
+     }
+    ],
+    "q0": 0.5575,
+    "modelRounds": 21.73
+   },
+   "status": "graded",
+   "actual": {
+    "total": 29,
+    "teams": [
+     16,
+     13
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "falcons-esports-vs-nip-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "CS2|1638111674|2",
+   "game": "CS2",
+   "pinId": 1638111674,
+   "league": "CS2 - TP World Championship",
+   "teams": [
+    "Falcons",
+    "Ninjas In Pyjamas"
+   ],
+   "start": "2026-10-14T11:00:00.000Z",
+   "map": 2,
+   "kind": "rounds",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 20.5,
+     "p": 0.5285,
+     "median": 20.75,
+     "points": 10
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.7504,
+      "median": 12.82,
+      "points": 2
+     },
+     {
+      "line": 9.5,
+      "p": 0.476,
+      "median": 9.13,
+      "points": 3
+     }
+    ],
+    "q0": 0.5775,
+    "modelRounds": 21.44
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 20.5,
+     "p": 0.5285,
+     "median": 20.75,
+     "points": 10
+    },
+    "teams": [
+     {
+      "line": 12.5,
+      "p": 0.7504,
+      "median": 12.82,
+      "points": 2
+     },
+     {
+      "line": 9.5,
+      "p": 0.476,
+      "median": 9.13,
+      "points": 3
+     }
+    ],
+    "q0": 0.5775,
+    "modelRounds": 21.44
+   },
+   "status": "graded",
+   "actual": {
+    "total": 19,
+    "teams": [
+     13,
+     6
+    ]
+   },
+   "source": "bo3.gg",
+   "matchId": "falcons-esports-vs-nip-14-10-2026",
+   "gradedAt": "2026-10-14T23:52:05.638Z"
+  },
+  {
+   "id": "DOTA|1638273151|1",
+   "game": "DOTA",
+   "pinId": 1638273151,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Dawn Bulls",
+    "salamit"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 1,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5088,
+     "median": 51.8,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.511,
+      "median": 28.72,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5022,
+      "median": 23.54,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5088,
+     "median": 51.8,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.511,
+      "median": 28.72,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5022,
+      "median": 23.54,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 45,
+    "teams": [
+     17,
+     28
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154722,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638273151|2",
+   "game": "DOTA",
+   "pinId": 1638273151,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Dawn Bulls",
+    "salamit"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 2,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5044,
+     "median": 51.66,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.511,
+      "median": 28.72,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5,
+      "median": 23.5,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5044,
+     "median": 51.66,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.511,
+      "median": 28.72,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5,
+      "median": 23.5,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 41,
+    "teams": [
+     28,
+     13
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154722,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  },
+  {
+   "id": "DOTA|1638273151|3",
+   "game": "DOTA",
+   "pinId": 1638273151,
+   "league": "Dota 2 - EPL Masters Play-In",
+   "teams": [
+    "Dawn Bulls",
+    "salamit"
+   ],
+   "start": "2026-10-14T19:00:00.000Z",
+   "map": 3,
+   "kind": "kills",
+   "signal": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5044,
+     "median": 51.65,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.5044,
+      "median": 28.59,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5066,
+      "median": 23.63,
+      "points": 1
+     }
+    ]
+   },
+   "close": {
+    "at": "2026-10-14T04:36:31.180Z",
+    "total": {
+     "line": 51.5,
+     "p": 0.5044,
+     "median": 51.65,
+     "points": 7
+    },
+    "teams": [
+     {
+      "line": 28.5,
+      "p": 0.5044,
+      "median": 28.59,
+      "points": 1
+     },
+     {
+      "line": 23.5,
+      "p": 0.5066,
+      "median": 23.63,
+      "points": 1
+     }
+    ]
+   },
+   "status": "graded",
+   "actual": {
+    "total": 38,
+    "teams": [
+     28,
+     10
+    ]
+   },
+   "source": "opendota",
+   "matchId": 1154722,
+   "gradedAt": "2026-10-14T23:54:08.594Z"
+  }
+ ]
+}
