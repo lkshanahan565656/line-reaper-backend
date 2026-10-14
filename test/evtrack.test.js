@@ -26,7 +26,7 @@ test('flags once, follows the fair price to the close, then scores CLV', async (
   assert.equal(b.clv, 10, '0.44 × 2.5 − 1');
   assert.equal(b.fairMove, 2);
   const s = await tr.summary();
-  assert.deepEqual(s.overall, { n: 1, avgEvAtFlag: 5, avgClv: 10, beatClosePct: 100 });
+  assert.deepEqual(s.overall, { n: 1, avgEvAtFlag: 5, avgClv: 10, beatClosePct: 100, execN: 0 });
   assert.equal(s.byBook.draftkings.n, 1);
   assert.equal(s.open, 0);
 });
@@ -66,4 +66,18 @@ test('a bet keeps following the fair price after its edge disappears', async () 
   t = Date.parse(START) + 1;
   await tr.recordBoard([]);
   assert.equal((await tr.list())[0].clv, -5);
+});
+
+test('summary grades the two-minute price too', async () => {
+  let t = Date.parse('2026-10-14T12:00:00Z');
+  const tr = createEvTracker({ now: () => t });
+  const row = { group: 'g|h2h', sport: 'nba', event: 'A @ B', start: '2026-10-14T13:00:00Z', market: 'h2h', side: 'A', book: 'fanduel', price: 100, decimal: 2, fairProb: 52, ev: 4, source: 'sharp' };
+  await tr.recordBoard([row], null);
+  t += 2 * 60e3;
+  await tr.recordBoard([], new Map([['g|h2h|A', 52]]), { costs: new Map([['g|h2h|A|fanduel', 0.5128]]) });
+  t = Date.parse('2026-10-14T13:00:01Z');
+  await tr.recordBoard([], null);
+  const s = await tr.summary();
+  assert.equal(s.byBook.fanduel.execN, 1);
+  assert.ok(Math.abs(s.byBook.fanduel.avgExecClv - 1.4) < 0.1);
 });

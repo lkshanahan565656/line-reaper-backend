@@ -2438,6 +2438,15 @@ const EV_ALERT_MIN = process.env.EV_ALERT_MIN != null ? parseFloat(process.env.E
 const evListeners = new Set();
 const evSeen = new Map();
 let evRecent = [];
+// Books whose +EV record has earned the webhook: EV_PROVEN_N closed bets with
+// a two-minute price, beating the close by EV_PROVEN_CLV % on average there.
+// Refreshed every 5 minutes from the tracker; empty until a book proves out.
+const EV_PROVEN_N = parseInt(process.env.EV_PROVEN_N) || 50, EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
+let evBookProven = new Set();
+async function refreshEvProof() {
+  const { byBook } = await evTracker.summary();
+  evBookProven = new Set(Object.entries(byBook || {}).filter(([, x]) => x.execN >= EV_PROVEN_N && x.avgExecClv >= EV_PROVEN_CLV).map(([b]) => b));
+}
 function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
   const feeds = evFeeds();
@@ -2454,7 +2463,9 @@ function runEvScreen(force = false) {
       evRecent = [...fresh, ...evRecent].slice(0, 200);
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
-      const posted = fresh.filter(evRowOk(webhookLicence()));
+      // and only from a book whose own record, graded two minutes after each
+      // flag, beats Pinnacle's close (evBookProven)
+      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => r.dfs || evBookProven.has(r.book));
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
@@ -4933,6 +4944,7 @@ schedule('*/5 * * * *', async () => {
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
+schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 schedule('2,7,12,17,22,27,32,37,42,47,52,57 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));

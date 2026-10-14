@@ -113,7 +113,7 @@ function parseKambiEvent(payload, now = Date.now()) {
   return g;
 }
 // listView payload → the ids of games not yet started, soonest first
-function kambiEventIds(payload, { now = Date.now(), withinMs = 3 * 86400e3 } = {}) {
+function kambiEventIds(payload, { now = Date.now(), withinMs = 8 * 86400e3 } = {}) {
   return (payload?.events || []).map(x => x.event).filter(e => e && e.state === 'NOT_STARTED' && ms(e.start) > now && ms(e.start) - now < withinMs)
     .sort((a, b) => ms(a.start) - ms(b.start)).map(e => e.id);
 }
@@ -158,7 +158,7 @@ const leagueGames = (pinGames, sport) => (pinGames || []).filter(g => g.sport ==
 
 // ── fetch ──
 // http: axios-style. → { games: { nfl: [Odds API games], … }, counts, errors }
-async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), maxKambiEvents = 80, now = Date.now() } = {}) {
+async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), maxKambiEvents = 120, now = Date.now() } = {}) {
   const headers = { 'User-Agent': UA, Accept: 'application/json' };
   const errors = [], counts = {};
   const get = url => http.get(url, { headers, timeout: 20000 }).then(r => r?.data);
