@@ -1,0 +1,2251 @@
+{
+ "before": {
+  "board": {
+   "rows": 10237,
+   "by": {
+    "TENNIS": {
+     "rows": 379,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "BAD": {
+     "rows": 10,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "BASKETBALL": {
+     "rows": 38,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "SOCCER": {
+     "rows": 1385,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "CURLING": {
+     "rows": 18,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "CFB": {
+     "rows": 3186,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "NHL": {
+     "rows": 339,
+     "consensus": 97,
+     "sharp": 0
+    },
+    "NBA": {
+     "rows": 666,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MLB": {
+     "rows": 430,
+     "consensus": 25,
+     "sharp": 0
+    },
+    "EUROGOLF": {
+     "rows": 48,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "NFL": {
+     "rows": 3185,
+     "consensus": 319,
+     "sharp": 2
+    },
+    "WNBA": {
+     "rows": 196,
+     "consensus": 34,
+     "sharp": 0
+    },
+    "WNBA SERIES": {
+     "rows": 29,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MMA": {
+     "rows": 227,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MOTORSPORTS": {
+     "rows": 36,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "GOLF": {
+     "rows": 65,
+     "consensus": 0,
+     "sharp": 0
+    }
+   },
+   "srcs": {
+    "pinnacle": 440,
+    "kalshi": 287,
+    "fanduel": 329,
+    "betrivers": 204
+   },
+   "sharpLegs": [
+    [
+     "NFL",
+     "Jalen Hurts",
+     "pass_yds",
+     "prizepicks",
+     "Under",
+     217.5,
+     5.38,
+     "fanduel+betrivers"
+    ],
+    [
+     "NFL",
+     "Kirk Cousins",
+     "rush_yds",
+     "prizepicks",
+     "Over",
+     0.5,
+     10.7,
+     "pinnacle+fanduel"
+    ]
+   ]
+  },
+  "ev": {
+   "rows": 134,
+   "clear2": 19,
+   "clear2Lines": 17,
+   "agree2": 0,
+   "agree2Lines": 0,
+   "linesWithKalshi": 0,
+   "lines": 127,
+   "spreadMedian": null,
+   "spreadP90": null,
+   "counts": null,
+   "agreeRows": []
+  }
+ },
+ "after": {
+  "board": {
+   "rows": 10233,
+   "by": {
+    "TENNIS": {
+     "rows": 379,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "BAD": {
+     "rows": 10,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "BASKETBALL": {
+     "rows": 38,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "SOCCER": {
+     "rows": 1384,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "CURLING": {
+     "rows": 18,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "CFB": {
+     "rows": 3186,
+     "consensus": 26,
+     "sharp": 0
+    },
+    "NHL": {
+     "rows": 339,
+     "consensus": 98,
+     "sharp": 0
+    },
+    "NBA": {
+     "rows": 666,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MLB": {
+     "rows": 430,
+     "consensus": 27,
+     "sharp": 0
+    },
+    "EUROGOLF": {
+     "rows": 48,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "NFL": {
+     "rows": 3182,
+     "consensus": 319,
+     "sharp": 2
+    },
+    "WNBA": {
+     "rows": 196,
+     "consensus": 34,
+     "sharp": 0
+    },
+    "WNBA SERIES": {
+     "rows": 29,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MMA": {
+     "rows": 227,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "MOTORSPORTS": {
+     "rows": 36,
+     "consensus": 0,
+     "sharp": 0
+    },
+    "GOLF": {
+     "rows": 65,
+     "consensus": 0,
+     "sharp": 0
+    }
+   },
+   "srcs": {
+    "pinnacle": 469,
+    "fanduel": 357,
+    "kalshi": 287,
+    "betrivers": 231
+   },
+   "sharpLegs": [
+    [
+     "NFL",
+     "Jalen Hurts",
+     "pass_yds",
+     "prizepicks",
+     "Under",
+     217.5,
+     5.38,
+     "fanduel+betrivers"
+    ],
+    [
+     "NFL",
+     "Kirk Cousins",
+     "rush_yds",
+     "prizepicks",
+     "Over",
+     0.5,
+     10.7,
+     "pinnacle+fanduel"
+    ]
+   ]
+  },
+  "ev": {
+   "rows": 117,
+   "clear2": 19,
+   "clear2Lines": 17,
+   "agree2": 0,
+   "agree2Lines": 0,
+   "linesWithKalshi": 16,
+   "lines": 110,
+   "spreadMedian": 0.8,
+   "spreadP90": 1.2,
+   "counts": {
+    "clear2": 19,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "agree2Props": 0
+   },
+   "agreeRows": []
+  }
+ },
+ "polls": [
+  {
+   "at": "2026-10-14T17:20:36.460Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 118,
+    "clear2": 13,
+    "clear2Lines": 13,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 5,
+    "lines": 118,
+    "spreadMedian": 1.2,
+    "spreadP90": 1.6,
+    "counts": {
+     "clear2": 13,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:21:36.522Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 287,
+       "fanduel": 0,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 112,
+    "clear2": 14,
+    "clear2Lines": 13,
+    "agree2": 1,
+    "agree2Lines": 1,
+    "linesWithKalshi": 11,
+    "lines": 109,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 1,
+     "agree2Lines": 1,
+     "agree2Props": 0
+    },
+    "agreeRows": [
+     [
+      "nfl",
+      "Tennessee Titans @ Indianapolis Colts",
+      "totals",
+      "Under",
+      "betrivers",
+      -130,
+      58.08,
+      2.76,
+      1.2,
+      "pinnacle+kalshi_mid"
+     ]
+    ]
+   }
+  },
+  {
+   "at": "2026-10-14T17:22:36.536Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 114,
+    "clear2": 15,
+    "clear2Lines": 13,
+    "agree2": 1,
+    "agree2Lines": 1,
+    "linesWithKalshi": 15,
+    "lines": 107,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 15,
+     "agree2": 1,
+     "agree2Lines": 1,
+     "agree2Props": 0
+    },
+    "agreeRows": [
+     [
+      "nfl",
+      "Tennessee Titans @ Indianapolis Colts",
+      "totals",
+      "Under",
+      "betrivers",
+      -130,
+      58.08,
+      2.76,
+      1.2,
+      "pinnacle+kalshi_mid"
+     ]
+    ]
+   }
+  },
+  {
+   "at": "2026-10-14T17:23:36.554Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 114,
+    "clear2": 15,
+    "clear2Lines": 13,
+    "agree2": 1,
+    "agree2Lines": 1,
+    "linesWithKalshi": 15,
+    "lines": 107,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 15,
+     "agree2": 1,
+     "agree2Lines": 1,
+     "agree2Props": 0
+    },
+    "agreeRows": [
+     [
+      "nfl",
+      "Tennessee Titans @ Indianapolis Colts",
+      "totals",
+      "Under",
+      "betrivers",
+      -130,
+      58.08,
+      2.76,
+      1.2,
+      "pinnacle+kalshi_mid"
+     ]
+    ]
+   }
+  },
+  {
+   "at": "2026-10-14T17:24:36.569Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 619,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89
+    }
+   },
+   "ev": {
+    "rows": 114,
+    "clear2": 15,
+    "clear2Lines": 13,
+    "agree2": 1,
+    "agree2Lines": 1,
+    "linesWithKalshi": 15,
+    "lines": 107,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 15,
+     "agree2": 1,
+     "agree2Lines": 1,
+     "agree2Props": 0
+    },
+    "agreeRows": [
+     [
+      "nfl",
+      "Tennessee Titans @ Indianapolis Colts",
+      "totals",
+      "Under",
+      "betrivers",
+      -130,
+      58.08,
+      2.76,
+      1.2,
+      "pinnacle+kalshi_mid"
+     ]
+    ]
+   }
+  },
+  {
+   "at": "2026-10-14T17:25:36.604Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 619,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89
+    }
+   },
+   "ev": {
+    "rows": 113,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 14,
+    "lines": 106,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:26:36.689Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 113,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 14,
+    "lines": 106,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:27:36.703Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 113,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 14,
+    "lines": 106,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:28:36.718Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 113,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 14,
+    "lines": 106,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:29:36.730Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 221,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 114,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 15,
+    "lines": 107,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:30:36.751Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 114,
+    "clear2": 14,
+    "clear2Lines": 12,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 15,
+    "lines": 107,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 14,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:31:36.764Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 82
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 119,
+    "clear2": 19,
+    "clear2Lines": 17,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 15,
+    "lines": 112,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 19,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:32:36.808Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 81
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 119,
+    "clear2": 19,
+    "clear2Lines": 17,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 15,
+    "lines": 112,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 19,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:33:36.927Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 81
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 121,
+    "clear2": 20,
+    "clear2Lines": 18,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 16,
+    "lines": 114,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 20,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:34:36.939Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 81
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 121,
+    "clear2": 20,
+    "clear2Lines": 18,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 17,
+    "lines": 114,
+    "spreadMedian": 0.9,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 20,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  },
+  {
+   "at": "2026-10-14T17:35:36.950Z",
+   "fb": {
+    "counts": {
+     "nfl": {
+      "pinnacle": 14,
+      "fanduel": 14,
+      "betrivers": 14,
+      "props": {
+       "pinnacle": 305,
+       "fanduel": 312,
+       "betrivers": 251,
+       "matched": {
+        "fanduel": 219,
+        "betrivers": 81
+       }
+      }
+     },
+     "ncaaf": {
+      "pinnacle": 57,
+      "fanduel": 53,
+      "betrivers": 51,
+      "props": {
+       "pinnacle": 26,
+       "fanduel": 32,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 25,
+        "betrivers": 0
+       }
+      }
+     },
+     "nba": {
+      "pinnacle": 12,
+      "fanduel": 12,
+      "betrivers": 12,
+      "props": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 0,
+        "betrivers": 0
+       }
+      }
+     },
+     "wnba": {
+      "pinnacle": 1,
+      "fanduel": 1,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 81,
+       "fanduel": 36,
+       "betrivers": 0,
+       "matched": {
+        "fanduel": 33,
+        "betrivers": 0
+       }
+      }
+     },
+     "nhl": {
+      "pinnacle": 3,
+      "fanduel": 2,
+      "betrivers": 2,
+      "props": {
+       "pinnacle": 103,
+       "fanduel": 35,
+       "betrivers": 38,
+       "matched": {
+        "fanduel": 18,
+        "betrivers": 27
+       }
+      }
+     },
+     "mlb": {
+      "pinnacle": 2,
+      "fanduel": 2,
+      "betrivers": 1,
+      "props": {
+       "pinnacle": 16,
+       "fanduel": 10,
+       "betrivers": 2,
+       "matched": {
+        "fanduel": 6,
+        "betrivers": 2
+       }
+      }
+     }
+    },
+    "errors": []
+   },
+   "pin": {
+    "props": 645,
+    "bySport": {
+     "NFL": 311,
+     "NBA": 30,
+     "WNBA": 81,
+     "NHL": 108,
+     "MLB": 89,
+     "CFB": 26
+    }
+   },
+   "ev": {
+    "rows": 117,
+    "clear2": 19,
+    "clear2Lines": 17,
+    "agree2": 0,
+    "agree2Lines": 0,
+    "linesWithKalshi": 16,
+    "lines": 110,
+    "spreadMedian": 0.8,
+    "spreadP90": 1.2,
+    "counts": {
+     "clear2": 19,
+     "agree2": 0,
+     "agree2Lines": 0,
+     "agree2Props": 0
+    },
+    "agreeRows": []
+   }
+  }
+ ]
+}
