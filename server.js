@@ -2331,7 +2331,9 @@ function priceKillShares(picks, { fam, sideOf }) {
     const base = p.matchup?.baseMean ?? p.marketPred;
     p.share = { mean, pinMean: p.pinTeam && base > 0 ? +(base * p.pinTeam.factor).toFixed(2) : null, share: sh.share, raw: sh.raw, games: sh.games,
       pinPerMap: pinPerMap.map(x => +x.toFixed(1)), maps: maps.length, game };
-    const ctx = { game, share: sh.share, maps: maps.length };
+    // the team kill spread: fitted from Pinnacle's graded totals once there are enough, else assumed
+    const sd = fittedTeamSd(game);
+    const ctx = { game, share: sh.share, maps: maps.length, ...(sd ? { o: { teamSd: sd } } : {}) };
     const fairAt = (m, line, side) => sharemodel.shareProb(m, line, side, ctx);
     const lines = esgaps.bookLines(p);
     const ud = p.udSides || {}, sl = p.slSides || {};
@@ -2417,7 +2419,8 @@ function priceRoundKills(picks) {
   const fitOf = m => {
     if (fits.has(m.id)) return fits.get(m.id);
     const f = {};
-    for (let n = 1; n <= 5; n++) { const x = roundmodel.fitMap(m.ladders, n, m.game); if (x) f[n] = x; }
+    const k = fittedKappa(m.game), ro = k ? { ...roundmodel.DEFAULTS, kappa: { ...roundmodel.DEFAULTS.kappa, [m.game]: k } } : roundmodel.DEFAULTS;
+    for (let n = 1; n <= 5; n++) { const x = roundmodel.fitMap(m.ladders, n, m.game, ro); if (x) f[n] = x; }
     fits.set(m.id, f);
     if (Object.keys(f).length) st.fits.push({ match: `${m.teams[0]} vs ${m.teams[1]}`, game: m.game, maps: f });
     return f;
@@ -2454,7 +2457,8 @@ function priceRoundKills(picks) {
     const q0 = maps.map(n => f[n]?.q ?? avgQ);
     const qs = q0.map(q => +(s.i === 0 ? q : 1 - q).toFixed(4));
     const scale = scaleFor(s.m, game);
-    const ctx = { game, kpr: +(rate.kpr * (scale ?? 1)).toFixed(4), qs };
+    const kap = fittedKappa(game);
+    const ctx = { game, kpr: +(rate.kpr * (scale ?? 1)).toFixed(4), qs, ...(kap ? { kappa: kap } : {}) };
     const mean = +roundmodel.pmfMean(roundmodel.killsPmf(ctx)).toFixed(2);
     const base = p.matchup?.baseMean ?? p.marketPred;
     const avgR = roundmodel.DEFAULTS.avgRounds[game];
@@ -2462,7 +2466,7 @@ function priceRoundKills(picks) {
     const lineup = scale != null ? 'known' : 'unknown';
     p.rounds = { mean, ctx, lineup, kpr: ctx.kpr, raw: rate.raw, maps: rate.maps, scale, game,
       roundsPerMap: maps.map(n => f[n]?.rounds ?? +(have.reduce((a, x) => a + x.rounds, 0) / have.length).toFixed(1)),
-      pinCtx: base > 0 ? { game, kpr: +(base / (avgR * maps.length)).toFixed(4), qs } : null };
+      pinCtx: base > 0 ? { game, kpr: +(base / (avgR * maps.length)).toFixed(4), qs, ...(kap ? { kappa: kap } : {}) } : null };
     p.rounds.pinMean = p.rounds.pinCtx ? +roundmodel.pmfMean(roundmodel.killsPmf(p.rounds.pinCtx)).toFixed(2) : null;
     const lines = esgaps.bookLines(p);
     const ud = p.udSides || {}, sl = p.slSides || {};
@@ -2569,7 +2573,7 @@ async function warmCsProfiles(batch = 12) {
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
 const { autoSlips, priceOnBooks } = require('./slipbuild');
-const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader } = require('./graders');
+const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader, createValGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
   const dir = await dotaLoadProPlayers();
@@ -2580,7 +2584,9 @@ const tracker = createTracker({
   store: resultsBackup.wrap('esportsPicks', createStoreFromEnv()),
   graders: {
     LOL: createLoLGraderChain(createLoLesportsGrader(axios), createLoLGrader(axios)), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
-    ...(panda ? { VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
+    // Valorant from vlr.gg's match pages, PandaScore after it when a token is set
+    VAL: createLoLGraderChain(createValGrader(axios), ...(panda ? [panda.grader('VAL')] : [])),
+    ...(panda ? { COD: panda.grader('COD') } : {}),
   },
   normalizeName, normalizeMarket, parseMapSpan, fairProb: marketFairProb,
 });
@@ -2618,6 +2624,34 @@ const roundsTracker = createTracker({
   fairProb: (p, line, side) => (p.roundsCtx ? roundmodel.sideProb(p.roundsCtx, line, side) : null),
 });
 roundsTracker.ready().catch(e => console.error('Rounds tracker: store failed to initialise:', e.message));
+// Pinnacle's per-map totals (rounds for CS2/Valorant, team kills for LoL/Dota)
+// at signal and close, graded against the maps played (pintotals.js). Once a
+// title has enough graded maps its fitted spread replaces the kill models'
+// assumed one.
+const pintotals = require('./pintotals');
+const pinTotals = { rows: new Map(), store: resultsBackup.wrap('esportsPinTotals', createPickFileStore(process.env.PIN_TOTALS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-pin-totals.json'))),
+  fit: pintotals.fitted([]), find: pintotals.createSources(axios), lastTry: new Map(), last: null, ready: null };
+pinTotals.ready = pinTotals.store.init().then(async () => {
+  for (const r of await pinTotals.store.all()) pinTotals.rows.set(r.id, r);
+  pinTotals.fit = pintotals.fitted([...pinTotals.rows.values()]);
+}).catch(e => console.error('Pinnacle totals: store failed to initialise:', e.message));
+async function observePinTotals(pin) {
+  await pinTotals.ready;
+  const changed = pintotals.observe(pinTotals.rows, pin);
+  if (changed.length) await pinTotals.store.putMany(changed);
+}
+async function gradePinTotals() {
+  await pinTotals.ready;
+  const res = await pintotals.gradeDue([...pinTotals.rows.values()], pinTotals.find, { lastTry: pinTotals.lastTry });
+  if (res.changed.length) await pinTotals.store.putMany(res.changed);
+  pinTotals.fit = pintotals.fitted([...pinTotals.rows.values()]);
+  const { changed, ...rest } = res;
+  pinTotals.last = { ...rest, at: new Date().toISOString() };
+  return pinTotals.last;
+}
+// what the kill models use: the fitted spread once a title has enough graded maps
+const fittedTeamSd = game => (pinTotals.fit[game]?.source === 'fitted' ? pinTotals.fit[game].teamSd : null);
+const fittedKappa = game => (pinTotals.fit[game]?.source === 'fitted' ? pinTotals.fit[game].kappa : null);
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
@@ -4091,7 +4125,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.122.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.123.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4561,7 +4595,24 @@ app.get('/api/esports/pingaps', async (req, res) => {
     const rows = await pinGapTracker.list({ limit: 5000 });
     res.json({ note: 'Plays on Pinnacle\'s side where its team kills and the books\' five players part by 3%+. Tracked to test the gap; not priced or alerted.',
       teamsNow: esportsCache.pinTeams || 0, playsNow: esportsCache.pinGapPlays || 0,
-      record: pingap.gapRecord(rows), rows: rows.slice(0, +req.query.limit || 500) });
+      record: pingap.gapRecord(rows), totals: pinTotalsSummary(), rows: rows.slice(0, +req.query.limit || 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Pinnacle's map totals against the maps played (pintotals.js): the scoreboard
+// by title, what the kill models use now (fitted or assumed), and the rows
+function pinTotalsSummary() {
+  const rows = [...pinTotals.rows.values()];
+  return { graded: rows.filter(r => r.status === 'graded').length, open: rows.filter(r => r.status === 'open').length,
+    close: pintotals.scoreboard(rows), signal: pintotals.scoreboard(rows, { snap: 'signal' }), fit: pinTotals.fit, minMaps: pintotals.DEFAULTS.minMaps, last: pinTotals.last };
+}
+app.get('/api/esports/pintotals', async (req, res) => {
+  try {
+    await pinTotals.ready;
+    const rows = [...pinTotals.rows.values()].sort((a, b) => String(b.start).localeCompare(String(a.start)));
+    const status = req.query.status;
+    res.json({ note: `Pinnacle's pregame totals on each map (rounds for CS2 and Valorant, team kills for LoL and Dota) against the maps played. err = actual - Pinnacle's 50/50 point; over = how often the over at its main line hit, next to the chance Pinnacle gave it. The kill models use a title's fitted spread once it has ${pintotals.DEFAULTS.minMaps} graded maps; until then the assumed one.`,
+      ...pinTotalsSummary(), rows: rows.filter(r => !status || r.status === status).slice(0, Math.min(+req.query.limit || 300, 3000)) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -4990,7 +5041,10 @@ async function refreshEsBooks() {
     ]);
     if (kb) { esBooksState.books = [...kb.events, ...(bv?.events || [])]; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
     if (bv) errors.push(...bv.errors.slice(0, 3).map(e => `bovada ${e}`));
-    if (pin) esBooksState.pin = pin;
+    if (pin) {
+      esBooksState.pin = pin;
+      observePinTotals(pin).catch(e => console.warn('Pinnacle totals:', e.message));
+    }
     Object.assign(esBooksState, { errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
     runEsBooksScreen();
   } finally { esBooksRunning = false; }
@@ -5806,7 +5860,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.122.0',
+  version: '3.123.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5889,6 +5943,9 @@ schedule('*/5 * * * *', async () => {
     const locked = await tracker.lockStarted();
     trackerHealth.last = { locked, ...(await tracker.gradeDue()), slips: await slipTracker.grade().catch(e => ({ error: e.message })) };
     trackerHealth.pinGaps = { locked: await pinGapTracker.lockStarted(), ...(await pinGapTracker.gradeDue()) };
+    trackerHealth.share = { locked: await shareTracker.lockStarted(), ...(await shareTracker.gradeDue()) };
+    trackerHealth.rounds = { locked: await roundsTracker.lockStarted(), ...(await roundsTracker.gradeDue()) };
+    trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
   } catch (e) { trackerHealth.error = e.message; }
