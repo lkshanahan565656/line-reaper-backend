@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { bookLines, lineGap, gapOutcome, describeGap } = require('../esgaps');
+const { bookLines, lineGap, gapOutcome } = require('../esgaps');
 const { createTracker, createMemoryStore, gapGroup } = require('../tracker');
 const { diffBoards, describe } = require('../alerts');
 
@@ -21,7 +21,6 @@ test('lineGap: an over at the low book, worth enough win chance', () => {
   assert.deepEqual(g.vs, [{ book: 'SL', line: 3.5 }, { book: 'UD', line: 3.5 }]);
   assert.equal(g.pts, 2);
   assert.equal(g.probPts, 24);
-  assert.equal(describeGap(g), 'PrizePicks Over 1.5 (Sleeper 3.5, Underdog 3.5)');
 });
 
 test('lineGap: none when the other books sit on the wrong side, agree, or the gap is small', () => {

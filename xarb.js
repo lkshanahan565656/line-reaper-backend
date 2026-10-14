@@ -1729,25 +1729,9 @@ function createKalshiTailSweep({ http, perScan = 6, keepMs = 30 * 60e3, maxEvent
   return { step, stats: () => ({ ...stats }) };
 }
 
-// One full scan: fetch both exchanges, parse, find every arb.
-async function scanExchanges(http, { games = [], kalshiMaxPages, polymarketMaxPages, ...opts } = {}) {
-  const o = withDefaults(opts);
-  const kalshi = [], polymarket = [];
-  const [k, p] = await Promise.all([
-    fetchKalshiEvents(http, { maxPages: kalshiMaxPages, onPage: page => kalshi.push(...parseKalshiBinaries(page)) }),
-    fetchPolymarketEvents(http, { maxPages: polymarketMaxPages, onPage: page => polymarket.push(...parsePolymarketBinaries(page)) }),
-  ]);
-  const arbs = findArbs({ kalshi, polymarket, games }, o);
-  return {
-    arbs, errors: [...k.errors, ...p.errors], updated: new Date(o.now).toISOString(),
-    counts: { kalshiEvents: k.count, polymarketEvents: p.count, kalshiMarkets: kalshi.length, polymarketMarkets: polymarket.length, arbs: arbs.length,
-      kalshiTruncated: k.truncated, polymarketTruncated: p.truncated },
-  };
-}
-
 module.exports = {
   parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
-  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, exchangeScreen, stakeArb, fetchKalshiEvents, fetchPolymarketEvents, scanExchanges,
+  findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, exchangeScreen, stakeArb, fetchKalshiEvents, fetchPolymarketEvents,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,
   optsFromEnv, DEFAULTS, RULES_WARNING, COVER_WARNING, MAX_OTHER_PCT, KALSHI_EVENTS_URL, POLYMARKET_EVENTS_URL, KALSHI_FEE_LOT,

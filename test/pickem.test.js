@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { parsePrizePicksPayload, parseSleeperLines, sleeperMarket, attachMatches, sleeperPricing, sleeperEsportsKeys } = require('../pickem');
+const { parsePrizePicksPayload, parseSleeperLines, sleeperMarket, attachMatches, sleeperPricing } = require('../pickem');
 const { teamsMatch } = require('../context');
 const { sportKey } = require('../tracker');
 
@@ -35,7 +35,6 @@ test('Sleeper: esports player lines with a price per side, names from the player
   assert.strictEqual(lines.length, 2);
   assert.deepStrictEqual([lines[0].player, lines[0].sport, lines[0].market, lines[0].line, lines[0].overMultiplier, lines[0].underMultiplier], ['NAF', 'CS', 'Headshots Maps 1-2', 9.5, 1.48, 2.19]);
   assert.strictEqual(lines[1].underOpen, false);
-  assert.deepStrictEqual(sleeperEsportsKeys(rows), ['cs']);
 });
 
 test('Sleeper lines borrow the match from the team\'s next PP or UD line, else drop', () => {

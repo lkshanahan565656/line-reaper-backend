@@ -139,18 +139,6 @@ function sportKey(sport) {
   return s;
 }
 
-// Over/under probability under a mixture of map-count scenarios.
-// mean scales with maps; variance = k × mean, as in the base model.
-function mixtureProb(line, side, scenarios, meanPerMap, k, normalCDF) {
-  let pUnder = 0;
-  for (const sc of scenarios) {
-    const mean = meanPerMap * sc.maps;
-    const std = Math.sqrt(Math.max(mean * k, 1e-6));
-    pUnder += sc.weight * normalCDF(line, mean, std);
-  }
-  return side === 'UNDER' ? pUnder : 1 - pUnder;
-}
-
 // ── team names ──
 // "academy" is NOT stripped: T1 Academy is a different team from T1.
 function teamKey(n) {
@@ -423,7 +411,7 @@ function describeContext(c) {
 
 module.exports = {
   TUNING, americanToProb, decimalToProb, devig, mapToSeriesProb, seriesToMapProb,
-  pMapPlayed, spanScenarios, inferBestOf, killFactor, mixtureProb,
+  pMapPlayed, spanScenarios, inferBestOf, killFactor,
   teamKey, teamsMatch, splitMatchTitle, opponentFrom,
   buildElo, lolGamesFromRows, dotaGamesFromRows, valGamesFromRows,
   createOddsBook, teamCode, matchContext, describeContext, sportKey,

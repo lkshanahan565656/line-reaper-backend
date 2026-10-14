@@ -64,17 +64,6 @@ test('kill factor rises with strength and falls on lopsided CS maps', () => {
   close(C.killFactor('COD', 0.9, 0.5), 1, 1e-9);   // unsupported sport: untouched
 });
 
-test('mixture pricing lowers an OVER when the last map may not happen', () => {
-  const sc = C.spanScenarios([1, 2, 3], 0.8, 3);   // mostly 2 maps
-  const perMap = 18, k = 2.5, line = 47.5;
-  const mixed = C.mixtureProb(line, 'OVER', sc, perMap, k, normalCDF);
-  const assume3 = 1 - normalCDF(line, perMap * 3, Math.sqrt(perMap * 3 * k));
-  assert.ok(mixed < assume3 - 0.2, `${mixed} should be well below ${assume3}`);
-  close(mixed + C.mixtureProb(line, 'UNDER', sc, perMap, k, normalCDF), 1);
-  // single scenario matches the plain normal model
-  close(C.mixtureProb(line, 'OVER', [{ maps: 3, weight: 1 }], perMap, k, normalCDF), assume3);
-});
-
 test('team names and opponents', () => {
   assert.ok(C.teamsMatch('Team Vitality', 'vitality'));
   assert.ok(C.teamsMatch('G2 Esports', 'G2'));

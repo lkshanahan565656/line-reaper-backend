@@ -7,8 +7,6 @@
 // (we got the number before it was fixed) or the others come to it.
 // Pure functions; the server feeds picks in, the tracker keeps the outcome.
 
-const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
-
 const DEFAULTS = {
   // the gap must be worth this many points of win chance on our side. A one-kill
   // difference on a CS line (about 5 points) is everyday shading between books
@@ -74,11 +72,4 @@ function gapOutcome(row) {
   return 'held';
 }
 
-// "PrizePicks Over 1.5 (Underdog 3.5, Sleeper 3.5)"
-function describeGap(g) {
-  if (!g) return '';
-  const side = g.side === 'OVER' ? 'Over' : 'Under';
-  return `${BOOK_NAMES[g.book] || g.book} ${side} ${g.line} (${g.vs.map(v => `${BOOK_NAMES[v.book] || v.book} ${v.line}`).join(', ')})`;
-}
-
-module.exports = { DEFAULTS, BOOK_NAMES, bookLines, lineGap, gapOutcome, describeGap };
+module.exports = { DEFAULTS, bookLines, lineGap, gapOutcome };
