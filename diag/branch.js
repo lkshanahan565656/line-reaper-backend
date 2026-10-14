@@ -11,7 +11,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < mins * 2; i++) {
     await sleep(30000);
     const s = await get('/api/status');
-    try { const j = JSON.parse(s.body); log.push({ t: new Date().toISOString(), rounds: (await get('/api/esports/rounds').then(r => { try { const x = JSON.parse(r.body); return { now: x.now share: j.esports?.killShare ?? j.killShare, lol: j.esports?.lolData ?? j.lolDatashare: j.esports?.killShare ?? j.killShare, lol: j.esports?.lolData ?? j.lolData { ...x.now, fits: undefined }, books: x.books, priced: x.priced?.length ?? x.priced }; } catch { return r.status; } })) }); } catch { log.push({ t: new Date().toISOString(), status: s.status }); }
+    try { const j = JSON.parse(s.body); const rr = await get('/api/esports/rounds'); let rounds = rr.status; try { const x = JSON.parse(rr.body); rounds = { now: x.now && { ...x.now, fits: undefined }, books: x.books, priced: x.priced?.length ?? x.priced }; } catch {} log.push({ t: new Date().toISOString(), rounds, warmer: j.esports?.warmer ?? null }); } catch { log.push({ t: new Date().toISOString(), status: s.status }); }
     fs.writeFileSync('out/status-log.json', JSON.stringify(log, null, 1));
   }
   const snaps = [['rounds', '/api/esports/rounds'], ['share', '/api/esports/share'], ['esbooks', '/api/ev?kind=esports&limit=1000'], ['status', '/api/status'], ['picks', '/api/esports/picks'], ['pingaps', '/api/esports/pingaps'],
