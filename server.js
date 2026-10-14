@@ -1585,10 +1585,14 @@ const oddsBook = createOddsBook();
 // Pinnacle guest API: sharp esports match prices for context (check its terms
 // before charging for a product built on it).
 const { createPandaScoreClient, fetchPinnacleEsports, loadMatchPrices } = require('./feeds');
+// One switch for every Pinnacle read (esports match prices and player props):
+// PINNACLE=on. The guest feed needs no key; PINNACLE_GUEST_KEY, when set, is
+// sent with each request and turns it on too.
+const PINNACLE_ON = !!process.env.PINNACLE_GUEST_KEY || /^(on|1|true|yes)$/i.test(String(process.env.PINNACLE || '').trim());
 const panda = process.env.PANDASCORE_TOKEN ? createPandaScoreClient(axios, process.env.PANDASCORE_TOKEN) : null;
 const feedState = {
   pandascore: { enabled: !!panda, schedules: {}, updated: null, errors: {} },
-  pinnacle: { enabled: !!process.env.PINNACLE_GUEST_KEY, matches: 0, loaded: 0, updated: null, error: null },
+  pinnacle: { enabled: PINNACLE_ON, matches: 0, loaded: 0, updated: null, error: null },
 };
 
 async function refreshMatchFeeds() {
@@ -4320,11 +4324,10 @@ function priceSportRows(rows) {
   }
   return flagged;
 }
-// Pinnacle's player props (pinprops.js): on with PINNACLE_PROPS=on (the guest
-// feed needs no key; PINNACLE_GUEST_KEY is sent when set, and turns it on
-// too), behind the pinnacle licence like its esports prices. Every 5 minutes.
+// Pinnacle's player props (pinprops.js): on with PINNACLE=on (PINNACLE_ON),
+// behind the pinnacle licence like its esports prices. Every 5 minutes.
 const pinprops = require('./pinprops');
-const pinPropsState = { enabled: !!process.env.PINNACLE_GUEST_KEY || /^(on|1|true|yes)$/i.test(String(process.env.PINNACLE_PROPS || '').trim()), props: 0, bySport: {}, updated: null, errors: [] };
+const pinPropsState = { enabled: PINNACLE_ON, props: 0, bySport: {}, updated: null, errors: [] };
 let pinPropsIndex = new Map();
 async function refreshPinnacleProps() {
   if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
