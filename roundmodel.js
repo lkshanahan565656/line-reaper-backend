@@ -18,8 +18,8 @@
 // with the rounds known, RMSE 4.05 kills a map against 5.45 for the
 // player's own kills a map; calibrated within 2-4 points a band. Valorant
 // fit on vlr.gg maps (see VAL below). Untested: how close Pinnacle's
-// pregame rounds sit to the rounds played (no Pinnacle history), so the
-// spread of q around q0 is the one fit with no pregame information at all.
+// pregame rounds sit to the rounds played (no Pinnacle history); the spread of
+// q around q0 is read off the shape of Pinnacle's own ladders.
 //
 // Two numbers for each app line, both on Pinnacle's rounds:
 //   rounds    the player's kills a round × Pinnacle's rounds (this model)
@@ -33,8 +33,13 @@
 
 
 const DEFAULTS = {
-  // concentration of q around q0: fit on the CS2 maps by likelihood (16-20)
-  kappa: { CS2: 18, VAL: 18 },
+  // concentration of q around q0. 35 fits the shape of Pinnacle's own round
+  // ladders within about a point (snapshot 10-14: 13 CS2 and 2 Valorant
+  // matches; 18 missed by 3-4) and, over a spread of q0 like Pinnacle's, gives
+  // the history's overtime share (11%) and overs at 21.5 (45-47%). Fit with
+  // no pregame strength the bo3.gg maps want 16-20: that spread is partly
+  // which team is better, which Pinnacle's q0 already carries.
+  kappa: { CS2: 35, VAL: 35 },
   // a winning team's players take more of the kills a round: fit 0.9 (RMSE 4.40 → 4.05)
   beta: { CS2: 0.9, VAL: 0.9 },
   // variance over mean of a player's kills with the rounds known

@@ -8,8 +8,8 @@ test('a map of rounds sums to one and runs to overtime about a tenth of the time
     const tot = d.reduce((s, x) => s + x[2], 0);
     assert.ok(Math.abs(tot - 1) < 1e-3, `${game} sums to ${tot}`);
     const ot = d.filter(([a, b]) => a + b > 24).reduce((s, x) => s + x[2], 0);
-    assert.ok(ot > 0.07 && ot < 0.14, `${game} overtime ${ot}`);
-    assert.ok(Math.abs(R.expectedRounds(d) - 21.3) < 0.6);
+    assert.ok(ot > 0.08 && ot < 0.16, `${game} overtime ${ot}`);
+    assert.ok(Math.abs(R.expectedRounds(d) - 21.8) < 0.6, `${game} rounds ${R.expectedRounds(d)}`);
   }
   // CS2 overtime ends 16-x, 19-x; Valorant wins by two
   assert.ok(R.rounds(0.5, 'CS2').some(([a, b]) => a === 16 && b === 14));
