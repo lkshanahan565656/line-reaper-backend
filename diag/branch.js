@@ -16,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   }
   const snaps = [['share', '/api/esports/share'], ['status', '/api/status'], ['picks', '/api/esports/picks'], ['pingaps', '/api/esports/pingaps'],
     ['board-pp', '/api/props/board?book=prizepicks&facets=1&sport=ESPORTS&limit=500'], ['board-ud', '/api/props/board?book=underdog&facets=1&sport=ESPORTS&limit=500'],
-    ['board-sl', '/api/props/board?book=sleeper&facets=1&sport=ESPORTS&limit=500'], ['board', '/api/props/board?limit=300&sport=ESPORTS']];
+    ['board-sl', '/api/props/board?book=sleeper&facets=1&sport=ESPORTS&limit=500'], ['board', '/api/props/board?limit=300&sport=ESPORTS'], ['ev', '/api/ev?limit=1000'], ['ev-record', '/api/ev/record']];
   for (const [n, p] of snaps) { const r = await get(p); fs.writeFileSync(`out/snap/${n}.json`, r.body); }
   srv.kill(); process.exit(0);
 })();
