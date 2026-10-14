@@ -1470,6 +1470,7 @@ body.no-help .clv-info { display:none; }
     <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;margin-left:6px">MIN EV</span>
     <input id="evMin" type="number" step="0.5" value="1" style="width:64px;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('minEv', parseFloat(this.value) || 0)">
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center"><input type="checkbox" id="evSharpOnly" onchange="evSet('sharpOnly', this.checked)"> sharp-backed only</label>
+    <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
@@ -4661,15 +4662,15 @@ function renderEsports() {
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
-const evState = { rows: [], sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
+const evState = { rows: [], sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
-try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', polymarket:'Polymarket' };
+try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
+const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions', pass_comp:'Completions', pass_att:'Pass Att', pass_ints:'INTs', rush_att:'Rush Att', saves:'Saves', earned_runs:'Earned Runs', hits_allowed:'Hits Allowed' };
 const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
 
-function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, books: [...evState.books] })); } catch {} }
+function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, agreeOnly: evState.agreeOnly, books: [...evState.books] })); } catch {} }
 function evSet(k, v) { evState[k] = v; evSave(); renderEv(); }
 function evToggleBook(b) { evState.books.has(b) ? evState.books.delete(b) : evState.books.add(b); evSave(); renderEv(); }
 
@@ -4717,6 +4718,7 @@ function evFiltered() {
     (evState.kind === 'all' || (evState.kind === 'dfs' ? r.dfs : evState.kind === 'props' ? ((r.player || r.prop) && !r.dfs) : !(r.player || r.prop))) &&
     (r.locked || r.ev >= evState.minEv) &&
     (!evState.sharpOnly || r.source === 'sharp') &&
+    (!evState.agreeOnly || r.agree) &&
     (r.locked || !evState.books.size || evState.books.has(r.book)) &&
     (!evState.search || `${r.event} ${r.player || ''} ${r.book || ''} ${r.side || ''}`.toLowerCase().includes(evState.search)));
 }
@@ -4780,6 +4782,7 @@ function renderEv() {
   document.querySelectorAll('[data-evkind]').forEach(b => b.classList.toggle('active', b.dataset.evkind === evState.kind));
   document.getElementById('evMin').value = evState.minEv;
   document.getElementById('evSharpOnly').checked = evState.sharpOnly;
+  document.getElementById('evAgreeOnly').checked = evState.agreeOnly;
   const books = [...new Set(evState.rows.map(r => r.book).filter(Boolean))].sort();
   document.getElementById('evBookRow').innerHTML = books.length ? `<span style="font-size:10px;color:#64748b;letter-spacing:1.5px;align-self:center">MY BOOKS</span>` + books.map(b =>
     `<button class="sport-chip ${evState.books.has(b) ? 'active' : ''}" style="font-size:10px;padding:3px 9px" onclick="evToggleBook('${escAttr(b)}')">${escAttr(evBookName(b))}</button>`).join('') : '';
@@ -4822,7 +4825,7 @@ function renderEv() {
         <div style="font-size:9px;color:#64748b;letter-spacing:1.5px">KELLY ¼</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1">${r.kelly != null ? r.kelly.toFixed(1) + '%' : '—'}</div>
       </div>
-      <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(', ')) : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(', ').toUpperCase()) : '◐ CONSENSUS'}</div>
+      <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ')) + (r.agree ? ', within ' + r.spreadPts + ' pts of each other' : r.spreadPts != null ? ', ' + r.spreadPts + ' pts apart' : '') : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ').toUpperCase()) + (r.agree ? '<div style="color:#10b981;margin-top:2px">✓ AGREE</div>' : '') : '◐ CONSENSUS'}</div>
     </div>`;
   }).join('') + `</div>` + (rows.length > 300 ? `<div style="font-size:11px;color:#64748b;margin-top:8px">Showing the best 300 of ${rows.length}. Raise MIN EV to narrow it.</div>` : '');
 }

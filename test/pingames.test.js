@@ -66,3 +66,39 @@ test('matchRows: a team contract with no draw does not pair with a three-way pri
   const rows = [{ exchange: 'polymarketus', eventKey: 'polymarketus:x', id: 'Z', kind: 'teams', outcomeLabel: 'Arsenal', noLabel: 'Chelsea', startTime: '2026-10-14T19:00:00Z' }];
   assert.equal(pin.matchRows(rows, games).length, 0);
 });
+
+test('kalshiMidBooks: Kalshi mids as a no-vig bookmaker on the matching game', () => {
+  const games = [{ id: 'pin-1', commence_time: '2026-10-14T23:05:00Z', home_team: 'New York Yankees', away_team: 'Boston Red Sox', bookmakers: [] },
+    { id: 'pin-9', commence_time: '2026-10-14T23:05:00Z', home_team: 'Chicago Cubs', away_team: 'St. Louis Cardinals', bookmakers: [] }];
+  const base = { exchange: 'kalshi', gameKey: 'KXMLB|26OCT14BOSNYY', eventKey: 'kalshi:KXMLBGAME-26OCT14BOSNYY', tradable: true, startTime: null, gameDay: null, expectedExpiration: '2026-10-15T02:30:00Z' };
+  const rows = [
+    { ...base, id: 'A', kind: 'teams', outcomeLabel: 'New York Y', noLabel: 'Boston', yesAsk: 0.61, noAsk: 0.40 },   // mid .605
+    { ...base, id: 'B', kind: 'teams', outcomeLabel: 'Boston', noLabel: 'New York Y', yesAsk: 0.40, noAsk: 0.61 },   // mid .395 → home .605
+    { ...base, id: 'C', kind: 'total', line: 8.5, yesAsk: 0.52, noAsk: 0.50 },                                         // over .51
+    { ...base, id: 'D', kind: 'spread', line: 1.5, lineTeam: 'New York Y', yesAsk: 0.44, noAsk: 0.57 },                // NYY −1.5 at .435
+    { ...base, id: 'E', kind: 'spread', line: 2.5, lineTeam: 'Boston', yesAsk: 0.30, noAsk: 0.60 },                    // 10¢ wide: no price
+  ];
+  const books = pin.kalshiMidBooks(rows, games);
+  assert.deepEqual([...books.keys()], ['pin-1']);
+  const bm = books.get('pin-1');
+  assert.equal(bm.key, 'kalshi_mid');
+  const mk = Object.fromEntries(bm.markets.map(m => [m.key, m.outcomes]));
+  const p = a => (a < 0 ? -a / (-a + 100) : 100 / (a + 100));
+  assert.ok(Math.abs(p(mk.h2h[0].price) - 0.605) < 1e-3);
+  assert.equal(mk.h2h[0].name, 'New York Yankees');
+  assert.ok(Math.abs(p(mk.h2h[0].price) + p(mk.h2h[1].price) - 1) < 1e-3);
+  assert.ok(Math.abs(p(mk.totals[0].price) - 0.51) < 1e-3);
+  assert.equal(mk.totals[0].point, 8.5);
+  assert.equal(mk.spreads.length, 2);
+  assert.deepEqual(mk.spreads.map(o => [o.name, o.point]), [['New York Yankees', -1.5], ['Boston Red Sox', 1.5]]);
+  assert.ok(Math.abs(p(mk.spreads[0].price) - 0.435) < 1e-3);
+  // only beside Pinnacle, and only at the lines Pinnacle prices
+  assert.equal(pin.withKalshiMid(games, rows)[0].bookmakers.length, 0);
+  const pinBm = { key: 'pinnacle', markets: [{ key: 'h2h', outcomes: [{ name: 'New York Yankees', price: -150 }, { name: 'Boston Red Sox', price: 138 }] },
+    { key: 'totals', outcomes: [{ name: 'Over', price: -105, point: 9.5 }, { name: 'Under', price: -105, point: 9.5 }] },
+    { key: 'spreads', outcomes: [{ name: 'New York Yankees', price: 120, point: -1.5 }, { name: 'Boston Red Sox', price: -130, point: 1.5 }] }] };
+  const withMid = pin.withKalshiMid([{ ...games[0], bookmakers: [pinBm] }, games[1]], rows);
+  const km = withMid[0].bookmakers.find(b => b.key === 'kalshi_mid');
+  assert.deepEqual(km.markets.map(m => m.key), ['h2h', 'spreads']);   // Kalshi's 8.5 total isn't Pinnacle's 9.5
+  assert.equal(withMid[1].bookmakers.length, 0);
+});

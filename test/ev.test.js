@@ -137,3 +137,28 @@ test('a sharp book is never scored on a fair made from its own price', () => {
   assert.ok(rows.length, 'FanDuel still scored');
   assert.ok(rows.every(r => r.book === 'fanduel'), rows.map(r => r.book).join());
 });
+
+test('screen: Pinnacle and Kalshi mid make one fair; agree flags two sources within 5 points; Kalshi scored without its own mid', () => {
+  const ev = require('../ev');
+  const start = new Date(Date.now() + 3 * 3600e3).toISOString();
+  const game = books => [{ id: 'g', sport_key: 'nfl', commence_time: start, home_team: 'Jets', away_team: 'Bills', bookmakers: books }];
+  const h2h = (key, home, away) => ({ key, markets: [{ key: 'h2h', outcomes: [{ name: 'Jets', price: home }, { name: 'Bills', price: away }] }] });
+  // Pinnacle ~50/50, Kalshi mid Bills 52%, FanDuel Bills +115, Kalshi's ask Bills +110
+  const feeds = [{ sport: 'nfl', games: game([h2h('pinnacle', -105, -105), h2h('kalshi_mid', 108.33, -108.33), h2h('fanduel', -135, 115), h2h('kalshi', -130, 110)]) }];
+  const rows = ev.screen({ feeds, minEv: 0 });
+  const fd = rows.find(r => r.book === 'fanduel' && r.side === 'Bills');
+  assert.deepEqual(fd.sharpBooks, ['pinnacle', 'kalshi_mid']);
+  assert.ok(Math.abs(fd.fairProb - 51) < 0.2);
+  assert.equal(fd.agree, true);
+  assert.equal(fd.spreadPts, 2);
+  const k = rows.find(r => r.book === 'kalshi' && r.side === 'Bills');
+  assert.deepEqual(k.sharpBooks, ['pinnacle']);
+  assert.equal(k.agree, false);
+  assert.ok(!rows.some(r => r.book === 'kalshi_mid'));
+  // apart: Kalshi 60% vs Pinnacle 50% → not agreeing
+  const far = ev.screen({ feeds: [{ sport: 'nfl', games: game([h2h('pinnacle', -105, -105), h2h('kalshi_mid', 150, -150), h2h('fanduel', -135, 115)]) }], minEv: 0 });
+  assert.equal(far.find(r => r.book === 'fanduel' && r.side === 'Bills').agree, false);
+  // Pinnacle alone: one source
+  const solo = ev.screen({ feeds: [{ sport: 'nfl', games: game([h2h('pinnacle', -105, -105), h2h('fanduel', -135, 115)]) }], minEv: 0 });
+  assert.equal(solo.find(r => r.book === 'fanduel' && r.side === 'Bills').agree, false);
+});

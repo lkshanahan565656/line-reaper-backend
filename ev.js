@@ -21,7 +21,17 @@ const SHARP_WEIGHTS = {
   novig: 0.7, prophetx: 0.7, sporttrade: 0.7, betfair_ex_eu: 0.7, betfair_ex_uk: 0.7, matchbook: 0.6,
   lowvig: 0.4, betonlineag: 0.4,
   kalshi_props: 0.7,   // Kalshi player ladders (kprops.js), an exchange price like novig's
+  // Kalshi's game contracts at their bid/ask mid (pingames.kalshiMidBooks):
+  // Pinnacle-priced Kalshi bets lost 5.1% over 205 settled (2026-10-14), so
+  // Kalshi counts as much as Pinnacle on game lines. EV_KALSHI_WEIGHT sets it.
+  kalshi_mid: 1,
 };
+// A venue's own price never prices its own bets: Kalshi's tradable asks are
+// scored on the fair without Kalshi's mid in it (Pinnacle alone), as before.
+const SELF_SOURCES = { kalshi: ['kalshi_mid', 'kalshi_props'] };
+// Two sharp sources agree when their no-vig chances on a side sit within this
+// many points: a play the screen calls 'agree' has two or more such sources.
+const AGREE_MAX_PTS = 5;
 const DFS_BOOKS = new Set(['prizepicks', 'underdog', 'sleeper', 'pick6', 'betr', 'parlayplay']);
 const MIN_CONSENSUS_BOOKS = 4;
 
@@ -184,13 +194,14 @@ function median(xs) {
   return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null;
 }
 
-// One market's quotes → { sides, fair: {side: prob}, source, sharpBooks }
-function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minConsensus = MIN_CONSENSUS_BOOKS } = {}) {
+// One market's quotes → { sides, fair: {side: prob}, source, sharpBooks,
+// novig: {book: [p per side]} }. exclude: sharp books left out of the fair.
+function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minConsensus = MIN_CONSENSUS_BOOKS, exclude = [] } = {}) {
   const sides = [...new Set(quotes.map(q => q.side))];
   if (sides.length < 2) return null;
   const byBook = new Map();
   for (const q of quotes) {
-    if (DFS_BOOKS.has(q.book)) continue;
+    if (DFS_BOOKS.has(q.book) || exclude.includes(q.book)) continue;
     const d = americanToDecimal(q.price);
     if (!d) continue;
     if (!byBook.has(q.book)) byBook.set(q.book, {});
@@ -204,7 +215,7 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
     const W = sharp.reduce((a, x) => a + weights[x.book], 0);
     const fair = {};
     sides.forEach((s, i) => { fair[s] = sharp.reduce((a, x) => a + weights[x.book] * x.p[i], 0) / W; });
-    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book) };
+    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])) };
   }
   if (complete.length >= minConsensus) {
     const all = complete.map(novig).filter(x => x.p);
@@ -212,9 +223,18 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
     const t = raw.reduce((a, b) => a + b, 0);
     const fair = {};
     sides.forEach((s, i) => { fair[s] = raw[i] / t; });
-    return { sides, fair, source: 'consensus', sharpBooks: [] };
+    return { sides, fair, source: 'consensus', sharpBooks: [], novig: {} };
   }
   return null;
+}
+// How far apart the sharp sources sit on one side, in points of win chance:
+// → { n, spreadPts, agree } (agree: 2+ sources within AGREE_MAX_PTS)
+function agreement(f, side, maxPts = AGREE_MAX_PTS) {
+  const i = f.sides.indexOf(side);
+  const ps = Object.values(f.novig || {}).map(p => p[i]).filter(Number.isFinite);
+  if (ps.length < 2) return { n: ps.length, spreadPts: null, agree: false };
+  const spreadPts = round((Math.max(...ps) - Math.min(...ps)) * 100, 1);
+  return { n: ps.length, spreadPts, agree: spreadPts <= maxPts };
 }
 
 // ── the screen ──
@@ -226,7 +246,7 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
 // market priced, +EV or not, so a tracker can follow a price to the close.
 // costs (optional Map) gets `${group}|${side}|${book}` → 1 / decimal for every
 // book's best price, so a tracker can grade a bet at what it cost later.
-function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null } = {}) {
+function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
   const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
   const groups = new Map();
   for (const q of quotes) {
@@ -238,7 +258,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   const rows = [];
   const propFair = new Map();   // player|market|line → fair, for DFS legs
   for (const [group, qs] of groups) {
-    const f = fairForGroup(qs, { method });
+    const f = fairForGroup(qs, { method, weights });
     if (!f) continue;
     if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
     const head = qs[0];
@@ -258,13 +278,19 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         // a sharp book scored on a fair made from its own price says nothing:
         // Kalshi's ladders filled the +EV tab with 856 such rows (2026-10-14)
         if (f.sharpBooks.includes(book)) continue;
-        const ev = (fp * d - 1) * 100;
+        // a venue whose own feed is in the fair is scored on the others alone
+        const self = (SELF_SOURCES[book] || []).filter(b => f.sharpBooks.includes(b));
+        const g = self.length ? fairForGroup(qs, { method, weights, exclude: self }) : f;
+        if (!g || g.fair[side] == null) continue;
+        const gp = g.fair[side];
+        const ev = (gp * d - 1) * 100;
         if (ev < minEv) continue;
+        const a = agreement(g, side, agreeMaxPts);
         rows.push({
           group, sport: q.sport, event: q.event, start: q.start, market: q.market, player: q.player, point: q.point,
-          side, book, price: q.price, decimal: round(d, 3), fairProb: round(fp * 100, 2), fairPrice: probToAmerican(fp),
-          ev: round(ev, 2), kelly: round(Math.max(0, (fp * d - 1) / (d - 1)) * kellyFraction * 100, 2),
-          source: f.source, sharpBooks: f.sharpBooks, books: best.size, updated: q.updated,
+          side, book, price: q.price, decimal: round(d, 3), fairProb: round(gp * 100, 2), fairPrice: probToAmerican(gp),
+          ev: round(ev, 2), kelly: round(Math.max(0, (gp * d - 1) / (d - 1)) * kellyFraction * 100, 2),
+          source: g.source, sharpBooks: g.sharpBooks, agree: a.agree, spreadPts: a.spreadPts, books: best.size, updated: q.updated,
         });
       }
     }
@@ -289,7 +315,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
           group: head.group, sport: head.sport || String(l.sport || '').toLowerCase(), event: head.event, start: head.start || l.startTime,
           market: head.market, player: l.player, point: Number(l.line), side, book: l.book, price: null,
           multiplier: mult ?? null, fairProb: round(fp * 100, 2), fairPrice: probToAmerican(fp), ev: round(ev, 2),
-          kelly: null, source: f.source, sharpBooks: f.sharpBooks, dfs: true, updated: head.updated,
+          kelly: null, source: f.source, sharpBooks: f.sharpBooks, agree: agreement(f, side, agreeMaxPts).agree, dfs: true, updated: head.updated,
         });
       }
     }
@@ -329,5 +355,5 @@ function describeEv(r) {
 
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, SELF_SOURCES, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
 };

@@ -32,11 +32,15 @@ const KAMBI = 'https://eu-offering-api.kambicdn.com/offering/v2018/rsiusnj';
 // board sport → FanDuel page, Kambi league path, Pinnacle sport and league names
 const LEAGUES = {
   nfl: { fd: 'nfl', kambi: 'american_football/nfl', pin: 'football', league: /^NFL$/i, props: 'NFL', fdTabs: ['passing-props', 'receiving-props', 'rushing-props'] },
-  ncaaf: { fd: 'ncaaf', kambi: 'american_football/ncaaf', pin: 'football', league: /^NCAA$/i },
-  nba: { fd: 'nba', kambi: 'basketball/nba', pin: 'basketball', league: /^NBA$/i, props: 'NBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes'] },
+  ncaaf: { fd: 'ncaaf', kambi: 'american_football/ncaaf', pin: 'football', league: /^NCAA$/i, props: 'CFB', fdTabs: ['passing-props', 'receiving-props', 'rushing-props'] },
+  // NBA: FanDuel posts no player tabs for preseason games, so these wait on opening night
+  nba: { fd: 'nba', kambi: 'basketball/nba', pin: 'basketball', league: /^NBA$/i, props: 'NBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes', 'player-combos'] },
   wnba: { fd: 'wnba', kambi: 'basketball/wnba', pin: 'basketball', league: /^WNBA$/i, props: 'WNBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes'] },
-  nhl: { fd: 'nhl', kambi: 'ice_hockey/nhl', pin: 'hockey', league: /^NHL$/i, props: 'NHL', fdTabs: ['shots', 'points-assists', 'goals'] },
-  mlb: { fd: 'mlb', kambi: 'baseball/mlb', pin: 'baseball', league: /^MLB$/i, props: 'MLB', fdTabs: ['pitcher-props', 'batter-props'] },
+  // FanDuel tab slugs are each tab's title, dashed (checked 2026-10-14). NHL
+  // points and assists are one-sided "1+ Points" ladders there, not a price;
+  // MLB batters' over/unders sit under Hits/Runs, pitchers' outs in ODDS pairs.
+  nhl: { fd: 'nhl', kambi: 'ice_hockey/nhl', pin: 'hockey', league: /^NHL$/i, props: 'NHL', fdTabs: ['shots', 'goals', 'goalies'] },
+  mlb: { fd: 'mlb', kambi: 'baseball/mlb', pin: 'baseball', league: /^MLB$/i, props: 'MLB', fdTabs: ['pitcher-props', 'hits-runs'] },
 };
 const TITLES = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers' };
 
@@ -149,30 +153,66 @@ function parseFanDuelProps(payload) {
     if (!player || /^(over|under)$/i.test(player) || !name.toLowerCase().startsWith(player.toLowerCase())) continue;
     const stat = name.slice(player.length).replace(/^\s*-\s*/, '').trim();
     if (!stat || PART_GAME.test(stat)) continue;
-    const px = r => american(r.winRunnerOdds?.americanDisplayOdds?.americanOddsInt ?? r.winRunnerOdds?.americanDisplayOdds?.americanOdds);
-    const o = { player, mkey: statKey(stat), line: num(over.handicap), over: px(over), under: px(under) };
+    const o = { player, mkey: statKey(stat), line: num(over.handicap), over: fdPx(over), under: fdPx(under) };
+    const k = `${canonName(o.player)}|${o.mkey}|${o.line}`;
+    if (o.over == null || o.under == null || seen.has(k)) continue;
+    seen.add(k); out.push(o);
+  }
+  // two-way ODDS markets carry the line in the runner: "Blake Snell Outs
+  // Recorded" with "Blake Snell Over 14.5" / "Blake Snell Under 14.5"
+  for (const m of Object.values(payload?.attachments?.markets || {})) {
+    if (m?.bettingType !== 'ODDS' || m.marketStatus !== 'OPEN' || m.inPlay) continue;
+    const rs = (m.runners || []).filter(r => r.runnerStatus === 'ACTIVE');
+    if (rs.length !== 2) continue;
+    const side = r => /^(.+?)\s+-?\s*(over|under)\s+(\d+(?:\.\d+)?)$/i.exec(String(r.runnerName || '').trim());
+    const a = side(rs[0]), b = side(rs[1]);
+    if (!a || !b || a[1] !== b[1] || a[3] !== b[3] || a[2].toLowerCase() === b[2].toLowerCase()) continue;
+    const player = a[1].trim(), name = String(m.marketName || '');
+    if (!name.toLowerCase().startsWith(player.toLowerCase())) continue;
+    const stat = name.slice(player.length).replace(/^\s*-\s*/, '').trim();
+    if (!stat || PART_GAME.test(stat)) continue;
+    const [ov, un] = /over/i.test(a[2]) ? rs : [rs[1], rs[0]];
+    const o = { player, mkey: statKey(stat), line: Number(a[3]), over: fdPx(ov), under: fdPx(un) };
     const k = `${canonName(o.player)}|${o.mkey}|${o.line}`;
     if (o.over == null || o.under == null || seen.has(k)) continue;
     seen.add(k); out.push(o);
   }
   return out;
 }
+const fdPx = r => american(r.winRunnerOdds?.americanDisplayOdds?.americanOddsInt ?? r.winRunnerOdds?.americanDisplayOdds?.americanOdds);
 // Kambi: "Total Receiving Yards by the Player - Including Overtime" with
 // OT_OVER / OT_UNDER outcomes for one participant ("Waddle, Jaylen" or
 // "Jaylen Waddle") → [{ player, mkey, line, over, under }]
+// NHL's are "Player's shots on goal - Including Overtime"; and a Yes / No
+// pair on "Player to record at least 1 assists" is the over / under at 0.5
+// (most of Kambi's "at least" ladders are Yes only, which isn't a price).
 const KB_PROP = /^total (.+?) by the player\b(.*)$/i;
+const KB_PLAYERS = /^player'?s (.+?)(\s+-\s+.*)?$/i;
+const KB_ATLEAST = /^player to (?:record|score) at least (\d+) (.+?)(\s+-\s+.*)?$/i;
+const kbName = p => (p.includes(',') ? p.split(',').map(x => x.trim()).reverse().join(' ') : p.trim());
 function kambiProps(payload) {
   const out = [];
   for (const b of payload?.betOffers || []) {
-    const m = KB_PROP.exec(String(b?.criterion?.englishLabel || ''));
-    if (!m || PART_GAME.test(m[2].replace(/\s*-\s*including\b.*$/i, '')) || b.suspended) continue;
+    if (b.suspended) continue;
+    const label = String(b?.criterion?.englishLabel || '');
     const os = (b.outcomes || []).filter(o => o.status === 'OPEN');
-    const over = os.find(o => o.type === 'OT_OVER'), under = os.find(o => o.type === 'OT_UNDER');
-    if (os.length !== 2 || !over || !under || num(over.line) == null || over.line !== under.line || !over.participant) continue;
-    const p = String(over.participant);
-    const player = p.includes(',') ? p.split(',').map(x => x.trim()).reverse().join(' ') : p.trim();
-    const o = { player, mkey: statKey(m[1]), line: num(over.line) / 1000, over: american(over.oddsAmerican), under: american(under.oddsAmerican) };
-    if (o.over != null && o.under != null) out.push(o);
+    const rest = r => PART_GAME.test(String(r || '').replace(/\s*-\s*including\b.*$/i, ''));
+    const m = KB_PROP.exec(label) || KB_PLAYERS.exec(label);
+    if (m) {
+      if (rest(m[2])) continue;
+      const over = os.find(o => o.type === 'OT_OVER'), under = os.find(o => o.type === 'OT_UNDER');
+      if (os.length !== 2 || !over || !under || num(over.line) == null || over.line !== under.line || !over.participant) continue;
+      const o = { player: kbName(String(over.participant)), mkey: statKey(m[1]), line: num(over.line) / 1000, over: american(over.oddsAmerican), under: american(under.oddsAmerican) };
+      if (o.over != null && o.under != null) out.push(o);
+      continue;
+    }
+    const a = KB_ATLEAST.exec(label);
+    if (a && !rest(a[3]) && !/power play/i.test(a[2])) {
+      const yes = os.find(o => o.type === 'OT_YES'), no = os.find(o => o.type === 'OT_NO');
+      if (os.length !== 2 || !yes || !no || !yes.participant || yes.participant !== no.participant) continue;
+      const o = { player: kbName(String(yes.participant)), mkey: statKey(a[2]), line: Number(a[1]) - 0.5, over: american(yes.oddsAmerican), under: american(no.oddsAmerican) };
+      if (o.over != null && o.under != null) out.push(o);
+    }
   }
   return out;
 }
@@ -239,7 +279,7 @@ const leagueGames = (pinGames, sport) => (pinGames || []).filter(g => g.sport ==
 // that read FanDuel's event pages) and propCache (FanDuel event id → props,
 // kept between those reads).
 async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), maxKambiEvents = 120, now = Date.now(), pinProps = [],
-  fdProps = false, propCache = new Map(), propWithinMs = 6 * 86400e3, maxFdEvents = 40 } = {}) {
+  fdProps = false, propCache = new Map(), propWithinMs = 6 * 86400e3, nearWithinMs = 30 * 3600e3, maxFdEvents = 40 } = {}) {
   const headers = { 'User-Agent': UA, Accept: 'application/json' };
   const errors = [], counts = {};
   const get = url => http.get(url, { headers, timeout: 20000 }).then(r => r?.data);
@@ -252,11 +292,14 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
   if (fdProps) {
     // a game Pinnacle has props up for (NFL props go up days ahead, so the window is wide)
     const pinTimes = sport => pinProps.filter(p => p.sport === sport).map(p => ms(p.start));
+    // and games in the next nearWithinMs Pinnacle has no props for yet: FanDuel
+    // and BetRivers together still make two sources (Pinnacle's first, then soonest)
     const want = sports.filter(s => LEAGUES[s].props).flatMap(s => {
       const ts = pinTimes(LEAGUES[s].props);
-      return books[s].filter(g => ms(g.start) - now < propWithinMs && ts.some(t => Math.abs(t - ms(g.start)) <= 3 * 3600e3)).map(g => [s, g]);
+      return books[s].filter(g => ms(g.start) - now < propWithinMs).map(g => [s, g, ts.some(t => Math.abs(t - ms(g.start)) <= 3 * 3600e3)])
+        .filter(([, g, pin]) => pin || ms(g.start) - now < nearWithinMs);
     })
-      .sort((a, b) => ms(a[1].start) - ms(b[1].start)).slice(0, maxFdEvents);
+      .sort((a, b) => (b[2] - a[2]) || ms(a[1].start) - ms(b[1].start)).slice(0, maxFdEvents);
     const fresh = new Map();
     await pool(want, 4, async ([s, g]) => {
       const props = [];
