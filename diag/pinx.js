@@ -159,11 +159,30 @@ async function tick() {
   log(`tick ${state.ticks}: pin ${P.games.length} games, kalshi ${kN} rows / pmus ${pmRows.length}, matched ${matched.length}, sides ${sides.length}, ev>=thr ${sides.filter(s => s.ev >= THR && !s.dead).length}, new ${newEps.length}, eps ${state.episodes.length}`);
 }
 
+// Outcome: a closed Kalshi episode's market result once it settles
+// (won = 1 when the result is our side), so the study grades wins and
+// losses as well as CLV. P&L per $1 staked at cost: won / cost - 1.
+const KALSHI_MARKET = id => `https://api.elections.kalshi.com/trade-api/v2/markets/${encodeURIComponent(id)}`;
+async function settle() {
+  const due = state.episodes.filter(e => e.closed && e.venue === 'kalshi' && e.won == null && !e.void && Date.now() > Date.parse(e.start) + 2 * 3600e3);
+  let n = 0;
+  await pool(due, 4, async e => {
+    try {
+      const m = (await http.get(KALSHI_MARKET(e.id), { timeout: 8000 })).data?.market;
+      if (m && (m.result === 'yes' || m.result === 'no')) { e.won = m.result === e.side ? 1 : 0; e.result = m.result; e.settledAt = new Date().toISOString(); n++; }
+      else if (m && /void|cancel/i.test(`${m.result} ${m.status}`)) { e.won = null; e.void = true; }
+    } catch (err) { if (err.response?.status === 404) e.void = true; }
+  });
+  if (due.length) log(`settle: ${due.length} due, ${n} settled`);
+}
+
 (async () => {
   const end = Date.now() + DUR_MIN * 60e3;
+  try { await settle(); } catch (e) { log('settle failed', e.message); }
   while (Date.now() < end) {
     const t0 = Date.now();
     try { await tick(); } catch (e) { log('tick failed', e.stack || e.message); }
+    if (state.ticks % 30 === 0) { try { await settle(); } catch (e) { log('settle failed', e.message); } }
     if (state.ticks % 5 === 0) fs.writeFileSync(STATE_OUT, JSON.stringify(state));
     await sleep(Math.max(1000, TICK_S * 1000 - (Date.now() - t0)));
   }
