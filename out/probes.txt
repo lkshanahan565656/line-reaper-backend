@@ -1,0 +1,7 @@
+dota team probe 107 teams 289 ms  {"team_id":9823272,"games":49,"kf":"32.5306122448979592","ka":"23.5510204081632653","dur":"2494.5306122448979592"}
+gol gol-teams.html.gz 200 969666
+gol gol-players.html.gz 200 2827279
+prod /api/tracker/picks?status=graded&limit=1000 200 161644
+prod /api/tracker/picks?limit=1000 200 374702
+prod /api/esports/share 200 7978
+prod /api/status 200 15650
