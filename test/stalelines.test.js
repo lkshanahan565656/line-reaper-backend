@@ -220,3 +220,15 @@ test('a prop quoted at two lines in one read is one quote, not a move every read
   for (let m = 0; m < 10; m += 2) { eng.observe(S.pinPropQuotes(m % 4 ? two : [two[1], two[0]]), min(m)); eng.step(min(m)); }
   assert.equal(eng.lagSummary(min(10)).moves24h, 0);
 });
+
+test('the lag table counts moves under the rows\' sport keys, whatever name the feed gave', () => {
+  const eng = S.createStaleLines({ sportKey: x => ({ NFL: 'nfl' })[x] || String(x).toLowerCase() });
+  const fdOld = book('fanduel', [[-3, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pinBefore, fdOld])], 'nfl', { league: 'NFL' }), min(0), 'books');
+  eng.step(min(0));
+  eng.observe(S.gameQuotes([game([pinAfter, fdOld])], 'nfl', { league: 'NFL' }), min(1), 'books');
+  eng.step(min(1));
+  const lag = eng.lagSummary(min(1));
+  assert.deepEqual(Object.keys(lag.bySport), ['nfl']);
+  assert.equal(eng.rows(min(1)).find(r => r.venue === 'fanduel').sport, 'nfl');
+});

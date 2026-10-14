@@ -517,7 +517,10 @@ function createStaleLines(opts = {}) {
     const day = all.filter(m => t - m.t <= 86400e3);
     const hours = Math.max(1 / 60, Math.min(24, (t - Math.max(startedAt, t - 86400e3)) / 3600e3));
     const byKind = {}, bySport = {};
-    for (const m of day) { byKind[m.kind] = (byKind[m.kind] || 0) + 1; bySport[m.sport] = (bySport[m.sport] || 0) + 1; }
+    for (const m of day) {
+      const sp = o.sportKey ? o.sportKey(m.sport) : m.sport;
+      byKind[m.kind] = (byKind[m.kind] || 0) + 1; bySport[sp] = (bySport[sp] || 0) + 1;
+    }
     const cells = {};
     for (const m of day) for (const [v, st] of Object.entries(m.venues)) {
       const c = (cells[`${v}|${m.kind}`] ||= { venue: v, kind: m.kind, moves: 0, followed: 0, led: 0, never: 0, open: 0, reverted: 0, started: 0, lags: [], openAges: [] });
