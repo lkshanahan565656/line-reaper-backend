@@ -1,0 +1,296 @@
+Wed Oct 14 14:37:57 UTC 2026
+KXHIGHAUS {"p":"If the maximum temperature recorded at Austin (CLIAUS) for Sep 18, 2026, is less than 96° fahrenheit according to The Weather Company, then the market resolves to Yes.","s":"Not all weather data is the same. While checking a source like AccuWeather or Google Weather may help guide your decision, the official and final value used to determine this market is the maximum/minimum temperature as reported by the Weather Company.\n\nReading weather data\nPreliminary Weather Company data may be subject to rounding and conversion differences from the final reported value.\nUse caution when interpreting preliminary Weather Company readings.\n\nIf it is determined in the sole discretion of the Ex
+KXLOWTTTN {"p":"If the minimum temperature recorded at Trenton (CLITTN) for Sep 10, 2026, is less than 66° fahrenheit according to The Weather Company, then the market resolves to Yes.","s":"Not all weather data is the same. While checking a source like AccuWeather or Google Weather may help guide your decision, the official and final value used to determine this market is the maximum/minimum temperature as reported by the Weather Company.\n\nReading weather data\nPreliminary Weather Company data may be subject to rounding and conversion differences from the final reported value.\nUse caution when interpreting preliminary Weather Company readings.\n\nIf it is determined in the sole discretion of the E
+KXLOWTSATX {"p":"If the minimum temperature recorded at San Antonio (CLISAT) for Sep 7, 2026, is less than 71° fahrenheit according to The Weather Company, then the market resolves to Yes.","s":"Not all weather data is the same. While checking a source like AccuWeather or Google Weather may help guide your decision, the official and final value used to determine this market is the maximum/minimum temperature as reported by the Weather Company.\n\nReading weather data\nPreliminary Weather Company data may be subject to rounding and conversion differences from the final reported value.\nUse caution when interpreting preliminary Weather Company readings.\n\nIf it is determined in the sole discretion of th
+cli done
+asos KAUS 200 324914
+asos KMDW 200 328864
+asos KDEN 200 316328
+asos KLAX 200 336357
+asos KMIA 200 322136
+asos KNYC 200 336217
+asos KPHL 200 360074
+asos KDFW 200 314629
+asos KDCA 200 339072
+asos KSFO 200 325504
+asos KPHX 200 298474
+asos KMSY 200 328609
+asos KTTN 200 346009
+asos KMSP 200 346107
+asos KATL 200 331682
+asos KLAS 200 296471
+asos KOKC 200 319617
+asos KSEA 200 343454
+asos KSDF 200 348355
+asos KSAT 200 335014
+asos KBOS 200 330144
+asos KHOU 200 324751
+asos KEWR 200 319711
+asos KSAN 200 354590
+NBS runtimes in a day 2026-09-18 00:00:00 2026-09-18 06:00:00 2026-09-18 12:00:00 2026-09-18 18:00:00 2026-09-19 00:00:00  bytes 17115
+nbs KAUS 2025 8 2853 0
+nbs KAUS 2025 9 2738 0
+nbs KAUS 2025 10 2876 0
+nbs KAUS 2025 11 2761 0
+nbs KAUS 2026 4 2830 69
+nbs KAUS 2026 5 3382 2875
+nbs KAUS 2026 6 2784 2783
+nbs KAUS 2026 7 2876 2875
+nbs KAUS 2026 8 2876 2875
+nbs KAUS 2026 9 2784 2783
+nbs KAUS 2026 10 1266 1265
+nbs KMDW 2025 8 2853 0
+nbs KMDW 2025 9 2761 0
+nbs KMDW 2025 10 2876 0
+nbs KMDW 2025 11 2761 0
+nbs KMDW 2026 4 2830 69
+nbs KMDW 2026 5 3382 2875
+nbs KMDW 2026 6 2784 2783
+nbs KMDW 2026 7 2876 2875
+nbs KMDW 2026 8 2876 2875
+nbs KMDW 2026 9 2784 2783
+nbs KMDW 2026 10 1266 1265
+nbs KDEN 2025 8 2853 0
+nbs KDEN 2025 9 2738 0
+nbs KDEN 2025 10 2876 0
+nbs KDEN 2025 11 2761 0
+nbs KDEN 2026 4 2830 69
+nbs KDEN 2026 5 3382 2875
+nbs KDEN 2026 6 2784 2783
+nbs KDEN 2026 7 2876 2875
+nbs KDEN 2026 8 2876 2875
+nbs KDEN 2026 9 2784 2783
+nbs KDEN 2026 10 1266 1265
+nbs KLAX 2025 8 2853 0
+nbs KLAX 2025 9 2761 0
+nbs KLAX 2025 10 2876 0
+nbs KLAX 2025 11 2761 0
+nbs KLAX 2026 4 2830 69
+nbs KLAX 2026 5 3382 2875
+nbs KLAX 2026 6 2784 2783
+nbs KLAX 2026 7 2876 2875
+nbs KLAX 2026 8 2876 2875
+nbs KLAX 2026 9 2784 2783
+nbs KLAX 2026 10 1266 1265
+nbs KMIA 2025 8 2853 0
+nbs KMIA 2025 9 2761 0
+nbs KMIA 2025 10 2876 0
+nbs KMIA 2025 11 2761 0
+nbs KMIA 2026 4 2830 69
+nbs KMIA 2026 5 3382 2875
+nbs KMIA 2026 6 2784 2783
+nbs KMIA 2026 7 2876 2875
+nbs KMIA 2026 8 2876 2875
+nbs KMIA 2026 9 2784 2783
+nbs KMIA 2026 10 1266 1265
+nbs KNYC 2025 8 2853 0
+nbs KNYC 2025 9 2761 0
+nbs KNYC 2025 10 2876 0
+nbs KNYC 2025 11 2761 0
+nbs KNYC 2026 4 2830 69
+nbs KNYC 2026 5 3382 2875
+nbs KNYC 2026 6 2784 2783
+nbs KNYC 2026 7 2876 2875
+nbs KNYC 2026 8 2876 2875
+nbs KNYC 2026 9 2784 2783
+nbs KNYC 2026 10 1266 1265
+nbs KPHL 2025 8 2853 0
+nbs KPHL 2025 9 2761 0
+nbs KPHL 2025 10 2876 0
+nbs KPHL 2025 11 2761 0
+nbs KPHL 2026 4 2830 69
+nbs KPHL 2026 5 3382 2875
+nbs KPHL 2026 6 2784 2783
+nbs KPHL 2026 7 2876 2875
+nbs KPHL 2026 8 2876 2875
+nbs KPHL 2026 9 2784 2783
+nbs KPHL 2026 10 1266 1265
+nbs KDFW 2025 8 2853 0
+nbs KDFW 2025 9 2738 0
+nbs KDFW 2025 10 2876 0
+nbs KDFW 2025 11 2761 0
+nbs KDFW 2026 4 2830 69
+nbs KDFW 2026 5 3382 2875
+nbs KDFW 2026 6 2784 2783
+nbs KDFW 2026 7 2876 2875
+nbs KDFW 2026 8 2876 2875
+nbs KDFW 2026 9 2784 2783
+nbs KDFW 2026 10 1266 1265
+nbs KDCA 2025 8 2853 0
+nbs KDCA 2025 9 2738 0
+nbs KDCA 2025 10 2876 0
+nbs KDCA 2025 11 2761 0
+nbs KDCA 2026 4 2830 69
+nbs KDCA 2026 5 3382 2875
+nbs KDCA 2026 6 2784 2783
+nbs KDCA 2026 7 2876 2875
+nbs KDCA 2026 8 2876 2875
+nbs KDCA 2026 9 2784 2783
+nbs KDCA 2026 10 1266 1265
+nbs KSFO 2025 8 2853 0
+nbs KSFO 2025 9 2761 0
+nbs KSFO 2025 10 2876 0
+nbs KSFO 2025 11 2761 0
+nbs KSFO 2026 4 2830 69
+nbs KSFO 2026 5 3382 2875
+nbs KSFO 2026 6 2784 2783
+nbs KSFO 2026 7 2876 2875
+nbs KSFO 2026 8 2876 2875
+nbs KSFO 2026 9 2784 2783
+nbs KSFO 2026 10 1266 1265
+nbs KPHX 2025 8 2853 0
+nbs KPHX 2025 9 2761 0
+nbs KPHX 2025 10 2876 0
+nbs KPHX 2025 11 2761 0
+nbs KPHX 2026 4 2830 69
+nbs KPHX 2026 5 3382 2875
+nbs KPHX 2026 6 2784 2783
+nbs KPHX 2026 7 2876 2875
+nbs KPHX 2026 8 2876 2875
+nbs KPHX 2026 9 2784 2783
+nbs KPHX 2026 10 1266 1265
+nbs KMSY 2025 8 2853 0
+nbs KMSY 2025 9 2761 0
+nbs KMSY 2025 10 2876 0
+nbs KMSY 2025 11 2761 0
+nbs KMSY 2026 4 2830 69
+nbs KMSY 2026 5 3382 2875
+nbs KMSY 2026 6 2784 2783
+nbs KMSY 2026 7 2876 2875
+nbs KMSY 2026 8 2876 2875
+nbs KMSY 2026 9 2784 2783
+nbs KMSY 2026 10 1266 1265
+nbs KTTN 2025 8 2853 0
+nbs KTTN 2025 9 2761 0
+nbs KTTN 2025 10 2876 0
+nbs KTTN 2025 11 2761 0
+nbs KTTN 2026 4 2830 69
+nbs KTTN 2026 5 3382 2875
+nbs KTTN 2026 6 2784 2783
+nbs KTTN 2026 7 2876 2875
+nbs KTTN 2026 8 2876 2875
+nbs KTTN 2026 9 2784 2783
+nbs KTTN 2026 10 1266 1265
+nbs KMSP 2025 8 2853 0
+nbs KMSP 2025 9 2761 0
+nbs KMSP 2025 10 2876 0
+nbs KMSP 2025 11 2761 0
+nbs KMSP 2026 4 2830 69
+nbs KMSP 2026 5 3382 2875
+nbs KMSP 2026 6 2784 2783
+nbs KMSP 2026 7 2876 2875
+nbs KMSP 2026 8 2876 2875
+nbs KMSP 2026 9 2784 2783
+nbs KMSP 2026 10 1266 1265
+nbs KATL 2025 8 2853 0
+nbs KATL 2025 9 2738 0
+nbs KATL 2025 10 2876 0
+nbs KATL 2025 11 2761 0
+nbs KATL 2026 4 2830 69
+nbs KATL 2026 5 3382 2875
+nbs KATL 2026 6 2784 2783
+nbs KATL 2026 7 2876 2875
+nbs KATL 2026 8 2876 2875
+nbs KATL 2026 9 2784 2783
+nbs KATL 2026 10 1266 1265
+nbs KLAS 2025 8 2853 0
+nbs KLAS 2025 9 2738 0
+nbs KLAS 2025 10 2876 0
+nbs KLAS 2025 11 2761 0
+nbs KLAS 2026 4 2830 69
+nbs KLAS 2026 5 3382 2875
+nbs KLAS 2026 6 2784 2783
+nbs KLAS 2026 7 2876 2875
+nbs KLAS 2026 8 2876 2875
+nbs KLAS 2026 9 2784 2783
+nbs KLAS 2026 10 1266 1265
+nbs KOKC 2025 8 2853 0
+nbs KOKC 2025 9 2761 0
+nbs KOKC 2025 10 2876 0
+nbs KOKC 2025 11 2761 0
+nbs KOKC 2026 4 2830 69
+nbs KOKC 2026 5 3382 2875
+nbs KOKC 2026 6 2784 2783
+nbs KOKC 2026 7 2876 2875
+nbs KOKC 2026 8 2876 2875
+nbs KOKC 2026 9 2784 2783
+nbs KOKC 2026 10 1266 1265
+nbs KSEA 2025 8 2853 0
+nbs KSEA 2025 9 2761 0
+nbs KSEA 2025 10 2876 0
+nbs KSEA 2025 11 2761 0
+nbs KSEA 2026 4 2830 69
+nbs KSEA 2026 5 3382 2875
+nbs KSEA 2026 6 2784 2783
+nbs KSEA 2026 7 2876 2875
+nbs KSEA 2026 8 2876 2875
+nbs KSEA 2026 9 2784 2783
+nbs KSEA 2026 10 1266 1265
+nbs KSDF 2025 8 2853 0
+nbs KSDF 2025 9 2761 0
+nbs KSDF 2025 10 2876 0
+nbs KSDF 2025 11 2761 0
+nbs KSDF 2026 4 2830 69
+nbs KSDF 2026 5 3382 2875
+nbs KSDF 2026 6 2784 2783
+nbs KSDF 2026 7 2876 2875
+nbs KSDF 2026 8 2876 2875
+nbs KSDF 2026 9 2784 2783
+nbs KSDF 2026 10 1266 1265
+nbs KSAT 2025 8 2853 0
+nbs KSAT 2025 9 2761 0
+nbs KSAT 2025 10 2876 0
+nbs KSAT 2025 11 2761 0
+nbs KSAT 2026 4 2830 69
+nbs KSAT 2026 5 3382 2875
+nbs KSAT 2026 6 2784 2783
+nbs KSAT 2026 7 2876 2875
+nbs KSAT 2026 8 2876 2875
+nbs KSAT 2026 9 2784 2783
+nbs KSAT 2026 10 1266 1265
+nbs KBOS 2025 8 2853 0
+nbs KBOS 2025 9 2738 0
+nbs KBOS 2025 10 2876 0
+nbs KBOS 2025 11 2761 0
+nbs KBOS 2026 4 2830 69
+nbs KBOS 2026 5 3382 2875
+nbs KBOS 2026 6 2784 2783
+nbs KBOS 2026 7 2876 2875
+nbs KBOS 2026 8 2876 2875
+nbs KBOS 2026 9 2784 2783
+nbs KBOS 2026 10 1266 1265
+nbs KHOU 2025 8 2853 0
+nbs KHOU 2025 9 2738 0
+nbs KHOU 2025 10 2876 0
+nbs KHOU 2025 11 2761 0
+nbs KHOU 2026 4 2830 69
+nbs KHOU 2026 5 3382 2875
+nbs KHOU 2026 6 2784 2783
+nbs KHOU 2026 7 2876 2875
+nbs KHOU 2026 8 2876 2875
+nbs KHOU 2026 9 2784 2783
+nbs KHOU 2026 10 1266 1265
+nbs KEWR 2025 8 2853 0
+nbs KEWR 2025 9 2738 0
+nbs KEWR 2025 10 2876 0
+nbs KEWR 2025 11 2761 0
+nbs KEWR 2026 4 2830 69
+nbs KEWR 2026 5 3382 2875
+nbs KEWR 2026 6 2784 2783
+nbs KEWR 2026 7 2876 2875
+nbs KEWR 2026 8 2876 2875
+nbs KEWR 2026 9 2784 2783
+nbs KEWR 2026 10 1266 1265
+nbs KSAN 2025 8 2853 0
+nbs KSAN 2025 9 2761 0
+nbs KSAN 2025 10 2876 0
+nbs KSAN 2025 11 2761 0
+nbs KSAN 2026 4 2830 69
+nbs KSAN 2026 5 3382 2875
+nbs KSAN 2026 6 2784 2783
+nbs KSAN 2026 7 2876 2875
+nbs KSAN 2026 8 2876 2875
+nbs KSAN 2026 9 2784 2783
+nbs KSAN 2026 10 1266 1265
+all done
+Wed Oct 14 14:53:02 UTC 2026
