@@ -24,9 +24,10 @@
 //   the other  FanDuel's two-way line for a BetRivers rung and the other way
 //   free book  round, read on the same curve (weight 1)
 //
-// A rung CLEARS when it beats the weighted fair by minEv, two or more sources
-// sit within agreePts of each other at that line, and at least one of them
-// prices that exact line (Kalshi's rung, or Pinnacle's own number). Rungs
+// A rung CLEARS when at least one source prices that exact line (Kalshi's
+// rung, or Pinnacle's own number), it beats that exact price by minEv, and two
+// or more sources sit within agreePts (and agreeRel of the chance) of each
+// other at that line. Rungs
 // resting on the curve alone are shown, marked model-only, and never count:
 // two medians agreeing on the same curve doesn't check the curve's tail.
 // Rows grade like the +EV record (closing fair, the price two minutes on) in a
@@ -40,6 +41,7 @@ const { normalCdf } = require('./dist');
 const DEFAULTS = {
   minEv: 2,          // percent past the fair, as on the +EV tab
   agreePts: 5,       // the sources' spread at the rung, points of win chance
+  agreeRel: 0.25,    // and at most this share of the smaller chance
   maxEv: 30,         // past this a rung is a bad match, not an edge
   minP: 0.04, maxP: 0.96,   // tails this far out are the curve's guess
   weights: { pinnacle: 3, kalshi: 2, fanduel: 1, betrivers: 1 },
@@ -151,15 +153,25 @@ function kalshiRungIndex(rungs, o = DEFAULTS) {
   return out;
 }
 
-// the sources at one rung → { fair, sources, agree, spreadPts, exact }
+// the sources at one rung → { fair, sources, agree, spreadPts, exact }.
+// A source at the rung's own line is a price; a curve read is a guess. With
+// one or more exact sources the fair is theirs alone and the curve reads only
+// have to agree with it: on the first live run (2026-10-14) Kalshi sat under
+// the curve on almost every tail rung (6.5% vs 9.7% on a 2+ assists), so a
+// blend priced most "clearing" rungs off the curve's error.
+// Agreement scales with the chance: within agreePts, and within agreeRel of
+// the smaller one (5 points apart on a 9% rung is a different price).
 function blend(sources, o) {
   const s = sources.filter(x => x.p > 0 && x.p < 1);
   if (!s.length) return null;
-  const W = s.reduce((a, x) => a + (o.weights[x.book] ?? 1), 0);
-  const fair = s.reduce((a, x) => a + (o.weights[x.book] ?? 1) * x.p, 0) / W;
+  const mean = list => list.reduce((a, x) => a + (o.weights[x.book] ?? 1) * x.p, 0) / list.reduce((a, x) => a + (o.weights[x.book] ?? 1), 0);
+  const ex = s.filter(x => x.exact);
+  const fair = mean(ex.length ? ex : s);
   const ps = s.map(x => x.p);
-  const spreadPts = s.length > 1 ? r2((Math.max(...ps) - Math.min(...ps)) * 100) : null;
-  return { fair, sources: s, agree: s.length > 1 && spreadPts <= o.agreePts, spreadPts, exact: s.some(x => x.exact) };
+  const lo = Math.min(...ps), hi = Math.max(...ps);
+  const spreadPts = s.length > 1 ? r2((hi - lo) * 100) : null;
+  const agree = s.length > 1 && spreadPts <= o.agreePts && hi - lo <= o.agreeRel * lo;
+  return { fair, sources: s, agree, spreadPts, exact: ex.length > 0 };
 }
 
 // one rung's row, or null when it's off the board's range

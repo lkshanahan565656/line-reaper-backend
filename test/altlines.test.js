@@ -103,8 +103,11 @@ test('screen: a ladder rung clears only when Kalshi prices that exact rung and a
   const rungs = new Map([['T', { league: 'NFL', player: 'Parker Washington', mkey: 'rec_yds', line: 99.5, yesBid: p - 0.01, yesAsk: p + 0.01, start: START }]]);
   const withK = alt.screen({ gamesBySport: { nfl: [g] }, kalshiRungs: rungs, now: NOW, leagueOf: () => 'NFL', o: { minEv: -100 } });
   assert.ok(withK[0].clears && !withK[0].model && withK[0].sharpBooks.includes('kalshi_props'), JSON.stringify(withK[0]));
-  // Kalshi far off Pinnacle's curve: no agreement, no clear
-  const far = new Map([['T', { ...rungs.get('T'), yesBid: p + 0.15, yesAsk: p + 0.17 }]]);
+  // Kalshi well under Pinnacle's curve (a third lower): no agreement, no clear,
+  // and the fair is Kalshi's exact price, not the curve's
+  const far = new Map([['T', { ...rungs.get('T'), yesBid: p * 0.66 - 0.005, yesAsk: p * 0.66 + 0.005 }]]);
+  const f0 = alt.screen({ gamesBySport: { nfl: [g] }, kalshiRungs: far, now: NOW, leagueOf: () => 'NFL', o: { minEv: -100 } })[0];
+  assert.ok(Math.abs(f0.fairProb / 100 - p * 0.66) < 0.002, JSON.stringify(f0));
   assert.ok(!alt.screen({ gamesBySport: { nfl: [g] }, kalshiRungs: far, now: NOW, leagueOf: () => 'NFL', o: { minEv: -100 } })[0].clears);
   // no Pinnacle and no Kalshi: a soft book's line alone prices nothing
   const fdOnly = game({ fdLadders, brMarkets: [{ key: 'rec_yds', outcomes: pinProps[0].outcomes }] });
