@@ -1,0 +1,100 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.34.0 on port 3999
+Tracker: store ready
+PP error: Request failed with status code 403 403
+UD error: Request failed with status code 426 426
+Startup complete
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/2026_LoL_esports_ ...
+OE attempt failed: 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com/2026_LoL_esports_ ...
+OE attempt failed: 404
+OE: all URL candidates failed — 2026_LoL_esports_match_data_from_Oracles → 404 | 2026_LoL_esports_match_data_from_Oracles → 404 · falling back to Leaguepedia
+Leaguepedia fallback also failed: Cargo error: {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail · inspect /api/esports/probe/lolsource for the raw response. Auto-retrying every 30 min.
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+Owls odds nfl: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+OpenDota: 7687 pro player names indexed
+Ratings LOL failed: Cargo: {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subs
+Ratings DOTA: 780 maps → 190 teams
+Ratings VAL failed: Request failed with status code 402
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+PP error: Request failed with status code 403 403
+UD error: Request failed with status code 426 426
+Tail: clv 0x006cc834cc092684f1b56626e23bedb3835c16ea: 1 of 25 lookups failed (Request failed with status code 400)
+Tail: clv 0xee00ba338c59557141789b127927a55f5cc5cea1: 2 of 25 lookups failed (Request failed with status code 400)
+Tail: clv 0x84571f1bf97a5c710cbe51daff2dd4556cc887fd: 2 of 25 lookups failed (Request failed with status code 400)
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+PP blocked (403) — backing off to 30-min retries; esports keeps running on Underdog
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/2026_LoL_esports_ ...
+OE attempt failed: 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com/2026_LoL_esports_ ...
+UD error: Request failed with status code 426 426
+OE attempt failed: 404
+OE: all URL candidates failed — 2026_LoL_esports_match_data_from_Oracles → 404 | 2026_LoL_esports_match_data_from_Oracles → 404 · falling back to Leaguepedia
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Leaguepedia fallback also failed: Cargo error: {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail · inspect /api/esports/probe/lolsource for the raw response. Auto-retrying every 30 min.
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+UD error: Request failed with status code 426 426
+Tail stream: no messages for 15s, reconnecting
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+UD error: Request failed with status code 426 426
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail: clv 0xe639e41094bbeae18f3e6d1790c17299183f082a: 1 of 25 lookups failed (Request failed with status code 400)
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail: clv 0xe25b9180f5687aa85bd94ee309bb72a464320f1b: 1 of 25 lookups failed (timeout of 10000ms exceeded)
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+UD error: Request failed with status code 426 426
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+UD error: Request failed with status code 426 426
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+UD error: Request failed with status code 426 426
+Tail: clv 0xfaf680c17a9cca24ff0773ae2d9f7db49c02cc47: 4 of 25 lookups failed (Request failed with status code 400)
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+Tail: clv 0x93fb8127a1b21a112b11af936361225df0563e4a: 3 of 25 lookups failed (Request failed with status code 400)
+Props board: 0 games, 0 props
+UD error: Request failed with status code 426 426
+UD error: Request failed with status code 426 426
+Props board: 0 games, 0 props
+Esports: PP=0 UD=0 udMap=0
+Esports: generated 0 picks (0 UD-sourced, 0 manual, 0 need model input)
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+UD error: Request failed with status code 426 426
+OE: bucket listing failed on oracleselixir-downloadable-match — 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3-us-west-2.amazonaws.com/2026_LoL_esports_ ...
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OE attempt failed: 404
+OE: downloading https://oracleselixir-downloadable-match-data.s3.us-west-2.amazonaws.com/2026_LoL_esports_ ...
+OE attempt failed: 404
+OE: all URL candidates failed — 2026_LoL_esports_match_data_from_Oracles → 404 | 2026_LoL_esports_match_data_from_Oracles → 404 · falling back to Leaguepedia
+Leaguepedia fallback also failed: Cargo error: {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail · inspect /api/esports/probe/lolsource for the raw response. Auto-retrying every 30 min.
+Props board: 0 games, 0 props

@@ -1,0 +1,51 @@
+03:26:46 prod saved 3.97.0 0
+03:27:06 ud 0 pp 0 sl undefined kalshi undefined
+03:27:26 ud 0 pp 0 sl undefined kalshi undefined
+03:27:46 ud 0 pp 0 sl undefined kalshi undefined
+03:28:06 ud 0 pp 0 sl undefined kalshi undefined
+03:28:27 ud 0 pp 0 sl undefined kalshi undefined
+03:28:47 ud 0 pp 0 sl undefined kalshi undefined
+03:29:07 ud 0 pp 0 sl undefined kalshi undefined
+03:29:27 ud 0 pp 0 sl undefined kalshi undefined
+03:29:47 ud 0 pp 0 sl undefined kalshi undefined
+03:30:07 ud 0 pp 0 sl undefined kalshi undefined
+03:30:27 ud 0 pp 0 sl undefined kalshi undefined
+03:30:47 ud 0 pp 0 sl undefined kalshi undefined
+03:31:07 ud 0 pp 0 sl undefined kalshi undefined
+03:31:27 ud 0 pp 0 sl undefined kalshi undefined
+03:31:47 ud 0 pp 0 sl undefined kalshi undefined
+03:32:07 ud 0 pp 0 sl undefined kalshi undefined
+03:32:27 ud 0 pp 0 sl undefined kalshi undefined
+03:32:47 ud 0 pp 0 sl undefined kalshi undefined
+03:33:07 ud 0 pp 0 sl undefined kalshi undefined
+03:33:27 ud 0 pp 0 sl undefined kalshi undefined
+03:33:47 ud 0 pp 0 sl undefined kalshi undefined
+03:34:07 ud 0 pp 0 sl undefined kalshi undefined
+03:34:27 ud 0 pp 0 sl undefined kalshi undefined
+03:34:47 ud 0 pp 0 sl undefined kalshi undefined
+03:35:07 ud 0 pp 0 sl undefined kalshi undefined
+03:35:27 ud 0 pp 0 sl undefined kalshi undefined
+03:35:47 ud 0 pp 0 sl undefined kalshi undefined
+03:36:07 ud 0 pp 0 sl undefined kalshi undefined
+03:36:27 ud 0 pp 0 sl undefined kalshi undefined
+03:36:47 ud 0 pp 0 sl undefined kalshi undefined
+03:37:07 ud 0 pp 0 sl undefined kalshi undefined
+03:37:27 ud 0 pp 0 sl undefined kalshi undefined
+03:37:47 ud 0 pp 0 sl undefined kalshi undefined
+03:38:07 ud 0 pp 0 sl undefined kalshi undefined
+03:38:27 ud 0 pp 0 sl undefined kalshi undefined
+03:38:47 ud 0 pp 0 sl undefined kalshi undefined
+03:39:07 ud 0 pp 0 sl undefined kalshi undefined
+03:39:27 ud 0 pp 0 sl undefined kalshi undefined
+03:39:47 ud 0 pp 0 sl undefined kalshi undefined
+03:40:07 ud 0 pp 0 sl undefined kalshi undefined
+03:40:27 ud 0 pp 0 sl undefined kalshi undefined
+03:40:48 ud 0 pp 0 sl undefined kalshi undefined
+03:40:48 snap 0 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:43:48 snap 1 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:46:48 snap 2 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:49:48 snap 3 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:52:48 snap 4 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:55:48 snap 5 rows 0 multi 0 gap>0 0 priced 0 ev 0
+03:58:48 snap 6 rows 0 multi 0 gap>0 0 priced 0 ev 0
+04:01:48 snap 7 rows 0 multi 0 gap>0 0 priced 0 ev 0
