@@ -14,9 +14,14 @@ const CANDIDATES = [
   { key: 'prizepicks-cs', url: 'https://api.prizepicks.com/projections?league_id=265&per_page=250&single_stat=true',
     headers: { Origin: 'https://app.prizepicks.com', Referer: 'https://app.prizepicks.com/' } },
   { key: 'dabble', url: 'https://api.dabble.com/sportfixtures/details' },
+  // the cross-comparison books (xbooks.js) and Bovada's esports: does Railway reach them too?
+  { key: 'actionnetwork', url: 'https://api.actionnetwork.com/web/v2/scoreboard/nfl?bookIds=68,75,123&periods=event' },
+  { key: 'matchbook', url: 'https://api.matchbook.com/edge/rest/events?sport-ids=1&per-page=5&include-prices=true' },
+  { key: 'bovada', url: 'https://www.bovada.lv/services/sports/event/coupon/events/A/description/esports?marketFilterId=def&preMatchOnly=true&lang=en' },
 ];
 const HOSTS = ['api.sleeper.app', 'sleeper.com', 'parlayplay.io', 'partner-api.prizepicks.com', 'api.prizepicks.com',
-  'api.dabble.com', 'api.betr.app', 'pick6.draftkings.com', 'api.draftkings.com', 'api.chalkboard.io', 'api.hotstreak.gg', 'api.ownersbox.com'];
+  'api.dabble.com', 'api.betr.app', 'pick6.draftkings.com', 'api.draftkings.com', 'api.chalkboard.io', 'api.hotstreak.gg', 'api.ownersbox.com',
+  'api.actionnetwork.com', 'api.matchbook.com', 'www.bovada.lv'];
 
 const SPORTISH = new Set(['sport', 'sport_id', 'sportName', 'sport_name', 'league', 'league_id', 'leagueName', 'leagueNameShort', 'league_name', 'wager_type', 'outcome', 'stat', 'stat_type', 'market', 'challengeName']);
 

@@ -215,7 +215,10 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
     const W = sharp.reduce((a, x) => a + weights[x.book], 0);
     const fair = {};
     sides.forEach((s, i) => { fair[s] = sharp.reduce((a, x) => a + weights[x.book] * x.p[i], 0) / W; });
-    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])) };
+    // every book's own no-vig, sharp or not: the cross-comparison columns and
+    // what the tracker scores each source on against the close
+    const all = Object.fromEntries(complete.map(novig).filter(x => x.p).map(x => [x.book, x.p]));
+    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])), all };
   }
   if (complete.length >= minConsensus) {
     const all = complete.map(novig).filter(x => x.p);
@@ -291,6 +294,9 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
           side, book, price: q.price, decimal: round(d, 3), fairProb: round(gp * 100, 2), fairPrice: probToAmerican(gp),
           ev: round(ev, 2), kelly: round(Math.max(0, (gp * d - 1) / (d - 1)) * kellyFraction * 100, 2),
           source: g.source, sharpBooks: g.sharpBooks, agree: a.agree, spreadPts: a.spreadPts, books: best.size, updated: q.updated,
+          // the same side at every other book, best first, and each book's no-vig chance of it
+          others: [...best].filter(([b]) => b !== book).sort((x, y) => y[1].d - x[1].d).slice(0, 10).map(([b, x]) => ({ book: b, price: x.q.price })),
+          srcP: Object.fromEntries(Object.entries(g.all || {}).map(([b, p]) => [b, round(p[g.sides.indexOf(side)] * 100, 1)])),
         });
       }
     }

@@ -135,6 +135,9 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         side: r.side, book: r.book, price: r.price, decimal: r.decimal, source: r.source,
         evAtFlag: r.ev, fairAtFlag: r.fairProb, closeFair: r.fairProb, closeAt: new Date(t).toISOString(),
         ...(r.depthUsd != null ? { depthUsd: r.depthUsd } : {}),
+        // every book's own no-vig chance of this side at the flag (sharp or not):
+        // summary.bySourceClose scores each against the closing fair
+        ...(r.srcP && Object.keys(r.srcP).length ? { srcP: r.srcP } : {}),
         // which contract on which venue market, so its book can be read again
         ...(r.contract ? { contract: r.contract, marketId: r.marketId ?? null, ...(r.yesSide ? { yesSide: r.yesSide } : {}) } : {}),
       };
@@ -202,7 +205,17 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       for (const b of closed) (g[b[key] || '—'] ||= []).push(b);
       return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, stats(v)]).sort((a, b) => b[1].n - a[1].n));
     };
-    return { open: all.length - closed.length, overall: stats(closed), bySport: by('sport'), byBook: by('book'), bySource: by('source'), byMarket: by('market') };
+    // How close each book's own no-vig chance at the flag sat to the closing
+    // fair (mean squared error in points², lower = closer). Game lines have no
+    // results feed here, so the close is the yardstick; the props record
+    // scores sources on real outcomes (sporttrack bySource Brier).
+    const src = {};
+    for (const b of closed) for (const [k, p] of Object.entries(b.srcP || {})) {
+      const a = (src[k] ||= { n: 0, se: 0 });
+      a.n++; a.se += (p - b.closeFair) ** 2;
+    }
+    const bySourceClose = Object.fromEntries(Object.entries(src).map(([k, a]) => [k, { n: a.n, mse: r2(a.se / a.n) }]).sort((a, b) => b[1].n - a[1].n));
+    return { open: all.length - closed.length, overall: stats(closed), bySport: by('sport'), byBook: by('book'), bySource: by('source'), byMarket: by('market'), bySourceClose };
   }
 
   async function list({ status, limit = 100 } = {}) {

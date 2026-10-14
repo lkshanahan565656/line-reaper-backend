@@ -540,6 +540,9 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .ln-badge { position: relative; display: inline-block; min-width: 46px; padding: 4px 6px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13px; color: #0b1220; background: var(--bk); }
 .ln-badge.model { color: #e0e7ff; background: #1d4ed8; }
 .ln-pin { display: inline-block; margin-left: 3px; padding: 1px 3px; border-radius: 4px; font: 700 8px/1.2 'JetBrains Mono', monospace; color: #fbbf24; border: 1px solid #fbbf2466; vertical-align: middle; }
+.ln-pin.ln-bk { color: #93c5fd; border-color: #93c5fd66; cursor: help; }
+.ev-others { order: 10; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 10px; letter-spacing: .5px; color: #64748b; cursor: help; }
+.ev-others span { color: #94a3b8; white-space: nowrap; } .ev-others b { color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
 .ln-badge.none { color: #475569; background: rgba(148,163,184,.1); font-weight: 600; }
 .ln-badge i { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; border: 2px solid var(--card); }
 .ln-lean { font-weight: 800; font-size: 12px; letter-spacing: .04em; }
@@ -3418,7 +3421,9 @@ function pbFmtStart(t) {
 const PB_COLOR = { underdog: '#a78bfa', prizepicks: '#3b82f6', sleeper: '#06b6d4' };
 const PB_ES = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'R6', 'COD']);
 const pbSideWord = (book, side) => book === 'prizepicks' ? (side === 'Over' ? 'More' : 'Less') : (side === 'Over' ? 'Higher' : 'Lower');
-const PB_SRC = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', kalshi: 'Kalshi' };
+const PB_SRC = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', kalshi: 'Kalshi', matchbook: 'Matchbook', draftkings: 'DraftKings', betmgm: 'BetMGM', caesars: 'Caesars', bet365: 'bet365', fanatics: 'Fanatics', hardrock: 'Hard Rock', thescore: 'theScore' };
+// every book's read of a prop: the ones in the fair, then the comparison-only books
+const pbBooksTxt = srcs => (srcs || []).map(x => `${PB_SRC[x.book] || x.book} ${x.line} ${(+x.p).toFixed(0)}% O${x.shadow ? ' (comparison only)' : ''}`).join(' · ');
 const pbSrcTxt = src => (src || []).map(x => PB_SRC[x.book] || x.book).join(' + ') || 'sharp books';
 const pbEvTxt = v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
 function pbCell(row, key, name) {
@@ -3492,7 +3497,9 @@ function lnRow(r, book) {
   const evCls = ev == null ? '' : go ? 'good' : ev.ev > 0 ? 'thin' : 'bad';
   const mult = book === 'prizepicks' ? null : ev ? (ev.side === 'Over' ? c.over : c.under) : null;
   const multTxt = book === 'prizepicks' ? 'Std' : mult != null ? `${(+mult).toFixed(2)}x` : '—';
-  const src = r.model?.share ? `Pinnacle team kills ${(r.model.share.pinPerMap || []).join(' + ')} × his ${r.model.share.pct}% kill share` : r.esports ? 'our esports model' : (r.consensus?.sources || []).map(x => PB_SRC[x.book] || x.book).join(' + ') || (c.fair != null ? 'Kalshi' : 'the other apps');
+  const src = r.model?.share ? `Pinnacle team kills ${(r.model.share.pinPerMap || []).join(' + ')} × his ${r.model.share.pct}% kill share` : r.esports ? 'our esports model' : (r.consensus?.sources || []).filter(x => !x.shadow).map(x => PB_SRC[x.book] || x.book).join(' + ') || (c.fair != null ? 'Kalshi' : 'the other apps');
+  const nBooks = r.esports ? 0 : (r.consensus?.sources || []).length;
+  const booksChip = nBooks >= 2 ? `<span class="ln-pin ln-bk" title="${escAttr(pbBooksTxt(r.consensus.sources))}">${nBooks} BK</span>` : '';
   const key = `${r.key}|${book}|${c.line}`;
   const used = lnUsed.keys.has(key);
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
@@ -3502,7 +3509,7 @@ function lnRow(r, book) {
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
     <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
-    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${r.model?.share ? '<span class="ln-pin" title="Pinnacle-backed: Pinnacle\'s team kills × his share of them">PIN</span>' : ''}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
+    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${r.model?.share ? '<span class="ln-pin" title="Pinnacle-backed: Pinnacle\'s team kills × his share of them">PIN</span>' : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
@@ -3545,7 +3552,7 @@ function renderPropsBoard() {
     const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
       : `<div class="pb-big" style="color:${b.ev > 0 ? 'var(--green)' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? 'Pinnacle kill share' : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
     const am = v => (v > 0 ? `+${v}` : `${v}`);
-    const proj = r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${r.consensus.sources.map(x => `${PB_SRC[x.book] || x.book} ${x.line} ${x.p.toFixed(0)}% O`).join(' · ')}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
+    const proj = r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
     const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
@@ -4765,8 +4772,10 @@ function renderEsports() {
 const evState = { rows: [], alt: [], esports: [], altModel: false, esSingle: false, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
+const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+// each book's own no-vig chance of the row's side: the cross-comparison behind the fair
+const evSrcTxt = r => 'No-vig chance of this side: ' + Object.entries(r.srcP || {}).sort((a, b) => b[1] - a[1]).map(([b, p]) => `${evBookName(b)} ${p}%${(r.sharpBooks || []).includes(b) ? ' (in the fair)' : ''}`).join(' · ');
 const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions', pass_comp:'Completions', pass_att:'Pass Att', pass_ints:'INTs', rush_att:'Rush Att', saves:'Saves', earned_runs:'Earned Runs', hits_allowed:'Hits Allowed', anytime_td:'TDs', rush_rec_yds:'Rush+Rec Yds', pass_rush_yds:'Pass+Rush Yds' };
 const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
 
@@ -4928,6 +4937,7 @@ function renderEv() {
         <div style="font-size:9px;color:#64748b;letter-spacing:1.5px">KELLY ¼</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1">${r.kelly != null ? r.kelly.toFixed(1) + '%' : '—'}</div>
       </div>
+      ${!r.locked && r.others?.length ? `<div class="ev-others" title="${escAttr(evSrcTxt(r))}">ALSO ${r.others.slice(0, 6).map(o => `<span>${escAttr(evBookName(o.book))} <b>${fmtAm(o.price)}</b></span>`).join('')}</div>` : ''}
       <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ')) + (r.agree ? ', within ' + r.spreadPts + ' pts of each other' : r.spreadPts != null ? ', ' + r.spreadPts + ' pts apart' : '') : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ').toUpperCase()) + (r.agree ? '<div style="color:#10b981;margin-top:2px">✓ AGREE</div>' : '') : '◐ CONSENSUS'}</div>
     </div>`;
   }).join('') + `</div>` + (rows.length > 300 ? `<div style="font-size:11px;color:#64748b;margin-top:8px">Showing the best 300 of ${rows.length}. Raise MIN EV to narrow it.</div>` : '');
