@@ -1,0 +1,34 @@
+name: diag-sharelive
+on:
+  push:
+    branches: [diag-sharelive]
+permissions:
+  contents: write
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p out
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 40); do
+            v=$(curl -s $U/api/status | jq -r .version 2>/dev/null || true)
+            echo "$(date -u +%H:%M:%S) $v" >> out/versions.txt
+            [ "$v" = "3.120.0" ] && break
+            sleep 30
+          done
+          sleep 600
+          curl -s $U/api/status > out/status.json
+          curl -s $U/api/esports/share > out/share.json
+          curl -s "$U/api/ev?limit=1000" > out/ev.json
+          curl -s "$U/api/props/board?book=prizepicks&facets=1&sport=ESPORTS&limit=300" > out/board-pp.json
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-sharelive-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "live output"
+          git push -f origin diag-sharelive-out
