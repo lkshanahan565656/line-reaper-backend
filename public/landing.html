@@ -338,7 +338,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge at alert</th><th class="n">After 2 min</th><th class="n">Status</th></tr></thead>
         <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; a dash means it is not measured for that play yet, and a play measured there must be positive to be listed. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
+      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; a dash means it is not measured for that play yet. Exchange value plays are listed only once their two-minute record has 8 bets and is positive. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
     </div>
   </div>
 </section>
@@ -465,7 +465,7 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const seen = new Set(), rows = [];
   const plays = (d.plays || []).filter(p => RANK[p.verdict] != null && p.n >= 8)
     .map(p => ({ ...p, edge: p.avgClv != null ? p.avgClv : p.roi, kind: p.avgClv != null ? 'CLV' : 'ROI' }))
-    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0)))
+    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0)) && !(p.source === 'exchangeValue' && !(p.execN >= 8)))
     .sort((a, b) => RANK[a.verdict] - RANK[b.verdict] || b.n - a.n);
   const backed = plays.filter(p => { const k = `${p.source}|${p.n}|${p.edge}`; return !seen.has(k) && seen.add(k); });
   for (const p of backed) {
