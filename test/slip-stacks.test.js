@@ -40,9 +40,10 @@ test('factor model: LoL opponents pull apart on kills, teammates together', () =
 });
 
 test('factor model: unmeasured sports and different matches stay as before', () => {
-  const val = [csLeg('A', 0), csLeg('B', 0)].map(l => ({ ...l, sport: 'VAL' }));
+  const r6 = [csLeg('A', 0), csLeg('B', 0)].map(l => ({ ...l, sport: 'R6' }));
   assert.ok(S.legLoadings({ ...csLeg('A', 0), sport: 'DOTA' }), 'Dota is measured');
-  assert.equal(S.legLoadings(val[0]), null);
+  assert.ok(S.legLoadings({ ...csLeg('A', 0), sport: 'VAL' }), 'Valorant is measured');
+  assert.equal(S.legLoadings(r6[0]), null);
   const two = S.priceSlip([csLeg('A', 0), { ...csLeg('A', 1), gameId: 'M2' }], 'prizepicks_power');
   close(two.probAll, 0.475 * 0.475, 1e-4);
 });
@@ -80,8 +81,8 @@ test('stacks: one match, one side, two teams, flipped legs where PrizePicks take
 test('stacks: nothing across matches, nothing for unmeasured sports', () => {
   const split = [boardPick('A', 0, 'OVER', 0.5, 'G1'), boardPick('B', 0, 'OVER', 0.5, 'G2'), boardPick('A', 1, 'OVER', 0.5, 'G1'), boardPick('B', 1, 'OVER', 0.5, 'G2')];
   assert.equal(B.autoSlips(split, { now: 0 }).stacks.length, 0);
-  const val = ['A', 'B'].flatMap(t => [0, 1, 2].map(i => ({ ...boardPick(t, i, 'OVER', 0.5), sport: 'VAL' })));
-  assert.equal(B.autoSlips(val, { now: 0 }).stacks.length, 0);
+  const r6 = ['A', 'B'].flatMap(t => [0, 1, 2].map(i => ({ ...boardPick(t, i, 'OVER', 0.5), sport: 'R6' })));
+  assert.equal(B.autoSlips(r6, { now: 0 }).stacks.length, 0);
 });
 
 test('stack record: one row per match, book and side', async () => {
@@ -104,4 +105,12 @@ test('factor model: Dota teammates hit together, opponents a little less often',
   const mates = S.slipHitsDistribution([dota('A', 0), dota('A', 1)])[2];
   const foes = S.slipHitsDistribution([dota('A', 0), dota('B', 0)])[2];
   assert.ok(mates > 0.27 && foes < 0.25, `${mates} ${foes}`);
+});
+
+test('factor model: Valorant teammates and opponents both lean together, weaker than CS', () => {
+  const leg = (sport, team, i) => ({ ...csLeg(team, i, 'OVER', 0.5), sport });
+  const six = sport => S.slipHitsDistribution([0, 1, 2].map(i => leg(sport, 'A', i)).concat([0, 1, 2].map(i => leg(sport, 'B', i))))[6];
+  const val = six('VAL'), cs = six('CS2');
+  assert.ok(val > 3 / 64 && val < cs, `${val} ${cs}`);
+  assert.ok(S.slipHitsDistribution([leg('VAL', 'A', 0), leg('VAL', 'B', 0)])[2] > 0.25);
 });

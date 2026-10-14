@@ -15,9 +15,9 @@
 // Same-series pairs with a team get a correlation term on top. Legs from different matches
 // stay independent, which they are.
 //
-// For CS and LoL the within-outcome link is measured, not guessed (FACTORS
-// below): a two-factor latent model fitted to 1,867 finished CS series and
-// ~600 LoL games. Other sports keep the pairwise CORR starting points.
+// For CS, LoL, Dota and Valorant the within-outcome link is measured, not
+// guessed (FACTORS below): a two-factor latent model fitted to finished pro
+// series. Other sports (R6) keep the pairwise CORR starting points.
 //
 // Payout tables are the defaults the apps publish. They move, so they are data,
 // not logic, and the caller can pass its own.
@@ -76,6 +76,10 @@ const CORR = {
 //   Dota Maps 1+2 (274 OpenDota pro series, split by series): kills teammates
 //     φ +0.15 / +0.17, opponents −0.07 / −0.06; assists +0.50 / +0.55,
 //     −0.12 / −0.07. As in LoL, the side that wins takes the kills.
+//   Valorant Maps 1-2 kills (2,415 vlr.gg series, split by series): teammates
+//     φ +0.21 / +0.24, opponents +0.07 / +0.08; a 3+3 six of overs hit
+//     3.3% / 5.0% against 1.0% / 1.3% independent. Like CS: more rounds, more
+//     kills for everyone, but a weaker pull than CS.
 // [α², β²] per side.
 const FACTORS = {
   cs: {
@@ -90,12 +94,16 @@ const FACTORS = {
     kills: { OVER: [0.075, 0.175], UNDER: [0.064, 0.15] },
     assists: { OVER: [0.27, 0.43], UNDER: [0.23, 0.37] },
   },
+  val: {
+    kills: { OVER: [0.18, 0.08], UNDER: [0.14, 0.06] },
+  },
 };
 function factorSport(sport) {
   const s = String(sport || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   if (s === 'cs' || s === 'cs2' || s === 'csgo' || s === 'counterstrike') return 'cs';
   if (s === 'lol' || s === 'leagueoflegends') return 'lol';
   if (s === 'dota' || s === 'dota2') return 'dota';
+  if (s === 'val' || s === 'valorant') return 'val';
   return null;
 }
 function legLoadings(leg) {
