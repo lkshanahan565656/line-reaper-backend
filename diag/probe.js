@@ -41,10 +41,10 @@ async function get(name, url) {
     const hits = [];
     for (const s of srcs) {
       const u = s.startsWith('http') ? s : s.startsWith('//') ? 'https:' + s : base + (s.startsWith('/') ? '' : '/') + s;
-      const r = await get(`${site}_js_${hits.length}`, u);
+      const nm = `${site}_js_${srcs.indexOf(s)}`; const r = await get(nm, u);
       if (!r.text) continue;
       for (const m of r.text.matchAll(/.{0,160}(boost|Boost|BOOST).{0,160}/g)) { hits.push(`${u.slice(-40)}: ${m[0]}`); if (hits.length > 400) break; }
-      fs.unlinkSync(`out/${site}_js_${hits.length}.txt`);
+      try { fs.unlinkSync(`out/${nm}.txt`); } catch {}
     }
     fs.writeFileSync(`out/${site}_js_boost_hits.txt`, hits.join('\n'));
   }
