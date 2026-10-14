@@ -1,7 +1,7 @@
-name: diag-esstable
+name: diag-esquick
 on:
   push:
-    branches: [diag-esstable]
+    branches: [diag-esquick]
 permissions:
   contents: write
 jobs:
@@ -14,13 +14,13 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-      - run: N=30 timeout 2700 node diag/es.js || true
+      - run: N=1 timeout 2700 node diag/es.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-esstable-out
+          git checkout --orphan diag-esquick-out
           git rm -rq --cached . || true
           true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-esstable-out
+          git push -f origin diag-esquick-out
