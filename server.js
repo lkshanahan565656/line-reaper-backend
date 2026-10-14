@@ -3865,7 +3865,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.118.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.119.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4182,13 +4182,26 @@ app.get('/api/xarbs', async (req, res) => {
   const bids = (xarbState.bids || []).filter(arbOk(lic)).filter(a => !q.category || a.category === q.category);
   const middles = (xarbState.middles || []).filter(arbOk(lic));
   let bidRecord = null, middleRecord = null;
-  try { [bidRecord, middleRecord] = await Promise.all([bidTracker.summary(), middleTracker.summary()]); } catch { /* store down */ }
+  let bookRecord = null;
+  try { [bidRecord, middleRecord, bookRecord] = await Promise.all([bidTracker.summary(), middleTracker.summary(), bookArbTracker.summary()]); } catch { /* store down */ }
+  // sportsbook pairs (bookarbs.js): FanDuel, BetRivers, Kalshi, Polymarket US
+  const bookArbList = bookArbState.arbs.filter(arbOk(lic)), bookMiddleList = bookArbState.middles.filter(arbOk(lic));
+  const books = { arbCount: bookArbList.length, middleCount: bookMiddleList.length, updated: bookArbState.updated, record: bookRecord };
   const base = { count: arbs.length, nearCount: near.length, bidCount: bids.length, middleCount: middles.length, bidRecord, middleRecord, updated: xarbState.updated, pro, region: TAIL_REGION, ...withheldBody(withheldOf(lic, TAIL_REGION === 'us' ? ['kalshi'] : ['kalshi', 'polymarket'])) };
-  if (!pro) return res.json({ ...base, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
+  if (!pro) return res.json({ ...base, books: { ...books, arbs: bookArbList.map(a => ({ profitPct: a.profitPct, locked: true })) }, arbs: arbs.map(a => ({ profitPct: a.profitPct, locked: true })) });
   res.json(regionSafe({
-    ...base, arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids, middles,
+    ...base, books: { ...books, arbs: bookArbList, middles: bookMiddleList.slice(0, 60), counts: bookArbState.counts },
+    arbs: arbs.slice(0, Math.min(parseInt(q.limit) || 200, 1000)), near, bids, middles,
     minPct: XARB_OPTS.minPct ?? xarb.DEFAULTS.minPct, counts: xarbState.counts, errors: xarbState.errors.slice(0, 5),
   }));
+});
+// Book arbs' fill record (bookarbtrack.js): each row and its +2 min check. ?limit=200
+app.get('/api/book-arbs/record', async (req, res) => {
+  try {
+    const summary = await bookArbTracker.summary();
+    if (!hasPro(req)) return res.json({ summary });
+    res.json({ summary, rows: await bookArbTracker.list({ limit: Math.min(parseInt(req.query.limit) || 200, 2000) }) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The exchanges' odds screen (xarb.exchangeScreen): games in the next 36
 // hours, each side's all-in price on Kalshi and Polymarket US. Free: the count.
@@ -4735,6 +4748,78 @@ function bigGames() {
   bigState.games = bigMoney.gameIndex(matches, Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? freeBooksState.games : {});
   bigState.gamesKey = key;
   return bigState.games;
+}
+// ─── BOOK ARBS AND MIDDLES ────────────────────────────────────────────────────
+// FanDuel's and BetRivers' main and alternate lines and player props against
+// each other and against Kalshi and Polymarket US (bookarbs.js). Each exchange
+// leg's book is read for the size resting at the price; every row is logged
+// and both legs checked again two minutes on (bookarbtrack.js). No alerts
+// until bookArbTracker.summary().proven (50 rows with both legs fillable).
+const bookArbs = require('./bookarbs');
+const bookArbTracker = require('./bookarbtrack').createBookArbTracker({
+  store: resultsBackup.wrap('bookArbs', createEvStoreFromEnv(process.env, { table: 'book_arbs', fileVar: 'BOOKARB_TRACK_FILE', file: 'book-arbs.json' })),
+});
+bookArbTracker.ready().catch(e => console.error('Book arbs: store failed to initialise:', e.message));
+const bookArbState = { arbs: [], middles: [], counts: null, updated: null, dataAt: null, errors: [], reads: 0 };
+const bookArbBooks = new Map();   // `${venue}:${marketId}` → { at, payload }
+async function bookArbRead(leg, t, budget) {
+  const k = `${leg.venue}:${leg.marketId}`;
+  const c = bookArbBooks.get(k);
+  if (c && t - c.at < 45e3) return c.payload;
+  if (budget.left <= 0) return undefined;
+  budget.left--;
+  try {
+    const payload = leg.venue === 'kalshi' ? (await upstream.get(execcheck.KALSHI_BOOK_URL(leg.marketId), { timeout: 10000 }))?.data
+      : polymarketUs ? await polymarketUs.book(leg.marketId) : null;
+    if (payload == null) return undefined;
+    bookArbBooks.set(k, { at: t, payload });
+    return payload;
+  } catch { return undefined; }
+}
+function bookArbAsks(leg, payload) {
+  if (leg.venue === 'kalshi') return execcheck.kalshiAsks(payload, leg.side);
+  if (payload?.open === false || !(leg.yesSide === 'long' || leg.yesSide === 'short')) return [];
+  return execcheck.pmusAsks(payload, leg.side === 'yes' ? leg.yesSide : leg.yesSide === 'long' ? 'short' : 'long');
+}
+async function scanBookArbs() {
+  const dataAt = freeBooksState.gamesAt;
+  if (!dataAt || Date.now() - Date.parse(dataAt) >= FREE_BOOKS_MAX_AGE_MS) return;
+  const t = Date.now(), budget = { left: 30 };
+  const collected = bookArbs.collect({ gamesBySport: freeBooksState.games, exchangeRows: bigGames().rows, kalshiRungs: kpropsState.rungs || null,
+    leagueOf: s => freebooks.LEAGUES[s]?.props || s.toUpperCase(), now: t });
+  const found = bookArbs.find(collected, { now: t });
+  // the size behind each exchange leg, best rows first; a leg whose book no
+  // longer holds the price at all takes its row off the list
+  const rows = [...found.arbs, ...found.middles];
+  for (const leg of bookArbs.legsToRead(rows, 20)) await bookArbRead(leg, t, budget);
+  const gone = new Set();
+  for (const r of rows) for (const l of r.legs) {
+    if (!bookArbs.EXCHANGES.has(l.venue)) continue;
+    const c = bookArbBooks.get(`${l.venue}:${l.marketId}`);
+    if (!c || t - c.at > 60e3) continue;
+    l.fill = bookArbs.fillable(r, l, bookArbAsks(l, c.payload));
+    // under $10 of size isn't a bet anyone can place: off the list
+    if (r.type === 'arb' ? !(l.fill.maxStake >= 10) : !(l.fill.atPrice >= 10)) gone.add(r.id);
+  }
+  for (const r of rows) {
+    const fills = r.legs.filter(l => l.fill).map(l => l.fill);
+    r.maxStake = r.type === 'arb' && fills.length ? Math.min(...fills.map(f => f.maxStake)) : null;
+  }
+  const keep = r => !gone.has(r.id);
+  // two minutes on: re-read the due rows' exchange books, then check both legs
+  const due = await bookArbTracker.due(dataAt);
+  for (const r of due) for (const l of r.legs) if (bookArbs.EXCHANGES.has(l.venue)) await bookArbRead(l, t, budget);
+  const fillAt = l => {
+    const c = bookArbBooks.get(`${l.venue}:${l.marketId}`);
+    if (!c || t - c.at > 60e3) return null;
+    // contracts resting at or under the leg's shown all-in cost
+    return Math.floor(bookArbAsks(l, c.payload).reduce((a, [p, n]) => a + (bookArbs.exchangeCost(l.venue, p) <= l.cost + 1e-4 ? n : 0), 0));
+  };
+  await bookArbTracker.check(bookArbs.quoteIndex(collected), fillAt, dataAt).catch(e => console.warn('Book arb tracker:', e.message));
+  const arbs = found.arbs.filter(keep), middles = found.middles.filter(keep);
+  await bookArbTracker.record([...arbs, ...middles], dataAt).catch(e => console.warn('Book arb tracker:', e.message));
+  Object.assign(bookArbState, { arbs, middles, dataAt, updated: new Date(t).toISOString(), reads: 30 - budget.left,
+    counts: { ...bookArbs.summarize({ arbs, middles, counts: found.counts }), stale: gone.size } });
 }
 const bigRungMid = rung => (rung && rung.yesBid > 0 && rung.yesAsk < 1 && rung.yesAsk > rung.yesBid ? (rung.yesBid + rung.yesAsk) / 2 : null);
 const ladderKey = rung => `${rung.eventTicker}|${evScreen.canonName(rung.player)}|${rung.mkey}`;
@@ -5422,7 +5507,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.118.1',
+  version: '3.119.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5430,6 +5515,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
+  bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
   propsBoard: propsBoardCache.counts || null,
@@ -5588,6 +5674,8 @@ schedule('50 * * * * *', () => runTailJob('xarb', scanXarbs));
 schedule('35 3,13,23,33,43,53 * * * *', () => runTailJob('gas', scanGasLocks));
 // Big money: the last minute's prints, every venue's price for each bet, the record
 schedule('45 * * * * *', () => runTailJob('bigMoney', scanBigMoney));
+// book arbs and middles: after the free books' refresh at :40 lands
+schedule('55 * * * * *', () => runTailJob('bookArbs', scanBookArbs));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
@@ -5652,4 +5740,5 @@ module.exports = {
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
+  scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState,
 };

@@ -106,7 +106,8 @@ function parseKambiEvent(payload, now = Date.now()) {
   const g = { book: 'betrivers', props: kambiProps(payload), ladders: kambiLadders(payload), alts: [], home: names[0].trim(), away: names[1].trim(), start: new Date(start).toISOString(), h2h: [], spreads: [], totals: [] };
   for (const b of payload.betOffers || []) {
     const label = String(b?.criterion?.englishLabel || '');
-    const kind = KB_FULL.test(label) && KB_KIND.find(([re]) => re.test(label))?.[1];
+    // "Total Points - 2nd Half - Including Overtime" is a half, not the game
+    const kind = KB_FULL.test(label) && !PART_GAME.test(label.replace(/\s*-\s*including\b.*$/i, '')) && KB_KIND.find(([re]) => re.test(label))?.[1];
     if (!kind || b.suspended) continue;
     const os = (b.outcomes || []).filter(o => o.status === 'OPEN');
     if (os.length !== 2) continue;
