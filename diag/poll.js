@@ -17,7 +17,7 @@ const log = [];
 function push() {
   fs.writeFileSync('out/log.json', JSON.stringify(log, null, 1));
   try {
-    execSync('rm -rf /tmp/pub && mkdir -p /tmp/pub && cp -r out /tmp/pub/ && cd /tmp/pub && git init -q -b diag-boosts-out && git add -A && git -c user.name=diag-bot -c user.email=d@x commit -qm out && git push -qf "$(cd $GITHUB_WORKSPACE && git config --get remote.origin.url)" diag-boosts-out', { stdio: 'inherit', shell: '/bin/bash', env: { ...process.env } });
+    execSync('rm -rf /tmp/pub && mkdir -p /tmp/pub && cp -r out /tmp/pub/ && cd /tmp/pub && git init -q -b diag-boosts-out && git add -A && git -c user.name=diag-bot -c user.email=d@x commit -qm out && git -c http.https://github.com/.extraheader="$(git -C $GITHUB_WORKSPACE config --get http.https://github.com/.extraheader)" push -qf "$(git -C $GITHUB_WORKSPACE config --get remote.origin.url)" diag-boosts-out', { stdio: 'inherit', shell: '/bin/bash', env: { ...process.env } });
   } catch (e) { console.log('push failed', e.message); }
 }
 (async () => {
