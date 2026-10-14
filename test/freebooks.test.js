@@ -129,3 +129,12 @@ test('FanDuel two-way ODDS props (line in the runner) and Kambi NHL shots and as
     { player: 'Dylan Strome', mkey: 'assists', line: 0.5, over: 110, under: -159 },
   ]);
 });
+
+test('parseKambiEvent: a second-half total "including overtime" is not the game total', () => {
+  const ev = { events: [{ englishName: 'Denver Broncos - Seattle Seahawks', state: 'NOT_STARTED', start: new Date(NOW + 3600e3).toISOString() }], betOffers: [
+    { criterion: { englishLabel: 'Total Points - Including Overtime' }, outcomes: [{ type: 'OT_OVER', line: 43500, oddsAmerican: '-110', status: 'OPEN' }, { type: 'OT_UNDER', line: 43500, oddsAmerican: '-110', status: 'OPEN' }] },
+    { criterion: { englishLabel: 'Total Points - 2nd Half - Including Overtime' }, outcomes: [{ type: 'OT_OVER', line: 19500, oddsAmerican: '-120', status: 'OPEN' }, { type: 'OT_UNDER', line: 19500, oddsAmerican: '-105', status: 'OPEN' }] },
+  ] };
+  const g = fb.parseKambiEvent(ev, NOW);
+  assert.deepEqual(g.totals.map(t => t.point), [43.5, 43.5]);
+});
