@@ -1,0 +1,32 @@
+name: diag-pacc3
+on:
+  push:
+    branches: [diag-pacc3]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: |
+          mkdir -p out
+          (PINNACLE_PROPS=on PORT=3999 node server.js > out/server.log 2>&1 &)
+          SCRIPTS="$(cat diag/RUN)"
+          for s in $SCRIPTS; do (node --max-old-space-size=6000 diag/$s > out/$s.txt 2>&1 || true) & done
+          wait
+          tail -c 20000 out/server.log > out/server-tail.log; rm out/server.log
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-pacc3-out
+          git rm -rq --cached . || true
+          gzip -f out/*.json || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-pacc3-out
