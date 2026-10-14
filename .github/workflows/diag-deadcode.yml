@@ -1,0 +1,36 @@
+name: diag-deadcode
+on:
+  push:
+    branches: [diag-deadcode]
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm init -y >/dev/null && npm i playwright@1.47.2 && npx playwright install --with-deps chromium
+      - run: |
+          mkdir -p out
+          U=https://line-reaper-backend-production.up.railway.app
+          WANT=$(cat WANT 2>/dev/null || true)
+          if [ -n "$WANT" ]; then
+            for i in $(seq 1 40); do
+              v=$(curl -s $U/api/status | jq -r .version 2>/dev/null || true)
+              echo "$(date -u +%H:%M:%S) $v" >> out/versions.txt
+              [ "$v" = "$WANT" ] && break
+              sleep 30
+            done
+            sleep 120
+          fi
+          curl -s $U/api/status > out/status.json
+          node render.js $(cat MODE)
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-deadcode-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "deadcode render output"
+          git push -f origin diag-deadcode-out
