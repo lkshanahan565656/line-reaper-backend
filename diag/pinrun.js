@@ -1,18 +1,10 @@
-// Runs this branch's server on live feeds with PINNACLE=on, then saves the board, picks, best plays.
-const fs = require('fs'); const { spawn } = require('child_process');
-const B = 'http://localhost:3999';
+// Waits for prod to serve 3.113.0, then saves /api/esports/pingaps and status.
+const fs = require('fs'); const P = 'https://line-reaper-backend-production.up.railway.app';
 const wait = ms => new Promise(r => setTimeout(r, ms));
-const get = async p => { try { const r = await fetch(p.startsWith('http') ? p : B + p, { signal: AbortSignal.timeout(90000) }); return await r.text(); } catch (e) { return JSON.stringify({ error: e.message }); } };
+const get = async p => { try { return await (await fetch(P + p, { signal: AbortSignal.timeout(90000) })).text(); } catch (e) { return JSON.stringify({ error: e.message }); } };
 (async () => {
-  fs.mkdirSync('out', { recursive: true }); fs.mkdirSync('/tmp/lr', { recursive: true });
-  const srv = spawn('node', ['server.js'], { env: { ...process.env, PORT: '3999', LR_DATA_DIR: '/tmp/lr', TRACK_MIN_EV: '-100', PINNACLE: 'on' }, stdio: ['ignore', fs.openSync('out/server.log', 'w'), fs.openSync('out/server.err', 'w')] });
-  const PROD = 'https://line-reaper-backend-production.up.railway.app';
-  fs.writeFileSync('out/prod_results.json', await get(PROD + '/api/results'));
-  fs.writeFileSync('out/prod_status.json', await get(PROD + '/api/status'));
-  const snap = async tag => {
-    for (const p of ['/api/esports/matches', '/api/esports/picks?minEV=-100', '/api/best', '/api/tracker/summary', '/api/status', '/api/esports/match-odds', '/api/esports/pingaps']) fs.writeFileSync(`out/${tag}_${p.replace(/[^a-z0-9]+/gi, '_')}.json`, await get(p));
-  };
-  await wait(7 * 60e3); await snap('a'); await wait(4 * 60e3); await snap('m');
-  await wait(4 * 60e3); await snap('b');
-  srv.kill();
+  fs.mkdirSync('out', { recursive: true });
+  for (let i = 0; i < 40; i++) { const s = await get('/api/status'); if (s.includes('3.113.0')) break; await wait(30e3); }
+  await wait(10 * 60e3);
+  for (const p of ['/api/status', '/api/esports/pingaps']) fs.writeFileSync(`out/prod_${p.replace(/[^a-z0-9]+/gi, '_')}.json`, await get(p));
 })();
