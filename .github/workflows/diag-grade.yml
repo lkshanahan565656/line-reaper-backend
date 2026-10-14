@@ -16,7 +16,7 @@ jobs:
           npm i --no-audit --no-fund 2>&1 | tail -1
           if [ -n "$WAIT_VERSION" ]; then for i in $(seq 1 60); do curl -s https://line-reaper-backend-production.up.railway.app/api/status | grep -q "\"$WAIT_VERSION\"" && break; sleep 30; done; fi
           node diag/gradecheck.js 2>&1 | tee grade-out.txt
-        env: { WAIT_VERSION: "" }
+        env: { WAIT_VERSION: "3.105.0" }
       - if: always()
         run: |
           git config user.name diag-bot
