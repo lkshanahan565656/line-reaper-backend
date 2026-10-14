@@ -1,0 +1,177 @@
+{
+ "stale": [
+  {
+   "group": "stale|WNBA|angelreese|threes|2026-10-17|0.5",
+   "key": "WNBA|angelreese|threes|2026-10-17",
+   "kind": "prop",
+   "venue": "fanduel",
+   "book": "fanduel",
+   "app": false,
+   "sport": "WNBA",
+   "event": "Atlanta Dream @ Golden State Valkyries",
+   "start": "2026-10-17T19:30:00.000Z",
+   "market": "threes",
+   "marketLabel": "3-Pointers Made",
+   "player": "Angel Reese",
+   "point": 0.5,
+   "side": "Under",
+   "sideIdx": 1,
+   "line": "0.5",
+   "price": -152,
+   "decimal": 1.6579,
+   "mult": null,
+   "entry": null,
+   "entries": null,
+   "ev": 0.09,
+   "fairProb": 60.37,
+   "fairPrice": -152,
+   "preFair": 57.04,
+   "moveAt": "2026-10-14T21:44:25.230Z",
+   "mins": 0,
+   "venueSince": "2026-10-14T21:32:45.391Z",
+   "moveSourceAt": "2026-10-14T21:44:25.230Z",
+   "dPts": 3.3,
+   "pinPre": "o0.5 43%",
+   "pinPost": "o0.5 39.6%",
+   "pinNow": "o0.5 39.6%",
+   "confirmedBy": [],
+   "clears": false,
+   "single": true,
+   "source": "stale-single",
+   "sharpBooks": [
+    "pinnacle"
+   ],
+   "rowKey": "WNBA|angelreese|threes"
+  }
+ ],
+ "counts": {
+  "clear2": 16,
+  "agree2": 2,
+  "agree2Lines": 2,
+  "agree2Props": 0,
+  "alt": 327,
+  "altClear": 30,
+  "esports": 48,
+  "esportsClear": 0,
+  "stale": 1,
+  "staleClear": 0
+ },
+ "staleLag": {
+  "since": "2026-10-14T21:30:38.777Z",
+  "hours": 0.25,
+  "moves24h": 33,
+  "movesPerDay": 3166,
+  "byKind": {
+   "prop": 33
+  },
+  "bySport": {
+   "CFB": 1,
+   "WNBA": 32
+  },
+  "lag": [
+   {
+    "venue": "underdog",
+    "kind": "prop",
+    "moves": 33,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 33,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "sleeper",
+    "kind": "prop",
+    "moves": 33,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 33,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "fanduel",
+    "kind": "prop",
+    "moves": 27,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 27,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   },
+   {
+    "venue": "prizepicks",
+    "kind": "prop",
+    "moves": 17,
+    "followed": 0,
+    "led": 0,
+    "never": 0,
+    "open": 17,
+    "medianMin": null,
+    "p75Min": null,
+    "within2": null,
+    "within5": null,
+    "within15": null,
+    "neverPct": null
+   }
+  ],
+  "cadence": {
+   "books": {
+    "reads": 15,
+    "medianGapMin": 1,
+    "last": "2026-10-14T21:44:47.074Z"
+   },
+   "prizepicks": {
+    "reads": 1,
+    "medianGapMin": null,
+    "last": "2026-10-14T21:30:40.627Z"
+   },
+   "underdog": {
+    "reads": 11,
+    "medianGapMin": 2,
+    "last": "2026-10-14T21:44:05.369Z"
+   },
+   "sleeper": {
+    "reads": 8,
+    "medianGapMin": 2,
+    "last": "2026-10-14T21:44:01.744Z"
+   },
+   "pinnacle-props": {
+    "reads": 9,
+    "medianGapMin": 2,
+    "last": "2026-10-14T21:44:25.230Z"
+   },
+   "kalshi-props": {
+    "reads": 3,
+    "medianGapMin": 5,
+    "last": "2026-10-14T21:41:21.089Z"
+   }
+  },
+  "subjects": 8087,
+  "openMoves": 33,
+  "movesSeen": 33,
+  "thresholds": {
+   "moveProbPts": 2,
+   "lineMovePts": 1,
+   "followFrac": 0.5,
+   "minFollowPts": 1,
+   "windowMin": 60,
+   "minEv": 2
+  }
+ }
+}
