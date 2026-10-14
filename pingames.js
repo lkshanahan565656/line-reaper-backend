@@ -1,0 +1,216 @@
+// ─── PINNACLE GAME LINES: THE SHARP FAIR FOR EXCHANGE GAME MARKETS ───────────
+// Pinnacle takes the sharpest action on game lines and posts both sides at a
+// low margin, on the same guest feed its website reads. With the margin taken
+// out (power method), its price is the market's best guess at each side's
+// chance. Kalshi and Polymarket US list the same games as $1 contracts: when
+// the ask plus the taker fee is under Pinnacle's fair, the contract is a bet
+// with an edge, priced off a book that isn't one of the exchanges.
+//
+//   moneyline  Kalshi / Polymarket US team contracts (kind 'teams') and
+//              soccer's three-way result (game3: team A, the draw, team B)
+//   spread     "<team> wins by more than 1.5": Pinnacle's line where that
+//              team gives 1.5 (alternate lines too), half lines only
+//   total      Over / Under a half line
+//
+// Everything here is full game (period 0), pregame. Not a licensed feed: it
+// sits behind the PINNACLE switch like the props and esports prices. Pure
+// parsers and matchers are tested on saved shapes; fetch is a thin wrapper.
+
+const { teamMatches } = require('./exchanges');
+const { nameMatch, kalshiTickerTime } = require('./xarb');
+
+const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
+// Pinnacle sport ids (esports, 12, is feeds.js's)
+const SPORTS = { baseball: 3, basketball: 4, football: 15, hockey: 19, soccer: 29, tennis: 33, mma: 22 };
+
+const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+const r4 = x => Math.round(x * 1e4) / 1e4;
+const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
+const halfLine = x => Number.isFinite(x) && Math.abs(((Math.abs(x) * 2) % 2) - 1) < 1e-9;
+
+// power devig over any number of outcomes: Σ p_i^k = 1, so a longshot gives
+// up more of the margin than a favourite → fair probabilities, or null
+function devig(americans) {
+  const ps = americans.map(Number).map(a => (Number.isFinite(a) && a !== 0 ? toProb(a) : NaN));
+  if (ps.length < 2 || !ps.every(p => p > 0 && p < 1)) return null;
+  const sum = ps.reduce((s, p) => s + p, 0);
+  if (sum < 1) return ps.map(p => p / sum);   // no margin to take out (never at Pinnacle)
+  let lo = 1, hi = 3;
+  for (let i = 0; i < 60; i++) {
+    const k = (lo + hi) / 2;
+    if (ps.reduce((s, p) => s + p ** k, 0) > 1) lo = k; else hi = k;
+  }
+  const k = (lo + hi) / 2;
+  return ps.map(p => p ** k);
+}
+const vigOf = americans => r4(americans.reduce((s, a) => s + toProb(a), 0) - 1);
+const limitOf = m => { const l = (m.limits || []).find(x => x?.type === 'maxRiskStake') || (m.limits || [])[0]; return Number(l?.amount) || null; };
+
+// one sport's matchups + straight markets → games, each { id, sport, league,
+// home, away, start, ml: { home, away, draw?, vig, limit, raw }, spreads:
+// [{ home (the home side's points), pHome, alt, vig, limit, raw }], totals:
+// [{ line, pOver, alt, vig, limit, raw }] }. Pregame only, full game only.
+function parseGames(sport, matchups, markets, now = Date.now()) {
+  const byMatchup = new Map();
+  for (const m of markets || []) {
+    if (!m || m.period !== 0 || (m.status && m.status !== 'open')) continue;
+    if (!byMatchup.has(m.matchupId)) byMatchup.set(m.matchupId, []);
+    byMatchup.get(m.matchupId).push(m);
+  }
+  const out = [];
+  for (const mu of matchups || []) {
+    if (!mu || mu.parentId != null || (mu.type && mu.type !== 'matchup') || mu.isLive) continue;
+    const start = ms(mu.startTime);
+    if (!(start > now)) continue;
+    const home = mu.participants?.find(p => p.alignment === 'home')?.name, away = mu.participants?.find(p => p.alignment === 'away')?.name;
+    if (!home || !away) continue;
+    const g = { id: mu.id, sport, league: mu.league?.name || null, home, away, start: new Date(start).toISOString(), ml: null, spreads: [], totals: [] };
+    for (const m of byMatchup.get(mu.id) || []) {
+      const price = d => m.prices?.find(p => p.designation === d);
+      if (m.type === 'moneyline' && !m.isAlternate) {
+        const h = price('home')?.price, a = price('away')?.price, d = price('draw')?.price;
+        const raw = d != null ? [h, a, d] : [h, a];
+        const f = raw.every(x => x != null) ? devig(raw) : null;
+        if (f) g.ml = { home: r4(f[0]), away: r4(f[1]), ...(d != null ? { draw: r4(f[2]) } : {}), vig: vigOf(raw), limit: limitOf(m), raw };
+      } else if (m.type === 'spread') {
+        const h = price('home'), a = price('away');
+        if (!h || !a || h.points == null || Number(h.points) !== -Number(a.points)) continue;
+        const f = devig([h.price, a.price]);
+        if (f) g.spreads.push({ home: Number(h.points), pHome: r4(f[0]), alt: !!m.isAlternate, vig: vigOf([h.price, a.price]), limit: limitOf(m), raw: [h.price, a.price] });
+      } else if (m.type === 'total') {
+        const o = price('over'), u = price('under');
+        if (!o || !u || o.points == null || Number(o.points) !== Number(u.points)) continue;
+        const f = devig([o.price, u.price]);
+        if (f) g.totals.push({ line: Number(o.points), pOver: r4(f[0]), alt: !!m.isAlternate, vig: vigOf([o.price, u.price]), limit: limitOf(m), raw: [o.price, u.price] });
+      }
+    }
+    if (g.ml || g.spreads.length || g.totals.length) out.push(g);
+  }
+  return out;
+}
+
+// an exchange team label is one of Pinnacle's names: the built-in leagues'
+// city and nickname rules either way round, else the same words
+const sameTeam = (label, name) => !!label && !!name && (teamMatches(label, name) || teamMatches(name, label) || nameMatch(label, name));
+// labels [a, b] → 'same' (a is home) | 'flipped' | null, one way round only
+function sidesOf(labels, game) {
+  const [a, b] = labels;
+  const same = sameTeam(a, game.home) && sameTeam(b, game.away);
+  const flip = sameTeam(a, game.away) && sameTeam(b, game.home);
+  return same === flip ? null : same ? 'same' : 'flipped';
+}
+
+// Where an exchange game can start: Polymarket US gives its start; Kalshi
+// sometimes has it in the ticker, else its expected expiration about 3h after,
+// else anywhere on the ticker's (Eastern) date. → [lo, hi] ms | null
+function startWindow(row) {
+  const t = ms(row.startTime);
+  if (t != null) return [t - 3 * 3600e3, t + 3 * 3600e3];
+  const exp = ms(row.expectedExpiration);
+  if (exp != null) return [exp - 9 * 3600e3, exp];
+  const day = row.gameDay ?? (row.exchange === 'kalshi' ? kalshiTickerTime(String(row.eventKey || '').replace(/^kalshi:/, ''))?.day : null);
+  return day != null ? [day - 6 * 3600e3, day + 30 * 3600e3] : null;
+}
+
+// Exchange rows grouped by game: Kalshi's GAME, TOTAL and SPREAD events share
+// gameKey; a Polymarket US game is one event. The group's teams come from its
+// team (or three-way result) rows. → [{ key, venue, teams, window, rows }]
+function groupRows(rows) {
+  const groups = new Map();
+  for (const r of rows || []) {
+    const key = r.exchange === 'kalshi' ? (r.gameKey ? `kalshi:${r.gameKey}` : null) : r.eventKey;
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, { key, venue: r.exchange, teams: null, window: null, rows: [] });
+    const g = groups.get(key);
+    g.rows.push(r);
+    if (!g.teams && r.kind === 'teams' && r.outcomeLabel && r.noLabel) g.teams = [r.outcomeLabel, r.noLabel];
+    if (!g.teams && r.game3?.teams?.length === 2) g.teams = r.game3.teams;
+    if (r.kind === 'teams' || r.game3) g.window = g.window || startWindow(r);
+  }
+  return [...groups.values()].filter(g => g.teams && g.window);
+}
+
+// one row's YES chance on Pinnacle, given which way round the game's teams
+// are (pol: the group's teams[0] is Pinnacle's home when 'same')
+// → { pYes, kind, line, alt, vig, limit } | null
+function fairForRow(game, row, teams, pol) {
+  const homeOf = label => {
+    const i = teams.findIndex(t => sameTeam(label, t) || t === label);
+    if (i < 0) return null;
+    return (i === 0) === (pol === 'same');   // true: home
+  };
+  if (row.game3) {
+    const ml = game.ml;
+    if (!ml || ml.draw == null) return null;
+    const pick = row.game3.pick;
+    const p = pick === 'draw' ? ml.draw : ((pick === 0) === (pol === 'same') ? ml.home : ml.away);
+    return { pYes: p, kind: 'moneyline3', line: null, alt: false, vig: ml.vig, limit: ml.limit };
+  }
+  if (row.kind === 'teams') {
+    const ml = game.ml;
+    if (!ml || ml.draw != null) return null;   // a team contract with no draw against a three-way price: not the same bet
+    const h = homeOf(row.outcomeLabel);
+    if (h == null) return null;
+    return { pYes: h ? ml.home : ml.away, kind: 'moneyline', line: null, alt: false, vig: ml.vig, limit: ml.limit };
+  }
+  if (row.kind === 'total' && halfLine(row.line)) {
+    const t = game.totals.filter(x => x.line === row.line).sort((a, b) => a.alt - b.alt)[0];
+    return t ? { pYes: t.pOver, kind: 'total', line: row.line, alt: t.alt, vig: t.vig, limit: t.limit } : null;
+  }
+  if (row.kind === 'spread' && halfLine(row.line) && row.lineTeam) {
+    const h = homeOf(row.lineTeam);
+    if (h == null) return null;
+    // YES: lineTeam wins by more than line, i.e. lineTeam −line
+    const want = h ? -row.line : row.line;   // the home side's points on that market
+    const s = game.spreads.filter(x => x.home === want).sort((a, b) => a.alt - b.alt)[0];
+    if (!s) return null;
+    return { pYes: h ? s.pHome : r4(1 - s.pHome), kind: 'spread', line: row.line, alt: s.alt, vig: s.vig, limit: s.limit };
+  }
+  return null;
+}
+
+// Every exchange row Pinnacle prices → [{ row, game, ...fairForRow }]. A
+// group pairs with the one Pinnacle game whose two teams it names and whose
+// start sits in its window; two candidates (a doubleheader) pair with the
+// closer start, or neither when that's a tie.
+function matchRows(rows, games) {
+  const out = [];
+  for (const g of groupRows(rows)) {
+    const [lo, hi] = g.window, mid = (lo + hi) / 2;
+    const cands = [];
+    for (const game of games || []) {
+      const t = ms(game.start);
+      if (t == null || t < lo || t > hi) continue;
+      const pol = sidesOf(g.teams, game);
+      if (pol) cands.push({ game, pol, d: Math.abs(t - mid) });
+    }
+    if (!cands.length) continue;
+    cands.sort((a, b) => a.d - b.d);
+    if (cands.length > 1 && cands[0].d === cands[1].d) continue;
+    const { game, pol } = cands[0];
+    for (const row of g.rows) {
+      const f = fairForRow(game, row, g.teams, pol);
+      if (f && f.pYes > 0 && f.pYes < 1) out.push({ row, game, ...f });
+    }
+  }
+  return out;
+}
+
+// Fetch every sport → { games, errors }. The feed answered without a key from
+// GitHub's runners (2026-10-14); PINNACLE_GUEST_KEY is sent when set.
+async function fetchPinnacleGames(http, { key = '', sports = SPORTS, now = Date.now() } = {}) {
+  const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0', ...(key ? { 'X-API-Key': key } : {}) };
+  const games = [], errors = [];
+  await Promise.all(Object.entries(sports).map(async ([sport, id]) => {
+    try {
+      const [mu, mk] = await Promise.all([
+        http.get(`${PIN}/sports/${id}/matchups`, { headers, timeout: 20000 }),
+        http.get(`${PIN}/sports/${id}/markets/straight`, { headers, timeout: 20000 }),
+      ]);
+      games.push(...parseGames(sport, mu?.data, mk?.data, now));
+    } catch (e) { errors.push(`${sport}: ${e.response?.status || e.message}`); }
+  }));
+  return { games, errors };
+}
+
+module.exports = { PIN, SPORTS, toProb, devig, parseGames, sameTeam, sidesOf, startWindow, groupRows, fairForRow, matchRows, fetchPinnacleGames };
