@@ -1,0 +1,19 @@
+name: diag-gaps
+on:
+  push:
+    branches: [claude/esports-line-gaps-aqjr7c]
+    paths: [diag/gaps.js, .github/workflows/diag-gaps.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  gaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: timeout 10500 node diag/gaps.js || true
