@@ -13,7 +13,10 @@
 //
 // We grade the SIGNAL (the first line/side the board recommended), because that
 // is what a user would have played. CLV compares that signal line to the last
-// line seen before lock.
+// line seen before lock. With fairProb (the books' consensus, esmarket.js) it
+// also prices the signal ticket on the market as it stood at signal and as it
+// stood at lock: line moves, payout moves and the other books all count, in
+// the one unit a bettor cares about (chance our side wins, and EV at the close).
 
 const fs = require('fs');
 const path = require('path');
@@ -157,6 +160,27 @@ function lineClv(side, signalLine, closeLine) {
   return side === 'OVER' ? d : -d;
 }
 
+// Market CLV for one row: how the books' consensus chance of the SIGNAL ticket
+// (same side, same line) moved from signal to close, in points, and what that
+// ticket was worth at the close. A move under 0.5 points counts as no move.
+const CLV_FLAT = 0.005;
+function marketClv(row) {
+  if (row.signalFair == null || row.closeFair == null) return null;
+  const move = row.closeFair - row.signalFair;
+  return {
+    move,
+    dir: move > CLV_FLAT ? 1 : move < -CLV_FLAT ? -1 : 0,
+    closeEv: row.signalDecimal ? row.closeFair * row.signalDecimal - 1 : null,
+  };
+}
+
+// The kind a pick's CLV is pooled under: sport, stat, the book it was signaled
+// on and the side. Works on board picks and tracked rows alike.
+function clvKind(r) {
+  const book = r.signalBook || r.bestBook || (r.lineSource === 'ud' ? 'UD' : r.lineSource === 'sl' ? 'SL' : 'PP');
+  return `${sportKey(r.sport)}|${r.stat || statKind(r.market)}|${book}|${r.signalSide || r.side}`;
+}
+
 function profitFor(outcome, decimal) {
   if (outcome === 'win') return decimal - 1;
   if (outcome === 'loss') return -1;
@@ -171,6 +195,9 @@ function createTracker({
   normalizeMarket = m => (m || '').toLowerCase(),
   parseMapSpan = () => ({ count: 1, label: '1' }),
   minEv = parseFloat(process.env.TRACK_MIN_EV || '0'),
+  // (pick, line, side) → the books' consensus chance (0-1) that side wins at
+  // that line, or null. Supplied by the server; without it only line CLV runs.
+  fairProb = null,
   gradeAfterMs = 2 * 3600000,      // don't look for results until 2h after start
   giveUpAfterMs = 72 * 3600000,    // after 3 days with no result, send it to review
   now = () => Date.now(),
@@ -207,6 +234,11 @@ function createTracker({
     }
     return byDay;
   }
+
+  const fairOf = (p, line, side) => {
+    if (!fairProb) return null;
+    try { const v = fairProb(p, line, side); return Number.isFinite(v) ? +v.toFixed(4) : null; } catch { return null; }
+  };
 
   // Called after every board refresh with the full pick list.
   async function recordBoard(picks) {
@@ -245,6 +277,8 @@ function createTracker({
           confidence: p.confidence, sampleSize: p.sampleSize ?? null,
           context: p.context?.source || 'none', pMap: p.context?.pMap ?? null, expMaps: p.context?.expMaps ?? null,
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),
+          // the market's chance of this exact ticket at signal; closeFair follows it to lock
+          signalFair: fairOf(p, signalLine, p.side), closeFair: null,
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
         };
@@ -254,7 +288,9 @@ function createTracker({
       } else if (row.status === 'open') {
         const closeLine = row.signalBook === 'UD' && p.udLine != null ? p.udLine : row.signalBook === 'SL' && p.sleeperLine != null ? p.sleeperLine : line;
         if (closeLine == null) continue;
+        const closeFair = row.signalFair != null ? fairOf(p, row.signalLine, row.signalSide) : null;
         Object.assign(row, {
+          ...(closeFair != null ? { closeFair } : {}),
           startTime: new Date(startMs).toISOString(),   // follow reschedules
           ...(row.gameId == null && p.gameId != null ? { gameId: p.gameId } : {}),
           ...(!row.matchTitle && p.matchTitle ? { matchTitle: p.matchTitle } : {}),
@@ -423,7 +459,36 @@ function createTracker({
       clvAvg: withClv.length ? withClv.reduce((s, r) => s + r.clv, 0) / withClv.length : null,
       beatClose: withClv.length ? withClv.filter(r => r.clv > 0).length / withClv.length : null,
       clvSample: withClv.length,
+      ...marketClvStats(rows),
     };
+  }
+
+  // Market CLV over the rows that have it: average chance moved (points), the
+  // share of moves that went our way, and the signal tickets' EV at the close.
+  function marketClvStats(rows) {
+    const m = rows.filter(r => r.status !== 'void' && r.closeAt !== r.signalAt).map(marketClv).filter(Boolean);
+    const moved = m.filter(x => x.dir !== 0);
+    const evs = m.filter(x => x.closeEv != null);
+    return {
+      mktClvSample: m.length,
+      mktMoved: moved.length,
+      mktBeat: moved.filter(x => x.dir > 0).length,
+      mktBeatShare: moved.length ? moved.filter(x => x.dir > 0).length / moved.length : null,
+      mktMoveAvg: m.length ? m.reduce((s, x) => s + x.move, 0) / m.length : null,
+      closeEvAvg: evs.length ? evs.reduce((s, x) => s + x.closeEv, 0) / evs.length : null,
+    };
+  }
+
+  // Market CLV per kind of pick (sport, stat, book, side), for the board: plays
+  // of a kind whose signals keep losing the close are the ones to doubt.
+  async function clvByKind() {
+    await ready;
+    const g = {};
+    for (const r of await store.all()) {
+      if (r.signalFair == null) continue;
+      (g[clvKind(r)] ||= []).push(r);
+    }
+    return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, marketClvStats(v)]));
   }
 
   function evBucket(ev) {
@@ -457,6 +522,9 @@ function createTracker({
       // cutoff can be judged on picks the current pricing made
       byPricing: groupBy(r => r.fair === 'market' ? 'market' : 'model'),
       byContext: groupBy(r => r.context || 'none'),
+      byBook: groupBy(r => r.signalBook || 'n/a'),
+      // market CLV pooled by kind (sport|stat|book|side), picks signaled since it was measured
+      byKind: Object.fromEntries(Object.entries(rows.filter(r => r.signalFair != null).reduce((g, r) => ((g[clvKind(r)] ||= []).push(r), g), {})).map(([k, v]) => [k, aggregate(v)])),
       counts: {
         open: rows.filter(r => r.status === 'open').length,
         locked: rows.filter(r => r.status === 'locked').length,
@@ -468,10 +536,10 @@ function createTracker({
     };
   }
 
-  return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, pickId, graders, ready: () => ready };
+  return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, clvByKind, pickId, graders, ready: () => ready };
 }
 
 module.exports = {
   createTracker, createMemoryStore, createFileStore, createPgStore, createStoreFromEnv,
-  spanToMaps, statKind, sportKey, legDecimal, outcomeFor, lineClv, profitFor, PP_IMPLIED,
+  spanToMaps, statKind, sportKey, legDecimal, outcomeFor, lineClv, marketClv, clvKind, profitFor, PP_IMPLIED,
 };

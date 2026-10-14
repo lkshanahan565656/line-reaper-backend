@@ -228,7 +228,8 @@ function valueRows(edges, verdict, o, now) {
 function propRows(picks, verdict, o, now) {
   const rows = [], dropped = [];
   for (const p of picks) {
-    if (p.locked || !p.side || p.bestEv == null || p.bestEv / 100 < o.propMinEv) continue;
+    // clvWarn: this kind of pick keeps losing the closing line (server.js)
+    if (p.locked || !p.side || p.bestEv == null || p.bestEv / 100 < o.propMinEv || p.clvWarn) continue;
     const start = ms(p.startTime);
     if (start == null || start <= now) continue;
     const labels = { sport: sportKey(p.sport), stat: statKind(p.market), side: p.side };
