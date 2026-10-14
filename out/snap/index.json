@@ -1,0 +1,37 @@
+{
+ "/api/status": {
+  "st": 200,
+  "f": "_api_status.json",
+  "bytes": 12910
+ },
+ "/api/props/board?sport=SPORTS&sort=ev&limit=500&priced=1": {
+  "st": 200,
+  "f": "_api_props_board_sport_SPORTS_sort_ev_limit_500_priced_1.json",
+  "bytes": 511510
+ },
+ "/api/props/board?sport=SPORTS&sort=ev&limit=150": {
+  "st": 200,
+  "f": "_api_props_board_sport_SPORTS_sort_ev_limit_150.json",
+  "bytes": 166950
+ },
+ "/api/props/board?sport=SPORTS&sort=ev&limit=150&sharp=1": {
+  "st": 200,
+  "f": "_api_props_board_sport_SPORTS_sort_ev_limit_150_sharp_1.json",
+  "bytes": 5793
+ },
+ "/api/best?limit=500": {
+  "st": 200,
+  "f": "_api_best_limit_500.json",
+  "bytes": 97352
+ },
+ "/api/props/record": {
+  "st": 200,
+  "f": "_api_props_record.json",
+  "bytes": 5570
+ },
+ "/api/results": {
+  "st": 200,
+  "f": "_api_results.json",
+  "bytes": 2383
+ }
+}

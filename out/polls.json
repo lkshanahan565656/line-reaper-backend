@@ -1,0 +1,256 @@
+{
+ "polls": [
+  {
+   "at": "2026-10-14T16:14:06.025Z",
+   "fb": {
+    "updated": "2026-10-14T16:13:47.346Z",
+    "gamesAt": "2026-10-14T16:13:47.336Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:13:19.935Z",
+    "props": 619
+   },
+   "evCount": 125,
+   "byBook": {
+    "betrivers": 97,
+    "fanduel": 28
+   }
+  },
+  {
+   "at": "2026-10-14T16:15:06.092Z",
+   "fb": {
+    "updated": "2026-10-14T16:14:46.637Z",
+    "gamesAt": "2026-10-14T16:14:46.631Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:14:21.315Z",
+    "props": 619
+   },
+   "evCount": 127,
+   "byBook": {
+    "betrivers": 97,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:16:06.109Z",
+   "fb": {
+    "updated": "2026-10-14T16:15:46.895Z",
+    "gamesAt": "2026-10-14T16:15:46.889Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:14:21.315Z",
+    "props": 619
+   },
+   "evCount": 127,
+   "byBook": {
+    "betrivers": 97,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:17:06.150Z",
+   "fb": {
+    "updated": "2026-10-14T16:16:46.015Z",
+    "gamesAt": "2026-10-14T16:16:46.008Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:16:20.856Z",
+    "props": 619
+   },
+   "evCount": 128,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 97,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:18:07.882Z",
+   "fb": {
+    "updated": "2026-10-14T16:17:48.044Z",
+    "gamesAt": "2026-10-14T16:17:48.039Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:16:20.856Z",
+    "props": 619
+   },
+   "evCount": 132,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 100,
+    "fanduel": 31
+   }
+  },
+  {
+   "at": "2026-10-14T16:19:07.900Z",
+   "fb": {
+    "updated": "2026-10-14T16:18:47.119Z",
+    "gamesAt": "2026-10-14T16:18:47.113Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:18:21.984Z",
+    "props": 619
+   },
+   "evCount": 132,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 100,
+    "fanduel": 31
+   }
+  },
+  {
+   "at": "2026-10-14T16:20:09.001Z",
+   "fb": {
+    "updated": "2026-10-14T16:19:47.383Z",
+    "gamesAt": "2026-10-14T16:19:47.378Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:18:21.984Z",
+    "props": 619
+   },
+   "evCount": 131,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 100,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:21:09.161Z",
+   "fb": {
+    "updated": "2026-10-14T16:20:46.499Z",
+    "gamesAt": "2026-10-14T16:20:46.493Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:20:21.869Z",
+    "props": 619
+   },
+   "evCount": 131,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 100,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:22:09.178Z",
+   "fb": {
+    "updated": "2026-10-14T16:21:47.655Z",
+    "gamesAt": "2026-10-14T16:21:47.649Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:20:21.869Z",
+    "props": 619
+   },
+   "evCount": 130,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:23:09.193Z",
+   "fb": {
+    "updated": "2026-10-14T16:22:47.175Z",
+    "gamesAt": "2026-10-14T16:22:47.170Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:22:20.790Z",
+    "props": 619
+   },
+   "evCount": 130,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:24:09.235Z",
+   "fb": {
+    "updated": "2026-10-14T16:23:47.508Z",
+    "gamesAt": "2026-10-14T16:23:47.501Z",
+    "errors": [
+     "pinnacle baseball: 401"
+    ]
+   },
+   "pin": {
+    "updated": "2026-10-14T16:22:20.790Z",
+    "props": 619
+   },
+   "evCount": 130,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 30
+   }
+  },
+  {
+   "at": "2026-10-14T16:25:09.255Z",
+   "fb": {
+    "updated": "2026-10-14T16:24:46.768Z",
+    "gamesAt": "2026-10-14T16:24:46.762Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:24:21.828Z",
+    "props": 619
+   },
+   "evCount": 129,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 29
+   }
+  },
+  {
+   "at": "2026-10-14T16:26:09.291Z",
+   "fb": {
+    "updated": "2026-10-14T16:25:47.519Z",
+    "gamesAt": "2026-10-14T16:25:47.512Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:24:21.828Z",
+    "props": 619
+   },
+   "evCount": 129,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 29
+   }
+  },
+  {
+   "at": "2026-10-14T16:27:09.306Z",
+   "fb": {
+    "updated": "2026-10-14T16:26:46.653Z",
+    "gamesAt": "2026-10-14T16:26:46.647Z",
+    "errors": []
+   },
+   "pin": {
+    "updated": "2026-10-14T16:26:21.076Z",
+    "props": 619
+   },
+   "evCount": 129,
+   "byBook": {
+    "dfs underdog": 1,
+    "betrivers": 99,
+    "fanduel": 29
+   }
+  }
+ ],
+ "check": []
+}
