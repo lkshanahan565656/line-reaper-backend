@@ -5840,8 +5840,8 @@ function trTable(title, groups) {
     ${rows.map(([k, g]) => {
       const hitCol = g.hitRate != null && g.breakeven != null ? trColor(g.hitRate - g.breakeven) : '#94a3b8';
       const roi = g.roi == null ? '—' : trSigned(g.roi * 100, 1) + '%';
-      // market CLV (moved our way, of the picks whose close moved) once measured; the line move before that
-      const bcv = g.mktMoved ? g.mktBeatShare : g.beatClose, bcn = g.mktMoved ? g.mktMoved : g.clvSample;
+      // market CLV (moved our way, of the picks whose close moved; n = moves) once measured; the line move before that
+      const bcv = g.mktClvSample ? g.mktBeatShare : g.beatClose, bcn = g.mktClvSample ? g.mktMoved : g.clvSample;
       const bc = `<span style="color:${bcv != null ? trColor(bcv - 0.5) : '#94a3b8'}">${trPct(bcv, 0)}</span><span class="dim" style="font-size:10px"> n=${bcn}</span>`;
       return `<div class="tr-row">
         <span class="g">${escEs(k)}</span>
@@ -5899,14 +5899,14 @@ async function renderTrackRecord(el) {
         ${cell(trPct(o.hitRate), `Hit rate · B/E ${trPct(o.breakeven)}`, o.hitRate != null && o.breakeven != null ? tone(o.hitRate - o.breakeven) : '')}
         ${cell(trSigned(o.units) + 'u', 'Units (1u / leg)', tone(o.units))}
         ${cell(o.roi == null ? '—' : trSigned(o.roi * 100, 1) + '%', 'ROI per leg', tone(o.roi))}
-        ${o.mktMoved ? cell(trPct(o.mktBeatShare, 0), `Close moved our way · ${o.mktBeat} of ${o.mktMoved}`, tone(o.mktBeatShare - 0.5))
+        ${o.mktClvSample ? cell(trPct(o.mktBeatShare, 0), `Close our way · ${o.mktBeat}/${o.mktMoved}`, o.mktBeatShare != null ? tone(o.mktBeatShare - 0.5) : '')
           : cell(trPct(o.beatClose, 0), `Beat close · n=${o.clvSample}`, o.beatClose != null ? tone(o.beatClose - 0.5) : '')}
         ${o.closeEvAvg != null ? cell(trSigned(o.closeEvAvg * 100, 1) + '%', `EV at the close · n=${o.mktClvSample}`, tone(o.closeEvAvg)) : ''}
         ${cell(sum.counts.locked, 'Awaiting result')}
       </div>
       <div class="tr-note">
         Each pick is logged the first time the board shows it +EV and graded at that line and side. ROI treats every pick as a single 1-unit leg at the book's standard payout (PrizePicks ≈ 1.78x).
-        Closing-line value: each pick's ticket (same side, same line, same book) is priced on the books' consensus when it is signaled and again at lock. "Close moved our way" counts the picks whose chance moved half a point or more, and "EV at the close" is what the ticket was worth on the closing market. Over hundreds of picks, beating the close is the surest sign of an edge, long before wins and losses settle it. Picks logged before this was measured show the line move only. Storage: ${escEs(sum.store)}.
+        Closing-line value: each pick's ticket (same side, same line, same book) is priced on the books' consensus when it is signaled and again at lock. "Close our way" is the share of picks whose chance moved half a point or more that moved in our favour, and "EV at the close" is what the ticket was worth on the closing market. Over hundreds of picks, beating the close is the surest sign of an edge, long before wins and losses settle it. Picks logged before this was measured show the line move only. Storage: ${escEs(sum.store)}.
       </div>
       ${trReviewHTML(review.picks || [])}
       ${trTable('BY SPORT', sum.bySport)}
