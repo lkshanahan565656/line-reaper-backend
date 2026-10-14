@@ -2997,6 +2997,12 @@ const STEAM_ALERT_MIN = Number.isFinite(parseFloat(process.env.STEAM_ALERT_MIN))
 const xvalueState = { edges: [], movers: [], moverBets: [], updated: null, counts: null, primed: false };
 // line movers are bets once their book is read; their alerts wait on the record
 const MOVER_ALERT_MIN = Number.isFinite(parseFloat(process.env.MOVER_ALERT_MIN)) ? parseFloat(process.env.MOVER_ALERT_MIN) : 0.02;
+// executable (execcheck.js): an alert needs XVALUE_MIN_DEPTH_USD resting on
+// Kalshi's book at the alerted price, and every bet is also graded at the
+// price a subscriber got 2 minutes after the flag
+const execcheck = require('./execcheck');
+const XVALUE_MIN_DEPTH = Number.isFinite(parseFloat(process.env.XVALUE_MIN_DEPTH_USD)) ? parseFloat(process.env.XVALUE_MIN_DEPTH_USD) : execcheck.DEFAULTS.minUsd;
+const depthCheck = execcheck.createDepthCheck({ http: upstream });
 const xvalueSeen = new Map();     // edge id → last alert (ms)
 const xvalueBookCache = new Map();  // ref id → { book, at }: a read counts for XVALUE_BOOK_TTL_MS
 const XVALUE_BOOK_TTL_MS = 4 * 60e3;
@@ -3051,8 +3057,10 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   let moverBets = [];
   try { moverBets = movers.moverBets(xvalueState.movers, { fairs, edges, maxEv: o.maxEv }); } catch (e) { console.warn('Line movers: bets:', e.message); }
   for (const e of [...edges, ...moverBets]) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
-  await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs).catch(err => console.warn('Exchange value tracker:', err.message));
-  Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), steamPoints: steamWatch.points(), steamRestored: steamWatch.restored(), moverBets: moverBets.length } });
+  let depthReads = 0;
+  try { depthReads = await depthCheck.check([...edges, ...moverBets]); } catch (e) { console.warn('Exchange value: depth:', e.message); }
+  await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs, { costs: xvalue.costsOf(scr.quotes) }).catch(err => console.warn('Exchange value tracker:', err.message));
+  Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), steamPoints: steamWatch.points(), steamRestored: steamWatch.restored(), moverBets: moverBets.length, depthReads, executable: [...edges, ...moverBets].filter(e => execcheck.executable(e, XVALUE_MIN_DEPTH)).length } });
   const lic = webhookLicence();
   // alerts follow the record the way Best Plays does: a signal, league or
   // market the results call "avoid" (standing price gaps, -0.6% CLV over 32
@@ -3061,13 +3069,14 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   try { ({ plays } = results.scoreboard({ exchangeValue: await xvalueTracker.list({ limit: 1e9 }) })); } catch (e) { console.warn('Exchange value: record:', e.message); }
   const bp = require('./bestplays'), verdict = bp.verdictIndex(plays);
   const avoided = e => !!verdict('exchangeValue', { signal: bp.valueSignal(e), sport: e.league || e.category, book: e.venue, market: e.market }).avoid;
-  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
+  const canFill = e => execcheck.executable(e, XVALUE_MIN_DEPTH);
+  const fresh = edges.filter(e => e.ev >= (e.steam ? STEAM_ALERT_MIN : XVALUE_ALERT_MIN) && canFill(e) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS));
   // a line mover alerts only once its own record is proven, at that record's CLV
   if (moverBets.length) {
     try {
       const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === 'line mover');
       if (rec && rec.verdict === 'proven' && rec.avgClv >= MOVER_ALERT_MIN) {
-        fresh.push(...moverBets.filter(e => valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
+        fresh.push(...moverBets.filter(e => canFill(e) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
       }
     } catch (e) { console.warn('Line movers: record:', e.message); }
   }
