@@ -106,7 +106,7 @@ function board({ pmBid = 0.55, pmAsk = 0.56, kG2 = {}, kT1 = {}, book = null, el
   const pm = [B.parsePolymarketEvent(pmEvent([pmMarket({ bestBid: pmBid, bestAsk: pmAsk })]), 'VAL')];
   const kalshi = [{ ...B.parseKalshiEvent(kGame(kG2, kT1), 'match'), game: 'VAL' }];
   const bk = book ? [{ ...B.parseBo3Match(book), game: 'VAL' }] : [];
-  return B.buildBoard(B.mergeSources({ pm, kalshi, book: bk }), { elo, moves, now });
+  return B.buildBoard(B.mergeSources({ pm, kalshi, book: bk }, {}, now), { elo, moves, now });
 }
 
 test('sources pair into one match with a no-vig fair price', () => {
@@ -167,7 +167,7 @@ test('decided and empty markets are dropped', () => {
     pmMarket({ sportsMarketType: 'child_moneyline', groupItemTitle: 'Map 1 Winner', bestBid: 0.999, bestAsk: null }),
     pmMarket({ sportsMarketType: 'totals', groupItemTitle: 'O/U 2.5 Games', outcomes: '["Over", "Under"]', bestBid: null, bestAsk: null }),
   ]), 'VAL')];
-  const [m] = B.buildBoard(B.mergeSources({ pm }), { now: NOW });
+  const [m] = B.buildBoard(B.mergeSources({ pm }, {}, NOW), { now: NOW });
   assert.deepEqual(m.markets.map(x => x.key), ['match']);
 });
 
@@ -270,7 +270,7 @@ test('Pinnacle is the fair price where it lists the market, and edges say so', (
   // Kalshi offers G2 at 60c; Pinnacle has G2 near 62%
   const kalshi = [{ ...B.parseKalshiEvent(kGame({ yes_bid_dollars: '0.5800', yes_ask_dollars: '0.5900' }, { yes_bid_dollars: '0.4100', yes_ask_dollars: '0.4200' }), 'match'), game: 'VAL' }];
   const sharp = B.parsePinnacle(pinMatchups, pinMarkets);
-  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }), { now: NOW });
+  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }, {}, NOW), { now: NOW });
   const mk = m.markets.find(x => x.key === 'match');
   assert.ok(mk.sources.includes('pinnacle'));
   const g2 = mk.outcomes[0];   // board order follows Polymarket: G2 first
@@ -279,10 +279,10 @@ test('Pinnacle is the fair price where it lists the market, and edges say so', (
   assert.equal(g2.quotes.kalshi.refSource, 'pinnacle');
   assert.ok(Math.abs(g2.quotes.kalshi.ref - g2.quotes.pinnacle.prob) < 1e-4);
   // without Pinnacle the reference is the other venues, as before
-  const [m2] = B.buildBoard(B.mergeSources({ pm, kalshi }), { now: NOW });
+  const [m2] = B.buildBoard(B.mergeSources({ pm, kalshi }, {}, NOW), { now: NOW });
   assert.equal(m2.markets[0].outcomes[0].quotes.kalshi.refSource, 'consensus');
   // sharpRef off: Pinnacle averages in like any other source
-  const [m3] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }), { now: NOW, opts: { sharpRef: false } });
+  const [m3] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }, {}, NOW), { now: NOW, opts: { sharpRef: false } });
   assert.equal(m3.markets.find(x => x.key === 'match').outcomes[0].quotes.kalshi.refSource, 'consensus');
 });
 
@@ -290,7 +290,22 @@ test('a small Pinnacle limit averages in rather than setting the fair alone', ()
   const pm = [B.parsePolymarketEvent(pmEvent([pmMarket()]), 'VAL')];
   const kalshi = [{ ...B.parseKalshiEvent(kGame({ yes_bid_dollars: '0.5800', yes_ask_dollars: '0.5900' }, { yes_bid_dollars: '0.4100', yes_ask_dollars: '0.4200' }), 'match'), game: 'VAL' }];
   const small = pinMarkets.map(k => (k.period === 0 && k.type === 'moneyline' ? { ...k, limits: [{ amount: 100 }] } : k));
-  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp: B.parsePinnacle(pinMatchups, small) }), { now: NOW });
+  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp: B.parsePinnacle(pinMatchups, small) }, {}, NOW), { now: NOW });
   const g2 = m.markets.find(x => x.key === 'match').outcomes[0];
   assert.equal(g2.quotes.kalshi.refSource, 'consensus');
+});
+
+test('a Kalshi ticker past the lookback joins the same teams\' next match, or leaves the board', () => {
+  // the Kalshi ticker says 11 Oct 12:00; the match moved to the next day
+  const pm = [B.parsePolymarketEvent(pmEvent([pmMarket({ gameStartTime: '2026-10-12 12:00:00+00' })], { startTime: '2026-10-12T12:00:00Z' }), 'VAL')];
+  const kalshi = [{ ...B.parseKalshiEvent(kGame(), 'match'), game: 'VAL' }];
+  const now = Date.parse('2026-10-12T06:00:00Z');   // 18 h after the ticker's start
+  const both = B.mergeSources({ pm, kalshi }, {}, now);
+  assert.equal(both.length, 1, 'one match, not a live ghost beside the real one');
+  assert.equal(both[0].start, Date.parse('2026-10-12T12:00:00Z'));
+  assert.ok(both[0].links.kalshi);
+  // nothing to join: the stale ticker leaves rather than show live all day
+  assert.equal(B.mergeSources({ kalshi }, {}, now).length, 0);
+  // inside the lookback it is a live match as before
+  assert.equal(B.mergeSources({ kalshi }, {}, Date.parse('2026-10-11T15:00:00Z')).length, 1);
 });

@@ -1469,7 +1469,7 @@ async function refreshLoLFromLeaguepedia(windowDays = 120) {
   const out = aggregateLPRows(rows);
   Object.assign(lolStats, out, { updated: new Date().toISOString(), state: 'ready', lastError: null, source: 'leaguepedia' });
   console.log(`Leaguepedia: ${rows.length} scoreboard rows → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
-  generateEsportsPicks().catch(() => {});
+  esPicksRebuild().catch(() => {});
 }
 
 // gol.gg's season table: every pro's games and per-game kills/assists on one
@@ -1481,7 +1481,7 @@ async function refreshLoLFromGol() {
   for (const r of Object.values(rows)) players[r.name.toLowerCase()] = { kpg: r.kpg, apg: r.apg, dpg: r.dpg, kp: r.kp, games: r.games };
   Object.assign(lolStats, { players, teams: {}, games: Object.values(rows).reduce((a, r) => a + r.games, 0) / 5 | 0, updated: new Date().toISOString(), state: 'ready', lastError: null, source: 'gol.gg' });
   console.log(`gol.gg: ${Object.keys(players).length} LoL players (${golSeason()})`);
-  generateEsportsPicks().catch(() => {});
+  esPicksRebuild().catch(() => {});
 }
 
 async function refreshLoLStats(windowDays = 120) {
@@ -1515,7 +1515,7 @@ async function refreshLoLStats(windowDays = 120) {
       const out = agg.finish();
       Object.assign(lolStats, out, { updated: new Date().toISOString(), state: 'ready', lastError: null });
       console.log(`OE: ${(bytes / 1048576).toFixed(1)}MB → ${Object.keys(out.players).length} players, ${Object.keys(out.teams).length} teams, ${out.games} games (last ${windowDays}d)`);
-      generateEsportsPicks().catch(() => {});
+      esPicksRebuild().catch(() => {});
       return;
     } catch (e) {
       const s = e.response?.status;
@@ -1651,8 +1651,10 @@ async function generateEsportsPicks() {
   const ppLines = cache.prizepicks.data || [];
   const udLines = cache.underdog.data || [];
 
-  const ppEsports = ppLines.filter(l => isEsports(l.sport));
-  const udEsports = udLines.filter(l => isEsports(l.sport));
+  // a started match's lines can't be played; a blocked book's cache keeps them
+  const t0 = Date.now(), open = l => !(Date.parse(l.startTime || '') <= t0);
+  const ppEsports = ppLines.filter(l => isEsports(l.sport) && open(l));
+  const udEsports = udLines.filter(l => isEsports(l.sport) && open(l));
 
   // UD lookup, side-aware multipliers
   const udMap = {};
@@ -2308,7 +2310,7 @@ async function warmCsProfiles(batch = 12) {
     warmer.lastRun = new Date().toISOString();
     if (filled) {
       console.log(`Warmer: +${filled} CS profiles (${queue.length - batch > 0 ? queue.length - batch : 0} still queued)`);
-      generateEsportsPicks().catch(() => {});
+      esPicksRebuild().catch(() => {});
     }
   } finally { warmer.running = false; }
 }
@@ -3763,7 +3765,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.107.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.108.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4144,11 +4146,21 @@ app.get('/api/esports/matches', (req, res) => {
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
 });
-// one build at a time: a page load and a refresh share a run in flight
-let esPicksRun = null;
+// one build at a time: a page load and a refresh share a run in flight.
+// Two builds at once (new stats landing during a lines rebuild) could finish
+// out of order and leave the older board up, and both would log and alert.
+let esPicksRun = null, esPicksAgain = false;
 function esPicksOnce() {
-  if (!esPicksRun) esPicksRun = generateEsportsPicks().finally(() => { esPicksRun = null; });
+  if (!esPicksRun) esPicksRun = generateEsportsPicks().finally(() => {
+    esPicksRun = null;
+    if (esPicksAgain) { esPicksAgain = false; esPicksOnce().catch(() => {}); }
+  });
   return esPicksRun;
+}
+// new data landed: build now, or once more when the build in flight is done
+function esPicksRebuild() {
+  if (esPicksRun) { esPicksAgain = true; return esPicksRun; }
+  return esPicksOnce();
 }
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
@@ -4161,7 +4173,11 @@ app.get('/api/esports/picks', async (req, res) => {
   // an EV filter would let a free user find each locked pick's EV by bisection
   const minEV = pro ? (parseFloat(req.query.minEV) || -100) : -100;
   const sport = req.query.sport;
-  let picks = esportsCache.picks || [];
+  // the board rebuilds every few minutes, and a book that stops answering
+  // (PrizePicks 429s) leaves its last lines in place: a line whose match has
+  // started can't be played, so it leaves the board the minute it starts
+  const now = Date.now();
+  let picks = (esportsCache.picks || []).filter(p => !(Date.parse(p.startTime || '') <= now));
   if (sport) picks = picks.filter(p => (p.sport || '').toUpperCase().includes(sport.toUpperCase()));
   picks = picks.filter(p => p.ev == null || p.ev >= minEV);
   if (!pro) picks = redactForFree(picks);
@@ -4806,7 +4822,7 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
 app.post('/api/esports/match-odds', requireAdmin, async (req, res) => {
   try {
     const row = oddsBook.set(req.body || {});
-    generateEsportsPicks().catch(() => {});
+    esPicksRebuild().catch(() => {});
     res.json({ ok: true, match: row });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -4927,7 +4943,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.107.0',
+  version: '3.108.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5028,7 +5044,7 @@ schedule('*/2 * * * *', async () => {
   await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
   trackSportProps().catch(() => {});
   const sig = esportsLinesSig();
-  if (esLinesSig && sig !== esLinesSig) esPicksOnce().catch(() => {});
+  if (esLinesSig && sig !== esLinesSig) esPicksRebuild().catch(() => {});
   esLinesSig = sig;
 });
 
@@ -5112,7 +5128,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
     setTimeout(() => pollSportsbooks(), 6000);
     setTimeout(() => refreshPinnacleProps().catch(() => {}), 9000);
     // Generate esports picks once UD is loaded
-    setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
+    setTimeout(() => esPicksRebuild().catch(()=>{}), 5000);
     // LoL dataset download (~1 min); regenerates picks when done
     setTimeout(() => refreshLoLStats().catch(()=>{}), 8000);
     // Valorant table (all regions) + Dota pro directory
@@ -5122,7 +5138,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
     setTimeout(() => warmCsProfiles(20).catch(()=>{}), 20000);
     // team ratings for match context, then rebuild picks with them
     setTimeout(() => refreshMatchFeeds()
-      .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => generateEsportsPicks()).catch(()=>{}), 25000);
+      .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => esPicksRebuild()).catch(()=>{}), 25000);
     setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
