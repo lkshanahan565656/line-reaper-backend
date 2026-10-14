@@ -324,3 +324,14 @@
 10:19:10 tick 304: pin 1540 games, kalshi 9853 rows / pmus 7944, matched 4100, sides 8174, ev>=thr 58, new 0, eps 448
 10:20:12 tick 305: pin 1540 games, kalshi 9853 rows / pmus 7944, matched 4100, sides 8174, ev>=thr 59, new 1, eps 449
 10:21:10 tick 306: pin 1540 games, kalshi 9853 rows / pmus 7944, matched 4100, sides 8173, ev>=thr 61, new 2, eps 451
+10:22:08 tick 307: pin 1540 games, kalshi 9852 rows / pmus 7944, matched 4100, sides 8181, ev>=thr 62, new 0, eps 451
+10:23:10 tick 308: pin 1541 games, kalshi 9852 rows / pmus 7944, matched 4102, sides 8185, ev>=thr 63, new 3, eps 454
+10:24:10 tick 309: pin 1541 games, kalshi 9842 rows / pmus 7944, matched 4102, sides 8185, ev>=thr 63, new 1, eps 455
+10:25:12 tick 310: pin 1541 games, kalshi 9842 rows / pmus 7944, matched 4102, sides 8185, ev>=thr 61, new 1, eps 456
+10:26:10 tick 311: pin 1541 games, kalshi 9842 rows / pmus 7944, matched 4102, sides 8185, ev>=thr 62, new 1, eps 457
+10:27:10 tick 312: pin 1541 games, kalshi 9842 rows / pmus 7944, matched 4102, sides 8186, ev>=thr 62, new 0, eps 457
+10:28:15 tick 313: pin 1543 games, kalshi 9842 rows / pmus 7944, matched 4104, sides 8189, ev>=thr 59, new 4, eps 461
+10:29:10 tick 314: pin 1543 games, kalshi 9835 rows / pmus 7944, matched 4104, sides 8189, ev>=thr 61, new 2, eps 463
+10:30:11 tick 315: pin 1543 games, kalshi 9835 rows / pmus 7944, matched 4104, sides 8186, ev>=thr 62, new 2, eps 465
+10:31:10 tick 316: pin 1539 games, kalshi 9836 rows / pmus 7944, matched 4102, sides 8186, ev>=thr 60, new 1, eps 466
+10:31:21 done 466 episodes
