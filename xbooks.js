@@ -137,7 +137,7 @@ function actionUrls(sport, { now = Date.now(), withProps = true } = {}) {
 // A player prop is a total named "Nix, B - Total Passing Yards".
 const MB_STAT = /^(.+?) - Total (.+)$/;
 function bestBack(r, minDepth) {
-  const b = (r?.prices || []).filter(p => p.side === 'back' && p['decimal-odds'] > 1 && (p['available-amount'] || 0) >= minDepth)
+  const b = (r?.prices || []).filter(p => (p.side === 'back' || p.side === 'win') && p['decimal-odds'] > 1 && (p['available-amount'] || 0) >= minDepth)
     .sort((x, y) => y['decimal-odds'] - x['decimal-odds'])[0];
   return b ? decToAm(b['decimal-odds']) : null;
 }

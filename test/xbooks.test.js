@@ -40,12 +40,12 @@ test('Action Network: each mapped book becomes a book game with main lines and p
   assert.ok(xbooks.actionUrls('nfl', { now: NOW })[0].includes('customPickTypes=core_bet_type_9_passing_yards'));
 });
 
-const back = (odds, amt) => ({ side: 'back', 'decimal-odds': odds, 'available-amount': amt });
+const back = (odds, amt, side = 'win') => ({ side, 'decimal-odds': odds, 'available-amount': amt });
 const mbPayload = {
   events: [{
     id: 9, name: 'Seattle Seahawks at Denver Broncos', start: START, status: 'open',
     markets: [
-      { name: 'Moneyline', 'market-type': 'money_line', status: 'open', runners: [{ name: 'Seattle Seahawks', prices: [back(1.76, 500)] }, { name: 'Denver Broncos', prices: [back(2.3, 400)] }] },
+      { name: 'Moneyline', 'market-type': 'money_line', status: 'open', runners: [{ name: 'Seattle Seahawks', prices: [back(1.76, 500, 'back'), { side: 'lose', 'decimal-odds': 1.8, 'available-amount': 900 }] }, { name: 'Denver Broncos', prices: [back(2.3, 400)] }] },
       { name: 'Handicap', 'market-type': 'handicap', status: 'open', runners: [{ name: 'Seattle Seahawks -2.5', handicap: -2.5, prices: [back(1.97, 400)] }, { name: 'Denver Broncos +2.5', handicap: 2.5, prices: [back(2.0, 300)] }] },
       { name: '1st Half Handicap', 'market-type': 'handicap', status: 'open', runners: [{ name: 'Seattle Seahawks -1.5', handicap: -1.5, prices: [back(2.04, 400)] }, { name: 'Denver Broncos +1.5', handicap: 1.5, prices: [back(1.81, 300)] }] },
       { name: 'Total', 'market-type': 'total', status: 'open', runners: [{ name: 'OVER 39.5', handicap: 39.5, prices: [back(1.82, 300)] }, { name: 'UNDER 39.5', handicap: 39.5, prices: [back(2.16, 500)] }] },
