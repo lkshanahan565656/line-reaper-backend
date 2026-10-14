@@ -1,0 +1,53 @@
+Wed Oct 14 02:58:55 UTC 2026
+backup {"state":"ready","snapshotAt":"2026-10-14T02:55:03.449Z","note":null,"restored":{"steamHistory":6705,"esportsPicks":251,"esportsSlips":25,"tailTraders":3121,"tail":42,"fresh":15,"exchangeValue":175,"bidArbs":834,"middles":105,"esportsEdges":182},"stores":["ev","esportsPicks","esportsSlips","tailTraders","tail","fresh","steamHistory","exchangeValue","bidArbs","middles","esportsEdges"]}
+SRC exchangeValue {"open":65,"n":110,"avgClv":0.0142,"execN":21,"execClv":-0.0566,"verdict":"avoid"}
+SRC esportsEdges {"open":61,"n":121,"avgClv":-0.0199,"verdict":"avoid"}
+SRC ev {"open":0,"n":0,"avgClv":null,"verdict":"early"}
+  PLAY exchangeValue signal steam n 36 clv 0.0402 execN 5 execClv -0.08 proven
+  PLAY exchangeValue sport cs2 n 9 clv 0.0726 execN undefined execClv undefined promising
+  PLAY exchangeValue sport afccl n 18 clv 0.0217 execN undefined execClv undefined promising
+  PLAY esportsEdges sport CS2 n 67 clv 0.0082 execN undefined execClv undefined promising
+  PLAY exchangeValue sport egypl n 5 clv 0.0848 execN undefined execClv undefined early
+  PLAY exchangeValue sport t20 n 3 clv 0.0627 execN undefined execClv undefined early
+  PLAY exchangeValue sport atp n 6 clv 0.0383 execN undefined execClv undefined early
+  PLAY exchangeValue sport dota2 n 3 clv 0.02 execN undefined execClv undefined early
+  PLAY esportsEdges sport R6 n 3 clv 0.0038 execN undefined execClv undefined early
+  PLAY exchangeValue signal Kalshi price n 3 clv 0.0028 execN 3 execClv -0.0357 early
+  PLAY exchangeValue sport elc n 5 clv -0.0057 execN undefined execClv undefined early
+  PLAY exchangeValue signal line mover n 5 clv -0.0105 execN undefined execClv undefined early
+  PLAY esportsEdges sport LOL n 5 clv -0.0224 execN undefined execClv undefined early
+  PLAY exchangeValue sport ucl n 4 clv -0.0581 execN undefined execClv undefined early
+  PLAY exchangeValue sport ncaaf n 6 clv -0.0361 execN undefined execClv undefined early
+  PLAY exchangeValue  all n 110 clv 0.0142 execN 21 execClv -0.0566 avoid
+  PLAY exchangeValue signal price gap n 66 clv 0.0025 execN 13 execClv -0.0524 avoid
+  PLAY exchangeValue sport nba n 27 clv 0.0015 execN 21 execClv -0.0566 avoid
+  PLAY exchangeValue sport sports n 17 clv -0.0135 execN undefined execClv undefined avoid
+  PLAY esportsEdges  all n 121 clv -0.0199 execN undefined execClv undefined avoid
+  PLAY esportsEdges sport DOTA n 44 clv -0.0567 execN undefined execClv undefined avoid
+version 3.97.0 2026-10-14T02:58:58.085Z counts {"pairs":4482,"kalshiPriced":949,"screened":145,"books":60,"read":30,"edges":2,"steaming":0,"steam":0,"watched":6712,"steamPoints":88214,"steamRestored":6699,"moverBets":0,"depthReads":2,"depthChecked":{"kalshi":1,"polymarketus":1},"executable":2}
+  EDGE kalshi cs2 Sashi Esport price 0.15 ev 0.0377  depth {"contracts":703,"usd":105,"best":0.15}
+  EDGE polymarketus nfl Los Angeles Chargers -2.5 price 0.175 ev 0.0268  depth {"contracts":1000,"usd":175,"best":0.175}
+version 3.97.0 2026-10-14T03:00:58.391Z counts {"pairs":6044,"kalshiPriced":1580,"screened":183,"books":89,"read":30,"edges":4,"steaming":0,"steam":0,"watched":6686,"steamPoints":81825,"steamRestored":6699,"moverBets":0,"depthReads":4,"depthChecked":{"kalshi":3,"polymarketus":1},"executable":2}
+  EDGE kalshi cs2 Sashi Esport price 0.15 ev 0.0377  depth {"contracts":703,"usd":105,"best":0.15}
+  EDGE polymarketus nfl Los Angeles Chargers -2.5 price 0.175 ev 0.0268  depth {"contracts":1000,"usd":175,"best":0.175}
+  EDGE kalshi ucl NO Barcelona price 0.49 ev 0.0246  depth {"contracts":10,"usd":5,"best":0.49}
+  EDGE kalshi ucl Tie price 0.19 ev 0.0209  depth {"contracts":201,"usd":38,"best":0.19}
+version 3.97.0 2026-10-14T03:02:58.611Z counts {"pairs":6104,"kalshiPriced":1584,"screened":183,"books":60,"read":30,"edges":3,"steaming":1,"steam":1,"watched":6690,"steamPoints":81785,"steamRestored":6699,"moverBets":0,"depthReads":3,"depthChecked":{"kalshi":3},"executable":0}
+  EDGE kalshi cs2 G2 Ares price 0.66 ev 0.0136 STEAM depth {"contracts":0,"usd":0,"best":0.66}
+  EDGE kalshi ucl NO Barcelona price 0.49 ev 0.0246  depth {"contracts":10,"usd":5,"best":0.49}
+  EDGE kalshi ucl Tie price 0.19 ev 0.0209  depth {"contracts":101,"usd":19,"best":0.19}
+version 3.97.0 2026-10-14T03:04:58.864Z counts {"pairs":6127,"kalshiPriced":1585,"screened":186,"books":87,"read":30,"edges":3,"steaming":1,"steam":1,"watched":6705,"steamPoints":82138,"steamRestored":6699,"moverBets":0,"depthReads":0,"depthChecked":{"kalshi":2,"polymarketus":1},"executable":2}
+  EDGE kalshi cs2 G2 Ares price 0.66 ev 0.0136 STEAM depth {"contracts":0,"usd":0,"best":0.66}
+  EDGE kalshi cs2 Sashi Esport price 0.15 ev 0.0377  depth {"contracts":703,"usd":105,"best":0.15}
+  EDGE polymarketus nfl Los Angeles Chargers -2.5 price 0.175 ev 0.0268  depth {"contracts":1000,"usd":175,"best":0.175}
+version 3.97.0 2026-10-14T03:06:59.111Z counts {"pairs":6116,"kalshiPriced":1590,"screened":181,"books":117,"read":30,"edges":4,"steaming":1,"steam":1,"watched":6704,"steamPoints":82301,"steamRestored":6699,"moverBets":1,"depthReads":5,"depthChecked":{"kalshi":4,"polymarketus":1},"executable":3}
+  EDGE kalshi cs2 G2 Ares price 0.66 ev 0.0136 STEAM depth {"contracts":0,"usd":0,"best":0.66}
+  EDGE kalshi cs2 Sashi Esport price 0.15 ev 0.0377  depth {"contracts":757,"usd":113,"best":0.15}
+  EDGE polymarketus nfl Los Angeles Chargers -2.5 price 0.175 ev 0.0268  depth {"contracts":1000,"usd":175,"best":0.175}
+  EDGE kalshi ucl Tie price 0.19 ev 0.0209  depth {"contracts":101,"usd":19,"best":0.19}
+version 3.97.0 2026-10-14T03:08:59.404Z counts {"pairs":6109,"kalshiPriced":1590,"screened":181,"books":144,"read":30,"edges":1,"steaming":1,"steam":0,"watched":6710,"steamPoints":88847,"steamRestored":6699,"moverBets":1,"depthReads":2,"depthChecked":{"kalshi":2},"executable":1}
+  EDGE kalshi ucl Tie price 0.19 ev 0.0209  depth {"contracts":101,"usd":19,"best":0.19}
+SRC after exchangeValue {"open":65,"n":111,"avgClv":0.0142,"execN":22,"execClv":-0.0566,"verdict":"avoid"}
+SRC after esportsEdges {"open":62,"n":121,"avgClv":-0.0199,"verdict":"avoid"}
+SRC after ev {"open":0,"n":0,"avgClv":null,"verdict":"early"}
+Wed Oct 14 03:10:59 UTC 2026
