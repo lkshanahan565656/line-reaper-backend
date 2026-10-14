@@ -28,6 +28,12 @@ const TUNING = {
   typicalGap: 0.15,
   eloK: 24,
   eloStart: 1500,
+  // head-to-head: maps between these two teams in the last h2hDays pull the
+  // rating's price toward their record, worth h2hPriorN maps of rating, and
+  // never by more than h2hMax. Exchange prices already know the history.
+  h2hDays: 365,
+  h2hPriorN: 12,
+  h2hMax: 0.06,
 };
 
 // ── odds math ──
@@ -203,8 +209,9 @@ function sharedWords(x, y) {
 // ── Elo ratings from results ──
 // games: [{ a, b, aWon: bool, t }] at MAP level, any order.
 function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
-  const r = {}, seen = {}, gaps = {};
+  const r = {}, seen = {}, gaps = {}, pairs = {};
   const get = n => (r[n] ??= start);
+  const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
   for (const g of games.slice().sort((x, y) => (x.t || 0) - (y.t || 0))) {
     const a = teamKey(g.a), b = teamKey(g.b);
     if (!a || !b || a === b) continue;
@@ -218,6 +225,8 @@ function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
     // calibrated scale as tonight's mapProb
     (gaps[a] ||= []).push(gap);
     (gaps[b] ||= []).push(-gap);
+    // every map between the two, for head-to-head
+    (pairs[pairKey(a, b)] ||= []).push({ t: g.t || 0, winner: g.aWon ? a : b });
   }
   const names = Object.keys(r);
   return {
@@ -245,6 +254,14 @@ function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
       const ra = this.rating(a), rb = this.rating(b);
       if (ra == null || rb == null) return null;
       return 1 / (1 + Math.pow(10, (this.scale ?? 1) * (rb - ra) / 400));
+    },
+    // maps team a won and lost against team b since `since` (ms)
+    h2h(a, b, since = -Infinity) {
+      const ka = resolve(a), kb = resolve(b);
+      if (!ka || !kb || ka === kb) return null;
+      const list = (pairs[pairKey(ka, kb)] || []).filter(x => x.t >= since);
+      const w = list.filter(x => x.winner === ka).length;
+      return { w, l: list.length - w, n: list.length };
     },
     size: names.length,
   };
@@ -328,7 +345,8 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
 // the baseline when there are no ratings for the sport (CS2). A player whose
 // 90 days came against weaker teams wins more maps than 50%, and his kill rate
 // carries that; tonight's matchup is measured against it, not against 50%.
-function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook, elo = {} }) {
+const clampN = (x, a, b) => Math.max(a, Math.min(b, x));
+function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook, elo = {}, now = Date.now() }) {
   if (!team) return null;
   const s = sportKey(sport);
   let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
@@ -342,11 +360,25 @@ function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook,
     if (p != null && ratings.games(team) >= 5 && ratings.games(opponent) >= 5) { pMap = p; source = 'elo'; }
   }
   if (pMap == null) return null;
+  // Head-to-head: shown whatever the source; it moves a rating's price only
+  // (an exchange's price already carries the history between the two)
+  let h2h = null;
+  if (ratings?.h2h && opponent) {
+    const rec = ratings.h2h(team, opponent, now - TUNING.h2hDays * 86400e3);
+    if (rec && rec.n > 0) {
+      h2h = { ...rec, shift: 0 };
+      if (source === 'elo' && rec.n >= 2) {
+        const pH = (rec.w + 1) / (rec.n + 2);
+        h2h.shift = clampN((pH - pMap) * rec.n / (rec.n + TUNING.h2hPriorN), -TUNING.h2hMax, TUNING.h2hMax);
+        pMap = Math.min(0.97, Math.max(0.03, pMap + h2h.shift));
+      }
+    }
+  }
   const scenarios = spanScenarios(maps, pMap, bestOf);
   const expMaps = scenarios.reduce((acc, sc) => acc + sc.maps * sc.weight, 0);
   const lastMap = Math.max(...(maps || [1]));
   return {
-    source, opponent: opponent || null, pMap, bestOf, pTypical,
+    source, opponent: opponent || null, pMap, bestOf, pTypical, h2h,
     pLastMap: pMapPlayed(lastMap, pMap, bestOf),
     scenarios, expMaps,
     factor: killFactor(s, pMap, pTypical),
@@ -358,6 +390,7 @@ function describeContext(c) {
   const bits = [];
   if (c.opponent) bits.push(`vs ${c.opponent}`);
   bits.push(`${Math.round(c.pMap * 100)}% map win (${c.source})`);
+  if (c.h2h?.n) bits.push(`H2H ${c.h2h.w}-${c.h2h.l} in maps${c.h2h.shift ? ` (${c.h2h.shift > 0 ? '+' : ''}${Math.round(c.h2h.shift * 100)} pts)` : ''}`);
   if (c.scenarios.length > 1) bits.push(`last map played ${Math.round(c.pLastMap * 100)}%`);
   if (Math.abs(c.factor - 1) >= 0.01) bits.push(`kills ×${c.factor.toFixed(2)}`);
   return bits.join(' · ');

@@ -775,10 +775,11 @@ function calcEsportsEV(ppLine, modelPred, side, sport, propText, opts = {}) {
 // prices a pick's signal ticket with it at signal and again at lock (market CLV).
 const pickCtx = new WeakMap();
 const CLV_WARN_N = parseInt(process.env.CLV_WARN_N || '20');
+const MATCHUP_PROVEN_N = parseInt(process.env.MATCHUP_PROVEN_N || '20');
 const CLV_WARN_SHARE = parseFloat(process.env.CLV_WARN_SHARE || '0.4');
-function marketFairProb(p, line, side) {
+function marketFairProb(p, line, side, ctx) {
   if (!p || p.marketPred == null || !(line > 0) || (side !== 'OVER' && side !== 'UNDER')) return null;
-  const opts = pickCtx.get(p) || { context: null };
+  const opts = ctx || pickCtx.get(p) || { context: null };
   const r = calcEsportsEV(line, p.marketPred, side, p.sport, p.market, opts);
   if (!r) return null;
   const skew = lineSkew(line, p.sport, p.market, opts);
@@ -1667,6 +1668,7 @@ async function generateEsportsPicks() {
   try { graded = await tracker.list({ status: 'graded', limit: 100000 }); } catch (e) { console.warn('Esports: graded record unavailable:', e.message); }
   weights = esmarket.modelWeights(graded);
   const biases = esmarket.lineBias(graded);
+  const matchupW = esmarket.matchupWeights(graded);
   if (process.env.ESPORTS_CALIBRATION !== 'off') {
     try {
       const prior = parseFloat(process.env.ESPORTS_CAL_PRIOR);
@@ -1677,7 +1679,7 @@ async function generateEsportsPicks() {
     } catch (e) { console.warn('Esports: calibration skipped:', e.message); }
   }
   esportsCache.calibration = calib ? { prior: calib.prior, buckets: Object.values(calib.buckets), at: new Date().toISOString() } : null;
-  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), lineBias: Object.values(biases.table), at: new Date().toISOString() };
+  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), lineBias: Object.values(biases.table), matchup: Object.values(matchupW.table), at: new Date().toISOString() };
   const marketCounts = { priced: 0, marketOnly: 0, multiBook: 0, dropped: 0 };
 
   // Where the books put this player, and the number the board prices with.
@@ -1699,17 +1701,24 @@ async function generateEsportsPicks() {
     const raw = g.predSource === 'auto' ? g.rawPred : null;
     let w = weights.weight(sk, st);
     if (g.sampleSize != null) w *= Math.min(1, Math.max(0.25, g.sampleSize / 40));
-    const mean = esmarket.blend(cons.mean, raw, w);
+    // Matchup: the market's number moved by how favoured the player's team is
+    // tonight against its usual opponent (context.js killFactor), at the weight
+    // the graded record gives it (esmarket.matchupWeights)
+    const mu = g.matchup && g.matchup.factor > 0 ? g.matchup : null;
+    const muW = mu ? matchupW.weight(sk) : 0;
+    const muAdj = mu ? 1 + muW * (mu.factor - 1) : 1;
+    const mean = esmarket.blend(cons.mean, raw, w) * muAdj;
     const kept = cons.quotes.filter(q => !q.dropped);
     marketCounts.priced++;
     if (raw == null) marketCounts.marketOnly++;
     if (kept.length > 1) marketCounts.multiBook++;
     marketCounts.dropped += cons.quotes.length - kept.length;
     const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.bias ? `, runs ${q.bias > 0 ? 'low' : 'high'} ${Math.abs(q.bias * 100).toFixed(0)}%` : ''}${q.dropped ? ' (left out)' : ''}`;
-    const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}`;
+    const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}${mu && Math.abs(muAdj - 1) >= 0.005 ? ` · matchup ×${muAdj.toFixed(3)} (${describeContext(mu)}, at ${Math.round(muW * 100)}% weight)` : ''}`;
     return {
       ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',
       market: { mean: cons.mean, quotes: cons.quotes, modelWeight: +w.toFixed(3), raw: raw != null ? +raw.toFixed(2) : null },
+      matchupInfo: mu ? { source: mu.source, opponent: mu.opponent, pMap: +mu.pMap.toFixed(3), factor: +mu.factor.toFixed(4), weight: +muW.toFixed(3), adj: +muAdj.toFixed(4), baseMean: +esmarket.blend(cons.mean, raw, w).toFixed(3), h2h: mu.h2h || null } : null,
       statLine: [g.statLine, note].filter(Boolean).join(' · '),
     };
   }
@@ -1864,9 +1873,25 @@ async function generateEsportsPicks() {
         }
       }
     }
+    // The matchup (who's favoured, by the exchanges or ratings, plus head-to-head)
+    // for the market price: read for every line, not only ones our model priced.
+    let matchup = predSource === 'auto' ? context : null;
+    if (!matchup && predSource !== 'manual' && ['k', 'hs', 'ast'].includes(statKind)) matchup = lineMatchup(lineObj);
     if (predSource !== 'auto') context = null;   // manual numbers are the user's own model
     if (context) statLine = [statLine, describeContext(context)].filter(Boolean).join(' · ');
-    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context };
+    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context, matchup };
+  }
+  function lineMatchup(lineObj) {
+    try {
+      const span = parseMapSpan(lineObj.market);
+      const maps = spanToMapList(span.label, span.count);
+      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null);
+      const sides = splitMatchTitle(lineObj.matchTitle);
+      const titleTeam = sides && opponent ? (sides[0] === opponent ? sides[1] : sides[1] === opponent ? sides[0] : null) : null;
+      const ctxArgs = { sport: (lineObj.sport || '').toUpperCase(), opponent, maps }, ctxDeps = { oddsBook, elo: ratingsState.elo };
+      return (titleTeam && titleTeam !== lineObj.team && matchContext({ ...ctxArgs, team: titleTeam }, ctxDeps))
+        || matchContext({ ...ctxArgs, team: lineObj.team }, ctxDeps);
+    } catch { return null; }
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
@@ -1881,6 +1906,7 @@ async function generateEsportsPicks() {
       rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
       fairSource: modelPred != null ? (g.fair || 'model') : null,
       marketPred: g.market ? g.market.mean : null,
+      matchup: g.matchupInfo || null,
       marketQuotes: g.market ? g.market.quotes : null,
       modelWeight: g.market ? g.market.modelWeight : null,
       sampleSize: g.sampleSize ?? null,
@@ -2077,6 +2103,28 @@ async function generateEsportsPicks() {
   esportsCache.marketCounts = marketCounts;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
+
+  // Matchup-led plays: +EV only because the matchup moved the number. The
+  // matchup's weight is a prior until graded picks set it, so these stay on
+  // the board (and in the record, BY MATCHUP) but leave Best Plays and alerts
+  // until matchup-moved picks beat the close: MATCHUP_PROVEN_N moves, half or
+  // more our way.
+  let matchupProven = false;
+  try {
+    const mm = (await tracker.summary()).byMatchup?.['matchup-led (no edge without it)'];
+    matchupProven = !!mm && mm.mktMoved >= MATCHUP_PROVEN_N && mm.mktBeatShare >= 0.5;
+  } catch { /* unproven */ }
+  esportsCache.matchupProven = matchupProven;
+  for (const p of picks) {
+    const m = p.matchup;
+    if (!m || m.baseMean == null || !p.side || !(p.bestEv > 0) || !(p.prob > 0) || p.ppLine == null) continue;
+    const at = mean => marketFairProb({ ...p, marketPred: mean }, p.ppLine, p.side, pickCtx.get(p));
+    const withMu = at(p.modelPred), without = at(m.baseMean);
+    if (withMu == null || without == null) continue;
+    const d = (p.bestEv / 100 + 1) / (p.prob / 100);
+    const evWithout = p.bestEv - (withMu - without) * d * 100;
+    if (evWithout <= 0) { p.matchupLed = +evWithout.toFixed(2); if (!matchupProven) p.clvWarn = true; }
+  }
 
   // Closing-line value by kind of pick (sport, stat, book, side): each play
   // carries how its kind's signals have done against the close. A kind whose
@@ -3597,7 +3645,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.92.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.94.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4624,7 +4672,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.92.0',
+  version: '3.94.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

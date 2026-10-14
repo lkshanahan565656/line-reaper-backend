@@ -724,6 +724,8 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-play .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
 .es-ldiff { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.03em; color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; vertical-align:1px; }
 .es-play .es-ldiff { display:block; width:max-content; margin:4px auto 0; }
+.es-mu { font-size:10.5px; color:#94a3b8; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-mu b { font-weight:700; } .es-mu b.up { color:#34d399; } .es-mu b.dn { color:#f87171; } .es-mu b.led { color:#fbbf24; }
 .es-clv { display:block; width:max-content; margin:4px auto 0; font-size:9.5px; font-weight:800; letter-spacing:.03em; padding:1px 6px; border-radius:5px; white-space:nowrap; }
 .es-clv.good { color:#34d399; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.35); }
 .es-clv.bad { color:#f87171; background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); }
@@ -5930,6 +5932,7 @@ async function renderTrackRecord(el) {
       ${trTable('BY SPORT', sum.bySport)}
       ${trTable('CLOSING LINE BY KIND', Object.fromEntries(Object.entries(sum.byKind || {}).map(([k, g]) => { const [sp, st, bk, sd] = k.split('|'); return [`${sp} ${st} · ${({ UD: 'Underdog', PP: 'PrizePicks', SL: 'Sleeper' })[bk] || bk} · ${sd === 'OVER' ? 'Over' : 'Under'}`, g]; })))}
       ${trTable('BY EV AT SIGNAL', sum.byEv)}
+      ${trTable('BY MATCHUP', sum.byMatchup)}
       ${trTable('BY STAT', sum.byStat)}
       ${trTable('BY SIDE', sum.bySide)}
       ${trTable('BY CONFIDENCE', sum.byConfidence)}
@@ -5993,6 +5996,20 @@ function esClvChip(p) {
   const ev = r.closeEv != null ? `, worth ${r.closeEv > 0 ? '+' : ''}${(r.closeEv * 100).toFixed(1)}% at the close on average` : '';
   return `<span class="es-clv ${good ? 'good' : 'bad'}" title="Picks like this (${escEs(p.sport)}, this stat, this book, this side): the closing market moved our way on ${r.beat} of the ${r.moved} that moved${ev}.${p.clvWarn ? ' Kept out of Best Plays and alerts until that turns.' : ''}">${good ? 'Beats' : 'Loses'} close ${r.beat}/${r.moved}</span>`;
 }
+// Tonight's matchup behind the price: how often the player's team wins a map
+// (from the exchanges, or ratings when no exchange prices it), head-to-head,
+// and how far that moved the number.
+const ES_MU_SRC = { kalshi: 'Kalshi', polymarket: 'Polymarket', exchanges: 'exchanges', elo: 'ratings', odds: 'odds', even: 'even' };
+function esMatchupLine(p) {
+  const m = p.matchup;
+  if (!m || m.pMap == null) return '';
+  const move = m.adj != null ? (m.adj - 1) * 100 : 0;
+  const bits = [`${p.team ? escEs(p.team) + ' ' : ''}${Math.round(m.pMap * 100)}% per map${m.opponent ? ' vs ' + escEs(m.opponent) : ''} (${ES_MU_SRC[m.source] || escEs(m.source)})`];
+  if (m.h2h?.n) bits.push(`H2H ${m.h2h.w}-${m.h2h.l}`);
+  if (Math.abs(move) >= 0.5) bits.push(`<b class="${move > 0 ? 'up' : 'dn'}">${move > 0 ? '+' : ''}${move.toFixed(1)}% kills</b>`);
+  if (p.matchupLed != null) bits.push(`<b class="led">matchup-led</b>`);
+  return `<div class="es-mu" title="Matchup: the market's number is moved by how favoured this team is tonight against its usual opponent, at ${Math.round((m.weight ?? 0) * 100)}% weight (the graded record sets it).${p.matchupLed != null && p.clvWarn ? ` Without the matchup this play would be ${p.matchupLed.toFixed(1)}% EV, so it stays out of Best Plays and alerts until matchup-led picks beat the closing line.` : ''}">${bits.join(' · ')}</div>`;
+}
 function esLineRow(p, key) {
   const B = key ? ES_BOOKS[key] : null;
   const ev = B ? p[B.evField] : esBestEv(p);
@@ -6054,7 +6071,7 @@ function esPlayRow(p, key, B) {
     : `<span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${esSideWord(p.side, key)}<em>${escEs(line)}</em></span>`;
   return `<div class="es-play">
     <div>${btn}</div>
-    <div style="min-width:0"><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div></div>
+    <div style="min-width:0"><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div>${esMatchupLine(p)}</div>
     <div class="mkcol sub" style="white-space:normal">${p.locked ? 'Pro' : `model <b style="color:#e2e8f0">${escEs(p.modelPred ?? '-')}</b>`}${mult && mult !== 1 ? ` · ${mult}x payout` : ''}</div>
     <div style="text-align:center">${side}${esLineDiffChip(p, key)}${esClvChip(p)}</div>
     <div class="evbig" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}${p.locked || p.prob == null ? '' : `<small>${p.prob.toFixed(0)}% to hit</small>`}</div>
