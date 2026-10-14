@@ -1,0 +1,9 @@
+/home/runner/work/line-reaper-backend/line-reaper-backend/diag/pboard.js:12
+  log('prod saved', prod['/api/status']?.version, (prod['/api/ev/record/bets?limit=500'].bets || []).length);
+                                                                                         ^
+
+TypeError: Cannot read properties of undefined (reading 'bets')
+    at /home/runner/work/line-reaper-backend/line-reaper-backend/diag/pboard.js:12:90
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Node.js v20.20.2

@@ -1,0 +1,11 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.92.0 on port 3999
+Tracker: store ready
+PP: 3148 lines (310 esports) · leagues: MLB, NBA, TENNIS, BAD, TT, CS2, LoL, NPB, KBO, CRICKET, UCL, SOCCER
+Sleeper: 124 esports and 1907 sports lines from 2031 rows
+UD: 6474 lines (4314 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NBA, FIFA, MMA, TENNIS, MOTORSPORTS, CS, LOL, VAL
+Startup complete
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
