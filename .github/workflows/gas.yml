@@ -1,0 +1,31 @@
+name: gascheck
+on:
+  push:
+    branches: [diag-gas]
+concurrency:
+  group: gascheck
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          set +e
+          SCRIPT=$(cat diag/RUN)
+          { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-gas-out
+          git add -f out.txt; git add -f data/* 2>/dev/null
+          git commit -qm "gas output" ; git push -f origin diag-gas-out
