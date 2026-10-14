@@ -1,0 +1,37 @@
+name: diag-esarb
+on:
+  push:
+    branches: [diag-esarb]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          npm i axios --no-audit --no-fund 2>&1 | tail -1
+          node diag/esprobe.js > esprobe-out.txt 2>&1 || true
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esarb-probe-out; git add -f esprobe-out.txt; git commit -qm probe; git push -qf origin diag-esarb-probe-out
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          npm i axios --no-audit --no-fund 2>&1 | tail -1
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esarb-live-out
+          (DUR_MIN=${DUR_MIN:-170} node diag/esarb.js > esarb-out.txt 2>&1; touch done.flag) &
+          for i in $(seq 1 40); do
+            sleep 300
+            git add -f esarb-out.txt esarb-out.json 2>/dev/null; git commit -qm "census $i" || true; git push -qf origin diag-esarb-live-out || true
+            [ -f done.flag ] && break
+          done
+          git add -f esarb-out.txt esarb-out.json; git commit -qm final || true; git push -qf origin diag-esarb-live-out
