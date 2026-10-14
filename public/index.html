@@ -5066,6 +5066,7 @@ function renderEvStale(el) {
       <div style="text-align:center;min-width:90px">
         <div style="font-size:12px;font-weight:700;color:#f1f5f9">${escAttr(EV_STALE_VENUE[r.book] || evBookName(r.book))}</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#fff;font-weight:700">${escAttr(price)}</div>
+        ${r.readMins >= 2 ? `<div style="font-size:9px;color:${r.readMins >= 10 ? '#f59e0b' : '#64748b'}" title="When we last read this venue; its line may have moved since">read ${r.readMins} min ago</div>` : ''}
       </div>
       <div style="text-align:center;min-width:80px" title="Pinnacle's no-vig fair at this number, after the move">
         <div style="font-size:9px;color:#64748b;letter-spacing:1.5px">FAIR NOW</div>

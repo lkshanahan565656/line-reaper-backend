@@ -471,6 +471,8 @@ function createStaleLines(opts = {}) {
           price: decimal ? probToAmerican(1 / decimal) : null, decimal: r4(decimal), mult, entry, entries,
           ev: r2(ev), fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), preFair: pre == null ? null : r2((side === 0 ? pre : 1 - pre) * 100),
           moveAt: new Date(mv.t).toISOString(), mins: Math.floor((t - mv.t) / 60e3), venueSince: new Date(e.t).toISOString(),
+          // when we last read the venue: PrizePicks is read every 20 min, so its line may have moved since
+          venueReadAt: new Date(e.seenAt).toISOString(), readMins: Math.max(0, Math.floor((t - e.seenAt) / 60e3)),
           moveSourceAt: new Date(mv.fromAt).toISOString(), dPts: r1(Math.abs(mv.d) * 100),
           pinPre: numberLabel(mv.from, s.meta), pinPost: numberLabel(mv.to, s.meta), pinNow: numberLabel(pin.q, s.meta),
           confirmedBy: conf, clears, single: conf.length === 0, source,

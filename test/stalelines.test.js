@@ -139,6 +139,7 @@ test('props: a pick\'em line left behind by Pinnacle\'s prop is priced through t
   assert.ok(r.ev > 3);
   assert.equal(r.single, true);
   assert.equal(r.rowKey, row.key);
+  assert.equal(r.readMins, 3);   // PrizePicks last read at the start: its line may have moved since
   // the app moves: it followed
   row.books.prizepicks.line = 254.5;
   eng.observe(apps(), min(20));
