@@ -13,7 +13,7 @@
 // read before the game (CLV); and the result from ESPN's box score.
 // Pure functions plus a small tracker; the server feeds board rows in.
 
-const { sideProbs } = require('./dist');
+const { sideProbs, SYM_MIN, nbCdf, nbPmf, normalCdf, useCount } = require('./dist');
 
 // Spread of each stat around its median, as var = k × mean (dist.sideProbs:
 // negative binomial for small counts, discretised normal above 8). Fitted on
@@ -28,11 +28,34 @@ const K = {
 };
 const kFor = (mkey, sport) => K[sport === 'NHL' && mkey === 'points' ? 'points_nhl' : mkey] ?? 1.5;
 
-// P(over line) for a median-ish mean on the stat's curve
+// P(over line) for a median-ish mean on the stat's curve. dist.sideProbs
+// switches from the negative binomial to a discretised normal at a mean of
+// SYM_MIN, and the two disagree there by up to 17 points of P(over) for the
+// yardage stats (k 12 to 14). A line whose read mean landed on that step came
+// back at a different price: Pinnacle's 47.3% over on Tory Horton's 5.5
+// receiving yards read back as 59.3% and flagged PrizePicks' over at +5.5%
+// (2026-10-14). Across BLEND means either side of SYM_MIN the curve slides
+// from one to the other, so a price read as a mean reads back as itself.
+const BLEND = 3;
+const whole = line => Math.abs(line - Math.round(line)) < 1e-9;
+// P(over | no push) on the negative binomial and on the discretised normal
+function nbPOver(line, mean, k) {
+  if (!whole(line)) return Math.max(0, 1 - nbCdf(Math.floor(line), mean, k));
+  const under = nbCdf(Math.round(line) - 1, mean, k), over = Math.max(0, 1 - under - nbPmf(Math.round(line), mean, k));
+  return under + over > 0 ? over / (under + over) : 0;
+}
+function symPOver(line, mean, k) {
+  const sd = Math.sqrt(mean * k);
+  if (!whole(line)) return 1 - normalCdf(Math.floor(line) + 0.5, mean, sd);
+  const under = normalCdf(line - 0.5, mean, sd), over = 1 - normalCdf(line + 0.5, mean, sd);
+  return under + over > 0 ? over / (under + over) : 0;
+}
 function pOver(mkey, sport, mean, line) {
   if (!(mean > 0)) return line < 0 ? 1 : 0;
-  const r = sideProbs(line, mean, kFor(mkey, sport), 'kills');
-  return r.push < 1 ? r.over / (1 - r.push) : 0;
+  const k = kFor(mkey, sport);
+  if (!useCount('kills', mean, k)) { const r = sideProbs(line, mean, k, 'kills'); return r.over; }
+  const w = Math.min(1, Math.max(0, (mean - (SYM_MIN - BLEND)) / (2 * BLEND)));
+  return (w < 1 ? (1 - w) * nbPOver(line, mean, k) : 0) + (w > 0 ? w * symPOver(line, mean, k) : 0);
 }
 
 // The mean whose curve gives P(over line) = p (bisection; the curve falls as

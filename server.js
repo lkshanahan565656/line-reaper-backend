@@ -2497,7 +2497,10 @@ function evFeeds() {
   // Kalshi player ladders price the pick'em lines (kprops.js); sport comes per game
   if (kpropsState.games.length) feeds.push({ sport: null, label: 'kalshi-props', games: kpropsState.games, updated: kpropsState.updated });
   // Pinnacle + FanDuel + BetRivers game lines (refreshFreeBooks)
-  for (const [s, games] of Object.entries(freeBooksState.games)) add(s, 'free-odds', { data: games, updated: freeBooksState.updated });
+  // the last good read only: a Pinnacle outage keeps the old games, which go
+  // off the board once they're FREE_BOOKS_MAX_AGE_MS old
+  if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)
+    for (const [s, games] of Object.entries(freeBooksState.games)) add(s, 'free-odds', { data: games, updated: freeBooksState.gamesAt });
   for (const [s, key] of Object.entries(EV_SPORTS)) {
     add(s, 'owls-odds', cache.owlsOdds[s]);
     add(s, 'owls-props', cache.owlsProps[s]);
@@ -3813,7 +3816,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.110.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.111.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4486,6 +4489,7 @@ function priceSportRows(rows) {
 const pingames = require('./pingames');
 const freebooks = require('./freebooks');
 const FREE_BOOK_PIN_SPORTS = { football: pingames.SPORTS.football, basketball: pingames.SPORTS.basketball, hockey: pingames.SPORTS.hockey, baseball: pingames.SPORTS.baseball };
+const FREE_BOOKS_MAX_AGE_MS = 5 * 60e3;
 const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.FREE_BOOKS || '').trim()), games: {}, counts: {}, errors: [], updated: null, ms: null };
 let freeBooksRunning = false;
 let freeBooksPropsAt = 0;
@@ -4500,20 +4504,23 @@ async function refreshFreeBooks() {
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache });
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) freeBooksState.games = games;
+    if (pin.games.length) Object.assign(freeBooksState, { games, gamesAt: new Date().toISOString() });
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
 }
 // Pinnacle's player props (pinprops.js): on with PINNACLE=on (PINNACLE_ON),
-// behind the pinnacle licence like its esports prices. Every 5 minutes.
+// behind the pinnacle licence like its esports prices. Every other minute.
 const pinprops = require('./pinprops');
 const pinPropsState = { enabled: PINNACLE_ON, props: 0, bySport: {}, updated: null, errors: [] };
-let pinPropsIndex = new Map();
+let pinPropsIndex = new Map(), pinPropsAt = 0;
+const PIN_PROPS_MAX_AGE_MS = 10 * 60e3;
 async function refreshPinnacleProps() {
   if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
   const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
-  if (props.length || !errors.length) pinPropsIndex = pinprops.indexProps(props);
+  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps(props); pinPropsAt = Date.now(); }
+  // an outage keeps the last read a while, never as the fair for long
+  else if (Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) pinPropsIndex = new Map();
   const bySport = {};
   for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
   Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
@@ -5006,7 +5013,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.110.0',
+  version: '3.111.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5014,7 +5021,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   pinnacleProps: pinPropsState,
-  freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, ms: freeBooksState.ms },
+  freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -5091,7 +5098,9 @@ schedule('*/5 * * * *', async () => {
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
-schedule('2,7,12,17,22,27,32,37,42,47,52,57 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
+// every other minute: the book props it prices move that often (a 5-minute
+// read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
+schedule('20 */2 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)

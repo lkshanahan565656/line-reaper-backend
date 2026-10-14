@@ -94,3 +94,15 @@ test('the record checks the line two minutes on, freezes the close and grades', 
   assert.strictEqual(s.overall.execGraded, 1);
   assert.strictEqual(s.byKind.gap.wins, 1);
 });
+
+test('a price read as a mean reads back as itself across the curve switch', () => {
+  // Pinnacle 47.3% over 5.5 receiving yards read back as 59.3% when the mean
+  // landed on dist's NB-to-normal step (2026-10-14)
+  for (const [mkey, line] of [['rec_yds', 5.5], ['rec_yds', 6.5], ['assists', 7.5], ['pra', 7.5], ['receptions', 7]])
+    for (const p of [0.3, 0.473, 0.5, 0.6]) {
+      const m = sp.meanFor(mkey, 'NFL', line, p);
+      assert.ok(Math.abs(sp.pOver(mkey, 'NFL', m, line) - p) < 1e-6, `${mkey} ${line} ${p}`);
+    }
+  let prev = 0;
+  for (let m = 0.5; m < 20; m += 0.05) { const p = sp.pOver('rec_yds', 'NFL', m, 6.5); assert.ok(p >= prev - 1e-3, `rises at ${m}`); prev = p; }
+});
