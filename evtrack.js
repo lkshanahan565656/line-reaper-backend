@@ -82,12 +82,29 @@ const betId = r => `${r.group}|${r.side}|${r.book}`;
 const marketSide = r => `${r.group}|${r.side}`;
 const r2 = x => Math.round(x * 100) / 100;
 
+// The delayed price only counts read within EXEC_WINDOW_MS of being due (2
+// minutes after the flag): a price read hours later grades a different bet.
+// Before 3.106.0 there was no such bound, so bets flagged before PR 117 shipped
+// took their "+2 min" price at the deploy (10-14 01:37 UTC), up to 14 hours
+// after the flag; load() drops those (execDropped: 'late').
+const EXEC_WINDOW_MS = 3 * 60e3;
+const execLate = (b, lagMs = 2 * 60e3) => b.execAt != null && Date.parse(b.execAt) - Date.parse(b.flaggedAt) > lagMs + EXEC_WINDOW_MS;
+
 function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => Date.now(), log = console } = {}) {
   const ready = store.init();
   const open = new Map();   // id → bet, for bets whose game hasn't started
 
   const loaded = ready.then(async () => {
-    for (const b of await store.all()) if (b.status === 'open') open.set(b.id, b);
+    const fixes = [];
+    for (const b of await store.all()) {
+      if (execLate(b)) {
+        for (const k of ['execPrice', 'execAt', 'execClv', 'execSized', 'execSizedUsd', 'execSizedClv']) delete b[k];
+        b.execDropped = 'late';
+        fixes.push(store.put(b));
+      }
+      if (b.status === 'open') open.set(b.id, b);
+    }
+    await Promise.all(fixes).catch(e => log.warn?.(`EV tracker: dropping late +2 min prices: ${e.message}`));
   });
 
   // Feed every screen here: its rows, plus the fair price of every market
@@ -129,7 +146,8 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
     for (const b of open.values()) {
       const started = b.start && Date.parse(b.start) <= t;
       if (!started) {
-        const ec = costs && b.execPrice == null && t - Date.parse(b.flaggedAt) >= lagMs - slackMs ? costs.get(b.id) ?? costs.get(marketSide(b)) : null;
+        const age = t - Date.parse(b.flaggedAt);
+        const ec = costs && b.execPrice == null && !b.execDropped && age >= lagMs - slackMs && age <= lagMs + EXEC_WINDOW_MS ? costs.get(b.id) ?? costs.get(marketSide(b)) : null;
         if (ec > 0 && ec < 1) {
           b.execPrice = ec; b.execAt = new Date(t).toISOString();
           const w = sized?.get(b.id);
@@ -156,7 +174,7 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
   async function dueForExec({ lagMs = 2 * 60e3, slackMs = 15e3 } = {}) {
     await loaded;
     const t = now();
-    return [...open.values()].filter(b => b.execPrice == null && b.contract && !(b.start && Date.parse(b.start) <= t) && t - Date.parse(b.flaggedAt) >= lagMs - slackMs && t - Date.parse(b.flaggedAt) <= lagMs + 5 * 60e3)
+    return [...open.values()].filter(b => b.execPrice == null && b.contract && !(b.start && Date.parse(b.start) <= t) && !b.execDropped && t - Date.parse(b.flaggedAt) >= lagMs - slackMs && t - Date.parse(b.flaggedAt) <= lagMs + EXEC_WINDOW_MS)
       .map(b => ({ id: b.id, venue: b.book, marketId: b.marketId, contract: b.contract, yesSide: b.yesSide }));
   }
 
@@ -196,4 +214,4 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
   return { recordBoard, dueForExec, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };
+module.exports = { EXEC_WINDOW_MS, createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };
