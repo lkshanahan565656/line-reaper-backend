@@ -32,14 +32,16 @@ const PRI = { Sports: 0, 'Climate and Weather': 1, Financials: 2, Economics: 2, 
   const sMeta = new Map(ser.map(s => [s.ticker, { cat: s.category, ft: s.fee_type, fm: s.fee_multiplier, freq: s.frequency }]));
   log('series', ser.length);
   // discover settled events (global paging, newest first)
-  const events = []; let cursor = null, pages = 0;
+  const events = []; let cursor = null, pages = 0, stale = 0;
   while (pages < 3000) {
     const d = await get('/events', { status: 'settled', with_nested_markets: true, limit: 200, cursor });
     if (!d) break; pages++;
-    const oldest = Date.parse((d.events || []).slice(-1)[0]?.markets?.[0]?.close_time || 0);
-    if (oldest && oldest < Date.now() - DAYS * 86400e3) { log('reached DAYS'); break; }
+    const cut = Date.now() - DAYS * 86400e3;
+    const fresh = (d.events || []).filter(e => Date.parse(e.markets?.[0]?.close_time || 0) >= cut).length;
+    stale = fresh ? 0 : stale + 1; if (stale >= 30) { log('reached DAYS'); break; }
     for (const e of d.events || []) {
       if (/^KXMVE/.test(e.event_ticker)) continue;
+      if (Date.parse(e.markets?.[0]?.close_time || 0) < Date.now() - DAYS * 86400e3) continue;
       if (CATS && !CATS.includes(e.category || sMeta.get(e.series_ticker)?.cat)) continue;
       const ms = (e.markets || []).filter(m => (num(m.volume_fp) ?? m.volume ?? 0) >= MINVOL && (m.result === 'yes' || m.result === 'no' || num(m.settlement_value_dollars) != null));
       const slim = m => ({ ticker: m.ticker, title: m.title, yes_sub_title: m.yes_sub_title, close_time: m.close_time, open_time: m.open_time, expected_expiration_time: m.expected_expiration_time, occurrence_datetime: m.occurrence_datetime, latest_expiration_time: m.latest_expiration_time, settlement_value_dollars: m.settlement_value_dollars, result: m.result, volume_fp: m.volume_fp, strike_type: m.strike_type });
