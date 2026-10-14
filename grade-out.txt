@@ -1,0 +1,3 @@
+version 3.106.0 edges 0 pro true
+record {"n":112,"avgEvAtFlag":3.46,"avgClv":1.42,"beatClosePct":66.96,"execN":1,"avgExecClv":1.01,"execAlertClv":1.01,"execBeatPct":100} {"xvalue":{"n":67,"avgEvAtFlag":3.87,"avgClv":0.26,"beatClosePct":62.69,"execN":1,"avgExecClv":1.01,"execAlertClv":1.01,"execBeatPct":100},"steam":{"n":37,"avgEvAtFlag":3.1,"avgClv":3.95,"beatClosePct":75.68,"execN":0},"mover":{"n":5,"avgEvAtFlag":0.6,"avgClv":-1.05,"beatClosePct":60,"execN":0},"kalshiref":{"n":3,"avgEvAtFlag":3.27,"avgClv":0.28,"beatClosePct":66.67,"execN":0}}
+bets 204
