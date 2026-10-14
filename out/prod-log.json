@@ -1,0 +1,563 @@
+[
+ {
+  "t": "2026-10-14T20:02:50.319Z",
+  "v": "3.117.0"
+ },
+ {
+  "t": "2026-10-14T20:03:20.574Z",
+  "v": "3.117.0"
+ },
+ {
+  "t": "2026-10-14T20:03:50.839Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": null,
+   "screenedAt": null,
+   "ms": null,
+   "summary": null,
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:04:21.098Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:03:50.814Z",
+   "screenedAt": "2026-10-14T20:03:50.820Z",
+   "ms": 448,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 0,
+    "priced": 370,
+    "shown": 51,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 3
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1,
+     "Match": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:04:51.394Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:03:50.814Z",
+   "screenedAt": "2026-10-14T20:04:51.329Z",
+   "ms": 448,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:05:21.647Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:03:50.814Z",
+   "screenedAt": "2026-10-14T20:04:51.329Z",
+   "ms": 448,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:05:52.004Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:05:51.312Z",
+   "screenedAt": "2026-10-14T20:05:51.316Z",
+   "ms": 97,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:06:23.839Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:05:51.312Z",
+   "screenedAt": "2026-10-14T20:05:51.316Z",
+   "ms": 97,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:06:54.120Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:05:51.312Z",
+   "screenedAt": "2026-10-14T20:06:51.789Z",
+   "ms": 97,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:07:24.396Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:05:51.312Z",
+   "screenedAt": "2026-10-14T20:06:51.789Z",
+   "ms": 97,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:07:54.647Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:07:50.773Z",
+   "screenedAt": "2026-10-14T20:07:50.775Z",
+   "ms": 385,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:08:24.912Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:07:50.773Z",
+   "screenedAt": "2026-10-14T20:07:50.775Z",
+   "ms": 385,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:08:55.194Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:07:50.773Z",
+   "screenedAt": "2026-10-14T20:08:51.938Z",
+   "ms": 385,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:09:25.457Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:07:50.773Z",
+   "screenedAt": "2026-10-14T20:08:51.938Z",
+   "ms": 385,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ },
+ {
+  "t": "2026-10-14T20:09:55.706Z",
+  "v": "3.118.0",
+  "es": {
+   "enabled": true,
+   "updated": "2026-10-14T20:09:51.736Z",
+   "screenedAt": "2026-10-14T20:09:51.740Z",
+   "ms": 31,
+   "summary": {
+    "events": 4,
+    "lines": 545,
+    "matched": 4,
+    "withKalshi": 4,
+    "priced": 370,
+    "shown": 50,
+    "clear": 0,
+    "byGame": {
+     "LOL": 48,
+     "VAL": 2
+    },
+    "byMarket": {
+     "Map 1 total kills": 15,
+     "Map 2 kill handicap": 5,
+     "Map 3 kill handicap": 5,
+     "Map 1 kill handicap": 4,
+     "Map 3 total kills": 11,
+     "Map 2 total kills": 8,
+     "Map 1 round handicap": 1,
+     "Map 2 round handicap": 1
+    },
+    "linesByMarket": {
+     "map|ml": 10,
+     "series|ml": 4,
+     "series|spread": 11,
+     "series|total": 6,
+     "kills|spread": 192,
+     "kills|tt": 144,
+     "kills|total": 138,
+     "rounds|spread": 20,
+     "rounds|total": 20
+    }
+   },
+   "errors": []
+  }
+ }
+]
