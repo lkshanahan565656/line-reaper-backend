@@ -12,6 +12,11 @@ const xarb = require(APP + '/xarb');
 const pmus = require(APP + '/pmus');
 const DUR = Number(process.env.DUR_MIN || 50) * 60e3, EVERY = Number(process.env.EVERY_S || 20) * 1e3;
 const http = axios.create({ timeout: 15000, headers: { 'user-agent': 'line-reaper-diag' } });
+http.interceptors.response.use(null, async e => {
+  const c = e.config || {};
+  if (e.response?.status === 429 && (c.__tries || 0) < 3) { c.__tries = (c.__tries || 0) + 1; await new Promise(r => setTimeout(r, 800 * c.__tries)); return http(c); }
+  throw e;
+});
 const K = 'https://api.elections.kalshi.com/trade-api/v2';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const r4 = x => Math.round(x * 1e4) / 1e4;
@@ -127,11 +132,11 @@ function fill(books, legs) {
   const seen = new Map();     // arb key → tracking
   const cycles = [];
   const bestHist = {};        // bucket of each matched pair's best all-in %
-  let rot = 0, cycle = 0, kErr = 0;
+  let rot = 0, cycle = 0, kErr = 0, ladderEv = 0; const ladHist = {}; const kMsg = {};
   while (Date.now() - t0 < DUR) {
     const c0 = Date.now(); cycle++; kErr = 0;
     const batch = [...prio, ...rest.slice(rot, rot + 25)]; rot = rest.length ? (rot + 25) % rest.length : 0;
-    await pool(batch, 6, async s => { const rows = []; const r = await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); if (r.errors.length) kErr++; else kCache.set(s, rows); });
+    await pool(batch, 3, async s => { const rows = []; const r = await xarb.fetchKalshiEvents(http, { seriesTicker: s, maxPages: 3, onPage: p => rows.push(...xarb.parseKalshiBinaries(p)) }); if (r.errors.length) { kErr++; kMsg[r.errors[0].message] = (kMsg[r.errors[0].message] || 0) + 1; } else kCache.set(s, rows); });
     const kalshi = [...kCache.values()].flat();
     let us = [];
     try { us = await pm.arbRows({}); } catch (e) { console.log('pmus failed', e.message); }
@@ -141,10 +146,19 @@ function fill(books, legs) {
     const near = xarb.findNearArbs({ matches, rows: us }, { ...o, minPct: 1000, nearPct: 1000, nearMax: 1e6 });
     for (const a of near) { const b = Math.max(-10, Math.floor(a.profitPct)); bestHist[b] = (bestHist[b] || 0) + 1; }
     const cands = [];
-    for (const a of near) if (a.profitPct > -1 && !(a.startTime && Date.parse(a.startTime) < now)) cands.push({ type: 'cross', title: a.title, pct: a.profitPct, cost: a.totalCost, startTime: a.startTime || null,
-      legs: a.legs.map(l => ({ venue: l.venue, id: l.marketId, side: l.side, price: l.price, row: l.venue === 'kalshi' ? null : us.find(r => r.id === l.marketId) })) });
-    const ladK = ladderArbs(ladderEvents(kalshi)), ladU = ladderArbs(ladderEvents(us));
-    for (const a of [...ladK, ...ladU]) if (!(a.startTime && Date.parse(a.startTime) < now)) cands.push(a);
+    const usById = new Map(us.map(r => [r.id, r])), kById = new Map(kalshi.map(r => [r.id, r]));
+    const rowOf = l => (l.venue === 'kalshi' ? kById.get(l.marketId) : usById.get(l.marketId)) || null;
+    for (const a of near) if (a.profitPct > -1) {
+      const legs = a.legs.map(l => ({ venue: l.venue, id: l.marketId, side: l.side, price: l.price, row: rowOf(l) }));
+      const start = a.startTime || legs.map(l => l.row?.startTime).find(Boolean) || null;
+      cands.push({ type: 'cross', title: a.title, pct: a.profitPct, cost: a.totalCost, startTime: start, legs });
+    }
+    const evK = ladderEvents(kalshi), evU = ladderEvents(us);
+    const ladK = ladderArbs(evK, 3), ladU = ladderArbs(evU, 3);
+    ladderEv = Math.max(ladderEv, evK.length + evU.length);
+    const lbest = new Map();
+    for (const a of [...ladK, ...ladU]) { const k = a.legs[0].row.id + a.legs[1].row.id; if (!lbest.has(k) || lbest.get(k).pct < a.pct) lbest.set(k, a); }
+    for (const a of lbest.values()) { const b = Math.max(-10, Math.floor(a.pct)); ladHist[b] = (ladHist[b] || 0) + 1; if (a.pct > -1) cands.push(a); }
     let mid = [];
     try { mid = xarb.findMiddles(kalshi, us, matches, { ...o, middleMinEv: -1000, middleMaxEv: 1e9, middleMax: 1e6 }).filter(m => m.totalCost < 1.01); } catch (e) { console.log('middles', e.message); }
     for (const m of mid) cands.push({ type: 'xladder', title: m.title, pct: r4((1 - m.totalCost) / m.totalCost * 100), cost: m.totalCost, startTime: m.startTime, middle: true,
@@ -162,23 +176,26 @@ function fill(books, legs) {
       if (!a.depth || a.depth.contracts <= 0) continue;
       live++;
       const key = a.type + '|' + a.legs.map(l => `${l.venue}:${l.id}:${l.side}`).join('+');
-      const s = seen.get(key) || { key, type: a.type, title: a.title, subject: a.subject, middle: !!a.middle, first: now, last: now, cycles: 0, gaps: 0, bestPct: -99, bestContracts: 0, bestProfit: 0, startTime: a.startTime, legs: a.legs.map(l => `${l.venue} ${l.side} ${l.id} @${l.price}`), suspect: a.pct > 15 };
+      const inPlay = !!(a.startTime && Date.parse(a.startTime) < now);
+      const s = seen.get(key) || { key, type: a.type, inPlay, title: a.title, subject: a.subject, middle: !!a.middle, first: now, last: now, cycles: 0, gaps: 0, bestPct: -99, bestContracts: 0, bestProfit: 0, startTime: a.startTime, legs: a.legs.map(l => `${l.venue} ${l.side} ${l.id} @${l.price}`), suspect: a.pct > 15 };
       if (s.lastCycle != null && s.lastCycle !== cycle - 1) s.gaps++;
       s.last = now; s.lastCycle = cycle; s.cycles++;
       s.bestPct = Math.max(s.bestPct, a.pct); s.bestContracts = Math.max(s.bestContracts, a.depth.contracts); s.bestProfit = Math.max(s.bestProfit, a.depth.profit);
       seen.set(key, s);
     }
     const row = { cycle, at: new Date(now).toISOString(), kalshiRows: kalshi.length, usRows: us.length, matches: matches.length, pairs: near.length,
-      snapCross: cands.filter(a => a.type === 'cross' && a.pct > 0).length, snapLadder: cands.filter(a => a.type !== 'cross' && a.pct > 0).length, live, kalshiErrors: kErr, ms: Date.now() - c0 };
+      snapCross: cands.filter(a => a.type === 'cross' && a.pct > 0).length, snapLadder: cands.filter(a => a.type !== 'cross' && a.pct > 0).length, inPlayCands: cands.filter(a => a.startTime && Date.parse(a.startTime) < now).length, live, kalshiErrors: kErr, ms: Date.now() - c0 };
     cycles.push(row);
     console.log(JSON.stringify(row));
     const wait = EVERY - (Date.now() - c0);
     if (wait > 0) await sleep(wait);
   }
   const list = [...seen.values()].map(s => ({ ...s, lastedSec: Math.round((s.last - s.first) / 1000) })).sort((a, b) => b.bestProfit - a.bestProfit);
+  console.log('kalshi errors', JSON.stringify(kMsg));
+  console.log('ladder events (max per cycle)', ladderEv, 'ladder best % per pair (bucket: count)', JSON.stringify(ladHist));
   console.log('\n=== best all-in % per matched pair, per cycle (floor bucket: count) ===');
   console.log(JSON.stringify(Object.fromEntries(Object.entries(bestHist).sort((a, b) => a[0] - b[0]))));
   console.log(`\n=== fillable arbs (book depth > 0): ${list.length} distinct ===`);
   for (const s of list.slice(0, 80)) console.log(JSON.stringify(s));
-  require('fs').writeFileSync('fastarbs-out.json', JSON.stringify({ cycles, bestHist, arbs: list }, null, 1));
+  require('fs').writeFileSync('fastarbs-out.json', JSON.stringify({ cycles, bestHist, ladHist, arbs: list }, null, 1));
 })();
