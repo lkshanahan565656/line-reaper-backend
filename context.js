@@ -28,6 +28,12 @@ const TUNING = {
   typicalGap: 0.15,
   eloK: 24,
   eloStart: 1500,
+  // head-to-head: maps between these two teams in the last h2hDays pull the
+  // rating's price toward their record, worth h2hPriorN maps of rating, and
+  // never by more than h2hMax. Exchange prices already know the history.
+  h2hDays: 365,
+  h2hPriorN: 12,
+  h2hMax: 0.06,
 };
 
 // ── odds math ──
@@ -149,6 +155,7 @@ function mixtureProb(line, side, scenarios, meanPerMap, k, normalCDF) {
 // "academy" is NOT stripped: T1 Academy is a different team from T1.
 function teamKey(n) {
   return (n || '').toLowerCase()
+    .replace(/['’]s\b/g, '')   // "Yakult's Brothers" is "Yakult Brothers"
     .replace(/\b(team|esports?|gaming|club)\b/g, '')
     .replace(/[^a-z0-9]/g, '');
 }
@@ -168,6 +175,23 @@ function teamsMatch(a, b) {
   return !SECOND_TEAM_RE.test(long.slice(short.length));
 }
 
+// A short team code against a full name: "BFX" is BNK FearX, "SLY" Solary,
+// "C9" Cloud9, "KT" KT Rolster. The code's letters run in order through the
+// name and it starts with the name's first letter.
+function teamCode(full, code) {
+  if (!full || !code) return false;
+  if (teamsMatch(full, code)) return true;
+  const a = String(full).toLowerCase().replace(/[^a-z0-9]/g, ''), b = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const [long, short] = a.length >= b.length ? [a, b] : [b, a];
+  if (short.length < 2 || short.length > 4 || long.length <= short.length || short[0] !== long[0]) return false;
+  // a plain prefix is teamsMatch's call ("MOUZ" is not "MOUZ NXT"); only a
+  // two-letter one ("KT" for KT Rolster) gets past it here
+  if (long.startsWith(short)) return short.length < 3 && !SECOND_TEAM_RE.test(long.slice(short.length));
+  let i = 0;
+  for (const ch of long) if (ch === short[i]) i++;
+  return i === short.length;
+}
+
 // "Vitality vs NAVI", "VIT @ NAVI", "G2 - FaZe" → ['Vitality', 'NAVI']
 function splitMatchTitle(title) {
   const parts = String(title || '').split(/\s+(?:vs\.?|v|@|-|–)\s+/i).map(s => s.trim()).filter(Boolean);
@@ -181,34 +205,81 @@ function opponentFrom(team, title, explicitOpponent) {
   if (!sides || !team) return null;
   if (teamsMatch(team, sides[0])) return sides[1];
   if (teamsMatch(team, sides[1])) return sides[0];
+  // Books and stat sites name teams differently ("Xi'an Team WE" in a "FlyQuest
+  // vs. Team WE" match, "HANJIN BRION" in "LGD vs. OKSavingsBank BRION"). Fall
+  // back to shared words, and only when exactly one side shares any.
+  const a = sharedWords(team, sides[0]), b = sharedWords(team, sides[1]);
+  if (a > 0 && b === 0) return sides[1];
+  if (b > 0 && a === 0) return sides[0];
   return null;
+}
+
+const NAME_FILLER = new Set(['team', 'esports', 'esport', 'gaming', 'club', 'the', 'fc']);
+const nameWords = n => String(n || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => (w.length >= 2 || /\d/.test(w)) && !NAME_FILLER.has(w));
+const SECOND_WORD_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)$/;
+function sharedWords(x, y) {
+  const wx = nameWords(x), wy = nameWords(y), sx = new Set(wx), sy = new Set(wy);
+  // a second roster is another team ("MOUZ" is not "MOUZ NXT")
+  if (wx.some(w => SECOND_WORD_RE.test(w) && !sy.has(w)) || wy.some(w => SECOND_WORD_RE.test(w) && !sx.has(w))) return 0;
+  return wy.filter(w => sx.has(w)).length;
 }
 
 // ── Elo ratings from results ──
 // games: [{ a, b, aWon: bool, t }] at MAP level, any order.
 function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
-  const r = {}, seen = {}, expSum = {};
+  const r = {}, seen = {}, gaps = {}, pairs = {};
   const get = n => (r[n] ??= start);
+  const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
   for (const g of games.slice().sort((x, y) => (x.t || 0) - (y.t || 0))) {
     const a = teamKey(g.a), b = teamKey(g.b);
     if (!a || !b || a === b) continue;
-    const ea = 1 / (1 + Math.pow(10, (get(b) - get(a)) / 400));
+    const gap = get(b) - get(a);
+    const ea = 1 / (1 + Math.pow(10, gap / 400));
     const sa = g.aWon ? 1 : 0;
     r[a] += k * (sa - ea);
     r[b] -= k * (sa - ea);
     seen[a] = (seen[a] || 0) + 1; seen[b] = (seen[b] || 0) + 1;
-    expSum[a] = (expSum[a] || 0) + ea; expSum[b] = (expSum[b] || 0) + (1 - ea);
+    // the rating gap each team faced, so `typical` can be read on the same
+    // calibrated scale as tonight's mapProb
+    (gaps[a] ||= []).push(gap);
+    (gaps[b] ||= []).push(-gap);
+    // every map between the two, for head-to-head
+    (pairs[pairKey(a, b)] ||= []).push({ t: g.t || 0, winner: g.aWon ? a : b });
   }
   const names = Object.keys(r);
   return {
     rating: n => { const key = resolve(n); return key ? r[key] : null; },
     games: n => { const key = resolve(n); return key ? seen[key] : 0; },
     // how favoured this team usually was, so we only adjust for the DIFFERENCE tonight
-    typical: n => { const key = resolve(n); return key && seen[key] ? expSum[key] / seen[key] : 0.5; },
-    mapProb(a, b) {
+    // Read through the same `scale` as mapProb: tonight's price is calibrated
+    // to the market, and comparing it to an uncalibrated "usual" price made
+    // every strong team look less favoured than usual and cut its kills.
+    typical(n) {
+      const key = resolve(n), g = key && gaps[key];
+      if (!g?.length) return 0.5;
+      const s = this.scale ?? 1;
+      return g.reduce((x, d) => x + 1 / (1 + Math.pow(10, s * d / 400)), 0) / g.length;
+    },
+    // scale: how much of the rating gap the market agrees with, fitted
+    // against exchange prices by the esports board (esboard.js calibrate)
+    scale: 1,
+    rawMapProb(a, b) {
       const ra = this.rating(a), rb = this.rating(b);
       if (ra == null || rb == null) return null;
       return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+    },
+    mapProb(a, b) {
+      const ra = this.rating(a), rb = this.rating(b);
+      if (ra == null || rb == null) return null;
+      return 1 / (1 + Math.pow(10, (this.scale ?? 1) * (rb - ra) / 400));
+    },
+    // maps team a won and lost against team b since `since` (ms)
+    h2h(a, b, since = -Infinity) {
+      const ka = resolve(a), kb = resolve(b);
+      if (!ka || !kb || ka === kb) return null;
+      const list = (pairs[pairKey(ka, kb)] || []).filter(x => x.t >= since);
+      const w = list.filter(x => x.winner === ka).length;
+      return { w, l: list.length - w, n: list.length };
     },
     size: names.length,
   };
@@ -275,12 +346,19 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
     // per-map win prob for `team` against `opponent`, or null
     lookup(sport, team, opponent) {
       const s = sportKey(sport), t = now();
-      for (const r of rows) {
-        if (r.sport !== s || t - r.at > ttlMs) continue;
+      const live = rows.filter(r => r.sport === s && t - r.at <= ttlMs);
+      for (const r of live) {
         if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf, source: r.source };
         if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source };
       }
-      return null;
+      // PrizePicks names teams by code ("KT", "BFX", "C9"): match a code to
+      // the one priced team it abbreviates, never to two
+      const hits = [];
+      for (const r of live) {
+        if (teamCode(r.teamA, team) && (!opponent || teamCode(r.teamB, opponent))) hits.push({ pMap: r.pMapA, bestOf: r.bestOf, source: r.source });
+        else if (teamCode(r.teamB, team) && (!opponent || teamCode(r.teamA, opponent))) hits.push({ pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source });
+      }
+      return hits.length === 1 ? hits[0] : null;
     },
     list() { const t = now(); return rows.filter(r => t - r.at <= ttlMs); },
   };
@@ -288,7 +366,12 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
 
 // ── the one call the pick generator makes ──
 // Returns null when we can't say anything about this match.
-function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
+// `usual`: the player's own team's map win rate behind his averages, used as
+// the baseline when there are no ratings for the sport (CS2). A player whose
+// 90 days came against weaker teams wins more maps than 50%, and his kill rate
+// carries that; tonight's matchup is measured against it, not against 50%.
+const clampN = (x, a, b) => Math.max(a, Math.min(b, x));
+function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook, elo = {}, now = Date.now() }) {
   if (!team) return null;
   const s = sportKey(sport);
   let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
@@ -296,16 +379,31 @@ function matchContext({ sport, team, opponent, maps }, { oddsBook, elo = {} }) {
   if (fed) { pMap = fed.pMap; source = fed.source === 'manual' || !fed.source ? 'odds' : fed.source; bestOf = fed.bestOf || bestOf; }
   const ratings = elo[s];
   if (ratings) pTypical = ratings.typical(team);
+  else if (usual > 0 && usual < 1) pTypical = usual;
   if (pMap == null && ratings && opponent) {
     const p = ratings.mapProb(team, opponent);
     if (p != null && ratings.games(team) >= 5 && ratings.games(opponent) >= 5) { pMap = p; source = 'elo'; }
   }
   if (pMap == null) return null;
+  // Head-to-head: shown whatever the source; it moves a rating's price only
+  // (an exchange's price already carries the history between the two)
+  let h2h = null;
+  if (ratings?.h2h && opponent) {
+    const rec = ratings.h2h(team, opponent, now - TUNING.h2hDays * 86400e3);
+    if (rec && rec.n > 0) {
+      h2h = { ...rec, shift: 0 };
+      if (source === 'elo' && rec.n >= 2) {
+        const pH = (rec.w + 1) / (rec.n + 2);
+        h2h.shift = clampN((pH - pMap) * rec.n / (rec.n + TUNING.h2hPriorN), -TUNING.h2hMax, TUNING.h2hMax);
+        pMap = Math.min(0.97, Math.max(0.03, pMap + h2h.shift));
+      }
+    }
+  }
   const scenarios = spanScenarios(maps, pMap, bestOf);
   const expMaps = scenarios.reduce((acc, sc) => acc + sc.maps * sc.weight, 0);
   const lastMap = Math.max(...(maps || [1]));
   return {
-    source, opponent: opponent || null, pMap, bestOf, pTypical,
+    source, opponent: opponent || null, pMap, bestOf, pTypical, h2h,
     pLastMap: pMapPlayed(lastMap, pMap, bestOf),
     scenarios, expMaps,
     factor: killFactor(s, pMap, pTypical),
@@ -317,6 +415,7 @@ function describeContext(c) {
   const bits = [];
   if (c.opponent) bits.push(`vs ${c.opponent}`);
   bits.push(`${Math.round(c.pMap * 100)}% map win (${c.source})`);
+  if (c.h2h?.n) bits.push(`H2H ${c.h2h.w}-${c.h2h.l} in maps${c.h2h.shift ? ` (${c.h2h.shift > 0 ? '+' : ''}${Math.round(c.h2h.shift * 100)} pts)` : ''}`);
   if (c.scenarios.length > 1) bits.push(`last map played ${Math.round(c.pLastMap * 100)}%`);
   if (Math.abs(c.factor - 1) >= 0.01) bits.push(`kills ×${c.factor.toFixed(2)}`);
   return bits.join(' · ');
@@ -327,5 +426,5 @@ module.exports = {
   pMapPlayed, spanScenarios, inferBestOf, killFactor, mixtureProb,
   teamKey, teamsMatch, splitMatchTitle, opponentFrom,
   buildElo, lolGamesFromRows, dotaGamesFromRows, valGamesFromRows,
-  createOddsBook, matchContext, describeContext, sportKey,
+  createOddsBook, teamCode, matchContext, describeContext, sportKey,
 };

@@ -34,13 +34,14 @@ async function dota() {
     rows.push(...b.map(m => ({ a: m.radiant_name, b: m.dire_name, aw: m.radiant_win ? 1 : 0, t: m.start_time * 1000, sid: m.series_id, st: m.series_type, lg: m.league_name, ra: m.radiant_team_id, da: m.dire_team_id })));
     before = Math.min(...b.map(m => m.match_id));
     if (Math.min(...b.map(m => m.start_time * 1000)) < cutoff) break;
+    if (i % 50 === 0) save('dota', rows);
     if (i % 100 === 0) log('dota page', i, new Date(b.slice(-1)[0].start_time * 1000).toISOString());
-    await sleep(1050);
+    await sleep(1500);
   }
   save('dota', rows);
 }
 async function lol() { const g = await R.fetchLoLesportsGames(http, { days: DAYS, maxPages: 600 }); save('lol', g); }
 async function val() { const g = await R.fetchVlrGames(http, { pages: 800 }); save('val', g); }
 (async () => {
-  await Promise.all([cs, dota, lol, val].map(f => f().catch(e => log('FAIL', f.name, e.message))));
+  await Promise.all([dota, lol, val].map(f => f().catch(e => log('FAIL', f.name, e.message))));
 })();

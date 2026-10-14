@@ -19,9 +19,7 @@ jobs:
       - run: npm ci --omit=dev || npm install --omit=dev
       - run: |
           set +e
-          { date -u; node diag/kpull.js; date -u; } > k.txt 2>&1 &
-          { date -u; node diag/rpull.js; date -u; } > r.txt 2>&1 &
-          wait
+          RDAYS=650 timeout 100m node diag/rpull.js 2>&1 | tee r.txt
           true
       - if: always()
         run: |
@@ -29,5 +27,5 @@ jobs:
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-esmodel-out
-          git add -f k.txt r.txt data/*.json.gz
+          git add -f r.txt data/*.json.gz
           git commit -qm "esmodel output" ; git push -f origin diag-esmodel-out
