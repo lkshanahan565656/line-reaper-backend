@@ -1,26 +1,26 @@
-name: diag-espin2
+name: diag-esstable
 on:
   push:
-    branches: [diag-espin2]
+    branches: [diag-esstable]
 permissions:
   contents: write
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-      - run: timeout 1700 node diag/post.js || true
+      - run: N=30 timeout 2700 node diag/es.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-espin2-out
+          git checkout --orphan diag-esstable-out
           git rm -rq --cached . || true
-          gzip -f out/*.json out/server.log || true
+          true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-espin2-out
+          git push -f origin diag-esstable-out
