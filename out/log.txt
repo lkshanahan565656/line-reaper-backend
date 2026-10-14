@@ -1,0 +1,5 @@
+2026-10-14T23:28:35.624Z an books {"68":{"key":"draftkings","title":"DraftKings"},"69":{"key":"fanduel_an_69","title":"FanDuel NJ"},"71":{"key":"betrivers_an_71","title":"BetRivers NJ"},"75":{"key":"betmgm","title":"BetMGM"},"79":{"key":"bet365","title":"bet365"},"123":{"key":"caesars","title":"Caesars"},"2724":{"key":"hardrock","title":"Hard Rock"},"2988":{"key":"fanatics","title":"Fanatics"},"4620":{"key":"thescore","title":"theScore Bet"}}
+2026-10-14T23:28:49.648Z cycle 0 quotes 34042 changed 34042 removed 0 secs 14
+2026-10-14T23:29:47.540Z cycle 1 quotes 34042 changed 30 removed 0 secs 12
+2026-10-14T23:30:48.289Z cycle 2 quotes 33416 changed 116 removed 630 secs 13
+2026-10-14T23:31:37.740Z done
