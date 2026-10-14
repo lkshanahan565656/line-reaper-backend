@@ -64,6 +64,7 @@ const DEFAULTS = {
   minCost: 0.10,          // longshots: a cent or two of noise reads as a huge %
   maxCost: 0.90,          // a 90¢+ buy wins too little to be worth flagging
   minEdgeCents: 0.015,    // and at least 1.5¢ a contract in absolute terms
+  pinMinLimit: 250,       // Pinnacle is the fair on its own only where it takes $250+
   pairHours: 3,           // sources' start times within this are the same match
   lookbackHours: 8,       // keep matches that started this long ago (live)
   aheadDays: 10,
@@ -548,7 +549,10 @@ function priceMarket(market, { model = null, start = null, now = Date.now(), opt
   const avg = list => (list.length ? list.reduce((x, v) => x + probs[v], 0) / list.length : null);
   // Pinnacle, when it prices the market, is the fair price on its own: the
   // sharpest book outranks an average that folds in thinner venues
-  const sharp = o.sharpRef !== false && probs.pinnacle != null;
+  // A small limit ($50-$100 on tier-3 matches) is Pinnacle saying it isn't
+  // sure either: there it averages in like any other source.
+  const pinLimit = market.outcomes[0].quotes.pinnacle?.limit;
+  const sharp = o.sharpRef !== false && probs.pinnacle != null && (pinLimit == null || pinLimit >= o.pinMinLimit);
   const fair0 = sharp ? probs.pinnacle : avg(srcs);
   market.sources = srcs;
   market.outcomes.forEach((oc, i) => {

@@ -285,3 +285,12 @@ test('Pinnacle is the fair price where it lists the market, and edges say so', (
   const [m3] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }), { now: NOW, opts: { sharpRef: false } });
   assert.equal(m3.markets.find(x => x.key === 'match').outcomes[0].quotes.kalshi.refSource, 'consensus');
 });
+
+test('a small Pinnacle limit averages in rather than setting the fair alone', () => {
+  const pm = [B.parsePolymarketEvent(pmEvent([pmMarket()]), 'VAL')];
+  const kalshi = [{ ...B.parseKalshiEvent(kGame({ yes_bid_dollars: '0.5800', yes_ask_dollars: '0.5900' }, { yes_bid_dollars: '0.4100', yes_ask_dollars: '0.4200' }), 'match'), game: 'VAL' }];
+  const small = pinMarkets.map(k => (k.period === 0 && k.type === 'moneyline' ? { ...k, limits: [{ amount: 100 }] } : k));
+  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp: B.parsePinnacle(pinMatchups, small) }), { now: NOW });
+  const g2 = m.markets.find(x => x.key === 'match').outcomes[0];
+  assert.equal(g2.quotes.kalshi.refSource, 'consensus');
+});
