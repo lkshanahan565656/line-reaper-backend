@@ -39,6 +39,34 @@ test('parseGames: pregame full-game lines only', () => {
   assert.ok(games[1].ml.draw > 0.2);
 });
 
+test('matchRows: Kalshi team, total and spread rows; Polymarket US rows', () => {
+  const games = pin.parseGames('baseball', matchups, markets, NOW);
+  const base = { exchange: 'kalshi', gameKey: 'KXMLB|26OCT14BOSNYY', eventKey: 'kalshi:KXMLBGAME-26OCT14BOSNYY', tradable: true, startTime: null, gameDay: null, expectedExpiration: '2026-10-15T02:30:00Z' };
+  const rows = [
+    { ...base, id: 'A', kind: 'teams', outcomeLabel: 'New York Y', noLabel: 'Boston' },
+    { ...base, id: 'B', kind: 'teams', outcomeLabel: 'Boston', noLabel: 'New York Y' },
+    { ...base, id: 'C', kind: 'total', line: 8.5, eventKey: 'kalshi:KXMLBTOTAL-26OCT14BOSNYY' },
+    { ...base, id: 'D', kind: 'spread', line: 1.5, lineTeam: 'New York Y' },
+    { ...base, id: 'E', kind: 'spread', line: 1.5, lineTeam: 'Boston' },   // Pinnacle has no Boston −1.5
+    { exchange: 'polymarketus', eventKey: 'polymarketus:epl-ars-che', id: 'P1', kind: 'yesno', outcomeLabel: 'Arsenal', game3: { teams: ['Arsenal', 'Chelsea'], pick: 0 }, startTime: '2026-10-14T19:00:00Z' },
+    { exchange: 'polymarketus', eventKey: 'polymarketus:epl-ars-che', id: 'P2', kind: 'yesno', outcomeLabel: 'Draw', game3: { teams: ['Arsenal', 'Chelsea'], pick: 'draw' }, startTime: '2026-10-14T19:00:00Z' },
+  ];
+  const m = Object.fromEntries(pin.matchRows(rows, games).map(x => [x.row.id, x]));
+  assert.ok(m.A.pYes > 0.58);
+  assert.ok(Math.abs(m.A.pYes + m.B.pYes - 1) < 1e-3);
+  assert.equal(m.C.pYes, 0.5);
+  assert.ok(m.D.pYes > 0.4 && m.D.pYes < 0.46);
+  assert.equal(m.E, undefined);
+  assert.equal(m.P1.kind, 'moneyline3');
+  assert.ok(m.P2.pYes > 0.25);
+});
+
+test('matchRows: a team contract with no draw does not pair with a three-way price', () => {
+  const games = pin.parseGames('soccer', matchups, markets, NOW);
+  const rows = [{ exchange: 'polymarketus', eventKey: 'polymarketus:x', id: 'Z', kind: 'teams', outcomeLabel: 'Arsenal', noLabel: 'Chelsea', startTime: '2026-10-14T19:00:00Z' }];
+  assert.equal(pin.matchRows(rows, games).length, 0);
+});
+
 test('kalshiMidBooks: Kalshi mids as a no-vig bookmaker on the matching game', () => {
   const games = [{ id: 'pin-1', commence_time: '2026-10-14T23:05:00Z', home_team: 'New York Yankees', away_team: 'Boston Red Sox', bookmakers: [] },
     { id: 'pin-9', commence_time: '2026-10-14T23:05:00Z', home_team: 'Chicago Cubs', away_team: 'St. Louis Cardinals', bookmakers: [] }];
