@@ -1,0 +1,16 @@
+fee mult {"KXCS2GAME":1,"KXLOLGAME":1,"KXVALORANTGAME":1,"KXDOTA2GAME":1,"KXCODGAME":1,"KXR6GAME":1,"KXOWGAME":1,"KXRLGAME":1,"KXMLBBGAME":1,"KXCS2MAP":1,"KXVALORANTMAP":1,"KXLOLMAP":1,"KXDOTA2MAP":1,"KXCODMAP":1,"KXR6MAP":1}
+13:55:04 ev 316 two 316 pre 287 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:55:24 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:55:44 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:56:04 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:56:24 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:56:44 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:57:04 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 2s
+13:57:24 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:57:44 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:58:04 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:58:24 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 2s
+13:58:44 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 2s
+13:59:04 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 2s
+13:59:24 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
+13:59:44 ev 317 two 317 pre 288 live 29 near 1 books 1 fillable 0 err 0 took 1s
