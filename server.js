@@ -3168,7 +3168,10 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   for (const e of [...edges, ...moverBets]) if (e.refToken) xvalueRefs.set(e.group, { refId: e.refId, token: e.refToken, start: e.start });
   let depthReads = 0;
   try { depthReads = await depthCheck.check([...edges, ...moverBets]); } catch (e) { console.warn('Exchange value: depth:', e.message); }
-  await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs, { costs: xvalue.costsOf(scr.quotes) }).catch(err => console.warn('Exchange value tracker:', err.message));
+  // bets due their +2 min grade also get it at $100 through a fresh book read
+  let sized = null;
+  try { sized = await depthCheck.sized(await xvalueTracker.dueForExec(), { kalshiFeeRate: o.kalshiFeeRate, pmusFeeRate: pmus.FEE_RATE }); } catch (e) { console.warn('Exchange value: sized grade:', e.message); }
+  await xvalueTracker.recordBoard(xvalue.trackRows([...edges, ...moverBets]), fairs, { costs: xvalue.costsOf(scr.quotes), sized }).catch(err => console.warn('Exchange value tracker:', err.message));
   Object.assign(xvalueState, { edges, moverBets, books, updated: new Date(now).toISOString(), counts: { pairs, kalshiPriced, screened: want.size, books: books.size, read, edges: edges.length, steaming: steaming.length, steam: edges.filter(e => e.steam).length, watched: steamWatch.size(), steamPoints: steamWatch.points(), steamRestored: steamWatch.restored(), moverBets: moverBets.length, depthReads, depthChecked: [...edges, ...moverBets].reduce((a, e) => (e.depth ? { ...a, [e.venue]: (a[e.venue] || 0) + 1 } : a), {}), executable: [...edges, ...moverBets].filter(e => execcheck.executable(e, XVALUE_MIN_DEPTH)).length } });
   const lic = webhookLicence();
   // alerts follow the record the way Best Plays does: a signal, league or
@@ -3187,7 +3190,7 @@ async function scanValue({ kalshi, polymarket, matches, usRows, usMatches }, now
   if (moverBets.length) {
     try {
       const rec = plays.find(p => p.source === 'exchangeValue' && p.by === 'signal' && p.play === 'line mover');
-      if (rec && rec.verdict === 'proven' && (rec.execClv ?? rec.avgClv) >= MOVER_ALERT_MIN) {
+      if (rec && rec.verdict === 'proven' && (rec.sizedN >= 8 ? rec.sizedClv : rec.execClv ?? rec.avgClv) >= MOVER_ALERT_MIN) {
         fresh.push(...moverBets.filter(e => canFill(e) && valueOk(lic)(e) && !avoided(e) && (!xvalueSeen.has(e.id) || now - xvalueSeen.get(e.id) > XVALUE_REALERT_MS)));
       }
     } catch (e) { console.warn('Line movers: record:', e.message); }
@@ -3720,7 +3723,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.104.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.105.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4056,6 +4059,19 @@ app.get('/api/exchange-value', async (req, res) => {
     if (!pro) return res.json({ ...base, edges: edges.map(e => ({ ev: e.ev, locked: true })) });
     res.json(regionSafe({ ...base, edges: edges.slice(0, Math.min(parseInt(req.query.limit) || 200, 500)), movers: moved, counts: xvalueState.counts,
       settings: { ...xvalue.DEFAULTS, ...XVALUE_OPTS, alertMin: XVALUE_ALERT_MIN, booksPerScan: XVALUE_BOOKS, steam: { ...steamWatch.opts, alertMin: STEAM_ALERT_MIN }, executable: { minDepthUsd: XVALUE_MIN_DEPTH, ...XVALUE_EXEC, lagMin: 2 } } }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Each tracked exchange value bet with its grades (at the alert, at the best
+// price 2 min later, and at $100 through the book then), newest first. Open
+// bets are live edges, so only closed ones are free.
+app.get('/api/exchange-value/bets', async (req, res) => {
+  try {
+    const status = hasPro(req) ? req.query.status : 'closed';
+    const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
+    const ok = valueOk(licenceOf(req));
+    const bets = (await xvalueTracker.list({ status, limit: 1e9 })).filter(b => ok({ venue: b.book }))
+      .sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, limit);
+    res.json(regionSafe({ bets }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The thresholds in force (defaults overridden by env), so the app can show
@@ -4871,7 +4887,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.104.0',
+  version: '3.105.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

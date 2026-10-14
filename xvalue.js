@@ -307,6 +307,7 @@ function trackRows(edges) {
     market: e.market, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100,
     source: e.mover ? 'mover' : e.steam ? 'steam' : e.ref?.venue === 'kalshi' ? 'kalshiref' : 'xvalue',
     depthUsd: e.depth?.usd ?? null,
+    contract: e.side, marketId: e.marketId, ...(e.yesSide ? { yesSide: e.yesSide } : {}),
   }));
 }
 
