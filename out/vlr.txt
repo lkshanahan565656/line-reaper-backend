@@ -1,0 +1,18 @@
+22:58:38 matches 2635
+22:58:39 sample 762036 {"gid":"285138","map":"Ascent","teams":["BBL Esports","Misa Esports"],"s":[13,9],"rounds":22,"p":[["31305","Lar0k","BBL",25,13],["40591","ComeBack","BBL",20,16],["52965","oroni","BBL",16,13],["24344","Loita","BBL",13,14],["5565","Rosé","BBL",7,16],["53094","Fortres","MISA",19,16],["55693","Ronniee","MISA",18,16],["58766","Tiyosta","MISA",15,16],["21865","MERZ","MISA",11,16],["42008","pAwn1","MISA",9,17]]}
+22:58:39 sample 754741 {"gid":"283300","map":"Lotus","teams":["G2 Esports","T1"],"s":[13,11],"rounds":24,"p":[["3993","jawgemo","G2",27,14],["15500","trent","G2",15,11],["3885","valyn","G2",13,17],["2170","BABYBAY","G2",13,19],["7873","leaf","G2",11,18],["13039","Meteor","T1",27,13],["485","stax","T1",18,18],["29833","iZu","T1",12,14],["2489","Munchkin","T1",11,15],["804","BuZz","T1",11,19]]}
+22:58:40 sample 754740 {"gid":"283297","map":"Sunset","teams":["NRG","100 Thieves"],"s":[12,14],"rounds":26,"p":[["11494","keiko","NRG",22,16],["5132","mada","NRG",23,17],["2172","brawk","NRG",18,18],["11118","skuba","NRG",13,18],["11225","Ethan","NRG",10,18],["20140","vora","100T",20,16],["601","Asuna","100T",21,18],["3880","bang","100T",14,17],["4147","Cryocells","100T",14,16],["29893","Timotino","100T",18,19]]}
+23:01:16 200 done 200 with maps 0 fails
+23:03:54 400 done 400 with maps 0 fails
+23:06:33 600 done 600 with maps 0 fails
+23:09:12 800 done 800 with maps 0 fails
+23:11:52 1000 done 1000 with maps 0 fails
+23:14:31 1200 done 1197 with maps 0 fails
+23:17:11 1400 done 1397 with maps 0 fails
+23:19:50 1600 done 1597 with maps 0 fails
+23:22:29 1800 done 1797 with maps 0 fails
+23:25:10 2000 done 1997 with maps 0 fails
+23:27:50 2200 done 2197 with maps 0 fails
+23:30:29 2400 done 2397 with maps 0 fails
+23:33:09 2600 done 2597 with maps 0 fails
+23:33:38 saved 2635 fails 0
