@@ -8,6 +8,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const get = async p => { try { const r = await fetch(P + p, { signal: AbortSignal.timeout(120000) }); return await r.json(); } catch (e) { return { error: e.message }; } };
 (async () => {
   fs.mkdirSync('out', { recursive: true });
+  for (let i = 0; i < 30 && process.env.WAITVER; i++) { const st = await get('/api/status'); if (st.version === process.env.WAITVER) break; await wait(60e3); }
+  await wait(+(process.env.SETTLE || 0) * 60e3);
+  fs.writeFileSync('out/sharp.json', JSON.stringify(await get('/api/props/board?sport=SPORTS&sort=ev&limit=150&sharp=1')));
+  fs.writeFileSync('out/best.json', JSON.stringify(await get('/api/best?limit=500')));
   fs.writeFileSync('out/record.json', JSON.stringify(await get('/api/props/record')));
   fs.writeFileSync('out/picks.json', JSON.stringify(await get('/api/props/record/picks?limit=1000')));
   fs.writeFileSync('out/status.json', JSON.stringify(await get('/api/status')));
