@@ -53,12 +53,13 @@ const slim = (m, src) => ({ t: m.ticker, ev: m.event_ticker, s: m.ticker.split('
   // candles: keep markets whose strike is within 25c of that event's settled value (others sit at 0/100)
   const todo = all.filter(m => m.pay === 0 || m.pay === 1).filter(m => m.ev_val == null || m.strike == null || Math.abs(m.strike - m.ev_val) <= 0.25);
   log('candle todo', todo.length);
-  const cs2row = (m, cs) => { const ct = Date.parse(m.close); const c = []; for (const k of cs || []) { const a = num(k.yes_ask?.close_dollars ?? (k.yes_ask?.close != null ? k.yes_ask.close / 100 : null)), b = num(k.yes_bid?.close_dollars ?? (k.yes_bid?.close != null ? k.yes_bid.close / 100 : null)); const al = num(k.yes_ask?.low_dollars), bh = num(k.yes_bid?.high_dollars); if (a == null && b == null) continue; c.push([Math.round((ct - k.end_period_ts * 1000) / 60e3), a == null ? null : Math.round(a * 100), b == null ? null : Math.round(b * 100), Math.round(num(k.volume_fp) || k.volume || 0), al == null ? null : Math.round(al * 100), bh == null ? null : Math.round(bh * 100)]); } m.c = c; };
+  const cs2row = (m, cs) => { const ct = Date.parse(m.close); const c = []; for (const k of cs || []) { const a = num(k.yes_ask?.close_dollars ?? (k.yes_ask?.close ?? null)), b = num(k.yes_bid?.close_dollars ?? (k.yes_bid?.close ?? null)); const al = num(k.yes_ask?.low_dollars ?? k.yes_ask?.low), bh = num(k.yes_bid?.high_dollars ?? k.yes_bid?.high); if (a == null && b == null) continue; c.push([Math.round((ct - k.end_period_ts * 1000) / 60e3), a == null ? null : Math.round(a * 100), b == null ? null : Math.round(b * 100), Math.round(num(k.volume_fp) || num(k.volume) || 0), al == null ? null : Math.round(al * 100), bh == null ? null : Math.round(bh * 100)]); } m.c = c; };
   // live in batches of 20 per event
   const live = todo.filter(m => m.src === 'live'), hist = todo.filter(m => m.src === 'hist');
   const byEv = new Map(); for (const m of live) (byEv.get(m.ev) || byEv.set(m.ev, []).get(m.ev)).push(m);
   const groups = []; for (const l of byEv.values()) for (let i = 0; i < l.length; i += 20) groups.push(l.slice(i, i + 20));
   let done = 0, sampleShown = false;
+  if (process.env.HIST_ONLY) groups.length = 0;
   await pool(groups, 8, async g => {
     const st = Math.min(...g.map(m => Date.parse(m.open))), en = Math.max(...g.map(m => Date.parse(m.close)));
     const d = await get('/markets/candlesticks', { market_tickers: g.map(m => m.t).join(','), start_ts: Math.floor(st / 1000) - 3600, end_ts: Math.ceil(en / 1000) + 3600, period_interval: 60 });
@@ -79,6 +80,6 @@ const slim = (m, src) => ({ t: m.ticker, ev: m.event_ticker, s: m.ticker.split('
     if (++done % 1000 === 0) log('hist', done, '/', hist.length, 'calls', calls, '429s', last429);
   });
   fs.mkdirSync('data', { recursive: true });
-  fs.writeFileSync('data/gas-all.json.gz', zlib.gzipSync(JSON.stringify(all)));
+  fs.writeFileSync(process.env.HIST_ONLY ? 'data/gas-hist.json.gz' : 'data/gas-all.json.gz', zlib.gzipSync(JSON.stringify(process.env.HIST_ONLY ? all.filter(m => m.src === 'hist') : all)));
   log('saved', all.length, 'with candles', all.filter(m => m.c?.length).length, 'calls', calls, 'errs', errs, '429s', last429);
 })();

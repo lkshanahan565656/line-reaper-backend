@@ -19,6 +19,7 @@ jobs:
       - run: |
           set +e
           SCRIPT=$(cat diag/RUN)
+          export HIST_ONLY=1
           { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
           true
       - if: always()
