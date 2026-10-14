@@ -44,21 +44,33 @@ function normLine(l) {
   return { ...l, sport, market: prefix ? `${prefix}${l.market}` : l.market, esports: ESPORTS.has(sport) };
 }
 
-// Sleeper's sports lines carry no start time. Borrow the player's next start
-// from Underdog or PrizePicks; the stat doesn't matter, it's the same game.
+// Sleeper's sports lines carry no start time of their own. Sleeper's schedule
+// gives most of them one (sleepersched.js); the rest borrow the player's start
+// from Underdog or PrizePicks, the stat doesn't matter, it's the same game.
+// A line whose game date is known only borrows a start on that date (within
+// 20 hours of its midday), so preseason and opening night don't merge; with
+// no date it takes the player's next start, as before.
+const DATE_SLACK = 20 * 3600e3;
 function borrowStarts(slLines, refLines, now = Date.now()) {
-  const next = new Map();
+  const starts = new Map();
   for (const r of refLines) {
     const t = Date.parse(r.startTime || '');
     if (!(t > now)) continue;
     const k = `${boardSport(r.sport).sport}|${canonName(r.player)}`;
-    const cur = next.get(k);
-    if (!cur || t < cur.t) next.set(k, { t, startTime: r.startTime, matchTitle: r.matchTitle || '' });
+    if (!starts.has(k)) starts.set(k, []);
+    starts.get(k).push({ t, startTime: r.startTime, matchTitle: r.matchTitle || '' });
   }
   return slLines.map(l => {
     if (l.startTime) return l;
-    const hit = next.get(`${boardSport(l.sport).sport}|${canonName(l.player)}`);
-    return hit ? { ...l, startTime: hit.startTime, matchTitle: l.matchTitle || hit.matchTitle } : l;
+    const list = starts.get(`${boardSport(l.sport).sport}|${canonName(l.player)}`) || [];
+    let hit = null;
+    if (l.gameDate) {
+      const mid = Date.parse(`${l.gameDate}T16:00:00Z`);
+      for (const c of list) if (Math.abs(c.t - mid) <= DATE_SLACK && (!hit || Math.abs(c.t - mid) < Math.abs(hit.t - mid))) hit = c;
+    } else {
+      for (const c of list) if (!hit || c.t < hit.t) hit = c;
+    }
+    return hit ? { ...l, startTime: hit.startTime, matchTitle: l.matchTitle || hit.matchTitle, startSource: 'borrowed' } : l;
   });
 }
 
@@ -70,13 +82,28 @@ const num = x => (x == null || x === '' || !Number.isFinite(Number(x)) ? null : 
 // alike); sports use sportMarketKey.
 function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
   const rows = new Map();
+  // A sports line from a different game than the others (Sleeper on opening
+  // night while Underdog lists preseason) gets a row of its own: the anchor is
+  // the player's earliest start on the other books, and a line more than
+  // DATE_SLACK away from it is keyed by its own date.
+  const anchor = new Map();
+  for (const raw of lines) {
+    if (!raw || raw.book === 'sleeper' || !raw.player) continue;
+    const l = normLine(raw);
+    const t = Date.parse(l.startTime || '');
+    if (l.esports || !(t > now)) continue;
+    const k = `${l.sport}|${canonName(l.player)}`;
+    if (!anchor.has(k) || t < anchor.get(k)) anchor.set(k, t);
+  }
   for (const raw of lines) {
     if (!raw || !raw.player || num(raw.line) == null || !BOOKS.includes(raw.book)) continue;
     const l = normLine(raw);
     const t = Date.parse(l.startTime || '');
     if (t && t <= now) continue;   // started: the price is gone
     const mkey = l.esports && esKey ? esKey(l.sport, l.market) : sportMarketKey(l.market);
-    const key = `${l.sport}|${canonName(l.player)}|${mkey}`;
+    const a = anchor.get(`${l.sport}|${canonName(l.player)}`);
+    const own = !l.esports && t && a && Math.abs(t - a) > DATE_SLACK ? `|${new Date(t).toISOString().slice(0, 10)}` : '';
+    const key = `${l.sport}|${canonName(l.player)}|${mkey}${own}`;
     let row = rows.get(key);
     if (!row) {
       row = { key, sport: l.sport, esports: l.esports, player: l.player, team: l.team || '', market: l.market, mkey,

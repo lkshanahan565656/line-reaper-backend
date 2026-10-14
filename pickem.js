@@ -107,7 +107,7 @@ function parseSleeperLines(rows, players = {}, { sports = false } = {}) {
     const esport = !!SLEEPER_ESPORTS[key];
     lines.push({
       book: 'sleeper', sport, player: name, team: team || p.team || '', market: esport ? sleeperMarket(row.wager_type) : sleeperSportMarket(sport, row.wager_type), line,
-      gameId: row.game_id || null, startTime: '', matchTitle: '',
+      gameId: row.game_id || null, startTime: '', matchTitle: '', slSport: key, season: row.season || null, seasonType: row.season_type || null,
       overMultiplier: over, underMultiplier: under, overOpen: over != null, underOpen: under != null,
     });
   }

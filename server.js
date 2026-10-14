@@ -212,7 +212,7 @@ let ppFail = { count: 0, until: 0 };
 const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
-const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, slimPlayers, attachMatches, sleeperPricing } = require('./pickem');
+const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, slimPlayers, attachMatches, sleeperPricing } = require('./pickem');
 const propsBoard = require('./propsboard');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
@@ -385,6 +385,8 @@ async function scrapeUnderdog() {
 // names come from /players/{sport} (0.2 to 6 MB a sport, slimmed to name and
 // team), refreshed every 6 hours. cache.sleeper keeps the esports lines the
 // esports board reads; cache.sleeperSports the rest, for the props board.
+const { createSleeperSchedule, attachGames: attachSleeperGames } = require('./sleepersched');
+const sleeperSchedule = createSleeperSchedule(axios);
 const SLEEPER_LINES_URL = 'https://api.sleeper.app/lines/available?dynamic=true&include_preseason=true&eg=15.control';
 const sleeperPlayers = { bySport: {}, at: {} };
 let sleeperRunning = false;
@@ -405,7 +407,11 @@ async function scrapeSleeper() {
     const lines = parseSleeperLines(rows, sleeperPlayers.bySport);
     const now = new Date().toISOString();
     cache.sleeper = { data: lines, updated: now, rows: rows.length };
-    const sports = parseSleeperLines(rows, sleeperPlayers.bySport, { sports: true }).filter(l => !isEsports(l.sport));
+    let sports = parseSleeperLines(rows, sleeperPlayers.bySport, { sports: true }).filter(l => !isEsports(l.sport));
+    try {
+      const { games, starts } = await sleeperSchedule.refresh(rows, k => { const sp = sleeperSport(k); return sp && !isEsports(sp) ? sp : null; });
+      sports = attachSleeperGames(sports, games, starts);
+    } catch (e) { console.warn('Sleeper schedule:', e.message); }
     cache.sleeperSports = { data: sports, updated: now };
     dfsError.sleeper = null;
     console.log(`Sleeper: ${lines.length} esports and ${sports.length} sports lines from ${rows.length} rows`);
@@ -3714,7 +3720,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.100.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.101.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4860,7 +4866,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.100.0',
+  version: '3.101.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
