@@ -6121,7 +6121,7 @@ function esLineRow(p, key) {
     <div>${esRowButtons(p)}</div>
     <div style="min-width:0">
       <div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div>
-      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}</div>
+      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
       ${bookRow}${esStatEdge(p)}
     </div>
     <div class="nums"><div class="es-lf"><b>${escEs(line)}</b><div>fair <span>${escEs(p.modelPred ?? '—')}</span></div></div>${side}</div>
