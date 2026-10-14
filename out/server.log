@@ -1,0 +1,250 @@
+Line Reaper v3.92.0 on port 3999
+Tracker: store ready
+PP: 2709 lines (311 esports) · leagues: MLB, NBA, UFC, NHL, NHL1P, NBAP, TENNIS, TT, CS2, BAD, LoL, NPB
+Sleeper: 124 esports and 1918 sports lines from 2042 rows
+UD: 6763 lines (4542 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+Startup complete
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 Djoko: KPM=14.2 KPR=0.68 HS%=62 R=—
+bo3 Brooxsy: KPM=14.0 KPR=0.68 HS%=62 R=—
+bo3 bL4SEZ: KPM=13.4 KPR=0.65 HS%=60 R=—
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+bo3 Wicadia: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 woxic: KPM=15.0 KPR=0.71 HS%=29 R=—
+bo3 Jimpphat: KPM=14.9 KPR=0.70 HS%=58 R=—
+OpenDota: 7686 pro player names indexed
+bo3 XANTARES: KPM=14.8 KPR=0.69 HS%=53 R=—
+Esports board: 197 matches (101 on both exchanges, 4 edges) in 8131ms
+bo3 kyxsan: KPM=12.0 KPR=0.57 HS%=54 R=—
+bo3 dgt: KPM=14.5 KPR=0.71 HS%=57 R=—
+Esports board: 197 matches (101 on both exchanges, 4 edges) in 3209ms
+bo3 HUASOPEEK: KPM=13.8 KPR=0.68 HS%=63 R=—
+bo3 sjuush: KPM=14.3 KPR=0.65 HS%=55 R=—
+bo3 meyern: KPM=12.1 KPR=0.60 HS%=39 R=—
+bo3 luchov: KPM=12.8 KPR=0.63 HS%=59 R=—
+bo3 Zyphon: KPM=15.1 KPR=0.71 HS%=57 R=—
+bo3 max: KPM=13.3 KPR=0.67 HS%=— R=—
+bo3 BRACE: KPM=14.5 KPR=0.72 HS%=55 R=—
+bo3 Jame: KPM=13.4 KPR=0.64 HS%=30 R=—
+bo3 yourwombat: KPM=13.2 KPR=0.65 HS%=40 R=—
+bo3 Roflko: KPM=15.6 KPR=0.81 HS%=54 R=—
+bo3 kyousuke: KPM=15.4 KPR=0.76 HS%=60 R=—
+bo3 sav: KPM=12.5 KPR=0.62 HS%=58 R=—
+bo3 micalis: KPM=12.0 KPR=0.63 HS%=69 R=—
+bo3 SkulL: KPM=13.4 KPR=0.68 HS%=49 R=—
+bo3 rekonz: KPM=13.2 KPR=0.67 HS%=56 R=—
+bo3 z1Nny: KPM=15.0 KPR=0.72 HS%=64 R=—
+bo3 foggers: KPM=14.3 KPR=0.69 HS%=53 R=—
+bo3 ju1ces: KPM=14.1 KPR=0.73 HS%=46 R=—
+bo3 XiELO: KPM=13.9 KPR=0.66 HS%=62 R=—
+bo3 dwushka: KPM=14.5 KPR=0.67 HS%=61 R=—
+bo3 frontales: KPM=15.5 KPR=0.72 HS%=33 R=—
+bo3 xKacpersky: KPM=15.8 KPR=0.71 HS%=54 R=—
+bo3 n0rb3r7: KPM=15.1 KPR=0.70 HS%=54 R=—
+bo3 Jambo: KPM=16.1 KPR=0.74 HS%=37 R=—
+bo3 kade0: KPM=13.4 KPR=0.62 HS%=54 R=—
+gol.gg: 2181 LoL players (S16)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+bo3 fear: KPM=12.4 KPR=0.57 HS%=47 R=—
+bo3 fear: KPM=12.4 KPR=0.57 HS%=47 R=—
+bo3 d1Ledez: KPM=14.9 KPR=0.66 HS%=61 R=—
+bo3 jackasmo: KPM=15.5 KPR=0.72 HS%=59 R=—
+Ratings LOL: 5506 maps → 299 teams
+bo3 jackasmo: KPM=15.5 KPR=0.72 HS%=59 R=—
+bo3 cairne: KPM=15.5 KPR=0.72 HS%=52 R=—
+bo3 cairne: KPM=15.5 KPR=0.72 HS%=52 R=—
+bo3 executor: KPM=14.6 KPR=0.70 HS%=38 R=—
+bo3 mazay: KPM=15.2 KPR=0.70 HS%=56 R=—
+bo3 mazay: KPM=15.2 KPR=0.70 HS%=56 R=—
+bo3 cmtry: KPM=13.6 KPR=0.61 HS%=38 R=—
+bo3 cmtry: KPM=13.6 KPR=0.61 HS%=38 R=—
+bo3 Anlelele: KPM=13.6 KPR=0.64 HS%=49 R=—
+bo3 molodoy: KPM=15.8 KPR=0.74 HS%=38 R=—
+bo3 phzy: KPM=15.6 KPR=0.70 HS%=28 R=—
+bo3 phzy: KPM=15.6 KPR=0.70 HS%=28 R=—
+bo3 zweih: KPM=11.7 KPR=0.56 HS%=51 R=—
+bo3 Staehr: KPM=16.2 KPR=0.73 HS%=56 R=—
+bo3 Staehr: KPM=16.2 KPR=0.73 HS%=56 R=—
+bo3 TeSeS: KPM=12.2 KPR=0.60 HS%=63 R=—
+bo3 TjP: KPM=13.0 KPR=0.68 HS%=57 R=—
+bo3 TjP: KPM=13.0 KPR=0.68 HS%=57 R=—
+bo3 KSCerato: KPM=15.8 KPR=0.74 HS%=50 R=—
+bo3 acoR: KPM=15.4 KPR=0.73 HS%=33 R=—
+bo3 acoR: KPM=15.4 KPR=0.73 HS%=33 R=—
+bo3 m0NESY: KPM=17.3 KPR=0.85 HS%=42 R=—
+bo3 m0NESY: KPM=17.3 KPR=0.85 HS%=42 R=—
+bo3 Banjo: KPM=13.4 KPR=0.61 HS%=51 R=—
+Warmer: +18 CS profiles (90 still queued)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+bo3 karrigan: KPM=9.6 KPR=0.47 HS%=49 R=—
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+Ratings DOTA: 780 maps → 190 teams
+bo3 stavn: KPM=16.5 KPR=0.75 HS%=31 R=—
+bo3 stavn: KPM=16.5 KPR=0.75 HS%=31 R=—
+bo3 adamb: KPM=15.0 KPR=0.71 HS%=54 R=—
+bo3 adamb: KPM=15.0 KPR=0.71 HS%=54 R=—
+bo3 bluewh1te: KPM=13.1 KPR=0.63 HS%=55 R=—
+bo3 Krimbo: KPM=14.2 KPR=0.65 HS%=52 R=—
+bo3 Krimbo: KPM=14.2 KPR=0.65 HS%=52 R=—
+bo3 amster: KPM=13.8 KPR=0.65 HS%=51 R=—
+bo3 Starry: KPM=16.0 KPR=0.71 HS%=60 R=—
+bo3 Starry: KPM=16.0 KPR=0.71 HS%=60 R=—
+bo3 EmiliaQAQ: KPM=15.4 KPR=0.68 HS%=64 R=—
+bo3 EmiliaQAQ: KPM=15.4 KPR=0.68 HS%=64 R=—
+bo3 nicoodoz: KPM=16.3 KPR=0.77 HS%=46 R=—
+bo3 C4LLM3SU3: KPM=15.2 KPR=0.67 HS%=55 R=—
+bo3 C4LLM3SU3: KPM=15.2 KPR=0.67 HS%=55 R=—
+bo3 z4kr: KPM=15.0 KPR=0.66 HS%=33 R=—
+bo3 z4kr: KPM=15.0 KPR=0.66 HS%=33 R=—
+bo3 Westmelon: KPM=14.8 KPR=0.66 HS%=61 R=—
+bo3 Westmelon: KPM=14.8 KPR=0.66 HS%=61 R=—
+bo3 PokemoN: KPM=15.8 KPR=0.73 HS%=62 R=—
+bo3 PokemoN: KPM=15.8 KPR=0.73 HS%=62 R=—
+bo3 shadiy: KPM=16.6 KPR=0.74 HS%=46 R=—
+bo3 TMB: KPM=12.3 KPR=0.58 HS%=56 R=—
+bo3 laxiee: KPM=15.4 KPR=0.70 HS%=56 R=—
+bo3 shadiy: KPM=16.6 KPR=0.74 HS%=46 R=—
+bo3 adex: KPM=19.9 KPR=0.92 HS%=31 R=—
+bo3 adex: KPM=19.9 KPR=0.92 HS%=31 R=—
+bo3 FalleN: KPM=11.4 KPR=0.53 HS%=51 R=—
+bo3 latto: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 latto: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 latto: KPM=16.0 KPR=0.75 HS%=53 R=—
+bo3 dumau: KPM=15.1 KPR=0.70 HS%=45 R=—
+bo3 Magnojez: KPM=15.8 KPR=0.70 HS%=51 R=—
+bo3 dumau: KPM=15.1 KPR=0.70 HS%=45 R=—
+bo3 n1ssim: KPM=14.1 KPR=0.66 HS%=54 R=—
+bo3 n1ssim: KPM=14.1 KPR=0.66 HS%=54 R=—
+bo3 Lack1: KPM=14.4 KPR=0.68 HS%=55 R=—
+bo3 art: KPM=12.0 KPR=0.55 HS%=46 R=—
+bo3 art: KPM=12.0 KPR=0.55 HS%=46 R=—
+bo3 FL1T: KPM=13.5 KPR=0.64 HS%=57 R=—
+bo3 FL1T: KPM=13.5 KPR=0.64 HS%=57 R=—
+bo3 FL1T: KPM=13.5 KPR=0.64 HS%=57 R=—
+bo3 HObbit: KPM=11.8 KPR=0.57 HS%=44 R=—
+bo3 HObbit: KPM=11.8 KPR=0.57 HS%=44 R=—
+bo3 podi: KPM=15.0 KPR=0.68 HS%=30 R=—
+Warmer: +12 CS profiles (49 still queued)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+bo3 synyx: KPM=14.2 KPR=0.68 HS%=58 R=—
+bo3 synyx: KPM=14.2 KPR=0.68 HS%=58 R=—
+bo3 synyx: KPM=14.2 KPR=0.68 HS%=58 R=—
+bo3 Raijin: KPM=13.6 KPR=0.65 HS%=55 R=—
+bo3 Raijin: KPM=13.6 KPR=0.65 HS%=55 R=—
+bo3 Raijin: KPM=13.6 KPR=0.65 HS%=55 R=—
+bo3 Kaide: KPM=17.9 KPR=0.85 HS%=53 R=—
+bo3 Kaide: KPM=17.9 KPR=0.85 HS%=53 R=—
+bo3 Kaide: KPM=17.9 KPR=0.85 HS%=53 R=—
+bo3 HeCkBNk: KPM=15.4 KPR=0.73 HS%=63 R=—
+Ratings VAL: 1531 maps → 191 teams
+bo3 HeCkBNk: KPM=15.4 KPR=0.73 HS%=63 R=—
+bo3 HeCkBNk: KPM=15.4 KPR=0.73 HS%=63 R=—
+bo3 YumsaN: KPM=14.5 KPR=0.68 HS%=33 R=—
+bo3 YumsaN: KPM=14.5 KPR=0.68 HS%=33 R=—
+bo3 YumsaN: KPM=14.5 KPR=0.68 HS%=33 R=—
+bo3 KusMe: KPM=13.6 KPR=0.64 HS%=55 R=—
+bo3 KusMe: KPM=13.6 KPR=0.64 HS%=55 R=—
+bo3 KusMe: KPM=13.6 KPR=0.64 HS%=55 R=—
+bo3 senka: KPM=13.3 KPR=0.59 HS%=52 R=—
+bo3 senka: KPM=13.3 KPR=0.59 HS%=52 R=—
+bo3 senka: KPM=13.3 KPR=0.59 HS%=52 R=—
+bo3 Djon8: KPM=16.3 KPR=0.75 HS%=58 R=—
+bo3 Djon8: KPM=16.3 KPR=0.75 HS%=58 R=—
+bo3 Djon8: KPM=16.3 KPR=0.75 HS%=58 R=—
+bo3 flouzer: KPM=15.1 KPR=0.67 HS%=54 R=—
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 107 Sleeper-priced, 0 manual, 40 need model input)
+bo3 flouzer: KPM=15.1 KPR=0.67 HS%=54 R=—
+bo3 flouzer: KPM=15.1 KPR=0.67 HS%=54 R=—
+bo3 ayuki: KPM=15.5 KPR=0.69 HS%=59 R=—
+bo3 ayuki: KPM=15.5 KPR=0.69 HS%=59 R=—
+bo3 tronic: KPM=16.1 KPR=0.67 HS%=39 R=—
+bo3 tronic: KPM=16.1 KPR=0.67 HS%=39 R=—
+bo3 KEi: KPM=15.3 KPR=0.72 HS%=46 R=—
+bo3 KEi: KPM=15.3 KPR=0.72 HS%=46 R=—
+bo3 Kylar: KPM=13.9 KPR=0.65 HS%=59 R=—
+bo3 Kylar: KPM=13.9 KPR=0.65 HS%=59 R=—
+bo3 Kunai: KPM=14.1 KPR=0.66 HS%=59 R=—
+bo3 Kunai: KPM=14.1 KPR=0.66 HS%=59 R=—
+bo3 h1te: KPM=14.5 KPR=0.68 HS%=33 R=—
+bo3 h1te: KPM=14.5 KPR=0.68 HS%=33 R=—
+bo3 sm3t: KPM=15.3 KPR=0.71 HS%=58 R=—
+bo3 sm3t: KPM=15.3 KPR=0.71 HS%=58 R=—
+bo3 sstiNiX: KPM=16.4 KPR=0.76 HS%=61 R=—
+bo3 sstiNiX: KPM=16.4 KPR=0.76 HS%=61 R=—
+bo3 Temny Prince: KPM=14.2 KPR=0.64 HS%=61 R=—
+bo3 Temny Prince: KPM=14.2 KPR=0.64 HS%=61 R=—
+bo3 wh1teout: KPM=13.5 KPR=0.61 HS%=57 R=—
+bo3 wh1teout: KPM=13.5 KPR=0.61 HS%=57 R=—
+bo3 Matheos: KPM=16.3 KPR=0.74 HS%=61 R=—
+bo3 Matheos: KPM=16.3 KPR=0.74 HS%=61 R=—
+bo3 ztr: KPM=12.8 KPR=0.58 HS%=49 R=—
+bo3 ztr: KPM=12.8 KPR=0.58 HS%=49 R=—
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 107 Sleeper-priced, 0 manual, 40 need model input)
+bo3 jocab: KPM=15.5 KPR=0.71 HS%=46 R=—
+bo3 YEKINDAR: KPM=14.6 KPR=0.69 HS%=63 R=—
+bo3 yuurih: KPM=12.0 KPR=0.56 HS%=49 R=—
+bo3 zorte: KPM=14.2 KPR=0.63 HS%=33 R=—
+bo3 S1ren: KPM=14.7 KPR=0.66 HS%=59 R=—
+bo3 Boombl4: KPM=12.9 KPR=0.57 HS%=43 R=—
+UD: 6763 lines (4541 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+bo3 Keoz: KPM=13.2 KPR=0.64 HS%=59 R=—
+UD: 6763 lines (4541 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+bo3 kL1o: KPM=15.2 KPR=0.72 HS%=53 R=—
+bo3 stefienson: KPM=13.2 KPR=0.65 HS%=53 R=—
+bo3 skcH: KPM=12.6 KPR=0.60 HS%=50 R=—
+Sleeper: 124 esports and 1922 sports lines from 2046 rows
+bo3 BobZ: KPM=9.2 KPR=0.44 HS%=45 R=—
+bo3 ADK: KPM=10.2 KPR=0.51 HS%=52 R=—
+bo3 rendY: KPM=15.1 KPR=0.72 HS%=43 R=—
+Warmer: +7 CS profiles (0 still queued)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+Esports board: 197 matches (101 on both exchanges, 5 edges) in 3859ms
+Ratings CS: 9535 maps → 607 teams
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+OpenDota TK: 3.6 kills/game over 40 matches
+OpenDota TK: 3.6 kills/game over 40 matches
+OpenDota zzq: 3.0 kills/game over 40 matches
+OpenDota zzq: 3.0 kills/game over 40 matches
+OpenDota niu: 6.4 kills/game over 40 matches
+OpenDota niu: 6.4 kills/game over 40 matches
+OpenDota Emo: 8.2 kills/game over 40 matches
+OpenDota Emo: 8.2 kills/game over 40 matches
+OpenDota Beyond: 6.0 kills/game over 40 matches
+OpenDota Beyond: 6.0 kills/game over 40 matches
+OpenDota KaKa: 2.5 kills/game over 40 matches
+OpenDota KaKa: 2.5 kills/game over 40 matches
+OpenDota Fernans: 3.8 kills/game over 40 matches
+OpenDota Fernans: 3.8 kills/game over 40 matches
+OpenDota mellojul: 7.5 kills/game over 40 matches
+OpenDota mellojul: 7.5 kills/game over 40 matches
+OpenDota QBFY: 4.5 kills/game over 40 matches
+OpenDota QBFY: 4.5 kills/game over 40 matches
+OpenDota V1olent: 8.7 kills/game over 40 matches
+OpenDota V1olent: 8.7 kills/game over 40 matches
+OpenDota kreker: 3.5 kills/game over 40 matches
+OpenDota kreker: 3.5 kills/game over 40 matches
+OpenDota Lou: 6.7 kills/game over 40 matches
+OpenDota Lou: 6.7 kills/game over 40 matches
+OpenDota Norma: 5.8 kills/game over 40 matches
+OpenDota Norma: 5.8 kills/game over 40 matches
+OpenDota Dualrazee: 8.8 kills/game over 40 matches
+OpenDota Dualrazee: 8.8 kills/game over 40 matches
+OpenDota Kidaro: 2.4 kills/game over 40 matches
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+OpenDota Kidaro: 2.4 kills/game over 40 matches
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+Esports: PP=311 UD=357 SL=107/124 udMap=355
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Esports: generated 411 picks (100 UD-sourced, 0 Sleeper-sourced, 106 Sleeper-priced, 0 manual, 40 need model input)
+Sleeper: 124 esports and 1923 sports lines from 2047 rows
+UD: 6763 lines (4541 boosted/demoted) · sports: MLB, NFL, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, CS, LOL, VAL
+Esports board: 197 matches (101 on both exchanges, 3 edges) in 3882ms
