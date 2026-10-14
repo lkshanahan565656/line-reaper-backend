@@ -1,0 +1,92 @@
+[
+ {
+  "at": "2026-10-14T21:02:09.870Z",
+  "v": "3.118.0"
+ },
+ {
+  "at": "2026-10-14T21:02:40.085Z",
+  "v": "3.118.0"
+ },
+ {
+  "at": "2026-10-14T21:03:10.288Z",
+  "v": "3.118.1"
+ },
+ {
+  "at": "2026-10-14T21:04:10.508Z",
+  "v": "3.118.1",
+  "big": {
+   "updated": "2026-10-14T21:03:45.628Z",
+   "counts": {
+    "prints": 573,
+    "big": 249,
+    "plays": 0,
+    "flagged": 0,
+    "marketMaker": 0,
+    "props": 0,
+    "games": 0,
+    "rungs": 0,
+    "gameRows": 0,
+    "bets": 0
+   },
+   "errors": []
+  },
+  "st": 200,
+  "count": 0,
+  "flagged": 0,
+  "hiddenMm": 0,
+  "bt": true,
+  "pro": true
+ },
+ {
+  "at": "2026-10-14T21:05:12.870Z",
+  "v": "3.118.1",
+  "big": {
+   "updated": "2026-10-14T21:04:46.725Z",
+   "counts": {
+    "prints": 633,
+    "big": 260,
+    "plays": 0,
+    "flagged": 0,
+    "marketMaker": 0,
+    "props": 0,
+    "games": 0,
+    "rungs": 0,
+    "gameRows": 1453,
+    "bets": 1842
+   },
+   "errors": []
+  },
+  "st": 200,
+  "count": 0,
+  "flagged": 0,
+  "hiddenMm": 0,
+  "bt": true,
+  "pro": true
+ },
+ {
+  "at": "2026-10-14T21:06:13.132Z",
+  "v": "3.118.1",
+  "big": {
+   "updated": "2026-10-14T21:05:45.980Z",
+   "counts": {
+    "prints": 745,
+    "big": 298,
+    "plays": 6,
+    "flagged": 1,
+    "marketMaker": 0,
+    "props": 0,
+    "games": 6,
+    "rungs": 0,
+    "gameRows": 1670,
+    "bets": 1856
+   },
+   "errors": []
+  },
+  "st": 200,
+  "count": 6,
+  "flagged": 1,
+  "hiddenMm": 0,
+  "bt": true,
+  "pro": true
+ }
+]
