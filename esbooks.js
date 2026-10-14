@@ -144,10 +144,23 @@ function parseKambiEsports(payload, now = Date.now()) {
   const game = gameOf(path[1]);
   const teams = String(e.englishName || '').split(' - ').map(s => s.trim());
   if (!game || teams.length !== 2) return null;
-  const lines = [], seen = new Set();
+  const lines = [], seen = new Set(), players = [];
+  const home = (e.participants || []).find(x => x.home === true)?.participantId, away = (e.participants || []).find(x => x.home === false)?.participantId;
   for (const b of payload.betOffers || []) {
     if (b?.suspended) continue;
     const label = String(b.criterion?.englishLabel || '').trim();
+    // each player's kills on one map, a ladder of lines: priced by the kill-share model (sharemodel.js)
+    const pk = /^map (\d) - total kills by the player$/i.exec(label);
+    if (pk) {
+      const os = (b.outcomes || []).filter(o => o.status === 'OPEN');
+      const o = os.find(x => x.type === 'OT_OVER'), u = os.find(x => x.type === 'OT_UNDER');
+      const line = num(o?.line) / 1000, team = o?.eventParticipantId === home ? 0 : o?.eventParticipantId === away ? 1 : null;
+      const prices = [am(o?.oddsAmerican), am(u?.oddsAmerican)];
+      if (o && u && o.line === u.line && o.participant && team != null && line > 0 && prices.every(x => x != null)) {
+        players.push({ period: +pk[1], player: String(o.participant).trim(), team, line, prices });
+      }
+      continue;
+    }
     let spec = null;
     for (const [re, fn] of KB_LINES) { const m = re.exec(label); if (m) { spec = fn(m); break; } }
     if (!spec) continue;
@@ -179,7 +192,7 @@ function parseKambiEsports(payload, now = Date.now()) {
     seen.add(`${key}|${x}`);
     lines.push({ key, scope: spec.scope, period: spec.period, type: spec.type, team, x, prices });
   }
-  return { book: 'betrivers', eventId: e.id, game, league: path.slice(1).join(' · '), teams, start: ms(e.start), lines };
+  return { book: 'betrivers', eventId: e.id, game, league: path.slice(1).join(' · '), teams, start: ms(e.start), lines, players };
 }
 // listView payload → ids of matches not yet started, soonest first
 function kambiEsportsIds(payload, { now = Date.now(), withinMs = 4 * 86400e3 } = {}) {
@@ -370,4 +383,4 @@ async function fetchKambi(http, { max = 30, now = Date.now() } = {}) {
   return { events: out, listed: ids.length, errors };
 }
 
-module.exports = { DEFAULTS, KAMBI, gameOf, parsePinnacle, parseKambiEsports, kambiEsportsIds, kalshiLadders, aligned, orient, readLadder, screen, summarize, fetchPinnacle, fetchKambi };
+module.exports = { DEFAULTS, KAMBI, LABEL, cleanTeam, gameOf, parsePinnacle, parseKambiEsports, kambiEsportsIds, kalshiLadders, aligned, orient, readLadder, screen, summarize, fetchPinnacle, fetchKambi };

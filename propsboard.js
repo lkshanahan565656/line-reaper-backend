@@ -157,7 +157,20 @@ function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null
     };
     if (row.esports) {
       const p = esPicks.get(row.key);
-      if (p) {
+      const sp = p?.share?.priced;
+      if (sp) {
+        // Pinnacle's team kills × the player's share (sharemodel.js): its own
+        // fair at each app's own line, green only where it clears
+        const SB = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
+        row.model = { proj: p.share.mean, side: sp.side, prob: sp.prob, share: { pct: r2(p.share.share * 100), pinPerMap: p.share.pinPerMap, pinMean: p.share.pinMean }, stat: p.statLine || null };
+        for (const [ab, cell] of Object.entries(sp.cells || {})) {
+          const c = row.books[SB[ab]];
+          if (!c) continue;
+          const side = cell.side === 'OVER' ? 'Over' : 'Under';
+          c.ev = { side, ev: cell.ev, fair: cell.prob, share: true, clears: !!cell.clears };
+          offer(SB[ab], side, cell.ev, cell.prob / 100, 'share', c.line);
+        }
+      } else if (p) {
         row.model = { proj: p.modelPred ?? null, side: p.side || null, prob: p.prob ?? null, closed: p.sideClosed || null, stat: p.statLine || null };
         const evs = { prizepicks: p.ppEv, underdog: p.udEv, sleeper: p.sleeperEv };
         for (const book of BOOKS) {
@@ -242,7 +255,8 @@ function counts(rows) {
 // The Lines view: how many of a book's lines clear minEv at that book on a
 // sharp price (the sharp books' consensus, or the esports model) with that
 // side still open (the header's "bettable"), and the stat names for the prop filter
-const sharpBacked = (r, c) => !!(c.ev && (r.esports || c.ev.consensus));
+// a kill-share price counts only where it clears (Pinnacle split the books' way agrees)
+const sharpBacked = (r, c) => !!(c.ev && (c.ev.share ? c.ev.clears : (r.esports || c.ev.consensus)));
 function lineFacets(rows, book, minEv) {
   const markets = new Map();
   let bettable = 0;
