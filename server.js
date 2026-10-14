@@ -2212,6 +2212,7 @@ async function generateEsportsPicks() {
       }
     }
   } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
+  try { priceRoundKills(picks); } catch (e) { console.warn('Esports: round model skipped:', e.message); }
 
   // Line gaps: the book a pick is played at sits on the soft side of another
   // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
@@ -2368,6 +2369,125 @@ function priceKillShares(picks, { fam, sideOf }) {
   return st;
 }
 
+// ─── ROUND MODEL (roundmodel.js) ──────────────────────────────────────────────
+// CS2 and Valorant kills lines where Pinnacle prices the rounds on the maps a
+// line covers: the player's kills a round (bo3.gg, vlr.gg) on Pinnacle's
+// rounds for each map, priced at every app's own line and payout. Same PIN
+// tag on the PROPS Lines table; cleared plays go to their own record
+// (esportsRounds). ESPORTS_ROUNDS=off stops it.
+const roundmodel = require('./roundmodel');
+const ROUNDS_OPTS = { minEv: parseFloat(process.env.ROUNDS_MIN_EV || String(roundmodel.DEFAULTS.minEv)), agreePts: parseFloat(process.env.ROUNDS_AGREE_PTS || String(roundmodel.DEFAULTS.agreePts)) };
+const ROUNDS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_ROUNDS || '').trim());
+// a player's kills a round and maps behind it, from the profiles we already pull
+function roundRate(p, game) {
+  if (game === 'CS2') {
+    const c = esportsCache.hltvPlayers[String(p.player || '').toLowerCase()];
+    // bo3's maps counter can be a match counter; the kills a round can't be wrong
+    return c && !c.failed && c.kpr ? { raw: c.kpr, maps: c.mapsPlayed || 0 } : null;
+  }
+  const t = vlrTable.players[vlrKey(p.player)] || vlrTable.players[vlrKey(String(p.player || '').split(/\s+/).pop())];
+  if (t?.kpr) return { raw: t.kpr, maps: t.rounds ? Math.round(t.rounds / 22) : 0 };
+  const v = vlrStats.cache.get(nameKey(p.player))?.stats;
+  return v?.kpr ? { raw: v.kpr, maps: v.maps || 0 } : null;
+}
+function priceRoundKills(picks) {
+  const st = { matches: 0, teams: 0, unknownLineup: 0, priced: 0, clear: 0, byGame: {}, noRounds: 0, fits: [] };
+  esportsCache.rounds = st;
+  if (!ROUNDS_ON) return st;
+  const pin = esBooksState.pin || [];
+  const fam = p => { const g = roundmodel.gameOf(trackerSportKey(p.sport)); return g && normalizeMarket(p.market).split('|')[0] === 'k' ? g : null; };
+  const cands = picks.filter(fam);
+  if (!cands.length || !pin.length) return st;
+  const sides = new Map();
+  const sideOf = p => {
+    if (sides.has(p)) return sides.get(p);
+    let hit = null;
+    const g = fam(p), t = Date.parse(p.startTime || '');
+    const opp = opponentFrom(p.team, p.matchTitle, null);
+    for (const m of pin) {
+      if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(m.start - t) > 12 * 3600e3)) continue;
+      const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
+      if (i != null) { hit = { m, i }; break; }
+    }
+    sides.set(p, hit);
+    return hit;
+  };
+  // each Pinnacle match's maps: team 0's q0 and expected rounds off its round ladders
+  const fits = new Map();
+  const fitOf = m => {
+    if (fits.has(m.id)) return fits.get(m.id);
+    const f = {};
+    for (let n = 1; n <= 5; n++) { const x = roundmodel.fitMap(m.ladders, n, m.game); if (x) f[n] = x; }
+    fits.set(m.id, f);
+    if (Object.keys(f).length) st.fits.push({ match: `${m.teams[0]} vs ${m.teams[1]}`, game: m.game, maps: f });
+    return f;
+  };
+  // a team's lineup is known when five of its players on the board have a rate
+  const teams = new Map();
+  for (const p of cands) {
+    const s = sideOf(p);
+    if (!s) continue;
+    const tk = `${s.m.id}|${s.i}`, nk = String(p.player || '').toLowerCase();
+    const g = teams.get(tk) || teams.set(tk, new Map()).get(tk);
+    if (!g.has(nk)) { const r = roundRate(p, fam(p)); g.set(nk, r ? roundmodel.playerRate(r.raw, r.maps, fam(p)) : null); }
+  }
+  for (const g of teams.values()) { if ([...g.values()].filter(Boolean).length >= roundmodel.DEFAULTS.need) st.teams++; else st.unknownLineup++; }
+  // with both lineups known, the ten rates are scaled to the game's kills a round
+  const scaleOf = new Map();
+  const rates = tk => [...(teams.get(tk)?.values() || [])].filter(Boolean).map(r => r.kpr);
+  const scaleFor = (m, game) => {
+    if (!scaleOf.has(m.id)) scaleOf.set(m.id, roundmodel.matchScale(rates(`${m.id}|0`), rates(`${m.id}|1`), game));
+    return scaleOf.get(m.id);
+  };
+  const plays = [];
+  for (const p of cands) {
+    const s = sideOf(p), game = fam(p);
+    if (!s) continue;
+    const rate = teams.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
+    const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
+    if (!rate || !pingap.spanIsCertain(maps, p.context?.bestOf)) continue;
+    const f = fitOf(s.m);
+    const have = Object.values(f);
+    if (!have.length) { st.noRounds++; continue; }
+    // a map Pinnacle hasn't posted rounds for takes the average of the ones it has
+    const avgQ = have.reduce((a, x) => a + x.q, 0) / have.length;
+    const q0 = maps.map(n => f[n]?.q ?? avgQ);
+    const qs = q0.map(q => +(s.i === 0 ? q : 1 - q).toFixed(4));
+    const scale = scaleFor(s.m, game);
+    const ctx = { game, kpr: +(rate.kpr * (scale ?? 1)).toFixed(4), qs };
+    const mean = +roundmodel.pmfMean(roundmodel.killsPmf(ctx)).toFixed(2);
+    const base = p.matchup?.baseMean ?? p.marketPred;
+    const avgR = roundmodel.DEFAULTS.avgRounds[game];
+    // known only when both teams are: the scale needs all ten
+    const lineup = scale != null ? 'known' : 'unknown';
+    p.rounds = { mean, ctx, lineup, kpr: ctx.kpr, raw: rate.raw, maps: rate.maps, scale, game,
+      roundsPerMap: maps.map(n => f[n]?.rounds ?? +(have.reduce((a, x) => a + x.rounds, 0) / have.length).toFixed(1)),
+      pinCtx: base > 0 ? { game, kpr: +(base / (avgR * maps.length)).toFixed(4), qs } : null };
+    p.rounds.pinMean = p.rounds.pinCtx ? +roundmodel.pmfMean(roundmodel.killsPmf(p.rounds.pinCtx)).toFixed(2) : null;
+    const lines = esgaps.bookLines(p);
+    const ud = p.udSides || {}, sl = p.slSides || {};
+    const books = [];
+    if (lines.PP != null) books.push({ book: 'PP', line: lines.PP, evAt: prob => calcBookEV(prob, 'pp') });
+    if (lines.UD != null) books.push({ book: 'UD', line: lines.UD, open: { OVER: ud.overOpen !== false, UNDER: ud.underOpen !== false },
+      evAt: (prob, side) => udPricing(prob, (side === 'OVER' ? ud.over : ud.under) || 1, side === 'OVER' ? ud.under : ud.over).ev });
+    if (lines.SL != null && (sl.over || sl.under)) books.push({ book: 'SL', line: lines.SL, open: { OVER: sl.overOpen !== false && !!sl.over, UNDER: sl.underOpen !== false && !!sl.under },
+      evAt: (prob, side) => sleeperPricing(prob, side === 'OVER' ? sl.over : sl.under, side === 'OVER' ? sl.under : sl.over).ev });
+    const priced = roundmodel.priceRounds(p, { books, o: ROUNDS_OPTS });
+    if (!priced) continue;
+    p.rounds.priced = priced;
+    st.priced++;
+    st.byGame[game] = (st.byGame[game] || 0) + 1;
+    if (priced.clears) st.clear++;
+    const play = roundmodel.roundsPlay(p, priced);
+    if (play) plays.push(play);
+  }
+  st.matches = fits.size;
+  st.fits = st.fits.slice(0, 30);
+  if (plays.length) roundsTracker.recordBoard(plays).catch(e => console.warn('Rounds tracker:', e.message));
+  if (st.priced) console.log(`Round model: ${st.matches} matches, ${st.priced} lines priced, ${st.clear} clear (${st.unknownLineup} teams with an unknown lineup)`);
+  return st;
+}
+
 // If a book labels a 3-map prop "Kills on Maps 1+2", rewrite the label to what
 // the line actually covers. Clearer than showing the wrong name plus an asterisk.
 function relabelMarket(market, maps) {
@@ -2490,6 +2610,14 @@ const shareTracker = createTracker({
   fairProb: (p, line, side) => (p.shareCtx && p.marketPred > 0 ? sharemodel.shareProb(p.marketPred, line, side, p.shareCtx) : null),
 });
 shareTracker.ready().catch(e => console.error('Share tracker: store failed to initialise:', e.message));
+// Round-model plays (roundmodel.js): the player's kills a round on Pinnacle's
+// rounds, graded in their own record, the close priced on the same model at lock
+const roundsTracker = createTracker({
+  store: resultsBackup.wrap('esportsRounds', createPickFileStore(process.env.ROUNDS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-rounds.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: 0,
+  fairProb: (p, line, side) => (p.roundsCtx ? roundmodel.sideProb(p.roundsCtx, line, side) : null),
+});
+roundsTracker.ready().catch(e => console.error('Rounds tracker: store failed to initialise:', e.message));
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
@@ -3963,7 +4091,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.121.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.122.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4451,6 +4579,20 @@ app.get('/api/esports/share', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Round-model plays: the record (roundmodel.js) and today's priced lines
+app.get('/api/esports/rounds', async (req, res) => {
+  try {
+    const rows = await roundsTracker.list({ limit: 5000 });
+    const priced = (esportsCache.picks || []).filter(p => p.rounds?.priced).map(p => ({ player: p.player, team: p.team, sport: p.sport, market: p.market, startTime: p.startTime,
+      kpr: p.rounds.kpr, raw: p.rounds.raw, maps: p.rounds.maps, scale: p.rounds.scale, lineup: p.rounds.lineup, roundsPerMap: p.rounds.roundsPerMap, qs: p.rounds.ctx.qs,
+      mean: p.rounds.mean, pinMean: p.rounds.pinMean, marketPred: p.marketPred, lines: esgaps.bookLines(p), best: p.rounds.priced }));
+    const graded = rows.filter(r => r.status === 'graded').length;
+    res.json({ note: `Pinnacle's rounds on each map x the player's kills a round (CS2, Valorant). ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,
+      now: esportsCache.rounds || null, minEv: ROUNDS_OPTS.minEv, agreePts: ROUNDS_OPTS.agreePts, books: esBooksState.summary?.roundModel || null,
+      record: roundmodel.roundsRecord(rows), priced: hasPro(req) ? priced : priced.length, rows: hasPro(req) ? rows.slice(0, +req.query.limit || 500) : rows.filter(r => r.status === 'graded').slice(0, 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
@@ -4869,7 +5011,8 @@ function runEsBooksScreen() {
       res.rows.sort((a, b) => (b.clears - a.clears) || b.ev - a.ev);
       shareSum = { priced: sr.priced, shown: sr.rows.length, clear: sr.rows.filter(r => r.clears).length, teams: sr.teams };
     }
-    Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum }, screenedAt: new Date().toISOString() });
+    Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum,
+      roundModel: { shown: res.rows.filter(r => r.rounds).length, clear: res.rows.filter(r => r.source === 'esbook-rounds').length, bothSources: res.rows.filter(r => r.rounds && r.sources.length > 1).length } }, screenedAt: new Date().toISOString() });
     esBookTracker.recordBoard(res.rows, fairs, { costs }).catch(e => console.warn('Esports books tracker:', e.message));
   } catch (e) { esBooksState.errors = [`screen ${e.message}`, ...esBooksState.errors].slice(0, 8); }
 }
@@ -5663,7 +5806,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.121.1',
+  version: '3.122.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5690,6 +5833,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   spanInferredCount: esportsCache.spanInferred || 0,
   priceMismatchCount: esportsCache.priceMismatches || 0,
   killShare: esportsCache.share || null,
+  roundModel: esportsCache.rounds ? { ...esportsCache.rounds, fits: undefined } : null,
   warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError, vlrPages: { ...vlrStats.health, cached: vlrStats.cache.size } },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },

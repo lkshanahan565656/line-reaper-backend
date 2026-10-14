@@ -34,6 +34,7 @@ const { teamsMatch } = require('./context');
 const { devigPower } = require('./esboard');
 const { ladderAt } = require('./altlines');
 const { americanToDecimal, probToAmerican } = require('./ev');
+const roundmodel = require('./roundmodel');
 
 const KAMBI = 'https://eu-offering-api.kambicdn.com/offering/v2018/rsiusnj';
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
@@ -48,7 +49,7 @@ const DEFAULTS = {
   kalshiMaxSpread: 0.06,
   minP: 0.05, maxP: 0.95,
   pairHours: 12,     // Kambi's start times can be hours off Pinnacle's
-  weights: { pinnacle: 3, kalshi: 2, polymarket: 2 },
+  weights: { pinnacle: 3, kalshi: 2, polymarket: 2, 'round model': 1 },
   polyMinLiquidity: 500,   // Polymarket books thinner than this ($) say little
 };
 const ROUND_GAMES = new Set(['CS2', 'VAL', 'R6']);
@@ -391,19 +392,23 @@ function screen({ books = [], pin = [], kalshi = [], poly = [], now = Date.now()
     const ql = pmm ? aligned(pmm.m.ladders, pmm.or) : new Map();
     matched.push({ eventId: g.eventId, pinId: pm.m.id, kalshi: !!km, polymarket: !!pmm, lines: g.lines.length });
     const event = `${g.teams[0]} vs ${g.teams[1]}`;
+    // round lines (CS2, Valorant): the round model's reading of Pinnacle's map winner
+    const rm = roundmodel.bookRoundFairs(g.game, pl, g.lines);
     for (const line of g.lines) {
       const pinAt = readLadder(pl.get(line.key), line.x, line.type, line.scope);
       const kalAt = readLadder(kl.get(line.key), line.x, line.type, line.scope);
       const kalExact = kalAt?.exact ? kalAt : null;
       const polAt = readLadder(ql.get(line.key), line.x, line.type, line.scope);
       const polExact = polAt?.exact ? polAt : null;
-      if (!pinAt && !kalExact && !polExact) continue;
+      const modelAt = line.scope === 'rounds' ? rm.get(`${line.key}|${line.x}`) || null : null;
+      if (!pinAt && !kalExact && !polExact && !modelAt) continue;
       const group = `es|${g.game}|${pm.m.id}|${line.key}|${line.x}`;
       for (const i of [0, 1]) {
         const sources = [];
         if (pinAt) sources.push({ book: 'pinnacle', p: i === 0 ? pinAt.p : 1 - pinAt.p, exact: pinAt.exact, limit: pinAt.limit });
         if (kalExact) sources.push({ book: 'kalshi', p: i === 0 ? kalExact.p : 1 - kalExact.p, exact: true });
         if (polExact) sources.push({ book: 'polymarket', p: i === 0 ? polExact.p : 1 - polExact.p, exact: true });
+        if (modelAt) sources.push({ book: 'round model', p: i === 0 ? modelAt.p : 1 - modelAt.p, exact: true, rounds: modelAt.rounds });
         const w = sources.reduce((s, x) => s + (o.weights[x.book] || 1), 0);
         const fair = sources.reduce((s, x) => s + x.p * (o.weights[x.book] || 1), 0) / w;
         const side = sideLabel(line, i, g.teams);
@@ -421,13 +426,15 @@ function screen({ books = [], pin = [], kalshi = [], poly = [], now = Date.now()
         // Kalshi or Polymarket, or the two exchanges with each other
         const pinOk = pinAt?.exact && (pinAt.limit == null || pinAt.limit >= o.pinMinLimit);
         const exactN = (pinOk ? 1 : 0) + (kalExact ? 1 : 0) + (polExact ? 1 : 0);
-        const clears = !!(agree && exactN >= 2 && (!pinAt || pinAt.exact));
+        // a round line has no exchange price: the round model off Pinnacle's map winner stands in
+        const clears = !!(agree && ((exactN >= 2 && (!pinAt || pinAt.exact)) || (pinOk && modelAt)));
         rows.push({
           sport: g.game.toLowerCase(), game: g.game, gameLabel: LABEL[g.game] || g.game, league: pm.m.league || g.league, event, start: new Date(start).toISOString(),
           group, market: line.key.split('|').slice(0, 3).join('|'), marketLabel: MARKET(line.scope, line.period, line.type), point: line.type === 'ml' ? null : (line.type === 'spread' ? (i === 0 ? line.x : -line.x) : -line.x),
           side, book: g.book || 'betrivers', price, decimal: Math.round(d * 1000) / 1000, fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), ev: r2(ev),
           kelly: r2(Math.max(0, (fair * d - 1) / (d - 1)) * 25),
-          source: clears ? 'esbook' : 'esbook-single', esports: true, clears, single: sources.length < 2, model: !sources.some(x => x.exact), agree, spreadPts,
+          source: clears ? (modelAt ? 'esbook-rounds' : 'esbook') : 'esbook-single', esports: true, clears, single: sources.length < 2, model: !sources.some(x => x.exact) || (!pinAt && !kalExact && !polExact), agree, spreadPts,
+          ...(modelAt ? { rounds: { expected: modelAt.rounds, q: modelAt.q } } : {}),
           ...(pinAt?.limit != null ? { pinLimit: pinAt.limit } : {}),
           sharpBooks: sources.map(x => x.book),
           sources: sources.map(x => ({ book: x.book, p: r2(x.p * 100), exact: !!x.exact })),
