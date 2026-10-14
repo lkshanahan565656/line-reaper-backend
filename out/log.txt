@@ -1,0 +1,10 @@
+2026-10-14T10:36:41.579Z 3.107.0 {"nfl":{"pinnacle":174,"fanduel":238,"betrivers":194,"matched":{"fanduel":123,"betrivers":34}},"ncaaf":{"pinnacle":0,"fanduel":0,"betrivers":0,"matched":{"fanduel":0,"betrivers":0}},"nba":{"pinnacle":0,"fanduel":0,"betrivers":0,"matched":{"fanduel":0,"betrivers":0}},"wnba":{"pinnacle":81,"fanduel":36,"betrivers":0,"matched":{"fanduel":33,"betrivers":0}},"nhl":{"pinnacle":13,"fanduel":37,"betrivers":0,"matched":{"fanduel":0,"betrivers":0}},"mlb":{"pinnacle":4,"fanduel":2,"betrivers":2,"matched":{"fanduel":1,"betrivers":1}}} []
+prop rows 720 {"betrivers":1,"fanduel":6,"underdog":1,"sleeper":1,"prizepicks":3,"pinnacle":1,"kalshi_props":707}
+betrivers Matthew Stafford pass_tds Over 2.5 130 8.85
+fanduel James Cook receptions Over 1.5 106 3
+fanduel Tory Horton receptions Under 0.5 126 1.55
+fanduel Kayla Thornton rebounds Under 4.5 102 1
+fanduel Bo Nix pass_tds Under 1.5 -230 0.73
+fanduel Naz Hillmon points Under 6.5 -118 0.41
+fanduel Malik Nabers receptions Under 5.5 -102 0.35
+{"open":24,"overall":{"n":0},"bySport":{},"byBook":{},"bySource":{},"byMarket":{}}
