@@ -1667,6 +1667,7 @@ async function generateEsportsPicks() {
   try { graded = await tracker.list({ status: 'graded', limit: 100000 }); } catch (e) { console.warn('Esports: graded record unavailable:', e.message); }
   weights = esmarket.modelWeights(graded);
   const biases = esmarket.lineBias(graded);
+  const matchupW = esmarket.matchupWeights(graded);
   if (process.env.ESPORTS_CALIBRATION !== 'off') {
     try {
       const prior = parseFloat(process.env.ESPORTS_CAL_PRIOR);
@@ -1677,7 +1678,7 @@ async function generateEsportsPicks() {
     } catch (e) { console.warn('Esports: calibration skipped:', e.message); }
   }
   esportsCache.calibration = calib ? { prior: calib.prior, buckets: Object.values(calib.buckets), at: new Date().toISOString() } : null;
-  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), lineBias: Object.values(biases.table), at: new Date().toISOString() };
+  esportsCache.modelWeights = { market: marketOn, weights: Object.values(weights.table), lineBias: Object.values(biases.table), matchup: Object.values(matchupW.table), at: new Date().toISOString() };
   const marketCounts = { priced: 0, marketOnly: 0, multiBook: 0, dropped: 0 };
 
   // Where the books put this player, and the number the board prices with.
@@ -1699,17 +1700,24 @@ async function generateEsportsPicks() {
     const raw = g.predSource === 'auto' ? g.rawPred : null;
     let w = weights.weight(sk, st);
     if (g.sampleSize != null) w *= Math.min(1, Math.max(0.25, g.sampleSize / 40));
-    const mean = esmarket.blend(cons.mean, raw, w);
+    // Matchup: the market's number moved by how favoured the player's team is
+    // tonight against its usual opponent (context.js killFactor), at the weight
+    // the graded record gives it (esmarket.matchupWeights)
+    const mu = g.matchup && g.matchup.factor > 0 ? g.matchup : null;
+    const muW = mu ? matchupW.weight(sk) : 0;
+    const muAdj = mu ? 1 + muW * (mu.factor - 1) : 1;
+    const mean = esmarket.blend(cons.mean, raw, w) * muAdj;
     const kept = cons.quotes.filter(q => !q.dropped);
     marketCounts.priced++;
     if (raw == null) marketCounts.marketOnly++;
     if (kept.length > 1) marketCounts.multiBook++;
     marketCounts.dropped += cons.quotes.length - kept.length;
     const fmtQ = q => `${q.book} ${q.line}${q.book === 'PP' ? '' : ` ${Math.round(q.pOver * 100)}% over`}${q.bias ? `, runs ${q.bias > 0 ? 'low' : 'high'} ${Math.abs(q.bias * 100).toFixed(0)}%` : ''}${q.dropped ? ' (left out)' : ''}`;
-    const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}`;
+    const note = `market ${cons.mean.toFixed(1)} (${cons.quotes.map(fmtQ).join(', ')})${raw != null ? ` · model ${raw.toFixed(1)} at ${Math.round(w * 100)}% weight` : ''}${mu && Math.abs(muAdj - 1) >= 0.005 ? ` · matchup ×${muAdj.toFixed(3)} (${describeContext(mu)}, at ${Math.round(muW * 100)}% weight)` : ''}`;
     return {
       ...g, modelPred: mean, predSource: raw != null ? 'auto' : 'market', fair: 'market',
       market: { mean: cons.mean, quotes: cons.quotes, modelWeight: +w.toFixed(3), raw: raw != null ? +raw.toFixed(2) : null },
+      matchupInfo: mu ? { source: mu.source, opponent: mu.opponent, pMap: +mu.pMap.toFixed(3), factor: +mu.factor.toFixed(4), weight: +muW.toFixed(3), adj: +muAdj.toFixed(4), h2h: mu.h2h || null } : null,
       statLine: [g.statLine, note].filter(Boolean).join(' · '),
     };
   }
@@ -1864,9 +1872,25 @@ async function generateEsportsPicks() {
         }
       }
     }
+    // The matchup (who's favoured, by the exchanges or ratings, plus head-to-head)
+    // for the market price: read for every line, not only ones our model priced.
+    let matchup = predSource === 'auto' ? context : null;
+    if (!matchup && predSource !== 'manual' && ['k', 'hs', 'ast'].includes(statKind)) matchup = lineMatchup(lineObj);
     if (predSource !== 'auto') context = null;   // manual numbers are the user's own model
     if (context) statLine = [statLine, describeContext(context)].filter(Boolean).join(' · ');
-    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context };
+    return { modelPred, predSource, manualKey, rawPred, sampleSize, spanInferred, statLine, context, matchup };
+  }
+  function lineMatchup(lineObj) {
+    try {
+      const span = parseMapSpan(lineObj.market);
+      const maps = spanToMapList(span.label, span.count);
+      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null);
+      const sides = splitMatchTitle(lineObj.matchTitle);
+      const titleTeam = sides && opponent ? (sides[0] === opponent ? sides[1] : sides[1] === opponent ? sides[0] : null) : null;
+      const ctxArgs = { sport: (lineObj.sport || '').toUpperCase(), opponent, maps }, ctxDeps = { oddsBook, elo: ratingsState.elo };
+      return (titleTeam && titleTeam !== lineObj.team && matchContext({ ...ctxArgs, team: titleTeam }, ctxDeps))
+        || matchContext({ ...ctxArgs, team: lineObj.team }, ctxDeps);
+    } catch { return null; }
   }
 
   // Build one pick object. Only books that ACTUALLY carry the line get an EV —
@@ -1881,6 +1905,7 @@ async function generateEsportsPicks() {
       rawPred: (predSource === 'auto' && g.rawPred != null) ? parseFloat(g.rawPred.toFixed(2)) : null,
       fairSource: modelPred != null ? (g.fair || 'model') : null,
       marketPred: g.market ? g.market.mean : null,
+      matchup: g.matchupInfo || null,
       marketQuotes: g.market ? g.market.quotes : null,
       modelWeight: g.market ? g.market.modelWeight : null,
       sampleSize: g.sampleSize ?? null,
@@ -3578,7 +3603,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.92.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.93.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4605,7 +4630,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.92.0',
+  version: '3.93.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

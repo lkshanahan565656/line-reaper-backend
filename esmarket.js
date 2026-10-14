@@ -24,6 +24,9 @@ const DEFAULTS = {
   outlier: { rel: 0.3, abs: 2.5 },
   biasPriorN: 40,       // graded picks a book's bias needs before it counts in full
   maxBiasRel: 0.1,      // never move a book's line by more than 10%
+  matchupPrior: 0.5,    // share of the matchup factor applied before the record has a say
+  matchupPriorN: 40,
+  maxMatchupWeight: 1,
 };
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -169,6 +172,33 @@ function lineBias(rows, o = DEFAULTS) {
   };
 }
 
+// How much of the matchup factor (context.js: how favoured the team is tonight
+// against its usual opponent, from exchange prices or ratings plus head-to-head)
+// shows up in results, per sport: the slope of (result − line) on
+// line × (factor − 1), through the origin, shrunk toward matchupPrior. Books
+// hang lines off a player's averages, which already hold his usual matchups;
+// the prior bets they move only half way for tonight's. The record decides.
+function matchupWeights(rows, o = DEFAULTS) {
+  const acc = {};
+  for (const r of rows || []) {
+    if (!r || r.status !== 'graded' || r.result == null || r.signalLine == null || !(r.ctxFactor > 0)) continue;
+    const line = Number(r.signalLine), x = line * (Number(r.ctxFactor) - 1), y = Number(r.result) - line;
+    if (!(line > 0) || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+    const a = acc[r.sport] || (acc[r.sport] = { n: 0, sxy: 0, sxx: 0 });
+    a.n++; a.sxy += x * y; a.sxx += x * x;
+  }
+  const out = {};
+  for (const [sport, a] of Object.entries(acc)) {
+    // n counts every pick, but one priced at an even matchup says nothing:
+    // shrink by the picks' spread in x, measured in "typical mismatch" units
+    const eff = a.sxx > 0 ? a.n : 0;
+    const slope = a.sxx > 0 ? a.sxy / a.sxx : o.matchupPrior;
+    const w = (slope * eff + o.matchupPrior * o.matchupPriorN) / (eff + o.matchupPriorN);
+    out[sport] = { sport, n: a.n, slope: +slope.toFixed(3), weight: +clamp(w, 0, o.maxMatchupWeight).toFixed(3) };
+  }
+  return { table: out, weight: sport => out[sport]?.weight ?? o.matchupPrior };
+}
+
 // The number the board prices with: the market's, nudged by our projection.
 function blend(marketMean, rawPred, weight) {
   if (marketMean == null) return null;
@@ -176,4 +206,4 @@ function blend(marketMean, rawPred, weight) {
   return marketMean + weight * (rawPred - marketMean);
 }
 
-module.exports = { DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, lineBias, blend, weightedMedian };
+module.exports = { DEFAULTS, bookOverShare, impliedMean, consensus, modelWeights, lineBias, matchupWeights, blend, weightedMedian };
