@@ -1,0 +1,26 @@
+name: diag-pingap
+on:
+  push:
+    branches: [diag-pingap]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: timeout 1700 node diag/pinrun.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-pingap-out
+          git rm -rq --cached . || true
+          gzip -f out/*.json out/server.log || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-pingap-out
