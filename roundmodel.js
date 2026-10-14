@@ -45,6 +45,11 @@ const DEFAULTS = {
   // variance over mean of a player's kills with the rounds known
   nbk: { CS2: 1.13, VAL: 1.13 },
   kpr0: { CS2: 0.667, VAL: 0.72 },
+  // both teams' kills a round add to a near-constant (CS2 6.66, sd 0.59 a
+  // map over 16,021 maps; s-tier 6.55): with both lineups known the ten
+  // players' rates are scaled to it, so a profile source that runs hot or
+  // cold across the board doesn't tilt every line one way
+  matchKpr: { CS2: 6.6, VAL: 7.2 },
   avgRounds: { CS2: 21.5, VAL: 22.0 },
   shrinkMaps: 8,     // maps of the game's average kills a round mixed into a player's
   minMaps: 6,        // fewer and his kills a round is a guess
@@ -226,6 +231,15 @@ function playerRate(raw, maps, game, o = DEFAULTS) {
   return { kpr: r4((raw * maps + k0 * o.shrinkMaps) / (maps + o.shrinkMaps)), raw: r4(raw), maps };
 }
 
+// both teams' rated players → the factor that puts the match on matchKpr
+// (each team's mean rate × 5), or null when either team has fewer than need
+function matchScale(team0, team1, game, o = DEFAULTS) {
+  const a = (team0 || []).filter(x => x > 0), b = (team1 || []).filter(x => x > 0);
+  if (a.length < o.need || b.length < o.need) return null;
+  const tot = 5 * (a.reduce((s, x) => s + x, 0) / a.length) + 5 * (b.reduce((s, x) => s + x, 0) / b.length);
+  return r4(((o.matchKpr || DEFAULTS.matchKpr)[game] ?? tot) / tot);
+}
+
 // One pick priced on the round model (as sharemodel.priceShare)
 //   p.rounds: { ctx, pinCtx (the apps' kills a round on Pinnacle's rounds), lineup }
 //   books:    [{ book, line, open: { OVER, UNDER }, evAt(prob, side) → % }]
@@ -341,4 +355,4 @@ function roundsRecord(rows) {
   return out;
 }
 
-module.exports = { DEFAULTS, GAMES, gameOf, mapRounds, rounds, expectedRounds, ladderProb, fitMap, qFromWin, mapKills, killsPmf, pmfMean, sideProb, playerRate, priceRounds, roundsPlay, bookRoundFairs, roundsRecord };
+module.exports = { DEFAULTS, GAMES, gameOf, mapRounds, rounds, expectedRounds, ladderProb, fitMap, qFromWin, mapKills, killsPmf, pmfMean, sideProb, playerRate, matchScale, priceRounds, roundsPlay, bookRoundFairs, roundsRecord };

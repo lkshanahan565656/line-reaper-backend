@@ -2432,6 +2432,13 @@ function priceRoundKills(picks) {
     if (!g.has(nk)) { const r = roundRate(p, fam(p)); g.set(nk, r ? roundmodel.playerRate(r.raw, r.maps, fam(p)) : null); }
   }
   for (const g of teams.values()) { if ([...g.values()].filter(Boolean).length >= roundmodel.DEFAULTS.need) st.teams++; else st.unknownLineup++; }
+  // with both lineups known, the ten rates are scaled to the game's kills a round
+  const scaleOf = new Map();
+  const rates = tk => [...(teams.get(tk)?.values() || [])].filter(Boolean).map(r => r.kpr);
+  const scaleFor = (m, game) => {
+    if (!scaleOf.has(m.id)) scaleOf.set(m.id, roundmodel.matchScale(rates(`${m.id}|0`), rates(`${m.id}|1`), game));
+    return scaleOf.get(m.id);
+  };
   const plays = [];
   for (const p of cands) {
     const s = sideOf(p), game = fam(p);
@@ -2446,12 +2453,14 @@ function priceRoundKills(picks) {
     const avgQ = have.reduce((a, x) => a + x.q, 0) / have.length;
     const q0 = maps.map(n => f[n]?.q ?? avgQ);
     const qs = q0.map(q => +(s.i === 0 ? q : 1 - q).toFixed(4));
-    const ctx = { game, kpr: rate.kpr, qs };
+    const scale = scaleFor(s.m, game);
+    const ctx = { game, kpr: +(rate.kpr * (scale ?? 1)).toFixed(4), qs };
     const mean = +roundmodel.pmfMean(roundmodel.killsPmf(ctx)).toFixed(2);
     const base = p.matchup?.baseMean ?? p.marketPred;
     const avgR = roundmodel.DEFAULTS.avgRounds[game];
-    const lineup = [...teams.get(`${s.m.id}|${s.i}`).values()].filter(Boolean).length >= roundmodel.DEFAULTS.need ? 'known' : 'unknown';
-    p.rounds = { mean, ctx, lineup, kpr: rate.kpr, raw: rate.raw, maps: rate.maps, game,
+    // known only when both teams are: the scale needs all ten
+    const lineup = scale != null ? 'known' : 'unknown';
+    p.rounds = { mean, ctx, lineup, kpr: ctx.kpr, raw: rate.raw, maps: rate.maps, scale, game,
       roundsPerMap: maps.map(n => f[n]?.rounds ?? +(have.reduce((a, x) => a + x.rounds, 0) / have.length).toFixed(1)),
       pinCtx: base > 0 ? { game, kpr: +(base / (avgR * maps.length)).toFixed(4), qs } : null };
     p.rounds.pinMean = p.rounds.pinCtx ? +roundmodel.pmfMean(roundmodel.killsPmf(p.rounds.pinCtx)).toFixed(2) : null;
@@ -4575,7 +4584,7 @@ app.get('/api/esports/rounds', async (req, res) => {
   try {
     const rows = await roundsTracker.list({ limit: 5000 });
     const priced = (esportsCache.picks || []).filter(p => p.rounds?.priced).map(p => ({ player: p.player, team: p.team, sport: p.sport, market: p.market, startTime: p.startTime,
-      kpr: p.rounds.kpr, raw: p.rounds.raw, maps: p.rounds.maps, lineup: p.rounds.lineup, roundsPerMap: p.rounds.roundsPerMap, qs: p.rounds.ctx.qs,
+      kpr: p.rounds.kpr, raw: p.rounds.raw, maps: p.rounds.maps, scale: p.rounds.scale, lineup: p.rounds.lineup, roundsPerMap: p.rounds.roundsPerMap, qs: p.rounds.ctx.qs,
       mean: p.rounds.mean, pinMean: p.rounds.pinMean, marketPred: p.marketPred, lines: esgaps.bookLines(p), best: p.rounds.priced }));
     const graded = rows.filter(r => r.status === 'graded').length;
     res.json({ note: `Pinnacle's rounds on each map x the player's kills a round (CS2, Valorant). ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,

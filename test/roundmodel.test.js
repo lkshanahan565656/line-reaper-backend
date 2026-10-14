@@ -84,3 +84,9 @@ test('roundsRecord counts team-maps, not rows', () => {
   assert.strictEqual(rec.all.plays, 3);
   assert.strictEqual(rec.all.teamMaps, 2);
 });
+
+test('matchScale puts both teams on the game total, and needs both lineups', () => {
+  const f = R.matchScale([0.8, 0.8, 0.8, 0.8, 0.8], [0.7, 0.7, 0.7, 0.7, 0.7], 'CS2');
+  assert.ok(Math.abs(f * 7.5 - R.DEFAULTS.matchKpr.CS2) < 0.01);
+  assert.strictEqual(R.matchScale([0.8, 0.8, 0.8, 0.8], [0.7, 0.7, 0.7, 0.7, 0.7], 'CS2'), null);
+});
