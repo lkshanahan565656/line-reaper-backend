@@ -1,0 +1,61 @@
+Wed Oct 14 12:49:29 UTC 2026
+12:49:29 daily gas series 51
+12:49:29 KXAAAGASDND live 102 hist 0
+12:49:29 KXAAAGASDMI live 835 hist 0
+12:49:30 KXAAAGASDWA live 735 hist 0
+12:49:30 KXAAAGASDKY live 102 hist 0
+12:49:30 KXAAAGASDMS live 102 hist 0
+12:49:31 KXAAAGASDLA live 112 hist 0
+12:49:31 KXAAAGASDNM live 278 hist 0
+12:49:31 KXAAAGASDGA live 853 hist 0
+12:49:31 KXAAAGASDIA live 139 hist 0
+12:49:33 KXAAAGASDOR live 476 hist 0
+12:49:33 KXAAAGASDWV live 102 hist 0
+12:49:33 KXAAAGASDME live 238 hist 0
+12:49:35 KXAAAGASDNC live 871 hist 0
+12:49:35 KXAAAGASDWY live 129 hist 0
+12:49:35 KXAAAGASDNE live 102 hist 0
+12:49:36 KXAAAGASDMO live 377 hist 0
+12:49:36 KXAAAGASDIN live 397 hist 0
+12:49:36 KXAAAGASDTN live 635 hist 0
+12:49:36 KXAAAGASDOK live 102 hist 0
+12:49:36 KXAAAGASDAZ live 615 hist 0
+12:49:38 KXAAAGASDSD live 112 hist 0
+12:49:38 KXAAAGASDCA live 920 hist 0
+12:49:40 KXAAAGASDNY live 850 hist 0
+12:49:40 KXAAAGASDAL live 129 hist 0
+12:49:40 KXAAAGASDOH live 1101 hist 0
+12:49:40 KXAAAGASDVT live 102 hist 0
+12:49:41 KXAAAGASDDE live 122 hist 0
+12:49:41 KXAAAGASDMN live 506 hist 0
+12:49:41 KXAAAGASDRI live 112 hist 0
+12:49:43 KXAAAGASDNH live 119 hist 0
+12:49:43 KXAAAGASDMT live 119 hist 0
+12:49:43 KXAAAGASDNJ live 897 hist 0
+12:49:43 KXAAAGASDHI live 112 hist 0
+12:49:45 KXAAAGASDPA live 781 hist 0
+12:49:45 KXAAAGASDCT live 357 hist 0
+12:49:45 KXAAAGASDVA live 605 hist 0
+12:49:46 KXAAAGASDUT live 248 hist 0
+12:49:47 KXAAAGASD live 1246 hist 2410
+12:49:48 KXAAAGASDFL live 1147 hist 0
+12:49:48 KXAAAGASDAR live 122 hist 0
+12:49:48 KXAAAGASDCO live 556 hist 0
+12:49:50 KXAAAGASDKS live 278 hist 0
+12:49:50 KXAAAGASDMA live 615 hist 0
+12:49:50 KXAAAGASDWI live 367 hist 0
+12:49:50 KXAAAGASDSC live 536 hist 0
+12:49:51 KXAAAGASDTX live 974 hist 0
+12:49:52 KXAAAGASDID live 112 hist 0
+12:49:52 KXAAAGASDIL live 960 hist 0
+12:49:53 KXAAAGASDAK live 248 hist 0
+12:49:53 KXAAAGASDMD live 516 hist 0
+12:49:53 KXAAAGASDNV live 377 hist 0
+12:49:53 markets 24958 live 22548 [ '2026-08-07T03:59:00Z', '2026-10-14T03:59:00Z' ] hist 2410 [ '2023-09-18T13:55:00Z', '2026-08-06T03:59:00Z' ]
+12:49:53 rules If average regular gas prices for North Dakota are strictly greater than $4.0950 on Oct 14, 2026 according to AAA, then the market resolves to Yes.
+12:49:53 candle todo 24955
+12:49:53 hist candle path /historical/markets/KXAAAGASD-26AUG06-4.115/candlesticks {"end_period_ts":1785942000,"open_interest":"1453.00","price":{"close":null,"high":null,"low":null,"mean":null,"open":null,"previous":"0.0100"},"volume":"0.00","yes_ask":{"close":"0.0100","high":"0.0100","low":"0.0100","open":"0.0100"},"yes_bid":{"close":"0.0000","high":"0.0000","low":"0.0000","open":"0.0000"}}
+12:54:04 hist 1000 / 2410 calls 2092 429s 986
+12:58:13 hist 2000 / 2410 calls 4023 429s 1913
+12:59:57 saved 24958 with candles 2409 calls 4817 errs 0 429s 2301
+Wed Oct 14 12:59:57 UTC 2026
