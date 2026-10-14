@@ -3,7 +3,7 @@
 // record at the end, then renders the ARBS tab at phone and desktop width.
 const fs = require('fs'); const { spawn } = require('child_process');
 const B = 'http://localhost:3999';
-const MIN = parseInt(process.env.MIN || '40');
+const MIN = parseInt(process.env.MIN || '25');
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const get = async (u) => { try { const r = await fetch(u, { signal: AbortSignal.timeout(120000) }); return { st: r.status, tx: await r.text() }; } catch (e) { return { st: 'ERR', tx: JSON.stringify({ error: e.message }) }; } };
 const J = x => { try { return JSON.parse(x.tx); } catch { return {}; } };
