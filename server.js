@@ -2191,6 +2191,9 @@ async function generateEsportsPicks() {
           return v.length ? v.reduce((a, x) => a + x, 0) / v.length : null;
         },
       });
+      const gaps = pingap.gapPlays(picks, { mapsOf: p => spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market)) });
+      esportsCache.pinGapPlays = gaps.length;
+      if (gaps.length) pinGapTracker.recordBoard(gaps).catch(e => console.warn('Pin gap tracker:', e.message));
       for (const p of picks) if (p.pinTeam) {
         const f = p.pinTeam.factor;
         p.statLine = [p.statLine, `Pinnacle team kills ${p.pinTeam.pin.toFixed(1)} a map vs the books' ${p.pinTeam.books.toFixed(1)} (x${f.toFixed(2)})`].filter(Boolean).join(' · ');
@@ -2371,6 +2374,16 @@ const slipTracker = require('./sliptrack').createSlipTracker({
   lookup: async () => new Map((await tracker.list({ status: 'graded', limit: 1e6 })).filter(r => r.result != null).map(r => [r.id, r.result])),
 });
 slipTracker.ready().catch(e => console.error('Slip tracker: store failed to initialise:', e.message));
+// Pinnacle team kill gaps (pingap.js): every player on a team where Pinnacle's
+// team kills and the books' five players part by 3%+, played on Pinnacle's
+// side and graded in their own record. Tested, not priced or alerted.
+const pingap = require('./pingap');
+const { createFileStore: createPickFileStore } = require('./tracker');
+const pinGapTracker = createTracker({
+  store: resultsBackup.wrap('esportsPinGaps', createPickFileStore(process.env.PIN_GAP_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-pin-gaps.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan,
+});
+pinGapTracker.ready().catch(e => console.error('Pin gap tracker: store failed to initialise:', e.message));
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
@@ -3816,7 +3829,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.112.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.113.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4228,6 +4241,16 @@ function esPicksRebuild() {
   if (esPicksRun) { esPicksAgain = true; return esPicksRun; }
   return esPicksOnce();
 }
+// Pinnacle team kill gaps: the record by gap size, and the plays (pingap.js)
+app.get('/api/esports/pingaps', async (req, res) => {
+  try {
+    const rows = await pinGapTracker.list({ limit: 5000 });
+    res.json({ note: 'Plays on Pinnacle\'s side where its team kills and the books\' five players part by 3%+. Tracked to test the gap; not priced or alerted.',
+      teamsNow: esportsCache.pinTeams || 0, playsNow: esportsCache.pinGapPlays || 0,
+      record: pingap.gapRecord(rows), rows: rows.slice(0, +req.query.limit || 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/esports/picks', async (req, res) => {
   const fresh = esportsCache.lastUpdated &&
     (Date.now() - new Date(esportsCache.lastUpdated).getTime()) < 300000;
@@ -5015,7 +5038,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.112.0',
+  version: '3.113.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5091,6 +5114,7 @@ schedule('*/5 * * * *', async () => {
   try {
     const locked = await tracker.lockStarted();
     trackerHealth.last = { locked, ...(await tracker.gradeDue()), slips: await slipTracker.grade().catch(e => ({ error: e.message })) };
+    trackerHealth.pinGaps = { locked: await pinGapTracker.lockStarted(), ...(await pinGapTracker.gradeDue()) };
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
   } catch (e) { trackerHealth.error = e.message; }
