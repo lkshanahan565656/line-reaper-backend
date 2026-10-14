@@ -22,6 +22,7 @@
 // Pure, so it's unit-tested; the server feeds picks, stats and Pinnacle in.
 
 const { sideProbs } = require('./dist');
+const { probToAmerican } = require('./ev');
 
 const DEFAULTS = {
   shrinkGames: 5,    // games of an even fifth mixed into each player's share (Dota fit: 0 to 5 best)
@@ -137,6 +138,57 @@ function sharePlay(p, priced) {
   };
 }
 
+// BetRivers' per-map player kill ladders (esbooks.parseKambiEsports players)
+// priced on the share. index: Map(`${game}|${nameKey}`) → { share, teamName,
+// start, pinByMap: { [map]: Pinnacle's team total }, booksPerMap (Pinnacle
+// split the books' way, a map) }. sameTeam(a, b) matches team names;
+// toDecimal(american). Rows in the +EV tab's esports shape (esbooks.screen).
+function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
+  const o = { ...DEFAULTS, ...opts };
+  const rows = [];
+  let priced = 0;
+  for (const g of books || []) {
+    if (!g?.players?.length || !['LOL', 'DOTA'].includes(g.game)) continue;
+    for (const l of g.players) {
+      const e = index.get(`${g.game}|${nameKey(l.player)}`);
+      if (!e || !sameTeam(e.teamName, g.teams[l.team])) continue;
+      const start = e.start ?? g.start;
+      if (!(start > now) || (g.start && e.start && Math.abs(g.start - e.start) > 12 * 3600e3)) continue;
+      const vals = Object.values(e.pinByMap || {}).filter(x => x > 0);
+      const pin = e.pinByMap?.[l.period] > 0 ? e.pinByMap[l.period] : vals.length ? vals.reduce((a, x) => a + x, 0) / vals.length : null;
+      if (!pin) continue;
+      const mean = r2(pin * e.share), ctx = { game: g.game, share: e.share, maps: 1 };
+      const group = `es|${g.game}|share|${nameKey(l.player)}|${l.period}|${l.line}`;
+      priced++;
+      for (const i of [0, 1]) {
+        const side = i === 0 ? 'OVER' : 'UNDER';
+        const fair = shareProb(mean, l.line, side, ctx);
+        if (!(fair > 0)) continue;
+        const sideLabel = `${l.player} ${i === 0 ? 'Over' : 'Under'} ${l.line}`;
+        if (fairs) fairs.set(`${group}|${sideLabel}`, r2(fair * 100));
+        const d = toDecimal(l.prices[i]);
+        if (!d) continue;
+        if (costs) costs.set(`${group}|${sideLabel}|betrivers`, Math.round(1e4 / d) / 1e4);
+        if (fair < 0.05 || fair > 0.95) continue;
+        const ev = (fair * d - 1) * 100;
+        if (ev < o.minEv || ev > o.maxEv) continue;
+        const pinFair = e.booksPerMap > 0 ? shareProb(e.booksPerMap, l.line, side, ctx) : null;
+        const agree = pinFair != null && Math.abs(fair - pinFair) * 100 <= o.agreePts && pinFair * d > 1;
+        rows.push({
+          sport: g.game.toLowerCase(), game: g.game, gameLabel: g.game === 'LOL' ? 'LoL' : 'Dota 2', league: g.league, event: `${g.teams[0]} vs ${g.teams[1]}`, start: new Date(start).toISOString(),
+          group, market: `kills|${l.period}|player`, marketLabel: `Map ${l.period} player kills`, player: l.player, point: l.line,
+          side: sideLabel, book: 'betrivers', price: l.prices[i], decimal: Math.round(d * 1000) / 1000, fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), ev: r2(ev),
+          kelly: r2(Math.max(0, (fair * d - 1) / (d - 1)) * 25),
+          source: agree ? 'esbook-share' : 'esbook-share-only', esports: true, clears: agree, single: !agree, model: true, agree, spreadPts: pinFair != null ? r2(Math.abs(fair - pinFair) * 100) : null,
+          sharpBooks: ['pinnacle'], share: { pct: r2(e.share * 100), pinTeamKills: r2(pin), mean, pinMean: e.booksPerMap > 0 ? r2(e.booksPerMap) : null },
+          sources: [{ book: 'kill share', p: r2(fair * 100), exact: false }, ...(pinFair != null ? [{ book: 'pinnacle', p: r2(pinFair * 100), exact: false }] : [])],
+        });
+      }
+    }
+  }
+  return { rows, priced };
+}
+
 // Graded rows → record: overall, by side, by app, and by team (five players on
 // one team move together, so the team count is the honest sample size)
 function shareRecord(rows) {
@@ -167,4 +219,4 @@ function shareRecord(rows) {
   return out;
 }
 
-module.exports = { DEFAULTS, PLAYER_K, TEAM_SD, shareProb, teamShares, shareMean, priceShare, sharePlay, shareRecord };
+module.exports = { DEFAULTS, PLAYER_K, TEAM_SD, shareProb, teamShares, shareMean, priceShare, priceBookPlayers, sharePlay, shareRecord };

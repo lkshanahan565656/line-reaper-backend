@@ -102,3 +102,18 @@ test('shareRecord counts teams and the close', () => {
   assert.equal(r.all.closeBeat, 1);
   assert.equal(r.all.hitRate, 0.5);
 });
+
+test('priceBookPlayers prices BetRivers player kill rungs on the share', () => {
+  const index = new Map([['LOL|caliste', { share: 0.3, teamName: 'Karmine Corp', start: Date.parse('2030-01-01T18:00:00Z'), pinByMap: { 1: 16, 2: 16.2 }, booksPerMap: 4.6 }]]);
+  const books = [{ game: 'LOL', league: 'Worlds', teams: ['Cloud9', 'Karmine Corp'], start: Date.parse('2030-01-01T18:00:00Z'),
+    players: [{ period: 3, player: 'Caliste', team: 1, line: 3.5, prices: [-110, -110] }, { period: 1, player: 'Caliste', team: 0, line: 3.5, prices: [-110, -110] }] }];
+  const toDecimal = a => (a > 0 ? 1 + a / 100 : 1 + 100 / -a);
+  const fairs = new Map();
+  const r = sm.priceBookPlayers(books, index, { nameKey: n => n.toLowerCase(), sameTeam: (a, b) => a === b, toDecimal, now: Date.parse('2029-12-31T00:00:00Z'), fairs });
+  assert.equal(r.priced, 1);                 // the wrong-team line is skipped
+  const over = r.rows.find(x => x.side.includes('Over'));
+  assert.ok(over.ev > 2);
+  assert.equal(over.share.mean, 4.83);       // map 3 has no Pinnacle total: the average of maps 1 and 2
+  assert.equal(over.clears, true);
+  assert.ok(fairs.size === 2);
+});

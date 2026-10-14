@@ -2348,6 +2348,20 @@ function priceKillShares(picks, { fam, sideOf }) {
     const play = sharemodel.sharePlay(p, priced);
     if (play) plays.push(play);
   }
+  // each player's share, for BetRivers' per-map player kill ladders (runEsBooksScreen)
+  const index = new Map();
+  for (const p of kills) {
+    const s = sideOf(p), game = fam(p);
+    const sh = shares.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
+    const k = `${game}|${normalizeName(p.player)}`;
+    if (!sh) continue;
+    const e = index.get(k) || { share: sh.share, teamName: s.m.teams[s.i], start: Date.parse(s.m.start) || null,
+      pinByMap: Object.fromEntries(Object.entries(s.m.pinTeamKills).map(([n, v]) => [n, v?.[s.i]]).filter(([, v]) => v > 0)), booksPerMap: null };
+    const base = p.matchup?.baseMean ?? p.marketPred;
+    if (e.booksPerMap == null && p.pinTeam && base > 0) e.booksPerMap = +(base / parseMapCount(p.market) * p.pinTeam.factor).toFixed(2);
+    index.set(k, e);
+  }
+  esportsCache.shareIndex = index;
   if (plays.length) shareTracker.recordBoard(plays).catch(e => console.warn('Share tracker:', e.message));
   if (st.priced) console.log(`Kill share: ${st.teams} teams, ${st.priced} lines priced, ${st.clear} clear (${st.unknownLineup} teams with an unknown lineup)`);
   return st;
@@ -4797,7 +4811,16 @@ function runEsBooksScreen() {
     const fairs = new Map(), costs = new Map();
     const kalshi = esbooks.kalshiLadders(esportsBoard.state.matches || []);
     const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, fairs, costs });
-    Object.assign(esBooksState, { rows: res.rows, summary: esbooks.summarize(esBooksState.books, res, fairs), screenedAt: new Date().toISOString() });
+    // BetRivers' player kill ladders on the kill-share model (sharemodel.js)
+    let shareSum = null;
+    if (SHARE_ON && esportsCache.shareIndex?.size) {
+      const sr = sharemodel.priceBookPlayers(esBooksState.books, esportsCache.shareIndex, { nameKey: normalizeName, sameTeam: (a, b) => teamsMatch(esbooks.cleanTeam(a), esbooks.cleanTeam(b)) || !!teamCode(a, b),
+        toDecimal: evScreen.americanToDecimal, fairs, costs, o: SHARE_OPTS });
+      res.rows.push(...sr.rows);
+      res.rows.sort((a, b) => (b.clears - a.clears) || b.ev - a.ev);
+      shareSum = { priced: sr.priced, shown: sr.rows.length, clear: sr.rows.filter(r => r.clears).length };
+    }
+    Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum }, screenedAt: new Date().toISOString() });
     esBookTracker.recordBoard(res.rows, fairs, { costs }).catch(e => console.warn('Esports books tracker:', e.message));
   } catch (e) { esBooksState.errors = [`screen ${e.message}`, ...esBooksState.errors].slice(0, 8); }
 }
