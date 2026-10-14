@@ -122,11 +122,15 @@ const SOURCES = {
   // a middle is graded on whether the final landed between its lines (1u staked)
   middles: { label: 'Middles', done: r => r.status === 'graded', open: r => r.status === 'open',
     bet: r => ({ profit: r.profit, staked: 1, clv: null, labels: { league: r.league, kind: r.kind } }), cuts: [['league'], ['kind']] },
+  // a gas lock: 1u at its first price, graded on Kalshi's result and on our side's last mid (gaslocks.js)
+  gasLocks: { label: 'Gas locks', done: r => r.status === 'graded', open: r => r.status === 'open',
+    bet: r => ({ profit: r.profit, staked: 1, clv: r.clv ?? null, labels: { state: r.state, price: r.price >= 0.96 ? '96-98c' : r.price >= 0.93 ? '93-95c' : '90-92c' } }),
+    cuts: [['state'], ['price']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
 };
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
-// lists: { tail: [records], fresh, esportsEdges, exchangeValue, ev, esportsPicks } →
+// lists: { tail: [records], fresh, esportsEdges, exchangeValue, ev, esportsPicks, gasLocks } →
 // { sources: { name: { label, open, overall } }, plays: [ranked] }
 function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   const sources = {}, plays = [];
