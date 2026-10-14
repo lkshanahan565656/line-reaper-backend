@@ -20,6 +20,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { bookLines, gapOutcome } = require('./esgaps');
 
 // PrizePicks standard pick'em at 1.00x implies 56.22% per leg (≈ -128).
 const PP_IMPLIED = 0.5622;
@@ -181,6 +182,14 @@ function clvKind(r) {
   return `${sportKey(r.sport)}|${r.stat || statKind(r.market)}|${book}|${r.signalSide || r.side}`;
 }
 
+// Line-gap group of a tracked row, for the record
+function gapGroup(r) {
+  if (!r.signalLines) return 'before gap tracking';
+  if (r.gapVs && r.gapVs.length) return 'line gap';
+  const n = Object.keys(r.signalLines).length;
+  return n < 2 ? 'one book only' : 'no gap';
+}
+
 function profitFor(outcome, decimal) {
   if (outcome === 'win') return decimal - 1;
   if (outcome === 'loss') return -1;
@@ -282,6 +291,10 @@ function createTracker({
           closeLine: signalLine, closeSide: p.side, closeEv: p.bestEv, closeAt: new Date(t).toISOString(),
           // the market's chance of this exact ticket at signal; closeFair follows it to lock
           signalFair: fairOf(p, signalLine, p.side), closeFair: null,
+          // every book's line at signal and at the last refresh before lock, and
+          // the gap when the book played sat apart from the others (esgaps.js)
+          signalLines: bookLines(p), closeLines: bookLines(p),
+          gapVs: p.lineGap ? p.lineGap.vs : null, gapPts: p.lineGap ? p.lineGap.pts : null, gapProbPts: p.lineGap ? p.lineGap.probPts : null,
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
         };
@@ -300,6 +313,7 @@ function createTracker({
           ...(!row.team && p.team ? { team: p.team } : {}),
           closeLine, closeSide: p.side || row.closeSide, closeEv: p.bestEv ?? row.closeEv,
           closeAt: new Date(t).toISOString(),
+          ...(row.signalLines ? { closeLines: bookLines(p) } : {}),
           clv: lineClv(row.signalSide, row.signalLine, closeLine),
         });
         await store.put(row);
@@ -528,6 +542,9 @@ function createTracker({
       byBook: groupBy(r => r.signalBook || 'n/a'),
       // picks the matchup moved by 2%+ vs the rest, once matchup pricing runs
       byMatchup: groupBy(r => r.matchupLed ? 'matchup-led (no edge without it)' : r.ctxFactor == null ? (r.matchupAdj === undefined ? 'before matchup pricing' : 'no match price') : Math.abs((r.matchupAdj ?? 1) - 1) >= 0.02 ? 'matchup moved price 2%+' : 'even-ish matchup'),
+      // line gaps (one book apart from the others, esgaps.js) vs books agreeing
+      byGap: groupBy(gapGroup),
+      gapOutcomes: rows.filter(r => r.gapVs && r.status !== 'void' && r.closeAt !== r.signalAt).reduce((g, r) => { const o = gapOutcome(r); if (o) g[o] = (g[o] || 0) + 1; return g; }, {}),
       // market CLV pooled by kind (sport|stat|book|side), picks signaled since it was measured
       byKind: Object.fromEntries(Object.entries(rows.filter(r => r.signalFair != null).reduce((g, r) => ((g[clvKind(r)] ||= []).push(r), g), {})).map(([k, v]) => [k, aggregate(v)])),
       counts: {
@@ -546,5 +563,5 @@ function createTracker({
 
 module.exports = {
   createTracker, createMemoryStore, createFileStore, createPgStore, createStoreFromEnv,
-  spanToMaps, statKind, sportKey, legDecimal, outcomeFor, lineClv, marketClv, clvKind, profitFor, PP_IMPLIED,
+  spanToMaps, statKind, sportKey, legDecimal, outcomeFor, lineClv, marketClv, clvKind, gapGroup, profitFor, PP_IMPLIED,
 };

@@ -723,6 +723,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-play .pl { font-size:14px; font-weight:700; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .es-play .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
 .es-ldiff { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.03em; color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; vertical-align:1px; }
+.es-ldiff.gap { color:#34d399; background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.4); }
 .es-play .es-ldiff { display:block; width:max-content; margin:4px auto 0; }
 .es-mu { font-size:10.5px; color:#94a3b8; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .es-mu b { font-weight:700; } .es-mu b.up { color:#34d399; } .es-mu b.dn { color:#f87171; } .es-mu b.led { color:#fbbf24; }
@@ -1498,7 +1499,7 @@ body.no-help .clv-info { display:none; }
   </div>
 
   <div class="es-tools">
-    <label class="es-field"><span>Prop</span><select id="esMarketSel" onchange="setEsportsMarket(this.value)"><option value="all">All props</option><option value="k">Kills</option><option value="hs">Headshots</option><option value="ast">Assists</option><option value="fp">Fantasy</option></select></label>
+    <label class="es-field"><span>Prop</span><select id="esMarketSel" onchange="setEsportsMarket(this.value)"><option value="all">All props</option><option value="k">Kills</option><option value="hs">Headshots</option><option value="ast">Assists</option><option value="fp">Fantasy</option><option value="gap">Line gaps</option></select></label>
     <label class="es-field"><span>Maps</span><select id="esSpanSel" onchange="setEsportsSpan(this.value)"><option value="all">All maps</option><option value="1">Map 1</option><option value="1-2">Maps 1-2</option><option value="1-3">Maps 1-3</option></select></label>
     <label class="es-field"><span>Sort by</span><select id="esSortSel" onchange="setEsportsSort(this.value)"><option value="ev">Best EV</option><option value="prob">Win probability</option><option value="edge">Model vs line</option><option value="start">Start time</option></select></label>
     <label class="es-field"><span>Min EV</span><select id="esMinEvSel" onchange="setEsportsMinEv(this.value)"><option value="0">Any +EV</option><option value="2">2%+</option><option value="5">5%+</option><option value="8">8%+</option></select></label>
@@ -4449,7 +4450,8 @@ function esFiltered() {
   if (esportsState.minEV > 0) {
     picks = picks.filter(p => p.locked || (esBestEv(p) ?? -999) >= esportsState.minEV);
   }
-  if (esportsState.market !== 'all') picks = picks.filter(p => esMarketKind(p.market) === esportsState.market);
+  if (esportsState.market === 'gap') picks = picks.filter(p => p.lineGap && !p.locked);
+  else if (esportsState.market !== 'all') picks = picks.filter(p => esMarketKind(p.market) === esportsState.market);
   if (esportsState.span !== 'all') picks = picks.filter(p => esSpanOf(p.market) === esportsState.span);
   if (esportsState.search) {
     picks = picks.filter(p => [p.player, p.market, p.team, p.matchTitle].some(x => (x || '').toLowerCase().includes(esportsState.search)));
@@ -5750,6 +5752,10 @@ const alertState = { list: [], unread: 0, open: false, source: null, live: false
 function alertText(e) {
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
   if (e.kind === 'edge') return `${e.player} ${e.side || ''} ${e.line} · ${e.market} · ${pct(e.ev)}${e.book ? ' on ' + e.book : ''}`;
+  if (e.kind === 'gap' && e.gap) {
+    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' })[b] || b;
+    return `Line gap: ${e.player} ${e.gap.side === 'OVER' ? 'Over' : 'Under'} ${e.gap.line} · ${e.market} on ${bn(e.gap.book)} · ${e.gap.vs.map(v => `${bn(v.book)} ${v.line}`).join(', ')} · ${pct(e.ev)}`;
+  }
   if (e.kind === 'move') return `${e.player} ${e.market} · line ${e.from} → ${e.to} · ${e.direction === 'with' ? 'moving our way, play now' : 'moving away'} · ${pct(e.ev)}${e.sideFlipped ? ' · side flipped' : ''}`;
   return `${e.player} ${e.market} · edge gone (was ${pct(e.previousEv)})`;
 }
@@ -5776,7 +5782,7 @@ function esRenderAlerts() {
   if (!alertState.open) return;
   let notifyOn = false;
   try { notifyOn = localStorage.getItem('lr_notify') === '1' && 'Notification' in window && Notification.permission === 'granted'; } catch {}
-  const color = k => k === 'edge' ? '#10b981' : k === 'move' ? '#fbbf24' : '#64748b';
+  const color = k => k === 'edge' || k === 'gap' ? '#10b981' : k === 'move' ? '#fbbf24' : '#64748b';
   if (alertState.locked) {
     el.innerHTML = `<div style="background:var(--card);border:1px solid #f59e0b55;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:12px;color:#cbd5e1"><b style="color:#fcd34d">Live alerts are a Pro feature.</b> New edges and line moves, pushed the moment the board refreshes.</span>
@@ -5849,6 +5855,29 @@ const trState = { sport: '', minEV: '' };
 function trPct(v, d = 1) { return v == null ? '—' : (v * 100).toFixed(d) + '%'; }
 function trSigned(v, d = 2) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(d); }
 function trColor(v) { return v == null ? '#94a3b8' : v > 0 ? '#10b981' : v < 0 ? '#ef4444' : '#94a3b8'; }
+
+// Line gaps on their own: plays where the book we took sat on the soft side
+// of another book's line, graded and measured against the close, plus how
+// each gap ended by lock (our book fixed its number, the others came to it,
+// or it held).
+function trGapCard(sum) {
+  const g = sum.byGap && sum.byGap['line gap'];
+  if (!g || !g.picks) return '';
+  const o = sum.gapOutcomes || {};
+  const fixed = (o.caught || 0) + (o.pulled || 0);
+  const tone = v => (v == null ? '' : v > 0 ? 'good' : v < 0 ? 'bad' : '');
+  const cell = (num, label, t = '') => `<div class="pb-stat ${t}"><b>${num}</b><span>${label}</span></div>`;
+  return `<div class="tr-card"><div class="tr-head">LINE GAPS · ${g.picks} PLAYS</div>
+    <div class="pb-sum tr-sum" style="margin:8px 0">
+      ${cell(`${g.wins}-${g.losses}-${g.pushes}`, 'Record')}
+      ${cell(trSigned(g.units) + 'u', 'Units (1u / leg)', tone(g.units))}
+      ${g.mktMoved ? cell(trPct(g.mktBeatShare, 0), `Close our way · ${g.mktBeat}/${g.mktMoved}`, g.mktBeatShare != null ? tone(g.mktBeatShare - 0.5) : '') : cell('—', 'Close our way · none moved yet')}
+      ${g.closeEvAvg != null ? cell(trSigned(g.closeEvAvg * 100, 1) + '%', `EV at the close · n=${g.mktClvSample}`, tone(g.closeEvAvg)) : ''}
+      ${fixed + (o.joined || 0) ? cell(trPct(fixed / (fixed + (o.joined || 0)), 0), `Gaps closed our way · ${fixed}/${fixed + (o.joined || 0)}`, tone(fixed / (fixed + (o.joined || 0)) - 0.5)) : ''}
+    </div>
+    <div class="tr-note" style="margin:0">A line gap is a play where the book we took hung a softer line than another book on the same player and stat (an over below the others, an under above them). By lock, the book we took moved its line most of the way to the others on ${o.caught || 0}, pulled the line on ${o.pulled || 0}, and stayed put while the others came to it on ${o.joined || 0}; ${o.held || 0} gaps held.</div>
+  </div>`;
+}
 
 function trTable(title, groups) {
   const rows = Object.entries(groups || {}).filter(([, g]) => g.picks > 0)
@@ -5929,10 +5958,12 @@ async function renderTrackRecord(el) {
         Closing-line value: each pick's ticket (same side, same line, same book) is priced on the books' consensus when it is signaled and again at lock. "Close our way" is the share of picks whose chance moved half a point or more that moved in our favour, and "EV at the close" is what the ticket was worth on the closing market. Over hundreds of picks, beating the close is the surest sign of an edge, long before wins and losses settle it. Picks logged before this was measured show the line move only. Storage: ${escEs(sum.store)}.
       </div>
       ${trReviewHTML(review.picks || [])}
+      ${trGapCard(sum)}
       ${trTable('BY SPORT', sum.bySport)}
       ${trTable('CLOSING LINE BY KIND', Object.fromEntries(Object.entries(sum.byKind || {}).map(([k, g]) => { const [sp, st, bk, sd] = k.split('|'); return [`${sp} ${st} · ${({ UD: 'Underdog', PP: 'PrizePicks', SL: 'Sleeper' })[bk] || bk} · ${sd === 'OVER' ? 'Over' : 'Under'}`, g]; })))}
       ${trTable('BY EV AT SIGNAL', sum.byEv)}
       ${trTable('BY MATCHUP', sum.byMatchup)}
+      ${trTable('BY LINE GAP', sum.byGap)}
       ${trTable('BY STAT', sum.byStat)}
       ${trTable('BY SIDE', sum.bySide)}
       ${trTable('BY CONFIDENCE', sum.byConfidence)}
@@ -5982,6 +6013,12 @@ async function trGrade(encId, isVoid = false) {
 // Underdog and PrizePicks post different numbers for the same prop: flag it, so a
 // bettor checks the line on the app they're placing (each book is priced at its own).
 function esLineDiffChip(p, key) {
+  const g = p.lineGap;
+  if (g && !p.locked) {
+    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' })[b] || b;
+    const side = g.side === 'OVER' ? 'Over' : 'Under';
+    return `<span class="es-ldiff gap" title="Line gap: ${escEs(bn(g.book))} hangs ${escEs(g.line)} where ${escEs(g.vs.map(v => `${bn(v.book)} has ${v.line}`).join(' and '))}. ${escEs(side)} ${escEs(g.line)} on ${escEs(bn(g.book))} is worth ${escEs(g.probPts)} points more win chance than at the other line. Gaps close when the odd book fixes its number, so check the line on ${escEs(bn(g.book))} before you play it.">Gap · ${escEs(g.vs.map(v => `${bn(v.book)} ${v.line}`).join(' · '))}</span>`;
+  }
   if (p.locked || p.udLine == null || p.ppLine == null || p.udLine === p.ppLine) return '';
   const onUd = key === 'underdog', other = onUd ? p.ppLine : p.udLine;
   return `<span class="es-ldiff" title="Underdog's line is ${escEs(p.udLine)}, PrizePicks' is ${escEs(p.ppLine)}. Each book is priced at its own line.">${onUd ? 'PrizePicks' : 'Underdog'} ${escEs(other)}</span>`;
@@ -5994,6 +6031,7 @@ function esClvChip(p) {
   if (p.locked || !r || !(r.moved >= 5)) return '';
   const good = r.share >= 0.5;
   const ev = r.closeEv != null ? `, worth ${r.closeEv > 0 ? '+' : ''}${(r.closeEv * 100).toFixed(1)}% at the close on average` : '';
+  if (r.gap) return `<span class="es-clv ${good ? 'good' : 'bad'}" title="Line-gap plays so far: the closing market moved our way on ${r.beat} of the ${r.moved} that moved${ev}.${p.clvWarn ? ' Kept out of Best Plays and alerts until that turns.' : ''}">Gaps ${good ? 'beat' : 'lose'} close ${r.beat}/${r.moved}</span>`;
   return `<span class="es-clv ${good ? 'good' : 'bad'}" title="Picks like this (${escEs(p.sport)}, this stat, this book, this side): the closing market moved our way on ${r.beat} of the ${r.moved} that moved${ev}.${p.clvWarn ? ' Kept out of Best Plays and alerts until that turns.' : ''}">${good ? 'Beats' : 'Loses'} close ${r.beat}/${r.moved}</span>`;
 }
 // Tonight's matchup behind the price: how often the player's team wins a map

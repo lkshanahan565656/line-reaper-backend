@@ -8,13 +8,20 @@
 //             "with" means the market moved toward our side (the edge was
 //             real and is shrinking: play now); "against" means away from it.
 //   gone      a pick that was alerting fell back below the threshold or left
+//   gap       a +EV pick whose book sits on the soft side of another book's
+//             line (esgaps.js): the alert names the book, line and side to
+//             take and the other books' lines, since a gap closes when the
+//             odd book fixes its number
 //
 // Each pick alerts at most once per COOLDOWN for the same kind, so a line that
 // flickers between two numbers doesn't spam the channel.
 
+const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
+
 const DEFAULTS = {
   minEv: 5,             // % EV to call it an edge
   moveMinEv: 2,         // only report moves on picks at least this good
+  gapMinEv: 2,          // % EV for a line gap to alert
   cooldownMs: 30 * 60000,
   maxRecent: 200,
 };
@@ -29,8 +36,11 @@ function lineOf(p) {
 }
 
 // Pure: previous board + new board → events. `seen` tracks cooldowns.
-function diffBoards(prev, next, { minEv, moveMinEv, cooldownMs, now = Date.now(), seen = new Map() } = {}) {
+const gapKey = g => (g ? `${g.book}|${g.side}|${g.line}|${g.vs.map(v => `${v.book}${v.line}`).join(',')}` : '');
+
+function diffBoards(prev, next, { minEv, moveMinEv, gapMinEv, cooldownMs, now = Date.now(), seen = new Map() } = {}) {
   minEv ??= DEFAULTS.minEv;
+  gapMinEv ??= DEFAULTS.gapMinEv;
   moveMinEv ??= DEFAULTS.moveMinEv;
   cooldownMs ??= DEFAULTS.cooldownMs;
   const before = new Map((prev || []).map(p => [keyOf(p), p]));
@@ -55,7 +65,10 @@ function diffBoards(prev, next, { minEv, moveMinEv, cooldownMs, now = Date.now()
     const old = before.get(k);
     const ev = p.bestEv ?? -Infinity, oldEv = old?.bestEv ?? -Infinity;
 
-    if (ev >= minEv && (!old || oldEv < minEv)) fire('edge', p, { previousEv: old?.bestEv ?? null });
+    // a new or changed gap goes out as a gap, which says more than an edge
+    const gapNew = p.lineGap && ev >= gapMinEv && (!old || !old.lineGap || (old.bestEv ?? -Infinity) < gapMinEv || gapKey(old.lineGap) !== gapKey(p.lineGap));
+    if (gapNew) fire('gap', p, { gap: p.lineGap, previousEv: old?.bestEv ?? null });
+    else if (ev >= minEv && (!old || oldEv < minEv) && !(p.lineGap && old?.lineGap && oldEv >= gapMinEv)) fire('edge', p, { previousEv: old?.bestEv ?? null });
 
     const line = lineOf(p), oldLine = old ? lineOf(old) : null;
     if (old && line != null && oldLine != null && line !== oldLine && (ev >= moveMinEv || oldEv >= moveMinEv)) {
@@ -81,6 +94,11 @@ function describe(e) {
   const pct = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
   const who = `${e.player} ${e.side || ''} ${e.line} ${e.market} (${e.sport}${e.book ? ', ' + e.book : ''})`;
   if (e.kind === 'edge') return `New edge ${pct(e.ev)}: ${who}`;
+  if (e.kind === 'gap' && e.gap) {
+    const g = e.gap, side = g.side === 'OVER' ? 'Over' : 'Under';
+    const others = g.vs.map(v => `${BOOK_NAMES[v.book] || v.book} ${v.line}`).join(', ');
+    return `Line gap ${pct(e.ev)}: ${e.player} ${side} ${g.line} ${e.market} on ${BOOK_NAMES[g.book] || g.book} (${e.sport}) · ${others}`;
+  }
   if (e.kind === 'move') {
     const arrow = e.to > e.from ? '↑' : '↓';
     const note = e.direction === 'with' ? 'market moving our way, edge shrinking' : 'market moving away, edge growing';
@@ -97,7 +115,7 @@ function webhookBody(events) {
   return { username: 'Line Reaper', content: lines.join('\n') };
 }
 
-function createAlerter({ minEv, moveMinEv, cooldownMs, maxRecent = DEFAULTS.maxRecent, send, now = () => Date.now(), log = console } = {}) {
+function createAlerter({ minEv, moveMinEv, gapMinEv, cooldownMs, maxRecent = DEFAULTS.maxRecent, send, now = () => Date.now(), log = console } = {}) {
   let prev = null;
   const seen = new Map();
   const recent = [];
@@ -107,7 +125,7 @@ function createAlerter({ minEv, moveMinEv, cooldownMs, maxRecent = DEFAULTS.maxR
     // a restart shouldn't announce the whole slate as new.
     async onBoard(picks) {
       if (prev == null) { prev = picks.slice(); return []; }
-      const events = diffBoards(prev, picks, { minEv, moveMinEv, cooldownMs, now: now(), seen });
+      const events = diffBoards(prev, picks, { minEv, moveMinEv, gapMinEv, cooldownMs, now: now(), seen });
       prev = picks.slice();
       if (!events.length) return events;
       for (const e of events) {
