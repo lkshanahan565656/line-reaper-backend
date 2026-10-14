@@ -2540,12 +2540,16 @@ async function refreshEvProof() {
   const { byBook } = await evTracker.summary();
   evBookProven = new Set(Object.entries(byBook || {}).filter(([, x]) => x.execN >= EV_PROVEN_N && x.avgExecClv >= EV_PROVEN_CLV).map(([b]) => b));
 }
+const EV_WEIGHTS = { ...evScreen.SHARP_WEIGHTS, ...(Number.isFinite(parseFloat(process.env.EV_KALSHI_WEIGHT)) ? { kalshi_mid: parseFloat(process.env.EV_KALSHI_WEIGHT) } : {}) };
 function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
-  const feeds = evFeeds();
+  // game lines take Kalshi's mids as a second sharp source next to Pinnacle's
+  // (only here: the exchange scans read evFeeds too and must not see a no-vig book)
+  const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
+  const feeds = evFeeds().map(f => (/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f));
   const dfsLines = sportsPropLines();
   const fairs = new Map(), costs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs });
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, weights: EV_WEIGHTS });
   const prev = evCache.at ? evCache.rows : null;
   evCache = { at: Date.now(), rows, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
@@ -2572,12 +2576,12 @@ function runEvScreen(force = false) {
 }
 function redactEv(rows) {
   return rows.map(r => ({ sport: r.sport, event: r.event, start: r.start, market: r.market, dfs: !!r.dfs, prop: !!r.player,
-    source: r.source, sharpBooks: r.sharpBooks, locked: true }));
+    source: r.source, sharpBooks: r.sharpBooks, agree: !!r.agree, locked: true }));
 }
 // +EV rows a viewer may see: a Kalshi book needs the Kalshi licence; a
 // Polymarket book needs its licence and never shows in US mode
 const evRowOk = lic => r => (r?.book !== 'kalshi' || lic.kalshi) && (r?.book !== 'polymarket' || (lic.polymarket && TAIL_REGION !== 'us'))
-  && (!(r?.sharpBooks || []).includes('kalshi_props') || lic.kalshi);   // priced off Kalshi's own data
+  && (!(r?.sharpBooks || []).some(b => b === 'kalshi_props' || b === 'kalshi_mid') || lic.kalshi);   // priced off Kalshi's own data
 // a webhook post can reach other people, so it gets the public's licences
 const webhookLicence = () => licenceFor({ paywall: PAYWALL, admin: false });
 
@@ -3337,6 +3341,8 @@ async function scanGasLocks() {
   return fresh;
 }
 let middleGradedAt = 0;
+let kalshiGameRows = { rows: [], at: 0 };
+const KALSHI_MID_MAX_AGE_MS = 10 * 60e3;
 async function scanXarbs() {
   if (xarbState.running) return [];
   xarbState.running = true;
@@ -3360,6 +3366,8 @@ async function scanXarbs() {
       try { tail = await kalshiTailSweep.step(k.cursor); } catch (e) { console.warn('Kalshi tail sweep:', e.message); }
       for (const r of tail) if (!listed.has(r.id)) { kalshi.push(r); listed.add(r.id); tailIn++; }
     }
+    // Kalshi's game contracts, kept for the +EV fair (pingames.kalshiMidBooks)
+    kalshiGameRows = { rows: kalshi.filter(r => r.category === 'sports' && r.tradable && (r.kind === 'teams' || r.kind === 'total' || r.kind === 'spread')), at: Date.now() };
     let games = [];
     try { games = evFeeds().filter(f => /odds$/.test(f.label)).flatMap(f => f.games); }
     catch (e) { console.warn('Exchange arbs: game feeds:', e.message); }
@@ -3834,7 +3842,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.113.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.115.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -3909,10 +3917,16 @@ app.get('/api/ev', (req, res) => {
     (!q.market || r.market === q.market) &&
     (q.props == null || (q.props === '1') === !!r.player) &&
     (q.dfs == null || (q.dfs === '1') === !!r.dfs) &&
-    (!q.source || r.source === q.source));
+    (!q.source || r.source === q.source) &&
+    (q.agree !== '1' || r.agree));
   const total = out.length;
+  // the bar: +2% with two sharp sources agreeing (sportsbook rows; the
+  // pick'em legs have their own consensus on the PROPS board)
+  const clear = rows.filter(r => !r.dfs && r.ev >= 2);
+  const counts = { clear2: clear.length, agree2: clear.filter(r => r.agree).length,
+    agree2Lines: clear.filter(r => r.agree && !r.player).length, agree2Props: clear.filter(r => r.agree && r.player).length };
   out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
-  res.json({ rows: pro ? out : redactEv(out), count: total, pro, updated: new Date(at).toISOString(), feeds });
+  res.json({ rows: pro ? out : redactEv(out), count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
 // ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
@@ -4830,16 +4844,52 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1' });
+  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1' };
+  const market = String(req.query.market || '').slice(0, 80);
+  const hits = propsBoard.queryRows(rows, { ...qo, market });
+  // the Lines view: one app's lines, with the header count and the prop filter
+  let lines = null;
+  if (book && req.query.facets === '1') {
+    const f = propsBoard.lineFacets(market ? propsBoard.queryRows(rows, qo) : hits, book, SHARP_OPTS.minEv);
+    lines = { markets: f.markets, bettable: pro ? propsBoard.lineFacets(hits, book, SHARP_OPTS.minEv).bettable : null, minEv: SHARP_OPTS.minEv };
+  }
   const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
   const offset = Math.max(0, parseInt(req.query.offset) || 0);
   let page = hits.slice(offset, offset + limit);
   if (!pro) page = page.map(propsBoard.redactRow);
   else if (!kalshiOk) page = page.map(r => (r.esports ? r : propsBoard.redactRow(r)));
   res.json({
-    rows: page, total: hits.length, offset, limit, pro, counts,
+    rows: page, total: hits.length, offset, limit, pro, counts, ...(lines ? { lines } : {}),
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// The Lines view's "Used?" boxes, kept on the account so they follow the
+// person between devices (the page keeps them in localStorage without one).
+// key → when ticked; a week on, the game is long over.
+const USED_KEEP_MS = 7 * 86400e3, USED_MAX = 2000;
+function usedOf(user) {
+  const now = Date.now(), out = {};
+  for (const [k, t] of Object.entries(user.used || {})) if (now - t < USED_KEEP_MS) out[k] = t;
+  return out;
+}
+app.get('/api/me/used', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  res.json({ used: Object.keys(usedOf(req.user)) });
+});
+app.post('/api/me/used', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Log in first' });
+  const keys = (Array.isArray(req.body?.keys) ? req.body.keys : [req.body?.key]).filter(k => typeof k === 'string' && k && k.length <= 200).slice(0, 200);
+  if (!keys.length) return res.status(400).json({ error: 'key needed' });
+  const used = usedOf(req.user);
+  for (const k of keys) { if (req.body?.used === false) delete used[k]; else used[k] = Date.now(); }
+  const trimmed = Object.fromEntries(Object.entries(used).sort((a, b) => b[1] - a[1]).slice(0, USED_MAX));
+  try {
+    const fresh = (await auth.store.get(req.user.id)) || req.user;
+    await auth.store.put({ ...fresh, used: trimmed });
+    res.json({ used: Object.keys(trimmed) });
+  }
+  catch (e) { sendErr(res, e); }
 });
 
 // The sports props record: free to see, like every other record. Open legs
@@ -5300,7 +5350,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.113.0',
+  version: '3.115.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

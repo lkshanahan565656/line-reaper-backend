@@ -196,6 +196,96 @@ function matchRows(rows, games) {
   return out;
 }
 
+// ── KALSHI AS A SECOND SHARP SOURCE ──
+// Kalshi's game contracts trade at a one- or two-cent spread with no book
+// margin: the bid/ask mid is its market's chance. Pinnacle-priced Kalshi bets
+// lost 5.1% over 205 settled (2026-10-14), so on these games Kalshi is at
+// least as sharp as Pinnacle. Each Odds API game (Pinnacle's names) gets a
+// 'kalshi_mid' bookmaker built from the mids: moneyline from the team
+// contracts, half-line totals and spreads from Kalshi's line contracts. The
+// prices are no-vig (both sides add up to 1), so ev.js reads them as a fair
+// next to Pinnacle's. Not a book anyone bets at: ev.screen never scores it.
+// → Map game id → bookmaker
+const KALSHI_MID = { maxSpread: 0.05, minP: 0.03 };
+function kalshiMid(r, o = KALSHI_MID) {
+  if (r.exchange !== 'kalshi' || r.tradable === false || r.yesAsk == null || r.noAsk == null) return null;
+  const bid = 1 - r.noAsk, ask = r.yesAsk;
+  if (!(ask >= bid) || ask - bid > o.maxSpread) return null;
+  const p = (ask + bid) / 2;
+  return p >= o.minP && p <= 1 - o.minP ? p : null;
+}
+const fairAmerican = p => +(p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p).toFixed(2);
+function kalshiMidBooks(rows, games, o = KALSHI_MID) {
+  const out = new Map();
+  const kgroups = groupRows((rows || []).filter(r => r.exchange === 'kalshi' && !r.hasDraw));
+  for (const g of kgroups) {
+    const [lo, hi] = g.window, mid = (lo + hi) / 2;
+    const cands = [];
+    for (const game of games || []) {
+      const t = ms(game.commence_time);
+      if (t == null || t < lo || t > hi) continue;
+      const pol = sidesOf(g.teams, { home: game.home_team, away: game.away_team });
+      if (pol) cands.push({ game, pol, d: Math.abs(t - mid) });
+    }
+    if (!cands.length) continue;
+    cands.sort((a, b) => a.d - b.d);
+    if (cands.length > 1 && cands[0].d === cands[1].d) continue;
+    const { game, pol } = cands[0];
+    const home = game.home_team, away = game.away_team;
+    const isHome = label => {
+      const i = g.teams.findIndex(t => sameTeam(label, t) || t === label);
+      return i < 0 ? null : (i === 0) === (pol === 'same');
+    };
+    const pHomes = [], totals = new Map(), spreads = new Map();
+    for (const r of g.rows) {
+      const p = kalshiMid(r, o);
+      if (p == null) continue;
+      if (r.kind === 'teams') {
+        const h = isHome(r.outcomeLabel);
+        if (h != null) pHomes.push(h ? p : 1 - p);
+      } else if (r.kind === 'total' && halfLine(r.line)) totals.set(r.line, p);
+      else if (r.kind === 'spread' && halfLine(r.line) && r.lineTeam) {
+        const h = isHome(r.lineTeam);
+        if (h == null) continue;
+        // YES: lineTeam wins by more than line → home gives `line` when it's home's contract
+        const homePt = h ? -r.line : r.line;
+        spreads.set(homePt, h ? p : 1 - p);
+      }
+    }
+    const markets = [];
+    if (pHomes.length) {
+      const p = pHomes.reduce((a, x) => a + x, 0) / pHomes.length;
+      markets.push({ key: 'h2h', outcomes: [{ name: home, price: fairAmerican(p) }, { name: away, price: fairAmerican(1 - p) }] });
+    }
+    if (spreads.size) markets.push({ key: 'spreads', outcomes: [...spreads].flatMap(([pt, p]) => [{ name: home, price: fairAmerican(p), point: pt }, { name: away, price: fairAmerican(1 - p), point: -pt }]) });
+    if (totals.size) markets.push({ key: 'totals', outcomes: [...totals].flatMap(([line, p]) => [{ name: 'Over', price: fairAmerican(p), point: line }, { name: 'Under', price: fairAmerican(1 - p), point: line }]) });
+    if (markets.length && !out.has(game.id)) out.set(game.id, { key: 'kalshi_mid', title: 'Kalshi', markets });
+  }
+  return out;
+}
+// games (one feed's) + the Kalshi mids → the same games with a 'kalshi_mid'
+// bookmaker added, holding only the markets and lines Pinnacle also prices on
+// that game: Kalshi is the second source, never the only one. Alone at its own
+// lines it priced a 20.5 "total" (not the game's) and 11.5-point alternates
+// nobody else had (live run, 2026-10-14).
+function withKalshiMid(games, rows, o = KALSHI_MID) {
+  const books = kalshiMidBooks(rows, games, o);
+  if (!books.size) return games;
+  return games.map(g => {
+    const bm = books.get(g.id);
+    const pin = (g.bookmakers || []).find(b => b.key === 'pinnacle');
+    if (!bm || !pin) return g;
+    const has = (key, o2) => (pin.markets || []).some(m => m.key === key && m.outcomes.some(x => x.name === o2.name && (key === 'h2h' || x.point === o2.point)));
+    const markets = bm.markets.map(m => ({ ...m, outcomes: m.outcomes.filter(x => has(m.key, x)) }))
+      .map(m => ({ ...m, outcomes: m.key === 'h2h' ? (m.outcomes.length === 2 ? m.outcomes : []) : m.outcomes }))
+      .filter(m => m.outcomes.length);
+    // a spread or total line keeps both its sides or neither
+    for (const m of markets) if (m.key !== 'h2h') m.outcomes = m.outcomes.filter(x => m.outcomes.filter(y => Math.abs(y.point) === Math.abs(x.point)).length === 2);
+    const kept = markets.filter(m => m.outcomes.length);
+    return kept.length ? { ...g, bookmakers: [...g.bookmakers, { ...bm, markets: kept }] } : g;
+  });
+}
+
 // Fetch every sport → { games, errors }. The feed answered without a key from
 // GitHub's runners (2026-10-14); PINNACLE_GUEST_KEY is sent when set.
 async function fetchPinnacleGames(http, { key = '', sports = SPORTS, now = Date.now() } = {}) {
@@ -213,4 +303,5 @@ async function fetchPinnacleGames(http, { key = '', sports = SPORTS, now = Date.
   return { games, errors };
 }
 
-module.exports = { PIN, SPORTS, toProb, devig, parseGames, sameTeam, sidesOf, startWindow, groupRows, fairForRow, matchRows, fetchPinnacleGames };
+module.exports = { PIN, SPORTS, toProb, devig, parseGames, sameTeam, sidesOf, startWindow, groupRows, fairForRow, matchRows, fetchPinnacleGames,
+  KALSHI_MID, kalshiMid, kalshiMidBooks, withKalshiMid };

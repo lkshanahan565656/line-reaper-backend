@@ -99,3 +99,33 @@ test('player props: FanDuel and Kambi parse, Pinnacle joins, ev.screen prices th
   assert.ok(rows.find(r => r.book === 'betrivers' && r.player === 'Shohei Ohtani' && r.side === 'Over').ev < 0);
   assert.ok(!rows.some(r => r.player === 'Freddy Peralta'));   // no Pinnacle price, no fair
 });
+
+test('FanDuel two-way ODDS props (line in the runner) and Kambi NHL shots and assists Yes/No', () => {
+  const fb = require('../freebooks');
+  const fd = { attachments: { markets: {
+    a: { bettingType: 'ODDS', marketStatus: 'OPEN', marketName: 'Blake Snell Outs Recorded', runners: [
+      { runnerName: 'Blake Snell Over 14.5', runnerStatus: 'ACTIVE', winRunnerOdds: { americanDisplayOdds: { americanOdds: -172 } } },
+      { runnerName: 'Blake Snell Under 14.5', runnerStatus: 'ACTIVE', winRunnerOdds: { americanDisplayOdds: { americanOdds: 126 } } }] },
+    b: { bettingType: 'ODDS', marketStatus: 'OPEN', marketName: '1+ Points', runners: [
+      { runnerName: 'Nick Suzuki', runnerStatus: 'ACTIVE', winRunnerOdds: { americanDisplayOdds: { americanOdds: -250 } } },
+      { runnerName: 'Lane Hutson', runnerStatus: 'ACTIVE', winRunnerOdds: { americanDisplayOdds: { americanOdds: -240 } } }] },
+  } } };
+  assert.deepEqual(fb.parseFanDuelProps(fd), [{ player: 'Blake Snell', mkey: 'pitcher_outs', line: 14.5, over: -172, under: 126 }]);
+  const kb = { betOffers: [
+    { criterion: { englishLabel: "Player's shots on goal - Including Overtime" }, outcomes: [
+      { type: 'OT_OVER', status: 'OPEN', participant: 'Kyrou, Jordan', line: 1500, oddsAmerican: '-157' },
+      { type: 'OT_UNDER', status: 'OPEN', participant: 'Kyrou, Jordan', line: 1500, oddsAmerican: '120' }] },
+    { criterion: { englishLabel: 'Player to record at least 1 assists - Including Overtime' }, outcomes: [
+      { type: 'OT_YES', status: 'OPEN', participant: 'Dylan Strome', line: 1000, oddsAmerican: '110' },
+      { type: 'OT_NO', status: 'OPEN', participant: 'Dylan Strome', line: 1000, oddsAmerican: '-159' }] },
+    { criterion: { englishLabel: 'Player to score at least 1 points - Including Overtime' }, outcomes: [
+      { type: 'OT_YES', status: 'OPEN', participant: 'Dylan Strome', line: 1000, oddsAmerican: '-152' }] },
+    { criterion: { englishLabel: 'Player To score at least 1 Power Play Points -  Including Overtime' }, outcomes: [
+      { type: 'OT_YES', status: 'OPEN', participant: 'Cole Caufield', line: 1000, oddsAmerican: '195' },
+      { type: 'OT_NO', status: 'OPEN', participant: 'Cole Caufield', line: 1000, oddsAmerican: '-286' }] },
+  ] };
+  assert.deepEqual(fb.kambiProps(kb), [
+    { player: 'Jordan Kyrou', mkey: 'shots_on_goal', line: 1.5, over: -157, under: 120 },
+    { player: 'Dylan Strome', mkey: 'assists', line: 0.5, over: 110, under: -159 },
+  ]);
+});

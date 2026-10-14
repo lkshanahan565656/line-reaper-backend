@@ -560,6 +560,47 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+/* LINES: one app's lines as a table, best EV first */
+#page-props.lines .pb-conly, #page-props:not(.lines) .pb-lonly { display: none; }
+.ln-head, .ln-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.3fr) 62px 62px 64px 60px 58px 64px 44px; gap: 8px; align-items: center; padding: 9px 12px; }
+.ln-head { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); }
+.ln-head > *, .ln-row > .c { text-align: center; }
+.ln-head > :first-child, .ln-head > :nth-child(2) { text-align: left; }
+.ln-list { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.ln-row { border-bottom: 1px solid rgba(255,255,255,.04); }
+.ln-row:last-child { border-bottom: 0; }
+.ln-row.used { opacity: .42; }
+.ln-row.go { background: linear-gradient(90deg, rgba(16,185,129,.08), transparent 45%); }
+.ln-who { min-width: 0; }
+.ln-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ln-name b { font-size: 14px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ln-apps { display: inline-flex; gap: 3px; flex: 0 0 auto; }
+.ln-app { font-size: 8.5px; font-weight: 800; letter-spacing: .04em; padding: 1px 4px; border-radius: 4px; color: #0b1220; background: var(--bk); }
+.ln-mprop { display: none; }
+.ln-meta { color: #64748b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.ln-prop { color: #cbd5e1; font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ln-badge { position: relative; display: inline-block; min-width: 46px; padding: 4px 6px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13px; color: #0b1220; background: var(--bk); }
+.ln-badge.model { color: #e0e7ff; background: #1d4ed8; }
+.ln-badge.none { color: #475569; background: rgba(148,163,184,.1); font-weight: 600; }
+.ln-badge i { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; border: 2px solid var(--card); }
+.ln-lean { font-weight: 800; font-size: 12px; letter-spacing: .04em; }
+.ln-lean.over { color: #34d399; } .ln-lean.under { color: #f472b6; }
+.ln-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; color: #94a3b8; }
+.ln-num.good { color: #34d399; } .ln-num.thin { color: #fbbf24; } .ln-num.bad { color: #f87171; } .ln-num.odd { color: #c084fc; }
+.ln-used { width: 18px; height: 18px; accent-color: #34d399; cursor: pointer; }
+.ln-count { font-size: 12px; color: #94a3b8; margin: 0 0 8px; }
+.ln-count b { color: #f1f5f9; } .ln-count .go { color: #34d399; font-weight: 700; }
+@media (max-width: 760px) {
+  .ln-head { display: none; }
+  .ln-row { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px 4px; padding: 10px; }
+  .ln-who { grid-column: 1 / 6; grid-row: 1; }
+  .ln-row > .ln-usedc { grid-column: 6; grid-row: 1; }
+  .ln-prop { display: none; } .ln-mprop { display: inline; }
+  .ln-row > .c:not(.ln-usedc) { grid-row: 2; }
+  .ln-row > .c::before { content: attr(data-l); display: block; font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #475569; margin-bottom: 3px; }
+  .ln-row > .ln-usedc::before { content: none; }
+  .ln-badge { min-width: 0; width: 100%; font-size: 12px; padding: 4px 2px; }
+}
 .pb-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
 .pb-stat { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.18)); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; }
 .pb-stat b { display: block; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1436,11 +1477,13 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
   </div>
-  <div class="pb-chips" id="pbSports" style="margin:12px 0 8px"></div>
+  <div class="pb-chips" id="pbView" style="margin:12px 0 8px"></div>
+  <div class="pb-chips" id="pbSports" style="margin:0 0 8px"></div>
   <div class="pb-chips" id="pbBooks" style="margin:0 0 10px"></div>
   <div style="display:flex;margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
-    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
-    <label class="es-field" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option><option value="sharp">Sharp consensus plays</option><option value="gaps">Line gaps</option></select></label>
+    <label class="es-field pb-lonly" style="flex:1 1 160px;max-width:240px"><span>Prop</span><select id="pbMarket" onchange="pbSet('market',this.value)"><option value="">Every prop</option></select></label>
+    <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
+    <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option><option value="sharp">Sharp consensus plays</option><option value="gaps">Line gaps</option></select></label>
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
   <div id="pbRecord"></div>
@@ -1480,6 +1523,7 @@ body.no-help .clv-info { display:none; }
     <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;margin-left:6px">MIN EV</span>
     <input id="evMin" type="number" step="0.5" value="1" style="width:64px;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('minEv', parseFloat(this.value) || 0)">
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center"><input type="checkbox" id="evSharpOnly" onchange="evSet('sharpOnly', this.checked)"> sharp-backed only</label>
+    <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
@@ -3344,21 +3388,30 @@ function updateWSStatus(active, mode='POLLING') {
 }
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
-const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0 };
+const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
+  view: lsGetPb('lr_pb_view') === 'cards' ? 'cards' : 'lines', lineBook: ['underdog', 'prizepicks', 'sleeper'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL']];
 const PB_SPORT_ORDER = ['NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
 let pbTimer = null;
-function pbSet(k, v) { pbState[k] = v; pbState.limit = 150; loadPropsBoard(); }
+function pbSet(k, v) {
+  if (k === 'book' && pbState.view === 'lines') { pbState.lineBook = v || 'underdog'; try { localStorage.setItem('lr_pb_lbook', pbState.lineBook); } catch {} pbState.market = ''; }
+  else if (k === 'view') { try { localStorage.setItem('lr_pb_view', v); } catch {} pbState.market = ''; }
+  pbState[k] = v; pbState.limit = 150; loadPropsBoard();
+}
 function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
 async function loadPropsBoard() {
   const seq = ++pbState.seq;
-  const qs = new URLSearchParams({ sport: pbState.sport, sort: pbState.sort, limit: pbState.limit });
-  if (pbState.book) qs.set('book', pbState.book);
+  const lines = pbState.view === 'lines';
+  document.getElementById('page-props')?.classList.toggle('lines', lines);
+  const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
+  if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
+  else if (pbState.book) qs.set('book', pbState.book);
   if (pbState.q) qs.set('q', pbState.q);
-  if (pbState.show === 'multi') qs.set('multi', '1');
-  if (pbState.show === 'priced') qs.set('priced', '1');
-  if (pbState.show === 'gaps') qs.set('gaps', '1');
-  if (pbState.show === 'sharp') qs.set('sharp', '1');
+  if (!lines && pbState.show === 'multi') qs.set('multi', '1');
+  if (!lines && pbState.show === 'priced') qs.set('priced', '1');
+  if (!lines && pbState.show === 'gaps') qs.set('gaps', '1');
+  if (!lines && pbState.show === 'sharp') qs.set('sharp', '1');
   if (!pbState.record || Date.now() - pbState.recordAt > 120000) loadPropsRecord();
   try {
     const r = await fetch(`${BACKEND_URL}/api/props/board?${qs}`);
@@ -3408,8 +3461,10 @@ function pbChips() {
   document.getElementById('pbSports').innerHTML = [chip(pbState.sport === 'ALL', 'ALL', c.rows, "pbSet('sport','ALL')"),
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
-  document.getElementById('pbBooks').innerHTML = [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')"),
-    ...PB_BOOKS.map(([k, name]) => chip(pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
+  const lines = pbState.view === 'lines';
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(!lines, 'CARDS', null, "pbSet('view','cards')")].join('');
+  document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
+    ...PB_BOOKS.map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
 }
 function pbFmtStart(t) {
   const d = new Date(t);
@@ -3439,8 +3494,99 @@ function pbCell(row, key, name) {
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
   return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}</div>${fair}${ev}</div>`;
 }
+// ── LINES: one app's lines in a table, best EV first ──
+// Each row: the app's line, our fair line (the sharp books' consensus median,
+// or the esports model's projection), the side, its chance, the app's payout
+// on that side and the EV at the app's own break-even. "Used?" boxes live on
+// the account when logged in, in this browser otherwise.
+const lnUsed = { keys: new Set(), loaded: false };
+try { for (const k of Object.keys(JSON.parse(localStorage.getItem('lr_used') || '{}'))) lnUsed.keys.add(k); } catch {}
+function lnSaveLocal() {
+  try {
+    const old = JSON.parse(localStorage.getItem('lr_used') || '{}'), now = Date.now(), out = {};
+    for (const k of lnUsed.keys) out[k] = old[k] && now - old[k] < 7 * 86400e3 ? old[k] : now;
+    for (const [k, t] of Object.entries(out)) if (now - t >= 7 * 86400e3) { delete out[k]; lnUsed.keys.delete(k); }
+    localStorage.setItem('lr_used', JSON.stringify(out));
+  } catch {}
+}
+async function lnLoadUsed() {
+  if (lnUsed.loaded || !acct.token) return;
+  lnUsed.loaded = true;
+  try {
+    // ticks made before logging in go up to the account once
+    const local = [...lnUsed.keys];
+    const r = local.length ? await fetch(`${BACKEND_URL}/api/me/used`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keys: local.slice(0, 200) }) })
+      : await fetch(`${BACKEND_URL}/api/me/used`);
+    if (!r.ok) return;
+    for (const k of (await r.json()).used || []) lnUsed.keys.add(k);
+    lnSaveLocal();
+    if (pbState.view === 'lines' && pbState.data) renderPropsBoard();
+  } catch {}
+}
+function lnToggleUsed(el) {
+  const k = el.dataset.k, on = el.checked;
+  if (on) lnUsed.keys.add(k); else lnUsed.keys.delete(k);
+  el.closest('.ln-row')?.classList.toggle('used', on);
+  lnSaveLocal();
+  if (acct.token) fetch(`${BACKEND_URL}/api/me/used`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: k, used: on }) }).catch(() => {});
+}
+const lnFix = v => (v == null || !isFinite(v) ? null : (+v).toFixed(1));
+function lnRow(r, book) {
+  const c = r.books[book] || {};
+  const ev = c.ev, locked = !ev && r.best?.locked;
+  const color = PB_COLOR[book];
+  const moved = r.best?.stale && r.best.book === book;
+  const closed = c.overOpen === false || c.underOpen === false;
+  const dot = moved || closed ? `<i title="${moved ? `The books moved ${r.best.stale.pts} pts and this line stood still` : `Only ${c.overOpen === false ? 'the under' : 'the over'} is open`}"></i>` : '';
+  const fairLine = r.esports ? r.model?.proj : r.consensus?.mean;
+  const prob = ev?.fair ?? (r.esports && r.model?.prob != null ? r.model.prob : null);
+  const minEv = pbState.data?.lines?.minEv ?? 2;
+  // green only on a sharp price (the books' consensus, or the esports model) with the side open
+  const sharp = !!ev && (r.esports || ev.consensus);
+  const open = ev && (ev.side === 'Over' ? c.overOpen !== false : c.underOpen !== false);
+  const go = sharp && open && ev.ev >= minEv;
+  const evCls = ev == null ? '' : go ? 'good' : ev.ev > 0 ? 'thin' : 'bad';
+  const mult = book === 'prizepicks' ? null : ev ? (ev.side === 'Over' ? c.over : c.under) : null;
+  const multTxt = book === 'prizepicks' ? 'Std' : mult != null ? `${(+mult).toFixed(2)}x` : '—';
+  const src = r.esports ? 'our esports model' : (r.consensus?.sources || []).map(x => PB_SRC[x.book] || x.book).join(' + ') || (c.fair != null ? 'Kalshi' : 'the other apps');
+  const key = `${r.key}|${book}|${c.line}`;
+  const used = lnUsed.keys.has(key);
+  const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
+  const meta = [r.matchTitle ? escAttr(r.matchTitle) : (r.team ? escAttr(r.team) : ''), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
+  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}">
+    <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span></div>
+      <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
+    <div class="ln-prop">${escAttr(r.market)}</div>
+    <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
+    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
+    <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
+    <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
+    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
+    <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : '—'}</span></div>
+    <div class="c ln-usedc" data-l="Used"><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
+  </div>`;
+}
+function renderLines() {
+  const el = document.getElementById('pbContent'), d = pbState.data, book = pbState.lineBook;
+  const ms = d?.lines?.markets || [];
+  const sel = document.getElementById('pbMarket');
+  if (sel) sel.innerHTML = `<option value="">Every prop</option>` + [...(pbState.market && !ms.some(m => m.market === pbState.market) ? [{ market: pbState.market, n: 0 }] : []), ...ms]
+    .map(m => `<option value="${escAttr(m.market)}"${m.market === pbState.market ? ' selected' : ''}>${escAttr(m.market)} (${m.n})</option>`).join('');
+  const rows = d?.rows || [];
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO LINES</div><div class="empty-sub">${pbState.q || pbState.market || pbState.sport !== 'ALL' ? 'Nothing priced matches these filters.' : 'Nothing is priced on this app yet. Try again in a minute.'}</div></div>`;
+    return;
+  }
+  const bet = d.lines?.bettable;
+  const name = PB_BOOKS.find(x => x[0] === book)?.[1] || book;
+  const count = `<div class="ln-count">${name} · <b>Lines ${d.total.toLocaleString()}</b> shown · ${bet == null ? 'bettable count is Pro' : `<span class="${bet ? 'go' : ''}">${bet} bettable</span> <span style="color:#64748b">(+${d.lines.minEv}% or better at ${name}'s break-even on a sharp price; yellow EV is priced off Kalshi or the other apps alone)</span>`}</div>`;
+  const head = `<div class="ln-head"><div>Player</div><div>Prop</div><div>${PB_BOOKS.find(x => x[0] === book)?.[2]}</div><div style="color:#60a5fa">Model</div><div>Lean</div><div>Prob</div><div>Mult</div><div>EV ↓</div><div>Used?</div></div>`;
+  const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
+  el.innerHTML = `${count}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
+}
 function renderPropsBoard() {
   pbChips();
+  if (pbState.view === 'lines') return renderLines();
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {
@@ -4672,15 +4818,15 @@ function renderEsports() {
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
-const evState = { rows: [], sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
+const evState = { rows: [], sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
-try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', polymarket:'Polymarket' };
+try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
+const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const EV_MARKET = { h2h:'Moneyline', spreads:'Spread', totals:'Total', points:'Points', rebounds:'Rebounds', assists:'Assists', threes:'3PM', pra:'Pts+Reb+Ast', pts_rebs:'Pts+Reb', pts_asts:'Pts+Ast', rebs_asts:'Reb+Ast', steals:'Steals', blocks:'Blocks', shots_on_goal:'Shots on Goal', goals:'Goals', hits:'Hits', total_bases:'Total Bases', home_runs:'Home Runs', rbis:'RBIs', runs:'Runs', stolen_bases:'Stolen Bases', strikeouts:'Strikeouts', pitcher_outs:'Pitcher Outs', pass_yds:'Pass Yds', pass_tds:'Pass TDs', rush_yds:'Rush Yds', rec_yds:'Rec Yds', receptions:'Receptions', pass_comp:'Completions', pass_att:'Pass Att', pass_ints:'INTs', rush_att:'Rush Att', saves:'Saves', earned_runs:'Earned Runs', hits_allowed:'Hits Allowed' };
 const fmtAm = a => a == null ? '—' : (a > 0 ? '+' + a : String(a));
 
-function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, books: [...evState.books] })); } catch {} }
+function evSave() { try { localStorage.setItem('lr_ev', JSON.stringify({ sport: evState.sport, kind: evState.kind, minEv: evState.minEv, sharpOnly: evState.sharpOnly, agreeOnly: evState.agreeOnly, books: [...evState.books] })); } catch {} }
 function evSet(k, v) { evState[k] = v; evSave(); renderEv(); }
 function evToggleBook(b) { evState.books.has(b) ? evState.books.delete(b) : evState.books.add(b); evSave(); renderEv(); }
 
@@ -4728,6 +4874,7 @@ function evFiltered() {
     (evState.kind === 'all' || (evState.kind === 'dfs' ? r.dfs : evState.kind === 'props' ? ((r.player || r.prop) && !r.dfs) : !(r.player || r.prop))) &&
     (r.locked || r.ev >= evState.minEv) &&
     (!evState.sharpOnly || r.source === 'sharp') &&
+    (!evState.agreeOnly || r.agree) &&
     (r.locked || !evState.books.size || evState.books.has(r.book)) &&
     (!evState.search || `${r.event} ${r.player || ''} ${r.book || ''} ${r.side || ''}`.toLowerCase().includes(evState.search)));
 }
@@ -4791,6 +4938,7 @@ function renderEv() {
   document.querySelectorAll('[data-evkind]').forEach(b => b.classList.toggle('active', b.dataset.evkind === evState.kind));
   document.getElementById('evMin').value = evState.minEv;
   document.getElementById('evSharpOnly').checked = evState.sharpOnly;
+  document.getElementById('evAgreeOnly').checked = evState.agreeOnly;
   const books = [...new Set(evState.rows.map(r => r.book).filter(Boolean))].sort();
   document.getElementById('evBookRow').innerHTML = books.length ? `<span style="font-size:10px;color:#64748b;letter-spacing:1.5px;align-self:center">MY BOOKS</span>` + books.map(b =>
     `<button class="sport-chip ${evState.books.has(b) ? 'active' : ''}" style="font-size:10px;padding:3px 9px" onclick="evToggleBook('${escAttr(b)}')">${escAttr(evBookName(b))}</button>`).join('') : '';
@@ -4833,7 +4981,7 @@ function renderEv() {
         <div style="font-size:9px;color:#64748b;letter-spacing:1.5px">KELLY ¼</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1">${r.kelly != null ? r.kelly.toFixed(1) + '%' : '—'}</div>
       </div>
-      <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(', ')) : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(', ').toUpperCase()) : '◐ CONSENSUS'}</div>
+      <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ')) + (r.agree ? ', within ' + r.spreadPts + ' pts of each other' : r.spreadPts != null ? ', ' + r.spreadPts + ' pts apart' : '') : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ').toUpperCase()) + (r.agree ? '<div style="color:#10b981;margin-top:2px">✓ AGREE</div>' : '') : '◐ CONSENSUS'}</div>
     </div>`;
   }).join('') + `</div>` + (rows.length > 300 ? `<div style="font-size:11px;color:#64748b;margin-top:8px">Showing the best 300 of ${rows.length}. Raise MIN EV to narrow it.</div>` : '');
 }
@@ -6850,11 +6998,6 @@ async function esCheckCorrelation(legs) {
   } catch (e) {
     if (seq === esCorrSeq) el.innerHTML = '';
   }
-}
-
-function esMultToAmerican(m) {
-  if (!isFinite(m) || m <= 1) return null;
-  return m >= 2 ? Math.round((m - 1) * 100) : -Math.round(100 / (m - 1));
 }
 
 function esSlipLabel(sel) {

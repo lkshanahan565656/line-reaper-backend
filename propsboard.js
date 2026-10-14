@@ -210,7 +210,7 @@ function evOf(row, book) {
   const v = book ? row.books[book]?.ev?.ev : row.best?.ev;
   return v == null ? -1e9 : v;
 }
-function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false } = {}) {
+function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, market = '' } = {}) {
   const s = String(sport || '').toUpperCase();
   const needle = String(q || '').toLowerCase().trim();
   let out = rows;
@@ -223,6 +223,7 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
   if (gaps) out = out.filter(r => r.best?.kind === 'gap' && (!book || r.best.book === book));
   if (sharp) out = out.filter(r => r.best?.kind === 'sharp' && (!book || r.best.book === book));
   if (needle) out = out.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(needle));
+  if (market) out = out.filter(r => r.market === market);
   return [...out].sort((SORTS[sort] || SORTS.ev)(book));
 }
 
@@ -238,6 +239,22 @@ function counts(rows) {
   return { sports, books, priced, multi, rows: rows.length };
 }
 
+// The Lines view: how many of a book's lines clear minEv at that book on a
+// sharp price (the sharp books' consensus, or the esports model) with that
+// side still open (the header's "bettable"), and the stat names for the prop filter
+const sharpBacked = (r, c) => !!(c.ev && (r.esports || c.ev.consensus));
+function lineFacets(rows, book, minEv) {
+  const markets = new Map();
+  let bettable = 0;
+  for (const r of rows) {
+    const c = r.books[book];
+    if (!c) continue;
+    markets.set(r.market, (markets.get(r.market) || 0) + 1);
+    if (sharpBacked(r, c) && c.ev.ev >= minEv && (c.ev.side === 'Over' ? c.overOpen : c.underOpen)) bettable++;
+  }
+  return { bettable, markets: [...markets].sort((a, b) => b[1] - a[1]).slice(0, 60).map(([m, n]) => ({ market: m, n })) };
+}
+
 // A free viewer sees every line; the fair price and EV are Pro
 function redactRow(r) {
   const books = {};
@@ -245,4 +262,4 @@ function redactRow(r) {
   return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null };
 }
 
-module.exports = { boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, counts, redactRow, BOOKS };
+module.exports = { boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };

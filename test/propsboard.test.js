@@ -95,3 +95,18 @@ test('Sleeper sports lines parse with the sport and wording the other books use'
   assert.deepStrictEqual(lines.map(l => [l.sport, l.player, l.market]), [['NHL', 'Adam Fox', 'Shots on Goal'], ['SOCCER', 'Bukayo Saka', 'Shots']]);
   assert.deepStrictEqual(sleeperSportKeys(rows), ['nhl', 'clubsoccer:epl']);
 });
+
+test('lines view: prop filter, and bettable counts only open sides on a sharp price', () => {
+  const cell = (ev, extra = {}) => ({ line: 20.5, over: 1, under: 1, overOpen: true, underOpen: true, ...(ev ? { ev } : {}), ...extra });
+  const rows = [
+    { key: 'a', market: 'Points', player: 'A', team: '', matchTitle: '', esports: false, books: { underdog: cell({ side: 'Over', ev: 5, consensus: true }) } },
+    { key: 'b', market: 'Points', player: 'B', team: '', matchTitle: '', esports: false, books: { underdog: cell({ side: 'Over', ev: 9 }) } },   // Kalshi alone
+    { key: 'c', market: 'Rebounds', player: 'C', team: '', matchTitle: '', esports: false, books: { underdog: cell({ side: 'Under', ev: 4, consensus: true }, { underOpen: false }) } },
+    { key: 'd', market: 'Kills', player: 'D', team: '', matchTitle: '', esports: true, books: { underdog: cell({ side: 'Under', ev: 3 }) } },
+    { key: 'e', market: 'Points', player: 'E', team: '', matchTitle: '', esports: false, books: { prizepicks: cell({ side: 'Over', ev: 7, consensus: true }) } },
+  ];
+  const f = B.lineFacets(rows, 'underdog', 2);
+  assert.equal(f.bettable, 2);
+  assert.deepEqual(f.markets, [{ market: 'Points', n: 2 }, { market: 'Rebounds', n: 1 }, { market: 'Kills', n: 1 }]);
+  assert.deepEqual(B.queryRows(rows, { book: 'underdog', market: 'Points' }).map(r => r.key), ['b', 'a']);
+});
