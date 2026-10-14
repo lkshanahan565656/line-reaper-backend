@@ -590,6 +590,9 @@ const BETR_IMPLIED = 0.5622;
 //   >1.35      → a DECIMAL PAYOUT in its own right (4.38x implies ~23%)
 //                EV = prob x mult - 1
 // Treating the second kind as the first is what produced +339% "edges".
+// A boost can run past 1.35 on a lopsided line (Higher 1.48x, Lower 0.70x on a
+// tight end's 14.5 receiving yards, 2026-10-14): when the other side pays
+// under 1x, the pair is a boost and a discount, never a decimal payout.
 //
 // Then a reality check: every payout implies a probability. If our fair is
 // more than 10 points ABOVE the book's implied number, the "edge" is almost
@@ -603,10 +606,11 @@ const UD_DECIMAL_THRESHOLD = 1.35;
 // a live market is already a strong sign the error is ours.
 const MAX_PROB_DISAGREEMENT = 0.10;
 
-function udPricing(prob, mult) {
+function udPricing(prob, mult, otherMult = null) {
   const p = prob > 1 ? prob / 100 : prob;
   const m = parseFloat(mult) || 1.00;
-  const decimal = m > UD_DECIMAL_THRESHOLD;
+  const o = parseFloat(otherMult);
+  const decimal = m > UD_DECIMAL_THRESHOLD && !(o > 0 && o < 1);
   const implied = decimal ? 1 / m : UD_IMPLIED / m;
   const ev = decimal ? (p * m - 1) * 100 : (p * m / UD_IMPLIED - 1) * 100;
   const gap = p - implied;
@@ -2026,7 +2030,7 @@ async function generateEsportsPicks() {
         if (r2) udProb = escal.adjustPct(r2.prob, calShift + (side === 'OVER' ? s2 : -s2) / 100);
         udShift = calShift + (side === 'OVER' ? s2 : -s2) / 100;
       }
-      const udP = udPricing(udProb, udSideMult);
+      const udP = udPricing(udProb, udSideMult, side === 'OVER' ? udm.underMultiplier : udm.overMultiplier);
       if (udP.ev != null) {
         bookLegs.UD = { line: udm.line ?? lineVal, shift: udShift, prob: udProb / 100, mult: udSideMult, decimal: udP.regime === 'decimal' };
       }
@@ -2398,10 +2402,9 @@ async function refreshKalshiProps() {
 // One pick'em leg's EV. Sleeper prices each side, so its vig comes out and a
 // price far from fair is withheld (pickem.js sleeperPricing), as on esports.
 function dfsLegEv(p, book, mult, line, side) {
-  if (book === 'sleeper' && line) {
-    const other = side === 'Over' ? line.underMultiplier : line.overMultiplier;
-    return sleeperPricing(p, mult, other || null).ev;
-  }
+  const other = line ? (side === 'Over' ? line.underMultiplier : line.overMultiplier) : null;
+  if (book === 'sleeper' && line) return sleeperPricing(p, mult, other || null).ev;
+  if (book === 'underdog' && other != null) return udPricing(p, mult, other).ev;
   return calcBookEV(p, book, mult);
 }
 
@@ -4280,6 +4283,14 @@ function priceSportRows(rows) {
     if (row.esports) continue;
     const kalshi = rowKalshi(row);
     const plays = sportProps.rowPlays(row, { kalshi, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    // lines apart but the payouts even it out (UD 249.5 at Higher 1.29x vs
+    // PP 223.5): every book reads as the same median within a few points
+    const means = Object.entries(row.books).map(([b, c]) => sportProps.meanFor(row.mkey, row.sport, c.line, sportProps.bookPOver(b, c) ?? NaN)).filter(m => m > 0);
+    if (row.gap > 0 && means.length > 1) {
+      const lo = Math.min(...means), hi = Math.max(...means);
+      row.medianGap = +(hi - lo).toFixed(2);
+      row.gapPriced = sportProps.pOver(row.mkey, row.sport, hi, lo) - 0.5 < SPORT_OPTS.minProbPts / 100;
+    }
     // a cell keeps a price only where Kalshi backs it or it's a gap
     for (const [book, c] of Object.entries(row.books)) {
       const mine = plays.filter(p => p.book === book && (c.fair != null || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
