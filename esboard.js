@@ -64,6 +64,7 @@ const DEFAULTS = {
   minCost: 0.10,          // longshots: a cent or two of noise reads as a huge %
   maxCost: 0.90,          // a 90¢+ buy wins too little to be worth flagging
   minEdgeCents: 0.015,    // and at least 1.5¢ a contract in absolute terms
+  pinMinLimit: 250,       // Pinnacle is the fair on its own only where it takes $250+
   pairHours: 3,           // sources' start times within this are the same match
   lookbackHours: 8,       // keep matches that started this long ago (live)
   aheadDays: 10,
@@ -307,6 +308,111 @@ function parseBo3Match(m) {
   return { teams, start: toMs(m.start_date), bestOf: num(m.bo_type), live: m.status === 'current', markets, slug: m.slug || null };
 }
 
+// ── parsing: Pinnacle (the sharp book: match, map, total-maps and map-spread prices) ──
+// Pinnacle's guest feed (guest.api.arcadia.pinnacle.com, sport 12) lists each
+// match as a "matchup" (units Regular) and prices it in straight markets:
+// period 0 is the series, period N is map N. Its no-vig price is the sharpest
+// free number for esports; Kalshi's tight books sit about a cent from it.
+// matchups: [{ id, parentId, type, units, league: { name }, participants: [{ alignment, name }], startTime, isLive }]
+// markets:  [{ matchupId, period, type, isAlternate, status, limits: [{ amount }], prices: [{ designation, points, price }] }]
+const PIN_GAMES = [[/^(cs2|cs:go|counter-strike)/i, 'CS2'], [/^league of legends|^lol/i, 'LOL'], [/^valorant/i, 'VAL'], [/^dota/i, 'DOTA'], [/^call of duty/i, 'COD'], [/^rainbow six/i, 'R6']];
+const pinGame = league => (PIN_GAMES.find(([re]) => re.test(String(league || ''))) || [])[1] || null;
+const amProb = a => { const x = num(a); return x == null || x === 0 ? null : x > 0 ? 100 / (x + 100) : -x / (-x + 100); };
+// power devig: p^k + q^k = 1, so the longshot gives up more of the margin
+// (Pinnacle shades favourite-longshot prices that way)
+function devigPower(a, b) {
+  const pa = amProb(a), pb = amProb(b);
+  if (!(pa > 0 && pb > 0) || pa + pb < 1) return pa > 0 && pb > 0 ? pa / (pa + pb) : null;
+  let lo = 1, hi = 3;
+  for (let i = 0; i < 50; i++) { const k = (lo + hi) / 2; if (pa ** k + pb ** k > 1) lo = k; else hi = k; }
+  return pa ** ((lo + hi) / 2);
+}
+// standard normal quantile (Acklam's approximation, |error| < 1.2e-9)
+function probit(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const q = p - 0.5;
+  if (Math.abs(q) <= 0.425) { const r = q * q; return q * (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  const r = Math.sqrt(-Math.log(q < 0 ? p : 1 - p));
+  const x = (((((c[0] * r + c[1]) * r + c[2]) * r + c[3]) * r + c[4]) * r + c[5]) / ((((d[0] * r + d[1]) * r + d[2]) * r + d[3]) * r + 1);
+  return q < 0 ? x : -x;
+}
+// a team's kills on one map, by game: spread of the count around its mean
+const KILL_SD = { LOL: 6, DOTA: 8 };
+// Pinnacle's team kill totals ("Kills" child matchups, one team_total per team
+// per map, main and alternate lines) → the mean each line implies: line +
+// sd × z(P over), averaged over the lines that aren't lopsided.
+function pinTeamKills(markets, childId, game) {
+  const sd = KILL_SD[game];
+  if (!sd) return null;
+  const acc = {};
+  for (const k of markets || []) {
+    if (k.matchupId !== childId || k.type !== 'team_total' || !(k.period > 0) || (k.status && k.status !== 'open')) continue;
+    const side = /;(home|away)$/.exec(k.key || '')?.[1];
+    const o = k.prices?.find(p => p.designation === 'over'), u = k.prices?.find(p => p.designation === 'under');
+    if (!side || !o || !u || o.points == null) continue;
+    const p = devigPower(o.price, u.price);
+    if (!(p >= 0.15 && p <= 0.85)) continue;
+    const a = ((acc[k.period] ??= { home: [], away: [] })[side]);
+    a.push(num(o.points) + sd * probit(p));
+  }
+  const out = {};
+  for (const [per, v] of Object.entries(acc)) {
+    if (!v.home.length || !v.away.length) continue;
+    const avg = xs => r4(xs.reduce((x, y) => x + y, 0) / xs.length);
+    out[per] = [avg(v.home), avg(v.away)];
+  }
+  return Object.keys(out).length ? out : null;
+}
+function parsePinnacle(matchups, markets) {
+  const byId = new Map(), killsOf = new Map();
+  for (const m of matchups || []) {
+    if (m.type === 'matchup' && m.parentId != null && m.units === 'Kills') { killsOf.set(m.parentId, m.id); continue; }
+    if (m.type !== 'matchup' || m.parentId != null || (m.units && m.units !== 'Regular')) continue;
+    const game = pinGame(m.league?.name);
+    const home = m.participants?.find(p => p.alignment === 'home')?.name, away = m.participants?.find(p => p.alignment === 'away')?.name;
+    if (!game || !home || !away) continue;
+    byId.set(m.id, { game, teams: [cleanName(home), cleanName(away)], start: toMs(m.startTime), live: !!m.isLive, league: m.league?.name || null, id: m.id, markets: [], maxPeriod: 0 });
+  }
+  for (const k of markets || []) {
+    const m = byId.get(k.matchupId);
+    if (!m || (k.status && k.status !== 'open')) continue;
+    const at = d => k.prices?.find(p => p.designation === d);
+    const limit = num(k.limits?.[0]?.amount);
+    if (k.type === 'moneyline') {
+      const h = at('home'), a = at('away');
+      if (!h || !a) continue;
+      m.maxPeriod = Math.max(m.maxPeriod, k.period || 0);
+      const p = devigPower(h.price, a.price);
+      if (p == null) continue;
+      m.markets.push(k.period === 0 ? { key: 'match', kind: 'match', outcomes: m.teams, prob: p, limit, price: [h.price, a.price] }
+        : { key: `map:${k.period}`, kind: 'map', n: k.period, outcomes: m.teams, prob: p, limit, price: [h.price, a.price] });
+    } else if (k.period === 0 && k.type === 'total') {
+      const o = at('over'), u = at('under');
+      if (!o || !u || o.points == null || o.points !== u.points) continue;
+      const p = devigPower(o.price, u.price);
+      if (p != null) m.markets.push({ key: `total:${num(o.points)}`, kind: 'total', line: num(o.points), outcomes: ['Over', 'Under'], prob: p, limit, price: [o.price, u.price] });
+    } else if (k.period === 0 && k.type === 'spread') {
+      const h = at('home'), a = at('away');
+      if (!h || !a || h.points == null || num(h.points) === 0 || num(h.points) !== -num(a.points)) continue;
+      const t = num(h.points) < 0 ? 0 : 1, line = Math.abs(num(h.points));
+      const p = devigPower(t === 0 ? h.price : a.price, t === 0 ? a.price : h.price);
+      if (p != null) m.markets.push({ key: `spread:${t}:${line}`, kind: 'spread', team: t, line: -line, outcomes: [`${m.teams[t]} -${line}`, `${m.teams[1 - t]} +${line}`], prob: p, limit, price: t === 0 ? [h.price, a.price] : [a.price, h.price] });
+    }
+  }
+  const out = [];
+  for (const m of byId.values()) {
+    if (!m.markets.length) continue;
+    const teamKills = killsOf.has(m.id) ? pinTeamKills(markets, killsOf.get(m.id), m.game) : null;
+    // a map-4 price or a 3.5-map total only exists in a best-of-5
+    const bo5 = m.maxPeriod >= 4 || m.markets.some(k => k.kind === 'total' && k.line >= 3);
+    out.push({ game: m.game, teams: m.teams, start: m.start, live: m.live, league: m.league, id: m.id, bestOf: bo5 ? 5 : null, markets: m.markets, ...(teamKills ? { teamKills } : {}) });
+  }
+  return out;
+}
+
 // ── merging ──
 function blankMatch(game, src) {
   return {
@@ -345,7 +451,7 @@ function findMatch(list, game, teams, start, o) {
 }
 
 // pm: parsed Polymarket events; kalshi: parsed Kalshi events with .game; book: parsed bo3 matches with .game
-function mergeSources({ pm = [], kalshi = [], book = [] } = {}, opts = {}) {
+function mergeSources({ pm = [], kalshi = [], book = [], sharp = [] } = {}, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const list = [];
   for (const p of pm) {
@@ -397,6 +503,23 @@ function mergeSources({ pm = [], kalshi = [], book = [] } = {}, opts = {}) {
       slot.outcomes[1].quotes.book = { decimal: mk.book[1], prob: r4(1 - p0) };
     }
   }
+  for (const p of sharp) {
+    const hit = findMatch(list, p.game, p.teams, p.start, o);
+    if (!hit) continue;   // Pinnacle alone isn't a market a subscriber can trade
+    if (!hit.m.bestOf && p.bestOf) hit.m.bestOf = p.bestOf;
+    if (p.live) hit.m.live = true;
+    hit.m.links.pinnacle = p.id;
+    // per-map team kills, in the board's team order
+    if (p.teamKills) hit.m.pinTeamKills = Object.fromEntries(Object.entries(p.teamKills).map(([n, v]) => [n, hit.or === 'same' ? v : [v[1], v[0]]]));
+    for (const raw of p.markets) {
+      const mk = alignMarket({ ...raw, book: [raw.prob, 1 - raw.prob], price: raw.price }, hit.or);
+      if (!hit.m.markets.has(mk.key)) continue;
+      const slot = hit.m.markets.get(mk.key);
+      const p0 = mk.book[0];
+      slot.outcomes[0].quotes.pinnacle = { prob: r4(p0), american: mk.price?.[0] ?? null, limit: raw.limit ?? null };
+      slot.outcomes[1].quotes.pinnacle = { prob: r4(1 - p0), american: mk.price?.[1] ?? null, limit: raw.limit ?? null };
+    }
+  }
   for (const m of list) {
     m.id = `${m.game}:${m.teams.map(t => cleanName(t).toLowerCase().replace(/[^a-z0-9]+/g, '')).join('-')}:${m.start ? new Date(m.start).toISOString().slice(0, 10) : 'tbd'}`;
   }
@@ -407,7 +530,7 @@ function mergeSources({ pm = [], kalshi = [], book = [] } = {}, opts = {}) {
 // a venue's probability for outcome 0 from tight two-sided quotes
 function venueProb(market, venue, o) {
   const [a, b] = market.outcomes.map(x => x.quotes[venue]);
-  if (venue === 'book') return a?.prob ?? null;
+  if (venue === 'book' || venue === 'pinnacle') return a?.prob ?? null;
   const mid = q => (q && q.bid != null && q.ask != null && q.ask - q.bid <= o.maxSpread + 1e-9 ? (q.bid + q.ask) / 2 : null);
   const ma = mid(a), mb = mid(b);
   if (ma != null && mb != null) return ma / (ma + mb);
@@ -415,7 +538,7 @@ function venueProb(market, venue, o) {
   if (mb != null) return 1 - mb;
   return null;
 }
-const VENUES = ['kalshi', 'polymarket', 'book'];
+const VENUES = ['kalshi', 'polymarket', 'book', 'pinnacle'];
 const TRADABLE = ['kalshi', 'polymarket'];
 // fair price, model, best buy and edges for one market
 function priceMarket(market, { model = null, start = null, now = Date.now(), opts = {} } = {}) {
@@ -424,7 +547,13 @@ function priceMarket(market, { model = null, start = null, now = Date.now(), opt
   for (const v of VENUES) { const p = venueProb(market, v, o); if (p != null) probs[v] = p; }
   const srcs = Object.keys(probs);
   const avg = list => (list.length ? list.reduce((x, v) => x + probs[v], 0) / list.length : null);
-  const fair0 = avg(srcs);
+  // Pinnacle, when it prices the market, is the fair price on its own: the
+  // sharpest book outranks an average that folds in thinner venues
+  // A small limit ($50-$100 on tier-3 matches) is Pinnacle saying it isn't
+  // sure either: there it averages in like any other source.
+  const pinLimit = market.outcomes[0].quotes.pinnacle?.limit;
+  const sharp = o.sharpRef !== false && probs.pinnacle != null && (pinLimit == null || pinLimit >= o.pinMinLimit);
+  const fair0 = sharp ? probs.pinnacle : avg(srcs);
   market.sources = srcs;
   market.outcomes.forEach((oc, i) => {
     oc.fair = fair0 == null ? null : r4(i === 0 ? fair0 : 1 - fair0);
@@ -436,12 +565,13 @@ function priceMarket(market, { model = null, start = null, now = Date.now(), opt
       const cost = r4(q.ask + (q.fee || 0));
       // the fair price from every OTHER source
       const refs = srcs.filter(s => s !== v);
-      const ref0 = avg(refs);
+      const ref0 = sharp ? probs.pinnacle : avg(refs);
       const refAgree = refs.length < 2 || Math.max(...refs.map(s => probs[s])) - Math.min(...refs.map(s => probs[s])) <= o.maxRefGap + 1e-9;
       const ref = ref0 == null ? null : (i === 0 ? ref0 : 1 - ref0);
       const ev = ref == null ? null : r4((ref - cost) / cost);
       q.cost = cost;
       q.ref = ref == null ? null : r4(ref);
+      q.refSource = ref == null ? null : sharp ? 'pinnacle' : 'consensus';
       q.ev = ev;
       // a real bid close behind the ask (and close relative to the price: 3¢/6¢ is no market)
       const tight = q.bid != null && q.ask - q.bid <= Math.min(o.maxSpread, 0.35 * q.ask) + 1e-9;
@@ -559,7 +689,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
     const order = { match: 0, map: 1, total: 2, spread: 3 };
     markets.sort((a, b) => order[a.kind] - order[b.kind] || (a.n || 0) - (b.n || 0) || (a.line || 0) - (b.line || 0) || (a.team || 0) - (b.team || 0));
     const edges = [];
-    for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.quotes[v].ref, ev: oc.quotes[v].ev }); }));
+    for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { if (oc.quotes[v]?.edge) edges.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, cost: oc.quotes[v].cost, fair: oc.quotes[v].ref, ev: oc.quotes[v].ev, refSource: oc.quotes[v].refSource, ...(oc.quotes.pinnacle?.limit != null ? { pinLimit: oc.quotes.pinnacle.limit } : {}) }); }));
     edges.sort((a, b) => b.ev - a.ev);
     const bids = [];
     for (const mk of markets) mk.outcomes.forEach(oc => TRADABLE.forEach(v => { const b = oc.quotes[v]?.bidPlan; if (b) bids.push({ market: mk.key, kind: mk.kind, outcome: oc.name, venue: v, price: b.price, cost: b.cost, fair: oc.quotes[v].ref, ev: b.ev, ask: oc.quotes[v].ask, bid: oc.quotes[v].bid }); }));
@@ -571,6 +701,7 @@ function buildBoard(matches, { elo = {}, moves = null, now = Date.now(), opts = 
       live: !!m.live || (m.start != null && m.start <= now), bestOf: m.bestOf, tournament: m.tournament, links: m.links, slug: m.slug || null,
       volume: m.volume, rating: ratingInfo, markets, edges, bids, arbs: markets.filter(mk => mk.arb).map(mk => ({ market: mk.key, ...mk.arb })),
       fair: main ? main.outcomes.map(oc => oc.fair) : null, move: main?.move || null,
+      ...(m.pinTeamKills ? { pinTeamKills: m.pinTeamKills } : {}),
     });
   }
   calibrate(rated, { elo, calib });
@@ -654,6 +785,15 @@ async function fetchKalshiSeries(http, ticker) {
   const res = await http.get(KALSHI_EVENTS, { params: { series_ticker: ticker, status: 'open', with_nested_markets: true, limit: 200 }, timeout: 20000 });
   return res?.data?.events || [];
 }
+const PIN_API = 'https://guest.api.arcadia.pinnacle.com/0.1';
+async function fetchPinnacle(http, key = '') {
+  const headers = { Accept: 'application/json', ...(key ? { 'X-API-Key': key } : {}) };
+  const [mu, mk] = await Promise.all([
+    http.get(`${PIN_API}/sports/12/matchups`, { headers, timeout: 20000 }),
+    http.get(`${PIN_API}/sports/12/markets/straight`, { headers, timeout: 20000 }),
+  ]);
+  return parsePinnacle(mu?.data, mk?.data);
+}
 async function fetchBo3Upcoming(http, { pages = 3 } = {}) {
   const out = [];
   for (let page = 0; page < pages; page++) {
@@ -670,7 +810,8 @@ async function fetchBo3Upcoming(http, { pages = 3 } = {}) {
 
 // The board: one scan pulls every source (a series that listed nothing is
 // skipped for emptySkipMs), merges and prices.
-function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = {}, now = () => Date.now(), emptySkipMs = 30 * 60e3, seriesTtlMs = 6 * 3600e3 } = {}) {
+// pinnacle: () => ({ on, key }) turns the sharp source on per scan
+function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = {}, now = () => Date.now(), emptySkipMs = 30 * 60e3, seriesTtlMs = 6 * 3600e3, pinnacle = () => ({ on: false }) } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const moves = createMoveTracker();
   const empty = new Map();
@@ -698,8 +839,10 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
       }
       const bookJob = fetchBo3Upcoming(http).then(rows => rows.map(parseBo3Match).filter(Boolean).map(b => ({ ...b, game: 'CS2' })))
         .catch(e => { errors.push({ source: 'bo3', key: 'matches', message: e.message }); return []; });
-      const [pm, kalshi, book] = await Promise.all([Promise.all(pmJobs).then(x => x.flat()), Promise.all(kalshiJobs).then(x => x.flat()), bookJob]);
-      const merged = mergeSources({ pm, kalshi, book }, o);
+      const pin = pinnacle() || {};
+      const sharpJob = pin.on ? fetchPinnacle(http, pin.key).catch(e => { errors.push({ source: 'pinnacle', key: 'esports', message: e.message }); return []; }) : Promise.resolve([]);
+      const [pm, kalshi, book, sharp] = await Promise.all([Promise.all(pmJobs).then(x => x.flat()), Promise.all(kalshiJobs).then(x => x.flat()), bookJob, sharpJob]);
+      const merged = mergeSources({ pm, kalshi, book, sharp }, o);
       const matches = buildBoard(merged, { elo: ratings() || {}, moves, now: t0, opts: o, calib: state.calibration });
       const byGame = {};
       for (const m of matches) byGame[m.game] = (byGame[m.game] || 0) + 1;
@@ -709,6 +852,7 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
           matches: matches.length, byGame, polymarketEvents: pm.length, kalshiEvents: kalshi.length, bookMatches: book.length,
           both: matches.filter(m => m.links.kalshi && m.links.polymarket).length,
           withBook: matches.filter(m => m.markets.some(mk => mk.sources.includes('book'))).length,
+          pinnacleMatches: sharp.length, withPinnacle: matches.filter(m => m.markets.some(mk => mk.sources.includes('pinnacle'))).length,
           edges: matches.reduce((x, m) => x + m.edges.length, 0), arbs: matches.reduce((x, m) => x + m.arbs.length, 0),
           rated: matches.filter(m => m.rating).length, tracked: moves.size(),
         },
@@ -723,6 +867,6 @@ function createEsportsBoard({ http, log = console, ratings = () => ({}), opts = 
 module.exports = {
   bidPlan,
   GAMES, DEFAULTS, cleanName, sameTeam, orient, parsePmTitle, seriesScores, modelFor,
-  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
+  parsePolymarketEvent, parseKalshiEvent, parseBo3Match, parsePinnacle, pinTeamKills, probit, devigPower, fetchPinnacle, mergeSources, priceMarket, buildBoard, createMoveTracker, fitScale, calibrate,
   createEsportsBoard, fetchPmSeries, PM_SERIES_FALLBACK,
 };

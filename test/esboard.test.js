@@ -236,3 +236,61 @@ test('ratings calibration: the share of the Elo gap the market agrees with, fitt
   // a market that disagrees on direction can't flip the ratings: clamped at the floor
   assert.equal(E.fitScale(pairs.map(() => ({ raw: 0.8, market: 0.3 }))), 0.15);
 });
+
+// ── Pinnacle: shaped like guest.api.arcadia.pinnacle.com /sports/12 (2026-10-14) ──
+const pinMatchups = [
+  { id: 1, parentId: null, type: 'matchup', units: 'Regular', league: { name: 'Valorant - Champions' }, startTime: START, isLive: false,
+    participants: [{ alignment: 'home', name: 'T1' }, { alignment: 'away', name: 'G2 Esports' }] },
+  { id: 2, parentId: 1, type: 'matchup', units: 'Kills', league: { name: 'Valorant - Champions' }, startTime: START, participants: [] },
+  { id: 3, type: 'special', units: 'Maps', league: { name: 'Valorant - Champions' }, startTime: START, participants: [] },
+];
+const pinMarkets = [
+  { matchupId: 1, period: 0, type: 'moneyline', status: 'open', limits: [{ amount: 1250 }], prices: [{ designation: 'home', price: 150 }, { designation: 'away', price: -180 }] },
+  { matchupId: 1, period: 1, type: 'moneyline', status: 'open', prices: [{ designation: 'home', price: 130 }, { designation: 'away', price: -155 }] },
+  { matchupId: 1, period: 0, type: 'total', status: 'open', prices: [{ designation: 'over', points: 2.5, price: 105 }, { designation: 'under', points: 2.5, price: -128 }] },
+  { matchupId: 1, period: 0, type: 'spread', status: 'open', prices: [{ designation: 'home', points: 1.5, price: -185 }, { designation: 'away', points: -1.5, price: 151 }] },
+];
+
+test('Pinnacle: series, map, total and spread prices, vig out by the power method', () => {
+  const [p] = B.parsePinnacle(pinMatchups, pinMarkets);
+  assert.equal(p.game, 'VAL');
+  assert.deepEqual(p.teams, ['T1', 'G2 Esports']);
+  const by = Object.fromEntries(p.markets.map(m => [m.key, m]));
+  assert.deepEqual(Object.keys(by).sort(), ['map:1', 'match', 'spread:1:1.5', 'total:2.5']);
+  // +150 / -180: 0.4 + 0.643; the power method takes more off the longshot than a straight split
+  assert.ok(by.match.prob < 0.4 / (0.4 + 0.6429) && by.match.prob > 0.37, `${by.match.prob}`);
+  assert.equal(by.match.limit, 1250);
+  // G2 -1.5 is spread:1, priced from G2's side
+  assert.ok(by['spread:1:1.5'].prob > 0.37 && by['spread:1:1.5'].prob < 0.4);
+  assert.equal(B.parsePinnacle([{ ...pinMatchups[0], league: { name: 'Hearthstone' } }], pinMarkets).length, 0, 'games the board has no key for are skipped');
+});
+
+test('Pinnacle is the fair price where it lists the market, and edges say so', () => {
+  const pm = [B.parsePolymarketEvent(pmEvent([pmMarket()]), 'VAL')];
+  // Kalshi offers G2 at 60c; Pinnacle has G2 near 62%
+  const kalshi = [{ ...B.parseKalshiEvent(kGame({ yes_bid_dollars: '0.5800', yes_ask_dollars: '0.5900' }, { yes_bid_dollars: '0.4100', yes_ask_dollars: '0.4200' }), 'match'), game: 'VAL' }];
+  const sharp = B.parsePinnacle(pinMatchups, pinMarkets);
+  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }), { now: NOW });
+  const mk = m.markets.find(x => x.key === 'match');
+  assert.ok(mk.sources.includes('pinnacle'));
+  const g2 = mk.outcomes[0];   // board order follows Polymarket: G2 first
+  assert.equal(g2.name, 'G2 Esports');
+  assert.ok(Math.abs(g2.fair - g2.quotes.pinnacle.prob) < 1e-9, 'fair is Pinnacle alone');
+  assert.equal(g2.quotes.kalshi.refSource, 'pinnacle');
+  assert.ok(Math.abs(g2.quotes.kalshi.ref - g2.quotes.pinnacle.prob) < 1e-4);
+  // without Pinnacle the reference is the other venues, as before
+  const [m2] = B.buildBoard(B.mergeSources({ pm, kalshi }), { now: NOW });
+  assert.equal(m2.markets[0].outcomes[0].quotes.kalshi.refSource, 'consensus');
+  // sharpRef off: Pinnacle averages in like any other source
+  const [m3] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp }), { now: NOW, opts: { sharpRef: false } });
+  assert.equal(m3.markets.find(x => x.key === 'match').outcomes[0].quotes.kalshi.refSource, 'consensus');
+});
+
+test('a small Pinnacle limit averages in rather than setting the fair alone', () => {
+  const pm = [B.parsePolymarketEvent(pmEvent([pmMarket()]), 'VAL')];
+  const kalshi = [{ ...B.parseKalshiEvent(kGame({ yes_bid_dollars: '0.5800', yes_ask_dollars: '0.5900' }, { yes_bid_dollars: '0.4100', yes_ask_dollars: '0.4200' }), 'match'), game: 'VAL' }];
+  const small = pinMarkets.map(k => (k.period === 0 && k.type === 'moneyline' ? { ...k, limits: [{ amount: 100 }] } : k));
+  const [m] = B.buildBoard(B.mergeSources({ pm, kalshi, sharp: B.parsePinnacle(pinMatchups, small) }), { now: NOW });
+  const g2 = m.markets.find(x => x.key === 'match').outcomes[0];
+  assert.equal(g2.quotes.kalshi.refSource, 'consensus');
+});

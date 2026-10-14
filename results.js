@@ -105,7 +105,10 @@ const tailDone = r => (r.status === 'settled' ? r.result !== 'unfilled' : r.clv 
 const SOURCES = {
   tail: { label: 'Sharp Tail', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['grade'], ['category'], ['grade', 'category'], ['venue'], ['consensus'], ['order']] },
   fresh: { label: 'Fresh wallets', done: tailDone, open: r => r.status !== 'settled', bet: tailBet, cuts: [['category'], ['venue']] },
-  esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['sport', 'book']] },
+  // edges priced off Pinnacle's no-vig line keep their own record
+  esportsEdges: { label: 'Esports edges', done: b => b.status === 'closed',
+    bet: b => { const x = evBet(b); x.labels.fair = b.source === 'esboard-pin' ? 'vs Pinnacle' : b.source === 'esboard-bid' ? 'limit bid' : 'vs exchanges'; return x; },
+    cuts: [['fair'], ['sport'], ['book'], ['market'], ['sport', 'book'], ['fair', 'market']] },
   // steam (a price Polymarket just moved), a line mover (a big move today,
   // followed near fair) and a standing gap are cut apart
   exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed',

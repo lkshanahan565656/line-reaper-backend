@@ -734,6 +734,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-play .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
 .es-ldiff { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.03em; color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; vertical-align:1px; }
 .es-ldiff.gap { color:#34d399; background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.4); }
+.es-ldiff.pin { color:#93c5fd; background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.4); }
 .es-play .es-ldiff { display:block; width:max-content; margin:4px auto 0; }
 .es-mu { font-size:10.5px; color:#94a3b8; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .es-mu b { font-weight:700; } .es-mu b.up { color:#34d399; } .es-mu b.dn { color:#f87171; } .es-mu b.led { color:#fbbf24; }
@@ -1486,7 +1487,7 @@ body.no-help .clv-info { display:none; }
   </div>
 
   <div id="esMatchesPane">
-    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources.</div>
+    <div class="esm-intro">Every esports match on Kalshi and Polymarket, side by side. <b>Fair</b> is Pinnacle's no-vig price where Pinnacle lists the match, otherwise the no-vig price from the exchanges and a sportsbook. A <span class="esm-good">green</span> price is cheaper than fair from the other sources.</div>
     <div class="esm-bar" id="esmGames"></div>
     <div class="esm-bar" id="esmToggles"></div>
     <div id="esmSummary" class="esm-summary"></div>
@@ -4127,16 +4128,16 @@ function esmMatchCard(m) {
       <div class="esm-row">${esmAvatar(oc.name)}
         <div class="esm-name"><b>${escEs(oc.name)}</b>${form(i)}</div>
         <div class="esm-fair ${oc.fair != null && oc.fair === fav ? 'fav' : ''}">${oc.fair != null ? `<b>${esmPct(oc.fair)}</b><small>FAIR</small>` : ''}</div>
-        <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}</div>
+        <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}${oc.quotes.pinnacle ? `<span class="esm-px ref"><small>Pinnacle</small>${esmPct(oc.quotes.pinnacle.prob)}</span>` : ''}</div>
       </div>`).join('') : m.teams.map((t, i) => `<div class="esm-row">${esmAvatar(t)}<div class="esm-name"><b>${escEs(t)}</b>${form(i)}</div><div></div><div class="esm-prices">${i === 0 ? '<span class="esm-sub" style="margin:0">No match price yet</span>' : ''}</div></div>`).join('');
   const f0 = main && main.outcomes[0].fair != null ? Math.round(main.outcomes[0].fair * 100) : null;
   const meter = f0 != null ? `<div class="esm-split" title="Fair: ${escEs(main.outcomes[0].name)} ${f0}%, ${escEs(main.outcomes[1]?.name || '')} ${100 - f0}%"><i style="width:${f0}%"></i><i style="flex:1"></i></div>` : '';
-  const detail = open ? `<div class="esm-table-wrap"><table class="esm-table"><tr><th>Market</th><th>Pick</th><th>Kalshi</th><th>Polymarket</th><th>Book</th><th>Fair</th><th>Ratings</th></tr>${
+  const detail = open ? `<div class="esm-table-wrap"><table class="esm-table"><tr><th>Market</th><th>Pick</th><th>Kalshi</th><th>Polymarket</th><th>Book</th><th>Pinnacle</th><th>Fair</th><th>Ratings</th></tr>${
     m.markets.map(mk => mk.outcomes.map((oc, i) => `<tr>
       <td>${i === 0 ? esmMarketName(mk) : ''}</td><td>${escEs(oc.name)}</td>
       <td class="${oc.quotes.kalshi?.edge ? 'good' : ''}">${oc.quotes.kalshi?.ask != null ? esmCents(oc.quotes.kalshi.cost) : '—'}</td>
       <td class="${oc.quotes.polymarket?.edge ? 'good' : ''}">${oc.quotes.polymarket?.ask != null ? esmCents(oc.quotes.polymarket.cost) : '—'}</td>
-      <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
+      <td>${oc.quotes.book ? esmPct(oc.quotes.book.prob) : '—'}</td><td>${oc.quotes.pinnacle ? esmPct(oc.quotes.pinnacle.prob) : '—'}</td><td>${esmPct(oc.fair)}</td><td>${esmPct(oc.model)}</td></tr>`).join('')).join('')
   }</table></div>${esmH2hDetail(m)}${m.rating ? `<div class="esm-sub">Ratings: ${escEs(m.teams[0])} ${m.rating.ratings[0]} (${m.rating.games[0]} maps), ${escEs(m.teams[1])} ${m.rating.ratings[1]} (${m.rating.games[1]} maps)${m.rating.scale != null && m.rating.scale !== 1 ? `, calibrated to the market (gap x${m.rating.scale.toFixed(2)})` : ''}. Prices include each venue's taker fee.</div>` : '<div class="esm-sub">Prices include each venue\'s taker fee.</div>'}` : '';
   return `<div class="esm-card ${m.edges.length ? 'edge' : ''} ${m.live ? 'live' : ''}">
     <div class="esm-top"><span class="esm-game">${escEs(m.label)}</span>${m.live ? '<span class="esm-live">LIVE</span>' : ''}<span>${escEs(m.tournament || '')}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
@@ -6009,6 +6010,7 @@ async function renderTrackRecord(el) {
       ${trTable('BY EV AT SIGNAL', sum.byEv)}
       ${trTable('BY MATCHUP', sum.byMatchup)}
       ${trTable('BY LINE GAP', sum.byGap)}
+      ${trTable('BY PINNACLE TEAM KILLS', sum.byPinTeam)}
       ${trTable('BY STAT', sum.byStat)}
       ${trTable('BY SIDE', sum.bySide)}
       ${trTable('BY CONFIDENCE', sum.byConfidence)}
@@ -6079,6 +6081,14 @@ function esClvChip(p) {
   if (r.gap) return `<span class="es-clv ${good ? 'good' : 'bad'}" title="Line-gap plays so far: the closing market moved our way on ${r.beat} of the ${r.moved} that moved${ev}.${p.clvWarn ? ' Kept out of Best Plays and alerts until that turns.' : ''}">Gaps ${good ? 'beat' : 'lose'} close ${r.beat}/${r.moved}</span>`;
   return `<span class="es-clv ${good ? 'good' : 'bad'}" title="Picks like this (${escEs(p.sport)}, this stat, this book, this side): the closing market moved our way on ${r.beat} of the ${r.moved} that moved${ev}.${p.clvWarn ? ' Kept out of Best Plays and alerts until that turns.' : ''}">${good ? 'Beats' : 'Loses'} close ${r.beat}/${r.moved}</span>`;
 }
+// Pinnacle's kills for the player's team against the five players' lines added
+// up: shown and tracked (Track record, BY PINNACLE TEAM KILLS), not yet priced in.
+function esPinChip(p) {
+  const t = p.pinTeam;
+  if (p.locked || !t || Math.abs(t.factor - 1) < 0.03) return '';
+  const backs = p.side ? (t.factor < 1) === (p.side === 'UNDER') : null;
+  return `<span class="es-ldiff pin" title="Pinnacle prices ${escEs(p.team || 'this team')} at ${t.pin.toFixed(1)} kills a map; the books' lines for its ${t.players} players add up to ${t.books.toFixed(1)}. ${t.factor < 1 ? 'Pinnacle sees fewer kills than the books' : 'Pinnacle sees more kills than the books'}${backs == null ? '' : backs ? ', which backs this pick' : ', against this pick'}. Tracked, not yet in the price.">Pinnacle team x${t.factor.toFixed(2)}</span>`;
+}
 // Tonight's matchup behind the price: how often the player's team wins a map
 // (from the exchanges, or ratings when no exchange prices it), head-to-head,
 // and how far that moved the number.
@@ -6114,7 +6124,7 @@ function esLineRow(p, key) {
     <div>${esRowButtons(p)}</div>
     <div style="min-width:0">
       <div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div>
-      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}</div>
+      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
       ${bookRow}${esStatEdge(p)}
     </div>
     <div class="nums"><div class="es-lf"><b>${escEs(line)}</b><div>fair <span>${escEs(p.modelPred ?? '—')}</span></div></div>${side}</div>
@@ -6156,7 +6166,7 @@ function esPlayRow(p, key, B) {
     <div>${btn}</div>
     <div style="min-width:0"><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div>${esMatchupLine(p)}</div>
     <div class="mkcol sub" style="white-space:normal">${p.locked ? 'Pro' : `model <b style="color:#e2e8f0">${escEs(p.modelPred ?? '-')}</b>`}${mult && mult !== 1 ? ` · ${mult}x payout` : ''}</div>
-    <div style="text-align:center">${side}${esLineDiffChip(p, key)}${esClvChip(p)}</div>
+    <div style="text-align:center">${side}${esLineDiffChip(p, key)}${esClvChip(p)}${esPinChip(p)}</div>
     <div class="evbig" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}${p.locked || p.prob == null ? '' : `<small>${p.prob.toFixed(0)}% to hit</small>`}</div>
   </div>`;
 }

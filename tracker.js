@@ -182,6 +182,16 @@ function clvKind(r) {
   return `${sportKey(r.sport)}|${r.stat || statKind(r.market)}|${book}|${r.signalSide || r.side}`;
 }
 
+// Does Pinnacle's team kill total back the pick? Its team's kills over the
+// books' five players: 3%+ under backs an under, 3%+ over backs an over.
+function pinTeamGroup(r) {
+  if (r.pinTeam === undefined) return 'before Pinnacle team kills';
+  if (r.pinTeam == null) return 'no Pinnacle team kills';
+  const side = r.signalSide || r.side;
+  if (Math.abs(r.pinTeam - 1) < 0.03) return 'Pinnacle in line with the books';
+  return (r.pinTeam < 1) === (side === 'UNDER') ? 'Pinnacle backs the pick' : 'Pinnacle against the pick';
+}
+
 // Line-gap group of a tracked row, for the record
 function gapGroup(r) {
   if (!r.signalLines) return 'before gap tracking';
@@ -295,6 +305,8 @@ function createTracker({
           // the gap when the book played sat apart from the others (esgaps.js)
           signalLines: bookLines(p), closeLines: bookLines(p),
           gapVs: p.lineGap ? p.lineGap.vs : null, gapPts: p.lineGap ? p.lineGap.pts : null, gapProbPts: p.lineGap ? p.lineGap.probPts : null,
+          // Pinnacle's team kills over the books' five players (esmarket.teamKillBudget)
+          pinTeam: p.pinTeam ? p.pinTeam.factor : null, pinTeamKills: p.pinTeam ? p.pinTeam.pin : null,
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
         };
@@ -544,6 +556,7 @@ function createTracker({
       byMatchup: groupBy(r => r.matchupLed ? 'matchup-led (no edge without it)' : r.ctxFactor == null ? (r.matchupAdj === undefined ? 'before matchup pricing' : 'no match price') : Math.abs((r.matchupAdj ?? 1) - 1) >= 0.02 ? 'matchup moved price 2%+' : 'even-ish matchup'),
       // line gaps (one book apart from the others, esgaps.js) vs books agreeing
       byGap: groupBy(gapGroup),
+      byPinTeam: groupBy(pinTeamGroup),
       gapOutcomes: rows.filter(r => r.gapVs && r.status !== 'void' && r.closeAt !== r.signalAt).reduce((g, r) => { const o = gapOutcome(r); if (o) g[o] = (g[o] || 0) + 1; return g; }, {}),
       // market CLV pooled by kind (sport|stat|book|side), picks signaled since it was measured
       byKind: Object.fromEntries(Object.entries(rows.filter(r => r.signalFair != null).reduce((g, r) => ((g[clvKind(r)] ||= []).push(r), g), {})).map(([k, v]) => [k, aggregate(v)])),
@@ -561,7 +574,7 @@ function createTracker({
   return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, clvByKind, pickId, graders, ready: () => ready };
 }
 
-module.exports = {
+module.exports = { pinTeamGroup,
   createTracker, createMemoryStore, createFileStore, createPgStore, createStoreFromEnv,
   spanToMaps, statKind, sportKey, legDecimal, outcomeFor, lineClv, marketClv, clvKind, gapGroup, profitFor, PP_IMPLIED,
 };

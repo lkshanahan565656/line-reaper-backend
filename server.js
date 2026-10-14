@@ -646,7 +646,7 @@ function calcBookEV(prob, book, mult = 1.00) {
 }
 
 const {
-  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
+  matchContext, describeContext, opponentFrom, createOddsBook, teamsMatch, teamCode, sportKey, splitMatchTitle, spanScenarios, pMapPlayed,
 } = require('./context');
 const { refreshRatings } = require('./ratings');
 const { fetchGolPlayers, golSeason, createVlrStats, headToHead, nameKey } = require('./propstats');
@@ -1911,7 +1911,9 @@ async function generateEsportsPicks() {
     try {
       const span = parseMapSpan(lineObj.market);
       const maps = spanToMapList(span.label, span.count);
-      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null);
+      // PrizePicks titles a line by the opponent's code and the span: "BFX MAPS 1-3"
+      const ppOpp = /^(\S+)\s+MAPS?\s/i.exec(String(lineObj.matchTitle || ''))?.[1] || null;
+      const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null) || ppOpp;
       const sides = splitMatchTitle(lineObj.matchTitle);
       const titleTeam = sides && opponent ? (sides[0] === opponent ? sides[1] : sides[1] === opponent ? sides[0] : null) : null;
       const ctxArgs = { sport: (lineObj.sport || '').toUpperCase(), opponent, maps }, ctxDeps = { oddsBook, elo: ratingsState.elo };
@@ -2129,6 +2131,43 @@ async function generateEsportsPicks() {
   esportsCache.marketCounts = marketCounts;
   if (priceMismatches) console.log(`Esports: ${priceMismatches} book prices withheld — our fair sat more than 10 points above the book's implied chance`);
   if (spanCounts.inferred) console.log(`Esports: ${spanCounts.inferred} picks rescaled — line implied a longer map span than the market label claimed`);
+
+  // Pinnacle's team kills against the books' five players (esmarket.teamKillBudget):
+  // measured and tracked (byPinTeam), not priced until the record says so
+  esportsCache.pinTeams = 0;
+  try {
+    const pinMatches = (esportsBoard.state.matches || []).filter(m => m.pinTeamKills && !m.live);
+    const fam = p => { const s = trackerSportKey(p.sport); return s === 'LOL' || s === 'DOTA' ? s : null; };
+    const sides = new Map();
+    const sideOf = p => {
+      if (sides.has(p)) return sides.get(p);
+      let hit = null;
+      const g = fam(p), t = Date.parse(p.startTime || '');
+      const opp = g ? opponentFrom(p.team, p.matchTitle, null) : null;
+      for (const m of g ? pinMatches : []) {
+        if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(Date.parse(m.start) - t) > 12 * 3600e3)) continue;
+        const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
+        if (i != null) { hit = { m, i }; break; }
+      }
+      sides.set(p, hit);
+      return hit;
+    };
+    if (pinMatches.length) {
+      esportsCache.pinTeams = esmarket.teamKillBudget(picks, {
+        perMap: p => (fam(p) && normalizeMarket(p.market).split('|')[0] === 'k' && p.marketPred != null ? (p.matchup?.baseMean ?? p.marketPred) / parseMapCount(p.market) : null),
+        teamOf: p => { const s = sideOf(p); return s ? `${s.m.id}|${s.i}` : null; },
+        pinFor: p => {
+          const s = sideOf(p);
+          const v = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market)).map(n => s?.m.pinTeamKills[n]?.[s.i]).filter(x => x > 0);
+          return v.length ? v.reduce((a, x) => a + x, 0) / v.length : null;
+        },
+      });
+      for (const p of picks) if (p.pinTeam) {
+        const f = p.pinTeam.factor;
+        p.statLine = [p.statLine, `Pinnacle team kills ${p.pinTeam.pin.toFixed(1)} a map vs the books' ${p.pinTeam.books.toFixed(1)} (x${f.toFixed(2)})`].filter(Boolean).join(' · ');
+      }
+    }
+  } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
 
   // Line gaps: the book a pick is played at sits on the soft side of another
   // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
@@ -3340,7 +3379,8 @@ const ESPORTS_OPTS = {
 };
 const ESPORTS_ALERT_MIN = parseFloat(process.env.ESPORTS_ALERT_MIN || '0.04');
 const ESPORTS_REALERT_MS = 6 * 3600e3;
-const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS });
+// Pinnacle's no-vig price is the board's fair where it lists the market (PINNACLE=on).
+const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS, pinnacle: () => ({ on: PINNACLE_ON, key: process.env.PINNACLE_GUEST_KEY || '' }) });
 const esportsEdgeSeen = new Map();
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
@@ -3368,7 +3408,7 @@ function esportsEdgeRows(matches, venueOk = () => true) {
       if (!venueOk(e.venue) || !(e.cost > 0 && e.cost < 1) || e.fair == null) continue;
       rows.push({
         group: `${m.id}|${e.market}|${e.venue}`, side: e.outcome, book: e.venue, start: m.start, sport: m.game, event: m.label,
-        market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: 'esboard',
+        market: e.kind, price: e.cost, decimal: 1 / e.cost, ev: e.ev * 100, fairProb: e.fair * 100, source: e.refSource === 'pinnacle' ? 'esboard-pin' : 'esboard',
       });
     }
   }
@@ -3723,7 +3763,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.106.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.107.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4887,7 +4927,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.106.0',
+  version: '3.107.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

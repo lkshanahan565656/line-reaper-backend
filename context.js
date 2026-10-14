@@ -174,6 +174,23 @@ function teamsMatch(a, b) {
   return !SECOND_TEAM_RE.test(long.slice(short.length));
 }
 
+// A short team code against a full name: "BFX" is BNK FearX, "SLY" Solary,
+// "C9" Cloud9, "KT" KT Rolster. The code's letters run in order through the
+// name and it starts with the name's first letter.
+function teamCode(full, code) {
+  if (!full || !code) return false;
+  if (teamsMatch(full, code)) return true;
+  const a = String(full).toLowerCase().replace(/[^a-z0-9]/g, ''), b = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const [long, short] = a.length >= b.length ? [a, b] : [b, a];
+  if (short.length < 2 || short.length > 4 || long.length <= short.length || short[0] !== long[0]) return false;
+  // a plain prefix is teamsMatch's call ("MOUZ" is not "MOUZ NXT"); only a
+  // two-letter one ("KT" for KT Rolster) gets past it here
+  if (long.startsWith(short)) return short.length < 3 && !SECOND_TEAM_RE.test(long.slice(short.length));
+  let i = 0;
+  for (const ch of long) if (ch === short[i]) i++;
+  return i === short.length;
+}
+
 // "Vitality vs NAVI", "VIT @ NAVI", "G2 - FaZe" → ['Vitality', 'NAVI']
 function splitMatchTitle(title) {
   const parts = String(title || '').split(/\s+(?:vs\.?|v|@|-|–)\s+/i).map(s => s.trim()).filter(Boolean);
@@ -328,12 +345,19 @@ function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
     // per-map win prob for `team` against `opponent`, or null
     lookup(sport, team, opponent) {
       const s = sportKey(sport), t = now();
-      for (const r of rows) {
-        if (r.sport !== s || t - r.at > ttlMs) continue;
+      const live = rows.filter(r => r.sport === s && t - r.at <= ttlMs);
+      for (const r of live) {
         if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf, source: r.source };
         if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source };
       }
-      return null;
+      // PrizePicks names teams by code ("KT", "BFX", "C9"): match a code to
+      // the one priced team it abbreviates, never to two
+      const hits = [];
+      for (const r of live) {
+        if (teamCode(r.teamA, team) && (!opponent || teamCode(r.teamB, opponent))) hits.push({ pMap: r.pMapA, bestOf: r.bestOf, source: r.source });
+        else if (teamCode(r.teamB, team) && (!opponent || teamCode(r.teamA, opponent))) hits.push({ pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source });
+      }
+      return hits.length === 1 ? hits[0] : null;
     },
     list() { const t = now(); return rows.filter(r => t - r.at <= ttlMs); },
   };
@@ -401,5 +425,5 @@ module.exports = {
   pMapPlayed, spanScenarios, inferBestOf, killFactor, mixtureProb,
   teamKey, teamsMatch, splitMatchTitle, opponentFrom,
   buildElo, lolGamesFromRows, dotaGamesFromRows, valGamesFromRows,
-  createOddsBook, matchContext, describeContext, sportKey,
+  createOddsBook, teamCode, matchContext, describeContext, sportKey,
 };

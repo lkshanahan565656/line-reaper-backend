@@ -221,3 +221,20 @@ test('opponent from the title when the roster name differs from the title name',
   assert.equal(C.opponentFrom('Falcons', 'Falcons 2 vs NAVI'), null);
   assert.equal(C.opponentFrom('Gen.G', 'Team Liquid vs NAVI'), null);
 });
+
+test('team codes: PrizePicks codes find the one priced team they abbreviate', () => {
+  assert.ok(C.teamCode('BNK FEARX', 'BFX'));
+  assert.ok(C.teamCode('KT Rolster', 'KT'));
+  assert.ok(C.teamCode('Cloud9', 'C9'));
+  assert.ok(C.teamCode('Solary', 'SLY'));
+  assert.ok(!C.teamCode('Cloud Rising', 'C9'));
+  assert.ok(!C.teamCode('MOUZ NXT', 'MOUZ'), 'an academy is never its main team');
+  const book = C.createOddsBook();
+  book.set({ sport: 'LOL', teamA: 'BNK FEARX', teamB: 'KT Rolster', pA: 0.4, bestOf: 5, source: 'exchanges' });
+  const hit = book.lookup('LoL', 'KT', 'BFX');
+  assert.equal(hit.bestOf, 5);
+  assert.ok(hit.pMap > 0.5, 'KT is the favourite');
+  // two priced teams a code could mean: no guess
+  book.set({ sport: 'LOL', teamA: 'KT Challengers', teamB: 'Gen.G Global', pA: 0.5, bestOf: 3, source: 'exchanges' });
+  assert.equal(book.lookup('LoL', 'KT', null), null);
+});

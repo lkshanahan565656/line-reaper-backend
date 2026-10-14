@@ -145,13 +145,14 @@ function edgeRows(matches, verdict, o, now) {
     if (m.live || (start != null && start <= now)) continue;
     for (const e of m.edges || []) {
       if (!(e.cost > 0 && e.cost < 1) || e.fair == null || !(e.ev > 0)) continue;
-      const labels = { sport: m.game, book: e.venue, market: e.kind };
+      const pin = e.refSource === 'pinnacle';
+      const labels = { sport: m.game, book: e.venue, market: e.kind, fair: pin ? 'vs Pinnacle' : 'vs exchanges' };
       const vd = verdict('esportsEdges', labels);
       if (vd.avoid) { dropped.push({ kind: 'esportsEdge', title: m.label, play: vd.avoid.play }); continue; }
       const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
       const units = kellyUnits(e.fair, e.cost, cap, o);
       if (!(units > 0)) continue;
-      const why = [`fair price ${Math.round(e.fair * 100)}c from the other markets, ${Math.round(e.cost * 100)}c here after fees`];
+      const why = [`fair price ${Math.round(e.fair * 100)}c ${pin ? "from Pinnacle's no-vig line" : 'from the other markets'}, ${Math.round(e.cost * 100)}c here after fees`];
       if (vd.play) why.push(evidence(vd.play));
       const mk = (m.markets || []).find(x => x.key === e.market);
       rows.push({
@@ -165,7 +166,7 @@ function edgeRows(matches, verdict, o, now) {
     for (const b of m.bids || []) {
       if (!(b.cost > 0 && b.cost < 1) || b.fair == null || !(b.ev > 0)) continue;
       const venue = b.venue === 'kalshi' ? 'Kalshi' : b.venue === 'polymarket' ? 'Polymarket' : b.venue;
-      const vd = verdict('esportsEdges', { sport: m.game, book: `${b.venue}-bid`, market: b.kind });
+      const vd = verdict('esportsEdges', { sport: m.game, book: `${b.venue}-bid`, market: b.kind, fair: 'limit bid' });
       if (vd.avoid) { dropped.push({ kind: 'esportsEdge', title: m.label, play: vd.avoid.play }); continue; }
       const cap = vd.verdict === 'proven' ? o.provenMaxUnits : o.edgeMaxUnits;
       const units = quarter(o.bidShare * kellyUnits(b.fair, b.cost, cap, o));

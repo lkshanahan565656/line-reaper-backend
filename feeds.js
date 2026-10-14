@@ -173,8 +173,10 @@ function pinnacleSport(leagueName) {
 }
 
 function pinnacleMatchPrices(matchups, markets) {
-  const ml = new Map(), maxPeriod = new Map();
+  const ml = new Map(), maxPeriod = new Map(), maxTotal = new Map();
   for (const k of markets || []) {
+    // a series total of 3.5 or 4.5 maps only exists in a best-of-5
+    if (k.type === 'total' && k.period === 0) for (const p of k.prices || []) if (p.points != null) maxTotal.set(k.matchupId, Math.max(maxTotal.get(k.matchupId) || 0, Number(p.points)));
     if (k.type !== 'moneyline' || k.isAlternate) continue;
     maxPeriod.set(k.matchupId, Math.max(maxPeriod.get(k.matchupId) || 0, k.period || 0));
     if (k.period === 0 && (k.status || 'open') === 'open') ml.set(k.matchupId, k);
@@ -189,10 +191,10 @@ function pinnacleMatchPrices(matchups, markets) {
     const ph = k.prices?.find(p => p.designation === 'home')?.price, pa = k.prices?.find(p => p.designation === 'away')?.price;
     if (!home?.name || !away?.name || ph == null || pa == null) continue;
     // per-map moneylines on periods 4-5 only exist in a best-of-5
-    const mp = maxPeriod.get(m.id) || 0;
+    const mp = maxPeriod.get(m.id) || 0, mt = maxTotal.get(m.id) || 0;
     out.push({
       sport, teamA: home.name, teamB: away.name, priceA: ph, priceB: pa,
-      bestOf: mp >= 4 ? 5 : null, start: m.startTime || null, league: m.league?.name || null, source: 'pinnacle',
+      bestOf: mp >= 4 || mt >= 3 ? 5 : mt === 2.5 ? 3 : null, start: m.startTime || null, league: m.league?.name || null, source: 'pinnacle',
     });
   }
   return out;
@@ -212,7 +214,9 @@ async function fetchPinnacleEsports(http, key) {
 function loadMatchPrices(oddsBook, prices, schedules = {}) {
   let n = 0;
   for (const p of prices) {
-    const bestOf = p.bestOf || bestOfFor(schedules[p.sport], p.teamA, p.teamB) || 3;
+    // when Pinnacle doesn't say, keep the best-of another source already set
+    // (the exchanges list a Bo5 as one) rather than falling back to Bo3
+    const bestOf = p.bestOf || bestOfFor(schedules[p.sport], p.teamA, p.teamB) || oddsBook.lookup?.(p.sport, p.teamA, p.teamB)?.bestOf || 3;
     try { oddsBook.set({ ...p, bestOf }); n++; } catch { /* a price that doesn't devig */ }
   }
   return n;
