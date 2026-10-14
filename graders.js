@@ -526,7 +526,9 @@ function createValGrader(http, { ttlMs = 10 * 60e3, windowMs = 6 * 3600e3, maxPa
   return async function gradeVal(pick) {
     const start = Date.parse(pick.startTime);
     if (!Number.isFinite(start)) return null;
-    const names = pickTeams(pick);
+    // the pick's team and both sides of its match title: an app's tag
+    // ("AKV.GC") may name nothing in the list, its opponent still does
+    const names = [...new Set([...pickTeams(pick), ...pickTeams({ matchTitle: pick.matchTitle })])];
     // the list has full names only ("G2 Esports" for an app's "G2"): a loose
     // first cut, the page (names and tags) decides
     const named = r => names.some(n => r.teams.some(t => vlrTeamIs({ name: t }, n) || teamsMatch(t, n) || teamCode(t, n)));
