@@ -7,7 +7,7 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,7 +15,7 @@ jobs:
       - run: |
           set +e
           npm i axios --no-audit --no-fund 2>&1 | tail -1
-          { date -u; DUR_MIN=100 node diag/latency.js; } 2>&1 | tee latency-out.txt || true
+          { date -u; DUR_MIN=330 node diag/latency.js; } 2>&1 | tee latency-out.txt || true
       - if: always()
         run: |
           git config user.name diag-bot
