@@ -38,7 +38,7 @@ function createSlipTracker({
   const open = new Map();
   const loaded = ready.then(async () => { for (const r of await store.all()) if (r.status === 'open') open.set(r.id, r); });
 
-  // slips: autoSlips().slips. Only +EV ones are the play.
+  // slips: autoSlips().slips and .stacks. Only +EV ones are the play.
   async function record(slips = []) {
     await loaded;
     const seen = new Set((await store.all()).map(r => r.id));
@@ -54,6 +54,7 @@ function createSlipTracker({
         id, status: 'open', flaggedAt: new Date(t).toISOString(),
         start: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
         end: starts.length ? new Date(Math.max(...starts)).toISOString() : null,
+        kind: s.kind || 'best', breakEvenPays: s.breakEvenPays ?? null,
         book: s.book, bookName: s.bookName, table: s.table, tableName: s.tableName, size: s.picks.length,
         ev: s.ev, probAll: s.probAll, paysAll: s.paysAll, payTable: s.payTable, kelly: s.kelly,
         legs: s.picks.map(l => ({
@@ -128,7 +129,10 @@ function createSlipTracker({
   // the record, overall and per book
   async function summary() {
     await loaded;
-    const rows = await store.all();
+    const all = await store.all();
+    // same-match stacks keep their own record (stacks), apart from Best Slips
+    const isStack = r => r.kind === 'stack';
+    const rows = all.filter(r => !isStack(r));
     const graded = rows.filter(r => r.status === 'graded');
     const cut = list => {
       const units = list.reduce((a, r) => a + r.profit, 0);
@@ -141,7 +145,11 @@ function createSlipTracker({
     };
     const byBook = {};
     for (const b of [...new Set(graded.map(r => r.book))]) byBook[b] = cut(graded.filter(r => r.book === b));
-    return { ...cut(graded), open: open.size, void: rows.filter(r => r.status === 'void').length, byBook };
+    const sRows = all.filter(isStack), sGraded = sRows.filter(r => r.status === 'graded');
+    const sByBook = {};
+    for (const b of [...new Set(sGraded.map(r => r.book))]) sByBook[b] = cut(sGraded.filter(r => r.book === b));
+    const stacks = { ...cut(sGraded), open: sRows.filter(r => r.status === 'open').length, void: sRows.filter(r => r.status === 'void').length, byBook: sByBook };
+    return { ...cut(graded), open: rows.filter(r => r.status === 'open').length, void: rows.filter(r => r.status === 'void').length, byBook, stacks };
   }
   async function list() { await loaded; return store.all(); }
   return { record, grade, summary, list, ready: () => loaded };
