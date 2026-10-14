@@ -338,7 +338,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge at alert</th><th class="n">After 2 min</th><th class="n">Status</th></tr></thead>
         <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; a dash means it is not measured for that play yet. Exchange value plays are listed only once their two-minute record has 8 bets and is positive. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
+      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; "not graded yet" means that play has no two-minute grade so far. Exchange value plays are listed only once their two-minute record has 8 bets and is positive. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
     </div>
   </div>
 </section>
@@ -395,7 +395,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
     <div class="faq">
       <details><summary>What is a betting exchange?</summary><div class="a"><p>Kalshi and Polymarket let you buy Yes or No on an outcome at a price between 1 and 99 cents. If you're right, each contract pays $1. Prices are set by other traders rather than a sportsbook, so they can be slow to react, and that lag is the edge Line Reaper looks for.</p></div></details>
       <details><summary>What is closing line value, and why does it matter?</summary><div class="a"><p>The closing line is the last price before a game starts, when the market knows the most. If you bought at 52 cents and it closed at 56, you beat the close by about 8%. Bettors who beat the close consistently win over time, and it shows up after dozens of bets instead of hundreds, which is why every Line Reaper alert is graded on it.</p></div></details>
-      <details><summary>What does "graded two minutes later" mean?</summary><div class="a"><p>A price at the moment an alert fires only helps if you can still buy it. On exchanges prices often move back before you can act, so we also record the price two minutes after each alert and grade that against the close. A signal only alerts once its own two-minute record is positive. Where a play has not been measured that way yet, the record shows a dash instead of a number.</p></div></details>
+      <details><summary>What does "graded two minutes later" mean?</summary><div class="a"><p>A price at the moment an alert fires only helps if you can still buy it. On exchanges prices often move back before you can act, so we also record the price two minutes after each alert and grade that against the close. A signal only alerts once its own two-minute record is positive. Where a play has no two-minute grade yet, the record says "not graded yet" instead of a number.</p></div></details>
       <details><summary>Do I need to be a professional to use this?</summary><div class="a"><p>No. Every play tells you where to bet, the price to take and how many units to stake. A unit is just the amount you choose to risk on a standard bet; most people set it at 1% of their bankroll. The Tools tab explains the math behind each number if you want it.</p></div></details>
       <details><summary>Does Line Reaper place bets for me?</summary><div class="a"><p>No. We never hold your money, connect to your betting accounts or place bets. You read the alert and decide whether to place it yourself.</p></div></details>
       <details><summary>Is the advice personalised?</summary><div class="a"><p>No. Everyone gets the same alert with the same suggested size in units. You choose what a unit is worth to you, and the app can track your own stakes, but it never tailors a bet to your situation.</p></div></details>
@@ -474,7 +474,7 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       + `<td class="n">${p.n}</td>`
       + `<td class="n hide-sm">${p.beatClosePct != null ? Math.round(p.beatClosePct * 100) + '%' : '-'}</td>`
       + `<td class="n up">${pct(p.edge)} <span style="color:var(--muted);font-size:11px">${p.kind}</span></td>`
-      + `<td class="n ${p.execClv > 0 ? 'up' : ''}">${p.execClv != null ? pct(p.execClv) : '-'}</td>`
+      + `<td class="n ${p.execClv > 0 ? 'up' : ''}">${p.execClv != null ? pct(p.execClv) : '<span style="color:var(--muted);font-size:11px">not graded yet</span>'}</td>`
       + `<td class="n"><span class="verdict v-${esc(p.verdict)}">${esc(p.verdict)}</span></td></tr>`);
     if (rows.length >= 7) break;
   }
