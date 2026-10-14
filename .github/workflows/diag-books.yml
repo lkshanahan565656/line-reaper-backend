@@ -15,6 +15,6 @@ jobs:
       - run: |
           set +e
           npm ci --omit=dev --no-audit --no-fund 2>&1 | tail -2
-          mkdir -p out; cd out; node ../diag/${SCRIPT:-evrun.js} > log.txt 2>&1; cd ..
+          mkdir -p out; cd out; node ../diag/${SCRIPT:-railcheck.js} > log.txt 2>&1; cd ..
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
           git checkout -B diag-books-out; git add -f out; git commit -qm "books out"; git push -qf origin diag-books-out
