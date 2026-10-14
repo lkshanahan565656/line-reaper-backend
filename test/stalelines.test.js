@@ -210,3 +210,13 @@ test('lag stats: a true median, and open moves past the mark count against "with
   assert.equal(br.within15, 0);   // 19 minutes open: it did not follow within 15
   assert.equal(br.within2, 0);
 });
+
+test('a prop quoted at two lines in one read is one quote, not a move every read', () => {
+  const eng = S.createStaleLines();
+  const two = [
+    { sport: 'WNBA', player: 'Angel Reese', mkey: 'points', line: 14.5, pOver: 0.52, over: -112, under: -108, start: START },
+    { sport: 'WNBA', player: 'Angel Reese', mkey: 'points', line: 16.5, pOver: 0.4, over: 135, under: -165, start: START },
+  ];
+  for (let m = 0; m < 10; m += 2) { eng.observe(S.pinPropQuotes(m % 4 ? two : [two[1], two[0]]), min(m)); eng.step(min(m)); }
+  assert.equal(eng.lagSummary(min(10)).moves24h, 0);
+});

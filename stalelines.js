@@ -294,12 +294,19 @@ function createStaleLines(opts = {}) {
   function observe(quotes, t, kind = null) {
     if (kind) noteRead(kind, t);
     // Pinnacle first: it's read first in each pass, so a venue that moved in
-    // the same pass followed with a lag under a minute, it didn't lead. One
-    // quote per subject and source a batch (an MLB doubleheader on one day
-    // would flip between its two games' lines every read).
-    const seen = new Set();
-    const ordered = [...(quotes || [])].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'))
-      .filter(x => { const k = `${x.key}|${x.source}`; return seen.has(k) ? false : seen.add(k); });
+    // the same pass followed with a lag under a minute, it didn't lead.
+    // A source quoting one prop at two lines in a batch (Pinnacle lists some
+    // players twice) is one quote with both lines, else it flips every read.
+    const merged = new Map();
+    for (const x of quotes || []) {
+      const k = `${x.key}|${x.source}`, m = merged.get(k);
+      if (!m) merged.set(k, x);
+      else if (x.q.kind === 'prop' && m.q.kind === 'prop') {
+        const pts = [...m.q.pts, ...x.q.pts.filter(a => !m.q.pts.some(b => Math.abs(b.x - a.x) < 1e-9))].sort((a, b) => a.x - b.x);
+        merged.set(k, { ...m, q: { ...m.q, pts } });
+      }
+    }
+    const ordered = [...merged.values()].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'));
     for (const { key, source, q, meta } of ordered) {
       let s = subjects.get(key);
       if (!s) { s = { meta, src: {}, anchor: null, moves: [] }; subjects.set(key, s); }
