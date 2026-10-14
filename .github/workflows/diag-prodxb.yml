@@ -1,0 +1,22 @@
+name: diag-prodxb
+on:
+  push:
+    branches: [diag-prodxb]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          for i in $(seq 1 60); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.121.0" ] && break; sleep 20; done
+          sleep 300
+          curl -s $U/api/status > out/status.json
+          curl -s "$U/api/esports/probe/books?only=actionnetwork,matchbook,bovada" > out/probe.json
+          curl -s "$U/api/ev" > out/ev.json
+          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-prodxb-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-prodxb-out
