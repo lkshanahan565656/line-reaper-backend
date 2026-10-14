@@ -537,7 +537,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.114.0');
+  assert.equal(body.version, '3.115.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -564,8 +564,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.114.0');
-  assert.equal((await get('/')).body.version, '3.114.0');
+  assert.equal(require('../package.json').version, '3.115.0');
+  assert.equal((await get('/')).body.version, '3.115.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1409,4 +1409,15 @@ test('middle alerts: the same text for everyone, with the window and what a miss
   const text = S.describeMiddle({ evPct: 7.6, title: 'New York K at Boston', low: 217.5, high: 221.5, hitProb: 0.083, missPct: -0.6,
     legs: [{ venue: 'polymarketus', pick: 'Over 217.5', price: 0.45 }, { venue: 'kalshi', pick: 'Under 221.5', price: 0.52 }] });
   assert.equal(text, 'Middle +7.6% EV: New York K at Boston · Polymarket US Over 217.5 45¢ + Kalshi Under 221.5 52¢ · both pay at 218 to 221 (about 8%), a miss costs 0.6%');
+});
+
+test('Lines "Used?" boxes stay on the account', async () => {
+  const s = await post('/api/auth/signup', { email: 'usedbox@example.com', password: 'longenough1', acceptTerms: true, confirmAge: true });
+  const auth = { authorization: `Bearer ${s.body.token}` };
+  assert.equal((await get('/api/me/used')).status, 401, 'logged out');
+  assert.deepEqual((await get('/api/me/used', auth)).body.used, []);
+  assert.deepEqual((await post('/api/me/used', { keys: ['NFL|a|points|underdog|20.5', 'NFL|b|points|underdog|9.5'] }, auth)).body.used.sort(), ['NFL|a|points|underdog|20.5', 'NFL|b|points|underdog|9.5']);
+  assert.deepEqual((await post('/api/me/used', { key: 'NFL|a|points|underdog|20.5', used: false }, auth)).body.used, ['NFL|b|points|underdog|9.5']);
+  assert.deepEqual((await get('/api/me/used', auth)).body.used, ['NFL|b|points|underdog|9.5']);
+  assert.equal((await post('/api/me/used', {}, auth)).status, 400);
 });
