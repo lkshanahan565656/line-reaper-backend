@@ -5,7 +5,7 @@ const K = 'https://api.elections.kalshi.com/trade-api/v2';
 const SERIES = (process.env.SERIES || 'KXCS2GAME,KXLOLGAME,KXVALORANTGAME,KXDOTA2GAME,KXR6GAME,KXCODGAME,KXOWGAME').split(',');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
-let calls = 0, errs = 0;
+let calls = 0, errs = 0; const T0 = Date.now(), BUDGET = Number(process.env.BUDGET_MIN || 140) * 60e3;
 async function get(path, params = {}, tries = 6) {
   const u = new URL(K + path); for (const [k, v] of Object.entries(params)) if (v != null) u.searchParams.set(k, v);
   for (let i = 0; i < tries; i++) {
@@ -20,7 +20,7 @@ async function get(path, params = {}, tries = 6) {
   }
   errs++; return null;
 }
-async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const x = items[i++]; await fn(x); } })); }
+async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length && Date.now() - T0 < BUDGET) { const x = items[i++]; await fn(x); } })); }
 const num = v => (v == null || v === '' ? null : Number(v));
 const MON = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
 // ET wall clock -> UTC ms
@@ -55,21 +55,23 @@ async function listMarkets(series, hist) {
     log(s, 'live', live.length, 'hist', hist.length, 'events', byEv.size, 'sample', JSON.stringify(live[0] || hist[0] || {}).slice(0, 1500));
     for (const [ev, ms] of byEv) evs.push({ s, ev, ms });
   }
+  evs.sort((x, y) => (startFromTicker(y.ev) || 0) - (startFromTicker(x.ev) || 0));
+  log('events total', evs.length);
   const out = []; let done = 0;
   await pool(evs, 8, async ({ s, ev, ms }) => {
     const start = startFromTicker(ev) || Date.parse(ms[0].occurrence_datetime || '') || null;
     const rec = { s, ev, start, title: ms[0].title, ms: [] };
-    for (const m of ms) {
+    for (const [mi_, m] of ms.entries()) {
       const hist = m._hist;
       const path = hist ? `/historical/markets/${m.ticker}/candlesticks` : `/series/${s}/markets/${m.ticker}/candlesticks`;
       const ref = start || Date.parse(m.close_time);
       const conv = (cs, refT) => (cs || []).map(k => [Math.round((k.end_period_ts * 1000 - refT) / 60e3), num(k.yes_ask?.close_dollars ?? k.yes_ask?.close), num(k.yes_bid?.close_dollars ?? k.yes_bid?.close), Math.round(num(k.volume_fp ?? k.volume) || 0), num(k.price?.close_dollars ?? k.price?.close)]);
-      const h = await get(path, { start_ts: Math.floor(ref / 1000) - 96 * 3600, end_ts: Math.floor(ref / 1000) + 4 * 3600, period_interval: 60 });
-      const mi = await get(path, { start_ts: Math.floor(ref / 1000) - 180 * 60, end_ts: Math.floor(ref / 1000) + 20 * 60, period_interval: 1 });
+      const h = mi_ ? null : await get(path, { start_ts: Math.floor(ref / 1000) - 96 * 3600, end_ts: Math.floor(ref / 1000) + 4 * 3600, period_interval: 60 });
+      const mi = mi_ ? null : await get(path, { start_ts: Math.floor(ref / 1000) - 180 * 60, end_ts: Math.floor(ref / 1000) + 20 * 60, period_interval: 1 });
       rec.ms.push({ t: m.ticker, sub: m.yes_sub_title, res: m.result, vol: num(m.volume_fp ?? m.volume), open: m.open_time, close: m.close_time, occ: m.occurrence_datetime, exp: m.expected_expiration_time, rules: done < 3 ? m.rules_primary : undefined, hist, h: conv(h?.candlesticks, ref), mi: conv(mi?.candlesticks, ref) });
     }
     out.push(rec);
-    if (++done % 200 === 0) log('events', done, '/', evs.length, 'calls', calls, 'errs', errs);
+    if (++done % 200 === 0) { fs.mkdirSync('data', { recursive: true }); fs.writeFileSync('data/kalshi-es.json.gz', zlib.gzipSync(JSON.stringify(out))); } if (done % 200 === 0) log('events', done, '/', evs.length, 'calls', calls, 'errs', errs);
   });
   fs.mkdirSync('data', { recursive: true });
   fs.writeFileSync('data/kalshi-es.json.gz', zlib.gzipSync(JSON.stringify(out)));
