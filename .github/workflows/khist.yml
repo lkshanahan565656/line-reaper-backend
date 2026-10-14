@@ -19,6 +19,7 @@ jobs:
       - run: |
           set +e
           SCRIPT=$(cat diag/RUN)
+          git fetch -q --depth 1 origin claude/kalshi-history-edge-q26jyc:refs/remotes/origin/pr && git worktree add -q app origin/pr && (cd app && npm i --omit=dev >/dev/null 2>&1); npm i axios >/dev/null 2>&1
           true
           { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
           true
