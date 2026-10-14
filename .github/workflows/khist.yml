@@ -1,0 +1,27 @@
+name: khist
+on:
+  push:
+    branches: [diag-khist]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          set +e
+          SCRIPT=$(cat diag/RUN)
+          { date -u; node --max-old-space-size=6000 diag/$SCRIPT; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-khist-out
+          git add -f out.txt; git add -f data/*.json.gz 2>/dev/null; git add -f data/*.json 2>/dev/null
+          git commit -qm "khist output" ; git push -f origin diag-khist-out
