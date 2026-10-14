@@ -285,3 +285,15 @@ test('kill models take the fitted spread when given one', () => {
   assert.notEqual(a, null);
   assert.ok(c < b, 'a wider team total spreads the player more: less of an over at a line under his mean');
 });
+
+test('Valorant grader: an app tag the results list doesn\'t carry is found through the match title', async () => {
+  const http = fakeHttp([[/results\/\?page=2/, ''], [/results/, RESULTS], [/vlr\.gg\/754741$/, G2T1]]);
+  const grade = createValGrader(http, { pause: 0, now: () => Date.parse('2026-10-12T00:00:00Z') });
+  // "T1" names the list's T1 anyway; a tag like "TONE" would not, the title's G2 side does
+  const page = G2T1.replace(/title="T1"/g, 'title="TONE"').replace(/>T1</g, '>TONE<').replace(/ovw-player-tag ge-text-light">T1/g, 'ovw-player-tag ge-text-light">TONE');
+  const http2 = fakeHttp([[/results\/\?page=2/, ''], [/results/, RESULTS], [/vlr\.gg\/754741$/, page]]);
+  const grade2 = createValGrader(http2, { pause: 0, now: () => Date.parse('2026-10-12T00:00:00Z') });
+  const r = await grade2({ player: 'stax', team: 'TONE', matchTitle: 'G2 Esports vs TONE', stat: 'kills', startTime: '2026-10-11T07:00:00Z' });
+  assert.ok(r?.maps, JSON.stringify(r));
+  assert.equal(await grade({ player: 'stax', team: 'TONE', stat: 'kills', startTime: '2026-10-11T07:00:00Z' }), null, 'no title: nothing to find it by');
+});
