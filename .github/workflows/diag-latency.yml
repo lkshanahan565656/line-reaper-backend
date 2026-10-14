@@ -1,0 +1,26 @@
+name: diag-latency
+on:
+  push:
+    branches: [diag-latency]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          npm i axios --no-audit --no-fund 2>&1 | tail -1
+          { date -u; DUR_MIN=100 node diag/latency.js; } 2>&1 | tee latency-out.txt || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-latency-out
+          git add -f latency-out.txt; git add -f latency-out.json || true
+          git commit -m "diag latency output"
+          git push -f origin diag-latency-out
