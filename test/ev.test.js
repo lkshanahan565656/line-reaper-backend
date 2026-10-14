@@ -131,3 +131,9 @@ test('screen reports what every book charges through `costs`, +EV or not', () =>
   assert.equal(fd.length, 2);
   assert.deepEqual(fd, [Math.round(1 / 2.1 * 1e4) / 1e4, Math.round(1 / (1 + 100 / 170) * 1e4) / 1e4].sort());
 });
+
+test('a sharp book is never scored on a fair made from its own price', () => {
+  const rows = E.screen({ minEv: -100, now: NOW, feeds: [{ sport: 'nba', games: [game([h2h('pinnacle', -150, 130), h2h('kalshi_props', -140, 125), h2h('fanduel', -155, 125)])] }] });
+  assert.ok(rows.length, 'FanDuel still scored');
+  assert.ok(rows.every(r => r.book === 'fanduel'), rows.map(r => r.book).join());
+});
