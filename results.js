@@ -91,6 +91,17 @@ const tailBet = r => ({
 // evtrack: CLV in percent, no win/loss
 const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null,
   sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
+// sports pick'em props (sporttrack.js): CLV is the leg's EV at the close (the
+// fair at the start times what the leg pays); the +2 min grade counts only legs
+// still up at the same line and payout two minutes after the flag
+const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale']);
+const sportPropBet = r => {
+  const graded = r.status === 'graded' && r.outcome !== 'push';
+  const clv = r.closeEv != null ? r.closeEv / 100 : null;
+  return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
+    labels: { kind: r.kind === 'gap' ? 'line gap' : 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
+};
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
@@ -126,6 +137,10 @@ const SOURCES = {
   gasLocks: { label: 'Gas locks', done: r => r.status === 'graded', open: r => r.status === 'open',
     bet: r => ({ profit: r.profit, staked: 1, clv: r.clv ?? null, labels: { state: r.state, price: r.price >= 0.96 ? '96-98c' : r.price >= 0.93 ? '93-95c' : '90-92c' } }),
     cuts: [['state'], ['price']] },
+  // research rows (unpriced gaps tracked both ways) are never plays
+  sportsProps: { label: 'Sports props', done: r => !SPORT_RESEARCH.has(r.kind) && (r.status === 'graded' || r.status === 'locked'),
+    open: r => !SPORT_RESEARCH.has(r.kind) && r.status === 'open', bet: sportPropBet,
+    cuts: [['kind'], ['sport'], ['book'], ['kind', 'book'], ['sport', 'stat']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
 };
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };

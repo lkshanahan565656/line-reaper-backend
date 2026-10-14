@@ -3816,7 +3816,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.111.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.112.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4922,9 +4922,9 @@ app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list()]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all)]);
+    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -4937,14 +4937,16 @@ app.get('/api/best', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list()]);
-    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles });
+    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps] = await Promise.all([
+      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), sportTracker.list(all)]);
+    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps });
     const out = bestplays.bestPlays({
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
       picks: pro ? esportsCache.picks || [] : [],
       props: pro ? runEvScreen().rows.filter(r => r.dfs).filter(evRowOk(lic)) : [],
+      // the PROPS board's flagged sports plays; one priced on Kalshi needs its licence
+      sportProps: pro ? (propsBoardRows().sportPlays || []).filter(x => !x.research && (lic.kalshi || !x.play.sources.some(s => s.book === 'kalshi'))) : [],
       lines: pro ? runEvScreen().rows.filter(r => !r.dfs).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       value: [...xvalueState.edges, ...(xvalueState.moverBets || [])].filter(valueOk(lic)),
@@ -5013,7 +5015,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.111.1',
+  version: '3.112.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
