@@ -590,6 +590,9 @@ const BETR_IMPLIED = 0.5622;
 //   >1.35      → a DECIMAL PAYOUT in its own right (4.38x implies ~23%)
 //                EV = prob x mult - 1
 // Treating the second kind as the first is what produced +339% "edges".
+// A boost can run past 1.35 on a lopsided line (Higher 1.48x, Lower 0.70x on a
+// tight end's 14.5 receiving yards, 2026-10-14): when the other side pays
+// under 1x, the pair is a boost and a discount, never a decimal payout.
 //
 // Then a reality check: every payout implies a probability. If our fair is
 // more than 10 points ABOVE the book's implied number, the "edge" is almost
@@ -603,10 +606,11 @@ const UD_DECIMAL_THRESHOLD = 1.35;
 // a live market is already a strong sign the error is ours.
 const MAX_PROB_DISAGREEMENT = 0.10;
 
-function udPricing(prob, mult) {
+function udPricing(prob, mult, otherMult = null) {
   const p = prob > 1 ? prob / 100 : prob;
   const m = parseFloat(mult) || 1.00;
-  const decimal = m > UD_DECIMAL_THRESHOLD;
+  const o = parseFloat(otherMult);
+  const decimal = m > UD_DECIMAL_THRESHOLD && !(o > 0 && o < 1);
   const implied = decimal ? 1 / m : UD_IMPLIED / m;
   const ev = decimal ? (p * m - 1) * 100 : (p * m / UD_IMPLIED - 1) * 100;
   const gap = p - implied;
@@ -645,6 +649,9 @@ const { sportKey: trackerSportKey, statKind: trackerStatKind, clvKind } = requir
 const escal = require('./escal');
 const esmarket = require('./esmarket');
 const esgaps = require('./esgaps');
+const sportProps = require('./sportprops');
+const { createSportTracker } = require('./sporttrack');
+const { createSportsGrader } = require('./sportgrade');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
@@ -665,6 +672,12 @@ const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
+const sportTracker = createSportTracker({
+  store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
+  grader: createSportsGrader({ http: axios }),
+});
+sportTracker.ready().catch(e => console.error('Sports props tracker: store failed to initialise:', e.message));
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -1572,10 +1585,14 @@ const oddsBook = createOddsBook();
 // Pinnacle guest API: sharp esports match prices for context (check its terms
 // before charging for a product built on it).
 const { createPandaScoreClient, fetchPinnacleEsports, loadMatchPrices } = require('./feeds');
+// One switch for every Pinnacle read (esports match prices and player props):
+// PINNACLE=on. The guest feed needs no key; PINNACLE_GUEST_KEY, when set, is
+// sent with each request and turns it on too.
+const PINNACLE_ON = !!process.env.PINNACLE_GUEST_KEY || /^(on|1|true|yes)$/i.test(String(process.env.PINNACLE || '').trim());
 const panda = process.env.PANDASCORE_TOKEN ? createPandaScoreClient(axios, process.env.PANDASCORE_TOKEN) : null;
 const feedState = {
   pandascore: { enabled: !!panda, schedules: {}, updated: null, errors: {} },
-  pinnacle: { enabled: !!process.env.PINNACLE_GUEST_KEY, matches: 0, loaded: 0, updated: null, error: null },
+  pinnacle: { enabled: PINNACLE_ON, matches: 0, loaded: 0, updated: null, error: null },
 };
 
 async function refreshMatchFeeds() {
@@ -2017,7 +2034,7 @@ async function generateEsportsPicks() {
         if (r2) udProb = escal.adjustPct(r2.prob, calShift + (side === 'OVER' ? s2 : -s2) / 100);
         udShift = calShift + (side === 'OVER' ? s2 : -s2) / 100;
       }
-      const udP = udPricing(udProb, udSideMult);
+      const udP = udPricing(udProb, udSideMult, side === 'OVER' ? udm.underMultiplier : udm.overMultiplier);
       if (udP.ev != null) {
         bookLegs.UD = { line: udm.line ?? lineVal, shift: udShift, prob: udProb / 100, mult: udSideMult, decimal: udP.regime === 'decimal' };
       }
@@ -2439,10 +2456,9 @@ async function refreshKalshiProps() {
 // One pick'em leg's EV. Sleeper prices each side, so its vig comes out and a
 // price far from fair is withheld (pickem.js sleeperPricing), as on esports.
 function dfsLegEv(p, book, mult, line, side) {
-  if (book === 'sleeper' && line) {
-    const other = side === 'Over' ? line.underMultiplier : line.overMultiplier;
-    return sleeperPricing(p, mult, other || null).ev;
-  }
+  const other = line ? (side === 'Over' ? line.underMultiplier : line.overMultiplier) : null;
+  if (book === 'sleeper' && line) return sleeperPricing(p, mult, other || null).ev;
+  if (book === 'underdog' && other != null) return udPricing(p, mult, other).ev;
   return calcBookEV(p, book, mult);
 }
 
@@ -3740,7 +3756,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.97.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.98.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4299,8 +4315,95 @@ function propsBoardRows() {
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
-  propsBoardCache = { at: Date.now(), rows, counts: propsBoard.counts(rows) };
+  const sportPlays = priceSportRows(rows);
+  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
+}
+
+// ── SPORTS PROPS: the other books and Kalshi as the fair (sportprops.js) ──
+// Kalshi's price alone was the fair before; now each book's line is priced on
+// every other source on the row, Kalshi counting as two books. A play is
+// flagged only where something says more than two books' noise: Kalshi's own
+// price at that line ('ev'), or the book sitting off two or more others that
+// agree ('gap'). Flagged plays are tracked (sporttrack.js) and graded off
+// ESPN's box scores (sportgrade.js).
+const SPORT_OPTS = { ...sportProps.DEFAULTS,
+  minEv: process.env.SPORT_PROPS_MIN_EV != null ? parseFloat(process.env.SPORT_PROPS_MIN_EV) : sportProps.DEFAULTS.minEv,
+  minProbPts: process.env.SPORT_GAP_MIN_PTS != null ? parseFloat(process.env.SPORT_GAP_MIN_PTS) : sportProps.DEFAULTS.minProbPts };
+// Kalshi's P(over) at each book line on the row, from priceRows' c.fair
+const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
+function sportFairAt(row, book, line) {
+  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quoteFor(pinPropsIndex, row), o: SPORT_OPTS });
+  return f ? f.p : null;
+}
+function priceSportRows(rows) {
+  const flagged = [];
+  for (const row of rows) {
+    if (row.esports) continue;
+    const kalshi = rowKalshi(row);
+    const pin = pinprops.quoteFor(pinPropsIndex, row);
+    if (pin) row.pinnacle = { line: pin.line, over: pin.over, under: pin.under, pOver: +(pin.pOver * 100).toFixed(1) };
+    const plays = sportProps.rowPlays(row, { kalshi, pin, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    // lines apart but the payouts even it out (UD 249.5 at Higher 1.29x vs
+    // PP 223.5): every book reads as the same median within a few points
+    const means = Object.entries(row.books).map(([b, c]) => sportProps.meanFor(row.mkey, row.sport, c.line, sportProps.bookPOver(b, c) ?? NaN)).filter(m => m > 0);
+    if (row.gap > 0 && means.length > 1) {
+      const lo = Math.min(...means), hi = Math.max(...means);
+      row.medianGap = +(hi - lo).toFixed(2);
+      row.gapPriced = sportProps.pOver(row.mkey, row.sport, hi, lo) - 0.5 < SPORT_OPTS.minProbPts / 100;
+    }
+    // a cell keeps a price only where a sharp price backs it or it's a gap
+    for (const [book, c] of Object.entries(row.books)) {
+      const mine = plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1) };
+      else if (c.fair == null) delete c.ev;
+    }
+    let best = null;
+    for (const p of plays) {
+      const kind = sportProps.playKind(p, SPORT_OPTS);
+      if (!kind) continue;
+      flagged.push({ row, play: p, kind });
+      if (!best) best = { p, kind };
+    }
+    // a gap with no sharp price: both directions go in the record, neither on the board
+    if (!best) for (const x of sportProps.researchGap(plays, SPORT_OPTS)) flagged.push({ row, ...x, research: true });
+    if (best) {
+      const { p, kind } = best;
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: p.sources.some(x => x.book === 'pinnacle') ? 'pinnacle' : p.sources.some(x => x.book === 'kalshi') ? 'kalshi' : 'gap', kind,
+        n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
+    } else if (pin || (row.best && row.best.source === 'kalshi')) {
+      // a sharp price, blended with the other books: the row's best, +EV or not
+      const top = plays.find(p => pin || row.books[p.book]?.fair != null);
+      row.best = top ? { book: top.book, side: top.side, ev: top.ev, fair: +(top.fair * 100).toFixed(1), line: top.line, source: pin ? 'pinnacle' : 'kalshi', kind: null, n: top.n } : null;
+    }
+  }
+  return flagged;
+}
+// Pinnacle's player props (pinprops.js): on with PINNACLE=on (PINNACLE_ON),
+// behind the pinnacle licence like its esports prices. Every 5 minutes.
+const pinprops = require('./pinprops');
+const pinPropsState = { enabled: PINNACLE_ON, props: 0, bySport: {}, updated: null, errors: [] };
+let pinPropsIndex = new Map();
+async function refreshPinnacleProps() {
+  if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
+  const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
+  if (props.length || !errors.length) pinPropsIndex = pinprops.indexProps(props);
+  const bySport = {};
+  for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
+  Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
+}
+// Every two minutes after the scrapes: flag, check two minutes on, keep the close
+let sportTrackRunning = false;
+async function trackSportProps() {
+  if (sportTrackRunning) return;
+  sportTrackRunning = true;
+  try {
+    propsBoardCache.at = 0;
+    const { rows, sportPlays } = propsBoardRows();
+    const updated = { prizepicks: ppState.fullAt ? new Date(ppState.fullAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged: sportPlays.filter(x => x.research || x.play.ev >= SPORT_OPTS.minEv), fairAt: sportFairAt, updated });
+  } catch (e) { console.warn('Sports props record:', e.message); }
+  finally { sportTrackRunning = false; }
 }
 app.get('/api/props/board', (req, res) => {
   const { rows, counts } = propsBoardRows();
@@ -4309,7 +4412,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1' });
+  const hits = propsBoard.queryRows(rows, { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1' });
   const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
   const offset = Math.max(0, parseInt(req.query.offset) || 0);
   let page = hits.slice(offset, offset + limit);
@@ -4319,6 +4422,16 @@ app.get('/api/props/board', (req, res) => {
     rows: page, total: hits.length, offset, limit, pro, counts,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// The sports props record: free to see, like every other record. Open legs
+// are today's plays, so only finished ones are free.
+app.get('/api/props/record', async (req, res) => {
+  res.json({ ...(await sportTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), minEv: SPORT_OPTS.minEv, gapMinPts: SPORT_OPTS.minProbPts });
+});
+app.get('/api/props/record/picks', async (req, res) => {
+  const status = hasPro(req) ? req.query.status : (['locked', 'graded'].includes(req.query.status) ? req.query.status : 'graded');
+  res.json({ picks: await sportTracker.list({ status, limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
 });
 
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
@@ -4767,13 +4880,14 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.97.0',
+  version: '3.98.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
+  pinnacleProps: pinPropsState,
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -4846,6 +4960,9 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// Sports props record: grade locked legs off ESPN box scores
+schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('2,7,12,17,22,27,32,37,42,47,52,57 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsState.errors = [e.message]; }));
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
@@ -4859,6 +4976,7 @@ function esportsLinesSig() {
 }
 schedule('*/2 * * * *', async () => {
   await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
+  trackSportProps().catch(() => {});
   const sig = esportsLinesSig();
   if (esLinesSig && sig !== esLinesSig) esPicksOnce().catch(() => {});
   esLinesSig = sig;
@@ -4942,6 +5060,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
       delay += 4000;
     }
     setTimeout(() => pollSportsbooks(), 6000);
+    setTimeout(() => refreshPinnacleProps().catch(() => {}), 9000);
     // Generate esports picks once UD is loaded
     setTimeout(() => generateEsportsPicks().catch(()=>{}), 5000);
     // LoL dataset download (~1 min); regenerates picks when done

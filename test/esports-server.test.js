@@ -383,6 +383,16 @@ test('Underdog sanity check is one-sided: a bad Underdog price shows its EV, a f
   assert.strictEqual(fake.ev, null);
 });
 
+test('a lopsided Underdog boost past 1.35x is still a boost when the other side pays under 1x', () => {
+  // Higher 1.48x / Lower 0.70x: the over is about a 32% shot, priced as a boost
+  const boost = S.udPricing(32, 1.48, 0.7);
+  assert.strictEqual(boost.regime, 'boost');
+  assert.ok(Math.abs(boost.ev - ((0.32 * 1.48 / 0.5623 - 1) * 100)) < 1e-9);
+  // a real decimal payout (no discount on the other side) stays decimal
+  assert.strictEqual(S.udPricing(32, 2.9, 1.4).regime, 'decimal');
+  assert.strictEqual(S.udPricing(32, 2.9).regime, 'decimal');
+});
+
 test('share card, robots and sitemap; the sales page carries its origin', async () => {
   const og = await fetch(base + '/og.png');
   assert.equal(og.status, 200);
