@@ -147,7 +147,12 @@ function okPair(a, b, maxHold) {
   const p = x => (x > 0 ? 100 / (x + 100) : -x / (-x + 100));
   return a != null && b != null && p(a) + p(b) <= 1 + maxHold && p(a) + p(b) >= 0.97;
 }
-function parseMatchbook(payload, { now = Date.now(), minDepth = 20, maxHold = 0.08 } = {}) {
+// Player props only with props: true. Its US props are a market maker's
+// quotes with nothing matched: 27% sat within a point of Pinnacle's no-vig
+// (median 1.8 points off, 22 shared lines), and one, Shaheed receptions
+// -116 / -104 against Pinnacle's +151 / -193, made three fake plays
+// (2026-10-15). Game lines track Pinnacle closely and stay on.
+function parseMatchbook(payload, { now = Date.now(), minDepth = 20, maxHold = 0.08, props = false } = {}) {
   const out = [];
   for (const e of payload?.events || []) {
     const start = ms(e.start);
@@ -175,7 +180,7 @@ function parseMatchbook(payload, { now = Date.now(), minDepth = 20, maxHold = 0.
         if (line == null || !okPair(po, pu, maxHold)) continue;
         const sm = MB_STAT.exec(String(mk.name || ''));
         if (/^total$/i.test(mk.name || '')) bg.totals.push({ name: 'Over', price: po, point: line }, { name: 'Under', price: pu, point: line });
-        else if (sm) bg.props.push({ player: sm[1].trim(), mkey: statOf(sm[2]), line, over: po, under: pu });
+        else if (sm && props) bg.props.push({ player: sm[1].trim(), mkey: statOf(sm[2]), line, over: po, under: pu });
       }
     }
     if (bg.h2h.length || bg.spreads.length || bg.totals.length || bg.props.length) out.push(bg);

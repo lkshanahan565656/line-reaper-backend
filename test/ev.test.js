@@ -65,9 +65,9 @@ test('spreads and totals group by number; mismatched numbers do not mix', () => 
 });
 
 test('no sharp book: consensus needs enough books and is labelled', () => {
-  const books = [h2h('draftkings', -150, 130), h2h('fanduel', -145, 125), h2h('betmgm', -150, 125), h2h('caesars', -140, 160)];
+  const books = [h2h('draftkings', -150, 130), h2h('fanduel', -145, 125), h2h('betmgm', -150, 125), h2h('betrivers', -140, 160)];
   const rows = E.screen({ now: NOW, feeds: [{ games: [game(books)] }] });
-  const czr = rows.find(r => r.book === 'caesars' && r.side === 'New York Knicks');
+  const czr = rows.find(r => r.book === 'betrivers' && r.side === 'New York Knicks');
   assert.ok(czr);
   assert.equal(czr.source, 'consensus');
   assert.deepEqual(E.screen({ now: NOW, feeds: [{ games: [game(books.slice(0, 3))] }] }), [], 'three books is not a consensus');
