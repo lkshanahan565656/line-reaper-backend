@@ -1,0 +1,30 @@
+name: diag-slipbr
+on:
+  push:
+    branches: [diag-slipbr]
+concurrency:
+  group: diag-slipbr
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/esports-slip-builder-d4tjmm, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
+      - run: MINS=16 timeout 2700 node diag/branch.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-slipbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-slipbr-out
