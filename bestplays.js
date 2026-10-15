@@ -92,6 +92,8 @@ function evidence(p) {
   if (!p) return null;
   const name = p.play === 'all' ? `every ${p.label} play` : `${p.label}: ${p.play}`;
   const stat = p.avgClv != null ? `${p.avgClv > 0 ? '+' : ''}${(p.avgClv * 100).toFixed(1)}% CLV` : p.roi != null ? `${p.roi > 0 ? '+' : ''}${(p.roi * 100).toFixed(1)}% ROI` : null;
+  // a sportsbook group below its own book's 50 graded: say so with the real numbers
+  if (p.provenNote) return `${p.provenNote} (${name})`;
   return `${p.verdict} (${name}${stat ? `, ${stat}` : ''} over ${p.n} bets)`;
 }
 

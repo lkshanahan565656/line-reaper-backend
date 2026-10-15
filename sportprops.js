@@ -399,18 +399,43 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
 // (another game, a stale or alternate line), not pricing the same prop: no
 // price at all rather than a big fake one (a FanDuel 45.5 rush-yards line
 // read at a PrizePicks 57.5 said 70% under, +26%)
+// A single book's price is shown only at the app's own number: lineTol is the
+// widest gap (in stat units, half-point steps) between the book's line and the
+// app's it will convert, a share of the line by market type. Counting stats
+// (receptions, shots, rebounds, assists, strikeouts, ...) take none: a 1-point
+// move is a different bet at a line of 3 to 8. Points stats take none either (a
+// Joel Embiid 22.5 is not 21.5). Yardage takes 2.5% of the line (1 yard at 40, 1.5 at 60,
+// never the 3 to 5 yards that priced Bo Melton's 14.5 off a 17.5). Both books
+// agreeing (n 2) are checked by maxOffPts alone.
+const LINE_TOL_FRAC = { counting: 0, points: 0, yards: 0.025 };
+const tolClass = mkey => (/yds|yards/.test(mkey) ? 'yards' : /points|^pra$|^pts_|^threes$|^ftm$/.test(mkey) ? 'points' : 'counting');
+const lineTol = (mkey, line, frac = LINE_TOL_FRAC) => Math.floor((frac[tolClass(mkey)] || 0) * Math.abs(line) * 2) / 2;
+const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10, lineTolFrac: LINE_TOL_FRAC, maxShiftPts: null };
 // (book fair drops the whole price instead of one source: maxShiftPts off)
-const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10, maxShiftPts: null };
 const isSharpSource = s => !s.shadow && (s.book === 'pinnacle' || s.book === 'kalshi');
 // a consensus play that rests on a sharp source (not FanDuel and BetRivers alone)
 const sharpBacked = p => (p.sources || []).some(isSharpSource);
-function bookFairPlays(row, quotes, { dfsEv, o = BOOK_FAIR } = {}) {
+function bookFairAll(row, quotes, { dfsEv, o = BOOK_FAIR } = {}) {
   const bq = (quotes || []).filter(q => o.weights[q.book] > 0);
   if (!bq.length) return [];
   const off = o.maxOffPts ?? BOOK_FAIR.maxOffPts;
   return consensusPlays(row, { sharp: bq, kalshi: null, dfsEv, o })
     .filter(p => p.sources.every(x => Math.abs(x.at - x.p) <= off))
     .map(p => ({ ...p, bookFair: p.n >= 2 ? 'both' : 'single' }));
+}
+const sameNumber = (row, p, o) => p.n >= 2 || p.sources.every(x => Math.abs(x.line - p.line) <= lineTol(row.mkey, p.line, o.lineTolFrac || LINE_TOL_FRAC) + 1e-9);
+function bookFairPlays(row, quotes, opts = {}) {
+  const o = opts.o || BOOK_FAIR;
+  return bookFairAll(row, quotes, { ...opts, o }).filter(p => sameNumber(row, p, o));
+}
+// a book is posting this prop at another number than the app's, so it carries
+// no price: the row says "line differs" ({ book, line, appLine } or null)
+function bookFairLineDiffers(row, quotes, opts = {}) {
+  const o = opts.o || BOOK_FAIR;
+  const cut = bookFairAll(row, quotes, { ...opts, o }).filter(p => !sameNumber(row, p, o));
+  if (!cut.length) return null;
+  const s = cut[0].sources.find(x => x.line !== cut[0].line) || cut[0].sources[0];
+  return { book: s.book, line: s.line, appLine: cut[0].line };
 }
 const bookFairKind = p => (p.n >= 2 ? 'book-fair' : 'book-fair-single');
 
@@ -521,4 +546,4 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
 }
 
 module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
-  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, sharpBacked, bookFairPlays, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
+  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
