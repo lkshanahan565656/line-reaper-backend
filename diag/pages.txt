@@ -1,10 +1,10 @@
-https://pick6.draftkings.com/
-https://pick6.draftkings.com/?_data=routes%2F_index
-https://pick6.draftkings.com/?sport=NFL&_data=routes%2F_index
-https://www.betr.app/
-https://picks.betr.app/
-https://www.betr.app/picks
-https://chalkboard.io/
-https://www.chalkboard.io/
-https://app.chalkboard.io/
-https://play.chalkboard.io/
+https://pick6.draftkings.com/_root.data?sport=NFL {"noscan":true}
+https://pick6.draftkings.com/_root.data?sport=NFL&pickGroup=154996 {"noscan":true}
+https://pick6.draftkings.com/?sport=CS {"noscan":true}
+https://pick6.draftkings.com/?sport=LOL {"noscan":true}
+https://pick6.draftkings.com/?sport=MLB {"noscan":true}
+https://picks.betr.app/betr-app.bundle.js {"noscan":true}
+https://api.fantasy.betr.app/graphql {"method":"POST","headers":{"content-type":"application/json","origin":"https://picks.betr.app","referer":"https://picks.betr.app/"},"body":"{\"query\":\"{ __typename }\"}","noscan":true}
+https://helps.chalkboard.io/en/ {"noscan":true}
+https://api.chalkboard.io/ {"noscan":true}
+https://go.chalkboard.io/organic-search-lp
