@@ -1089,6 +1089,34 @@ body.no-help .clv-info { display:none; }
 .tl-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.04); }
 .tl-note { margin-top:12px; font-size:11px; color:var(--text2); line-height:1.6; }
 .tl-err { margin-top:14px; font-size:12px; color:var(--muted2); }
+/* MY SLIPS: the user's pick'em slips, every leg against the close */
+.ms-paste { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin:14px 0 4px; }
+.ms-paste textarea { width:100%; min-height:150px; box-sizing:border-box; background:var(--surface); border:1px solid var(--border2); border-radius:8px; color:var(--text); font:12px/1.6 'JetBrains Mono',monospace; padding:10px; resize:vertical; }
+.ms-paste textarea:focus { outline:none; border-color:var(--green); }
+.ms-paste .ms-help { font-size:11px; color:var(--text2); line-height:1.6; margin:8px 0; }
+.ms-paste .ms-help code { font-family:'JetBrains Mono',monospace; color:var(--text); }
+.ms-paste .mb-actions { margin-top:8px; }
+.ms-slip { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; }
+.ms-slip-head { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 14px; background:rgba(0,0,0,.15); font-size:12px; }
+.ms-slip-head b { font-size:13px; }
+.ms-slip-head .ms-meta { color:var(--muted2); font:11px 'JetBrains Mono',monospace; }
+.ms-slip-head .ms-x { background:transparent; border:none; color:var(--muted2); cursor:pointer; font-size:14px; padding:2px 4px; }
+.ms-leg { display:grid; grid-template-columns: minmax(0,1.6fr) 80px 92px 92px 84px 84px; gap:10px; align-items:center; padding:9px 14px; border-top:1px solid rgba(255,255,255,.04); font-size:12px; }
+.ms-leg.ms-th { font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; border-top:none; padding-top:7px; padding-bottom:7px; }
+.ms-leg .r { text-align:right; font-family:'JetBrains Mono',monospace; }
+.ms-leg small { display:block; color:var(--muted2); font-size:10px; margin-top:2px; }
+.ms-leg .ms-none { grid-column: 2 / -1; color:var(--muted2); font-size:11px; }
+#page-myslips .pos { color:#34d399; } #page-myslips .neg { color:#f87171; }
+.ms-tag { display:inline-block; font:600 9px 'Inter',sans-serif; letter-spacing:1px; padding:2px 6px; border-radius:4px; border:1px solid var(--border2); color:var(--text2); margin-left:6px; vertical-align:middle; }
+.ms-tag.pos { border-color:rgba(52,211,153,.4); } .ms-tag.neg { border-color:rgba(248,113,113,.4); }
+@media (max-width: 760px) {
+  .ms-leg.ms-th { display:none; }
+  .ms-leg { grid-template-columns: repeat(3, minmax(0,1fr)); gap:6px 10px; padding:10px 12px; }
+  .ms-leg > :first-child { grid-column: 1 / -1; }
+  .ms-leg .r { text-align:left; }
+  .ms-leg > [data-k]::before { content:attr(data-k); display:block; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; margin-bottom:2px; }
+  .ms-leg .ms-none { grid-column: 1 / -1; }
+}
 /* MY BETS: personal bet tracker */
 .mb-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
 .mb-head .tl-blurb { max-width:640px; margin-bottom:0; }
@@ -1231,6 +1259,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
     <button class="tab" onclick="showTab('results',this)">RESULTS</button>
     <button class="tab" onclick="showTab('betlog',this)">MY BETS</button>
+    <button class="tab" onclick="showTab('myslips',this)">MY SLIPS</button>
     <button class="tab" onclick="showTab('tools',this)">TOOLS</button>
     <span class="tab-sep" title="Sportsbook tools: these need an odds feed"></span>
     <button class="tab" onclick="showTab('lines',this)">LINES</button>
@@ -1424,6 +1453,30 @@ body.no-help .clv-info { display:none; }
   <div id="mybBreak"></div>
 </div>
 <div class="lay-modal" id="mybModal" onclick="if(event.target===this)mybFormClose()"></div>
+
+<!-- MY SLIPS PAGE -->
+<div class="page" id="page-myslips">
+  <div class="mb-head">
+    <div><div class="tl-title">MY SLIPS</div>
+      <div class="tl-blurb">Paste a pick'em slip, or import your Pikkit export, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
+    <div class="mb-actions">
+      <button class="mb-btn primary" onclick="msPasteToggle()">PASTE SLIPS</button>
+      <label class="mb-btn">IMPORT PIKKIT CSV<input type="file" accept=".csv,text/csv,text/plain" hidden onchange="msImport(this)"></label>
+    </div>
+  </div>
+  <div class="ms-paste" id="msPaste" style="display:none">
+    <textarea id="msText" placeholder="PrizePicks $10 to win $60&#10;Josh Allen Over 245.5 Pass Yds&#10;Stefon Diggs Under 64.5 Rec Yds&#10;Bo Nix More 220.5 Pass Yards&#10;&#10;Underdog $5 flex&#10;Aaron Judge Under 1.5 Total Bases"></textarea>
+    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start.</div>
+    <div class="mb-actions"><button class="mb-btn primary" onclick="msPasteSave()">ADD SLIPS</button><button class="mb-btn" onclick="msPasteToggle(false)">CANCEL</button></div>
+    <div class="mb-hint" id="msHint"></div>
+  </div>
+  <div class="tl-out mb-stats" id="msStats"></div>
+  <div class="mb-bar" id="msBar"></div>
+  <div id="msTotals"></div>
+  <div class="section-head" style="margin-top:18px">Slips</div>
+  <div id="msList"></div>
+  <div id="msPikkit"></div>
+</div>
 
 <!-- PROPS PAGE -->
 <div class="page" id="page-props">
@@ -1704,6 +1757,7 @@ function showTab(name, el) {
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
   if (name === 'betlog') mybOpen();
+  if (name === 'myslips') msOpen();
   if (name === 'clv') mybReady().then(renderCLV);
 }
 
@@ -2267,6 +2321,168 @@ function renderArb(games) {
   arbState.passive = games || [];
   renderArbTool();
 }
+// ─── MY SLIPS ────────────────────────────────────────────────────────────────
+// The user's own pick'em slips, pasted or imported from Pikkit, kept in this
+// browser (lr_slips; the Pikkit bets in lr_pikkit). Only the legs go to
+// POST /api/slips/grade, which follows each one to the close the way the
+// props record follows our own plays. The parsing and math are slips.js on
+// the backend (tested there).
+const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
+const ms = { slips: [], grades: {}, pikkit: null, ready: false, loading: null, by: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
+const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
+  market: 'no line history: that stat isn\'t on our board for this player', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
+function msReady() {
+  if (ms.ready) return Promise.resolve(true);
+  if (!ms.loading) ms.loading = (async () => {
+    if (!window.LRSlips) await mybLoadScript('/slips.js');
+    try { ms.slips = JSON.parse(lsGet(MS_KEY) || '[]').filter(s => s && s.id && Array.isArray(s.legs)); } catch { ms.slips = []; }
+    try { ms.grades = JSON.parse(lsGet(MS_GRADES) || '{}') || {}; } catch { ms.grades = {}; }
+    try { ms.pikkit = JSON.parse(lsGet(MS_PK) || 'null'); } catch { ms.pikkit = null; }
+    ms.ready = true;
+    return true;
+  })().catch(() => { ms.loading = null; return false; });
+  return ms.loading;
+}
+function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); }
+async function msOpen() {
+  const el = document.getElementById('msList');
+  if (!ms.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your slips...</div></div>`;
+  if (!(await msReady())) { if (el) el.innerHTML = tailEmpty('COULD NOT LOAD', 'My Slips loads its math from the Line Reaper server, which isn\'t reachable right now.'); return; }
+  renderMySlips();
+  msGrade();
+}
+// every leg not final yet goes to the server; answers are kept with the slips
+async function msGrade(force) {
+  if (!ms.ready || ms.grading || (!force && Date.now() - ms.lastGrade < 110e3)) return;
+  const legs = LRSlips.gradeRequest(ms.slips, undefined, ms.grades);
+  if (!legs.length) return;
+  ms.grading = true; ms.lastGrade = Date.now();
+  try {
+    for (let i = 0; i < legs.length; i += 300) {
+      const r = await fetch(`${BACKEND_URL}/api/slips/grade`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ legs: legs.slice(i, i + 300) }) });
+      if (!r.ok) break;
+      const { results } = await r.json();
+      Object.assign(ms.grades, results || {});
+    }
+    msSave();
+    if (document.getElementById('page-myslips')?.classList.contains('active')) renderMySlips();
+  } catch {} finally { ms.grading = false; }
+}
+setInterval(() => { if (document.getElementById('page-myslips')?.classList.contains('active')) msGrade(); }, 120e3);
+
+function msPasteToggle(on) {
+  const el = document.getElementById('msPaste');
+  const show = on ?? el.style.display === 'none';
+  el.style.display = show ? '' : 'none';
+  if (show) document.getElementById('msText').focus();
+}
+async function msPasteSave() {
+  if (!(await msReady())) return;
+  const { slips, skipped } = LRSlips.parseSlips(document.getElementById('msText').value);
+  const hint = document.getElementById('msHint');
+  if (!slips.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
+  ms.slips = [...slips, ...ms.slips];
+  msSave();
+  document.getElementById('msText').value = '';
+  hint.textContent = skipped.length ? `Added ${slips.length} slip${slips.length === 1 ? '' : 's'}. Skipped: ${skipped.slice(0, 3).join(' / ')}` : '';
+  if (!skipped.length) msPasteToggle(false);
+  showToast(`${slips.length} slip${slips.length === 1 ? '' : 's'} added, ${slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
+  renderMySlips();
+  msGrade(true);
+}
+function msDelete(id) {
+  if (!confirm('Remove this slip?')) return;
+  ms.slips = ms.slips.filter(s => s.id !== id);
+  msSave(); renderMySlips();
+}
+// Pikkit's export: every bet into the breakdown; the last week's bets with
+// legs we can read also become slips to grade (older ones predate our history)
+async function msImport(input) {
+  const f = input.files?.[0];
+  input.value = '';
+  if (!f || !(await msReady())) return;
+  const r = LRSlips.parsePikkitCsv(await f.text());
+  if (r.error) { showToast(r.error, 'error'); return; }
+  const bets = r.bets.map(b => ({ id: b.id, app: b.app, bookName: b.bookName, type: b.type, league: b.league, market: b.market, placedAt: b.placedAt, stake: b.stake, profit: b.profit, payout: b.payout, odds: b.odds, status: b.status, legs: b.legs }));
+  ms.pikkit = { at: new Date().toISOString(), file: f.name, bets, legsRead: bets.filter(b => b.legs.length).length };
+  lsSet(MS_PK, JSON.stringify(ms.pikkit));
+  const have = new Set(ms.slips.map(s => s.id));
+  const recent = bets.filter(b => b.legs.length && Date.parse(b.placedAt) > Date.now() - 7 * 86400e3 && !have.has(b.id)).map(LRSlips.slipFromPikkit);
+  ms.slips = [...recent, ...ms.slips];
+  msSave();
+  showToast(`${bets.length} Pikkit bets read${recent.length ? `, ${recent.length} recent slips added` : ''}`);
+  renderMySlips();
+  msGrade(true);
+}
+
+const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
+const msShare = x => (x == null ? '—' : `${Math.round(x * 100)}%`);
+const msCls = x => (x == null ? '' : x > 1e-9 ? 'pos' : x < -1e-9 ? 'neg' : '');
+function msSet(k, v) { ms[k] = v; renderMySlips(); }
+function renderMySlips() {
+  if (!ms.ready) return;
+  const L = LRSlips;
+  const views = ms.slips.map(s => L.slipView(s, ms.grades)).sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt));
+  const s = L.summary(views);
+  const tile = (k, v, cls, sub) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="mb-sub">${sub}</div>` : ''}</div>`;
+  document.getElementById('msStats').innerHTML = [
+    tile('Slips', `${s.slips}`, '', `${s.legs} legs`),
+    tile('Beat the close', msShare(s.beatShare), s.beatShare == null ? '' : msCls(s.beatShare - 0.5), s.priced ? `of ${s.priced} legs with a close` : 'no closes yet'),
+    tile('Leg CLV', msPct(s.closeEv), msCls(s.closeEv), 'vs the app\'s break-even'),
+    tile('Slips +EV at close', s.slipsClosed ? `${s.slipsPlusEv}/${s.slipsClosed}` : '—', '', s.slipCloseEv != null ? `avg ${msPct(s.slipCloseEv * 100)}` : 'every leg needs a close'),
+    tile('Legs hit', msShare(s.hitRate), '', s.graded ? `${s.graded} graded` : 'no results yet'),
+    tile('Profit', s.settled ? mybUsd(s.profit, true) : '—', msCls(s.profit), s.settled ? `ROI ${mybPct(s.roi)} on ${s.settled}` : `${s.noHistory} legs with no line history`),
+  ].join('');
+  const seg = (k, list) => `<div class="mb-seg">${list.map(([v, l]) => `<button class="${ms[k] === v ? 'on' : ''}" onclick="msSet('${k}','${v}')">${l}</button>`).join('')}</div>`;
+  document.getElementById('msBar').innerHTML = views.length ? seg('by', [['app', 'By app'], ['league', 'By league'], ['market', 'By stat']]) : '';
+  const tot = views.length ? L.legTotals(views, ms.by) : [];
+  document.getElementById('msTotals').innerHTML = tot.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Stat' }[ms.by]}</th><th class="r">Legs</th><th class="r">With a close</th><th class="r">Beat it</th><th class="r">Leg CLV</th><th class="r">Fair moved</th><th class="r">Hit</th><th class="r">No history</th></tr></thead><tbody>${
+    tot.map(t => `<tr><td>${escAttr(t.key)}</td><td class="r">${t.legs}</td><td class="r">${t.priced}</td><td class="r">${msShare(t.beatShare)}</td><td class="r ${msCls(t.closeEv)}">${msPct(t.closeEv)}</td><td class="r ${msCls(t.fairMove)}">${t.fairMove == null ? '—' : `${t.fairMove > 0 ? '+' : ''}${t.fairMove.toFixed(1)} pts`}</td><td class="r">${t.graded ? `${msShare(t.hitRate)} <small>of ${t.graded}</small>` : '—'}</td><td class="r">${t.noHistory || ''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tl-note">A leg counts once the game starts and the sharp price was still being read in the hour before. Under about 50 legs a group is noise, not a finding.</div>` : '';
+  const list = document.getElementById('msList');
+  if (!views.length) {
+    list.innerHTML = `<div class="mb-empty"><b>No slips yet.</b><span>Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like <i>Josh Allen Over 245.5 Pass Yds</i>. Or import your Pikkit export for a breakdown of every bet you've tracked.</span><div><button class="mb-btn primary" onclick="msPasteToggle(true)">PASTE SLIPS</button></div></div>`;
+  } else {
+    list.innerHTML = views.slice(0, ms.shown).map(msSlipHtml).join('') + (views.length > ms.shown ? `<button class="mb-btn mb-moreall" onclick="ms.shown+=30;renderMySlips()">SHOW MORE (${views.length - ms.shown})</button>` : '');
+  }
+  msRenderPikkit();
+}
+function msSlipHtml(v) {
+  const L = LRSlips;
+  const when = new Date(v.placedAt);
+  const pay = v.stake ? `${mybUsd(v.stake)}${v.payout ? ` to win ${mybUsd(v.payout)}` : ''}` : '';
+  const res = v.result && v.result !== 'open' ? `<span class="ms-tag ${v.result === 'win' ? 'pos' : v.result === 'loss' ? 'neg' : ''}">${v.result.toUpperCase()}</span>` : '';
+  const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
+  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : ''}</div></div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
+  const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
+  return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l)).join('')}</div>`;
+}
+function msLegHtml(l) {
+  const g = l.g;
+  const name = `<div><b>${escAttr(l.player)}</b> ${l.side} ${l.line} ${escAttr(l.market)}${g?.matched?.start ? `<small>${escAttr(g.matched.matchTitle || g.matched.sport || '')} · ${new Date(g.matched.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</small>` : ''}</div>`;
+  if (!g) return `<div class="ms-leg">${name}<div class="ms-none">checking...</div></div>`;
+  if (g.status === 'nohistory') return `<div class="ms-leg">${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? `: it lists ${escAttr(g.near.join(', '))}` : ''}</div></div>`;
+  const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+  const open = g.status === 'open';
+  const move = g.lineMove ? ` <small class="${msCls(g.lineMove)}">${Math.abs(g.lineMove)} ${g.lineMove > 0 ? 'your way' : 'against you'}</small>` : '';
+  const clv = open ? `<span title="sharp price now, before the close">${msPct(g.evNow)}<small>now</small></span>`
+    : g.closeEv == null ? '<small>no sharp price</small>' : g.closeOk === false ? `<span>${msPct(g.closeEv)}<small>close read ${Math.round(g.closeAgeMin)} min early</small></span>` : `<span class="${msCls(g.closeEv)}">${msPct(g.closeEv)}</span>`;
+  const res = g.outcome ? `<span class="${g.outcome === 'win' ? 'pos' : g.outcome === 'loss' ? 'neg' : ''}">${g.outcome.toUpperCase()}</span>${g.result != null ? `<small>${g.result}</small>` : ''}` : g.status === 'void' ? `VOID<small>${escAttr(g.voidReason || '')}</small>` : open ? '<small>before start</small>' : '<small>waiting on the box score</small>';
+  return `<div class="ms-leg">${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}</div><div class="r" data-k="Result">${res}</div></div>`;
+}
+function msRenderPikkit() {
+  const el = document.getElementById('msPikkit');
+  const pk = ms.pikkit;
+  if (!pk?.bets?.length) { el.innerHTML = ''; return; }
+  const rows = LRSlips.pikkitBreakdown(pk.bets, ms.pkBy);
+  const seg = `<div class="mb-seg">${[['app', 'App'], ['league', 'League'], ['market', 'Market'], ['type', 'Bet type'], ['month', 'Month']].map(([v, l]) => `<button class="${ms.pkBy === v ? 'on' : ''}" onclick="msSet('pkBy','${v}')">${l}</button>`).join('')}</div>`;
+  el.innerHTML = `<div class="section-head" style="margin-top:22px">Your Pikkit history</div>
+    <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, Pikkit's own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
+    <div class="mb-bar" style="margin-top:8px">${seg}</div>
+    <div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Market', type: 'Bet type', month: 'Month' }[ms.pkBy]}</th><th class="r">Bets</th><th class="r">W-L-P</th><th class="r">Won</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">ROI</th></tr></thead><tbody>${
+      rows.map(r => `<tr><td>${escAttr(r.key)}</td><td class="r">${r.bets}</td><td class="r">${r.won}-${r.lost}-${r.push}</td><td class="r">${msShare(r.winRate)}</td><td class="r">${mybUsd(r.staked)}</td><td class="r ${msCls(r.profit)}">${mybUsd(r.profit, true)}</td><td class="r ${msCls(r.roi)}">${mybPct(r.roi)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
 // ─── MY BETS ─────────────────────────────────────────────────────────────────
 // The user's own bets: logged by hand or in one tap from a play, kept in this
 // browser (lr_bets), with profit, ROI, record, CLV and breakdowns. The math is

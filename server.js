@@ -739,6 +739,15 @@ const sportTracker = createSportTracker({
   grader: createSportsGrader({ http: axios }),
 });
 sportTracker.ready().catch(e => console.error('Sports props tracker: store failed to initialise:', e.message));
+// MY SLIPS (slips.js, sliplog.js): the legs of users' own slips, followed to the
+// close and graded like the props record, in a record of their own. Legs only:
+// stakes and payouts stay in the user's browser.
+const slipLegTracker = createSportTracker({
+  store: resultsBackup.wrap('slipLegs', createEvStoreFromEnv(process.env, { table: 'slip_legs', fileVar: 'SLIP_LEGS_FILE', file: 'slip-legs.json' })),
+  grader: createSportsGrader({ http: axios }),
+});
+slipLegTracker.ready().catch(e => console.error('Slip log: store failed to initialise:', e.message));
+const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -4346,6 +4355,10 @@ app.get('/app', (req, res) => {
 app.get('/calc.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
 });
+// MY SLIPS parsing and math (slips.js, window.LRSlips).
+app.get('/slips.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'slips.js'));
+});
 // MY BETS math, the same way (bets.js, window.LRBets; it needs /calc.js first).
 app.get('/bets.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'bets.js'));
@@ -4393,7 +4406,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.130.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.131.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5833,6 +5846,8 @@ async function trackSportProps() {
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, updated });
+    // the slip log's legs keep their close on the same reads, on the sharp consensus
+    await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
@@ -5902,6 +5917,29 @@ app.post('/api/me/used', async (req, res) => {
     res.json({ used: Object.keys(trimmed) });
   }
   catch (e) { sendErr(res, e); }
+});
+
+// MY SLIPS: a user's pick'em legs (no stakes) → each leg against the close.
+// A leg is matched to its props-board row and followed from first sight on the
+// sharp consensus at its own line (sliplog.js); a leg whose game started
+// before it reached us says 'no line history'. Free, like the records.
+// The fair is the props record's sharp consensus, down to one source: a leg
+// Pinnacle or Kalshi alone prices still gets a close (weights put Pinnacle first).
+const SLIP_FAIR_OPTS = { ...SHARP_OPTS, minSources: 1 };
+const slipFairAt = (row, book, line) => {
+  const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: { ...SLIP_FAIR_OPTS, weights: SHARP_OPTS.weights } });
+  return f ? f.p : null;
+};
+app.post('/api/slips/grade', async (req, res) => {
+  const legs = Array.isArray(req.body?.legs) ? req.body.legs.slice(0, 300) : null;
+  if (!legs) return res.status(400).json({ error: 'legs needed' });
+  try {
+    const { rows } = propsBoardRows();
+    res.json(await slipLog.grade(legs, { rows: rows.filter(r => !r.esports), fairAt: slipFairAt }));
+  } catch (e) { sendErr(res, e); }
+});
+app.get('/api/slips/record', async (req, res) => {
+  res.json(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined }));
 });
 
 // The sports props record: free to see, like every other record. Open legs
@@ -6368,7 +6406,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.130.0',
+  version: '3.131.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6466,6 +6504,7 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
