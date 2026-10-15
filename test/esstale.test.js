@@ -89,7 +89,7 @@ test('rows stop at the match start; pickQuotes maps the board\'s market quotes',
     marketQuotes: [{ book: 'PP', line: 30.5, pOver: 0.5, mean: 30.4 }, { book: 'UD', line: 31.5, pOver: 0.48, mean: 31.2 }, { book: 'XX', line: 1, mean: 1 }] };
   const qs = E.pickQuotes(p, { probAt: (pk, m, x) => probAt(m, x), cellOf: (pk, b) => ({ b }) });
   assert.deepEqual(qs.map(x => [x.app, x.line, x.cell.b]), [['prizepicks', 30.5, 'PP'], ['underdog', 31.5, 'UD']]);
-  assert.equal(qs[0].key, 'CS|niko|Kills on Maps 1+2|7');
+  assert.equal(qs[0].key, 'CS|niko|Kills on Maps 1+2|2026-10-15');
   assert.ok(Math.abs(qs[0].meta.probAt(30.5, 30.5) - 0.5) < 1e-9);
 });
 

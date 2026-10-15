@@ -251,8 +251,11 @@ function createEsStale(opts = {}) {
 // The pick's quotes, one per app, from the board's market consensus
 // (p.marketQuotes: { book: 'PP'|'UD'|'SL', line, pOver, mean }). cellOf(p, book)
 // gives the app's payout cell for pricing.
-// one player's stat over one map span in one match
-const subjectKey = p => `${String(p.sport || '').toUpperCase()}|${String(p.player || '').toLowerCase().replace(/[^a-z0-9]/g, '')}|${p.market}|${p.gameId ?? String(p.startTime || '').slice(0, 10)}`;
+// one player's stat over one map span on one day. Not the match id: a player
+// in two same-day Bo1s shows under one board pick whose match swaps between
+// reads, and keyed by day that swap reads as a flip, which quiets the subject.
+const dayOf = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? new Date(x - 6 * 3600e3).toISOString().slice(0, 10) : 'noday'; };
+const subjectKey = p => `${String(p.sport || '').toUpperCase()}|${String(p.player || '').toLowerCase().replace(/[^a-z0-9]/g, '')}|${p.market}|${dayOf(p.startTime)}`;
 function pickQuotes(p, { probAt, cellOf = () => null } = {}) {
   const out = [];
   if (!p || !Array.isArray(p.marketQuotes) || !p.player || !p.startTime) return out;
