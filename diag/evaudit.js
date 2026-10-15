@@ -13,12 +13,12 @@ async function board(base) { const rows = []; let total = 0; for (let off = 0; o
 async function views(base) { const o = { at: new Date().toISOString() }; await Promise.all(Object.entries(VIEWS).map(async ([k, p]) => { o[k] = await get(base + p); })); o.board = await board(base); o.end = new Date().toISOString(); return o; }
 (async () => {
   fs.mkdirSync('out', { recursive: true }); fs.mkdirSync('/tmp/lr', { recursive: true });
-  const srv = spawn('node', ['-r', './diag/rec.js', 'server.js'], { env: { ...process.env, PORT: '3999', LR_DATA_DIR: '/tmp/lr', PINNACLE: 'on' }, stdio: ['ignore', fs.openSync('out/server.log', 'w'), fs.openSync('out/server.err', 'w')] });
+  const srv = spawn('node', ['--max-old-space-size=9000', '-r', './diag/rec.js', 'server.js'], { env: { ...process.env, PORT: '3999', LR_DATA_DIR: '/tmp/lr', PINNACLE: 'on' }, stdio: ['ignore', fs.openSync('out/server.log', 'w'), fs.openSync('out/server.err', 'w')] });
   await wait(+(process.env.WARM || 18) * 60e3);
   for (let i = 0; i < +(process.env.SNAPS || 2); i++) {
     const t = new Date().toISOString();
     const [prod, local] = await Promise.all([views(P), views(B)]);
-    srv.kill('SIGUSR2'); await wait(15000);
+    srv.kill('SIGUSR2'); await wait(25000);
     if (fs.existsSync('out/raw')) fs.renameSync('out/raw', `out/raw${i}`);
     fs.writeFileSync(`out/prod${i}.json`, JSON.stringify(prod)); fs.writeFileSync(`out/local${i}.json`, JSON.stringify(local));
     console.log(`snap ${i} at ${t}: prod ev ${prod.ev?.rows?.length} board ${prod.board.rows.length}; local ev ${local.ev?.rows?.length} board ${local.board.rows.length}`);
