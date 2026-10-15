@@ -1,0 +1,27 @@
+name: diag-esbr
+on:
+  push:
+    branches: [diag-esbr]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/es-stale-p2tqiq, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
+      - run: MINS=55 timeout 4200 node diag/branch.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-esbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-esbr-out
