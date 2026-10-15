@@ -114,10 +114,14 @@ function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
     const mkey = l.esports && esKey ? esKey(l.sport, l.market) : sportMarketKey(l.market, l.sport);
     const a = anchor.get(`${l.sport}|${canonName(l.player)}`);
     const own = !l.esports && t && a && Math.abs(t - a) > DATE_SLACK ? `|${new Date(t).toISOString().slice(0, 10)}` : '';
-    const key = `${l.sport}|${canonName(l.player)}|${mkey}${own}`;
+    // esports: one row per match (esmatch.js tags; null = a line no match fits)
+    if (l.esports && l.matchTag === null) continue;
+    const tag = l.esports && l.matchTag ? `|${l.matchTag}` : '';
+    const key = `${l.sport}|${canonName(l.player)}|${mkey}${own}${tag}`;
     let row = rows.get(key);
     if (!row) {
       row = { key, sport: l.sport, esports: l.esports, player: l.player, team: l.team || '', market: l.market, mkey,
+        ...(tag ? { matchTag: l.matchTag } : {}),
         startTime: l.startTime || '', matchTitle: l.matchTitle || '', books: {} };
       rows.set(key, row);
     }

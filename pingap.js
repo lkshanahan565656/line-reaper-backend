@@ -34,7 +34,7 @@ function gapPlay(p, { mapsOf, minGap = MIN_GAP } = {}) {
   lines.sort((a, b) => (side === 'OVER' ? a[1] - b[1] : b[1] - a[1]));
   const [book, line] = lines[0];
   return {
-    sport: p.sport, player: p.player, team: p.team, matchTitle: p.matchTitle, gameId: p.gameId ?? null,
+    sport: p.sport, player: p.player, team: p.team, matchTitle: p.matchTitle, gameId: p.gameId ?? null, matchTag: p.matchTag ?? null,
     market: p.market, displayMarket: p.displayMarket || p.market, startTime: p.startTime,
     side, bestBook: book, bestEv: 0, prob: null, rawProb: null,
     ppLine: book === 'PP' ? line : p.ppLine, udLine: book === 'UD' ? line : p.udLine, sleeperLine: p.sleeperLine ?? null,
