@@ -136,6 +136,11 @@ test('a leg no sharp source prices is still followed, and closes without a fair'
   const r = (await log.grade([{ id: 'x', app: 'betr', player: 'Bo Nix', market: 'Passing Yards', side: 'Under', line: 220.5, betAt: '2026-10-15T03:00:00Z' }], { rows, fairAt: () => null })).results;
   assert.strictEqual(r.x.status, 'open');
   assert.strictEqual(r.x.signalFair, null);
+  // a Sleeper pick is priced at its own multiplier on the board
+  const sl = [row('Bo Nix', 'rush_yds', 'Rush Yards', start, { sleeper: { line: 20.5, over: 1.9, under: 1.6 } })];
+  const y = (await log.grade([{ id: 'y', app: 'sleeper', player: 'Bo Nix', market: 'Rush Yds', side: 'Under', line: 20.5, betAt: '2026-10-15T03:00:00Z' }], { rows: sl, fairAt: () => 0.4 })).results.y;
+  assert.strictEqual(y.decimal, 1.6);
+  assert.ok(Math.abs(y.evNow - (0.6 * 1.6 - 1) * 100) < 0.01);
   t = Date.parse(start) + 60e3;
   await tracker.record({ rows, flagged: [], fairAt: () => null });
   const b = (await tracker.list())[0];

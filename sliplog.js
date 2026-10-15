@@ -20,7 +20,7 @@
 
 const { canonName } = require('./ev');
 const { sportMarketKey, boardSport } = require('./propsboard');
-const { idOf, CODE } = require('./sporttrack');
+const { idOf, CODE, legDecimal: appLegDecimal } = require('./sporttrack');
 const { legDecimal: slipLegDecimal } = require('./slips');
 
 const KIND = 'slip';
@@ -117,7 +117,12 @@ function createSlipLog({ tracker, now = () => Date.now() } = {}) {
         continue;
       }
       const row = m.row;
-      const play = { book: app, side, line, mult: 1, decimal: slipLegDecimal(app) };
+      // the app's own payout on this pick where its board shows our line (a
+      // Sleeper or Underdog pick multiplier), else its break-even
+      const cell = row.books?.[app];
+      const mult = cell && cell.line === line ? Number(side === 'Over' ? cell.over : cell.under) : NaN;
+      const priced = mult > 0 && ['prizepicks', 'underdog', 'sleeper', 'pick6'].includes(app);
+      const play = { book: app, side, line, mult: priced ? mult : 1, decimal: priced ? r4(appLegDecimal(app, mult)) : slipLegDecimal(app) };
       const tid = idOf(row, play, KIND);
       const b = known.get(tid);
       if (b) { results[id] = view(b, { id }); continue; }
