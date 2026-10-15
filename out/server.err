@@ -1,0 +1,195 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 millert: no usable kill fields — inspect /api/esports/probe/cs/millert
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+bo3 m0NESY-: no search hit
+bo3 Jason: no usable kill fields — inspect /api/esports/probe/cs/Jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-6pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-214pt5: Request failed with status code 429
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-48pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-4pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-53pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-13pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-50pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-7pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-7pt5: Request failed with status code 429
+Polymarket US: book aec-nba-cha-bos-2026-10-14: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-12pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-54pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-10pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-22pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-57pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-wkent-smho-2026-10-14-neg-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book aec-nba-det-min-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-49pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-wkent-smho-2026-10-14-total-43pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-51pt5: Request failed with status code 429
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-210pt5: Request failed with status code 429
+Polymarket US: book aec-nba-pho-sa-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-7pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-10pt5: Request failed with status code 429
+Polymarket US: book aec-nba-pho-sa-2026-10-14: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book aec-nba-det-min-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-220pt5: Request failed with status code 429
+Polymarket US: book aec-nba-bkn-mia-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-16pt5: Request failed with status code 429
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-228pt5: Request failed with status code 429
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-8pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-7pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-6pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-7pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book tsc-cfb-kenest-msrst-2026-10-14-total-52pt5: Request failed with status code 429
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-10pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-10pt5: Request failed with status code 429
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-9pt5: Request failed with status code 429
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-6pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-232pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-16pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-238pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-6pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-210pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-222pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-216pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-4pt5: Request failed with status code 429
+Tail: clv 0x0ffcad4963e25dc150774363f4061ebe840c8236: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0xa59c570a9eca148da55f6e1f47a538c0c600bb62: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-226pt5: Request failed with status code 429
+Polymarket US: league nfl: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: league cfb: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0)
+Polymarket US: league nba: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: league nhl: connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-9pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-8pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-13pt5: Request failed with status code 429
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-5pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-6pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-nba-no-dal-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-mon-was-2026-10-14-7pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-10pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-7pt5: Request failed with status code 429
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-4pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-7pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-232pt5: Request failed with status code 429
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-13pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-210pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-227pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-stl-vwh-2026-10-14-0pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-stl-vwh-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-0pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-221pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-226pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-1pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-stl-vwh-2026-10-14-2pt5: Request failed with status code 429
+Polymarket US: book asc-nba-bkn-mia-2026-10-14-pos-4pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-stl-vwh-2026-10-14-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-wkent-smho-2026-10-14-pos-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+Tail stream: no messages for 15s, reconnecting
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Polymarket US: book asc-nba-det-min-2026-10-14-pos-2pt5: Request failed with status code 429
+Polymarket US: book aec-mlb-mil-lad-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-4pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-no-dal-2026-10-14-233pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-5pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-0pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-mon-was-2026-10-14-8pt5: Request failed with status code 429
+Polymarket US: book asc-mls-dal-sea-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book asc-mls-dal-sea-2026-10-14-neg-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book asc-mls-dal-sea-2026-10-14-neg-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-6pt5: Request failed with status code 429
+Polymarket US: book aec-nhl-mon-was-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-216pt5: Request failed with status code 429
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-222pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-mon-was-2026-10-14-9pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-221pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book asc-nhl-mon-was-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-mon-was-2026-10-14-8pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-233pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-mon-was-2026-10-14-7pt5: Request failed with status code 429
+Polymarket US: book aec-nhl-mon-was-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-dal-sea-2026-10-14-1pt5: Request failed with status code 429
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+Polymarket US: book asc-nhl-mon-was-2026-10-14-neg-1pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
