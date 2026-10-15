@@ -706,15 +706,15 @@ const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('.
 const { createBackup, axiosFetchJson } = require('./backup');
 const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
-const evTracker = createEvTracker({ store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const evTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
 // the same way in a record of their own: the main-line record (and the books
 // it proves for the webhook) stays the main lines'
-const altTracker = createEvTracker({ store: resultsBackup.wrap('evAlt', createEvStoreFromEnv(process.env, { table: 'ev_alt_bets', fileVar: 'EV_ALT_TRACK_FILE', file: 'ev-alt-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const altTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evAlt', createEvStoreFromEnv(process.env, { table: 'ev_alt_bets', fileVar: 'EV_ALT_TRACK_FILE', file: 'ev-alt-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // BetRivers' esports lines (esbooks.js), priced off Pinnacle and Kalshi: a record of their own too
-const esBookTracker = createEvTracker({ store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const esBookTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel and BetRivers still on the number Pinnacle just left (stalelines.js): a record of their own
-const staleTracker = createEvTracker({ store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
@@ -4354,7 +4354,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.127.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.128.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4495,6 +4495,26 @@ app.get('/api/ev/record', async (req, res) => {
   const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
   out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
   res.json(out);
+});
+// Every book and every kind against the close (closeboard.js): graded toward
+// 50, beat-the-close rate, CLV and the tracker's own mark. Free: it's the
+// record. A Kalshi or Polymarket row needs its licence, as on /api/ev/record.
+const closeBoard = require('./closeboard');
+let closeBoardCache = { at: 0, key: '', body: null };
+app.get('/api/ev/scoreboard', async (req, res) => {
+  try {
+    const ok = evRowOk(licenceOf(req)), days = parseFloat(req.query.days) || 0;
+    const key = `${JSON.stringify(licenceOf(req))}|${days}`;
+    if (closeBoardCache.key !== key || Date.now() - closeBoardCache.at > 60e3) {
+      const all = { status: undefined, limit: 1e9 };
+      const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
+        esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
+      const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok), props, bigMoney },
+        { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
+      closeBoardCache = { at: Date.now(), key, body: { ...body, at: new Date().toISOString() } };
+    }
+    res.json(closeBoardCache.body);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
@@ -6272,7 +6292,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.127.0',
+  version: '3.128.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

@@ -1174,6 +1174,10 @@ body.no-help .clv-info { display:none; }
 .xs-win { color:var(--green) !important; font-weight:700; }
 .xs-add { width:22px; height:22px; margin-right:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text2); font-weight:700; cursor:pointer; padding:0; line-height:20px; }
 .xs-add.on { border-color:var(--green); color:var(--green); }
+.cb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px}
+.cb-name{flex:1;min-width:150px}.cb-n{min-width:96px}.cb-stat{min-width:70px;text-align:right;font-family:'JetBrains Mono',monospace}.cb-wide{min-width:226px}
+.cb-k{font-size:9px;letter-spacing:1.2px;color:#64748b;font-family:inherit}.cb-mark{min-width:110px;text-align:right}
+@media (max-width:600px){.cb-name{min-width:100%}.cb-n{min-width:100%}.cb-stat{min-width:60px;text-align:left}.cb-wide{min-width:0}.cb-mark{min-width:0;margin-left:auto}}
 </style>
 </head>
 <body>
@@ -4840,11 +4844,12 @@ function evFiltered() {
 // Closing-line value of everything the screener has flagged.
 async function renderEvRecord(el) {
   if (!el.innerText.includes('BETS GRADED')) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading track record...</div></div>`;
-  let s, bets;
+  let s, bets, board = null;
   try {
-    [s, bets] = await Promise.all([
+    [s, bets, board] = await Promise.all([
       fetch(`${BACKEND_URL}/api/ev/record${evState.sport !== 'all' ? '?sport=' + encodeURIComponent(evState.sport) : ''}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/ev/record/bets?status=closed&limit=50`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/api/ev/scoreboard`).then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
   } catch { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div></div>`; return; }
   if (evState.kind !== 'record') return;
@@ -4862,14 +4867,14 @@ async function renderEvRecord(el) {
         <span style="min-width:80px;text-align:right;color:${v.avgClv > 0 ? '#10b981' : '#f87171'}">CLV ${pct(v.avgClv)}</span>
         <span style="min-width:70px;text-align:right;color:#94a3b8">${v.beatClosePct}% beat</span></div>`).join('')}</div>`;
   };
-  el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap">
+  el.innerHTML = `${evCloseBoard(board)}<div style="display:flex;gap:10px;flex-wrap:wrap">
       ${tile(o.n || 0, 'BETS GRADED')}
       ${tile(pct(o.avgClv), 'AVG CLOSING-LINE VALUE', o.avgClv > 0 ? '#10b981' : o.avgClv < 0 ? '#f87171' : '#f1f5f9')}
       ${tile(o.beatClosePct != null ? o.beatClosePct + '%' : '—', 'BEAT THE CLOSE')}
       ${tile(pct(o.avgEvAtFlag), 'AVG EV WHEN FLAGGED')}
       ${tile(s.open || 0, 'WAITING FOR CLOSE', '#94a3b8')}
     </div>
-    <div style="font-size:11px;color:#64748b;margin-top:8px">Every price flagged at the tracking threshold is logged at its first price and graded against the sharp fair price just before the game starts. Positive CLV over a large sample is the standard proof an edge is real.</div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px">Main lines only. Every price flagged at the tracking threshold is logged at its first price and graded against the sharp fair price just before the game starts. A close read more than an hour before the start isn't graded${s.closeCheck && (s.closeCheck.stale + s.closeCheck.unverified) ? ` (${s.closeCheck.stale + s.closeCheck.unverified} so far)` : ''}. Positive CLV over a large sample is the standard proof an edge is real.</div>
     ${o.n ? '' : `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">NO GRADED BETS YET</div><div class="empty-sub">Bets grade at game start. The first numbers show up after tonight's games begin.</div></div>`}
     ${table('BY BOOK', s.byBook, evBookName)}${table('BY SPORT', s.bySport, k => k.toUpperCase())}${table('BY MARKET', s.byMarket, k => EV_MARKET[k] || k)}${table('BY FAIR-PRICE SOURCE', s.bySource)}
     ${evAltRecord(s.alt)}${evEsRecord(s.esports)}${evStaleRecord(s.stale, s.staleApps)}
@@ -4947,6 +4952,48 @@ function renderEv() {
       <div style="min-width:80px;font-size:10px;letter-spacing:1px;color:${r.source === 'sharp' ? '#10b981' : '#f59e0b'}" title="${r.source === 'sharp' ? 'Fair price from ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ')) + (r.agree ? ', within ' + r.spreadPts + ' pts of each other' : r.spreadPts != null ? ', ' + r.spreadPts + ' pts apart' : '') : 'No sharp book on this market: fair price is the median of all books'}">${r.source === 'sharp' ? '● ' + escAttr((r.sharpBooks || []).map(evBookName).join(' + ').toUpperCase()) + (r.agree ? '<div style="color:#10b981;margin-top:2px">✓ AGREE</div>' : '') : '◐ CONSENSUS'}</div>
     </div>`;
   }).join('') + `</div>` + (rows.length > 300 ? `<div style="font-size:11px;color:#64748b;margin-top:8px">Showing the best 300 of ${rows.length}. Raise MIN EV to narrow it.</div>` : '');
+}
+
+// Every book and every kind against the close (/api/ev/scoreboard): graded
+// toward 50, how often the price beat the close, average CLV at the flag and
+// two minutes on, and the tracker's own mark. Only 'proven' is a claim.
+const EV_MARK = { proven: ['PROVEN', '#10b981'], promising: ['PROMISING', '#a3e635'], early: ['EARLY', '#94a3b8'], avoid: ['LOSING', '#f87171'], 'not graded yet': ['NOT GRADED YET', '#64748b'], 'no sharp close': ['MODEL CLOSE', '#f59e0b'] };
+let evBoardView = 'book';
+try { evBoardView = localStorage.getItem('lr_board_view') || 'book'; } catch { /* private window */ }
+function evBoardSet(v) { evBoardView = v; try { localStorage.setItem('lr_board_view', v); } catch { /* fine */ } renderEv(); }
+function evCloseBoard(b) {
+  if (!b || !b.rows) return '';
+  const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const col = v => v == null ? '#64748b' : v > 0 ? '#10b981' : '#f87171';
+  const T = b.target || 50;
+  const list = evBoardView === 'kind' ? Object.entries(b.byKind || {}).map(([k, v]) => ({ name: v.kindLabel || k, sub: '', ...v }))
+    : evBoardView === 'all' ? b.rows.map(v => ({ name: v.bookName, sub: v.kindLabel, ...v }))
+    : Object.entries(b.byBook || {}).map(([k, v]) => ({ name: v.bookName || k, sub: v.relayed ? 'via Action Network' : '', ...v }));
+  const o = b.overall || {};
+  const chip = (v, label) => `<button class="sport-chip ${evBoardView === v ? 'active' : ''}" style="font-size:10px;padding:3px 9px" onclick="evBoardSet('${v}')">${label}</button>`;
+  const row = v => {
+    const m = EV_MARK[v.mark] || EV_MARK.early;
+    const graded = v.graded > 0;
+    const w = Math.round(Math.min(1, v.graded / T) * 100);
+    return `<div class="cb-row">
+      <div class="cb-name"><div style="color:#e2e8f0;font-weight:700">${escAttr(v.name)}</div>${v.sub ? `<div style="font-size:10px;color:#64748b">${escAttr(v.sub)}</div>` : ''}</div>
+      <div class="cb-n" title="Graded: closes read within the hour before the start"><div style="font-family:'JetBrains Mono',monospace;color:#cbd5e1">${v.graded}/${T}</div>
+        <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:3px"><div style="height:4px;width:${w}%;background:${graded ? '#38bdf8' : 'transparent'};border-radius:2px"></div></div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">${v.open} waiting${v.staleClose + v.unverified ? ` · ${v.staleClose + v.unverified} no close` : ''}</div></div>
+      ${graded ? `<div class="cb-stat"><div class="cb-k">BEAT CLOSE</div><div style="color:#cbd5e1">${v.beatPct}%</div></div>
+      <div class="cb-stat"><div class="cb-k">CLV</div><div style="color:${col(v.avgClv)}">${pct(v.avgClv)}</div></div>
+      <div class="cb-stat" title="Graded at the price two minutes after the flag (or, on the apps, only legs still up then)"><div class="cb-k">AT +2 MIN</div><div style="color:${col(v.avgExecClv)}">${v.execN ? pct(v.avgExecClv) : '—'}</div></div>`
+      : `<div class="cb-stat cb-wide"><div style="color:#64748b">not graded yet</div></div>`}
+      <div class="cb-mark"><span style="color:${m[1]};border:1px solid ${m[1]}55;border-radius:4px;padding:2px 6px;font-size:10px;letter-spacing:1px;font-weight:700">${m[0]}</span></div>
+    </div>`;
+  };
+  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;flex:1;min-width:180px">EVERY BOOK AGAINST THE CLOSE · ${o.graded || 0} GRADED · ${o.open || 0} WAITING</span>
+      ${chip('book', 'BY BOOK')}${chip('kind', 'BY KIND')}${chip('all', 'BOOK × KIND')}</div>
+    ${list.length ? list.map(row).join('') : `<div style="padding:12px 14px;font-size:12px;color:#64748b">Nothing recorded yet.</div>`}
+    <div style="padding:8px 14px;font-size:11px;color:#64748b;border-top:1px solid var(--border)">Every play the +EV tab, alt lines, stale lines, the pick'em apps and big money flag, at the book it was offered. A play is graded once its close is in: the sharp fair the play was priced on (Pinnacle first, with Kalshi where it prices the line) read within the hour before the start. A close read earlier than that, or from before this check, isn't counted. Lines on the same game or the same player's stat count as one play. PROVEN needs ${T} graded plays with CLV positive at a t-stat of 2, and nothing else here is a claim. MODEL CLOSE rows were closed on our own curve or soft books alone, so they never count.</div>
+  </div>`;
 }
 
 // Ladders and alternate lines (altlines.js on the backend): a rung CLEARS

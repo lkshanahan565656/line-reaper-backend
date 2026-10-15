@@ -21,6 +21,19 @@ const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
 const RESEARCH = new Set(['gap-odd', 'gap-stale']);
 const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35;
 const r2 = x => Math.round(x * 100) / 100;
+// The close counts only when the fair was still being read near the start
+// (as in evtrack.js): closeSeenAt is the last read that priced the leg, saved
+// at most every SEEN_SAVE_MS (exact in memory); at the lock closeOk says it
+// was within CLOSE_FRESH_MS of the start. A leg locked before closeSeenAt
+// existed is 'unverified' unless its fair last changed inside that hour.
+const CLOSE_FRESH_MS = 60 * 60e3, SEEN_SAVE_MS = 10 * 60e3;
+function closeState(b, freshMs = CLOSE_FRESH_MS) {
+  if (b.status === 'open' || b.status === 'void') return null;
+  if (b.closeOk != null) return b.closeOk ? 'ok' : 'stale';
+  const start = Date.parse(b.start || ''), seen = Date.parse(b.closeSeenAt || b.closeAt || '');
+  if (!Number.isFinite(start) || !Number.isFinite(seen)) return 'unverified';
+  return start - seen <= freshMs ? 'ok' : b.closeSeenAt ? 'stale' : 'unverified';
+}
 const r4 = x => Math.round(x * 1e4) / 1e4;
 
 // What one leg pays per unit if it wins, as decimal odds: the book's own
@@ -42,6 +55,7 @@ const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([
 function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
   const ready = store.init();
   const open = new Map();
+  const seen = new Map();   // id → last read that priced the leg (ms)
   const loaded = ready.then(async () => { for (const b of await store.all()) if (b.status === 'open' || b.status === 'locked') open.set(b.id, b); });
   const put = b => store.put(b).catch(e => log.warn?.(`Sports record: ${e.message}`));
 
@@ -69,9 +83,10 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
         ...(kind === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
-        closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(),
+        closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
       open.set(id, b);
+      seen.set(id, t);
       writes.push(put(b));
     }
     const byKey = new Map(rows.map(r => [r.key, r]));
@@ -100,8 +115,10 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         if (JSON.stringify(lines) !== JSON.stringify(b.closeLines)) { b.closeLines = lines; dirty = true; }
         const pOver = fairAt ? fairAt(row, b.book, b.signalLine, b.kind) : null;
         if (pOver != null) {
+          seen.set(b.id, t);
           const fair = r4(b.signalSide === 'Over' ? pOver : 1 - pOver);
           if (fair !== b.closeFair) { b.closeFair = fair; dirty = true; }
+          if (dirty || !(t - Date.parse(b.closeSeenAt || b.closeAt) < SEEN_SAVE_MS)) { b.closeSeenAt = new Date(t).toISOString(); dirty = true; }
         }
         if (dirty) { b.closeAt = new Date(t).toISOString(); writes.push(put(b)); }
         continue;
@@ -109,6 +126,11 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       // the game started: freeze the close
       b.status = 'locked';
       b.lockedAt = new Date(t).toISOString();
+      const seenT = Math.max(seen.get(b.id) || 0, Date.parse(b.closeSeenAt || b.signalAt) || 0);
+      seen.delete(b.id);
+      b.closeSeenAt = new Date(seenT).toISOString();
+      b.closeAgeMin = r2((start - seenT) / 60e3);
+      b.closeOk = start - seenT <= CLOSE_FRESH_MS;
       b.closeEv = r2((b.closeFair * b.signalDecimal - 1) * 100);
       b.fairMove = r2((b.closeFair - b.signalFair) * 100);
       b.gapOutcome = gapOutcome({ gapVs: b.gapVs, signalLine: b.signalLine, signalBook: b.signalBook, closeLines: b.closeLines });
@@ -203,4 +225,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { createSportTracker, legDecimal, idOf, CODE };
+module.exports = { createSportTracker, legDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
