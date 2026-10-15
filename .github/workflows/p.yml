@@ -1,0 +1,26 @@
+name: diag-h2hprod
+on:
+  push:
+    branches: [diag-h2hprod]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - run: |
+          mkdir out; U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 30); do
+            v=$(curl -s $U/ | jq -r .version); echo "$(date -u) $v" >> out/wait.txt
+            [ "$v" = "3.124.0" ] && break; sleep 60
+          done
+          sleep 240
+          curl -s $U/api/status > out/status.json
+          curl -s $U/api/esports/h2h > out/h2h.json
+          jq '{version, h2h}' out/status.json > out/summary.json || true
+      - if: always()
+        run: |
+          cd out && git init -q && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-h2hprod-out && git add -A && git commit -qm out
+          git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-h2hprod-out
