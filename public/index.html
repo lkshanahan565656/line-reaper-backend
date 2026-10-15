@@ -1376,7 +1376,7 @@ body.no-help .clv-info { display:none; }
 <div class="page" id="page-results">
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">WHAT'S WINNING</strong> — every Sharp Tail signal, fresh-wallet alert, esports exchange edge, +EV price, sports prop and esports prop the app has flagged, graded and cut into plays.
-    <span style="color:#94a3b8;font-size:11px">CLV (did the price beat the close) proves an edge in dozens of bets where profit needs hundreds. <b style="color:#34d399">Proven</b>: 20+ bets and a t-stat of 2+. <b style="color:#fbbf24">Promising</b>: 8+ bets beating the close. <b style="color:#f87171">Avoid</b>: 8+ bets losing to it.</span>
+    <span style="color:#94a3b8;font-size:11px">CLV (did the price beat the close) proves an edge in dozens of bets where profit needs hundreds. <b style="color:#34d399">Proven</b>: 20+ bets and a t-stat of 2+; for sportsbook plays (+EV, props), 50+ graded bets at one book and a t-stat of 2+, and a pooled count never counts. <b style="color:#fbbf24">Promising</b>: 8+ bets beating the close. <b style="color:#f87171">Avoid</b>: 8+ bets losing to it.</span>
   </div>
   <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="sport-chip active" data-days="0" onclick="resultsDays(0)">ALL TIME</button>
@@ -3782,7 +3782,7 @@ function lnRow(r, book) {
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
-    <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : '—'}</span></div>
+    <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
     <div class="c ln-usedc" data-l="Used"><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
 }

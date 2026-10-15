@@ -90,3 +90,23 @@ test('book-fair legs keep a second close on Pinnacle when one appears before the
   const s = await tr.summary();
   assert.strictEqual(s.byKind['book-fair-single'].sharpClosed, 1);
 });
+
+test('book fair: a single book prices only the app\'s own number, scaled by market', () => {
+  const q = (line, p = 0.6) => [{ book: 'fanduel', line, pOver: p }];
+  const mk = (mkey, line) => ({ ...row({ prizepicks: cell(line) }), mkey, key: `CFB|x|${mkey}` });
+  // yardage: the four named gaps stay unpriced; a yard on 60 still converts
+  assert.deepStrictEqual(sp.bookFairPlays(mk('rec_yds', 14.5), q(17.5), { dfsEv: ev }), []);
+  assert.deepStrictEqual(sp.bookFairPlays(mk('rec_yds', 62.5), q(67.5), { dfsEv: ev }), []);
+  assert.ok(sp.bookFairPlays(mk('rec_yds', 60.5), q(61.5), { dfsEv: ev }).length);
+  // points and counting stats: exact line only
+  assert.deepStrictEqual(sp.bookFairPlays(mk('points', 21.5), q(22.5), { dfsEv: ev }), []);
+  assert.deepStrictEqual(sp.bookFairPlays(mk('shots_on_goal', 2.5), q(3.5), { dfsEv: ev }), []);
+  assert.ok(sp.bookFairPlays(mk('shots_on_goal', 2.5), q(2.5), { dfsEv: ev }).length);
+  // the row says so
+  const d = sp.bookFairLineDiffers(mk('rec_yds', 14.5), q(17.5), { dfsEv: ev });
+  assert.deepStrictEqual(d, { book: 'fanduel', line: 17.5, appLine: 14.5 });
+  assert.strictEqual(sp.bookFairLineDiffers(mk('rec_yds', 14.5), q(14.5), { dfsEv: ev }), null);
+  // an alt line at the app's number is the exact line
+  const alt = [{ book: 'fanduel', line: 17.5, pOver: 0.45 }, { book: 'fanduel', line: 14.5, pOver: 0.6 }];
+  assert.ok(sp.bookFairPlays(mk('rec_yds', 14.5), alt, { dfsEv: ev }).length);
+});

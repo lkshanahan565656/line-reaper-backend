@@ -56,3 +56,21 @@ test('exchange value: the delayed grade is compared with the same bets at the al
   assert.ok(s.sizedClv < 0);
   assert.equal(s.verdict, 'avoid', 'the $100 grade decides, not the +2.5% at the best price');
 });
+
+test('sportsbook plays: proven only as one book with 50 graded of its own; a pooled count never proves a book', () => {
+  const mk = (n, book, sport = 'nfl') => Array.from({ length: n }, (_, i) => ({ id: `${book}${i}`, status: 'closed', flaggedAt: new Date().toISOString(), sport, book, market: 'spreads', clv: 3 + (i % 3) }));
+  const rec = [...mk(30, 'draftkings'), ...mk(30, 'caesars'), ...mk(2, 'fanduel')];
+  const b = scoreboard({ ev: rec });
+  const all = b.plays.find(p => p.source === 'ev' && p.play === 'all');
+  assert.equal(all.n, 62);
+  assert.notEqual(all.verdict, 'proven', 'the pool is not proof');
+  assert.match(all.provenNote, /^not proven yet: 62 graded, \+\d/);
+  const dk = b.plays.find(p => p.source === 'ev' && p.by === 'book' && p.play === 'draftkings');
+  assert.notEqual(dk.verdict, 'proven', '30 of its own is under 50');
+  assert.match(dk.provenNote, /not proven yet: 30 graded/);
+  const full = scoreboard({ ev: mk(55, 'fanduel') }).plays.find(p => p.source === 'ev' && p.by === 'book');
+  assert.equal(full.verdict, 'proven');
+  assert.equal(full.provenNote, undefined);
+  // the pooled sport cut of the same 55 stays unproven
+  assert.notEqual(scoreboard({ ev: mk(55, 'fanduel') }).plays.find(p => p.source === 'ev' && p.by === 'sport').verdict, 'proven');
+});
