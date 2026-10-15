@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
-      - run: MINS=35 timeout 3000 node diag/branch.js || true
+      - run: MINS=25 timeout 2400 node diag/branch.js || true
       - if: always()
         run: |
           git config user.name diag-bot
