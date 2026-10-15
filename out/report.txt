@@ -1,0 +1,192 @@
+branch 3.129.0 vs prod at 2026-10-15T03:52:26.765Z
+
+== PROD (same moment, classified by propsboard.coverage)
+CFB            legs  5127  sharp     0  pin     0  kal    0  book    0  apps  2895  none  2232
+NFL            legs  4899  sharp  1194  pin   806  kal  388  book   47  apps  1419  none  2239
+NHL            legs  1014  sharp     0  pin     0  kal    0  book    0  apps   106  none   908
+SOCCER         legs   965  sharp     0  pin     0  kal    0  book    0  apps     2  none   963
+NBA            legs   639  sharp    33  pin    33  kal    0  book    0  apps    87  none   519
+TENNIS         legs   538  sharp     0  pin     0  kal    0  book    0  apps    42  none   496
+MLB            legs   522  sharp   123  pin    78  kal   45  book    0  apps   184  none   215
+WNBA           legs   344  sharp   106  pin   106  kal    0  book    0  apps   168  none    70
+MMA            legs   305  sharp     0  pin     0  kal    0  book    0  apps   133  none   172
+BAD            legs    99  sharp     0  pin     0  kal    0  book    0  apps     0  none    99
+TT             legs    74  sharp     0  pin     0  kal    0  book    0  apps     0  none    74
+MOTORSPORTS    legs    36  sharp     0  pin     0  kal    0  book    0  apps     0  none    36
+WNBA SERIES    legs    29  sharp     0  pin     0  kal    0  book    0  apps     0  none    29
+EUROGOLF       legs    28  sharp     0  pin     0  kal    0  book    0  apps     0  none    28
+DGPT           legs    11  sharp     0  pin     0  kal    0  book    0  apps     0  none    11
+NPB            legs     6  sharp     0  pin     0  kal    0  book    0  apps     4  none     2
+TOTAL          legs 14636  sharp  1456  pin  1023  kal  433  book   47  apps  5040  none  8093
+
+== BRANCH
+CFB            legs  5128  sharp     0  pin     0  kal    0  book 1768  apps  1234  none  2126
+NFL            legs  4899  sharp  1194  pin   806  kal  388  book 1050  apps   482  none  2173
+NHL            legs  1014  sharp     0  pin     0  kal    0  book  283  apps    31  none   700
+SOCCER         legs   951  sharp     0  pin     0  kal    0  book    0  apps     2  none   949
+NBA            legs   639  sharp    33  pin    33  kal    0  book   12  apps    87  none   507
+TENNIS         legs   536  sharp   258  pin   258  kal    0  book    0  apps    26  none   252
+MLB            legs   518  sharp   122  pin    77  kal   45  book  102  apps   100  none   194
+WNBA           legs   344  sharp   106  pin   106  kal    0  book    6  apps   162  none    70
+MMA            legs   305  sharp    55  pin    33  kal   22  book    0  apps   133  none   117
+BAD            legs    99  sharp     0  pin     0  kal    0  book    0  apps     0  none    99
+TT             legs    74  sharp     0  pin     0  kal    0  book    0  apps     0  none    74
+MOTORSPORTS    legs    36  sharp    12  pin     0  kal   12  book    0  apps     0  none    24
+WNBA SERIES    legs    29  sharp     0  pin     0  kal    0  book    0  apps     0  none    29
+EUROGOLF       legs    28  sharp     0  pin     0  kal    0  book    0  apps     0  none    28
+DGPT           legs    11  sharp     0  pin     0  kal    0  book    0  apps     0  none    11
+NPB            legs     6  sharp     0  pin     0  kal    0  book    0  apps     4  none     2
+TOTAL          legs 14617  sharp  1780  pin  1313  kal  467  book 3221  apps  2261  none  7355
+
+== BRANCH markets in MMA, TENNIS, SOCCER, MOTORSPORTS, NBA, NHL, CFB
+CFB Anytime TD                                          legs   970  sharp     0  pin     0  kal    0  book    0  apps   617  none   353
+CFB Receiving Yards                                     legs   620  sharp     0  pin     0  kal    0  book  516  apps   101  none     3
+CFB Longest Reception                                   legs   347  sharp     0  pin     0  kal    0  book  271  apps    72  none     4  NEVER
+CFB Rush Yards                                          legs   335  sharp     0  pin     0  kal    0  book  292  apps    43  none     0
+CFB First TD Scorer                                     legs   323  sharp     0  pin     0  kal    0  book    0  apps     0  none   323  NEVER
+CFB Receptions                                          legs   198  sharp     0  pin     0  kal    0  book  154  apps    28  none    16
+CFB 1H Receiving TDs                                    legs   193  sharp     0  pin     0  kal    0  book    0  apps     0  none   193  NEVER
+CFB Pass Yards                                          legs   180  sharp     0  pin     0  kal    0  book  152  apps    27  none     1
+CFB Longest Rush                                        legs   172  sharp     0  pin     0  kal    0  book  142  apps    30  none     0  NEVER
+CFB 1H Receiving Yards                                  legs   170  sharp     0  pin     0  kal    0  book    0  apps     0  none   170  NEVER
+CFB 1H Rush TDs                                         legs   138  sharp     0  pin     0  kal    0  book    0  apps     0  none   138  NEVER
+CFB Fantasy Points                                      legs   118  sharp     0  pin     0  kal    0  book    0  apps     0  none   118  NEVER
+CFB Pass TDs                                            legs   117  sharp     0  pin     0  kal    0  book   96  apps    20  none     1
+CFB 1Q Receptions                                       legs   101  sharp     0  pin     0  kal    0  book    0  apps     0  none   101  NEVER
+CFB 1H Receptions                                       legs   101  sharp     0  pin     0  kal    0  book    0  apps     0  none   101  NEVER
+CFB 1Q Receiving Yards                                  legs    91  sharp     0  pin     0  kal    0  book    0  apps     0  none    91  NEVER
+CFB Longest Completion                                  legs    88  sharp     0  pin     0  kal    0  book   71  apps    16  none     1  NEVER
+CFB 1H Rush Yards                                       legs    87  sharp     0  pin     0  kal    0  book    0  apps     2  none    85  NEVER
+CFB 1Q Rush Yards                                       legs    72  sharp     0  pin     0  kal    0  book    0  apps     0  none    72  NEVER
+CFB Pass + Rush Yards                                   legs    71  sharp     0  pin     0  kal    0  book    0  apps    68  none     3
+CFB Rush + Rec Yards                                    legs    69  sharp     0  pin     0  kal    0  book    0  apps    66  none     3
+CFB Kicking Points                                      legs    68  sharp     0  pin     0  kal    0  book    0  apps    68  none     0  NEVER
+CFB Rush Attempts                                       legs    57  sharp     0  pin     0  kal    0  book   40  apps    14  none     3
+CFB INTs Thrown                                         legs    56  sharp     0  pin     0  kal    0  book    0  apps    16  none    40
+CFB 1Q Pass TDs                                         legs    49  sharp     0  pin     0  kal    0  book    0  apps     0  none    49  NEVER
+CFB 1H Pass TDs                                         legs    49  sharp     0  pin     0  kal    0  book    0  apps     0  none    49  NEVER
+CFB 1Q Pass Yards                                       legs    48  sharp     0  pin     0  kal    0  book    0  apps     0  none    48  NEVER
+CFB 1H Pass Yards                                       legs    48  sharp     0  pin     0  kal    0  book    0  apps     0  none    48  NEVER
+CFB Completions                                         legs    43  sharp     0  pin     0  kal    0  book    0  apps    40  none     3
+CFB Pass Attempts                                       legs    41  sharp     0  pin     0  kal    0  book   34  apps     6  none     1
+CFB 1H Rush + Rec Yards                                 legs    33  sharp     0  pin     0  kal    0  book    0  apps     0  none    33  NEVER
+CFB FG Made                                             legs    23  sharp     0  pin     0  kal    0  book    0  apps     0  none    23  NEVER
+CFB XP Made                                             legs    23  sharp     0  pin     0  kal    0  book    0  apps     0  none    23  NEVER
+CFB Fantasy Score                                       legs    21  sharp     0  pin     0  kal    0  book    0  apps     0  none    21  NEVER
+CFB PAT Made                                            legs     5  sharp     0  pin     0  kal    0  book    0  apps     0  none     5  NEVER
+CFB Total TDs                                           legs     3  sharp     0  pin     0  kal    0  book    0  apps     0  none     3
+MMA Significant Strikes                                 legs    73  sharp     0  pin     0  kal    0  book    0  apps    73  none     0  NEVER
+MMA Finishes                                            legs    43  sharp     5  pin     0  kal    5  book    0  apps    32  none     6
+MMA Fight Time (Mins)                                   legs    33  sharp    33  pin    33  kal    0  book    0  apps     0  none     0
+MMA Submissions                                         legs    31  sharp     9  pin     0  kal    9  book    0  apps    10  none    12
+MMA Knockouts                                           legs    30  sharp     6  pin     0  kal    6  book    0  apps     6  none    18
+MMA 1st Round Finish                                    legs    26  sharp     0  pin     0  kal    0  book    0  apps     0  none    26
+MMA 2nd Round Finish                                    legs    26  sharp     0  pin     0  kal    0  book    0  apps     0  none    26
+MMA 3rd Round Finish                                    legs    26  sharp     2  pin     0  kal    2  book    0  apps     0  none    24
+MMA Takedowns                                           legs    13  sharp     0  pin     0  kal    0  book    0  apps    12  none     1  NEVER
+MOTORSPORTS Finishing Position                          legs    36  sharp    12  pin     0  kal   12  book    0  apps     0  none    24
+NBA Points                                              legs    82  sharp     9  pin     9  kal    0  book    1  apps    49  none    23
+NBA Regular Season Points Per Game                      legs    81  sharp     0  pin     0  kal    0  book    0  apps     0  none    81  NEVER
+NBA Pts+Rebs+Asts                                       legs    59  sharp     7  pin     7  kal    0  book    0  apps    20  none    32
+NBA Regular Season Rebounds Per Game                    legs    54  sharp     0  pin     0  kal    0  book    0  apps     0  none    54  NEVER
+NBA Regular Season Assists Per Game                     legs    45  sharp     0  pin     0  kal    0  book    0  apps     0  none    45  NEVER
+NBA Season Points Per Game                              legs    44  sharp     0  pin     0  kal    0  book    0  apps     0  none    44  NEVER
+NBA Rebounds                                            legs    35  sharp     5  pin     5  kal    0  book    0  apps     8  none    22
+NBA Assists                                             legs    33  sharp     8  pin     8  kal    0  book    0  apps     4  none    21
+NBA 3-PT Made                                           legs    27  sharp     4  pin     4  kal    0  book    0  apps     6  none    17
+NBA Pts+Asts                                            legs    26  sharp     0  pin     0  kal    0  book    4  apps     0  none    22
+NBA Pts+Rebs                                            legs    25  sharp     0  pin     0  kal    0  book    3  apps     0  none    22
+NBA Season Rebs Per Game                                legs    23  sharp     0  pin     0  kal    0  book    0  apps     0  none    23  NEVER
+NBA Season 3PM Per Game                                 legs    20  sharp     0  pin     0  kal    0  book    0  apps     0  none    20  NEVER
+NBA Season Asts Per Game                                legs    20  sharp     0  pin     0  kal    0  book    0  apps     0  none    20  NEVER
+NBA Rebs+Asts                                           legs    16  sharp     0  pin     0  kal    0  book    3  apps     0  none    13
+NBA Season 50+ Point Games                              legs     8  sharp     0  pin     0  kal    0  book    0  apps     0  none     8  NEVER
+NBA Regular Season Triple Doubles                       legs     8  sharp     0  pin     0  kal    0  book    0  apps     0  none     8  NEVER
+NBA Season Triple-Doubles                               legs     7  sharp     0  pin     0  kal    0  book    0  apps     0  none     7  NEVER
+NBA Season Blocked Shots Per Game                       legs     7  sharp     0  pin     0  kal    0  book    0  apps     0  none     7  NEVER
+NBA Steals                                              legs     5  sharp     0  pin     0  kal    0  book    0  apps     0  none     5
+NBA Double Double                                       legs     4  sharp     0  pin     0  kal    0  book    0  apps     0  none     4
+NBA Blks+Stls                                           legs     4  sharp     0  pin     0  kal    0  book    0  apps     0  none     4
+NBA Turnovers                                           legs     3  sharp     0  pin     0  kal    0  book    0  apps     0  none     3
+NHL Goals                                               legs   266  sharp     0  pin     0  kal    0  book  180  apps     0  none    86
+NHL Shots on Goal                                       legs   150  sharp     0  pin     0  kal    0  book  103  apps    23  none    24
+NHL First Goal Scorer                                   legs   135  sharp     0  pin     0  kal    0  book    0  apps     0  none   135  NEVER
+NHL Points                                              legs   107  sharp     0  pin     0  kal    0  book    0  apps     0  none   107
+NHL Assists                                             legs   106  sharp     0  pin     0  kal    0  book    0  apps     0  none   106
+NHL Power Play Points                                   legs    82  sharp     0  pin     0  kal    0  book    0  apps     0  none    82
+NHL Plus Minus                                          legs    67  sharp     0  pin     0  kal    0  book    0  apps     0  none    67
+NHL Time On Ice                                         legs    35  sharp     0  pin     0  kal    0  book    0  apps     0  none    35  NEVER
+NHL Hits                                                legs    34  sharp     0  pin     0  kal    0  book    0  apps     4  none    30  NEVER
+NHL Faceoffs Won                                        legs    25  sharp     0  pin     0  kal    0  book    0  apps     4  none    21  NEVER
+NHL Blocked Shots                                       legs     7  sharp     0  pin     0  kal    0  book    0  apps     0  none     7
+SOCCER Goals                                            legs   192  sharp     0  pin     0  kal    0  book    0  apps     0  none   192
+SOCCER Assists                                          legs   176  sharp     0  pin     0  kal    0  book    0  apps     0  none   176
+SOCCER Goals + Assists                                  legs   134  sharp     0  pin     0  kal    0  book    0  apps     0  none   134
+SOCCER First Goal Scorer                                legs    62  sharp     0  pin     0  kal    0  book    0  apps     0  none    62  NEVER
+SOCCER Last Goal Scorer                                 legs    55  sharp     0  pin     0  kal    0  book    0  apps     0  none    55  NEVER
+SOCCER Shots                                            legs    54  sharp     0  pin     0  kal    0  book    0  apps     0  none    54  NEVER
+SOCCER Goals Against                                    legs    50  sharp     0  pin     0  kal    0  book    0  apps     0  none    50  NEVER
+SOCCER Shots On Target                                  legs    49  sharp     0  pin     0  kal    0  book    0  apps     2  none    47
+SOCCER 1H Goals Against                                 legs    40  sharp     0  pin     0  kal    0  book    0  apps     0  none    40  NEVER
+SOCCER Goalie Saves                                     legs    35  sharp     0  pin     0  kal    0  book    0  apps     0  none    35  NEVER
+SOCCER 1H Goals                                         legs    34  sharp     0  pin     0  kal    0  book    0  apps     0  none    34  NEVER
+SOCCER Passes Attempted                                 legs    30  sharp     0  pin     0  kal    0  book    0  apps     0  none    30  NEVER
+SOCCER Goalie Fantasy Score                             legs    26  sharp     0  pin     0  kal    0  book    0  apps     0  none    26  NEVER
+SOCCER Outfield Fantasy Score                           legs    14  sharp     0  pin     0  kal    0  book    0  apps     0  none    14  NEVER
+TENNIS 1st Set Games Won                                legs   125  sharp     0  pin     0  kal    0  book    0  apps    18  none   107  NEVER
+TENNIS Games Played                                     legs    83  sharp    74  pin    74  kal    0  book    0  apps     0  none     9
+TENNIS Sets Won                                         legs    70  sharp    57  pin    57  kal    0  book    0  apps     0  none    13
+TENNIS 1st Set Games Played                             legs    52  sharp    44  pin    44  kal    0  book    0  apps     2  none     6
+TENNIS Tiebreakers Played                               legs    49  sharp     0  pin     0  kal    0  book    0  apps     2  none    47  NEVER
+TENNIS Sets Played                                      legs    44  sharp    43  pin    43  kal    0  book    0  apps     0  none     1
+TENNIS Games Won                                        legs    41  sharp    40  pin    40  kal    0  book    0  apps     0  none     1
+TENNIS Fantasy Score                                    legs    18  sharp     0  pin     0  kal    0  book    0  apps     0  none    18  NEVER
+TENNIS Aces                                             legs    14  sharp     0  pin     0  kal    0  book    0  apps     4  none    10  NEVER
+TENNIS 1st Set Aces                                     legs    12  sharp     0  pin     0  kal    0  book    0  apps     0  none    12  NEVER
+TENNIS Points Won                                       legs    12  sharp     0  pin     0  kal    0  book    0  apps     0  none    12  NEVER
+TENNIS Double Faults                                    legs    10  sharp     0  pin     0  kal    0  book    0  apps     0  none    10  NEVER
+TENNIS Break Points Won                                 legs     6  sharp     0  pin     0  kal    0  book    0  apps     0  none     6  NEVER
+
+status {"pinnacleProps":{"enabled":true,"props":468,"bySport":{"NFL":311,"NBA":30,"WNBA":81,"MLB":46},"updated":"2026-10-15T03:52:23.062Z","errors":[],"extra":{"props":4468,"bySport":{"TENNIS 1st_set_games_played":738,"TENNIS games_won":946,"TENNIS games_played":1688,"TENNIS sets_won":738,"TENNIS sets_played":332,"MMA fight_time":26},"errors":[]}},"kalshiExtra":{"quotes":218,"bySport":{"MMA knockouts":5,"MMA submissions":9,"MMA finishes":4,"MMA 3rd_round_finish":2,"MMA fight_time":4,"MOTORSPORTS finishing_position":146,"TENNIS games_played":48},"events":61,"updated":"2026-10-15T03:51:49.308Z","errors":[]},"kalshiProps":{"updated":"2026-10-15T03:51:43.553Z","counts":{"events":87,"ladders":525,"matched":803,"interpolated":123},"errors":[]}}
+
+== EXAMPLES
+TENNIS Shintaro Mochizuki Games Played pin={"line":21.5,"over":null,"under":null,"pOver":53.2} cons=- underdog 21.5 fair=- ev=Under -10.19 best=underdog Under -10.19 pinnacle null
+TENNIS Shintaro Mochizuki 1st Set Games Played pin={"line":8.5,"over":null,"under":null,"pOver":70.2} cons=- underdog 9.5 fair=- ev=- best=-
+TENNIS Shintaro Mochizuki Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":75.4} cons=- underdog 0.5 fair=- ev=Over -14.14 best=underdog Over -14.14 pinnacle null
+TENNIS Shintaro Mochizuki Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":41.3} cons=- underdog 2.5 fair=- ev=Under -13.28 best=underdog Under -13.28 pinnacle null
+TENNIS Dane Sweeny Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":66.8} cons=- underdog 0.5 fair=- ev=Over -13.34 best=underdog Over -13.34 pinnacle null
+TENNIS Maria Sakkari Total Games pin={"line":21.5,"over":null,"under":null,"pOver":45.7} cons=pinnacle 21.5 45.7,kalshi 21.5 46.5 sleeper 21.5 fair=46.5 ev=Under -1.71 best=sleeper Under -1.71 consensus null
+TENNIS Maria Sakkari Games Won pin={"line":12.5,"over":null,"under":null,"pOver":45.7} cons=- sleeper 12.5 fair=- ev=Under -7.08 best=sleeper Under -7.08 pinnacle null
+TENNIS Mia Pohankova Games Won pin={"line":11,"over":null,"under":null,"pOver":48.6} cons=- sleeper 11.5 fair=- ev=Under -1.43 best=sleeper Under -1.43 pinnacle null
+TENNIS Elina Svitolina Games Played pin={"line":18.5,"over":null,"under":null,"pOver":45} cons=- underdog 18.5 fair=- ev=Under -10.2 | prizepicks 18.5 fair=- ev=Under -3.21 best=prizepicks Under -3.21 pinnacle null
+TENNIS Elina Svitolina Games Won pin={"line":12.5,"over":null,"under":null,"pOver":34.7} cons=- underdog 12.5 fair=- ev=Under -10.8 | sleeper 12.5 fair=- ev=Over -11.75 best=underdog Under -10.8 pinnacle null
+TENNIS Elina Svitolina 1st Set Games Played pin={"line":8.5,"over":null,"under":null,"pOver":53.5} cons=- underdog 8.5 fair=- ev=Under -10.63 best=underdog Under -10.63 pinnacle null
+TENNIS Elina Svitolina Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":22.1} cons=- underdog 2.5 fair=- ev=Under -12.68 best=underdog Under -12.68 pinnacle null
+TENNIS Hanyu Guo Games Won pin={"line":6.5,"over":null,"under":null,"pOver":44.5} cons=- underdog 6.5 fair=- ev=Under -3.81 | prizepicks 6.5 fair=- ev=Under -3.79 best=prizepicks Under -3.79 pinnacle null
+TENNIS Hanyu Guo Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":27.8} cons=- underdog 0.5 fair=- ev=Under -8.85 best=underdog Under -8.85 pinnacle null
+TENNIS Maja Chwalinska Total Games pin={"line":19.5,"over":null,"under":null,"pOver":54.1} cons=pinnacle 19.5 54.1,kalshi 19.5 54.5 sleeper 19.5 fair=54.5 ev=Over -6.1 best=sleeper Over -6.1 consensus null
+TENNIS Marin Cilic Games Played pin={"line":23.5,"over":null,"under":null,"pOver":47.3} cons=- underdog 23.5 fair=- ev=Over -11.64 best=underdog Over -11.64 pinnacle null
+TENNIS Marin Cilic 1st Set Games Played pin={"line":10.5,"over":null,"under":null,"pOver":32.7} cons=- underdog 9.5 fair=- ev=- best=-
+TENNIS Marin Cilic Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":41.8} cons=- underdog 2.5 fair=- ev=Under -14.06 best=underdog Under -14.06 pinnacle null
+TENNIS Yosuke Watanuki Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":62.5} cons=- underdog 0.5 fair=- ev=Over -13.34 best=underdog Over -13.34 pinnacle null
+TENNIS Mattia Bellucci Games Played pin={"line":21.5,"over":null,"under":null,"pOver":50} cons=- underdog 21.5 fair=- ev=Over -11.08 best=underdog Over -11.08 pinnacle null
+TENNIS Mattia Bellucci 1st Set Games Played pin={"line":10.5,"over":null,"under":null,"pOver":27.2} cons=- underdog 9.5 fair=- ev=- best=-
+TENNIS Mattia Bellucci Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":31.3} cons=- underdog 2.5 fair=- ev=Under -13.28 best=underdog Under -13.28 pinnacle null
+TENNIS Iva Jovic Games Played pin={"line":19.5,"over":null,"under":null,"pOver":54.1} cons=pinnacle 19.5 54.1,kalshi 19.5 54.5 underdog 20.5 fair=- ev=Under -11.52 | sleeper 19.5 fair=54.5 ev=Over -7.18 best=sleeper Over -7.18 consensus null
+TENNIS Iva Jovic Games Won pin={"line":12.5,"over":null,"under":null,"pOver":44.1} cons=- underdog 12.5 fair=- ev=Over -10.26 | sleeper 12.5 fair=- ev=Over -7.78 best=sleeper Over -7.78 pinnacle null
+TENNIS Iva Jovic 1st Set Games Played pin={"line":8.5,"over":null,"under":null,"pOver":63.6} cons=- underdog 9.5 fair=- ev=- best=-
+TENNIS Iva Jovic Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":34} cons=- underdog 2.5 fair=- ev=Over -14.06 best=underdog Over -14.06 pinnacle null
+TENNIS Maja Chwalinska Games Won pin={"line":9,"over":null,"under":null,"pOver":51.4} cons=- underdog 8.5 fair=- ev=Over 2.28 | prizepicks 9.5 fair=- ev=Under -2.08 | sleeper 8.5 fair=- ev=Over -3.65 best=underdog Over 2.28 pinnacle gap
+TENNIS Maja Chwalinska Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":49.2} cons=- underdog 0.5 fair=- ev=Over -9.06 best=underdog Over -9.06 pinnacle null
+TENNIS Luka Pavlovic Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":43.4} cons=- underdog 0.5 fair=- ev=Under -11.48 best=underdog Under -11.48 pinnacle null
+TENNIS Jasmine Paolini Games Played pin={"line":21.5,"over":null,"under":null,"pOver":49.3} cons=pinnacle 22.5 42.9,kalshi 22.5 43.5 underdog 21.5 fair=- ev=Over -10.92 | prizepicks 21.5 fair=- ev=Over -8.98 | sleeper 22.5 fair=43.5 ev=Under -5.01 best=sleeper Under -5.01 consensus null
+TENNIS Jasmine Paolini Games Won pin={"line":12.5,"over":null,"under":null,"pOver":42.2} cons=- underdog 12.5 fair=- ev=Under -14.17 | sleeper 12.5 fair=- ev=Under -9.63 best=sleeper Under -9.63 pinnacle null
+TENNIS Jasmine Paolini 1st Set Games Played pin={"line":8.5,"over":null,"under":null,"pOver":69.6} cons=- underdog 9.5 fair=- ev=Over -4.86 | prizepicks 9.5 fair=- ev=Under -2.9 best=prizepicks Under -2.9 pinnacle null
+TENNIS Jasmine Paolini Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":72.3} cons=- underdog 0.5 fair=- ev=Under -13.21 best=underdog Under -13.21 pinnacle null
+TENNIS Jasmine Paolini Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":38.1} cons=- underdog 2.5 fair=- ev=Under -10.89 best=underdog Under -10.89 pinnacle null
+TENNIS Tomas Machac Games Played pin={"line":22.5,"over":null,"under":null,"pOver":50} cons=- underdog 22.5 fair=- ev=Over -11.08 best=underdog Over -11.08 pinnacle null
+TENNIS Tomas Machac 1st Set Games Played pin={"line":10.5,"over":null,"under":null,"pOver":29.9} cons=- underdog 9.5 fair=- ev=- best=-
+TENNIS Tomas Machac Sets Played pin={"line":2.5,"over":null,"under":null,"pOver":39.1} cons=- underdog 2.5 fair=- ev=Under -13.37 best=underdog Under -13.37 pinnacle null
+TENNIS Aleksandar Vukic Sets Won pin={"line":0.5,"over":null,"under":null,"pOver":57.3} cons=- underdog 0.5 fair=- ev=Over -14.39 best=underdog Over -14.39 pinnacle null
+TENNIS Liam Draxl Games Played pin={"line":22.5,"over":null,"under":null,"pOver":48.4} cons=- underdog 22.5 fair=- ev=Under -8.16 best=underdog Under -8.16 pinnacle null
+TENNIS Liam Draxl 1st Set Games Played pin={"line":10.5,"over":null,"under":null,"pOver":25.2} cons=- underdog 9.5 fair=- ev=- best=-
