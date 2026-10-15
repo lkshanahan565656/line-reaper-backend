@@ -1530,7 +1530,7 @@ body.no-help .clv-info { display:none; }
     <button class="sport-chip" data-evkind="dfs" onclick="evSet('kind','dfs')">DFS (PP/UD)</button>
     <button class="sport-chip" data-evkind="alt" onclick="evSet('kind','alt')" title="FanDuel and BetRivers ladders and alternate lines, priced off Pinnacle and Kalshi">ALT LINES</button>
     <button class="sport-chip" data-evkind="esports" onclick="evSet('kind','esports')" title="BetRivers esports lines (match, maps, kill and round lines), priced off Pinnacle and Kalshi">ESPORTS</button>
-    <button class="sport-chip" data-evkind="stale" onclick="evSet('kind','stale')" title="Books and pick'em apps still showing the number Pinnacle just moved off">STALE</button>
+    <button class="sport-chip" data-evkind="stale" onclick="evSet('kind','stale')" title="Books and pick'em apps still showing the number Pinnacle (or, in esports, another app) just moved off">STALE</button>
     <button class="sport-chip" data-evkind="record" onclick="evSet('kind','record')" style="border-color:#10b98155">TRACK RECORD</button>
     <span style="font-size:10px;color:#64748b;letter-spacing:1.5px;margin-left:6px">MIN EV</span>
     <input id="evMin" type="number" step="0.5" value="1" style="width:64px;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('minEv', parseFloat(this.value) || 0)">
@@ -5039,7 +5039,7 @@ function renderEsports() {
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
-const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
+const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, esStale: [], esStaleLag: null, esStaleLagOpen: false, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
 const EV_BOOK_NAMES = { pick6:'DK Pick6', draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
@@ -5061,7 +5061,7 @@ async function loadEv() {
     const r = await fetch(`${BACKEND_URL}/api/ev?limit=1000`);
     if (r.status === 404) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">BACKEND TOO OLD</div><div class="empty-sub">The +EV screener needs backend v3.15 or later.</div></div>`; return; }
     const d = await r.json();
-    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
+    Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
     renderEv();
   } catch (e) {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(e.message)}</div></div>`;
@@ -5138,7 +5138,7 @@ async function renderEvRecord(el) {
     <div style="font-size:11px;color:#64748b;margin-top:8px">Main lines only. Every price flagged at the tracking threshold is logged at its first price and graded against the sharp fair price just before the game starts. A close read more than an hour before the start isn't graded${s.closeCheck && (s.closeCheck.stale + s.closeCheck.unverified) ? ` (${s.closeCheck.stale + s.closeCheck.unverified} so far)` : ''}. Positive CLV over a large sample is the standard proof an edge is real.</div>
     ${o.n ? '' : `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">NO GRADED BETS YET</div><div class="empty-sub">Bets grade at game start. The first numbers show up after tonight's games begin.</div></div>`}
     ${table('BY BOOK', s.byBook, evBookName)}${table('BY SPORT', s.bySport, k => k.toUpperCase())}${table('BY MARKET', s.byMarket, k => EV_MARKET[k] || k)}${table('BY FAIR-PRICE SOURCE', s.bySource)}
-    ${evAltRecord(s.alt)}${evEsRecord(s.esports)}${evStaleRecord(s.stale, s.staleApps)}
+    ${evAltRecord(s.alt)}${evEsRecord(s.esports)}${evStaleRecord(s.stale, s.staleApps, s.esStale)}
     ${(bets.bets || []).length ? `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
       <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">RECENTLY GRADED</div>
       ${bets.bets.map(b => `<div style="display:flex;gap:10px;flex-wrap:wrap;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px">
@@ -5291,6 +5291,7 @@ function renderEvAlt(el) {
   if (!rows.length) { el.innerHTML = head + `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO RUNG CLEARS RIGHT NOW</div><div class="empty-sub">${model.length ? 'Tick "show model-only" to see rungs priced on the curve alone.' : 'Nothing beats the sharp ladder at this filter.'}</div></div>`; return; }
   el.innerHTML = head + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
     if (r.locked) return `<div style="padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:13px;color:#cbd5e1"><span class="es-lock" onclick="acctNeedPro('The +EV screener')">+EV</span> ${escAttr((r.sport || '').toUpperCase())} · ${escAttr(r.event || '')}</div>`;
+    if (r.es) return evEsStaleRow(r, when);
     const what = r.player ? `${escAttr(r.player)} · ${escAttr(EV_MARKET[r.market] || r.market)} ${Math.round(r.point + 0.5)}+` : `${escAttr(EV_MARKET[r.market] || r.market)} · ${escAttr(r.side)}${r.market === 'totals' ? ' ' + r.point : ''}`;
     const srcs = (r.sources || []).map(x => `${EV_ALT_SRC[x.book] || x.book} ${x.p}%${x.exact ? '' : ' (from ' + x.line + ')'}`.replace(' (from undefined)', ' (curve)')).join(' · ');
     const tag = r.clears ? `<span style="color:#10b981;font-weight:700">✓ CLEARS</span>` : `<span style="color:#f59e0b;font-weight:700">MODEL-ONLY</span>`;
@@ -5319,8 +5320,8 @@ function renderEvAlt(el) {
 // Pinnacle-only move shows as single-source and never counts.
 const EV_STALE_VENUE = { fanduel: 'FanDuel', betrivers: 'BetRivers', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6' };
 const EV_STALE_KIND = { ml: 'Moneyline', spread: 'Spread', total: 'Total', prop: 'Player prop' };
-function evStaleRecord(a, apps) {
-  if (!a && !apps) return '';
+function evStaleRecord(a, apps, es) {
+  if (!a && !apps && !es) return '';
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
   const src = a?.bySource || {};
   const row = (label, n, val, good, unit = 'graded') => `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
@@ -5339,9 +5340,21 @@ function evStaleRecord(a, apps) {
     // green or red only on the legs still up at the next read; none of those closed yet → neutral
     return row(label, n, 'close EV ' + pct(v?.closeEvAvg) + ex, v?.execClosed > 0 ? v.execCloseEvAvg > 0 : null, 'closed'); };
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
-    <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0)} WAITING FOR CLOSE</div>
+    <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0) + (es?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}
-    ${apps ? app(apps.stale, "Pick'em apps, cleared") + app(apps.single, "Pick'em apps, single-source") : ''}</div>`;
+    ${apps ? app(apps.stale, "Pick'em apps, cleared") + app(apps.single, "Pick'em apps, single-source") : ''}${evEsStaleRecord(es)}</div>`;
+}
+// esports legs at an app another app had just moved off: graded on the result,
+// the close on the app's own line by the start
+function evEsStaleRecord(es) {
+  if (!es) return '';
+  const o = es.overall || {};
+  const n = (o.wins || 0) + (o.losses || 0);
+  const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
+  const val = n ? `${o.wins}-${o.losses} · ROI ${pct(o.roi)}${o.mktMoved ? ` · ${Math.round(100 * o.mktBeatShare)}% of ${o.mktMoved} moves our way` : ''}` : '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
+      <span style="flex:1 1 200px;color:#e2e8f0;font-family:inherit">Esports kill lines, another app moved first</span><span style="color:#64748b">${n} graded · ${es.open || 0} waiting</span>
+      <span style="min-width:110px;margin-left:auto;text-align:right;color:${!n ? '#64748b' : o.units > 0 ? '#10b981' : '#f87171'}">${n ? val : 'not graded yet'}</span></div>`;
 }
 function evStaleLag(L) {
   if (!L) return '';
@@ -5360,23 +5373,26 @@ function evStaleLag(L) {
 function renderEvStale(el) {
   document.querySelectorAll('[data-evkind]').forEach(b => b.classList.toggle('active', b.dataset.evkind === 'stale'));
   document.getElementById('evBookRow').innerHTML = '';
-  const list = evState.stale;
+  const list = [...evState.stale, ...evState.esStale];
   const sports = [...new Set(list.map(r => r.sport).filter(Boolean))].sort();
   document.getElementById('evSportRow').innerHTML = ['all', ...sports].map(s =>
     `<button class="sport-chip ${evState.sport === s ? 'active' : ''}" onclick="evSet('sport','${escAttr(s)}')">${s === 'all' ? 'ALL' : escAttr(s.toUpperCase())} ${s === 'all' ? list.length : list.filter(r => r.sport === s).length}</button>`).join('');
   const all = list.filter(r => (evState.sport === 'all' || !sports.includes(evState.sport) || r.sport === evState.sport) && (r.locked || r.ev >= evState.minEv) &&
     (!evState.search || `${r.event} ${r.player || ''} ${r.side || ''} ${r.book || ''}`.toLowerCase().includes(evState.search)));
-  const clear = all.filter(r => r.clears), locked = all.filter(r => r.locked), single = all.filter(r => !r.clears && !r.locked);
-  const rows = evState.staleSingle ? [...clear, ...locked, ...single] : [...clear, ...locked];
+  const clear = all.filter(r => r.clears && !r.es), locked = all.filter(r => r.locked), single = all.filter(r => !r.clears && !r.locked && !r.es);
+  const esRows = all.filter(r => r.es && !r.locked);
+  const rows = evState.staleSingle ? [...clear, ...esRows, ...locked, ...single] : [...clear, ...esRows, ...locked];
   const when = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
   const head = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:12px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
-      ${locked.length ? `<span style="color:#f1f5f9;font-weight:700">${locked.length} STALE (PRO)</span>` : `<span style="color:#f1f5f9;font-weight:700">${clear.length} CLEAR</span><span>${single.length} SINGLE-SOURCE</span>`}
+      ${locked.length ? `<span style="color:#f1f5f9;font-weight:700">${locked.length} STALE (PRO)</span>` : `<span style="color:#f1f5f9;font-weight:700">${clear.length} CLEAR</span><span>${single.length} SINGLE-SOURCE</span>${esRows.length ? `<span>${esRows.length} ESPORTS</span>` : ''}`}
       <label style="display:flex;gap:4px;align-items:center;letter-spacing:0;font-family:inherit;margin-left:auto"><input type="checkbox" ${evState.staleSingle ? 'checked' : ''} onchange="evState.staleSingle=this.checked;renderEv()"> show single-source</label></div>
     <div style="font-size:11px;color:#64748b;margin:-4px 0 12px">FanDuel, BetRivers and the pick'em apps still showing the number Pinnacle just moved off, priced at Pinnacle's new fair at the venue's own number. A row clears at +2% when Kalshi, FanDuel or BetRivers moved the same way too; a Pinnacle-only move is single-source and doesn't count. Not graded yet: tracked against the close in their own record (TRACK RECORD), with no alerts until that record beats the close over 50 bets.</div>
-    ${evStaleLag(evState.staleLag)}`;
+    <div style="font-size:11px;color:#64748b;margin:-4px 0 12px">Esports kill lines have no Pinnacle line, so there the leader is whichever app moves first: a row is an app still on the number Underdog, PrizePicks or Sleeper just moved off, priced on the mover's new line with no model of ours. Not graded yet: tracked in its own record, no alerts.</div>
+    ${evStaleLag(evState.staleLag)}${evEsStaleLag(evState.esStaleLag)}`;
   if (!rows.length) { el.innerHTML = head + `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NOTHING STALE RIGHT NOW</div><div class="empty-sub">${single.length ? 'Tick "show single-source" to see venues behind a Pinnacle-only move.' : 'Every venue has caught up with Pinnacle, or nothing behind is worth the MIN EV.'}</div></div>`; return; }
   el.innerHTML = head + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
     if (r.locked) return `<div style="padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:13px;color:#cbd5e1"><span class="es-lock" onclick="acctNeedPro('The +EV screener')">+EV</span> ${escAttr((r.sport || '').toUpperCase())} · ${escAttr(r.event || '')}</div>`;
+    if (r.es) return evEsStaleRow(r, when);
     const what = r.player ? `${escAttr(r.player)} · ${escAttr(r.marketLabel || r.market)} ${escAttr(r.side)} ${escAttr(r.line)}` : `${escAttr(r.marketLabel)} · ${escAttr(r.side)} ${escAttr(r.line)}`;
     const tag = r.clears ? `<span style="color:#10b981;font-weight:700">✓ CLEARS</span> · ${escAttr(r.confirmedBy.map(c => EV_ALT_SRC[c] || c).join(' and '))} moved too`
       : r.confirmedBy?.length ? `<span style="color:#94a3b8;font-weight:700">UNDER +2%</span> · ${escAttr(r.confirmedBy.map(c => EV_ALT_SRC[c] || c).join(' and '))} moved too` : `<span style="color:#f59e0b;font-weight:700">SINGLE-SOURCE</span> · Pinnacle only`;
@@ -5400,6 +5416,45 @@ function renderEvStale(el) {
       </div>
     </div>`;
   }).join('') + `</div>`;
+}
+
+// an esports app still on the number another app just moved off (esstale.js)
+const ES_STALE_APP = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
+function evEsStaleRow(r, when) {
+  const app = ES_STALE_APP[r.app] || r.app, lead = ES_STALE_APP[r.leader] || r.leader;
+  const price = r.app === 'prizepicks' ? 'pick' : (r.mult ? r.mult + 'x' : '1x');
+  const moved = r.leadPre === r.leadPost ? `bent its payout on ${escAttr(r.leadPost)}` : `${escAttr(r.leadPre)} → ${escAttr(r.leadPost)}`;
+  return `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--card);border:1px solid ${r.clears ? '#10b98155' : 'var(--border)'};border-radius:10px">
+      <div style="min-width:70px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:17px;color:${r.clears ? '#10b981' : '#a3a3a3'}">${r.ev > 0 ? '+' : ''}${r.ev.toFixed(1)}%</div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:14px;font-weight:700;color:#f1f5f9">${escAttr(r.player || '')} · ${escAttr(r.marketLabel || r.market || '')} ${escAttr(r.side)} ${escAttr(r.line)}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px"><span style="color:#a78bfa;font-weight:700">${escAttr((r.sport || '').toUpperCase())}</span> · ${escAttr(r.event || '')} · ${when(r.start)}</div>
+        <div style="font-size:11px;color:#cbd5e1;margin-top:3px">${escAttr(lead)} moved ${r.mins} min ago: ${moved} · ${escAttr(app)} still on ${escAttr(r.line)}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:3px"><span style="color:#a78bfa;font-weight:700">ESPORTS</span> · no model, ${escAttr(lead)}'s new line priced at ${escAttr(app)}'s${r.preFair != null ? ' · fair here before the move ' + r.preFair + '%' : ''}${r.entry ? ' · priced as a ' + escAttr(r.entry) : ''}</div>
+      </div>
+      <div style="text-align:center;min-width:90px">
+        <div style="font-size:12px;font-weight:700;color:#f1f5f9">${escAttr(app)}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#fff;font-weight:700">${escAttr(price)}</div>
+        ${r.readMins >= 2 ? `<div style="font-size:9px;color:${r.readMins >= 10 ? '#f59e0b' : '#64748b'}" title="When we last read this app; its line may have moved since">read ${r.readMins} min ago</div>` : ''}
+      </div>
+      <div style="text-align:center;min-width:80px" title="${escAttr(lead)}'s new line, read at this number">
+        <div style="font-size:9px;color:#64748b;letter-spacing:1.5px">FAIR NOW</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbd5e1">${fmtAm(r.fairPrice)} · ${r.fairProb}%</div>
+      </div>
+    </div>`;
+}
+function evEsStaleLag(L) {
+  if (!L) return '';
+  const cells = (L.lag || []).filter(c => c.moves > 0);
+  const pctOr = v => v == null ? '—' : `${Math.round(v)}%`;
+  const moves = Object.values(L.leads || {}).reduce((a, x) => a + x, 0);
+  return `<details ${evState.esStaleLagOpen ? 'open' : ''} ontoggle="evState.esStaleLagOpen=this.open" style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+    <summary style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;cursor:pointer">ESPORTS: HOW FAST EACH APP FOLLOWS THE OTHERS · ${moves} MOVES IN ${L.hours < 1 ? Math.round(L.hours * 60) + ' MIN' : Math.round(L.hours * 10) / 10 + ' H'}</summary>
+    <div style="font-size:11px;color:#64748b;padding:0 14px 8px">A move is an app's chance of the over at its own old line shifting ${L.thresholds?.moveProbPts} points (a new line, or bent payouts). Another app follows when its own number moves half as far the same way within ${L.thresholds?.windowMin} min. SAME WAY: of the apps that moved at all, the share that went the leader's way. AHEAD: it had already moved that way. A lag under one read shows as the read's length.</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;min-width:520px">
+      <tr style="color:#64748b;text-align:right"><th style="text-align:left;padding:5px 14px">LEADER → APP</th><th style="padding-left:10px">MOVES</th><th style="padding-left:10px">FOLLOWED</th><th style="padding-left:10px">SAME WAY</th><th style="padding-left:10px">MEDIAN LAG</th><th style="padding-left:10px">AHEAD</th><th style="padding-left:10px">PULLED</th><th style="padding-right:14px">NOT IN 1 H</th></tr>
+      ${cells.map(c => `<tr style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:#cbd5e1"><td style="text-align:left;padding:5px 14px;color:#f1f5f9">${escAttr(ES_STALE_APP[c.leader] || c.leader)} → ${escAttr(ES_STALE_APP[c.app] || c.app)}</td><td>${c.moves}</td><td>${c.followed}</td><td>${pctOr(c.sameWayPct)}</td><td>${c.medianMin == null ? '—' : c.medianMin + ' min'}</td><td>${(c.ahead || 0) + (c.led || 0)}</td><td>${c.pulled || 0}</td><td style="padding-right:14px">${c.none || 0}</td></tr>`).join('') || `<tr><td colspan="8" style="padding:8px 14px;color:#64748b">No esports moves closed since the server started.</td></tr>`}
+    </table></div></details>`;
 }
 
 // BetRivers' esports lines (esbooks.js on the backend): a line CLEARS when
@@ -5436,6 +5491,7 @@ function renderEvEs(el) {
   if (!rows.length) { el.innerHTML = head + `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO ESPORTS LINE CLEARS RIGHT NOW</div><div class="empty-sub">${single.length ? 'Tick "show single-source" to see lines priced off Pinnacle alone.' : 'BetRivers posts tier-one events only; nothing beats the sharp price at this filter.'}</div></div>`; return; }
   el.innerHTML = head + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
     if (r.locked) return `<div style="padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:13px;color:#cbd5e1"><span class="es-lock" onclick="acctNeedPro('The +EV screener')">+EV</span> ${escAttr((r.sport || '').toUpperCase())} · ${escAttr(r.event || '')}</div>`;
+    if (r.es) return evEsStaleRow(r, when);
     const srcs = (r.sources || []).map(x => `${EV_ALT_SRC[x.book] || x.book} ${x.p}%${x.exact ? '' : ' (between its lines)'}`).join(' · ');
     const tag = (r.clears ? `<span style="color:#10b981;font-weight:700">✓ CLEARS</span>` : `<span style="color:#f59e0b;font-weight:700">SINGLE-SOURCE</span>`)
       + (r.share ? ` · <span style="color:#fbbf24" title="Pinnacle's team kills on the map × the player's share of his team's kills">PIN KILL SHARE</span> ${r.share.pinTeamKills} × ${r.share.pct}% = ${r.share.mean}` : '')
