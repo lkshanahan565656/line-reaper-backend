@@ -6,11 +6,19 @@
 // payout, and isn't allowed in flex here), Sleeper's legs multiplied together.
 // slip.js prices the entry with legs from one series moving together.
 //
+// Every leg is priced at the fair the PROPS Lines table shows for that book's
+// line (server attachLinesFair: our kill share, rounds or head-to-head model
+// where they price it, the books' consensus elsewhere), and a best slip takes
+// one leg a match: the apps cut the payout on same-match lineups (Underdog
+// reprices them, PrizePicks says it lowers them), so a best slip's EV has to
+// come from its legs, not from correlation the app won't pay for. Same-match
+// entries live under MATCH STACKS with the payout they need.
+//
 // The board often has only a handful of +EV legs, so a book's best slip can sit
 // just under break-even. That slip is still shown, marked 'near', so it's clear
 // which entry is closest and by how much it falls short.
 
-const { priceSlip, PAYOUTS, factorSport } = require('./slip');
+const { priceSlip, PAYOUTS, factorSport, slipHitsDistribution } = require('./slip');
 
 const LEG_FLOOR = -6;      // % EV: legs further below their book's break-even never help a slip
 const POOL_MAX = 20;       // best legs per book the greedy search looks at
@@ -19,20 +27,48 @@ const MAX_LEGS = { PP: 6, UD: 6, SL: 6 };
 
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// One pick → the leg as BOOK takes it, or null when that book doesn't carry it
-function bookLeg(p, book) {
-  const b = p.pricing?.books?.[book];
-  if (!b || !p.side) return null;
+// The calibration shift that moves a leg's own series pricing (slip.js, the
+// consensus mean per map) onto PROB, so same-series legs keep their link but
+// each one hits as often as the fair it was picked on says.
+function shiftTo(leg, prob) {
+  if (leg.meanPerMap == null || leg.k == null) return 0;
+  const base = slipHitsDistribution([{ ...leg, shift: 0 }])[1];
+  return Number.isFinite(base) ? +(prob - base).toFixed(4) : 0;
+}
+
+// One pick → the leg as BOOK takes it, or null when that book doesn't carry
+// it. Priced at the Lines table's fair for that book's line. SIDE: the side
+// the person picked (the slip bar); left out, the side the fair leans.
+// BETTABLE: a model fair counts only where the Lines table marks it green
+// (a Pinnacle-based price agrees); a model-only lean is no leg for an auto slip.
+function bookLeg(p, book, { side = null, bettable = false } = {}) {
+  if (!p?.pricing) return null;
+  const base = {
+    player: p.player, team: p.team || '', gameId: p.gameId ?? null, sport: p.sport, matchTitle: p.matchTitle || '',
+    market: p.displayMarket || p.market, rawMarket: p.market, startTime: p.startTime || '',
+    meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
+  };
+  const lines = p.pricing.lines;
+  const m = lines?.books?.[book];
+  if (m) {
+    if (bettable && !m.clears) return null;
+    const s = side || m.side;
+    const q = m.sides?.[s];
+    if (!q || (book === 'UD' && q.decimal)) return null;
+    const leg = { ...base, side: s, line: m.line, prob: q.prob, ev: q.ev, mult: q.mult ?? null, fair: m.src };
+    return { ...leg, shift: shiftTo(leg, q.prob) };
+  }
+  if (lines && !lines.marketOk) return null;
+  const b = p.pricing.books?.[book];
+  if (!b || !p.side || (side && side !== p.side)) return null;
   const ev = book === 'PP' ? p.ppEv : book === 'UD' ? p.udEv : p.sleeperEv;
   if (ev == null || !Number.isFinite(b.prob)) return null;
   if (book === 'UD' && b.decimal) return null;   // decimal-priced Underdog legs pay differently
-  return {
-    player: p.player, team: p.team || '', gameId: p.gameId ?? null, sport: p.sport, matchTitle: p.matchTitle || '',
-    market: p.displayMarket || p.market, rawMarket: p.market, side: p.side, startTime: p.startTime || '',
-    line: b.line, prob: b.prob, ev, mult: b.mult ?? null, shift: b.shift || 0,
-    meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
-  };
+  return { ...base, side: p.side, line: b.line, prob: b.prob, ev, mult: b.mult ?? null, shift: b.shift || 0, fair: 'market' };
 }
+
+// The match a leg belongs to, for one leg a match
+const matchKey = l => (l.gameId != null ? `g:${l.gameId}` : norm(l.matchTitle) ? `t:${norm(l.matchTitle)}` : null);
 
 // Expected log growth of a bankroll staking the slip's own Kelly fraction. EV
 // alone always favours the longest entry (a 6-pick at +60% that hits 4% of the
@@ -66,18 +102,26 @@ function priceOn(book, legs) {
 // The choice at each step doesn't depend on the final size, so one pass gives
 // the best entry at every size. One pick per player, and the apps want at least
 // two teams in an entry.
-function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX } = {}) {
-  const rest = pool.slice().sort((a, b) => b.ev - a.ev).slice(0, poolMax);
+function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX, oneMatch = false } = {}) {
+  let rest = pool.slice().sort((a, b) => b.ev - a.ev);
+  if (oneMatch) {
+    // the best few legs of each match, so one busy match can't fill the pool
+    const per = new Map();
+    rest = rest.filter(l => { const k = matchKey(l); if (!k) return true; const n = per.get(k) || 0; per.set(k, n + 1); return n < 2; });
+  }
+  rest = rest.slice(0, poolMax);
   const chosen = [];
   const sizes = [];
   while (chosen.length < maxLegs && rest.length) {
     const players = new Set(chosen.map(l => norm(l.player)));
+    const matches = new Set(chosen.map(matchKey).filter(Boolean));
     const teams = new Set(chosen.map(l => norm(l.team)).filter(Boolean));
     const oneTeam = chosen.length > 0 && teams.size === 1 && chosen.every(l => norm(l.team));
     let bestIdx = -1, best = null;
     for (let i = 0; i < rest.length; i++) {
       const c = rest[i];
       if (players.has(norm(c.player))) continue;
+      if (oneMatch && matches.has(matchKey(c))) continue;
       if (oneTeam && teams.has(norm(c.team))) continue;
       if (!chosen.length) { bestIdx = i; break; }
       const priced = priceOn(book, [...chosen, c])[0];
@@ -181,7 +225,7 @@ function present(book, s, kind = 'best') {
     picks: s.picks.map(l => ({
       player: l.player, team: l.team, sport: l.sport, market: l.market, rawMarket: l.rawMarket, side: l.side, line: l.line,
       gameId: l.gameId, matchTitle: l.matchTitle,
-      prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime, flipped: l.flipped || undefined,
+      prob: r1(l.prob * 100), ev: l.ev, mult: l.mult, startTime: l.startTime, flipped: l.flipped || undefined, fair: l.fair,
     })),
   };
 }
@@ -194,10 +238,10 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true
   });
   const books = {}, pool = {}, slips = [], stacks = {};
   for (const book of ['PP', 'UD', 'SL']) {
-    const all = live.map(p => bookLeg(p, book)).filter(Boolean);
+    const all = live.map(p => bookLeg(p, book, { bettable: true })).filter(Boolean);
     const legs = all.filter(l => l.ev >= LEG_FLOOR);
-    pool[book] = { legs: legs.length, plus: legs.filter(l => l.ev > 0).length };
-    const sizes = buildForBook(legs, book, MAX_LEGS[book]).filter(s => s.ev > -near).map(s => present(book, s));
+    pool[book] = { legs: legs.length, plus: legs.filter(l => l.ev > 0).length, model: legs.filter(l => l.fair !== 'market').length };
+    const sizes = buildForBook(legs, book, MAX_LEGS[book], { oneMatch: true }).filter(s => s.ev > -near).map(s => present(book, s));
     books[book] = sizes;
     if (sizes.length) slips.push(sizes[0]);
     stacks[book] = withStacks ? stacksForBook(all, book).map(s => present(book, s, 'stack')) : [];
@@ -210,10 +254,11 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true
 // One slip the user built, priced on each book that takes every leg, at that
 // book's own lines → { PP: entry | null, UD: ..., SL: ... }. A book that doesn't
 // carry a leg, or wants two picks on one player, can't take the slip.
-function priceOnBooks(picks) {
+// SIDES: the side picked for each leg (the slip bar), else the fair's lean.
+function priceOnBooks(picks, sides = []) {
   const out = {};
   for (const book of ['PP', 'UD', 'SL']) {
-    const legs = picks.map(p => p && bookLeg(p, book));
+    const legs = picks.map((p, i) => p && bookLeg(p, book, { side: sides[i] || null }));
     const players = new Set(legs.map(l => l && norm(l.player)));
     const best = legs.length >= 2 && legs.every(Boolean) && players.size === legs.length ? priceOn(book, legs)[0] : null;
     out[book] = best ? present(book, { ...best, picks: legs }) : null;
@@ -221,4 +266,4 @@ function priceOnBooks(picks) {
   return out;
 }
 
-module.exports = { autoSlips, priceOnBooks, bookLeg, priceOn, buildForBook, stacksForBook, otherSide, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };
+module.exports = { autoSlips, priceOnBooks, bookLeg, matchKey, priceOn, buildForBook, stacksForBook, otherSide, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };

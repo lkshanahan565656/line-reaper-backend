@@ -38,6 +38,14 @@ const AGREE_MAX_PTS = 5;
 // median of 3+ other books is left off the board as unverified.
 const RELAYED_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore']);
 const OUTLIER_PTS = 6;
+// Matchbook's US lines are one market maker's quotes: about $48 at the best
+// price, no money matched on 95% of markets, and within 2 points of
+// Pinnacle's no-vig on 99% of shared lines (75 live minutes, 2026-10-15). It
+// follows the sharp market rather than adding a second opinion, so it only
+// counts beside another sharp source: never a fair on its own (its
+// alternate totals priced BetRivers rows Pinnacle had no number for) and
+// never the second vote in 'agree'.
+const COMPANION_SOURCES = new Set(['matchbook']);
 function isOutlier(g, book, side) {
   if (!RELAYED_BOOKS.has(book) || !g.all || !g.all[book]) return false;
   const i = g.sides.indexOf(side);
@@ -225,7 +233,7 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
   const novig = ([book, px]) => ({ book, p: devig(sides.map(s => px[s]), method) });
 
   const sharp = complete.filter(([b]) => weights[b]).map(novig).filter(x => x.p);
-  if (sharp.length) {
+  if (sharp.length && sharp.some(x => !COMPANION_SOURCES.has(x.book))) {
     const W = sharp.reduce((a, x) => a + weights[x.book], 0);
     const fair = {};
     sides.forEach((s, i) => { fair[s] = sharp.reduce((a, x) => a + weights[x.book] * x.p[i], 0) / W; });
@@ -248,7 +256,7 @@ function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minCo
 // → { n, spreadPts, agree } (agree: 2+ sources within AGREE_MAX_PTS)
 function agreement(f, side, maxPts = AGREE_MAX_PTS) {
   const i = f.sides.indexOf(side);
-  const ps = Object.values(f.novig || {}).map(p => p[i]).filter(Number.isFinite);
+  const ps = Object.entries(f.novig || {}).filter(([b]) => !COMPANION_SOURCES.has(b)).map(([, p]) => p[i]).filter(Number.isFinite);
   if (ps.length < 2) return { n: ps.length, spreadPts: null, agree: false };
   const spreadPts = round((Math.max(...ps) - Math.min(...ps)) * 100, 1);
   return { n: ps.length, spreadPts, agree: spreadPts <= maxPts };
@@ -304,6 +312,11 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
         const ev = (gp * d - 1) * 100;
         // one placeholder line means that book's whole event is suspect
         if (isOutlier(g, book, side)) { suspect.add(`${book}|${q.event}`); continue; }
+        // a second-hand price only plays against a sharp one: without one the
+        // fair is the median of soft books, and the play is the one book off
+        // the rest (7 of 63 plays live, 6 of them bet365 props, 5 to 7 points
+        // from the others: unverifiable placeholders or stale copies)
+        if (g.source === 'consensus' && RELAYED_BOOKS.has(book)) continue;
         if (ev < minEv) continue;
         const a = agreement(g, side, agreeMaxPts);
         rows.push({
@@ -380,5 +393,5 @@ function describeEv(r) {
 
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
 };

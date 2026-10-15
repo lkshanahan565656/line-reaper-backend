@@ -663,7 +663,8 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-meter { width:64px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:12px; color:#e2e8f0; font-weight:700; }
 .es-meter i { display:block; height:4px; margin-top:4px; border-radius:2px; background:rgba(148,163,184,.15); overflow:hidden; }
 .es-meter i::after { content:''; display:block; height:100%; width:var(--p); background:linear-gradient(90deg, #10b981, #34d399); border-radius:2px; }
-.es-as-foot { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)) auto; gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-foot { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-foot .es-as-load { grid-column:1 / -1; }
 .es-as-stat { font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; text-transform:uppercase; }
 .es-as-stat b { display:block; font-family:'JetBrains Mono',monospace; font-size:15px; color:#f1f5f9; letter-spacing:0; margin-top:2px; }
 .es-as-load { cursor:pointer; border:0; border-radius:10px; padding:10px 16px; font-weight:800; font-size:12px; letter-spacing:.08em; color:#06110d; background:linear-gradient(180deg, #34d399, #10b981); }
@@ -6738,6 +6739,8 @@ async function loadEsAutoSlips() {
   esAsState.loading = false;
   if (esportsState.view === 'plays') renderEsports();
 }
+// which fair priced a leg, when it isn't the books' consensus (slipbuild.bookLeg)
+const ES_AS_FAIR = { h2h: 'H2H model', share: 'kill share', rounds: 'round model' };
 const esAsSide = (l, book) => book === 'PP' ? (l.side === 'OVER' ? 'More' : 'Less') : (l.side === 'OVER' ? 'Higher' : 'Lower');
 function esAutoSlipsHTML() {
   if (esAsState.locked) return `<div class="es-as-note" style="margin-bottom:12px;cursor:pointer;color:#f59e0b" onclick="acctNeedPro('Best slips')">BEST SLIPS: the best entry on each book is a Pro feature</div>`;
@@ -6753,7 +6756,7 @@ function esAutoSlipsHTML() {
   const recLine = !rec ? '' : rec.slips
     ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
     : `<span class="es-rec">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
-  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book, every game on the board</span>${recLine}</div><div class="es-autoslips">${cards}</div>${esStacksHTML(d)}`;
+  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book: one leg a match, each priced at the fair the Lines table shows</span>${recLine}</div><div class="es-autoslips">${cards}</div>${esStacksHTML(d)}`;
 }
 // ── MATCH STACKS: one match's overs (or unders) in one entry ──────────────
 // Legs from one CS or LoL match move together; the apps pay them as if they
@@ -6774,7 +6777,7 @@ function esAsCard(s, i, d) {
     const key = ES_AS_KEY[s.book], B = ES_BOOKS[key], logo = logoSrc(key);
     const legs = s.picks.map(l => `<div class="es-as-leg">
       <span class="es-side ${l.side === 'OVER' ? 'over' : 'under'}">${esAsSide(l, s.book)}<em>${l.line}</em></span>
-      <div class="who"><b>${escEs(l.player)}</b>${l.mult && Math.abs(l.mult - 1) > 1e-6 ? ` <span style="color:#a78bfa;font-size:11px;font-weight:700">${l.mult}x</span>` : ''}<div>${escEs(l.market)} · ${escEs(l.sport)}${l.team ? ' · ' + escEs(l.team) : ''}</div></div>
+      <div class="who"><b>${escEs(l.player)}</b>${ES_AS_FAIR[l.fair] ? ` <span style="color:#fbbf24;font-size:10px;font-weight:700;letter-spacing:.04em">${ES_AS_FAIR[l.fair].toUpperCase()}</span>` : ''}${l.mult && Math.abs(l.mult - 1) > 1e-6 ? ` <span style="color:#a78bfa;font-size:11px;font-weight:700">${l.mult}x</span>` : ''}<div>${escEs(l.market)} · ${escEs(l.sport)}${l.team ? ' · ' + escEs(l.team) : ''}</div></div>
       <div class="es-meter">${l.prob}%<i style="--p:${Math.max(0, Math.min(100, l.prob))}%"></i></div>
     </div>`).join('');
     const flex = /flex/.test(s.table);
@@ -6808,11 +6811,13 @@ function esLoadAutoSlip(i) {
   for (const l of s.picks) {
     const p = (esportsState.picks || []).find(x => x.player === l.player && x.market === l.rawMarket);
     if (!p) continue;
+    // the slip's own leg: its side, line and fair (the Lines table's), which
+    // can lean the other way from the card's consensus pick
     legs.push({
-      key: `${p.player}|${p.market}`, player: p.player, market: p.market, side: p.side,
-      line: p.ppLine, model: p.modelPred, sport: p.sport, prob: esLegProb(p),
-      evs: { prizepicks: p.ppEv ?? null, underdog: p.udEv ?? null, betr: p.betrEv ?? null, parlayplay: p.parlayEv ?? null, sleeper: p.sleeperEv ?? null },
-      mults: { underdog: parseFloat(p.udMultiplier) || null, sleeper: parseFloat(p.sleeperMultiplier) || null },
+      key: `${p.player}|${p.market}`, player: p.player, market: p.market, side: l.side,
+      line: l.line, model: p.modelPred, sport: p.sport, prob: l.prob / 100,
+      evs: { [key]: l.ev ?? null },
+      mults: { underdog: s.book === 'UD' ? l.mult || 1 : null, sleeper: s.book === 'SL' ? l.mult || null : null },
     });
   }
   if (legs.length !== s.picks.length) { showToast('The board changed since this slip was built. Refresh and try again', 'danger'); return; }
@@ -7183,7 +7188,7 @@ async function esCheckCorrelation(legs) {
   try {
     const r = await fetch(`${BACKEND_URL}/api/esports/slip`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ legs: legs.map(l => ({ player: l.player, market: l.market })) }),
+      body: JSON.stringify({ legs: legs.map(l => ({ player: l.player, market: l.market, side: l.side })) }),
     });
     if (seq !== esCorrSeq) return;                 // a newer slip replaced this one
     if (r.status === 404) { el.innerHTML = ''; return; }   // backend older than v3.12
@@ -7246,46 +7251,16 @@ async function esLogSlip() {
   showToast(`Logged ${sel.n}-leg ${sel.book.name} to My Bets: $${stake} to win $${(stake * (sel.fullMult - 1)).toFixed(2)}`);
 }
 
-// ── AUTO-BUILD: scan the filtered pool, return the highest-EV slip ──────────
-function esAutoBuild() {
-  const pool = esFiltered().filter(p => esLegProb(p) != null);
-  const byPlayer = {};
-  for (const p of pool) {
-    if (!byPlayer[p.player] || esLegProb(p) > esLegProb(byPlayer[p.player])) byPlayer[p.player] = p;
-  }
-  const cands = Object.values(byPlayer);
-  if (cands.length < 2) { showToast('Not enough model-graded picks in the current filter to build from', 'danger'); return; }
-
-  const toLeg = p => ({
-    key: `${p.player}|${p.market}`, player: p.player, market: p.market, side: p.side,
-    line: p.ppLine, model: p.modelPred, sport: p.sport, prob: esLegProb(p),
-    evs: { prizepicks: p.ppEv ?? null, underdog: p.udEv ?? null, betr: p.betrEv ?? null, parlayplay: p.parlayEv ?? null, sleeper: p.sleeperEv ?? null },
-    mults: { underdog: parseFloat(p.udMultiplier) || null, sleeper: parseFloat(p.sleeperMultiplier) || null }
-  });
-
-  let best = null;
-  for (const bookKey of Object.keys(ES_BOOKS)) {
-    const B = ES_BOOKS[bookKey];
-    const offered = cands.filter(p => p[B.evField] != null || (B.multField && parseFloat(p[B.multField])));
-    const score = p => {
-      const pr = esLegProb(p);
-      const m = B.multField ? (parseFloat(p[B.multField]) || B.perLegMult || 1.75) : 1;
-      return pr * m;
-    };
-    const ranked = offered.slice().sort((a, b) => score(b) - score(a));
-    for (let n = 2; n <= Math.min(6, ranked.length); n++) {
-      const legs = ranked.slice(0, n).map(toLeg);
-      const st = esStatsForLegs(bookKey, legs);
-      if (st && (!best || st.ev > best.ev)) best = { st, legs };
-    }
-  }
-
-  if (!best || best.st.ev <= 0) { showToast('No positive-EV slip in the current pool — widen filters or wait for lines', 'danger'); return; }
-  esportsState.slip = best.legs;
-  esportsState.slipBook = best.st.bookKey;
-  esSaveSlip(); renderSlipBar(); renderEsports();
-  showToast(`✓ Built ${best.legs.length}-leg ${best.st.book.name}${best.st.mode === 'FLEX' ? ' FLEX' : ''} · +${best.st.ev.toFixed(1)}% EV`);
-  document.getElementById('esSlipBar')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+// ── AUTO-BUILD: load the best +EV slip Best Slips built on the backend ──────
+// (every leg at its book's own line and the Lines table's fair, one leg a match)
+async function esAutoBuild() {
+  await loadEsAutoSlips();
+  if (esAsState.locked) { acctNeedPro('Best slips'); return; }
+  const i = (esAsState.data?.slips || []).findIndex(s => s.status === 'plus');
+  if (i < 0) { showToast('No +EV slip on PrizePicks, Underdog or Sleeper right now', 'danger'); return; }
+  esLoadAutoSlip(i);
+  const s = esAsState.data.slips[i];
+  showToast(`✓ Loaded ${s.legs}-pick ${s.bookName} ${s.tableName} · +${s.ev.toFixed(1)}% EV`);
 }
 
 async function promptManualPred(player, market) {
