@@ -1,0 +1,58 @@
+PROD Best Plays 43 rows, verdict proven 36
+  bookProp | proven (+EV screener: betrivers, +7.3% CLV over 25 bets)
+  bookProp | proven (every +EV screener play, +5.1% CLV over 38 bets)
+  bookProp | proven (every +EV screener play, +5.1% CLV over 38 bets)
+  bookProp | proven (every +EV screener play, +5.1% CLV over 38 bets)
+  bookProp | proven (every +EV screener play, +5.1% CLV over 38 bets)
+PROD /api/results proven plays: ev:book:betrivers n25; ev:sport:ncaaf n25; ev:all:all n38
+
+BRANCH 3.136.0 Best Plays 215 rows, verdict proven 0
+BRANCH verdict mix: {"arb|arb":1,"sportsProp|early":13,"esportsEdge|early":154,"esportsProp|early":3,"bookProp|early":35,"bookLine|early":8,"exchangeValue|early":1}
+  sportsProp PrizePicks | not graded yet
+  sportsProp Underdog | not graded yet
+  sportsProp PrizePicks | not graded yet
+  sportsProp Sleeper | not graded yet
+  sportsProp Underdog | not graded yet
+  sportsProp Sleeper | not graded yet
+  bookProp Hardrock | not graded yet
+  sportsProp Underdog | not graded yet
+BRANCH /api/results ev + sportsProps plays: 
+BRANCH scoreboard overall {"recorded":121,"open":121,"graded":0,"gradedLines":0,"toTarget":0,"staleClose":0,"unverified":0,"beatPct":null,"avgClv":null,"execN":0,"avgExecClv":null,"wins":0,"losses":0,"mark":"not graded yet"}
+
+book-fair legs: prod 278 (clearing 2%: 2); branch priced 219 (clearing 2%: 0), line differs 33
+PROD clearing:
+  NFL Bo Melton rec_yds prizepicks 14.5: ev 4.67 [single] vs fanduel 17.5
+  NBA Joel Embiid points prizepicks 21.5: ev 3.07 [single] vs fanduel 22.5
+BRANCH clearing:
+BRANCH line differs (sample):
+  NFL J.K. Dobbins rush_rec_yds underdog 59.5: LINE DIFFERS (fanduel 55.5)
+  NFL J.K. Dobbins rush_rec_yds prizepicks 53.5: LINE DIFFERS (fanduel 55.5)
+  NFL Sam Darnold pass_rush_yds prizepicks 229.5: LINE DIFFERS (betrivers 223.5)
+  WNBA Kiah Stokes points prizepicks 3: LINE DIFFERS (fanduel 2.5)
+  WNBA Kiah Stokes rebounds prizepicks 8: LINE DIFFERS (fanduel 8.5)
+  NFL Trevor Lawrence pass_rush_yds underdog 244.5: LINE DIFFERS (betrivers 237.5)
+  NFL Trevor Lawrence pass_rush_yds prizepicks 244.5: LINE DIFFERS (betrivers 237.5)
+  NFL Jalon Daniels pass_rush_yds prizepicks 212.5: LINE DIFFERS (betrivers 219.5)
+  NFL Rhamondre Stevenson rush_rec_yds underdog 99.5: LINE DIFFERS (betrivers 94.5)
+  NFL Cam Skattebo rush_rec_yds underdog 79.5: LINE DIFFERS (fanduel 75.5)
+  NFL Tyler Shough rush_yds underdog 9.5: LINE DIFFERS (fanduel 10.5)
+  NFL Jameis Winston rush_yds prizepicks 5.5: LINE DIFFERS (fanduel 4.5)
+  NFL Malachi Fields rec_yds underdog 24.5: LINE DIFFERS (fanduel 25.5)
+  NFL Malachi Fields rec_yds sleeper 26.5: LINE DIFFERS (fanduel 25.5)
+  NFL Elijah Higgins rec_yds prizepicks 11.5: LINE DIFFERS (fanduel 10.5)
+  NFL Elijah Higgins rec_yds sleeper 11.5: LINE DIFFERS (fanduel 10.5)
+  NFL Justin Herbert pass_att underdog 30.5: LINE DIFFERS (betrivers 29.5)
+  NFL Justin Herbert pass_att prizepicks 30.5: LINE DIFFERS (betrivers 29.5)
+  NFL Justin Herbert pass_att sleeper 30.5: LINE DIFFERS (betrivers 29.5)
+  NFL Bo Melton rec_yds prizepicks 14.5: LINE DIFFERS (fanduel 17.5)
+  NFL Christian McCaffrey rush_rec_yds underdog 99.5: LINE DIFFERS (betrivers 102.5)
+  NFL Christian McCaffrey rush_rec_yds prizepicks 105.5: LINE DIFFERS (betrivers 102.5)
+  NFL Christian McCaffrey rush_rec_yds sleeper 105.5: LINE DIFFERS (betrivers 102.5)
+  NFL Jayden Daniels pass_att underdog 30.5: LINE DIFFERS (betrivers 29.5)
+  NFL Jayden Daniels pass_att prizepicks 30.5: LINE DIFFERS (betrivers 29.5)
+named Melton: prod NFL Bo Melton rec_yds prizepicks 14.5: ev 4.67 [single] vs fanduel 17.5 || NFL Bo Melton receptions underdog 1.5: ev -10.62 [single] vs fanduel 1.5 || NFL Bo Melton receptions sleeper 1.5: ev -6.26 [single] vs fanduel 1.5 | branch NFL Bo Melton rec_yds prizepicks 14.5: LINE DIFFERS (fanduel 17.5) || NFL Bo Melton receptions underdog 1.5: ev -10.62 [single] vs fanduel 1.5 || NFL Bo Melton receptions sleeper 1.5: ev -6.26 [single] vs fanduel 1.5
+named Sparks: prod  | branch 
+named Embiid: prod NBA Joel Embiid points prizepicks 21.5: ev 3.07 [single] vs fanduel 22.5 | branch NBA Joel Embiid points prizepicks 21.5: LINE DIFFERS (fanduel 22.5)
+named Nygard: prod  | branch 
+named Brandsegg: prod  | branch 
+renders done
