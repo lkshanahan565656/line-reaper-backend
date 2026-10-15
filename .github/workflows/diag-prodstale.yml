@@ -1,0 +1,26 @@
+name: diag-prodstale
+on:
+  push:
+    branches: [diag-prodstale]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          for i in $(seq 1 90); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.126.0" ] && break; sleep 20; done
+          echo "deployed $(date -u +%FT%TZ)" > out/deployed.txt
+          sleep 360
+          curl -s $U/api/status > out/status-06.json
+          curl -s "$U/api/ev" > out/ev-06.json
+          sleep 900
+          curl -s $U/api/status > out/status-21.json
+          curl -s "$U/api/ev" > out/ev-21.json
+          curl -s "$U/api/ev/record" > out/record-21.json
+          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-prodstale-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-prodstale-out
