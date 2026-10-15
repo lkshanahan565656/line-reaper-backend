@@ -85,7 +85,7 @@ async function partB() {
     clock = Date.parse(r.startTime) + 60e3; await tracker.lockStarted();
     clock = Date.parse(r.startTime) + 6 * 3600e3;
     let g = null;
-    for (let i = 0; i < 3 && !(g && g.final); i++) { await tracker.gradeDue({ limit: 50 }); g = (await log.grade([leg], { picks: [] })).results[r.id]; }
+    for (let i = 0; i < 3 && !(g && g.final); i++) { await tracker.gradeDue({ limit: 50 }); g = (await log.grade([leg], { picks: [pick] })).results[r.id]; }
     out.push({ player: r.player, sport: r.sport, market: r.market, line: r.signalLine, side: r.signalSide, prod: { outcome: r.outcome, result: r.result }, mine: { status: g?.status, outcome: g?.outcome, result: g?.result, note: g?.voidReason }, first: g0.results[r.id]?.status });
     save('replay.json', out);
   }
@@ -95,6 +95,6 @@ async function partB() {
 }
 
 (async () => {
-  try { await Promise.all([partA(), partB().catch(e => save('replay-error.txt', String(e.stack || e)))]); } catch (e) { save('error.txt', String(e.stack || e)); }
+  try { await Promise.all([process.env.SKIP_A ? Promise.resolve() : partA(), partB().catch(e => save('replay-error.txt', String(e.stack || e)))]); } catch (e) { save('error.txt', String(e.stack || e)); }
   srv.kill(); process.exit(0);
 })();
