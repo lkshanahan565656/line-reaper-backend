@@ -1,0 +1,50 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls odds mlb: 403 (auth) — 2 more failures until Owls disables itself
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book asc-nba-den-lac-2026-10-14-neg-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book atc-mls-col-min-2026-10-14-min: Request failed with status code 429
+Polymarket US: book asc-nba-den-lac-2026-10-14-neg-7pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-col-min-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-den-lac-2026-10-14-neg-16pt5: Request failed with status code 429
+Polymarket US: book atc-mls-col-min-2026-10-14-draw: Request failed with status code 429
+Polymarket US: book atc-mls-col-min-2026-10-14-col: Request failed with status code 429
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Polymarket US: book atc-mls-rsl-sje-2026-10-14-draw: Request failed with status code 429
+Tail: clv 0x90ed5bffbffbfc344aa1195572d89719a398b5bc: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Polymarket US: book atc-mls-col-min-2026-10-14-min: Request failed with status code 429
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Polymarket US: book atc-mls-laf-aus-2026-10-14-draw: Request failed with status code 429
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+Polymarket US: book tsc-mls-laf-aus-2026-10-14-2pt5: Request failed with status code 429
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Polymarket US: book tsc-sea-bol-int-2026-10-17-0pt5: Request failed with status code 429
