@@ -75,6 +75,29 @@ test('PrizePicks lines past their age leave the board; the rest stay', async () 
   Object.assign(srv.ppState, { fullOkAt: 0, leagueOkAt: {} });
 });
 
+test('a player in two Bo1s on one day gets a pick per match, each priced on its own lines', async () => {
+  const t = h => new Date(Date.now() + h * 3600e3).toISOString();
+  const ud = (line, opp, h, gameId) => ({ book: 'underdog', sport: 'CS', player: 'DemQQ', team: 'WBT', market: 'Kills on Map 1', line, startTime: t(h), matchTitle: `WBT vs ${opp}`, gameId,
+    overMultiplier: 1, underMultiplier: 1, overOpen: true, underOpen: true });
+  srv.cache.prizepicks = { data: [
+    { book: 'prizepicks', sport: 'CS2', player: 'DemQQ', team: 'WBT', market: 'MAP 1 Kills', line: 16, startTime: t(4), matchTitle: 'ENCE MAP 1', gameId: 'ENCEWBT' },
+    { book: 'prizepicks', sport: 'CS2', player: 'DemQQ', team: 'WBT', market: 'MAP 1 Kills', line: 15.5, startTime: t(8), matchTitle: 'BOJONG MAP 1', gameId: 'BOJONGWBT' },
+  ], updated: null };
+  // Underdog lists the BOJONG match first: keyed by player and stat, the ENCE pick took its 14.5
+  srv.cache.underdog = { data: [ud(15.5, 'ENCE', 6, 2), ud(14.5, 'BOJONG', 8, 3)].reverse() };
+  srv.cache.sleeper = { data: [
+    { book: 'sleeper', sport: 'CS', player: 'DemQQ', team: 'WBT', market: 'Kills Map 1', line: 16.5, gameId: 'm-17', overMultiplier: 1.8, underMultiplier: 1.9, overOpen: true, underOpen: true },
+    { book: 'sleeper', sport: 'CS', player: 'gla1ve', team: 'ENCE', market: 'Kills Map 1', line: 17.5, gameId: 'm-17', overMultiplier: 1.8, underMultiplier: 1.9, overOpen: true, underOpen: true },
+  ] };
+  srv.esportsCache.manualPredictions = {};
+  const picks = (await srv.generateEsportsPicks()).filter(p => p.player === 'DemQQ');
+  assert.equal(picks.length, 2);
+  const ence = picks.find(p => /ENCE/.test(p.matchTitle)), boj = picks.find(p => /BOJONG/.test(p.matchTitle));
+  assert.equal(ence.ppLine, 16); assert.equal(ence.udLine, 15.5); assert.equal(ence.sleeperLine, 16.5);
+  assert.equal(boj.ppLine, 15.5); assert.equal(boj.udLine, 14.5); assert.equal(boj.sleeperLine, null);
+  assert.notEqual(ence.matchTag, boj.matchTag);
+});
+
 test('Retry-After in seconds or as a date', () => {
   assert.equal(srv.ppRetryAfterMs({ 'retry-after': '120' }), 120000);
   const ms = srv.ppRetryAfterMs({ 'retry-after': new Date(Date.now() + 300e3).toUTCString() });

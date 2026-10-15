@@ -220,6 +220,7 @@ function createDotaGrader(http, resolveAccountId) {
 const BO3_API = 'https://api.bo3.gg/api/v1';
 const BO3_HEADERS = { origin: 'https://bo3.gg', referer: 'https://bo3.gg/', 'User-Agent': 'Mozilla/5.0 (LineReaper pick grading)', Accept: 'application/json' };
 const squash = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const { pickOpponent } = require('./esmatch');
 const bo3Ms = v => { const t = Date.parse(v); return Number.isFinite(t) ? t : null; };
 
 // Pure: the names a bo3 match's teams go by, from its games' clans
@@ -252,13 +253,20 @@ function pickTeams(pick) {
 }
 // Pure: finished matches that could be the pick's, best first: its team's,
 // then the nearest start. Within windowMs of kickoff.
+// A team in three Bo1s a day has three matches inside the window: the one
+// against the pick's opponent (Underdog's "A vs B", PrizePicks' "ENCE MAP 1")
+// goes first, so a kill line isn't graded on another opponent's map.
 function bo3Candidates(matches, pick, { windowMs = 3 * 3600e3 } = {}) {
   const start = Date.parse(pick.startTime);
   const teams = pickTeams(pick);
+  const opp = squash(pick.team).length >= 2 ? pickOpponent(pick) : null;
   return (matches || [])
-    .map(m => ({ m, gap: Math.abs((bo3Ms(m.start_date) ?? Infinity) - start), team: teams.some(t => bo3TeamMatch(m, t)) }))
+    .map(m => {
+      const team = teams.some(t => bo3TeamMatch(m, t));
+      return { m, gap: Math.abs((bo3Ms(m.start_date) ?? Infinity) - start), team, opp: team && !!opp && bo3TeamMatch(m, opp) };
+    })
     .filter(x => x.gap <= windowMs && x.m.status === 'finished' && (x.m.games || []).length)
-    .sort((a, b) => (b.team - a.team) || (a.gap - b.gap));
+    .sort((a, b) => (b.team - a.team) || (b.opp - a.opp) || (a.gap - b.gap));
 }
 // Pure: one map's player rows → the pick's player stat, or undefined when
 // the player isn't in them
@@ -319,7 +327,8 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, emptyTtlMs = 30 * 60e3, giveUp
     if (!Number.isFinite(start)) return null;
     const cands = bo3Candidates(await matchesSince(start - 3 * 3600e3), pick);
     // the team's match first; with no team match, the nearest few by start
-    const tryList = cands.some(c => c.team) ? cands.filter(c => c.team) : cands.slice(0, 4);
+    // (and of those, the one against its opponent when bo3 names it)
+    const tryList = cands.some(c => c.opp) ? cands.filter(c => c.opp) : cands.some(c => c.team) ? cands.filter(c => c.team) : cands.slice(0, 4);
     for (const { m } of tryList) {
       const out = {};
       let found = false, parsed = 0;
@@ -335,7 +344,7 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, emptyTtlMs = 30 * 60e3, giveUp
       }
       if (found) return { maps: out, complete: parsed === games.length, matchId: m.slug || m.id };
     }
-    const own = cands.find(c => c.team)?.m;
+    const own = (cands.find(c => c.opp) || cands.find(c => c.team))?.m;
     // Every map of the team's match parsed and the player in none of them:
     // he didn't play (or the book had his team wrong). Underdog voids a DNP.
     if (own && own.games.length && own.games.every(g => maps.has(g.id))) {

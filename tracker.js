@@ -311,6 +311,8 @@ function createTracker({
           gradedBy: null, gradedAt: null, note: null,
           // what a record of its own wants kept beside the usual fields (esstale.js: the leading app's move)
           ...(p.trackExtra && typeof p.trackExtra === 'object' ? p.trackExtra : {}),
+          // the match the board keyed the line to (esmatch.js; rows before v3.134.0 have none)
+          ...(p.matchTag ? { matchTag: p.matchTag } : {}),
         };
         await store.put(fresh);
         existing.push(fresh);
@@ -447,6 +449,22 @@ function createTracker({
       gradedAt: new Date(now()).toISOString(), note: note || 'Voided' });
   }
 
+  // Void every row pred picks (a repair: rows the board priced wrong), keeping
+  // what they were so it can be undone. Already-void rows are left alone.
+  async function voidWhere(pred, note) {
+    await ready;
+    let n = 0;
+    for (const row of await store.all()) {
+      if (row.status === 'void' || !pred(row)) continue;
+      const was = { status: row.status, result: row.result, outcome: row.outcome, profit: row.profit, gradedBy: row.gradedBy, gradedAt: row.gradedAt, note: row.note };
+      voidRow(row, 'repair', note);
+      row.voidedFrom = was;
+      await store.put(row);
+      n++;
+    }
+    return n;
+  }
+
   async function manualGrade(id, { result, void: isVoid, note } = {}) {
     await ready;
     const row = (await store.all()).find(r => r.id === id);
@@ -575,7 +593,7 @@ function createTracker({
     };
   }
 
-  return { recordBoard, lockStarted, gradeDue, manualGrade, list, summary, clvByKind, pickId, graders, ready: () => ready };
+  return { recordBoard, lockStarted, gradeDue, manualGrade, voidWhere, list, summary, clvByKind, pickId, graders, ready: () => ready };
 }
 
 module.exports = { pinTeamGroup,

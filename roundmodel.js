@@ -284,7 +284,7 @@ function roundsPlay(p, priced) {
   if (!priced || !p?.rounds) return null;
   const book = priced.book;
   return {
-    sport: p.sport, player: p.player, team: p.team, matchTitle: p.matchTitle, gameId: p.gameId ?? null,
+    sport: p.sport, player: p.player, team: p.team, matchTitle: p.matchTitle, gameId: p.gameId ?? null, matchTag: p.matchTag ?? null,
     market: p.market, displayMarket: p.displayMarket || p.market, startTime: p.startTime,
     side: priced.side, bestBook: book, bestEv: priced.clears ? priced.ev : null, prob: priced.prob, rawProb: priced.prob,
     ppLine: book === 'PP' ? priced.line : p.ppLine, udLine: book === 'UD' ? priced.line : p.udLine, sleeperLine: book === 'SL' ? priced.line : p.sleeperLine ?? null,
