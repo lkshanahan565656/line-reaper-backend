@@ -1107,6 +1107,7 @@ body.no-help .clv-info { display:none; }
 .ms-leg .r { text-align:right; font-family:'JetBrains Mono',monospace; }
 .ms-leg small { display:block; color:var(--muted2); font-size:10px; margin-top:2px; }
 .ms-leg .ms-none { grid-column: 2 / -1; color:var(--muted2); font-size:11px; }
+.ms-leg .ms-unsure { color:#fbbf24; font-weight:700; }
 #page-myslips .pos { color:#34d399; } #page-myslips .neg { color:#f87171; }
 .ms-tag { display:inline-block; font:600 9px 'Inter',sans-serif; letter-spacing:1px; padding:2px 6px; border-radius:4px; border:1px solid var(--border2); color:var(--text2); margin-left:6px; vertical-align:middle; }
 .ms-tag.pos { border-color:rgba(52,211,153,.4); } .ms-tag.neg { border-color:rgba(248,113,113,.4); }
@@ -1467,7 +1468,7 @@ body.no-help .clv-info { display:none; }
   </div>
   <div class="ms-paste" id="msPaste" style="display:none">
     <textarea id="msText" placeholder="PrizePicks $10 to win $60&#10;Josh Allen Over 245.5 Pass Yds&#10;Stefon Diggs Under 64.5 Rec Yds&#10;Bo Nix More 220.5 Pass Yards&#10;&#10;Underdog $5 flex&#10;Aaron Judge Under 1.5 Total Bases"></textarea>
-    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start.</div>
+    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start. For CS2, LoL, Valorant and Dota kills, headshots and assists add the league (<code>CS</code>) and, if the player has two matches that day, the opponent: <code>Chr1zn Over 24.5 Maps 1-2 Kills CS (vs G2)</code>. Esports legs are priced on the books' consensus, since no sharp book posts player kills there.</div>
     <div class="mb-actions"><button class="mb-btn primary" onclick="msPasteSave()">ADD SLIPS</button><button class="mb-btn" onclick="msPasteToggle(false)">CANCEL</button></div>
     <div class="mb-hint" id="msHint"></div>
   </div>
@@ -2331,7 +2332,7 @@ function renderArb(games) {
 const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
 const ms = { slips: [], grades: {}, pikkit: null, ready: false, loading: null, by: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
 const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
-  market: 'no line history: that stat isn\'t on our board for this player', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
+  market: 'no line history: that stat isn\'t on our board for this player', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
 function msReady() {
   if (ms.ready) return Promise.resolve(true);
   if (!ms.loading) ms.loading = (async () => {
@@ -2460,9 +2461,9 @@ function msSlipHtml(v) {
 }
 function msLegHtml(l) {
   const g = l.g;
-  const name = `<div><b>${escAttr(l.player)}</b> ${l.side} ${l.line} ${escAttr(l.market)}${g?.matched?.start ? `<small>${escAttr(g.matched.matchTitle || g.matched.sport || '')} · ${new Date(g.matched.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</small>` : ''}</div>`;
+  const name = `<div><b>${escAttr(l.player)}</b> ${l.side} ${l.line} ${escAttr(l.market)}${g?.matched?.start ? `<small>${escAttr(g.matched.matchTitle || g.matched.sport || '')} · ${new Date(g.matched.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}${g.matchUncertain ? ' · <b class="ms-unsure" title="Two matches fit and your slip names no opponent: we took the one whose posted line equals yours">match uncertain</b>' : ''}${g.esports ? ' · books\' consensus price' : ''}</small>` : ''}</div>`;
   if (!g) return `<div class="ms-leg">${name}<div class="ms-none">checking...</div></div>`;
-  if (g.status === 'nohistory') return `<div class="ms-leg">${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? `: it lists ${escAttr(g.near.join(', '))}` : ''}</div></div>`;
+  if (g.status === 'nohistory') return `<div class="ms-leg">${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? (g.reason === 'match' ? `: ${escAttr(g.opp ? 'none of them is ' + g.opp + '; ' : '')}they play ${escAttr(g.near.join(' and '))}` : `: it lists ${escAttr(g.near.join(', '))}`) : ''}</div></div>`;
   const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
   const open = g.status === 'open';
   const move = g.lineMove ? ` <small class="${msCls(g.lineMove)}">${Math.abs(g.lineMove)} ${g.lineMove > 0 ? 'your way' : 'against you'}</small>` : '';
@@ -7091,7 +7092,7 @@ function esExchangePlays() {
 // and prices legs from one series together. A book with no +EV slip shows its
 // closest one, marked near break-even.
 const esAsState = { data: null, locked: false, loading: false };
-const ES_AS_KEY = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
+const ES_AS_KEY = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper', P6: 'pick6' };
 async function loadEsAutoSlips() {
   if (esAsState.loading) return;
   esAsState.loading = true;
@@ -7158,10 +7159,11 @@ function esAsCard(s, i, d) {
         <div class="es-as-stat">Pays<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
         <div class="es-as-stat">Needs<b>${s.breakEvenPays ? s.breakEvenPays + 'x' : '—'}</b></div>
         <div class="es-as-stat">¼ Kelly<b>${s.status === 'plus' && s.kelly > 0 ? (s.kelly * 25).toFixed(1) + '%' : '—'}</b></div>
-        ${stack ? '' : `<button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>`}
+        ${stack || s.book === 'P6' ? '' : `<button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>`}
       </div>
       ${stack ? `<div class="es-as-note">Play it only if ${escEs(s.bookName)} shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b> for this lineup. ${s.book === 'PP' ? 'PrizePicks lowers the payout for several players from one team or game, so check the number on the entry screen.' : 'The app may lower the payout for players from one match, so check the number on the entry screen.'}</div>` : ''}
       ${flex && s.paysAll ? `<div class="es-as-note">Flex: pays on a miss too.</div>` : ''}
+      ${s.book === 'P6' ? `<div class="es-as-note">Pick6's own esports line and payout. Each leg is priced where a Pinnacle-based model agrees; a pick's multiplier scales a clean sweep. Check the multiplier on Pick6's entry screen before you play.</div>` : ''}
       ${more.length ? `<div class="es-as-note" style="padding-bottom:6px">Also +EV on ${escEs(s.bookName)} (this one grows a bankroll fastest):</div><div class="es-as-more">${more.map(o => `<span>${o.legs}-pick ${escEs(o.tableName)} <b>+${o.ev.toFixed(1)}%</b> · hits ${(o.probAll * 100).toFixed(1)}%</span>`).join('')}</div>` : ''}
       ${s.status === 'near' ? `<div class="es-as-note">Closest entry on ${escEs(s.bookName)}, ${Math.abs(s.ev).toFixed(1)}% short of break-even. Not a bet; it shows what's nearly there.</div>` : ''}
       ${s.correlated ? `<div class="es-as-note">Legs share a series, priced together (${s.evIndependent > 0 ? '+' : ''}${s.evIndependent.toFixed(1)}% if they were independent).</div>` : ''}

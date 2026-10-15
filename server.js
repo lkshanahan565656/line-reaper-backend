@@ -2326,9 +2326,10 @@ async function generateEsportsPicks() {
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
+  esSlipLog.follow(picks).catch(e => console.warn('Esports slip legs:', e.message));
   try { observeEsStale(picks); } catch (e) { esStaleState.errors = [e.message, ...esStaleState.errors].slice(0, 5); console.warn('Esports stale lines:', e.message); }
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
-  try { const built = autoSlips(picks); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
+  try { const built = autoSlips(picks, pick6SlipOpts(picks)); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
@@ -2622,6 +2623,24 @@ async function warmCsProfiles(batch = 12) {
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
 const { autoSlips, priceOnBooks, bookLeg: slipBookLeg } = require('./slipbuild');
+// DK Pick6's esports cells for the Best Slips builder: the props board's Pick6 cell
+// for each esports pick it prices (a Pinnacle-based twin cell on the same number,
+// at Pick6's own payout). Empty unless PICK6=on and Pick6's esports lines are read,
+// so with Pick6 off the builder has three books and nothing on the page changes.
+function pick6SlipOpts(picks) {
+  if (!PICK6_ON) return {};
+  try {
+    const { rows } = propsBoardRows();
+    const byKey = new Map(rows.filter(r => r.esports && r.books.pick6?.ev).map(r => [r.key, r.books.pick6]));
+    const cells = new Map();
+    for (const p of picks || []) {
+      const sport = propsBoard.boardSport(p.sport).sport;
+      const c = byKey.get(`${sport}|${evScreen.canonName(p.player)}|${normalizeMarket(p.market)}${p.matchTag ? `|${p.matchTag}` : ''}`);
+      if (c) cells.set(p, c);
+    }
+    return cells.size ? { pick6: cells, pick6Table: pick6.state.payouts || null } : {};
+  } catch (e) { console.warn('Best slips: Pick6 cells skipped:', e.message); return {}; }
+}
 const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader, createValGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
@@ -2915,6 +2934,23 @@ const esStaleTracker = createTracker({
   fairProb: (p, line, side) => marketFairProb(p, line, side, pickCtx.get(p)),
 });
 esStaleTracker.ready().catch(e => console.error('Esports stale tracker: store failed to initialise:', e.message));
+
+// ── MY SLIPS, ESPORTS LEGS (esslips.js) ──
+// A user's esports kill, headshot and assist legs, matched to the board's pick
+// for that player and match, followed to the start on the books' consensus at
+// the leg's own line and graded from the match stats like the esports record.
+// Its own record (esports-slip-legs.json): legs only, no stakes, no people.
+const esSlipTracker = createTracker({
+  store: resultsBackup.wrap('esportsSlipLegs', createPickFileStore(process.env.ES_SLIP_LEGS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-slip-legs.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: -1000,
+  fairProb: (p, line, side) => marketFairProb(p, line, side, pickCtx.get(p)),
+  idSuffix: p => p.slipKey,
+});
+esSlipTracker.ready().catch(e => console.error('Esports slip legs: store failed to initialise:', e.message));
+const esSlipLog = require('./esslips').createEsSlipLog({
+  tracker: esSlipTracker, normalizeName, parseMapSpan,
+  prepare: (sp, orig) => { const c = pickCtx.get(orig); if (c) pickCtx.set(sp, c); },
+});
 
 // ── SAME-DAY MATCHES CHECK (v3.135.0, esmatch.js) ──
 // Until v3.135.0 the board keyed an app's line by player and stat alone, so a
@@ -4548,7 +4584,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.135.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.136.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6128,11 +6164,28 @@ app.post('/api/slips/grade', async (req, res) => {
   if (!legs) return res.status(400).json({ error: 'legs needed' });
   try {
     const { rows } = propsBoardRows();
-    res.json(await slipLog.grade(legs, { rows: rows.filter(r => !r.esports), fairAt: slipFairAt }));
+    // esports legs (a league tag of CS, LoL, Valorant, Dota) go to the esports slip record
+    const esMod = require('./esslips');
+    const esLegs = legs.filter(esMod.isEsportsLeg);
+    const rest = legs.filter(l => !esMod.isEsportsLeg(l));
+    const out = await slipLog.grade(rest, { rows: rows.filter(r => !r.esports), fairAt: slipFairAt });
+    // a leg with no league tag that no sports board lists may be an esports player
+    const maybe = rest.filter(l => !l.sport && out.results[String(l.id || '').slice(0, 200)]?.reason === 'player');
+    const esTry = [...esLegs, ...maybe];
+    if (esTry.length) {
+      if (!(esportsCache.picks || []).length) await esPicksOnce().catch(() => {});
+      const es = await esSlipLog.grade(esTry, { picks: esportsCache.picks || [] });
+      for (const l of esTry) {
+        const id = String(l.id || '').slice(0, 200), g = es.results[id];
+        // an untagged leg keeps its sports answer unless an esports line lists the player
+        if (g && (esLegs.includes(l) || g.reason !== 'player')) out.results[id] = g;
+      }
+    }
+    res.json(out);
   } catch (e) { sendErr(res, e); }
 });
 app.get('/api/slips/record', async (req, res) => {
-  res.json(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined }));
+  res.json({ ...(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), esports: await esSlipTracker.summary() });
 });
 
 // The sports props record: free to see, like every other record. Open legs
@@ -6462,7 +6515,7 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   // the board rebuilds every few minutes; the search only reruns when it does,
   // or when a match has started since (its legs drop out)
   if (!autoSlipMemo.data || autoSlipMemo.at !== at || Date.now() - autoSlipMemo.built > 120000) {
-    autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || []) };
+    autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || [], pick6SlipOpts(esportsCache.picks || [])) };
   }
   res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null) });
 });
@@ -6599,7 +6652,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.135.0',
+  version: '3.136.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6695,6 +6748,7 @@ schedule('*/5 * * * *', async () => {
     trackerHealth.rounds = { locked: await roundsTracker.lockStarted(), ...(await roundsTracker.gradeDue()) };
     trackerHealth.h2h = { locked: await h2hTracker.lockStarted(), ...(await h2hTracker.gradeDue()) };
     trackerHealth.esStale = { locked: await esStaleTracker.lockStarted(), ...(await esStaleTracker.gradeDue()) };
+    trackerHealth.esSlipLegs = { locked: await esSlipTracker.lockStarted(), ...(await esSlipTracker.gradeDue()) };
     trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
@@ -6841,7 +6895,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
