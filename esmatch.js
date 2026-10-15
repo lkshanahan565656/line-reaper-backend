@@ -29,6 +29,19 @@ const initials = n => String(n || '').replace(/([a-z])([A-Z])/g, '$1 $2').split(
 const bare = n => String(n || '').toLowerCase().replace(/\b(team|esports?|gaming|club)\b/g, '').replace(/[^a-z0-9]/g, '');
 const looseTeam = (a, b) => sameTeam(a, b) || (bare(a).length >= 2 && (initials(a) === bare(b) || initials(b) === bare(a)));
 
+// "KOIA" and "Movistar KOI Fénix", "BRO" and "OKSavingsBank BRION": a word of
+// one starts the other's code, or the code runs through a word. Too
+// loose to split a board on; enough to keep one Bo5's map lines (PrizePicks
+// times each map) from counting as two matches in the record check
+const shareWord = (a, b) => {
+  const words = n => String(n || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !/^(team|esports?|gaming|club|academy)$/.test(w));
+  const sq = n => String(n || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // a short code running through one word in order, from its first letter ("BRO" in "brion")
+  const runs = (code, w) => { if (code.length < 3 || code.length > 4 || code[0] !== w[0]) return false; let i = 0; for (const ch of w) if (ch === code[i]) i++; return i === code.length; };
+  const one = (x, y) => words(x).some(w => sq(y).startsWith(w) || runs(sq(y), w));
+  return one(a, b) || one(b, a);
+};
+
 // the other team on one line, or null. slOpp: Sleeper game id → its teams
 function lineOpponent(l, slOpp = null) {
   if (!l) return null;
@@ -189,7 +202,7 @@ function multiMatchRows(rows, { sportOf = r => r.sport } = {}) {
       for (let j = i + 1; j < list.length; j++) {
         const a = list[i], b = list[j];
         if (Math.abs(a.t - b.t) > 20 * 3600e3 || !sameTeam(a.team, b.team)) continue;
-        const differ = a.opp && b.opp ? !sameTeam(a.opp, b.opp) : Math.abs(a.t - b.t) >= START_SLACK;
+        const differ = a.opp && b.opp ? !sameTeam(a.opp, b.opp) && !looseTeam(a.opp, b.opp) && !shareWord(a.opp, b.opp) : Math.abs(a.t - b.t) >= START_SLACK;
         if (differ) { out.add(a.r); out.add(b.r); }
       }
     }

@@ -68,6 +68,9 @@ test('multiMatchRows: record rows from a team\'s multi-match day', () => {
     row(1, 'WBT', 'EAC MAP 1', '2026-10-14T08:00:00Z'), row(2, 'WBT', 'WBT vs ENCE', '2026-10-14T14:00:00Z'),
     row(3, 'Vitality', 'Vitality vs NAVI', '2026-10-14T16:00:00Z'), row(4, 'Vitality', 'NAVI MAPS 1-2', '2026-10-14T16:00:00Z'),
     row(5, 'WBT', 'WBT vs ENCE', '2026-10-14T14:00:00Z'),
+    // one Bo5, PrizePicks timing each map, and a code against a full name: one match each
+    row(6, 'Galions', 'Movistar KOI Fénix vs Galions', '2026-10-13T16:00:00Z'), row(7, 'GL', 'KOIA MAP 5', '2026-10-13T20:00:00Z'),
+    row(8, 'LGD GAMING', 'LGD Gaming vs. OKSavingsBank BRION', '2026-10-13T09:00:00Z'), row(9, 'LGD', 'BRO MAPS 1-3', '2026-10-13T09:00:00Z'),
   ];
   assert.deepEqual([...M.multiMatchRows(rows)].map(r => r.id).sort(), [1, 2, 5]);
 });
