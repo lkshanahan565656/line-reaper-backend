@@ -84,7 +84,7 @@ test('a leg finds its row by player, stat and the next game, or says why not', (
   assert.strictEqual(matchLeg({ ...leg, player: 'Jake Allen' }, idx).reason, 'player');
   assert.strictEqual(matchLeg({ ...leg, market: 'Receptions' }, idx).reason, 'market');
   // a bet days before the game is someone else's game
-  assert.strictEqual(matchLeg({ ...leg, betAt: '2026-10-10T03:00:00Z' }, idx).reason, 'player');
+  assert.strictEqual(matchLeg({ ...leg, betAt: '2026-10-05T03:00:00Z' }, idx).reason, 'player');
   assert.strictEqual(matchLeg({ ...leg, sport: 'CS' }, idx).reason, 'esports');
 });
 

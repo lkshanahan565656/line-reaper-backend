@@ -25,8 +25,9 @@ const { legDecimal: slipLegDecimal } = require('./slips');
 
 const KIND = 'slip';
 const ESPORTS = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'COD', 'R6', 'HALO', 'RL', 'OW']);
-// a leg belongs to the player's first game starting from an hour before the bet to 36 h after
-const BEFORE_MS = 60 * 60e3, AFTER_MS = 36 * 3600e3;
+// a leg belongs to the player's first game starting from an hour before the bet
+// to a week after (the apps post Sunday's NFL lines midweek)
+const BEFORE_MS = 60 * 60e3, AFTER_MS = 7 * 86400e3;
 const r4 = x => Math.round(x * 1e4) / 1e4;
 const sideOf = s => (/^(over|more|higher|o)$/i.test(String(s || '')) ? 'Over' : /^(under|less|lower|u)$/i.test(String(s || '')) ? 'Under' : null);
 const lastName = n => canonName(String(n || '').trim().split(/\s+/).pop());
