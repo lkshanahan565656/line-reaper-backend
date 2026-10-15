@@ -1,0 +1,43 @@
+{
+ "counts": {
+  "clear2": 50,
+  "agree2": 9,
+  "agree2Lines": 9,
+  "agree2Props": 0,
+  "alt": 280,
+  "altClear": 30,
+  "esports": 40,
+  "esportsClear": 14
+ },
+ "clear2": 50,
+ "byBook": {
+  "betrivers": 15,
+  "thescore": 11,
+  "fanduel": 10,
+  "bet365": 3,
+  "draftkings": 6,
+  "fanatics": 1,
+  "caesars": 2,
+  "hardrock": 1,
+  "betmgm": 1
+ },
+ "bySource": {
+  "pinnacle": 30,
+  "matchbook+pinnacle": 11,
+  "kalshi_mid+matchbook+pinnacle": 8,
+  "kalshi_mid+pinnacle": 1
+ },
+ "consensusRelayed": 0,
+ "matchbookOnly": 0,
+ "agreeWithMb": [
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid",
+  "pinnacle+kalshi_mid",
+  "pinnacle+matchbook+kalshi_mid"
+ ]
+}
