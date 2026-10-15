@@ -24,6 +24,7 @@
 
 const { sameTeam } = require('./pingames');
 const { canonMarket, canonName } = require('./ev');
+const { resolveMatchbookNames } = require('./xbooks');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36';
 const FD_EVENT_URL = (id, tab) => `https://sbapi.nj.sportsbook.fanduel.com/api/event-page?_ak=FhMFpcPWXMeyZxOx&eventId=${id}${tab ? `&tab=${tab}` : ''}`;
@@ -44,7 +45,7 @@ const LEAGUES = {
   nhl: { fd: 'nhl', kambi: 'ice_hockey/nhl', pin: 'hockey', league: /^NHL$/i, props: 'NHL', fdTabs: ['shots', 'goals', 'goalies', 'points-assists', 'popular'] },
   mlb: { fd: 'mlb', kambi: 'baseball/mlb', pin: 'baseball', league: /^MLB$/i, props: 'MLB', fdTabs: ['pitcher-props', 'hits-runs', 'popular'] },
 };
-const TITLES = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers' };
+const TITLES = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', ...require('./xbooks').TITLES };
 
 const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
@@ -381,7 +382,7 @@ const leagueGames = (pinGames, sport) => (pinGames || []).filter(g => g.sport ==
 // that read FanDuel's event pages) and propCache (FanDuel event id → props,
 // kept between those reads).
 async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), maxKambiEvents = 120, now = Date.now(), pinProps = [],
-  fdProps = false, propCache = new Map(), ladderCache = new Map(), propWithinMs = 6 * 86400e3, nearWithinMs = 30 * 3600e3, maxFdEvents = 40 } = {}) {
+  fdProps = false, propCache = new Map(), ladderCache = new Map(), propWithinMs = 6 * 86400e3, nearWithinMs = 30 * 3600e3, maxFdEvents = 40, extra = {} } = {}) {
   const headers = { 'User-Agent': UA, Accept: 'application/json' };
   const errors = [], counts = {};
   const get = url => http.get(url, { headers, timeout: 20000 }).then(r => r?.data);
@@ -443,18 +444,22 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
     try { const g = parseKambiEvent(await get(`${KAMBI}/betoffer/event/${id}.json?lang=en_US&market=US`), now); if (g) books[s].push(g); }
     catch (e) { errors.push(`betrivers ${id}: ${e.response?.status || e.message}`); }
   });
+  // more books (xbooks.js: Action Network's US books, Matchbook), already read
+  for (const s of sports) books[s].push(...(extra[s] || []));
   // book props at Pinnacle's exact line: the ones the screen can price
   const propKeys = bm => new Set((bm?.markets || []).filter(m => !/^(h2h|spreads|totals)$/.test(m.key))
     .flatMap(m => m.outcomes.filter(o => o.name === 'Over').map(o => `${m.key}|${canonName(o.description)}|${o.point}`)));
   const sameLine = (gs, key) => gs.reduce((n, g) => { const pin = propKeys(g.bookmakers[0]); return n + [...propKeys(g.bookmakers.find(b => b.key === key))].filter(k => pin.has(k)).length; }, 0);
   const games = {};
   for (const s of sports) {
-    games[s] = mergeGames(s, leagueGames(pinGames, s), books[s], { pinProps: pinProps.filter(p => p.sport === LEAGUES[s].props) });
+    games[s] = resolveMatchbookNames(mergeGames(s, leagueGames(pinGames, s), books[s], { pinProps: pinProps.filter(p => p.sport === LEAGUES[s].props) }));
     const propN = key => games[s].reduce((n, g) => n + (g.bookmakers.find(b => b.key === key)?.markets || []).filter(m => !/^(h2h|spreads|totals)$/.test(m.key)).reduce((a, m) => a + m.outcomes.length / 2, 0), 0);
     counts[s] = { pinnacle: games[s].length, fanduel: games[s].filter(g => g.bookmakers.some(b => b.key === 'fanduel')).length,
       betrivers: games[s].filter(g => g.bookmakers.some(b => b.key === 'betrivers')).length,
       props: { pinnacle: propN('pinnacle'), fanduel: propN('fanduel'), betrivers: propN('betrivers'),
-        matched: { fanduel: sameLine(games[s], 'fanduel'), betrivers: sameLine(games[s], 'betrivers') } } };
+        matched: { fanduel: sameLine(games[s], 'fanduel'), betrivers: sameLine(games[s], 'betrivers') } },
+      // the other books: games paired to Pinnacle's, props, props at Pinnacle's line
+      more: Object.fromEntries([...new Set((extra[s] || []).map(b => b.book))].map(k => [k, { games: games[s].filter(g => g.bookmakers.some(b => b.key === k)).length, props: propN(k), matched: sameLine(games[s], k) }])) };
   }
   return { games, counts, errors };
 }

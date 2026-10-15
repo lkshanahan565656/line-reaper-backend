@@ -2214,6 +2214,8 @@ async function generateEsportsPicks() {
       }
     }
   } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
+  try { priceRoundKills(picks); } catch (e) { console.warn('Esports: round model skipped:', e.message); }
+  try { priceH2HKills(picks); } catch (e) { console.warn('Esports: head-to-head model skipped:', e.message); }
 
   // Line gaps: the book a pick is played at sits on the soft side of another
   // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
@@ -2332,17 +2334,11 @@ function priceKillShares(picks, { fam, sideOf }) {
     const base = p.matchup?.baseMean ?? p.marketPred;
     p.share = { mean, pinMean: p.pinTeam && base > 0 ? +(base * p.pinTeam.factor).toFixed(2) : null, share: sh.share, raw: sh.raw, games: sh.games,
       pinPerMap: pinPerMap.map(x => +x.toFixed(1)), maps: maps.length, game };
-    const ctx = { game, share: sh.share, maps: maps.length };
+    // the team kill spread: fitted from Pinnacle's graded totals once there are enough, else assumed
+    const sd = fittedTeamSd(game);
+    const ctx = { game, share: sh.share, maps: maps.length, ...(sd ? { o: { teamSd: sd } } : {}) };
     const fairAt = (m, line, side) => sharemodel.shareProb(m, line, side, ctx);
-    const lines = esgaps.bookLines(p);
-    const ud = p.udSides || {}, sl = p.slSides || {};
-    const books = [];
-    if (lines.PP != null) books.push({ book: 'PP', line: lines.PP, evAt: prob => calcBookEV(prob, 'pp') });
-    if (lines.UD != null) books.push({ book: 'UD', line: lines.UD, open: { OVER: ud.overOpen !== false, UNDER: ud.underOpen !== false },
-      evAt: (prob, side) => udPricing(prob, (side === 'OVER' ? ud.over : ud.under) || 1, side === 'OVER' ? ud.under : ud.over).ev });
-    if (lines.SL != null && (sl.over || sl.under)) books.push({ book: 'SL', line: lines.SL, open: { OVER: sl.overOpen !== false && !!sl.over, UNDER: sl.underOpen !== false && !!sl.under },
-      evAt: (prob, side) => sleeperPricing(prob, side === 'OVER' ? sl.over : sl.under, side === 'OVER' ? sl.under : sl.over).ev });
-    const priced = sharemodel.priceShare(p, { fairAt, books, o: SHARE_OPTS });
+    const priced = sharemodel.priceShare(p, { fairAt, books: appBooksFor(p), o: SHARE_OPTS });
     if (!priced) continue;
     p.share.priced = priced;
     st.priced++;
@@ -2367,6 +2363,127 @@ function priceKillShares(picks, { fam, sideOf }) {
   esportsCache.shareIndex = index;
   if (plays.length) shareTracker.recordBoard(plays).catch(e => console.warn('Share tracker:', e.message));
   if (st.priced) console.log(`Kill share: ${st.teams} teams, ${st.priced} lines priced, ${st.clear} clear (${st.unknownLineup} teams with an unknown lineup)`);
+  return st;
+}
+
+// ─── ROUND MODEL (roundmodel.js) ──────────────────────────────────────────────
+// CS2 and Valorant kills lines where Pinnacle prices the rounds on the maps a
+// line covers: the player's kills a round (bo3.gg, vlr.gg) on Pinnacle's
+// rounds for each map, priced at every app's own line and payout. Same PIN
+// tag on the PROPS Lines table; cleared plays go to their own record
+// (esportsRounds). ESPORTS_ROUNDS=off stops it.
+const roundmodel = require('./roundmodel');
+const ROUNDS_OPTS = { minEv: parseFloat(process.env.ROUNDS_MIN_EV || String(roundmodel.DEFAULTS.minEv)), agreePts: parseFloat(process.env.ROUNDS_AGREE_PTS || String(roundmodel.DEFAULTS.agreePts)) };
+const ROUNDS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_ROUNDS || '').trim());
+// a player's kills a round and maps behind it, from the profiles we already pull
+function roundRate(p, game) {
+  if (game === 'CS2') {
+    const c = esportsCache.hltvPlayers[String(p.player || '').toLowerCase()];
+    // bo3's maps counter can be a match counter; the kills a round can't be wrong
+    return c && !c.failed && c.kpr ? { raw: c.kpr, maps: c.mapsPlayed || 0 } : null;
+  }
+  const t = vlrTable.players[vlrKey(p.player)] || vlrTable.players[vlrKey(String(p.player || '').split(/\s+/).pop())];
+  if (t?.kpr) return { raw: t.kpr, maps: t.rounds ? Math.round(t.rounds / 22) : 0 };
+  const v = vlrStats.cache.get(nameKey(p.player))?.stats;
+  return v?.kpr ? { raw: v.kpr, maps: v.maps || 0 } : null;
+}
+function priceRoundKills(picks) {
+  const st = { matches: 0, teams: 0, unknownLineup: 0, priced: 0, clear: 0, byGame: {}, noRounds: 0, fits: [] };
+  esportsCache.rounds = st;
+  if (!ROUNDS_ON) return st;
+  const pin = esBooksState.pin || [];
+  const fam = p => { const g = roundmodel.gameOf(trackerSportKey(p.sport)); return g && normalizeMarket(p.market).split('|')[0] === 'k' ? g : null; };
+  const cands = picks.filter(fam);
+  if (!cands.length || !pin.length) return st;
+  const sides = new Map();
+  const sideOf = p => {
+    if (sides.has(p)) return sides.get(p);
+    let hit = null;
+    const g = fam(p), t = Date.parse(p.startTime || '');
+    const opp = opponentFrom(p.team, p.matchTitle, null);
+    for (const m of pin) {
+      if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(m.start - t) > 12 * 3600e3)) continue;
+      const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
+      if (i != null) { hit = { m, i }; break; }
+    }
+    sides.set(p, hit);
+    return hit;
+  };
+  // each Pinnacle match's maps: team 0's q0 and expected rounds off its round ladders
+  const fits = new Map();
+  const fitOf = m => {
+    if (fits.has(m.id)) return fits.get(m.id);
+    const f = {};
+    const k = fittedKappa(m.game), ro = k ? { ...roundmodel.DEFAULTS, kappa: { ...roundmodel.DEFAULTS.kappa, [m.game]: k } } : roundmodel.DEFAULTS;
+    for (let n = 1; n <= 5; n++) { const x = roundmodel.fitMap(m.ladders, n, m.game, ro); if (x) f[n] = x; }
+    fits.set(m.id, f);
+    if (Object.keys(f).length) st.fits.push({ match: `${m.teams[0]} vs ${m.teams[1]}`, game: m.game, maps: f });
+    return f;
+  };
+  // a team's lineup is known when five of its players on the board have a rate
+  const teams = new Map();
+  for (const p of cands) {
+    const s = sideOf(p);
+    if (!s) continue;
+    const tk = `${s.m.id}|${s.i}`, nk = String(p.player || '').toLowerCase();
+    const g = teams.get(tk) || teams.set(tk, new Map()).get(tk);
+    if (!g.has(nk)) { const r = roundRate(p, fam(p)); g.set(nk, r ? roundmodel.playerRate(r.raw, r.maps, fam(p)) : null); }
+  }
+  for (const g of teams.values()) { if ([...g.values()].filter(Boolean).length >= roundmodel.DEFAULTS.need) st.teams++; else st.unknownLineup++; }
+  // with both lineups known, the ten rates are scaled to the game's kills a round
+  const scaleOf = new Map();
+  const rates = tk => [...(teams.get(tk)?.values() || [])].filter(Boolean).map(r => r.kpr);
+  const scaleFor = (m, game) => {
+    if (!scaleOf.has(m.id)) scaleOf.set(m.id, roundmodel.matchScale(rates(`${m.id}|0`), rates(`${m.id}|1`), game));
+    return scaleOf.get(m.id);
+  };
+  const plays = [];
+  for (const p of cands) {
+    const s = sideOf(p), game = fam(p);
+    if (!s) continue;
+    const rate = teams.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
+    const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
+    if (!rate || !pingap.spanIsCertain(maps, p.context?.bestOf)) continue;
+    const f = fitOf(s.m);
+    const have = Object.values(f);
+    if (!have.length) { st.noRounds++; continue; }
+    // a map Pinnacle hasn't posted rounds for takes the average of the ones it has
+    const avgQ = have.reduce((a, x) => a + x.q, 0) / have.length;
+    const q0 = maps.map(n => f[n]?.q ?? avgQ);
+    const qs = q0.map(q => +(s.i === 0 ? q : 1 - q).toFixed(4));
+    const scale = scaleFor(s.m, game);
+    const kap = fittedKappa(game);
+    const ctx = { game, kpr: +(rate.kpr * (scale ?? 1)).toFixed(4), qs, ...(kap ? { kappa: kap } : {}) };
+    const mean = +roundmodel.pmfMean(roundmodel.killsPmf(ctx)).toFixed(2);
+    const base = p.matchup?.baseMean ?? p.marketPred;
+    const avgR = roundmodel.DEFAULTS.avgRounds[game];
+    // known only when both teams are: the scale needs all ten
+    const lineup = scale != null ? 'known' : 'unknown';
+    p.rounds = { mean, ctx, lineup, kpr: ctx.kpr, raw: rate.raw, maps: rate.maps, scale, game,
+      roundsPerMap: maps.map(n => f[n]?.rounds ?? +(have.reduce((a, x) => a + x.rounds, 0) / have.length).toFixed(1)),
+      pinCtx: base > 0 ? { game, kpr: +(base / (avgR * maps.length)).toFixed(4), qs, ...(kap ? { kappa: kap } : {}) } : null };
+    p.rounds.pinMean = p.rounds.pinCtx ? +roundmodel.pmfMean(roundmodel.killsPmf(p.rounds.pinCtx)).toFixed(2) : null;
+    const lines = esgaps.bookLines(p);
+    const ud = p.udSides || {}, sl = p.slSides || {};
+    const books = [];
+    if (lines.PP != null) books.push({ book: 'PP', line: lines.PP, evAt: prob => calcBookEV(prob, 'pp') });
+    if (lines.UD != null) books.push({ book: 'UD', line: lines.UD, open: { OVER: ud.overOpen !== false, UNDER: ud.underOpen !== false },
+      evAt: (prob, side) => udPricing(prob, (side === 'OVER' ? ud.over : ud.under) || 1, side === 'OVER' ? ud.under : ud.over).ev });
+    if (lines.SL != null && (sl.over || sl.under)) books.push({ book: 'SL', line: lines.SL, open: { OVER: sl.overOpen !== false && !!sl.over, UNDER: sl.underOpen !== false && !!sl.under },
+      evAt: (prob, side) => sleeperPricing(prob, side === 'OVER' ? sl.over : sl.under, side === 'OVER' ? sl.under : sl.over).ev });
+    const priced = roundmodel.priceRounds(p, { books, o: ROUNDS_OPTS });
+    if (!priced) continue;
+    p.rounds.priced = priced;
+    st.priced++;
+    st.byGame[game] = (st.byGame[game] || 0) + 1;
+    if (priced.clears) st.clear++;
+    const play = roundmodel.roundsPlay(p, priced);
+    if (play) plays.push(play);
+  }
+  st.matches = fits.size;
+  st.fits = st.fits.slice(0, 30);
+  if (plays.length) roundsTracker.recordBoard(plays).catch(e => console.warn('Rounds tracker:', e.message));
+  if (st.priced) console.log(`Round model: ${st.matches} matches, ${st.priced} lines priced, ${st.clear} clear (${st.unknownLineup} teams with an unknown lineup)`);
   return st;
 }
 
@@ -2451,7 +2568,7 @@ async function warmCsProfiles(batch = 12) {
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
 const { autoSlips, priceOnBooks } = require('./slipbuild');
-const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader } = require('./graders');
+const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader, createValGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
   const dir = await dotaLoadProPlayers();
@@ -2462,7 +2579,9 @@ const tracker = createTracker({
   store: resultsBackup.wrap('esportsPicks', createStoreFromEnv()),
   graders: {
     LOL: createLoLGraderChain(createLoLesportsGrader(axios), createLoLGrader(axios)), DOTA: createDotaGrader(axios, dotaAccountId), CS: createCsGrader(axios),
-    ...(panda ? { VAL: panda.grader('VAL'), COD: panda.grader('COD') } : {}),
+    // Valorant from vlr.gg's match pages, PandaScore after it when a token is set
+    VAL: createLoLGraderChain(createValGrader(axios), ...(panda ? [panda.grader('VAL')] : [])),
+    ...(panda ? { COD: panda.grader('COD') } : {}),
   },
   normalizeName, normalizeMarket, parseMapSpan, fairProb: marketFairProb,
 });
@@ -2479,6 +2598,159 @@ slipTracker.ready().catch(e => console.error('Slip tracker: store failed to init
 // side and graded in their own record. Tested, not priced or alerted.
 const pingap = require('./pingap');
 const { createFileStore: createPickFileStore } = require('./tracker');
+// ─── HEAD-TO-HEAD KILL MODEL (h2hmodel.js, h2hdata.js) ───────────────────────
+// Our own fair for every LoL, Dota and CS2 kills line, no Pinnacle number
+// needed: his share of his team's kills × the kills his team makes against
+// this opponent (each team's pace for and against, from gol.gg's season
+// tables, OpenDota's pro games and bo3.gg's maps), over the maps the line
+// covers. A leg clears only where a Pinnacle-based fair (the kill-share model)
+// puts the same side past the app's break-even too; the rest show the model's
+// fair on the PROPS Lines table and go to their own record, never a play.
+// ESPORTS_H2H=off turns it off; it's never alerted.
+const h2hmodel = require('./h2hmodel');
+const h2hdata = require('./h2hdata');
+const H2H_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_H2H || '').trim());
+const H2H_OPTS = { minEv: parseFloat(process.env.H2H_MIN_EV || String(h2hmodel.DEFAULTS.minEv)), agreePts: parseFloat(process.env.H2H_AGREE_PTS || String(h2hmodel.DEFAULTS.agreePts)) };
+const H2H_DIR = process.env.LR_DATA_DIR || path.join(__dirname, 'data');
+const H2H_STORES = { CS: { hl: 30, unit: 'round', pace: 3.4 }, DOTA: { hl: 40, unit: 'game', pace: 28 } };
+const h2hState = { stores: {}, gol: null, golAt: null, refreshedAt: {}, added: {}, errors: {}, running: false };
+for (const [title, c] of Object.entries(H2H_STORES)) {
+  const file = n => path.join(n, `h2h-${title.toLowerCase()}.json.gz`);
+  // the newer of the saved state and the seed that ships with the code
+  const saved = h2hdata.loadStore(file(H2H_DIR)), seed = h2hdata.loadStore(file(path.join(__dirname, 'seeds')));
+  h2hState.stores[title] = [saved, seed].filter(Boolean).sort((a, b) => b.state.lastT - a.state.lastT)[0]
+    || h2hdata.createStore({ title, hl: c.hl, unit: c.unit, pace0: c.pace });
+}
+// new games since each store's last one (bo3.gg, OpenDota) and gol.gg's team
+// table; every 30 minutes, the team table every 6 hours
+async function refreshH2H({ http = axios, now = Date.now() } = {}) {
+  if (!H2H_ON || h2hState.running) return h2hState;
+  h2hState.running = true;
+  try {
+    for (const [title, fetch] of [['CS', h2hdata.fetchCsMaps], ['DOTA', h2hdata.fetchDotaMaps]]) {
+      const store = h2hState.stores[title];
+      try {
+        const maps = await fetch(http, { since: store.state.lastT });
+        let n = 0;
+        for (const m of maps) if (store.ingest(m)) n++;
+        if (n) { store.prune(150); h2hdata.saveStore(store, path.join(H2H_DIR, `h2h-${title.toLowerCase()}.json.gz`)); }
+        h2hState.added[title] = n;
+        h2hState.refreshedAt[title] = new Date(now).toISOString();
+        h2hState.errors[title] = null;
+      } catch (e) { h2hState.errors[title] = e.response?.status ? `HTTP ${e.response.status}` : e.message; }
+    }
+    if (!h2hState.golAt || now - Date.parse(h2hState.golAt) > 6 * 3600e3) {
+      try { h2hState.gol = await h2hdata.fetchGolTeams(http, { season: golSeason(now) }); h2hState.golAt = new Date(now).toISOString(); h2hState.errors.LOL = null; }
+      catch (e) { h2hState.errors.LOL = e.response?.status ? `HTTP ${e.response.status}` : e.message; }
+    }
+  } finally { h2hState.running = false; }
+  return h2hState;
+}
+// the other team: the board's matchup, the "A vs B" title, or PrizePicks'
+// "OPP MAPS 1-3"
+function h2hOpponent(p) {
+  return p.context?.opponent || opponentFrom(p.team, p.matchTitle, null) || /^(.+?)\s+MAPS?\s/i.exec(String(p.matchTitle || ''))?.[1]?.trim() || null;
+}
+// each app's line on a pick, with its payouts, for pricing either side
+function appBooksFor(p) {
+  const lines = esgaps.bookLines(p);
+  const ud = p.udSides || {}, sl = p.slSides || {};
+  const books = [];
+  if (lines.PP != null) books.push({ book: 'PP', line: lines.PP, evAt: prob => calcBookEV(prob, 'pp') });
+  if (lines.UD != null) books.push({ book: 'UD', line: lines.UD, open: { OVER: ud.overOpen !== false, UNDER: ud.underOpen !== false },
+    evAt: (prob, side) => udPricing(prob, (side === 'OVER' ? ud.over : ud.under) || 1, side === 'OVER' ? ud.under : ud.over).ev });
+  if (lines.SL != null && (sl.over || sl.under)) books.push({ book: 'SL', line: lines.SL, open: { OVER: sl.overOpen !== false && !!sl.over, UNDER: sl.underOpen !== false && !!sl.under },
+    evAt: (prob, side) => sleeperPricing(prob, side === 'OVER' ? sl.over : sl.under, side === 'OVER' ? sl.under : sl.over).ev });
+  return books;
+}
+// PrizePicks names teams by code ("MVK", "BRO"), which can fit the wrong team
+// ("MVK" is MVK Esports, not Movistar KOI). Another app's "A vs B" title for
+// the same match, within two hours, gives both full names.
+function h2hTitles(picks) {
+  const out = [];
+  for (const p of picks) {
+    const sides = splitMatchTitle(p.matchTitle);
+    if (sides) out.push({ sport: trackerSportKey(p.sport), sides, t: Date.parse(p.startTime || '') || 0 });
+  }
+  return out;
+}
+function h2hFullNames(game, team, opp, t, titles) {
+  const fits = (full, n) => teamsMatch(full, n) || teamCode(full, n) || h2hdata.nameTier(full, n) > 0;
+  for (const x of titles) {
+    if (x.sport !== game || (t && x.t && Math.abs(x.t - t) > 2 * 3600e3)) continue;
+    for (const [a, b] of [x.sides, [x.sides[1], x.sides[0]]]) if (fits(a, team) && fits(b, opp)) return [a, b];
+  }
+  return [team, opp];
+}
+// The model's inputs for one pick → p.h2h, or why not (counted in st.why)
+function h2hInputs(p, game, team, opp) {
+  if (game === 'LOL') {
+    if (!h2hState.gol) return { why: 'no gol.gg table' };
+    const lp = lolPlayer(p.player);
+    const inp = h2hdata.golInputs(h2hState.gol, lp ? { kpg: lp.kpg, games: lp.games } : null, team, opp);
+    if (inp.why) return inp;
+    const sh = h2hmodel.playerShare('LOL', inp.rate, inp.games, inp.teamKpg);
+    if (!sh) return { why: 'share' };
+    if (sh.share < h2hmodel.TITLES.LOL.minShare) return { why: 'support' };
+    return { ...inp, share: sh.share };
+  }
+  const store = h2hState.stores[game];
+  return store ? store.inputs(p.player, team, opp, { shareGames: h2hmodel.TITLES[game].shareGames }) : { why: 'title' };
+}
+function priceH2HKills(picks) {
+  const st = { priced: 0, clear: 0, modelOnly: 0, byGame: {}, why: {}, stores: {} };
+  for (const [t, s] of Object.entries(h2hState.stores)) st.stores[t] = { maps: s.state.maps, players: Object.keys(s.state.players).length, through: s.state.lastT ? new Date(s.state.lastT).toISOString() : null };
+  st.gol = h2hState.gol ? { teams: Object.keys(h2hState.gol).length, at: h2hState.golAt } : null;
+  esportsCache.h2h = st;
+  if (!H2H_ON) return st;
+  const plays = [];
+  const miss = w => { st.why[w] = (st.why[w] || 0) + 1; };
+  const titles = h2hTitles(picks);
+  for (const p of picks) {
+    const game = trackerSportKey(p.sport);
+    if (!['LOL', 'DOTA', 'CS'].includes(game) || normalizeMarket(p.market).split('|')[0] !== 'k') continue;
+    if (Date.parse(p.startTime || '') <= Date.now()) continue;
+    const opp = h2hOpponent(p);
+    if (!opp) { miss('opponent'); continue; }
+    const [team, vs] = h2hFullNames(game, p.team, opp, Date.parse(p.startTime || ''), titles);
+    const inp = h2hInputs(p, game, team, vs);
+    if (inp.why) { miss(inp.why); continue; }
+    const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
+    // the series length only from a real match price; a guessed one ('even')
+    // prices maps 1-2 and nothing past them
+    const bestOf = p.context && p.context.source !== 'even' ? p.context.bestOf : (Math.max(...maps) <= 2 ? 3 : null);
+    const scenarios = h2hmodel.scenariosFor(maps, bestOf, p.context?.pMap);
+    if (!scenarios) { miss('maps'); continue; }
+    const teamKills = h2hmodel.teamKills(game, inp.pace, inp.team, inp.opp);
+    const perMap = h2hmodel.mapMean(game, { share: inp.share, teamKillsPerMap: teamKills, own: inp.own, rounds: inp.rounds });
+    if (!(perMap > 0)) { miss('mean'); continue; }
+    const expMaps = scenarios.reduce((a, x) => a + x.maps * x.weight, 0);
+    p.h2h = { game, perMap: +perMap.toFixed(3), mean: +(perMap * expMaps).toFixed(2), scenarios, share: +inp.share.toFixed(4), own: +(inp.own * expMaps).toFixed(2),
+      teamKills: +(teamKills * (inp.rounds || 1)).toFixed(2), team: inp.teamKey, opp: inp.oppKey, games: inp.games };
+    // a Pinnacle-based fair at the same line: the kill-share model's (LoL,
+    // Dota) or the round model's (CS2)
+    const sharp = p.share?.mean > 0 ? (line, side) => {
+      const prob = sharemodel.shareProb(p.share.mean, line, side, { game: p.share.game, share: p.share.share, maps: p.share.maps });
+      return prob > 0 ? { src: 'pinnacle kill share', prob } : null;
+    } : p.rounds?.ctx ? (line, side) => {
+      const prob = roundmodel.sideProb(p.rounds.ctx, line, side);
+      return prob > 0 ? { src: 'pinnacle rounds', prob } : null;
+    } : null;
+    const priced = h2hmodel.priceH2H(p, { books: appBooksFor(p), sharp, o: H2H_OPTS });
+    if (!priced) { miss('no line'); continue; }
+    p.h2h.priced = priced;
+    st.priced++;
+    st.byGame[game] = (st.byGame[game] || 0) + 1;
+    if (priced.clears) st.clear++;
+    else if (priced.ev >= H2H_OPTS.minEv) st.modelOnly++;
+    const play = h2hmodel.h2hPlay(p, priced, H2H_OPTS);
+    if (play) plays.push(play);
+  }
+  if (plays.length) h2hTracker.recordBoard(plays).catch(e => console.warn('H2H tracker:', e.message));
+  if (st.priced) console.log(`H2H kills: ${st.priced} lines priced (${JSON.stringify(st.byGame)}), ${st.clear} clear with a sharp price, ${st.modelOnly} model-only at +${H2H_OPTS.minEv}%`);
+  return st;
+}
+
 const pinGapTracker = createTracker({
   store: resultsBackup.wrap('esportsPinGaps', createPickFileStore(process.env.PIN_GAP_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-pin-gaps.json'))),
   graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan,
@@ -2492,6 +2764,50 @@ const shareTracker = createTracker({
   fairProb: (p, line, side) => (p.shareCtx && p.marketPred > 0 ? sharemodel.shareProb(p.marketPred, line, side, p.shareCtx) : null),
 });
 shareTracker.ready().catch(e => console.error('Share tracker: store failed to initialise:', e.message));
+// Round-model plays (roundmodel.js): the player's kills a round on Pinnacle's
+// rounds, graded in their own record, the close priced on the same model at lock
+const roundsTracker = createTracker({
+  store: resultsBackup.wrap('esportsRounds', createPickFileStore(process.env.ROUNDS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-rounds.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: 0,
+  fairProb: (p, line, side) => (p.roundsCtx ? roundmodel.sideProb(p.roundsCtx, line, side) : null),
+});
+roundsTracker.ready().catch(e => console.error('Rounds tracker: store failed to initialise:', e.message));
+// Head-to-head plays (h2hmodel.js): every leg the model puts past minEv, the
+// ones a sharp price backed marked fair 'h2h-sharp'; the close priced on the model
+const h2hTracker = createTracker({
+  store: resultsBackup.wrap('esportsH2H', createPickFileStore(process.env.H2H_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-h2h.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: 0,
+  fairProb: (p, line, side) => (p.h2hCtx && p.marketPred > 0 ? h2hmodel.h2hProb(p.h2hCtx.game, p.marketPred, line, side, p.h2hCtx.scenarios) : null),
+});
+h2hTracker.ready().catch(e => console.error('H2H tracker: store failed to initialise:', e.message));
+// Pinnacle's per-map totals (rounds for CS2/Valorant, team kills for LoL/Dota)
+// at signal and close, graded against the maps played (pintotals.js). Once a
+// title has enough graded maps its fitted spread replaces the kill models'
+// assumed one.
+const pintotals = require('./pintotals');
+const pinTotals = { rows: new Map(), store: resultsBackup.wrap('esportsPinTotals', createPickFileStore(process.env.PIN_TOTALS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-pin-totals.json'))),
+  fit: pintotals.fitted([]), find: pintotals.createSources(axios), lastTry: new Map(), last: null, ready: null };
+pinTotals.ready = pinTotals.store.init().then(async () => {
+  for (const r of await pinTotals.store.all()) pinTotals.rows.set(r.id, r);
+  pinTotals.fit = pintotals.fitted([...pinTotals.rows.values()]);
+}).catch(e => console.error('Pinnacle totals: store failed to initialise:', e.message));
+async function observePinTotals(pin) {
+  await pinTotals.ready;
+  const changed = pintotals.observe(pinTotals.rows, pin);
+  if (changed.length) await pinTotals.store.putMany(changed);
+}
+async function gradePinTotals() {
+  await pinTotals.ready;
+  const res = await pintotals.gradeDue([...pinTotals.rows.values()], pinTotals.find, { lastTry: pinTotals.lastTry });
+  if (res.changed.length) await pinTotals.store.putMany(res.changed);
+  pinTotals.fit = pintotals.fitted([...pinTotals.rows.values()]);
+  const { changed, ...rest } = res;
+  pinTotals.last = { ...rest, at: new Date().toISOString() };
+  return pinTotals.last;
+}
+// what the kill models use: the fitted spread once a title has enough graded maps
+const fittedTeamSd = game => (pinTotals.fit[game]?.source === 'fitted' ? pinTotals.fit[game].teamSd : null);
+const fittedKappa = game => (pinTotals.fit[game]?.source === 'fitted' ? pinTotals.fit[game].kappa : null);
 tracker.ready().then(
   () => console.log('Tracker: store ready'),
   e => console.error('Tracker: store failed to initialise:', e.message));
@@ -3965,7 +4281,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.121.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.125.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4455,7 +4771,24 @@ app.get('/api/esports/pingaps', async (req, res) => {
     const rows = await pinGapTracker.list({ limit: 5000 });
     res.json({ note: 'Plays on Pinnacle\'s side where its team kills and the books\' five players part by 3%+. Tracked to test the gap; not priced or alerted.',
       teamsNow: esportsCache.pinTeams || 0, playsNow: esportsCache.pinGapPlays || 0,
-      record: pingap.gapRecord(rows), rows: rows.slice(0, +req.query.limit || 500) });
+      record: pingap.gapRecord(rows), totals: pinTotalsSummary(), rows: rows.slice(0, +req.query.limit || 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Pinnacle's map totals against the maps played (pintotals.js): the scoreboard
+// by title, what the kill models use now (fitted or assumed), and the rows
+function pinTotalsSummary() {
+  const rows = [...pinTotals.rows.values()];
+  return { graded: rows.filter(r => r.status === 'graded').length, open: rows.filter(r => r.status === 'open').length,
+    close: pintotals.scoreboard(rows), signal: pintotals.scoreboard(rows, { snap: 'signal' }), fit: pinTotals.fit, minMaps: pintotals.DEFAULTS.minMaps, last: pinTotals.last };
+}
+app.get('/api/esports/pintotals', async (req, res) => {
+  try {
+    await pinTotals.ready;
+    const rows = [...pinTotals.rows.values()].sort((a, b) => String(b.start).localeCompare(String(a.start)));
+    const status = req.query.status;
+    res.json({ note: `Pinnacle's pregame totals on each map (rounds for CS2 and Valorant, team kills for LoL and Dota) against the maps played. err = actual - Pinnacle's 50/50 point; over = how often the over at its main line hit, next to the chance Pinnacle gave it. The kill models use a title's fitted spread once it has ${pintotals.DEFAULTS.minMaps} graded maps; until then the assumed one.`,
+      ...pinTotalsSummary(), rows: rows.filter(r => !status || r.status === status).slice(0, Math.min(+req.query.limit || 300, 3000)) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -4470,6 +4803,37 @@ app.get('/api/esports/share', async (req, res) => {
     res.json({ note: `Pinnacle's team kills x each player's share of his team's kills. ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,
       now: esportsCache.share || null, minEv: SHARE_OPTS.minEv, agreePts: SHARE_OPTS.agreePts,
       record: sharemodel.shareRecord(rows), priced: hasPro(req) ? priced : priced.length, rows: hasPro(req) ? rows.slice(0, +req.query.limit || 500) : rows.filter(r => r.status === 'graded').slice(0, 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Head-to-head plays: the record (h2hmodel.js), today's priced lines and the
+// data behind them
+app.get('/api/esports/h2h', async (req, res) => {
+  try {
+    const rows = await h2hTracker.list({ limit: 5000 });
+    const priced = (esportsCache.picks || []).filter(p => p.h2h?.priced).map(p => ({ player: p.player, team: p.team, sport: p.sport, market: p.market, startTime: p.startTime,
+      game: p.h2h.game, mean: p.h2h.mean, perMap: p.h2h.perMap, own: p.h2h.own, share: p.h2h.share, teamKills: p.h2h.teamKills, vs: p.h2h.opp, scenarios: p.h2h.scenarios,
+      shareMean: p.share?.mean ?? null, marketPred: p.marketPred, lines: esgaps.bookLines(p), best: p.h2h.priced }));
+    const graded = rows.filter(r => r.status === 'graded').length;
+    res.json({ note: `Our matchup model: each player's share of his team's kills x the kills his team makes against this opponent. A leg is a play only where Pinnacle's kill-share fair agrees. ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,
+      on: H2H_ON, now: esportsCache.h2h || null, minEv: H2H_OPTS.minEv, agreePts: H2H_OPTS.agreePts,
+      data: { refreshedAt: h2hState.refreshedAt, added: h2hState.added, errors: h2hState.errors, golAt: h2hState.golAt },
+      params: h2hmodel.TITLES,
+      record: h2hmodel.h2hRecord(rows), priced: hasPro(req) ? priced : priced.length, rows: hasPro(req) ? rows.slice(0, +req.query.limit || 500) : rows.filter(r => r.status === 'graded').slice(0, 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Round-model plays: the record (roundmodel.js) and today's priced lines
+app.get('/api/esports/rounds', async (req, res) => {
+  try {
+    const rows = await roundsTracker.list({ limit: 5000 });
+    const priced = (esportsCache.picks || []).filter(p => p.rounds?.priced).map(p => ({ player: p.player, team: p.team, sport: p.sport, market: p.market, startTime: p.startTime,
+      kpr: p.rounds.kpr, raw: p.rounds.raw, maps: p.rounds.maps, scale: p.rounds.scale, lineup: p.rounds.lineup, roundsPerMap: p.rounds.roundsPerMap, qs: p.rounds.ctx.qs,
+      mean: p.rounds.mean, pinMean: p.rounds.pinMean, marketPred: p.marketPred, lines: esgaps.bookLines(p), best: p.rounds.priced }));
+    const graded = rows.filter(r => r.status === 'graded').length;
+    res.json({ note: `Pinnacle's rounds on each map x the player's kills a round (CS2, Valorant). ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,
+      now: esportsCache.rounds || null, minEv: ROUNDS_OPTS.minEv, agreePts: ROUNDS_OPTS.agreePts, books: esBooksState.summary?.roundModel || null,
+      record: roundmodel.roundsRecord(rows), priced: hasPro(req) ? priced : priced.length, rows: hasPro(req) ? rows.slice(0, +req.query.limit || 500) : rows.filter(r => r.status === 'graded').slice(0, 500) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -4692,6 +5056,16 @@ function sportFairAt(row, book, line, kind) {
 // in the record; it takes the leg over the older kinds when both flag it.
 const SHARP_OPTS = { ...sportProps.CONSENSUS, weights: sportProps.parseWeights(process.env.SPORT_SHARP_WEIGHTS),
   minEv: process.env.SPORT_SHARP_MIN_EV != null ? parseFloat(process.env.SPORT_SHARP_MIN_EV) : sportProps.CONSENSUS.minEv };
+// a shadow book (DraftKings, BetMGM, … via Action Network) joins the consensus
+// once its own graded legs score at least as well as FanDuel's (promoteShadows);
+// SPORT_SHARP_WEIGHTS still sets the rest. Checked every 10 minutes.
+const SHARP_BASE_WEIGHTS = { ...SHARP_OPTS.weights };
+let sharpPromoted = [];
+async function refreshSharpPromotions() {
+  const { bySource } = await sportTracker.summary();
+  const { weights, promoted } = sportProps.promoteShadows(bySource, { ...SHARP_OPTS, weights: SHARP_BASE_WEIGHTS });
+  SHARP_OPTS.weights = weights; sharpPromoted = promoted;
+}
 const consensusMoves = sportProps.createMoveTracker();
 let bookPropsIndex = new Map();
 function refreshBookPropsIndex() {
@@ -4719,7 +5093,7 @@ function priceSportRows(rows) {
     const cplays = sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [];
     if (cplays.length) {
       consensusMoves.observe(row, cplays[0].mean);
-      row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
+      row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
     } else consensusMoves.observe(row, null);
     const sharpTaken = new Set();
     let sharpBest = null;
@@ -4787,6 +5161,24 @@ const freeBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(Str
 let freeBooksRunning = false;
 let freeBooksPropsAt = 0;
 const freeBooksPropCache = new Map(), freeBooksLadderCache = new Map();
+// More books beside FanDuel and BetRivers (xbooks.js): Action Network's US
+// books (DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock, theScore)
+// as venues and comparison columns, Matchbook's exchange as a sharp source.
+// Read every other minute inside refreshFreeBooks. XBOOKS=off turns both off;
+// ACTION_NETWORK=off or MATCHBOOK=off one of them.
+const xbooks = require('./xbooks');
+const envOff = k => /^(off|0|false|no)$/i.test(String(process.env[k] || '').trim());
+const xbooksState = { enabled: !envOff('XBOOKS'), action: !envOff('ACTION_NETWORK'), matchbook: !envOff('MATCHBOOK'), books: {}, counts: {}, errors: [], at: 0, updated: null, ms: null };
+const XBOOKS_EVERY_MS = 110e3, XBOOKS_MAX_AGE_MS = 6 * 60e3;
+async function refreshExtraBooks() {
+  if (!xbooksState.enabled || Date.now() - xbooksState.at < XBOOKS_EVERY_MS) return;
+  const t0 = Date.now();
+  try {
+    const { books, counts, errors } = await xbooks.fetchExtraBooks(axios, { action: xbooksState.action && licences.isOn('actionnetwork'), matchbook: xbooksState.matchbook && licences.isOn('matchbook') });
+    if (counts.action + counts.matchbook > 0) Object.assign(xbooksState, { books, at: Date.now() });
+    Object.assign(xbooksState, { counts, errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { xbooksState.errors = [e.message]; }
+}
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
   freeBooksRunning = true;
@@ -4795,7 +5187,9 @@ async function refreshFreeBooks() {
     const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: FREE_BOOK_PIN_SPORTS });
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
-    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache });
+    await refreshExtraBooks();
+    const extra = Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {};
+    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
     if (fdProps) freeBooksPropsAt = Date.now();
     if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps, !pin.errors.length); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
@@ -4826,6 +5220,7 @@ async function refreshPinnacleProps() {
 // (ESPORTS) and graded against Pinnacle's close in their own record. No
 // alerts. ESPORTS_BOOKS=off stops it.
 const esbooks = require('./esbooks');
+const BOVADA_ESPORTS = /^(on|1|true|yes)$/i.test(String(process.env.BOVADA_ESPORTS || '').trim());
 const esBooksState = { enabled: PINNACLE_ON && !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_BOOKS || '').trim()),
   books: [], pin: [], rows: [], summary: null, errors: [], updated: null, screenedAt: null, ms: null };
 let esBooksRunning = false;
@@ -4834,12 +5229,18 @@ async function refreshEsBooks() {
   esBooksRunning = true;
   const t0 = Date.now(), errors = [];
   try {
-    const [kb, pin] = await Promise.all([
+    const [kb, pin, bv] = await Promise.all([
       esbooks.fetchKambi(axios).catch(e => { errors.push(`betrivers ${e.message}`); return null; }),
       esbooks.fetchPinnacle(axios, process.env.PINNACLE_GUEST_KEY || '').catch(e => { errors.push(`pinnacle ${e.message}`); return null; }),
+      // Bovada's esports (offshore: off unless BOVADA_ESPORTS=on) reach past tier one
+      BOVADA_ESPORTS && licences.isOn('bovada') ? esbooks.fetchBovada(axios).catch(e => { errors.push(`bovada ${e.message}`); return null; }) : null,
     ]);
-    if (kb) { esBooksState.books = kb.events; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
-    if (pin) esBooksState.pin = pin;
+    if (kb) { esBooksState.books = [...kb.events, ...(bv?.events || [])]; errors.push(...kb.errors.map(e => `betrivers ${e}`)); }
+    if (bv) errors.push(...bv.errors.slice(0, 3).map(e => `bovada ${e}`));
+    if (pin) {
+      esBooksState.pin = pin;
+      observePinTotals(pin).catch(e => console.warn('Pinnacle totals:', e.message));
+    }
     Object.assign(esBooksState, { errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
     runEsBooksScreen();
   } finally { esBooksRunning = false; }
@@ -4849,7 +5250,8 @@ function runEsBooksScreen() {
   try {
     const fairs = new Map(), costs = new Map();
     const kalshi = esbooks.kalshiLadders(esportsBoard.state.matches || []);
-    const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, fairs, costs });
+    const poly = esbooks.kalshiLadders(esportsBoard.state.matches || [], esbooks.DEFAULTS, 'polymarket');
+    const res = esbooks.screen({ books: esBooksState.books, pin: esBooksState.pin, kalshi, poly, fairs, costs });
     // BetRivers' player kill ladders on the kill-share model (sharemodel.js)
     let shareSum = null;
     if (SHARE_ON && esportsCache.shareIndex?.size) {
@@ -4859,7 +5261,8 @@ function runEsBooksScreen() {
       res.rows.sort((a, b) => (b.clears - a.clears) || b.ev - a.ev);
       shareSum = { priced: sr.priced, shown: sr.rows.length, clear: sr.rows.filter(r => r.clears).length, teams: sr.teams };
     }
-    Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum }, screenedAt: new Date().toISOString() });
+    Object.assign(esBooksState, { rows: res.rows, summary: { ...esbooks.summarize(esBooksState.books, res, fairs), killShare: shareSum,
+      roundModel: { shown: res.rows.filter(r => r.rounds).length, clear: res.rows.filter(r => r.source === 'esbook-rounds').length, bothSources: res.rows.filter(r => r.rounds && r.sources.length > 1).length } }, screenedAt: new Date().toISOString() });
     esBookTracker.recordBoard(res.rows, fairs, { costs }).catch(e => console.warn('Esports books tracker:', e.message));
   } catch (e) { esBooksState.errors = [`screen ${e.message}`, ...esBooksState.errors].slice(0, 8); }
 }
@@ -5791,7 +6194,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.121.0',
+  version: '3.125.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -5802,6 +6205,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
+  moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
@@ -5817,6 +6221,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   spanInferredCount: esportsCache.spanInferred || 0,
   priceMismatchCount: esportsCache.priceMismatches || 0,
   killShare: esportsCache.share || null,
+  roundModel: esportsCache.rounds ? { ...esportsCache.rounds, fits: undefined } : null,
+  h2h: { on: H2H_ON, ...(esportsCache.h2h || {}), refreshedAt: h2hState.refreshedAt, errors: h2hState.errors },
   warmer: { filled: warmer.done, misses: warmer.misses, queued: warmer.queueSize, lastRun: warmer.lastRun },
   valData: { players: Object.keys(vlrTable.players).length, regions: vlrTable.regions, updated: vlrTable.updated, error: vlrTable.lastError, vlrPages: { ...vlrStats.health, cached: vlrStats.cache.size } },
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
@@ -5874,6 +6280,9 @@ schedule('*/5 * * * *', async () => {
     const locked = await tracker.lockStarted();
     trackerHealth.last = { locked, ...(await tracker.gradeDue()), slips: await slipTracker.grade().catch(e => ({ error: e.message })) };
     trackerHealth.pinGaps = { locked: await pinGapTracker.lockStarted(), ...(await pinGapTracker.gradeDue()) };
+    trackerHealth.share = { locked: await shareTracker.lockStarted(), ...(await shareTracker.gradeDue()) };
+    trackerHealth.rounds = { locked: await roundsTracker.lockStarted(), ...(await roundsTracker.gradeDue()) };
+    trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;
   } catch (e) { trackerHealth.error = e.message; }
@@ -5963,8 +6372,11 @@ schedule('35 3,13,23,33,43,53 * * * *', () => runTailJob('gas', scanGasLocks));
 schedule('45 * * * * *', () => runTailJob('bigMoney', scanBigMoney));
 // book arbs and middles: after the free books' refresh at :40 lands
 schedule('55 * * * * *', () => runTailJob('bookArbs', scanBookArbs));
+schedule('15 */10 * * * *', () => refreshSharpPromotions().catch(() => {}));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
+// Head-to-head kill model's data (bo3.gg maps, OpenDota games, gol.gg teams), every 30 minutes
+schedule('40 13,43 * * * *', () => refreshH2H().then(() => esPicksRebuild()).catch(e => console.warn('H2H refresh:', e.message)));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
 // Grade tracked signals whose markets resolved, every 10 minutes
 schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => { await tailTracker.check(); await freshTracker.check(); }));
@@ -6007,6 +6419,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
     setTimeout(() => refreshMatchFeeds()
       .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => esPicksRebuild()).catch(()=>{}), 25000);
     setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
+    setTimeout(() => refreshH2H().then(() => esPicksRebuild()).catch(() => {}), 35000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');

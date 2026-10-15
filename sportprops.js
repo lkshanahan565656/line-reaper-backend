@@ -218,12 +218,20 @@ function researchGap(plays, o = DEFAULTS) {
 // priced, never the fair. A play needs two or more sharp sources that roughly
 // agree; one book alone, or books far apart (often two different games), say
 // nothing.
-const SHARP_BOOKS = ['pinnacle', 'kalshi', 'fanduel', 'betrivers'];
+// Shadow books (DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock and
+// theScore, read through Action Network): each one's own chance at our line is
+// worked out and kept on the play, so the record scores it (sporttrack
+// bySource Brier) from the first graded leg, but it weighs nothing and doesn't
+// count toward the two sources until promoteShadows says it has earned it.
+const { SOFT_BOOKS } = require('./xbooks');
+const SHARP_BOOKS = ['pinnacle', 'kalshi', 'fanduel', 'betrivers', 'matchbook', ...SOFT_BOOKS];
 const CONSENSUS = {
   // Starting weights (Pinnacle the market-maker, FanDuel the biggest US book,
-  // Kambi copying the market). The record's bySource Brier scores are what
-  // should set these: SPORT_SHARP_WEIGHTS=pinnacle:3,fanduel:2,...
-  weights: { pinnacle: 3, kalshi: 2, fanduel: 2, betrivers: 1 },
+  // Kambi copying the market, Matchbook's market makers). The record's
+  // bySource Brier scores are what should set these: SPORT_SHARP_WEIGHTS=pinnacle:3,fanduel:2,...
+  weights: { pinnacle: 3, kalshi: 2, fanduel: 2, betrivers: 1, matchbook: 1 },
+  shadow: SOFT_BOOKS,
+  promoteN: 50,         // graded legs a shadow book needs before it can count
   minSources: 2,
   maxSpreadPts: 12,     // sources this far apart at our line: not one market
   minEv: 2,             // % over the entry's break-even
@@ -255,19 +263,21 @@ const PP_GRADE = PP_ENTRIES.find(e => e.name === '3-pick power');
 // `at` is that source's own chance at our line, read off its own mean.
 function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = {}) {
   const srcs = [];
-  for (const s of sharp) if (s && s.line != null && s.pOver > 0 && s.pOver < 1 && o.weights[s.book] > 0) srcs.push({ book: s.book, line: s.line, p: s.pOver });
+  const counts = b => o.weights[b] > 0, shadow = b => !counts(b) && (o.shadow || []).includes(b);
+  for (const s of sharp) if (s && s.line != null && s.pOver > 0 && s.pOver < 1 && (counts(s.book) || shadow(s.book))) srcs.push({ book: s.book, line: s.line, p: s.pOver });
   // Kalshi: its price at our line when it has one, else its nearest rung
   if (kalshi?.size && o.weights.kalshi > 0) {
     let best = null;
     for (const [l, p] of kalshi) if (p > 0 && p < 1 && (!best || Math.abs(l - line) < Math.abs(best[0] - line))) best = [l, p];
     if (best) srcs.push({ book: 'kalshi', line: best[0], p: best[1] });
   }
-  const means = [];
+  const all = [];
   for (const s of srcs) {
     const m = meanFor(row.mkey, row.sport, s.line, s.p);
     if (m == null) continue;
-    means.push({ ...s, m, w: o.weights[s.book], at: pOver(row.mkey, row.sport, m, line) });
+    all.push({ ...s, m, w: o.weights[s.book] || 0, at: pOver(row.mkey, row.sport, m, line) });
   }
+  const means = all.filter(x => x.w > 0), shadows = all.filter(x => !(x.w > 0));
   if (means.length < o.minSources) return null;
   const ats = means.map(x => x.at);
   const spreadPts = +((Math.max(...ats) - Math.min(...ats)) * 100).toFixed(1);
@@ -275,7 +285,18 @@ function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = 
   const w = means.reduce((a, x) => a + x.w, 0);
   const mean = means.reduce((a, x) => a + x.m * x.w, 0) / w;
   return { p: pOver(row.mkey, row.sport, mean, line), mean: +mean.toFixed(2), n: means.length, spreadPts,
-    sources: means.map(x => ({ book: x.book, line: x.line, p: +(x.p * 100).toFixed(1), at: +(x.at * 100).toFixed(1) })) };
+    sources: [...means, ...shadows].map(x => ({ book: x.book, line: x.line, p: +(x.p * 100).toFixed(1), at: +(x.at * 100).toFixed(1), ...(x.w > 0 ? {} : { shadow: true }) })) };
+}
+// Shadow books whose record has earned a say: promoteN graded legs and a
+// Brier score at least as good as FanDuel's (bySource from sporttrack's
+// summary). → weights with each of those at 1 (BetRivers' weight).
+function promoteShadows(bySource, o = CONSENSUS) {
+  const fd = bySource?.fanduel;
+  const w = { ...o.weights };
+  if (!(fd?.n > 0)) return { weights: w, promoted: [] };
+  const promoted = (o.shadow || []).filter(b => !(w[b] > 0) && bySource[b]?.n >= o.promoteN && bySource[b].brier <= fd.brier);
+  for (const b of promoted) w[b] = 1;
+  return { weights: w, promoted };
 }
 
 // Every open side of every app on a row, priced on the sharp consensus.
@@ -313,7 +334,7 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
 // Sportsbook props (freebooks' Odds API games) → [{ sport, key, book, line, pOver, start }]:
 // one no-vig quote per book, player, stat and game, in pinprops' row keys.
 // sportOf maps the feed's sport key (nfl) to the board's (NFL).
-function bookPropQuotes(gamesBySport, sportOf, canonName, books = ['fanduel', 'betrivers']) {
+function bookPropQuotes(gamesBySport, sportOf, canonName, books = ['fanduel', 'betrivers', 'matchbook', ...SOFT_BOOKS]) {
   const toProb = a => (a > 0 ? 100 / (a + 100) : -a / (-a + 100));
   const out = [];
   for (const [s, games] of Object.entries(gamesBySport || {})) {
@@ -416,5 +437,5 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
   return { observe, stale, prune, size: () => hist.size };
 }
 
-module.exports = { K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
+module.exports = { promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
   SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

@@ -20,10 +20,13 @@
 //   kalshi     the esports board's Kalshi mid (bid/ask, spread under 6¢) on
 //              the match, map winners, total maps and map spread
 //
-// A line CLEARS when Pinnacle (at that exact line, taking $250+) and Kalshi
-// both price it, sit within agreePts of each other, and BetRivers beats their
-// blend by minEv. Pinnacle-only lines (all the kill and round lines: Kalshi
-// has none) are shown as single-source and never count. Rows grade against
+//   polymarket the board's Polymarket mid (global book, spread under 6¢,
+//              $500+ liquidity) on the same markets as Kalshi
+//
+// A line CLEARS when two exact sharp prices (Pinnacle taking $250+, Kalshi,
+// Polymarket) sit within agreePts of each other and BetRivers beats their
+// blend by minEv. A single source never clears: the kill and round lines,
+// which only Pinnacle prices, show as single-source. Rows grade against
 // Pinnacle's close in a tracker of their own, like the alt lines.
 // Pure parsing and pricing; the server fetches.
 
@@ -31,6 +34,7 @@ const { teamsMatch } = require('./context');
 const { devigPower } = require('./esboard');
 const { ladderAt } = require('./altlines');
 const { americanToDecimal, probToAmerican } = require('./ev');
+const roundmodel = require('./roundmodel');
 
 const KAMBI = 'https://eu-offering-api.kambicdn.com/offering/v2018/rsiusnj';
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
@@ -45,7 +49,8 @@ const DEFAULTS = {
   kalshiMaxSpread: 0.06,
   minP: 0.05, maxP: 0.95,
   pairHours: 12,     // Kambi's start times can be hours off Pinnacle's
-  weights: { pinnacle: 3, kalshi: 2 },
+  weights: { pinnacle: 3, kalshi: 2, polymarket: 2, 'round model': 1 },
+  polyMinLiquidity: 500,   // Polymarket books thinner than this ($) say little
 };
 const ROUND_GAMES = new Set(['CS2', 'VAL', 'R6']);
 
@@ -194,6 +199,81 @@ function parseKambiEsports(payload, now = Date.now()) {
   }
   return { book: 'betrivers', eventId: e.id, game, league: path.slice(1).join(' · '), teams, start: ms(e.start), lines, players };
 }
+// ── Bovada (off unless BOVADA_ESPORTS=on: an offshore book) ──
+// coupon/events/A/description/<event link>: [{ path, events: [{ description
+// "A vs B", startTime, competitors, displayGroups: [{ description, markets:
+// [{ description, period: { description "Game" | "Map N" }, outcomes: [{
+// description, price: { american, handicap } }] }] }] }] }]. Same shape as
+// parseKambiEsports, book 'bovada'; its list reaches past tier one (CCT,
+// Challenger leagues), where BetRivers has nothing.
+const BV_MARKETS = [
+  [/^moneyline$/i, 'ml'], [/^(point )?spread$/i, 'spread'], [/^total$/i, 'total'],
+  [/^asian handicap kills$/i, 'kspread'], [/^under\/over kills$/i, 'ktotal'],
+  [/^(asian )?(handicap )?rounds?( handicap)?$/i, 'rspread'], [/^(under\/over |total )rounds$/i, 'rtotal'],
+];
+const bvAm = v => (/^even$/i.test(String(v || '').trim()) ? 100 : am(String(v || '').replace('+', '')));
+function parseBovadaEsports(payload, now = Date.now()) {
+  const node = Array.isArray(payload) ? payload[0] : null;
+  const e = node?.events?.[0];
+  if (!e || e.live || !(e.startTime > now)) return null;
+  const path = (node.path || []).map(p => p.description);
+  const game = gameOf(path.find(p => gameOf(p)) || '');
+  const teams = String(e.description || '').split(/\s+vs\.?\s+/i).map(x => x.trim());
+  if (!game || teams.length !== 2) return null;
+  const lines = [], seen = new Set();
+  const teamIdx = d => { const n = String(d || '').replace(/\s+-\s+map \d+$/i, ''); return sameT(n, teams[0]) && !sameT(n, teams[1]) ? 0 : sameT(n, teams[1]) && !sameT(n, teams[0]) ? 1 : null; };
+  for (const dg of e.displayGroups || []) for (const mk of dg.markets || []) {
+    if (mk.status && mk.status !== 'O') continue;
+    const kind = (BV_MARKETS.find(([re]) => re.test(String(mk.description || '').trim())) || [])[1];
+    const pm = /^map (\d)$/i.exec(String(mk.period?.description || ''));
+    const period = /^(game|match)$/i.test(String(mk.period?.description || '')) ? 0 : pm ? +pm[1] : null;
+    if (!kind || period == null) continue;
+    const os = (mk.outcomes || []).filter(o => !o.status || o.status === 'O');
+    const put = (scope, type, x, prices) => {
+      const key = lkey(scope, scope === 'series' ? 0 : period, type, null);
+      if (prices.some(p => p == null) || seen.has(`${key}|${x}`)) return;
+      if (type !== 'ml' && Math.abs(Math.abs(x % 1) - 0.5) > 1e-9) return;
+      seen.add(`${key}|${x}`);
+      lines.push({ key, scope, period: scope === 'series' ? 0 : period, type, team: null, x, prices });
+    };
+    if (kind === 'ml') {
+      const a = os.find(o => teamIdx(o.description) === 0), z = os.find(o => teamIdx(o.description) === 1);
+      if (a && z) put(period === 0 ? 'series' : 'map', 'ml', 0, [bvAm(a.price?.american), bvAm(z.price?.american)]);
+      continue;
+    }
+    const spread = /spread$/.test(kind), scope = kind[0] === 'k' ? 'kills' : kind[0] === 'r' ? 'rounds' : period === 0 ? 'series' : null;
+    if (!scope) continue;
+    if (spread) {
+      for (const a of os.filter(o => teamIdx(o.description) === 0)) {
+        const h = num(a.price?.handicap);
+        const z = os.find(o => teamIdx(o.description) === 1 && num(o.price?.handicap) === -h);
+        if (h != null && h !== 0 && z) put(scope, 'spread', h, [bvAm(a.price?.american), bvAm(z.price?.american)]);
+      }
+    } else {
+      for (const o of os.filter(x => /^over/i.test(x.description))) {
+        const L = num(o.price?.handicap);
+        const u = os.find(x => /^under/i.test(x.description) && num(x.price?.handicap) === L);
+        if (L != null && u) put(scope, 'total', -L, [bvAm(o.price?.american), bvAm(u.price?.american)]);
+      }
+    }
+  }
+  return { book: 'bovada', eventId: `bv-${e.id}`, game, league: path.slice(0, -1).reverse().join(' · '), teams, start: e.startTime, lines, players: [] };
+}
+const BOVADA = 'https://www.bovada.lv/services/sports/event/coupon/events/A/description';
+async function fetchBovada(http, { max = 30, now = Date.now(), withinMs = 2 * 86400e3 } = {}) {
+  const headers = { Accept: 'application/json', 'User-Agent': UA };
+  const lv = await http.get(`${BOVADA}/esports?marketFilterId=def&preMatchOnly=true&lang=en`, { headers, timeout: 20000 });
+  const links = (Array.isArray(lv?.data) ? lv.data : []).flatMap(x => x.events || []).filter(e => !e.live && e.startTime > now && e.startTime - now < withinMs)
+    .sort((a, b) => a.startTime - b.startTime).slice(0, max).map(e => e.link);
+  const out = [], errors = [];
+  for (let i = 0; i < links.length; i += 4) {
+    const got = await Promise.all(links.slice(i, i + 4).map(l => http.get(`${BOVADA}${l}?lang=en`, { headers, timeout: 20000 })
+      .then(r => parseBovadaEsports(r?.data, now)).catch(e => { errors.push(`${l}: ${e.message}`); return null; })));
+    out.push(...got.filter(Boolean));
+  }
+  return { events: out, listed: links.length, errors };
+}
+
 // listView payload → ids of matches not yet started, soonest first
 function kambiEsportsIds(payload, { now = Date.now(), withinMs = 4 * 86400e3 } = {}) {
   return (payload?.events || []).map(x => x.event).filter(e => e && e.state === 'NOT_STARTED' && ms(e.start) > now && ms(e.start) - now < withinMs)
@@ -239,15 +319,19 @@ function nearest(list, game, teams, start, hours) {
 }
 // the esports board's matches → Kalshi mids as ladders, in each match's own
 // team order: [{ game, teams, start, ladders }]
-function kalshiLadders(boardMatches, o = DEFAULTS) {
+// venue: 'kalshi' or 'polymarket' (the board quotes both; Polymarket's global
+// book is the second exchange price, so a BetRivers line no longer leans on
+// Pinnacle and Kalshi alone)
+function kalshiLadders(boardMatches, o = DEFAULTS, venue = 'kalshi') {
   const out = [];
   for (const m of boardMatches || []) {
     if (m.live) continue;
     const ladders = new Map();
     const put = (key, x, p) => { if (!ladders.has(key)) ladders.set(key, []); ladders.get(key).push({ x, p }); };
     for (const mk of m.markets || []) {
-      const q = mk.outcomes?.[0]?.quotes?.kalshi;
+      const q = mk.outcomes?.[0]?.quotes?.[venue];
       if (!q || !(q.bid > 0) || !(q.ask < 1) || !(q.ask > q.bid) || q.ask - q.bid > o.kalshiMaxSpread) continue;
+      if (venue === 'polymarket' && q.liquidity != null && q.liquidity < o.polyMinLiquidity) continue;
       const mid = (q.bid + q.ask) / 2;
       if (mk.kind === 'match') put('series|0|ml', 0, mid);
       else if (mk.kind === 'map' && mk.n) put(`map|${mk.n}|ml`, 0, mid);
@@ -292,7 +376,7 @@ function readLadder(pts, x, type, scope) {
 
 // books: parsed Kambi events; pin: parsePinnacle(); kalshi: kalshiLadders().
 // fairs and costs (Maps) are filled for every side priced, for the tracker.
-function screen({ books = [], pin = [], kalshi = [], now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
+function screen({ books = [], pin = [], kalshi = [], poly = [], now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts, weights: { ...DEFAULTS.weights, ...(opts.weights || {}) } };
   const rows = [], matched = [];
   for (const g of books || []) {
@@ -304,39 +388,53 @@ function screen({ books = [], pin = [], kalshi = [], now = Date.now(), fairs = n
     const pl = aligned(pm.m.ladders, pm.or);
     const km = nearest(kalshi, g.game, g.teams, start, 6);
     const kl = km ? aligned(km.m.ladders, km.or) : new Map();
-    matched.push({ eventId: g.eventId, pinId: pm.m.id, kalshi: !!km, lines: g.lines.length });
+    const pmm = nearest(poly, g.game, g.teams, start, 6);
+    const ql = pmm ? aligned(pmm.m.ladders, pmm.or) : new Map();
+    matched.push({ eventId: g.eventId, pinId: pm.m.id, kalshi: !!km, polymarket: !!pmm, lines: g.lines.length });
     const event = `${g.teams[0]} vs ${g.teams[1]}`;
+    // round lines (CS2, Valorant): the round model's reading of Pinnacle's map winner
+    const rm = roundmodel.bookRoundFairs(g.game, pl, g.lines);
     for (const line of g.lines) {
       const pinAt = readLadder(pl.get(line.key), line.x, line.type, line.scope);
       const kalAt = readLadder(kl.get(line.key), line.x, line.type, line.scope);
       const kalExact = kalAt?.exact ? kalAt : null;
-      if (!pinAt && !kalExact) continue;
+      const polAt = readLadder(ql.get(line.key), line.x, line.type, line.scope);
+      const polExact = polAt?.exact ? polAt : null;
+      const modelAt = line.scope === 'rounds' ? rm.get(`${line.key}|${line.x}`) || null : null;
+      if (!pinAt && !kalExact && !polExact && !modelAt) continue;
       const group = `es|${g.game}|${pm.m.id}|${line.key}|${line.x}`;
       for (const i of [0, 1]) {
         const sources = [];
         if (pinAt) sources.push({ book: 'pinnacle', p: i === 0 ? pinAt.p : 1 - pinAt.p, exact: pinAt.exact, limit: pinAt.limit });
         if (kalExact) sources.push({ book: 'kalshi', p: i === 0 ? kalExact.p : 1 - kalExact.p, exact: true });
+        if (polExact) sources.push({ book: 'polymarket', p: i === 0 ? polExact.p : 1 - polExact.p, exact: true });
+        if (modelAt) sources.push({ book: 'round model', p: i === 0 ? modelAt.p : 1 - modelAt.p, exact: true, rounds: modelAt.rounds });
         const w = sources.reduce((s, x) => s + (o.weights[x.book] || 1), 0);
         const fair = sources.reduce((s, x) => s + x.p * (o.weights[x.book] || 1), 0) / w;
         const side = sideLabel(line, i, g.teams);
         if (fairs) fairs.set(`${group}|${side}`, r2(fair * 100));
         const price = line.prices[i], d = americanToDecimal(price);
         if (!d) continue;
-        if (costs) costs.set(`${group}|${side}|betrivers`, Math.round(1e4 / d) / 1e4);
+        if (costs) costs.set(`${group}|${side}|${g.book || 'betrivers'}`, Math.round(1e4 / d) / 1e4);
         if (fair < o.minP || fair > o.maxP) continue;
         const ev = (fair * d - 1) * 100;
         if (ev < o.minEv || ev > o.maxEv) continue;
         const ps = sources.map(x => x.p);
         const spreadPts = ps.length > 1 ? r2((Math.max(...ps) - Math.min(...ps)) * 100) : null;
         const agree = ps.length > 1 && spreadPts <= o.agreePts && (Math.max(...ps) - Math.min(...ps)) <= o.agreeRel * Math.min(...ps);
+        // two exact sharp prices that agree: Pinnacle (taking real size) with
+        // Kalshi or Polymarket, or the two exchanges with each other
         const pinOk = pinAt?.exact && (pinAt.limit == null || pinAt.limit >= o.pinMinLimit);
-        const clears = !!(agree && pinOk && kalExact);
+        const exactN = (pinOk ? 1 : 0) + (kalExact ? 1 : 0) + (polExact ? 1 : 0);
+        // a round line has no exchange price: the round model off Pinnacle's map winner stands in
+        const clears = !!(agree && ((exactN >= 2 && (!pinAt || pinAt.exact)) || (pinOk && modelAt)));
         rows.push({
           sport: g.game.toLowerCase(), game: g.game, gameLabel: LABEL[g.game] || g.game, league: pm.m.league || g.league, event, start: new Date(start).toISOString(),
           group, market: line.key.split('|').slice(0, 3).join('|'), marketLabel: MARKET(line.scope, line.period, line.type), point: line.type === 'ml' ? null : (line.type === 'spread' ? (i === 0 ? line.x : -line.x) : -line.x),
-          side, book: 'betrivers', price, decimal: Math.round(d * 1000) / 1000, fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), ev: r2(ev),
+          side, book: g.book || 'betrivers', price, decimal: Math.round(d * 1000) / 1000, fairProb: r2(fair * 100), fairPrice: probToAmerican(fair), ev: r2(ev),
           kelly: r2(Math.max(0, (fair * d - 1) / (d - 1)) * 25),
-          source: clears ? 'esbook' : 'esbook-single', esports: true, clears, single: sources.length < 2, model: !sources.some(x => x.exact), agree, spreadPts,
+          source: clears ? (modelAt ? 'esbook-rounds' : 'esbook') : 'esbook-single', esports: true, clears, single: sources.length < 2, model: !sources.some(x => x.exact) || (!pinAt && !kalExact && !polExact), agree, spreadPts,
+          ...(modelAt ? { rounds: { expected: modelAt.rounds, q: modelAt.q } } : {}),
           ...(pinAt?.limit != null ? { pinLimit: pinAt.limit } : {}),
           sharpBooks: sources.map(x => x.book),
           sources: sources.map(x => ({ book: x.book, p: r2(x.p * 100), exact: !!x.exact })),
@@ -355,6 +453,7 @@ function summarize(books = [], res = { rows: [], matched: [] }, fairs = null) {
   for (const g of books) for (const l of g.lines) { const k = l.key.split('|')[0] + '|' + l.type; markets[k] = (markets[k] || 0) + 1; }
   return {
     events: books.length, lines: books.reduce((s, g) => s + g.lines.length, 0), matched: res.matched.length, withKalshi: res.matched.filter(m => m.kalshi).length,
+    withPolymarket: res.matched.filter(m => m.polymarket).length, clearBySources: res.rows.filter(r => r.clears).reduce((m, r) => { const k = r.sharpBooks.join('+'); m[k] = (m[k] || 0) + 1; return m; }, {}),
     priced: fairs ? [...fairs.keys()].filter(k => k.startsWith('es|')).length : null,
     shown: res.rows.length, clear: res.rows.filter(r => r.clears).length, byGame: by('game'), byMarket: by('marketLabel'), linesByMarket: markets,
   };
@@ -383,4 +482,4 @@ async function fetchKambi(http, { max = 30, now = Date.now() } = {}) {
   return { events: out, listed: ids.length, errors };
 }
 
-module.exports = { DEFAULTS, KAMBI, LABEL, cleanTeam, gameOf, parsePinnacle, parseKambiEsports, kambiEsportsIds, kalshiLadders, aligned, orient, readLadder, screen, summarize, fetchPinnacle, fetchKambi };
+module.exports = { parseBovadaEsports, fetchBovada, DEFAULTS, KAMBI, LABEL, cleanTeam, gameOf, parsePinnacle, parseKambiEsports, kambiEsportsIds, kalshiLadders, aligned, orient, readLadder, screen, summarize, fetchPinnacle, fetchKambi };
