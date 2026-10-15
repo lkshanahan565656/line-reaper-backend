@@ -2299,6 +2299,13 @@ function shareRate(p, game) {
   const c = dotaCache.players[vlrKey(p.player)];
   return c && !c.failed && c.pro !== false ? { rate: c.avgKillsPerMap, games: c.mapsPlayed } : null;
 }
+// A series' length for a pick: the sharp board's match (Pinnacle or the
+// exchanges named it) first, then the pick's context unless that was a guess.
+// null when nobody says, which prices only the maps every series plays.
+function seriesBestOf(m, p) {
+  if (m?.bestOf > 0) return m.bestOf;
+  return p.context && p.context.source !== 'even' ? p.context.bestOf || null : null;
+}
 function priceKillShares(picks, { fam, sideOf }) {
   const st = { teams: 0, unknownLineup: 0, priced: 0, clear: 0, byGame: {} };
   esportsCache.share = st;
@@ -2320,7 +2327,11 @@ function priceKillShares(picks, { fam, sideOf }) {
     const s = sideOf(p), game = fam(p);
     const sh = shares.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
     const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
-    if (!sh || !pingap.spanIsCertain(maps, p.context?.bestOf)) continue;
+    // the series length: Pinnacle's (a map-4 price or a 3.5-map total means a
+    // Bo5) over the pick's own context, which guesses Bo3 when no match price
+    // names the opponent ("C9 | KC MAPS 1-3" is a Bo5 at Worlds)
+    const bestOf = seriesBestOf(s.m, p);
+    if (!sh || !pingap.spanIsCertain(maps, bestOf)) continue;
     if (game === 'LOL' && sh.share < sharemodel.DEFAULTS.lolMinShare) { st.supports = (st.supports || 0) + 1; continue; }
     const have = maps.map(n => s.m.pinTeamKills[n]?.[s.i]).filter(x => x > 0);
     if (!have.length) continue;
@@ -2331,7 +2342,7 @@ function priceKillShares(picks, { fam, sideOf }) {
     if (!mean) continue;
     const base = p.matchup?.baseMean ?? p.marketPred;
     p.share = { mean, pinMean: p.pinTeam && base > 0 ? +(base * p.pinTeam.factor).toFixed(2) : null, share: sh.share, raw: sh.raw, games: sh.games,
-      pinPerMap: pinPerMap.map(x => +x.toFixed(1)), maps: maps.length, game };
+      pinPerMap: pinPerMap.map(x => +x.toFixed(1)), maps: maps.length, game, bestOf };
     // the team kill spread: fitted from Pinnacle's graded totals once there are enough, else assumed
     const sd = fittedTeamSd(game);
     const ctx = { game, share: sh.share, maps: maps.length, ...(sd ? { o: { teamSd: sd } } : {}) };
@@ -2441,7 +2452,7 @@ function priceRoundKills(picks) {
     if (!s) continue;
     const rate = teams.get(`${s.m.id}|${s.i}`)?.get(String(p.player || '').toLowerCase());
     const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
-    if (!rate || !pingap.spanIsCertain(maps, p.context?.bestOf)) continue;
+    if (!rate || !pingap.spanIsCertain(maps, seriesBestOf(s.m, p))) continue;
     const f = fitOf(s.m);
     const have = Object.values(f);
     if (!have.length) { st.noRounds++; continue; }
@@ -2716,7 +2727,7 @@ function priceH2HKills(picks) {
     const maps = spanToMapList(parseMapSpan(p.market).label, parseMapCount(p.market));
     // the series length only from a real match price; a guessed one ('even')
     // prices maps 1-2 and nothing past them
-    const bestOf = p.context && p.context.source !== 'even' ? p.context.bestOf : (Math.max(...maps) <= 2 ? 3 : null);
+    const bestOf = p.share?.bestOf || (p.context && p.context.source !== 'even' ? p.context.bestOf : (Math.max(...maps) <= 2 ? 3 : null));
     const scenarios = h2hmodel.scenariosFor(maps, bestOf, p.context?.pMap);
     if (!scenarios) { miss('maps'); continue; }
     const teamKills = h2hmodel.teamKills(game, inp.pace, inp.team, inp.opp);
@@ -4279,7 +4290,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.124.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.124.2', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6031,7 +6042,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.124.1',
+  version: '3.124.2',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
