@@ -51,6 +51,8 @@ function createEsStale(opts = {}) {
   const open = [];             // moves being followed
   const log = [];              // closed moves (one entry per leader → follower)
   const lastRead = {};         // app → last read time fed
+  const shown = new Map();     // `${key}|${app}` → Map(quote signature → last time shown)
+  const unstable = new Map();  // `${key}|${app}` → until: the app keeps swapping between quotes it showed before
 
   // the chance of the over at line x on mean m, from the subject's own curve
   const pAt = (key, m, x) => { const f = metaOf.get(key)?.probAt; const v = f ? f(m, x) : null; return Number.isFinite(v) ? v : null; };
@@ -60,7 +62,7 @@ function createEsStale(opts = {}) {
     if (!f || f.status !== 'waiting') return;
     f.status = status; f.at = t;
     if (status === 'followed' || status === 'opposite') f.lagMin = r1((t - mv.t) / 60e3);
-    log.push({ t: mv.t, key: mv.key, sport: mv.sport, leader: mv.leader, app, status, lagMin: f.lagMin ?? null, dPts: mv.dPts });
+    (mv.pending ? mv.pendingLog : log).push({ t: mv.t, key: mv.key, sport: mv.sport, leader: mv.leader, app, status, lagMin: f.lagMin ?? null, dPts: mv.dPts });
   }
 
   // quotes: [{ key, app, line, mean, cell, meta: { sport, player, market, event, start, probAt(m, x) } }]
@@ -79,6 +81,34 @@ function createEsStale(opts = {}) {
       const prev = per.get(app);
       const cur = { line: q.line, mean: q.mean, t, cell: q.cell || null };
       per.set(app, cur);
+      // a quote this app already showed on this subject and left: the feed is
+      // swapping between two listings (one player in two same-day matches, a
+      // main line and an alternate), not moving. The subject is out for histMs.
+      const rk = `${q.key}|${app}`;
+      const sig = `${q.line}|${q.mean.toFixed(2)}`;
+      const sigs = shown.get(rk) || new Map();
+      shown.set(rk, sigs);
+      const prevSig = prev ? `${prev.line}|${prev.mean.toFixed(2)}` : null;
+      const flip = prevSig != null && sig !== prevSig && sigs.has(sig) && t - sigs.get(sig) <= o.histMs;
+      sigs.set(sig, t);
+      for (const [k2, t2] of sigs) if (t - t2 > o.histMs) sigs.delete(k2);
+      if (flip) {
+        unstable.set(rk, t + o.histMs);
+        for (let i = open.length - 1; i >= 0; i--) {
+          const mv = open[i];
+          if (mv.key !== q.key || mv.leader !== app) continue;
+          if (mv.pending) open.splice(i, 1); else if (!mv.endedAt) mv.endedAt = t;
+        }
+        continue;
+      }
+      if ((unstable.get(rk) || 0) > t) continue;
+      // a pending move holds when the app's next read shows the same quote
+      for (let i = open.length - 1; i >= 0; i--) {
+        const mv = open[i];
+        if (!mv.pending || mv.key !== q.key || mv.leader !== app || t <= mv.t) continue;
+        if (q.line === mv.line1 && Math.abs(q.mean - mv.mean1) < 1e-9) { mv.pending = false; log.push(...mv.pendingLog); mv.pendingLog = []; }
+        else open.splice(i, 1);
+      }
       // this app following (or running against) open moves on the subject
       let followedNow = false;
       for (const mv of open) {
@@ -100,22 +130,22 @@ function createEsStale(opts = {}) {
       const dir = Math.sign(dPts);
       // an app catching up with another's move is a follow, not a new lead
       if (followedNow) continue;
-      const rk = `${q.key}|${app}`;
       const hist = (recent.get(rk) || []).filter(x => t - x.t <= o.histMs);
       hist.push({ t, dir }); recent.set(rk, hist);
       const meta = metaOf.get(q.key) || {};
-      const followers = {};
+      const followers = {}, pendingLog = [];
       for (const [b, c] of per) {
         if (b === app) continue;
         // led: b moved this way in the ledMs before; ahead: b already sits half way or more to the new number
         const led = (recent.get(`${q.key}|${b}`) || []).some(x => x.dir === dir && t - x.t <= o.ledMs);
         const ahead = (c.mean - prev.mean) * dir >= o.followFrac * Math.abs(q.mean - prev.mean);
         followers[b] = { mean0: c.mean, line0: c.line, status: led ? 'led' : ahead ? 'ahead' : 'waiting' };
-        if (led || ahead) log.push({ t, key: q.key, sport: meta.sport, leader: app, app: b, status: led ? 'led' : 'ahead', lagMin: null, dPts: r1(dPts) });
+        if (led || ahead) pendingLog.push({ t, key: q.key, sport: meta.sport, leader: app, app: b, status: led ? 'led' : 'ahead', lagMin: null, dPts: r1(dPts) });
       }
       // a fresh move by the same app on the same subject replaces the old one
-      for (const mv of open) if (mv.key === q.key && mv.leader === app && !mv.endedAt) mv.endedAt = t;
-      open.push({ key: q.key, sport: meta.sport, leader: app, t, dir, dPts: r1(dPts), dMean: Math.abs(q.mean - prev.mean),
+      for (let i = open.length - 1; i >= 0; i--) { const mv = open[i]; if (mv.key === q.key && mv.leader === app) { if (mv.pending) open.splice(i, 1); else if (!mv.endedAt) mv.endedAt = t; } }
+      // pending until the app's next read shows the same quote
+      open.push({ pending: true, pendingLog, key: q.key, sport: meta.sport, leader: app, t, dir, dPts: r1(dPts), dMean: Math.abs(q.mean - prev.mean),
         line0: prev.line, line1: q.line, mean0: prev.mean, mean1: q.mean, cell0: prev.cell, cell1: q.cell || null, followers });
     }
     // taken down: every subject this app quoted before and didn't now
@@ -133,9 +163,13 @@ function createEsStale(opts = {}) {
       const mv = open[i];
       const start = Date.parse(metaOf.get(mv.key)?.start || '');
       if (t - mv.t < o.windowMs && !(start <= t)) continue;
-      for (const [b, f] of Object.entries(mv.followers)) if (f.status === 'waiting') { f.status = 'none'; log.push({ t: mv.t, key: mv.key, sport: mv.sport, leader: mv.leader, app: b, status: 'none', lagMin: null, dPts: mv.dPts }); }
+      // a move still unconfirmed never counted; one its leader took back
+      // leaves the apps that never moved as 'reverted', not as slow
+      if (!mv.pending) for (const [b, f] of Object.entries(mv.followers)) if (f.status === 'waiting') { f.status = mv.endedAt ? 'reverted' : 'none'; log.push({ t: mv.t, key: mv.key, sport: mv.sport, leader: mv.leader, app: b, status: f.status, lagMin: null, dPts: mv.dPts }); }
       open.splice(i, 1);
     }
+    for (const [k, until] of unstable) if (until <= t) unstable.delete(k);
+    for (const [k, sigs] of shown) { for (const [g, t2] of sigs) if (t - t2 > o.histMs) sigs.delete(g); if (!sigs.size) shown.delete(k); }
     while (log.length > o.logCap || (log.length && t - log[0].t > o.logMs)) log.shift();
     for (const [k, h] of recent) { const kept = h.filter(x => t - x.t <= o.histMs); if (kept.length) recent.set(k, kept); else recent.delete(k); }
   }
@@ -145,7 +179,8 @@ function createEsStale(opts = {}) {
   function rows(t, { priceApp } = {}) {
     const out = [];
     for (const mv of open) {
-      if (mv.endedAt || t - mv.t >= o.windowMs) continue;
+      if (mv.pending || mv.endedAt || t - mv.t >= o.windowMs) continue;
+      if ((unstable.get(`${mv.key}|${mv.leader}`) || 0) > t) continue;
       const meta = metaOf.get(mv.key) || {};
       if (Date.parse(meta.start || '') <= t) continue;
       const per = last.get(mv.key);
@@ -154,7 +189,7 @@ function createEsStale(opts = {}) {
       // the apps disagree: another app moved this subject the other way within the hour
       if (open.some(x => x !== mv && x.key === mv.key && !x.endedAt && x.dir !== mv.dir && t - x.t < o.windowMs)) continue;
       for (const [b, f] of Object.entries(mv.followers)) {
-        if (f.status !== 'waiting') continue;
+        if (f.status !== 'waiting' || (unstable.get(`${mv.key}|${b}`) || 0) > t) continue;
         const c = per.get(b);
         if (!c) continue;
         const side = mv.dir > 0 ? 'Over' : 'Under';
@@ -189,7 +224,7 @@ function createEsStale(opts = {}) {
     const cells = {};
     for (const e of log) {
       const k = `${e.leader}>${e.app}`;
-      const c = cells[k] = cells[k] || { leader: e.leader, app: e.app, moves: 0, followed: 0, opposite: 0, pulled: 0, none: 0, led: 0, ahead: 0, lags: [] };
+      const c = cells[k] = cells[k] || { leader: e.leader, app: e.app, moves: 0, followed: 0, opposite: 0, pulled: 0, none: 0, led: 0, ahead: 0, reverted: 0, lags: [] };
       c.moves++; c[e.status] = (c[e.status] || 0) + 1;
       if (e.status === 'followed') c.lags.push(e.lagMin);
     }
@@ -198,19 +233,19 @@ function createEsStale(opts = {}) {
     const out = Object.values(cells).map(c => {
       const lags = c.lags.sort((a, b) => a - b);
       const moved = c.followed + c.opposite;
-      return { leader: c.leader, app: c.app, moves: c.moves, followed: c.followed, opposite: c.opposite, pulled: c.pulled, none: c.none, led: c.led, ahead: c.ahead,
+      return { leader: c.leader, app: c.app, moves: c.moves, followed: c.followed, opposite: c.opposite, pulled: c.pulled, none: c.none, led: c.led, ahead: c.ahead, reverted: c.reverted,
         sameWayPct: moved ? Math.round(100 * c.followed / moved) : null,
         medianMin: lags.length ? lags[Math.floor(lags.length / 2)] : null,
         within2: c.moves ? Math.round(100 * lags.filter(x => x <= 2).length / c.moves) : null,
         within15: c.moves ? Math.round(100 * lags.filter(x => x <= 15).length / c.moves) : null };
     }).sort((a, b) => b.moves - a.moves);
     const first = log.length ? log[0].t : t;
-    return { lag: out, leads: Object.fromEntries(Object.entries(leads).map(([a, s]) => [a, s.size])), open: open.filter(m => !m.endedAt).length,
+    return { lag: out, unstable: unstable.size, leads: Object.fromEntries(Object.entries(leads).map(([a, s]) => [a, s.size])), open: open.filter(m => !m.endedAt).length,
       hours: +((t - first) / 3600e3).toFixed(2), reads: Object.fromEntries(Object.entries(lastRead).map(([a, x]) => [a, new Date(x).toISOString()])),
       thresholds: { moveProbPts: o.moveProbPts, followFrac: o.followFrac, windowMin: o.windowMs / 60e3 } };
   }
 
-  return { observe, step, rows, lagSummary, state: () => ({ subjects: last.size, open: open.length, log: log.length }) };
+  return { observe, step, rows, lagSummary, state: () => ({ subjects: last.size, open: open.filter(m => !m.pending).length, pending: open.filter(m => m.pending).length, unstable: unstable.size, log: log.length }) };
 }
 
 // The pick's quotes, one per app, from the board's market consensus
