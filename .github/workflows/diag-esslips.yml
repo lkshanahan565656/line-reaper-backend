@@ -1,0 +1,30 @@
+name: diag-esslips
+on:
+  push:
+    branches: [diag-esslips]
+concurrency:
+  group: diag-esslips
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/es-slips-hmggjy, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
+      - run: MINS=14 timeout 3300 node diag/esslips.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-esslips-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-esslips-out
