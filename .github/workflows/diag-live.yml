@@ -16,10 +16,10 @@ jobs:
           for i in $(seq 1 40); do
             v=$(curl -s $U/api/status | jq -r .version 2>/dev/null || true)
             echo "$(date -u +%H:%M:%S) $v" >> out/versions.txt
-            [ "$v" = "3.117.0" ] && break
+            [ "$v" = "3.133.0" ] && break
             sleep 30
           done
-          sleep 420
+          sleep 600
           curl -s $U/api/status > out/status.json
           curl -s "$U/api/ev?limit=1000" > out/ev.json
           curl -s $U/api/ev/record > out/record.json
