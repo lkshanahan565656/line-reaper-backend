@@ -5923,7 +5923,13 @@ app.post('/api/me/used', async (req, res) => {
 // A leg is matched to its props-board row and followed from first sight on the
 // sharp consensus at its own line (sliplog.js); a leg whose game started
 // before it reached us says 'no line history'. Free, like the records.
-const slipFairAt = (row, book, line) => sportFairAt(row, book, line, 'sharp');
+// The fair is the props record's sharp consensus, down to one source: a leg
+// Pinnacle or Kalshi alone prices still gets a close (weights put Pinnacle first).
+const SLIP_FAIR_OPTS = { ...SHARP_OPTS, minSources: 1 };
+const slipFairAt = (row, book, line) => {
+  const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: { ...SLIP_FAIR_OPTS, weights: SHARP_OPTS.weights } });
+  return f ? f.p : null;
+};
 app.post('/api/slips/grade', async (req, res) => {
   const legs = Array.isArray(req.body?.legs) ? req.body.legs.slice(0, 300) : null;
   if (!legs) return res.status(400).json({ error: 'legs needed' });
