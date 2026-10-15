@@ -1,7 +1,7 @@
-name: diag-esbr
+name: diag-esbr22
 on:
   push:
-    branches: [diag-esbr]
+    branches: [diag-esbr2]
 permissions:
   contents: write
 jobs:
@@ -20,8 +20,8 @@ jobs:
         run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-esbr-out
+          git checkout --orphan diag-esbr2-out
           git rm -rq --cached . || true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-esbr-out
+          git push -f origin diag-esbr2-out
