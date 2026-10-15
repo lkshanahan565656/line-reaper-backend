@@ -130,6 +130,20 @@ test('bo3Map: two full lineups or nothing', () => {
   assert.equal(D.bo3Map({ team1_id: 1, team2_id: 2 }, { begin_at: '2026-10-14T17:05:00Z', rounds_count: 24 }, rows.slice(1), { 1: 'FURIA', 2: 'BetBoom' }), null);
 });
 
+test('the pulls reach the lower tiers the apps post lines on', async () => {
+  assert.ok(D.dotaSql(0).includes("'excluded'"));
+  assert.deepEqual(D.CS_TIERS, ['s', 'a', 'b', 'c']);
+  const seen = [];
+  const http = { async get(url, { params } = {}) {
+    if (url.endsWith('/matches')) return { data: { results: params['page[offset]'] ? [] : [{ id: 1, tier: 'c', start_date: '2026-10-14T10:00:00Z', team1_id: 1, team2_id: 2 }, { id: 2, tier: 'd', start_date: '2026-10-14T10:00:00Z', team1_id: 1, team2_id: 2 }] } };
+    if (url.endsWith('/teams')) return { data: { results: [] } };
+    if (url.endsWith('/games')) { seen.push(params['filter[games.match_id][in]']); return { data: { results: [] } }; }
+    return { data: [] };
+  } };
+  await D.fetchCsMaps(http, { since: Date.parse('2026-10-14T00:00:00Z'), pause: 0 });
+  assert.deepEqual(seen, ['1']);
+});
+
 test('dotaMaps groups explorer rows into games with team ids and pro names', () => {
   const rows = [];
   for (let s = 0; s < 10; s++) rows.push({ match_id: 7, start_time: 100, radiant_score: 30, dire_score: 20, radiant_team_id: 1, dire_team_id: 2, player_slot: s < 5 ? s : 128 + s, account_id: 50 + s, kills: s < 5 ? 6 : 4 });
@@ -158,11 +172,16 @@ test('parseGolTeams reads the team list; golInputs finds teams by code', () => {
 
 test('the seeds load and price a known matchup', () => {
   const path = require('path');
-  for (const t of ['cs', 'dota']) {
+  for (const t of ['cs', 'dota', 'val']) {
     const s = D.loadStore(path.join(__dirname, '..', 'seeds', `h2h-${t}.json.gz`));
     assert.ok(s && Object.keys(s.state.players).length > 500, t);
     assert.ok(s.state.lastT > Date.parse('2026-10-01'), t);
+    // v2: tier-c CS2, Dota qualifiers and Valorant, so a v1 saved state gives way
+    assert.equal(s.state.v, 2, t);
   }
+  const val = D.loadStore(path.join(__dirname, '..', 'seeds', 'h2h-val.json.gz'));
+  const inp = val.inputs('Lar0k', 'BBL Esports', 'Misa Esports');
+  assert.ok(!inp.why || inp.why === 'team games', JSON.stringify(inp));
 });
 
 test('team names: a full name beats a code, words teams drop are ignored', () => {

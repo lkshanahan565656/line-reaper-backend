@@ -297,3 +297,41 @@ test('Valorant grader: an app tag the results list doesn\'t carry is found throu
   assert.ok(r?.maps, JSON.stringify(r));
   assert.equal(await grade({ player: 'stax', team: 'TONE', stat: 'kills', startTime: '2026-10-11T07:00:00Z' }), null, 'no title: nothing to find it by');
 });
+
+test('head-to-head Valorant store: vlr.gg pages → keyed maps, each taken once, overlapping matches kept', async () => {
+  const D = require('../h2hdata');
+  const maps = D.valMaps(vlrMatchPage(G2T1));
+  assert.equal(maps.length, 3);
+  assert.deepEqual(maps.map(m => m.key), ['val:283300', 'val:283301', 'val:283302']);
+  assert.equal(maps[0].R, 24);
+  // map 2's header was flipped back: G2 is still team 0 and its kills are G2's
+  assert.equal(maps[1].teams[0].name, 'G2 Esports');
+  assert.equal(maps[1].players.find(p => p.name === 'leaf').ti, 0);
+  assert.deepEqual(maps[0].teams.map(t => t.K), [10 + 11 + 12 + 13 + 14, 20 + 21 + 22 + 23 + 24]);
+  assert.equal(D.valMaps(vlrMatchPage(vlrPage({ final: false, games: [vlrGame(283300, 'G2 Esports', 'T1', 13, 11, ['G2', 'T1'], lineup(10).slice(1))] }))).length, 0);
+
+  const http = fakeHttp([[/results\/\?page=/, ''], [/results/, RESULTS], [/vlr\.gg\/754741$/, G2T1], [/vlr\.gg\/754740$/, vlrPage({ final: false, games: [] })]]);
+  const since = Date.parse('2026-10-11T00:00:00Z');
+  const got = await D.fetchValMaps(http, { since, pause: 0, tried: new Set() });
+  assert.equal(got.length, 3);
+  // a page not final (754740) gives nothing; maps already seen are skipped
+  assert.equal((await D.fetchValMaps(http, { since, seen: ['val:283300', 'val:283301'], pause: 0, tried: new Set() })).length, 1);
+  // a match read final isn't read again; one not final is read next time
+  const tried = new Set();
+  await D.fetchValMaps(http, { since, pause: 0, tried });
+  const before = http.calls.length;
+  assert.equal((await D.fetchValMaps(http, { since, pause: 0, tried })).length, 0);
+  assert.deepEqual(http.calls.slice(before).filter(u => /\/\d+$/.test(u)), ['https://www.vlr.gg/754740']);
+
+  const st = D.createStore({ title: 'VAL', hl: 30, unit: 'round', pace0: 3.47, rounds: 21, v: 2 });
+  const late = { ...got[2], key: 'val:999', t: got[2].t + 10 * HOUR };
+  assert.ok(st.ingest(late));
+  // an earlier map of an overlapping match still counts, once
+  assert.ok(st.ingest(got[0]));
+  assert.equal(st.ingest(got[0]), false);
+  assert.equal(st.state.maps, 2);
+  assert.ok(st.state.lastT > late.t);
+  const inp = st.inputs('leaf', 'G2', 'T1', { minGames: 1, minTeamGames: 1 });
+  assert.ok(!inp.why, JSON.stringify(inp));
+  assert.ok(inp.rounds > 20 && inp.own > 0);
+});

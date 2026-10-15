@@ -7,8 +7,10 @@
 //         the player list (kills a game), one page each
 //   Dota: OpenDota's explorer (pro and premium leagues), every game since the
 //         seed's last one, kept as running averages
-//   CS2:  bo3.gg's s/a/b-tier maps with each player's kills (players_stats),
+//   CS2:  bo3.gg's s/a/b/c-tier maps with each player's kills (players_stats),
 //         every map since the seed's last one, kept as running averages
+//   VAL:  vlr.gg's results list and match pages (each map's score and every
+//         player's kills), kept as running averages the same way
 //
 // Dota and CS2 keep exponentially weighted running totals per team and player
 // (a half-life of hl games each), exactly the state the walk-forward fit used.
@@ -20,6 +22,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
 const { teamsMatch, teamCode } = require('./context');
+const { vlrMatchPage, vlrResultsList } = require('./graders');
 
 const sq = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 // a name without the words teams add and drop ("9Z Team" ↔ "9z", "Team Envy"
@@ -44,14 +47,26 @@ const ROUNDS_PER_MAP = 21.3;
 
 // ── running state (Dota, CS2) ──
 // map: { t, R (rounds, CS2 only), teams: [{ key, name, tag?, K }], players: [{ id, name, ti, k }] }
-function createStore({ title, hl, unit = 'game', pace0 }) {
+// v: the data version (a seed built from more sources outranks a saved state
+// built from fewer, however recent)
+function createStore({ title, hl, unit = 'game', pace0, rounds = ROUNDS_PER_MAP, v = 1 }) {
   const dec = Math.pow(0.5, 1 / hl);
-  const s = { title, unit, hl, pace: pace0, rounds: ROUNDS_PER_MAP, lastT: 0, maps: 0, teams: {}, players: {}, names: {}, teamNames: {} };
+  const s = { title, unit, hl, v, pace: pace0, rounds, lastT: 0, maps: 0, teams: {}, players: {}, names: {}, teamNames: {}, seen: [] };
   return wrapStore(s, dec);
 }
 function wrapStore(s, dec = Math.pow(0.5, 1 / s.hl)) {
+  // a map with a key (vlr.gg's game id) is taken once, in the order it comes,
+  // even when its match began before the last one taken (matches overlap);
+  // one without a key must be newer than the last
   function ingest(m) {
-    if (!m || !(m.t > s.lastT) || m.teams?.length !== 2) return false;
+    if (!m || m.teams?.length !== 2) return false;
+    if (m.key) {
+      const seen = s.seen || (s.seen = []);
+      if (seen.includes(m.key)) return false;
+      seen.push(m.key);
+      if (seen.length > 600) seen.splice(0, seen.length - 600);
+      m = { ...m, t: Math.max(m.t, s.lastT + 1) };
+    } else if (!(m.t > s.lastT)) return false;
     const R = s.unit === 'round' ? m.R : 0;
     if (s.unit === 'round' && !(R >= 13)) return false;
     for (let i = 0; i < 2; i++) {
@@ -150,14 +165,17 @@ function bo3Map(match, game, rows, names) {
   const t = Date.parse(game.begin_at || match.start_date);
   return Number.isFinite(t) ? { t, R, teams: tn.map((name, i) => ({ key: `cs:${sq(name)}`, name, K: K[i] })), players } : null;
 }
-async function fetchCsMaps(http, { since, maxPages = 10, pause = 250 } = {}) {
+// tiers: bo3.gg's s, a, b and c (c is where the qualifiers and second
+// divisions the apps post lines on play)
+const CS_TIERS = ['s', 'a', 'b', 'c'];
+async function fetchCsMaps(http, { since, maxPages = 10, pause = 250, tiers = CS_TIERS } = {}) {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const ms = [];
   for (let p = 0; p < maxPages; p++) {
     const res = await http.get(`${BO3}/matches`, { headers: BO3_HEADERS, timeout: 20000, params: { 'page[offset]': p * 100, 'page[limit]': 100, sort: '-start_date',
       'filter[matches.status][in]': 'finished', 'filter[matches.discipline_id][eq]': 1 } });
     const rows = res?.data?.results || [];
-    ms.push(...rows.filter(m => ['s', 'a', 'b'].includes(m.tier) && Date.parse(m.start_date) > since - 6 * 3600e3));
+    ms.push(...rows.filter(m => tiers.includes(m.tier) && Date.parse(m.start_date) > since - 6 * 3600e3));
     if (rows.length < 100 || Math.min(...rows.map(m => Date.parse(m.start_date) || Infinity)) < since - 6 * 3600e3) break;
     await wait(pause);
   }
@@ -189,10 +207,15 @@ async function fetchCsMaps(http, { since, maxPages = 10, pause = 250 } = {}) {
 
 // ── Dota: OpenDota explorer ──
 const DOTA_COLS = ['match_id', 'start_time', 'radiant_score', 'dire_score', 'radiant_team_id', 'dire_team_id', 'player_slot', 'account_id', 'kills'];
-function dotaSql(sinceSec) {
-  return `SELECT m.match_id, m.start_time, m.radiant_score, m.dire_score, m.radiant_team_id, m.dire_team_id, pm.player_slot, pm.account_id, pm.kills
+// premium and professional leagues and the 'excluded' ones (the qualifiers
+// and small leagues the apps post lines on), with both teams' names from the
+// explorer's own team table (the /teams list names only the top thousand)
+function dotaSql(sinceSec, untilSec = null) {
+  return `SELECT m.match_id, m.start_time, m.radiant_score, m.dire_score, m.radiant_team_id, m.dire_team_id, pm.player_slot, pm.account_id, pm.kills,
+    rt.name radiant_name, rt.tag radiant_tag, dt.name dire_name, dt.tag dire_tag
     FROM matches m JOIN player_matches pm USING(match_id) JOIN leagues l USING(leagueid)
-    WHERE m.start_time > ${Math.floor(sinceSec)} AND l.tier IN ('premium','professional') AND m.radiant_team_id IS NOT NULL AND m.dire_team_id IS NOT NULL
+    LEFT JOIN teams rt ON rt.team_id = m.radiant_team_id LEFT JOIN teams dt ON dt.team_id = m.dire_team_id
+    WHERE m.start_time > ${Math.floor(sinceSec)}${untilSec ? ` AND m.start_time <= ${Math.floor(untilSec)}` : ''} AND l.tier IN ('premium','professional','excluded') AND m.radiant_team_id IS NOT NULL AND m.dire_team_id IS NOT NULL
     ORDER BY m.match_id LIMIT 20000`;
 }
 // explorer rows (one per player) → maps. teams: { id → { name, tag } }, pros: { account → name }
@@ -200,13 +223,14 @@ function dotaMaps(rows, { teams = {}, pros = {} } = {}) {
   const by = new Map();
   for (const r of rows || []) {
     const id = r.match_id ?? r[0];
-    const g = by.get(id) || by.set(id, { t: (r.start_time ?? r[1]) * 1000, rs: r.radiant_score ?? r[2], ds: r.dire_score ?? r[3], rt: r.radiant_team_id ?? r[4], dt: r.dire_team_id ?? r[5], p: [] }).get(id);
+    const g = by.get(id) || by.set(id, { t: (r.start_time ?? r[1]) * 1000, rs: r.radiant_score ?? r[2], ds: r.dire_score ?? r[3], rt: r.radiant_team_id ?? r[4], dt: r.dire_team_id ?? r[5], p: [],
+      names: { [r.radiant_team_id ?? r[4]]: { name: r.radiant_name, tag: r.radiant_tag }, [r.dire_team_id ?? r[5]]: { name: r.dire_name, tag: r.dire_tag } } }).get(id);
     g.p.push({ rad: (r.player_slot ?? r[6]) < 128, acct: r.account_id ?? r[7], k: r.kills ?? r[8] });
   }
   const out = [];
   for (const g of by.values()) {
     if (g.p.length !== 10 || !g.rt || !g.dt || g.p.some(p => !p.acct)) continue;
-    const team = (id, K) => ({ key: `dota:${id}`, name: teams[id]?.name || String(id), tag: teams[id]?.tag || null, K });
+    const team = (id, K) => ({ key: `dota:${id}`, name: teams[id]?.name || g.names[id]?.name || String(id), tag: teams[id]?.tag || g.names[id]?.tag || null, K });
     out.push({ t: g.t, teams: [team(g.rt, g.rs), team(g.dt, g.ds)], players: g.p.map(p => ({ id: `dota:${p.acct}`, name: pros[p.acct] || null, ti: p.rad ? 0 : 1, k: p.k })) });
   }
   return out.sort((a, b) => a.t - b.t);
@@ -222,6 +246,62 @@ async function fetchDotaMaps(http, { since }) {
   for (const t of Array.isArray(teams) ? teams : []) tm[t.team_id] = { name: t.name, tag: t.tag };
   for (const p of Array.isArray(pros) ? pros : []) pr[p.account_id] = p.name;
   return dotaMaps(res?.data?.rows || [], { teams: tm, pros: pr });
+}
+
+// ── Valorant: vlr.gg ──
+// a parsed match page (graders.vlrMatchPage) → its finished maps for the
+// store, each keyed by vlr.gg's game id (null when a map lacks two full lineups)
+function valMaps(page) {
+  if (!page || !(page.start > 0) || page.teams?.length !== 2) return [];
+  const out = [];
+  for (const mp of page.maps || []) {
+    if (!mp.done || !mp.gameId) continue;
+    const players = (mp.players || []).filter(p => (p.team === 0 || p.team === 1) && Number.isFinite(p.kills) && p.name)
+      .map(p => ({ id: `val:${p.id || sq(p.name)}`, name: p.name, ti: p.team, k: p.kills }));
+    if (players.filter(p => p.ti === 0).length !== 5 || players.filter(p => p.ti === 1).length !== 5) continue;
+    const K = [0, 1].map(i => players.filter(p => p.ti === i).reduce((a, p) => a + p.k, 0));
+    out.push({ key: `val:${mp.gameId}`, t: page.start + ((mp.number || 1) - 1) * 3600e3, R: mp.score[0] + mp.score[1],
+      teams: page.teams.map((t, i) => ({ key: `val:${sq(t.name)}`, name: t.name, tag: t.tag || null, K: K[i] })), players });
+  }
+  return out;
+}
+const VLR = 'https://www.vlr.gg';
+const VAL_TRIED = new Set();
+const VLR_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36' };
+// the results list's newest pages, then each match page not read yet, oldest
+// first, at most maxMatches a refresh and a pause between pages (vlr.gg is a
+// scraped site: the licence gate and its rate both apply). tried: match ids
+// already read final, so a match with no usable map isn't read again
+async function fetchValMaps(http, { since, seen = [], tried = VAL_TRIED, maxPages = 6, maxMatches = 30, pause = 1500 } = {}) {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const taken = new Set((seen || []).map(k => String(k)));
+  const list = [];
+  for (let p = 1; p <= maxPages; p++) {
+    const res = await http.get(`${VLR}/matches/results${p > 1 ? `/?page=${p}` : ''}`, { headers: VLR_HEADERS, timeout: 20000, responseType: 'text' });
+    const rows = vlrResultsList(res?.data);
+    if (!rows.length) break;
+    list.push(...rows);
+    await wait(pause);
+    // the list is newest first, by day: stop a day past the store's last map
+    if (Math.min(...rows.map(r => r.day ?? Infinity)) < since - 2 * 86400e3) break;
+  }
+  const ids = [...new Set(list.filter(r => r.day == null || r.day >= since - 2 * 86400e3).map(r => r.id))].reverse();
+  const out = [];
+  let n = 0;
+  for (const id of ids) {
+    if (n >= maxMatches) break;
+    if (tried.has(id)) continue;
+    let page = null;
+    try { const res = await http.get(`${VLR}/${id}`, { headers: VLR_HEADERS, timeout: 20000, responseType: 'text' }); page = vlrMatchPage(res?.data); } catch { /* one match */ }
+    n++;
+    if (page && page.final) {
+      tried.add(id);
+      if (tried.size > 2000) tried.delete(tried.values().next().value);
+      out.push(...valMaps(page).filter(m => !taken.has(m.key)));
+    }
+    await wait(pause);
+  }
+  return out.sort((a, b) => a.t - b.t);
 }
 
 // ── LoL: gol.gg's team list ──
@@ -282,4 +362,4 @@ function golInputs(teams, player, team, opp, { minGames = 6, minTeamGames = 3 } 
     team: { kf: ta.kpg, n: ta.games }, opp: { ka: tb.dpg, n: tb.games }, teamKey: ta.name, oppKey: tb.name, teamKpg: ta.kpg };
 }
 
-module.exports = { createStore, wrapStore, loadStore, saveStore, bo3Map, fetchCsMaps, dotaSql, dotaMaps, fetchDotaMaps, parseGolTeams, fetchGolTeams, findGolTeam, golInputs, nameTier, ROUNDS_PER_MAP };
+module.exports = { createStore, wrapStore, loadStore, saveStore, bo3Map, fetchCsMaps, CS_TIERS, valMaps, fetchValMaps, dotaSql, dotaMaps, fetchDotaMaps, parseGolTeams, fetchGolTeams, findGolTeam, golInputs, nameTier, ROUNDS_PER_MAP };
