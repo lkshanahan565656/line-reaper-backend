@@ -213,7 +213,8 @@ const PP_BACKOFF_MS = 4 * 60 * 1000, PP_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
 const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
-const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, slimPlayers, attachMatches, sleeperPricing } = require('./pickem');
+const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, slimPlayers, sleeperPricing } = require('./pickem');
+const esmatch = require('./esmatch');
 const propsBoard = require('./propsboard');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
@@ -1726,24 +1727,37 @@ async function generateEsportsPicks() {
   const ppEsports = ppLines.filter(l => isEsports(l.sport) && open(l));
   const udEsports = udLines.filter(l => isEsports(l.sport) && open(l));
 
+  // Each line's match (esmatch.js): a CS player in two or three Bo1s a day has
+  // a "Kills on Map 1" per match, so lines are keyed by player, stat and match.
+  // Sleeper lines take their start and title from an Underdog or PrizePicks line
+  // against the same opponent (both teams' Sleeper lines share a game id).
+  const slTeams = esmatch.sleeperTeams(cache.sleeper.data || []);
+  const slEsports = [];
+  for (const l of cache.sleeper.data || []) {
+    const b = esmatch.borrowMatch(l, [...udEsports, ...ppEsports], { slOpp: slTeams, sportOf: x => trackerSportKey(x.sport), now: t0 });
+    if (b) slEsports.push(b);
+  }
+  const tags = esmatch.matchTags([...ppEsports, ...udEsports, ...slEsports], { playerOf: l => normalizeName(l.player), sportOf: l => trackerSportKey(l.sport) });
+  const lineKey = l => `${normalizeName(l.player)}|${normalizeMarket(l.market)}|${tags.get(l)}`;
+  let unplaced = 0;
+  const placed = l => { if (tags.get(l) == null) { unplaced++; return false; } return true; };
+
   // UD lookup, side-aware multipliers
   const udMap = {};
   for (const l of udEsports) {
-    if (!l.player || l.line == null) continue;
-    udMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = {
+    if (!l.player || l.line == null || !placed(l)) continue;
+    udMap[lineKey(l)] = {
       line: l.line, overMultiplier: l.overMultiplier || 1.00, underMultiplier: l.underMultiplier || 1.00,
       overOpen: l.overOpen !== false, underOpen: l.underOpen !== false,
       market: l.market, sport: l.sport, player: l.player, team: l.team || '', startTime: l.startTime || '',
       matchTitle: l.matchTitle || '',
-      gameId: l.gameId || null,
+      gameId: l.gameId || null, matchTag: tags.get(l),
       matched: false,
     };
   }
-  // Sleeper lines take their match and start time from a PP or UD line on the
-  // same team (pickem.js attachMatches); the UD title reads best, so it's first
-  const slEsports = attachMatches((cache.sleeper.data || []), [...udEsports, ...ppEsports], teamsMatch, trackerSportKey);
   const slMap = {};
-  for (const l of slEsports) slMap[`${normalizeName(l.player)}|${normalizeMarket(l.market)}`] = { ...l, matched: false };
+  for (const l of slEsports) if (placed(l)) slMap[lineKey(l)] = { ...l, matchTag: tags.get(l), matched: false };
+  esportsCache.matchSplit = { players: new Set([...tags].filter(([, t]) => t != null).map(([l, t]) => `${normalizeName(l.player)}|${t}`)).size, unplaced };
   console.log(`Esports: PP=${ppEsports.length} UD=${udEsports.length} SL=${slEsports.length}/${(cache.sleeper.data || []).length} udMap=${Object.keys(udMap).length}`);
 
   // Limit fresh stat lookups per cycle so pick generation stays fast;
@@ -1931,7 +1945,10 @@ async function generateEsportsPicks() {
         const spanMaps = spanInferred ? spanInferred : mapCount;
         const label = spanInferred ? `1-${spanInferred}` : parseMapSpan(lineObj.market).label;
         const maps = spanToMapList(label, spanMaps);
+        // PrizePicks names the opponent in "ENCE MAP 1": without it a team in
+        // three Bo1s a day was priced on whichever of its matches came up first
         const opponent = opponentFrom(lineObj.team, lineObj.matchTitle, null)
+          || (lineObj.book !== 'sleeper' ? esmatch.lineOpponent({ ...lineObj, book: 'x' }) : null)
           || (lineObj.matchTitle && !splitMatchTitle(lineObj.matchTitle) && !/\d|map|game/i.test(lineObj.matchTitle) && !teamsMatch(lineObj.team, lineObj.matchTitle) ? lineObj.matchTitle : null);
         // the title's own name for the player's side, when it differs from the
         // roster name ("Team WE" vs "Xi'an Team WE"): the match prices use it
@@ -2029,6 +2046,8 @@ async function generateEsportsPicks() {
       udRegime: null, udImplied: null, udFlag: null,
       bestBook: null, bestEv: null, bookEdge: null, confidence: null, varianceK: null,
       model: null, pushProb: 0, gameId: base.gameId ?? null,
+      // the match this line is for (esmatch.js): one player, two Bo1s, two picks
+      matchTag: base.matchTag ?? tags.get(base) ?? null,
       pricing: null,
     };
     if (modelPred == null || !lineVal) return pick;   // no model yet — still listed for input
@@ -2168,8 +2187,8 @@ async function generateEsportsPicks() {
 
   // PP lines first (when PP is alive) — cross-matched to UD
   for (const line of ppEsports) {
-    if (!line.player || line.line == null) continue;
-    const key = `${normalizeName(line.player)}|${normalizeMarket(line.market)}`;
+    if (!line.player || line.line == null || !placed(line)) continue;
+    const key = lineKey(line);
     const udm = udMap[key] || null, slm = slMap[key] || null;
     if (udm) udm.matched = true;
     if (slm) slm.matched = true;
@@ -2180,8 +2199,8 @@ async function generateEsportsPicks() {
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
     if (udm.matched) continue;
-    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId };
-    const slm = slMap[`${normalizeName(udm.player)}|${normalizeMarket(udm.market)}`] || null;
+    const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId, matchTag: udm.matchTag };
+    const slm = slMap[`${normalizeName(udm.player)}|${normalizeMarket(udm.market)}|${udm.matchTag}`] || null;
     if (slm) slm.matched = true;
     const g = marketize(base, await getModelPred(base), [udQuote(udm), slQuote(slm)]);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, udm, 'ud', g, slm));
@@ -2190,7 +2209,7 @@ async function generateEsportsPicks() {
   // Sleeper lines neither PP nor UD carries
   for (const slm of Object.values(slMap)) {
     if (slm.matched) continue;
-    const base = { sport: slm.sport, player: slm.player, team: slm.team, market: slm.market, line: slm.line, startTime: slm.startTime, matchTitle: slm.matchTitle, gameId: slm.gameId };
+    const base = { sport: slm.sport, player: slm.player, team: slm.team, market: slm.market, line: slm.line, startTime: slm.startTime, matchTitle: slm.matchTitle, gameId: slm.gameId, matchTag: slm.matchTag };
     const g = marketize(base, await getModelPred(base), [slQuote(slm)]);
     picks.push(assemble(base, g.modelPred, g.predSource, g.manualKey, null, 'sl', g, slm));
   }
@@ -2216,14 +2235,9 @@ async function generateEsportsPicks() {
     const sides = new Map();
     const sideOf = p => {
       if (sides.has(p)) return sides.get(p);
-      let hit = null;
-      const g = fam(p), t = Date.parse(p.startTime || '');
-      const opp = g ? opponentFrom(p.team, p.matchTitle, null) : null;
-      for (const m of g ? pinMatches : []) {
-        if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(Date.parse(m.start) - t) > 12 * 3600e3)) continue;
-        const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
-        if (i != null) { hit = { m, i }; break; }
-      }
+      // the pick's own match: its opponent (PrizePicks' "ENCE MAP 1" too), or the nearest start (esmatch.js)
+      const g = fam(p);
+      const hit = g ? esmatch.sideFor(pinMatches.filter(m => m.game === g), p) : null;
       sides.set(p, hit);
       return hit;
     };
@@ -2444,14 +2458,8 @@ function priceRoundKills(picks) {
   const sides = new Map();
   const sideOf = p => {
     if (sides.has(p)) return sides.get(p);
-    let hit = null;
-    const g = fam(p), t = Date.parse(p.startTime || '');
-    const opp = opponentFrom(p.team, p.matchTitle, null);
-    for (const m of pin) {
-      if (m.game !== g || (Number.isFinite(t) && m.start && Math.abs(m.start - t) > 12 * 3600e3)) continue;
-      const i = [0, 1].find(j => teamCode(m.teams[j], p.team) && (!opp || teamCode(m.teams[1 - j], opp)));
-      if (i != null) { hit = { m, i }; break; }
-    }
+    const g = fam(p);
+    const hit = esmatch.sideFor(pin.filter(m => m.game === g), p, { startOf: m => m.start || NaN });
     sides.set(p, hit);
     return hit;
   };
@@ -2907,6 +2915,41 @@ const esStaleTracker = createTracker({
   fairProb: (p, line, side) => marketFairProb(p, line, side, pickCtx.get(p)),
 });
 esStaleTracker.ready().catch(e => console.error('Esports stale tracker: store failed to initialise:', e.message));
+
+// ── SAME-DAY MATCHES CHECK (v3.134.0, esmatch.js) ──
+// Until v3.134.0 the board keyed an app's line by player and stat alone, so a
+// player in two or three Bo1s a day was priced against whichever listing came
+// up first (PrizePicks' line for one opponent next to Underdog's for another),
+// and the CS grader took the nearest of the team's matches. This counts the
+// record rows from 10-13 on, made before the fix (no matchTag), on a team the
+// records show in more than one match that day. A dry run: it changes nothing
+// unless SAME_DAY_REPAIR=void, which voids them with the reason, undoably
+// (voidedFrom keeps what each row was).
+const SAME_DAY_FROM = Date.parse('2026-10-13T00:00:00Z');
+const SAME_DAY_NOTE = 'Same-day matches: the team played more than one match that day and the board priced (or graded) this line off whichever listing came first; fixed in v3.134.0';
+const SAME_DAY_MODE = String(process.env.SAME_DAY_REPAIR || '').trim().toLowerCase() === 'void' ? 'void' : 'count';
+const sameDayCheck = { mode: SAME_DAY_MODE, at: null, exposed: {}, graded: {}, voided: {}, error: null };
+async function checkSameDayRows() {
+  const recs = { esports: tracker, pinGaps: pinGapTracker, share: shareTracker, rounds: roundsTracker, h2h: h2hTracker, esStale: esStaleTracker };
+  const all = [];
+  for (const [name, t] of Object.entries(recs)) {
+    for (const r of await t.list({ limit: 1e7 })) if (Date.parse(r.startTime || '') >= SAME_DAY_FROM) all.push({ name, r });
+  }
+  const exposed = esmatch.multiMatchRows(all.map(x => x.r));
+  const hit = all.filter(x => exposed.has(x.r) && !x.r.matchTag && x.r.status !== 'void');
+  const ids = new Set(hit.map(x => `${x.name}|${x.r.id}`));
+  for (const name of Object.keys(recs)) {
+    const mine = hit.filter(x => x.name === name);
+    sameDayCheck.exposed[name] = mine.length;
+    sameDayCheck.graded[name] = mine.filter(x => x.r.status === 'graded').length;
+  }
+  if (SAME_DAY_MODE === 'void') {
+    for (const [name, t] of Object.entries(recs)) sameDayCheck.voided[name] = await t.voidWhere(r => ids.has(`${name}|${r.id}`), SAME_DAY_NOTE);
+  }
+  sameDayCheck.at = new Date().toISOString();
+  return sameDayCheck;
+}
+if (require.main === module) setTimeout(() => checkSameDayRows().catch(e => { sameDayCheck.error = e.message; }), 45e3);
 // each app's payout cell on a pick, as stalelines prices the sports apps
 function esStaleCell(p, book) {
   if (book === 'UD') return p.udSides || { over: p.udMultiplier ?? 1, under: p.udMultiplier ?? 1, overOpen: true, underOpen: true };
@@ -4505,7 +4548,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.133.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.134.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5269,13 +5312,17 @@ let propsBoardCache = { at: 0, rows: [] };
 function propsBoardRows() {
   if (Date.now() - propsBoardCache.at < 60000) return propsBoardCache;
   const es = l => isEsports(l.sport);
-  const esLines = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || []), ...pick6.lines().filter(es)];
+  const now = Date.now(), open = l => !(Date.parse(l.startTime || '') <= now);
+  const esRaw = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || []), ...pick6.lines().filter(es)].filter(open);
+  // one row per match: tagged as the esports board tags them (esmatch.js)
+  const esTags = esmatch.matchTags(esRaw, { playerOf: l => normalizeName(l.player), sportOf: l => trackerSportKey(l.sport) });
+  const esLines = esRaw.map(l => ({ ...l, matchTag: esTags.get(l) ?? null }));
   const esKey = (sport, market) => normalizeMarket(market);
   const rows = propsBoard.buildRows([...sportsPropLines(), ...esLines], { esKey });
   const esPicks = new Map();
   for (const p of esportsCache.picks || []) {
     const sport = propsBoard.boardSport(p.sport).sport;
-    esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
+    esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}${p.matchTag ? `|${p.matchTag}` : ''}`, p);
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
@@ -6540,7 +6587,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.133.0',
+  version: '3.134.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6576,6 +6623,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   dotaData: { indexed: dotaCache.proPlayers ? Object.keys(dotaCache.proPlayers).length : 0, profiles: Object.values(dotaCache.players).filter(p => !p.failed).length, error: dotaCache.lastError },
   bo3: { profiles: bo3Health.profiles, predsAccepted: bo3Health.predsAccepted, predsRejected: bo3Health.predsRejected, lastRejected: bo3Health.lastRejected, lastError: bo3Health.lastError },
   tracker: trackerHealth,
+  // one row per match for players in several a day (esmatch.js), and the old rows that weren't
+  sameDay: { split: esportsCache.matchSplit || null, record: sameDayCheck },
   sharp: sharpTracker.state(),
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null,
@@ -6780,7 +6829,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, slipTracker, cache, ppState, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
