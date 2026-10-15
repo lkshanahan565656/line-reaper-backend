@@ -121,7 +121,12 @@ const DEFAULTS = {
   // markets merged on one row (a preseason line next to opening night's), not
   // a soft book (2026-10-14: PrizePicks 17.5 vs 26.5 on Tatum read as 36).
   maxProbPts: 25,
+  // Pinnacle or Kalshi at another line counts only when reading it at ours
+  // moves its chance by this many points or fewer (CONSENSUS.maxShiftPts)
+  maxShiftPts: 10,
 };
+// a sharp source read along the curve from its line to ours: too far → null
+const shifted = (row, o, srcLine, p, line, m) => o.maxShiftPts != null && Math.abs(pOver(row.mkey, row.sport, m, line) - p) * 100 > o.maxShiftPts;
 
 // Fair P(over) at `line` for one book, from every OTHER source on the row:
 // the other books' lines read as means on the stat's curve, and Kalshi's own
@@ -147,7 +152,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   } else if (kalshi?.size && !EXACT.has(row.mkey)) {
     for (const [l, p] of kalshi) {
       const m = meanFor(row.mkey, row.sport, l, p);
-      if (m != null) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
+      if (m != null && !shifted(row, o, l, p, line, m)) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
     }
   }
   // Pinnacle: its own line and devigged price, read as a mean on the curve
@@ -155,7 +160,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   if (Array.isArray(pin)) pin = pin.reduce((a, b) => (!a || Math.abs(b.line - line) < Math.abs(a.line - line) ? b : a), null);
   if (pin && pin.line != null && pin.pOver > 0 && pin.pOver < 1 && sameLine(row.mkey, pin.line, line)) {
     const m = meanFor(row.mkey, row.sport, pin.line, pin.pOver);
-    if (m != null) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
+    if (m != null && !shifted(row, o, pin.line, pin.pOver, line, m)) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
   }
   if (means.length < o.minOthers) return null;
   const w = means.reduce((a, [, x]) => a + x, 0);
@@ -169,15 +174,21 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
 function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) {
   if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
   const out = [];
+  const sharpOnly = { ...o, weights: Object.fromEntries(Object.keys(row.books || {}).map(b => [b, 0])), minOthers: 1 };
   for (const [book, c] of Object.entries(row.books || {})) {
     const f = fairFor(row, book, c.line, { kalshi, pin, o });
     if (!f) continue;
+    // the same fair from Pinnacle and Kalshi alone, no app's line in it
+    const fs = fairFor(row, book, c.line, { kalshi, pin, o: sharpOnly });
     for (const side of ['Over', 'Under']) {
       if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
       const fair = side === 'Over' ? f.p : 1 - f.p;
       const mult = side === 'Over' ? c.over : c.under;
-      const ev = dfsEv(fair, book, mult ?? 1, { overMultiplier: c.over, underMultiplier: c.under }, side);
+      const cell = { overMultiplier: c.over, underMultiplier: c.under };
+      const ev = dfsEv(fair, book, mult ?? 1, cell, side);
       if (ev == null || !Number.isFinite(ev)) continue;
+      const sFair = fs ? (side === 'Over' ? fs.p : 1 - fs.p) : null;
+      const sEv = sFair == null ? null : dfsEv(sFair, book, mult ?? 1, cell, side);
       // the soft side: other books hang a line that makes our side harder
       const vs = Object.entries(row.books).filter(([b, x]) => b !== book && (side === 'Over' ? x.line > c.line : x.line < c.line)).map(([b, x]) => ({ book: b, line: x.line }));
       let gap = null;
@@ -187,7 +198,8 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
         const probPts = +(((side === 'Over' ? f.p - there : there - f.p)) * 100).toFixed(1);
         gap = { vs, pts: +Math.abs(far.line - c.line).toFixed(2), probPts };
       }
-      out.push({ book, side, line: c.line, mult: mult ?? 1, fair: +fair.toFixed(4), ev: +ev.toFixed(2), mean: f.mean, n: f.n, sources: f.sources, gap });
+      out.push({ book, side, line: c.line, mult: mult ?? 1, fair: +fair.toFixed(4), ev: +ev.toFixed(2), mean: f.mean, n: f.n, sources: f.sources, gap,
+        sharpFair: sFair == null ? null : +sFair.toFixed(4), sharpEv: sEv == null || !Number.isFinite(sEv) ? null : +sEv.toFixed(2) });
     }
   }
   return out.sort((a, b) => b.ev - a.ev);
@@ -204,6 +216,11 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
 const hasSharp = p => p.sources.some(s => s.book === 'pinnacle' || s.book === 'kalshi');
 function playKind(p, o = DEFAULTS) {
   if (!p || p.ev < o.minEv) return null;
+  // The other apps' lines can move the fair, never make the play: Kalshi's
+  // 25.5% anytime TD blended with Underdog's 0.5 read as 50% made a 36% fair
+  // and +13% at Sleeper's 3.14x, about -20% on Kalshi alone (DeMario
+  // Douglas, 2026-10-15 audit). A play clears minEv on the sharp prices alone.
+  if (p.sharpEv !== undefined && !(p.sharpEv >= o.minEv)) return null;
   if (p.gap && p.gap.probPts > o.maxProbPts) return null;
   const gap = p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources;
   if (gap && hasSharp(p)) return 'gap';
@@ -248,6 +265,12 @@ const CONSENSUS = {
   promoteN: 50,         // graded legs a shadow book needs before it can count
   minSources: 2,
   maxSpreadPts: 12,     // sources this far apart at our line: not one market
+  // A source whose chance moves more than this (points of win chance) when
+  // read along the curve from its own line to the app's says nothing about the
+  // app's line and is left out: Pinnacle and FanDuel at 2.5 rush yards (38.5%)
+  // read at Underdog's 0.5 said 60.6%, while the books posting 0.5 said 50%
+  // (Kirk Cousins, +8% shown, 2026-10-15 audit)
+  maxShiftPts: 10,
   minEv: 2,             // % over the entry's break-even
 };
 
@@ -314,7 +337,9 @@ function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = 
   for (const s of srcs) {
     const m = meanFor(row.mkey, row.sport, s.line, s.p);
     if (m == null) continue;
-    all.push({ ...s, m, w: o.weights[s.book] || 0, at: pOver(row.mkey, row.sport, m, line) });
+    const at = pOver(row.mkey, row.sport, m, line);
+    if (o.maxShiftPts != null && Math.abs(at - s.p) * 100 > o.maxShiftPts) continue;
+    all.push({ ...s, m, w: o.weights[s.book] || 0, at });
   }
   const means = all.filter(x => x.w > 0), shadows = all.filter(x => !(x.w > 0));
   if (means.length < o.minSources) return null;
@@ -390,7 +415,8 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
 const LINE_TOL_FRAC = { counting: 0, points: 0, yards: 0.025 };
 const tolClass = mkey => (/yds|yards/.test(mkey) ? 'yards' : /points|^pra$|^pts_|^threes$|^ftm$/.test(mkey) ? 'points' : 'counting');
 const lineTol = (mkey, line, frac = LINE_TOL_FRAC) => Math.floor((frac[tolClass(mkey)] || 0) * Math.abs(line) * 2) / 2;
-const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10, lineTolFrac: LINE_TOL_FRAC };
+const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10, lineTolFrac: LINE_TOL_FRAC, maxShiftPts: null };
+// (book fair drops the whole price instead of one source: maxShiftPts off)
 const isSharpSource = s => !s.shadow && (s.book === 'pinnacle' || s.book === 'kalshi');
 // a consensus play that rests on a sharp source (not FanDuel and BetRivers alone)
 const sharpBacked = p => (p.sources || []).some(isSharpSource);

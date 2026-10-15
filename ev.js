@@ -282,13 +282,17 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
 
   const rows = [];
   const suspect = new Set();
-  const propFair = new Map();   // player|market|line → fair, for DFS legs
+  const propFair = new Map();   // player|market|line → [{ f, head }], one per game, for DFS legs
   for (const [group, qs] of groups) {
     const f = fairForGroup(qs, { method, weights });
     if (!f) continue;
     if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
     const head = qs[0];
-    if (head.player) propFair.set(`${canonName(head.player)}|${head.market}|${head.point}`, { f, head });
+    if (head.player) {
+      const k = `${canonName(head.player)}|${head.market}|${head.point}`;
+      if (!propFair.has(k)) propFair.set(k, []);
+      propFair.get(k).push({ f, head });
+    }
 
     for (const side of f.sides) {
       const fp = f.fair[side];
@@ -339,7 +343,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   if (dfsEv) {
     for (const l of dfsLines) {
       if (l.startTime && Date.parse(l.startTime) <= now) continue;
-      const hit = propFair.get(`${canonName(l.player)}|${canonMarket(l.market)}|${Number(l.line)}`);
+      const hit = dfsGame(propFair.get(`${canonName(l.player)}|${canonMarket(l.market)}|${Number(l.line)}`), l.startTime);
       if (!hit) continue;
       const { f, head } = hit;
       for (const side of ['Over', 'Under']) {
@@ -363,6 +367,27 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   return rows;
 }
 const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
+
+// The books' game a DFS leg belongs to. A player's name, market and line
+// don't name a game: PrizePicks' Brunson rebounds 2.5 was a 10-15 preseason
+// game priced on Pinnacle's 10-20 prop (+7.4% shown, 2026-10-15 audit).
+// With a start time the leg takes the game starting within DFS_START_SLACK_MS
+// of it; without one, only a lone candidate.
+const DFS_START_SLACK_MS = 4 * 3600e3;
+function dfsGame(cands, startTime) {
+  if (!cands || !cands.length) return null;
+  const t = Date.parse(startTime);
+  if (!Number.isFinite(t)) return cands.length === 1 ? cands[0] : null;
+  if (cands.length === 1 && !Number.isFinite(Date.parse(cands[0].head.start))) return cands[0];
+  let best = null, bestGap = Infinity;
+  for (const c of cands) {
+    const s = Date.parse(c.head.start);
+    if (!Number.isFinite(s)) continue;
+    const gap = Math.abs(s - t);
+    if (gap <= DFS_START_SLACK_MS && gap < bestGap) { best = c; bestGap = gap; }
+  }
+  return best;
+}
 
 // ── live edges ──
 // Rows that newly cleared minEv since the last screen (new to the board, or
@@ -393,5 +418,5 @@ function describeEv(r) {
 
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS, dfsGame, DFS_START_SLACK_MS,
 };

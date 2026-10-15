@@ -37,9 +37,11 @@ test("Pinnacle's price counts as three books and makes a play on its own", () =>
   assert.strictEqual(plays[0].side, 'Over');
   assert.ok(Math.abs(plays[0].fair - 0.62) < 1e-3);
   assert.strictEqual(sp.playKind(plays[0]), 'ev');
-  // a book line off Pinnacle's reads through the curve
-  const off = sp.fairFor({ ...row, books: { prizepicks: { line: 4.5, overOpen: true, underOpen: true } } }, 'prizepicks', 4.5, { pin: { line: 3.5, pOver: 0.62 } });
-  assert.ok(off.p < 0.5 && off.p > 0.4);
+  // a book line off Pinnacle's reads through the curve, while the move stays
+  // within maxShiftPts; a whole catch away at 3.5 is 17 points: not a price
+  const near = sp.fairFor({ ...row, mkey: 'rec_yds', books: { prizepicks: { line: 45.5, overOpen: true, underOpen: true } } }, 'prizepicks', 45.5, { pin: { line: 43.5, pOver: 0.55 } });
+  assert.ok(near.p < 0.55 && near.p > 0.45);
+  assert.strictEqual(sp.fairFor({ ...row, books: { prizepicks: { line: 4.5, overOpen: true, underOpen: true } } }, 'prizepicks', 4.5, { pin: { line: 3.5, pOver: 0.62 } }), null);
 });
 
 test('a Pinnacle quote only prices the same game', () => {

@@ -4584,7 +4584,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.136.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.137.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5488,9 +5488,13 @@ function priceSportRows(rows) {
     // a cell keeps a price only where a sharp price backs it or it's a gap
     for (const [book, c] of Object.entries(row.books)) {
       const cons = cplays.filter(p => p.book === book);
-      const mine = cons.length ? cons : plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      const mine = cons.length ? cons : plays.filter(p => p.book === book && p.sharpEv != null);   // a Pinnacle or Kalshi price within reach of this line
       const bf = mine.length ? null : bfPlays.find(p => p.book === book);
-      if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
+      // without a consensus the cell shows the sharp prices' own number (the
+      // other apps' lines left out of it) where there is one
+      const sh = cons.length ? null : mine.filter(p => p.sharpEv != null).sort((x, y) => y.sharpEv - x.sharpEv)[0];
+      if (sh) c.ev = { side: sh.side, ev: sh.sharpEv, fair: +(sh.sharpFair * 100).toFixed(1) };
+      else if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
       else if (bf) c.ev = { side: bf.side, ev: bf.ev, fair: +(bf.fair * 100).toFixed(1), bookFair: bf.n >= 2 ? 'both' : 'single' };
       else if (c.fair == null) delete c.ev;
       // the books post this prop at another number than the app's: no price, and the row says so
@@ -5527,7 +5531,7 @@ function priceSportRows(rows) {
     } else if (pin || (row.best && row.best.source === 'kalshi')) {
       // a sharp price, blended with the other books: the row's best, +EV or not
       const top = plays.find(p => pin || row.books[p.book]?.fair != null);
-      row.best = top ? { book: top.book, side: top.side, ev: top.ev, fair: +(top.fair * 100).toFixed(1), line: top.line, source: pin ? 'pinnacle' : 'kalshi', kind: null, n: top.n } : null;
+      row.best = top ? { book: top.book, side: top.side, ev: top.sharpEv ?? top.ev, fair: +((top.sharpEv != null ? top.sharpFair : top.fair) * 100).toFixed(1), line: top.line, source: pin ? 'pinnacle' : 'kalshi', kind: null, n: top.n } : null;
     }
   }
   return flagged;
@@ -6658,7 +6662,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.136.0',
+  version: '3.137.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

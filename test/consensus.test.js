@@ -34,10 +34,10 @@ test('sources far apart (two games) say nothing', () => {
 });
 
 test('pick\'em apps never price themselves', () => {
-  const r = row({ prizepicks: cell(50.5), underdog: cell(60.5, 1, 1) });
+  const r = row({ prizepicks: cell(50.5), underdog: cell(54.5, 1, 1) });
   const plays = sp.consensusPlays(r, { sharp: [{ book: 'pinnacle', line: 50.5, pOver: 0.5 }, { book: 'betrivers', line: 50.5, pOver: 0.5 }], dfsEv: ev });
   for (const p of plays) assert.ok(p.sources.every(s => sp.SHARP_BOOKS.includes(s.book)));
-  // Underdog's 60.5 under is the soft side against books at 50.5
+  // Underdog's 54.5 under is the soft side against books at 50.5
   assert.strictEqual(plays[0].book, 'underdog');
   assert.strictEqual(plays[0].side, 'Under');
 });
