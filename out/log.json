@@ -1,0 +1,452 @@
+[
+ {
+  "t": "2026-10-15T02:50:18.489Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 92,
+   "open": 92,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:51:20.623Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 107,
+   "open": 107,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:52:21.988Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:53:22.052Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:54:23.104Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:55:23.134Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:56:26.804Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:57:26.842Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:58:26.972Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 118,
+   "open": 118,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 63,
+   "withSeen": 63,
+   "seenRecent": 63
+  }
+ },
+ {
+  "t": "2026-10-15T02:59:26.998Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 119,
+   "open": 119,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:00:27.064Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 119,
+   "open": 119,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:01:27.125Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 119,
+   "open": 119,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:02:27.177Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:03:27.230Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:04:27.297Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:05:31.278Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:06:31.449Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ },
+ {
+  "t": "2026-10-15T03:07:32.084Z",
+  "sbStatus": 200,
+  "overall": {
+   "recorded": 120,
+   "open": 120,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  "seen": {
+   "open": 64,
+   "withSeen": 64,
+   "seenRecent": 64
+  }
+ }
+]

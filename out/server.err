@@ -1,0 +1,25 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+Polymarket US: book atc-mls-col-min-2026-10-14-col: Request failed with status code 429
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+bo3 m0NESY-: no search hit
+Polymarket US: book atc-mls-col-min-2026-10-14-draw: Request failed with status code 429
+Polymarket US: book atc-mls-sdg-hou-2026-10-14-sdg: Request failed with status code 429
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Polymarket US: book tsc-mls-sdg-hou-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book atc-mls-sdg-hou-2026-10-14-sdg: Request failed with status code 429
+Polymarket US: book atc-mls-sdg-hou-2026-10-14-draw: Request failed with status code 429
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
