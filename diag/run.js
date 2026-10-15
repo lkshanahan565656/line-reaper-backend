@@ -11,7 +11,7 @@ const post = legs => j('/api/slips/grade', { method: 'POST', headers: { 'content
   for (let i = 0; i < 40; i++) {
     await sleep(30000);
     try {
-      const b = await j('/api/props/board?limit=500&sort=ev');
+      const b = await j('/api/props/board?limit=500&sort=ev&priced=1');
       rows = (b.rows || []).filter(r => !r.esports);
       out.counts = b.counts; out.boardTotal = b.total; out.sportsRows = rows.length;
       const priced = rows.filter(r => Object.values(r.books || {}).some(c => c.fair != null || c.ev != null));
@@ -23,6 +23,11 @@ const post = legs => j('/api/slips/grade', { method: 'POST', headers: { 'content
   // up to 14 real legs: different players, sports and apps, game still ahead
   const legs = [], seen = new Set();
   const now = Date.now();
+  // rows the sharp consensus or Kalshi prices first, then the rest
+  const rank = r => (r.best?.kind === 'sharp' ? 0 : /pinnacle|kalshi/.test(r.best?.source || '') ? 1 : 2);
+  rows.sort((a, b) => rank(a) - rank(b));
+  out.ranks = [0, 1, 2].map(k => rows.filter(r => rank(r) === k).length);
+  out.bestKinds = rows.reduce((a, r) => { const k = `${r.best?.kind}|${r.best?.source}`; a[k] = (a[k] || 0) + 1; return a; }, {});
   for (const r of rows) {
     if (legs.length >= 14) break;
     if (seen.has(r.player) || !(Date.parse(r.startTime) > now + 20 * 60e3)) continue;
@@ -37,6 +42,7 @@ const post = legs => j('/api/slips/grade', { method: 'POST', headers: { 'content
     { id: 'old', app: 'prizepicks', sport: p0?.sport, player: p0?.player, market: p0?.market, side: 'Over', line: 10.5, betAt: new Date(now - 5 * 86400e3).toISOString() },
     { id: 'fake', app: 'underdog', player: 'Nobody Realname', market: 'Points', side: 'Over', line: 20.5, betAt: new Date(now).toISOString() },
     { id: 'stat', app: 'prizepicks', sport: p0?.sport, player: p0?.player, market: 'Hot Dogs Eaten', side: 'Over', line: 2.5, betAt: new Date(now).toISOString() },
+    { id: 'late', app: 'underdog', sport: 'NFL', player: 'Josh Allen', market: 'Pass Yards', side: 'Over', line: 230.5, betAt: new Date(now - 9 * 86400e3).toISOString() },
     { id: 'es', app: 'prizepicks', sport: 'CS', player: 'ZywOo', market: 'Kills', side: 'Over', line: 35.5, betAt: new Date(now).toISOString() },
   ];
   out.legs = [...legs, ...nohist];
