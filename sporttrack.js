@@ -70,7 +70,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   // rows: the props board's sports rows. flagged: [{ row, play, kind }].
   // fairAt(row, book, line) → P(over) on the other sources now, or null.
   // updated: { prizepicks: iso, ... } when each book's lines were last read.
-  async function record({ rows = [], flagged = [], fairAt, updated = {} } = {}) {
+  // sharpAt(row, line) → P(over) on a sharp price (Pinnacle or Kalshi), or
+  // null: a book-fair leg keeps it as a second close when one appears
+  async function record({ rows = [], flagged = [], fairAt, sharpAt = null, updated = {} } = {}) {
     await loaded;
     const t = now();
     const writes = [];
@@ -129,6 +131,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
           if (fair !== b.closeFair) { b.closeFair = fair; dirty = true; }
           if (dirty || !(t - Date.parse(b.closeSeenAt || b.closeAt) < SEEN_SAVE_MS)) { b.closeSeenAt = new Date(t).toISOString(); dirty = true; }
         }
+        const sOver = sharpAt && BOOK_FAIR.has(baseKind(b.kind)) ? sharpAt(row, b.signalLine) : null;
+        if (sOver != null) {
+          const sf = r4(b.signalSide === 'Over' ? sOver : 1 - sOver);
+          if (sf !== b.closeSharpFair) { b.closeSharpFair = sf; dirty = true; }
+          b.closeSharpAt = new Date(t).toISOString();
+        }
         if (dirty) { b.closeAt = new Date(t).toISOString(); writes.push(put(b)); }
         continue;
       }
@@ -143,6 +151,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       // a leg no sharp source priced (a slip-log leg, sliplog.js) closes without a fair
       b.closeEv = b.closeFair == null ? null : r2((b.closeFair * b.signalDecimal - 1) * 100);
       b.fairMove = b.closeFair == null || b.signalFair == null ? null : r2((b.closeFair - b.signalFair) * 100);
+      // a sharp close counts only when it was read in the last hour before the start
+      if (b.closeSharpFair != null) { b.closeSharpOk = start - Date.parse(b.closeSharpAt) <= CLOSE_FRESH_MS; b.closeSharpEv = r2((b.closeSharpFair * b.signalDecimal - 1) * 100); }
       b.gapOutcome = gapOutcome({ gapVs: b.gapVs, signalLine: b.signalLine, signalBook: b.signalBook, closeLines: b.closeLines });
       writes.push(put(b));
     }
@@ -198,6 +208,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       execClosed: live.filter(b => b.execOk === true).length, execCloseEvAvg: avg(live.filter(b => b.execOk === true), b => b.closeEv ?? 0),
       // the record that counts: only plays still up at the next read
       execGraded: exec.length, execUnits: r2(exec.reduce((a, b) => a + (b.profit || 0), 0)), execRoi: exec.length ? r4(exec.reduce((a, b) => a + (b.profit || 0), 0) / exec.length) : null,
+      // book-fair legs: the close on Pinnacle or Kalshi, where one appeared
+      sharpClosed: live.filter(b => b.closeSharpOk).length, sharpCloseEvAvg: avg(live.filter(b => b.closeSharpOk), b => b.closeSharpEv ?? 0),
       gapOutcomes: list.reduce((a, b) => { if (b.gapOutcome) a[b.gapOutcome] = (a[b.gapOutcome] || 0) + 1; return a; }, {}),
     };
   }

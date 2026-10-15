@@ -61,3 +61,32 @@ test('book-fair legs keep their own kind, stay out of the headline record and th
   assert.strictEqual(b.byKind['props-book-fair'].recorded, 1);
   assert.strictEqual(b.byKind['props-book-fair'].kindLabel, "Pick'em vs FanDuel + BetRivers");
 });
+
+test('book fair: a book line too far from the app line to convert makes no price', () => {
+  // FanDuel 45.5 rush yards at 50% read at a PrizePicks 57.5: ~70% under, a different number
+  const r = { ...row({ prizepicks: cell(57.5), underdog: cell(46.5, 1, 1) }), mkey: 'rush_yds' };
+  const plays = sp.bookFairPlays(r, [{ book: 'fanduel', line: 45.5, pOver: 0.5 }], { dfsEv: ev });
+  assert.ok(!plays.some(p => p.book === 'prizepicks'), 'no fake +26%');
+  assert.ok(plays.some(p => p.book === 'underdog'), 'a nearby line still prices');
+  // the same line at a lopsided price is a real price, kept
+  const nhl = { ...row({ underdog: cell(2.5, 1, 1) }), sport: 'NHL', mkey: 'shots_on_goal' };
+  assert.ok(sp.bookFairPlays(nhl, [{ book: 'fanduel', line: 2.5, pOver: 0.39 }], { dfsEv: ev }).length);
+});
+
+test('book-fair legs keep a second close on Pinnacle when one appears before the start', async () => {
+  let t = Date.parse('2026-10-15T00:00:00Z');
+  const tr = createSportTracker({ store: createMemoryStore(), now: () => t });
+  const r = { ...row({ prizepicks: cell(50.5) }), startTime: '2026-10-15T02:00:00Z' };
+  const [p] = sp.bookFairPlays(r, [{ book: 'fanduel', line: 50.5, pOver: 0.57 }], { dfsEv: ev });
+  await tr.record({ rows: [r], flagged: [{ row: r, play: p, kind: sp.bookFairKind(p) }], fairAt: () => 0.57, sharpAt: () => null });
+  t += 90 * 60e3;
+  await tr.record({ rows: [r], flagged: [], fairAt: () => 0.58, sharpAt: () => 0.6 });
+  t += 60 * 60e3;
+  await tr.record({ rows: [r], flagged: [], fairAt: () => 0.58, sharpAt: () => 0.6 });
+  const [leg] = await tr.list();
+  assert.strictEqual(leg.kind, 'book-fair-single');
+  assert.strictEqual(leg.closeSharpOk, true);
+  assert.ok(leg.closeSharpEv > leg.closeEv, 'Pinnacle closed further our way');
+  const s = await tr.summary();
+  assert.strictEqual(s.byKind['book-fair-single'].sharpClosed, 1);
+});
