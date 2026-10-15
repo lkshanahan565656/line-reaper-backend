@@ -446,13 +446,31 @@ async function scrapeSleeper() {
   finally { sleeperRunning = false; }
 }
 
+// DraftKings Pick6 (pick6.js): its board from the loader data its site uses,
+// no login, one sport a 2-minute tick. A lead: off unless PICK6=on, never in
+// Best Plays or alerts, its legs in the record under kinds of their own
+// (p6-sharp, p6-ev, p6-gap) until about 50 graded legs say whether it beats the close.
+const { createPick6Reader } = require('./pick6');
+const PICK6_ON = /^(on|1|true|yes)$/i.test(String(process.env.PICK6 || '').trim());
+const pick6 = createPick6Reader(axios, { enabled: PICK6_ON });
+async function scrapePick6() {
+  if (!PICK6_ON) return;
+  if (!licences.isOn('pick6')) { pick6.state.lastError = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
+  await pick6.tick();
+  // its own payout table, as the last read showed it
+  if (pick6.state.payouts) sportProps.setPick6Payouts(pick6.state.payouts);
+}
+const P6_KIND = k => `p6-${k}`;
+const baseSportKind = k => String(k || '').replace(/^p6-/, '');
+
 // Every book's sports prop lines in one list, PrizePicks' half and quarter
 // leagues folded into their sport, Sleeper given start times from the others
 function sportsPropLines() {
   const ud = (cache.underdog.data || []).filter(l => !isEsports(l.sport));
   const pp = ppLinesNow().filter(l => !isEsports(l.sport));
   const sl = propsBoard.borrowStarts(cache.sleeperSports.data || [], [...ud, ...pp]);
-  return [...ud, ...pp, ...sl].map(propsBoard.normLine).filter(l => !l.esports);
+  const p6 = pick6.lines().filter(l => !isEsports(l.sport));
+  return [...ud, ...pp, ...sl, ...p6].map(propsBoard.normLine).filter(l => !l.esports);
 }
 
 // ─── OWLS FETCHERS (with dead-key circuit breaker) ────────────────────────────
@@ -2995,6 +3013,7 @@ function dfsLegEv(p, book, mult, line, side) {
   const other = line ? (side === 'Over' ? line.underMultiplier : line.overMultiplier) : null;
   if (book === 'sleeper' && line) return sleeperPricing(p, mult, other || null).ev;
   if (book === 'underdog' && other != null) return udPricing(p, mult, other).ev;
+  if (book === 'pick6') return sportProps.fixedLeg('pick6', p > 1 ? p / 100 : p, mult)?.ev ?? null;
   return calcBookEV(p, book, mult);
 }
 
@@ -3052,7 +3071,8 @@ function runEvScreen(force = false) {
   evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
-    const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen });
+    // DK Pick6 is a lead: on the board and in the record, never an alert
+    const fresh = evScreen.diffEv(prev, rows, { minEv: EV_ALERT_MIN, seen: evSeen }).filter(r => r.book !== 'pick6');
     if (fresh.length) {
       evRecent = [...fresh, ...evRecent].slice(0, 200);
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
@@ -4354,7 +4374,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.128.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.129.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5110,7 +5130,7 @@ let propsBoardCache = { at: 0, rows: [] };
 function propsBoardRows() {
   if (Date.now() - propsBoardCache.at < 60000) return propsBoardCache;
   const es = l => isEsports(l.sport);
-  const esLines = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || [])];
+  const esLines = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || []), ...pick6.lines().filter(es)];
   const esKey = (sport, market) => normalizeMarket(market);
   const rows = propsBoard.buildRows([...sportsPropLines(), ...esLines], { esKey });
   const esPicks = new Map();
@@ -5118,7 +5138,7 @@ function propsBoardRows() {
     const sport = propsBoard.boardSport(p.sport).sport;
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
   }
-  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv });
+  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
   observeStaleApps(rows);
   propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
@@ -5138,6 +5158,7 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
 function sportFairAt(row, book, line, kind) {
+  kind = baseSportKind(kind);
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
   if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
@@ -5768,8 +5789,10 @@ async function trackSportProps() {
     propsBoardCache.at = 0;
     const { rows, sportPlays } = propsBoardRows();
     // when each app's lines were last read (a PrizePicks pull that failed read nothing)
-    const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated };
-    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)];
+    const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
+    // a Pick6 leg goes in under a kind of its own, so its record stands apart
+    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
+      .map(x => (x.play.book === 'pick6' ? { ...x, kind: P6_KIND(x.kind) } : x));
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
@@ -6221,9 +6244,10 @@ app.get('/api/best', async (req, res) => {
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
       picks: pro ? esportsCache.picks || [] : [],
-      props: pro ? runEvScreen().rows.filter(r => r.dfs).filter(evRowOk(lic)) : [],
+      props: pro ? runEvScreen().rows.filter(r => r.dfs && r.book !== 'pick6').filter(evRowOk(lic)) : [],
       // the PROPS board's flagged sports plays; one priced on Kalshi needs its licence
-      sportProps: pro ? (propsBoardRows().sportPlays || []).filter(x => !x.research && (lic.kalshi || !x.play.sources.some(s => s.book === 'kalshi'))) : [],
+      // Pick6 is a lead with a record of its own: not in Best Plays until it's proven
+      sportProps: pro ? (propsBoardRows().sportPlays || []).filter(x => !x.research && x.play.book !== 'pick6' && (lic.kalshi || !x.play.sources.some(s => s.book === 'kalshi'))) : [],
       lines: pro ? runEvScreen().rows.filter(r => !r.dfs).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       value: [...xvalueState.edges, ...(xvalueState.moverBets || [])].filter(valueOk(lic)),
@@ -6292,11 +6316,12 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.128.0',
+  version: '3.129.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
+  pick6: pick6.status(),
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
@@ -6409,7 +6434,7 @@ function esportsLinesSig() {
     .filter(l => isEsports(l.sport)).map(sig).sort().join('\n');
 }
 schedule('*/2 * * * *', async () => {
-  await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
+  await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper(), scrapePick6()]);
   trackSportProps().catch(() => {});
   const sig = esportsLinesSig();
   if (esLinesSig && sig !== esLinesSig) esPicksRebuild().catch(() => {});

@@ -36,7 +36,7 @@ const mean = a => (a.length ? a.reduce((x, v) => x + v, 0) / a.length : null);
 
 const BOOK = { fanduel: 'FanDuel', betrivers: 'BetRivers', draftkings: 'DraftKings', betmgm: 'BetMGM', caesars: 'Caesars', bet365: 'bet365',
   fanatics: 'Fanatics', hardrock: 'Hard Rock', thescore: 'theScore', kalshi: 'Kalshi', polymarket: 'Polymarket', matchbook: 'Matchbook',
-  prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
+  prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6', PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
 // Action Network's copies: no direct read of the book's own price
 const RELAYED = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore']);
 
@@ -53,6 +53,10 @@ const KINDS = {
   'props-gap': "Pick'em line gap",
   'props-stale': "Pick'em stale (confirmed)",
   'props-stale-single': "Pick'em stale (Pinnacle only)",
+  // DraftKings Pick6, a lead with its own record
+  'props-p6-sharp': 'Pick6 sharp consensus',
+  'props-p6-ev': 'Pick6 sharp price',
+  'props-p6-gap': 'Pick6 line gap',
   'bigmoney': 'Big money',
 };
 
@@ -68,7 +72,7 @@ const evKind = b => (b.source === 'consensus' ? 'ev-consensus' : 'ev');
 function propsPlay(b) {
   const state = sporttrack.closeState(b);
   const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
-  return { kind: `props-${b.kind}`, book: b.book || ({ PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' })[b.signalBook] || b.signalBook,
+  return { kind: `props-${b.kind}`, book: b.book || ({ PP: 'prizepicks', UD: 'underdog', SL: 'sleeper', P6: 'pick6' })[b.signalBook] || b.signalBook,
     cluster: `${b.sport}|${b.player}|${b.mkey}|${day(b.start)}`, state, clv: b.closeEv ?? null,
     exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null, bet: results.SOURCES.sportsProps.bet(b) };
 }

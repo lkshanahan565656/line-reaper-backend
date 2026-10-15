@@ -3342,9 +3342,12 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: lsGetPb('lr_pb_view') === 'cards' ? 'cards' : 'lines', lineBook: ['underdog', 'prizepicks', 'sleeper'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: lsGetPb('lr_pb_view') === 'cards' ? 'cards' : 'lines', lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
-const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL']];
+const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
+// DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
+const pbBooksOn = () => PB_BOOKS.filter(([k]) => k !== 'pick6' || (pbState.data?.counts?.books?.pick6 || 0) > 0 || pbState.lineBook === 'pick6');
+const PB_LEAD = { pick6: 'DK Pick6 is new here: its legs keep a record of their own and are not graded yet, so none is proven' };
 const PB_SPORT_ORDER = ['NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
 let pbTimer = null;
 function pbSet(k, v) {
@@ -3398,8 +3401,8 @@ function renderPropsRecord() {
   const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
   const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
   const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
-  const KN = { sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side' };
-  const kinds = ['sharp', 'gap', 'ev', 'gap-odd', 'gap-stale'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
+  const KN = { sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
+  const kinds = ['sharp', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-ev', 'p6-gap'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
     ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;
@@ -3417,7 +3420,7 @@ function pbChips() {
   const lines = pbState.view === 'lines';
   document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(!lines, 'CARDS', null, "pbSet('view','cards')")].join('');
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
-    ...PB_BOOKS.map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
+    ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
 }
 function pbFmtStart(t) {
   const d = new Date(t);
@@ -3425,9 +3428,9 @@ function pbFmtStart(t) {
   const today = new Date().toDateString() === d.toDateString();
   return (today ? '' : d.toLocaleDateString([], { weekday: 'short' }) + ' ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
-const PB_COLOR = { underdog: '#a78bfa', prizepicks: '#3b82f6', sleeper: '#06b6d4' };
+const PB_COLOR = { underdog: '#a78bfa', prizepicks: '#3b82f6', sleeper: '#06b6d4', pick6: '#53d337' };
 const PB_ES = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'R6', 'COD']);
-const pbSideWord = (book, side) => book === 'prizepicks' ? (side === 'Over' ? 'More' : 'Less') : (side === 'Over' ? 'Higher' : 'Lower');
+const pbSideWord = (book, side) => book === 'prizepicks' || book === 'pick6' ? (side === 'Over' ? 'More' : 'Less') : (side === 'Over' ? 'Higher' : 'Lower');
 const PB_SRC = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', kalshi: 'Kalshi', matchbook: 'Matchbook', draftkings: 'DraftKings', betmgm: 'BetMGM', caesars: 'Caesars', bet365: 'bet365', fanatics: 'Fanatics', hardrock: 'Hard Rock', thescore: 'theScore' };
 // every book's read of a prop: the ones in the fair, then the comparison-only books
 const pbBooksTxt = srcs => (srcs || []).map(x => `${PB_SRC[x.book] || x.book} ${x.line} ${(+x.p).toFixed(0)}% O${x.shadow ? ' (comparison only)' : ''}`).join(' · ');
@@ -3521,7 +3524,7 @@ function lnRow(r, book) {
     <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="Our head-to-head model: not graded yet, and a play only where Pinnacle agrees">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
-    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
+    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
     <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : '—'}</span></div>
     <div class="c ln-usedc" data-l="Used"><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
@@ -3539,7 +3542,7 @@ function renderLines() {
   }
   const bet = d.lines?.bettable;
   const name = PB_BOOKS.find(x => x[0] === book)?.[1] || book;
-  const count = `<div class="ln-count">${name} · <b>Lines ${d.total.toLocaleString()}</b> shown · ${bet == null ? 'bettable count is Pro' : `<span class="${bet ? 'go' : ''}">${bet} bettable</span> <span style="color:#64748b">(+${d.lines.minEv}% or better at ${name}'s break-even on a sharp price; yellow EV is priced off Kalshi or the other apps alone)</span>`}</div>`;
+  const count = `<div class="ln-count">${name} · <b>Lines ${d.total.toLocaleString()}</b> shown · ${bet == null ? 'bettable count is Pro' : `<span class="${bet ? 'go' : ''}">${bet} bettable</span> <span style="color:#64748b">(+${d.lines.minEv}% or better at ${name}'s break-even on a sharp price; yellow EV is priced off Kalshi or the other apps alone)</span>`}${PB_LEAD[book] ? `<div style="color:#fbbf24;margin-top:4px">${PB_LEAD[book]}.</div>` : ''}</div>`;
   const head = `<div class="ln-head"><div>Player</div><div>Prop</div><div>${PB_BOOKS.find(x => x[0] === book)?.[2]}</div><div style="color:#60a5fa">Model</div><div>Lean</div><div>Prob</div><div>Mult</div><div>EV ↓</div><div>Used?</div></div>`;
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   el.innerHTML = `${count}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
@@ -3553,20 +3556,21 @@ function renderPropsBoard() {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">${pbState.q || pbState.book || pbState.sport !== 'ALL' || pbState.show !== 'all' ? 'Nothing matches these filters.' : 'The books are still loading. Try again in a minute.'}</div></div>`;
     return;
   }
+  const booksOn = pbBooksOn();
   const body = rows.map(r => {
     const b = r.best;
     const plus = b && !b.locked && b.ev > 0;
-    const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+    const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
     const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
     const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
-      : `<div class="pb-big" style="color:${b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
+      : `<div class="pb-big" style="color:${b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${PB_LEAD[b.book] ? `<div class="pb-dim" title="${PB_LEAD[b.book]}">new app, not graded yet</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
     const am = v => (v > 0 ? `+${v}` : `${v}`);
     const proj = r.model?.h2h ? ` · proj ${r.model.proj} (matchup: ${r.model.h2h.share}% of ${r.model.h2h.teamKills} team kills a map${r.model.h2h.vs ? ` vs ${escAttr(r.model.h2h.vs)}` : ''}${r.model.pin ? `; Pinnacle ${r.model.pin.proj}` : ''})` : r.model?.share?.rounds ? ` · proj ${r.model.proj} (Pinnacle rounds × ${(+r.model.share.kpr).toFixed(2)} kills a round)` : r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
     const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
       <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-meta">${meta}${proj}</div></div>
-      <div class="pb-books">${PB_BOOKS.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
+      <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
       <div class="pb-play">${bestTxt}</div></div>`;
   }).join('');
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
@@ -3827,6 +3831,7 @@ const BOOK_META = {
   betr:          { n:'Betr Picks',   c:'#f59e0b', tx:1, kind:'dfs' },
   parlayplay:    { n:'ParlayPlay',   c:'#ec4899', tx:1, kind:'dfs' },
   sleeper:       { n:'Sleeper',      c:'#06b6d4', tx:1, kind:'dfs' },
+  pick6:         { n:'DK Pick6',     c:'#53d337', tx:1, kind:'dfs' },
 };
 const SPORT_ICON = { baseball_mlb:'MLB', americanfootball_nfl:'NFL', basketball_nba:'NBA', basketball_ncaab:'NCAAB', icehockey_nhl:'NHL', mma_mixed_martial_arts:'MMA' };
 
@@ -4781,7 +4786,7 @@ function renderEsports() {
 const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
+const EV_BOOK_NAMES = { pick6:'DK Pick6', draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 // each book's own no-vig chance of the row's side: the cross-comparison behind the fair
 const evSrcTxt = r => 'No-vig chance of this side: ' + Object.entries(r.srcP || {}).sort((a, b) => b[1] - a[1]).map(([b, p]) => `${evBookName(b)} ${p}%${(r.sharpBooks || []).includes(b) ? ' (in the fair)' : ''}`).join(' · ');
@@ -5056,7 +5061,7 @@ function renderEvAlt(el) {
 // number Pinnacle just moved off, priced at Pinnacle's post-move fair. A row
 // CLEARS when Kalshi, FanDuel or BetRivers moved the same way too; a
 // Pinnacle-only move shows as single-source and never counts.
-const EV_STALE_VENUE = { fanduel: 'FanDuel', betrivers: 'BetRivers', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper' };
+const EV_STALE_VENUE = { fanduel: 'FanDuel', betrivers: 'BetRivers', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6' };
 const EV_STALE_KIND = { ml: 'Moneyline', spread: 'Spread', total: 'Total', prop: 'Player prop' };
 function evStaleRecord(a, apps) {
   if (!a && !apps) return '';
@@ -6376,7 +6381,7 @@ function alertText(e) {
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
   if (e.kind === 'edge') return `${e.player} ${e.side || ''} ${e.line} · ${e.market} · ${pct(e.ev)}${e.book ? ' on ' + e.book : ''}`;
   if (e.kind === 'gap' && e.gap) {
-    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' })[b] || b;
+    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' })[b] || b;
     return `Line gap: ${e.player} ${e.gap.side === 'OVER' ? 'Over' : 'Under'} ${e.gap.line} · ${e.market} on ${bn(e.gap.book)} · ${e.gap.vs.map(v => `${bn(v.book)} ${v.line}`).join(', ')} · ${pct(e.ev)}`;
   }
   if (e.kind === 'move') return `${e.player} ${e.market} · line ${e.from} → ${e.to} · ${e.direction === 'with' ? 'moving our way, play now' : 'moving away'} · ${pct(e.ev)}${e.sideFlipped ? ' · side flipped' : ''}`;
@@ -6583,7 +6588,7 @@ async function renderTrackRecord(el) {
       ${trReviewHTML(review.picks || [])}
       ${trGapCard(sum)}
       ${trTable('BY SPORT', sum.bySport)}
-      ${trTable('CLOSING LINE BY KIND', Object.fromEntries(Object.entries(sum.byKind || {}).map(([k, g]) => { const [sp, st, bk, sd] = k.split('|'); return [`${sp} ${st} · ${({ UD: 'Underdog', PP: 'PrizePicks', SL: 'Sleeper' })[bk] || bk} · ${sd === 'OVER' ? 'Over' : 'Under'}`, g]; })))}
+      ${trTable('CLOSING LINE BY KIND', Object.fromEntries(Object.entries(sum.byKind || {}).map(([k, g]) => { const [sp, st, bk, sd] = k.split('|'); return [`${sp} ${st} · ${({ UD: 'Underdog', PP: 'PrizePicks', SL: 'Sleeper', P6: 'DK Pick6' })[bk] || bk} · ${sd === 'OVER' ? 'Over' : 'Under'}`, g]; })))}
       ${trTable('BY EV AT SIGNAL', sum.byEv)}
       ${trTable('BY MATCHUP', sum.byMatchup)}
       ${trTable('BY LINE GAP', sum.byGap)}
@@ -6639,7 +6644,7 @@ async function trGrade(encId, isVoid = false) {
 function esLineDiffChip(p, key) {
   const g = p.lineGap;
   if (g && !p.locked) {
-    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' })[b] || b;
+    const bn = b => ({ PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' })[b] || b;
     const side = g.side === 'OVER' ? 'Over' : 'Under';
     return `<span class="es-ldiff gap" title="Line gap: ${escEs(bn(g.book))} hangs ${escEs(g.line)} where ${escEs(g.vs.map(v => `${bn(v.book)} has ${v.line}`).join(' and '))}. ${escEs(side)} ${escEs(g.line)} on ${escEs(bn(g.book))} is worth ${escEs(g.probPts)} points more win chance than at the other line. Gaps close when the odd book fixes its number, so check the line on ${escEs(bn(g.book))} before you play it.">Gap · ${escEs(g.vs.map(v => `${bn(v.book)} ${v.line}`).join(' · '))}</span>`;
   }

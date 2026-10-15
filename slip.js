@@ -49,6 +49,17 @@ const PAYOUTS = {
   },
 };
 
+// DraftKings Pick6's guaranteed multipliers, read off its own entry screen
+// data (entryDetails.payoutPackages on pick6.draftkings.com, 2026-10-15; the
+// server refreshes them from each read). Each pick's own multiplier (1x, or
+// 0.9x on a favoured side) multiplies these, and a contest bonus can pay more
+// once the pool settles, never less. Kept out of PAYOUTS so the esports slip
+// pricer (priceAll) only offers apps those legs are on.
+const PICK6_PAYOUTS = {
+  2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 12, 4: 1 },
+  6: { 6: 25, 5: 1.5 }, 7: { 7: 40, 6: 2 }, 8: { 8: 80, 7: 3, 6: 1 },
+};
+
 // How much of a leg's outcome is shared with another leg in the same series.
 // Starting points; the tracker's graded pairs are what should set these.
 const CORR = {
@@ -481,7 +492,7 @@ function bestSlips(pool, { maxLegs = 6, minLegs = 2, payouts = PAYOUTS } = {}) {
 }
 
 module.exports = {
-  PAYOUTS, CORR, FACTORS, priceSlip, priceAll, bestSlips, slipHitsDistribution,
+  PAYOUTS, PICK6_PAYOUTS, CORR, FACTORS, priceSlip, priceAll, bestSlips, slipHitsDistribution,
   independentHitsDistribution, kelly, evFromDistribution, groupBySeries, pairRho, adjustJoint,
   hitsDistribution, patternDistribution, seriesLatents, legProbIn, factorHitsDistribution, legLoadings, factorSport,
 };

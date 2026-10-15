@@ -74,7 +74,7 @@ function borrowStarts(slLines, refLines, now = Date.now()) {
   });
 }
 
-const BOOKS = ['underdog', 'prizepicks', 'sleeper'];
+const BOOKS = ['underdog', 'prizepicks', 'sleeper', 'pick6'];
 const num = x => (x == null || x === '' || !Number.isFinite(Number(x)) ? null : Number(x));
 
 // lines: raw lines from every book. esKey(sport, market) keys esports stats
@@ -148,7 +148,8 @@ const r2 = x => Math.round(x * 100) / 100;
 
 // Prices every cell. dfsEv(prob 0-1, book, mult) is the server's calcBookEV.
 // esPicks: index key → esports pick (side, prob, ppEv/udEv/sleeperEv).
-function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null } = {}) {
+// fixedEv(book, fair 0-1, mult): a fixed-table app's leg EV (sportprops.fixedLeg).
+function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null, fixedEv = null } = {}) {
   for (const row of rows) {
     let best = null;
     const offer = (book, side, ev, fair, source, line) => {
@@ -200,6 +201,25 @@ function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null
           offer(SB[ab], side, cell.ev, cell.prob / 100, 'h2h', c.line);
         }
         if (best) best.clears = !!row.books[best.book]?.ev?.clears;
+      }
+      // Pick6 posts esports lines too, but the models price the three apps
+      // they read. A Pick6 line on the same number as a model-priced cell
+      // takes that cell's fair at Pick6's own payout; it clears only where
+      // that cell clears and Pick6 pays at least as much. Another number
+      // stays unpriced.
+      const p6 = row.books.pick6;
+      if (p6 && fixedEv) {
+        const twin = Object.entries(row.books).find(([b, c]) => b !== 'pick6' && c.line === p6.line && c.ev?.fair != null && (c.ev.share || c.ev.h2h));
+        if (twin) {
+          const [tb, tc] = twin;
+          const side = tc.ev.side, fair = tc.ev.fair / 100;
+          const ev = fixedEv('pick6', fair, (side === 'Over' ? p6.over : p6.under) ?? 1);
+          if (ev != null && Number.isFinite(ev) && (side === 'Over' ? p6.overOpen : p6.underOpen)) {
+            p6.ev = { side, ev: r2(ev), fair: tc.ev.fair, twin: tb, ...(tc.ev.share ? { share: true } : { h2h: true }), clears: !!tc.ev.clears && ev >= tc.ev.ev - 1e-9 };
+            offer('pick6', side, ev, fair, tc.ev.share ? 'share' : 'h2h', p6.line);
+            if (best?.book === 'pick6') best.clears = p6.ev.clears;
+          }
+        }
       }
     } else {
       const base = row.mkey.includes('|') ? null : row.mkey;   // period stats have no Kalshi ladder
@@ -262,7 +282,7 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
 }
 
 function counts(rows) {
-  const sports = {}, books = { underdog: 0, prizepicks: 0, sleeper: 0 };
+  const sports = {}, books = { underdog: 0, prizepicks: 0, sleeper: 0, pick6: 0 };
   let priced = 0, multi = 0;
   for (const r of rows) {
     sports[r.sport] = (sports[r.sport] || 0) + 1;
