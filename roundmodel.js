@@ -205,8 +205,10 @@ function convolve(a, b) {
 }
 // ctx: { game, kpr, qs: [his team's q0 on each map the line covers] } → pmf of his kills
 const PMF = new Map();
+// ctx.kappa (a fitted spread of q around q0) overrides o's for the game
 function killsPmf(ctx, o = DEFAULTS) {
-  const key = `${ctx.game}|${r4(ctx.kpr)}|${(ctx.qs || []).join(',')}`;
+  if (ctx.kappa > 0) o = { ...o, kappa: { ...(o.kappa || DEFAULTS.kappa), [ctx.game]: ctx.kappa } };
+  const key = `${ctx.game}|${r4(ctx.kpr)}|${(ctx.qs || []).join(',')}|${(o.kappa || DEFAULTS.kappa)[ctx.game]}`;
   if (PMF.has(key)) return PMF.get(key);
   let pmf = null;
   for (const q of ctx.qs || []) { const m = mapKills(ctx.kpr, q, ctx.game, o); pmf = pmf ? convolve(pmf, m) : m; }

@@ -349,4 +349,209 @@ function createCsGrader(http, { ttlMs = 5 * 60e3, emptyTtlMs = 30 * 60e3, giveUp
   };
 }
 
-module.exports = { pickTeams, createLoLGrader, createLoLesportsGrader, createLoLGraderChain, loleMatchFor, loleStatFromWindow, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
+// ─── Valorant via vlr.gg ──────────────────────────────────────────────────────
+// PandaScore (paid) was the only Valorant grader, so Valorant rows sat
+// ungraded. vlr.gg's match pages carry every map's score and each player's
+// kills, deaths and assists. The results list finds the match (both team
+// names, the day), the match page confirms it (its UTC start, the teams,
+// "final") and gives the maps by their number in the series. Anything that
+// doesn't match cleanly (a player in neither lineup, a handle two players
+// share, a stat vlr doesn't count) is ungradable, never a guess.
+const { teamsMatch, teamCode } = require('./context');
+const VLR = 'https://www.vlr.gg';
+const VLR_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36' };
+const vlrText = s => String(s || '').replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/\s+/g, ' ').trim();
+const VLR_STAT = { kills: 'kills', deaths: 'deaths', assists: 'assists' };
+
+// Pure: a finished Valorant map has a winner at 13+ by two (overtime goes on
+// until someone leads by two)
+const vlrMapDone = ([a, b]) => Math.max(a, b) >= 13 && Math.abs(a - b) >= 2;
+
+// Pure: vlr.gg match page → { id, start, final, teams: [{ name, tag }], maps:
+// [{ number, gameId, name, score: [a, b], done, players: [{ id, name, team, kills, deaths, assists }] }] }
+// team is 0 or 1 (the match header's order), from the player's tag where the
+// map's round chart names both tags, else his row's place (vlr lists one
+// team's five, then the other's).
+function vlrMatchPage(html) {
+  const h = String(html || '');
+  const id = /<link rel="canonical" href="https?:\/\/www\.vlr\.gg\/(\d+)\//.exec(h)?.[1] || null;
+  const start = Date.parse((/data-utc-ts="([^"]+)"/.exec(h)?.[1] || '').replace(' ', 'T') + 'Z');
+  const notes = [...h.matchAll(/match-header-vs-note">\s*([^<]*)/g)].map(m => m[1].trim().toLowerCase());
+  const names = [...h.matchAll(/match-header-link-name mod-(\d)">\s*<div class="wf-title-med[^"]*">([\s\S]*?)<\/div>/g)].map(m => vlrText(m[2]));
+  const teams = names.slice(0, 2).map(name => ({ name, tag: null }));
+  // map numbers from the maps bar: game id → its place in the series
+  const numberOf = new Map();
+  for (const m of h.matchAll(/vm-stats-gamesnav-item[^"]*"\s+data-game-id="(\d+)"[^>]*>[\s\S]*?<span[^>]*>\s*(\d+)\s*<\/span>/g)) numberOf.set(m[1], +m[2]);
+  const maps = [];
+  for (const c of h.split(/<div class="vm-stats-game\s/).slice(1)) {
+    const gid = /^[^>]*data-game-id="(\d+)"/.exec(c)?.[1];
+    if (!gid) continue;   // "all" (the series totals) and the nav bar
+    const cut = c.search(/class="ovw-|<table/);
+    const head = cut > 0 ? c.slice(0, cut) : c.slice(0, 20000);
+    const score = [...head.matchAll(/<div class="score[^"]*"[^>]*>\s*(\d+)\s*</g)].map(m => +m[1]).slice(0, 2);
+    const sideNames = [...head.matchAll(/<div class="team-name"[^>]*>([\s\S]*?)<\/div>/g)].map(m => vlrText(m[1]));
+    const tags = [...head.matchAll(/vlr-rounds-tag" title="([^"]*)"/g)].map(m => vlrText(m[1])).slice(0, 2);
+    // the map header's left team is normally the match's first; flip when its names say otherwise
+    const flip = sideNames.length === 2 && teams.length === 2 && squash(sideNames[0]) === squash(teams[1].name) && squash(sideNames[1]) === squash(teams[0].name);
+    if (flip) { score.reverse(); tags.reverse(); }
+    if (tags.length === 2) tags.forEach((t, i) => { if (teams[i] && !teams[i].tag) teams[i].tag = t; });
+    const players = [];
+    const rows = c.split(/class="ovw-row"|<tr[\s>]/).slice(1).filter(r => /mod-player/.test(r));
+    rows.forEach((row, i) => {
+      const name = vlrText((/<div class="ovw-player-name[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(row) || /<div class="text-of"[^>]*>([\s\S]*?)<\/div>/.exec(row))?.[1]);
+      const tag = vlrText((/<div class="ovw-player-tag[^"]*"[^>]*>([\s\S]*?)<\/div>/.exec(row) || /<div class="ge-text-light"[^>]*>([\s\S]*?)<\/div>/.exec(row))?.[1]);
+      const col = key => {
+        const v = (new RegExp(`data-col="${key}"><span class="side mod-both[^"]*">\\s*(\\d+)`).exec(row) || new RegExp(`mod-vlr-${key}[\\s\\S]*?mod-both[^>]*>\\s*(\\d+)`).exec(row))?.[1];
+        return v != null ? +v : null;
+      };
+      const kills = col('kills');
+      if (!name || kills == null) return;
+      let team = tags.length === 2 && tag ? tags.findIndex(t => squash(t) === squash(tag)) : -1;
+      if (team < 0) team = rows.length === 10 ? (i < 5 ? 0 : 1) : null;
+      players.push({ id: /href="\/player\/(\d+)/.exec(row)?.[1] || null, name, tag: tag || null, team, kills, deaths: col('deaths'), assists: col('assists') });
+    });
+    if (score.length < 2) continue;
+    maps.push({ number: numberOf.get(gid) ?? null, gameId: gid, name: vlrText(/<div class="map-name"[^>]*>\s*<span[^>]*>\s*([^<]*)/.exec(head)?.[1] || ''), score, done: vlrMapDone(score), players });
+  }
+  // maps the nav bar didn't number keep the page's order
+  let n = 0;
+  for (const m of maps) { n++; if (m.number == null) m.number = n; }
+  return { id, start: Number.isFinite(start) ? start : null, final: notes.includes('final'), teams, maps };
+}
+
+// Pure: the results list (newest first) → [{ id, teams: [a, b], day }]
+// day is the list's date header (vlr.gg's own time zone), a rough filter only:
+// the match page's UTC start decides.
+function vlrResultsList(html) {
+  const out = [];
+  for (const part of String(html || '').split(/<div class="wf-label mod-large">/).slice(1)) {
+    const day = Date.parse(vlrText(part.slice(0, part.indexOf('</div>'))).replace(/\s*(Today|Yesterday)\s*/g, ' ').trim()) || null;
+    for (const m of part.matchAll(/<a href="\/(\d+)\/[^"]*"[^>]*class="wf-module-item match-item[\s\S]*?<\/a>/g)) {
+      const teams = [...m[0].matchAll(/<div class="match-item-vs-team-name">([\s\S]*?)<\/div>\s*<\/div>/g)].map(x => vlrText(x[1]));
+      if (teams.length >= 2) out.push({ id: m[1], teams: teams.slice(0, 2), day });
+    }
+  }
+  return out;
+}
+
+// Pure: does a name (a pick's team, or one side of its match title) name this
+// team (its full name or its tag)?
+function vlrTeamIs(team, name) {
+  const t = squash(name);
+  if (t.length < 2 || !team) return false;
+  for (const n of [team.name, team.tag].map(squash).filter(Boolean)) {
+    if (n === t) return true;
+    if (Math.min(n.length, t.length) >= 4 && (n.includes(t) || t.includes(n))) return true;
+  }
+  return false;
+}
+// Pure: which of the match's teams the pick names, -1 for none. With only a
+// match title, both sides must be the match's two teams.
+function vlrPickSide(page, pick) {
+  if (squash(pick.team).length >= 2) {
+    const hit = page.teams.map((t, i) => (vlrTeamIs(t, pick.team) ? i : -1)).filter(i => i >= 0);
+    return hit.length === 1 ? hit[0] : -1;
+  }
+  const sides = pickTeams(pick);
+  if (sides.length !== 2) return -1;
+  const fwd = vlrTeamIs(page.teams[0], sides[0]) && vlrTeamIs(page.teams[1], sides[1]);
+  const rev = vlrTeamIs(page.teams[0], sides[1]) && vlrTeamIs(page.teams[1], sides[0]);
+  return fwd || rev ? 2 : -1;   // 2: the match, either team
+}
+
+// Pure: a final match page + a pick → { maps, complete } | { unavailable } | null.
+// The player is matched on his handle within the pick's team (or within the
+// match when the pick names only the match); a handle two players share is
+// ungradable.
+function vlrGradeFromPage(page, pick) {
+  const key = VLR_STAT[pick.stat || 'kills'];
+  if (!key) return { unavailable: `vlr.gg has no ${pick.stat} counts for Valorant` };
+  const side = vlrPickSide(page, pick);
+  if (side < 0) return null;
+  const want = squash(pick.player);
+  const played = page.maps.filter(m => m.done && m.players.length >= 10);
+  const maps = {};
+  let found = false;
+  for (const m of played) {
+    const hits = m.players.filter(p => squash(p.name) === want && (side === 2 || p.team === side));
+    if (hits.length > 1) return { unavailable: `two players named ${pick.player} in ${page.teams.map(t => t.name).join(' vs ')}` };
+    if (!hits.length || hits[0][key] == null) continue;
+    maps[m.number] = hits[0][key];
+    found = true;
+  }
+  if (found) return { maps, complete: page.final && played.length === page.maps.filter(m => m.done).length, matchId: page.id };
+  if (!page.final) return null;
+  // a final match with stats on every map played and the player in none: he
+  // didn't play (or the book had his team wrong); the apps void a DNP
+  if (played.length && played.length === page.maps.filter(m => m.done).length) {
+    return { unavailable: `${pick.player} is not in ${side === 2 ? 'either lineup' : page.teams[side].name + "'s lineup"} on vlr.gg for ${page.teams.map(t => t.name).join(' vs ')} (did not play)` };
+  }
+  return null;
+}
+
+// Results pages are shared by every pick for ttlMs (newest first, back to the
+// oldest day asked for); a final match page is kept, others re-read after
+// ttlMs. A pick's match: a result within a day and a half of its start with
+// one of its teams, whose page starts within windowMs of the pick.
+function createValGrader(http, { ttlMs = 10 * 60e3, windowMs = 6 * 3600e3, maxPages = 25, giveUpMs = 18 * 3600e3, now = () => Date.now(), pause = 1200 } = {}) {
+  let list = { at: 0, rows: [], oldest: Infinity };
+  const pages = new Map();   // match id → { at, page }
+  const wait = ms => (ms > 0 ? new Promise(r => setTimeout(r, ms)) : null);
+  async function resultsSince(from) {
+    if (now() - list.at < ttlMs && list.oldest <= from) return list.rows;
+    const rows = [], seen = new Set();
+    let oldest = Infinity;
+    for (let p = 1; p <= maxPages && oldest > from; p++) {
+      const res = await http.get(`${VLR}/matches/results${p > 1 ? `/?page=${p}` : ''}`, { headers: VLR_HEADERS, timeout: 20000, responseType: 'text' });
+      // past the last page vlr.gg serves an earlier one again: stop when nothing is new
+      const got = vlrResultsList(res?.data).filter(r => !seen.has(r.id));
+      if (!got.length) { oldest = -Infinity; break; }
+      for (const r of got) { seen.add(r.id); rows.push(r); }
+      oldest = Math.min(oldest, ...got.map(r => r.day ?? Infinity));
+      await wait(pause);
+    }
+    list = { at: now(), rows, oldest };
+    return rows;
+  }
+  async function matchPage(id) {
+    const hit = pages.get(id);
+    if (hit && (hit.page.final || now() - hit.at < ttlMs)) return hit.page;
+    const res = await http.get(`${VLR}/${id}`, { headers: VLR_HEADERS, timeout: 20000, responseType: 'text' });
+    const page = { ...vlrMatchPage(res?.data), id: String(id) };
+    pages.set(id, { at: now(), page });
+    while (pages.size > 600) pages.delete(pages.keys().next().value);
+    await wait(pause);
+    return page;
+  }
+  return async function gradeVal(pick) {
+    const start = Date.parse(pick.startTime);
+    if (!Number.isFinite(start)) return null;
+    // the pick's team and both sides of its match title: an app's tag
+    // ("AKV.GC") may name nothing in the list, its opponent still does
+    const names = [...new Set([...pickTeams(pick), ...pickTeams({ matchTitle: pick.matchTitle })])];
+    // the list has full names only ("G2 Esports" for an app's "G2"): a loose
+    // first cut, the page (names and tags) decides
+    const named = r => names.some(n => r.teams.some(t => vlrTeamIs({ name: t }, n) || teamsMatch(t, n) || teamCode(t, n)));
+    const cands = (await resultsSince(start - 36 * 3600e3))
+      .filter(r => named(r) && (r.day == null || Math.abs(r.day - start) <= 36 * 3600e3));
+    const fits = [];
+    for (const r of cands.slice(0, 6)) {
+      const page = await matchPage(r.id);
+      if (page.start == null || Math.abs(page.start - start) > windowMs || vlrPickSide(page, pick) < 0) continue;
+      fits.push(page);
+    }
+    fits.sort((a, b) => Math.abs(a.start - start) - Math.abs(b.start - start));
+    const page = fits[0];
+    if (!page) return null;
+    const out = vlrGradeFromPage(page, pick);
+    if (out) return out;
+    // a final match with no stats on any map, long after: a forfeit or a match
+    // vlr.gg never filled in
+    if (page.final && now() - page.start > giveUpMs && !page.maps.some(m => m.done && m.players.length >= 10)) {
+      return { unavailable: `vlr.gg has no player stats for ${page.teams.map(t => t.name).join(' vs ')}` };
+    }
+    return null;
+  };
+}
+
+module.exports = { createValGrader, vlrMatchPage, vlrResultsList, vlrTeamIs, vlrPickSide, vlrGradeFromPage, vlrMapDone, pickTeams, createLoLGrader, createLoLesportsGrader, createLoLGraderChain, loleMatchFor, loleStatFromWindow, createDotaGrader, createCsGrader, lolMapsFromRows, dotaMapsFromMatches, lpName, bo3TeamMatch, bo3Candidates, bo3PlayerStat };
