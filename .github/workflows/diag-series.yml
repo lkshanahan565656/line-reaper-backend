@@ -1,0 +1,27 @@
+name: diag-series
+on:
+  push:
+    branches: [diag-series]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          (timeout 1500 node diag/series.js prod; timeout 1500 node diag/series.js lol) &
+          timeout 1800 node diag/series.js dota &
+          wait; true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-series-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-series-out
