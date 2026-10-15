@@ -13,10 +13,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: mkdir -p out && timeout 1200 node diag/probe.js || true
+      - run: mkdir -p out && timeout 900 node diag/betr.js || true
+      - run: timeout 600 node diag/probe.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
+          gzip -9 out/*.json || true
           git checkout --orphan diag-pickem-out
           git rm -rq --cached . || true
           git add -f out
