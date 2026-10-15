@@ -1,0 +1,37 @@
+# DraftKings Pick6 answers GitHub's servers but blocks Railway's. This reads
+# the Pick6 board here every 10 minutes (relay/pick6.js) and force-pushes it as
+# the only commit on the pick6-data branch, which the app reads while its own
+# read is blocked (pick6.js). A run that reads nothing (DraftKings blocking
+# GitHub too) fails and leaves the last board in place; the app drops it 45
+# minutes after it was read. Added on Logan's OK, 10-15. Free: public repo.
+name: pick6-relay
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pick6-relay
+  cancel-in-progress: false
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --omit=dev --ignore-scripts
+      - run: node relay/pick6.js out/pick6.json
+      - name: Push the board to pick6-data
+        run: |
+          cd out
+          git init -q
+          git config user.name pick6-relay
+          git config user.email pick6-relay@users.noreply.github.com
+          git checkout -q --orphan pick6-data
+          git add pick6.json
+          git commit -qm "Pick6 board $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" pick6-data
