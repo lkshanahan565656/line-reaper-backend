@@ -1,0 +1,290 @@
+[
+ {
+  "player": "pancc",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 30.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 23
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 23,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Alisson",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 30.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 21
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 21,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "gbb",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 31.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 27
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 27,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "zmb",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 27.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 15
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 15,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "destiny",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 31.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 25
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 25,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "divine",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 28.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 16
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 16,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "tomate",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 31.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 19
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 19,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "KSCERATO",
+  "sport": "CS",
+  "market": "MAPS 1-2 Kills",
+  "line": 33,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 40
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 40,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Giyuu",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 9.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 7
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 7,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Shy Carry",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 12.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 17
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 17,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Maged",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 7.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 8
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 8,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Theocacs",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 8.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "loss",
+   "result": 7
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "loss",
+   "result": 7,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Piero",
+  "sport": "LOL",
+  "market": "Kills on Maps 1+2+3",
+  "line": 2.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 3
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 3,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "B Butcher",
+  "sport": "LOL",
+  "market": "Kills on Maps 1+2+3",
+  "line": 2.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 5
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 5,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Cuzz",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 10.5,
+  "side": "UNDER",
+  "prod": {
+   "outcome": "win",
+   "result": 10
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 10,
+   "note": null
+  },
+  "first": "open"
+ },
+ {
+  "player": "Kellin",
+  "sport": "LOL",
+  "market": "MAPS 1-3 Kills",
+  "line": 1.5,
+  "side": "OVER",
+  "prod": {
+   "outcome": "win",
+   "result": 2
+  },
+  "mine": {
+   "status": "graded",
+   "outcome": "win",
+   "result": 2,
+   "note": null
+  },
+  "first": "open"
+ }
+]

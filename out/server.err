@@ -1,0 +1,4 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
