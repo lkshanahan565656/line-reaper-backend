@@ -62,7 +62,9 @@ test('Matchbook: best backs make two-way prices, halves and thin books skipped, 
   assert.strictEqual(g.h2h.length, 2);
   assert.deepStrictEqual(g.spreads.map(x => x.point), [2.5, -2.5]);
   assert.deepStrictEqual(g.totals.map(x => x.point), [39.5, 39.5]);
-  assert.deepStrictEqual(g.props.map(p => [p.player, p.mkey, p.line]), [['Nix, B', 'rush_yds', 15.5]]);
+  assert.deepStrictEqual(g.props, [], 'props stay off: a market maker\'s quotes with nothing matched');
+  const [p] = xbooks.parseMatchbook(mbPayload, { now: NOW, props: true });
+  assert.deepStrictEqual(p.props.map(x => [x.player, x.mkey, x.line]), [['Nix, B', 'rush_yds', 15.5]]);
   assert.strictEqual(xbooks.resolvePlayer('Nix, B', ['Bo Nix', 'Sam Darnold']), 'Bo Nix');
   assert.strictEqual(xbooks.resolvePlayer('Mims Jr., Marvin', ['Marvin Mims Jr.']), 'Marvin Mims Jr.');
 });
@@ -137,4 +139,27 @@ test('a relayed book far from the other books is left off as unverified', () => 
   assert.ok(ev.isOutlier(g, 'hardrock', 'A'), 'a -120/-120 placeholder on a -340 favourite');
   assert.ok(!ev.isOutlier(g, 'betmgm', 'A'), 'a few points off is a real price');
   assert.ok(!ev.isOutlier({ ...g, all: { pinnacle: [0.76, 0.24], fanduel: [0.5, 0.5] } }, 'fanduel', 'A'), 'books we read directly are never dropped');
+});
+
+test('Matchbook counts only beside another sharp source, and is never the second vote', () => {
+  const q = (book, a, b) => [{ book, side: 'Over', price: a }, { book, side: 'Under', price: b }];
+  // alone: no sharp fair (and too few books for a consensus)
+  assert.strictEqual(ev.fairForGroup([...q('matchbook', 144, -175), ...q('betrivers', 130, -143)]), null);
+  const f = ev.fairForGroup([...q('pinnacle', -127, 109), ...q('matchbook', -127, 106), ...q('thescore', -105, -115)]);
+  assert.deepStrictEqual(f.sharpBooks.sort(), ['matchbook', 'pinnacle']);
+  assert.strictEqual(ev.agreement(f, 'Over').agree, false, 'Matchbook follows Pinnacle: one opinion');
+  const k = ev.fairForGroup([...q('pinnacle', -127, 109), ...q('matchbook', -127, 106), ...q('kalshi_mid', -110, -110)]);
+  assert.strictEqual(ev.agreement(k, 'Over').n, 2);
+});
+
+test('a second-hand book never plays off a soft-book consensus', () => {
+  const game = (bms) => ({ id: 'g', home_team: 'Tampa Bay Buccaneers', away_team: 'Pittsburgh Steelers', commence_time: START, bookmakers: bms });
+  const prop = (key, o, u) => ({ key, markets: [{ key: 'player_receptions', outcomes: [{ name: 'Over', description: 'Cade Otton', point: 3.5, price: o }, { name: 'Under', description: 'Cade Otton', point: 3.5, price: u }] }] });
+  // live 2026-10-15: bet365 -115 on the Under, everyone else -154 to -157
+  const bms = [prop('bet365', -105, -115), prop('fanduel', 120, -154), prop('caesars', 120, -154), prop('draftkings', 122, -157)];
+  const rows = ev.screen({ feeds: [{ sport: 'nfl', games: [game(bms)] }], now: NOW });
+  assert.ok(!rows.some(r => r.book === 'bet365'), 'bet365 off the consensus is dropped');
+  // a book we read directly still scores off the consensus
+  const direct = ev.screen({ feeds: [{ sport: 'nfl', games: [game([prop('betrivers', -105, -115), ...bms.slice(1)])] }], now: NOW });
+  assert.ok(direct.some(r => r.book === 'betrivers' && r.source === 'consensus'));
 });
