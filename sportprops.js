@@ -169,15 +169,21 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
 function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) {
   if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
   const out = [];
+  const sharpOnly = { ...o, weights: Object.fromEntries(Object.keys(row.books || {}).map(b => [b, 0])), minOthers: 1 };
   for (const [book, c] of Object.entries(row.books || {})) {
     const f = fairFor(row, book, c.line, { kalshi, pin, o });
     if (!f) continue;
+    // the same fair from Pinnacle and Kalshi alone, no app's line in it
+    const fs = fairFor(row, book, c.line, { kalshi, pin, o: sharpOnly });
     for (const side of ['Over', 'Under']) {
       if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
       const fair = side === 'Over' ? f.p : 1 - f.p;
       const mult = side === 'Over' ? c.over : c.under;
-      const ev = dfsEv(fair, book, mult ?? 1, { overMultiplier: c.over, underMultiplier: c.under }, side);
+      const cell = { overMultiplier: c.over, underMultiplier: c.under };
+      const ev = dfsEv(fair, book, mult ?? 1, cell, side);
       if (ev == null || !Number.isFinite(ev)) continue;
+      const sFair = fs ? (side === 'Over' ? fs.p : 1 - fs.p) : null;
+      const sEv = sFair == null ? null : dfsEv(sFair, book, mult ?? 1, cell, side);
       // the soft side: other books hang a line that makes our side harder
       const vs = Object.entries(row.books).filter(([b, x]) => b !== book && (side === 'Over' ? x.line > c.line : x.line < c.line)).map(([b, x]) => ({ book: b, line: x.line }));
       let gap = null;
@@ -187,7 +193,8 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
         const probPts = +(((side === 'Over' ? f.p - there : there - f.p)) * 100).toFixed(1);
         gap = { vs, pts: +Math.abs(far.line - c.line).toFixed(2), probPts };
       }
-      out.push({ book, side, line: c.line, mult: mult ?? 1, fair: +fair.toFixed(4), ev: +ev.toFixed(2), mean: f.mean, n: f.n, sources: f.sources, gap });
+      out.push({ book, side, line: c.line, mult: mult ?? 1, fair: +fair.toFixed(4), ev: +ev.toFixed(2), mean: f.mean, n: f.n, sources: f.sources, gap,
+        sharpFair: sFair == null ? null : +sFair.toFixed(4), sharpEv: sEv == null || !Number.isFinite(sEv) ? null : +sEv.toFixed(2) });
     }
   }
   return out.sort((a, b) => b.ev - a.ev);
@@ -204,6 +211,11 @@ function rowPlays(row, { kalshi = null, pin = null, dfsEv, o = DEFAULTS } = {}) 
 const hasSharp = p => p.sources.some(s => s.book === 'pinnacle' || s.book === 'kalshi');
 function playKind(p, o = DEFAULTS) {
   if (!p || p.ev < o.minEv) return null;
+  // The other apps' lines can move the fair, never make the play: Kalshi's
+  // 25.5% anytime TD blended with Underdog's 0.5 read as 50% made a 36% fair
+  // and +13% at Sleeper's 3.14x, about -20% on Kalshi alone (DeMario
+  // Douglas, 2026-10-15 audit). A play clears minEv on the sharp prices alone.
+  if (p.sharpEv !== undefined && !(p.sharpEv >= o.minEv)) return null;
   if (p.gap && p.gap.probPts > o.maxProbPts) return null;
   const gap = p.gap && p.gap.probPts >= o.minProbPts && p.n >= o.gapMinSources;
   if (gap && hasSharp(p)) return 'gap';
@@ -248,6 +260,12 @@ const CONSENSUS = {
   promoteN: 50,         // graded legs a shadow book needs before it can count
   minSources: 2,
   maxSpreadPts: 12,     // sources this far apart at our line: not one market
+  // A source whose chance moves more than this (points of win chance) when
+  // read along the curve from its own line to the app's says nothing about the
+  // app's line and is left out: Pinnacle and FanDuel at 2.5 rush yards (38.5%)
+  // read at Underdog's 0.5 said 60.6%, while the books posting 0.5 said 50%
+  // (Kirk Cousins, +8% shown, 2026-10-15 audit)
+  maxShiftPts: 10,
   minEv: 2,             // % over the entry's break-even
 };
 
@@ -314,7 +332,9 @@ function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = 
   for (const s of srcs) {
     const m = meanFor(row.mkey, row.sport, s.line, s.p);
     if (m == null) continue;
-    all.push({ ...s, m, w: o.weights[s.book] || 0, at: pOver(row.mkey, row.sport, m, line) });
+    const at = pOver(row.mkey, row.sport, m, line);
+    if (o.maxShiftPts != null && Math.abs(at - s.p) * 100 > o.maxShiftPts) continue;
+    all.push({ ...s, m, w: o.weights[s.book] || 0, at });
   }
   const means = all.filter(x => x.w > 0), shadows = all.filter(x => !(x.w > 0));
   if (means.length < o.minSources) return null;
@@ -379,7 +399,8 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
 // (another game, a stale or alternate line), not pricing the same prop: no
 // price at all rather than a big fake one (a FanDuel 45.5 rush-yards line
 // read at a PrizePicks 57.5 said 70% under, +26%)
-const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10 };
+// (book fair drops the whole price instead of one source: maxShiftPts off)
+const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10, maxShiftPts: null };
 const isSharpSource = s => !s.shadow && (s.book === 'pinnacle' || s.book === 'kalshi');
 // a consensus play that rests on a sharp source (not FanDuel and BetRivers alone)
 const sharpBacked = p => (p.sources || []).some(isSharpSource);
