@@ -1,7 +1,7 @@
-name: diag-esbr22
+name: diag-esbr3
 on:
   push:
-    branches: [diag-esbr2]
+    branches: [diag-esbr3]
 permissions:
   contents: write
 jobs:
@@ -15,13 +15,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
-      - run: MINS=55 timeout 4200 node diag/branch.js || true
+      - run: MINS=35 timeout 3000 node diag/branch.js || true
       - if: always()
         run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-esbr2-out
+          git checkout --orphan diag-esbr3-out
           git rm -rq --cached . || true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-esbr2-out
+          git push -f origin diag-esbr3-out
