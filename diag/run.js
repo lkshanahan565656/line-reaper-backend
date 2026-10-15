@@ -54,3 +54,4 @@ const post = legs => j('/api/slips/grade', { method: 'POST', headers: { 'content
   fs.writeFileSync('out/sliplog.json', JSON.stringify(out, null, 1));
   console.log(JSON.stringify(out.second).slice(0, 3000));
 })();
+// v3
