@@ -19,6 +19,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   const t0 = Date.now();
   const box = sg.createSportsGrader({ http: axios }), extra = xg.createExtraGrader({ http: axios });
   const G = xg.combineGraders(box, extra);
+  if (!process.env.RENDER_ONLY) {
   // ── 1a. prod record
   const picks = []; for (const s of ['open', 'locked', 'graded', 'void']) picks.push(...((await get(`${P}/api/props/record/picks?status=${s}&limit=1000`)).picks || []));
   say(`prod record legs ${picks.length} at ${new Date().toISOString()}`);
@@ -65,6 +66,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   found = 0; tried = 0; samp.length = 0;
   for (const pl of ['Sven Botman', 'Harvey Barnes', 'Mohamed Salah', 'Erling Haaland', 'Bukayo Saka']) for (const st of ['2026-10-11T14:00:00Z', '2026-10-12T19:00:00Z', '2026-10-11T16:30:00Z']) { tried++; const g = await G.grade({ sport: 'SOCCER', mkey: 'goals', player: pl, signalSide: 'Over', signalLine: 0.5, startTime: st }); if (g?.outcome) { found++; samp.push(`${pl} ${st} → ${JSON.stringify(g)}`); } }
   say(`soccer goal legs (players x weekend kickoffs, most combos are no match): graded ${found} of ${tried}`); samp.forEach(s => say('  ' + s));
+  }
   // ── 2. branch server
   const runMin = +(process.env.RUNMIN || 22);
   while (Date.now() - t0 < runMin * 60e3) await wait(20e3);
@@ -94,7 +96,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: mobile });
       const page = await ctx.newPage();
       await page.route(/line-reaper-backend-production\.up\.railway\.app/, route => route.continue({ url: route.request().url().replace(/https:\/\/line-reaper-backend-production\.up\.railway\.app/, B) }));
-      await page.goto(B + '/app', { waitUntil: 'domcontentloaded' }); await wait(4000);
+      await page.goto(B + '/app?start=app', { waitUntil: 'domcontentloaded' }); await wait(4000);
       await page.evaluate(() => { const t = [...document.querySelectorAll('.tab')].find(b => b.textContent.trim() === 'PROPS'); if (t) t.click(); });
       await wait(5000);
       for (const [tag, setup] of [['cfb-lines', "pbState.sport='CFB';pbState.view='lines';pbState.lineBook='prizepicks'"], ['nhl-lines', "pbState.sport='NHL';pbState.view='lines';pbState.lineBook='underdog'"], ['cfb-cards', "pbState.sport='CFB';pbState.view='cards';pbState.sort='ev';pbState.show='priced'"]]) {
