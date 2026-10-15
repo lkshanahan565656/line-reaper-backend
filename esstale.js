@@ -256,6 +256,22 @@ function createEsStale(opts = {}) {
 // reads, and keyed by day that swap reads as a flip, which quiets the subject.
 const dayOf = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? new Date(x - 6 * 3600e3).toISOString().slice(0, 10) : 'noday'; };
 const subjectKey = p => `${String(p.sport || '').toUpperCase()}|${String(p.player || '').toLowerCase().replace(/[^a-z0-9]/g, '')}|${p.market}|${dayOf(p.startTime)}`;
+// players listed in two or more matches (starts 2 h+ apart) on one day,
+// by playerDay: the board keys a player's line by name and stat, so their
+// matches swap under one pick
+const playerDay = (l, norm) => `${norm(l.player)}|${dayOf(l.startTime)}`;
+function multiMatchPlayers(lines, norm) {
+  const starts = new Map();
+  for (const l of lines || []) {
+    if (!l?.player || !l.startTime) continue;
+    const k = playerDay(l, norm);
+    const s = starts.get(k) || new Set();
+    s.add(Date.parse(l.startTime)); starts.set(k, s);
+  }
+  // apps post one match's start a few minutes apart: two matches are 2 h+ apart
+  const apart = s => { const xs = [...s].filter(Number.isFinite).sort((a, b) => a - b); return xs.length > 1 && xs[xs.length - 1] - xs[0] >= 2 * 3600e3; };
+  return new Set([...starts].filter(([, s]) => apart(s)).map(([k]) => k));
+}
 function pickQuotes(p, { probAt, cellOf = () => null } = {}) {
   const out = [];
   if (!p || !Array.isArray(p.marketQuotes) || !p.player || !p.startTime) return out;
@@ -269,4 +285,4 @@ function pickQuotes(p, { probAt, cellOf = () => null } = {}) {
   return out;
 }
 
-module.exports = { DEFAULTS, APPS, BOOK_APP, createEsStale, pickQuotes, subjectKey };
+module.exports = { DEFAULTS, APPS, BOOK_APP, createEsStale, pickQuotes, subjectKey, playerDay, multiMatchPlayers };

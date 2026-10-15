@@ -106,3 +106,13 @@ test('an app swapping between two listings is not moving: the subject goes quiet
   s.step(min(90));
   assert.equal(s.lagSummary(min(90)).lag.length, 0);
 });
+
+test('multiMatchPlayers: a player in two matches on one day', () => {
+  const norm = n => n.toLowerCase();
+  const set = E.multiMatchPlayers([
+    { player: 'DemQQ', startTime: '2026-10-15T08:00:00Z' }, { player: 'DemQQ', startTime: '2026-10-15T14:00:00Z' },
+    { player: 'NiKo', startTime: '2026-10-15T11:00:00Z' }, { player: 'NiKo', startTime: '2026-10-15T11:10:00.000Z' },
+  ], norm);
+  assert.deepEqual([...set], ['demqq|2026-10-15']);
+  assert.equal(E.playerDay({ player: 'DemQQ', startTime: '2026-10-15T20:00:00Z' }, norm), 'demqq|2026-10-15');
+});

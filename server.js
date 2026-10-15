@@ -2930,7 +2930,11 @@ function observeEsStale(picks) {
   if (!esStaleState.enabled) return;
   const t = Date.now();
   const probAt = (pk, m, x) => marketFairProb({ ...pk, marketPred: m }, x, 'OVER', pickCtx.get(pk));
-  const quotes = picks.flatMap(p => esstale.pickQuotes(p, { probAt, cellOf: esStaleCell }));
+  // a player in two matches on one day (round-robin Bo1s) shows as one board
+  // pick whose match swaps between reads: those players sit out
+  const twoMatches = esstale.multiMatchPlayers([...(cache.underdog.data || []), ...ppLinesNow(), ...(cache.sleeper.data || [])].filter(l => isEsports(l.sport)), normalizeName);
+  const quotes = picks.filter(p => !twoMatches.has(esstale.playerDay(p, normalizeName))).flatMap(p => esstale.pickQuotes(p, { probAt, cellOf: esStaleCell }));
+  esStaleState.twoMatchPlayers = twoMatches.size;
   const readAt = esStaleReadAt();
   // apps in the order they were read, each only when it has been read again
   for (const app of esstale.APPS.slice().sort((a, b) => readAt[a] - readAt[b])) {
@@ -6579,7 +6583,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
     stale: { enabled: staleState.enabled, screenedAt: staleState.screenedAt, rows: staleState.rows.length, clear: staleState.rows.filter(r => r.clears).length, errors: staleState.errors.slice(0, 5),
       lag: staleState.enabled ? staleState.engine.lagSummary() : null },
     esStale: { enabled: esStaleState.enabled, screenedAt: esStaleState.screenedAt, rows: esStaleState.rows.length, clear: esStaleState.rows.filter(r => r.clears).length, errors: esStaleState.errors.slice(0, 5),
-      engine: esStaleState.engine.state(), lag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null } },
+      twoMatchPlayers: esStaleState.twoMatchPlayers ?? null, engine: esStaleState.engine.state(), lag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null } },
   // free: counts and timestamps only (see publicTailState)
   tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats(), polymarketUs: polymarketUs?.state() ?? null } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
