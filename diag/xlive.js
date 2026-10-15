@@ -16,7 +16,7 @@ const U = 'https://line-reaper-backend-production.up.railway.app';
     await p.locator('input[type=checkbox]').first().check().catch(e => console.log(e.message));
     await p.getByText('Enter the app').first().click().catch(e => console.log(e.message));
     await p.waitForTimeout(5000);
-    await p.locator('button.tab', { hasText: '+EV' }).first().click().catch(e => console.log(e.message));
+    await p.evaluate(() => { const b = document.querySelector("button.tab[onclick*=\"'ev'\"]"); showTab('ev', b); }).catch(e => console.log(e.message));
     await p.waitForTimeout(8000);
     await p.screenshot({ path: `out/ev-${name}.png`, fullPage: false });
   }
