@@ -5,6 +5,10 @@
 // 20 minutes, PrizePicks' pace. A 403 or 429 backs off from the first one,
 // longer each time and never sooner than its Retry-After.
 // Off unless PICK6=on; under the paywall it also needs PICK6_DATA_OK (licences.js).
+// DraftKings answers our Railway server with a 403 but answers GitHub's, so
+// while the direct read is blocked the reader takes the board the pick6-relay
+// workflow saves on the pick6-data branch (relayUrl), each sport stamped with
+// when GitHub read it.
 
 const { decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board } = require('./pickem');
 
@@ -27,11 +31,12 @@ function retryAfterMs(headers) {
   return Number.isFinite(t) ? Math.max(0, t - Date.now()) : 0;
 }
 
-function createPick6Reader(axios, { enabled = false, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)), log = console } = {}) {
+function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)), log = console } = {}) {
   const st = {
     enabled, sports: [], sportsAt: 0, next: 0, payouts: null,
     bySport: {},          // label → { lines, at, groups }
     fail: { limited: 0, until: 0 }, lastError: null, reads: 0, running: false,
+    relay: { at: null, reads: 0, error: null },
   };
   const get = async (params) => {
     const res = await axios.get(`${BASE}/_root.data`, { params, headers: HEADERS, timeout: 20000, responseType: 'text', transformResponse: x => x, maxContentLength: 20e6 });
@@ -40,8 +45,27 @@ function createPick6Reader(axios, { enabled = false, now = () => Date.now(), sle
     if (!home) throw new Error('Pick6: no board in the answer');
     return home;
   };
+  // the relayed board: a sport replaces ours only when GitHub read it later
+  async function readRelay() {
+    if (!relayUrl) return;
+    try {
+      const res = await axios.get(relayUrl, { params: { t: Math.floor(now() / 60000) }, timeout: 20000, maxContentLength: 20e6 });
+      const d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+      st.relay.reads++;
+      st.relay.at = d?.at || null;
+      st.relay.error = null;
+      for (const [label, v] of Object.entries(d?.bySport || {})) {
+        const at = Date.parse(v.at);
+        if (!Number.isFinite(at) || !Array.isArray(v.lines)) continue;
+        if (!st.bySport[label] || st.bySport[label].at < at) st.bySport[label] = { lines: v.lines, at, groups: v.groups || 0, relay: true };
+      }
+      if (d?.payouts && Object.keys(d.payouts).length) st.payouts = d.payouts;
+      if (!st.sports.length && Array.isArray(d?.sports)) st.sports = d.sports;
+    } catch (e) { st.relay.error = String(e.message).slice(0, 200); }
+  }
   async function tick() {
-    if (!st.enabled || st.running || now() < st.fail.until) return;
+    if (!st.enabled || st.running) return;
+    if (now() < st.fail.until) { st.running = true; try { await readRelay(); } finally { st.running = false; } return; }
     st.running = true;
     try {
       if (!st.sports.length || now() - st.sportsAt > SPORTS_EVERY_MS) {
@@ -79,7 +103,8 @@ function createPick6Reader(axios, { enabled = false, now = () => Date.now(), sle
         st.fail.limited++;
         const wait = Math.max(retryAfterMs(e.response?.headers), Math.min(BACKOFF_MAX_MS, BACKOFF_MS * 2 ** (st.fail.limited - 1)));
         st.fail.until = now() + wait;
-        log.warn?.(`Pick6 blocked (${s}): next try in ${Math.round(wait / 60000)} min`);
+        log.warn?.(`Pick6 blocked (${s}): next try in ${Math.round(wait / 60000)} min${relayUrl ? ', reading the relay meanwhile' : ''}`);
+        await readRelay();
       } else log.warn?.('Pick6 error:', e.message, s);
     } finally { st.running = false; }
   }
@@ -95,12 +120,17 @@ function createPick6Reader(axios, { enabled = false, now = () => Date.now(), sle
     for (const [label, v] of Object.entries(st.bySport)) for (const l of v.lines.slice(0, 1)) out[`pick6|${l.sport}`] = new Date(v.at).toISOString();
     return out;
   }
+  // what the relay workflow saves: every sport it read, stamped with when
+  function snapshot() {
+    return { at: new Date(now()).toISOString(), payouts: st.payouts, sports: st.sports,
+      bySport: Object.fromEntries(Object.entries(st.bySport).map(([k, v]) => [k, { at: new Date(v.at).toISOString(), groups: v.groups, lines: v.lines }])) };
+  }
   function status() {
-    return { enabled: st.enabled, sports: st.sports.map(s => s.label), reads: st.reads, payouts: st.payouts,
+    return { enabled: st.enabled, relay: relayUrl ? { ...st.relay, sports: Object.entries(st.bySport).filter(([, v]) => v.relay).map(([k]) => k) } : null, sports: st.sports.map(s => s.label), reads: st.reads, payouts: st.payouts,
       bySport: Object.fromEntries(Object.entries(st.bySport).map(([k, v]) => [k, { lines: v.lines.length, groups: v.groups, at: new Date(v.at).toISOString() }])),
       lines: lines().length, blockedUntil: st.fail.until > now() ? new Date(st.fail.until).toISOString() : null, lastError: st.lastError };
   }
-  return { tick, lines, readTimes, status, state: st };
+  return { tick, readRelay, lines, readTimes, snapshot, status, state: st };
 }
 
 module.exports = { createPick6Reader, retryAfterMs };

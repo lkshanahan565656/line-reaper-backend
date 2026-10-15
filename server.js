@@ -453,7 +453,11 @@ async function scrapeSleeper() {
 // (p6-sharp, p6-ev, p6-gap) until about 50 graded legs say whether it beats the close.
 const { createPick6Reader } = require('./pick6');
 const PICK6_ON = /^(on|1|true|yes)$/i.test(String(process.env.PICK6 || '').trim());
-const pick6 = createPick6Reader(axios, { enabled: PICK6_ON });
+// DraftKings blocks Railway, so while it does the board comes from the
+// pick6-data branch, read on GitHub's servers (relay/pick6.js)
+const PICK6_RELAY_REPO = process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend';
+const PICK6_RELAY_URL = process.env.PICK6_RELAY_URL || `https://raw.githubusercontent.com/${PICK6_RELAY_REPO}/pick6-data/pick6.json`;
+const pick6 = createPick6Reader(axios, { enabled: PICK6_ON, relayUrl: /^off$/i.test(PICK6_RELAY_URL) ? null : PICK6_RELAY_URL });
 async function scrapePick6() {
   if (!PICK6_ON) return;
   if (!licences.isOn('pick6')) { pick6.state.lastError = { ...LICENCE_PAUSED, at: new Date().toISOString() }; return; }
@@ -4584,7 +4588,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.137.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.138.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6662,7 +6666,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.137.0',
+  version: '3.138.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

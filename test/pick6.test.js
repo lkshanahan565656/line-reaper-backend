@@ -169,3 +169,28 @@ test('Pick6 reader: one sport a tick, every pick group, backs off on a 429 for i
   t += 46 * 60e3;
   assert.strictEqual(r.lines().length, 0);   // unread 45 minutes: off the board
 });
+
+test('Pick6 reader: blocked, it takes the relayed board, newer sports only', async () => {
+  const { createPick6Reader } = require('../pick6');
+  let t = Date.parse('2026-10-15T16:30:00Z');
+  const relay = { at: '2026-10-15T16:25:00Z', payouts: { 3: { 3: 6 } }, sports: [{ label: 'NFL', open: true }],
+    bySport: { NFL: { at: '2026-10-15T16:24:00Z', groups: 2, lines: [{ player: 'A', sport: 'NFL', market: 'Pass Yards', line: 250.5 }] } } };
+  const axios = { get: async (url) => {
+    if (url.includes('pick6-data')) return { data: JSON.stringify(relay) };
+    const e = new Error('403'); e.response = { status: 403, headers: {} }; throw e;
+  } };
+  const r = createPick6Reader(axios, { enabled: true, relayUrl: 'https://raw.githubusercontent.com/x/y/pick6-data/pick6.json', now: () => t, sleep: async () => {}, log: {} });
+  await r.tick();
+  assert.strictEqual(r.lines().length, 1);
+  assert.deepStrictEqual(r.state.payouts, { 3: { 3: 6 } });
+  assert.strictEqual(r.readTimes()['pick6|NFL'], '2026-10-15T16:24:00.000Z');
+  assert.ok(r.status().relay.sports.includes('NFL'));
+  // still blocked on the next tick: no DraftKings call, the relay again
+  t += 120e3;
+  relay.bySport.NFL.at = '2026-10-15T16:20:00Z';
+  await r.tick();
+  assert.strictEqual(r.state.bySport.NFL.at, Date.parse('2026-10-15T16:24:00Z'));
+  // 45 minutes after GitHub's read the lines drop
+  t = Date.parse('2026-10-15T17:10:00Z');
+  assert.strictEqual(r.lines().length, 0);
+});
