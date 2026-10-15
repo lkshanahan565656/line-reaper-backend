@@ -1,0 +1,7981 @@
+[
+ {
+  "t": "2026-10-15T02:27:19.738Z",
+  "now": null,
+  "data": {
+   "refreshedAt": {},
+   "added": {},
+   "errors": {},
+   "golAt": null
+  }
+ },
+ {
+  "t": "2026-10-15T02:27:49.763Z",
+  "now": null,
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null
+   },
+   "golAt": null
+  }
+ },
+ {
+  "t": "2026-10-15T02:28:21.435Z",
+  "now": {
+   "priced": 157,
+   "clear": 6,
+   "modelOnly": 49,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 9,
+    "player": 4,
+    "team games": 9,
+    "team": 16,
+    "no gol.gg table": 30
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 0,
+     "none": 27,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 0,
+       "none": 25
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 0,
+       "none": 6
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 0,
+     "pinOnly": 16,
+     "none": 14,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 10
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 14
+      }
+     },
+     "why": {
+      "no gol.gg table": 30
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": null
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:28:51.510Z",
+  "now": {
+   "priced": 157,
+   "clear": 6,
+   "modelOnly": 49,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 9,
+    "player": 4,
+    "team games": 9,
+    "team": 16,
+    "no gol.gg table": 30
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 0,
+     "none": 27,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 0,
+       "none": 25
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 0,
+       "none": 6
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 0,
+     "pinOnly": 16,
+     "none": 14,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 10
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 14
+      }
+     },
+     "why": {
+      "no gol.gg table": 30
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": null
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:29:24.310Z",
+  "now": {
+   "priced": 157,
+   "clear": 6,
+   "modelOnly": 49,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 9,
+    "player": 4,
+    "team games": 9,
+    "team": 16,
+    "no gol.gg table": 30
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 0,
+     "none": 27,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 0,
+       "none": 25
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 0,
+       "none": 6
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 0,
+     "pinOnly": 16,
+     "none": 14,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 10
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 0,
+       "pinOnly": 16,
+       "none": 14
+      }
+     },
+     "why": {
+      "no gol.gg table": 30
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": null
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:29:54.348Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 61,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 5,
+     "none": 22,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 4,
+       "none": 2
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:30:26.416Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 61,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 5,
+     "none": 22,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 4,
+       "none": 2
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:30:56.631Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:31:26.649Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:31:56.684Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:32:26.734Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:32:56.772Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:33:26.807Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:33:57.039Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:34:27.053Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:34:57.090Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:35:27.128Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:35:57.152Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:36:27.187Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:36:57.209Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:37:31.871Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:38:01.907Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:38:31.944Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:39:01.972Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:39:34.196Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5,
+    "team games": 9
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:40:04.587Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "LOL": 20,
+    "VAL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "support": 5,
+    "team games": 9,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:40:34.622Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:41:04.657Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:41:38.196Z",
+  "now": {
+   "priced": 177,
+   "clear": 9,
+   "modelOnly": 58,
+   "byGame": {
+    "CS": 130,
+    "VAL": 20,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:42:08.893Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "LOL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "support": 5,
+    "team games": 9,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:42:38.930Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "LOL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "support": 5,
+    "team games": 9,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:43:08.966Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "LOL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "support": 5,
+    "team games": 9,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:43:38.992Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "LOL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "support": 5,
+    "team games": 9,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:27:33.593Z",
+    "DOTA": "2026-10-15T02:27:33.593Z",
+    "VAL": "2026-10-15T02:27:33.593Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 7
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:44:09.002Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:44:39.037Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:45:09.074Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:45:39.103Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:46:09.139Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:46:39.174Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:47:09.190Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:47:39.229Z",
+  "now": {
+   "priced": 177,
+   "clear": 6,
+   "modelOnly": 57,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:48:09.293Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:48:39.345Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:49:09.370Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:49:39.405Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "CS": 130,
+    "LOL": 20,
+    "VAL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "maps": 13,
+    "player": 4,
+    "team games": 9,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:50:09.442Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "LOL": 20,
+    "VAL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "support": 5,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:50:39.477Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "LOL": 20,
+    "VAL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "support": 5,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:51:09.514Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "LOL": 20,
+    "VAL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "support": 5,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:51:39.529Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "LOL": 20,
+    "VAL": 20,
+    "CS": 130,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "support": 5,
+    "player": 4,
+    "team": 17
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ },
+ {
+  "t": "2026-10-15T02:52:09.554Z",
+  "now": {
+   "priced": 177,
+   "clear": 11,
+   "modelOnly": 52,
+   "byGame": {
+    "VAL": 20,
+    "CS": 130,
+    "LOL": 20,
+    "DOTA": 7
+   },
+   "why": {
+    "team games": 9,
+    "maps": 13,
+    "player": 4,
+    "team": 17,
+    "support": 5
+   },
+   "stores": {
+    "CS": {
+     "maps": 18726,
+     "players": 2519,
+     "through": "2026-10-14T20:20:06.000Z"
+    },
+    "DOTA": {
+     "maps": 7339,
+     "players": 2299,
+     "through": "2026-10-15T01:20:26.000Z"
+    },
+    "VAL": {
+     "maps": 9473,
+     "players": 1428,
+     "through": "2026-10-14T20:00:00.000Z"
+    }
+   },
+   "coverage": {
+    "DOTA": {
+     "lines": 17,
+     "h2h": 7,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 9,
+       "h2h": 0,
+       "pinOnly": 0,
+       "none": 9
+      },
+      "UD": {
+       "lines": 8,
+       "h2h": 7,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "team games": 9,
+      "player": 1
+     }
+    },
+    "VAL": {
+     "lines": 21,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 1,
+     "apps": {
+      "PP": {
+       "lines": 19,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 0
+      },
+      "UD": {
+       "lines": 20,
+       "h2h": 19,
+       "pinOnly": 0,
+       "none": 1
+      }
+     },
+     "why": {
+      "player": 1
+     }
+    },
+    "CS": {
+     "lines": 157,
+     "h2h": 130,
+     "pinOnly": 6,
+     "none": 21,
+     "apps": {
+      "PP": {
+       "lines": 120,
+       "h2h": 95,
+       "pinOnly": 5,
+       "none": 20
+      },
+      "UD": {
+       "lines": 128,
+       "h2h": 122,
+       "pinOnly": 5,
+       "none": 1
+      },
+      "SL": {
+       "lines": 120,
+       "h2h": 114,
+       "pinOnly": 5,
+       "none": 1
+      }
+     },
+     "why": {
+      "maps": 9,
+      "player": 2,
+      "team": 16
+     }
+    },
+    "LOL": {
+     "lines": 30,
+     "h2h": 20,
+     "pinOnly": 0,
+     "none": 10,
+     "apps": {
+      "PP": {
+       "lines": 26,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 6
+      },
+      "UD": {
+       "lines": 30,
+       "h2h": 20,
+       "pinOnly": 0,
+       "none": 10
+      }
+     },
+     "why": {
+      "maps": 4,
+      "support": 5,
+      "team": 1
+     }
+    }
+   },
+   "gol": {
+    "teams": 328,
+    "at": "2026-10-15T02:27:33.593Z"
+   }
+  },
+  "data": {
+   "refreshedAt": {
+    "CS": "2026-10-15T02:43:40.396Z",
+    "DOTA": "2026-10-15T02:43:40.396Z",
+    "VAL": "2026-10-15T02:43:40.396Z"
+   },
+   "added": {
+    "CS": 0,
+    "DOTA": 0,
+    "VAL": 0
+   },
+   "errors": {
+    "CS": null,
+    "DOTA": null,
+    "VAL": null,
+    "LOL": null
+   },
+   "golAt": "2026-10-15T02:27:33.593Z"
+  }
+ }
+]
