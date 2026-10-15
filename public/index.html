@@ -518,6 +518,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pb-cover { font-size: 11px; color: #94a3b8; margin: 0 0 8px; line-height: 1.5; overflow-wrap: anywhere; } .pb-cover:empty { display: none; } .pb-cover b { color: #cbd5e1; font-weight: 600; } .pb-cover .z { color: #f87171; }
 /* LINES: one app's lines as a table, best EV first */
 #page-props.lines .pb-conly, #page-props:not(.lines) .pb-lonly { display: none; }
 .ln-head, .ln-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.3fr) 62px 62px 64px 60px 58px 64px 44px; gap: 8px; align-items: center; padding: 9px 12px; }
@@ -1432,6 +1433,7 @@ body.no-help .clv-info { display:none; }
   </div>
   <div class="pb-chips" id="pbView" style="margin:12px 0 8px"></div>
   <div class="pb-chips" id="pbSports" style="margin:0 0 8px"></div>
+  <div class="pb-cover" id="pbCover"></div>
   <div class="pb-chips" id="pbBooks" style="margin:0 0 10px"></div>
   <div style="display:flex;margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
     <label class="es-field pb-lonly" style="flex:1 1 160px;max-width:240px"><span>Prop</span><select id="pbMarket" onchange="pbSet('market',this.value)"><option value="">Every prop</option></select></label>
@@ -3416,8 +3418,43 @@ function pbChips() {
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
   document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(!lines, 'CARDS', null, "pbSet('view','cards')")].join('');
+  pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...PB_BOOKS.map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
+}
+// How many of the apps' legs carry a sharp price (Pinnacle or Kalshi), per
+// league (/api/props/coverage). One league picked: its count on the app shown
+// and the stats no sharp market lists, so an unpriced leg reads as expected.
+const pbCover = { sport: '', never: null, seq: 0 };
+async function pbCoverNever(sport) {
+  const seq = ++pbCover.seq;
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/coverage?sport=${encodeURIComponent(sport)}`);
+    if (!r.ok || seq !== pbCover.seq) return;
+    const d = await r.json();
+    pbCover.never = (d.markets || []).filter(m => m.never && !m.sharp).sort((a, b) => b.legs - a.legs).map(m => m.market);
+    pbCover.sport = sport;
+    pbCoverage();
+  } catch {}
+}
+function pbCoverage() {
+  const el = document.getElementById('pbCover'), cov = pbState.data?.coverage;
+  if (!el) return;
+  const s = pbState.sport;
+  if (!cov?.leagues || PB_ES.has(s) || s === 'ESPORTS') { el.innerHTML = ''; return; }
+  const n = v => (+v || 0).toLocaleString();
+  const lines = pbState.view === 'lines', book = lines ? pbState.lineBook : pbState.book;
+  const one = s !== 'ALL' && s !== 'SPORTS' ? (book ? cov.byApp?.[book]?.[s] : cov.leagues[s]) : null;
+  if (one) {
+    const app = book ? ` on ${PB_BOOKS.find(x => x[0] === book)?.[1] || book}` : '';
+    const parts = [one.pinnacle ? `Pinnacle ${n(one.pinnacle)}` : '', one.kalshi ? `Kalshi ${n(one.kalshi)}` : '', one.books ? `${n(one.books)} with one sportsbook only` : ''].filter(Boolean).join(', ');
+    if (pbCover.sport !== s) { pbCover.never = null; pbCoverNever(s); }
+    const never = pbCover.sport === s && pbCover.never?.length ? ` No sharp market lists ${pbCover.never.slice(0, 8).join(', ')}${pbCover.never.length > 8 ? ', …' : ''}.` : '';
+    el.innerHTML = `<b>${escAttr(s)}${app}: ${n(one.sharp)} of ${n(one.legs)} legs sharp-priced</b>${parts ? ` (${parts})` : ''}.${never}`;
+    return;
+  }
+  const ls = Object.entries(cov.leagues).filter(([, v]) => v.legs >= 20).sort((a, b) => b[1].legs - a[1].legs);
+  el.innerHTML = `<b>Legs with a sharp price</b> ${ls.map(([k, v]) => `<span class="${v.sharp ? '' : 'z'}">${escAttr(k)} ${n(v.sharp)}/${n(v.legs)}</span>`).join(' · ')}`;
 }
 function pbFmtStart(t) {
   const d = new Date(t);

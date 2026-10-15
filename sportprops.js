@@ -27,7 +27,15 @@ const K = {
   // touchdowns: near Poisson (a k of 1.5 put 2+ TDs at 17% for a 13% bet)
   anytime_td: 1.05,
   shots_on_goal: 1.2, saves: 1.6, goals: 1.05, points_nhl: 1.1, kicking_points: 1.6, fg_made: 1.2,
+  // tennis games (best of three: total games sd about 5 at a mean of 22)
+  games_played: 1.2, games_won: 1.1,
 };
+// Stats whose curve isn't a count around a median (a fight's minutes, sets in a
+// match, a yes/no like a knockout, a finishing position): a source prices only
+// the line it sits on, never a line read off it.
+const EXACT = new Set(['fight_time', 'knockouts', 'submissions', 'finishes', '1st_round_finish', '2nd_round_finish',
+  '3rd_round_finish', '4th_round_finish', '5th_round_finish', 'sets_played', 'sets_won', '1st_set_games_played', 'finishing_position']);
+const sameLine = (mkey, a, b) => !EXACT.has(mkey) || Math.abs(a - b) < 1e-6;
 const kFor = (mkey, sport) => K[sport === 'NHL' && mkey === 'points' ? 'points_nhl' : mkey] ?? 1.5;
 
 // P(over line) for a median-ish mean on the stat's curve. dist.sideProbs
@@ -119,7 +127,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   const means = [];
   const sources = [];
   for (const [b, c] of Object.entries(row.books || {})) {
-    if (b === book) continue;
+    if (b === book || !sameLine(row.mkey, c.line, line)) continue;
     const p = bookPOver(b, c);
     if (p == null) continue;
     const m = meanFor(row.mkey, row.sport, c.line, p);
@@ -132,14 +140,16 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   if (kp != null) {
     const m = meanFor(row.mkey, row.sport, line, kp);
     if (m != null) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line, p: +(kp * 100).toFixed(1) }); }
-  } else if (kalshi?.size) {
+  } else if (kalshi?.size && !EXACT.has(row.mkey)) {
     for (const [l, p] of kalshi) {
       const m = meanFor(row.mkey, row.sport, l, p);
       if (m != null) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
     }
   }
   // Pinnacle: its own line and devigged price, read as a mean on the curve
-  if (pin && pin.line != null && pin.pOver > 0 && pin.pOver < 1) {
+  // a list of Pinnacle's lines for this game: the one nearest ours
+  if (Array.isArray(pin)) pin = pin.reduce((a, b) => (!a || Math.abs(b.line - line) < Math.abs(a.line - line) ? b : a), null);
+  if (pin && pin.line != null && pin.pOver > 0 && pin.pOver < 1 && sameLine(row.mkey, pin.line, line)) {
     const m = meanFor(row.mkey, row.sport, pin.line, pin.pOver);
     if (m != null) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
   }
@@ -264,11 +274,14 @@ const PP_GRADE = PP_ENTRIES.find(e => e.name === '3-pick power');
 function consensusFor(row, line, { sharp = [], kalshi = null, o = CONSENSUS } = {}) {
   const srcs = [];
   const counts = b => o.weights[b] > 0, shadow = b => !counts(b) && (o.shadow || []).includes(b);
-  for (const s of sharp) if (s && s.line != null && s.pOver > 0 && s.pOver < 1 && (counts(s.book) || shadow(s.book))) srcs.push({ book: s.book, line: s.line, p: s.pOver });
+  // one source per book: the line nearest ours where a book hangs several
+  const near = new Map();
+  for (const s of sharp) if (s && s.line != null && (!near.has(s.book) || Math.abs(s.line - line) < Math.abs(near.get(s.book).line - line))) near.set(s.book, s);
+  for (const s of near.values()) if (s && s.line != null && s.pOver > 0 && s.pOver < 1 && (counts(s.book) || shadow(s.book)) && sameLine(row.mkey, s.line, line)) srcs.push({ book: s.book, line: s.line, p: s.pOver });
   // Kalshi: its price at our line when it has one, else its nearest rung
   if (kalshi?.size && o.weights.kalshi > 0) {
     let best = null;
-    for (const [l, p] of kalshi) if (p > 0 && p < 1 && (!best || Math.abs(l - line) < Math.abs(best[0] - line))) best = [l, p];
+    for (const [l, p] of kalshi) if (p > 0 && p < 1 && sameLine(row.mkey, l, line) && (!best || Math.abs(l - line) < Math.abs(best[0] - line))) best = [l, p];
     if (best) srcs.push({ book: 'kalshi', line: best[0], p: best[1] });
   }
   const all = [];
@@ -437,5 +450,5 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
   return { observe, stale, prune, size: () => hist.size };
 }
 
-module.exports = { promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
+module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
   SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

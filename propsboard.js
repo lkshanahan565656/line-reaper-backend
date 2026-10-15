@@ -30,12 +30,23 @@ function boardSport(sport) {
 // "1H Rec Yards" and a PP NFL1H "Receiving Yards" both key as 1h|rec_yds
 const PERIOD = /^(1h|2h|1q|2q|3q|4q|1p|1st half|first half|1st quarter|1st period|season)\s+/i;
 const PERIOD_KEY = { '1st half': '1h', 'first half': '1h', '1st quarter': '1q', '1st period': '1p' };
-function sportMarketKey(market) {
+// The apps name the same tennis, fight and soccer stats differently
+// (PrizePicks "Total Games Won" is Underdog's "Games Won", Sleeper's "Knockout
+// Win" is Underdog's "Knockouts"): one key per stat, so the lines share a row
+// and the sharp prices (pinextra.js, kxextra.js) find them.
+const SPORT_MARKET_ALIASES = {
+  TENNIS: { total_games: 'games_played', total_games_won: 'games_won', '1st_set_total_games': '1st_set_games_played',
+    '1st_set_total_games_won': '1st_set_games_won', total_tie_breaks: 'tiebreakers_played' },
+  MMA: { 'fight_time_(mins)': 'fight_time', knockout_win: 'knockouts', submission_win: 'submissions' },
+  SOCCER: { shots: 'shots_attempted', goalie_saves: 'saves' },
+};
+function sportMarketKey(market, sport = '') {
   const s = String(market || '').trim();
   const m = PERIOD.exec(s);
-  if (!m) return canonMarket(s);
+  const alias = k => SPORT_MARKET_ALIASES[sport]?.[k] || k;
+  if (!m) return alias(canonMarket(s));
   const p = m[1].toLowerCase();
-  return `${PERIOD_KEY[p] || p}|${canonMarket(s.slice(m[0].length))}`;
+  return `${PERIOD_KEY[p] || p}|${alias(canonMarket(s.slice(m[0].length)))}`;
 }
 
 // One book's line in the board's terms: base sport, period on the stat
@@ -100,7 +111,7 @@ function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
     const l = normLine(raw);
     const t = Date.parse(l.startTime || '');
     if (t && t <= now) continue;   // started: the price is gone
-    const mkey = l.esports && esKey ? esKey(l.sport, l.market) : sportMarketKey(l.market);
+    const mkey = l.esports && esKey ? esKey(l.sport, l.market) : sportMarketKey(l.market, l.sport);
     const a = anchor.get(`${l.sport}|${canonName(l.player)}`);
     const own = !l.esports && t && a && Math.abs(t - a) > DATE_SLACK ? `|${new Date(t).toISOString().slice(0, 10)}` : '';
     const key = `${l.sport}|${canonName(l.player)}|${mkey}${own}`;
@@ -148,7 +159,9 @@ const r2 = x => Math.round(x * 100) / 100;
 
 // Prices every cell. dfsEv(prob 0-1, book, mult) is the server's calcBookEV.
 // esPicks: index key → esports pick (side, prob, ppEv/udEv/sleeperEv).
-function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null } = {}) {
+// kalshiAt(row, line) → P(over) from Kalshi's fight, race and tennis markets
+// (kxextra.js), where its ladders (kalshi) have nothing at that line.
+function priceRows(rows, { kalshi = new Map(), kalshiAt = null, esPicks = new Map(), dfsEv = null } = {}) {
   for (const row of rows) {
     let best = null;
     const offer = (book, side, ev, fair, source, line) => {
@@ -206,7 +219,7 @@ function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null
       for (const book of BOOKS) {
         const c = row.books[book];
         if (!c || !base) continue;
-        const pOver = kalshi.get(`${canonName(row.player)}|${base}|${c.line}`);
+        const pOver = kalshi.get(`${canonName(row.player)}|${base}|${c.line}`) ?? (kalshiAt ? kalshiAt(row, c.line) : null);
         if (pOver == null) continue;
         c.fair = r2(pOver * 100);
         if (!dfsEv) continue;
@@ -290,6 +303,56 @@ function lineFacets(rows, book, minEv) {
   return { bettable, markets: [...markets].sort((a, b) => b[1] - a[1]).slice(0, 60).map(([m, n]) => ({ market: m, n })) };
 }
 
+// ── COVERAGE: which legs carry a sharp price ─────────────────────────────────
+// Each app leg on a sports row, by what prices it: Pinnacle (its prop, or a
+// match market read as one: pinextra.js), Kalshi (a ladder or a fight, race or
+// tennis market at that line), a sportsbook alone (FanDuel, BetRivers, … in
+// row.sharpBooks, which needs a second source to make a price), the other apps
+// only (a soft consensus, not a price), or nothing. Esports rows aren't counted
+// (their model prices them).
+// Stats no sharp market lists anywhere we read, so they stay unpriced on purpose.
+const NO_SHARP = {
+  ALL: [/fantasy/, /season|per_game|triple_doubles|50\+/, /first_.*scorer|last_goal_scorer|first_td/, /^longest/, /^(1h|2h|1q|2q|3q|4q|1p)\|/,
+    /kicking_points|fg_made|xp_made|pat_made/],
+  MMA: [/significant_strikes|takedowns/],
+  SOCCER: [/shots_attempted|passes|goals_against|tackles|clearances|crosses|^saves$/],
+  TENNIS: [/aces|double_faults|break_points|points_won|tiebreakers|1st_set_games_won/],
+  NHL: [/time_on_ice|faceoffs|^hits$|blocked_shots/],
+};
+const NO_SHARP_SPORTS = /^(GOLF|EUROGOLF|PGA|LPGA|LIVGOLF|TT|BAD|DARTS|CRICKET)$/;
+function noSharpMarket(row) {
+  const k = row.mkey || '';
+  return NO_SHARP_SPORTS.test(row.sport || '') || [...NO_SHARP.ALL, ...(NO_SHARP[row.sport] || [])].some(re => re.test(k));
+}
+function legSource(row, c) {
+  const src = new Set((row.consensus?.sources || []).map(s => s.book));
+  if (row.pinnacle || src.has('pinnacle')) return 'pinnacle';
+  if (c.fair != null || src.has('kalshi')) return 'kalshi';
+  if (row.consensus || row.sharpBooks?.length) return 'books';
+  if (row.nBooks > 1) return 'apps';
+  return 'none';
+}
+const blank = () => ({ legs: 0, sharp: 0, pinnacle: 0, kalshi: 0, books: 0, apps: 0, none: 0 });
+// → { total, leagues: { NFL: {...} }, byApp: { underdog: { NFL: {...} } },
+//     markets: [{ sport, market, mkey, legs, sharp, ..., never }] }
+function coverage(rows) {
+  const total = blank(), leagues = {}, byApp = {}, markets = new Map();
+  const add = (o, k) => { o.legs++; o[k]++; if (k === 'pinnacle' || k === 'kalshi') o.sharp++; };
+  for (const r of rows || []) {
+    if (r.esports) continue;
+    for (const [book, c] of Object.entries(r.books || {})) {
+      const k = legSource(r, c);
+      add(total, k);
+      add(leagues[r.sport] ||= blank(), k);
+      add((byApp[book] ||= {})[r.sport] ||= blank(), k);
+      const mk = `${r.sport}|${r.mkey}`;
+      if (!markets.has(mk)) markets.set(mk, { sport: r.sport, market: r.market, mkey: r.mkey, never: noSharpMarket(r), ...blank() });
+      add(markets.get(mk), k);
+    }
+  }
+  return { total, leagues, byApp, markets: [...markets.values()].sort((a, b) => a.sport.localeCompare(b.sport) || b.legs - a.legs) };
+}
+
 // A free viewer sees every line; the fair price and EV are Pro
 function redactRow(r) {
   const books = {};
@@ -297,4 +360,4 @@ function redactRow(r) {
   return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null };
 }
 
-module.exports = { boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };
+module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };
