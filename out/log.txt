@@ -1,0 +1,18 @@
+status 200 19983
+matches 200 1038525
+picks 200 989897
+tr-LOL 200 88422
+tr-CS 200 282215
+tr-DOTA 200 6344
+tr-VAL 200 2468
+board-pp 200 243930
+board-ud 200 293418
+board-sl 200 196814
+share 200 7967
+h2h 200 133414
+odds 200 13818
+pin-mu 200 748690
+pin-mk 200 641190
+lol series 9398
+dota stop 168 0
+dota maps 16800
