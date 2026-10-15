@@ -13,7 +13,10 @@
 //   3. follows every venue that was quoting the subject at the move: the
 //      minutes until it moved the same way (by half Pinnacle's move, at least
 //      a point at the old number) are its LAG; a venue that had already moved
-//      that way in the 10 minutes before is a LEADER, not stale
+//      that way in the 10 minutes before, read before Pinnacle's previous
+//      read, is a LEADER, not stale. A venue whose complete reads leave the
+//      subject out has taken it down: off the board at once, PULLED if it is
+//      still down when the move closes.
 //   4. lists each venue still on its pre-move quote while the move is under an
 //      hour old: its price against Pinnacle's post-move fair at the venue's
 //      own number. A row CLEARS at minEv when another sharp source (Kalshi,
