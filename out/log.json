@@ -1,0 +1,2426 @@
+[
+ {
+  "t": "2026-10-15T05:08:12.473Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {},
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": null,
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": null,
+   "engine": {
+    "subjects": 0,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:08:42.505Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:08:00.838Z",
+    "prizepicks": "2026-10-15T05:08:00.960Z",
+    "underdog": "2026-10-15T05:08:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:08:32.257Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:09:13.511Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:08:00.838Z",
+    "prizepicks": "2026-10-15T05:08:00.960Z",
+    "underdog": "2026-10-15T05:08:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:08:32.257Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:09:43.557Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:08:00.838Z",
+    "prizepicks": "2026-10-15T05:08:00.960Z",
+    "underdog": "2026-10-15T05:08:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:09:21.263Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:10:14.234Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:08:00.838Z",
+    "prizepicks": "2026-10-15T05:08:00.960Z",
+    "underdog": "2026-10-15T05:08:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:09:21.263Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:10:44.271Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:10:01.767Z",
+    "prizepicks": "2026-10-15T05:10:01.710Z",
+    "underdog": "2026-10-15T05:10:02.708Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:10:37.309Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:11:14.319Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:10:01.767Z",
+    "prizepicks": "2026-10-15T05:10:01.710Z",
+    "underdog": "2026-10-15T05:10:02.708Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:10:37.309Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:11:44.362Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:10:01.767Z",
+    "prizepicks": "2026-10-15T05:10:01.710Z",
+    "underdog": "2026-10-15T05:10:02.708Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:10:37.309Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:12:14.406Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:12:06.564Z",
+    "prizepicks": "2026-10-15T05:12:01.143Z",
+    "underdog": "2026-10-15T05:12:01.884Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:12:07.788Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:12:44.443Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:12:06.564Z",
+    "prizepicks": "2026-10-15T05:12:01.143Z",
+    "underdog": "2026-10-15T05:12:01.884Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:12:07.788Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:13:14.508Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:12:06.564Z",
+    "prizepicks": "2026-10-15T05:12:01.143Z",
+    "underdog": "2026-10-15T05:12:01.884Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:12:07.788Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:13:44.554Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:12:06.564Z",
+    "prizepicks": "2026-10-15T05:12:01.143Z",
+    "underdog": "2026-10-15T05:12:01.884Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:13:41.361Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:14:14.656Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:14:04.189Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:14:44.694Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:02.993Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:14:04.189Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:15:14.717Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:15:44.757Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:16:14.803Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:16:44.849Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:17:14.897Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:17:44.945Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:14:01.378Z",
+    "prizepicks": "2026-10-15T05:14:01.479Z",
+    "underdog": "2026-10-15T05:14:04.882Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:15:02.078Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:18:15.012Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:18:04.284Z",
+    "prizepicks": "2026-10-15T05:18:01.136Z",
+    "underdog": "2026-10-15T05:18:03.239Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:18:05.464Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:18:45.072Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:18:04.284Z",
+    "prizepicks": "2026-10-15T05:18:01.136Z",
+    "underdog": "2026-10-15T05:18:03.239Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:18:05.464Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:19:15.098Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:18:04.284Z",
+    "prizepicks": "2026-10-15T05:18:01.136Z",
+    "underdog": "2026-10-15T05:18:03.239Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:18:05.464Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:19:45.126Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:18:04.284Z",
+    "prizepicks": "2026-10-15T05:18:01.136Z",
+    "underdog": "2026-10-15T05:18:03.239Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:18:05.464Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:20:15.175Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 1,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:20:01.917Z",
+    "prizepicks": "2026-10-15T05:20:01.950Z",
+    "underdog": "2026-10-15T05:20:02.565Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:20:03.633Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 1,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:20:45.217Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 1,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:20:01.917Z",
+    "prizepicks": "2026-10-15T05:20:01.950Z",
+    "underdog": "2026-10-15T05:20:02.565Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:20:03.633Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 1,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:21:15.263Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 1,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:20:01.917Z",
+    "prizepicks": "2026-10-15T05:20:01.950Z",
+    "underdog": "2026-10-15T05:20:02.565Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:20:03.633Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 1,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:21:45.311Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 1,
+   "hours": 0,
+   "reads": {
+    "sleeper": "2026-10-15T05:20:01.917Z",
+    "prizepicks": "2026-10-15T05:20:01.950Z",
+    "underdog": "2026-10-15T05:20:02.565Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:20:03.633Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 0,
+    "pending": 1,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:22:15.360Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.04,
+   "reads": {
+    "sleeper": "2026-10-15T05:22:01.715Z",
+    "prizepicks": "2026-10-15T05:22:01.650Z",
+    "underdog": "2026-10-15T05:22:08.251Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:22:09.405Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:22:46.018Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.05,
+   "reads": {
+    "sleeper": "2026-10-15T05:22:01.715Z",
+    "prizepicks": "2026-10-15T05:22:01.650Z",
+    "underdog": "2026-10-15T05:22:08.251Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:22:09.405Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:23:19.256Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.05,
+   "reads": {
+    "sleeper": "2026-10-15T05:22:01.715Z",
+    "prizepicks": "2026-10-15T05:22:01.650Z",
+    "underdog": "2026-10-15T05:22:08.251Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:22:09.405Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:23:49.284Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.06,
+   "reads": {
+    "sleeper": "2026-10-15T05:22:01.715Z",
+    "prizepicks": "2026-10-15T05:22:01.650Z",
+    "underdog": "2026-10-15T05:22:08.251Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:22:09.405Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:24:23.575Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.07,
+   "reads": {
+    "sleeper": "2026-10-15T05:24:01.476Z",
+    "prizepicks": "2026-10-15T05:24:01.535Z",
+    "underdog": "2026-10-15T05:24:05.572Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:24:06.660Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:24:53.611Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.08,
+   "reads": {
+    "sleeper": "2026-10-15T05:24:01.476Z",
+    "prizepicks": "2026-10-15T05:24:01.535Z",
+    "underdog": "2026-10-15T05:24:05.572Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:24:06.660Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:25:23.658Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.09,
+   "reads": {
+    "sleeper": "2026-10-15T05:24:01.476Z",
+    "prizepicks": "2026-10-15T05:24:01.535Z",
+    "underdog": "2026-10-15T05:24:07.450Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:25:02.001Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:25:53.704Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 1,
+   "hours": 0.1,
+   "reads": {
+    "sleeper": "2026-10-15T05:24:01.476Z",
+    "prizepicks": "2026-10-15T05:24:01.535Z",
+    "underdog": "2026-10-15T05:24:07.450Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:25:02.001Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 0,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:26:23.753Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 2,
+   "hours": 0.11,
+   "reads": {
+    "sleeper": "2026-10-15T05:26:03.453Z",
+    "prizepicks": "2026-10-15T05:26:03.475Z",
+    "underdog": "2026-10-15T05:26:04.195Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:26:05.390Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 1,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:26:53.875Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 2,
+   "hours": 0.11,
+   "reads": {
+    "sleeper": "2026-10-15T05:26:03.453Z",
+    "prizepicks": "2026-10-15T05:26:03.475Z",
+    "underdog": "2026-10-15T05:26:04.195Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:26:05.390Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 1,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:27:24.879Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 2,
+   "hours": 0.12,
+   "reads": {
+    "sleeper": "2026-10-15T05:26:03.453Z",
+    "prizepicks": "2026-10-15T05:26:03.475Z",
+    "underdog": "2026-10-15T05:26:04.195Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:26:05.390Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 1,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:27:54.926Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 1
+   },
+   "open": 2,
+   "hours": 0.13,
+   "reads": {
+    "sleeper": "2026-10-15T05:26:03.453Z",
+    "prizepicks": "2026-10-15T05:26:03.475Z",
+    "underdog": "2026-10-15T05:26:04.195Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:26:05.390Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 1,
+    "pending": 1,
+    "unstable": 0,
+    "log": 1
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:28:25.019Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.14,
+   "reads": {
+    "sleeper": "2026-10-15T05:28:01.877Z",
+    "prizepicks": "2026-10-15T05:28:03.738Z",
+    "underdog": "2026-10-15T05:28:07.653Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:28:08.887Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:28:55.064Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.15,
+   "reads": {
+    "sleeper": "2026-10-15T05:28:01.877Z",
+    "prizepicks": "2026-10-15T05:28:03.738Z",
+    "underdog": "2026-10-15T05:28:07.653Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:28:08.887Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:29:25.110Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.16,
+   "reads": {
+    "sleeper": "2026-10-15T05:28:01.877Z",
+    "prizepicks": "2026-10-15T05:28:03.738Z",
+    "underdog": "2026-10-15T05:28:07.653Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:28:08.887Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:29:55.155Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.16,
+   "reads": {
+    "sleeper": "2026-10-15T05:28:01.877Z",
+    "prizepicks": "2026-10-15T05:28:03.738Z",
+    "underdog": "2026-10-15T05:28:07.653Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:28:08.887Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:30:25.205Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.17,
+   "reads": {
+    "sleeper": "2026-10-15T05:30:02.502Z",
+    "prizepicks": "2026-10-15T05:30:02.528Z",
+    "underdog": "2026-10-15T05:30:04.506Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:30:05.559Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:30:55.272Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.18,
+   "reads": {
+    "sleeper": "2026-10-15T05:30:02.502Z",
+    "prizepicks": "2026-10-15T05:30:02.528Z",
+    "underdog": "2026-10-15T05:30:04.506Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:30:05.559Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:31:25.863Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.19,
+   "reads": {
+    "sleeper": "2026-10-15T05:30:02.502Z",
+    "prizepicks": "2026-10-15T05:30:02.528Z",
+    "underdog": "2026-10-15T05:30:04.506Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:30:05.559Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:31:56.842Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.2,
+   "reads": {
+    "sleeper": "2026-10-15T05:30:02.502Z",
+    "prizepicks": "2026-10-15T05:30:02.528Z",
+    "underdog": "2026-10-15T05:30:04.506Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:30:05.559Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:32:26.934Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.21,
+   "reads": {
+    "sleeper": "2026-10-15T05:32:01.971Z",
+    "prizepicks": "2026-10-15T05:32:02.199Z",
+    "underdog": "2026-10-15T05:32:02.673Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:32:03.769Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T05:32:56.978Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 2,
+     "within2": 100,
+     "within15": 100
+    }
+   ],
+   "unstable": 0,
+   "leads": {
+    "underdog": 2
+   },
+   "open": 2,
+   "hours": 0.22,
+   "reads": {
+    "sleeper": "2026-10-15T05:32:01.971Z",
+    "prizepicks": "2026-10-15T05:32:02.199Z",
+    "underdog": "2026-10-15T05:32:02.673Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T05:32:03.769Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "twoMatchPlayers": 21,
+   "engine": {
+    "subjects": 295,
+    "open": 2,
+    "pending": 0,
+    "unstable": 0,
+    "log": 2
+   }
+  }
+ }
+]
