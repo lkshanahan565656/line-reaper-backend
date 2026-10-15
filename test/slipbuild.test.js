@@ -105,3 +105,60 @@ test('a hand-built slip is priced on each book that carries every leg, at its ow
   assert.equal(priceOnBooks([a, null]).PP, null);
   assert.equal(priceOnBooks([a, { ...a, market: 'Headshots' }]).PP, null);   // one player twice
 });
+
+// the Lines table's fair on a pick (server attachLinesFair)
+function linesFair(p, books, marketOk = true) {
+  p.pricing.lines = { books, marketOk };
+  return p;
+}
+
+test('a leg is priced at the Lines table\'s model fair, on the side it leans, not the consensus side', () => {
+  const p = linesFair(pick({ PP: { prob: 0.6 } }), {
+    PP: { src: 'h2h', line: 20.5, side: 'UNDER', clears: true, sides: { UNDER: { prob: 0.61, ev: 8.4 }, OVER: { prob: 0.39, ev: -30.7 } } },
+  });
+  const l = bookLeg(p, 'PP');
+  assert.equal(l.side, 'UNDER');
+  assert.equal(l.prob, 0.61);
+  assert.equal(l.ev, 8.4);
+  assert.equal(l.fair, 'h2h');
+  // the person's own side (the slip bar) is priced at the same fair
+  assert.equal(bookLeg(p, 'PP', { side: 'OVER' }).prob, 0.39);
+});
+
+test('a model-only lean (not green on the Lines table) is no leg for an auto slip, but a hand-built slip still prices it', () => {
+  const p = linesFair(pick({ PP: { prob: 0.6 } }), {
+    PP: { src: 'h2h', line: 20.5, side: 'UNDER', clears: false, sides: { UNDER: { prob: 0.66, ev: 17 } } },
+  });
+  assert.equal(bookLeg(p, 'PP', { bettable: true }), null);
+  assert.equal(bookLeg(p, 'PP').side, 'UNDER');
+  const others = [pick({ PP: { prob: 0.62 } }), pick({ PP: { prob: 0.61 } })];
+  const r = autoSlips([p, ...others]);
+  assert.ok(!r.slips.some(s => s.picks.some(l => l.player === p.player)));
+});
+
+test('a row kill share or rounds took shows no market price, so a book it skipped gets no leg', () => {
+  const p = linesFair(pick({ PP: { prob: 0.6 }, UD: { prob: 0.6, mult: 1 } }), {
+    PP: { src: 'share', line: 20.5, side: 'OVER', clears: true, sides: { OVER: { prob: 0.6, ev: 6.7 } } },
+  }, false);
+  assert.ok(bookLeg(p, 'PP'));
+  assert.equal(bookLeg(p, 'UD'), null);
+});
+
+test('a best slip takes one leg a match; same-match lineups are left to match stacks', () => {
+  const a = [pick({ PP: { prob: 0.64 } }), pick({ PP: { prob: 0.63 } }), pick({ PP: { prob: 0.62 } })];
+  for (const p of a) p.gameId = 'same';
+  const b = [pick({ PP: { prob: 0.6 } }), pick({ PP: { prob: 0.59 } })];
+  const pp = autoSlips([...a, ...b]).slips.find(s => s.book === 'PP');
+  const games = pp.picks.map(l => l.gameId);
+  assert.equal(new Set(games).size, games.length);
+  assert.ok(!pp.correlated);
+});
+
+test('a model leg keeps its series pricing but hits as often as the fair says', () => {
+  const { slipHitsDistribution } = require('../slip');
+  const p = pick({ PP: { prob: 0.55 } });
+  Object.assign(p.pricing, { meanPerMap: 10, k: 1.2, scenarios: [{ maps: 2, weight: 0.6 }, { maps: 3, weight: 0.4 }] });
+  linesFair(p, { PP: { src: 'rounds', line: 20.5, side: 'OVER', clears: true, sides: { OVER: { prob: 0.62, ev: 10 } } } });
+  const l = bookLeg(p, 'PP');
+  assert.ok(Math.abs(slipHitsDistribution([l])[1] - 0.62) < 0.005);
+});
