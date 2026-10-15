@@ -1,0 +1,11 @@
+02:12:57 matches 4226
+02:13:08 games 8770
+02:14:12 stats 1000 / 8770 with 731 calls 1142 errs 0
+02:15:10 stats 2000 / 8770 with 1325 calls 2142 errs 0
+02:16:17 stats 3000 / 8770 with 1865 calls 3142 errs 0
+02:17:25 stats 4000 / 8770 with 2683 calls 4142 errs 0
+02:18:29 stats 5000 / 8770 with 3485 calls 5142 errs 0
+02:19:34 stats 6000 / 8770 with 4206 calls 6142 errs 0
+02:20:37 stats 7000 / 8770 with 4825 calls 7142 errs 0
+02:21:49 stats 8000 / 8770 with 5486 calls 8142 errs 0
+02:22:55 done 8770 with stats 6100 calls 8909 errs 0
