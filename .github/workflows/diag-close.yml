@@ -7,24 +7,20 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
           mkdir out; cd out
+          for i in $(seq 1 90); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.128.0" ] && break; sleep 20; done
+          echo "deployed $(date -u +%FT%TZ)" > deployed.txt
+          sleep 600
           g() { curl -s --max-time 120 "$U$1" > "$2"; echo "$2 $(wc -c < $2)"; }
           g /api/status status.json
-          g "/api/ev/record" ev-record.json
-          g "/api/props/record" props-record.json
-          for k in main alt es stale; do
-            q=""; [ $k != main ] && q="&$k=1"
-            for st in open closed; do g "/api/ev/record/bets?status=$st&limit=500$q" ev-$k-$st.json; done
-          done
-          for st in open locked graded void; do g "/api/props/record/picks?status=$st&limit=1000" props-$st.json; done
-          g "/api/book-arbs/record?limit=2000" bookarbs.json
-          g "/api/big-money" bigmoney.json
-          g "/api/esports/pintotals" pintotals.json
-          g "/api/ev" ev.json
+          g /api/ev/scoreboard scoreboard.json
+          g /api/ev/record ev-record.json
+          g "/api/ev/record/bets?status=open&limit=500" ev-main-open.json
+          g "/api/ev/record/bets?status=open&alt=1&limit=500" ev-alt-open.json
           date -u +%FT%TZ > at.txt
           cd ..
           git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
