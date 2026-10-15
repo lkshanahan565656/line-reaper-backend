@@ -97,7 +97,8 @@ const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 
 const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
 // research rows and the stale-line legs (stalelines.js, their own record on
 // the +EV tab) never count toward the sports props headline or its plays
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single']);
+// leads with records of their own (stale lines, the books' fair) stay out of the verdict
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single']);
 const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';

@@ -57,10 +57,19 @@ const KINDS = {
   'props-p6-sharp': 'Pick6 sharp consensus',
   'props-p6-ev': 'Pick6 sharp price',
   'props-p6-gap': 'Pick6 line gap',
+  // FanDuel and BetRivers alone where nothing sharp prices the leg (college
+  // football, NHL): the apps' margin against the soft books, judged on their close
+  'props-book-fair': "Pick'em vs FanDuel + BetRivers",
+  'props-book-fair-single': "Pick'em vs one book (FanDuel or BetRivers)",
+  'props-p6-book-fair': 'Pick6 vs FanDuel + BetRivers',
+  'props-p6-book-fair-single': 'Pick6 vs one book',
   'bigmoney': 'Big money',
 };
 
 const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
+// closes on the soft books' own fair: scored and marked, but kept out of a
+// book's total and the headline, which count sharp closes only
+const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single']);
 const day = t => String(t || '').slice(0, 10);
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }
@@ -138,7 +147,7 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
     return m;
   };
   // a book's total and the headline count sharp closes only
-  const sharp = plays.filter(p => !NO_SHARP_CLOSE.has(p.kind));
+  const sharp = plays.filter(p => !NO_SHARP_CLOSE.has(p.kind) && !BOOK_CLOSE.has(p.kind));
   const order = (a, b) => (a.mark === 'no sharp close') - (b.mark === 'no sharp close') || b.graded - a.graded || b.recorded - a.recorded;
   const rows = [...group(p => `${p.kind}|${p.book}`)].map(([k, l]) => {
     const [kind, book] = k.split('|');
@@ -151,4 +160,4 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp), rows, byBook, byKind };
 }
 
-module.exports = { scoreboard, KINDS, TARGET, NO_SHARP_CLOSE };
+module.exports = { scoreboard, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE };
