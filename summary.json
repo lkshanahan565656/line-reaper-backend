@@ -1,0 +1,46 @@
+{
+  "version": "3.124.0",
+  "h2h": {
+    "on": true,
+    "priced": 100,
+    "clear": 1,
+    "modelOnly": 47,
+    "byGame": {
+      "LOL": 12,
+      "CS": 88
+    },
+    "why": {
+      "maps": 12,
+      "support": 5,
+      "team": 44,
+      "player": 11,
+      "games": 7,
+      "team games": 17
+    },
+    "stores": {
+      "CS": {
+        "maps": 8824,
+        "players": 1454,
+        "through": "2026-10-14T20:20:06.000Z"
+      },
+      "DOTA": {
+        "maps": 8573,
+        "players": 1315,
+        "through": "2026-10-14T22:48:33.000Z"
+      }
+    },
+    "gol": {
+      "teams": 328,
+      "at": "2026-10-15T00:02:26.040Z"
+    },
+    "refreshedAt": {
+      "CS": "2026-10-15T00:02:26.040Z",
+      "DOTA": "2026-10-15T00:02:26.040Z"
+    },
+    "errors": {
+      "CS": null,
+      "DOTA": null,
+      "LOL": null
+    }
+  }
+}
