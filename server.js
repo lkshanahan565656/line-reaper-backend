@@ -2214,6 +2214,7 @@ async function generateEsportsPicks() {
   } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
   try { priceRoundKills(picks); } catch (e) { console.warn('Esports: round model skipped:', e.message); }
   try { priceH2HKills(picks); } catch (e) { console.warn('Esports: head-to-head model skipped:', e.message); }
+  try { attachLinesFair(picks); } catch (e) { console.warn('Esports: Lines fair for slips skipped:', e.message); }
 
   // Line gaps: the book a pick is played at sits on the soft side of another
   // book's line (PP Over 1.5 where Underdog and Sleeper hang 3.5). Worth
@@ -2576,7 +2577,7 @@ async function warmCsProfiles(batch = 12) {
 // Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
-const { autoSlips, priceOnBooks } = require('./slipbuild');
+const { autoSlips, priceOnBooks, bookLeg: slipBookLeg } = require('./slipbuild');
 const { createLoLGrader, createLoLesportsGrader, createLoLGraderChain, createDotaGrader, createCsGrader, createValGrader } = require('./graders');
 
 async function dotaAccountId(playerName) {
@@ -2758,6 +2759,46 @@ function priceH2HKills(picks) {
   if (plays.length) h2hTracker.recordBoard(plays).catch(e => console.warn('H2H tracker:', e.message));
   if (st.priced) console.log(`H2H kills: ${st.priced} lines priced (${JSON.stringify(st.byGame)}), ${st.clear} clear with a sharp price, ${st.modelOnly} model-only at +${H2H_OPTS.minEv}%`);
   return st;
+}
+
+// The fair the PROPS Lines table shows at each app's line (propsboard.priceRows):
+// kill share or rounds where they price the pick, the head-to-head model over
+// them for the books it prices. Best Slips and the slip bar build on it
+// (slipbuild.bookLeg), so a slip never takes a side the Lines table argues
+// against. Both sides are kept: a half line's other side is 1 - p.
+function attachLinesFair(picks) {
+  const rnd = x => Math.round(x * 100) / 100;
+  for (const p of picks) {
+    if (!p.pricing) continue;
+    const pin = p.share?.priced?.cells || p.rounds?.priced?.cells || null;
+    const h2h = p.h2h?.priced?.cells || null;
+    if (!pin && !h2h) continue;
+    const ud = p.udSides || {}, sl = p.slSides || {};
+    const books = {};
+    for (const b of appBooksFor(p)) {
+      const cell = h2h?.[b.book] || pin?.[b.book];
+      if (!cell) continue;
+      const src = h2h?.[b.book] ? 'h2h' : p.share?.priced ? 'share' : 'rounds';
+      const sides = {};
+      for (const side of ['OVER', 'UNDER']) {
+        if (b.open && b.open[side] === false) continue;
+        const prob = side === cell.side ? cell.prob / 100 : Math.abs(cell.line % 1) === 0.5 ? 1 - cell.prob / 100 : null;
+        if (!(prob > 0 && prob < 1)) continue;
+        const ev = side === cell.side ? cell.ev : b.evAt(prob, side);
+        if (ev == null || !Number.isFinite(ev)) continue;
+        const q = { prob, ev: rnd(ev) };
+        if (b.book === 'UD') {
+          const m = parseFloat(side === 'OVER' ? ud.over : ud.under) || 1, o = parseFloat(side === 'OVER' ? ud.under : ud.over);
+          q.mult = m;
+          q.decimal = m > UD_DECIMAL_THRESHOLD && !(o > 0 && o < 1);
+        } else if (b.book === 'SL') q.mult = side === 'OVER' ? sl.over : sl.under;
+        sides[side] = q;
+      }
+      books[b.book] = { src, line: cell.line, side: cell.side, clears: !!cell.clears, sides };
+    }
+    // the Lines table shows no market price on a row kill share or rounds took
+    p.pricing.lines = { books, marketOk: !pin };
+  }
 }
 
 const pinGapTracker = createTracker({
@@ -4290,7 +4331,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.124.2', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.125.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5851,7 +5892,12 @@ function legsFromBoard(input) {
     const hit = board.find(p =>
       normalizeName(p.player) === normalizeName(spec.player) &&
       (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market)));
-    if (!hit || hit.prob == null) return null;
+    if (!hit) return null;
+    // the fair the Lines table shows, on the side picked (slipbuild.bookLeg)
+    const side = spec.side === 'OVER' || spec.side === 'UNDER' ? spec.side : null;
+    const lf = ['PP', 'UD', 'SL'].map(b => slipBookLeg(hit, b, { side })).find(Boolean);
+    if (lf) return lf;
+    if (hit.prob == null) return null;
     return {
       player: hit.player, team: hit.team, gameId: hit.gameId, stat: hit.pricing?.stat,
       side: hit.side, line: hit.pricing?.line, prob: hit.prob / 100,
@@ -5871,7 +5917,7 @@ app.post('/api/esports/slip', requirePro, (req, res) => {
   const picks = (req.body?.legs || []).map(spec => board.find(p =>
     normalizeName(p.player) === normalizeName(spec.player) &&
     (!spec.market || normalizeMarket(p.market) === normalizeMarket(spec.market))) || null);
-  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks) });
+  res.json({ legs: legs.length, prices: priceAll(legs), payoutTables: Object.keys(PAYOUTS), books: priceOnBooks(picks, (req.body?.legs || []).map(l => (l?.side === 'OVER' || l?.side === 'UNDER' ? l.side : null))) });
 });
 
 app.get('/api/esports/best-slips', requirePro, (req, res) => {
@@ -6042,7 +6088,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.124.2',
+  version: '3.125.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
