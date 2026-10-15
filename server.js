@@ -5488,7 +5488,7 @@ function priceSportRows(rows) {
     // a cell keeps a price only where a sharp price backs it or it's a gap
     for (const [book, c] of Object.entries(row.books)) {
       const cons = cplays.filter(p => p.book === book);
-      const mine = cons.length ? cons : plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      const mine = cons.length ? cons : plays.filter(p => p.book === book && p.sharpEv != null);   // a Pinnacle or Kalshi price within reach of this line
       const bf = mine.length ? null : bfPlays.find(p => p.book === book);
       // without a consensus the cell shows the sharp prices' own number (the
       // other apps' lines left out of it) where there is one

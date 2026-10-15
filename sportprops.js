@@ -121,7 +121,12 @@ const DEFAULTS = {
   // markets merged on one row (a preseason line next to opening night's), not
   // a soft book (2026-10-14: PrizePicks 17.5 vs 26.5 on Tatum read as 36).
   maxProbPts: 25,
+  // Pinnacle or Kalshi at another line counts only when reading it at ours
+  // moves its chance by this many points or fewer (CONSENSUS.maxShiftPts)
+  maxShiftPts: 10,
 };
+// a sharp source read along the curve from its line to ours: too far → null
+const shifted = (row, o, srcLine, p, line, m) => o.maxShiftPts != null && Math.abs(pOver(row.mkey, row.sport, m, line) - p) * 100 > o.maxShiftPts;
 
 // Fair P(over) at `line` for one book, from every OTHER source on the row:
 // the other books' lines read as means on the stat's curve, and Kalshi's own
@@ -147,7 +152,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   } else if (kalshi?.size && !EXACT.has(row.mkey)) {
     for (const [l, p] of kalshi) {
       const m = meanFor(row.mkey, row.sport, l, p);
-      if (m != null) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
+      if (m != null && !shifted(row, o, l, p, line, m)) { means.push([m, o.kalshiWeight]); sources.push({ book: 'kalshi', line: l, p: +(p * 100).toFixed(1) }); break; }
     }
   }
   // Pinnacle: its own line and devigged price, read as a mean on the curve
@@ -155,7 +160,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   if (Array.isArray(pin)) pin = pin.reduce((a, b) => (!a || Math.abs(b.line - line) < Math.abs(a.line - line) ? b : a), null);
   if (pin && pin.line != null && pin.pOver > 0 && pin.pOver < 1 && sameLine(row.mkey, pin.line, line)) {
     const m = meanFor(row.mkey, row.sport, pin.line, pin.pOver);
-    if (m != null) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
+    if (m != null && !shifted(row, o, pin.line, pin.pOver, line, m)) { means.push([m, o.pinWeight]); sources.push({ book: 'pinnacle', line: pin.line, p: +(pin.pOver * 100).toFixed(1) }); }
   }
   if (means.length < o.minOthers) return null;
   const w = means.reduce((a, [, x]) => a + x, 0);

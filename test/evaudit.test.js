@@ -55,6 +55,10 @@ test('sharp consensus leaves out a source stretched far from its own line', () =
   // Durell Robinson, CFB: PrizePicks 57.5 rush yards against Pinnacle and FanDuel at 45.5 (+26.5% shown)
   const dr = { key: 'CFB|robinson|rush_yds', sport: 'CFB', player: 'Durell Robinson', mkey: 'rush_yds', books: { prizepicks: cell(57.5) } };
   assert.equal(sp.consensusFor(dr, 57.5, { sharp: [{ book: 'pinnacle', line: 45.5, pOver: 0.5 }, { book: 'fanduel', line: 45.5, pOver: 0.51 }] }), null);
+  // and the same stretch from Pinnacle alone prices nothing on the board
+  const alone = sp.rowPlays({ ...dr, books: { prizepicks: cell(57.5), underdog: cell(56.5, 1, 1) } }, { pin: { line: 45.5, pOver: 0.5 }, dfsEv: appEv });
+  assert.ok(alone.every(p => p.sharpEv == null && sp.playKind(p) == null));
+  assert.ok(sp.rowPlays({ ...dr, books: { prizepicks: cell(47.5) } }, { pin: { line: 45.5, pOver: 0.5 }, dfsEv: appEv })[0].sharpEv != null, 'two yards away still prices');
   // near lines still price
   const near = sp.consensusFor({ ...row, mkey: 'rec_yds' }, 50.5, { sharp: [{ book: 'pinnacle', line: 49.5, pOver: 0.52 }, { book: 'fanduel', line: 51.5, pOver: 0.48 }] });
   assert.equal(near.n, 2);
