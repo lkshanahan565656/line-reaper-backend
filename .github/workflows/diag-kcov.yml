@@ -2,9 +2,6 @@ name: diag-kcov
 on:
   push:
     branches: [diag-kcov]
-concurrency:
-  group: diag-kcov
-  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -36,7 +33,6 @@ jobs:
           git checkout --orphan diag-kcov-dota; git rm -rq --cached . || true
           git add -f data; git commit -qm dota; git push -f origin diag-kcov-dota
   cs:
-    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 200
     steps:
