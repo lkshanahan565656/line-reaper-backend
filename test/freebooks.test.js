@@ -138,3 +138,12 @@ test('parseKambiEvent: a second-half total "including overtime" is not the game 
   const g = fb.parseKambiEvent(ev, NOW);
   assert.deepEqual(g.totals.map(t => t.point), [43.5, 43.5]);
 });
+
+test('mergeGames says which books\' events came back, even with every market suspended, and whether FanDuel\'s props were read in full', () => {
+  const kbGame = { ...fb.parseKambiEvent(kbEvent, NOW), h2h: [], spreads: [], totals: [], props: [] };   // everything suspended
+  const fdGame = { ...fb.parseFanDuel(fdPage, NOW)[0], propsComplete: false };
+  const [g] = fb.mergeGames('mlb', [pinGame], [fdGame, kbGame]);
+  assert.ok(!g.bookmakers.some(b => b.key === 'betrivers'));
+  assert.deepEqual(g.read.betrivers, { props: true });
+  assert.deepEqual(g.read.fanduel, { props: false });
+});

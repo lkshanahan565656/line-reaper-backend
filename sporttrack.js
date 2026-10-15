@@ -33,7 +33,10 @@ function legDecimal(book, mult) {
   return m;
 }
 
-const idOf = (row, p) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}`;
+// a stale-line leg keeps its own id, so the same leg flagged on the consensus
+// and as stale lands in both records
+const STALE = new Set(['stale', 'stale-single']);
+const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${STALE.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
 function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
@@ -50,7 +53,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const t = now();
     const writes = [];
     for (const { row, play, kind } of flagged) {
-      const id = idOf(row, play);
+      const id = idOf(row, play, kind);
       if (open.has(id)) continue;
       const start = Date.parse(row.startTime || '');
       if (!(start > t)) continue;
@@ -59,11 +62,13 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       const b = {
         id, status: 'open', kind, sport: row.sport, player: row.player, team: row.team || '', matchTitle: row.matchTitle || '',
         market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
-        signalAt: new Date(t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
+        // a stale-line leg is logged as of the read it first showed on
+        signalAt: new Date(STALE.has(kind) && play.signalAt ? Math.min(play.signalAt, t) : t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
         ...(kind === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
         closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(),
       };
       open.set(id, b);
@@ -73,7 +78,10 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     for (const b of open.values()) {
       if (b.status !== 'open') continue;
       const start = Date.parse(b.start);
-      const row = byKey.get(b.rowKey);
+      // a stale-line leg whose row left the board (no app lists the player
+      // now) is still checked and closed: at the next read it was gone, and
+      // its close is Pinnacle's fair, which doesn't need the row
+      const row = byKey.get(b.rowKey) || (STALE.has(b.kind) ? { key: b.rowKey, sport: b.sport, player: b.player, mkey: b.mkey, startTime: b.startTime, books: {} } : null);
       if (t < start) {
         if (!row) continue;
         let dirty = false;
@@ -150,6 +158,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       graded: g.length, wins, losses: g.length - wins, hitRate: g.length ? r4(wins / g.length) : null,
       breakeven: g.length ? r4(g.length / g.reduce((a, b) => a + b.signalDecimal, 0)) : null,
       units: r2(units), roi: g.length ? r4(units / g.length) : null, avgEv: avg(list, b => b.signalEv),
+      // close EV on the legs still up at the next read: the executable grade before results
+      execClosed: live.filter(b => b.execOk === true).length, execCloseEvAvg: avg(live.filter(b => b.execOk === true), b => b.closeEv ?? 0),
       // the record that counts: only plays still up at the next read
       execGraded: exec.length, execUnits: r2(exec.reduce((a, b) => a + (b.profit || 0), 0)), execRoi: exec.length ? r4(exec.reduce((a, b) => a + (b.profit || 0), 0) / exec.length) : null,
       gapOutcomes: list.reduce((a, b) => { if (b.gapOutcome) a[b.gapOutcome] = (a[b.gapOutcome] || 0) + 1; return a; }, {}),
@@ -173,8 +183,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
-    // research rows (gap-odd, gap-stale) are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind));
+    // research rows (gap-odd, gap-stale) and the stale-line legs (stalelines.js)
+    // are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);

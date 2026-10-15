@@ -95,7 +95,9 @@ const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 
 // fair at the start times what the leg pays); the +2 min grade counts only legs
 // still up at the same line and payout two minutes after the flag
 const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale']);
+// research rows and the stale-line legs (stalelines.js, their own record on
+// the +EV tab) never count toward the sports props headline or its plays
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single']);
 const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';

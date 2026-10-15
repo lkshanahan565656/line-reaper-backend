@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const os = require('os'), path = require('path');
-const { createEvTracker, createFileStore } = require('../evtrack');
+const { createEvTracker, createFileStore, createMemoryStore } = require('../evtrack');
 
 const T0 = Date.parse('2026-10-08T12:00:00Z');
 const START = '2026-10-08T23:00:00Z';
@@ -134,4 +134,19 @@ test('a +2 min price read long after the flag is not a +2 min price: never taken
   assert.deepEqual(await tr2.dueForExec(), []);
   await tr2.recordBoard([], null, { costs: new Map([['kalshi|KX-A|A', 0.55]]) });
   assert.equal((await tr2.list())[0].execPrice, undefined);
+});
+
+test('execStillN counts the bets still at the flagged price or better at +2 min, not every bet with a +2 min price', async () => {
+  let t = Date.parse('2026-10-19T12:00:00Z');
+  const tr = createEvTracker({ store: createMemoryStore(), now: () => t, log: { warn() {} } });
+  const row = (side, book) => ({ group: 'g', side, book, ev: 4, decimal: 1.9091, price: -110, fairProb: 54.5, start: '2026-10-19T17:00:00Z', sport: 'nfl', market: 'spreads', source: 'stale' });
+  await tr.recordBoard([row('A', 'fanduel'), row('A', 'betrivers')]);
+  t += 2 * 60e3;
+  // FanDuel still -110; BetRivers moved to -125
+  await tr.recordBoard([], null, { costs: new Map([['g|A|fanduel', 1 / 1.9091], ['g|A|betrivers', 1 / 1.8]]) });
+  t = Date.parse('2026-10-19T17:01:00Z');
+  await tr.recordBoard([]);
+  const s = await tr.summary();
+  assert.strictEqual(s.overall.execN, 2);
+  assert.strictEqual(s.overall.execStillN, 1);
 });
