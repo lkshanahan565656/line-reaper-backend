@@ -1,0 +1,75 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 Jason: no usable kill fields — inspect /api/esports/probe/cs/Jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-10pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-220pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-7pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-5pt5: Request failed with status code 429
+Polymarket US: book aec-mlb-mil-lad-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-8pt5: Request failed with status code 429
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-228pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-6pt5: Request failed with status code 429
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-3pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-8pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-7pt5: Request failed with status code 429
+Polymarket US: book tsc-mlb-mil-lad-2026-10-14-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-cha-bos-2026-10-14-222pt5: Request failed with status code 429
+Tail: clv 0xf2f6af4f27ec2dcf4072095ab804016e14cd5817: 1 of 25 lookups failed (connect ETIMEDOUT 172.64.153.51:443; connect ENETUNREACH 2606:4700:440d::6812:22cd:443 - Local (:::0); connect ETIMEDOUT 104.18.34.205:443; connect ENETUNREACH 2606:4700:4408::ac40:9933:443 - Local (:::0) from gamma-api.polymarket.com/markets)
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-4pt5: Request failed with status code 429
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-8pt5: Request failed with status code 429
+Polymarket US: book aec-nba-det-min-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-6pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-13pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-232pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-sj-nas-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-238pt5: Request failed with status code 429
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-11pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-224pt5: Request failed with status code 429
+Polymarket US: book aec-nhl-dal-col-2026-10-14: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-5pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-216pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-3pt5: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-16pt5: connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-6pt5: connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-226pt5: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book tsc-nhl-dal-col-2026-10-14-4pt5: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0)
+Polymarket US: book tsc-nhl-van-fla-2026-10-15-2pt5: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0)
+Polymarket US: book asc-nba-chi-mil-2026-10-14-neg-3pt5: connect ETIMEDOUT 104.18.38.40:443; connect ENETUNREACH 2606:4700:4401::6812:2628:443 - Local (:::0); connect ETIMEDOUT 172.64.149.216:443; connect ENETUNREACH 2a06:98c1:310c::ac40:95d8:443 - Local (:::0)
+Polymarket US: book asc-nba-pho-sa-2026-10-14-pos-22pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-210pt5: Request failed with status code 429
+Polymarket US: book asc-nba-cha-bos-2026-10-14-pos-22pt5: Request failed with status code 429
+Polymarket US: book asc-nba-det-min-2026-10-14-pos-6pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-233pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-2pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-chi-mil-2026-10-14-227pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-pho-sa-2026-10-14-232pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nhl-uta-edm-2026-10-15-9pt5: Request failed with status code 429
+Polymarket US: book tsc-mls-stl-vwh-2026-10-14-3pt5: Request failed with status code 429
+Polymarket US: book tsc-nba-no-dal-2026-10-14-225pt5: Request failed with status code 429

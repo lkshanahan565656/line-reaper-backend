@@ -1,0 +1,360 @@
+{
+ "lean": {
+  "legs": [
+   {
+    "player": "ArtwOo",
+    "market": "Kills on Map 1",
+    "side": "OVER"
+   },
+   {
+    "player": "HENU",
+    "market": "MAP 1 Kills",
+    "side": "OVER"
+   }
+  ],
+  "status": 200,
+  "body": {
+   "legs": 2,
+   "prices": [
+    {
+     "table": "underdog_standard",
+     "legs": 2,
+     "probAll": 0.3220459100347948,
+     "probAllIndependent": 0.32205609,
+     "hits": [
+      0.187064,
+      0.49089,
+      0.322046
+     ],
+     "ev": 12.72,
+     "evIndependent": 12.72,
+     "kelly": 0.0509,
+     "breakEvenScale": 0.8872,
+     "correlated": false
+    },
+    {
+     "table": "prizepicks_power",
+     "legs": 2,
+     "probAll": 0.3220459100347948,
+     "probAllIndependent": 0.32205609,
+     "hits": [
+      0.187064,
+      0.49089,
+      0.322046
+     ],
+     "ev": -3.39,
+     "evIndependent": -3.38,
+     "kelly": 0,
+     "breakEvenScale": 1.035,
+     "correlated": false
+    }
+   ],
+   "payoutTables": [
+    "prizepicks_power",
+    "prizepicks_flex",
+    "underdog_standard",
+    "underdog_flex"
+   ],
+   "books": {
+    "PP": null,
+    "UD": {
+     "book": "UD",
+     "bookName": "Underdog",
+     "table": "underdog_standard",
+     "tableName": "Standard",
+     "legs": 2,
+     "kind": "best",
+     "status": "plus",
+     "breakEvenPays": 2.71,
+     "ev": 29.26,
+     "evIndependent": 29.26,
+     "probAll": 0.3693,
+     "correlated": false,
+     "paysAll": 3.5,
+     "payTable": {
+      "2": 3.5
+     },
+     "hits": [
+      0.151097,
+      0.479589,
+      0.369313
+     ],
+     "kelly": 0.117,
+     "growth": 0.016281,
+     "picks": [
+      {
+       "player": "ArtwOo",
+       "team": "BOJONG",
+       "sport": "CS",
+       "market": "Kills on Map 1",
+       "rawMarket": "Kills on Map 1",
+       "side": "OVER",
+       "line": 11.5,
+       "gameId": 266494,
+       "matchTitle": "Esport Academy Copenhagen vs BOJONG",
+       "prob": 56.8,
+       "ev": 1,
+       "mult": 1,
+       "startTime": "2026-10-15T14:00:00Z",
+       "fair": "rounds"
+      },
+      {
+       "player": "HENU",
+       "team": "ENCE",
+       "sport": "CS2",
+       "market": "MAP 1 Kills",
+       "rawMarket": "MAP 1 Kills",
+       "side": "OVER",
+       "line": 13.5,
+       "gameId": "ENCEWBT46310.3333333333",
+       "matchTitle": "WBT MAP 1",
+       "prob": 65,
+       "ev": 15.64,
+       "mult": 1,
+       "startTime": "2026-10-15T08:00:00.000-04:00",
+       "fair": "rounds"
+      }
+     ]
+    },
+    "SL": {
+     "book": "SL",
+     "bookName": "Sleeper",
+     "table": "sleeper",
+     "tableName": "Picks",
+     "legs": 2,
+     "kind": "best",
+     "status": "near",
+     "breakEvenPays": 3.58,
+     "ev": -10.95,
+     "evIndependent": -10.94,
+     "probAll": 0.2795,
+     "correlated": false,
+     "paysAll": 3.19,
+     "payTable": {
+      "2": 3.1862
+     },
+     "hits": [
+      0.219544,
+      0.500959,
+      0.279497
+     ],
+     "kelly": 0,
+     "growth": 0,
+     "picks": [
+      {
+       "player": "ArtwOo",
+       "team": "BOJONG",
+       "sport": "CS",
+       "market": "Kills on Map 1",
+       "rawMarket": "Kills on Map 1",
+       "side": "OVER",
+       "line": 12.5,
+       "gameId": 266494,
+       "matchTitle": "Esport Academy Copenhagen vs BOJONG",
+       "prob": 49.3,
+       "ev": -11.77,
+       "mult": 1.79,
+       "startTime": "2026-10-15T14:00:00Z",
+       "fair": "rounds"
+      },
+      {
+       "player": "HENU",
+       "team": "ENCE",
+       "sport": "CS2",
+       "market": "MAP 1 Kills",
+       "rawMarket": "MAP 1 Kills",
+       "side": "OVER",
+       "line": 14.5,
+       "gameId": "ENCEWBT46310.3333333333",
+       "matchTitle": "WBT MAP 1",
+       "prob": 56.7,
+       "ev": 0.94,
+       "mult": 1.78,
+       "startTime": "2026-10-15T08:00:00.000-04:00",
+       "fair": "rounds"
+      }
+     ]
+    }
+   }
+  }
+ },
+ "flipped": {
+  "legs": [
+   {
+    "player": "ArtwOo",
+    "market": "Kills on Map 1",
+    "side": "UNDER"
+   },
+   {
+    "player": "HENU",
+    "market": "MAP 1 Kills",
+    "side": "UNDER"
+   }
+  ],
+  "status": 200,
+  "body": {
+   "legs": 2,
+   "prices": [
+    {
+     "table": "underdog_standard",
+     "legs": 2,
+     "probAll": 0.1870638561108132,
+     "probAllIndependent": 0.18705609,
+     "hits": [
+      0.322046,
+      0.49089,
+      0.187064
+     ],
+     "ev": -34.53,
+     "evIndependent": -34.53,
+     "kelly": 0,
+     "breakEvenScale": 1.5274,
+     "correlated": false
+    },
+    {
+     "table": "prizepicks_power",
+     "legs": 2,
+     "probAll": 0.1870638561108132,
+     "probAllIndependent": 0.18705609,
+     "hits": [
+      0.322046,
+      0.49089,
+      0.187064
+     ],
+     "ev": -43.88,
+     "evIndependent": -43.88,
+     "kelly": 0,
+     "breakEvenScale": 1.7819,
+     "correlated": false
+    }
+   ],
+   "payoutTables": [
+    "prizepicks_power",
+    "prizepicks_flex",
+    "underdog_standard",
+    "underdog_flex"
+   ],
+   "books": {
+    "PP": null,
+    "UD": {
+     "book": "UD",
+     "bookName": "Underdog",
+     "table": "underdog_standard",
+     "tableName": "Standard",
+     "legs": 2,
+     "kind": "best",
+     "status": "near",
+     "breakEvenPays": 6.62,
+     "ev": -47.12,
+     "evIndependent": -47.11,
+     "probAll": 0.1511,
+     "correlated": false,
+     "paysAll": 3.5,
+     "payTable": {
+      "2": 3.5
+     },
+     "hits": [
+      0.369313,
+      0.479589,
+      0.151097
+     ],
+     "kelly": 0,
+     "growth": 0,
+     "picks": [
+      {
+       "player": "ArtwOo",
+       "team": "BOJONG",
+       "sport": "CS",
+       "market": "Kills on Map 1",
+       "rawMarket": "Kills on Map 1",
+       "side": "UNDER",
+       "line": 11.5,
+       "gameId": 266494,
+       "matchTitle": "Esport Academy Copenhagen vs BOJONG",
+       "prob": 43.2,
+       "ev": -23.15,
+       "mult": 1,
+       "startTime": "2026-10-15T14:00:00Z",
+       "fair": "rounds"
+      },
+      {
+       "player": "HENU",
+       "team": "ENCE",
+       "sport": "CS2",
+       "market": "MAP 1 Kills",
+       "rawMarket": "MAP 1 Kills",
+       "side": "UNDER",
+       "line": 13.5,
+       "gameId": "ENCEWBT46310.3333333333",
+       "matchTitle": "WBT MAP 1",
+       "prob": 35,
+       "ev": -37.81,
+       "mult": 1,
+       "startTime": "2026-10-15T08:00:00.000-04:00",
+       "fair": "rounds"
+      }
+     ]
+    },
+    "SL": {
+     "book": "SL",
+     "bookName": "Sleeper",
+     "table": "sleeper",
+     "tableName": "Picks",
+     "legs": 2,
+     "kind": "best",
+     "status": "near",
+     "breakEvenPays": 4.55,
+     "ev": -30.83,
+     "evIndependent": -30.84,
+     "probAll": 0.2195,
+     "correlated": false,
+     "paysAll": 3.15,
+     "payTable": {
+      "2": 3.1506
+     },
+     "hits": [
+      0.279497,
+      0.500959,
+      0.219544
+     ],
+     "kelly": 0,
+     "growth": 0,
+     "picks": [
+      {
+       "player": "ArtwOo",
+       "team": "BOJONG",
+       "sport": "CS",
+       "market": "Kills on Map 1",
+       "rawMarket": "Kills on Map 1",
+       "side": "UNDER",
+       "line": 12.5,
+       "gameId": 266494,
+       "matchTitle": "Esport Academy Copenhagen vs BOJONG",
+       "prob": 50.7,
+       "ev": -10.24,
+       "mult": 1.77,
+       "startTime": "2026-10-15T14:00:00Z",
+       "fair": "rounds"
+      },
+      {
+       "player": "HENU",
+       "team": "ENCE",
+       "sport": "CS2",
+       "market": "MAP 1 Kills",
+       "rawMarket": "MAP 1 Kills",
+       "side": "UNDER",
+       "line": 14.5,
+       "gameId": "ENCEWBT46310.3333333333",
+       "matchTitle": "WBT MAP 1",
+       "prob": 43.3,
+       "ev": -22.94,
+       "mult": 1.78,
+       "startTime": "2026-10-15T08:00:00.000-04:00",
+       "fair": "rounds"
+      }
+     ]
+    }
+   }
+  }
+ }
+}
