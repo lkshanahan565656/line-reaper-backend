@@ -5,7 +5,7 @@ const get = async u => { try { const r = await fetch(u, { signal: AbortSignal.ti
 const out = []; const say = s => { out.push(s); console.log(s); fs.writeFileSync('out/log.txt', out.join('\n')); };
 (async () => {
   fs.mkdirSync('out', { recursive: true });
-  let st; for (let i = 0; i < 40; i++) { st = await get(P + '/api/status'); if (st.version === '3.132.0') break; await wait(60e3); }
+  let st; for (let i = 0; i < 40; i++) { st = await get(P + '/api/status'); if (st.version === '3.134.0') break; await wait(60e3); }
   say(`version ${st.version} at ${new Date().toISOString()}`);
   await wait(8 * 60e3);
   const rows = []; for (let off = 0; off < 40000; off += 500) { const d = await get(`${P}/api/props/board?sport=SPORTS&sort=start&limit=500&offset=${off}`); rows.push(...(d.rows || [])); if (!d.rows || d.rows.length < 500) break; }
