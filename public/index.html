@@ -663,7 +663,8 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-meter { width:64px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:12px; color:#e2e8f0; font-weight:700; }
 .es-meter i { display:block; height:4px; margin-top:4px; border-radius:2px; background:rgba(148,163,184,.15); overflow:hidden; }
 .es-meter i::after { content:''; display:block; height:100%; width:var(--p); background:linear-gradient(90deg, #10b981, #34d399); border-radius:2px; }
-.es-as-foot { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)) auto; gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-foot { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; align-items:center; padding:12px 16px 14px; }
+.es-as-foot .es-as-load { grid-column:1 / -1; }
 .es-as-stat { font-size:9px; letter-spacing:.12em; color:#64748b; font-weight:700; text-transform:uppercase; }
 .es-as-stat b { display:block; font-family:'JetBrains Mono',monospace; font-size:15px; color:#f1f5f9; letter-spacing:0; margin-top:2px; }
 .es-as-load { cursor:pointer; border:0; border-radius:10px; padding:10px 16px; font-weight:800; font-size:12px; letter-spacing:.08em; color:#06110d; background:linear-gradient(180deg, #34d399, #10b981); }
