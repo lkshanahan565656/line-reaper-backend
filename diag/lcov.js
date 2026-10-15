@@ -9,7 +9,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const get = async (u, h = {}) => { try { const r = await fetch(u, { headers: { Accept: 'application/json', ...h }, signal: AbortSignal.timeout(120000) }); if (!r.ok) return { error: r.status }; return await r.json(); } catch (e) { return { error: e.message }; } };
 const PH = { 'User-Agent': 'Mozilla/5.0' };
 
-function classify(r, c) {
+const pbc = require('./pb');
+function classify(r, c) { const k = pbc.legSource(r, c); return k;
+}
+function classifyOld(r, c) {
   const src = new Set((r.consensus?.sources || []).map(s => s.book));
   if (r.pinnacle || src.has('pinnacle')) return 'pinnacle';
   if (c.fair != null || src.has('kalshi')) return 'kalshi';

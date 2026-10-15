@@ -7,13 +7,13 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: timeout 600 node diag/kfmt.js || true
+      - run: WAITVER=3.129.0 SETTLE=8 timeout 3000 node diag/lcov.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
