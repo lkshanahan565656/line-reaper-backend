@@ -1,0 +1,25 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x8749194e5105c97c3d134e974e103b44eea44ea4: timeout of 10000ms exceeded
+Tail: score 0x1d0034134e339a309700ff2d34e99fa2d48b0313: timeout of 10000ms exceeded
+Tail: score 0x6e2c0e9474af7d720e5aba2a5b0bb6f723b7787c: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x27f738fe203827445690339104aae35b20bc44b0: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x676c1bb692c76b57b06f1b93817515acfa5ce139: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
