@@ -1,0 +1,31 @@
+{
+  "version": "3.135.0",
+  "sameDay": {
+    "split": {
+      "players": 237,
+      "unplaced": 0
+    },
+    "record": {
+      "mode": "count",
+      "at": "2026-10-15T06:25:56.460Z",
+      "exposed": {
+        "esports": 51,
+        "pinGaps": 0,
+        "share": 0,
+        "rounds": 22,
+        "h2h": 26,
+        "esStale": 0
+      },
+      "graded": {
+        "esports": 7,
+        "pinGaps": 0,
+        "share": 0,
+        "rounds": 0,
+        "h2h": 0,
+        "esStale": 0
+      },
+      "voided": {},
+      "error": null
+    }
+  }
+}

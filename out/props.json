@@ -1,0 +1,71 @@
+[
+  {
+    "player": "DemQQ",
+    "market": "Kills on Map 1",
+    "matchTitle": "WBT vs Esport Academy Copenhagen",
+    "startTime": "2026-10-15T08:00:00Z",
+    "matchTag": "2026-10-15T08:00:00.000Z",
+    "books": {
+      "underdog": 14.5,
+      "prizepicks": 15.5,
+      "sleeper": 15.5
+    }
+  },
+  {
+    "player": "DemQQ",
+    "market": "Kills on Map 1",
+    "matchTitle": "WBT vs BOJONG",
+    "startTime": "2026-10-15T16:00:00Z",
+    "matchTag": "2026-10-15T16:00:00.000Z",
+    "books": {
+      "underdog": 14.5,
+      "prizepicks": 15.5,
+      "sleeper": 15.5
+    }
+  },
+  {
+    "player": "DemQQ",
+    "market": "Kills on Map 1",
+    "matchTitle": "WBT vs ENCE",
+    "startTime": "2026-10-15T14:00:00Z",
+    "matchTag": "2026-10-15T12:00:00.000Z",
+    "books": {
+      "underdog": 15.5,
+      "prizepicks": 16,
+      "sleeper": 15.5
+    }
+  },
+  {
+    "player": "DemQQ",
+    "market": "MAP 1 Headshots",
+    "matchTitle": "EAC MAP 1",
+    "startTime": "2026-10-15T04:00:00.000-04:00",
+    "matchTag": "2026-10-15T08:00:00.000Z",
+    "books": {
+      "prizepicks": 8.5,
+      "sleeper": 8.5
+    }
+  },
+  {
+    "player": "DemQQ",
+    "market": "MAP 1 Headshots",
+    "matchTitle": "ENCE MAP 1",
+    "startTime": "2026-10-15T08:00:00.000-04:00",
+    "matchTag": "2026-10-15T12:00:00.000Z",
+    "books": {
+      "prizepicks": 8.5,
+      "sleeper": 8.5
+    }
+  },
+  {
+    "player": "DemQQ",
+    "market": "MAP 1 Headshots",
+    "matchTitle": "BOJONG MAP 1",
+    "startTime": "2026-10-15T12:00:00.000-04:00",
+    "matchTag": "2026-10-15T16:00:00.000Z",
+    "books": {
+      "prizepicks": 8.5,
+      "sleeper": 8.5
+    }
+  }
+]
