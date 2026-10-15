@@ -4505,7 +4505,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.133.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.134.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5296,10 +5296,15 @@ const SPORT_OPTS = { ...sportProps.DEFAULTS,
   minProbPts: process.env.SPORT_GAP_MIN_PTS != null ? parseFloat(process.env.SPORT_GAP_MIN_PTS) : sportProps.DEFAULTS.minProbPts };
 // Kalshi's P(over) at each book line on the row, from priceRows' c.fair
 const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != null).map(c => [c.line, c.fair / 100]));
+function sportSharpAt(row, line) {
+  const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
+  return f && sportProps.sharpBacked(f) ? f.p : null;
+}
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
-  // a book-fair leg closes on the books' own fair at its line
+  // a book-fair leg closes on the books' own fair at its line (and on
+  // Pinnacle's or Kalshi's, sportSharpAt, when one appears before the start)
   if (kind === 'book-fair' || kind === 'book-fair-single') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row).filter(q => BOOK_FAIR_BOOKS.includes(q.book)), o: BOOK_FAIR_OPTS }); return f ? f.p : null; }
   // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
   if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
@@ -5342,7 +5347,8 @@ function sharpQuotes(row) {
 // the apps' margin against the soft books until about 50 graded legs say
 // otherwise. Action Network's second-hand books never price it (they make no
 // play without a sharp price). BOOK_FAIR=off turns it off.
-const BOOK_FAIR_OPTS = { ...sportProps.BOOK_FAIR, minEv: SHARP_OPTS.minEv, maxSpreadPts: SHARP_OPTS.maxSpreadPts };
+const BOOK_FAIR_OPTS = { ...sportProps.BOOK_FAIR, minEv: SHARP_OPTS.minEv, maxSpreadPts: SHARP_OPTS.maxSpreadPts,
+  ...(process.env.BOOK_FAIR_MAX_OFF_PTS != null ? { maxOffPts: parseFloat(process.env.BOOK_FAIR_MAX_OFF_PTS) } : {}) };
 const BOOK_FAIR_BOOKS = Object.keys(BOOK_FAIR_OPTS.weights);
 const BOOK_FAIR_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_FAIR || '').trim());
 const bookFairKind = sportProps.bookFairKind;
@@ -5366,7 +5372,13 @@ function priceSportRows(rows) {
     const bfPlays = cplays.length || pin || kalshi.size ? [] : bookFairPlays(row, sharp);
     if (bfPlays.length) row.bookFair = { n: bfPlays[0].n, mean: bfPlays[0].mean, spreadPts: bfPlays[0].spreadPts, sources: bfPlays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
     else delete row.bookFair;
-    for (const p of bfPlays) if (p.ev >= SHARP_OPTS.minEv) flagged.push({ row, play: p, kind: bookFairKind(p) });
+    // both books: the +2% plays; one book alone: every leg's better side, so a
+    // FanDuel-only price can be judged on its close (recorded, never a play)
+    const bfSeen = new Set();
+    for (const p of bfPlays) {
+      const single = bookFairKind(p) === 'book-fair-single';
+      if (single ? p.ev > 0 && !bfSeen.has(p.book) : p.ev >= SHARP_OPTS.minEv) { flagged.push({ row, play: p, kind: bookFairKind(p) }); bfSeen.add(p.book); }
+    }
     if (cplays.length) {
       consensusMoves.observe(row, cplays[0].mean);
       row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
@@ -5979,7 +5991,7 @@ async function trackSportProps() {
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
@@ -6540,7 +6552,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.133.0',
+  version: '3.134.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
