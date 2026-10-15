@@ -1,0 +1,26 @@
+name: diag-sdlive
+on:
+  push:
+    branches: [diag-sdlive]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: |
+          S=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          for i in $(seq 1 60); do
+            curl -s $S/api/status > out/status.json
+            if jq -e '.version=="3.135.0" and .sameDay.record.at != null' out/status.json >/dev/null; then break; fi
+            sleep 15
+          done
+          jq '{version, sameDay}' out/status.json > out/sameday.json
+          curl -s "$S/api/props/board?sport=CS&q=demqq&limit=50" | jq '[.rows[] | {player, market, matchTitle, startTime, matchTag, books: (.books|map_values(.line))}]' > out/props.json || true
+          cat out/sameday.json
+          git init -q r && cd r && cp -r ../out . && git checkout -q -b diag-sdlive-out
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git add -f out && git commit -qm live
+          git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-sdlive-out
