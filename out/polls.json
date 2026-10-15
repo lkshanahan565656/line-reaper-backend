@@ -1,0 +1,6359 @@
+[
+ {
+  "at": "2026-10-14T23:51:54.942Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:51:49.817Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.02,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:07.696Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:57.852Z"
+     },
+     "sleeper": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.195Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:49.750Z"
+     }
+    },
+    "subjects": 7634,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:51:49.742Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:51:07.701Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:52:54.996Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:52:47.049Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.03,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 2,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:52:22.471Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 3,
+      "medianGapMin": 0.6,
+      "last": "2026-10-14T23:52:09.939Z"
+     },
+     "sleeper": {
+      "reads": 2,
+      "medianGapMin": 1.1,
+      "last": "2026-10-14T23:52:01.943Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 2,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:52:46.944Z"
+     }
+    },
+    "subjects": 7634,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:52:46.937Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:52:22.479Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:53:55.085Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:53:50.641Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.05,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 2,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:52:22.471Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 3,
+      "medianGapMin": 0.6,
+      "last": "2026-10-14T23:52:09.939Z"
+     },
+     "sleeper": {
+      "reads": 2,
+      "medianGapMin": 1.1,
+      "last": "2026-10-14T23:52:01.943Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 3,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:53:50.533Z"
+     }
+    },
+    "subjects": 7634,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:53:50.527Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:52:22.479Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:54:55.111Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:54:46.282Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.07,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 3,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:54:22.077Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 4,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:54:02.623Z"
+     },
+     "sleeper": {
+      "reads": 3,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:54:07.497Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 4,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:54:46.169Z"
+     }
+    },
+    "subjects": 7636,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:54:46.162Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:54:22.084Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:55:55.128Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:55:48.124Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.08,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 3,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:54:22.077Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 4,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:54:02.623Z"
+     },
+     "sleeper": {
+      "reads": 3,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:54:07.497Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 5,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:55:47.985Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:55:47.976Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:54:22.084Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:56:55.154Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:56:46.513Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.1,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 5,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:56:21.196Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 6,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:56:02.979Z"
+     },
+     "sleeper": {
+      "reads": 4,
+      "medianGapMin": 2,
+      "last": "2026-10-14T23:56:08.277Z"
+     },
+     "kalshi-props": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:51:29.684Z"
+     },
+     "books": {
+      "reads": 6,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:56:46.402Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:56:46.396Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:56:21.202Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:57:55.167Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:57:49.931Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.12,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 5,
+      "medianGapMin": 1.6,
+      "last": "2026-10-14T23:56:21.196Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 6,
+      "medianGapMin": 1.2,
+      "last": "2026-10-14T23:56:02.979Z"
+     },
+     "sleeper": {
+      "reads": 4,
+      "medianGapMin": 2,
+      "last": "2026-10-14T23:56:08.277Z"
+     },
+     "kalshi-props": {
+      "reads": 2,
+      "medianGapMin": 4.9,
+      "last": "2026-10-14T23:56:24.772Z"
+     },
+     "books": {
+      "reads": 7,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:57:49.816Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:57:49.809Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:56:21.202Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:58:55.917Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:58:47.339Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.13,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 6,
+      "medianGapMin": 2,
+      "last": "2026-10-14T23:58:20.609Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 7,
+      "medianGapMin": 1.5,
+      "last": "2026-10-14T23:58:05.513Z"
+     },
+     "sleeper": {
+      "reads": 5,
+      "medianGapMin": 1.9,
+      "last": "2026-10-14T23:58:01.015Z"
+     },
+     "kalshi-props": {
+      "reads": 2,
+      "medianGapMin": 4.9,
+      "last": "2026-10-14T23:56:24.772Z"
+     },
+     "books": {
+      "reads": 8,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:58:47.231Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:58:47.224Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:58:20.615Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-14T23:59:56.457Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-14T23:59:48.105Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.15,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 6,
+      "medianGapMin": 2,
+      "last": "2026-10-14T23:58:20.609Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 7,
+      "medianGapMin": 1.5,
+      "last": "2026-10-14T23:58:05.513Z"
+     },
+     "sleeper": {
+      "reads": 5,
+      "medianGapMin": 1.9,
+      "last": "2026-10-14T23:58:01.015Z"
+     },
+     "kalshi-props": {
+      "reads": 2,
+      "medianGapMin": 4.9,
+      "last": "2026-10-14T23:56:24.772Z"
+     },
+     "books": {
+      "reads": 9,
+      "medianGapMin": 1,
+      "last": "2026-10-14T23:59:47.989Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-14T23:59:47.981Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 573,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 88,
+    "CFB": 13
+   },
+   "updated": "2026-10-14T23:58:20.615Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:00:56.475Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:00:47.192Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.17,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 7,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:00:20.891Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 8,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:00:03.726Z"
+     },
+     "sleeper": {
+      "reads": 6,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:00:02.556Z"
+     },
+     "kalshi-props": {
+      "reads": 2,
+      "medianGapMin": 4.9,
+      "last": "2026-10-14T23:56:24.772Z"
+     },
+     "books": {
+      "reads": 10,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:00:47.071Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:00:47.065Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:00:20.898Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:01:56.628Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:01:50.344Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.18,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 7,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:00:20.891Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 8,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:00:03.726Z"
+     },
+     "sleeper": {
+      "reads": 6,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:00:02.556Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 11,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:01:50.220Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:01:50.213Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:00:20.898Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:02:56.679Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:02:46.787Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.2,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 9,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:02:21.602Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 10,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:02:08.419Z"
+     },
+     "sleeper": {
+      "reads": 7,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:02:01.668Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 12,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:02:46.673Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:02:46.667Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:02:21.608Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:03:57.003Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:03:46.561Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.22,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 9,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:02:21.602Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 10,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:02:08.419Z"
+     },
+     "sleeper": {
+      "reads": 7,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:02:01.668Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 13,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:03:46.434Z"
+     }
+    },
+    "subjects": 7641,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:03:46.428Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:02:21.608Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:04:57.017Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:04:47.170Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.23,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 10,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:04:23.964Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 11,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:04:05.888Z"
+     },
+     "sleeper": {
+      "reads": 8,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:04:02.466Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 14,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:04:47.053Z"
+     }
+    },
+    "subjects": 7642,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:04:47.047Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 561,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 89
+   },
+   "updated": "2026-10-15T00:04:23.984Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:05:57.030Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:05:50.300Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.25,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 10,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:04:23.964Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 11,
+      "medianGapMin": 1.9,
+      "last": "2026-10-15T00:04:05.888Z"
+     },
+     "sleeper": {
+      "reads": 8,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:04:02.466Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 15,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:05:50.178Z"
+     }
+    },
+    "subjects": 7642,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:05:50.172Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 561,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 89
+   },
+   "updated": "2026-10-15T00:04:23.984Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:06:57.074Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:06:46.453Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.27,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:21.533Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:04.959Z"
+     },
+     "sleeper": {
+      "reads": 9,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:08.476Z"
+     },
+     "kalshi-props": {
+      "reads": 3,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:01:37.712Z"
+     },
+     "books": {
+      "reads": 16,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:06:46.336Z"
+     }
+    },
+    "subjects": 7643,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:06:46.330Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 561,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 89
+   },
+   "updated": "2026-10-15T00:06:21.540Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:07:57.096Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:07:50.542Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.28,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:21.533Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:04.959Z"
+     },
+     "sleeper": {
+      "reads": 9,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:06:08.476Z"
+     },
+     "kalshi-props": {
+      "reads": 4,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:06:46.016Z"
+     },
+     "books": {
+      "reads": 17,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:07:50.415Z"
+     }
+    },
+    "subjects": 7643,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:07:50.409Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 561,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 89
+   },
+   "updated": "2026-10-15T00:06:21.540Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:08:57.131Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:08:46.608Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.3,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:22.755Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:02.986Z"
+     },
+     "sleeper": {
+      "reads": 10,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:02.188Z"
+     },
+     "kalshi-props": {
+      "reads": 4,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:06:46.016Z"
+     },
+     "books": {
+      "reads": 18,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:08:46.491Z"
+     }
+    },
+    "subjects": 7643,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:08:46.485Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:08:22.762Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:09:57.144Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:09:47.018Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.32,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:22.755Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:02.986Z"
+     },
+     "sleeper": {
+      "reads": 10,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:08:02.188Z"
+     },
+     "kalshi-props": {
+      "reads": 4,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:06:46.016Z"
+     },
+     "books": {
+      "reads": 19,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:09:46.880Z"
+     }
+    },
+    "subjects": 7643,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:09:46.870Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:08:22.762Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:10:57.157Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:10:48.130Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.33,
+    "moves24h": 0,
+    "movesPerDay": 0,
+    "byKind": {},
+    "bySport": {},
+    "lag": [],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 14,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:24.323Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:05.297Z"
+     },
+     "sleeper": {
+      "reads": 11,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:03.787Z"
+     },
+     "kalshi-props": {
+      "reads": 4,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:06:46.016Z"
+     },
+     "books": {
+      "reads": 20,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:10:48.011Z"
+     }
+    },
+    "subjects": 7654,
+    "openMoves": 0,
+    "movesSeen": 0,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:10:48.005Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:10:24.330Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:11:57.177Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:11:48.316Z",
+   "rows": 1,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.35,
+    "moves24h": 1,
+    "movesPerDay": 68,
+    "byKind": {
+     "total": 1
+    },
+    "bySport": {
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 14,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:24.323Z"
+     },
+     "prizepicks": {
+      "reads": 1,
+      "medianGapMin": null,
+      "last": "2026-10-14T23:50:56.616Z"
+     },
+     "underdog": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:05.297Z"
+     },
+     "sleeper": {
+      "reads": 11,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:10:03.787Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 21,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:11:48.195Z"
+     }
+    },
+    "subjects": 7654,
+    "openMoves": 1,
+    "movesSeen": 1,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:11:48.188Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:10:24.330Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:12:57.192Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:12:47.516Z",
+   "rows": 1,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.37,
+    "moves24h": 1,
+    "movesPerDay": 65,
+    "byKind": {
+     "total": 1
+    },
+    "bySport": {
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:23.522Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:03.331Z"
+     },
+     "sleeper": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:01.522Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 22,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:12:47.393Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 1,
+    "movesSeen": 1,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:12:47.386Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:12:23.535Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:13:57.438Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:13:47.136Z",
+   "rows": 1,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.38,
+    "moves24h": 1,
+    "movesPerDay": 62,
+    "byKind": {
+     "total": 1
+    },
+    "bySport": {
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:23.522Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:03.331Z"
+     },
+     "sleeper": {
+      "reads": 12,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:12:01.522Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 23,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:13:45.644Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 1,
+    "movesSeen": 1,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:13:45.637Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:12:23.535Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:14:57.454Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:14:46.382Z",
+   "rows": 1,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.4,
+    "moves24h": 1,
+    "movesPerDay": 60,
+    "byKind": {
+     "total": 1
+    },
+    "bySport": {
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 16,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:20.734Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:02.261Z"
+     },
+     "sleeper": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:06.521Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 24,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:14:46.254Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 1,
+    "movesSeen": 1,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:14:46.247Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:14:20.753Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:15:57.712Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:15:47.878Z",
+   "rows": 1,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.42,
+    "moves24h": 1,
+    "movesPerDay": 57,
+    "byKind": {
+     "total": 1
+    },
+    "bySport": {
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 16,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:20.734Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:02.261Z"
+     },
+     "sleeper": {
+      "reads": 13,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:14:06.521Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 25,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:15:47.759Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 1,
+    "movesSeen": 1,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:15:47.753Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:14:20.753Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:16:57.738Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:16:51.116Z",
+   "rows": 6,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.43,
+    "moves24h": 3,
+    "movesPerDay": 166,
+    "byKind": {
+     "prop": 2,
+     "total": 1
+    },
+    "bySport": {
+     "nfl": 2,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:25.128Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 19,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:02.449Z"
+     },
+     "sleeper": {
+      "reads": 14,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:06.259Z"
+     },
+     "kalshi-props": {
+      "reads": 5,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:11:22.338Z"
+     },
+     "books": {
+      "reads": 26,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:16:50.994Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 3,
+    "movesSeen": 3,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:16:50.985Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:16:25.139Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:17:57.752Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:17:46.435Z",
+   "rows": 6,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.45,
+    "moves24h": 3,
+    "movesPerDay": 160,
+    "byKind": {
+     "prop": 2,
+     "total": 1
+    },
+    "bySport": {
+     "nfl": 2,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": null,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:25.128Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 19,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:02.449Z"
+     },
+     "sleeper": {
+      "reads": 14,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:16:06.259Z"
+     },
+     "kalshi-props": {
+      "reads": 6,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:16:44.074Z"
+     },
+     "books": {
+      "reads": 27,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:17:44.356Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 3,
+    "movesSeen": 3,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:17:44.350Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:16:25.139Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:18:57.766Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:18:50.358Z",
+   "rows": 6,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.47,
+    "moves24h": 3,
+    "movesPerDay": 154,
+    "byKind": {
+     "prop": 2,
+     "total": 1
+    },
+    "bySport": {
+     "nfl": 2,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:25.318Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:07.440Z"
+     },
+     "sleeper": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:01.318Z"
+     },
+     "kalshi-props": {
+      "reads": 6,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:16:44.074Z"
+     },
+     "books": {
+      "reads": 28,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:18:50.233Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 3,
+    "movesSeen": 3,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:18:50.226Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:18:25.325Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:19:57.809Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:19:47.288Z",
+   "rows": 6,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.48,
+    "moves24h": 3,
+    "movesPerDay": 149,
+    "byKind": {
+     "prop": 2,
+     "total": 1
+    },
+    "bySport": {
+     "nfl": 2,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:25.318Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:07.440Z"
+     },
+     "sleeper": {
+      "reads": 15,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:18:01.318Z"
+     },
+     "kalshi-props": {
+      "reads": 6,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:16:44.074Z"
+     },
+     "books": {
+      "reads": 29,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:19:47.174Z"
+     }
+    },
+    "subjects": 7686,
+    "openMoves": 3,
+    "movesSeen": 3,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:19:47.167Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:18:25.325Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:20:57.824Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:20:46.895Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.5,
+    "moves24h": 4,
+    "movesPerDay": 192,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": null,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 19,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:20:24.888Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 21,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:20:03.628Z"
+     },
+     "sleeper": {
+      "reads": 16,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:20:03.896Z"
+     },
+     "kalshi-props": {
+      "reads": 6,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:16:44.074Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:20:46.767Z"
+     }
+    },
+    "subjects": 7711,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:20:46.760Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:20:24.895Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:22:34.220Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:22:22.850Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.53,
+    "moves24h": 4,
+    "movesPerDay": 182,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:22.848Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:03.278Z"
+     },
+     "sleeper": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:06.186Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:21:45.489Z"
+     }
+    },
+    "subjects": 7720,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:21:45.483Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:22:22.855Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:23:34.240Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:22:47.428Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.54,
+    "moves24h": 4,
+    "movesPerDay": 176,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:22.848Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:03.278Z"
+     },
+     "sleeper": {
+      "reads": 17,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:22:06.186Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:22:47.307Z"
+     }
+    },
+    "subjects": 7720,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:22:47.301Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:22:22.855Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:24:34.337Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:24:24.665Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.56,
+    "moves24h": 4,
+    "movesPerDay": 171,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 21,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:24.662Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 24,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:09.289Z"
+     },
+     "sleeper": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:05.515Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:23:48.110Z"
+     }
+    },
+    "subjects": 7720,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:23:48.103Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:24:24.672Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:25:34.351Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:24:46.834Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.58,
+    "moves24h": 4,
+    "movesPerDay": 166,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 21,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:24.662Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 24,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:09.289Z"
+     },
+     "sleeper": {
+      "reads": 18,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:24:05.515Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:24:46.709Z"
+     }
+    },
+    "subjects": 7737,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:24:46.702Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:24:24.672Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:26:36.490Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:26:20.335Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.59,
+    "moves24h": 4,
+    "movesPerDay": 161,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:20.332Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 25,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:04.408Z"
+     },
+     "sleeper": {
+      "reads": 19,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:06.053Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:25:47.627Z"
+     }
+    },
+    "subjects": 7737,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:25:47.620Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 437,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:26:20.340Z",
+   "errors": [
+    "WNBA: 401"
+   ]
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:27:36.514Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:26:47.222Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.61,
+    "moves24h": 4,
+    "movesPerDay": 157,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:20.332Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 25,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:04.408Z"
+     },
+     "sleeper": {
+      "reads": 19,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:26:06.053Z"
+     },
+     "kalshi-props": {
+      "reads": 7,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:21:24.136Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:26:47.097Z"
+     }
+    },
+    "subjects": 7739,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:26:47.090Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 437,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:26:20.340Z",
+   "errors": [
+    "WNBA: 401"
+   ]
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:28:36.526Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:28:24.483Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.63,
+    "moves24h": 4,
+    "movesPerDay": 153,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 23,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:24.481Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 26,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:01.828Z"
+     },
+     "sleeper": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:07.758Z"
+     },
+     "kalshi-props": {
+      "reads": 8,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:26:45.916Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:27:46.912Z"
+     }
+    },
+    "subjects": 7739,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:27:46.906Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:28:24.488Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:29:36.570Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:28:47.589Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.64,
+    "moves24h": 4,
+    "movesPerDay": 149,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 23,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:24.481Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 26,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:01.828Z"
+     },
+     "sleeper": {
+      "reads": 20,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:28:07.758Z"
+     },
+     "kalshi-props": {
+      "reads": 8,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:26:45.916Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:28:47.468Z"
+     }
+    },
+    "subjects": 7739,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:28:47.462Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:28:24.488Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:30:36.584Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:30:25.326Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.66,
+    "moves24h": 4,
+    "movesPerDay": 145,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": null,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 24,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:25.323Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 28,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:05.622Z"
+     },
+     "sleeper": {
+      "reads": 21,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:08.518Z"
+     },
+     "kalshi-props": {
+      "reads": 8,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:26:45.916Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:29:47.210Z"
+     }
+    },
+    "subjects": 7741,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:29:47.204Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:30:25.331Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:31:36.715Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:30:46.750Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.68,
+    "moves24h": 4,
+    "movesPerDay": 142,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 24,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:25.323Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 28,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:05.622Z"
+     },
+     "sleeper": {
+      "reads": 21,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:30:08.518Z"
+     },
+     "kalshi-props": {
+      "reads": 8,
+      "medianGapMin": 5.1,
+      "last": "2026-10-15T00:26:45.916Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:30:46.623Z"
+     }
+    },
+    "subjects": 7741,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:30:46.616Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:30:25.331Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:32:36.734Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:32:23.116Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.69,
+    "moves24h": 4,
+    "movesPerDay": 138,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 25,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:23.113Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 29,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:03.123Z"
+     },
+     "sleeper": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:06.675Z"
+     },
+     "kalshi-props": {
+      "reads": 9,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:31:22.342Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:31:47.407Z"
+     }
+    },
+    "subjects": 7741,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:31:47.401Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:32:23.121Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:33:36.747Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:32:48.122Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.71,
+    "moves24h": 4,
+    "movesPerDay": 135,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 25,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:23.113Z"
+     },
+     "prizepicks": {
+      "reads": 2,
+      "medianGapMin": 21.1,
+      "last": "2026-10-15T00:12:03.657Z"
+     },
+     "underdog": {
+      "reads": 29,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:03.123Z"
+     },
+     "sleeper": {
+      "reads": 22,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:32:06.675Z"
+     },
+     "kalshi-props": {
+      "reads": 9,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:31:22.342Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:32:47.998Z"
+     }
+    },
+    "subjects": 7741,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:32:47.992Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:32:23.121Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:34:36.771Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:34:22.134Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.73,
+    "moves24h": 4,
+    "movesPerDay": 132,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 26,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:22.131Z"
+     },
+     "prizepicks": {
+      "reads": 3,
+      "medianGapMin": 21.6,
+      "last": "2026-10-15T00:34:03.256Z"
+     },
+     "underdog": {
+      "reads": 30,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:02.058Z"
+     },
+     "sleeper": {
+      "reads": 23,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:01.826Z"
+     },
+     "kalshi-props": {
+      "reads": 9,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:31:22.342Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:33:45.836Z"
+     }
+    },
+    "subjects": 7748,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:33:45.829Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:34:22.143Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:35:36.804Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:34:47.067Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.74,
+    "moves24h": 4,
+    "movesPerDay": 129,
+    "byKind": {
+     "prop": 2,
+     "total": 2
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 1,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 1,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 26,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:22.131Z"
+     },
+     "prizepicks": {
+      "reads": 3,
+      "medianGapMin": 21.6,
+      "last": "2026-10-15T00:34:03.256Z"
+     },
+     "underdog": {
+      "reads": 30,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:02.058Z"
+     },
+     "sleeper": {
+      "reads": 23,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:34:01.826Z"
+     },
+     "kalshi-props": {
+      "reads": 9,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:31:22.342Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:34:46.942Z"
+     }
+    },
+    "subjects": 7748,
+    "openMoves": 4,
+    "movesSeen": 4,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:34:46.935Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:34:22.143Z",
+   "errors": []
+  },
+  "fbErr": []
+ },
+ {
+  "at": "2026-10-15T00:36:38.276Z",
+  "stale": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T00:36:21.728Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "lag": {
+    "since": "2026-10-14T23:50:54.982Z",
+    "hours": 0.76,
+    "moves24h": 5,
+    "movesPerDay": 157,
+    "byKind": {
+     "prop": 2,
+     "total": 3
+    },
+    "bySport": {
+     "nfl": 2,
+     "ncaaf": 2,
+     "nhl": 1
+    },
+    "lag": [
+     {
+      "venue": "fanduel",
+      "kind": "total",
+      "moves": 3,
+      "followed": 0,
+      "led": 2,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "fanduel",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "underdog",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "sleeper",
+      "kind": "prop",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "total",
+      "moves": 2,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 2,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "betrivers",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     },
+     {
+      "venue": "prizepicks",
+      "kind": "prop",
+      "moves": 1,
+      "followed": 0,
+      "led": 0,
+      "never": 0,
+      "open": 1,
+      "reverted": 0,
+      "started": 0,
+      "pulled": 0,
+      "medianMin": null,
+      "p75Min": null,
+      "within2": 0,
+      "within5": 0,
+      "within15": 0,
+      "neverPct": null
+     }
+    ],
+    "cadence": {
+     "pinnacle-props": {
+      "reads": 28,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:36:21.726Z"
+     },
+     "prizepicks": {
+      "reads": 3,
+      "medianGapMin": 21.6,
+      "last": "2026-10-15T00:34:03.256Z"
+     },
+     "underdog": {
+      "reads": 30,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:36:02.414Z"
+     },
+     "sleeper": {
+      "reads": 24,
+      "medianGapMin": 2,
+      "last": "2026-10-15T00:36:08.588Z"
+     },
+     "kalshi-props": {
+      "reads": 9,
+      "medianGapMin": 5,
+      "last": "2026-10-15T00:31:22.342Z"
+     },
+     "books": {
+      "reads": 30,
+      "medianGapMin": 1,
+      "last": "2026-10-15T00:35:47.601Z"
+     }
+    },
+    "subjects": 7751,
+    "openMoves": 5,
+    "movesSeen": 5,
+    "thresholds": {
+     "moveProbPts": 2,
+     "lineMovePts": 1,
+     "followFrac": 0.5,
+     "minFollowPts": 1,
+     "windowMin": 60,
+     "minEv": 2
+    }
+   }
+  },
+  "fbAt": "2026-10-15T00:35:47.595Z",
+  "pinProps": {
+   "enabled": true,
+   "props": 518,
+   "bySport": {
+    "NFL": 311,
+    "NBA": 30,
+    "WNBA": 81,
+    "NHL": 50,
+    "MLB": 46
+   },
+   "updated": "2026-10-15T00:36:21.734Z",
+   "errors": []
+  },
+  "fbErr": []
+ }
+]

@@ -1,0 +1,67 @@
+{
+ "stale": [],
+ "counts": {
+  "clear2": 25,
+  "agree2": 1,
+  "agree2Lines": 1,
+  "agree2Props": 0,
+  "alt": 259,
+  "altClear": 22,
+  "esports": 50,
+  "esportsClear": 13,
+  "stale": 0,
+  "staleClear": 0
+ },
+ "staleLag": {
+  "since": "2026-10-14T23:50:54.982Z",
+  "hours": 0.25,
+  "moves24h": 0,
+  "movesPerDay": 0,
+  "byKind": {},
+  "bySport": {},
+  "lag": [],
+  "cadence": {
+   "pinnacle-props": {
+    "reads": 10,
+    "medianGapMin": 2,
+    "last": "2026-10-15T00:04:23.964Z"
+   },
+   "prizepicks": {
+    "reads": 1,
+    "medianGapMin": null,
+    "last": "2026-10-14T23:50:56.616Z"
+   },
+   "underdog": {
+    "reads": 11,
+    "medianGapMin": 1.9,
+    "last": "2026-10-15T00:04:05.888Z"
+   },
+   "sleeper": {
+    "reads": 8,
+    "medianGapMin": 2,
+    "last": "2026-10-15T00:04:02.466Z"
+   },
+   "kalshi-props": {
+    "reads": 3,
+    "medianGapMin": 5.1,
+    "last": "2026-10-15T00:01:37.712Z"
+   },
+   "books": {
+    "reads": 15,
+    "medianGapMin": 1,
+    "last": "2026-10-15T00:05:50.178Z"
+   }
+  },
+  "subjects": 7642,
+  "openMoves": 0,
+  "movesSeen": 0,
+  "thresholds": {
+   "moveProbPts": 2,
+   "lineMovePts": 1,
+   "followFrac": 0.5,
+   "minFollowPts": 1,
+   "windowMin": 60,
+   "minEv": 2
+  }
+ }
+}
