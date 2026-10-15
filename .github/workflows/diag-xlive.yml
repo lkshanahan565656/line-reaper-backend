@@ -1,0 +1,28 @@
+name: diag-xlive
+on:
+  push:
+    branches: [diag-xlive]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 90); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.122.1" ] && break; sleep 20; done
+          sleep 240
+      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: node diag/xlive.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-xlive-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-xlive-out
