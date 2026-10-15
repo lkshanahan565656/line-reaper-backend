@@ -1,0 +1,27 @@
+name: diag-slipcheck
+on:
+  push:
+    branches: [diag-slipcheck]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: |
+          mkdir out; U=https://line-reaper-backend-production.up.railway.app
+          curl -s $U/api/status > out/status.json
+          curl -s $U/api/esports/picks > out/picks.json
+          curl -s $U/api/esports/auto-slips > out/autoslips.json
+          curl -s $U/api/esports/h2h > out/h2h.json
+          curl -s $U/api/esports/share > out/share.json
+          curl -s $U/api/esports/rounds > out/rounds.json
+          for b in prizepicks underdog sleeper; do curl -s "$U/api/props/board?book=$b&facets=1&limit=500" > out/board-$b.json; done
+          curl -s "$U/api/esports/slips/record" > out/sliprec.json || true
+          ls -la out
+      - if: always()
+        run: |
+          cd out && gzip -9 *.json && git init -q && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-slipcheck-out && git add -A && git commit -qm out
+          git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-slipcheck-out
