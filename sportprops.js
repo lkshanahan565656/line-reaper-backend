@@ -34,7 +34,9 @@ const K = {
 // match, a yes/no like a knockout, a finishing position): a source prices only
 // the line it sits on, never a line read off it.
 const EXACT = new Set(['fight_time', 'knockouts', 'submissions', 'finishes', '1st_round_finish', '2nd_round_finish',
-  '3rd_round_finish', '4th_round_finish', '5th_round_finish', 'sets_played', 'sets_won', '1st_set_games_played', 'finishing_position']);
+  '3rd_round_finish', '4th_round_finish', '5th_round_finish', 'sets_played', 'sets_won', '1st_set_games_played', 'finishing_position',
+  // a player's double-double is yes/no at 0.5, not a count
+  'double_double', 'triple_double']);
 const sameLine = (mkey, a, b) => !EXACT.has(mkey) || Math.abs(a - b) < 1e-6;
 const kFor = (mkey, sport) => K[sport === 'NHL' && mkey === 'points' ? 'points_nhl' : mkey] ?? 1.5;
 

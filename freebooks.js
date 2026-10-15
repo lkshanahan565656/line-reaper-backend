@@ -37,7 +37,7 @@ const LEAGUES = {
   nfl: { fd: 'nfl', kambi: 'american_football/nfl', pin: 'football', league: /^NFL$/i, props: 'NFL', fdTabs: ['passing-props', 'receiving-props', 'rushing-props', 'td-scorer-props', 'popular'] },
   ncaaf: { fd: 'ncaaf', kambi: 'american_football/ncaaf', pin: 'football', league: /^NCAA$/i, props: 'CFB', fdTabs: ['passing-props', 'receiving-props', 'rushing-props', 'td-scorer-props', 'popular'] },
   // NBA: FanDuel posts no player tabs for preseason games, so these wait on opening night
-  nba: { fd: 'nba', kambi: 'basketball/nba', pin: 'basketball', league: /^NBA$/i, props: 'NBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes', 'player-combos'] },
+  nba: { fd: 'nba', kambi: 'basketball/nba', pin: 'basketball', league: /^NBA$/i, props: 'NBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes', 'player-combos', 'player-defense'] },
   wnba: { fd: 'wnba', kambi: 'basketball/wnba', pin: 'basketball', league: /^WNBA$/i, props: 'WNBA', fdTabs: ['', 'player-points', 'player-rebounds', 'player-assists', 'player-threes'] },
   // FanDuel tab slugs are each tab's title, dashed (checked 2026-10-14). NHL
   // points and assists are one-sided "1+ Points" ladders there, not a price;
@@ -206,6 +206,10 @@ const FD_PLAYER_RUNG = [
   [/^TO_SCORE_(\d+)\+_TOUCHDOWNS$/, m => [Number(m[1]), 'TOUCHDOWNS']],
   [/^ANY_TIME_TOUCHDOWN_SCORER(_CFB)?$/, () => [1, 'TOUCHDOWNS']],
   [/^ANY_TIME_GOAL_SCORER$/, () => [1, 'GOALS']],
+  // NBA: "To Score 20+ Points", "To Record 6+ Rebounds", "3+ Made Threes" (checked 2026-10-15, opening-week games)
+  [/^TO_SCORE_(\d+)\+_POINTS$/, m => [Number(m[1]), 'POINTS']],
+  [/^TO_RECORD_(\d+)\+_(ASSISTS|REBOUNDS|STEALS|BLOCKS)$/, m => [Number(m[1]), m[2]]],
+  [/^(\d+)\+_MADE_THREES$/, m => [Number(m[1]), 'THREES']],
 ];
 const FD_ALT_GAME = [[/^ALTERNATE_(HANDICAP|PUCK_LINE|RUN_LINE)$/, 'spreads'], [/^ALTERNATE_TOTAL(_GOALS|_RUNS|_POINTS)?$/, 'totals']];
 function parseFanDuelLadders(payload) {

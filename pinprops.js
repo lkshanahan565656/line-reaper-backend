@@ -13,7 +13,8 @@ const { canonName, canonMarket } = require('./ev');
 
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
 // CFB: Pinnacle's NCAA football league (26 player props up 2026-10-14)
-const LEAGUES = { NFL: 889, NBA: 487, WNBA: 578, NHL: 1456, MLB: 246, CFB: 880 };
+// CBB: Pinnacle's NCAA basketball league (1 listing, futures only, 2026-10-15; the season starts in November)
+const LEAGUES = { NFL: 889, NBA: 487, WNBA: 578, NHL: 1456, MLB: 246, CFB: 880, CBB: 493 };
 
 // Pinnacle's stat words → the board's market keys (canonMarket), per sport
 const STAT = {
@@ -21,6 +22,8 @@ const STAT = {
   'receptions': 'receptions', 'receiving yards': 'rec_yds', 'rushing yards': 'rush_yds', 'rushing attempts': 'rush_att', 'interceptions': 'pass_ints',
   'points': 'points', 'rebounds': 'rebounds', 'assists': 'assists', 'threes made': 'threes', 'pts & rebs & asts': 'pra',
   'pts & rebs': 'pts_rebs', 'pts & asts': 'pts_asts', 'rebs & asts': 'rebs_asts', 'steals': 'steals', 'blocks': 'blocks',
+  'points & rebounds & assists': 'pra', 'points & rebounds': 'pts_rebs', 'points & assists': 'pts_asts', 'rebounds & assists': 'rebs_asts',
+  'steals & blocks': 'stocks', 'blocks & steals': 'stocks', 'turnovers': 'turnovers', 'free throws made': 'ftm',
   'goals': 'goals', 'shots on goal': 'shots_on_goal', 'saves': 'saves',
   'bases': 'total_bases', 'home runs': 'home_runs', 'strikeouts': 'strikeouts', 'earned runs': 'earned_runs', 'pitching outs': 'pitcher_outs',
   'hits allowed': 'hits_allowed', 'hits': 'hits', 'runs': 'runs', 'rbis': 'rbis',
@@ -30,7 +33,8 @@ const STAT = {
 function parseDescription(desc) {
   const m = /^(.+?)\s+Total\s+(.+?)(?:\s*\(.*\))?$/.exec(String(desc || '').trim());
   if (!m) return null;
-  const stat = m[2].toLowerCase();
+  // "Pts + Rebs" and "Pts & Rebs" are one stat
+  const stat = m[2].toLowerCase().replace(/\s*\+\s*/g, ' & ');
   const mkey = STAT[stat] || canonMarket(stat);
   return { player: m[1].trim(), mkey };
 }
