@@ -1,0 +1,27 @@
+name: diag-kcovbr
+on:
+  push:
+    branches: [diag-kcovbr]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/kill-coverage-04b5we, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --omit=dev || npm install --omit=dev)
+      - run: MINS=25 timeout 2700 node diag/branch.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-kcovbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-kcovbr-out
