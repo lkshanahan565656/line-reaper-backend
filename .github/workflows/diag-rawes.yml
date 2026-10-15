@@ -1,0 +1,25 @@
+name: diag-rawes
+on:
+  push:
+    branches: [diag-rawes]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: timeout 400 node diag/rawes.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          gzip out/raw.json || true
+          git checkout --orphan diag-rawes-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "raw"
+          git push -f origin diag-rawes-out
