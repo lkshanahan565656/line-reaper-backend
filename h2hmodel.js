@@ -15,8 +15,8 @@
 // 0.85), so the mean is blended back toward his plain average (blend).
 //
 // Fit walk-forward on the free history (fit numbers below and in the PR):
-// LoL 6,661 lolesports games, CS2 16,802 bo3.gg maps, Dota and Valorant pulled
-// for this model. Against each player's own average the miss falls about 2.5%
+// LoL 6,661 lolesports games, CS2 16,802 bo3.gg maps, Dota from OpenDota and
+// Valorant 9,466 vlr.gg maps. Against each player's own average the miss falls about 2.5%
 // on one LoL game and 5% on three, about 1% in CS2. A team's kills in one game
 // are mostly not predictable (LoL sd 8.1, our miss 7.6), so read the mean as a
 // mean, never a pick.
@@ -41,7 +41,10 @@ const TITLES = {
   // and runs 3% low on the fit without the lift
   DOTA: { unit: 'game', A: 0.7, B: 0.7, shrink: 8, shareGames: 0, varA: 1.9, varB: 0.12, blend: 1, scale: 1.03, minShare: 0 },
   CS: { unit: 'round', A: 1, B: 1, shrink: 6, shareGames: 4, varA: 2.1, varB: 0, blend: 0.75, scale: 1, minShare: 0, roundsPerMap: 21.3 },
-  VAL: { unit: 'round', A: 1, B: 1, shrink: 6, shareGames: 4, varA: 2.1, varB: 0, blend: 0.75, scale: 1, minShare: 0, roundsPerMap: 21.5 },
+  // Valorant fit walk-forward on 9,466 vlr.gg maps (Jul 2025 to Oct 2026):
+  // miss 5.14 kills a map vs 5.20 on his own average, mean within 0.01,
+  // variance ÷ mean 1.80 on one map and 1.86 on two
+  VAL: { unit: 'round', A: 1, B: 1, shrink: 6, shareGames: 4, varA: 1.85, varB: 0, blend: 0.75, scale: 1, minShare: 0, roundsPerMap: 21 },
 };
 
 const DEFAULTS = {
