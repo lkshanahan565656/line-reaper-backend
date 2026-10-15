@@ -440,7 +440,11 @@ function createBigMoneyTracker({ store = createMemoryStore(), propGrader = null,
     const t = now(), writes = [];
     for (const r of open.values()) {
       if (r.status !== 'open') continue;
-      if (ms(r.start) <= t) { r.status = 'locked'; writes.push(put(r)); continue; }
+      if (ms(r.start) <= t) {
+        // the close counts only if the money's market was still read within the hour before the start
+        if (r.closeSeenAt) { r.closeAgeMin = r2((ms(r.start) - ms(r.closeSeenAt)) / 60e3); r.closeOk = r.closeAgeMin <= 60; }
+        r.status = 'locked'; writes.push(put(r)); continue;
+      }
       let x = null;
       try { x = lookup(r); } catch (e) { log.warn?.(`Big money mark: ${e.message}`); }
       if (!x) continue;
@@ -452,6 +456,8 @@ function createBigMoneyTracker({ store = createMemoryStore(), propGrader = null,
         dirty = true;
       }
       if (x.close != null && x.close !== r.closeFair) { r.closeFair = r4(x.close); r.closeEv = r2((x.close * r.decimal - 1) * 100); r.closeAt = iso(t); dirty = true; }
+      // last read that priced the close, saved every 10 minutes at most
+      if (x.close != null && (dirty || !(t - ms(r.closeSeenAt) < 10 * 60e3))) { r.closeSeenAt = iso(t); dirty = true; }
       if (x.sharp != null && x.sharp !== r.sharpFair) { r.sharpFair = r4(x.sharp); r.sharpEv = r2((x.sharp * r.decimal - 1) * 100); dirty = true; }
       if (dirty) writes.push(put(r));
     }

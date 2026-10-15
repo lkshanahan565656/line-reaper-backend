@@ -90,9 +90,29 @@ const r2 = x => Math.round(x * 100) / 100;
 const EXEC_WINDOW_MS = 3 * 60e3;
 const execLate = (b, lagMs = 2 * 60e3) => b.execAt != null && Date.parse(b.execAt) - Date.parse(b.flaggedAt) > lagMs + EXEC_WINDOW_MS;
 
-function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => Date.now(), log = console } = {}) {
+// A close only counts when the fair was still being read near the start.
+// closeAt moves only when the fair changes, so a market the sharp book pulled
+// hours early used to close at its last price as if nothing were wrong (10-15
+// audit: 9 of 36 main-line closes and 77 of 225 alt closes last changed more
+// than 30 minutes before the start, and 46 never changed after the flag).
+// fairSeenAt is the last screen that priced the side (saved at most every
+// SEEN_SAVE_MS, exact in memory); at the close, closeAgeMin is start minus
+// that, and closeOk says it was within CLOSE_FRESH_MS.
+const CLOSE_FRESH_MS = 60 * 60e3, SEEN_SAVE_MS = 10 * 60e3;
+// 'ok' | 'stale' | 'unverified' (closed before fairSeenAt existed, last
+// change too early to tell a pulled market from a quiet one) | null (open)
+function closeState(b, freshMs = CLOSE_FRESH_MS) {
+  if (b.status !== 'closed') return null;
+  if (b.closeOk != null) return b.closeOk ? 'ok' : 'stale';
+  const start = Date.parse(b.start || ''), seen = Date.parse(b.fairSeenAt || b.closeAt || '');
+  if (!Number.isFinite(start) || !Number.isFinite(seen)) return 'unverified';
+  return start - seen <= freshMs ? 'ok' : b.fairSeenAt ? 'stale' : 'unverified';
+}
+
+function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => Date.now(), log = console, closeFreshMs = CLOSE_FRESH_MS, freshCloseOnly = false } = {}) {
   const ready = store.init();
   const open = new Map();   // id → bet, for bets whose game hasn't started
+  const seen = new Map();   // id → last time a screen priced its side (ms)
 
   const loaded = ready.then(async () => {
     const fixes = [];
@@ -121,7 +141,7 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
     const fairBySide = new Map();
     for (const r of rows || []) if (r.fairProb != null) fairBySide.set(marketSide(r), r.fairProb);
     if (fairs) for (const [k, v] of fairs) fairBySide.set(k, v);
-    const writes = [];
+    const dirty = new Set();
 
     // new flags
     for (const r of rows || []) {
@@ -133,7 +153,7 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         id, group: r.group, status: 'open', flaggedAt: new Date(t).toISOString(), start: r.start || null,
         sport: r.sport, event: r.event, market: r.market, player: r.player || null, point: r.point ?? null,
         side: r.side, book: r.book, price: r.price, decimal: r.decimal, source: r.source,
-        evAtFlag: r.ev, fairAtFlag: r.fairProb, closeFair: r.fairProb, closeAt: new Date(t).toISOString(),
+        evAtFlag: r.ev, fairAtFlag: r.fairProb, closeFair: r.fairProb, closeAt: new Date(t).toISOString(), fairSeenAt: new Date(t).toISOString(),
         ...(r.depthUsd != null ? { depthUsd: r.depthUsd } : {}),
         // every book's own no-vig chance of this side at the flag (sharp or not):
         // summary.bySourceClose scores each against the closing fair
@@ -142,7 +162,8 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         ...(r.contract ? { contract: r.contract, marketId: r.marketId ?? null, ...(r.yesSide ? { yesSide: r.yesSide } : {}) } : {}),
       };
       open.set(id, b);
-      writes.push(store.put(b));
+      seen.set(id, t);
+      dirty.add(b);
     }
 
     // keep the fair price current until the game starts, then close
@@ -155,21 +176,33 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
           b.execPrice = ec; b.execAt = new Date(t).toISOString();
           const w = sized?.get(b.id);
           if (w && w.cost > 0 && w.cost < 1) { b.execSized = w.cost; b.execSizedUsd = w.usd; }
-          writes.push(store.put(b));
+          dirty.add(b);
         }
         const fp = fairBySide.get(marketSide(b));
-        if (fp != null && fp !== b.closeFair) { b.closeFair = fp; b.closeAt = new Date(t).toISOString(); writes.push(store.put(b)); }
+        if (fp != null) {
+          seen.set(b.id, t);
+          if (fp !== b.closeFair) { b.closeFair = fp; b.closeAt = b.fairSeenAt = new Date(t).toISOString(); dirty.add(b); }
+          else if (!(t - Date.parse(b.fairSeenAt || b.closeAt) < SEEN_SAVE_MS)) { b.fairSeenAt = new Date(t).toISOString(); dirty.add(b); }
+        }
         continue;
       }
+      // the close: the last fair seen, and whether it was seen near the start
+      const seenT = Math.max(seen.get(b.id) || 0, Date.parse(b.fairSeenAt || b.closeAt) || 0);
+      b.fairSeenAt = new Date(seenT).toISOString();
+      b.closeAgeMin = r2((Date.parse(b.start) - seenT) / 60e3);
+      b.closeOk = Date.parse(b.start) - seenT <= closeFreshMs;
+      seen.delete(b.id);
       b.status = 'closed';
       b.clv = r2((b.closeFair / 100) * b.decimal * 100 - 100);
       b.fairMove = r2(b.closeFair - b.fairAtFlag);
       if (b.execPrice) b.execClv = r2((b.closeFair / 100) / b.execPrice * 100 - 100);   // + means the market moved toward our side
       if (b.execSized) b.execSizedClv = r2((b.closeFair / 100) / b.execSized * 100 - 100);
       open.delete(b.id);
-      writes.push(store.put(b));
+      dirty.add(b);
     }
-    await Promise.all(writes).catch(e => log.warn?.(`EV tracker: ${e.message}`));
+    if (!dirty.size) return;
+    // one write for the whole screen where the store can batch (the file store rewrites the file per put)
+    await (store.putMany ? store.putMany([...dirty]) : Promise.all([...dirty].map(b => store.put(b)))).catch(e => log.warn?.(`EV tracker: ${e.message}`));
   }
 
   // open bets that the next recordBoard will give their delayed price: what
@@ -187,7 +220,11 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
     const all = (await store.all()).filter(b =>
       (!sport || b.sport === sport) && (!book || b.book === book) && (!source || b.source === source) &&
       Date.parse(b.flaggedAt) >= cut);
-    const closed = all.filter(b => b.status === 'closed');
+    // with freshCloseOnly (the books' records) only a close read near the
+    // start grades a bet; the rest are counted apart in closeCheck
+    const check = { ok: 0, stale: 0, unverified: 0 };
+    for (const b of all) { const c = closeState(b, closeFreshMs); if (c) check[c]++; }
+    const closed = all.filter(b => (freshCloseOnly ? closeState(b, closeFreshMs) === 'ok' : b.status === 'closed'));
     const stats = list => {
       const n = list.length;
       if (!n) return { n: 0 };
@@ -217,7 +254,7 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       a.n++; a.se += (p - b.closeFair) ** 2;
     }
     const bySourceClose = Object.fromEntries(Object.entries(src).map(([k, a]) => [k, { n: a.n, mse: r2(a.se / a.n) }]).sort((a, b) => b[1].n - a[1].n));
-    return { open: all.length - closed.length, overall: stats(closed), bySport: by('sport'), byBook: by('book'), bySource: by('source'), byMarket: by('market'), bySourceClose };
+    return { open: all.filter(b => b.status === 'open').length, closeCheck: check, overall: stats(closed), bySport: by('sport'), byBook: by('book'), bySource: by('source'), byMarket: by('market'), bySourceClose };
   }
 
   async function list({ status, limit = 100 } = {}) {
@@ -229,4 +266,4 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
   return { recordBoard, dueForExec, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { EXEC_WINDOW_MS, createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };
+module.exports = { EXEC_WINDOW_MS, CLOSE_FRESH_MS, closeState, createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };
