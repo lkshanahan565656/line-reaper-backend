@@ -1,0 +1,697 @@
+version 3.130.0 at 2026-10-15T04:06:47.879Z
+
+== BY LEAGUE (11321 rows)
+L|CFB                                            legs  5134  pin    0  kal    0  books 1774  apps 1229  none  2131
+L|NFL                                            legs  4901  pin  806  kal  383  books 1051  apps  486  none  2175
+L|NHL                                            legs  1490  pin    0  kal    0  books  414  apps   70  none  1006
+L|SOCCER                                         legs   963  pin    0  kal    0  books    0  apps    2  none   961
+L|NBA                                            legs   639  pin   33  kal    0  books   12  apps   87  none   507
+L|TENNIS                                         legs   532  pin  259  kal    0  books    0  apps   42  none   231
+L|MLB                                            legs   519  pin   78  kal   54  books  102  apps   93  none   192
+L|WNBA                                           legs   344  pin  106  kal    0  books    6  apps  162  none    70
+L|MMA                                            legs   305  pin   33  kal   20  books    0  apps  133  none   119
+L|BAD                                            legs    99  pin    0  kal    0  books    0  apps    0  none    99
+L|TT                                             legs    74  pin    0  kal    0  books    0  apps    0  none    74
+L|MOTORSPORTS                                    legs    36  pin    0  kal    6  books    0  apps    0  none    30
+L|WNBA SERIES                                    legs    29  pin    0  kal    0  books    0  apps    0  none    29
+L|EUROGOLF                                       legs    28  pin    0  kal    0  books    0  apps    0  none    28
+L|DGPT                                           legs    11  pin    0  kal    0  books    0  apps    0  none    11
+L|NPB                                            legs     6  pin    0  kal    0  books    0  apps    4  none     2
+
+== BY APP x LEAGUE
+B|prizepicks|BAD                                 legs    99  pin    0  kal    0  books    0  apps    0  none    99
+B|prizepicks|CFB                                 legs   940  pin    0  kal    0  books  646  apps  263  none    31
+B|prizepicks|EUROGOLF                            legs    28  pin    0  kal    0  books    0  apps    0  none    28
+B|prizepicks|MLB                                 legs    76  pin    9  kal    4  books    3  apps   18  none    42
+B|prizepicks|MMA                                 legs    37  pin    9  kal    0  books    0  apps   28  none     0
+B|prizepicks|NBA                                 legs   348  pin   14  kal    0  books   11  apps   41  none   282
+B|prizepicks|NFL                                 legs  1097  pin  203  kal   32  books  367  apps  156  none   339
+B|prizepicks|NHL                                 legs    99  pin    0  kal    0  books   23  apps   10  none    66
+B|prizepicks|NPB                                 legs     3  pin    0  kal    0  books    0  apps    2  none     1
+B|prizepicks|SOCCER                              legs   147  pin    0  kal    0  books    0  apps    0  none   147
+B|prizepicks|TENNIS                              legs    83  pin   33  kal    0  books    0  apps   20  none    30
+B|prizepicks|TT                                  legs    74  pin    0  kal    0  books    0  apps    0  none    74
+B|prizepicks|WNBA                                legs   153  pin   24  kal    0  books    2  apps   67  none    60
+B|prizepicks|WNBA SERIES                         legs    29  pin    0  kal    0  books    0  apps    0  none    29
+B|sleeper|CFB                                    legs   902  pin    0  kal    0  books  334  apps  396  none   172
+B|sleeper|MLB                                    legs   136  pin   26  kal   18  books   59  apps   31  none     2
+B|sleeper|MMA                                    legs    63  pin   11  kal    2  books    0  apps   50  none     0
+B|sleeper|NBA                                    legs    87  pin   17  kal    0  books    1  apps   35  none    34
+B|sleeper|NFL                                    legs   907  pin  298  kal  111  books  238  apps  109  none   151
+B|sleeper|NHL                                    legs   103  pin    0  kal    0  books   76  apps   26  none     1
+B|sleeper|SOCCER                                 legs    89  pin    0  kal    0  books    0  apps    1  none    88
+B|sleeper|TENNIS                                 legs    30  pin   28  kal    0  books    0  apps    1  none     1
+B|sleeper|WNBA                                   legs    61  pin   41  kal    0  books    2  apps   17  none     1
+B|underdog|CFB                                   legs  3292  pin    0  kal    0  books  794  apps  570  none  1928
+B|underdog|DGPT                                  legs    11  pin    0  kal    0  books    0  apps    0  none    11
+B|underdog|MLB                                   legs   307  pin   43  kal   32  books   40  apps   44  none   148
+B|underdog|MMA                                   legs   205  pin   13  kal   18  books    0  apps   55  none   119
+B|underdog|MOTORSPORTS                           legs    36  pin    0  kal    6  books    0  apps    0  none    30
+B|underdog|NBA                                   legs   204  pin    2  kal    0  books    0  apps   11  none   191
+B|underdog|NFL                                   legs  2897  pin  305  kal  240  books  446  apps  221  none  1685
+B|underdog|NHL                                   legs  1288  pin    0  kal    0  books  315  apps   34  none   939
+B|underdog|NPB                                   legs     3  pin    0  kal    0  books    0  apps    2  none     1
+B|underdog|SOCCER                                legs   727  pin    0  kal    0  books    0  apps    1  none   726
+B|underdog|TENNIS                                legs   419  pin  198  kal    0  books    0  apps   21  none   200
+B|underdog|WNBA                                  legs   130  pin   41  kal    0  books    2  apps   78  none     9
+
+== BY MARKET (legs >= 5)
+M|BAD|Total Points                               legs    62  pin    0  kal    0  books    0  apps    0  none    62
+M|BAD|1st Game Total Points                      legs    37  pin    0  kal    0  books    0  apps    0  none    37
+M|CFB|Anytime TD                                 legs   970  pin    0  kal    0  books    0  apps  618  none   352
+M|CFB|Receiving Yards                            legs   619  pin    0  kal    0  books  514  apps  102  none     3
+M|CFB|Longest Reception                          legs   348  pin    0  kal    0  books  275  apps   70  none     3
+M|CFB|Rush Yards                                 legs   334  pin    0  kal    0  books  291  apps   43  none     0
+M|CFB|First TD Scorer                            legs   324  pin    0  kal    0  books    0  apps    0  none   324
+M|CFB|Receptions                                 legs   199  pin    0  kal    0  books  154  apps   30  none    15
+M|CFB|1H Receiving TDs                           legs   194  pin    0  kal    0  books    0  apps    0  none   194
+M|CFB|Pass Yards                                 legs   181  pin    0  kal    0  books  156  apps   24  none     1
+M|CFB|1H Receiving Yards                         legs   171  pin    0  kal    0  books    0  apps    0  none   171
+M|CFB|Longest Rush                               legs   171  pin    0  kal    0  books  143  apps   28  none     0
+M|CFB|1H Rush TDs                                legs   138  pin    0  kal    0  books    0  apps    0  none   138
+M|CFB|Fantasy Points                             legs   120  pin    0  kal    0  books    0  apps    0  none   120
+M|CFB|Pass TDs                                   legs   117  pin    0  kal    0  books   96  apps   20  none     1
+M|CFB|1Q Receptions                              legs   102  pin    0  kal    0  books    0  apps    0  none   102
+M|CFB|1H Receptions                              legs   102  pin    0  kal    0  books    0  apps    0  none   102
+M|CFB|1Q Receiving Yards                         legs    92  pin    0  kal    0  books    0  apps    0  none    92
+M|CFB|Longest Completion                         legs    88  pin    0  kal    0  books   73  apps   14  none     1
+M|CFB|1H Rush Yards                              legs    87  pin    0  kal    0  books    0  apps    2  none    85
+M|CFB|1Q Rush Yards                              legs    72  pin    0  kal    0  books    0  apps    0  none    72
+M|CFB|Pass + Rush Yards                          legs    71  pin    0  kal    0  books    0  apps   68  none     3
+M|CFB|Rush + Rec Yards                           legs    69  pin    0  kal    0  books    0  apps   66  none     3
+M|CFB|Kicking Points                             legs    68  pin    0  kal    0  books    0  apps   68  none     0
+M|CFB|INTs Thrown                                legs    56  pin    0  kal    0  books    0  apps   16  none    40
+M|CFB|Rush Attempts                              legs    55  pin    0  kal    0  books   38  apps   14  none     3
+M|CFB|1Q Pass TDs                                legs    49  pin    0  kal    0  books    0  apps    0  none    49
+M|CFB|1H Pass TDs                                legs    49  pin    0  kal    0  books    0  apps    0  none    49
+M|CFB|1Q Pass Yards                              legs    48  pin    0  kal    0  books    0  apps    0  none    48
+M|CFB|1H Pass Yards                              legs    48  pin    0  kal    0  books    0  apps    0  none    48
+M|CFB|Completions                                legs    43  pin    0  kal    0  books    0  apps   40  none     3
+M|CFB|Pass Attempts                              legs    41  pin    0  kal    0  books   34  apps    6  none     1
+M|CFB|1H Rush + Rec Yards                        legs    33  pin    0  kal    0  books    0  apps    0  none    33
+M|CFB|FG Made                                    legs    23  pin    0  kal    0  books    0  apps    0  none    23
+M|CFB|XP Made                                    legs    23  pin    0  kal    0  books    0  apps    0  none    23
+M|CFB|Fantasy Score                              legs    21  pin    0  kal    0  books    0  apps    0  none    21
+M|CFB|PAT Made                                   legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|DGPT|Tourney Finishing Position                legs    11  pin    0  kal    0  books    0  apps    0  none    11
+M|EUROGOLF|Strokes                               legs    15  pin    0  kal    0  books    0  apps    0  none    15
+M|EUROGOLF|Birdies Or Better                     legs    13  pin    0  kal    0  books    0  apps    0  none    13
+M|MLB|Hits + Runs + RBIs                         legs    66  pin    0  kal   16  books    0  apps   38  none    12
+M|MLB|Total Bases                                legs    63  pin   41  kal    3  books    0  apps    8  none    11
+M|MLB|Hits                                       legs    57  pin    0  kal   19  books   25  apps    2  none    11
+M|MLB|Runs                                       legs    54  pin    0  kal    0  books   35  apps    2  none    17
+M|MLB|RBIs                                       legs    53  pin    0  kal   13  books   23  apps    0  none    17
+M|MLB|Batter Walks                               legs    50  pin    0  kal    0  books    0  apps   32  none    18
+M|MLB|Home Runs                                  legs    35  pin   17  kal    2  books    0  apps    0  none    16
+M|MLB|Hitter Fantasy Score                       legs    34  pin    0  kal    0  books    0  apps    0  none    34
+M|MLB|Stolen Bases                               legs    27  pin    0  kal    0  books    0  apps    4  none    23
+M|MLB|Singles                                    legs    22  pin    0  kal    0  books   19  apps    0  none     3
+M|MLB|Fantasy Points                             legs    21  pin    0  kal    0  books    0  apps    0  none    21
+M|MLB|Strikeouts                                 legs     8  pin    6  kal    1  books    0  apps    1  none     0
+M|MLB|Pitching Outs Recorded                     legs     7  pin    6  kal    0  books    0  apps    0  none     1
+M|MLB|Pitcher Earned Runs Allowed                legs     6  pin    4  kal    0  books    0  apps    2  none     0
+M|MLB|Pitcher Hits Allowed                       legs     5  pin    4  kal    0  books    0  apps    0  none     1
+M|MLB|Pitcher Walks Allowed                      legs     5  pin    0  kal    0  books    0  apps    4  none     1
+M|MMA|Significant Strikes                        legs    73  pin    0  kal    0  books    0  apps   73  none     0
+M|MMA|Finishes                                   legs    43  pin    0  kal    4  books    0  apps   32  none     7
+M|MMA|Fight Time (Mins)                          legs    33  pin   33  kal    0  books    0  apps    0  none     0
+M|MMA|Submissions                                legs    31  pin    0  kal    9  books    0  apps   10  none    12
+M|MMA|Knockouts                                  legs    30  pin    0  kal    5  books    0  apps    6  none    19
+M|MMA|1st Round Finish                           legs    26  pin    0  kal    0  books    0  apps    0  none    26
+M|MMA|2nd Round Finish                           legs    26  pin    0  kal    0  books    0  apps    0  none    26
+M|MMA|3rd Round Finish                           legs    26  pin    0  kal    2  books    0  apps    0  none    24
+M|MMA|Takedowns                                  legs    13  pin    0  kal    0  books    0  apps   12  none     1
+M|MOTORSPORTS|Finishing Position                 legs    36  pin    0  kal    6  books    0  apps    0  none    30
+M|NBA|Points                                     legs    82  pin    9  kal    0  books    1  apps   49  none    23
+M|NBA|Regular Season Points Per Game             legs    81  pin    0  kal    0  books    0  apps    0  none    81
+M|NBA|Pts+Rebs+Asts                              legs    57  pin    7  kal    0  books    0  apps   20  none    30
+M|NBA|Regular Season Rebounds Per Game           legs    54  pin    0  kal    0  books    0  apps    0  none    54
+M|NBA|Regular Season Assists Per Game            legs    45  pin    0  kal    0  books    0  apps    0  none    45
+M|NBA|Season Points Per Game                     legs    44  pin    0  kal    0  books    0  apps    0  none    44
+M|NBA|Rebounds                                   legs    35  pin    5  kal    0  books    0  apps    8  none    22
+M|NBA|Assists                                    legs    33  pin    8  kal    0  books    0  apps    4  none    21
+M|NBA|Pts+Asts                                   legs    26  pin    0  kal    0  books    4  apps    0  none    22
+M|NBA|Pts+Rebs                                   legs    25  pin    0  kal    0  books    3  apps    0  none    22
+M|NBA|Season Rebs Per Game                       legs    23  pin    0  kal    0  books    0  apps    0  none    23
+M|NBA|Season 3PM Per Game                        legs    20  pin    0  kal    0  books    0  apps    0  none    20
+M|NBA|Season Asts Per Game                       legs    20  pin    0  kal    0  books    0  apps    0  none    20
+M|NBA|3-PT Made                                  legs    17  pin    4  kal    0  books    0  apps    6  none     7
+M|NBA|Rebs+Asts                                  legs    16  pin    0  kal    0  books    3  apps    0  none    13
+M|NBA|3-Pointers Made                            legs    10  pin    0  kal    0  books    0  apps    0  none    10
+M|NBA|Season 50+ Point Games                     legs     8  pin    0  kal    0  books    0  apps    0  none     8
+M|NBA|Regular Season Triple Doubles              legs     8  pin    0  kal    0  books    0  apps    0  none     8
+M|NBA|Season Triple-Doubles                      legs     7  pin    0  kal    0  books    0  apps    0  none     7
+M|NBA|Season Blocked Shots Per Game              legs     7  pin    0  kal    0  books    0  apps    0  none     7
+M|NBA|Steals                                     legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|NFL|Anytime TD                                 legs   414  pin   17  kal  288  books    0  apps   34  none    75
+M|NFL|Receiving Yards                            legs   365  pin  236  kal   47  books   73  apps    7  none     2
+M|NFL|Longest Reception                          legs   338  pin    0  kal    0  books  326  apps   12  none     0
+M|NFL|1H Rush + Rec TDs                          legs   269  pin    0  kal    0  books    0  apps    0  none   269
+M|NFL|Receptions                                 legs   261  pin  182  kal    2  books   74  apps    2  none     1
+M|NFL|1Q Rush + Rec TDs                          legs   186  pin    0  kal    0  books    0  apps    0  none   186
+M|NFL|First TD Scorer                            legs   183  pin    0  kal    0  books    0  apps    0  none   183
+M|NFL|Rush Yards                                 legs   182  pin  115  kal   18  books   49  apps    0  none     0
+M|NFL|1Q Rec Yards                               legs   167  pin    0  kal    0  books    0  apps   74  none    93
+M|NFL|Longest Rush                               legs   152  pin    0  kal    0  books  146  apps    6  none     0
+M|NFL|Fantasy Points                             legs   144  pin    0  kal    0  books    0  apps   14  none   130
+M|NFL|1H Rec Yards                               legs   139  pin    0  kal    0  books    0  apps   18  none   121
+M|NFL|Rush Attempts                              legs   127  pin   13  kal    3  books  110  apps    0  none     1
+M|NFL|1Q Receptions                              legs   124  pin    0  kal    0  books    0  apps    0  none   124
+M|NFL|1H Receptions                              legs   124  pin    0  kal    0  books    0  apps    0  none   124
+M|NFL|Fumbles Lost                               legs    96  pin    0  kal    0  books    0  apps    0  none    96
+M|NFL|Rush + Rec Yards                           legs    84  pin    0  kal    6  books   74  apps    3  none     1
+M|NFL|1Q Rush Yards                              legs    82  pin    0  kal    0  books    0  apps   30  none    52
+M|NFL|Fantasy Score                              legs    82  pin    0  kal    0  books    0  apps    0  none    82
+M|NFL|Pass Yards                                 legs    81  pin   66  kal    9  books    6  apps    0  none     0
+M|NFL|Completions                                legs    80  pin   42  kal    0  books    0  apps   38  none     0
+M|NFL|Pass Attempts                              legs    79  pin   41  kal    0  books   38  apps    0  none     0
+M|NFL|Longest Completion                         legs    76  pin    0  kal    0  books   76  apps    0  none     0
+M|NFL|1H Fantasy Score                           legs    72  pin    0  kal    0  books    0  apps    0  none    72
+M|NFL|1H Rush Yards                              legs    71  pin    0  kal    0  books    0  apps    8  none    63
+M|NFL|Pass + Rush Yards                          legs    64  pin    0  kal    0  books   64  apps    0  none     0
+M|NFL|Rec Targets                                legs    62  pin    0  kal    0  books    0  apps    0  none    62
+M|NFL|Kicking Points                             legs    61  pin    0  kal    0  books    0  apps   55  none     6
+M|NFL|INTs Thrown                                legs    59  pin   46  kal    0  books   13  apps    0  none     0
+M|NFL|Pass TDs                                   legs    58  pin   48  kal   10  books    0  apps    0  none     0
+M|NFL|FG Made                                    legs    57  pin    0  kal    0  books    0  apps   51  none     6
+M|NFL|XP Made                                    legs    53  pin    0  kal    0  books    0  apps   52  none     1
+M|NFL|Sacks                                      legs    50  pin    0  kal    0  books    0  apps    8  none    42
+M|NFL|Last TD Scorer                             legs    50  pin    0  kal    0  books    0  apps    0  none    50
+M|NFL|1Q Fantasy Score                           legs    45  pin    0  kal    0  books    0  apps    0  none    45
+M|NFL|1Q Pass Yards                              legs    41  pin    0  kal    0  books    0  apps   28  none    13
+M|NFL|Assists                                    legs    38  pin    0  kal    0  books    0  apps   18  none    20
+M|NFL|Tackles + Assists                          legs    29  pin    0  kal    0  books    0  apps    0  none    29
+M|NFL|Solo Tackles                               legs    29  pin    0  kal    0  books    0  apps    0  none    29
+M|NFL|1H Pass Yards                              legs    29  pin    0  kal    0  books    0  apps    4  none    25
+M|NFL|1Q Pass TDs                                legs    27  pin    0  kal    0  books    0  apps    0  none    27
+M|NFL|1H Pass TDs                                legs    27  pin    0  kal    0  books    0  apps    0  none    27
+M|NFL|Completion Percentage                      legs    27  pin    0  kal    0  books    0  apps    0  none    27
+M|NFL|Targets                                    legs    25  pin    0  kal    0  books    0  apps   24  none     1
+M|NFL|Rush Yards Per Carry                       legs    23  pin    0  kal    0  books    0  apps    0  none    23
+M|NFL|Defensive INTs                             legs    21  pin    0  kal    0  books    0  apps    0  none    21
+M|NFL|Rush Yards in First 5 Attempts             legs    12  pin    0  kal    0  books    0  apps    0  none    12
+M|NFL|Tackles                                    legs     9  pin    0  kal    0  books    0  apps    0  none     9
+M|NFL|Tackles And Assists                        legs     9  pin    0  kal    0  books    0  apps    0  none     9
+M|NFL|Rush TDs                                   legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|NHL|Goals                                      legs   452  pin    0  kal    0  books  241  apps   48  none   163
+M|NHL|Shots on Goal                              legs   205  pin    0  kal    0  books  173  apps    2  none    30
+M|NHL|First Goal Scorer                          legs   205  pin    0  kal    0  books    0  apps    0  none   205
+M|NHL|Points                                     legs   158  pin    0  kal    0  books    0  apps    0  none   158
+M|NHL|Assists                                    legs   156  pin    0  kal    0  books    0  apps    0  none   156
+M|NHL|Power Play Points                          legs   109  pin    0  kal    0  books    0  apps    0  none   109
+M|NHL|Plus Minus                                 legs    89  pin    0  kal    0  books    0  apps    0  none    89
+M|NHL|Hits                                       legs    39  pin    0  kal    0  books    0  apps   10  none    29
+M|NHL|Time On Ice                                legs    35  pin    0  kal    0  books    0  apps    0  none    35
+M|NHL|Faceoffs Won                               legs    28  pin    0  kal    0  books    0  apps    8  none    20
+M|NHL|Blocked Shots                              legs    12  pin    0  kal    0  books    0  apps    0  none    12
+M|NPB|Strikeouts                                 legs     5  pin    0  kal    0  books    0  apps    4  none     1
+M|SOCCER|Goals                                   legs   192  pin    0  kal    0  books    0  apps    0  none   192
+M|SOCCER|Assists                                 legs   176  pin    0  kal    0  books    0  apps    0  none   176
+M|SOCCER|Goals + Assists                         legs   134  pin    0  kal    0  books    0  apps    0  none   134
+M|SOCCER|First Goal Scorer                       legs    62  pin    0  kal    0  books    0  apps    0  none    62
+M|SOCCER|Last Goal Scorer                        legs    55  pin    0  kal    0  books    0  apps    0  none    55
+M|SOCCER|Goals Against                           legs    50  pin    0  kal    0  books    0  apps    0  none    50
+M|SOCCER|Shots on Target                         legs    43  pin    0  kal    0  books    0  apps    2  none    41
+M|SOCCER|Passes Attempted                        legs    38  pin    0  kal    0  books    0  apps    0  none    38
+M|SOCCER|1H Goals Against                        legs    38  pin    0  kal    0  books    0  apps    0  none    38
+M|SOCCER|1H Goals                                legs    34  pin    0  kal    0  books    0  apps    0  none    34
+M|SOCCER|Goalie Saves                            legs    31  pin    0  kal    0  books    0  apps    0  none    31
+M|SOCCER|Goalie Fantasy Score                    legs    28  pin    0  kal    0  books    0  apps    0  none    28
+M|SOCCER|Shots Attempted                         legs    28  pin    0  kal    0  books    0  apps    0  none    28
+M|SOCCER|Shots                                   legs    26  pin    0  kal    0  books    0  apps    0  none    26
+M|SOCCER|Outfield Fantasy Score                  legs    17  pin    0  kal    0  books    0  apps    0  none    17
+M|SOCCER|Shots On Target                         legs     6  pin    0  kal    0  books    0  apps    0  none     6
+M|TENNIS|1st Set Games Won                       legs   131  pin    0  kal    0  books    0  apps   34  none    97
+M|TENNIS|Sets Won                                legs    68  pin   55  kal    0  books    0  apps    0  none    13
+M|TENNIS|Games Played                            legs    62  pin   62  kal    0  books    0  apps    0  none     0
+M|TENNIS|1st Set Games Played                    legs    53  pin   45  kal    0  books    0  apps    2  none     6
+M|TENNIS|Tiebreakers Played                      legs    48  pin    0  kal    0  books    0  apps    2  none    46
+M|TENNIS|Sets Played                             legs    43  pin   42  kal    0  books    0  apps    0  none     1
+M|TENNIS|Games Won                               legs    38  pin   37  kal    0  books    0  apps    0  none     1
+M|TENNIS|Total Games                             legs    20  pin   11  kal    0  books    0  apps    0  none     9
+M|TENNIS|Fantasy Score                           legs    17  pin    0  kal    0  books    0  apps    0  none    17
+M|TENNIS|Aces                                    legs    12  pin    0  kal    0  books    0  apps    4  none     8
+M|TENNIS|1st Set Aces                            legs    10  pin    0  kal    0  books    0  apps    0  none    10
+M|TENNIS|Points Won                              legs    10  pin    0  kal    0  books    0  apps    0  none    10
+M|TENNIS|Double Faults                           legs     8  pin    0  kal    0  books    0  apps    0  none     8
+M|TENNIS|Total Games Won                         legs     7  pin    7  kal    0  books    0  apps    0  none     0
+M|TENNIS|Break Points Won                        legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|TT|1st Game Total Points                       legs    38  pin    0  kal    0  books    0  apps    0  none    38
+M|TT|Total Points                                legs    36  pin    0  kal    0  books    0  apps    0  none    36
+M|WNBA|Points                                    legs    36  pin   33  kal    0  books    3  apps    0  none     0
+M|WNBA|Pts + Rebs + Asts                         legs    30  pin   18  kal    0  books    0  apps   12  none     0
+M|WNBA|Rebounds                                  legs    25  pin   22  kal    0  books    3  apps    0  none     0
+M|WNBA|Assists                                   legs    23  pin   16  kal    0  books    0  apps    6  none     1
+M|WNBA|Fantasy Points                            legs    21  pin    0  kal    0  books    0  apps   20  none     1
+M|WNBA|3-Pointers Made                           legs    20  pin   17  kal    0  books    0  apps    2  none     1
+M|WNBA|Points + Assists                          legs    20  pin    0  kal    0  books    0  apps   20  none     0
+M|WNBA|Points + Rebounds                         legs    20  pin    0  kal    0  books    0  apps   20  none     0
+M|WNBA|Rebounds + Assists                        legs    20  pin    0  kal    0  books    0  apps   20  none     0
+M|WNBA|1H Points                                 legs    17  pin    0  kal    0  books    0  apps   12  none     5
+M|WNBA|1H Pts + Rebs + Asts                      legs    12  pin    0  kal    0  books    0  apps   12  none     0
+M|WNBA|1Q Points                                 legs    12  pin    0  kal    0  books    0  apps   10  none     2
+M|WNBA|FG Attempted                              legs    12  pin    0  kal    0  books    0  apps   12  none     0
+M|WNBA|Free Throws Made                          legs    12  pin    0  kal    0  books    0  apps   12  none     0
+M|WNBA|Fantasy Score                             legs    11  pin    0  kal    0  books    0  apps    0  none    11
+M|WNBA|1H Fantasy Score                          legs    11  pin    0  kal    0  books    0  apps    0  none    11
+M|WNBA|Offensive Rebounds                        legs     6  pin    0  kal    0  books    0  apps    4  none     2
+M|WNBA|Two Pointers Attempted                    legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|WNBA|1H Pts+Rebs+Asts                          legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|WNBA|FG Made                                   legs     5  pin    0  kal    0  books    0  apps    0  none     5
+M|WNBA SERIES|P+R+A Per Game                     legs     6  pin    0  kal    0  books    0  apps    0  none     6
+M|WNBA SERIES|Points Per Game                    legs     6  pin    0  kal    0  books    0  apps    0  none     6
+M|WNBA SERIES|Rebs Per Game                      legs     6  pin    0  kal    0  books    0  apps    0  none     6
+M|WNBA SERIES|Asts Per Game                      legs     6  pin    0  kal    0  books    0  apps    0  none     6
+M|WNBA SERIES|3PM Per Game                       legs     5  pin    0  kal    0  books    0  apps    0  none     5
+
+== PINNACLE SPORTS 1:Badminton() 2:Bandy() 3:Baseball(9) 4:Basketball(229) 5:Beach Volleyball() 6:Boxing(10) 7:Chess(1) 8:Cricket(4) 9:Curling(14) 10:Darts() 12:E Sports(35) 13:Field Hockey() 14:Floorball() 15:Football(112) 16:Futsal() 17:Golf(68) 18:Handball(30) 19:Hockey(211) 20:Horse Racing() 21:Lacrosse() 22:Mixed Martial Arts(51) 23:Other Sports() 24:Politics() 26:Rugby League() 27:Rugby Union(2) 28:Snooker() 29:Soccer(900) 30:Softball() 31:Squash() 32:Table Tennis() 33:Tennis(241) 34:Volleyball(7) 36:Water Polo() 37:Padel Tennis(10) 39:Aussie Rules() 40:Alpine Skiing() 41:Biathlon() 42:Ski Jumping() 43:Cross Country() 44:Formula 1() 45:Cycling(41) 46:Bobsleigh() 47:Figure Skating() 48:Freestyle Skiing() 49:Luge() 50:Nordic Combined() 51:Short Track() 52:Skeleton() 53:Snow Boarding() 54:Speed Skating() 55:Olympics() 56:Athletics() 57:Crossfit() 58:Entertainment(1) 59:Archery() 60:Drone Racing() 62:Poker() 63:Motorsport() 64:Simulated Games() 65:Sumo() 66:Slap Fighting() 67:Pickleball() 68:Ski Mountaineering()
+
+-- 3 Baseball: 3 leagues with matchups; top: 246:MLB(5), 187703:Nippon Professional Baseball(3), 6227:Korea Professional Baseball(1)
+   matchup types {"special":73,"matchup":3}; market types {"total/p0":67,"moneyline/p1":9,"moneyline/p0":21,"moneyline/p3":1,"spread/p3":1,"total/p3":1,"team_total/p0/home":9,"team_total/p0/away":9,"spread/p0":19,"team_total/p1/home":3,"team_total/p1/away":3,"spread/p1":14,"total/p1":15}
+   special categories {"Player Props":46,"Exact Scores":19,"Futures":4,"Double Result":1,"Series Prices":2,"Next Run":1}
+     20  Player Props :: <X> Total Home Runs
+     18  Player Props :: <X> Total Bases
+     3  Exact Scores :: <X> Total Runs Nst Half
+     3  Exact Scores :: <X> Total Runs
+     2  Player Props :: <X> Total Strikeouts
+     2  Player Props :: <X> Total Hits Allowed
+     2  Series Prices :: MLB Best of N Series Winner
+     2  Player Props :: <X> Total Pitching Outs
+     2  Player Props :: <X> Total Earned Runs
+     1  Exact Scores :: Cleveland Guardians Runs Odd/Even Nst Half
+     1  Exact Scores :: Total Runs Range
+     1  Exact Scores :: Tampa Bay Rays Runs Odd/Even
+     1  Futures :: N World Series Champion
+     1  Double Result :: <X> Total Runs
+     1  Exact Scores :: Tampa Bay Rays Runs Odd/Even Nst Half
+     1  Futures :: Korea Professional Baseball Winner
+     1  Exact Scores :: Correct Score
+     1  Futures :: Nippon Professional Baseball Winner
+     1  Exact Scores :: Total Runs Range Nst Half
+     1  Exact Scores :: Winning Margin Range
+     1  Next Run :: <X> To Score Nst Run
+     1  Exact Scores :: Total Runs Odd/Even Nst Half
+     1  Exact Scores :: Winning Margin Nst Half
+     1  Exact Scores :: Total Runs Odd/Even
+     1  Exact Scores :: Cleveland Guardians Runs Odd/Even
+     1  Exact Scores :: Correct Score Nst Half
+     1  Exact Scores :: Winning Margin
+     1  Futures :: Los Angeles Dodgers to Win N World Series
+   by league {"MLB":72,"Nippon Professional Baseball":3,"Korea Professional Baseball":1}
+
+-- 4 Basketball: 61 leagues with matchups; top: 487:NBA(78), 208618:Lithuania - National Basketball League(9), 238265:Mexico - Liga ABE(7), 210239:Czech Republic - 1. Liga(7), 415:France - Championnat Pro B(7), 210286:France - Nationale 1(7), 437:Greek Basket League(7), 268:ABA - Adriatic League(6), 242092:Mexico - Liga ABE Women(5), 204110:Iceland - Premier League(5), 216284:Puerto Rico - Superior Nacional Women(4), 321:British - SLB(4), 197913:Turkey - Super League(4), 565:Sweden - Basketligan(4), 382:Europe - Euroleague(4), 274:Argentina - Liga Nacional(3), 212805:Israel - National League(3), 556:Spain - Liga FEB(3), 282:Australia - WNBL(3), 317:Denmark - Basketligaen(3), 228036:Philippines - NCAA(3), 237764:Japan - Women`s League United Cup(2), 5251:Uruguay - Liga(2), 216605:Paraguay - LNCF Women(2), 430:Germany - Pro A(2)
+   matchup types {"matchup":160,"special":179}; market types {"moneyline/p0":193,"spread/p0":1393,"total/p0":1534,"moneyline/p1":98,"spread/p1":354,"total/p1":354,"team_total/p0/home":65,"team_total/p0/away":65,"team_total/p1/home":1,"team_total/p1/away":1}
+   special categories {"Futures":7,"Player Props":111,"Regular Season Wins":30,"To Make the Playoffs":30,"Series Prices":1}
+     30  Regular Season Wins :: <X> Total Regular Season Wins
+     30  To Make the Playoffs :: <X> To Make the Playoffs
+     28  Player Props :: <X> Total Points
+     24  Player Props :: <X> Total Rebounds
+     22  Player Props :: <X> Total Threes Made
+     19  Player Props :: <X> Total Assists
+     18  Player Props :: <X> Total Pts & Rebs & Asts
+     1  Futures :: N-N Defensive Player of the Year
+     1  Futures :: N-N NBA Regular Season MVP
+     1  Futures :: N-N Rookie of the Year
+     1  Series Prices :: WNBA Best of N Series Winner
+     1  Futures :: N-N NBA Champion
+     1  Futures :: N-N NBA Western Conference Winner
+     1  Futures :: N-N NBA Eastern Conference Winner
+     1  Futures :: <X> Tournament Winner
+   by league {"NBA":108,"WNBA":83,"Lithuania - National Basketball League":9,"Czech Republic - 1. Liga":7,"France - Nationale 1":7,"France - Championnat Pro B":7,"Greek Basket League":7,"Mexico - Liga ABE":7,"ABA - Adriatic League":6,"Mexico - Liga ABE Women":5,"Iceland - Premier League":5,"Sweden - Basketligan":4,"Turkey - Super League":4,"Europe - Euroleague":4,"British - SLB":4,"Puerto Rico - Superior Nacional Women":4,"Denmark - Basketligaen":3,"Argentina - Liga Nacional":3,"Spain - Liga FEB":3,"Israel - National League":3,"Australia - WNBL":3,"Philippines - NCAA":3,"Germany - Pro A":2,"Chile - LNB":2,"Estonia - I Liiga":2,"Finland - Korisliiga":2,"Mexico - Liga Nacional de Baloncesto Profesional":2,"Uruguay - Liga":2,"Europe - BNXT League":2,"Japan - Women`s League United Cup":2}
+
+-- 6 Boxing: 1 leagues with matchups; top: 197047:Boxing Matches(10)
+   matchup types {"matchup":10}; market types {"moneyline/p0":10}
+   special categories {}
+   by league {"Boxing Matches":10}
+
+-- 13 Field Hockey: 0 leagues with matchups; top: 
+   matchups error {"error":401}
+
+-- 15 Football: 3 leagues with matchups; top: 880:NCAA(63), 889:NFL(45), 876:Canadian Football(4)
+   matchup types {"special":493,"matchup":73}; market types {"total/p0":1016,"moneyline/p0":174,"team_total/p0/home":73,"team_total/p0/away":73,"spread/p0":706,"moneyline/p3":44,"team_total/p3/home":18,"team_total/p3/away":18,"spread/p3":45,"total/p3":46,"moneyline/p1":76,"team_total/p1/home":22,"team_total/p1/away":22,"spread/p1":174,"total/p1":142}
+   special categories {"Game Props":144,"Player Props":311,"Futures":15,"Team to Make Playoffs":16,"To Make the Playoffs":7}
+     80  Player Props :: <X> Total Receptions
+     80  Player Props :: <X> Total Receiving Yards
+     40  Player Props :: <X> Total Rushing Yards
+     22  Player Props :: <X> Total Passing Yards
+     22  Player Props :: <X> Total Touchdown Passes
+     21  Player Props :: <X> Total Interceptions
+     16  Team to Make Playoffs :: <X> To Make the Playoffs
+     14  Player Props :: <X> Total Pass Completions
+     14  Player Props :: <X> Total Pass Attempts
+     11  Player Props :: <X> Total Touchdowns
+     9  Game Props :: Total Points Odd/Even
+     9  Game Props :: Total Points Range Nst Half
+     9  Game Props :: Total Points Odd/Even Nst Half
+     9  Game Props :: Winning Margin Range
+     9  Game Props :: Total Points Range
+     9  Game Props :: Total Points Range Nst Quarter
+     6  To Make the Playoffs :: <X> To Make the Playoffs
+     5  Player Props :: <X> Total Rush Attempts
+     2  Player Props :: <X> Total Field Goals
+     1  Game Props :: Arizona Cardinals Points Odd/Even Nst Half
+     1  Game Props :: Indianapolis Colts Points Range
+     1  Futures :: NFC Conference Winner
+     1  Futures :: Super Bowl Champion
+     1  Game Props :: Indianapolis Colts Points Odd/Even
+     1  Game Props :: Arizona Cardinals Points Range Nst Half
+     1  Game Props :: Tennessee Titans Points Range Nst Half
+     1  Game Props :: Jacksonville Jaguars Points Odd/Even Nst Half
+     1  Game Props :: Philadelphia Eagles Points Odd/Even
+     1  Game Props :: Los Angeles Chargers Points Range Nst Half
+     1  Game Props :: Jacksonville Jaguars Points Odd/Even
+     1  Game Props :: Seattle Seahawks Points Range Nst Half
+     1  Futures :: AFC North Winner
+     1  Game Props :: Seattle Seahawks Points Range Nst Quarter
+     1  Game Props :: Carolina Panthers Points Odd/Even Nst Half
+     1  Game Props :: Green Bay Packers Points Range
+     1  Game Props :: Houston Texans Points Range
+     1  Game Props :: Los Angeles Rams Points Range
+     1  Game Props :: Los Angeles Rams Points Odd/Even Nst Half
+     1  Game Props :: Philadelphia Eagles Points Odd/Even Nst Half
+     1  Game Props :: New England Patriots Points Range Nst Half
+   by league {"NFL":500,"NCAA":62,"Canadian Football":4}
+
+-- 17 Golf: 4 leagues with matchups; top: 296070:DP World - India Championship - Tournament(32), 296072:DP World - India Championship - 1st Round(20), 295916:DP World - India Championship(15), 202859:LPGA - Buick LPGA Shanghai(1)
+   matchup types {"matchup":52,"special":16}; market types {"moneyline/p0":68}
+   special categories {"Top Finish":14,"Futures":2}
+     14  Top Finish :: <X> Top N Finish
+     1  Futures :: DP World - India Championship Winner
+     1  Futures :: LPGA - Buick LPGA Shanghai Winner
+   by league {"DP World - India Championship - Tournament":32,"DP World - India Championship - 1st Round":20,"DP World - India Championship":15,"LPGA - Buick LPGA Shanghai":1}
+
+-- 19 Hockey: 35 leagues with matchups; top: 1456:NHL(14), 1264:USA - American Hockey League(12), 5154:Russia - Vysshaya hokkeinaya Liga(11), 217161:Sweden - HockeyEttan(11), 149037:Russia - Junior Hockey League (MHL)(10), 1484:Russia - Kontinental Hockey League(9), 1517:Sweden - SHL(8), 1282:Belarus - Extraleague(7), 1293:Canada - Ontario Hockey League(7), 1379:Finland - Suomi Sarja U20(7), 1419:Germany - DEL(7), 1512:Sweden - Hockey Allsvenskan(7), 149036:Germany - DEL 2(7), 206705:Czech Republic - 1. Liga(7), 1275:Austria - EHL(6), 1297:Czech Republic - Extraliga(6), 1497:Slovakia - 1. Liga(6), 1498:Slovakia - Extraliga(6), 1532:Switzerland - Nationalliga A(6), 1295:Canada - Quebec Major Junior Hockey League(5), 1413:France - Ligue Magnus(5), 206704:Canada - Western Hockey League(5), 206707:Switzerland - Swiss League(5), 216131:Europe - Alps Hockey League(5), 1316:Denmark - Metal Ligaen(4)
+   matchup types {"matchup":207,"special":93}; market types {"moneyline/p1":178,"spread/p1":693,"total/p1":247,"moneyline/p6":205,"spread/p6":799,"total/p6":597,"moneyline/p0":297,"team_total/p1/home":11,"team_total/p1/away":11,"moneyline/p2":11,"team_total/p2/home":11,"team_total/p2/away":11,"spread/p2":33,"total/p2":33,"team_total/p6/home":36,"team_total/p6/away":35,"team_total/p0/home":37,"team_total/p0/away":37,"spread/p0":73,"total/p0":149,"moneyline/p3":11,"team_total/p3/home":11,"team_total/p3/away":11,"spread/p3":33,"total/p3":33}
+   special categories {"Game Props":89,"Futures":4}
+     19  Game Props :: <X> Total Goals
+     14  Game Props :: <X> To Score?
+     12  Game Props :: <X> To Win To Nil
+     11  Game Props :: Total Goals Range
+     11  Game Props :: Correct Score
+     1  Game Props :: Ottawa Senators Goals
+     1  Game Props :: Utah Mammoth Goals
+     1  Game Props :: Philadelphia Flyers Goals
+     1  Game Props :: Vegas Golden Knights Goals
+     1  Game Props :: New York Rangers Goals
+     1  Futures :: N-N NHL Western Conference Winner
+     1  Game Props :: San Jose Sharks Goals
+     1  Game Props :: Seattle Kraken Goals
+     1  Game Props :: St. Louis Blues Goals
+     1  Game Props :: New York Islanders Goals
+     1  Game Props :: Calgary Flames Goals
+     1  Game Props :: Edmonton Oilers Goals
+     1  Game Props :: Detroit Red Wings Goals
+     1  Game Props :: Winnipeg Jets Goals
+     1  Game Props :: Chicago Blackhawks Goals
+     1  Game Props :: Tampa Bay Lightning Goals
+     1  Game Props :: Minnesota Wild Goals
+     1  Futures :: Sweden - SHL N/N Winner (including play-offs)
+     1  Game Props :: Buffalo Sabres Goals
+     1  Futures :: N-N Stanley Cup Champion
+     1  Game Props :: Nashville Predators Goals
+     1  Futures :: N-N NHL Eastern Conference Winner
+     1  Game Props :: Florida Panthers Goals
+     1  Game Props :: Toronto Maple Leafs Goals
+     1  Game Props :: New Jersey Devils Goals
+     1  Game Props :: Vancouver Canucks Goals
+   by league {"NHL":103,"USA - American Hockey League":12,"Sweden - HockeyEttan":11,"Russia - Vysshaya hokkeinaya Liga":11,"Russia - Junior Hockey League (MHL)":10,"Russia - Kontinental Hockey League":9,"Sweden - SHL":8,"Germany - DEL":7,"Czech Republic - 1. Liga":7,"Belarus - Extraleague":7,"Sweden - Hockey Allsvenskan":7,"Finland - Suomi Sarja U20":7,"Germany - DEL 2":7,"Canada - Ontario Hockey League":7,"Austria - EHL":6,"Slovakia - 1. Liga":6,"Czech Republic - Extraliga":6,"Slovakia - Extraliga":6,"Switzerland - Nationalliga A":6,"France - Ligue Magnus":5,"Switzerland - Swiss League":5,"Europe - Alps Hockey League":5,"Canada - Western Hockey League":5,"Canada - Quebec Major Junior Hockey League":5,"Denmark - Metal Ligaen":4,"Poland - Polska Hokey Liga":4,"Finland - SM Liiga":4,"Finland - Mestis":4,"World - Asian Hockey League":3,"Norway - Eliteserien":3}
+
+-- 20 Horse Racing: 0 leagues with matchups; top: 
+   matchups error {"error":401}
+
+-- 22 Mixed Martial Arts: 3 leagues with matchups; top: 1624:UFC(24), 207442:PFL(14), 208746:Cage Warriors(13)
+   matchup types {"matchup":51}; market types {"moneyline/p0":51,"total/p0":13}
+   special categories {}
+   by league {"UFC":24,"PFL":14,"Cage Warriors":13}
+
+-- 29 Soccer: 137 leagues with matchups; top: 2663:USA - Major League Soccer(57), 2196:Spain - La Liga(22), 1980:England - Premier League(22), 2436:Italy - Serie A(21), 2036:France - Ligue 1(19), 214101:UEFA - Conference League(19), 1739:Argentina - Primera B Nacional(19), 1842:Germany - Bundesliga(19), 2630:UEFA - Europa League(19), 2627:UEFA - Champions League(19), 2067:Germany - Cup(16), 210697:Argentina - Liga Pro(15), 1977:England - Championship(13), 201065:USA - USL Championship(12), 1958:England - League 2(12), 1957:England - League 1(12), 2432:Spain - Segunda Division(11), 1929:Netherlands - Eerste Divisie(10), 9885:Egypt - Premier League(10), 2438:Italy - Serie B(10), 1835:Brazil - Serie B(10), 1844:Germany - 3. Liga(10), 5591:Colombia - Primera A(10), 2159:Japan - J2 League(10), 1834:Brazil - Serie A(10)
+   matchup types {"special":11575,"matchup":975}; market types {"moneyline/p0":8238,"moneyline/p1":4926,"team_total/p1/home":798,"team_total/p1/away":769,"spread/p1":4395,"total/p1":4325,"team_total/p0/home":1714,"team_total/p0/away":1617,"spread/p0":7904,"total/p0":7173,"moneyline/p8":8}
+   special categories {"Team Props":11562,"Futures":12,"Goalscorer":1}
+     1277  Team Props :: <X> To Score?
+     1194  Team Props :: <X> To Score? Nst Half
+     558  Team Props :: <X> Total Goals
+     333  Team Props :: Correct Score
+     332  Team Props :: Total Goals Odd/Even
+     329  Team Props :: Draw No Bet
+     304  Team Props :: Winning Margin
+     301  Team Props :: <X> To Score Nst Half
+     301  Team Props :: Total Goals Range
+     301  Team Props :: <X> Total Goals Nst Half
+     300  Team Props :: Winning Margin Nst Half
+     300  Team Props :: Correct Score Nst Half
+     300  Team Props :: Total Goals Range Nst Half
+     300  Team Props :: Total Goals Odd/Even Nst Half
+     298  Team Props :: <X> To Score
+     298  Team Props :: Draw No Bet Nst Half
+     236  Team Props :: Double Chance
+     165  Team Props :: Double Chance Nst Half
+     124  Team Props :: <X> To Win To Nil Nst Half
+     122  Team Props :: <X> To Win To Nil
+     88  Team Props :: <X> To Score and Total Goals
+     62  Team Props :: <X> To Score and Moneyline
+     12  Team Props :: N-Way Handicap Real Madrid -N
+     12  Team Props :: N-Way Handicap Manchester City -N
+     11  Team Props :: N-Way Handicap Brighton -N
+     11  Team Props :: N-Way Handicap Roma -N
+     10  Team Props :: N-Way Handicap Bournemouth -N
+     10  Team Props :: N-Way Handicap Bayern Munich -N
+     10  Team Props :: N-Way Handicap Fenerbahce -N
+     9  Team Props :: N-Way Handicap Lyon -N
+     9  Team Props :: N-Way Handicap NEC Nijmegen -N
+     8  Team Props :: N-Way Handicap Los Angeles FC -N
+     8  Team Props :: N-Way Handicap Lille -N
+     7  Team Props :: N-Way Handicap Los Angeles Galaxy -N
+     7  Team Props :: N-Way Handicap Celta Vigo +N
+     7  Team Props :: N-Way Handicap Celta Vigo -N
+     7  Team Props :: N-Way Handicap Real Betis -N
+     6  Team Props :: N-Way Handicap Sporting CP -N
+     6  Team Props :: N-Way Handicap FC Twente -N
+     6  Team Props :: N-Way Handicap Real Betis +N
+   by league {"UEFA - Champions League":652,"UEFA - Europa League":651,"UEFA - Conference League":623,"England - Premier League":371,"Spain - La Liga":370,"Italy - Serie A":365,"England - Championship":363,"Germany - Bundesliga":338,"France - Ligue 1":333,"Germany - 3. Liga":330,"Germany - Bundesliga 2":317,"Italy - Serie B":310,"USA - Major League Soccer":289,"China - Super League":248,"Turkey - Super League":248,"Spain - Segunda Division":245,"Netherlands - Eredivisie":210,"Netherlands - Eerste Divisie":200,"Japan - J2 League":197,"Turkey - 1st League":196,"Russia - First League":192,"Saudi Arabia - Pro League":188,"Argentina - Liga Pro":183,"Finland - Ykkosliiga":183,"Japan - J League":178,"Brazil - Serie A":177,"Mexico - Liga MX":177,"Finland - Veikkausliiga":176,"Norway - Eliteserien":176,"Slovakia - Super Liga":150}
+
+-- 32 Table Tennis: 0 leagues with matchups; top: 
+   matchup types {}; market types {}
+   special categories {}
+   by league {}
+
+-- 33 Tennis: 47 leagues with matchups; top: 295618:ITF Men Solapur - R16(11), 295559:ITF Women Stara Zagora - R1(9), 207155:ITF Women Heraklion - R1(9), 237830:WTA Wuhan - R16(9), 235305:ITF Women Bol - R16(8), 202411:ITF Women Monastir - R16(8), 221726:ITF Men Szabolcsveresmart - R16(8), 235278:ITF Men Bol - R16(8), 295574:ITF Women Maceio - R16(8), 280412:ITF Women Quebec City - R16(8), 219772:ITF Men Quito - R16(8), 295587:ITF Women Chisinau - R16(8), 286256:ITF Men Maringa - R16(8), 209991:ITF Men Monastir - R16(8), 88178:ITF Women Santa Margherita di Pula - R16(8), 238293:ITF Men Qian Daohu - R16(7), 238518:ITF Men Luanda - R16(7), 199562:ATP Challenger Jinan - R16(6), 217169:ITF Men Austin - R16(6), 280219:ITF Men Lexington - R16(6), 217088:ATP Challenger Roanne - R16(5), 237835:WTA Wuhan - Doubles(5), 238199:ITF Men Offenbach - QF(4), 207096:ATP Challenger Maia - R16(4), 272871:WTA 125k Mallorca - R16(4)
+   matchup types {"matchup":449,"special":3}; market types {"spread/p0":1205,"team_total/p0/home":472,"team_total/p0/away":474,"total/p0":1030,"spread/p1":476,"total/p1":381,"moneyline/p1":169,"moneyline/p0":224,"moneyline/p14":1,"moneyline/p15":1,"moneyline/p13":1,"moneyline/p2":5,"moneyline/p10":3,"moneyline/p11":3,"total/p2":3,"moneyline/p27":1,"moneyline/p28":1,"moneyline/p9":1}
+   special categories {"Futures":3}
+     1  Futures :: Davis Cup Winner
+     1  Futures :: WTA Wuhan N Winner
+     1  Futures :: ATP Shanghai N Winner
+   by league {"ITF Women Stara Zagora - R1":18,"ITF Men Szabolcsveresmart - R16":16,"ITF Men Monastir - R16":16,"ITF Men Maringa - R16":16,"ITF Women Quebec City - R16":16,"ITF Women Monastir - R16":16,"ITF Women Bol - R16":16,"ITF Women Santa Margherita di Pula - R16":16,"WTA Wuhan - R16":16,"ITF Women Chisinau - R16":16,"ITF Men Quito - R16":16,"ITF Men Bol - R16":16,"ITF Men Solapur - R16":16,"ITF Women Maceio - R16":16,"ITF Men Luanda - R16":14,"ITF Women Heraklion - R1":13,"ITF Men Austin - R16":12,"ITF Men Qian Daohu - R16":12,"ATP Challenger Jinan - R16":12,"ITF Men Lexington - R16":12,"ATP Challenger Roanne - R16":10,"ITF Men Offenbach - QF":8,"ATP Challenger Maia - R16":8,"ITF Women Birmingham - QF":8,"ITF Women Redding - R16":8,"ATP Shanghai - QF":8,"ITF Men Santa Margherita di Pula - QF":8,"ATP Challenger Olbia - R16":8,"ITF Women Islamabad - QF":8,"WTA 125k Rovereto - R16":8}
+
+-- 37 Padel Tennis: 2 leagues with matchups; top: 236750:Premier Padel Milan(5), 240845:Premier Padel Milan Women(5)
+   matchup types {"matchup":10}; market types {"moneyline/p0":10}
+   special categories {}
+   by league {"Premier Padel Milan":5,"Premier Padel Milan Women":5}
+
+-- 44 Formula 1: 0 leagues with matchups; top: 
+   matchups error {"error":401}
+
+-- 60 Drone Racing: 0 leagues with matchups; top: 
+   matchups error {"error":401}
+
+-- 63 Motorsport: 0 leagues with matchups; top: 
+   matchups error {"error":401}
+
+== KALSHI sports series 3978
+   KXLIGUE11HSCORE              15 open  1st Half Correct Score  e.g. Will the 1st half score be Le Mans FC wins 3-2? | Will the 1st half score be Le Mans FC wins 3-1?
+   KXLALIGA2GAME                33 open  LaLiga 2 Game  e.g. Tie is the result | Tenerife wins
+   KXLALIGATOP                  40 open  La Liga Top Finishers  e.g. Will Villarreal finish in the top 6 in the La Liga season? | Will Valencia finish in the top 6 in the La Liga season?
+   KXBUNDESLIGALAST             18 open  Bundesliga Last Place Finisher  e.g. Will Stuttgart finish in last place in the Bundesliga 2026-27 season? | Will Union Berlin finish in last place in the Bundesliga 2026-27 season?
+   KXWTA                       144 open  Women's Tournament Winner  e.g. WTA Wuhan: Shuai Zhang wins | WTA Wuhan: Dayana Yastremska wins
+   KXATP                       108 open  Men's Tournament Winner  e.g. ATP Shanghai: Rafael Jodar wins | ATP Shanghai: Daniil Medvedev wins
+   KXATPFINALSQUAL              26 open  Will Player Qualify for ATP Finals?  e.g. Will Alexander Zverev qualify for the Nitto ATP Singles Finals? | Will Stefanos Tsitsipas qualify for the Nitto ATP Singles Finals?
+   KXLIGUE1SPREAD               36 open  Ligue 1 Spread  e.g. Lyon wins by more than 2.5 goals? | Lyon wins by more than 1.5 goals?
+   KXPGATOUR                    51 open  PGA Tour  e.g. Masters Tournament: Xander Schauffele wins | Masters Tournament: Wyndham Clark wins
+   KXBUNDESLIGALEADER           18 open  Bundesliga Leader  e.g. Will Younes Ebnoutalib lead Bundesliga in goals for the 2026-27 season? | Will Tim Kleindienst lead Bundesliga in goals for the 2026-27 season?
+   KXMLSCUP                     30 open  MLS Cup champion  e.g. Will Vancouver win the MLS Cup? | Will Toronto win the MLS Cup?
+   KXLIGUE1LEADER               22 open  Ligue 1 Leader  e.g. Will Yann Gboho lead Ligue 1 in goals for the 2026-27 season? | Will Santiago Hidalgo lead Ligue 1 in goals for the 2026-27 season?
+   KXWBCWELTERWEIGHTTITLE       18 open  Boxing Welterweight Title  e.g. Who will hold the WBC Welterweight Title on January 1, 2027? | Who will hold the WBC Welterweight Title on January 1, 2027?
+   KXUCLTOTAL                  108 open  Champions League Total Goals  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXMLSGAME                   141 open  Major League Soccer Game  e.g. Tie is the result | Salt Lake wins
+   KXBUNDESLIGA1HSCORE          15 open  1st Half Correct Score  e.g. Will the 1st half score be Eintracht Frankfurt wins 3-2? | Will the 1st half score be Eintracht Frankfurt wins 3-1?
+   KXSERIEATEAMPOINTS           80 open  Team Points  e.g. Will Venezia finish the 2026-27 Serie A season with 35+ points? | Will Venezia finish the 2026-27 Serie A season with 30+ points?
+   KXATPSETWINNER               12 open  ATP Set Winner  e.g. Will Casper Ruud win set 2 in the Rafael Jodar vs Casper Ruud match | Will Rafael Jodar win set 2 in the Rafael Jodar vs Casper Ruud match
+   KXEPLCORNERS                 45 open  EPL Corners  e.g. 9+ total corners | 8+ total corners
+   KXNASCARTOP10               112 open  NASCAR Top 10 Finishers  e.g. Auto Parts: Nick Sanchez to finish in the top 10 | Auto Parts: Josh Williams to finish in the top 10
+   KXUFCMOV                     91 open  UFC Method of Victory  e.g. Mike Malott wins by Submission? | Mike Malott wins by KO/TKO/DQ?
+   KXLALIGA2HBTTS                1 open  2nd Half BTTS  e.g. Both teams score in the 2nd Half?
+   KXUFCFIGHT                   46 open  UFC Fight  e.g. Colby Thicknesse wins | Asaf Chopurov wins
+   KXLIGUE12HTOTAL               3 open  2nd Half Total  e.g. Over 2.5 2H goals scored | Over 1.5 2H goals scored
+   KXSERIEAGAME                 90 open  Serie A Game  e.g. Tie is the result | Lecce wins
+   KXBUNDESLIGASPREAD           36 open  Bundesliga Spread  e.g. Hoffenheim wins by more than 2.5 goals? | Hoffenheim wins by more than 1.5 goals?
+   KXUFCLIGHTWEIGHTTITLE        12 open  UFC Lightweight Title  e.g. Who will be the Lightweight Title Holder on Dec 31, 2026? | Who will be the Lightweight Title Holder on Dec 31, 2026?
+   KXLIGUE11H                    3 open  Ligue 1 First Half Winner  e.g. Tie 1st Half | Toulouse wins 1st Half
+   KXNCAAF1H                   200 open  College Football 1st Half Winner  e.g. Tie in the 1st half | New Mexico St. wins the 1st half
+   KXPGARYDER                    3 open  Ryder Cup  e.g. Will Team USA win the Ryder Cup? | Will Team USA and Team Europe tie in the Ryder Cup?
+   KXUCLLEAGUE                  16 open  League to Win UEFA Champions League  e.g. Will a team from Slovak Super Liga win the Champions League? | Will a team from Eliteserien win the Champions League?
+   KXLALIGACORNERS              40 open  Total Corners  e.g. 9+ total corners | 8+ total corners
+   KXEFLCHAMPIONSHIPGAME        39 open  EFL Championship Game  e.g. Wolverhampton wins | Tie is the result
+   KXF1CONSTRUCTORS             11 open  Formula 1 Constructors  e.g. Will Williams win the F1 Constructors Championship? | Will Red Bull Racing win the F1 Constructors Championship?
+   KXBUNDESLIGATOTAL            54 open  Bundesliga Total  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXBOXING                     40 open  Boxing Match Champion  e.g. Levi Gilles wins | Nelson Birchall wins
+   KXWCHOST                     14 open  World Soccer Cup Host Country  e.g. Will USA be announced as a host for the 2038 Men's FIFA World Cup? | Will United Kingdom or Ireland be announced as hosts for the 2038 Men's FIFA World Cup?
+   KXMLS2HTOTAL                  9 open  2nd Half Total  e.g. Over 2.5 2H goals scored | Over 1.5 2H goals scored
+   KXLALIGA                     20 open  LA LIGA  e.g. Will Malaga win the La Liga? | Will Villarreal win La Liga?
+   KXLALIGABTTS                 10 open  La Liga BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXATPGSPREAD                  9 open  ATP Game Spread  e.g. Will Casper Ruud win at least 1.5 more games than Rafael Jodar? | Will Rafael Jodar win at least 4.5 more games than Casper Ruud?
+   KXLIGUE1TEAMPOINTS           72 open  Team Points  e.g. Will Toulouse finish the 2026-27 Ligue 1 season with 55+ points? | Will Toulouse finish the 2026-27 Ligue 1 season with 50+ points?
+   KXMLSEAST                    15 open  MLS Western Conference winner?  e.g. Will Toronto win the MLS Eastern Conference? | Will Philadelphia win the MLS Eastern Conference?
+   KXUCLBOTTOM                  36 open  UCL League Phase Bottom of Table  e.g. Will Villarreal finish bottom of the table in the league phase for the Champions League? | Will Viking finish bottom of the table in the league phase for the Champions League?
+   KXSERIEATOTAL                60 open  Serie A Total  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXTFF1LIGGAME                42 open  TFF 1. Lig Game  e.g. Tie is the result | Keciorengucu wins
+   KXEPLH2H                      6 open  EPL H2H Results  e.g. Will Tottenham win one and draw one of their two 2026-27 EPL matches against Arsenal? | Will Tottenham win both 2026-27 EPL matches against Arsenal?
+   KXBOXINGMOV                  30 open  Boxing Method of Victory  e.g. Jose Armando Resendiz wins by KO/TKO/DQ | Jose Armando Resendiz wins by decision
+   KXUCLTOP                     36 open  UCL League Phase Top of Table  e.g. Will Villarreal finish top of the table in the league phase for the Champions League? | Will Viking finish top of the table in the league phase for the Champions League?
+   KXSERIEATEAMTOTAL             6 open  Team Total  e.g. Will Sassuolo score over 2.5 goals? | Will Sassuolo score over 1.5 goals?
+   KXLNBPGAME                    4 open  LNBP Basketball Game  e.g. Mineros de Zacatecas wins | Diablos Rojos Del Mexico wins
+   KXSERIEAPOINTMARGIN           6 open  Serie A Champion Winning Margin  e.g. Will the Serie A champion win by 15+ points? | Will the Serie A champion win by 8 to 10 points?
+   KXNASCARCUPSERIES            35 open  NASCAR Cup Series Champion  e.g. Will Shane Van Gisbergen win the 2026 NASCAR Cup Series? | Will Riley Herbst win the 2026 NASCAR Cup Series?
+   KXBOLPDIVGAME                24 open  Bolivia Premier Division Game  e.g. Tie is the result | Nacional Potosi wins
+   KXF1                         22 open  Formula 1  e.g. Will Valtteri Bottas win the F1 Drivers Championship? | Will Sergio Perez win the F1 Drivers Championship?
+   KXUFCTITLE                  121 open  UFC Title Holder  e.g. Yan Xiaonan to be Women's Strawweight Title holder on Dec 31, 2026 | Zhang Weili to be Women's Strawweight Title holder on Dec 31, 2026
+   KXSERIEA1H                    3 open  Serie A First Half Winner  e.g. Tie 1st Half | Sassuolo wins 1st Half
+   KXLIGUE11HTOTAL               3 open  1st Half Total  e.g. Over 2.5 1H goals scored | Over 1.5 1H goals scored
+   KXWTACHALLENGERMATCH         22 open  Challenger WTA  e.g. Anouk Koevermans wins | Lea Boskovic wins
+   KXLIVCOMPETE                 15 open  Golfers to Compete in a LIV Event  e.g. Tyrrell Hatton to compete in a LIV Golf Tournament in Q1 2027 (January 1, 2027 to March 31, 2027)? | Thomas Detry to compete in a LIV Golf Tournament in Q1 2027 (January 1, 2027 to March 31, 2027)?
+   KXMLSBTTS                    18 open  MLS BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXNASCARRACE                112 open  NASCAR Race  e.g. Auto Parts: Nick Sanchez wins | Auto Parts: Josh Williams wins
+   KXECULPGAME                  24 open  Ecuador Liga Pro Game  e.g. Tie is the result | Orense wins
+   KXWTATOURNWIN                 1 open  Will player win tournament  e.g. Will Serena Williams win a WTA tournament in 2026?
+   KXSERIEAWGAME                18 open  Serie A Femminile Game  e.g. Tie is the result | Juventus wins
+   KXNASCARTOP5                 37 open  NASCAR Top 5 Finishers  e.g. Cup Series: Zane Smith to finish in the top 5 | Cup Series: William Byron to finish in the top 5
+   KXEPLPOINTMARGIN              6 open  English Premier League Champion Winning Margin  e.g. Will the EPL champion win by 15+ points? | Will the EPL champion win by 9 to 14 points?
+   KXWTA1RANK                    8 open  WTA #1 Ranked  e.g. Who will be the #1 ranked WTA women's singles player on Dec 31, 2026? | Who will be the #1 ranked WTA women's singles player on Dec 31, 2026?
+   KXEPLLAST                    20 open  EPL Last Place Finisher  e.g. Will Tottenham finish in last place in the EPL 2026-27 season? | Will Sunderland finish in last place in the EPL 2026-27 season?
+   KXUFCHEAVYWEIGHTTITLE        12 open  UFC Heavyweight Title  e.g. Heavyweight Title holder to be vacant on Dec 31, 2026 | Who will be the Heavyweight Title on Dec 31, 2026?
+   KXBUNDESLIGA                 18 open  BUNDESLIGA  e.g. Will Stuttgart win the 2026-27 Bundesliga? | Will Union Berlin win the 2026-27 Bundesliga?
+   KXUFCDISTANCE                13 open  UFC To Go The Distance  e.g. Fight goes the distance? | Fight goes the distance?
+   KXMLSSCORE                   66 open  Correct Score  e.g. Final score San Diego FC wins 5-2? | Final score San Diego FC wins 4-3?
+   KXUFCMIDDLEWEIGHTTITLE        8 open  UFC Middleweight Title  e.g. Who will be the Middleweight Title Holder on Dec 31, 2026? | Who will be the Middleweight Title Holder on Dec 31, 2026?
+   KXWBCMIDDLEWEIGHTTITLE       19 open  Boxing Middleweight Title  e.g. Who will hold the WBC Middleweight Title on January 1, 2027? | Who will hold the WBC Middleweight Title on January 1, 2027?
+   KXLIGUE12H                    3 open  2nd Half Winner  e.g. Tie 2nd Half | Toulouse wins 2nd Half
+   KXTFF1LIGSPREAD              16 open  Spread  e.g. Mugla wins by more than 2.5 goals? | Mugla wins by more than 1.5 goals?
+   KXLIGUE1TOTAL                54 open  Ligue 1 Total  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXBUNDESLIGAGAME             54 open  Bundesliga Game  e.g. Hoffenheim wins | Tie is the result
+   KXSERIEA                     20 open  Serie A   e.g. Will Venezia win the 2026-27 Serie A? | Will Udinese win the 2026-27 Serie A?
+   KXNCAAF1QSPREAD             200 open  College Football 1st Quarter Spread  e.g. Oregon wins 1Q by over 7.5 points | Oregon wins 1Q by over 6.5 points
+   KXUFCFLYWEIGHTTITLE           9 open  UFC Flyweight Title  e.g. Who will hold the UFC Flyweight Title title on Dec 31, 2026? | Who will hold the UFC Flyweight Title title on Dec 31, 2026?
+   KXATPGRANDSLAM               22 open  ATP Grand Slam  e.g. Tennis Grand Slam in 2027: Alex Michelsen | Tennis Grand Slam in 2027: Tommy Paul
+   KXUCLGAME                    54 open  UEFA Champions League Game  e.g. Tie is the result | Lille wins
+   KXATPMATCH                    8 open  ATP Tennis Match  e.g. Tommy Paul wins | Daniil Medvedev wins
+   KXF1ACTION                   23 open  FIA Action of the Year Award  e.g. Will Max Verstappen win the FIA F1 Action of the Year award in the 2026 FIA (Fédération Internationale de l'Automobile) season? | Will Tie/Co-Winners win the FIA F1 Action of the Year award in the 2026 FIA (Fédération Internationale de l'Automobile) season?
+   KXATPNOVAK25                  1 open  When will Novak win his 25th Major?  e.g. Novak Djokovic to win his 25th Major before 2028?
+   KXSERIEA1HSPREAD              2 open  1st Half Spread  e.g. Sassuolo wins by more than 1.5 goals in the 1st Half | Frosinone wins by more than 1.5 goals in the 1st Half
+   KXMMACOMPETE                 48 open  Fighters to comepete in MVP event  e.g. Tony Ferguson to compete in the MVP (Most Valuable Promotions) MMA before 2028? | Qileng Aori to compete in the MVP (Most Valuable Promotions) MMA before 2028?
+   KXNASCARAUTOPARTSSERIES      40 open  NASCAR Auto Parts Series Champion  e.g. Will Brent Crews be the NASCAR O'Reilly Auto Parts Series Champion? | Will William Sawalich be the NASCAR O'Reilly Auto Parts Series Champion?
+   KXMMAFIGHT                   28 open  MMA Fight  e.g. Emiliano Sordi wins | Abraham Bably wins
+   KXJOINCLUB                  114 open  Soccer Join Club  e.g. Where will Erling Haaland go next? | Where will Erling Haaland go next?
+   KXEPLH2HFINISH               14 open  EPL H2H Finishing Position  e.g. Will Manchester United finish higher than Leeds United in the 2026-27 EPL final table? | Will Leeds United finish higher than Manchester United in the 2026-27 EPL final table?
+   KXLALIGAPOINTMARGIN           6 open  La Liga Champion Winning Margin  e.g. Will the La Liga champion win by 15+ points? | Will the La Liga champion win by 9 to 11 points?
+   KXWTAMATCH                   16 open  WTA Tennis Match  e.g. Jelena Ostapenko wins | Leylah Fernandez wins
+   KXLALIGALEADER               24 open  La Liga Leader  e.g. Will Yan Diomande lead La Liga in goals for the 2026-27 season? | Will Vinicius Junior lead La Liga in goals for the 2026-27 season?
+   KXNCAAF1Q                    93 open  College Football 1st Quarter Winner  e.g. 1st quarter tie | Oregon wins the 1st quarter
+   KXBBSERIEAGAME               16 open  Italy Serie A Game  e.g. Maxima Roma wins | Derthona Basket wins
+   KXUCLBTTS                    18 open  Champions League BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXBUNDESLIGA2H                3 open  2nd Half Winner  e.g. Tie 2nd Half | Frankfurt wins 2nd Half
+   KXNASCARTOP20                37 open  NASCAR Top 20 Finishers  e.g. Cup Series: Zane Smith to finish in the top 20 | Cup Series: William Byron to finish in the top 20
+   KXLIGUE1SCORE                30 open  Correct Score  e.g. Final score Le Mans FC wins 5-2? | Final score Le Mans FC wins 5-1?
+   KXLALIGA1HBTTS                1 open  1st Half BTTS  e.g. Both teams score in the 1st Half?
+   KXLALIGA1HSCORE              13 open  1st Half Correct Score  e.g. Will the 1st half score be RC Deportivo De La Coruna wins 3-1? | Will the 1st half score be RC Deportivo De La Coruna wins 3-0?
+   KXCHAMPTOUR                  75 open  PGA Champions Tour  e.g. SAS Championship: Y.E. Yang wins | SAS Championship: Woody Austin wins
+   KXUFCMOF                     52 open  UFC Method of Finish  e.g. Fight ends by Submission? | Fight ends by KO/TKO/DQ?
+   KXSERIEALEADER               20 open  Serie A Leader  e.g. Will Riccardo Orsolini lead Serie A in goals for the 2026-27 season? | Will Randal Kolo Muani lead Serie A in goals for the 2026-27 season?
+   KXLALIGA2HSPREAD              2 open  2nd Half Spread  e.g. Levante wins by more than 1.5 goals in the 2nd Half | Deportivo De La Coruna wins by more than 1.5 goals in the 2nd Half
+   KXTFF1LIGBTTS                 4 open  BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXSERIEASPREAD               40 open  Serie A Spread  e.g. Torino wins by more than 2.5 goals? | Torino wins by more than 1.5 goals?
+   KXTFF1LIGTOTAL               24 open  Point Total  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXLALIGA1HSPREAD              2 open  1st Half Spread  e.g. Levante wins by more than 1.5 goals in the 1st Half | Deportivo De La Coruna wins by more than 1.5 goals in the 1st Half
+   KXLIGUE12HSPREAD              2 open  2nd Half Spread  e.g. Toulouse wins by more than 1.5 goals in the 2nd Half | Le Mans wins by more than 1.5 goals in the 2nd Half
+   KXBUNDESLIGATEAMPOINTS       72 open  Team Points  e.g. Will Stuttgart finish the 2026-27 Bundesliga season with 70+ points? | Will Stuttgart finish the 2026-27 Bundesliga season with 65+ points?
+   KXAUTBUNDESGAME              18 open  Austrian Bundesliga Game  e.g. Tie is the result | SK Rapid wins
+   KXEPLSEASONSTAT              50 open  EPL Season Stats  e.g. Will Yoane Wissa record 14+ goals during the 2026-27 EPL season? | Will Yoane Wissa record 10+ goals during the 2026-27 EPL season?
+   KXLIGUE1BTTS                  9 open  Ligue 1 BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXF1CHINA                     1 open  F1 team from China  e.g. Will there be an F1 team from China before 2027?
+   KXWBCBANTAMWEIGHTTITLE       20 open  Boxing Bantamweight Title  e.g. Who will hold the WBC Bantamweight Title on January 1, 2027? | Who will hold the WBC Bantamweight Title on January 1, 2027?
+   KXUCLLEADER                  66 open  Champions League Leader  e.g. Will Yan Diomande lead Champions League in assists for the 2026-27 season? | Will Vinicius Junior lead Champions League in assists for the 2026-27 season?
+   KXSERIEA1HBTTS                1 open  1st Half BTTS  e.g. Both teams score in the 1st Half?
+   KXLIGUE1                     18 open  LIGUE 1  e.g. Will Toulouse win the 2026-27 Ligue 1? | Will Stade Brest 29 win the 2026-27 Ligue 1?
+   KXLPGAR2LEAD                 81 open  LPGA Round 2 Leader  e.g. Ziyan Meng leads at the end of Round 2 | Yuting Shi leads at the end of Round 2
+   KXLIGAEXPGAME                24 open  Liga Expansion Game  e.g. Tie is the result | Tepatitlan wins
+   KXUFCVICROUND                95 open  UFC Round of Victory  e.g. Will either competitor win the Joaquin Buckley vs. Mike Malott fight by decision or the fight result in a draw/no contest | Will Mike Malott win the Joaquin Buckley vs. Mike Malott UFC Fight Night fight in Round 5
+   KXBUNDESLIGA1HSPREAD          2 open  1st Half Spread  e.g. Frankfurt wins by more than 1.5 goals in the 1st Half | FC Köln wins by more than 1.5 goals in the 1st Half
+   KXUFCFEATHERWEIGHTTITLE      11 open  UFC Featherweight Title  e.g. Who will be the Featherweight Title Holder on Dec 31, 2026? | Who will be the Featherweight Title Holder on Dec 31, 2026?
+   KXMLSWEST                    15 open  MLS Western Conference winner?  e.g. Will Vancouver win the MLS Western Conference? | Will Saint Louis win the MLS Western Conference?
+   KXBUNDESLIGARELEGATION       18 open  Bundesliga Relegation  e.g. Will Stuttgart be relegated from Bundesliga in 2026-27 Season? | Will Union Berlin be relegated from Bundesliga in 2026-27 Season?
+   KXLIGUE11HBTTS                1 open  1st Half BTTS  e.g. Both teams score in the 1st Half?
+   KXEPLLEADER                  64 open  EPL Leader  e.g. Will Youri Tielemans lead EPL in assists for the 2026-27 season? | Will Yeremy Pino lead EPL in assists for the 2026-27 season?
+   KXMLSTOTAL                  114 open  MLS Total  e.g. Will over 9.5 goals be scored? | Will over 8.5 goals be scored?
+   KXMLSSPREAD                  78 open  MLS Spread  e.g. San Diego FC wins by more than 3.5 goals? | Los Angeles F wins by more than 3.5 goals?
+   KXUCLTOP8                    36 open  UCL League Phase Top 8 Finishers  e.g. Will Villarreal finish in the top 8 of the table in the league phase for the Champions League? | Will Viking finish in the top 8 of the table in the league phase for the Champions League?
+   KXMLSLEADER                  17 open  MLS Leader  e.g. Will Tai Baribo lead MLS in goals for the 2026 season? | Will Sam Surridge lead MLS in goals for the 2026 season?
+   KXSERIEA2HTOTAL               3 open  2nd Half Total  e.g. Over 2.5 2H goals scored | Over 1.5 2H goals scored
+   KXPGAFUTURE                   8 open  Future Major Championship Wins  e.g. How many golf major championships will Jackson Koivun win before 2036? | How many golf major championships will Jackson Koivun win before 2036?
+   KXLALIGATOTAL                60 open  La Liga Total  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXNASCARTRUCKSERIES          35 open  NASCAR Truck Series Champion  e.g. Will Tyler Tomassi be the NASCAR Truck Series Champion? | Will Tyler Reif be the NASCAR Truck Series Champion?
+   KXUCLROUND                  144 open  Round Qualifiers  e.g. Will Villarreal qualify for the Champions League Final? | Will Viking qualify for the Champions League Final?
+   KXSINNERFINISH                1 open  Jannik Sinner to Complete Tennis  e.g. Will Jannik Sinner win every major tennis event by 2028?
+   KXLALIGAGAME                 60 open  La Liga Game  e.g. Tie is the result | Sevilla wins
+   KXBUNDESLIGA2GAME            27 open  Bundesliga 2 Game  e.g. Tie is the result | Karlsruhe wins
+   KXEPLGAME                    60 open  English Premier League Game  e.g. Tie is the result | Newcastle wins
+   KXPGARETURN                  13 open  PGA Returning Players  e.g. Will Tyrrell Hatton rejoin, apply to rejoin, or announce that he will rejoin the PGA Tour before Jan 21, 2027? | Will Thomas Detry rejoin, apply to rejoin, or announce that he will rejoin the PGA Tour before Jan 21, 2027?
+   KXUFCROUNDS                  28 open  UFC Round of Finish  e.g. Fight ends before round 5? | Fight ends before round 4?
+   KXBUNDESLIGA2HTOTAL           3 open  2nd Half Total  e.g. Over 2.5 2H goals scored | Over 1.5 2H goals scored
+   KXWBCFLYWEIGHTTITLE          19 open  Boxing Flyweight Title  e.g. Who will hold the WBC Flyweight Title on January 1, 2027? | Who will hold the WBC Flyweight Title on January 1, 2027?
+   KXUAEPLGAME                  21 open  UAE Pro League  e.g. Tie is the result | Khor Fakkan wins
+   KXUCL                        36 open  UEFA Champions League  e.g. Will Viking win the Champions League? | Will Slovan Bratislava win the Champions League?
+   KXLALIGATCORNERS             16 open  Team Corners  e.g. Levante: 5+ corners | Deportivo De La Coruna: 6+ corners
+   KXLALIGASCORE                27 open  Correct Score  e.g. Final score RC Deportivo De La Coruna wins 5-2? | Final score RC Deportivo De La Coruna wins 5-1?
+   KXPGACURRY                    1 open  Steph Curry PGA  e.g. Steph Curry to compete in a PGA Tour event before 2028
+   KXWBCFEATHERWEIGHTTITLE      17 open  Boxing Featherweight Title  e.g. Who will hold the WBC Featherweight Title on January 1, 2027? | Who will hold the WBC Featherweight Title on January 1, 2027?
+   KXSOCCERRETIRE               13 open  Soccer Retire  e.g. Will Thiago Silva announce his retirement from soccer before Jul 1, 2027? | Will Sergio Ramos announce his retirement from soccer before Jul 1, 2027?
+   KXBUNDESLIGATOP              18 open  Bundesliga Top Finishers  e.g. Will Stuttgart finish in the top 4 in the Bundesliga season? | Will Union Berlin finish in the top 4 in the Bundesliga season?
+   KXEPLTEAMPOINTS              80 open  Team Points  e.g. Will Tottenham finish the 2026-27 EPL season with 75+ points? | Will Tottenham finish the 2026-27 EPL season with 70+ points?
+   KXLALIGASPREAD               40 open  La Liga Spread  e.g. Vallecano wins by more than 2.5 goals? | Vallecano wins by more than 1.5 goals?
+   KXBUNDESLIGASCORE            30 open  Correct Score  e.g. Final score Eintracht Frankfurt wins 5-2? | Final score Eintracht Frankfurt wins 5-1?
+   KXLALIGALAST                 20 open  La Liga Last Place Finisher  e.g. Will Villarreal finish in last place in the La Liga 2026-27 season? | Will Valencia finish in last place in the La Liga 2026-27 season?
+   KXLALIGA2HTOTAL               3 open  2nd Half Total  e.g. Over 2.5 2H goals scored | Over 1.5 2H goals scored
+   KXBUNDESLIGAPOINTMARGIN       6 open  Bundesliga Champion Winning Margin  e.g. Will the Bundesliga champion win by 15+ points? | Will the Bundesliga champion win by 8 to 10 points?
+   KXWBCHEAVYWEIGHTTITLE        17 open  Boxing Heavyweight Title  e.g. Who will hold the WBC Heavyweight Title on January 1, 2027? | Who will hold the WBC Heavyweight Title on January 1, 2027?
+   KXLIGUE1LAST                 18 open  Ligue 1 Last Place Finisher  e.g. Will Toulouse finish in last place in the Ligue 1 2026-27 season? | Will Stade Brest 29 finish in last place in the Ligue 1 2026-27 season?
+   KXBOXINGDISTANCE              6 open  Boxing Fight to Go the Distance  e.g. Fight goes the distance | Fight goes the distance
+   KXNCAAF1HSPREAD             200 open  College Football 1st Half Spread  e.g. Oregon wins 1H by over 7.5 points | Oregon wins 1H by over 6.5 points
+   KXUFCFIGHTOCCUR               1 open  UFC Fighter to Compete in a Fight  e.g. Will Conor McGregor compete in an officially sanctioned UFC fight after Issuance and before Jan 1, 2028?
+   KXEPLRELEGATION              20 open  English Premier League Relegation  e.g. Will Tottenham be relegated from EPL in 2026-27 Season? | Will Sunderland be relegated from EPL in 2026-27 Season?
+   KXEPLTOP                     80 open  EPL Top Finishers  e.g. Will Tottenham finish in the top 6 in the 2026-27 EPL season? | Will Sunderland finish in the top 6 in the 2026-27 EPL season?
+   KXGOLFMAJOR                 171 open  Will golfer win a major by 2030?  e.g. Will Xander Schauffele win a golf major championship in 2027? | Will Wyndham Clark win a golf major championship in 2027?
+   KXLALIGA2H                    3 open  2nd Half Winner  e.g. Tie 2nd Half | Levante wins 2nd Half
+   KXATPCHALLENGERDOUBLES       36 open  ATP Challenger Doubles Match  e.g. Finn Reynolds / James Watt wins | Daniel de Jonge / Jannik Opitz wins
+   KXLIGUE1GAME                 54 open  Ligue 1 Game  e.g. Tie is the result | Lille wins
+   KXEPLTCORNERS                18 open  EPL Team Corners  e.g. Manchester City: 8+ corners | Ipswich Town: 3+ corners
+   KXLIGUE2GAME                 27 open  Ligue 2 Game  e.g. Tie is the result | Rodez wins
+   KXMLS2HBTTS                   3 open  2nd Half BTTS  e.g. Both teams score in the 2nd Half? | Both teams score in the 2nd Half?
+   KXEUROCUPGAME                 2 open  EuroCup Basketball Game  e.g. Fraport Skyliners wins | London Lions wins
+   KXSERIEABTTS                 10 open  Serie A BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXATPRETIRE                   3 open  ATP Tennis Retirement  e.g. Will Novak Djokovic announce his retirement before 2027? | Will Novak Djokovic announce their retirement before the 2028 ATP season?
+   KXWTAGTOTAL                  22 open  WTA Total Games  e.g. Over 25.5 games | Over 20.5 games
+   KXEPLTOTAL                   56 open  English Premier League Total Goals  e.g. Will over 5.5 goals be scored? | Will over 4.5 goals be scored?
+   KXPGATIGER                    1 open  Tiger Woods PGA  e.g. Will Tiger Woods compete in any PGA event in 2026?
+   KXF1OCCUR                     1 open  Formula 1 Event Occurrence  e.g. Will the 2026 F1 Abu Dhabi Grand Prix main race take place in Abu Dhabi before December 7, 2026?
+   KXBUNDESLIGAWGAME            21 open  German Women's Bundesliga Game  e.g. Stuttgart wins | Tie is the result
+   KXFRAPLWGAME                 18 open  French Women's Première Ligue Game  e.g. Tie is the result | Strasbourg wins
+   KXSERIEA2HBTTS                1 open  2nd Half BTTS  e.g. Both teams score in the 2nd Half?
+   KXBUNDESLIGABTTS              9 open  Bundesliga BTTS  e.g. Both Teams To Score | Both Teams To Score
+   KXBUNDESLIGA1H                3 open  Bundesliga First Half Winner  e.g. Tie 1st Half | Frankfurt wins 1st Half
+   KXLIGUE12HBTTS                1 open  2nd Half BTTS  e.g. Both teams score in the 2nd Half?
+   KXATPCHALLENGERMATCH         44 open  Challenger ATP   e.g. Lukas Neumayer wins | Matej Dodig wins
+   KXNASCARTOP3                112 open  NASCAR Podium Finishers  e.g. Auto Parts: Nick Sanchez to finish in the top 3 | Auto Parts: Josh Williams to finish in the top 3
+   KXEPLSPREAD                  40 open  English Premier League Spread  e.g. Tottenham wins by more than 2.5 goals? | Tottenham wins by more than 1.5 goals?
+   KXMMAEXFIGHT                  6 open  MMA Fight  e.g. Jeremy Smith wins | Flyysoulja wins
+   KXWTAFINALSQUAL              20 open  Will Player Qualify for WTA Finals  e.g. Will Qinwen Zheng qualify for the WTA Singles Finals? | Will Iga Swiatek qualify for the WTA Singles Finals?
+   KXBUNDESLIGATEAMTOTAL         6 open  Team Total  e.g. Will Frankfurt score over 2.5 goals? | Will Frankfurt score over 1.5 goals?
+   KXLIGUE1TOP                  18 open  Ligue 1 Top Finishers  e.g. Will Toulouse finish in the top 4 in the Ligue 1 season? | Will Stade Brest 29 finish in the top 4 in the Ligue 1 season?
+   KXNCAAF1HFT                  66 open  College Football 1st Half Fulltime Result  e.g. Tie in 1st Half / Oklahoma St. wins game | Tie in 1st Half / Houston wins game
+   KXSERIEA2HSPREAD              2 open  2nd Half Spread  e.g. Sassuolo wins by more than 1.5 goals in the 2nd Half | Frosinone wins by more than 1.5 goals in the 2nd Half
