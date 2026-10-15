@@ -1,0 +1,32 @@
+name: diag-close
+on:
+  push:
+    branches: [diag-close]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out; cd out
+          g() { curl -s --max-time 120 "$U$1" > "$2"; echo "$2 $(wc -c < $2)"; }
+          g /api/status status.json
+          g "/api/ev/record" ev-record.json
+          g "/api/props/record" props-record.json
+          for k in main alt es stale; do
+            q=""; [ $k != main ] && q="&$k=1"
+            for st in open closed; do g "/api/ev/record/bets?status=$st&limit=500$q" ev-$k-$st.json; done
+          done
+          for st in open locked graded void; do g "/api/props/record/picks?status=$st&limit=1000" props-$st.json; done
+          g "/api/book-arbs/record?limit=2000" bookarbs.json
+          g "/api/big-money" bigmoney.json
+          g "/api/esports/pintotals" pintotals.json
+          g "/api/ev" ev.json
+          date -u +%FT%TZ > at.txt
+          cd ..
+          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-close-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-close-out
