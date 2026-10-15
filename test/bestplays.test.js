@@ -238,7 +238,7 @@ test("the PROPS board's sharp-priced plays: in Best Plays, ranked by their recor
   const { plays } = scoreboard({ sportsProps: [...Array.from({ length: 9 }, (_, i) => rec(i)), rec('r', { kind: 'gap-odd' })] });
   const ranked = bestPlays({ sportProps: flagged, plays }, { now: NOW }).rows.filter(r => r.kind === 'sportsProp');
   assert.deepEqual(ranked.map(r => r.verdict), ['promising', 'promising']);
-  assert.match(ranked[1].why.at(-1), /^promising \(Sports props: NFL · rec_yds, \+4.0% CLV over 9 bets\)/);
+  assert.match(ranked[1].why.at(-1), /^not proven yet: 9 graded, \+4.0% CLV \(Sports props: NFL · rec_yds\)/);
   const few = scoreboard({ sportsProps: Array.from({ length: 4 }, (_, i) => rec(i)) }).plays;
   const early = bestPlays({ sportProps: flagged, plays: few }, { now: NOW }).rows.filter(r => r.kind === 'sportsProp');
   assert.match(early[1].why.at(-1), /^record so far \(Sports props: line gap · Underdog\): 4-0 \(\+3.12u\), \+4.0% CLV over 4/);

@@ -4548,7 +4548,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.135.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.136.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5399,6 +5399,7 @@ const BOOK_FAIR_OPTS = { ...sportProps.BOOK_FAIR, minEv: SHARP_OPTS.minEv, maxSp
 const BOOK_FAIR_BOOKS = Object.keys(BOOK_FAIR_OPTS.weights);
 const BOOK_FAIR_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_FAIR || '').trim());
 const bookFairKind = sportProps.bookFairKind;
+const bookFairLineDiffers = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairLineDiffers(row, sharp, { dfsEv: dfsLegEv, o: BOOK_FAIR_OPTS }) : null);
 const bookFairPlays = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairPlays(row, sharp, { dfsEv: dfsLegEv, o: BOOK_FAIR_OPTS }) : []);
 function priceSportRows(rows) {
   const flagged = [];
@@ -5456,6 +5457,11 @@ function priceSportRows(rows) {
       if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
       else if (bf) c.ev = { side: bf.side, ev: bf.ev, fair: +(bf.fair * 100).toFixed(1), bookFair: bf.n >= 2 ? 'both' : 'single' };
       else if (c.fair == null) delete c.ev;
+      // the books post this prop at another number than the app's: no price, and the row says so
+      if (!c.ev && !cplays.length && !pin && !kalshi.size) {
+        const d = bookFairLineDiffers({ ...row, books: { [book]: c } }, sharp);
+        if (d) c.lineDiffers = d; else delete c.lineDiffers;
+      } else delete c.lineDiffers;
     }
     let best = null;
     for (const p of plays) {
@@ -6599,7 +6605,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.135.0',
+  version: '3.136.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

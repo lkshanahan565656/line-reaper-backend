@@ -9,6 +9,10 @@
 //              (CLV here is the 2-minute grade once 8+ bets have one)
 //   promising  8+ bets, beating the close (or in profit when there's no CLV)
 //   avoid      8+ bets, losing to the close and losing money (or a t of -2)
+//
+// Sportsbook records (BOOK_SOURCES) are held to a stricter rule: only a cut by
+// a single book can be proven, and only with PROVEN_BOOK_N graded bets of its
+// own. A pooled group (all books, a sport, a market) never makes a book proven.
 //   early      everything else
 //
 // "Bets" means bets that carry the number being judged: a CLV verdict counts
@@ -159,6 +163,19 @@ const SOURCES = {
     cuts: [['flow'], ['venue'], ['kind'], ['line'], ['flow', 'venue'], ['kind', 'flow']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
 };
+// sportsbook records whose proven mark must come from one book's own sample
+const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
+const PROVEN_BOOK_N = 50;
+// the bets behind a verdict: the sized or 2-minute grade once 8+ carry one, else the close
+const judgedN = s => (s.sizedN >= EXEC_MIN_N ? s.sizedN : s.execN >= EXEC_MIN_N ? s.execN : (s.clvN ?? s.graded ?? s.n));
+// a sportsbook play keeps 'proven' only as one book's own 50+ sample
+function bookGuard(source, by, s) {
+  if (!BOOK_SOURCES.has(source) || s.verdict === 'avoid') return s;
+  const ownBook = !!by && by.split('+').includes('book');
+  if (s.verdict === 'proven' && ownBook && judgedN(s) >= PROVEN_BOOK_N) return s;
+  const verdict = s.verdict === 'proven' ? 'promising' : s.verdict;
+  return { ...s, verdict, provenNote: `not proven yet: ${judgedN(s)} graded${s.avgClv != null ? `, ${s.avgClv > 0 ? '+' : ''}${(s.avgClv * 100).toFixed(1)}% CLV` : ''}` };
+}
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
 // lists: { tail: [records], fresh, esportsEdges, exchangeValue, ev, esportsPicks, gasLocks } →
@@ -170,8 +187,8 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
     const done = all.filter(def.done);
     const bets = done.map(def.bet);
     const open = def.open ? all.filter(def.open).length : all.length - done.length - all.filter(r => r.result === 'unfilled').length;
-    sources[name] = { label: def.label, open, overall: score(bets) };
-    if (bets.length) plays.push({ source: name, label: def.label, play: 'all', ...sources[name].overall });
+    sources[name] = { label: def.label, open, overall: bookGuard(name, null, score(bets)) };
+    if (bets.length) plays.push({ source: name, label: def.label, play: 'all', ...bookGuard(name, null, sources[name].overall) });
     for (const cut of def.cuts) {
       const g = new Map();
       for (const b of bets) {
@@ -181,7 +198,7 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
         if (!g.has(k)) g.set(k, []);
         g.get(k).push(b);
       }
-      for (const [k, list] of g) if (list.length >= minN) plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...score(list) });
+      for (const [k, list] of g) if (list.length >= minN) plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...bookGuard(name, cut.join('+'), score(list)) });
     }
   }
   const lead = p => p.clvT ?? p.roiT ?? -Infinity;
@@ -189,4 +206,4 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   return { sources, plays };
 }
 
-module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N };
+module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N, PROVEN_BOOK_N, BOOK_SOURCES };
