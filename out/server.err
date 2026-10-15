@@ -1,0 +1,27 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 jason: no usable kill fields — inspect /api/esports/probe/cs/jason
+bo3 corim: no usable kill fields — inspect /api/esports/probe/cs/corim
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 Psycho: read ECONNRESET
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail: clv 0x4f1d5ae26fc31472966e951af3183308736d8de2: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Ratings CS failed: read ECONNRESET
+bo3 yuurih: no usable kill fields — inspect /api/esports/probe/cs/yuurih
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 m0NESY-: no search hit
+bo3 BlNGB0NG: no usable kill fields — inspect /api/esports/probe/cs/BlNGB0NG
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Polymarket US: book asc-cfb-kenest-msrst-2026-10-14-neg-7pt5: Request failed with status code 429
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Polymarket US: book asc-mlb-mil-lad-2026-10-14-pos-1pt5: Request failed with status code 429
+Polymarket US: book aec-nba-por-gs-2026-10-16: Request failed with status code 429
