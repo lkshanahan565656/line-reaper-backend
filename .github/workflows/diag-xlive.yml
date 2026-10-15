@@ -15,7 +15,7 @@ jobs:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
           for i in $(seq 1 90); do v=$(curl -s $U/api/status | jq -r .version); echo "$i $v"; [ "$v" = "3.124.1" ] && break; sleep 20; done
-          sleep 240
+          sleep 5
       - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
       - run: node diag/xlive.js || true
       - run: |

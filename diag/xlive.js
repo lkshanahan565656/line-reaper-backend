@@ -13,6 +13,9 @@ const U = 'https://line-reaper-backend-production.up.railway.app';
   for (const [name, w, h] of [['phone', 390, 844], ['desktop', 1280, 900]]) {
     const p = await b.newPage({ viewport: { width: w, height: h } });
     await p.goto(`${U}/app`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await p.locator('input[type=checkbox]').first().check().catch(e => console.log(e.message));
+    await p.getByText('Enter the app').first().click().catch(e => console.log(e.message));
+    await p.waitForTimeout(5000);
     await p.locator('button.tab', { hasText: '+EV' }).first().click().catch(e => console.log(e.message));
     await p.waitForTimeout(8000);
     await p.screenshot({ path: `out/ev-${name}.png`, fullPage: false });
