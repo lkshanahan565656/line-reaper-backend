@@ -82,12 +82,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
         // a stale-line leg is logged as of the read it first showed on
         signalAt: new Date(STALE.has(kind) && play.signalAt ? Math.min(play.signalAt, t) : t).toISOString(), signalBook: CODE[play.book] || play.book, book: play.book, signalSide: play.side, signalLine: play.line,
-        signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
+        signalMult: play.mult, signalDecimal: r4(decimal), signalFair: play.fair == null ? null : r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
         ...(baseKind(kind) === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
-        closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
+        closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
       open.set(id, b);
       seen.set(id, t);
@@ -136,8 +136,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       b.closeSeenAt = new Date(seenT).toISOString();
       b.closeAgeMin = r2((start - seenT) / 60e3);
       b.closeOk = start - seenT <= CLOSE_FRESH_MS;
-      b.closeEv = r2((b.closeFair * b.signalDecimal - 1) * 100);
-      b.fairMove = r2((b.closeFair - b.signalFair) * 100);
+      // a leg no sharp source priced (a slip-log leg, sliplog.js) closes without a fair
+      b.closeEv = b.closeFair == null ? null : r2((b.closeFair * b.signalDecimal - 1) * 100);
+      b.fairMove = b.closeFair == null || b.signalFair == null ? null : r2((b.closeFair - b.signalFair) * 100);
       b.gapOutcome = gapOutcome({ gapVs: b.gapVs, signalLine: b.signalLine, signalBook: b.signalBook, closeLines: b.closeLines });
       writes.push(put(b));
     }
