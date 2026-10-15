@@ -78,8 +78,9 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   for (const r of br) for (const [bk, c] of Object.entries(r.books || {})) { const a = (L[r.sport] ||= { legs: 0, sharp: 0, both: 0, single: 0, clear2: 0, clear2single: 0 }); a.legs++; const k = pb.legSource(r, c); if (k === 'pinnacle' || k === 'kalshi') a.sharp++; if (c.ev?.bookFair) { a[c.ev.bookFair]++; if (c.ev.ev >= 2) a[c.ev.bookFair === 'both' ? 'clear2' : 'clear2single']++; } }
   say('league       legs   sharp  bookfair-both  bookfair-single  clear2%(both)  clear2%(single)');
   for (const [k, a] of Object.entries(L).sort((x, y) => y[1].legs - x[1].legs)) say(`${k.padEnd(12)} ${String(a.legs).padStart(5)} ${String(a.sharp).padStart(6)} ${String(a.both).padStart(13)} ${String(a.single).padStart(16)} ${String(a.clear2).padStart(13)} ${String(a.clear2single).padStart(16)}`);
-  const cp = pb.coverage(prod.length ? prod : await board(P)), cb = pb.coverage(br);
+  const prodNow = prod.length ? prod : await board(P); const cp = pb.coverage(prodNow), cb = pb.coverage(br);
   say(`sharp legs prod ${cp.total.sharp} / ${cp.total.legs}, branch ${cb.total.sharp} / ${cb.total.legs}; branch bookFair legs ${cb.total.bookFair}`);
+  { let n = 0, c2 = 0; for (const r of prodNow) for (const c of Object.values(r.books || {})) if (c.ev?.bookFair) { n++; if (c.ev.ev >= 2) c2++; } say(`PROD (v3.132.0, no guard) book-fair legs ${n}, clearing 2% ${c2}`); }
   say('\n== BOOK-FAIR EXAMPLES (clearing first)');
   const ex = []; for (const r of br) for (const [bk, c] of Object.entries(r.books || {})) if (c.ev?.bookFair) ex.push({ r, bk, c });
   ex.sort((a, b) => b.c.ev.ev - a.c.ev.ev);

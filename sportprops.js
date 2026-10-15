@@ -374,14 +374,22 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
 // through the same consensusFor, both books weighing the same (one book alone
 // makes a 'book-fair-single' price, shown and not counted). Never sharp:
 // a lead that measures the apps' margin against the soft books.
-const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1 };
+// maxOffPts: a book whose price moves further than this (points of win chance)
+// when read along its curve from its own line to the app's is hanging a different number
+// (another game, a stale or alternate line), not pricing the same prop: no
+// price at all rather than a big fake one (a FanDuel 45.5 rush-yards line
+// read at a PrizePicks 57.5 said 70% under, +26%)
+const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1, maxOffPts: 10 };
 const isSharpSource = s => !s.shadow && (s.book === 'pinnacle' || s.book === 'kalshi');
 // a consensus play that rests on a sharp source (not FanDuel and BetRivers alone)
 const sharpBacked = p => (p.sources || []).some(isSharpSource);
 function bookFairPlays(row, quotes, { dfsEv, o = BOOK_FAIR } = {}) {
   const bq = (quotes || []).filter(q => o.weights[q.book] > 0);
   if (!bq.length) return [];
-  return consensusPlays(row, { sharp: bq, kalshi: null, dfsEv, o }).map(p => ({ ...p, bookFair: p.n >= 2 ? 'both' : 'single' }));
+  const off = o.maxOffPts ?? BOOK_FAIR.maxOffPts;
+  return consensusPlays(row, { sharp: bq, kalshi: null, dfsEv, o })
+    .filter(p => p.sources.every(x => Math.abs(x.at - x.p) <= off))
+    .map(p => ({ ...p, bookFair: p.n >= 2 ? 'both' : 'single' }));
 }
 const bookFairKind = p => (p.n >= 2 ? 'book-fair' : 'book-fair-single');
 
