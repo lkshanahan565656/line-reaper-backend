@@ -2312,6 +2312,7 @@ async function generateEsportsPicks() {
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
+  try { observeEsStale(picks); } catch (e) { esStaleState.errors = [e.message, ...esStaleState.errors].slice(0, 5); console.warn('Esports stale lines:', e.message); }
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
   try { const built = autoSlips(picks); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
@@ -2886,6 +2887,98 @@ const h2hTracker = createTracker({
   fairProb: (p, line, side) => (p.h2hCtx && p.marketPred > 0 ? h2hmodel.h2hProb(p.h2hCtx.game, p.marketPred, line, side, p.h2hCtx.scenarios) : null),
 });
 h2hTracker.ready().catch(e => console.error('H2H tracker: store failed to initialise:', e.message));
+
+// ── ESPORTS STALE LINES (esstale.js) ──
+// Esports kill props have no Pinnacle player line, so the leader is whichever
+// pick'em app moves first: when Underdog moves a player's line and PrizePicks
+// or Sleeper is still on the old number, the unmoved app is stale. Fed after
+// every esports board build, one app at a time at the time that app was read.
+// No model prices a row: its fair is the leader's new number on the board's
+// curve. Legs at 2%+ go in their own record (esports-stale.json), graded on
+// the result like any esports pick, the close on the follower's own line.
+// No alerts. ES_STALE=off stops it.
+const esstale = require('./esstale');
+const esStaleState = { enabled: !/^(off|0|false|no)$/i.test(String(process.env.ES_STALE || '').trim()),
+  engine: esstale.createEsStale(), rows: [], screenedAt: null, errors: [], fedAt: {} };
+const ES_STALE_TRACK_MIN = parseFloat(process.env.ES_STALE_TRACK_MIN || '2');
+const esStaleTracker = createTracker({
+  store: resultsBackup.wrap('esportsStale', createPickFileStore(process.env.ES_STALE_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-stale.json'))),
+  graders: tracker.graders, normalizeName, normalizeMarket, parseMapSpan, minEv: ES_STALE_TRACK_MIN,
+  fairProb: (p, line, side) => marketFairProb(p, line, side, pickCtx.get(p)),
+});
+esStaleTracker.ready().catch(e => console.error('Esports stale tracker: store failed to initialise:', e.message));
+// each app's payout cell on a pick, as stalelines prices the sports apps
+function esStaleCell(p, book) {
+  if (book === 'UD') return p.udSides || { over: p.udMultiplier ?? 1, under: p.udMultiplier ?? 1, overOpen: true, underOpen: true };
+  if (book === 'SL') return p.slSides || null;
+  return { overOpen: true, underOpen: true };
+}
+function esStalePrice(app, fair, cell, side) {
+  if (!cell) return null;
+  if (cell[side === 'Over' ? 'overOpen' : 'underOpen'] === false) return null;   // that side is shut at the app
+  if (app === 'sleeper' && !(cell.over > 1 && cell.under > 1)) return null;
+  return stalePriceApp(app, fair, cell, side);
+}
+// the app's last good read: PrizePicks' newest esports league, Underdog's and Sleeper's boards
+function esStaleReadAt() {
+  return { prizepicks: Math.max(0, ...Object.values(ppState.leagueOkAt || {})), underdog: Date.parse(cache.underdog.updated || '') || 0, sleeper: Date.parse(cache.sleeper.updated || '') || 0 };
+}
+const esStalePicks = new Map();     // tracked stale legs by pick id, until the match starts
+const esStaleBooks = new Map();     // every open row's app (PP, UD, SL) by pick id
+esStaleTracker.ready().then(async () => { for (const r of await esStaleTracker.list({ status: 'open', limit: 1e6 })) esStaleBooks.set(r.id, r.signalBook); }).catch(() => {});
+function observeEsStale(picks) {
+  if (!esStaleState.enabled) return;
+  const t = Date.now();
+  const probAt = (pk, m, x) => marketFairProb({ ...pk, marketPred: m }, x, 'OVER', pickCtx.get(pk));
+  // a player in two matches on one day (round-robin Bo1s) shows as one board
+  // pick whose match swaps between reads: those players sit out
+  const twoMatches = esstale.multiMatchPlayers([...(cache.underdog.data || []), ...ppLinesNow(), ...(cache.sleeper.data || [])].filter(l => isEsports(l.sport)), normalizeName);
+  const quotes = picks.filter(p => !twoMatches.has(esstale.playerDay(p, normalizeName))).flatMap(p => esstale.pickQuotes(p, { probAt, cellOf: esStaleCell }));
+  esStaleState.twoMatchPlayers = twoMatches.size;
+  const readAt = esStaleReadAt();
+  // apps in the order they were read, each only when it has been read again
+  for (const app of esstale.APPS.slice().sort((a, b) => readAt[a] - readAt[b])) {
+    const r = readAt[app];
+    if (!(r > 0) || r <= (esStaleState.fedAt[app] || 0)) continue;
+    esStaleState.engine.observe(app, quotes.filter(q => q.app === app), r);
+    esStaleState.fedAt[app] = r;
+  }
+  esStaleState.engine.step(t);
+  const rows = esStaleState.engine.rows(t, { priceApp: esStalePrice });
+  esStaleState.rows = rows;
+  esStaleState.screenedAt = new Date(t).toISOString();
+  // the record: each subject's first 2%+ stale leg, as a pick at the follower app
+  const byKey = new Map(picks.map(p => [esstale.subjectKey(p), p]));
+  const BOOK = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+  for (const r of rows) {
+    if (!(r.ev >= ES_STALE_TRACK_MIN)) continue;
+    const p = byKey.get(r.key);
+    if (!p) continue;
+    const id = esStaleTracker.pickId(p);
+    if (esStalePicks.has(id)) continue;
+    const book = BOOK[r.app];
+    esStaleBooks.set(id, book);
+    esStalePicks.set(id, { start: Date.parse(p.startTime || ''), ctx: pickCtx.get(p), p: {
+      ...p, side: r.side.toUpperCase(), bestBook: book, bestEv: r.ev, prob: r.fairProb, lineGap: null, matchupLed: null,
+      ...(book === 'PP' ? { ppLine: r.line, lineSource: 'pp' } : book === 'UD' ? { udLine: r.line, udImplied: r.decimal ? 100 / r.decimal : undefined } : { sleeperLine: r.line, sleeperMultiplier: r.decimal ?? undefined }),
+      trackExtra: { staleLeader: BOOK[r.leader], staleLeadPre: r.leadPre, staleLeadPost: r.leadPost, staleMoveAt: r.moveAt, staleMins: r.mins, staleDPts: r.dPts, staleFair: r.fairProb, stalePreFair: r.preFair },
+    } });
+  }
+  for (const [id, v] of esStalePicks) if (v.start <= t) esStalePicks.delete(id);
+  // new stale legs first (they open the row), then every board pick (with no
+  // side of its own) so open rows follow their app's line to the start
+  const withCtx = (x, ctx) => { if (ctx) pickCtx.set(x, ctx); return x; };
+  const fresh = [...esStalePicks.values()].map(v => withCtx(v.p, v.ctx));
+  // a tracked row only follows its own app's line: a PrizePicks row whose
+  // PrizePicks line is gone mustn't close on Underdog's number
+  const plain = [];
+  for (const p of picks) {
+    const book = esStaleBooks.get(esStaleTracker.pickId(p));
+    if (!book || (book === 'PP' && p.lineSource !== 'pp') || (book === 'UD' && p.udLine == null) || (book === 'SL' && p.sleeperLine == null)) continue;
+    plain.push(withCtx({ ...p, side: null, bestEv: null }, pickCtx.get(p)));
+  }
+  esStaleTracker.recordBoard([...fresh, ...plain]).catch(e => console.warn('Esports stale tracker:', e.message));
+}
 // Pinnacle's per-map totals (rounds for CS2/Valorant, team kills for LoL/Dota)
 // at signal and close, graded against the maps played (pintotals.js). Once a
 // title has enough graded maps its fitted spread replaces the kill models'
@@ -4412,7 +4505,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.132.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.133.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4508,10 +4601,15 @@ app.get('/api/ev', (req, res) => {
   const stale = (staleState.rows || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
   counts.stale = stale.length; counts.staleClear = stale.filter(r => r.clears).length;
   const staleOut = stale.slice(0, 300);
+  // esports: one pick'em app moved a kill line, another hasn't (esstale.js)
+  const esStale = (esStaleState.rows || []).filter(r => !q.sport || r.sport === q.sport).map(r => ({ ...r, es: true, book: r.app, marketLabel: r.market }));
+  counts.esStale = esStale.length; counts.esStaleClear = esStale.filter(r => r.clears).length;
+  const esStaleOut = esStale.slice(0, 200);
   res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })),
     esports: pro ? esOut : redactEv(esOut).map(r => ({ ...r, esports: true })), esportsAt: esBooksState.screenedAt,
     // free users see a lock per row the Pro view shows at its default floor (+1%)
     stale: pro ? staleOut : redactEv(staleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, stale: true })), staleAt: staleState.screenedAt, staleLag: staleState.enabled ? staleState.engine.lagSummary() : null,
+    esStale: pro ? esStaleOut : redactEv(esStaleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, es: true, stale: true })), esStaleAt: esStaleState.screenedAt, esStaleLag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null,
     count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
 });
 // New edges as they appear: event "ev" carries an array of rows.
@@ -4552,6 +4650,9 @@ app.get('/api/ev/record', async (req, res) => {
   // the props record has no sport cut: with one asked for, the apps' lines stay off
   const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
   out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
+  // esports: legs at an app another app had just moved away from, graded on the result
+  try { const es = await esStaleTracker.summary(); out.esStale = { overall: es.overall, byBook: es.byBook, open: es.counts.open + es.counts.locked, mkt: es.overall }; }
+  catch { out.esStale = null; }
   res.json(out);
 });
 // Every book and every kind against the close (closeboard.js): graded toward
@@ -6439,7 +6540,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.132.0',
+  version: '3.133.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6480,7 +6581,9 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null,
     esports: { enabled: esBooksState.enabled, updated: esBooksState.updated, screenedAt: esBooksState.screenedAt, ms: esBooksState.ms, summary: esBooksState.summary, errors: esBooksState.errors.slice(0, 5) },
     stale: { enabled: staleState.enabled, screenedAt: staleState.screenedAt, rows: staleState.rows.length, clear: staleState.rows.filter(r => r.clears).length, errors: staleState.errors.slice(0, 5),
-      lag: staleState.enabled ? staleState.engine.lagSummary() : null } },
+      lag: staleState.enabled ? staleState.engine.lagSummary() : null },
+    esStale: { enabled: esStaleState.enabled, screenedAt: esStaleState.screenedAt, rows: esStaleState.rows.length, clear: esStaleState.rows.filter(r => r.clears).length, errors: esStaleState.errors.slice(0, 5),
+      twoMatchPlayers: esStaleState.twoMatchPlayers ?? null, engine: esStaleState.engine.state(), lag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null } },
   // free: counts and timestamps only (see publicTailState)
   tail: pro ? { ...tailEngine.state(), record: tailTracker.state(), jobs: tailJobs, routing: tailRouting, stream: tailStream.stats(), polymarketUs: polymarketUs?.state() ?? null } : { ...publicTailState(tailEngine.state()), record: tailTracker.state(), jobs: publicJobs(tailJobs), routing: tailRouting, stream: tailStream.stats() },
   whales: pro ? whaleWatcher.state() : publicWhaleState(whaleWatcher.state()),
@@ -6529,6 +6632,8 @@ schedule('*/5 * * * *', async () => {
     trackerHealth.pinGaps = { locked: await pinGapTracker.lockStarted(), ...(await pinGapTracker.gradeDue()) };
     trackerHealth.share = { locked: await shareTracker.lockStarted(), ...(await shareTracker.gradeDue()) };
     trackerHealth.rounds = { locked: await roundsTracker.lockStarted(), ...(await roundsTracker.gradeDue()) };
+    trackerHealth.h2h = { locked: await h2hTracker.lockStarted(), ...(await h2hTracker.gradeDue()) };
+    trackerHealth.esStale = { locked: await esStaleTracker.lockStarted(), ...(await esStaleTracker.gradeDue()) };
     trackerHealth.pinTotals = await gradePinTotals().catch(e => ({ error: e.message }));
     trackerHealth.lastRun = new Date().toISOString();
     trackerHealth.error = null;

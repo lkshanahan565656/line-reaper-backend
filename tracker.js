@@ -309,6 +309,8 @@ function createTracker({
           pinTeam: p.pinTeam ? p.pinTeam.factor : null, pinTeamKills: p.pinTeam ? p.pinTeam.pin : null,
           result: null, outcome: null, profit: null, clv: 0,
           gradedBy: null, gradedAt: null, note: null,
+          // what a record of its own wants kept beside the usual fields (esstale.js: the leading app's move)
+          ...(p.trackExtra && typeof p.trackExtra === 'object' ? p.trackExtra : {}),
         };
         await store.put(fresh);
         existing.push(fresh);
