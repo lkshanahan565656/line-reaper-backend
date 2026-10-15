@@ -19,6 +19,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   const t0 = Date.now();
   const box = sg.createSportsGrader({ http: axios }), extra = xg.createExtraGrader({ http: axios });
   const G = xg.combineGraders(box, extra);
+  let prod = [];
   if (!process.env.RENDER_ONLY) {
   // ── 1a. prod record
   const picks = []; for (const s of ['open', 'locked', 'graded', 'void']) picks.push(...((await get(`${P}/api/props/record/picks?status=${s}&limit=1000`)).picks || []));
@@ -36,7 +37,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   for (const b of locked) { let g; try { g = G.canGrade(b) ? await G.grade(b) : 'no source'; } catch (e) { g = { error: e.message }; } lockRes.push(`${b.sport} ${b.player} ${b.mkey} ${b.signalSide} ${b.signalLine} start ${b.start}: ${JSON.stringify(g)}`); }
   say(`\nprod locked legs (${locked.length}) graded now:`); lockRes.forEach(x => say('  ' + x));
   // ── 1b. prod board: priced legs in the new sports by market → source
-  const prod = await board(P);
+  prod = await board(P);
   fs.writeFileSync('out/prod-board.json', JSON.stringify(prod));
   say('\n== PROD BOARD sharp-priced legs (Pinnacle or Kalshi) in TENNIS, MMA, MOTORSPORTS, SOCCER, CFB, NHL: results source');
   const legs = [];
@@ -77,7 +78,7 @@ const tally = (list, key) => { const m = {}; for (const x of list) { const k = k
   for (const r of br) for (const [bk, c] of Object.entries(r.books || {})) { const a = (L[r.sport] ||= { legs: 0, sharp: 0, both: 0, single: 0, clear2: 0, clear2single: 0 }); a.legs++; const k = pb.legSource(r, c); if (k === 'pinnacle' || k === 'kalshi') a.sharp++; if (c.ev?.bookFair) { a[c.ev.bookFair]++; if (c.ev.ev >= 2) a[c.ev.bookFair === 'both' ? 'clear2' : 'clear2single']++; } }
   say('league       legs   sharp  bookfair-both  bookfair-single  clear2%(both)  clear2%(single)');
   for (const [k, a] of Object.entries(L).sort((x, y) => y[1].legs - x[1].legs)) say(`${k.padEnd(12)} ${String(a.legs).padStart(5)} ${String(a.sharp).padStart(6)} ${String(a.both).padStart(13)} ${String(a.single).padStart(16)} ${String(a.clear2).padStart(13)} ${String(a.clear2single).padStart(16)}`);
-  const cp = pb.coverage(prod), cb = pb.coverage(br);
+  const cp = pb.coverage(prod.length ? prod : await board(P)), cb = pb.coverage(br);
   say(`sharp legs prod ${cp.total.sharp} / ${cp.total.legs}, branch ${cb.total.sharp} / ${cb.total.legs}; branch bookFair legs ${cb.total.bookFair}`);
   say('\n== BOOK-FAIR EXAMPLES (clearing first)');
   const ex = []; for (const r of br) for (const [bk, c] of Object.entries(r.books || {})) if (c.ev?.bookFair) ex.push({ r, bk, c });
