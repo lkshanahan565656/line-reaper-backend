@@ -5430,7 +5430,7 @@ function evEsStaleRow(r, when) {
         <div style="font-size:14px;font-weight:700;color:#f1f5f9">${escAttr(r.player || '')} · ${escAttr(r.marketLabel || r.market || '')} ${escAttr(r.side)} ${escAttr(r.line)}</div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px"><span style="color:#a78bfa;font-weight:700">${escAttr((r.sport || '').toUpperCase())}</span> · ${escAttr(r.event || '')} · ${when(r.start)}</div>
         <div style="font-size:11px;color:#cbd5e1;margin-top:3px">${escAttr(lead)} moved ${r.mins} min ago: ${moved} · ${escAttr(app)} still on ${escAttr(r.line)}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:3px"><span style="color:#a78bfa;font-weight:700">ESPORTS</span> · no model, ${escAttr(lead)}'s new line priced at ${escAttr(app)}'s${r.preFair != null ? ' · fair here before the move ' + r.preFair + '%' : ''}${r.entry ? ' · priced as a ' + escAttr(r.entry) : ''}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:3px"><span style="color:#a78bfa;font-weight:700">ESPORTS</span> · no model: ${escAttr(lead)}'s new line, read at ${escAttr(r.line)}${r.preFair != null ? ' · fair here before the move ' + r.preFair + '%' : ''}${r.entry ? ' · priced as a ' + escAttr(r.entry) : ''}</div>
       </div>
       <div style="text-align:center;min-width:90px">
         <div style="font-size:12px;font-weight:700;color:#f1f5f9">${escAttr(app)}</div>
