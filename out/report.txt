@@ -1,0 +1,141 @@
+NBA end to end, started 2026-10-15T07:55:40.394Z
+
+Pinnacle NBA (487): 12 games, 96 specials, 30 player props, 30 priced and parsed
+  games: 10-22T00:00 New Orleans Pelicans v Indiana Pacers | 10-22T00:00 Memphis Grizzlies v Utah Jazz | 10-22T02:00 Portland Trail Blazers v Phoenix Suns | 10-21T23:00 Washington Wizards v Milwaukee Bucks | 10-21T23:30 Brooklyn Nets v Charlotte Hornets | 10-20T19:00 Detroit Pistons v Boston Celtics | 10-21T23:00 Orlando Magic v Atlanta Hawks | 10-21T23:30 Miami Heat v Minnesota Timberwolves | 10-22T02:00 Los Angeles Lakers v Golden State Warriors | 10-21T01:30 San Antonio Spurs v Oklahoma City Thunder | 10-20T23:00 New York Knicks v Philadelphia 76ers | 10-22T00:30 Houston Rockets v Dallas Mavericks
+  prop stats: Points:6, Pts & Rebs & Asts:6, Assists:6, Threes Made:6, Rebounds:6
+  unparsed: 
+  parsed by stat/day: points 10-20:4, pra 10-20:4, assists 10-20:4, threes 10-20:4, rebounds 10-20:4, threes 10-21:2, assists 10-21:2, pra 10-21:2, points 10-21:2, rebounds 10-21:2
+
+Pinnacle NBA Preseason (5270): 2 games, 0 specials, 0 player props, 0 priced and parsed
+  games: 10-15T23:10 New York Knicks v Toronto Raptors | 10-16T00:40 Houston Rockets v Oklahoma City Thunder
+  prop stats: 
+  unparsed: 
+  parsed by stat/day: 
+
+Pinnacle NCAA basketball (493): 0 games, 1 specials, 0 player props, 0 priced and parsed
+  games: 
+  prop stats: 
+  unparsed: 
+  parsed by stat/day: 
+
+FanDuel NBA: 27 games on the league page: 10-20T19:00 Boston Celtics @ Detroit Pistons | 10-20T23:00 Philadelphia 76ers @ New York Knicks | 10-21T01:30 Oklahoma City Thunder @ San Antonio Spurs | 10-21T23:30 Minnesota Timberwolves @ Miami Heat | 10-22T02:00 Golden State Warriors @ Los Angeles Lakers | 10-21T23:10 Atlanta Hawks @ Orlando Magic | 10-21T23:40 Charlotte Hornets @ Brooklyn Nets | 10-22T02:10 Phoenix Suns @ Portland Trail Blazers | 10-21T23:10 Milwaukee Bucks @ Washington Wizards | 10-22T02:40 Sacramento Kings @ Los Angeles Clippers | 10-22T00:10 Utah Jazz @ Memphis Grizzlies | 10-23T01:40 Denver Nuggets @ Oklahoma City Thunder | 10-22T00:40 Dallas Mavericks @ Houston Rockets | 10-21T23:40 Chicago Bulls @ Toronto Raptors
+  league page: 84 rungs [["points",31],["threes",27],["rebounds",15],["assists",11]]
+  event 35928218 Boston Celtics @ Detroit Pistons 2026-10-20T19:00:00.000Z: props 26, rungs 104; (default): 40 mkts, 8 props, 0 rungs | player-points: 14 mkts, 2 props, 16 rungs | player-rebounds: 12 mkts, 2 props, 11 rungs | player-assists: 11 mkts, 2 props, 11 rungs | player-threes: 13 mkts, 2 props, 14 rungs | player-combos: 40 mkts, 8 props, 0 rungs | player-defense: 3 mkts, 0 props, 0 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 37 mkts, 2 props, 52 rungs
+    market types: TO_RECORD_20+_REB_+_AST, TO_RECORD_50+_PTS_+_REB_+_AST, TO_RECORD_40+_PTS_+_AST, TO_RECORD_35+_PTS_+_REB, TO_RECORD_65+_PTS_+_REB_+_AST, MONEY_LINE, MATCH_HANDICAP_(2-WAY), TO_RECORD_70+_PTS_+_REB_+_AST, PLAYER_B_TOTAL_POINTS_+_ASSISTS, TOTAL_POINTS_(OVER/UNDER), PLAYER_B_TOTAL_POINTS_+_REB_+_AST, TO_RECORD_35+_PTS_+_REB_+_AST, PLAYER_B_TOTAL_POINTS_+_REBOUNDS, TO_RECORD_A_DOUBLE_DOUBLE, TO_RECORD_50+_PTS_+_REB, PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS, TO_RECORD_55+_PTS_+_REB_+_AST, PLAYER_A_TOTAL_POINTS_+_ASSISTS, TO_RECORD_45+_PTS_+_AST, TO_RECORD_10+_REB_+_AST, TO_RECORD_20+_PTS_+_AST, TO_RECORD_30+_PTS_+_REB, TO_RECORD_30+_PTS_+_REB_+_AST, TO_RECORD_25+_PTS_+_AST, PLAYER_A_TOTAL_POINTS_+_REB_+_AST, TO_RECORD_40+_PTS_+_REB_+_AST, TO_RECORD_20+_PTS_+_REB, PLAYER_A_TOTAL_POINTS_+_REBOUNDS, TO_RECORD_15+_REB_+_AST, TO_RECORD_25+_REB_+_AST, TO_RECORD_45+_PTS_+_REB, TO_RECORD_35+_PTS_+_AST, TO_RECORD_A_TRIPLE_DOUBLE, TO_RECORD_25+_PTS_+_REB_+_AST, TO_RECORD_25+_PTS_+_REB, PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS, TO_RECORD_60+_PTS_+_REB_+_AST, TO_RECORD_45+_PTS_+_REB_+_AST, TO_RECORD_30+_PTS_+_AST, TO_RECORD_40+_PTS_+_REB, TO_SCORE_35+_POINTS, TO_SCORE_10+_POINTS, PLAYER_B_TOTAL_POINTS, TO_SCORE_45+_POINTS, TO_SCORE_15+_POINTS, TO_SCORE_50+_POINTS, TO_SCORE_40+_POINTS, TO_SCORE_25+_POINTS, TO_SCORE_30+_POINTS, PLAYER_A_TOTAL_POINTS, TO_SCORE_20+_POINTS, TO_RECORD_14+_REBOUNDS, TO_RECORD_10+_REBOUNDS, TO_RECORD_6+_REBOUNDS, PLAYER_A_TOTAL_REBOUNDS, TO_RECORD_12+_REBOUNDS, PLAYER_B_TOTAL_REBOUNDS, TO_RECORD_16+_REBOUNDS, TO_RECORD_8+_REBOUNDS, TO_RECORD_4+_REBOUNDS
+  event 35928228 Philadelphia 76ers @ New York Knicks 2026-10-20T23:00:00.000Z: props 28, rungs 106; (default): 41 mkts, 8 props, 0 rungs | player-points: 15 mkts, 3 props, 22 rungs | player-rebounds: 11 mkts, 2 props, 8 rungs | player-assists: 11 mkts, 2 props, 12 rungs | player-threes: 12 mkts, 2 props, 11 rungs | player-combos: 41 mkts, 8 props, 0 rungs | player-defense: 3 mkts, 0 props, 0 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 36 mkts, 3 props, 53 rungs
+    market types: TO_RECORD_10+_REB_+_AST, PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS, PLAYER_A_TOTAL_POINTS_+_REB_+_AST, PLAYER_B_TOTAL_POINTS_+_REBOUNDS, TO_RECORD_35+_PTS_+_REB, TO_RECORD_40+_PTS_+_AST, TO_RECORD_A_TRIPLE_DOUBLE, TO_RECORD_20+_PTS_+_AST, TO_RECORD_45+_PTS_+_REB_+_AST, TO_RECORD_15+_PTS_+_REB, MATCH_HANDICAP_(2-WAY), TO_RECORD_30+_PTS_+_REB, MONEY_LINE, TO_RECORD_60+_PTS_+_REB_+_AST, TO_RECORD_25+_REB_+_AST, PLAYER_A_TOTAL_POINTS_+_ASSISTS, TO_RECORD_15+_REB_+_AST, TO_RECORD_40+_PTS_+_REB_+_AST, TO_RECORD_25+_PTS_+_AST, TO_RECORD_15+_PTS_+_AST, TO_RECORD_35+_PTS_+_AST, PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS, TO_RECORD_50+_PTS_+_REB_+_AST, PLAYER_B_TOTAL_POINTS_+_ASSISTS, TO_RECORD_30+_PTS_+_REB_+_AST, TO_RECORD_45+_PTS_+_REB, TO_RECORD_20+_PTS_+_REB_+_AST, TO_RECORD_25+_PTS_+_REB, TO_RECORD_25+_PTS_+_REB_+_AST, TO_RECORD_35+_PTS_+_REB_+_AST, TO_RECORD_30+_PTS_+_AST, TO_RECORD_20+_PTS_+_REB, TOTAL_POINTS_(OVER/UNDER), TO_RECORD_20+_REB_+_AST, TO_RECORD_50+_PTS_+_REB, PLAYER_B_TOTAL_POINTS_+_REB_+_AST, TO_RECORD_45+_PTS_+_AST, TO_RECORD_A_DOUBLE_DOUBLE, TO_RECORD_55+_PTS_+_REB_+_AST, PLAYER_A_TOTAL_POINTS_+_REBOUNDS, TO_RECORD_40+_PTS_+_REB, TO_SCORE_35+_POINTS, TO_SCORE_20+_POINTS, PLAYER_B_TOTAL_POINTS, TO_SCORE_30+_POINTS, TO_SCORE_10+_POINTS, TO_SCORE_45+_POINTS, PLAYER_A_TOTAL_POINTS, TO_SCORE_50+_POINTS, TO_SCORE_40+_POINTS, TO_SCORE_25+_POINTS, TO_SCORE_15+_POINTS, PLAYER_C_TOTAL_POINTS, PLAYER_A_TOTAL_REBOUNDS, TO_RECORD_8+_REBOUNDS, TO_RECORD_12+_REBOUNDS, TO_RECORD_6+_REBOUNDS, TO_RECORD_14+_REBOUNDS, PLAYER_B_TOTAL_REBOUNDS, TO_RECORD_10+_REBOUNDS
+  event 35928229 Oklahoma City Thunder @ San Antonio Spurs 2026-10-21T01:30:00.000Z: props 21, rungs 108; (default): 14 mkts, 2 props, 9 rungs | player-points: 13 mkts, 2 props, 16 rungs | player-rebounds: 12 mkts, 2 props, 9 rungs | player-assists: 11 mkts, 2 props, 9 rungs | player-threes: 11 mkts, 2 props, 11 rungs | player-combos: 40 mkts, 7 props, 0 rungs | player-defense: 14 mkts, 2 props, 9 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 34 mkts, 2 props, 45 rungs
+    market types: TO_RECORD_3+_BLOCKS, TO_RECORD_4+_BLOCKS, PLAYER_A_TOTAL_STEALS, TO_RECORD_1+_BLOCKS, TO_RECORD_1+_STEALS, PLAYER_A_TOTAL_BLOCKS, TO_RECORD_4+_STEALS, MATCH_HANDICAP_(2-WAY), TO_RECORD_5+_BLOCKS, TO_RECORD_2+_BLOCKS, TO_RECORD_3+_STEALS, MONEY_LINE, TOTAL_POINTS_(OVER/UNDER), TO_RECORD_2+_STEALS, TO_SCORE_45+_POINTS, PLAYER_B_TOTAL_POINTS, TO_SCORE_50+_POINTS, TO_SCORE_15+_POINTS, TO_SCORE_40+_POINTS, PLAYER_A_TOTAL_POINTS, TO_SCORE_30+_POINTS, TO_SCORE_25+_POINTS, TO_SCORE_20+_POINTS, TO_SCORE_35+_POINTS, TO_RECORD_10+_REBOUNDS, PLAYER_B_TOTAL_REBOUNDS, TO_RECORD_6+_REBOUNDS, TO_RECORD_12+_REBOUNDS, PLAYER_A_TOTAL_REBOUNDS, TO_RECORD_8+_REBOUNDS, TO_RECORD_16+_REBOUNDS, TO_RECORD_4+_REBOUNDS, TO_RECORD_14+_REBOUNDS, TO_RECORD_2+_ASSISTS, TO_RECORD_8+_ASSISTS, TO_RECORD_10+_ASSISTS, PLAYER_B_TOTAL_ASSISTS, TO_RECORD_6+_ASSISTS, TO_RECORD_12+_ASSISTS, PLAYER_A_TOTAL_ASSISTS, TO_RECORD_4+_ASSISTS, 4+_MADE_THREES, 5+_MADE_THREES, 1+_MADE_THREES, PLAYER_A_TOTAL_MADE_3_POINT_FIELD_GOALS, 3+_MADE_THREES, 2+_MADE_THREES, PLAYER_B_TOTAL_MADE_3_POINT_FIELD_GOALS, 6+_MADE_THREES, TO_RECORD_20+_REB_+_AST, PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS, TO_RECORD_20+_PTS_+_REB, TO_RECORD_50+_PTS_+_REB, TO_RECORD_35+_PTS_+_REB_+_AST, TO_RECORD_65+_PTS_+_REB_+_AST, TO_RECORD_A_DOUBLE_DOUBLE, TO_RECORD_25+_PTS_+_AST, PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS, TO_RECORD_30+_PTS_+_AST, PLAYER_B_TOTAL_POINTS_+_REBOUNDS
+  event 35932897 Minnesota Timberwolves @ Miami Heat 2026-10-21T23:30:00.000Z: props 0, rungs 0; (default): 8 mkts, 0 props, 0 rungs | player-points: 3 mkts, 0 props, 0 rungs | player-rebounds: 3 mkts, 0 props, 0 rungs | player-assists: 3 mkts, 0 props, 0 rungs | player-threes: 3 mkts, 0 props, 0 rungs | player-combos: 3 mkts, 0 props, 0 rungs | player-defense: 3 mkts, 0 props, 0 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 3 mkts, 0 props, 0 rungs
+    market types: 2ND_QUARTER_POINTS_ODD/EVEN, TOTAL_POINTS_ODD/EVEN, TOTAL_POINTS_(OVER/UNDER), MATCH_HANDICAP_(2-WAY), 4TH_QUARTER_POINTS_ODD/EVEN, 1ST_QUARTER_POINTS_ODD/EVEN, MONEY_LINE, 3RD_QUARTER_POINTS_ODD/EVEN
+  event 35932904 Golden State Warriors @ Los Angeles Lakers 2026-10-22T02:00:00.000Z: props 0, rungs 0; (default): 8 mkts, 0 props, 0 rungs | player-points: 3 mkts, 0 props, 0 rungs | player-rebounds: 3 mkts, 0 props, 0 rungs | player-assists: 3 mkts, 0 props, 0 rungs | player-threes: 3 mkts, 0 props, 0 rungs | player-combos: 3 mkts, 0 props, 0 rungs | player-defense: 3 mkts, 0 props, 0 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 3 mkts, 0 props, 0 rungs
+    market types: TOTAL_POINTS_(OVER/UNDER), 2ND_QUARTER_POINTS_ODD/EVEN, TOTAL_POINTS_ODD/EVEN, 3RD_QUARTER_POINTS_ODD/EVEN, MATCH_HANDICAP_(2-WAY), 4TH_QUARTER_POINTS_ODD/EVEN, MONEY_LINE, 1ST_QUARTER_POINTS_ODD/EVEN
+  event 35937399 Atlanta Hawks @ Orlando Magic 2026-10-21T23:10:00.000Z: props 0, rungs 0; (default): 8 mkts, 0 props, 0 rungs | player-points: 3 mkts, 0 props, 0 rungs | player-rebounds: 3 mkts, 0 props, 0 rungs | player-assists: 3 mkts, 0 props, 0 rungs | player-threes: 3 mkts, 0 props, 0 rungs | player-combos: 3 mkts, 0 props, 0 rungs | player-defense: 3 mkts, 0 props, 0 rungs | player-specials: 3 mkts, 0 props, 0 rungs | popular: 3 mkts, 0 props, 0 rungs
+    market types: MATCH_HANDICAP_(2-WAY), 4TH_QUARTER_POINTS_ODD/EVEN, TOTAL_POINTS_(OVER/UNDER), 3RD_QUARTER_POINTS_ODD/EVEN, 2ND_QUARTER_POINTS_ODD/EVEN, 1ST_QUARTER_POINTS_ODD/EVEN, MONEY_LINE, TOTAL_POINTS_ODD/EVEN
+
+BetRivers NBA: 16 events
+  1028726107 Boston Celtics @ Detroit Pistons 2026-10-20T19:00:00.000Z: props 0 [], rungs 0
+  1028726106 Philadelphia 76ers @ New York Knicks 2026-10-20T23:00:00.000Z: props 0 [], rungs 0
+  1028726108 Oklahoma City Thunder @ San Antonio Spurs 2026-10-21T01:30:00.000Z: props 0 [], rungs 0
+  1028754195 Atlanta Hawks @ Orlando Magic 2026-10-21T23:00:00.000Z: props 0 [], rungs 0
+  1028754206 Milwaukee Bucks @ Washington Wizards 2026-10-21T23:00:00.000Z: props 0 [], rungs 0
+  1028736326 Minnesota Timberwolves @ Miami Heat 2026-10-21T23:30:00.000Z: props 0 [], rungs 0
+
+Action Network 20261015: 2 games (10-15T23:30 NYK/TOR, 10-16T00:30 OKC/HOU); book-games 8; props by book {}
+
+Action Network 20261016: 12 games (10-16T23:00 PHI/BOS, 10-16T23:00 TOR/DET, 10-16T23:00 IND/MIL, 10-16T23:00 MIA/ORL, 10-17T00:00 ATL/DAL, 10-17T00:00 CHA/MEM, 10-17T00:00 CHI/MIN, 10-17T00:00 SAS/SAC); book-games 0; props by book {}
+
+== GRADING: finished NBA games, last 6 days
+20261014 Brooklyn Nets @ Miami Heat: 28 players with a line (12 DNP/no stats)
+20261014 Charlotte Hornets @ Boston Celtics: 28 players with a line (9 DNP/no stats)
+20261014 Phoenix Suns @ San Antonio Spurs: 27 players with a line (10 DNP/no stats)
+20261014 New Orleans Pelicans @ Dallas Mavericks: 30 players with a line (3 DNP/no stats)
+20261014 Chicago Bulls @ Milwaukee Bucks: 27 players with a line (15 DNP/no stats)
+20261014 Detroit Pistons @ Minnesota Timberwolves: 32 players with a line (3 DNP/no stats)
+20261014 Denver Nuggets @ LA Clippers: 31 players with a line (9 DNP/no stats)
+20261013 Cleveland Cavaliers @ Orlando Magic: 29 players with a line (13 DNP/no stats)
+20261013 New York Knicks @ Toronto Raptors: 31 players with a line (5 DNP/no stats)
+20261013 Indiana Pacers @ Oklahoma City Thunder: 31 players with a line (0 DNP/no stats)
+20261013 Golden State Warriors @ Los Angeles Lakers: 30 players with a line (4 DNP/no stats)
+20261013 Portland Trail Blazers @ Sacramento Kings: 26 players with a line (5 DNP/no stats)
+20261012 London Lions @ Portland Trail Blazers: 26 players with a line (7 DNP/no stats)
+20261012 Oklahoma City Thunder @ Atlanta Hawks: 21 players with a line (0 DNP/no stats)
+20261012 Brooklyn Nets @ Washington Wizards: 29 players with a line (9 DNP/no stats)
+20261012 Minnesota Timberwolves @ New York Knicks: 33 players with a line (9 DNP/no stats)
+20261012 San Antonio Spurs @ Utah Jazz: 29 players with a line (13 DNP/no stats)
+20261011 Dallas Mavericks @ Houston Rockets: 28 players with a line (10 DNP/no stats)
+20261011 Orlando Magic @ Cleveland Cavaliers: 29 players with a line (12 DNP/no stats)
+20261011 Milwaukee Bucks @ Charlotte Hornets: 29 players with a line (4 DNP/no stats)
+20261011 Chicago Bulls @ Denver Nuggets: 30 players with a line (12 DNP/no stats)
+20261010 LA Clippers @ Toronto Raptors: 30 players with a line (2 DNP/no stats)
+20261010 Atlanta Hawks @ Indiana Pacers: 31 players with a line (1 DNP/no stats)
+20261010 Detroit Pistons @ Washington Wizards: 31 players with a line (10 DNP/no stats)
+20261010 Minnesota Timberwolves @ Miami Heat: 24 players with a line (8 DNP/no stats)
+20261010 Philadelphia 76ers @ Boston Celtics: 27 players with a line (15 DNP/no stats)
+20261010 Sacramento Kings @ Golden State Warriors: 29 players with a line (5 DNP/no stats)
+20261010 San Antonio Spurs @ Phoenix Suns: 30 players with a line (5 DNP/no stats)
+games 28, players 806, box vs independent read: 10478 equal, 0 different 
+stats the box could not give (null): {}
+real grader on legs built from the finished games: 336 graded of 336
+  Michael Porter Jr. points Over 26.5 → win (27)
+  Michael Porter Jr. pra Under 29.5 → win (29)
+  Michael Porter Jr. double_double Over 0.5 → loss (0)
+  Giannis Antetokounmpo points Over 19.5 → win (20)
+  Giannis Antetokounmpo pra Under 44.5 → win (44)
+  Giannis Antetokounmpo double_double Over 0.5 → win (1)
+  Andrew Wiggins points Over 18.5 → win (19)
+  Andrew Wiggins pra Under 26.5 → win (26)
+  Andrew Wiggins double_double Over 0.5 → loss (0)
+  Egor Demin points Over 16.5 → win (17)
+  Egor Demin pra Under 23.5 → win (23)
+  Egor Demin double_double Over 0.5 → loss (0)
+
+prod record: 1083 legs, NBA 52: [["graded/gap-stale",12],["graded/gap-odd",10],["open/gap-stale",9],["open/gap-odd",8],["locked/gap-odd",5],["locked/gap-stale",4],["open/gap",2],["open/book-fair-single",1],["open/ev",1]]
+
+== BRANCH 3.137.0 board 11269 rows at 2026-10-15T08:09:58.032Z; freeBooks nba {"pinnacle":12,"fanduel":12,"betrivers":12,"props":{"pinnacle":30,"fanduel":50,"betrivers":0,"matched":{"fanduel":27,"betrivers":0}},"more":{"draftkings":{"games":0,"props":0,"matched":0},"bet365":{"games":0,"props":0,"matched":0},"caesars":{"games":0,"props":0,"matched":0},"fanatics":{"games":0,"props":0,"matched":0},"matchbook":{"games":0,"props":0,"matched":0}}} errors []
+pinnacle props status: {"enabled":true,"props":798,"bySport":{"NFL":348,"NBA":30,"WNBA":81,"NHL":257,"MLB":46,"CFB":36},"updated":"2026-10-15T08:08:21.806Z","errors":[],"extra":{"props":3715,"bySport":{"TENNIS 1st_set_games_played":616,"TENNIS games_won":781,"TENNIS games_played":1410,"TENNIS sets_won":606,"TENNIS sets_played":276,"MMA fight_time":26},"errors":[]}}
+
+-- PROD (before): NBA rows 573 (all NBA legs by app; sharp = Pinnacle or Kalshi price; clear = EV 2%+ on a sharp price)
+app          legs  sharp  clear2%  no-sharp-market
+prizepicks    347     14        0        129
+sleeper        86     17        0          0
+underdog      193      1        0        188
+by stat (legs/sharp): regular_season_points_per_game 81/0, points 71/8, pra 59/7, regular_season_rebounds_per_game 54/0, regular_season_assists_per_game 45/0, season|points_per_game 44/0, rebounds 35/5, assists 33/8, threes 26/4, pts_asts 26/0, pts_rebs 25/0, season|rebs_per_game 23/0, season|3pm_per_game 20/0, season|asts_per_game 20/0, rebs_asts 16/0, season|50_+_point_games 8/0, regular_season_triple_doubles 8/0, season|triple-doubles 7/0, season|blocked_shots_per_game 7/0, steals 5/0, stocks 4/0, double_double 3/0, turnovers 3/0, blocks 2/0, double-double 1/0
+by day (legs/sharp): 10-20 228/32,  188/0, 10-31 129/0, 10-15 65/0, 10-21 16/0
+stats the grader cannot settle: double-double
+
+-- BRANCH: NBA rows 543 (all NBA legs by app; sharp = Pinnacle or Kalshi price; clear = EV 2%+ on a sharp price)
+app          legs  sharp  clear2%  no-sharp-market
+prizepicks    347     14        0        129
+sleeper        86     17        0          0
+underdog      193      1        0        188
+by stat (legs/sharp): season|points_per_game 125/0, points 71/8, pra 59/7, season|rebounds_per_game 54/0, season|assists_per_game 45/0, rebounds 35/5, assists 33/8, threes 26/4, pts_asts 26/0, pts_rebs 25/0, season|rebs_per_game 23/0, season|3pm_per_game 20/0, season|asts_per_game 20/0, rebs_asts 16/0, season|triple_double 15/0, season|50_+_point_games 8/0, season|blocked_shots_per_game 7/0, steals 5/0, double_double 4/0, stocks 4/0, turnovers 3/0, blocks 2/0
+by day (legs/sharp): 10-20 228/32, 10-31 159/0,  158/0, 10-15 65/0, 10-21 16/0
+stats the grader cannot settle: none
+
+== BRANCH NBA examples with a sharp price
+Jayson Tatum Points [points] 2026-10-20T19:00:00.000Z pin={"line":26.5,"over":-122,"under":-110,"pOver":51.3} sleeper 26.5 fair=- ev=Over -7.03
+Jayson Tatum Rebounds [rebounds] 2026-10-20T19:00:00.000Z pin={"line":8.5,"over":-139,"under":105,"pOver":54.9} sleeper 8.5 fair=- ev=Over -11.15
+Cade Cunningham Rebounds [rebounds] 2026-10-20T19:00:00.000Z pin={"line":5.5,"over":105,"under":-140,"pOver":45.1} sleeper 5.5 fair=- ev=Under -10.63
+Jayson Tatum Pts+Rebs+Asts [pra] 2026-10-20T15:10:00.000-04:00 pin={"line":42.5,"over":-108,"under":-122,"pOver":48.4} prizepicks 42.5 fair=- ev=Under -6.29
+Cade Cunningham Pts+Rebs+Asts [pra] 2026-10-20T15:10:00.000-04:00 pin={"line":40.5,"over":-106,"under":-125,"pOver":47.9} prizepicks 39.5 fair=- ev=Over -8.73 | sleeper 39.5 fair=- ev=Over -9.59
+Cade Cunningham Points [points] 2026-10-20T15:10:00.000-04:00 pin={"line":24.5,"over":-125,"under":-106,"pOver":52.1} prizepicks 24 fair=- ev=Over -3.54 | sleeper 23.5 fair=- ev=Over -5.24
+Cade Cunningham Assists [assists] 2026-10-20T15:10:00.000-04:00 pin={"line":9.5,"over":-108,"under":-122,"pOver":48.4} prizepicks 9 fair=- ev=Over -4.36 | sleeper 9.5 fair=- ev=Over -9.83
+Jayson Tatum Assists [assists] 2026-10-20T15:10:00.000-04:00 pin={"line":5.5,"over":-130,"under":-102,"pOver":53.1} prizepicks 6 fair=- ev=Under -3.69 | sleeper 5.5 fair=- ev=Under -8.39
+Cade Cunningham 3-PT Made [threes] 2026-10-20T15:10:00.000-04:00 pin={"line":2.5,"over":148,"under":-200,"pOver":36.4} prizepicks 2 fair=- ev=- | sleeper 1.5 fair=- ev=-
+LeBron James Points [points] 2026-10-20T23:00:00Z pin={"line":17.5,"over":-102,"under":-130,"pOver":46.9} underdog 16.5 fair=- ev=Over -9.08 | prizepicks 16.5 fair=- ev=Over -7.1 | sleeper 16.5 fair=- ev=Over -5.42
+LeBron James Rebounds [rebounds] 2026-10-20T23:00:00.000Z pin={"line":6.5,"over":116,"under":-154,"pOver":42.6} sleeper 6.5 fair=- ev=Under -5.26
+LeBron James Pts+Rebs+Asts [pra] 2026-10-20T19:10:00.000-04:00 pin={"line":30.5,"over":-112,"under":-118,"pOver":49.3} prizepicks 30.5 fair=- ev=Under -8.9 | sleeper 30.5 fair=- ev=Over -9.74
+LeBron James Assists [assists] 2026-10-20T19:10:00.000-04:00 pin={"line":7.5,"over":-115,"under":-115,"pOver":50} prizepicks 7.5 fair=- ev=Over -9.14 | sleeper 7.5 fair=- ev=Over -9.5
+Victor Wembanyama Assists [assists] 2026-10-20T21:40:00.000-04:00 pin={"line":2.5,"over":-186,"under":138,"pOver":61.9} prizepicks 3 fair=- ev=Over -2.86 | sleeper 2.5 fair=- ev=Over -6.86
+Victor Wembanyama Pts+Rebs+Asts [pra] 2026-10-20T21:40:00.000-04:00 pin={"line":40.5,"over":-114,"under":-114,"pOver":50} prizepicks 40.5 fair=- ev=Over -9.14 | sleeper 40.5 fair=- ev=Under -10
+Victor Wembanyama Points [points] 2026-10-20T21:40:00.000-04:00 pin={"line":26.5,"over":100,"under":-132,"pOver":46.4} prizepicks 26 fair=- ev=Under -6.97 | sleeper 26.5 fair=- ev=Under -7.86
+Victor Wembanyama Rebounds [rebounds] 2026-10-20T21:40:00.000-04:00 pin={"line":11.5,"over":102,"under":-136,"pOver":45.8} prizepicks 11 fair=- ev=Over -8.09 | sleeper 11.5 fair=- ev=Under -7.84
+Victor Wembanyama 3-PT Made [threes] 2026-10-20T21:40:00.000-04:00 pin={"line":1.5,"over":-188,"under":140,"pOver":62.2} prizepicks 2 fair=- ev=- | sleeper 1.5 fair=- ev=Over -7.9
+
+coverage NBA: {"legs":626,"sharp":32,"pinnacle":32,"kalshi":0,"books":12,"apps":136,"none":446,"bookFair":8}
+coverage CBB: null
+coverage NBA markets: [{"sport":"NBA","market":"Regular Season Points Per Game","mkey":"season|points_per_game","never":true,"legs":125,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":52,"none":73,"bookFair":0},{"sport":"NBA","market":"Points","mkey":"points","never":false,"legs":71,"sharp":8,"pinnacle":8,"kalshi":0,"books":1,"apps":38,"none":24,"bookFair":0},{"sport":"NBA","market":"Pts+Rebs+Asts","mkey":"pra","never":false,"legs":59,"sharp":7,"pinnacle":7,"kalshi":0,"books":0,"apps":20,"none":32,"bookFair":0},{"sport":"NBA","market":"Regular Season Rebounds Per Game","mkey":"season|rebounds_per_game","never":true,"legs":54,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":54,"bookFair":0},{"sport":"NBA","market":"Regular Season Assists Per Game","mkey":"season|assists_per_game","never":true,"legs":45,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":45,"bookFair":0},{"sport":"NBA","market":"Rebounds","mkey":"rebounds","never":false,"legs":35,"sharp":5,"pinnacle":5,"kalshi":0,"books":0,"apps":8,"none":22,"bookFair":0},{"sport":"NBA","market":"Assists","mkey":"assists","never":false,"legs":33,"sharp":8,"pinnacle":8,"kalshi":0,"books":0,"apps":4,"none":21,"bookFair":0},{"sport":"NBA","market":"3-PT Made","mkey":"threes","never":false,"legs":26,"sharp":4,"pinnacle":4,"kalshi":0,"books":0,"apps":6,"none":16,"bookFair":0},{"sport":"NBA","market":"Pts+Asts","mkey":"pts_asts","never":false,"legs":26,"sharp":0,"pinnacle":0,"kalshi":0,"books":4,"apps":0,"none":22,"bookFair":3},{"sport":"NBA","market":"Pts+Rebs","mkey":"pts_rebs","never":false,"legs":25,"sharp":0,"pinnacle":0,"kalshi":0,"books":3,"apps":0,"none":22,"bookFair":2},{"sport":"NBA","market":"Season Rebs Per Game","mkey":"season|rebs_per_game","never":true,"legs":23,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":23,"bookFair":0},{"sport":"NBA","market":"Season 3PM Per Game","mkey":"season|3pm_per_game","never":true,"legs":20,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":20,"bookFair":0},{"sport":"NBA","market":"Season Asts Per Game","mkey":"season|asts_per_game","never":true,"legs":20,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":20,"bookFair":0},{"sport":"NBA","market":"Rebs+Asts","mkey":"rebs_asts","never":false,"legs":16,"sharp":0,"pinnacle":0,"kalshi":0,"books":3,"apps":0,"none":13,"bookFair":2},{"sport":"NBA","market":"Regular Season Triple Doubles","mkey":"season|triple_double","never":true,"legs":15,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":8,"none":7,"bookFair":0},{"sport":"NBA","market":"Season 50+ Point Games","mkey":"season|50_+_point_games","never":true,"legs":8,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":8,"bookFair":0},{"sport":"NBA","market":"Season Blocked Shots Per Game","mkey":"season|blocked_shots_per_game","never":true,"legs":7,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":7,"bookFair":0},{"sport":"NBA","market":"Steals","mkey":"steals","never":false,"legs":5,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":5,"bookFair":0},{"sport":"NBA","market":"Double-Double","mkey":"double_double","never":false,"legs":4,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":4,"bookFair":0},{"sport":"NBA","market":"Blks+Stls","mkey":"stocks","never":false,"legs":4,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":4,"bookFair":0},{"sport":"NBA","market":"Turnovers","mkey":"turnovers","never":false,"legs":3,"sharp":0,"pinnacle":0,"kalshi":0,"books":0,"apps":0,"none":3,"bookFair":0},{"sport":"NBA","market":"Blocked Shots","mkey":"blocks","never":false,"legs":2,"sharp":0,"pinnacle":0,"kalshi":0,"books":1,"apps":0,"none":1,"bookFair":1}]
+branch record byKind: {"gap-odd":84,"gap-stale":83,"sharp":2,"ev":1}
+alt lines summary: ["error"]
+renders done
