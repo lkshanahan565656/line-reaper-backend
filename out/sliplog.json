@@ -1,0 +1,42 @@
+{
+ "version": "3.131.0",
+ "slipsJs": {
+  "bytes": 21202,
+  "umd": true
+ },
+ "record": {
+  "overall": {
+   "signals": 0,
+   "open": 0,
+   "execChecked": 0,
+   "execShare": null,
+   "closed": 0,
+   "closeEvAvg": null,
+   "fairMoveAvg": null,
+   "movedOurWay": 0,
+   "movedAgainst": 0,
+   "graded": 0,
+   "wins": 0,
+   "losses": 0,
+   "hitRate": null,
+   "breakeven": null,
+   "units": 0,
+   "roi": null,
+   "avgEv": null,
+   "execClosed": 0,
+   "execCloseEvAvg": null,
+   "execGraded": 0,
+   "execUnits": 0,
+   "execRoi": null,
+   "gapOutcomes": {}
+  },
+  "bySource": {},
+  "byStale": {},
+  "byKind": {},
+  "bySport": {},
+  "byBook": {},
+  "byStat": {},
+  "voided": 0
+ },
+ "appHasTab": true
+}

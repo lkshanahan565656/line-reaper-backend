@@ -1,0 +1,57 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.92.0 on port 3999
+Tracker: store ready
+Sleeper: 243 esports and 2940 sports lines from 3183 rows
+PP: 3622 lines (287 esports) · leagues: NBA, TENNIS, BAD, EUROGOLF, Dota2, TT, CS2, LoL, NPB, SOCCER, MLB, MLBLIVE
+UD: 9915 lines (6833 boosted/demoted) · sports: NFL, MLB, CFB, WNBA, NHL, FIFA, MMA, TENNIS, MOTORSPORTS, CS, LOL, VAL
+Startup complete
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: PP=287 UD=341 SL=235/243 udMap=285
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+OpenDota: 7701 pro player names indexed
+Owls odds nba: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+Esports board: 203 matches (107 on both exchanges, 7 edges) in 8203ms
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 sjuush: KPM=14.4 KPR=0.65 HS%=55 R=—
+bo3 NiKo: no usable kill fields — inspect /api/esports/probe/cs/NiKo
+bo3 Lucky: KPM=14.8 KPR=0.66 HS%=52 R=—
+OpenDota Palos: 8.8 kills/game over 40 matches
+OpenDota: 7701 pro player names indexed
+bo3 XANTARES: KPM=14.6 KPR=0.69 HS%=53 R=—
+gol.gg: 2181 LoL players (S16)
+bo3 Jame: KPM=13.4 KPR=0.62 HS%=31 R=—
+OpenDota Bob: 7.5 kills/game over 40 matches
+bo3 DemQQ: KPM=17.3 KPR=0.76 HS%=53 R=—
+bo3 kyousuke: KPM=15.4 KPR=0.75 HS%=60 R=—
+Ratings LOL: 5362 maps → 299 teams
+OpenDota Tino: 4.5 kills/game over 40 matches
+bo3 senzu: KPM=17.2 KPR=0.82 HS%=58 R=—
+bo3 brutmonster: KPM=14.7 KPR=0.70 HS%=34 R=—
+OpenDota Shanks: 4.5 kills/game over 40 matches
+bo3 XiELO: KPM=14.1 KPR=0.66 HS%=61 R=—
+Sleeper: 243 esports and 2937 sports lines from 3180 rows
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+PP league 121: 3622 lines (287 esports) · leagues: NBA, TENNIS, BAD, EUROGOLF, Dota2, TT, CS2, NPB, SOCCER, MLB, MLBLIVE, R6
+OpenDota Ghost: 5.4 kills/game over 12 matches
+bo3 Dragon: KPM=14.6 KPR=0.71 HS%=51 R=—
+Sleeper: 243 esports and 2937 sports lines from 3180 rows
+PP league 159: 3622 lines (287 esports) · leagues: NBA, TENNIS, BAD, EUROGOLF, Dota2, TT, CS2, NPB, SOCCER, MLB, MLBLIVE, R6
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 Cjoffo: KPM=14.4 KPR=0.69 HS%=60 R=—
+UD: 9917 lines (6834 boosted/demoted) · sports: NFL, MLB, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, MOTORSPORTS, CS, LOL
+OpenDota MidOne: 7.4 kills/game over 40 matches
+bo3 xKacpersky: KPM=15.6 KPR=0.70 HS%=54 R=—
+UD: 9917 lines (6834 boosted/demoted) · sports: NFL, MLB, CFB, WNBA, NHL, NBA, FIFA, MMA, TENNIS, MOTORSPORTS, CS, LOL
+bo3 Wicadia: KPM=15.8 KPR=0.75 HS%=53 R=—
+bo3 mzinho: KPM=13.7 KPR=0.65 HS%=67 R=—
+OpenDota Raven: 4.0 kills/game over 8 matches
+bo3 Chr1zN: KPM=14.5 KPR=0.69 HS%=55 R=—
+OpenDota Tims: 3.0 kills/game over 40 matches
+bo3 Kind0: KPM=13.0 KPR=0.62 HS%=48 R=—
