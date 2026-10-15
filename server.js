@@ -2916,8 +2916,8 @@ const esStaleTracker = createTracker({
 });
 esStaleTracker.ready().catch(e => console.error('Esports stale tracker: store failed to initialise:', e.message));
 
-// ── SAME-DAY MATCHES CHECK (v3.134.0, esmatch.js) ──
-// Until v3.134.0 the board keyed an app's line by player and stat alone, so a
+// ── SAME-DAY MATCHES CHECK (v3.135.0, esmatch.js) ──
+// Until v3.135.0 the board keyed an app's line by player and stat alone, so a
 // player in two or three Bo1s a day was priced against whichever listing came
 // up first (PrizePicks' line for one opponent next to Underdog's for another),
 // and the CS grader took the nearest of the team's matches. This counts the
@@ -2926,7 +2926,7 @@ esStaleTracker.ready().catch(e => console.error('Esports stale tracker: store fa
 // unless SAME_DAY_REPAIR=void, which voids them with the reason, undoably
 // (voidedFrom keeps what each row was).
 const SAME_DAY_FROM = Date.parse('2026-10-13T00:00:00Z');
-const SAME_DAY_NOTE = 'Same-day matches: the team played more than one match that day and the board priced (or graded) this line off whichever listing came first; fixed in v3.134.0';
+const SAME_DAY_NOTE = 'Same-day matches: the team played more than one match that day and the board priced (or graded) this line off whichever listing came first; fixed in v3.135.0';
 const SAME_DAY_MODE = String(process.env.SAME_DAY_REPAIR || '').trim().toLowerCase() === 'void' ? 'void' : 'count';
 const sameDayCheck = { mode: SAME_DAY_MODE, at: null, exposed: {}, graded: {}, voided: {}, error: null };
 async function checkSameDayRows() {
@@ -4548,7 +4548,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.134.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.135.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6599,7 +6599,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.134.0',
+  version: '3.135.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

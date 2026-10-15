@@ -311,7 +311,7 @@ function createTracker({
           gradedBy: null, gradedAt: null, note: null,
           // what a record of its own wants kept beside the usual fields (esstale.js: the leading app's move)
           ...(p.trackExtra && typeof p.trackExtra === 'object' ? p.trackExtra : {}),
-          // the match the board keyed the line to (esmatch.js; rows before v3.134.0 have none)
+          // the match the board keyed the line to (esmatch.js; rows before v3.135.0 have none)
           ...(p.matchTag ? { matchTag: p.matchTag } : {}),
         };
         await store.put(fresh);
