@@ -1,0 +1,53 @@
+
+== BRANCH 3.133.0 board 11416 rows at 2026-10-15T06:02:38.847Z
+league       legs   sharp  bookfair-both  bookfair-single  clear2%(both)  clear2%(single)
+CFB           5275      0             0              105             0                0
+NFL           4904   1205            45              175             0                1
+NHL           2022      0             0              116             0                1
+SOCCER         960      0             0                0             0                0
+MLB            639    176             0                0             0                0
+NBA            623     31             0               12             0                1
+TENNIS         496    237             0                0             0                0
+WNBA           344    106             0                5             0                0
+MMA            305     87             0                0             0                0
+BAD            115      0             0                0             0                0
+TT              68      0             0                0             0                0
+MOTORSPORTS     36      5             0                0             0                0
+WNBA SERIES     29      0             0                0             0                0
+EUROGOLF        18      0             0                0             0                0
+DGPT            11      0             0                0             0                0
+NPB              6      0             0                0             0                0
+sharp legs prod 1848 / 15851, branch 1847 / 15851; branch bookFair legs 458
+PROD (v3.132.0, no guard) book-fair legs 491, clearing 2% 8
+
+== BOOK-FAIR EXAMPLES (clearing first)
+NFL Bo Melton Receiving Yards prizepicks Over 14.5 ev 4.67 fair 57.6 [single] books fanduel 17.5 50% start 2026-10-19T00:20:00Z
+NBA Joel Embiid Points prizepicks Over 21.5 ev 3.07 fair 56.7 [single] books fanduel 22.5 51.6% start 2026-10-20T19:10:00.000-04:00
+NHL Michael Brandsegg-Nygård Shots on Goal prizepicks Over 1.5 ev 3 fair 56.7 [single] books fanduel 1.5 56.7% start 2026-10-15T23:30:00Z
+NHL Brayden Point Shots on Goal underdog Under 2.5 ev 1.38 fair 50.9 [single] books fanduel 2.5 49.1% start 2026-10-15T23:00:00Z
+NHL Roman Josi Shots on Goal underdog Under 2.5 ev 1.21 fair 60.5 [single] books fanduel 2.5 39.5% start 2026-10-16T00:00:00Z
+CFB Josh Rodriguez Receiving Yards prizepicks Over 29.5 ev 1.02 fair 55.6 [single] books fanduel 32.5 50% start 2026-10-15T23:30:00Z
+NFL Bhayshul Tuten Rush + Rec Yards underdog Under 79.5 ev 0.77 fair 56.7 [both] books fanduel 75.5 50%, betrivers 73.5 49.4% start 2026-10-18T13:30:00Z
+NHL Vince Dunn Shots on Goal prizepicks Over 1.5 ev -0.27 fair 54.9 [single] books fanduel 1.5 54.9% start 2026-10-15T23:00:00Z
+NFL Brock Purdy Pass Attempts prizepicks Under 31.5 ev -0.33 fair 54.9 [single] books betrivers 30.5 51.4% start 2026-10-20T00:15:00Z
+NHL Owen Tippett Shots on Goal underdog Under 2.5 ev -0.34 fair 53.4 [single] books fanduel 2.5 46.6% start 2026-10-15T23:30:00Z
+NFL Jameis Winston Rush Yards prizepicks Under 5.5 ev -0.34 fair 54.8 [single] books fanduel 4.5 50% start 2026-10-18T17:00:00Z
+NFL Trevor Lawrence Pass + Rush Yards prizepicks Under 244.5 ev -0.36 fair 54.8 [single] books betrivers 237.5 50% start 2026-10-18T13:30:00Z
+CFB Max Johnson Pass Yards prizepicks Under 252.5 ev -0.5 fair 54.8 [single] books fanduel 245.5 50% start 2026-10-15T23:30:00Z
+WNBA Kiah Stokes Points prizepicks Under 3 ev -0.57 fair 54.7 [single] books fanduel 2.5 52.9% start 2026-10-17T19:30:00Z
+NFL Jalon Daniels Pass + Rush Yards prizepicks Over 212.5 ev -0.6 fair 54.7 [single] books betrivers 219.5 49.7% start 2026-10-18T17:00:00Z
+CFB Emory Williams Pass Yards prizepicks Over 188.5 ev -0.82 fair 54.6 [single] books fanduel 194.5 50% start 2026-10-15T23:30:00Z
+NFL Sam Darnold Pass + Rush Yards prizepicks Under 229.5 ev -1.18 fair 54.4 [single] books betrivers 223.5 49.9% start 2026-10-16T00:15:00Z
+NHL Kirill Marchenko Shots on Goal underdog Under 2.5 ev -1.74 fair 50.2 [single] books fanduel 2.5 49.8% start 2026-10-15T23:00:00Z
+CFB TJ Engleman Rush Yards prizepicks Over 75.5 ev -2.07 fair 53.9 [single] books fanduel 78.5 50% start 2026-10-15T23:30:00Z
+NFL Chris Godwin Receiving Yards prizepicks Under 28.5 ev -2.15 fair 53.8 [both] books fanduel 26.5 50%, betrivers 26.5 50.6% start 2026-10-18T17:00:00Z
+NFL Aaron Rodgers Rush Yards prizepicks Under 0.5 ev -2.2 fair 53.8 [single] books fanduel 0.5 46.2% start 2026-10-18T17:00:00Z
+NFL Brock Purdy Pass Attempts underdog Under 31.5 ev -2.45 fair 54.9 [single] books betrivers 30.5 51.4% start 2026-10-20T00:15:00Z
+NFL Trevor Lawrence Pass + Rush Yards underdog Under 244.5 ev -2.49 fair 54.8 [single] books betrivers 237.5 50% start 2026-10-18T13:30:00Z
+NFL Chuba Hubbard Receptions prizepicks Over 2.5 ev -2.65 fair 53.6 [single] books fanduel 2.5 53.6% start 2026-10-18T17:00:00Z
+NFL Justin Herbert Pass Attempts prizepicks Under 30.5 ev -2.99 fair 53.4 [single] books betrivers 29.5 53% start 2026-10-18T20:25:00Z
+
+branch record byKind: {"gap-odd":78,"gap-stale":78,"book-fair-single":6,"gap":2,"ev":3}
+branch headline signals 5
+scoreboard byKind props-book-fair*: {"props-book-fair-single":{"label":"Pick'em vs one book (FanDuel or BetRivers)","recorded":6,"mark":"not graded yet"}}
+renders done
