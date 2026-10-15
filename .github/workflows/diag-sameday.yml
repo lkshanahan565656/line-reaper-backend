@@ -1,0 +1,27 @@
+name: diag-sameday
+on:
+  push:
+    branches: [diag-sameday]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: timeout 300 node diag/fetch.js || true
+      - run: timeout 300 node diag/run1.js ../server_before.js before || true
+      - run: timeout 300 node diag/run1.js ../server.js after || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          tar czf out.tgz out
+          git checkout --orphan diag-sameday-out
+          git rm -rq --cached . || true
+          git add -f out.tgz
+          git commit -qm "same-day run $(date -u +%H%M)"
+          git push -f origin diag-sameday-out
