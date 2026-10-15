@@ -1,0 +1,34 @@
+name: diag-edge
+on:
+  push:
+    branches: [diag-edge]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out; cd out
+          g() { curl -s --max-time 120 "$U$1" > "$2"; echo "$2 $(wc -c < $2)"; }
+          g /api/status status.json
+          g /api/ev/scoreboard scoreboard.json
+          g /api/results results.json
+          g /api/ev/record ev-record.json
+          g /api/props/record props-record.json
+          g /api/gas-locks gas-locks.json
+          g /api/tracker/summary es-summary.json
+          g /api/book-arbs/record book-arbs.json
+          g /api/slips/record slips-record.json
+          g /api/tail/record tail-record.json
+          g /api/esports/h2h h2h.json
+          g /api/esports/rounds rounds.json
+          g /api/esports/share share.json
+          g /api/esports/pintotals pintotals.json
+          date -u +%FT%TZ > at.txt
+          cd ..
+          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-edge-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-edge-out
