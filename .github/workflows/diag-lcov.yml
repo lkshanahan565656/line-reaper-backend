@@ -13,11 +13,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: timeout 2700 node diag/lcov.js || true
+      - run: timeout 600 node diag/kfmt.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          gzip -9 out/*.json
+          gzip -9 out/*.json 2>/dev/null || true
           git checkout --orphan diag-lcov-out
           git rm -rq --cached . || true
           git add -f out
