@@ -11,6 +11,8 @@ jobs:
     steps:
       - run: |
           mkdir out; U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 30); do v=$(curl -s $U/ | jq -r .version); echo "$(date -u) $v" >> out/wait.txt; [ "$v" = "3.125.0" ] && break; sleep 30; done
+          sleep 300
           curl -s $U/api/status > out/status.json
           curl -s $U/api/esports/picks > out/picks.json
           curl -s $U/api/esports/auto-slips > out/autoslips.json
