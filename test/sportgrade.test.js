@@ -15,6 +15,11 @@ test('box scores parse into named stat groups per player', () => {
   assert.strictEqual(g.statValue('NFL', 'receptions', puka.groups), 17);
   assert.strictEqual(g.statValue('NFL', 'rec_yds', puka.groups), 138);
   assert.strictEqual(g.statValue('NFL', 'targets', puka.groups), 24);
+  // anytime touchdown: Allen's rushing TD counts, his passing TDs don't; Puka's catch does
+  assert.strictEqual(g.statValue('NFL', 'anytime_td', allen.groups), 1);
+  assert.strictEqual(g.statValue('NFL', 'anytime_td', puka.groups), 1);
+  assert.ok(g.canGrade({ sport: 'NFL', mkey: 'anytime_td' }));
+  assert.ok(!g.canGrade({ sport: 'NFL', mkey: 'longest_comp' }));
 });
 
 test('basketball, baseball and hockey stats read off their keys', () => {

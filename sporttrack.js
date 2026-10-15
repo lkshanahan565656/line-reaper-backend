@@ -9,8 +9,9 @@
 //          fair (the play's own: the sharp consensus for kind 'sharp', else
 //          the other books, Kalshi and Pinnacle) at OUR signal line, so CLV is
 //          the chance our ticket wins as the market stood at the start.
-//   grade  ESPN's box score settles it (sportgrade.js). A player who didn't
-//          play, or a box that never shows him, is void after voidAfterMs.
+//   grade  ESPN's box score settles it (sportgrade.js; tennis, UFC, NASCAR
+//          and soccer from extragrade.js). A player who didn't play, or a
+//          box that never shows him, is void after voidAfterMs.
 //
 // Rows: open → locked (game started) → graded | void.
 
@@ -19,6 +20,9 @@ const { gapOutcome } = require('./esgaps');
 
 const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
 const RESEARCH = new Set(['gap-odd', 'gap-stale']);
+// FanDuel and BetRivers alone (no Pinnacle, no Kalshi): a lead of its own,
+// never in the headline (the apps' margin against the soft books, not an edge)
+const BOOK_FAIR = new Set(['book-fair', 'book-fair-single']);
 const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35, P6_BE = 0.5503;
 // Pick6 legs carry their own kinds (p6-sharp, p6-gap, ...): the same play, its own record
 const baseKind = k => String(k || '').replace(/^p6-/, '');
@@ -85,7 +89,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: play.fair == null ? null : r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
-        ...(baseKind(kind) === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(baseKind(kind) === 'sharp' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
@@ -153,16 +157,20 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     let graded = 0, voided = 0, tried = 0;
     for (const b of [...open.values()]) {
       if (b.status !== 'locked' || t - Date.parse(b.start) < afterMs) continue;
-      if (tried++ >= max) break;
+      // a stat no results source carries isn't tried (it would use up the
+      // budget every run); it voids when the others would
+      const can = !grader.canGrade || grader.canGrade(b);
+      if (can && tried++ >= max) continue;
       let g = null;
-      try { g = await grader.grade(b); } catch (e) { log.warn?.(`Sports grader: ${e.message}`); continue; }
+      if (can) try { g = await grader.grade(b); } catch (e) { log.warn?.(`Sports grader: ${e.message}`); continue; }
       if (g && !g.pending && g.outcome) {
-        Object.assign(b, { status: 'graded', result: g.result, outcome: g.outcome, eventId: g.eventId || null, gradedAt: new Date(t).toISOString(),
+        Object.assign(b, { status: 'graded', result: g.result, outcome: g.outcome, eventId: g.eventId || null, gradeSource: g.source || 'espn', gradedAt: new Date(t).toISOString(),
           profit: g.outcome === 'win' ? r4(b.signalDecimal - 1) : g.outcome === 'loss' ? -1 : 0 });
         open.delete(b.id); graded++;
         await put(b);
-      } else if (t - Date.parse(b.start) > voidAfterMs) {
-        Object.assign(b, { status: 'void', voidReason: g?.pending ? 'never final' : 'no box score line', gradedAt: new Date(t).toISOString() });
+      } else if (g?.void || t - Date.parse(b.start) > voidAfterMs) {
+        // a retirement, walkover or no contest voids at once, as the apps void it
+        Object.assign(b, { status: 'void', voidReason: g?.void || (!can ? 'no results source' : g?.pending ? 'never final' : 'no box score line'), gradedAt: new Date(t).toISOString() });
         open.delete(b.id); voided++;
         await put(b);
       }
@@ -211,9 +219,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
-    // research rows (gap-odd, gap-stale) and the stale-line legs (stalelines.js)
-    // are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind));
+    // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js)
+    // and the book-fair legs are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -231,4 +239,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { createSportTracker, legDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { BOOK_FAIR, createSportTracker, legDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

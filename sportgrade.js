@@ -76,6 +76,9 @@ function statValue(sport, market, groups) {
         targets: has(rec) && rec.receivingTargets != null ? n(rec.receivingTargets) : null,
         rush_rec_yds: has(rush) || has(rec) ? n(rush?.rushingYards) + n(rec?.receivingYards) : null,
         pass_rush_yds: has(pass) ? n(pass.passingYards) + n(rush?.rushingYards) : null,
+        // anytime touchdown: a rushing, receiving or return touchdown (Kalshi's
+        // touchdown ladder settles the same way); a passer's own throws don't count
+        anytime_td: has(rush) || has(rec) ? n(rush?.rushingTouchdowns) + n(rec?.receivingTouchdowns) + n(g.kickReturns?.kickReturnTouchdowns) + n(g.puntReturns?.puntReturnTouchdowns) : null,
         longest_rec: has(rec) ? n(rec.longReception) : null,
         longest_rush: has(rush) ? n(rush.longRushing) : null,
         fg_made: has(kick) ? pair(kick['fieldGoalsMade/fieldGoalAttempts'])[0] : null,
@@ -105,6 +108,16 @@ function statValue(sport, market, groups) {
     default: return null;
   }
 }
+
+// The stats statValue reads per sport: a leg on anything else never grades
+// from a box score, so the tracker doesn't spend its grading budget on it.
+const BB = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'threes', 'ftm', 'pra', 'pts_rebs', 'pts_asts', 'rebs_asts', 'stocks'];
+const FB = ['pass_yds', 'pass_tds', 'pass_comp', 'pass_att', 'pass_ints', 'rush_yds', 'rush_att', 'rec_yds', 'receptions', 'targets',
+  'rush_rec_yds', 'pass_rush_yds', 'anytime_td', 'longest_rec', 'longest_rush', 'fg_made', 'kicking_points'];
+const MARKETS = { NBA: BB, WNBA: BB, CBB: BB, NFL: FB, CFB: FB,
+  MLB: ['hits', 'runs', 'rbis', 'home_runs', 'hits_runs_rbis', 'batter_walks', 'batter_strikeouts', 'strikeouts', 'pitcher_outs', 'hits_allowed', 'earned_runs', 'walks_allowed'],
+  NHL: ['saves', 'goals_against', 'goals', 'assists', 'points', 'shots_on_goal', 'blocks', 'hits'] };
+const canGrade = pick => !!MARKETS[pick.sport]?.includes(pick.mkey);
 
 // "Cleveland Cavaliers" vs a pick's "CLE @ ORL" title or team: last words and
 // abbreviations both count
@@ -172,7 +185,7 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     if (!ev.status?.type?.completed) return { pending: true };
     return scoreOf(ev, game);
   }
-  return { grade, gradeGame };
+  return { grade, gradeGame, canGrade };
 }
 
 // ESPN's competitors → our home and away points, each side found by name
@@ -186,4 +199,4 @@ function scoreOf(ev, game) {
   return Number.isFinite(hp) && Number.isFinite(ap) ? { home: hp, away: ap } : null;
 }
 
-module.exports = { LEAGUES, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };
+module.exports = { LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };

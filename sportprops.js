@@ -368,6 +368,23 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
   return out.sort((a, b) => b.ev - a.ev);
 }
 
+// ── BOOK FAIR ──
+// Where neither Pinnacle nor Kalshi prices a leg (college football and NHL
+// props), FanDuel's and BetRivers' own two sides with the vig out price it
+// through the same consensusFor, both books weighing the same (one book alone
+// makes a 'book-fair-single' price, shown and not counted). Never sharp:
+// a lead that measures the apps' margin against the soft books.
+const BOOK_FAIR = { ...CONSENSUS, weights: { fanduel: 1, betrivers: 1 }, shadow: [], minSources: 1 };
+const isSharpSource = s => !s.shadow && (s.book === 'pinnacle' || s.book === 'kalshi');
+// a consensus play that rests on a sharp source (not FanDuel and BetRivers alone)
+const sharpBacked = p => (p.sources || []).some(isSharpSource);
+function bookFairPlays(row, quotes, { dfsEv, o = BOOK_FAIR } = {}) {
+  const bq = (quotes || []).filter(q => o.weights[q.book] > 0);
+  if (!bq.length) return [];
+  return consensusPlays(row, { sharp: bq, kalshi: null, dfsEv, o }).map(p => ({ ...p, bookFair: p.n >= 2 ? 'both' : 'single' }));
+}
+const bookFairKind = p => (p.n >= 2 ? 'book-fair' : 'book-fair-single');
+
 // Sportsbook props (freebooks' Odds API games) → [{ sport, key, book, line, pOver, start }]:
 // one no-vig quote per book, player, stat and game, in pinprops' row keys.
 // sportOf maps the feed's sport key (nfl) to the board's (NFL).
@@ -475,4 +492,4 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
 }
 
 module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
-  SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
+  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, sharpBacked, bookFairPlays, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
