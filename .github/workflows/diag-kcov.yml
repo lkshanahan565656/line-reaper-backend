@@ -1,0 +1,42 @@
+name: diag-kcov
+on:
+  push:
+    branches: [diag-kcov]
+concurrency:
+  group: diag-kcov
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node diag/snap.js || true
+      - if: always()
+        run: |
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-kcov-out; git rm -rq --cached . || true
+          git add -f out; git commit -qm snap; git push -f origin diag-kcov-out
+  cs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          git fetch -q origin diag-veto-out
+          git show origin/diag-veto-out:data/bo3-cs.json.gz > /tmp/bo3-cs.json.gz
+          mkdir -p data
+          SINCE=2026-04-01 TIERS=c,d timeout 180m node diag/mapstats.js 2>&1 | tee data/mapstats.txt
+      - if: always()
+        run: |
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-kcov-cs; git rm -rq --cached . || true
+          git add -f data; git commit -qm cs; git push -f origin diag-kcov-cs
