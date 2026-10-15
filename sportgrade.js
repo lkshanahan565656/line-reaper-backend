@@ -59,7 +59,14 @@ function statValue(sport, market, groups) {
       const map = { points: p, rebounds: r, assists: a, steals: s, blocks: b, turnovers: n(bb.turnovers),
         threes: pair(bb['threePointFieldGoalsMade-threePointFieldGoalsAttempted'])[0],
         ftm: pair(bb['freeThrowsMade-freeThrowsAttempted'])[0],
-        pra: p + r + a, pts_rebs: p + r, pts_asts: p + a, rebs_asts: r + a, stocks: s + b };
+        pra: p + r + a, pts_rebs: p + r, pts_asts: p + a, rebs_asts: r + a, stocks: s + b,
+        off_rebounds: n(bb.offensiveRebounds), def_rebounds: n(bb.defensiveRebounds), fouls: n(bb.fouls),
+        fgm: pair(bb['fieldGoalsMade-fieldGoalsAttempted'])[0], fga: pair(bb['fieldGoalsMade-fieldGoalsAttempted'])[1],
+        threes_att: pair(bb['threePointFieldGoalsMade-threePointFieldGoalsAttempted'])[1],
+        fta: pair(bb['freeThrowsMade-freeThrowsAttempted'])[1],
+        // a double-double is two of points, rebounds, assists, steals, blocks at 10+ (a triple, three); the line is 0.5
+        double_double: [p, r, a, s, b].filter(x => x >= 10).length >= 2 ? 1 : 0,
+        triple_double: [p, r, a, s, b].filter(x => x >= 10).length >= 3 ? 1 : 0 };
       return map[market] ?? null;
     }
     case 'NFL': case 'CFB': {
@@ -111,7 +118,8 @@ function statValue(sport, market, groups) {
 
 // The stats statValue reads per sport: a leg on anything else never grades
 // from a box score, so the tracker doesn't spend its grading budget on it.
-const BB = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'threes', 'ftm', 'pra', 'pts_rebs', 'pts_asts', 'rebs_asts', 'stocks'];
+const BB = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'threes', 'ftm', 'pra', 'pts_rebs', 'pts_asts', 'rebs_asts', 'stocks',
+  'off_rebounds', 'def_rebounds', 'fouls', 'fgm', 'fga', 'threes_att', 'fta', 'double_double', 'triple_double'];
 const FB = ['pass_yds', 'pass_tds', 'pass_comp', 'pass_att', 'pass_ints', 'rush_yds', 'rush_att', 'rec_yds', 'receptions', 'targets',
   'rush_rec_yds', 'pass_rush_yds', 'anytime_td', 'longest_rec', 'longest_rush', 'fg_made', 'kicking_points'];
 const MARKETS = { NBA: BB, WNBA: BB, CBB: BB, NFL: FB, CFB: FB,

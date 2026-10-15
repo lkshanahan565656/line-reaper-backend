@@ -28,13 +28,22 @@ function boardSport(sport) {
 }
 
 // "1H Rec Yards" and a PP NFL1H "Receiving Yards" both key as 1h|rec_yds
-const PERIOD = /^(1h|2h|1q|2q|3q|4q|1p|1st half|first half|1st quarter|1st period|season)\s+/i;
-const PERIOD_KEY = { '1st half': '1h', 'first half': '1h', '1st quarter': '1q', '1st period': '1p' };
+// (Underdog's NBA season-long lines say "Regular Season Points Per Game", PrizePicks' NBASZN "Season ...")
+const PERIOD = /^(1h|2h|1q|2q|3q|4q|1p|1st half|first half|1st quarter|1st period|regular season|season)\s+/i;
+const PERIOD_KEY = { '1st half': '1h', 'first half': '1h', '1st quarter': '1q', '1st period': '1p', 'regular season': 'season' };
 // The apps name the same tennis, fight and soccer stats differently
 // (PrizePicks "Total Games Won" is Underdog's "Games Won", Sleeper's "Knockout
 // Win" is Underdog's "Knockouts"): one key per stat, so the lines share a row
 // and the sharp prices (pinextra.js, kxextra.js) find them.
+// Basketball stats the apps post that canonMarket leaves in their own words
+// (PrizePicks "FG Made" would read as football's fg_made without the sport)
+const BASKETBALL_ALIASES = { 'double-double': 'double_double', 'double-doubles': 'double_double', double_doubles: 'double_double',
+  'triple-double': 'triple_double', 'triple-doubles': 'triple_double', triple_doubles: 'triple_double', fg_made: 'fgm', fg_attempted: 'fga',
+  fg_attempts: 'fga', '3-pt_attempted': 'threes_att', '3-pt_attempts': 'threes_att', '3-pointers_attempted': 'threes_att',
+  free_throws_attempted: 'fta', ft_attempted: 'fta', offensive_rebounds: 'off_rebounds', defensive_rebounds: 'def_rebounds',
+  personal_fouls: 'fouls', fantasy_points: 'fantasy_score' };
 const SPORT_MARKET_ALIASES = {
+  NBA: BASKETBALL_ALIASES, WNBA: BASKETBALL_ALIASES, CBB: BASKETBALL_ALIASES,
   TENNIS: { total_games: 'games_played', total_games_won: 'games_won', '1st_set_total_games': '1st_set_games_played',
     '1st_set_total_games_won': '1st_set_games_won', total_tie_breaks: 'tiebreakers_played' },
   MMA: { 'fight_time_(mins)': 'fight_time', knockout_win: 'knockouts', submission_win: 'submissions' },
@@ -336,7 +345,7 @@ function lineFacets(rows, book, minEv) {
 // (their model prices them).
 // Stats no sharp market lists anywhere we read, so they stay unpriced on purpose.
 const NO_SHARP = {
-  ALL: [/fantasy/, /season|per_game|triple_doubles|50\+/, /first_.*scorer|last_goal_scorer|first_td/, /^longest/, /^(1h|2h|1q|2q|3q|4q|1p)\|/,
+  ALL: [/fantasy/, /season|per_game|triple_doubles?|50\+/, /first_.*scorer|last_goal_scorer|first_td/, /^longest/, /^(1h|2h|1q|2q|3q|4q|1p)\|/,
     /kicking_points|fg_made|xp_made|pat_made/],
   MMA: [/significant_strikes|takedowns/],
   SOCCER: [/shots_attempted|passes|goals_against|tackles|clearances|crosses|^saves$/],
