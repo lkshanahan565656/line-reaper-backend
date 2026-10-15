@@ -5792,7 +5792,7 @@ async function trackSportProps() {
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
-      .map(x => (x.play.book === 'pick6' ? { ...x, kind: P6_KIND(x.kind) } : x));
+      .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
