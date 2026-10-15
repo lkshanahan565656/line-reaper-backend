@@ -9,6 +9,7 @@ permissions:
   contents: write
 jobs:
   snap:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -21,7 +22,21 @@ jobs:
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
           git checkout --orphan diag-kcov-out; git rm -rq --cached . || true
           git add -f out; git commit -qm snap; git push -f origin diag-kcov-out
+  dota:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node diag/dotapull.js 2>&1 | tee dota.txt; mkdir -p data; cp dota.txt data/ || true
+      - if: always()
+        run: |
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-kcov-dota; git rm -rq --cached . || true
+          git add -f data; git commit -qm dota; git push -f origin diag-kcov-dota
   cs:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 200
     steps:
