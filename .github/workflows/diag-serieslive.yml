@@ -1,0 +1,33 @@
+name: diag-serieslive
+on:
+  push:
+    branches: [diag-serieslive]
+permissions:
+  contents: write
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p out
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 50); do
+            v=$(curl -s $U/api/status | jq -r .version 2>/dev/null || true)
+            echo "$(date -u +%H:%M:%S) $v" >> out/versions.txt
+            [ "$v" = "3.124.2" ] && break
+            sleep 30
+          done
+          sleep 480
+          curl -s $U/api/status > out/status.json
+          curl -s $U/api/esports/share > out/share.json
+          curl -s $U/api/esports/h2h > out/h2h.json
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-serieslive-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "live output"
+          git push -f origin diag-serieslive-out
