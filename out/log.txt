@@ -1,0 +1,5 @@
+version 3.134.0 at 2026-10-15T06:07:19.396Z
+board rows 11397; book-fair legs by league {"NHL":{"both":0,"single":129,"clear2":1},"CFB":{"both":0,"single":104,"clear2":1},"NFL":{"both":45,"single":177,"clear2":1},"WNBA":{"both":0,"single":5,"clear2":0},"NBA":{"both":0,"single":12,"clear2":1}}
+coverage total {"legs":15833,"sharp":1845,"pinnacle":1288,"kalshi":557,"books":3536,"apps":3249,"none":7203,"bookFair":472}
+record byKind {"gap-odd":462,"gap-stale":486,"gap":17,"ev":18,"sharp":28,"stale-single":1,"book-fair-single":8} headline 63 graded 22
+scoreboard overall {"g":47,"clv":1.11} book-fair ["props-book-fair-single"]
