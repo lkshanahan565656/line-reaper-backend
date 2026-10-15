@@ -1,0 +1,30 @@
+name: diag-sliplog
+on:
+  push:
+    branches: [diag-sliplog]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/slip-log-x5c8gi
+          path: app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd app && npm ci --omit=dev
+      - run: mkdir -p out && (cd app && PORT=3999 LR_DATA_DIR=/tmp/lrdata node server.js > ../out/server.log 2>&1 &) && timeout 1800 node diag/run.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          tail -c 200000 out/server.log > out/server-tail.log; rm -f out/server.log
+          git checkout --orphan diag-sliplog-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-sliplog-out
