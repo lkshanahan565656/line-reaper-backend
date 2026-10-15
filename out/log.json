@@ -1,0 +1,8295 @@
+[
+ {
+  "t": "2026-10-15T03:32:41.278Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {},
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": null,
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 0,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:33:11.331Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:32:12.413Z",
+    "sleeper": "2026-10-15T03:32:12.590Z",
+    "prizepicks": "2026-10-15T03:32:13.004Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:33:09.299Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:33:41.384Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:32:12.413Z",
+    "sleeper": "2026-10-15T03:32:12.590Z",
+    "prizepicks": "2026-10-15T03:32:13.004Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:33:09.299Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:34:11.439Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:34:06.359Z",
+    "sleeper": "2026-10-15T03:34:01.257Z",
+    "prizepicks": "2026-10-15T03:34:01.288Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:34:10.842Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:34:41.469Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:34:06.359Z",
+    "sleeper": "2026-10-15T03:34:01.257Z",
+    "prizepicks": "2026-10-15T03:34:01.288Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:34:10.842Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:35:14.902Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:34:06.359Z",
+    "sleeper": "2026-10-15T03:34:01.257Z",
+    "prizepicks": "2026-10-15T03:34:01.288Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:34:10.842Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:35:44.955Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 0,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:34:06.359Z",
+    "sleeper": "2026-10-15T03:34:01.257Z",
+    "prizepicks": "2026-10-15T03:34:01.288Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:35:38.319Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 0,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:36:15.001Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 15,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:36:02.011Z",
+    "sleeper": "2026-10-15T03:36:01.432Z",
+    "prizepicks": "2026-10-15T03:36:01.394Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:36:03.153Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 15,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:36:45.048Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 15,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:36:02.011Z",
+    "sleeper": "2026-10-15T03:36:01.432Z",
+    "prizepicks": "2026-10-15T03:36:01.394Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:36:03.153Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 15,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:37:15.122Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 15,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:36:02.011Z",
+    "sleeper": "2026-10-15T03:36:01.432Z",
+    "prizepicks": "2026-10-15T03:36:01.394Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:36:03.153Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 15,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:37:45.197Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [],
+   "unstable": 0,
+   "leads": {},
+   "open": 15,
+   "hours": 0,
+   "reads": {
+    "underdog": "2026-10-15T03:36:02.011Z",
+    "sleeper": "2026-10-15T03:36:01.432Z",
+    "prizepicks": "2026-10-15T03:36:01.394Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:36:03.153Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 0,
+    "pending": 15,
+    "unstable": 0,
+    "log": 0
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:38:15.250Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 6,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 6,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 9,
+   "leads": {
+    "underdog": 6
+   },
+   "open": 15,
+   "hours": 0.04,
+   "reads": {
+    "underdog": "2026-10-15T03:38:07.414Z",
+    "sleeper": "2026-10-15T03:38:01.372Z",
+    "prizepicks": "2026-10-15T03:38:01.400Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:38:08.801Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 6,
+    "pending": 9,
+    "unstable": 9,
+    "log": 9
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:38:45.568Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 6,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 6,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 9,
+   "leads": {
+    "underdog": 6
+   },
+   "open": 15,
+   "hours": 0.05,
+   "reads": {
+    "underdog": "2026-10-15T03:38:07.414Z",
+    "sleeper": "2026-10-15T03:38:01.372Z",
+    "prizepicks": "2026-10-15T03:38:01.400Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:38:08.801Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 6,
+    "pending": 9,
+    "unstable": 9,
+    "log": 9
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:39:15.616Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 6,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 6,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 9,
+   "leads": {
+    "underdog": 6
+   },
+   "open": 15,
+   "hours": 0.05,
+   "reads": {
+    "underdog": "2026-10-15T03:38:07.414Z",
+    "sleeper": "2026-10-15T03:38:01.372Z",
+    "prizepicks": "2026-10-15T03:38:01.400Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:38:08.801Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 6,
+    "pending": 9,
+    "unstable": 9,
+    "log": 9
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:39:46.568Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 6,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 6,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 9,
+   "leads": {
+    "underdog": 6
+   },
+   "open": 15,
+   "hours": 0.06,
+   "reads": {
+    "underdog": "2026-10-15T03:38:07.414Z",
+    "sleeper": "2026-10-15T03:38:01.372Z",
+    "prizepicks": "2026-10-15T03:38:01.400Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:38:08.801Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 6,
+    "pending": 9,
+    "unstable": 9,
+    "log": 9
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:40:16.618Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 18,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 9,
+   "hours": 0.07,
+   "reads": {
+    "underdog": "2026-10-15T03:40:02.983Z",
+    "sleeper": "2026-10-15T03:40:02.403Z",
+    "prizepicks": "2026-10-15T03:40:02.348Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:40:04.144Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 3,
+    "unstable": 18,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:40:46.652Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 18,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 9,
+   "hours": 0.08,
+   "reads": {
+    "underdog": "2026-10-15T03:40:02.983Z",
+    "sleeper": "2026-10-15T03:40:02.403Z",
+    "prizepicks": "2026-10-15T03:40:02.348Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:40:04.144Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 3,
+    "unstable": 18,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:41:16.749Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 18,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 9,
+   "hours": 0.09,
+   "reads": {
+    "underdog": "2026-10-15T03:40:02.983Z",
+    "sleeper": "2026-10-15T03:40:02.403Z",
+    "prizepicks": "2026-10-15T03:40:02.348Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:40:04.144Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 3,
+    "unstable": 18,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:41:47.191Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 18,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 9,
+   "hours": 0.1,
+   "reads": {
+    "underdog": "2026-10-15T03:40:02.983Z",
+    "sleeper": "2026-10-15T03:40:02.403Z",
+    "prizepicks": "2026-10-15T03:40:02.348Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:40:04.144Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 3,
+    "unstable": 18,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:42:17.293Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 24,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 7,
+   "hours": 0.1,
+   "reads": {
+    "underdog": "2026-10-15T03:42:06.788Z",
+    "sleeper": "2026-10-15T03:42:01.372Z",
+    "prizepicks": "2026-10-15T03:42:01.343Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:42:07.921Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 4,
+    "unstable": 24,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:42:47.387Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 24,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 7,
+   "hours": 0.11,
+   "reads": {
+    "underdog": "2026-10-15T03:42:06.788Z",
+    "sleeper": "2026-10-15T03:42:01.372Z",
+    "prizepicks": "2026-10-15T03:42:01.343Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:42:07.921Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 4,
+    "unstable": 24,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:43:17.419Z",
+  "rows": 0,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 7,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 7,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 24,
+   "leads": {
+    "underdog": 7
+   },
+   "open": 7,
+   "hours": 0.12,
+   "reads": {
+    "underdog": "2026-10-15T03:42:06.788Z",
+    "sleeper": "2026-10-15T03:42:01.372Z",
+    "prizepicks": "2026-10-15T03:42:01.343Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:42:07.921Z",
+   "rows": 0,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 15,
+    "pending": 4,
+    "unstable": 24,
+    "log": 10
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:43:48.152Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 10,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 10,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 24,
+   "leads": {
+    "underdog": 10
+   },
+   "open": 7,
+   "hours": 0.13,
+   "reads": {
+    "underdog": "2026-10-15T03:42:08.539Z",
+    "sleeper": "2026-10-15T03:42:01.372Z",
+    "prizepicks": "2026-10-15T03:42:01.343Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:43:47.651Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 18,
+    "pending": 1,
+    "unstable": 24,
+    "log": 13
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:44:18.203Z",
+  "rows": 5,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 10,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 10,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 27,
+   "leads": {
+    "underdog": 10
+   },
+   "open": 5,
+   "hours": 0.14,
+   "reads": {
+    "underdog": "2026-10-15T03:44:04.768Z",
+    "sleeper": "2026-10-15T03:44:02.109Z",
+    "prizepicks": "2026-10-15T03:44:02.081Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:44:05.904Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 19,
+    "pending": 1,
+    "unstable": 27,
+    "log": 13
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:44:48.313Z",
+  "rows": 5,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 10,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 10,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 3,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 3,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 27,
+   "leads": {
+    "underdog": 10
+   },
+   "open": 5,
+   "hours": 0.15,
+   "reads": {
+    "underdog": "2026-10-15T03:44:04.768Z",
+    "sleeper": "2026-10-15T03:44:02.109Z",
+    "prizepicks": "2026-10-15T03:44:02.081Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:44:05.904Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 19,
+    "pending": 1,
+    "unstable": 27,
+    "log": 13
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:45:22.959Z",
+  "rows": 5,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 27,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.16,
+   "reads": {
+    "underdog": "2026-10-15T03:44:06.633Z",
+    "sleeper": "2026-10-15T03:44:02.109Z",
+    "prizepicks": "2026-10-15T03:44:02.081Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:45:01.735Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 27,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:45:53.050Z",
+  "rows": 5,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 27,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.16,
+   "reads": {
+    "underdog": "2026-10-15T03:44:06.633Z",
+    "sleeper": "2026-10-15T03:44:02.109Z",
+    "prizepicks": "2026-10-15T03:44:02.081Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:45:01.735Z",
+   "rows": 5,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 27,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:46:23.101Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 30,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.17,
+   "reads": {
+    "underdog": "2026-10-15T03:46:02.300Z",
+    "sleeper": "2026-10-15T03:46:01.638Z",
+    "prizepicks": "2026-10-15T03:46:01.659Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:46:03.519Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 3,
+    "unstable": 30,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:46:53.994Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 30,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.18,
+   "reads": {
+    "underdog": "2026-10-15T03:46:02.300Z",
+    "sleeper": "2026-10-15T03:46:01.638Z",
+    "prizepicks": "2026-10-15T03:46:01.659Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:46:03.519Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 3,
+    "unstable": 30,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:47:24.046Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 30,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.19,
+   "reads": {
+    "underdog": "2026-10-15T03:46:02.300Z",
+    "sleeper": "2026-10-15T03:46:01.638Z",
+    "prizepicks": "2026-10-15T03:46:01.659Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:46:03.519Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 3,
+    "unstable": 30,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:47:54.121Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 30,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 5,
+   "hours": 0.2,
+   "reads": {
+    "underdog": "2026-10-15T03:46:02.300Z",
+    "sleeper": "2026-10-15T03:46:01.638Z",
+    "prizepicks": "2026-10-15T03:46:01.659Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:46:03.519Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 3,
+    "unstable": 30,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:48:27.296Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.21,
+   "reads": {
+    "underdog": "2026-10-15T03:48:03.099Z",
+    "sleeper": "2026-10-15T03:48:02.129Z",
+    "prizepicks": "2026-10-15T03:48:02.071Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:48:04.342Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:48:57.389Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.22,
+   "reads": {
+    "underdog": "2026-10-15T03:48:03.099Z",
+    "sleeper": "2026-10-15T03:48:02.129Z",
+    "prizepicks": "2026-10-15T03:48:02.071Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:48:04.342Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:49:27.462Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.22,
+   "reads": {
+    "underdog": "2026-10-15T03:48:03.099Z",
+    "sleeper": "2026-10-15T03:48:02.129Z",
+    "prizepicks": "2026-10-15T03:48:02.071Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:48:04.342Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:49:57.510Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.23,
+   "reads": {
+    "underdog": "2026-10-15T03:48:03.099Z",
+    "sleeper": "2026-10-15T03:48:02.129Z",
+    "prizepicks": "2026-10-15T03:48:02.071Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:48:04.342Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:50:27.561Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.24,
+   "reads": {
+    "underdog": "2026-10-15T03:50:06.759Z",
+    "sleeper": "2026-10-15T03:50:03.100Z",
+    "prizepicks": "2026-10-15T03:50:02.989Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:50:08.044Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:50:57.609Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.25,
+   "reads": {
+    "underdog": "2026-10-15T03:50:06.759Z",
+    "sleeper": "2026-10-15T03:50:03.100Z",
+    "prizepicks": "2026-10-15T03:50:02.989Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:50:08.044Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:51:27.633Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.26,
+   "reads": {
+    "underdog": "2026-10-15T03:50:06.759Z",
+    "sleeper": "2026-10-15T03:50:03.100Z",
+    "prizepicks": "2026-10-15T03:50:02.989Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:50:08.044Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:51:57.681Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 2,
+   "hours": 0.27,
+   "reads": {
+    "underdog": "2026-10-15T03:50:06.759Z",
+    "sleeper": "2026-10-15T03:50:03.100Z",
+    "prizepicks": "2026-10-15T03:50:02.989Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:50:08.044Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 0,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:52:27.715Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.27,
+   "reads": {
+    "underdog": "2026-10-15T03:52:07.187Z",
+    "sleeper": "2026-10-15T03:52:01.519Z",
+    "prizepicks": "2026-10-15T03:52:01.493Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:52:08.422Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 1,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:52:57.797Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.28,
+   "reads": {
+    "underdog": "2026-10-15T03:52:07.187Z",
+    "sleeper": "2026-10-15T03:52:01.519Z",
+    "prizepicks": "2026-10-15T03:52:01.493Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:52:08.422Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 1,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:53:32.953Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.29,
+   "reads": {
+    "underdog": "2026-10-15T03:52:07.187Z",
+    "sleeper": "2026-10-15T03:52:01.519Z",
+    "prizepicks": "2026-10-15T03:52:01.493Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:52:08.422Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 1,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:54:03.003Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 33,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.3,
+   "reads": {
+    "underdog": "2026-10-15T03:52:07.187Z",
+    "sleeper": "2026-10-15T03:52:01.519Z",
+    "prizepicks": "2026-10-15T03:52:01.493Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:52:08.422Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 20,
+    "pending": 1,
+    "unstable": 33,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:54:35.221Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.31,
+   "reads": {
+    "underdog": "2026-10-15T03:54:09.296Z",
+    "sleeper": "2026-10-15T03:54:02.003Z",
+    "prizepicks": "2026-10-15T03:54:03.656Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:54:10.624Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:55:05.249Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.32,
+   "reads": {
+    "underdog": "2026-10-15T03:54:11.464Z",
+    "sleeper": "2026-10-15T03:54:02.003Z",
+    "prizepicks": "2026-10-15T03:54:03.656Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:55:01.563Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:55:35.277Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.33,
+   "reads": {
+    "underdog": "2026-10-15T03:54:11.464Z",
+    "sleeper": "2026-10-15T03:54:02.003Z",
+    "prizepicks": "2026-10-15T03:54:03.656Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:55:01.563Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:56:06.688Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.33,
+   "reads": {
+    "underdog": "2026-10-15T03:56:04.917Z",
+    "sleeper": "2026-10-15T03:56:02.116Z",
+    "prizepicks": "2026-10-15T03:56:01.737Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:56:06.150Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:56:40.385Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.34,
+   "reads": {
+    "underdog": "2026-10-15T03:56:04.917Z",
+    "sleeper": "2026-10-15T03:56:02.116Z",
+    "prizepicks": "2026-10-15T03:56:01.737Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:56:06.150Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:57:10.410Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.35,
+   "reads": {
+    "underdog": "2026-10-15T03:56:04.917Z",
+    "sleeper": "2026-10-15T03:56:02.116Z",
+    "prizepicks": "2026-10-15T03:56:01.737Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:56:06.150Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:57:40.637Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 3,
+   "hours": 0.36,
+   "reads": {
+    "underdog": "2026-10-15T03:56:04.917Z",
+    "sleeper": "2026-10-15T03:56:02.116Z",
+    "prizepicks": "2026-10-15T03:56:01.737Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:56:06.150Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 0,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:58:10.716Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 4,
+   "hours": 0.37,
+   "reads": {
+    "underdog": "2026-10-15T03:58:06.918Z",
+    "sleeper": "2026-10-15T03:58:02.436Z",
+    "prizepicks": "2026-10-15T03:58:01.794Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:58:08.227Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 1,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:58:40.805Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 4,
+   "hours": 0.38,
+   "reads": {
+    "underdog": "2026-10-15T03:58:06.918Z",
+    "sleeper": "2026-10-15T03:58:02.436Z",
+    "prizepicks": "2026-10-15T03:58:01.794Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:58:08.227Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 1,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:59:10.843Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 4,
+   "hours": 0.39,
+   "reads": {
+    "underdog": "2026-10-15T03:58:06.918Z",
+    "sleeper": "2026-10-15T03:58:02.436Z",
+    "prizepicks": "2026-10-15T03:58:01.794Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:58:08.227Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 1,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T03:59:40.875Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 11,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 11,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 11
+   },
+   "open": 4,
+   "hours": 0.39,
+   "reads": {
+    "underdog": "2026-10-15T03:58:06.918Z",
+    "sleeper": "2026-10-15T03:58:02.436Z",
+    "prizepicks": "2026-10-15T03:58:01.794Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T03:58:08.227Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 389,
+    "open": 21,
+    "pending": 1,
+    "unstable": 43,
+    "log": 15
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:00:10.928Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.4,
+   "reads": {
+    "underdog": "2026-10-15T04:00:03.265Z",
+    "sleeper": "2026-10-15T04:00:05.622Z",
+    "prizepicks": "2026-10-15T04:00:02.582Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:00:06.855Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:00:40.976Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.41,
+   "reads": {
+    "underdog": "2026-10-15T04:00:03.265Z",
+    "sleeper": "2026-10-15T04:00:05.622Z",
+    "prizepicks": "2026-10-15T04:00:02.582Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:00:06.855Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:01:11.066Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.42,
+   "reads": {
+    "underdog": "2026-10-15T04:00:03.265Z",
+    "sleeper": "2026-10-15T04:00:05.622Z",
+    "prizepicks": "2026-10-15T04:00:02.582Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:00:06.855Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:01:41.091Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.43,
+   "reads": {
+    "underdog": "2026-10-15T04:00:03.265Z",
+    "sleeper": "2026-10-15T04:00:05.622Z",
+    "prizepicks": "2026-10-15T04:00:02.582Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:00:06.855Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:02:11.121Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.44,
+   "reads": {
+    "underdog": "2026-10-15T04:02:04.669Z",
+    "sleeper": "2026-10-15T04:02:02.796Z",
+    "prizepicks": "2026-10-15T04:02:02.738Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:02:05.946Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:02:41.229Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.44,
+   "reads": {
+    "underdog": "2026-10-15T04:02:04.669Z",
+    "sleeper": "2026-10-15T04:02:02.796Z",
+    "prizepicks": "2026-10-15T04:02:02.738Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:02:05.946Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:03:11.335Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.45,
+   "reads": {
+    "underdog": "2026-10-15T04:02:04.669Z",
+    "sleeper": "2026-10-15T04:02:02.796Z",
+    "prizepicks": "2026-10-15T04:02:02.738Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:02:05.946Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:03:41.544Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.46,
+   "reads": {
+    "underdog": "2026-10-15T04:02:04.669Z",
+    "sleeper": "2026-10-15T04:02:02.796Z",
+    "prizepicks": "2026-10-15T04:02:02.738Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:02:05.946Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:04:11.572Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.47,
+   "reads": {
+    "underdog": "2026-10-15T04:04:08.015Z",
+    "sleeper": "2026-10-15T04:04:01.752Z",
+    "prizepicks": "2026-10-15T04:04:01.667Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:04:09.256Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:04:41.604Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.48,
+   "reads": {
+    "underdog": "2026-10-15T04:04:08.015Z",
+    "sleeper": "2026-10-15T04:04:01.752Z",
+    "prizepicks": "2026-10-15T04:04:01.667Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:04:09.256Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:05:11.653Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.49,
+   "reads": {
+    "underdog": "2026-10-15T04:04:10.178Z",
+    "sleeper": "2026-10-15T04:04:01.752Z",
+    "prizepicks": "2026-10-15T04:04:01.667Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:05:02.261Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:05:41.716Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 4,
+   "hours": 0.49,
+   "reads": {
+    "underdog": "2026-10-15T04:04:10.178Z",
+    "sleeper": "2026-10-15T04:04:01.752Z",
+    "prizepicks": "2026-10-15T04:04:01.667Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:05:02.261Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 0,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:06:11.773Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 5,
+   "hours": 0.5,
+   "reads": {
+    "underdog": "2026-10-15T04:06:07.772Z",
+    "sleeper": "2026-10-15T04:06:01.575Z",
+    "prizepicks": "2026-10-15T04:06:01.541Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:06:08.991Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 1,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:06:45.606Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 5,
+   "hours": 0.51,
+   "reads": {
+    "underdog": "2026-10-15T04:06:07.772Z",
+    "sleeper": "2026-10-15T04:06:01.575Z",
+    "prizepicks": "2026-10-15T04:06:01.541Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:06:08.991Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 1,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:07:15.787Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 5,
+   "hours": 0.52,
+   "reads": {
+    "underdog": "2026-10-15T04:06:07.772Z",
+    "sleeper": "2026-10-15T04:06:01.575Z",
+    "prizepicks": "2026-10-15T04:06:01.541Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:06:08.991Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 1,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:07:46.534Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12
+   },
+   "open": 5,
+   "hours": 0.53,
+   "reads": {
+    "underdog": "2026-10-15T04:06:07.772Z",
+    "sleeper": "2026-10-15T04:06:01.575Z",
+    "prizepicks": "2026-10-15T04:06:01.541Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:06:08.991Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 22,
+    "pending": 1,
+    "unstable": 43,
+    "log": 16
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:08:16.600Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.54,
+   "reads": {
+    "underdog": "2026-10-15T04:08:07.233Z",
+    "sleeper": "2026-10-15T04:08:01.403Z",
+    "prizepicks": "2026-10-15T04:08:01.427Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:08:08.526Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:08:46.656Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.55,
+   "reads": {
+    "underdog": "2026-10-15T04:08:07.233Z",
+    "sleeper": "2026-10-15T04:08:01.403Z",
+    "prizepicks": "2026-10-15T04:08:01.427Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:08:08.526Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:09:16.708Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.55,
+   "reads": {
+    "underdog": "2026-10-15T04:08:07.233Z",
+    "sleeper": "2026-10-15T04:08:01.403Z",
+    "prizepicks": "2026-10-15T04:08:01.427Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:08:08.526Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:09:46.900Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.56,
+   "reads": {
+    "underdog": "2026-10-15T04:08:07.233Z",
+    "sleeper": "2026-10-15T04:08:01.403Z",
+    "prizepicks": "2026-10-15T04:08:01.427Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:08:08.526Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:10:16.936Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.57,
+   "reads": {
+    "underdog": "2026-10-15T04:10:07.576Z",
+    "sleeper": "2026-10-15T04:10:02.820Z",
+    "prizepicks": "2026-10-15T04:10:02.743Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:10:08.784Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:10:46.974Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.58,
+   "reads": {
+    "underdog": "2026-10-15T04:10:07.576Z",
+    "sleeper": "2026-10-15T04:10:02.820Z",
+    "prizepicks": "2026-10-15T04:10:02.743Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:10:08.784Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:11:17.025Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.59,
+   "reads": {
+    "underdog": "2026-10-15T04:10:07.576Z",
+    "sleeper": "2026-10-15T04:10:02.820Z",
+    "prizepicks": "2026-10-15T04:10:02.743Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:10:08.784Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:11:47.077Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.6,
+   "reads": {
+    "underdog": "2026-10-15T04:10:07.576Z",
+    "sleeper": "2026-10-15T04:10:02.820Z",
+    "prizepicks": "2026-10-15T04:10:02.743Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:10:08.784Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 0,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:12:17.114Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.6,
+   "reads": {
+    "underdog": "2026-10-15T04:12:07.438Z",
+    "sleeper": "2026-10-15T04:12:02.304Z",
+    "prizepicks": "2026-10-15T04:12:01.964Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:12:08.687Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 1,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:12:47.162Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.61,
+   "reads": {
+    "underdog": "2026-10-15T04:12:07.438Z",
+    "sleeper": "2026-10-15T04:12:02.304Z",
+    "prizepicks": "2026-10-15T04:12:01.964Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:12:08.687Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 1,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:13:17.225Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 12,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 12,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 12,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.62,
+   "reads": {
+    "underdog": "2026-10-15T04:12:07.438Z",
+    "sleeper": "2026-10-15T04:12:02.304Z",
+    "prizepicks": "2026-10-15T04:12:01.964Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:12:08.687Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 23,
+    "pending": 1,
+    "unstable": 43,
+    "log": 17
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:13:47.273Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.63,
+   "reads": {
+    "underdog": "2026-10-15T04:12:09.543Z",
+    "sleeper": "2026-10-15T04:12:02.304Z",
+    "prizepicks": "2026-10-15T04:12:01.964Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:13:41.429Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 43,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:14:17.309Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.64,
+   "reads": {
+    "underdog": "2026-10-15T04:14:02.717Z",
+    "sleeper": "2026-10-15T04:14:01.529Z",
+    "prizepicks": "2026-10-15T04:14:01.491Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:14:03.936Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 43,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:14:47.356Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.65,
+   "reads": {
+    "underdog": "2026-10-15T04:14:02.717Z",
+    "sleeper": "2026-10-15T04:14:01.529Z",
+    "prizepicks": "2026-10-15T04:14:01.491Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:14:03.936Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 43,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:15:17.406Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.65,
+   "reads": {
+    "underdog": "2026-10-15T04:14:02.717Z",
+    "sleeper": "2026-10-15T04:14:01.529Z",
+    "prizepicks": "2026-10-15T04:14:05.048Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:15:02.049Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 43,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:15:47.481Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 43,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.66,
+   "reads": {
+    "underdog": "2026-10-15T04:14:02.717Z",
+    "sleeper": "2026-10-15T04:14:01.529Z",
+    "prizepicks": "2026-10-15T04:14:05.048Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:15:02.049Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 43,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:16:17.531Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.67,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:16:47.929Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.68,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:17:18.008Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.69,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:17:48.191Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.7,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:18:18.258Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.7,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:18:48.465Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.71,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:19:24.138Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.72,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:19:54.207Z",
+  "rows": 4,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 1,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 1
+   },
+   "open": 5,
+   "hours": 0.73,
+   "reads": {
+    "underdog": "2026-10-15T04:16:04.442Z",
+    "sleeper": "2026-10-15T04:16:01.815Z",
+    "prizepicks": "2026-10-15T04:16:01.783Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:16:05.712Z",
+   "rows": 4,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 18
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:20:24.288Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.74,
+   "reads": {
+    "underdog": "2026-10-15T04:20:03.065Z",
+    "sleeper": "2026-10-15T04:20:02.204Z",
+    "prizepicks": "2026-10-15T04:20:02.155Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:20:04.261Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 19
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:20:54.339Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.75,
+   "reads": {
+    "underdog": "2026-10-15T04:20:03.065Z",
+    "sleeper": "2026-10-15T04:20:02.204Z",
+    "prizepicks": "2026-10-15T04:20:02.155Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:20:04.261Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 19
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:21:29.727Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.76,
+   "reads": {
+    "underdog": "2026-10-15T04:20:03.065Z",
+    "sleeper": "2026-10-15T04:20:02.204Z",
+    "prizepicks": "2026-10-15T04:20:02.155Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:20:04.261Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 19
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:21:59.779Z",
+  "rows": 3,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.77,
+   "reads": {
+    "underdog": "2026-10-15T04:20:03.065Z",
+    "sleeper": "2026-10-15T04:20:02.204Z",
+    "prizepicks": "2026-10-15T04:20:02.155Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:20:04.261Z",
+   "rows": 3,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 19
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:22:29.850Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.77,
+   "reads": {
+    "underdog": "2026-10-15T04:22:03.308Z",
+    "sleeper": "2026-10-15T04:22:02.143Z",
+    "prizepicks": "2026-10-15T04:22:02.164Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:22:04.572Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:22:59.898Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.78,
+   "reads": {
+    "underdog": "2026-10-15T04:22:03.308Z",
+    "sleeper": "2026-10-15T04:22:02.143Z",
+    "prizepicks": "2026-10-15T04:22:02.164Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:22:04.572Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:23:35.653Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.79,
+   "reads": {
+    "underdog": "2026-10-15T04:22:03.308Z",
+    "sleeper": "2026-10-15T04:22:02.143Z",
+    "prizepicks": "2026-10-15T04:22:02.164Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:22:04.572Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:24:05.855Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.8,
+   "reads": {
+    "underdog": "2026-10-15T04:24:02.727Z",
+    "sleeper": "2026-10-15T04:24:01.883Z",
+    "prizepicks": "2026-10-15T04:24:01.852Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:24:03.933Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:24:36.298Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.81,
+   "reads": {
+    "underdog": "2026-10-15T04:24:02.727Z",
+    "sleeper": "2026-10-15T04:24:01.883Z",
+    "prizepicks": "2026-10-15T04:24:01.852Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:24:03.933Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:25:06.347Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.82,
+   "reads": {
+    "underdog": "2026-10-15T04:24:04.820Z",
+    "sleeper": "2026-10-15T04:24:01.883Z",
+    "prizepicks": "2026-10-15T04:24:01.852Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:25:02.247Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:25:36.373Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.83,
+   "reads": {
+    "underdog": "2026-10-15T04:24:04.820Z",
+    "sleeper": "2026-10-15T04:24:01.883Z",
+    "prizepicks": "2026-10-15T04:24:01.852Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:25:02.247Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:26:06.425Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.83,
+   "reads": {
+    "underdog": "2026-10-15T04:26:02.238Z",
+    "sleeper": "2026-10-15T04:26:01.290Z",
+    "prizepicks": "2026-10-15T04:26:01.317Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:26:03.442Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:26:40.166Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.84,
+   "reads": {
+    "underdog": "2026-10-15T04:26:02.238Z",
+    "sleeper": "2026-10-15T04:26:01.290Z",
+    "prizepicks": "2026-10-15T04:26:01.317Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:26:03.442Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:27:10.222Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.85,
+   "reads": {
+    "underdog": "2026-10-15T04:26:02.238Z",
+    "sleeper": "2026-10-15T04:26:01.290Z",
+    "prizepicks": "2026-10-15T04:26:01.317Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:26:03.442Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:27:40.275Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.86,
+   "reads": {
+    "underdog": "2026-10-15T04:26:02.238Z",
+    "sleeper": "2026-10-15T04:26:01.290Z",
+    "prizepicks": "2026-10-15T04:26:01.317Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:26:03.442Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ },
+ {
+  "t": "2026-10-15T04:28:10.326Z",
+  "rows": 2,
+  "clear": 0,
+  "lag": {
+   "lag": [
+    {
+     "leader": "underdog",
+     "app": "prizepicks",
+     "moves": 13,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 13,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "underdog",
+     "app": "sleeper",
+     "moves": 4,
+     "followed": 0,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 4,
+     "reverted": 0,
+     "sameWayPct": null,
+     "medianMin": null,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "underdog",
+     "moves": 2,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 1,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 38,
+     "within2": 0,
+     "within15": 0
+    },
+    {
+     "leader": "prizepicks",
+     "app": "sleeper",
+     "moves": 1,
+     "followed": 1,
+     "opposite": 0,
+     "pulled": 0,
+     "none": 0,
+     "led": 0,
+     "ahead": 0,
+     "reverted": 0,
+     "sameWayPct": 100,
+     "medianMin": 40,
+     "within2": 0,
+     "within15": 0
+    }
+   ],
+   "unstable": 44,
+   "leads": {
+    "underdog": 13,
+    "prizepicks": 2
+   },
+   "open": 5,
+   "hours": 0.87,
+   "reads": {
+    "underdog": "2026-10-15T04:28:03.289Z",
+    "sleeper": "2026-10-15T04:28:02.587Z",
+    "prizepicks": "2026-10-15T04:28:02.129Z"
+   },
+   "thresholds": {
+    "moveProbPts": 3,
+    "followFrac": 0.5,
+    "windowMin": 60
+   }
+  },
+  "status": {
+   "enabled": true,
+   "screenedAt": "2026-10-15T04:28:04.616Z",
+   "rows": 2,
+   "clear": 0,
+   "errors": [],
+   "engine": {
+    "subjects": 380,
+    "open": 24,
+    "pending": 0,
+    "unstable": 44,
+    "log": 20
+   }
+  }
+ }
+]
