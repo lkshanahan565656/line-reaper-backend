@@ -1,0 +1,1508 @@
+[
+ {
+  "at": "2026-10-15T03:31:11.619Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 2,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    }
+   },
+   "lines": 18,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 364,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 916,
+    "MMA": 227,
+    "TENNIS": 509,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8511,
+    "prizepicks": 3370,
+    "sleeper": 2486,
+    "pick6": 18
+   },
+   "priced": 450,
+   "multi": 2932,
+   "rows": 10410,
+   "gaps": 0,
+   "sharp": 1,
+   "consensus": 366,
+   "researchGaps": 74
+  }
+ },
+ {
+  "at": "2026-10-15T03:33:11.632Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 5,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    }
+   },
+   "lines": 58,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 364,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 916,
+    "MMA": 227,
+    "TENNIS": 509,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8512,
+    "prizepicks": 3370,
+    "sleeper": 2484,
+    "pick6": 58
+   },
+   "priced": 974,
+   "multi": 2931,
+   "rows": 10410,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 58
+  }
+ },
+ {
+  "at": "2026-10-15T03:35:11.706Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 6,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    }
+   },
+   "lines": 66,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 364,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 227,
+    "TENNIS": 509,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8524,
+    "prizepicks": 3370,
+    "sleeper": 2485,
+    "pick6": 66
+   },
+   "priced": 973,
+   "multi": 2932,
+   "rows": 10422,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 59
+  }
+ },
+ {
+  "at": "2026-10-15T03:37:11.741Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 8,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    }
+   },
+   "lines": 87,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 364,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 227,
+    "TENNIS": 507,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8524,
+    "prizepicks": 3368,
+    "sleeper": 2485,
+    "pick6": 87
+   },
+   "priced": 974,
+   "multi": 2934,
+   "rows": 10420,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 60
+  }
+ },
+ {
+  "at": "2026-10-15T03:39:12.176Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 9,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    }
+   },
+   "lines": 99,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 365,
+    "CFB": 3504,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 227,
+    "TENNIS": 507,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8523,
+    "prizepicks": 3368,
+    "sleeper": 2486,
+    "pick6": 99
+   },
+   "priced": 974,
+   "multi": 2934,
+   "rows": 10420,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 60
+  }
+ },
+ {
+  "at": "2026-10-15T03:41:12.188Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 10,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    }
+   },
+   "lines": 112,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 364,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 240,
+    "TENNIS": 507,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8522,
+    "prizepicks": 3368,
+    "sleeper": 2486,
+    "pick6": 112
+   },
+   "priced": 974,
+   "multi": 2933,
+   "rows": 10433,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 60
+  }
+ },
+ {
+  "at": "2026-10-15T03:43:12.270Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 11,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    }
+   },
+   "lines": 127,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3401,
+    "MLB": 365,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 240,
+    "TENNIS": 507,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8523,
+    "prizepicks": 3368,
+    "sleeper": 2486,
+    "pick6": 127
+   },
+   "priced": 976,
+   "multi": 2933,
+   "rows": 10434,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 60
+  }
+ },
+ {
+  "at": "2026-10-15T03:45:12.281Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 12,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    }
+   },
+   "lines": 157,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3398,
+    "MLB": 365,
+    "CFB": 3505,
+    "WNBA": 191,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 240,
+    "TENNIS": 507,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "NHL": 101,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 8518,
+    "prizepicks": 3368,
+    "sleeper": 2486,
+    "pick6": 157
+   },
+   "priced": 976,
+   "multi": 2933,
+   "rows": 10431,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 60
+  }
+ },
+ {
+  "at": "2026-10-15T03:47:12.325Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 13,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:30:02.478Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    },
+    "VAL": {
+     "lines": 20,
+     "groups": 1,
+     "at": "2026-10-15T03:46:01.973Z"
+    }
+   },
+   "lines": 177,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3397,
+    "MLB": 365,
+    "CFB": 3506,
+    "WNBA": 191,
+    "NHL": 620,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 240,
+    "TENNIS": 515,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 9055,
+    "prizepicks": 3368,
+    "sleeper": 2487,
+    "pick6": 177
+   },
+   "priced": 976,
+   "multi": 2938,
+   "rows": 10958,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 61
+  }
+ },
+ {
+  "at": "2026-10-15T03:49:12.340Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 14,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:48:01.350Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:32:03.592Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    },
+    "VAL": {
+     "lines": 20,
+     "groups": 1,
+     "at": "2026-10-15T03:46:01.973Z"
+    }
+   },
+   "lines": 177,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3396,
+    "MLB": 365,
+    "CFB": 3506,
+    "WNBA": 191,
+    "NHL": 720,
+    "NBA": 578,
+    "SOCCER": 917,
+    "MMA": 240,
+    "TENNIS": 515,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 89,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 9157,
+    "prizepicks": 3368,
+    "sleeper": 2487,
+    "pick6": 177
+   },
+   "priced": 977,
+   "multi": 2940,
+   "rows": 11057,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 61
+  }
+ },
+ {
+  "at": "2026-10-15T03:51:12.357Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 17,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:48:01.350Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:50:04.574Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:34:01.071Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    },
+    "VAL": {
+     "lines": 20,
+     "groups": 1,
+     "at": "2026-10-15T03:46:01.973Z"
+    }
+   },
+   "lines": 177,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3398,
+    "MLB": 370,
+    "CFB": 3504,
+    "WNBA": 191,
+    "NHL": 821,
+    "NBA": 578,
+    "SOCCER": 953,
+    "MMA": 240,
+    "TENNIS": 517,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 99,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 9260,
+    "prizepicks": 3427,
+    "sleeper": 2499,
+    "pick6": 177
+   },
+   "priced": 978,
+   "multi": 2959,
+   "rows": 11211,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 63
+  }
+ },
+ {
+  "at": "2026-10-15T03:53:12.457Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 18,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:48:01.350Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:50:04.574Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:52:01.327Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.286Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:36:01.551Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    },
+    "VAL": {
+     "lines": 20,
+     "groups": 1,
+     "at": "2026-10-15T03:46:01.973Z"
+    }
+   },
+   "lines": 177,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3398,
+    "MLB": 370,
+    "CFB": 3503,
+    "WNBA": 191,
+    "NHL": 954,
+    "NBA": 578,
+    "SOCCER": 953,
+    "MMA": 240,
+    "TENNIS": 517,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 99,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 9393,
+    "prizepicks": 3427,
+    "sleeper": 2503,
+    "pick6": 177
+   },
+   "priced": 984,
+   "multi": 2960,
+   "rows": 11343,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 64
+  }
+ },
+ {
+  "at": "2026-10-15T03:55:12.521Z",
+  "pick6": {
+   "enabled": true,
+   "sports": [
+    "MLB",
+    "NFL",
+    "CFB",
+    "NBA",
+    "SOCCER",
+    "WNBA",
+    "UFC",
+    "LOL",
+    "CS",
+    "VAL"
+   ],
+   "reads": 20,
+   "payouts": {
+    "2": {
+     "2": 3
+    },
+    "3": {
+     "3": 6
+    },
+    "4": {
+     "4": 10
+    },
+    "5": {
+     "4": 1,
+     "5": 12
+    },
+    "6": {
+     "5": 1.5,
+     "6": 25
+    }
+   },
+   "bySport": {
+    "MLB": {
+     "lines": 18,
+     "groups": 1,
+     "at": "2026-10-15T03:48:01.350Z"
+    },
+    "NFL": {
+     "lines": 40,
+     "groups": 3,
+     "at": "2026-10-15T03:50:04.574Z"
+    },
+    "CFB": {
+     "lines": 8,
+     "groups": 1,
+     "at": "2026-10-15T03:52:01.327Z"
+    },
+    "NBA": {
+     "lines": 21,
+     "groups": 1,
+     "at": "2026-10-15T03:54:01.671Z"
+    },
+    "SOCCER": {
+     "lines": 0,
+     "groups": 1,
+     "at": "2026-10-15T03:54:01.877Z"
+    },
+    "WNBA": {
+     "lines": 12,
+     "groups": 1,
+     "at": "2026-10-15T03:38:01.591Z"
+    },
+    "UFC": {
+     "lines": 13,
+     "groups": 1,
+     "at": "2026-10-15T03:40:02.351Z"
+    },
+    "LOL": {
+     "lines": 15,
+     "groups": 1,
+     "at": "2026-10-15T03:42:01.250Z"
+    },
+    "CS": {
+     "lines": 30,
+     "groups": 1,
+     "at": "2026-10-15T03:44:01.357Z"
+    },
+    "VAL": {
+     "lines": 20,
+     "groups": 1,
+     "at": "2026-10-15T03:46:01.973Z"
+    }
+   },
+   "lines": 177,
+   "blockedUntil": null,
+   "lastError": null
+  },
+  "board": {
+   "sports": {
+    "NFL": 3398,
+    "MLB": 370,
+    "CFB": 3508,
+    "WNBA": 191,
+    "NHL": 1264,
+    "NBA": 578,
+    "SOCCER": 953,
+    "MMA": 240,
+    "TENNIS": 517,
+    "MOTORSPORTS": 36,
+    "NPB": 4,
+    "DGPT": 11,
+    "BAD": 99,
+    "EUROGOLF": 28,
+    "TT": 74,
+    "WNBA SERIES": 29,
+    "CS": 227,
+    "LOL": 70,
+    "VAL": 24,
+    "DOTA": 17,
+    "R6": 20
+   },
+   "books": {
+    "underdog": 9722,
+    "prizepicks": 3426,
+    "sleeper": 2503,
+    "pick6": 177
+   },
+   "priced": 984,
+   "multi": 2965,
+   "rows": 11658,
+   "gaps": 1,
+   "sharp": 1,
+   "consensus": 399,
+   "researchGaps": 65
+  }
+ }
+]

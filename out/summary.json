@@ -1,0 +1,200 @@
+{
+ "total": 177,
+ "sum": {
+  "esports LOL": {
+   "rows": 15,
+   "shared": 15,
+   "priced": 12,
+   "consensus": 0,
+   "clears2": 0,
+   "ev2any": 6
+  },
+  "esports CS": {
+   "rows": 30,
+   "shared": 30,
+   "priced": 28,
+   "consensus": 0,
+   "clears2": 1,
+   "ev2any": 18
+  },
+  "esports VAL": {
+   "rows": 20,
+   "shared": 20,
+   "priced": 19,
+   "consensus": 0,
+   "clears2": 1,
+   "ev2any": 5
+  },
+  "NFL": {
+   "rows": 40,
+   "shared": 40,
+   "priced": 40,
+   "consensus": 40,
+   "clears2": 0,
+   "ev2any": 0
+  },
+  "WNBA": {
+   "rows": 12,
+   "shared": 12,
+   "priced": 11,
+   "consensus": 11,
+   "clears2": 0,
+   "ev2any": 0
+  },
+  "NBA": {
+   "rows": 21,
+   "shared": 21,
+   "priced": 4,
+   "consensus": 4,
+   "clears2": 0,
+   "ev2any": 0
+  },
+  "MLB": {
+   "rows": 18,
+   "shared": 18,
+   "priced": 6,
+   "consensus": 0,
+   "clears2": 0,
+   "ev2any": 0
+  },
+  "CFB": {
+   "rows": 8,
+   "shared": 8,
+   "priced": 0,
+   "consensus": 0,
+   "clears2": 0,
+   "ev2any": 0
+  },
+  "MMA": {
+   "rows": 13,
+   "shared": 0,
+   "priced": 0,
+   "consensus": 0,
+   "clears2": 0,
+   "ev2any": 0
+  }
+ },
+ "clears": [
+  {
+   "sport": "CS",
+   "player": "Adamb",
+   "market": "Kills on Maps 1+2",
+   "line": 26.5,
+   "side": "Over",
+   "ev": 14.03,
+   "fair": 62.75,
+   "mult": 1,
+   "others": {
+    "underdog": 26.5,
+    "prizepicks": 27.5,
+    "sleeper": 27.5
+   },
+   "start": "2026-10-15T08:30:00Z"
+  },
+  {
+   "sport": "VAL",
+   "player": "leaf",
+   "market": "Kills on Maps 1+2",
+   "line": 30.5,
+   "side": "Under",
+   "ev": 12.43,
+   "fair": 61.87,
+   "mult": 1,
+   "others": {
+    "underdog": 29.5,
+    "prizepicks": 30.5
+   },
+   "start": "2026-10-16T09:00:00Z"
+  }
+ ],
+ "status": {
+  "enabled": true,
+  "sports": [
+   "MLB",
+   "NFL",
+   "CFB",
+   "NBA",
+   "SOCCER",
+   "WNBA",
+   "UFC",
+   "LOL",
+   "CS",
+   "VAL"
+  ],
+  "reads": 20,
+  "payouts": {
+   "2": {
+    "2": 3
+   },
+   "3": {
+    "3": 6
+   },
+   "4": {
+    "4": 10
+   },
+   "5": {
+    "4": 1,
+    "5": 12
+   },
+   "6": {
+    "5": 1.5,
+    "6": 25
+   }
+  },
+  "bySport": {
+   "MLB": {
+    "lines": 18,
+    "groups": 1,
+    "at": "2026-10-15T03:48:01.350Z"
+   },
+   "NFL": {
+    "lines": 40,
+    "groups": 3,
+    "at": "2026-10-15T03:50:04.574Z"
+   },
+   "CFB": {
+    "lines": 8,
+    "groups": 1,
+    "at": "2026-10-15T03:52:01.327Z"
+   },
+   "NBA": {
+    "lines": 21,
+    "groups": 1,
+    "at": "2026-10-15T03:54:01.671Z"
+   },
+   "SOCCER": {
+    "lines": 0,
+    "groups": 1,
+    "at": "2026-10-15T03:54:01.877Z"
+   },
+   "WNBA": {
+    "lines": 12,
+    "groups": 1,
+    "at": "2026-10-15T03:38:01.591Z"
+   },
+   "UFC": {
+    "lines": 13,
+    "groups": 1,
+    "at": "2026-10-15T03:40:02.351Z"
+   },
+   "LOL": {
+    "lines": 15,
+    "groups": 1,
+    "at": "2026-10-15T03:42:01.250Z"
+   },
+   "CS": {
+    "lines": 30,
+    "groups": 1,
+    "at": "2026-10-15T03:44:01.357Z"
+   },
+   "VAL": {
+    "lines": 20,
+    "groups": 1,
+    "at": "2026-10-15T03:46:01.973Z"
+   }
+  },
+  "lines": 177,
+  "blockedUntil": null,
+  "lastError": null
+ }
+}
