@@ -98,7 +98,10 @@ function indexProps(props) {
 // night while the pick'em apps still list tonight's preseason game (Tatum 17.5
 // points on PrizePicks vs 26.5 at Pinnacle, 2026-10-14), so a quote more than
 // slackMs from the row's start is a different game, never a fair.
-function quoteFor(idx, row, slackMs = 3 * 3600e3) {
+// Pinnacle can hang several lines on one stat (tennis totals and their
+// alternates): quoteFor returns the one nearest the row's own lines,
+// quotesForGame every line of that game (null when there is none).
+function quotesForGame(idx, row, slackMs = 3 * 3600e3) {
   const list = idx?.get(row?.key);
   if (!list?.length) return null;
   const t = Date.parse(row.startTime || '');
@@ -108,7 +111,19 @@ function quoteFor(idx, row, slackMs = 3 * 3600e3) {
     const d = Math.abs(Date.parse(q.start) - t);
     if (d <= slackMs && (!best || d < best.d)) best = { q, d };
   }
-  return best ? best.q : null;
+  return best ? list.filter(q => q.start === best.q.start) : null;
+}
+const median = xs => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor((s.length - 1) / 2)] : null; };
+// the quote nearest `line` (a list, or one quote)
+function nearestLine(qs, line) {
+  if (!Array.isArray(qs)) return qs || null;
+  if (line == null) return qs[0] || null;
+  return qs.reduce((a, b) => (!a || Math.abs(b.line - line) < Math.abs(a.line - line) ? b : a), null);
+}
+function quoteFor(idx, row, slackMs = 3 * 3600e3) {
+  const qs = quotesForGame(idx, row, slackMs);
+  if (!qs) return null;
+  return nearestLine(qs, median(Object.values(row.books || {}).map(c => c.line).filter(x => x != null)));
 }
 
-module.exports = { LEAGUES, STAT, parseDescription, devigPower, parseLeague, fetchPinnacleProps, indexProps, quoteFor };
+module.exports = { quotesForGame, nearestLine, LEAGUES, STAT, parseDescription, devigPower, parseLeague, fetchPinnacleProps, indexProps, quoteFor };
