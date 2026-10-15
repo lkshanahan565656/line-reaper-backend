@@ -1,0 +1,28 @@
+name: diag-evaudit
+on:
+  push:
+    branches: [diag-evaudit]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: WARM=18 SNAPS=2 SNAPGAP=4 timeout 3600 node diag/evaudit.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          for f in out/*.json; do gzip -9 "$f"; done
+          ls -laR out | head -80
+          find out -size +95M -print -delete
+          git checkout --orphan diag-evaudit-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-evaudit-out
