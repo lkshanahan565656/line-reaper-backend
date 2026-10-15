@@ -160,4 +160,110 @@ function sleeperPricing(prob, mult, otherMult) {
   return { ev: flag ? null : (p * mult - 1) * 100, implied: implied * 100, flag, gap: gap * 100 };
 }
 
-module.exports = { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
+
+// ─── DRAFTKINGS PICK6 ────────────────────────────────────────────────────────
+// pick6.draftkings.com is a React Router app: /_root.data?sport=NFL&pickGroup=ID
+// answers without a login with the page's loader data as a turbo-stream (a
+// flat JSON array whose objects point at other entries by index; "_N" keys
+// name the key at index N). Read from GitHub's runners 2026-10-15: NFL, MLB,
+// NBA, WNBA, NHL, soccer, UFC, CS, LoL and Valorant boards.
+function decodeTurboStream(text) {
+  const first = String(text || '').split('\n').find(l => l.startsWith('['));
+  if (!first) return null;
+  const arr = JSON.parse(first);
+  const memo = new Map();
+  const hyd = i => {
+    if (typeof i !== 'number' || i < 0) return null;
+    if (memo.has(i)) return memo.get(i);
+    const v = arr[i];
+    if (v === null || typeof v !== 'object') { memo.set(i, v); return v; }
+    if (Array.isArray(v)) {
+      // ["D", ms] a date, ["P", id] a promise, other tagged values kept raw
+      if (typeof v[0] === 'string') { const r = v[0] === 'D' ? new Date(v[1]).toISOString() : null; memo.set(i, r); return r; }
+      const r = []; memo.set(i, r);
+      for (const x of v) r.push(hyd(x));
+      return r;
+    }
+    const r = {}; memo.set(i, r);
+    for (const [k, x] of Object.entries(v)) r[k.startsWith('_') ? arr[+k.slice(1)] : k] = hyd(x);
+    return r;
+  };
+  return hyd(0);
+}
+// The home route's loader data, from a /_root.data answer
+function pick6Home(decoded) {
+  const r = decoded && (decoded['routes/_homeShared'] || decoded.loaderData?.['routes/_homeShared']);
+  return r ? (r.data || r) : null;
+}
+
+// Pick6's pills are its sports; season-long boards and the NFL day filters
+// (NFL SUN, MNF) repeat or aren't single games
+const PICK6_SKIP = /SZN|SEASON|^NFL SUN$|^MNF$|^TNF$/i;
+const PICK6_SPORT = { 'PGA TOUR': 'GOLF', UFC: 'MMA', CFB: 'CFB', CBB: 'CBB' };
+function pick6Sports(home) {
+  const out = [];
+  const seen = new Set();
+  for (const p of home?.carouselPills || []) {
+    const label = String(p?.label || '').trim();
+    const d = p?.sportLeaguePillData;
+    if (!label || !d || PICK6_SKIP.test(label) || seen.has(p.sportLeagueKey)) continue;
+    seen.add(p.sportLeagueKey);
+    out.push({ label, key: p.sportLeagueKey, open: d.hasPicksAvailable !== false });
+  }
+  return out;
+}
+// What Pick6 pays, from its own entry screen: { n: { correct: x } }. These are
+// the guaranteed floors; a contest bonus can pay more after it settles.
+function pick6Payouts(home) {
+  const out = {};
+  for (const pk of home?.entryDetails?.payoutPackages || []) {
+    const t = {};
+    for (const tier of pk.payoutTiers || []) if (tier.guaranteedMultiplier > 0) t[tier.numberOfPicksCorrect] = tier.guaranteedMultiplier;
+    if (Object.keys(t).length) out[pk.pickSetSize] = t;
+  }
+  return out;
+}
+
+// One sport's board (every pick group read for it) → lines in the board's
+// shape. Single-player cards only, the main two-sided line of each stat (the
+// one-sided alt ladders and promo picks pay differently), nothing paused.
+// Each side carries its own multiplier (1x, or 0.9x on the favoured side):
+// the entry's payout is the table times the picks' multipliers.
+function parsePick6Board(home, sportLabel) {
+  const p = home?.pickCardsResponse;
+  if (!p) return [];
+  const sport = PICK6_SPORT[sportLabel] || sportLabel;
+  const markets = p.pickSixMarketById || {}, ents = p.entityInfoByDkId || {}, comps = p.competitionById || {}, teams = p.displayTeamById || {};
+  const lines = [];
+  for (const card of Object.values(p.pickCardByPickableId || {})) {
+    if (!card || (card.entities || []).length !== 1) continue;
+    const ent = card.entities[0];
+    const info = ents[ent.dkId] || {};
+    const name = info.fullName || info.name;
+    const comp = comps[(ent.compIds || [])[0]];
+    if (!name || !comp) continue;
+    const teamId = comp.entityCompByDkId?.[ent.dkId]?.teamId;
+    const team = teams[teamId]?.name || '';
+    for (const m of card.activePickableMarkets || []) {
+      if (!m || m.isPaused || m.isLive || (m.promoPickTypeId != null && m.promoPickTypeId !== 1)) continue;
+      const mk = markets[m.pickSixMarketId] || {};
+      const names = mk.propositionNameById || {};
+      let over = null, under = null;
+      for (const s of m.activeSelections || []) {
+        const word = String(names[s.statLinePropositionId] || '').toLowerCase();
+        const mult = Number(s.standingsMultiplier);
+        if (!(mult > 0)) continue;
+        if (/more|over|higher/.test(word)) over = mult; else if (/less|under|lower/.test(word)) under = mult;
+      }
+      if (over == null || under == null || !Number.isFinite(Number(m.targetValue))) continue;
+      // esports stats are per map span: "Kills" over "Maps 1-2" reads as PrizePicks' "MAPS 1-2 Kills"
+      const span = comp.totalCompTime ? String(comp.totalCompTime).toUpperCase() : '';
+      lines.push({ book: 'pick6', sport, player: name, team, market: span ? `${span} ${mk.name || ''}`.trim() : (mk.name || ''), line: Number(m.targetValue),
+        startTime: comp.startTime ? new Date(comp.startTime).toISOString() : '', matchTitle: comp.name || '', gameId: comp.compId || null,
+        overMultiplier: over, underMultiplier: under, overOpen: true, underOpen: true, p6Market: m.pickableMarketKey || null });
+    }
+  }
+  return lines;
+}
+
+module.exports = { decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board, parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };

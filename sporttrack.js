@@ -17,9 +17,11 @@
 const { canonName } = require('./ev');
 const { gapOutcome } = require('./esgaps');
 
-const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL' };
+const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
 const RESEARCH = new Set(['gap-odd', 'gap-stale']);
-const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35;
+const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35, P6_BE = 0.5503;
+// Pick6 legs carry their own kinds (p6-sharp, p6-gap, ...): the same play, its own record
+const baseKind = k => String(k || '').replace(/^p6-/, '');
 const r2 = x => Math.round(x * 100) / 100;
 // The close counts only when the fair was still being read near the start
 // (as in evtrack.js): closeSeenAt is the last read that priced the leg, saved
@@ -43,12 +45,14 @@ function legDecimal(book, mult) {
   const m = Number(mult) || 1;
   if (book === 'prizepicks') return 1 / PP_IMPLIED;
   if (book === 'underdog') return m > UD_DECIMAL ? m : m / UD_IMPLIED;
+  // a Pick6 pick pays its table times its own multiplier: at the 3-pick 6x, 1.817 a leg
+  if (book === 'pick6') return m / P6_BE;
   return m;
 }
 
 // a stale-line leg keeps its own id, so the same leg flagged on the consensus
 // and as stale lands in both records
-const STALE = new Set(['stale', 'stale-single']);
+const STALE = new Set(['stale', 'stale-single', 'p6-stale', 'p6-stale-single']);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${STALE.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
@@ -81,7 +85,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
-        ...(kind === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(baseKind(kind) === 'sharp' ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
         closeFair: r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
@@ -102,7 +106,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         let dirty = false;
         const cell = row.books?.[b.book];
         // the executable check, on the first fresh read of the book lagMs on
-        const read = Date.parse(updated[b.book] || '');
+        // Pick6 reads one sport at a time, so its read is that sport's
+        const read = Date.parse(updated[`${b.book}|${b.sport}`] || updated[b.book] || '');
         if (b.execOk == null && read >= Date.parse(b.signalAt) + lagMs) {
           const sideOpen = cell && (b.signalSide === 'Over' ? cell.overOpen : cell.underOpen);
           const mult = cell ? (b.signalSide === 'Over' ? cell.over : cell.under) ?? 1 : null;

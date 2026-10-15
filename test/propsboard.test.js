@@ -79,7 +79,7 @@ test('query: sport, book, two-plus books, search and sort', () => {
   assert.strictEqual(B.queryRows(rows, { multi: true })[0].player, 'Puka Nacua');
   assert.strictEqual(B.queryRows(rows, { q: 'allen' }).length, 1);
   assert.strictEqual(B.queryRows(rows, { sort: 'gap' })[0].gap, 5);
-  assert.deepStrictEqual(B.counts(rows).books, { underdog: 3, prizepicks: 1, sleeper: 0 });
+  assert.deepStrictEqual(B.counts(rows).books, { underdog: 3, prizepicks: 1, sleeper: 0, pick6: 0 });
 });
 
 test('Sleeper sports lines parse with the sport and wording the other books use', () => {

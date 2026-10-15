@@ -40,6 +40,8 @@ const BLOCKED = [
     why: 'DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock and theScore prices read from the JSON its odds pages use: no licence for a paid product.' },
   { key: 'matchbook', name: 'Matchbook', flag: 'MATCHBOOK_DATA_OK', hosts: ['api.matchbook.com'],
     why: "Matchbook's public REST prices; its API terms cover account holders, not a redistributed feed." },
+  { key: 'pick6', name: 'DraftKings Pick6', flag: 'PICK6_DATA_OK', hosts: ['pick6.draftkings.com'],
+    why: "Lines read from the loader data its site uses: no licence for a paid product." },
   { key: 'bovada', name: 'Bovada', flag: 'BOVADA_DATA_OK', hosts: ['www.bovada.lv', 'bovada.lv'],
     why: 'Prices read from the JSON its site uses; an offshore book, never a venue for US subscribers.' },
 ];

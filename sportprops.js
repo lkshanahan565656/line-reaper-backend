@@ -88,9 +88,12 @@ function bookPOver(book, c) {
   if (book === 'prizepicks') return 0.5;
   const o = c.over ?? 1, u = c.under ?? 1;
   if (!c.overOpen || !c.underOpen) {
-    // one side only: a plain 1x side on Underdog still reads as the median
-    return book === 'underdog' && (c.overOpen ? o : u) === 1 ? 0.5 : null;
+    // one side only: a plain 1x side on Underdog or Pick6 still reads as the median
+    return (book === 'underdog' || book === 'pick6') && (c.overOpen ? o : u) === 1 ? 0.5 : null;
   }
+  // Pick6 pays its table times each pick's multiplier (0.9x on the side it
+  // thinks likelier), so the multipliers read like Underdog's: payout ∝ 1 / chance
+  if (book === 'pick6') return o > 0 && u > 0 ? (1 / o) / (1 / o + 1 / u) : null;
   if (book === 'underdog') {
     if ((o > UD_DECIMAL) !== (u > UD_DECIMAL)) return null;
     return (1 / o) / (1 / o + 1 / u);   // both regimes: payout ∝ 1 / chance
@@ -103,7 +106,8 @@ function bookPOver(book, c) {
 }
 
 const DEFAULTS = {
-  weights: { prizepicks: 1, underdog: 1, sleeper: 1 },
+  // Pick6 weighs nothing in the other apps' fairs until its own record earns it
+  weights: { prizepicks: 1, underdog: 1, sleeper: 1, pick6: 0 },
   kalshiWeight: 2,        // Kalshi's ladder counts as this many books
   pinWeight: 3,           // Pinnacle's devigged prop counts as this many books
   minProbPts: 6,          // a gap worth this many points of win chance on our side
@@ -127,7 +131,7 @@ function fairFor(row, book, line, { kalshi = null, pin = null, o = DEFAULTS } = 
   const means = [];
   const sources = [];
   for (const [b, c] of Object.entries(row.books || {})) {
-    if (b === book || !sameLine(row.mkey, c.line, line)) continue;
+    if (b === book || o.weights[b] === 0 || !sameLine(row.mkey, c.line, line)) continue;
     const p = bookPOver(b, c);
     if (p == null) continue;
     const m = meanFor(row.mkey, row.sport, c.line, p);
@@ -266,6 +270,28 @@ const PP_ENTRIES = [
 // smallest entry with a low break-even, built from the few legs that clear at
 // once. A 5- or 6-pick flex needs less a leg but more legs at the same time.
 const PP_GRADE = PP_ENTRIES.find(e => e.name === '3-pick power');
+// DraftKings Pick6 the same way, on its own table (slip.js PICK6_PAYOUTS, or
+// the one the last read showed): a leg is graded at its 3-pick entry (6x) and
+// each pick's multiplier scales what it pays. setPick6Payouts swaps the table in.
+const { PICK6_PAYOUTS } = require('./slip');
+const entriesOf = table => Object.entries(table).map(([n, t]) => ({ name: `${n}-pick${Object.keys(t).length > 1 ? ' (pays a miss)' : ''}`, legs: +n, be: tableBreakEven(t, +n) })).sort((a, b) => a.be - b.be);
+const FIXED = { prizepicks: { grade: PP_GRADE, entries: PP_ENTRIES }, pick6: null };
+function setPick6Payouts(table) {
+  const entries = entriesOf(table && Object.keys(table).length ? table : PICK6_PAYOUTS);
+  FIXED.pick6 = { grade: entries.find(e => e.legs === 3) || entries[0], entries };
+  return FIXED.pick6;
+}
+setPick6Payouts(PICK6_PAYOUTS);
+// One leg on a fixed-table app (PrizePicks, Pick6): EV at the entry it's
+// graded on, the per-leg decimal that implies, and every entry it clears.
+// mult is the pick's own multiplier (always 1 on PrizePicks' standard lines).
+function fixedLeg(book, fair, mult = 1) {
+  const f = FIXED[book];
+  if (!f) return null;
+  const m = mult > 0 ? mult : 1;
+  return { ev: (fair * m / f.grade.be - 1) * 100, decimal: +(m / f.grade.be).toFixed(4), entry: f.grade.name,
+    entries: f.entries.filter(e => fair * m > e.be).map(e => e.name) };
+}
 
 // sharp: [{ book, line, pOver }] (Pinnacle's quote, FanDuel's and BetRivers'
 // props for this game); kalshi: line → P(over) from the board's cells.
@@ -328,11 +354,9 @@ function consensusPlays(row, { sharp = [], kalshi = null, dfsEv, o = CONSENSUS }
       const fair = side === 'Over' ? f.p : 1 - f.p;
       const mult = (side === 'Over' ? c.over : c.under) ?? 1;
       let ev, decimal = null, entry = null, entries = null;
-      if (book === 'prizepicks') {
-        ev = (fair / PP_GRADE.be - 1) * 100;
-        decimal = +(1 / PP_GRADE.be).toFixed(4);
-        entry = PP_GRADE.name;
-        entries = PP_ENTRIES.filter(e => fair > e.be).map(e => e.name);
+      const fx = fixedLeg(book, fair, mult);
+      if (fx) {
+        ({ ev, decimal, entry, entries } = fx);
       } else {
         ev = dfsEv(fair, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side);
       }
@@ -451,4 +475,4 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
 }
 
 module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
-  SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
+  SHARP_BOOKS, CONSENSUS, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
