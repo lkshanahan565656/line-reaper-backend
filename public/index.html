@@ -5003,7 +5003,7 @@ function evStaleRecord(a, apps) {
   const src = a?.bySource || {};
   const row = (label, n, val, good, unit = 'graded') => `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 14px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;font-family:'JetBrains Mono',monospace">
       <span style="flex:1 1 200px;color:#e2e8f0;font-family:inherit">${label}</span><span style="color:#64748b">${n} ${unit}</span>
-      <span style="min-width:110px;margin-left:auto;text-align:right;color:${!n ? '#64748b' : good ? '#10b981' : '#f87171'}">${n ? val : 'not graded yet'}</span></div>`;
+      <span style="min-width:110px;margin-left:auto;text-align:right;color:${!n ? '#64748b' : good == null ? '#94a3b8' : good ? '#10b981' : '#f87171'}">${n ? val : 'not graded yet'}</span></div>`;
   // a stale line is only worth something if it is still there when you get to it: the books' grade at the
   // +2 min price (and how many still had it), the apps' share still up at the next read
   // books: CLV at the flag; +2 MIN = graded at the price two minutes on, where
@@ -5014,7 +5014,8 @@ function evStaleRecord(a, apps) {
   // apps: close EV at the flagged line; still up = same line, same payout at the app's next read
   const app = (v, label) => { const n = v?.closed || 0;
     const ex = v?.execChecked ? ` · ${Math.round(100 * (v.execShare || 0))}% still up at the next read` + (v.execClosed ? ` (close EV ${pct(v.execCloseEvAvg)})` : '') : '';
-    return row(label, n, 'close EV ' + pct(v?.closeEvAvg) + ex, v?.execClosed > 0 && v.execCloseEvAvg > 0, 'closed'); };
+    // green or red only on the legs still up at the next read; none of those closed yet → neutral
+    return row(label, n, 'close EV ' + pct(v?.closeEvAvg) + ex, v?.execClosed > 0 ? v.execCloseEvAvg > 0 : null, 'closed'); };
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}

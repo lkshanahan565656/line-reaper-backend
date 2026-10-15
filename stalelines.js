@@ -297,10 +297,12 @@ function createStaleLines(opts = {}) {
   }
   const scopeOf = s => (s.meta.kind === 'prop' ? 'prop' : 'game');
   // complete reads of the source since the entry was last seen in one: of
-  // everything ('fanduel|game'), or of the subject's game ('betrivers|prop|<game id>')
+  // everything ('pinnacle|game'), of the subject's game ('betrivers|prop|<game
+  // id>') or of its props-board row ('underdog|prop|row:<row key>')
   const missed = (source, s, e) => {
     const k = `${source}|${scopeOf(s)}`;
-    return [...(complete[k] || []), ...(s.meta.gameId != null ? complete[`${k}|${s.meta.gameId}`] || [] : [])].filter(x => x > e.seenAt).sort((a, b) => a - b);
+    return [...(complete[k] || []), ...(s.meta.gameId != null ? complete[`${k}|${s.meta.gameId}`] || [] : []),
+      ...(s.meta.row?.key != null ? complete[`${k}|row:${s.meta.row.key}`] || [] : [])].filter(x => x > e.seenAt).sort((a, b) => a - b);
   };
   const isAmbiguous = (key, t) => { const a = ambiguous.get(key); return a != null && t - a <= o.keepMs; };
   // a lower-vig pair first, then the lower chance: the same pick whatever order the feed lists them in
@@ -333,6 +335,7 @@ function createStaleLines(opts = {}) {
       merged.set(k, { ...m, q: { ...m.q, pts: pts.sort((a, b) => a.x - b.x) } });
     }
     const ordered = [...merged.values()].sort((a, b) => (b.source === 'pinnacle') - (a.source === 'pinnacle'));
+    const pinNew = [];
     for (const { key, source, q, meta } of ordered) {
       let s = subjects.get(key);
       if (!s) { s = { meta, src: {}, anchor: null, moves: [] }; subjects.set(key, s); }
@@ -345,9 +348,12 @@ function createStaleLines(opts = {}) {
       if (last && t < last.t) continue;   // an older read landing late
       l.push({ t, seenAt: t, q, fp });
       while (l.length > o.histCap || (l.length > 1 && t - l[0].t > o.keepMs && t - l[1].t > o.keepMs)) l.shift();
-      if (source === 'pinnacle') checkMove(key, s, t);
+      if (source === 'pinnacle') pinNew.push([key, s]);
     }
-    // after the batch: a move found in it is checked against the venues' reads before it
+    // moves are checked once the whole batch is in: a venue this read shows
+    // back on its number is quoting, and one that moved in it followed within a read
+    for (const [key, s] of pinNew) checkMove(key, s, t);
+    // then the batch's complete reads: what it left out is off the board from now
     for (const c of done || []) { const l = (complete[c] ||= []); if (!l.length || l[l.length - 1] < t) l.push(t); while (l.length > 5) l.shift(); }
     if (++observed % 500 === 0) for (const [k, l] of Object.entries(complete)) if (t - l[l.length - 1] > 86400e3) delete complete[k];
   }
@@ -430,19 +436,20 @@ function createStaleLines(opts = {}) {
           const l = s.src[v] || [];
           const i = l.indexOf(st.snapE);
           const later = i >= 0 ? l.slice(i + 1) : l.filter(e => e.t >= st.snapAt && e !== st.snapE);
+          const pinQ = latest(s, 'pinnacle')?.q;
           for (const e of later) {
             const m = moved(mv, { q: st.snapQ }, e);
-            if (m == null || m < need(mv)) continue;
+            if (m == null) continue;
+            // it moved half Pinnacle's move, or (after a pullback) moved our way
+            // and caught up with where Pinnacle is now
+            const pn = pinQ ? pAt(pinQ, mv.oldX) : null, sv = pinQ ? shiftedAt(e.q, pinQ, mv.oldX) : null;
+            const caught = m >= o.minFollowPts / 100 && pn != null && sv != null && (pn - sv) * mv.dir <= need(mv) / 2;
+            if (m < need(mv) && !caught) continue;
             // a read taken before Pinnacle's previous read that landed late: the
             // venue was first; one since Pinnacle's previous read followed within a read
             if (e.t <= (mv.prevAt ?? -Infinity)) { st.status = 'led'; st.how = 'moved'; st.ledMs = mv.t - e.t; }
             else { st.status = 'followed'; st.lagMs = Math.max(0, e.t - mv.t); st.followAt = e.t; }
             break;
-          }
-          // left out of two complete reads since: the venue took the number down
-          if (st.status === 'open') {
-            const e = latest(s, v), miss = e ? missed(v, s, e) : [];
-            if (miss.length >= 2) { st.status = 'pulled'; st.lagMs = Math.max(0, miss[0] - mv.t); }
           }
         }
       }
@@ -450,7 +457,13 @@ function createStaleLines(opts = {}) {
       for (const mv of s.moves) {
         const started = start != null && t >= start && start - mv.t < o.windowMs;
         if (t - mv.t > o.windowMs || started) {
-          for (const st of Object.values(mv.venues)) if (st.status === 'open') st.status = started ? 'started' : 'never';
+          for (const [v, st] of Object.entries(mv.venues)) {
+            if (st.status !== 'open') continue;
+            // still left out of its last two complete reads: the venue took the number down
+            const e = latest(s, v), miss = e ? missed(v, s, e) : [];
+            if (miss.length >= 2) { st.status = 'pulled'; st.lagMs = Math.max(0, miss[0] - mv.t); }
+            else st.status = started ? 'started' : 'never';
+          }
           log.push({ id: mv.id, t: mv.t, kind: s.meta.kind, sport: s.meta.sport, dPts: r1(mv.d * 100), closedAt: t,
             venues: Object.fromEntries(Object.entries(mv.venues).map(([v, st]) => [v, { status: st.status, lagMs: st.lagMs ?? null, ledMs: st.ledMs ?? null }])) });
         } else keep.push(mv);
@@ -597,6 +610,8 @@ function createStaleLines(opts = {}) {
       c.moves++;
       if (st.status === 'followed') { c.followed++; c.lags.push(st.lagMs / 60e3); }
       else if (st.status === 'open') { c.open++; c.openAges.push((t - m.t) / 60e3); }
+      // a number taken down m minutes on sat stale until then
+      else if (st.status === 'pulled') { c.pulled++; c.openAges.push((st.lagMs ?? 0) / 60e3); }
       else c[st.status] = (c[st.status] || 0) + 1;
     }
     const median = l => { if (!l.length) return null; const s = [...l].sort((a, b) => a - b), h = s.length / 2; return r1(s.length % 2 ? s[Math.floor(h)] : (s[h - 1] + s[h]) / 2); };

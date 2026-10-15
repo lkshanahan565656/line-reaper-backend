@@ -4910,15 +4910,13 @@ function observeStale(quotes, t, kind, screen = true, done = []) {
 function observeStaleBooks(gamesBySport, fdPropsRead, pinOk = true) {
   if (!staleState.enabled) return;
   const t = Date.now(), quotes = [], done = pinOk ? ['pinnacle|game'] : [];
-  // a book's read of a game is complete when its event came back: a market
-  // missing from it is suspended or pulled (FanDuel's props only on the
-  // passes that read its prop pages)
-  for (const g of Object.values(gamesBySport).flat()) for (const bm of g.bookmakers || []) {
-    if (bm.key === 'betrivers') done.push(`betrivers|game|${g.id}`, `betrivers|prop|${g.id}`);
-    else if (bm.key === 'fanduel') {
-      done.push(`fanduel|game|${g.id}`);
-      if (fdPropsRead && (bm.markets || []).some(m => !/^(h2h|spreads|totals)$/.test(m.key))) done.push(`fanduel|prop|${g.id}`);
-    }
+  // a book's read of a game is complete when its event came back (even with
+  // everything suspended): a market missing from it is suspended or pulled.
+  // FanDuel's props only on the passes that read every one of its prop tabs.
+  for (const g of Object.values(gamesBySport).flat()) {
+    const r = g.read || {};
+    if (r.betrivers) done.push(`betrivers|game|${g.id}`, `betrivers|prop|${g.id}`);
+    if (r.fanduel) { done.push(`fanduel|game|${g.id}`); if (fdPropsRead && r.fanduel.props) done.push(`fanduel|prop|${g.id}`); }
   }
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
   let kbooks = new Map();
@@ -4939,9 +4937,12 @@ function observeStaleApps(rows) {
   // PrizePicks' sports lines come with its whole board, every 20 minutes
   const readAt = { prizepicks: ppState.fullOkAt, underdog: Date.parse(cache.underdog.updated || ''), sleeper: Date.parse(cache.sleeperSports.updated || '') };
   const all = staleLines.appQuotes(sports, { pOverOf: sportProps.bookPOver, kalshiOf: rowKalshi });
+  // each app's read covers the board rows the engine can key (a start time
+  // and one stat): a row there without the app's line means the app dropped it
+  const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime).map(r => r.key);
   for (const book of staleLines.APP_VENUES) {
     const t = readAt[book];
-    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, [`${book}|prop`]);
+    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(k => `${book}|prop|row:${k}`));
   }
   const kt = Date.parse(kpropsState.updated || '');
   if (Number.isFinite(kt)) observeStale(all.filter(q => q.source === 'kalshi'), kt, 'kalshi-props', false);

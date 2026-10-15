@@ -146,3 +146,17 @@ test('a stale-line leg is logged as of the read it first showed on, and only leg
   assert.strictEqual(s.execClosed, 0);  // ...but nobody could take it
   assert.strictEqual(s.execCloseEvAvg, null);
 });
+
+test('a stale-line leg whose row leaves the board fails its exec check at the next read and still closes on the fair', async () => {
+  let t = Date.parse('2026-10-19T12:00:00Z');
+  const tr = createSportTracker({ store: createMemoryStore(), now: () => t, log: { warn() {} } });
+  const r = row({ underdog: cell(48.5, 1, 1) }, { startTime: '2026-10-19T17:00:00Z' });
+  const play = { book: 'underdog', side: 'Under', line: 48.5, mult: 1, fair: 0.6, ev: 6.7, decimal: 1.7784, signalAt: t, sources: [] };
+  await tr.record({ rows: [r], flagged: [{ row: r, play, kind: 'stale' }], fairAt: () => 0.45, updated: { underdog: new Date(t).toISOString() } });
+  // Underdog pulls the player; no app lists him, so the row is gone
+  t += 3 * 60e3;
+  await tr.record({ rows: [], flagged: [], fairAt: (row, b, l, k) => (k === 'stale' && row.player === 'X' ? 0.42 : null), updated: { underdog: new Date(t).toISOString() } });
+  const [b] = await tr.list();
+  assert.strictEqual(b.execOk, false);
+  assert.strictEqual(b.closeFair, 0.58);
+});

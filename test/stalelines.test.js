@@ -309,27 +309,59 @@ test('a partial pullback leaves a venue that never moved stale, priced at Pinnac
   assert.equal(c.led, 0);
 });
 
-test('a line the venue takes down drops off the board at once, gets no +2 min price, and is pulled after two reads without it', () => {
+test('a line the venue takes down drops off the board at once and gets no +2 min price; pulled if still down when the move closes, back on the board if it returns', () => {
+  const run = comesBack => {
+    const eng = S.createStaleLines();
+    const done = ['pinnacle|game', 'fanduel|game', 'betrivers|game'];
+    const fd = book('fanduel', [[-3, -110, -110]]), br = book('betrivers', [[-3, -110, -110]]);
+    eng.observe(S.gameQuotes([game([pinBefore, fd, br])], 'nfl'), min(0), 'books', done);
+    eng.observe(S.gameQuotes([game([pinAfter, fd, br])], 'nfl'), min(1), 'books', done);
+    eng.step(min(1));
+    const brRow = eng.rows(min(1)).find(r => r.venue === 'betrivers' && r.kind === 'spread');
+    assert.ok(brRow);
+    const bets = new Map([['br', { group: brRow.group, key: brRow.key, x: brRow.x, venue: 'betrivers', at: min(1) }]]);
+    // BetRivers suspends the spread: gone from its next reads
+    for (const m of [2, 3]) { eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(m), 'books', done); eng.step(min(m)); }
+    assert.equal(eng.rows(min(3)).filter(r => r.venue === 'betrivers').length, 0);
+    assert.ok(eng.rows(min(3)).find(r => r.venue === 'fanduel'));
+    assert.equal(eng.marks(bets, min(3)).costs.size, 0);
+    for (let m = 4; m <= 62; m += 2) {
+      eng.observe(S.gameQuotes([game([pinAfter, fd, ...(comesBack ? [br] : [])])], 'nfl'), min(m), 'books', done);
+      eng.step(min(m));
+      if (m === 4 && comesBack) assert.ok(eng.rows(min(4)).find(r => r.venue === 'betrivers'), 'back on its old number: stale again');
+    }
+    return eng.lagSummary(min(62)).lag.find(x => x.venue === 'betrivers' && x.kind === 'spread');
+  };
+  const gone = run(false), back = run(true);
+  assert.equal(gone.pulled, 1);
+  assert.equal(gone.never, 0);
+  assert.equal(back.pulled, 0);
+  assert.equal(back.never, 1);
+});
+
+test('a venue that misses one read just before Pinnacle moves, and is back on its number in the same read as the move, is followed', () => {
   const eng = S.createStaleLines();
-  const done = ['pinnacle|game', 'fanduel|game', 'betrivers|game'];
-  const fd = book('fanduel', [[-3, -110, -110]]), br = book('betrivers', [[-3, -110, -110]]);
-  eng.observe(S.gameQuotes([game([pinBefore, fd, br])], 'nfl'), min(0), 'books', done);
-  eng.observe(S.gameQuotes([game([pinAfter, fd, br])], 'nfl'), min(1), 'books', done);
-  eng.step(min(1));
-  const brRow = eng.rows(min(1)).find(r => r.venue === 'betrivers' && r.kind === 'spread');
-  assert.ok(brRow);
-  const bets = new Map([['br', { group: brRow.group, key: brRow.key, x: brRow.x, venue: 'betrivers', at: min(1) }]]);
-  // BetRivers suspends the spread: gone from its next reads
+  const done = ['pinnacle|game', 'fanduel|game'];
+  const fd = book('fanduel', [[-3, -110, -110]]);
+  eng.observe(S.gameQuotes([game([pinBefore, fd])], 'nfl'), min(0), 'books', done);
+  eng.observe(S.gameQuotes([game([pinBefore])], 'nfl'), min(1), 'books', done);
   eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(2), 'books', done);
   eng.step(min(2));
-  assert.equal(eng.rows(min(2)).filter(r => r.venue === 'betrivers').length, 0);
-  assert.ok(eng.rows(min(2)).find(r => r.venue === 'fanduel'));
-  eng.observe(S.gameQuotes([game([pinAfter, fd])], 'nfl'), min(3), 'books', done);
-  eng.step(min(3));
-  assert.equal(eng.marks(bets, min(3)).costs.size, 0);
-  const c = eng.lagSummary(min(3)).lag.find(x => x.venue === 'betrivers' && x.kind === 'spread');
-  assert.equal(c.pulled, 1);
-  assert.equal(c.open, 0);
+  assert.ok(eng.rows(min(2)).find(r => r.venue === 'fanduel' && r.kind === 'spread'));
+});
+
+test('a venue still behind after a pullback that catches up with Pinnacle\'s price now has followed', () => {
+  const eng = S.createStaleLines();
+  const pin = (o, u) => book('pinnacle', [[-3, -105, -105]], [[47.5, o, u]]);
+  const fd = (o, u) => book('fanduel', [[-3, -110, -110]], [[47.5, o, u]]);
+  eng.observe(S.gameQuotes([game([pin(-105, -105), fd(-110, -110)])], 'nfl'), min(0));
+  eng.observe(S.gameQuotes([game([pin(-134, 120), fd(-110, -110)])], 'nfl'), min(1));
+  eng.observe(S.gameQuotes([game([pin(-118, -102), fd(-110, -110)])], 'nfl'), min(3));
+  eng.observe(S.gameQuotes([game([pin(-118, -102), fd(-120, -100)])], 'nfl'), min(5));   // 2.3 pts: short of half the first move, level with Pinnacle now
+  eng.step(min(5));
+  const c = eng.lagSummary(min(5)).lag.find(x => x.venue === 'fanduel' && x.kind === 'total');
+  assert.equal(c.followed, 1);
+  assert.equal(c.medianMin, 4);
 });
 
 test('the +2 min price comes from a venue read at least 105 s after the flag, never the read it was flagged on', () => {

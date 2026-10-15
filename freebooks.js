@@ -347,23 +347,29 @@ function bookmakerFor(b, pg) {
 // Pinnacle's games in one league + the books' → Odds API games
 // pinProps (pinprops rows, this league's): a player the books price in a game
 // takes Pinnacle's prop of that player starting within maxGapMs of it
+// read: the books whose event for the game came back this read, even with
+// every market suspended ({ betrivers: { props: true }, fanduel: { props } }),
+// so a market missing from it can be told from one we never fetched
+const teamsMatch = (b, pg) => (sameTeam(b.home, pg.home) && sameTeam(b.away, pg.away)) !== (sameTeam(b.home, pg.away) && sameTeam(b.away, pg.home));
 function mergeGames(sport, pinGames, bookGames, { maxGapMs = 3 * 3600e3, pinProps = [] } = {}) {
   const out = [];
   const pinBy = new Map();
   for (const p of pinProps) { const k = canonName(p.player); if (!pinBy.has(k)) pinBy.set(k, []); pinBy.get(k).push(p); }
   for (const pg of pinGames || []) {
     const t = ms(pg.start);
-    const bookmakers = [pinnacleBookmaker(pg)];
+    const bookmakers = [pinnacleBookmaker(pg)], read = {};
     for (const book of [...new Set((bookGames || []).map(b => b.book))]) {
-      const cands = bookGames.filter(b => b.book === book && Math.abs(ms(b.start) - t) <= maxGapMs)
-        .map(b => ({ b, bm: bookmakerFor(b, pg), gap: Math.abs(ms(b.start) - t) })).filter(x => x.bm).sort((x, y) => x.gap - y.gap);
+      const near = bookGames.filter(b => b.book === book && Math.abs(ms(b.start) - t) <= maxGapMs && teamsMatch(b, pg))
+        .sort((x, y) => Math.abs(ms(x.start) - t) - Math.abs(ms(y.start) - t));
+      if (near.length) read[book] = { props: book === 'betrivers' ? true : !!near[0].propsComplete };
+      const cands = near.map(b => ({ b, bm: bookmakerFor(b, pg), gap: Math.abs(ms(b.start) - t) })).filter(x => x.bm);
       if (cands.length) bookmakers.push(cands[0].bm);
     }
     const players = new Set(bookmakers.flatMap(bm => bm.markets.flatMap(m => m.outcomes.map(o => o.description).filter(Boolean))).map(canonName));
     const pins = [...players].flatMap(k => (pinBy.get(k) || []).filter(p => Math.abs(ms(p.start) - t) <= maxGapMs))
       .map(p => ({ player: p.player, mkey: p.mkey, line: p.line, over: p.over, under: p.under }));
     bookmakers[0].markets.push(...propMarkets(pins));
-    out.push({ id: `pin-${pg.id}`, sport_key: sport, commence_time: pg.start, home_team: pg.home, away_team: pg.away, bookmakers });
+    out.push({ id: `pin-${pg.id}`, sport_key: sport, commence_time: pg.start, home_team: pg.home, away_team: pg.away, bookmakers, read });
   }
   return out;
 }
@@ -385,6 +391,7 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
     try { books[s].push(...parseFanDuel(await get(FD_URL(LEAGUES[s].fd)), now)); } catch (e) { if (e.response?.status !== 404) errors.push(`fanduel ${s}: ${e.response?.status || e.message}`); }
   }));
   // FanDuel player props: only games Pinnacle posts props for, soonest first
+  const fdComplete = new Set();
   if (fdProps) {
     // a game Pinnacle has props up for (NFL props go up days ahead, so the window is wide)
     const pinTimes = sport => pinProps.filter(p => p.sport === sport).map(p => ms(p.start));
@@ -399,14 +406,16 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
     const fresh = new Map(), freshL = new Map();
     await pool(want, 4, async ([s, g]) => {
       const props = [], ladders = [], alts = [];
+      let all = true;   // every tab answered (or had nothing): the event's props were read in full
       for (const tab of LEAGUES[s].fdTabs) {
         try {
           const page = await get(FD_EVENT_URL(g.eventId, tab));
           props.push(...parseFanDuelProps(page));
           const l = parseFanDuelLadders(page);
           ladders.push(...l.ladders); alts.push(...l.alts);
-        } catch (e) { if (e.response?.status !== 404) errors.push(`fanduel props ${g.eventId}: ${e.response?.status || e.message}`); }
+        } catch (e) { if (e.response?.status !== 404) { all = false; errors.push(`fanduel props ${g.eventId}: ${e.response?.status || e.message}`); } }
       }
+      if (all) fdComplete.add(String(g.eventId));
       const seen = new Set(), seenL = new Set(), seenA = new Set();
       fresh.set(String(g.eventId), props.filter(p => { const k = `${canonName(p.player)}|${p.mkey}|${p.line}`; return seen.has(k) ? false : seen.add(k); }));
       freshL.set(String(g.eventId), {
@@ -421,6 +430,7 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
   }
   for (const s of sports) for (const g of books[s]) if (g.book === 'fanduel') {
     g.props = propCache.get(String(g.eventId)) || [];
+    g.propsComplete = fdProps && fdComplete.has(String(g.eventId));
     const l = ladderCache.get(String(g.eventId));
     if (l) { g.ladders = l.ladders; g.alts = l.alts; }
   }

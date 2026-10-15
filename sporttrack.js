@@ -78,7 +78,10 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     for (const b of open.values()) {
       if (b.status !== 'open') continue;
       const start = Date.parse(b.start);
-      const row = byKey.get(b.rowKey);
+      // a stale-line leg whose row left the board (no app lists the player
+      // now) is still checked and closed: at the next read it was gone, and
+      // its close is Pinnacle's fair, which doesn't need the row
+      const row = byKey.get(b.rowKey) || (STALE.has(b.kind) ? { key: b.rowKey, sport: b.sport, player: b.player, mkey: b.mkey, startTime: b.startTime, books: {} } : null);
       if (t < start) {
         if (!row) continue;
         let dirty = false;
