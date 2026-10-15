@@ -1,8 +1,10 @@
 # DraftKings Pick6 answers GitHub's servers but blocks Railway's. This reads
 # the Pick6 board here every 10 minutes (relay/pick6.js) and force-pushes it as
 # the only commit on the pick6-data branch, which the app reads while its own
-# read is blocked (pick6.js). A run that reads nothing (DraftKings blocking
-# GitHub too) fails and leaves the last board in place; the app drops it 45
+# read is blocked (pick6.js). GitHub fires this repo's schedules hours apart, not
+# every 10 minutes, so each run keeps reading every 10 minutes for about 5.5
+# hours and the schedule only restarts it. A read that gets nothing (DraftKings
+# blocking GitHub too) leaves the last board in place; the app drops it 45
 # minutes after it was read. Added on Logan's OK, 10-15. Free: public repo.
 name: pick6-relay
 on:
@@ -17,21 +19,25 @@ concurrency:
 jobs:
   relay:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci --omit=dev --ignore-scripts
-      - run: node relay/pick6.js out/pick6.json
-      - name: Push the board to pick6-data
+      - name: Read the board every 10 minutes and push it to pick6-data
         run: |
-          cd out
-          git init -q
-          git config user.name pick6-relay
-          git config user.email pick6-relay@users.noreply.github.com
-          git checkout -q --orphan pick6-data
-          git add pick6.json
-          git commit -qm "Pick6 board $(date -u +%FT%TZ)"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" pick6-data
+          url="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          for i in $(seq 1 33); do
+            start=$(date +%s)
+            rm -rf out && mkdir -p out
+            if timeout 300 node relay/pick6.js out/pick6.json; then
+              (cd out && git init -q && git config user.name pick6-relay && git config user.email pick6-relay@users.noreply.github.com \
+                && git checkout -q --orphan pick6-data && git add pick6.json && git commit -qm "Pick6 board $(date -u +%FT%TZ)" \
+                && git push -qf "$url" pick6-data) || echo "::warning::push failed"
+            else
+              echo "::warning::Pick6 read nothing this time"
+            fi
+            [ "$i" = 33 ] || sleep $(( 600 - ($(date +%s) - start) > 0 ? 600 - ($(date +%s) - start) : 0 ))
+          done
