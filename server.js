@@ -3005,7 +3005,26 @@ async function refreshKalshiProps() {
     if (events.length) kpropsState.rungs = bigMoney.rungIndex(events, { canonMarket: evScreen.canonMarket, parseRung: kprops.parseRung });
   } catch (e) { kpropsState.errors = [e.message]; }
   finally { kpropsRunning = false; }
+  await refreshKalshiExtra();
 }
+// Kalshi's UFC (method, round, distance), NASCAR (top N) and tennis total-games
+// markets, read as pick'em fairs at the lines they sit on (kxextra.js). Behind
+// the kalshi licence like the ladders; refreshed with them.
+const kxextra = require('./kxextra');
+const kxExtraState = { quotes: 0, bySport: {}, events: 0, updated: null, errors: [] };
+let kxExtraIndex = new Map();
+async function refreshKalshiExtra() {
+  if (!licences.isOn('kalshi')) return;
+  try {
+    const { events, errors } = await kxextra.fetchEvents(upstream);
+    const quotes = kxextra.quotesFromEvents(events);
+    if (quotes.length || !errors.length) kxExtraIndex = kxextra.indexQuotes(quotes);
+    const bySport = {};
+    for (const x of quotes) bySport[`${x.sport} ${x.mkey}`] = (bySport[`${x.sport} ${x.mkey}`] || 0) + 1;
+    Object.assign(kxExtraState, { quotes: quotes.length, bySport, events: events.length, errors: errors.slice(0, 5), updated: new Date().toISOString() });
+  } catch (e) { kxExtraState.errors = [e.message]; }
+}
+const kalshiExtraAt = (row, line) => kxextra.quoteAt(kxExtraIndex, { key: `${row.sport}|${evScreen.canonName(row.player)}|${row.mkey}`, startTime: row.startTime }, line)?.pOver ?? null;
 
 // One pick'em leg's EV. Sleeper prices each side, so its vig comes out and a
 // price far from fair is withheld (pickem.js sleeperPricing), as on esports.
@@ -4374,7 +4393,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.129.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.130.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5138,10 +5157,10 @@ function propsBoardRows() {
     const sport = propsBoard.boardSport(p.sport).sport;
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}`, p);
   }
-  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
+  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
   observeStaleApps(rows);
-  propsBoardCache = { at: Date.now(), rows, counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -5162,7 +5181,7 @@ function sportFairAt(row, book, line, kind) {
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
   if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
-  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quoteFor(pinPropsIndex, row), o: SPORT_OPTS });
+  const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quotesForGame(pinPropsIndex, row), o: SPORT_OPTS });
   return f ? f.p : null;
 }
 // The sharp consensus (sportprops.consensusFor): Pinnacle's prop, FanDuel's
@@ -5188,8 +5207,8 @@ function refreshBookPropsIndex() {
 }
 function sharpQuotes(row) {
   const out = [];
-  const pin = pinprops.quoteFor(pinPropsIndex, row);
-  if (pin) out.push({ book: 'pinnacle', line: pin.line, pOver: pin.pOver });
+  // every line Pinnacle hangs for this game; consensusFor takes the one nearest each app's line
+  for (const pin of pinprops.quotesForGame(pinPropsIndex, row) || []) out.push({ book: 'pinnacle', line: pin.line, pOver: pin.pOver });
   // the books' props only while their read is fresh, like the +EV screen's
   if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS) out.push(...sportProps.quotesFor(bookPropsIndex, row));
   return out;
@@ -5199,11 +5218,14 @@ function priceSportRows(rows) {
   for (const row of rows) {
     if (row.esports) continue;
     const kalshi = rowKalshi(row);
+    const pinAll = pinprops.quotesForGame(pinPropsIndex, row);
     const pin = pinprops.quoteFor(pinPropsIndex, row);
-    if (pin) row.pinnacle = { line: pin.line, over: pin.over, under: pin.under, pOver: +(pin.pOver * 100).toFixed(1) };
-    const plays = sportProps.rowPlays(row, { kalshi, pin, dfsEv: dfsLegEv, o: SPORT_OPTS });
+    if (pin) row.pinnacle = { line: pin.line, over: pin.over ?? null, under: pin.under ?? null, pOver: +(pin.pOver * 100).toFixed(1), ...(pin.rounds ? { rounds: pin.rounds } : {}) };
+    const plays = sportProps.rowPlays(row, { kalshi, pin: pinAll, dfsEv: dfsLegEv, o: SPORT_OPTS });
     // the sharp consensus first: Pinnacle, FanDuel, BetRivers and Kalshi together
     const sharp = sharpQuotes(row);
+    const books = [...new Set(sharp.map(x => x.book).filter(b => b !== 'pinnacle'))];
+    if (books.length) row.sharpBooks = books; else delete row.sharpBooks;
     const cplays = sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [];
     if (cplays.length) {
       consensusMoves.observe(row, cplays[0].mean);
@@ -5316,15 +5338,32 @@ const pinprops = require('./pinprops');
 const pinPropsState = { enabled: PINNACLE_ON, props: 0, bySport: {}, updated: null, errors: [] };
 let pinPropsIndex = new Map(), pinPropsAt = 0;
 const PIN_PROPS_MAX_AGE_MS = 10 * 60e3;
+// Pinnacle's tennis and UFC match markets read as pick'em props (pinextra.js):
+// a bigger pull (every tennis match), so every sixth minute; the last read is
+// kept up to PIN_PROPS_MAX_AGE_MS, never longer.
+const pinextra = require('./pinextra');
+const PIN_EXTRA_EVERY_MS = 350e3;
+let pinExtra = { props: [], at: 0, tried: 0, bySport: {}, errors: [] };
+async function refreshPinnacleExtra() {
+  if (Date.now() - pinExtra.tried < PIN_EXTRA_EVERY_MS) return;
+  pinExtra.tried = Date.now();
+  const { props, errors } = await pinextra.fetchPinnacleExtra(axios, process.env.PINNACLE_GUEST_KEY);
+  const bySport = {};
+  for (const p of props) bySport[`${p.sport} ${p.mkey}`] = (bySport[`${p.sport} ${p.mkey}`] || 0) + 1;
+  if (props.length || !errors.length) Object.assign(pinExtra, { props, at: Date.now() });
+  Object.assign(pinExtra, { bySport, errors: errors.slice(0, 5) });
+}
 async function refreshPinnacleProps() {
   if (!pinPropsState.enabled || !licences.isOn('pinnacle')) return;
+  try { await refreshPinnacleExtra(); } catch (e) { pinExtra.errors = [e.message]; }
+  const extra = Date.now() - pinExtra.at < PIN_PROPS_MAX_AGE_MS ? pinExtra.props : [];
   const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
-  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps(props); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
+  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps([...props, ...extra]); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
   // an outage keeps the last read a while, never as the fair for long
   else if (Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) pinPropsIndex = new Map();
   const bySport = {};
   for (const p of props) bySport[p.sport] = (bySport[p.sport] || 0) + 1;
-  Object.assign(pinPropsState, { props: props.length, bySport, errors: errors.slice(0, 5), updated: new Date().toISOString() });
+  Object.assign(pinPropsState, { props: props.length, bySport, extra: { props: extra.length, bySport: pinExtra.bySport, errors: pinExtra.errors }, errors: errors.slice(0, 5), updated: new Date().toISOString() });
 }
 // ── ESPORTS AT BETRIVERS (esbooks.js) ──
 // BetRivers' esports lines (Kambi: match, maps, map handicap, total maps and
@@ -5820,8 +5859,21 @@ app.get('/api/props/board', (req, res) => {
   else if (!kalshiOk) page = page.map(r => (r.esports ? r : propsBoard.redactRow(r)));
   res.json({
     rows: page, total: hits.length, offset, limit, pro, counts, ...(lines ? { lines } : {}),
+    coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// ── COVERAGE: how many pick'em legs carry a sharp price (propsboard.coverage) ──
+// By app, league and stat: legs priced off Pinnacle, off Kalshi, a sportsbook
+// alone, the other apps only, or nothing; `never` marks stats no sharp market
+// lists. Counts only, free. ?sport=MMA narrows the markets list.
+app.get('/api/props/coverage', (req, res) => {
+  const { coverage } = propsBoardRows();
+  const sport = String(req.query.sport || '').toUpperCase();
+  res.json({ ...coverage, markets: sport ? coverage.markets.filter(m => m.sport === sport) : coverage.markets,
+    sources: { pinnacleProps: pinPropsState.props, pinnacleExtra: pinPropsState.extra || null, kalshiExtra: kxExtraState, kalshiLadders: kpropsState.counts },
+    updated: new Date(propsBoardCache.at).toISOString() });
 });
 
 // The Lines view's "Used?" boxes, kept on the account so they follow the
@@ -6316,7 +6368,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.129.0',
+  version: '3.130.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6324,6 +6376,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   pick6: pick6.status(),
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
+  kalshiExtra: kxExtraState,
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,

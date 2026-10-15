@@ -25,6 +25,10 @@ const SERIES = {
     'KXNBASTL', 'KXNBABLK', 'KXNBASTOCKS', 'KXNBAFTM'],
   WNBA: ['KXWNBAPTS', 'KXWNBAREB', 'KXWNBAAST', 'KXWNBA3PT'],
   NHL: ['KXNHLGOAL', 'KXNHLPTS', 'KXNHLAST', 'KXNHLSAVES'],
+  // goalscorer ladders ("Sven Botman: 1+ goals"), listed in the days before
+  // each match; assists and shots on target where Kalshi lists them
+  SOCCER: ['KXEPLGOAL', 'KXLALIGAGOAL', 'KXSERIEAGOAL', 'KXBUNDESLIGAGOAL', 'KXLIGUE1GOAL', 'KXMLSGOAL', 'KXLIGAMXGOAL',
+    'KXUCLGOAL', 'KXUELGOAL', 'KXEPLAST', 'KXUCLAST', 'KXUCLSOT'],
 };
 const DEFAULTS = {
   maxSpread: 0.06,      // widest yes bid/ask gap we treat as a price
