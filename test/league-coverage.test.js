@@ -137,7 +137,7 @@ test('coverage counts each app leg by what prices it and marks stats nothing sha
     { sport: 'CS', esports: true, mkey: 'k', books: { underdog: { line: 30 } } },
   ];
   const c = propsBoard.coverage(rows);
-  assert.deepStrictEqual(c.total, { legs: 6, sharp: 3, pinnacle: 2, kalshi: 1, books: 1, apps: 2, none: 0 });
+  assert.deepStrictEqual(c.total, { legs: 6, sharp: 3, pinnacle: 2, kalshi: 1, books: 1, apps: 2, none: 0, bookFair: 0 });
   assert.strictEqual(c.leagues.MMA.sharp, 1);
   assert.strictEqual(c.byApp.prizepicks.MMA.apps, 1);
   assert.strictEqual(c.markets.find(m => m.mkey === 'significant_strikes').never, true);

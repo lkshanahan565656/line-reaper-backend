@@ -348,26 +348,27 @@ function legSource(row, c) {
   const src = new Set((row.consensus?.sources || []).map(s => s.book));
   if (row.pinnacle || src.has('pinnacle')) return 'pinnacle';
   if (c.fair != null || src.has('kalshi')) return 'kalshi';
-  if (row.consensus || row.sharpBooks?.length) return 'books';
+  if (row.consensus || row.bookFair || row.sharpBooks?.length) return 'books';
   if (row.nBooks > 1) return 'apps';
   return 'none';
 }
-const blank = () => ({ legs: 0, sharp: 0, pinnacle: 0, kalshi: 0, books: 0, apps: 0, none: 0 });
+const blank = () => ({ legs: 0, sharp: 0, pinnacle: 0, kalshi: 0, books: 0, apps: 0, none: 0, bookFair: 0 });
 // → { total, leagues: { NFL: {...} }, byApp: { underdog: { NFL: {...} } },
 //     markets: [{ sport, market, mkey, legs, sharp, ..., never }] }
 function coverage(rows) {
   const total = blank(), leagues = {}, byApp = {}, markets = new Map();
-  const add = (o, k) => { o.legs++; o[k]++; if (k === 'pinnacle' || k === 'kalshi') o.sharp++; };
+  // bookFair: of the 'books' legs, those FanDuel or BetRivers price alone (grey on the board)
+  const add = (o, k, bf) => { o.legs++; o[k]++; if (k === 'pinnacle' || k === 'kalshi') o.sharp++; if (bf) o.bookFair++; };
   for (const r of rows || []) {
     if (r.esports) continue;
     for (const [book, c] of Object.entries(r.books || {})) {
-      const k = legSource(r, c);
-      add(total, k);
-      add(leagues[r.sport] ||= blank(), k);
-      add((byApp[book] ||= {})[r.sport] ||= blank(), k);
+      const k = legSource(r, c), bf = !!c.ev?.bookFair;
+      add(total, k, bf);
+      add(leagues[r.sport] ||= blank(), k, bf);
+      add((byApp[book] ||= {})[r.sport] ||= blank(), k, bf);
       const mk = `${r.sport}|${r.mkey}`;
       if (!markets.has(mk)) markets.set(mk, { sport: r.sport, market: r.market, mkey: r.mkey, never: noSharpMarket(r), ...blank() });
-      add(markets.get(mk), k);
+      add(markets.get(mk), k, bf);
     }
   }
   return { total, leagues, byApp, markets: [...markets.values()].sort((a, b) => a.sport.localeCompare(b.sport) || b.legs - a.legs) };

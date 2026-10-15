@@ -733,10 +733,16 @@ const altTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.
 const esBookTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel and BetRivers still on the number Pinnacle just left (stalelines.js): a record of their own
 const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
-// Sports pick'em props flagged off the books' consensus and Kalshi, graded on ESPN box scores
+// Sports pick'em props flagged off the books' consensus and Kalshi, graded on
+// ESPN box scores; tennis, UFC, NASCAR and soccer on ESPN's tennis and UFC
+// scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
+const extraGrade = require('./extragrade');
+const EXTRA_RESULTS_ON = !/^(off|0|false|no)$/i.test(String(process.env.EXTRA_RESULTS || '').trim());
+const sportGrader = extraGrade.combineGraders(createSportsGrader({ http: axios }),
+  EXTRA_RESULTS_ON ? extraGrade.createExtraGrader({ http: axios }) : { canGrade: () => false, grade: async () => null });
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
-  grader: createSportsGrader({ http: axios }),
+  grader: sportGrader,
 });
 sportTracker.ready().catch(e => console.error('Sports props tracker: store failed to initialise:', e.message));
 // MY SLIPS (slips.js, sliplog.js): the legs of users' own slips, followed to the
@@ -5192,6 +5198,8 @@ const rowKalshi = row => new Map(Object.values(row.books).filter(c => c.fair != 
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
+  // a book-fair leg closes on the books' own fair at its line
+  if (kind === 'book-fair' || kind === 'book-fair-single') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row).filter(q => BOOK_FAIR_BOOKS.includes(q.book)), o: BOOK_FAIR_OPTS }); return f ? f.p : null; }
   // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
   if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
   const f = sportProps.fairFor(row, book, line, { kalshi: rowKalshi(row), pin: pinprops.quotesForGame(pinPropsIndex, row), o: SPORT_OPTS });
@@ -5226,6 +5234,18 @@ function sharpQuotes(row) {
   if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS) out.push(...sportProps.quotesFor(bookPropsIndex, row));
   return out;
 }
+// ── BOOK FAIR: FanDuel and BetRivers alone, where nothing sharp prices a leg ──
+// (sportprops.bookFairPlays) Kinds 'book-fair' (both books) and
+// 'book-fair-single' (one, shown, not counted). Grey on PROPS, never in Best
+// Plays or alerts, its own record judged on the books' own close: it measures
+// the apps' margin against the soft books until about 50 graded legs say
+// otherwise. Action Network's second-hand books never price it (they make no
+// play without a sharp price). BOOK_FAIR=off turns it off.
+const BOOK_FAIR_OPTS = { ...sportProps.BOOK_FAIR, minEv: SHARP_OPTS.minEv, maxSpreadPts: SHARP_OPTS.maxSpreadPts };
+const BOOK_FAIR_BOOKS = Object.keys(BOOK_FAIR_OPTS.weights);
+const BOOK_FAIR_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_FAIR || '').trim());
+const bookFairKind = sportProps.bookFairKind;
+const bookFairPlays = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairPlays(row, sharp, { dfsEv: dfsLegEv, o: BOOK_FAIR_OPTS }) : []);
 function priceSportRows(rows) {
   const flagged = [];
   for (const row of rows) {
@@ -5239,7 +5259,13 @@ function priceSportRows(rows) {
     const sharp = sharpQuotes(row);
     const books = [...new Set(sharp.map(x => x.book).filter(b => b !== 'pinnacle'))];
     if (books.length) row.sharpBooks = books; else delete row.sharpBooks;
-    const cplays = sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [];
+    // a consensus of FanDuel and BetRivers alone isn't sharp: it's the book fair below
+    const cplays = (sharp.length + (kalshi.size ? 1 : 0) >= SHARP_OPTS.minSources ? sportProps.consensusPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: SHARP_OPTS }) : [])
+      .filter(sportProps.sharpBacked);
+    const bfPlays = cplays.length || pin || kalshi.size ? [] : bookFairPlays(row, sharp);
+    if (bfPlays.length) row.bookFair = { n: bfPlays[0].n, mean: bfPlays[0].mean, spreadPts: bfPlays[0].spreadPts, sources: bfPlays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
+    else delete row.bookFair;
+    for (const p of bfPlays) if (p.ev >= SHARP_OPTS.minEv) flagged.push({ row, play: p, kind: bookFairKind(p) });
     if (cplays.length) {
       consensusMoves.observe(row, cplays[0].mean);
       row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
@@ -5266,7 +5292,9 @@ function priceSportRows(rows) {
     for (const [book, c] of Object.entries(row.books)) {
       const cons = cplays.filter(p => p.book === book);
       const mine = cons.length ? cons : plays.filter(p => p.book === book && (c.fair != null || pin || sportProps.playKind(p, SPORT_OPTS) === 'gap'));
+      const bf = mine.length ? null : bfPlays.find(p => p.book === book);
       if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
+      else if (bf) c.ev = { side: bf.side, ev: bf.ev, fair: +(bf.fair * 100).toFixed(1), bookFair: bf.n >= 2 ? 'both' : 'single' };
       else if (c.fair == null) delete c.ev;
     }
     let best = null;
@@ -5289,6 +5317,11 @@ function priceSportRows(rows) {
       const { p, kind } = best;
       row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: p.sources.some(x => x.book === 'pinnacle') ? 'pinnacle' : p.sources.some(x => x.book === 'kalshi') ? 'kalshi' : 'gap', kind,
         n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
+    } else if (bfPlays.length && !pin && !(row.best && row.best.source === 'kalshi')) {
+      // the books' fair only: grey, never green, its own kind
+      const p = bfPlays[0];
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: 'books', kind: p.ev >= SHARP_OPTS.minEv ? bookFairKind(p) : null,
+        n: p.n, mean: p.mean, sources: p.sources, ...(p.entry ? { entry: p.entry, entries: p.entries } : {}) };
     } else if (pin || (row.best && row.best.source === 'kalshi')) {
       // a sharp price, blended with the other books: the row's best, +EV or not
       const top = plays.find(p => pin || row.books[p.book]?.fair != null);
