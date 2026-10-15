@@ -72,8 +72,8 @@
   //   Josh Allen Over 245.5 Pass Yds        Josh Allen o245.5 pass yds (NFL)
   //   Josh Allen 245.5 Pass Yds More        NFL: Josh Allen Under 245.5 Pass Yards
   const SIDE = { over: 'Over', more: 'Over', higher: 'Over', o: 'Over', under: 'Under', less: 'Under', lower: 'Under', u: 'Under' };
-  const SPORTS = ['NFL', 'CFB', 'NCAAF', 'NBA', 'WNBA', 'CBB', 'NCAAB', 'MLB', 'NHL', 'MMA', 'UFC', 'SOCCER', 'TENNIS', 'GOLF', 'PGA', 'NASCAR', 'LOL', 'CS', 'CS2', 'VAL', 'DOTA', 'COD'];
-  const SPORT_FIX = { NCAAF: 'CFB', NCAAB: 'CBB', UFC: 'MMA', CS2: 'CS', PGA: 'GOLF' };
+  const SPORTS = ['NFL', 'CFB', 'NCAAF', 'NBA', 'WNBA', 'CBB', 'NCAAB', 'MLB', 'NHL', 'MMA', 'UFC', 'SOCCER', 'TENNIS', 'GOLF', 'PGA', 'NASCAR', 'LOL', 'CS', 'CS2', 'VAL', 'VALORANT', 'DOTA', 'DOTA2', 'COD'];
+  const SPORT_FIX = { NCAAF: 'CFB', NCAAB: 'CBB', UFC: 'MMA', CS2: 'CS', PGA: 'GOLF', VALORANT: 'VAL', DOTA2: 'DOTA' };
   const sportRe = new RegExp(`(?:^|[\\s(\\[])(${SPORTS.join('|')})(?:[\\s)\\]:]|$)`, 'i');
   const NUM = '(\\d+(?:\\.\\d+)?)';
   const SIDE_W = '(over|under|more|less|higher|lower)';
@@ -88,6 +88,10 @@
   function parseLeg(line) {
     let s = String(line || '').replace(/^[\s\-*•·\d.)]*(?=[A-Za-z])/, '').replace(/[✓✗✔✘❌✅]/g, '').trim();
     if (!s) return null;
+    // an esports leg may name its opponent last: "(vs G2)", "vs. G2", "@ G2"
+    let opp = null;
+    const om = /\s*[(\[]?\s*\b(?:vs\.?|versus|against)\s+([^()\[\]]{2,40}?)\s*[)\]]?\s*$|\s*[(\[]?\s*@\s*([^()\[\]]{2,40}?)\s*[)\]]?\s*$/i.exec(s);
+    if (om) { opp = (om[1] || om[2]).replace(/[.,:]+$/, '').trim(); s = s.slice(0, om.index).trim(); }
     let sport = null;
     const sm = sportRe.exec(s);
     if (sm) { sport = SPORT_FIX[sm[1].toUpperCase()] || sm[1].toUpperCase(); s = (s.slice(0, sm.index) + ' ' + s.slice(sm.index + sm[0].length)).replace(/\s+/g, ' ').replace(/^[\s:,-]+|[\s:,-]+$/g, '').trim(); }
@@ -96,9 +100,9 @@
       if (!m) continue;
       const [player, side, lineS, market] = i === 2 ? [m[1], m[4], m[2], m[3]] : [m[1], m[2], m[3], m[4]];
       const ln = parseFloat(lineS);
-      const mk = market.replace(/\s*[-–—|].*$/, '').trim();
+      const mk = market.replace(/\s+[-–—]\s+.*$|\s*\|.*$/, '').trim();
       if (!ok(ln) || !mk || /\$/.test(player) || player.length > 60) continue;
-      return { player: player.replace(/[,:]+$/, '').trim(), side: SIDE[side.toLowerCase()], line: ln, market: mk, sport };
+      return { player: player.replace(/[,:]+$/, '').trim(), side: SIDE[side.toLowerCase()], line: ln, market: mk, sport, ...(opp ? { opp } : {}) };
     }
     return null;
   }
@@ -281,14 +285,14 @@
 
   // ── grading ──
   // what goes to the server: the leg alone, no stake or payout
-  const legKey = (slip, leg) => `${slip.app}|${leg.sport || ''}|${String(leg.player).toLowerCase()}|${String(leg.market).toLowerCase()}|${leg.side}|${leg.line}|${String(slip.placedAt).slice(0, 13)}`;
+  const legKey = (slip, leg) => `${slip.app}|${leg.sport || ''}|${String(leg.player).toLowerCase()}|${String(leg.market).toLowerCase()}|${leg.side}|${leg.line}|${String(leg.opp || '').toLowerCase()}|${String(slip.placedAt).slice(0, 13)}`;
   function gradeRequest(slips, { finalOk = g => g && g.final } = {}, grades = {}) {
     const out = [], seen = new Set();
     for (const s of slips) for (const l of s.legs) {
       const id = legKey(s, l);
       if (seen.has(id) || finalOk(grades[id])) continue;
       seen.add(id);
-      out.push({ id, app: s.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: s.placedAt });
+      out.push({ id, app: s.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: s.placedAt, ...(l.opp ? { opp: l.opp } : {}) });
     }
     return out;
   }

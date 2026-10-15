@@ -18,12 +18,12 @@
 // just under break-even. That slip is still shown, marked 'near', so it's clear
 // which entry is closest and by how much it falls short.
 
-const { priceSlip, PAYOUTS, factorSport, slipHitsDistribution } = require('./slip');
+const { priceSlip, PAYOUTS, PICK6_PAYOUTS, factorSport, slipHitsDistribution } = require('./slip');
 
 const LEG_FLOOR = -6;      // % EV: legs further below their book's break-even never help a slip
 const POOL_MAX = 20;       // best legs per book the greedy search looks at
 const NEAR_PCT = 5;        // a slip within 5% of break-even is 'near'
-const MAX_LEGS = { PP: 6, UD: 6, SL: 6 };
+const MAX_LEGS = { PP: 6, UD: 6, SL: 6, P6: 6 };
 
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -41,13 +41,25 @@ function shiftTo(leg, prob) {
 // the person picked (the slip bar); left out, the side the fair leans.
 // BETTABLE: a model fair counts only where the Lines table marks it green
 // (a Pinnacle-based price agrees); a model-only lean is no leg for an auto slip.
-function bookLeg(p, book, { side = null, bettable = false } = {}) {
+function bookLeg(p, book, { side = null, bettable = false, pick6 = null } = {}) {
   if (!p?.pricing) return null;
   const base = {
     player: p.player, team: p.team || '', gameId: p.gameId ?? null, sport: p.sport, matchTitle: p.matchTitle || '',
     market: p.displayMarket || p.market, rawMarket: p.market, startTime: p.startTime || '',
     meanPerMap: p.pricing.meanPerMap, k: p.pricing.k, stat: p.pricing.stat, scenarios: p.pricing.scenarios,
   };
+  // DK Pick6 posts its own esports lines: priced only where they sit on a number
+  // a Pinnacle-based model priced (propsboard twin cell), at Pick6's own payout.
+  // pick6: Map(pick -> the props board's Pick6 cell), present only while PICK6 is on.
+  if (book === 'P6') {
+    const c = pick6?.get(p);
+    if (!c?.ev || !Number.isFinite(c.ev.fair) || !Number.isFinite(c.ev.ev)) return null;
+    const s = String(c.ev.side).toUpperCase();
+    if ((side && side !== s) || (bettable && !c.ev.clears)) return null;
+    const prob = c.ev.fair / 100;
+    const leg = { ...base, side: s, line: c.line, prob, ev: c.ev.ev, mult: (s === 'OVER' ? c.over : c.under) ?? 1, fair: c.ev.share ? 'share' : 'h2h' };
+    return { ...leg, shift: shiftTo(leg, prob) };
+  }
   const lines = p.pricing.lines;
   const m = lines?.books?.[book];
   if (m) {
@@ -80,10 +92,10 @@ function growth(r, table) {
 }
 
 // Every table BOOK offers for these legs, best EV first
-function priceOn(book, legs) {
+function priceOn(book, legs, { pick6Table = null } = {}) {
   const n = legs.length;
   const out = [];
-  const add = (name, table) => { if (table) { const r = priceSlip(legs, name, { [name]: { [n]: table } }); if (r) out.push({ ...r, growth: growth(r, table) }); } };
+  const add = (name, table) => { if (table) { const r = priceSlip(legs, name, { [name]: { [n]: table } }); if (r) out.push({ ...r, growth: growth(r, table), payTable: name === 'pick6' ? table : undefined }); } };
   if (book === 'PP') {
     add('prizepicks_power', PAYOUTS.prizepicks_power[n]);
     add('prizepicks_flex', PAYOUTS.prizepicks_flex[n]);
@@ -94,6 +106,14 @@ function priceOn(book, legs) {
     if (legs.every(l => Math.abs((l.mult || 1) - 1) < 1e-6)) add('underdog_flex', PAYOUTS.underdog_flex[n]);
   } else if (book === 'SL') {
     if (n >= 2 && legs.every(l => l.mult > 1)) add('sleeper', { [n]: +legs.reduce((m, l) => m * l.mult, 1).toFixed(4) });
+  } else if (book === 'P6') {
+    // Pick6's table (the last read's, else slip.js); a pick's own multiplier (1x, 0.9x on a
+    // favoured side) multiplies what a clean sweep pays, the near-miss rows stay as posted
+    const t = (pick6Table || PICK6_PAYOUTS)[n];
+    if (t) {
+      const boost = legs.reduce((m, l) => m * (l.mult > 0 ? l.mult : 1), 1);
+      add('pick6', { ...t, [n]: +(t[n] * boost).toFixed(4) });
+    }
   }
   return out.sort((a, b) => b.ev - a.ev);
 }
@@ -102,7 +122,7 @@ function priceOn(book, legs) {
 // The choice at each step doesn't depend on the final size, so one pass gives
 // the best entry at every size. One pick per player, and the apps want at least
 // two teams in an entry.
-function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX, oneMatch = false } = {}) {
+function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX, oneMatch = false, pick6Table = null } = {}) {
   let rest = pool.slice().sort((a, b) => b.ev - a.ev);
   if (oneMatch) {
     // the best few legs of each match, so one busy match can't fill the pool
@@ -124,7 +144,7 @@ function buildForBook(pool, book, maxLegs, { poolMax = POOL_MAX, oneMatch = fals
       if (oneMatch && matches.has(matchKey(c))) continue;
       if (oneTeam && teams.has(norm(c.team))) continue;
       if (!chosen.length) { bestIdx = i; break; }
-      const priced = priceOn(book, [...chosen, c])[0];
+      const priced = priceOn(book, [...chosen, c], { pick6Table })[0];
       if (priced && (!best || priced.ev > best.ev)) { best = priced; bestIdx = i; }
     }
     if (bestIdx < 0) break;
@@ -195,9 +215,9 @@ function stacksForBook(legs, book) {
   return best.sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev)).slice(0, STACKS_PER_BOOK);
 }
 
-const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
+const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
 const TABLE_NAMES = {
-  prizepicks_power: 'Power', prizepicks_flex: 'Flex', underdog_standard: 'Standard', underdog_flex: 'Flex', sleeper: 'Picks',
+  prizepicks_power: 'Power', prizepicks_flex: 'Flex', underdog_standard: 'Standard', underdog_flex: 'Flex', sleeper: 'Picks', pick6: 'Picks',
 };
 
 const r1 = x => Math.round(x * 10) / 10;
@@ -208,6 +228,7 @@ function present(book, s, kind = 'best') {
   const prod = s.picks.reduce((m, l) => m * (l.mult || 1), 1);
   // what a sweep pays; flex tables also pay on a miss or two (hits[] has the odds)
   const pays = table === 'sleeper' ? prod
+    : table === 'pick6' ? s.payTable?.[n] ?? null
     : table === 'underdog_standard' ? PAYOUTS.underdog_standard[n][n] * prod
     : PAYOUTS[table]?.[n]?.[n] ?? null;
   return {
@@ -220,7 +241,7 @@ function present(book, s, kind = 'best') {
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
     paysAll: pays != null ? +pays.toFixed(2) : null,
     // what 1u returns on each hit count, for grading (sliptrack.js)
-    payTable: pays == null ? null : table === 'sleeper' || table === 'underdog_standard' || table === 'prizepicks_power' ? { [n]: +pays.toFixed(4) } : { ...PAYOUTS[table][n] },
+    payTable: pays == null ? null : table === 'pick6' ? { ...s.payTable } : table === 'sleeper' || table === 'underdog_standard' || table === 'prizepicks_power' ? { [n]: +pays.toFixed(4) } : { ...PAYOUTS[table][n] },
     hits: s.hits, kelly: s.kelly, growth: +(s.growth || 0).toFixed(6),
     picks: s.picks.map(l => ({
       player: l.player, team: l.team, sport: l.sport, market: l.market, rawMarket: l.rawMarket, side: l.side, line: l.line,
@@ -231,20 +252,21 @@ function present(book, s, kind = 'best') {
 }
 
 // picks: the esports board → { slips: [best per book, fastest growth first], books: { PP: [...every size] }, pool }
-function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true } = {}) {
+function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true, pick6 = null, pick6Table = null } = {}) {
   const live = (picks || []).filter(p => {
     const t = Date.parse(p.startTime);
     return p.pricing && p.side && !(Number.isFinite(t) && t <= now);
   });
   const books = {}, pool = {}, slips = [], stacks = {};
-  for (const book of ['PP', 'UD', 'SL']) {
-    const all = live.map(p => bookLeg(p, book, { bettable: true })).filter(Boolean);
+  // Pick6 is a book here only while its esports lines are being read (pick6 is then a Map)
+  for (const book of pick6?.size ? ['PP', 'UD', 'SL', 'P6'] : ['PP', 'UD', 'SL']) {
+    const all = live.map(p => bookLeg(p, book, { bettable: true, pick6 })).filter(Boolean);
     const legs = all.filter(l => l.ev >= LEG_FLOOR);
     pool[book] = { legs: legs.length, plus: legs.filter(l => l.ev > 0).length, model: legs.filter(l => l.fair !== 'market').length };
-    const sizes = buildForBook(legs, book, MAX_LEGS[book], { oneMatch: true }).filter(s => s.ev > -near).map(s => present(book, s));
+    const sizes = buildForBook(legs, book, MAX_LEGS[book], { oneMatch: true, pick6Table }).filter(s => s.ev > -near).map(s => present(book, s));
     books[book] = sizes;
     if (sizes.length) slips.push(sizes[0]);
-    stacks[book] = withStacks ? stacksForBook(all, book).map(s => present(book, s, 'stack')) : [];
+    stacks[book] = withStacks && book !== 'P6' ? stacksForBook(all, book).map(s => present(book, s, 'stack')) : [];
   }
   slips.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
   const stackList = Object.values(stacks).flat().sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev));
@@ -255,12 +277,12 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true
 // book's own lines → { PP: entry | null, UD: ..., SL: ... }. A book that doesn't
 // carry a leg, or wants two picks on one player, can't take the slip.
 // SIDES: the side picked for each leg (the slip bar), else the fair's lean.
-function priceOnBooks(picks, sides = []) {
+function priceOnBooks(picks, sides = [], { pick6 = null, pick6Table = null } = {}) {
   const out = {};
-  for (const book of ['PP', 'UD', 'SL']) {
-    const legs = picks.map((p, i) => p && bookLeg(p, book, { side: sides[i] || null }));
+  for (const book of pick6?.size ? ['PP', 'UD', 'SL', 'P6'] : ['PP', 'UD', 'SL']) {
+    const legs = picks.map((p, i) => p && bookLeg(p, book, { side: sides[i] || null, pick6 }));
     const players = new Set(legs.map(l => l && norm(l.player)));
-    const best = legs.length >= 2 && legs.every(Boolean) && players.size === legs.length ? priceOn(book, legs)[0] : null;
+    const best = legs.length >= 2 && legs.every(Boolean) && players.size === legs.length ? priceOn(book, legs, { pick6Table })[0] : null;
     out[book] = best ? present(book, { ...best, picks: legs }) : null;
   }
   return out;

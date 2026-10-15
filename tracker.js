@@ -217,6 +217,9 @@ function createTracker({
   // (pick, line, side) → the books' consensus chance (0-1) that side wins at
   // that line, or null. Supplied by the server; without it only line CLV runs.
   fairProb = null,
+  // (pick or row) → text added to the row's key, for a record that holds several
+  // tickets on one player and market (MY SLIPS: a line, a side and an app each)
+  idSuffix = null,
   gradeAfterMs = 2 * 3600000,      // don't look for results until 2h after start
   giveUpAfterMs = 72 * 3600000,    // after 3 days with no result, send it to review
   now = () => Date.now(),
@@ -229,7 +232,7 @@ function createTracker({
   // there is one, else on the UTC day, so a rescheduled start doesn't spawn a
   // second row. (Older rows used the exact start time; they still match by day.)
   function pickBase(p) {
-    return `${sportKey(p.sport)}|${normalizeName(p.player)}|${normalizeMarket(p.market)}`;
+    return `${sportKey(p.sport)}|${normalizeName(p.player)}|${normalizeMarket(p.market)}${idSuffix ? `|${idSuffix(p)}` : ''}`;
   }
   function utcDay(startTime) {
     const ms = startTime ? new Date(startTime).getTime() : NaN;
