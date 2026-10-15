@@ -1,0 +1,18 @@
+name: diag-esstale
+on:
+  push:
+    branches: [diag-esstale]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: timeout 20400 node diag/esstale.js || true
