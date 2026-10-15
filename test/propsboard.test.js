@@ -110,3 +110,22 @@ test('lines view: prop filter, and bettable counts only open sides on a sharp pr
   assert.deepEqual(f.markets, [{ market: 'Points', n: 2 }, { market: 'Rebounds', n: 1 }, { market: 'Kills', n: 1 }]);
   assert.deepEqual(B.queryRows(rows, { book: 'underdog', market: 'Points' }).map(r => r.key), ['b', 'a']);
 });
+
+test('esports rows our head-to-head model prices take its fair; green (bettable) only where Pinnacle agrees', () => {
+  const es = { book: 'underdog', sport: 'CS', player: 'donk', market: 'Kills on Maps 1+2', line: 38.5, startTime: soon, overMultiplier: 1, underMultiplier: 1, overOpen: true, underOpen: true };
+  const esKey = (s, m) => (/kills/i.test(m) ? 'k|1-2' : m);
+  const rows = B.buildRows([es, { ...es, book: 'prizepicks', sport: 'CS2', market: 'MAPS 1-2 Kills' }], { esKey });
+  const pick = { side: 'OVER', prob: 60, ppEv: 6.7, udEv: 4.1, modelPred: 41.2,
+    h2h: { mean: 42.1, share: 0.26, teamKills: 75.2, opp: 'cs:vitality', own: 40.3, scenarios: [{ maps: 2, weight: 1 }],
+      priced: { book: 'PP', side: 'OVER', ev: 5.2, prob: 58.7, cells: { PP: { side: 'OVER', ev: 5.2, prob: 58.7, clears: false }, UD: { side: 'OVER', ev: 3.1, prob: 57.9, clears: true, sharp: { src: 'pin', prob: 57, ev: 2.4 } } } } } };
+  B.priceRows(rows, { esPicks: new Map([[rows[0].key, pick]]) });
+  const r = rows[0];
+  assert.strictEqual(r.model.proj, 42.1);
+  assert.strictEqual(r.model.h2h.share, 26);
+  assert.deepStrictEqual(r.books.prizepicks.ev, { side: 'Over', ev: 5.2, fair: 58.7, h2h: true, clears: false, sharp: null });
+  assert.strictEqual(r.books.underdog.ev.sharp, 57);
+  assert.strictEqual(r.best.source, 'h2h');
+  assert.strictEqual(r.best.clears, false);   // the best EV is the model alone
+  assert.equal(B.lineFacets(rows, 'prizepicks', 2).bettable, 0);
+  assert.equal(B.lineFacets(rows, 'underdog', 2).bettable, 1);
+});

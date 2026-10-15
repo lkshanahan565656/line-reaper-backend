@@ -378,8 +378,10 @@ function createTracker({
         const age = t - new Date(r.startTime).getTime();
         // An auto review from a partial series is asked again (hourly, for a
         // week): a source that had only some maps may have them all now.
-        if (r.status === 'review') return /^Series ended after/.test(r.note || '') && !!graders[r.sport]
-          && age < 7 * 86400e3 && t - (lastTry.get(r.id) || 0) >= 3600e3;
+        // A row parked for want of a grader is asked once one exists (the
+        // Valorant grader backfills what sat in review before it).
+        if (r.status === 'review') return (/^Series ended after/.test(r.note || '') || /^No automatic grader for /.test(r.note || ''))
+          && !!graders[r.sport] && r.stat !== 'fantasy' && age < 14 * 86400e3 && t - (lastTry.get(r.id) || 0) >= 3600e3;
         if (r.status !== 'locked') return false;
         if (age < gradeAfterMs) return false;
         if ((graders[r.sport] && r.stat !== 'fantasy') || age >= giveUpAfterMs) return true;

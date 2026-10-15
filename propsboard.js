@@ -183,6 +183,24 @@ function priceRows(rows, { kalshi = new Map(), esPicks = new Map(), dfsEv = null
           offer(book, c.ev.side, evs[book], p.prob != null ? p.prob / 100 : null, 'model', c.line);
         }
       }
+      // our head-to-head model (h2hmodel.js) takes the row when it prices it:
+      // its fair at each app's own line, green only where a Pinnacle-based fair agrees
+      const hp = p?.h2h?.priced;
+      if (hp) {
+        const SB = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper' };
+        const pin = row.model?.share ? { proj: row.model.proj, pct: row.model.share.pct } : null;
+        row.model = { proj: p.h2h.mean, side: hp.side, prob: hp.prob, stat: p.statLine || null,
+          h2h: { share: r2(p.h2h.share * 100), teamKills: p.h2h.teamKills, vs: p.h2h.opp || null, own: p.h2h.own, maps: r2(p.h2h.scenarios.reduce((a, x) => a + x.maps * x.weight, 0)) }, pin };
+        best = null;
+        for (const [ab, cell] of Object.entries(hp.cells || {})) {
+          const c = row.books[SB[ab]];
+          if (!c) continue;
+          const side = cell.side === 'OVER' ? 'Over' : 'Under';
+          c.ev = { side, ev: cell.ev, fair: cell.prob, h2h: true, clears: !!cell.clears, sharp: cell.sharp ? cell.sharp.prob : null };
+          offer(SB[ab], side, cell.ev, cell.prob / 100, 'h2h', c.line);
+        }
+        if (best) best.clears = !!row.books[best.book]?.ev?.clears;
+      }
     } else {
       const base = row.mkey.includes('|') ? null : row.mkey;   // period stats have no Kalshi ladder
       for (const book of BOOKS) {
@@ -258,8 +276,8 @@ function counts(rows) {
 // The Lines view: how many of a book's lines clear minEv at that book on a
 // sharp price (the sharp books' consensus, or the esports model) with that
 // side still open (the header's "bettable"), and the stat names for the prop filter
-// a kill-share price counts only where it clears (Pinnacle split the books' way agrees)
-const sharpBacked = (r, c) => !!(c.ev && (c.ev.share ? c.ev.clears : (r.esports || c.ev.consensus)));
+// a kill-share or head-to-head price counts only where it clears (a Pinnacle-based fair agrees)
+const sharpBacked = (r, c) => !!(c.ev && (c.ev.share || c.ev.h2h ? c.ev.clears : (r.esports || c.ev.consensus)));
 function lineFacets(rows, book, minEv) {
   const markets = new Map();
   let bettable = 0;
