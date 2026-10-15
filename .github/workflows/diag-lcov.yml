@@ -1,0 +1,25 @@
+name: diag-lcov
+on:
+  push:
+    branches: [diag-lcov]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: timeout 2700 node diag/lcov.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          gzip -9 out/*.json
+          git checkout --orphan diag-lcov-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-lcov-out
