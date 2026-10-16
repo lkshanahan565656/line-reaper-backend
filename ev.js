@@ -1,0 +1,422 @@
+// ─── +EV SCREENER ─────────────────────────────────────────────────────────────
+// Finds prices that beat the sharp market. For every market (moneyline, spread
+// at a given number, total at a given number, player prop at a given line) we:
+//
+//   1. take each sharp book that prices every side, and remove its vig
+//      (power method by default: it shades longshots the way real books do),
+//   2. average those no-vig probabilities (weighted by how sharp the book is)
+//      into a fair price,
+//   3. score every book's price against it: EV = fair prob × decimal odds − 1.
+//
+// With no sharp book on a market we fall back to the devigged median of all
+// books (needs MIN_CONSENSUS_BOOKS) and label the row "consensus", which is
+// weaker evidence. DFS apps (PrizePicks, Underdog) have no per-side price, so
+// their legs are scored against the same fair probability at the same line.
+//
+// Pure functions only. The server feeds it whatever odds it already caches, so
+// the screener costs no extra Odds API credits.
+
+const SHARP_WEIGHTS = {
+  pinnacle: 1, circa: 1, ps3838: 1,
+  novig: 0.7, prophetx: 0.7, sporttrade: 0.7, betfair_ex_eu: 0.7, betfair_ex_uk: 0.7, matchbook: 0.6,
+  lowvig: 0.4, betonlineag: 0.4,
+  kalshi_props: 0.7,   // Kalshi player ladders (kprops.js), an exchange price like novig's
+  // Kalshi's game contracts at their bid/ask mid (pingames.kalshiMidBooks):
+  // Pinnacle-priced Kalshi bets lost 5.1% over 205 settled (2026-10-14), so
+  // Kalshi counts as much as Pinnacle on game lines. EV_KALSHI_WEIGHT sets it.
+  kalshi_mid: 1,
+};
+// A venue's own price never prices its own bets: Kalshi's tradable asks are
+// scored on the fair without Kalshi's mid in it (Pinnacle alone), as before.
+const SELF_SOURCES = { kalshi: ['kalshi_mid', 'kalshi_props'] };
+// Two sharp sources agree when their no-vig chances on a side sit within this
+// many points: a play the screen calls 'agree' has two or more such sources.
+const AGREE_MAX_PTS = 5;
+// Books we read second-hand through Action Network. Its Hard Rock college
+// lines were placeholders (-120 both sides on a -340 favourite, 2026-10-14),
+// so a quote from these books that sits more than OUTLIER_PTS from the
+// median of 3+ other books is left off the board as unverified.
+const RELAYED_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore']);
+const OUTLIER_PTS = 6;
+// Matchbook's US lines are one market maker's quotes: about $48 at the best
+// price, no money matched on 95% of markets, and within 2 points of
+// Pinnacle's no-vig on 99% of shared lines (75 live minutes, 2026-10-15). It
+// follows the sharp market rather than adding a second opinion, so it only
+// counts beside another sharp source: never a fair on its own (its
+// alternate totals priced BetRivers rows Pinnacle had no number for) and
+// never the second vote in 'agree'.
+const COMPANION_SOURCES = new Set(['matchbook']);
+function isOutlier(g, book, side) {
+  if (!RELAYED_BOOKS.has(book) || !g.all || !g.all[book]) return false;
+  const i = g.sides.indexOf(side);
+  const rest = Object.entries(g.all).filter(([b]) => b !== book).map(([, p]) => p[i]).sort((x, y) => x - y);
+  if (rest.length < 3) return false;
+  const mid = rest.length % 2 ? rest[rest.length >> 1] : (rest[rest.length / 2 - 1] + rest[rest.length / 2]) / 2;
+  return Math.abs(g.all[book][i] - mid) * 100 > OUTLIER_PTS;
+}
+const DFS_BOOKS = new Set(['prizepicks', 'underdog', 'sleeper', 'pick6', 'betr', 'parlayplay']);
+const MIN_CONSENSUS_BOOKS = 4;
+
+// ── odds math ──
+function americanToDecimal(a) {
+  a = Number(a);
+  if (!Number.isFinite(a) || a === 0 || Math.abs(a) < 100) return null;
+  return a > 0 ? 1 + a / 100 : 1 + 100 / -a;
+}
+function decimalToAmerican(d) {
+  if (!(d > 1)) return null;
+  return d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1));
+}
+const probToAmerican = p => (p > 0 && p < 1 ? decimalToAmerican(1 / p) : null);
+
+// No-vig probabilities from a full set of decimal prices.
+function devig(decimals, method = 'power') {
+  const imp = decimals.map(d => 1 / d);
+  const sum = imp.reduce((a, b) => a + b, 0);
+  if (!(sum > 0)) return null;
+  if (method === 'multiplicative' || sum <= 1) return imp.map(p => p / sum);
+  // power: find k with Σ p_i^k = 1 (k > 1 when there is vig)
+  let lo = 1, hi = 20;
+  for (let i = 0; i < 80; i++) {
+    const k = (lo + hi) / 2;
+    const s = imp.reduce((a, p) => a + p ** k, 0);
+    if (s > 1) lo = k; else hi = k;
+  }
+  const k = (lo + hi) / 2;
+  const out = imp.map(p => p ** k);
+  const t = out.reduce((a, b) => a + b, 0);
+  return out.map(p => p / t);
+}
+
+// ── market names ──
+// Odds API keys, Owls categories and DFS stat labels all name the same props
+// differently. Everything is reduced to one canonical key.
+const MARKET_ALIASES = [
+  [/^(player_)?points?_rebounds?_assists?$|^pts_?rebs_?asts$|^pra$|^pts\+rebs\+asts$|^points \+ rebounds \+ assists$/, 'pra'],
+  [/^(player_)?points?_rebounds?$|^pts_?rebs$|^pts\+rebs$|^points \+ rebounds$/, 'pts_rebs'],
+  [/^(player_)?points?_assists?$|^pts_?asts$|^pts\+asts$|^points \+ assists$/, 'pts_asts'],
+  [/^(player_)?rebounds?_assists?$|^rebs_?asts$|^rebs\+asts$|^rebounds \+ assists$/, 'rebs_asts'],
+  [/^(player_)?threes?(_made)?$|^3-?pt(s)? made$|^3-pointers made$|^3pm$/, 'threes'],
+  [/^(player_)?points?$|^pts$/, 'points'],
+  [/^(player_)?rebounds?$|^rebs$/, 'rebounds'],
+  [/^(player_)?assists?$|^asts$/, 'assists'],
+  [/^(player_)?steals?$/, 'steals'],
+  [/^(player_)?blocks?$|^(player_)?blocked[_ ]shots$/, 'blocks'],
+  [/^(player_)?shots_on_goal$|^shots on goal$|^sog$/, 'shots_on_goal'],
+  [/^(player_)?goals$/, 'goals'],
+  [/^batter_hits$|^hits$/, 'hits'],
+  [/^batter_total_bases$|^total bases$/, 'total_bases'],
+  [/^batter_home_runs$|^home runs$/, 'home_runs'],
+  [/^batter_rbis$|^rbis?$/, 'rbis'],
+  [/^batter_runs_scored$|^runs$/, 'runs'],
+  [/^batter_stolen_bases$|^stolen bases$/, 'stolen_bases'],
+  [/^pitcher_strikeouts$|^pitcher strikeouts$|^strikeouts$/, 'strikeouts'],
+  [/^pitcher_outs$|^pitching outs$|^pitcher outs$/, 'pitcher_outs'],
+  [/^player_pass_yds$|^pass(ing)? yards$/, 'pass_yds'],
+  [/^player_pass_tds$|^pass(ing)? tds$|^passing touchdowns$/, 'pass_tds'],
+  [/^player_rush_yds$|^rush(ing)? yards$/, 'rush_yds'],
+  [/^player_reception_yds$|^receiving yards$|^rec yards$/, 'rec_yds'],
+  [/^player_receptions$|^receptions$/, 'receptions'],
+  // Kalshi ladder wordings next to the Underdog and Odds API names
+  [/^player_rush_reception_yds$|^rush \+ rec yards$|^rushing and receiving yards( combined)?$/, 'rush_rec_yds'],
+  [/^player_anytime_td$|^anytime td$|^touchdowns$/, 'anytime_td'],
+  [/^player_rush_attempts$|^rush(ing)? attempts$/, 'rush_att'],
+  [/^player_pass_completions$|^(passing )?completions$/, 'pass_comp'],
+  [/^player_pass_attempts$|^pass(ing)? attempts$/, 'pass_att'],
+  [/^player_pass_interceptions$|^ints thrown$|^passing interceptions$/, 'pass_ints'],
+  [/^pitcher_hits_allowed$|^(pitcher )?hits allowed$/, 'hits_allowed'],
+  [/^hits \+ runs \+ rbis$|^batter_hits_runs_rbis$/, 'hits_runs_rbis'],
+  [/^(player_)?steals?_blocks?$|^blks \+ stls$|^steals (and|\+) blocks$/, 'stocks'],
+  [/^free throws made$|^player_frees_made$/, 'ftm'],
+  // PrizePicks and Sleeper wordings
+  [/^pass \+ rush yards$|^passing and rushing yards$|^player_pass_rush_yds$/, 'pass_rush_yds'],
+  [/^(rec )?targets$|^receiving targets$/, 'targets'],
+  [/^pass completions$/, 'pass_comp'],
+  [/^int$|^interceptions$/, 'pass_ints'],
+  [/^(batter )?walks$|^bat walks$/, 'walks'],
+  [/^(pitcher )?earned runs( allowed)?$/, 'earned_runs'],
+  [/^(goalie )?saves$/, 'saves'],
+  [/^power ?play points$|^powerplay points$/, 'pp_points'],
+  [/^pitching outs recorded$|^outs$/, 'pitcher_outs'],
+  [/^singles$/, 'singles'],
+  [/^longest reception$/, 'longest_rec'], [/^longest rush$/, 'longest_rush'], [/^longest (passing )?completion$/, 'longest_comp'],
+  [/^kicking points$/, 'kicking_points'], [/^(fg|field goals?) made$/, 'fg_made'],
+  [/^pts \+ rebs \+ asts$/, 'pra'], [/^pts \+ rebs$/, 'pts_rebs'], [/^pts \+ asts$/, 'pts_asts'], [/^rebs \+ asts$/, 'rebs_asts'],
+];
+// Each pick'em book spells the same stat its own way ("Rush+Rec Yds" on
+// PrizePicks, "Rush + Rec Yards" on Underdog): spacing round '+' and the
+// short forms are evened out before the aliases run.
+const MARKET_WORDS = [[/\byds\b/g, 'yards'], [/\btds\b/g, 'tds'], [/^anytime tds$/, 'anytime td'], [/^anytime touchdowns$/, 'anytime td']];
+function canonMarket(m) {
+  let s = String(m || '').trim().toLowerCase().replace(/\s*\+\s*/g, ' + ').replace(/\s+/g, ' ');
+  for (const [re, to] of MARKET_WORDS) s = s.replace(re, to);
+  for (const [re, key] of MARKET_ALIASES) if (re.test(s)) return key;
+  return s.replace(/\s+/g, '_');
+}
+const canonName = n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/\b(jr|sr|ii|iii|iv)\b\.?/g, '').replace(/[^a-z0-9]/g, '');
+
+// ── normalize feeds into quotes ──
+// quote: { group, eventId, sport, event, start, market, player, point, side, book, price }
+function quotesFromGames(games, { sport } = {}) {
+  const out = [];
+  for (const g of games || []) {
+    // keyed by teams and day, not feed id, so Owls and the Odds API merge into one market
+    const day = g.commence_time ? String(g.commence_time).slice(0, 10) : '';
+    const eventId = g.home_team ? `${canonName(g.away_team)}@${canonName(g.home_team)}|${day}` : g.id;
+    const base = { eventId, sport: String(sport || g.sport_key || g.sport || '').toLowerCase(), event: `${g.away_team} @ ${g.home_team}`, start: g.commence_time || null };
+    // Odds API / Owls game-line shape
+    for (const bm of g.bookmakers || []) {
+      const book = String(bm.key || bm.title || '').toLowerCase();
+      for (const m of bm.markets || []) {
+        const key = m.key;
+        for (const o of m.outcomes || []) {
+          if (o.price == null) continue;
+          let group, side, point = o.point ?? null, player = null, market = key;
+          if (key === 'h2h') { group = `${eventId}|h2h`; side = o.name; }
+          else if (key === 'spreads') {
+            if (point == null) continue;
+            const homePt = o.name === g.home_team ? point : -point;
+            group = `${eventId}|spreads|${homePt}`; side = `${o.name} ${point > 0 ? '+' : ''}${point}`;
+          } else if (key === 'totals') {
+            if (point == null) continue;
+            group = `${eventId}|totals|${point}`; side = o.name;
+          } else if (o.description && /^(over|under)$/i.test(o.name) && point != null) {
+            player = o.description; market = canonMarket(key);
+            group = `${eventId}|${market}|${canonName(player)}|${point}`; side = cap(o.name);
+          } else continue;
+          out.push({ ...base, group, market, player, point, side, book, price: Number(o.price) });
+        }
+      }
+    }
+    // Odds API props cache / Owls props shape: books[].props[]
+    for (const bk of g.books || []) {
+      const book = String(bk.key || bk.title || bk.name || '').toLowerCase();
+      for (const p of bk.props || bk.player_props || []) {
+        const player = p.player || p.playerName || p.player_name || p.name;
+        const market = canonMarket(p.market || p.category || p.stat_type || p.type);
+        const point = p.line ?? p.point ?? p.value;
+        if (!player || point == null) continue;
+        const group = `${eventId}|${market}|${canonName(player)}|${point}`;
+        const over = p.overPrice ?? p.over_price ?? p.overOdds ?? p.over;
+        const under = p.underPrice ?? p.under_price ?? p.underOdds ?? p.under;
+        if (over != null) out.push({ ...base, group, market, player, point: Number(point), side: 'Over', book, price: Number(over) });
+        if (under != null) out.push({ ...base, group, market, player, point: Number(point), side: 'Under', book, price: Number(under) });
+      }
+    }
+  }
+  return out;
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+// ── fair prices ──
+function median(xs) {
+  const s = xs.slice().sort((a, b) => a - b);
+  const n = s.length;
+  return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null;
+}
+
+// One market's quotes → { sides, fair: {side: prob}, source, sharpBooks,
+// novig: {book: [p per side]} }. exclude: sharp books left out of the fair.
+function fairForGroup(quotes, { method = 'power', weights = SHARP_WEIGHTS, minConsensus = MIN_CONSENSUS_BOOKS, exclude = [] } = {}) {
+  const sides = [...new Set(quotes.map(q => q.side))];
+  if (sides.length < 2) return null;
+  const byBook = new Map();
+  for (const q of quotes) {
+    if (DFS_BOOKS.has(q.book) || exclude.includes(q.book)) continue;
+    const d = americanToDecimal(q.price);
+    if (!d) continue;
+    if (!byBook.has(q.book)) byBook.set(q.book, {});
+    byBook.get(q.book)[q.side] = d;
+  }
+  const complete = [...byBook].filter(([, px]) => sides.every(s => px[s]));
+  const novig = ([book, px]) => ({ book, p: devig(sides.map(s => px[s]), method) });
+
+  const sharp = complete.filter(([b]) => weights[b]).map(novig).filter(x => x.p);
+  if (sharp.length && sharp.some(x => !COMPANION_SOURCES.has(x.book))) {
+    const W = sharp.reduce((a, x) => a + weights[x.book], 0);
+    const fair = {};
+    sides.forEach((s, i) => { fair[s] = sharp.reduce((a, x) => a + weights[x.book] * x.p[i], 0) / W; });
+    // every book's own no-vig, sharp or not: the cross-comparison columns and
+    // what the tracker scores each source on against the close
+    const all = Object.fromEntries(complete.map(novig).filter(x => x.p).map(x => [x.book, x.p]));
+    return { sides, fair, source: 'sharp', sharpBooks: sharp.map(x => x.book), novig: Object.fromEntries(sharp.map(x => [x.book, x.p])), all };
+  }
+  if (complete.length >= minConsensus) {
+    const all = complete.map(novig).filter(x => x.p);
+    const raw = sides.map((_, i) => median(all.map(x => x.p[i])));
+    const t = raw.reduce((a, b) => a + b, 0);
+    const fair = {};
+    sides.forEach((s, i) => { fair[s] = raw[i] / t; });
+    return { sides, fair, source: 'consensus', sharpBooks: [], novig: {} };
+  }
+  return null;
+}
+// How far apart the sharp sources sit on one side, in points of win chance:
+// → { n, spreadPts, agree } (agree: 2+ sources within AGREE_MAX_PTS)
+function agreement(f, side, maxPts = AGREE_MAX_PTS) {
+  const i = f.sides.indexOf(side);
+  const ps = Object.entries(f.novig || {}).filter(([b]) => !COMPANION_SOURCES.has(b)).map(([, p]) => p[i]).filter(Number.isFinite);
+  if (ps.length < 2) return { n: ps.length, spreadPts: null, agree: false };
+  const spreadPts = round((Math.max(...ps) - Math.min(...ps)) * 100, 1);
+  return { n: ps.length, spreadPts, agree: spreadPts <= maxPts };
+}
+
+// ── the screen ──
+// games: arrays in Odds API / Owls shape (see quotesFromGames)
+// dfsLines: [{book, sport, player, market, line, startTime, overMultiplier, underMultiplier}]
+// dfsEv(prob, book, mult, line, side) → EV % for one DFS leg (the server's calcBookEV;
+// line and side let it check a two-sided price like Sleeper's for vig)
+// fairs (optional Map) is filled with `${group}|${side}` → fair prob % for every
+// market priced, +EV or not, so a tracker can follow a price to the close.
+// costs (optional Map) gets `${group}|${side}|${book}` → 1 / decimal for every
+// book's best price, so a tracker can grade a bet at what it cost later.
+function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
+  const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
+  const groups = new Map();
+  for (const q of quotes) {
+    if (q.start && Date.parse(q.start) <= now) continue;      // live or started: prices are stale
+    if (!groups.has(q.group)) groups.set(q.group, []);
+    groups.get(q.group).push(q);
+  }
+
+  const rows = [];
+  const suspect = new Set();
+  const propFair = new Map();   // player|market|line → [{ f, head }], one per game, for DFS legs
+  for (const [group, qs] of groups) {
+    const f = fairForGroup(qs, { method, weights });
+    if (!f) continue;
+    if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
+    const head = qs[0];
+    if (head.player) {
+      const k = `${canonName(head.player)}|${head.market}|${head.point}`;
+      if (!propFair.has(k)) propFair.set(k, []);
+      propFair.get(k).push({ f, head });
+    }
+
+    for (const side of f.sides) {
+      const fp = f.fair[side];
+      // best price per book on this side (books can appear twice across feeds)
+      const best = new Map();
+      for (const q of qs) {
+        if (q.side !== side || DFS_BOOKS.has(q.book)) continue;
+        const d = americanToDecimal(q.price);
+        if (d && (!best.has(q.book) || d > best.get(q.book).d)) best.set(q.book, { d, q });
+      }
+      for (const [book, { d, q }] of best) {
+        if (costs) costs.set(`${group}|${side}|${book}`, round(1 / d, 4));
+        // a sharp book scored on a fair made from its own price says nothing:
+        // Kalshi's ladders filled the +EV tab with 856 such rows (2026-10-14)
+        if (f.sharpBooks.includes(book)) continue;
+        // a venue whose own feed is in the fair is scored on the others alone
+        const self = (SELF_SOURCES[book] || []).filter(b => f.sharpBooks.includes(b));
+        const g = self.length ? fairForGroup(qs, { method, weights, exclude: self }) : f;
+        if (!g || g.fair[side] == null) continue;
+        const gp = g.fair[side];
+        const ev = (gp * d - 1) * 100;
+        // one placeholder line means that book's whole event is suspect
+        if (isOutlier(g, book, side)) { suspect.add(`${book}|${q.event}`); continue; }
+        // a second-hand price only plays against a sharp one: without one the
+        // fair is the median of soft books, and the play is the one book off
+        // the rest (7 of 63 plays live, 6 of them bet365 props, 5 to 7 points
+        // from the others: unverifiable placeholders or stale copies)
+        if (g.source === 'consensus' && RELAYED_BOOKS.has(book)) continue;
+        if (ev < minEv) continue;
+        const a = agreement(g, side, agreeMaxPts);
+        rows.push({
+          group, sport: q.sport, event: q.event, start: q.start, market: q.market, player: q.player, point: q.point,
+          side, book, price: q.price, decimal: round(d, 3), fairProb: round(gp * 100, 2), fairPrice: probToAmerican(gp),
+          ev: round(ev, 2), kelly: round(Math.max(0, (gp * d - 1) / (d - 1)) * kellyFraction * 100, 2),
+          source: g.source, sharpBooks: g.sharpBooks, agree: a.agree, spreadPts: a.spreadPts, books: best.size, updated: q.updated,
+          // the same side at every other book, best first, and each book's no-vig chance of it
+          others: [...best].filter(([b]) => b !== book).sort((x, y) => y[1].d - x[1].d).slice(0, 10).map(([b, x]) => ({ book: b, price: x.q.price })),
+          srcP: Object.fromEntries(Object.entries(g.all || {}).map(([b, p]) => [b, round(p[g.sides.indexOf(side)] * 100, 1)])),
+        });
+      }
+    }
+  }
+
+  if (suspect.size) for (let i = rows.length - 1; i >= 0; i--) if (suspect.has(`${rows[i].book}|${rows[i].event}`)) rows.splice(i, 1);
+
+  // DFS legs at exactly a line the books price. Different line → skipped:
+  // moving a fair price across lines needs a distribution we don't have here.
+  if (dfsEv) {
+    for (const l of dfsLines) {
+      if (l.startTime && Date.parse(l.startTime) <= now) continue;
+      const hit = dfsGame(propFair.get(`${canonName(l.player)}|${canonMarket(l.market)}|${Number(l.line)}`), l.startTime);
+      if (!hit) continue;
+      const { f, head } = hit;
+      for (const side of ['Over', 'Under']) {
+        const fp = f.fair[side];
+        if (fp == null) continue;
+        if ((side === 'Over' ? l.overOpen : l.underOpen) === false) continue;   // book doesn't take this side
+        const mult = side === 'Over' ? l.overMultiplier : l.underMultiplier;
+        const ev = dfsEv(fp, l.book, mult ?? 1, l, side);
+        if (ev == null || ev < minEv) continue;
+        rows.push({
+          group: head.group, sport: head.sport || String(l.sport || '').toLowerCase(), event: head.event, start: head.start || l.startTime,
+          market: head.market, player: l.player, point: Number(l.line), side, book: l.book, price: null,
+          multiplier: mult ?? null, fairProb: round(fp * 100, 2), fairPrice: probToAmerican(fp), ev: round(ev, 2),
+          kelly: null, source: f.source, sharpBooks: f.sharpBooks, agree: agreement(f, side, agreeMaxPts).agree, dfs: true, updated: head.updated,
+        });
+      }
+    }
+  }
+
+  rows.sort((a, b) => b.ev - a.ev);
+  return rows;
+}
+const round = (x, n) => Math.round(x * 10 ** n) / 10 ** n;
+
+// The books' game a DFS leg belongs to. A player's name, market and line
+// don't name a game: PrizePicks' Brunson rebounds 2.5 was a 10-15 preseason
+// game priced on Pinnacle's 10-20 prop (+7.4% shown, 2026-10-15 audit).
+// With a start time the leg takes the game starting within DFS_START_SLACK_MS
+// of it; without one, only a lone candidate.
+const DFS_START_SLACK_MS = 4 * 3600e3;
+function dfsGame(cands, startTime) {
+  if (!cands || !cands.length) return null;
+  const t = Date.parse(startTime);
+  if (!Number.isFinite(t)) return cands.length === 1 ? cands[0] : null;
+  if (cands.length === 1 && !Number.isFinite(Date.parse(cands[0].head.start))) return cands[0];
+  let best = null, bestGap = Infinity;
+  for (const c of cands) {
+    const s = Date.parse(c.head.start);
+    if (!Number.isFinite(s)) continue;
+    const gap = Math.abs(s - t);
+    if (gap <= DFS_START_SLACK_MS && gap < bestGap) { best = c; bestGap = gap; }
+  }
+  return best;
+}
+
+// ── live edges ──
+// Rows that newly cleared minEv since the last screen (new to the board, or
+// improved from below). A cooldown per row stops a price that flickers around
+// the threshold from alerting every refresh.
+const rowKey = r => `${r.group}|${r.side}|${r.book}`;
+function diffEv(prev, next, { minEv = 3, now = Date.now(), seen = new Map(), cooldownMs = 30 * 60000 } = {}) {
+  const before = new Map((prev || []).map(r => [rowKey(r), r]));
+  const out = [];
+  for (const r of next || []) {
+    if (r.ev < minEv) continue;
+    const old = before.get(rowKey(r));
+    if (old && old.ev >= minEv) continue;
+    const k = rowKey(r), last = seen.get(k);
+    if (last != null && now - last < cooldownMs) continue;
+    seen.set(k, now);
+    out.push({ ...r, kind: 'ev', at: new Date(now).toISOString(), previousEv: old?.ev ?? null });
+  }
+  for (const [k, t] of seen) if (now - t > 24 * 3600000) seen.delete(k);
+  return out;
+}
+
+function describeEv(r) {
+  const what = r.player ? `${r.player} ${r.side} ${r.point} ${r.market}` : `${r.event} ${r.market === 'h2h' ? 'ML' : r.market} ${r.side}`;
+  const price = r.dfs ? (r.multiplier && r.multiplier !== 1 ? `${r.multiplier}x` : 'pick') : (r.price > 0 ? `+${r.price}` : r.price);
+  return `+${r.ev.toFixed(1)}% ${what} @ ${r.book} ${price} (fair ${r.fairPrice > 0 ? '+' : ''}${r.fairPrice}${r.source === 'consensus' ? ', consensus' : ''})`;
+}
+
+module.exports = {
+  americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS, dfsGame, DFS_START_SLACK_MS,
+};
