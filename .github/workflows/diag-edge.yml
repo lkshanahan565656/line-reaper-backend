@@ -7,7 +7,7 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 15  # run 2026-10-16
     steps:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
@@ -27,6 +27,8 @@ jobs:
           g /api/esports/rounds rounds.json
           g /api/esports/share share.json
           g /api/esports/pintotals pintotals.json
+          g /api/props/coverage coverage.json
+          g /api/props/board props-board.json
           date -u +%FT%TZ > at.txt
           cd ..
           git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
