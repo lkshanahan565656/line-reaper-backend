@@ -7,7 +7,7 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # run 2026-10-16 b
+    timeout-minutes: 15  # run 2026-10-16 c
     steps:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
@@ -28,8 +28,8 @@ jobs:
           g /api/esports/share share.json
           g /api/esports/pintotals pintotals.json
           g /api/props/coverage coverage.json
-          g '/api/ev/record/bets?limit=500' ev-bets.json
-          g '/api/ev/record/bets?limit=500&alt=1' alt-bets.json
+          g '/api/ev/record/bets?limit=500&status=closed' ev-bets.json
+          g '/api/ev/record/bets?limit=500&alt=1&status=closed' alt-bets.json
           g '/api/ev/record/bets?limit=500&stale=1' stale-bets.json
           g /api/ev ev-now.json
           g /api/props/board props-board.json
