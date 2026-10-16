@@ -114,3 +114,71 @@ test('factor model: Valorant teammates and opponents both lean together, weaker 
   assert.ok(val > 3 / 64 && val < cs, `${val} ${cs}`);
   assert.ok(S.slipHitsDistribution([leg('VAL', 'A', 0), leg('VAL', 'B', 0)])[2] > 0.25);
 });
+
+test('stacks at the record: legs hitting under their price need a bigger payout', () => {
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)));
+  const plain = B.autoSlips(picks, { now: 0 }).stacks[0];
+  assert.equal(plain.atRecord, undefined, 'no record, no second price');
+  const s = B.autoSlips(picks, { now: 0, stackLegGap: -0.08 }).stacks[0];
+  assert.ok(s.atRecord, 'priced at the record too');
+  assert.equal(s.atRecord.gap, -8);
+  assert.equal(s.ev, plain.ev, 'the board price is unchanged');
+  assert.ok(s.atRecord.ev < s.ev && s.atRecord.probAll < s.probAll);
+  assert.ok(s.atRecord.breakEvenPays > s.breakEvenPays);
+  // the same stack with every leg 8 points lower, priced directly
+  const legs = picks.filter(p => s.picks.some(l => l.player === p.player)).map(p => B.bookLeg(p, 'PP')).map(l => ({ ...l, prob: l.prob - 0.08 }));
+  const direct = B.priceOn('PP', legs.map(l => ({ ...l, shift: 0, meanPerMap: null }))).find(r => r.table === s.table);
+  close(s.atRecord.probAll, direct.probAll, 2e-3);
+});
+
+test('stack record: sweeps against their price, legs against theirs, and the close', async () => {
+  const { createSlipTracker } = require('../sliptrack');
+  const { createMemoryStore } = require('../evtrack');
+  let t = 0;
+  const store = createMemoryStore();
+  const tr = createSlipTracker({ store, now: () => t });
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)));
+  const stack = B.autoSlips(picks, { now: 0 }).stacks[0];
+  await tr.record([stack]);
+  // before the start the board moves: one leg's chance rises at the same line, one leg's line moves up
+  const moved = picks.map(p => p.player === stack.picks[0].player ? { ...p, pricing: { ...p.pricing, books: { PP: { line: 29.5, prob: 0.58 } } } }
+    : p.player === stack.picks[1].player ? { ...p, pricing: { ...p.pricing, books: { PP: { line: 30.5, prob: 0.53 } } } } : p);
+  await tr.follow(B.stackLegLookup(moved));
+  const row = (await tr.list())[0];
+  assert.equal(row.legs[0].closeProb, 58);
+  assert.equal(row.legs[1].closeLine, 30.5);
+  assert.equal(row.legs[1].closeProb, null, 'a moved line has no price at the old number');
+  assert.equal(row.legs[2].closeProb, row.legs[2].prob);
+  // after the start nothing follows
+  t = Date.parse('2099-01-01T00:00:01Z');
+  await tr.follow(B.stackLegLookup(picks));
+  assert.equal((await tr.list())[0].legs[0].closeProb, 58);
+  // graded: every leg won
+  Object.assign(row, { status: 'graded', hits: row.size, profit: 36.5, gradedAt: new Date(t).toISOString() });
+  row.legs.forEach(l => { l.outcome = 'win'; });
+  await store.put(row);
+  const sum = (await tr.summary()).stacks;
+  assert.equal(sum.swept, 1);
+  close(sum.expectedSwept, +row.probAll.toFixed(2), 0.006);
+  assert.ok(sum.independentSwept < sum.expectedSwept);
+  assert.equal(sum.legs.n, row.size);
+  assert.equal(sum.legs.wonPct, 100);
+  assert.equal(sum.legs.calibrated, false, 'one stack is not a record');
+  assert.equal(sum.close.lineMoves, 1);
+  assert.equal(sum.close.toward, 1, 'an OVER line that rose moved our way');
+  assert.equal(sum.close.stacks, 0, 'a leg without a closing price leaves the stack unpriced at the close');
+  assert.ok(sum.close.move > 0);
+});
+
+test('stack record: a logged stack priced again from its row matches its price', async () => {
+  const { createSlipTracker, repriceStack } = require('../sliptrack');
+  const tr = createSlipTracker({ now: () => 0 });
+  // legs priced at their own chance (no per-map distribution to shift)
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)))
+    .map(p => ({ ...p, pricing: { ...p.pricing, meanPerMap: null, k: null } }));
+  const stack = B.autoSlips(picks, { now: 0 }).stacks[0];
+  await tr.record([stack]);
+  const row = (await tr.list())[0];
+  const again = repriceStack(row, row.legs.map(l => l.prob / 100));
+  close(again.probAll, row.probAll, 2e-3);
+});
