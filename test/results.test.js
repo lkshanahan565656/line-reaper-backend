@@ -11,7 +11,7 @@ test('t-stat needs spread and 3 values', () => {
 });
 
 test('verdicts: proven on CLV, avoid when losing, early on small samples', () => {
-  const good = Array.from({ length: 25 }, (_, i) => ({ profit: i % 2 ? 1 : -1, staked: 1, clv: 0.04 + (i % 3) * 0.01 }));
+  const good = Array.from({ length: 55 }, (_, i) => ({ profit: i % 2 ? 1 : -1, staked: 1, clv: 0.04 + (i % 3) * 0.01 }));
   assert.equal(score(good).verdict, 'proven');
   const bad = Array.from({ length: 10 }, (_, i) => ({ profit: -1, staked: 1, clv: -0.03 - (i % 2) * 0.01 }));
   assert.equal(score(bad).verdict, 'avoid');
@@ -22,14 +22,14 @@ test('verdicts: proven on CLV, avoid when losing, early on small samples', () =>
 
 test('scoreboard cuts plays per source and ranks proven first', () => {
   const recs = [
-    ...Array.from({ length: 22 }, (_, i) => tail(i, { grade: 'A', category: 'sports', profit: i % 2 ? 0.9 : -1, clv: 0.05 + (i % 4) * 0.01 })),
+    ...Array.from({ length: 52 }, (_, i) => tail(i, { grade: 'A', category: 'sports', profit: i % 2 ? 0.9 : -1, clv: 0.05 + (i % 4) * 0.01 })),
     ...Array.from({ length: 10 }, (_, i) => tail(100 + i, { grade: 'B', category: 'politics', profit: -1, clv: -0.04 - (i % 2) * 0.01 })),
     tail(200, { status: 'open' }),
   ];
   const edges = Array.from({ length: 4 }, (_, i) => ({ id: `e${i}`, status: 'closed', flaggedAt: new Date().toISOString(), sport: 'cs2', book: 'kalshi', market: 'match', clv: 3 + i }));
   const b = scoreboard({ tail: recs, esportsEdges: edges });
   assert.equal(b.sources.tail.open, 1);
-  assert.equal(b.sources.tail.overall.n, 32);
+  assert.equal(b.sources.tail.overall.n, 62);
   assert.equal(b.sources.esportsEdges.overall.avgClv, 0.045);
   const first = b.plays[0];
   assert.equal(first.verdict, 'proven');
@@ -58,7 +58,7 @@ test('exchange value: the delayed grade is compared with the same bets at the al
 });
 
 test('sportsbook plays: proven only as one book with 50 graded of its own; a pooled count never proves a book', () => {
-  const mk = (n, book, sport = 'nfl') => Array.from({ length: n }, (_, i) => ({ id: `${book}${i}`, status: 'closed', flaggedAt: new Date().toISOString(), sport, book, market: 'spreads', clv: 3 + (i % 3) }));
+  const mk = (n, book, sport = 'nfl') => Array.from({ length: n }, (_, i) => ({ id: `${book}${i}`, status: 'closed', flaggedAt: new Date().toISOString(), sport, book, market: 'spreads', event: `G${i}`, start: '2026-10-17T17:00:00Z', clv: 3 + (i % 3) }));
   const rec = [...mk(30, 'draftkings'), ...mk(30, 'caesars'), ...mk(2, 'fanduel')];
   const b = scoreboard({ ev: rec });
   const all = b.plays.find(p => p.source === 'ev' && p.play === 'all');
@@ -73,4 +73,24 @@ test('sportsbook plays: proven only as one book with 50 graded of its own; a poo
   assert.equal(full.provenNote, undefined);
   // the pooled sport cut of the same 55 stays unproven
   assert.notEqual(scoreboard({ ev: mk(55, 'fanduel') }).plays.find(p => p.source === 'ev' && p.by === 'sport').verdict, 'proven');
+});
+
+test('proven needs 50, counted in games, never a copied book, never with the close against it (10-16)', () => {
+  const mk = (n, book, games = n) => Array.from({ length: n }, (_, i) => ({ id: `${book}${i}`, status: 'closed', flaggedAt: new Date().toISOString(), sport: 'nhl', book,
+    market: 'shots_on_goal', event: `G${i % games}`, player: `P${i % games}`, start: '2026-10-17T00:00:00Z', clv: 3 + (i % 3) }));
+  const book = (rec, b) => scoreboard({ ev: rec }).plays.find(p => p.source === 'ev' && p.by === 'book' && p.play === b);
+  assert.equal(book(mk(55, 'betrivers'), 'betrivers').verdict, 'proven', 'a book we read, 55 games');
+  // 55 lines on 5 games: five bets of evidence
+  const few = book(mk(55, 'betrivers', 5), 'betrivers');
+  assert.equal(few.verdict, 'promising');
+  assert.match(few.provenNote, /^not proven yet: 5 graded/);
+  // Action Network's copy of Hard Rock: the price was never checked at the book
+  const hr = book(mk(60, 'hardrock'), 'hardrock');
+  assert.equal(hr.verdict, 'promising');
+  assert.match(hr.provenNote, /60 graded, \+4\.0% CLV, price copied via Action Network/);
+  // 21 gas locks, all won, the close against them: not proven
+  const locks = Array.from({ length: 21 }, (_, i) => ({ status: 'graded', profit: 0.02 + (i % 3) * 0.005, clv: -0.06 - (i % 2) * 0.01, state: 'MD', price: 0.97 }));
+  assert.notEqual(scoreboard({ gasLocks: locks }).plays.find(p => p.play === '96-98c').verdict, 'proven');
+  const many = Array.from({ length: 60 }, (_, i) => ({ status: 'graded', profit: 0.02 + (i % 3) * 0.005, clv: -0.06 - (i % 2) * 0.01, state: 'MD', price: 0.97 }));
+  assert.notEqual(scoreboard({ gasLocks: many }).plays.find(p => p.play === '96-98c').verdict, 'proven', 'winning while the close says otherwise');
 });

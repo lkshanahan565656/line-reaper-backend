@@ -5,14 +5,21 @@
 // grouped into plays (A-grade sports tails, Kalshi CS2 match edges, ...) and
 // every play gets a verdict from its own sample:
 //
-//   proven     20+ bets and a t-stat of 2+ on CLV or on ROI, with it positive
-//              (CLV here is the 2-minute grade once 8+ bets have one)
+//   proven     50+ bets (PROVEN_N) and a t-stat of 2+ on CLV or on ROI, with it
+//              positive (CLV here is the 2-minute grade once 8+ bets have one),
+//              and never while the CLV says the opposite (a t of -2): 21 gas
+//              locks won at 96-98c with the close against them read "proven" on
+//              ROI alone (10-16)
 //   promising  8+ bets, beating the close (or in profit when there's no CLV)
 //   avoid      8+ bets, losing to the close and losing money (or a t of -2)
 //
 // Sportsbook records (BOOK_SOURCES) are held to a stricter rule: only a cut by
 // a single book can be proven, and only with PROVEN_BOOK_N graded bets of its
-// own. A pooled group (all books, a sport, a market) never makes a book proven.
+// own, counted one per game (or player stat) and day: nine spreads on one game
+// are one bet of evidence, not nine. A pooled group (all books, a sport, a
+// market) never makes a book proven, and neither does a book we only see
+// second-hand (Action Network's copies of DraftKings, Hard Rock, ...): nobody
+// has checked that price could be bet there.
 //   early      everything else
 //
 // "Bets" means bets that carry the number being judged: a CLV verdict counts
@@ -41,6 +48,7 @@ function tStat(a) {
 // Graded at $100 through the book (sizedClv) once 8 have that, which is
 // what a subscriber betting real size gets.
 const EXEC_MIN_N = 8;
+const PROVEN_N = 50;
 function verdictOf(s) {
   if (s.sizedN >= EXEC_MIN_N) s = { ...s, avgClv: s.sizedClv, clvN: s.sizedN, clvT: s.sizedT ?? null };
   else if (s.execN >= EXEC_MIN_N) s = { ...s, avgClv: s.execClv, clvN: s.execN, clvT: s.execT ?? null };
@@ -49,10 +57,10 @@ function verdictOf(s) {
   const useClv = s.avgClv != null && (clvN >= 8 || s.roi == null);
   const lead = useClv ? s.avgClv : s.roi;
   const leadN = useClv ? clvN : roiN;
-  const clvProven = clvN >= 20 && (s.clvT ?? -Infinity) >= 2 && s.avgClv > 0;
-  const roiProven = roiN >= 20 && (s.roiT ?? -Infinity) >= 2 && s.roi > 0;
-  if (clvProven || roiProven) return 'proven';
   const clvBad = clvN >= 8 && (s.clvT ?? 0) <= -2;
+  const clvProven = clvN >= PROVEN_N && (s.clvT ?? -Infinity) >= 2 && s.avgClv > 0;
+  const roiProven = roiN >= PROVEN_N && (s.roiT ?? -Infinity) >= 2 && s.roi > 0 && !clvBad;
+  if (clvProven || roiProven) return 'proven';
   const losing = leadN >= 8 && lead != null && lead <= 0 && (s.roi == null || s.roi < 0);
   if (clvBad || losing) return 'avoid';
   if (leadN >= 8 && lead != null && lead > 0) return 'promising';
@@ -93,8 +101,11 @@ const tailBet = r => ({
   labels: { grade: r.grade ? `${r.grade} grade` : null, category: r.category || 'other', venue: r.venue || 'Polymarket', consensus: r.isConsensus ? 'consensus' : 'single wallet', order: r.order === 'limit' ? 'limit bid' : 'take' },
 });
 // evtrack: CLV in percent, no win/loss
+// game: one per event (or player) and day, the unit a book's 50 counts in
+const day = t => String(t || '').slice(0, 10);
 const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null,
-  sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, labels: { sport: b.sport, book: b.book, market: b.market } });
+  sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, game: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`,
+  labels: { sport: b.sport, book: b.book, market: b.market } });
 // sports pick'em props (sporttrack.js): CLV is the leg's EV at the close (the
 // fair at the start times what the leg pays); the +2 min grade counts only legs
 // still up at the same line and payout two minutes after the flag
@@ -108,6 +119,7 @@ const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
   return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
+    game: `${r.sport}|${r.player}|${r.mkey}|${day(r.start || r.startTime)}`,
     labels: { kind: SPORT_KIND[r.kind] || 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
 };
 const pickBet = r => ({
@@ -166,15 +178,22 @@ const SOURCES = {
 // sportsbook records whose proven mark must come from one book's own sample
 const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
 const PROVEN_BOOK_N = 50;
+// books read only through Action Network's copy of their prices
+const RELAYED_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore', 'DraftKings', 'BetMGM', 'Caesars', 'Fanatics', 'Hard Rock', 'theScore']);
 // the bets behind a verdict: the sized or 2-minute grade once 8+ carry one, else the close
 const judgedN = s => (s.sizedN >= EXEC_MIN_N ? s.sizedN : s.execN >= EXEC_MIN_N ? s.execN : (s.clvN ?? s.graded ?? s.n));
-// a sportsbook play keeps 'proven' only as one book's own 50+ sample
-function bookGuard(source, by, s) {
+// games (one per event or player stat and day) among the bets that carry a CLV
+const gamesOf = bets => new Set(bets.filter(b => b.clv != null && Number.isFinite(b.clv)).map(b => b.game ?? b)).size;
+// a sportsbook play keeps 'proven' only as one book's own 50+ games, read at the book itself
+function bookGuard(source, by, s, { bets = null, book = null } = {}) {
   if (!BOOK_SOURCES.has(source) || s.verdict === 'avoid') return s;
   const ownBook = !!by && by.split('+').includes('book');
-  if (s.verdict === 'proven' && ownBook && judgedN(s) >= PROVEN_BOOK_N) return s;
+  const games = bets ? Math.min(judgedN(s), gamesOf(bets)) : judgedN(s);
+  const relayed = ownBook && RELAYED_BOOKS.has(book);
+  if (s.verdict === 'proven' && ownBook && !relayed && games >= PROVEN_BOOK_N) return s;
   const verdict = s.verdict === 'proven' ? 'promising' : s.verdict;
-  return { ...s, verdict, provenNote: `not proven yet: ${judgedN(s)} graded${s.avgClv != null ? `, ${s.avgClv > 0 ? '+' : ''}${(s.avgClv * 100).toFixed(1)}% CLV` : ''}` };
+  const clv = s.avgClv != null ? `, ${s.avgClv > 0 ? '+' : ''}${(s.avgClv * 100).toFixed(1)}% CLV` : '';
+  return { ...s, verdict, games, provenNote: `not proven yet: ${games} graded${clv}${relayed ? ', price copied via Action Network, never checked at the book' : ''}` };
 }
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
@@ -198,7 +217,11 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
         if (!g.has(k)) g.set(k, []);
         g.get(k).push(b);
       }
-      for (const [k, list] of g) if (list.length >= minN) plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...bookGuard(name, cut.join('+'), score(list)) });
+      for (const [k, list] of g) {
+        if (list.length < minN) continue;
+        const book = cut.length === 1 && cut[0] === 'book' ? k : null;
+        plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...bookGuard(name, cut.join('+'), score(list), { bets: list, book }) });
+      }
     }
   }
   const lead = p => p.clvT ?? p.roiT ?? -Infinity;
@@ -206,4 +229,4 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   return { sources, plays };
 }
 
-module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N, PROVEN_BOOK_N, BOOK_SOURCES };
+module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N, PROVEN_N, PROVEN_BOOK_N, BOOK_SOURCES, RELAYED_BOOKS };

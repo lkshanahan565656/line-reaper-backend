@@ -51,7 +51,7 @@ test('Sharp Tail entries: sized, fresh, not sold, not started', () => {
 test('the results decide: avoid play types drop out, proven ones rank first', () => {
   const recs = [
     // A grade sports: proven on CLV
-    ...Array.from({ length: 22 }, (_, i) => tailRec(i, { grade: 'A', category: 'sports', profit: i % 2 ? 0.9 : -1, clv: 0.05 + (i % 4) * 0.01 })),
+    ...Array.from({ length: 52 }, (_, i) => tailRec(i, { grade: 'A', category: 'sports', profit: i % 2 ? 0.9 : -1, clv: 0.05 + (i % 4) * 0.01 })),
     // B grade politics: losing to the close
     ...Array.from({ length: 10 }, (_, i) => tailRec(100 + i, { grade: 'B', category: 'politics', profit: -1, clv: -0.04 - (i % 2) * 0.01 })),
   ];
@@ -234,7 +234,7 @@ test("the PROPS board's sharp-priced plays: in Best Plays, ranked by their recor
   assert.equal(b.label, 'NFL line gap');
 
   // with a record: its verdict and numbers show, and an early one still shows what it has
-  const rec = (i, o = {}) => ({ id: `s${i}`, kind: 'gap', status: 'graded', outcome: i < 7 ? 'win' : 'loss', profit: i < 7 ? 0.78 : -1, closeEv: 4, execOk: true, sport: 'NFL', signalBook: 'UD', mkey: 'rec_yds', startTime: iso(-86400e3), ...o });
+  const rec = (i, o = {}) => ({ id: `s${i}`, kind: 'gap', status: 'graded', outcome: i < 7 ? 'win' : 'loss', profit: i < 7 ? 0.78 : -1, closeEv: 4, execOk: true, sport: 'NFL', signalBook: 'UD', mkey: 'rec_yds', player: `P${i}`, startTime: iso(-86400e3), ...o });
   const { plays } = scoreboard({ sportsProps: [...Array.from({ length: 9 }, (_, i) => rec(i)), rec('r', { kind: 'gap-odd' })] });
   const ranked = bestPlays({ sportProps: flagged, plays }, { now: NOW }).rows.filter(r => r.kind === 'sportsProp');
   assert.deepEqual(ranked.map(r => r.verdict), ['promising', 'promising']);
