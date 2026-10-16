@@ -1,0 +1,12 @@
+https://sportsbook-nash.draftkings.com/api/sportscontent/dkusnj/v1/leagues/42133
+https://sportsbook-nash.draftkings.com/sites/US-NJ-SB/api/sportscontent/controldata/league/leagueData/v1/markets?isBatchable=false&templateVars=42133&eventsQuery=%24filter%3DleagueId%20eq%20%2742133%27%20AND%20clientMetadata%2FSubcategories%2Fany%28s%3A%20s%2FId%20eq%20%274525%27%29&marketsQuery=%24filter%3DclientMetadata%2FsubCategoryId%20eq%20%274525%27%20AND%20tags%2Fall%28t%3A%20t%20ne%20%27SportcastBetBuilder%27%29&include=Events&entity=events
+https://sportsbook.draftkings.com/sites/US-NJ-SB/api/v5/eventgroups/42133?format=json
+https://sportsbook-nash-usnj.draftkings.com/sites/US-NJ-SB/api/v5/eventgroups/42133?format=json
+https://sportsbook-nash.draftkings.com/api/sportscontent/dkusoh/v1/leagues/88808
+https://sportsbook.draftkings.com/leagues/hockey/nhl {"accept":"text/html"}
+https://www.hardrock.bet/ {"accept":"text/html"}
+https://app.hardrock.bet/ {"accept":"text/html"}
+https://app.hardrock.bet/sport/ice-hockey {"accept":"text/html"}
+https://www.hardrockbet.com/ {"accept":"text/html"}
+https://api.hardrocksportsbook.com/java-graphql/graphql {"noscan":true}
+https://api.hardrock.bet/ {"noscan":true}
