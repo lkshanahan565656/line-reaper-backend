@@ -10,8 +10,10 @@ const { canonName, canonMarket } = require('./ev');
 // PrizePicks splits halves, quarters, periods and specials into leagues of
 // their own ("NFL1H", "NHL1P", "NBAP"). Each becomes its base sport, with the
 // period carried on the stat so a first-half line never meets a full-game one.
+// Every quarter, half and period ("NFL4Q" read as plain NFL priced a fourth
+// quarter's 9.5 receiving yards off Kalshi's full-game ladder, 10-16).
 const PP_LEAGUES = [
-  [/^(.+?)1H$/, '1H '], [/^(.+?)2H$/, '2H '], [/^(.+?)1Q$/, '1Q '], [/^(.+?)1P$/, '1P '],
+  [/^(.+?)([12]H|[1-4]Q|[1-3]P)$/, null],
   [/^(.+?)SZN$/, 'Season '], [/^(.+?)LIVE$/, ''], [/^(NBA|WNBA|NHL|NFL|MLB)P$/, ''],
 ];
 const SPORT_ALIASES = { CS2: 'CS', CSGO: 'CS', LOL: 'LOL', 'LEAGUE OF LEGENDS': 'LOL', VALORANT: 'VAL', DOTA2: 'DOTA',
@@ -22,14 +24,14 @@ function boardSport(sport) {
   let s = String(sport || '').toUpperCase().trim(), prefix = '';
   for (const [re, p] of PP_LEAGUES) {
     const m = re.exec(s);
-    if (m && m[1].length >= 2) { s = m[1]; prefix = p; break; }
+    if (m && m[1].length >= 2) { s = m[1]; prefix = p ?? `${m[2]} `; break; }
   }
   return { sport: SPORT_ALIASES[s] || s, prefix };
 }
 
 // "1H Rec Yards" and a PP NFL1H "Receiving Yards" both key as 1h|rec_yds
 // (Underdog's NBA season-long lines say "Regular Season Points Per Game", PrizePicks' NBASZN "Season ...")
-const PERIOD = /^(1h|2h|1q|2q|3q|4q|1p|1st half|first half|1st quarter|1st period|regular season|season)\s+/i;
+const PERIOD = /^(1h|2h|1q|2q|3q|4q|1p|2p|3p|1st half|first half|1st quarter|1st period|regular season|season)\s+/i;
 const PERIOD_KEY = { '1st half': '1h', 'first half': '1h', '1st quarter': '1q', '1st period': '1p', 'regular season': 'season' };
 // The apps name the same tennis, fight and soccer stats differently
 // (PrizePicks "Total Games Won" is Underdog's "Games Won", Sleeper's "Knockout
@@ -361,21 +363,22 @@ function legSource(row, c) {
   const src = new Set((row.consensus?.sources || []).map(s => s.book));
   if (row.pinnacle || src.has('pinnacle')) return 'pinnacle';
   if (c.fair != null || src.has('kalshi')) return 'kalshi';
-  if (row.consensus || row.bookFair || row.sharpBooks?.length) return 'books';
+  if (row.consensus || row.bookFair || row.bookConsensus || row.sharpBooks?.length) return 'books';
   if (row.nBooks > 1) return 'apps';
   return 'none';
 }
-const blank = () => ({ legs: 0, sharp: 0, pinnacle: 0, kalshi: 0, books: 0, apps: 0, none: 0, bookFair: 0 });
+const blank = () => ({ legs: 0, sharp: 0, pinnacle: 0, kalshi: 0, books: 0, apps: 0, none: 0, bookFair: 0, bookCons: 0 });
 // → { total, leagues: { NFL: {...} }, byApp: { underdog: { NFL: {...} } },
 //     markets: [{ sport, market, mkey, legs, sharp, ..., never }] }
 function coverage(rows) {
   const total = blank(), leagues = {}, byApp = {}, markets = new Map();
-  // bookFair: of the 'books' legs, those FanDuel or BetRivers price alone (grey on the board)
-  const add = (o, k, bf) => { o.legs++; o[k]++; if (k === 'pinnacle' || k === 'kalshi') o.sharp++; if (bf) o.bookFair++; };
+  // bookFair: of the 'books' legs, those FanDuel or BetRivers price alone (grey on the board);
+  // bookCons: those three or more books price at the app's own number (grey too)
+  const add = (o, k, bf) => { o.legs++; o[k]++; if (k === 'pinnacle' || k === 'kalshi') o.sharp++; if (bf === 'consensus') o.bookCons++; else if (bf) o.bookFair++; };
   for (const r of rows || []) {
     if (r.esports) continue;
     for (const [book, c] of Object.entries(r.books || {})) {
-      const k = legSource(r, c), bf = !!c.ev?.bookFair;
+      const k = legSource(r, c), bf = c.ev?.bookFair || null;
       add(total, k, bf);
       add(leagues[r.sport] ||= blank(), k, bf);
       add((byApp[book] ||= {})[r.sport] ||= blank(), k, bf);
@@ -391,7 +394,7 @@ function coverage(rows) {
 function redactRow(r) {
   const books = {};
   for (const [k, c] of Object.entries(r.books)) books[k] = { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen };
-  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null };
+  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null };
 }
 
 module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };

@@ -95,3 +95,19 @@ test('scoreboard: by book and kind, graded toward 50, ungraded rows say not grad
   assert.equal(b.byKind['props-gap-odd'], undefined, 'research rows are not plays');
   assert.equal(b.rows.find(r => r.kind === 'ev' && r.book === 'betrivers').bookName, 'BetRivers');
 });
+
+test('proven: one kind on one book we read ourselves; pooled totals and copied books stop at promising (10-16)', () => {
+  const ev = (n, book, o = {}) => Array.from({ length: n }, (_, i) => ({ id: `${book}${i}${o.source || ''}`, status: 'closed', book, source: 'sharp', event: `G${i}`, start: START,
+    closeOk: true, clv: 2 + (i % 3), execClv: 1.5 + (i % 3), flaggedAt: START, sport: 'nhl', market: 'shots_on_goal', ...o }));
+  const b = closeBoard.scoreboard({ ev: [...ev(55, 'betrivers'), ...ev(60, 'hardrock')] });
+  assert.equal(b.rows.find(r => r.kind === 'ev' && r.book === 'betrivers').mark, 'proven');
+  assert.equal(b.byBook.betrivers.mark, 'proven', 'through its own main lines');
+  assert.equal(b.rows.find(r => r.kind === 'ev' && r.book === 'hardrock').mark, 'promising', 'a copied price');
+  assert.equal(b.byBook.hardrock.mark, 'promising');
+  assert.equal(b.overall.mark, 'promising', 'the pool is never proof');
+  assert.equal(b.byKind.ev.mark, 'promising', 'a kind pools its books');
+  // 30 main lines and 30 alt lines on one book: 60 games, but no one kind has 50
+  const mixed = closeBoard.scoreboard({ ev: ev(30, 'betrivers'), alt: ev(30, 'betrivers', { source: 'alt', event: undefined, group: 'x' }).map((x, i) => ({ ...x, group: `A${i}` })) });
+  assert.equal(mixed.byBook.betrivers.graded, 60);
+  assert.equal(mixed.byBook.betrivers.mark, 'promising');
+});
