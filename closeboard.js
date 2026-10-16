@@ -70,13 +70,16 @@ const KINDS = {
   'props-book-fair-single': "Pick'em vs one book (FanDuel or BetRivers)",
   'props-p6-book-fair': 'Pick6 vs FanDuel + BetRivers',
   'props-p6-book-fair-single': 'Pick6 vs one book',
+  // three or more sportsbooks at the app's own number, where nothing sharp prices it
+  'props-book-consensus': "Pick'em vs 3+ books' consensus",
+  'props-p6-book-consensus': "Pick6 vs 3+ books' consensus",
   'bigmoney': 'Big money',
 };
 
 const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
-const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single']);
+const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
 const day = t => String(t || '').slice(0, 10);
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }

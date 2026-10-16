@@ -23,6 +23,13 @@ test('PrizePicks period leagues fold into their sport with the period on the sta
   assert.deepStrictEqual(B.boardSport('CS2'), { sport: 'CS', prefix: '' });
   assert.deepStrictEqual(B.boardSport('UCL'), { sport: 'SOCCER', prefix: '' });
   assert.strictEqual(B.normLine(pp({ sport: 'NFL1H' })).market, '1H Receiving Yards');
+  // every quarter and period, not only the first (a PP NFL4Q leg was priced off the full game, 10-16)
+  assert.deepStrictEqual(B.boardSport('NFL4Q'), { sport: 'NFL', prefix: '4Q ' });
+  assert.deepStrictEqual(B.boardSport('NBA2Q'), { sport: 'NBA', prefix: '2Q ' });
+  assert.deepStrictEqual(B.boardSport('NHL3P'), { sport: 'NHL', prefix: '3P ' });
+  assert.deepStrictEqual(B.boardSport('CFB2H'), { sport: 'CFB', prefix: '2H ' });
+  assert.strictEqual(B.sportMarketKey(B.normLine(pp({ sport: 'NFL4Q' })).market), '4q|rec_yds');
+  assert.strictEqual(B.sportMarketKey(B.normLine(pp({ sport: 'NHL3P' })).market), '3p|rec_yds');
 });
 
 test('one row per player and stat, a cell per book; Sleeper borrows a start time', () => {

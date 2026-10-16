@@ -3621,7 +3621,7 @@ function renderPropsRecord() {
   const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
   const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
   const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
-  const KN = { 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
+  const KN = { 'book-consensus': '3+ books\' consensus (lead, not sharp)', 'p6-book-consensus': 'DK Pick6 vs 3+ books', 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
   const kinds = ['sharp', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-ev', 'p6-gap'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
@@ -3668,7 +3668,7 @@ function pbCoverage() {
   const one = s !== 'ALL' && s !== 'SPORTS' ? (book ? cov.byApp?.[book]?.[s] : cov.leagues[s]) : null;
   if (one) {
     const app = book ? ` on ${PB_BOOKS.find(x => x[0] === book)?.[1] || book}` : '';
-    const parts = [one.pinnacle ? `Pinnacle ${n(one.pinnacle)}` : '', one.kalshi ? `Kalshi ${n(one.kalshi)}` : '', one.books ? `${n(one.books)} more with sportsbooks only, not counted${one.bookFair ? `; ${n(one.bookFair)} of them priced grey off FanDuel or BetRivers alone` : ''}` : ''].filter(Boolean).join(', ');
+    const parts = [one.pinnacle ? `Pinnacle ${n(one.pinnacle)}` : '', one.kalshi ? `Kalshi ${n(one.kalshi)}` : '', one.books ? `${n(one.books)} more with sportsbooks only, not counted${one.bookCons ? `; ${n(one.bookCons)} of them priced grey off 3+ books at the same number` : ''}${one.bookFair ? `; ${n(one.bookFair)} priced grey off FanDuel or BetRivers alone` : ''}` : ''].filter(Boolean).join(', ');
     if (pbCover.sport !== s) { pbCover.never = null; pbCoverNever(s); }
     const never = pbCover.sport === s && pbCover.never?.length ? ` No sharp market lists ${pbCover.never.slice(0, 8).join(', ')}${pbCover.never.length > 8 ? ', …' : ''}.` : '';
     el.innerHTML = `<b>${escAttr(s)}${app}: ${n(one.sharp)} of ${n(one.legs)} legs sharp-priced</b>${parts ? ` (${parts})` : ''}.${never}`;
@@ -3751,7 +3751,7 @@ function lnRow(r, book) {
   const moved = r.best?.stale && r.best.book === book;
   const closed = c.overOpen === false || c.underOpen === false;
   const dot = moved || closed ? `<i title="${moved ? `The books moved ${r.best.stale.pts} pts and this line stood still` : `Only ${c.overOpen === false ? 'the under' : 'the over'} is open`}"></i>` : '';
-  const fairLine = r.esports ? r.model?.proj : r.consensus?.mean ?? (ev?.bookFair ? r.bookFair?.mean : null);
+  const fairLine = r.esports ? r.model?.proj : r.consensus?.mean ?? (ev?.bookFair === 'consensus' ? ev.mean : ev?.bookFair ? r.bookFair?.mean : null);
   const prob = ev?.fair ?? (r.esports && r.model?.prob != null ? r.model.prob : null);
   const minEv = pbState.data?.lines?.minEv ?? 2;
   // green only on a sharp price (the books' consensus, or the esports model) with the side open
@@ -3765,9 +3765,10 @@ function lnRow(r, book) {
   const mult = book === 'prizepicks' ? null : ev ? (ev.side === 'Over' ? c.over : c.under) : null;
   const multTxt = book === 'prizepicks' ? 'Std' : mult != null ? `${(+mult).toFixed(2)}x` : '—';
   const h2 = r.model?.h2h;
-  const src = h2 ? `our matchup model: his ${h2.share}% share of the ${h2.teamKills} kills his team makes a map${h2.vs ? ` against ${h2.vs}` : ''}, over ${h2.maps} maps (his own average ${h2.own})${r.model.pin ? `; Pinnacle says ${r.model.pin.proj}` : ''}` : r.model?.share?.rounds ? `Pinnacle rounds ${r.model.share.rounds.join(' + ')} × his ${(+r.model.share.kpr).toFixed(2)} kills a round` : r.model?.share ? `Pinnacle team kills ${(r.model.share.pinPerMap || []).join(' + ')} × his ${r.model.share.pct}% kill share` : r.esports ? 'our esports model' : ev?.bookFair ? `${pbSrcTxt(r.bookFair?.sources)} alone, vig out (a book's price, not a sharp one)` : (r.consensus?.sources || []).filter(x => !x.shadow).map(x => PB_SRC[x.book] || x.book).join(' + ') || (r.pinnacle ? 'Pinnacle' : c.fair != null ? 'Kalshi' : 'the other apps');
+  const src = h2 ? `our matchup model: his ${h2.share}% share of the ${h2.teamKills} kills his team makes a map${h2.vs ? ` against ${h2.vs}` : ''}, over ${h2.maps} maps (his own average ${h2.own})${r.model.pin ? `; Pinnacle says ${r.model.pin.proj}` : ''}` : r.model?.share?.rounds ? `Pinnacle rounds ${r.model.share.rounds.join(' + ')} × his ${(+r.model.share.kpr).toFixed(2)} kills a round` : r.model?.share ? `Pinnacle team kills ${(r.model.share.pinPerMap || []).join(' + ')} × his ${r.model.share.pct}% kill share` : r.esports ? 'our esports model' : ev?.bookFair === 'consensus' ? `${pbSrcTxt(ev.books)} at this same number, vig out (${ev.n} books' price, not a sharp one)` : ev?.bookFair ? `${pbSrcTxt(r.bookFair?.sources)} alone, vig out (a book's price, not a sharp one)` : (r.consensus?.sources || []).filter(x => !x.shadow).map(x => PB_SRC[x.book] || x.book).join(' + ') || (r.pinnacle ? 'Pinnacle' : c.fair != null ? 'Kalshi' : 'the other apps');
   const nBooks = r.esports ? 0 : (r.consensus?.sources || []).length;
   const booksChip = nBooks >= 2 ? `<span class="ln-pin ln-bk" title="${escAttr(pbBooksTxt(r.consensus.sources))}">${nBooks} BK</span>`
+    : ev?.bookFair === 'consensus' ? `<span class="ln-pin ln-bf" title="${escAttr(`${pbBooksTxt(ev.books)}. No sharp book posts this prop, so this is ${ev.n} sportsbooks' own price at this exact number: a lead with its own record, not graded yet`)}">${ev.n} BOOKS</span>`
     : ev?.bookFair && r.bookFair ? `<span class="ln-pin ln-bf" title="${escAttr(`${pbBooksTxt(r.bookFair.sources)}. No sharp book posts this prop, so this is the books' own price: a lead with its own record, not graded yet${ev.bookFair === 'single' ? '; one book only, shown and not counted' : ''}`)}">${r.bookFair.sources.map(x => ({ fanduel: 'FD', betrivers: 'BR' })[x.book] || x.book).join('+')}</span>` : '';
   const key = `${r.key}|${book}|${c.line}`;
   const used = lnUsed.keys.has(key);

@@ -4588,7 +4588,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.138.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.139.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5392,6 +5392,8 @@ function sportFairAt(row, book, line, kind) {
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a book-fair leg closes on the books' own fair at its line (and on
   // Pinnacle's or Kalshi's, sportSharpAt, when one appears before the start)
+  // a book-consensus leg closes on the same three-plus books at its own line
+  if (kind === 'book-consensus') { const f = sportProps.bookConsensusAt(bookLineQuotes(row), line); return f ? f.p : null; }
   if (kind === 'book-fair' || kind === 'book-fair-single') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row).filter(q => BOOK_FAIR_BOOKS.includes(q.book)), o: BOOK_FAIR_OPTS }); return f ? f.p : null; }
   // a stale-line leg closes on what it was flagged on: Pinnacle's own fair at its line
   if (kind === 'stale' || kind === 'stale-single') return staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line);
@@ -5441,6 +5443,21 @@ const BOOK_FAIR_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_FAIR ||
 const bookFairKind = sportProps.bookFairKind;
 const bookFairLineDiffers = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairLineDiffers(row, sharp, { dfsEv: dfsLegEv, o: BOOK_FAIR_OPTS }) : null);
 const bookFairPlays = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairPlays(row, sharp, { dfsEv: dfsLegEv, o: BOOK_FAIR_OPTS }) : []);
+// ── BOOK CONSENSUS: three or more sportsbooks at the app's own number ──
+// (sportprops.bookConsensusPlays) Where nothing sharp prices a leg, every book
+// we read (FanDuel, BetRivers and Action Network's seven) that posts the same
+// stat at the same line, the outliers dropped. Kind 'book-consensus': grey on
+// PROPS, never in Best Plays or alerts, its own record judged on the same
+// consensus at the close, until about 50 graded legs say whether it is an edge.
+// BOOK_CONSENSUS=off turns it off.
+const BOOK_CONS_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_CONSENSUS || '').trim());
+// every book quote on the row's player and stat in the same game, at every line it hangs
+function bookLineQuotes(row, slackMs = 3 * 3600e3) {
+  if (!(Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)) return [];
+  const t = Date.parse(row?.startTime || '');
+  return (bookPropsIndex.get(row?.key) || []).filter(q => t && Math.abs(Date.parse(q.start) - t) <= slackMs);
+}
+const bookConsensusPlays = row => (BOOK_CONS_ON ? sportProps.bookConsensusPlays(row, bookLineQuotes(row), { dfsEv: dfsLegEv }) : []);
 function priceSportRows(rows) {
   const flagged = [];
   for (const row of rows) {
@@ -5460,6 +5477,11 @@ function priceSportRows(rows) {
     const bfPlays = cplays.length || pin || kalshi.size ? [] : bookFairPlays(row, sharp);
     if (bfPlays.length) row.bookFair = { n: bfPlays[0].n, mean: bfPlays[0].mean, spreadPts: bfPlays[0].spreadPts, sources: bfPlays[0].sources.map(({ book, line, p }) => ({ book, line, p })) };
     else delete row.bookFair;
+    // three or more books at the app's own number: a lead of its own, recorded at +2%
+    const bcPlays = cplays.length || pin || kalshi.size ? [] : bookConsensusPlays(row);
+    if (bcPlays.length) row.bookConsensus = { n: bcPlays[0].n, line: bcPlays[0].line, mean: bcPlays[0].mean, sources: bcPlays[0].sources };
+    else delete row.bookConsensus;
+    for (const p of bcPlays) if (p.ev >= SHARP_OPTS.minEv) flagged.push({ row, play: p, kind: 'book-consensus' });
     // both books: the +2% plays; one book alone: every leg's better side, so a
     // FanDuel-only price can be judged on its close (recorded, never a play)
     const bfSeen = new Set();
@@ -5493,16 +5515,19 @@ function priceSportRows(rows) {
     for (const [book, c] of Object.entries(row.books)) {
       const cons = cplays.filter(p => p.book === book);
       const mine = cons.length ? cons : plays.filter(p => p.book === book && p.sharpEv != null);   // a Pinnacle or Kalshi price within reach of this line
-      const bf = mine.length ? null : bfPlays.find(p => p.book === book);
+      // the books' consensus at this app's own number before FanDuel or BetRivers read along a curve
+      const bc = mine.length ? null : bcPlays.find(p => p.book === book);
+      const bf = mine.length || bc ? null : bfPlays.find(p => p.book === book);
       // without a consensus the cell shows the sharp prices' own number (the
       // other apps' lines left out of it) where there is one
       const sh = cons.length ? null : mine.filter(p => p.sharpEv != null).sort((x, y) => y.sharpEv - x.sharpEv)[0];
       if (sh) c.ev = { side: sh.side, ev: sh.sharpEv, fair: +(sh.sharpFair * 100).toFixed(1) };
       else if (mine.length) c.ev = { side: mine[0].side, ev: mine[0].ev, fair: +(mine[0].fair * 100).toFixed(1), ...(cons.length ? { consensus: true } : {}) };
+      else if (bc) c.ev = { side: bc.side, ev: bc.ev, fair: +(bc.fair * 100).toFixed(1), bookFair: 'consensus', n: bc.n, mean: bc.mean, books: bc.sources };
       else if (bf) c.ev = { side: bf.side, ev: bf.ev, fair: +(bf.fair * 100).toFixed(1), bookFair: bf.n >= 2 ? 'both' : 'single' };
       else if (c.fair == null) delete c.ev;
       // the books post this prop at another number than the app's: no price, and the row says so
-      if (!c.ev && !cplays.length && !pin && !kalshi.size) {
+      if (!c.ev && !cplays.length && !pin && !kalshi.size && !bc) {
         const d = bookFairLineDiffers({ ...row, books: { [book]: c } }, sharp);
         if (d) c.lineDiffers = d; else delete c.lineDiffers;
       } else delete c.lineDiffers;
@@ -5527,6 +5552,11 @@ function priceSportRows(rows) {
       const { p, kind } = best;
       row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: p.sources.some(x => x.book === 'pinnacle') ? 'pinnacle' : p.sources.some(x => x.book === 'kalshi') ? 'kalshi' : 'gap', kind,
         n: p.n, mean: p.mean, ...(p.gap ? { gap: p.gap } : {}) };
+    } else if (bcPlays.length && !pin && !(row.best && row.best.source === 'kalshi')) {
+      // three or more books' price only: grey, never green, its own kind
+      const p = bcPlays[0];
+      row.best = { book: p.book, side: p.side, ev: p.ev, fair: +(p.fair * 100).toFixed(1), line: p.line, source: 'books', kind: p.ev >= SHARP_OPTS.minEv ? 'book-consensus' : null,
+        n: p.n, mean: p.mean, sources: p.sources, ...(p.entry ? { entry: p.entry, entries: p.entries } : {}) };
     } else if (bfPlays.length && !pin && !(row.best && row.best.source === 'kalshi')) {
       // the books' fair only: grey, never green, its own kind
       const p = bfPlays[0];
@@ -6666,7 +6696,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.138.0',
+  version: '3.139.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
