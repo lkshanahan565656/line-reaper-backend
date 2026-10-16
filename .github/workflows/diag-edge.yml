@@ -7,10 +7,11 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # run 2026-10-16 d
+    timeout-minutes: 15  # run 2026-10-16 e
     steps:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 60); do curl -s $U/api/status | grep -q '3.139.0' && break; sleep 20; done
           mkdir out; cd out
           g() { curl -s --max-time 120 "$U$1" > "$2"; echo "$2 $(wc -c < $2)"; }
           g /api/status status.json
