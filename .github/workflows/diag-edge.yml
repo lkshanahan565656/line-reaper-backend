@@ -7,7 +7,7 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # run 2026-10-16 c
+    timeout-minutes: 15  # run 2026-10-16 d
     steps:
       - run: |
           U=https://line-reaper-backend-production.up.railway.app
@@ -32,6 +32,11 @@ jobs:
           g '/api/ev/record/bets?limit=500&alt=1&status=closed' alt-bets.json
           g '/api/ev/record/bets?limit=500&stale=1' stale-bets.json
           g /api/ev ev-now.json
+          g '/api/props/record/picks?limit=1000&status=locked' picks-locked.json
+          g '/api/props/record/picks?limit=1000&status=graded' picks-graded.json
+          g '/api/props/record/picks?limit=1000&status=open' picks-open.json
+          g '/api/props/record/picks?limit=1000&status=void' picks-void.json
+          g '/api/ev/record/bets?limit=500&status=open' ev-open.json
           g /api/props/board props-board.json
           date -u +%FT%TZ > at.txt
           cd ..
