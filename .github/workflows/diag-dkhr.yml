@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm i --no-save playwright-core@1.47.2
       - run: mkdir -p out && timeout 1200 node diag/run.js || true
       - run: |
           git config user.name diag-bot
