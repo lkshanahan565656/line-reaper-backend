@@ -22,7 +22,7 @@ const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
 const RESEARCH = new Set(['gap-odd', 'gap-stale']);
 // FanDuel and BetRivers alone (no Pinnacle, no Kalshi): a lead of its own,
 // never in the headline (the apps' margin against the soft books, not an edge)
-const BOOK_FAIR = new Set(['book-fair', 'book-fair-single']);
+const BOOK_FAIR = new Set(['book-fair', 'book-fair-single', 'book-consensus']);
 const PP_IMPLIED = 0.5622, UD_IMPLIED = 0.5623, UD_DECIMAL = 1.35, P6_BE = 0.5503;
 // Pick6 legs carry their own kinds (p6-sharp, p6-gap, ...): the same play, its own record
 const baseKind = k => String(k || '').replace(/^p6-/, '');
@@ -57,7 +57,9 @@ function legDecimal(book, mult) {
 // a stale-line leg keeps its own id, so the same leg flagged on the consensus
 // and as stale lands in both records
 const STALE = new Set(['stale', 'stale-single', 'p6-stale', 'p6-stale-single']);
-const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${STALE.has(kind) ? `|${kind}` : ''}`;
+// a book-consensus leg too: the same leg can be a sharp or book-fair play and a consensus one
+const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus']);
+const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
 function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
@@ -159,8 +161,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await Promise.all(writes);
   }
 
-  // Locked rows a few hours past the start go to the grader
-  async function grade({ afterMs = 3.5 * 3600e3, max = 60 } = {}) {
+  // Locked rows a few hours past the start go to the grader. A leg whose box
+  // score had nothing yet waits retryMs before it is tried again, so a few
+  // dozen stuck legs (a player the box never lists) can't use up every run's
+  // budget while a Sunday's fresh legs queue behind them.
+  const triedAt = new Map();
+  async function grade({ afterMs = 3.5 * 3600e3, max = 60, retryMs = 30 * 60e3 } = {}) {
     await loaded;
     if (!grader) return { graded: 0 };
     const t = now();
@@ -170,18 +176,20 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       // a stat no results source carries isn't tried (it would use up the
       // budget every run); it voids when the others would
       const can = !grader.canGrade || grader.canGrade(b);
-      if (can && tried++ >= max) continue;
+      const waiting = can && t - (triedAt.get(b.id) || 0) < retryMs && t - Date.parse(b.start) <= voidAfterMs;
+      if (waiting || (can && tried++ >= max)) continue;
+      if (can) triedAt.set(b.id, t);
       let g = null;
       if (can) try { g = await grader.grade(b); } catch (e) { log.warn?.(`Sports grader: ${e.message}`); continue; }
       if (g && !g.pending && g.outcome) {
         Object.assign(b, { status: 'graded', result: g.result, outcome: g.outcome, eventId: g.eventId || null, gradeSource: g.source || 'espn', gradedAt: new Date(t).toISOString(),
           profit: g.outcome === 'win' ? r4(b.signalDecimal - 1) : g.outcome === 'loss' ? -1 : 0 });
-        open.delete(b.id); graded++;
+        open.delete(b.id); triedAt.delete(b.id); graded++;
         await put(b);
       } else if (g?.void || t - Date.parse(b.start) > voidAfterMs) {
         // a retirement, walkover or no contest voids at once, as the apps void it
         Object.assign(b, { status: 'void', voidReason: g?.void || (!can ? 'no results source' : g?.pending ? 'never final' : 'no box score line'), gradedAt: new Date(t).toISOString() });
-        open.delete(b.id); voided++;
+        open.delete(b.id); triedAt.delete(b.id); voided++;
         await put(b);
       }
     }

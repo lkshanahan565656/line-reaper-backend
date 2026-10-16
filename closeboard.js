@@ -23,6 +23,13 @@
 // is the flag EV again, so those kinds are shown but never marked or counted
 // in a book's total.
 //
+// Proven is narrower still: one kind of play on one book we read ourselves.
+// The headline pools every book and kind, a book's total pools its kinds
+// (main lines with big money and esports), and a book seen only through Action
+// Network's copy has never had its price checked at the book: all three stop at
+// promising, however good the numbers (10-16, when Hard Rock's copied NHL
+// prices and the pooled total first read "proven").
+//
 // A public page may claim only what this marks proven. Book arbs aren't here:
 // a locked arb has no close to beat (its record grades fills, /api/book-arbs/record).
 
@@ -63,13 +70,16 @@ const KINDS = {
   'props-book-fair-single': "Pick'em vs one book (FanDuel or BetRivers)",
   'props-p6-book-fair': 'Pick6 vs FanDuel + BetRivers',
   'props-p6-book-fair-single': 'Pick6 vs one book',
+  // three or more sportsbooks at the app's own number, where nothing sharp prices it
+  'props-book-consensus': "Pick'em vs 3+ books' consensus",
+  'props-p6-book-consensus': "Pick6 vs 3+ books' consensus",
   'bigmoney': 'Big money',
 };
 
 const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
-const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single']);
+const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
 const day = t => String(t || '').slice(0, 10);
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }
@@ -104,7 +114,7 @@ function clusterBets(lines) {
         profit: won.length ? won.reduce((a, b) => a + b.profit, 0) : null, staked: won.reduce((a, b) => a + b.staked, 0) } };
   });
 }
-function stats(plays, { noMark = false } = {}) {
+function stats(plays, { noMark = false, cap = false } = {}) {
   const lines = plays.filter(p => p.state === 'ok' && p.clv != null);
   const g = clusterBets(lines);
   const ex = g.filter(p => p.exec != null);
@@ -113,7 +123,7 @@ function stats(plays, { noMark = false } = {}) {
   if (noMark) mark = 'no sharp close';
   else if (g.length) {
     mark = results.score(g.map(p => p.bet)).verdict;
-    if (mark === 'proven' && g.length < TARGET) mark = 'promising';
+    if (mark === 'proven' && (g.length < TARGET || cap)) mark = 'promising';
   }
   return {
     recorded: plays.length, open: plays.filter(p => p.state == null).length,
@@ -151,13 +161,16 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   const order = (a, b) => (a.mark === 'no sharp close') - (b.mark === 'no sharp close') || b.graded - a.graded || b.recorded - a.recorded;
   const rows = [...group(p => `${p.kind}|${p.book}`)].map(([k, l]) => {
     const [kind, book] = k.split('|');
-    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind) }) };
+    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind), cap: RELAYED.has(book) }) };
   }).sort(order);
-  const byBook = Object.fromEntries([...group(p => p.book, sharp)].map(([k, l]) => [k, { bookName: BOOK[k] || k, relayed: RELAYED.has(k), ...stats(l) }])
+  // a book's total is proven only through one of its own kinds
+  const provenBooks = new Set(rows.filter(r => r.mark === 'proven' && !BOOK_CLOSE.has(r.kind)).map(r => r.book));
+  const byBook = Object.fromEntries([...group(p => p.book, sharp)].map(([k, l]) => [k, { bookName: BOOK[k] || k, relayed: RELAYED.has(k), ...stats(l, { cap: !provenBooks.has(k) }) }])
     .sort((a, b) => order(a[1], b[1])));
-  const byKind = Object.fromEntries([...group(p => p.kind)].map(([k, l]) => [k, { kindLabel: KINDS[k] || k, ...stats(l, { noMark: NO_SHARP_CLOSE.has(k) }) }])
+  // a kind's total pools its books
+  const byKind = Object.fromEntries([...group(p => p.kind)].map(([k, l]) => [k, { kindLabel: KINDS[k] || k, ...stats(l, { noMark: NO_SHARP_CLOSE.has(k), cap: true }) }])
     .sort((a, b) => order(a[1], b[1])));
-  return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp), rows, byBook, byKind };
+  return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp, { cap: true }), rows, byBook, byKind };
 }
 
 module.exports = { scoreboard, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE };

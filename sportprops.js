@@ -446,6 +446,61 @@ function bookFairLineDiffers(row, quotes, opts = {}) {
 }
 const bookFairKind = p => (p.n >= 2 ? 'book-fair' : 'book-fair-single');
 
+// ── BOOK CONSENSUS ──
+// Where no sharp book prices a leg (college football and NHL props, mostly),
+// every sportsbook we read that posts the same stat at the app's own number:
+// FanDuel and BetRivers read direct, DraftKings, BetMGM, Caesars, bet365,
+// Fanatics, Hard Rock and theScore through Action Network. Each book's two
+// sides with its vig out (bookPropQuotes); a book more than outlierPts from
+// the books' median is dropped (Action Network relays stale and placeholder
+// prices, and Hard Rock's copied NHL shots sat 4 to 6 points off everyone on
+// 10-16); the fair is the rest's mean, and only with minBooks or more left.
+// Never read along a curve: a book at another number doesn't count. A lead,
+// kind 'book-consensus', judged on this same consensus at the close; never
+// sharp, never in Best Plays or alerts until 50 graded legs of its own.
+const BOOK_CONSENSUS = { minBooks: 3, outlierPts: 5, books: ['fanduel', 'betrivers', ...SOFT_BOOKS] };
+const median = a => { const x = [...a].sort((p, q) => p - q), m = x.length >> 1; return x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2; };
+// quotes: [{ book, line, pOver }] → { p, n, sources: [{ book, line, p }], dropped: [book] } or null
+function bookConsensusAt(quotes, line, o = BOOK_CONSENSUS) {
+  const per = new Map();
+  for (const q of quotes || []) {
+    if (!q || !o.books.includes(q.book) || q.line == null || Math.abs(q.line - line) > 1e-6 || !(q.pOver > 0 && q.pOver < 1)) continue;
+    if (!per.has(q.book)) per.set(q.book, q);
+  }
+  if (per.size < o.minBooks) return null;
+  const med = median([...per.values()].map(q => q.pOver));
+  const keep = [...per.values()].filter(q => Math.abs(q.pOver - med) * 100 <= o.outlierPts);
+  if (keep.length < o.minBooks) return null;
+  const p = keep.reduce((a, q) => a + q.pOver, 0) / keep.length;
+  return { p, n: keep.length, sources: keep.map(q => ({ book: q.book, line: q.line, p: +(q.pOver * 100).toFixed(1) })),
+    dropped: [...per.values()].filter(q => !keep.includes(q)).map(q => q.book) };
+}
+// Every open side of every app on a row, priced on the books' consensus at
+// that app's line. quotes: the row's book quotes at any line. → plays, best first
+// (consensusPlays' shape, with bookFair 'consensus' and n the books counted)
+function bookConsensusPlays(row, quotes, { dfsEv, o = BOOK_CONSENSUS } = {}) {
+  if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
+  const out = [];
+  for (const [book, c] of Object.entries(row.books || {})) {
+    const f = bookConsensusAt(quotes, c.line, o);
+    if (!f) continue;
+    const mean = meanFor(row.mkey, row.sport, c.line, f.p);
+    for (const side of ['Over', 'Under']) {
+      if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
+      const fair = side === 'Over' ? f.p : 1 - f.p;
+      const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+      let ev, decimal = null, entry = null, entries = null;
+      const fx = fixedLeg(book, fair, mult);
+      if (fx) ({ ev, decimal, entry, entries } = fx);
+      else ev = dfsEv(fair, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side);
+      if (ev == null || !Number.isFinite(ev)) continue;
+      out.push({ book, side, line: c.line, mult, fair: +fair.toFixed(4), ev: +ev.toFixed(2), decimal, entry, entries,
+        mean: mean == null ? null : +mean.toFixed(2), n: f.n, spreadPts: 0, sources: f.sources, dropped: f.dropped, bookFair: 'consensus' });
+    }
+  }
+  return out.sort((a, b) => b.ev - a.ev);
+}
+
 // Sportsbook props (freebooks' Odds API games) → [{ sport, key, book, line, pOver, start }]:
 // one no-vig quote per book, player, stat and game, in pinprops' row keys.
 // sportOf maps the feed's sport key (nfl) to the board's (NFL).
@@ -553,4 +608,4 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
 }
 
 module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
-  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
+  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, BOOK_CONSENSUS, bookConsensusAt, bookConsensusPlays, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

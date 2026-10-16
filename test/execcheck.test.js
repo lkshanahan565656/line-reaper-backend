@@ -105,7 +105,7 @@ test('evtrack: costs keyed by bet id grade one book of many; a scan a few second
 
 test('verdicts judge the 2-minute grade once 8 bets carry one', () => {
   const bet = (clv, exec) => ({ id: Math.random().toString(36), status: 'closed', flaggedAt: '2026-10-14T00:00:00Z', source: 'steam', sport: 'nba', book: 'kalshi', market: 'moneyline', clv, execClv: exec });
-  const good = Array.from({ length: 24 }, (_, i) => bet(3 + (i % 3), exec(i)));
+  const good = Array.from({ length: 54 }, (_, i) => bet(3 + (i % 3), exec(i)));
   function exec(i) { return -2 + (i % 3) * 0.5; }
   const s = R.scoreboard({ exchangeValue: good }).sources.exchangeValue.overall;
   assert.ok(s.avgClv > 0.03 && s.execClv < 0);

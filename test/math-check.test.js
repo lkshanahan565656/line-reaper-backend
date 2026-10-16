@@ -99,8 +99,8 @@ test('a verdict counts only the bets that carry the number it judges', () => {
   const s = score(bets);
   assert.equal(s.clvN, 3);
   assert.equal(s.verdict, 'early');
-  // 20 closing prices clearly beating the close is
-  const good = Array.from({ length: 20 }, (_, i) => ({ profit: null, staked: 0, clv: 0.03 + (i % 5) * 0.002 }));
+  // 50 closing prices clearly beating the close is
+  const good = Array.from({ length: 50 }, (_, i) => ({ profit: null, staked: 0, clv: 0.03 + (i % 5) * 0.002 }));
   assert.equal(score(good).verdict, 'proven');
   assert.equal(verdictOf({ n: 30, graded: 30, roi: -0.1, roiT: -1, avgClv: 0.02, clvN: 2, clvT: null }), 'avoid', 'too little CLV, so ROI leads');
 });
