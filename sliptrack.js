@@ -16,7 +16,9 @@ const { sportKey, statKind, spanToMaps, outcomeFor } = require('./tracker');
 
 const HOUR = 3600e3;
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const r1 = x => Math.round(x * 10) / 10;
 const r2 = x => Math.round(x * 100) / 100;
+const avg = xs => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 function legKey(l) {
   const day = l.startTime ? String(l.startTime).slice(0, 10) : 'nostart';
@@ -32,6 +34,57 @@ const slipId = s => (s.kind === 'stack'
 // a slip's payout on h hits, 1u staked
 function payout(row, hits) {
   return row.payTable?.[hits] ?? 0;
+}
+
+// The stack record: how often stacks swept against what they were priced at,
+// how the legs hit against their own prices, and how the legs closed.
+//   swept / expectedSwept / independentSwept: every leg won; the sum of the
+//     priced chance of that; the same if the legs had been independent.
+//   matches: distinct matches behind them (one match is logged once per app
+//     and side, so stacks overstate how much evidence there is).
+//   legs: how often the legs won against their average price, in points.
+//   close: each leg's chance at its own line just before the match (follow());
+//     move = average points it moved from its price, lineMoves / toward = legs
+//     whose line moved and how many moved our way (up for an OVER).
+// stacks that share a player on the same day are one match (the apps name
+// teams differently, so players join them)
+function countMatches(rows) {
+  const parent = rows.map((_, i) => i);
+  const find = i => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const seen = new Map();
+  rows.forEach((r, i) => {
+    for (const l of r.legs) {
+      const k = `${String(r.start || '').slice(0, 10)}|${norm(l.player)}`;
+      if (seen.has(k)) parent[find(i)] = find(seen.get(k)); else seen.set(k, i);
+    }
+  });
+  return new Set(rows.map((_, i) => find(i))).size;
+}
+function stackStats(graded, started) {
+  const legs = graded.flatMap(r => r.legs);
+  const won = legs.filter(l => l.outcome === 'win').length;
+  const priced = avg(legs.map(l => l.prob));
+  const startedLegs = started.flatMap(r => r.legs);
+  const closed = startedLegs.filter(l => l.closeProb != null);
+  const lineMoves = startedLegs.filter(l => l.closeLine != null && l.closeLine !== l.line);
+  return {
+    swept: graded.filter(r => r.hits === r.size).length,
+    expectedSwept: r2(graded.reduce((a, r) => a + (r.probAll || 0), 0)),
+    independentSwept: r2(graded.reduce((a, r) => a + r.legs.reduce((m, l) => m * l.prob / 100, 1), 0)),
+    matches: countMatches(graded),
+    legs: {
+      n: legs.length, won,
+      wonPct: legs.length ? r1(won / legs.length * 100) : null,
+      pricedPct: priced != null ? r1(priced) : null,
+      gap: legs.length ? r1(won / legs.length * 100 - priced) : null,
+    },
+    close: {
+      legs: closed.length,
+      move: closed.length ? r1(avg(closed.map(l => l.closeProb - l.prob))) : null,
+      lineMoves: lineMoves.length,
+      toward: lineMoves.filter(l => (l.side === 'OVER') === (l.closeLine > l.line)).length,
+    },
+  };
 }
 
 function createSlipTracker({
@@ -73,6 +126,33 @@ function createSlipTracker({
       };
       open.set(id, row);
       await store.put(row).catch(e => log.warn?.(`Slip tracker: ${e.message}`));
+    }
+  }
+
+  // Follow every open stack's legs on the board until its match starts, so each
+  // leg keeps its last price: the close. legNow(book, leg) → { line, prob } (prob
+  // in %) for that leg's side on that book now, or null when the board no longer
+  // carries it. A leg whose line moved keeps the new line and no price (its
+  // chance at the old number isn't on the board).
+  async function follow(legNow) {
+    await loaded;
+    const t = now();
+    for (const row of open.values()) {
+      if (row.kind !== 'stack' || !row.start || Date.parse(row.start) <= t) continue;
+      let changed = false;
+      for (const leg of row.legs) {
+        let q = null;
+        try { q = legNow(row.book, leg); } catch { q = null; }
+        if (!q || q.line == null) continue;
+        const closeProb = q.line === leg.line && Number.isFinite(q.prob) ? r1(q.prob) : null;
+        if (leg.closeLine !== q.line || leg.closeProb !== closeProb) {
+          leg.closeLine = q.line; leg.closeProb = closeProb; changed = true;
+        }
+      }
+      if (changed) {
+        row.closeAt = new Date(t).toISOString();
+        await store.put(row).catch(e => log.warn?.(`Slip tracker: ${e.message}`));
+      }
     }
   }
 
@@ -153,11 +233,20 @@ function createSlipTracker({
     const sRows = all.filter(isStack), sGraded = sRows.filter(r => r.status === 'graded');
     const sByBook = {};
     for (const b of [...new Set(sGraded.map(r => r.book))]) sByBook[b] = cut(sGraded.filter(r => r.book === b));
-    const stacks = { ...cut(sGraded), open: sRows.filter(r => r.status === 'open').length, void: sRows.filter(r => r.status === 'void').length, byBook: sByBook };
+    for (const b of Object.keys(sByBook)) {
+      const g = sGraded.filter(r => r.book === b);
+      Object.assign(sByBook[b], { swept: g.filter(r => r.hits === r.size).length, expectedSwept: r2(g.reduce((a, r) => a + (r.probAll || 0), 0)) });
+    }
+    const t = now();
+    const started = sRows.filter(r => r.status !== 'void' && r.start && Date.parse(r.start) <= t);
+    const stacks = {
+      ...cut(sGraded), ...stackStats(sGraded, started),
+      open: sRows.filter(r => r.status === 'open').length, void: sRows.filter(r => r.status === 'void').length, byBook: sByBook,
+    };
     return { ...cut(graded), open: rows.filter(r => r.status === 'open').length, void: rows.filter(r => r.status === 'void').length, byBook, stacks };
   }
   async function list() { await loaded; return store.all(); }
-  return { record, grade, summary, list, ready: () => loaded };
+  return { record, follow, grade, summary, list, ready: () => loaded };
 }
 
 module.exports = { createSlipTracker, slipId, legKey };

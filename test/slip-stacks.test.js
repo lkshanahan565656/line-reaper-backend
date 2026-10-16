@@ -114,3 +114,66 @@ test('factor model: Valorant teammates and opponents both lean together, weaker 
   assert.ok(val > 3 / 64 && val < cs, `${val} ${cs}`);
   assert.ok(S.slipHitsDistribution([leg('VAL', 'A', 0), leg('VAL', 'B', 0)])[2] > 0.25);
 });
+
+test('stacks carry the chance of a sweep if the legs were independent', () => {
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)));
+  const s = B.autoSlips(picks, { now: 0 }).stacks[0];
+  assert.ok(s.probAllIndependent > 0 && s.probAllIndependent < s.probAll);
+});
+
+test('stack close: a leg the board now leans against keeps following on every app', () => {
+  // market-path legs: the board prices only the side it leans to
+  const ud = (prob, side = 'OVER') => ({
+    sport: 'CS2', player: 'A0', team: 'A', side, gameId: 'G1', market: 'MAPS 1-2 Kills', startTime: '2099-01-01T00:00:00Z',
+    pricing: { books: { UD: { line: 29.5, prob }, SL: { line: 29.5, prob, mult: 1.8 } } }, udEv: 1, sleeperEv: 1,
+  });
+  const leg = { player: 'A0', gameId: 'G1', market: 'MAPS 1-2 Kills', side: 'OVER', line: 29.5 };
+  for (const book of ['UD', 'SL']) {
+    assert.equal(B.stackLegLookup([ud(0.51)])(book, leg).prob, 51);
+    const flipped = B.stackLegLookup([ud(0.56, 'UNDER')])(book, leg);
+    assert.equal(flipped.line, 29.5);
+    close(flipped.prob, 44, 1e-9);
+  }
+  // a whole-number line has a push, so the other side's chance isn't the rest
+  const whole = { ...ud(0.56, 'UNDER'), pricing: { books: { UD: { line: 29, prob: 0.56 } } } };
+  assert.equal(B.stackLegLookup([whole])('UD', { ...leg, line: 29 }), null);
+});
+
+test('stack record: sweeps against their price, legs against theirs, and the close', async () => {
+  const { createSlipTracker } = require('../sliptrack');
+  const { createMemoryStore } = require('../evtrack');
+  let t = 0;
+  const store = createMemoryStore();
+  const tr = createSlipTracker({ store, now: () => t });
+  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)));
+  const stack = B.autoSlips(picks, { now: 0 }).stacks[0];
+  await tr.record([stack]);
+  // before the start the board moves: one leg's chance rises at the same line, one leg's line moves up
+  const moved = picks.map(p => p.player === stack.picks[0].player ? { ...p, pricing: { ...p.pricing, books: { PP: { line: 29.5, prob: 0.58 } } } }
+    : p.player === stack.picks[1].player ? { ...p, pricing: { ...p.pricing, books: { PP: { line: 30.5, prob: 0.53 } } } } : p);
+  await tr.follow(B.stackLegLookup(moved));
+  const row = (await tr.list())[0];
+  assert.equal(row.legs[0].closeProb, 58);
+  assert.equal(row.legs[1].closeLine, 30.5);
+  assert.equal(row.legs[1].closeProb, null, 'a moved line has no price at the old number');
+  assert.equal(row.legs[2].closeProb, row.legs[2].prob);
+  // after the start nothing follows
+  t = Date.parse('2099-01-01T00:00:01Z');
+  await tr.follow(B.stackLegLookup(picks));
+  assert.equal((await tr.list())[0].legs[0].closeProb, 58);
+  // graded: every leg won
+  Object.assign(row, { status: 'graded', hits: row.size, profit: 36.5, gradedAt: new Date(t).toISOString() });
+  row.legs.forEach(l => { l.outcome = 'win'; });
+  await store.put(row);
+  const sum = (await tr.summary()).stacks;
+  assert.equal(sum.swept, 1);
+  close(sum.expectedSwept, +row.probAll.toFixed(2), 0.006);
+  assert.ok(sum.independentSwept < sum.expectedSwept);
+  assert.equal(sum.legs.n, row.size);
+  assert.equal(sum.legs.wonPct, 100);
+  assert.equal(sum.matches, 1);
+  assert.equal(sum.close.lineMoves, 1);
+  assert.equal(sum.close.toward, 1, 'an OVER line that rose moved our way');
+  assert.equal(sum.close.legs, row.size - 1, 'the leg whose line moved has no price at the old number');
+  assert.ok(sum.close.move > 0);
+});

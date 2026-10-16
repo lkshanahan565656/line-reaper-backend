@@ -2335,6 +2335,7 @@ async function generateEsportsPicks() {
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
   try { const built = autoSlips(picks, pick6SlipOpts(picks)); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
+  slipTracker.follow(stackLegLookup(picks)).catch(e => console.warn('Slip tracker: follow failed:', e.message));
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
   return picks;
@@ -2626,7 +2627,7 @@ async function warmCsProfiles(batch = 12) {
 // Storage: Postgres when DATABASE_URL is set (use this on Railway), otherwise
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
-const { autoSlips, priceOnBooks, bookLeg: slipBookLeg } = require('./slipbuild');
+const { autoSlips, priceOnBooks, bookLeg: slipBookLeg, stackLegLookup } = require('./slipbuild');
 // DK Pick6's esports cells for the Best Slips builder: the props board's Pick6 cell
 // for each esports pick it prices (a Pinnacle-based twin cell on the same number,
 // at Pick6's own payout). Empty unless PICK6=on and Pick6's esports lines are read,
@@ -4588,7 +4589,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.139.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.140.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6696,7 +6697,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.139.0',
+  version: '3.140.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

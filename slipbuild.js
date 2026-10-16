@@ -215,6 +215,25 @@ function stacksForBook(legs, book) {
   return best.sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev)).slice(0, STACKS_PER_BOOK);
 }
 
+// The board → (book, logged stack leg) → that leg's price on the book now, at
+// the book's current line: { line, prob in % } or null. The stack record follows
+// each leg with it until the match starts (sliptrack follow), for the close.
+function stackLegLookup(picks) {
+  const key = (player, gameId, market) => [norm(player), gameId ?? '', String(market || '').toLowerCase()].join('|');
+  const byKey = new Map((picks || []).map(p => [key(p.player, p.gameId, p.market), p]));
+  return (book, leg) => {
+    const p = byKey.get(key(leg.player, leg.gameId, leg.market));
+    if (!p) return null;
+    const q = bookLeg(p, book, { side: leg.side });
+    if (q) return { line: q.line, prob: q.prob * 100 };
+    // the board leans the other way now: on a half line the leg's chance is the
+    // rest, on any book (a fair chance, not a payout)
+    const o = bookLeg(p, book);
+    if (!o || o.side === leg.side || Math.abs(o.line % 1) !== 0.5) return null;
+    return { line: o.line, prob: (1 - o.prob) * 100 };
+  };
+}
+
 const BOOK_NAMES = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
 const TABLE_NAMES = {
   prizepicks_power: 'Power', prizepicks_flex: 'Flex', underdog_standard: 'Standard', underdog_flex: 'Flex', sleeper: 'Picks', pick6: 'Picks',
@@ -238,7 +257,9 @@ function present(book, s, kind = 'best') {
     // payout below it (correlated lineups) makes it a pass
     breakEvenPays: pays != null && s.breakEvenScale != null ? +(pays * s.breakEvenScale).toFixed(2) : null,
     matchTitle: kind === 'stack' ? [...new Set(s.picks.map(l => l.team).filter(Boolean))].join(' vs ') : undefined,
+
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
+    probAllIndependent: s.probAllIndependent != null ? +s.probAllIndependent.toFixed(4) : undefined,
     paysAll: pays != null ? +pays.toFixed(2) : null,
     // what 1u returns on each hit count, for grading (sliptrack.js)
     payTable: pays == null ? null : table === 'pick6' ? { ...s.payTable } : table === 'sleeper' || table === 'underdog_standard' || table === 'prizepicks_power' ? { [n]: +pays.toFixed(4) } : { ...PAYOUTS[table][n] },
@@ -288,4 +309,4 @@ function priceOnBooks(picks, sides = [], { pick6 = null, pick6Table = null } = {
   return out;
 }
 
-module.exports = { autoSlips, priceOnBooks, bookLeg, matchKey, priceOn, buildForBook, stacksForBook, otherSide, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };
+module.exports = { autoSlips, priceOnBooks, bookLeg, matchKey, priceOn, buildForBook, stacksForBook, otherSide, stackLegLookup, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };
