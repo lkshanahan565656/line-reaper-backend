@@ -215,20 +215,6 @@ function stacksForBook(legs, book) {
   return best.sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev)).slice(0, STACKS_PER_BOOK);
 }
 
-// The same stack if its legs hit GAP (a fraction: −0.08 is eight points) off
-// their prices, as the stack record says they have so far (sliptrack.js
-// legs.gap). Priced on the same table, so its breakEvenPays is the payout the
-// stack needs if the legs keep hitting like that.
-function atRecord(book, s, gap) {
-  if (!Number.isFinite(gap) || !gap) return null;
-  const legs = s.picks.map(l => {
-    const prob = Math.min(0.98, Math.max(0.02, l.prob + gap));
-    return { ...l, prob, shift: shiftTo(l, prob) };
-  });
-  const r = priceOn(book, legs).find(x => x.table === s.table);
-  return r ? { gap, ev: r.ev, probAll: r.probAll, breakEvenScale: r.breakEvenScale } : null;
-}
-
 // The board → (book, logged stack leg) → that leg's price on the book now, at
 // the book's current line: { line, prob in % } or null. The stack record follows
 // each leg with it until the match starts (sliptrack follow), for the close.
@@ -238,10 +224,13 @@ function stackLegLookup(picks) {
   return (book, leg) => {
     const p = byKey.get(key(leg.player, leg.gameId, leg.market));
     if (!p) return null;
-    let q = bookLeg(p, book, { side: leg.side });
-    // PrizePicks takes the other side of a half line too (otherSide)
-    if (!q && book === 'PP') { const o = bookLeg(p, book); q = o && o.side !== leg.side ? otherSide(o) : null; }
-    return q ? { line: q.line, prob: q.prob * 100 } : null;
+    const q = bookLeg(p, book, { side: leg.side });
+    if (q) return { line: q.line, prob: q.prob * 100 };
+    // the board leans the other way now: on a half line the leg's chance is the
+    // rest, on any book (a fair chance, not a payout)
+    const o = bookLeg(p, book);
+    if (!o || o.side === leg.side || Math.abs(o.line % 1) !== 0.5) return null;
+    return { line: o.line, prob: (1 - o.prob) * 100 };
   };
 }
 
@@ -268,12 +257,9 @@ function present(book, s, kind = 'best') {
     // payout below it (correlated lineups) makes it a pass
     breakEvenPays: pays != null && s.breakEvenScale != null ? +(pays * s.breakEvenScale).toFixed(2) : null,
     matchTitle: kind === 'stack' ? [...new Set(s.picks.map(l => l.team).filter(Boolean))].join(' vs ') : undefined,
-    // a stack priced again at the legs' record so far (atRecord), when there is one
-    atRecord: s.atRecord ? {
-      gap: +(s.atRecord.gap * 100).toFixed(1), ev: s.atRecord.ev, probAll: +s.atRecord.probAll.toFixed(4),
-      breakEvenPays: pays != null ? +(pays * s.atRecord.breakEvenScale).toFixed(2) : null,
-    } : undefined,
+
     ev: s.ev, evIndependent: s.evIndependent, probAll: +s.probAll.toFixed(4), correlated: s.correlated,
+    probAllIndependent: s.probAllIndependent != null ? +s.probAllIndependent.toFixed(4) : undefined,
     paysAll: pays != null ? +pays.toFixed(2) : null,
     // what 1u returns on each hit count, for grading (sliptrack.js)
     payTable: pays == null ? null : table === 'pick6' ? { ...s.payTable } : table === 'sleeper' || table === 'underdog_standard' || table === 'prizepicks_power' ? { [n]: +pays.toFixed(4) } : { ...PAYOUTS[table][n] },
@@ -287,9 +273,7 @@ function present(book, s, kind = 'best') {
 }
 
 // picks: the esports board → { slips: [best per book, fastest growth first], books: { PP: [...every size] }, pool }
-// stackLegGap: how far (a fraction) the stack record's legs have hit off their
-// prices; each stack is also priced at that (atRecord). Left out, it isn't.
-function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true, pick6 = null, pick6Table = null, stackLegGap = null } = {}) {
+function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true, pick6 = null, pick6Table = null } = {}) {
   const live = (picks || []).filter(p => {
     const t = Date.parse(p.startTime);
     return p.pricing && p.side && !(Number.isFinite(t) && t <= now);
@@ -303,8 +287,7 @@ function autoSlips(picks, { now = Date.now(), near = NEAR_PCT, withStacks = true
     const sizes = buildForBook(legs, book, MAX_LEGS[book], { oneMatch: true, pick6Table }).filter(s => s.ev > -near).map(s => present(book, s));
     books[book] = sizes;
     if (sizes.length) slips.push(sizes[0]);
-    stacks[book] = withStacks && book !== 'P6'
-      ? stacksForBook(all, book).map(s => present(book, { ...s, atRecord: atRecord(book, s, stackLegGap) }, 'stack')) : [];
+    stacks[book] = withStacks && book !== 'P6' ? stacksForBook(all, book).map(s => present(book, s, 'stack')) : [];
   }
   slips.sort((a, b) => (b.growth > 0) - (a.growth > 0) || (b.growth - a.growth) || (b.ev - a.ev));
   const stackList = Object.values(stacks).flat().sort((a, b) => (b.growth - a.growth) || (b.ev - a.ev));
@@ -326,4 +309,4 @@ function priceOnBooks(picks, sides = [], { pick6 = null, pick6Table = null } = {
   return out;
 }
 
-module.exports = { autoSlips, priceOnBooks, bookLeg, matchKey, priceOn, buildForBook, stacksForBook, otherSide, atRecord, stackLegLookup, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };
+module.exports = { autoSlips, priceOnBooks, bookLeg, matchKey, priceOn, buildForBook, stacksForBook, otherSide, stackLegLookup, LEG_FLOOR, NEAR_PCT, STACK_FLOOR };

@@ -115,20 +115,28 @@ test('factor model: Valorant teammates and opponents both lean together, weaker 
   assert.ok(S.slipHitsDistribution([leg('VAL', 'A', 0), leg('VAL', 'B', 0)])[2] > 0.25);
 });
 
-test('stacks at the record: legs hitting under their price need a bigger payout', () => {
+test('stacks carry the chance of a sweep if the legs were independent', () => {
   const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)));
-  const plain = B.autoSlips(picks, { now: 0 }).stacks[0];
-  assert.equal(plain.atRecord, undefined, 'no record, no second price');
-  const s = B.autoSlips(picks, { now: 0, stackLegGap: -0.08 }).stacks[0];
-  assert.ok(s.atRecord, 'priced at the record too');
-  assert.equal(s.atRecord.gap, -8);
-  assert.equal(s.ev, plain.ev, 'the board price is unchanged');
-  assert.ok(s.atRecord.ev < s.ev && s.atRecord.probAll < s.probAll);
-  assert.ok(s.atRecord.breakEvenPays > s.breakEvenPays);
-  // the same stack with every leg 8 points lower, priced directly
-  const legs = picks.filter(p => s.picks.some(l => l.player === p.player)).map(p => B.bookLeg(p, 'PP')).map(l => ({ ...l, prob: l.prob - 0.08 }));
-  const direct = B.priceOn('PP', legs.map(l => ({ ...l, shift: 0, meanPerMap: null }))).find(r => r.table === s.table);
-  close(s.atRecord.probAll, direct.probAll, 2e-3);
+  const s = B.autoSlips(picks, { now: 0 }).stacks[0];
+  assert.ok(s.probAllIndependent > 0 && s.probAllIndependent < s.probAll);
+});
+
+test('stack close: a leg the board now leans against keeps following on every app', () => {
+  // market-path legs: the board prices only the side it leans to
+  const ud = (prob, side = 'OVER') => ({
+    sport: 'CS2', player: 'A0', team: 'A', side, gameId: 'G1', market: 'MAPS 1-2 Kills', startTime: '2099-01-01T00:00:00Z',
+    pricing: { books: { UD: { line: 29.5, prob }, SL: { line: 29.5, prob, mult: 1.8 } } }, udEv: 1, sleeperEv: 1,
+  });
+  const leg = { player: 'A0', gameId: 'G1', market: 'MAPS 1-2 Kills', side: 'OVER', line: 29.5 };
+  for (const book of ['UD', 'SL']) {
+    assert.equal(B.stackLegLookup([ud(0.51)])(book, leg).prob, 51);
+    const flipped = B.stackLegLookup([ud(0.56, 'UNDER')])(book, leg);
+    assert.equal(flipped.line, 29.5);
+    close(flipped.prob, 44, 1e-9);
+  }
+  // a whole-number line has a push, so the other side's chance isn't the rest
+  const whole = { ...ud(0.56, 'UNDER'), pricing: { books: { UD: { line: 29, prob: 0.56 } } } };
+  assert.equal(B.stackLegLookup([whole])('UD', { ...leg, line: 29 }), null);
 });
 
 test('stack record: sweeps against their price, legs against theirs, and the close', async () => {
@@ -163,22 +171,9 @@ test('stack record: sweeps against their price, legs against theirs, and the clo
   assert.ok(sum.independentSwept < sum.expectedSwept);
   assert.equal(sum.legs.n, row.size);
   assert.equal(sum.legs.wonPct, 100);
-  assert.equal(sum.legs.calibrated, false, 'one stack is not a record');
+  assert.equal(sum.matches, 1);
   assert.equal(sum.close.lineMoves, 1);
   assert.equal(sum.close.toward, 1, 'an OVER line that rose moved our way');
-  assert.equal(sum.close.stacks, 0, 'a leg without a closing price leaves the stack unpriced at the close');
+  assert.equal(sum.close.legs, row.size - 1, 'the leg whose line moved has no price at the old number');
   assert.ok(sum.close.move > 0);
-});
-
-test('stack record: a logged stack priced again from its row matches its price', async () => {
-  const { createSlipTracker, repriceStack } = require('../sliptrack');
-  const tr = createSlipTracker({ now: () => 0 });
-  // legs priced at their own chance (no per-map distribution to shift)
-  const picks = ['A', 'B'].flatMap(team => [0, 1, 2].map(i => boardPick(team, i, 'OVER', 0.53)))
-    .map(p => ({ ...p, pricing: { ...p.pricing, meanPerMap: null, k: null } }));
-  const stack = B.autoSlips(picks, { now: 0 }).stacks[0];
-  await tr.record([stack]);
-  const row = (await tr.list())[0];
-  const again = repriceStack(row, row.legs.map(l => l.prob / 100));
-  close(again.probAll, row.probAll, 2e-3);
 });

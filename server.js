@@ -6529,15 +6529,10 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   const at = esportsCache.lastUpdated || null;
   // the board rebuilds every few minutes; the search only reruns when it does,
   // or when a match has started since (its legs drop out)
-  const record = await slipTracker.summary().catch(() => null);
-  // once enough stacks are graded, every stack is also priced at the hit rate
-  // its legs have shown (sliptrack legs.gap)
-  const legs = record?.stacks?.legs;
-  const gap = legs?.calibrated && Number.isFinite(legs.gap) ? legs.gap / 100 : null;
-  if (!autoSlipMemo.data || autoSlipMemo.at !== at || autoSlipMemo.gap !== gap || Date.now() - autoSlipMemo.built > 120000) {
-    autoSlipMemo = { at, gap, built: Date.now(), data: autoSlips(esportsCache.picks || [], { ...pick6SlipOpts(esportsCache.picks || []), stackLegGap: gap }) };
+  if (!autoSlipMemo.data || autoSlipMemo.at !== at || Date.now() - autoSlipMemo.built > 120000) {
+    autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || [], pick6SlipOpts(esportsCache.picks || [])) };
   }
-  res.json({ ...autoSlipMemo.data, updated: at, record });
+  res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null) });
 });
 
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────

@@ -7133,9 +7133,13 @@ function esStacksHTML(d) {
   // the record is graded at each app's standard payout: what a sweep would have
   // paid if the app hadn't cut it for same-match picks
   const legs = rec?.legs, close = rec?.close;
-  const closeLine = close?.legs ? ` · at the close the legs moved ${close.move > 0 ? '+' : ''}${close.move} pts (${close.legs} legs)${close.stacks ? `, stacks ${close.closeEv > 0 ? '+' : ''}${close.closeEv}%` : ''}` : '';
+  const closeBits = [
+    close?.legs ? `legs still on their line moved ${close.move > 0 ? '+' : ''}${close.move} pts by the start (${close.legs})` : '',
+    close?.lineMoves ? `${close.lineMoves} lines moved, ${close.toward} our way` : '',
+  ].filter(Boolean).join(', ');
+  const swept = rec?.swept != null ? `${rec.swept} of ${rec.slips} swept` : `${rec?.cashed} of ${rec?.slips} cashed`;
   const recLine = rec && rec.slips
-    ? `<span class="es-rec">Record at standard payouts: ${rec.swept ?? rec.cashed} of ${rec.slips} swept${rec.expectedSwept != null ? ` (priced ${rec.expectedSwept}; ${rec.independentSwept} if the legs were independent)` : ''}, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${legs?.n ? ` · legs won ${legs.wonPct}% against ${legs.pricedPct}% priced` : ''}${closeLine}${rec.open ? ` · ${rec.open} pending` : ''} · <b>Not proven</b>: the apps may pay less than standard for same-match picks</span>`
+    ? `<span class="es-rec">Record at standard payouts: ${swept}${rec.expectedSwept != null ? ` (priced ${rec.expectedSwept}; ${rec.independentSwept} if the legs were independent)` : ''}, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${legs?.n ? ` · legs won ${legs.wonPct}% against ${legs.pricedPct}% priced${rec.matches ? `, from ${rec.matches} matches` : ''}` : ''}${closeBits ? ` · at the close: ${closeBits}` : ''}${rec.open ? ` · ${rec.open} pending` : ''} · <b>Not proven</b>: too few matches yet, and the apps may pay less than standard for same-match picks</span>`
     : `<span class="es-rec">Not graded yet: every stack shown is logged and graded${rec?.open ? `, ${rec.open} pending` : ''}</span>`;
   const head = `<div class="es-hdr"><h3>MATCH STACKS</h3><span class="sub">One match, every leg the same way. When a match runs long, everyone's kills go over together. Every number assumes the app's standard payout, which it may cut for picks from one match: check the entry screen.</span>${recLine}</div>`;
   if (!list.length) return head + `<div class="es-as-note" style="margin-bottom:12px">No same-match stack on PrizePicks, Underdog or Sleeper is +EV right now.</div>`;
@@ -7146,13 +7150,10 @@ function esStackNote(s) {
   const flex = /flex/.test(s.table);
   const std = s.table === 'sleeper' ? `${s.paysAll}x (its picks' multipliers multiplied)`
     : flex ? `${s.legs}-pick Flex table (${s.paysAll}x for ${s.legs} of ${s.legs})` : `${s.paysAll}x for a ${s.legs}-pick ${escEs(s.tableName)}`;
-  const how = s.book === 'PP' ? 'add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting'
-    : 'build the entry in the app and read the payout before you submit';
-  const r = s.atRecord;
-  const rec = r?.breakEvenPays
-    ? ` At the legs' record so far (${r.gap > 0 ? '+' : ''}${r.gap} points off their price) it needs <b style="color:#e2e8f0">${r.breakEvenPays}x</b> and returns ${r.ev > 0 ? '+' : ''}${r.ev.toFixed(1)}% at the standard payout.`
-    : '';
-  return `Every number here assumes ${escEs(s.bookName)} pays its standard ${std}. ${s.book === 'PP' ? 'PrizePicks says it lowers the payout for several players from one team or game' : 'The app may pay less for picks from one match'}, so ${how}. Play it only if it shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b>.${rec}`;
+  const how = s.book === 'PP'
+    ? `add each pick, open the lineup, choose ${flex ? 'Flex Play' : 'Power Play'}, enter an amount and read the payout${flex ? ` for ${s.legs} of ${s.legs}` : ''}, then back out without submitting`
+    : `build the entry in the app and read the payout${flex ? ` for ${s.legs} of ${s.legs}` : ''} before you submit`;
+  return `Every number here assumes ${escEs(s.bookName)} pays its standard ${std}. ${s.book === 'PP' ? 'PrizePicks says it lowers the payout for several players from one team or game' : 'The app may pay less for picks from one match'}, so ${how}. Play it only if it shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b>.`;
 }
 function esAsCard(s, i, d) {
     const stack = s.kind === 'stack';
@@ -7167,7 +7168,7 @@ function esAsCard(s, i, d) {
     return `<div class="es-as ${s.status}" style="--bk:${B?.color || '#8b5cf6'}">
       <div class="es-as-head">
         <span class="es-as-logo">${escEs(s.bookName[0])}${logo ? `<img src="${logo}" alt="" onerror="this.remove()">` : ''}</span>
-        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${stack && s.matchTitle ? escEs(s.matchTitle) + ' · ' : ''}${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge ${s.status}">${s.status === 'plus' ? '+EV' : 'NEAR BREAK-EVEN'}</span></span></div>
+        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${stack && s.matchTitle ? escEs(s.matchTitle) + ' · ' : ''}${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge ${s.status}">${s.status === 'plus' ? (stack ? '+EV AS PRICED' : '+EV') : 'NEAR BREAK-EVEN'}</span></span></div>
         <span class="es-as-ev" style="color:${esEvColor(s.ev)}">${s.ev > 0 ? '+' : ''}${s.ev.toFixed(1)}%<small>${stack ? (flex ? 'AT THE STANDARD TABLE' : `IF IT PAYS ${s.paysAll}X`) : 'EXPECTED RETURN'}</small></span>
       </div>
       <div class="es-as-legs">${legs}</div>
@@ -7175,7 +7176,7 @@ function esAsCard(s, i, d) {
         <div class="es-as-stat">Hit all<b>${(s.probAll * 100).toFixed(1)}%</b></div>
         <div class="es-as-stat">${stack ? 'Standard pays' : 'Pays'}<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
         <div class="es-as-stat">Needs<b>${s.breakEvenPays ? s.breakEvenPays + 'x' : '—'}</b></div>
-        ${stack ? `<div class="es-as-stat">Needs at record<b>${s.atRecord?.breakEvenPays ? s.atRecord.breakEvenPays + 'x' : '—'}</b></div>`
+        ${stack ? `<div class="es-as-stat">If independent<b>${s.probAllIndependent != null ? (s.probAllIndependent * 100).toFixed(1) + '%' : '—'}</b></div>`
           : `<div class="es-as-stat">¼ Kelly<b>${s.status === 'plus' && s.kelly > 0 ? (s.kelly * 25).toFixed(1) + '%' : '—'}</b></div>`}
         ${stack || s.book === 'P6' ? '' : `<button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>`}
       </div>

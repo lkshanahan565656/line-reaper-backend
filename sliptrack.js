@@ -13,15 +13,12 @@
 
 const { createMemoryStore } = require('./evtrack');
 const { sportKey, statKind, spanToMaps, outcomeFor } = require('./tracker');
-const { priceSlip } = require('./slip');
 
 const HOUR = 3600e3;
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const r1 = x => Math.round(x * 10) / 10;
 const r2 = x => Math.round(x * 100) / 100;
 const avg = xs => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
-// stacks graded before a leg hit rate is shown as a correction to the price
-const STACK_CAL_MIN = 30;
 
 function legKey(l) {
   const day = l.startTime ? String(l.startTime).slice(0, 10) : 'nostart';
@@ -39,53 +36,53 @@ function payout(row, hits) {
   return row.payTable?.[hits] ?? 0;
 }
 
-// A logged stack priced again by slip.js at PROBS (fractions, one per leg), on
-// the payout it was logged with. The row keeps what the factor model needs:
-// sport, stat, side and team of every leg, all from one series.
-function repriceStack(row, probs) {
-  const legs = row.legs.map((l, i) => ({
-    sport: l.sport, team: l.team, stat: l.stat, side: l.side, line: l.line, player: l.player,
-    gameId: l.gameId ?? 'stack', prob: probs[i],
-  }));
-  return priceSlip(legs, row.table, { [row.table]: { [legs.length]: row.payTable } });
-}
-
 // The stack record: how often stacks swept against what they were priced at,
 // how the legs hit against their own prices, and how the legs closed.
 //   swept / expectedSwept / independentSwept: every leg won; the sum of the
 //     priced chance of that; the same if the legs had been independent.
-//   legs.gap: points the legs won above (+) or below (−) their price.
-//   close: each leg's price at its own line just before the match (follow());
-//     move = average points it moved, lineMoves / toward = legs whose line moved
-//     and how many moved our way; closeEv = the stack priced again at those
-//     closing chances, on the same payout.
+//   matches: distinct matches behind them (one match is logged once per app
+//     and side, so stacks overstate how much evidence there is).
+//   legs: how often the legs won against their average price, in points.
+//   close: each leg's chance at its own line just before the match (follow());
+//     move = average points it moved from its price, lineMoves / toward = legs
+//     whose line moved and how many moved our way (up for an OVER).
+// stacks that share a player on the same day are one match (the apps name
+// teams differently, so players join them)
+function countMatches(rows) {
+  const parent = rows.map((_, i) => i);
+  const find = i => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const seen = new Map();
+  rows.forEach((r, i) => {
+    for (const l of r.legs) {
+      const k = `${String(r.start || '').slice(0, 10)}|${norm(l.player)}`;
+      if (seen.has(k)) parent[find(i)] = find(seen.get(k)); else seen.set(k, i);
+    }
+  });
+  return new Set(rows.map((_, i) => find(i))).size;
+}
 function stackStats(graded, started) {
   const legs = graded.flatMap(r => r.legs);
   const won = legs.filter(l => l.outcome === 'win').length;
   const priced = avg(legs.map(l => l.prob));
-  const closed = started.flatMap(r => r.legs).filter(l => l.closeProb != null);
-  const lineMoves = started.flatMap(r => r.legs).filter(l => l.closeLine != null && l.closeLine !== l.line);
-  const closeEvs = started.filter(r => r.legs.every(l => l.closeProb != null))
-    .map(r => repriceStack(r, r.legs.map(l => l.closeProb / 100))?.ev).filter(Number.isFinite);
+  const startedLegs = started.flatMap(r => r.legs);
+  const closed = startedLegs.filter(l => l.closeProb != null);
+  const lineMoves = startedLegs.filter(l => l.closeLine != null && l.closeLine !== l.line);
   return {
     swept: graded.filter(r => r.hits === r.size).length,
     expectedSwept: r2(graded.reduce((a, r) => a + (r.probAll || 0), 0)),
     independentSwept: r2(graded.reduce((a, r) => a + r.legs.reduce((m, l) => m * l.prob / 100, 1), 0)),
+    matches: countMatches(graded),
     legs: {
       n: legs.length, won,
       wonPct: legs.length ? r1(won / legs.length * 100) : null,
       pricedPct: priced != null ? r1(priced) : null,
       gap: legs.length ? r1(won / legs.length * 100 - priced) : null,
-      // enough graded stacks to price the board's stacks at this hit rate too
-      calibrated: graded.length >= STACK_CAL_MIN,
     },
     close: {
       legs: closed.length,
       move: closed.length ? r1(avg(closed.map(l => l.closeProb - l.prob))) : null,
       lineMoves: lineMoves.length,
       toward: lineMoves.filter(l => (l.side === 'OVER') === (l.closeLine > l.line)).length,
-      stacks: closeEvs.length,
-      closeEv: closeEvs.length ? r1(avg(closeEvs)) : null,
     },
   };
 }
@@ -252,4 +249,4 @@ function createSlipTracker({
   return { record, follow, grade, summary, list, ready: () => loaded };
 }
 
-module.exports = { createSlipTracker, slipId, legKey, repriceStack, STACK_CAL_MIN };
+module.exports = { createSlipTracker, slipId, legKey };
