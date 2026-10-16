@@ -1,0 +1,418 @@
+// ─── MATCH CONTEXT ────────────────────────────────────────────────────────────
+// Player averages ignore who they're playing tonight. Context fixes three things:
+//
+//  1. Is the last map in the span even played?  A "Maps 1-3" prop in a Bo3 only
+//     gets a map 3 when the series goes 1-1:  P(map 3) = 2·p·(1−p).
+//     A heavy favourite's 1-3 line is often priced as if map 3 is likely.
+//     We price it as a MIXTURE: (1−P3) × "2 maps" + P3 × "3 maps".
+//  2. How many rounds per map (CS2 / Valorant)?  Even matchups run long,
+//     stomps end around 13-4. Fewer rounds, fewer kills for everyone.
+//  3. Which side is favoured?  Players on the stronger team get more kills
+//     (LoL/Dota: team kills; CS/VAL: rounds won), relative to how favoured
+//     their team usually is (their averages already include that).
+//
+// Win probability comes from, in order: odds entered by hand (or from a feed)
+// for the match, then Elo ratings built from recent results (LoL from
+// Leaguepedia, Dota from OpenDota, Valorant from vlrggapi). CS2 has no free
+// results feed we can call from a server, so CS2 context needs entered odds.
+//
+// Every constant below is a starting point. The pick tracker splits results by
+// context source, so these can be tuned on real graded picks.
+
+const TUNING = {
+  // kills scale with how favoured the team is versus its usual matchup
+  strength: { CS: 0.30, VAL: 0.30, LOL: 0.50, DOTA: 0.40 },
+  // rounds per map shrink as a matchup gets lopsided (CS/VAL only)
+  roundsCurve: 0.8,
+  // a typical pro matchup is ~65/35, so that's where the rounds factor is 1.0
+  typicalGap: 0.15,
+  eloK: 24,
+  eloStart: 1500,
+  // head-to-head: maps between these two teams in the last h2hDays pull the
+  // rating's price toward their record, worth h2hPriorN maps of rating, and
+  // never by more than h2hMax. Exchange prices already know the history.
+  h2hDays: 365,
+  h2hPriorN: 12,
+  h2hMax: 0.06,
+};
+
+// ── odds math ──
+function americanToProb(ml) {
+  const m = parseFloat(ml);
+  if (!isFinite(m) || m === 0 || Math.abs(m) < 100) return null;
+  return m > 0 ? 100 / (m + 100) : -m / (-m + 100);
+}
+
+function decimalToProb(d) {
+  const x = parseFloat(d);
+  return isFinite(x) && x > 1 ? 1 / x : null;
+}
+
+// Two-way no-vig probability for side A, from American or decimal prices.
+function devig(priceA, priceB) {
+  const conv = v => (Math.abs(parseFloat(v)) >= 100 ? americanToProb(v) : decimalToProb(v));
+  const a = conv(priceA), b = conv(priceB);
+  if (a == null || b == null) return null;
+  return a / (a + b);
+}
+
+// P(team wins a best-of-N series) given per-map win probability p
+function mapToSeriesProb(p, bestOf = 3) {
+  const need = Math.ceil(bestOf / 2);
+  let total = 0;
+  // win `need` maps having lost k (k < need); last map played is a win
+  for (let k = 0; k < need; k++) total += binom(need - 1 + k, k) * Math.pow(p, need) * Math.pow(1 - p, k);
+  return total;
+}
+
+function seriesToMapProb(ps, bestOf = 3) {
+  if (bestOf <= 1) return ps;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (mapToSeriesProb(mid, bestOf) < ps) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function binom(n, k) {
+  let r = 1;
+  for (let i = 1; i <= k; i++) r = r * (n - k + i) / i;
+  return r;
+}
+
+// P(map n gets played) in a best-of-N, with per-map win prob p for one side.
+// Map n is played iff neither side reached the target in the first n−1 maps.
+function pMapPlayed(n, p, bestOf = 3) {
+  const need = Math.ceil(bestOf / 2);
+  if (n <= need) return 1;
+  if (n > bestOf) return 0;
+  const played = n - 1;
+  let open = 0;
+  for (let w = 0; w <= played; w++) {
+    const l = played - w;
+    if (w < need && l < need) open += binom(played, w) * Math.pow(p, w) * Math.pow(1 - p, l);
+  }
+  return open;
+}
+
+// Scenarios for a span: [{ maps, weight }], weights sum to 1.
+// Map m+1 can only be played if map m was, so P(exactly k maps) is a difference.
+function spanScenarios(maps, p, bestOf = 3) {
+  const sorted = (maps || [1]).slice().sort((a, b) => a - b);
+  const probs = sorted.map(m => pMapPlayed(m, p, bestOf));
+  const out = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const pThis = probs[i], pNext = i + 1 < sorted.length ? probs[i + 1] : 0;
+    const w = pThis - pNext;
+    if (w > 1e-9) out.push({ maps: i + 1, weight: w });
+  }
+  // span starts past the guaranteed maps (e.g. "Map 3" alone): renormalise
+  const tot = out.reduce((s, x) => s + x.weight, 0);
+  return tot > 0 ? out.map(x => ({ maps: x.maps, weight: x.weight / tot })) : [{ maps: sorted.length, weight: 1 }];
+}
+
+function inferBestOf(maps) {
+  const last = Math.max(...(maps || [1]));
+  return last >= 4 ? 5 : 3;
+}
+
+// Kills-per-map multiplier from the matchup (pMap = this player's team per-map win prob).
+function killFactor(sport, pMap, pTypical = 0.5) {
+  const s = sportKey(sport);
+  const S = TUNING.strength[s] ?? 0;
+  let f = 1 + S * (pMap - pTypical);
+  if (s === 'CS' || s === 'VAL') {
+    const gap = pMap - 0.5;
+    f *= 1 + TUNING.roundsCurve * (TUNING.typicalGap ** 2 - gap * gap);
+  }
+  return f;
+}
+
+function sportKey(sport) {
+  const s = (sport || '').toUpperCase();
+  if (s.includes('VAL')) return 'VAL';
+  if (s.includes('CS') || s.includes('COUNTER')) return 'CS';
+  if (s.includes('LOL') || s.includes('LEAGUE')) return 'LOL';
+  if (s.includes('DOTA')) return 'DOTA';
+  if (s.includes('COD') || s.includes('CALL OF DUTY')) return 'COD';
+  return s;
+}
+
+// ── team names ──
+// "academy" is NOT stripped: T1 Academy is a different team from T1.
+function teamKey(n) {
+  return (n || '').toLowerCase()
+    .replace(/['’]s\b/g, '')   // "Yakult's Brothers" is "Yakult Brothers"
+    .replace(/\b(team|esports?|gaming|club)\b/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Suffixes that mark an academy / second roster (Fnatic Rising, MOUZ NXT,
+// Gen.G Global Academy, NAVI Junior, T1 Academy, ...).
+const SECOND_TEAM_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)/;
+
+function teamsMatch(a, b) {
+  const x = teamKey(a), y = teamKey(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  if (x.length < 3 || y.length < 3) return false;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  if (!long.startsWith(short)) return false;
+  // "FaZe" ↔ "FaZe Clan" is fine; "MOUZ" ↔ "MOUZ NXT" is not.
+  return !SECOND_TEAM_RE.test(long.slice(short.length));
+}
+
+// A short team code against a full name: "BFX" is BNK FearX, "SLY" Solary,
+// "C9" Cloud9, "KT" KT Rolster. The code's letters run in order through the
+// name and it starts with the name's first letter.
+function teamCode(full, code) {
+  if (!full || !code) return false;
+  if (teamsMatch(full, code)) return true;
+  const a = String(full).toLowerCase().replace(/[^a-z0-9]/g, ''), b = String(code).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const [long, short] = a.length >= b.length ? [a, b] : [b, a];
+  if (short.length < 2 || short.length > 4 || long.length <= short.length || short[0] !== long[0]) return false;
+  // a plain prefix is teamsMatch's call ("MOUZ" is not "MOUZ NXT"); only a
+  // two-letter one ("KT" for KT Rolster) gets past it here
+  if (long.startsWith(short)) return short.length < 3 && !SECOND_TEAM_RE.test(long.slice(short.length));
+  let i = 0;
+  for (const ch of long) if (ch === short[i]) i++;
+  return i === short.length;
+}
+
+// "Vitality vs NAVI", "VIT @ NAVI", "G2 - FaZe" → ['Vitality', 'NAVI']
+function splitMatchTitle(title) {
+  const parts = String(title || '').split(/\s+(?:vs\.?|v|@|-|–)\s+/i).map(s => s.trim()).filter(Boolean);
+  return parts.length === 2 ? parts : null;
+}
+
+// Given the player's team and the match title, the other side.
+function opponentFrom(team, title, explicitOpponent) {
+  if (explicitOpponent) return explicitOpponent;
+  const sides = splitMatchTitle(title);
+  if (!sides || !team) return null;
+  if (teamsMatch(team, sides[0])) return sides[1];
+  if (teamsMatch(team, sides[1])) return sides[0];
+  // Books and stat sites name teams differently ("Xi'an Team WE" in a "FlyQuest
+  // vs. Team WE" match, "HANJIN BRION" in "LGD vs. OKSavingsBank BRION"). Fall
+  // back to shared words, and only when exactly one side shares any.
+  const a = sharedWords(team, sides[0]), b = sharedWords(team, sides[1]);
+  if (a > 0 && b === 0) return sides[1];
+  if (b > 0 && a === 0) return sides[0];
+  return null;
+}
+
+const NAME_FILLER = new Set(['team', 'esports', 'esport', 'gaming', 'club', 'the', 'fc']);
+const nameWords = n => String(n || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => (w.length >= 2 || /\d/.test(w)) && !NAME_FILLER.has(w));
+const SECOND_WORD_RE = /^(academy|rising|nxt|junior|youth|global|next|ii|2)$/;
+function sharedWords(x, y) {
+  const wx = nameWords(x), wy = nameWords(y), sx = new Set(wx), sy = new Set(wy);
+  // a second roster is another team ("MOUZ" is not "MOUZ NXT")
+  if (wx.some(w => SECOND_WORD_RE.test(w) && !sy.has(w)) || wy.some(w => SECOND_WORD_RE.test(w) && !sx.has(w))) return 0;
+  return wy.filter(w => sx.has(w)).length;
+}
+
+// ── Elo ratings from results ──
+// games: [{ a, b, aWon: bool, t }] at MAP level, any order.
+function buildElo(games, { k = TUNING.eloK, start = TUNING.eloStart } = {}) {
+  const r = {}, seen = {}, gaps = {}, pairs = {};
+  const get = n => (r[n] ??= start);
+  const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  for (const g of games.slice().sort((x, y) => (x.t || 0) - (y.t || 0))) {
+    const a = teamKey(g.a), b = teamKey(g.b);
+    if (!a || !b || a === b) continue;
+    const gap = get(b) - get(a);
+    const ea = 1 / (1 + Math.pow(10, gap / 400));
+    const sa = g.aWon ? 1 : 0;
+    r[a] += k * (sa - ea);
+    r[b] -= k * (sa - ea);
+    seen[a] = (seen[a] || 0) + 1; seen[b] = (seen[b] || 0) + 1;
+    // the rating gap each team faced, so `typical` can be read on the same
+    // calibrated scale as tonight's mapProb
+    (gaps[a] ||= []).push(gap);
+    (gaps[b] ||= []).push(-gap);
+    // every map between the two, for head-to-head
+    (pairs[pairKey(a, b)] ||= []).push({ t: g.t || 0, winner: g.aWon ? a : b });
+  }
+  const names = Object.keys(r);
+  return {
+    rating: n => { const key = resolve(n); return key ? r[key] : null; },
+    games: n => { const key = resolve(n); return key ? seen[key] : 0; },
+    // how favoured this team usually was, so we only adjust for the DIFFERENCE tonight
+    // Read through the same `scale` as mapProb: tonight's price is calibrated
+    // to the market, and comparing it to an uncalibrated "usual" price made
+    // every strong team look less favoured than usual and cut its kills.
+    typical(n) {
+      const key = resolve(n), g = key && gaps[key];
+      if (!g?.length) return 0.5;
+      const s = this.scale ?? 1;
+      return g.reduce((x, d) => x + 1 / (1 + Math.pow(10, s * d / 400)), 0) / g.length;
+    },
+    // scale: how much of the rating gap the market agrees with, fitted
+    // against exchange prices by the esports board (esboard.js calibrate)
+    scale: 1,
+    rawMapProb(a, b) {
+      const ra = this.rating(a), rb = this.rating(b);
+      if (ra == null || rb == null) return null;
+      return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+    },
+    mapProb(a, b) {
+      const ra = this.rating(a), rb = this.rating(b);
+      if (ra == null || rb == null) return null;
+      return 1 / (1 + Math.pow(10, (this.scale ?? 1) * (rb - ra) / 400));
+    },
+    // maps team a won and lost against team b since `since` (ms)
+    h2h(a, b, since = -Infinity) {
+      const ka = resolve(a), kb = resolve(b);
+      if (!ka || !kb || ka === kb) return null;
+      const list = (pairs[pairKey(ka, kb)] || []).filter(x => x.t >= since);
+      const w = list.filter(x => x.winner === ka).length;
+      return { w, l: list.length - w, n: list.length };
+    },
+    size: names.length,
+  };
+  function resolve(n) {
+    const key = teamKey(n);
+    if (!key) return null;
+    if (r[key] != null) return key;
+    return names.find(x => teamsMatch(x, key)) || null;
+  }
+}
+
+// Leaguepedia ScoreboardGames rows → map-level games
+function lolGamesFromRows(rows) {
+  return (rows || []).map(x => ({
+    a: x.Team1, b: x.Team2, aWon: (x.WinTeam || '') === x.Team1, t: Date.parse((x.DateTime || '').replace(' ', 'T') + 'Z') || 0,
+  })).filter(g => g.a && g.b && g.a !== g.b);
+}
+
+// OpenDota /proMatches rows → map-level games
+function dotaGamesFromRows(rows) {
+  return (rows || []).filter(m => m.radiant_name && m.dire_name).map(m => ({
+    a: m.radiant_name, b: m.dire_name, aWon: !!m.radiant_win, t: (m.start_time || 0) * 1000,
+  }));
+}
+
+// vlrggapi /match?q=results rows (series scores) → map-level games
+function valGamesFromRows(rows) {
+  // Results come newest first. Without a parseable timestamp, fall back to
+  // list position so Elo still replays oldest → newest.
+  const out = [];
+  (rows || []).forEach((m, i) => {
+    const s1 = parseInt(m.score1), s2 = parseInt(m.score2);
+    if (!m.team1 || !m.team2 || !isFinite(s1) || !isFinite(s2) || s1 + s2 > 7) return;
+    const ts = m.unix_timestamp != null && isFinite(+m.unix_timestamp) ? +m.unix_timestamp * 1000 : Date.parse(m.unix_timestamp || '');
+    const t = isFinite(ts) && ts > 0 ? ts : -i;
+    for (let i = 0; i < s1; i++) out.push({ a: m.team1, b: m.team2, aWon: true, t });
+    for (let i = 0; i < s2; i++) out.push({ a: m.team1, b: m.team2, aWon: false, t });
+  });
+  return out;
+}
+
+// ── manual / fed match odds ──
+function createOddsBook({ ttlMs = 36 * 3600000, now = () => Date.now() } = {}) {
+  const rows = [];
+  return {
+    // { sport, teamA, teamB, priceA, priceB } or { ..., pA } (series win prob), bestOf
+    set(entry) {
+      const pSeries = entry.pA != null ? parseFloat(entry.pA) : devig(entry.priceA, entry.priceB);
+      if (!(pSeries > 0 && pSeries < 1)) throw new Error('need pA between 0 and 1, or two prices');
+      const bestOf = parseInt(entry.bestOf) || 3;
+      const row = {
+        sport: sportKey(entry.sport), teamA: entry.teamA, teamB: entry.teamB, bestOf,
+        pSeriesA: pSeries, pMapA: seriesToMapProb(pSeries, bestOf), at: now(),
+        source: entry.source || 'manual', start: entry.start || null,
+        // prices quoted on a single map (Bo1 or a map line) are already map probs
+        ...(entry.perMap ? { pMapA: pSeries } : {}),
+      };
+      const i = rows.findIndex(r => r.sport === row.sport && teamsMatch(r.teamA, row.teamA) && teamsMatch(r.teamB, row.teamB));
+      // a fresh price someone entered by hand outranks one from a feed
+      if (i >= 0 && rows[i].source === 'manual' && row.source !== 'manual' && now() - rows[i].at <= ttlMs) return rows[i];
+      if (i >= 0) rows[i] = row; else rows.push(row);
+      return row;
+    },
+    // per-map win prob for `team` against `opponent`, or null
+    lookup(sport, team, opponent) {
+      const s = sportKey(sport), t = now();
+      const live = rows.filter(r => r.sport === s && t - r.at <= ttlMs);
+      for (const r of live) {
+        if (teamsMatch(r.teamA, team) && (!opponent || teamsMatch(r.teamB, opponent))) return { pMap: r.pMapA, bestOf: r.bestOf, source: r.source };
+        if (teamsMatch(r.teamB, team) && (!opponent || teamsMatch(r.teamA, opponent))) return { pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source };
+      }
+      // PrizePicks names teams by code ("KT", "BFX", "C9"): match a code to
+      // the one priced team it abbreviates, never to two
+      const hits = [];
+      for (const r of live) {
+        if (teamCode(r.teamA, team) && (!opponent || teamCode(r.teamB, opponent))) hits.push({ pMap: r.pMapA, bestOf: r.bestOf, source: r.source });
+        else if (teamCode(r.teamB, team) && (!opponent || teamCode(r.teamA, opponent))) hits.push({ pMap: 1 - r.pMapA, bestOf: r.bestOf, source: r.source });
+      }
+      return hits.length === 1 ? hits[0] : null;
+    },
+    list() { const t = now(); return rows.filter(r => t - r.at <= ttlMs); },
+  };
+}
+
+// ── the one call the pick generator makes ──
+// Returns null when we can't say anything about this match.
+// `usual`: the player's own team's map win rate behind his averages, used as
+// the baseline when there are no ratings for the sport (CS2). A player whose
+// 90 days came against weaker teams wins more maps than 50%, and his kill rate
+// carries that; tonight's matchup is measured against it, not against 50%.
+const clampN = (x, a, b) => Math.max(a, Math.min(b, x));
+function matchContext({ sport, team, opponent, maps, usual = null }, { oddsBook, elo = {}, now = Date.now() }) {
+  if (!team) return null;
+  const s = sportKey(sport);
+  let pMap = null, source = null, bestOf = inferBestOf(maps), pTypical = 0.5;
+  const fed = oddsBook?.lookup(s, team, opponent);
+  if (fed) { pMap = fed.pMap; source = fed.source === 'manual' || !fed.source ? 'odds' : fed.source; bestOf = fed.bestOf || bestOf; }
+  const ratings = elo[s];
+  if (ratings) pTypical = ratings.typical(team);
+  else if (usual > 0 && usual < 1) pTypical = usual;
+  if (pMap == null && ratings && opponent) {
+    const p = ratings.mapProb(team, opponent);
+    if (p != null && ratings.games(team) >= 5 && ratings.games(opponent) >= 5) { pMap = p; source = 'elo'; }
+  }
+  if (pMap == null) return null;
+  // Head-to-head: shown whatever the source; it moves a rating's price only
+  // (an exchange's price already carries the history between the two)
+  let h2h = null;
+  if (ratings?.h2h && opponent) {
+    const rec = ratings.h2h(team, opponent, now - TUNING.h2hDays * 86400e3);
+    if (rec && rec.n > 0) {
+      h2h = { ...rec, shift: 0 };
+      if (source === 'elo' && rec.n >= 2) {
+        const pH = (rec.w + 1) / (rec.n + 2);
+        h2h.shift = clampN((pH - pMap) * rec.n / (rec.n + TUNING.h2hPriorN), -TUNING.h2hMax, TUNING.h2hMax);
+        pMap = Math.min(0.97, Math.max(0.03, pMap + h2h.shift));
+      }
+    }
+  }
+  const scenarios = spanScenarios(maps, pMap, bestOf);
+  const expMaps = scenarios.reduce((acc, sc) => acc + sc.maps * sc.weight, 0);
+  const lastMap = Math.max(...(maps || [1]));
+  return {
+    source, opponent: opponent || null, pMap, bestOf, pTypical, h2h,
+    pLastMap: pMapPlayed(lastMap, pMap, bestOf),
+    scenarios, expMaps,
+    factor: killFactor(s, pMap, pTypical),
+  };
+}
+
+function describeContext(c) {
+  if (!c) return '';
+  const bits = [];
+  if (c.opponent) bits.push(`vs ${c.opponent}`);
+  bits.push(`${Math.round(c.pMap * 100)}% map win (${c.source})`);
+  if (c.h2h?.n) bits.push(`H2H ${c.h2h.w}-${c.h2h.l} in maps${c.h2h.shift ? ` (${c.h2h.shift > 0 ? '+' : ''}${Math.round(c.h2h.shift * 100)} pts)` : ''}`);
+  if (c.scenarios.length > 1) bits.push(`last map played ${Math.round(c.pLastMap * 100)}%`);
+  if (Math.abs(c.factor - 1) >= 0.01) bits.push(`kills ×${c.factor.toFixed(2)}`);
+  return bits.join(' · ');
+}
+
+module.exports = {
+  TUNING, americanToProb, decimalToProb, devig, mapToSeriesProb, seriesToMapProb,
+  pMapPlayed, spanScenarios, inferBestOf, killFactor,
+  teamKey, teamsMatch, splitMatchTitle, opponentFrom,
+  buildElo, lolGamesFromRows, dotaGamesFromRows, valGamesFromRows,
+  createOddsBook, teamCode, matchContext, describeContext, sportKey,
+};

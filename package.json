@@ -1,0 +1,37 @@
+{
+  "name": "line-reaper-backend",
+  "version": "3.139.0",
+  "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js",
+    "build_desktop": "pkg . --targets node22-win-x64,node22-macos-x64,node22-macos-arm64 --out-path dist-desktop"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.12.0",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": "desktop/launcher.js",
+  "pkg": {
+    "assets": [
+      "public/**/*"
+    ],
+    "scripts": [
+      "*.js"
+    ]
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.23.0"
+  }
+}
