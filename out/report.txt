@@ -1,0 +1,68 @@
+prod 3.140.0 at 2026-10-17T13:48:23.371Z
+board 16270 rows
+league        legs  sharp  3+books  >0EV  clear2%  FD/BR-fair  clear2%
+NFL           6644   1663      241     0        0          73        0
+CFB           5618    856       37     0        0          88        0
+NHL           3271   1273      434     0        0          30        0
+SOCCER        2980     11        0     0        0           0        0
+NBA           1802     72        0     0        0           0        0
+TENNIS         426    168        0     0        0           0        0
+WNBA           413    122       35     0        0           0        0
+MLB            376     65      123     0        0           0        0
+MMA            361    210        0     0        0           0        0
+LA LIGA         69      0        0     0        0           0        0
+MOTORSPORTS     37     12        0     0        0           0        0
+WNBA SERIES     29      0        0     0        0           0        0
+NASCAR          25      0        0     0        0           0        0
+HANDBALL        24      0        0     0        0           0        0
+DARTS           18      0        0     0        0           0        0
+TT              10      0        0     0        0           0        0
+CFL              4      0        0     0        0           0        0
+BAD              2      0        0     0        0           0        0
+books in consensus legs {"fanduel":37,"bet365":336,"caesars":744,"draftkings":758,"hardrock":659,"betmgm":134,"fanatics":62,"betrivers":19} ; per leg {"3":738,"4":125,"5":7} ; apps {"underdog":297,"prizepicks":165,"sleeper":279,"pick6":129}
+
+== CONSENSUS best EV first
+NHL Robert Thomas Shots on Goal prizepicks Over 1.5 ev -1.51 fair 54.2 n3 [draftkings 53.9, caesars 53.8, hardrock 54.9] start 2026-10-18T00:00:00Z
+NHL Shayne Gostisbehere Shots on Goal prizepicks Over 1.5 ev -1.66 fair 54.1 n3 [draftkings 53.4, caesars 53, hardrock 56] start 2026-10-17T19:30:00Z
+NHL Brock Boeser Shots on Goal prizepicks Over 1.5 ev -2.33 fair 53.8 n3 [draftkings 55.4, caesars 52.4, hardrock 53.4] start 2026-10-17T20:00:00Z
+NHL Viktor Arvidsson Shots on Goal prizepicks Over 2.5 ev -2.79 fair 53.5 n3 [draftkings 52.8, caesars 52.8, hardrock 54.9] start 2026-10-17T23:00:00Z
+NHL Gabriel Vilardi Shots on Goal prizepicks Under 1.5 ev -2.92 fair 53.4 n3 [draftkings 45.6, caesars 48.5, hardrock 45.5] start 2026-10-17T19:30:00Z
+NHL Mason Marchment Shots on Goal prizepicks Over 1.5 ev -3.33 fair 53.2 n3 [draftkings 54.4, caesars 53, hardrock 52.2] start 2026-10-17T23:00:00Z
+NHL Kirill Marchenko Shots on Goal prizepicks Over 2.5 ev -3.44 fair 53.1 n3 [draftkings 51.6, caesars 51.8, hardrock 56] start 2026-10-17T23:00:00Z
+NHL Andrei Svechnikov Shots on Goal prizepicks Over 2.5 ev -3.57 fair 53.1 n3 [draftkings 51.6, caesars 51.2, hardrock 56.3] start 2026-10-17T19:30:00Z
+NHL Cole Hutson Shots on Goal prizepicks Over 1.5 ev -3.63 fair 53 n3 [draftkings 52.2, caesars 51.9, hardrock 54.9] start 2026-10-17T17:00:00Z
+NHL Tyler Bertuzzi Shots on Goal prizepicks Over 1.5 ev -3.76 fair 53 n3 [draftkings 52.2, caesars 52.8, hardrock 53.9] start 2026-10-17T23:00:00Z
+NHL Will Cuylle Shots on Goal prizepicks Over 1.5 ev -3.83 fair 52.9 n3 [draftkings 52.2, caesars 53.8, hardrock 52.8] start 2026-10-17T23:00:00Z
+WNBA DeWanna Bonner Points + Assists prizepicks Under 10.5 ev -4.09 fair 52.8 n3 [draftkings 46.4, bet365 47.8, caesars 47.5] start 2026-10-17T19:30:00Z
+CFB JC French Pass TDs prizepicks Under 1.5 ev -4.11 fair 52.8 n3 [fanduel 46.8, bet365 47.8, caesars 47.1] start 2026-10-17T16:00:00Z
+NHL Elias Lindholm Shots on Goal prizepicks Over 1.5 ev -4.11 fair 52.8 n3 [draftkings 53.9, caesars 52.8, hardrock 51.6] start 2026-10-18T01:00:00Z
+NHL Thomas Harley Shots on Goal prizepicks Over 1.5 ev -4.16 fair 52.7 n3 [draftkings 53.9, caesars 52.1, hardrock 52.2] start 2026-10-17T23:00:00Z
+NFL Chuba Hubbard Longest Reception underdog Under 9.5 ev -4.18 fair 51.3 n4 [draftkings 48.6, bet365 51.1, caesars 49.4, hardrock 45.5] start 2026-10-18T17:00:00Z
+NHL Trevor Zegras Shots on Goal prizepicks Under 1.5 ev -4.25 fair 52.7 n3 [draftkings 48.4, caesars 50, hardrock 43.6] start 2026-10-17T23:00:00Z
+WNBA Rhyne Howard Points + Assists prizepicks Under 19.5 ev -4.35 fair 52.6 n3 [draftkings 47.8, bet365 46.6, caesars 47.7] start 2026-10-17T19:30:00Z
+CFB Malik Knight Receptions prizepicks Over 2.5 ev -4.53 fair 52.5 n3 [fanduel 54.5, bet365 50, caesars 53.1] start 2026-10-17T16:00:00Z
+NHL Alex Ovechkin Shots on Goal prizepicks Under 2.5 ev -4.63 fair 52.5 n3 [draftkings 47.2, caesars 47.5, hardrock 47.8] start 2026-10-17T17:00:00Z
+NHL Gavin McKenna Shots on Goal prizepicks Under 1.5 ev -4.63 fair 52.5 n3 [draftkings 47.2, caesars 47.5, hardrock 47.8] start 2026-10-17T23:00:00Z
+NFL Daniel Jones Longest Rush underdog Under 5.5 ev -4.68 fair 51 n3 [draftkings 49.1, bet365 48.9, hardrock 48.9] start 2026-10-18T17:00:00Z
+WNBA Jordin Canada Points + Assists prizepicks Over 18.5 ev -4.75 fair 52.4 n3 [draftkings 52.9, bet365 52.2, caesars 52.1] start 2026-10-17T19:30:00Z
+NHL Matty Beniers Shots on Goal prizepicks Under 1.5 ev -4.79 fair 52.4 n3 [draftkings 46.1, caesars 46.7, hardrock 50] start 2026-10-17T22:00:00Z
+WNBA Cecilia Zandalasini Points + Rebounds prizepicks Over 8.5 ev -4.9 fair 52.3 n3 [draftkings 52.8, bet365 52.2, caesars 52] start 2026-10-17T19:30:00Z
+NHL Sean Monahan Shots on Goal prizepicks Under 1.5 ev -4.9 fair 52.3 n3 [draftkings 47.2, caesars 48, hardrock 47.8] start 2026-10-17T23:00:00Z
+NHL Jake Guentzel Shots on Goal prizepicks Over 2.5 ev -4.91 fair 52.3 n3 [draftkings 53.9, caesars 52, hardrock 51.1] start 2026-10-17T20:00:00Z
+NHL Matvei Michkov Shots on Goal prizepicks Over 1.5 ev -4.92 fair 52.3 n3 [draftkings 51.6, caesars 51.4, hardrock 53.9] start 2026-10-17T23:00:00Z
+NHL Alex DeBrincat Shots on Goal prizepicks Under 3.5 ev -4.97 fair 52.3 n3 [draftkings 46.1, caesars 48.1, hardrock 48.9] start 2026-10-17T23:00:00Z
+NHL Connor Bedard Shots on Goal prizepicks Under 2.5 ev -5.04 fair 52.3 n3 [draftkings 46.1, caesars 48.2, hardrock 48.9] start 2026-10-17T23:00:00Z
+CFB Jeremiah Smith Receptions prizepicks Under 8.5 ev -5.06 fair 52.2 n3 [fanduel 46.8, bet365 50, caesars 46.4] start 2026-10-17T16:00:00Z
+NHL Owen Tippett Shots on Goal prizepicks Under 2.5 ev -5.11 fair 52.2 n3 [draftkings 47.2, caesars 46.1, hardrock 50] start 2026-10-17T23:00:00Z
+NHL Sam Bennett Shots on Goal prizepicks Under 2.5 ev -5.31 fair 52.1 n3 [draftkings 47.2, caesars 47.5, hardrock 48.9] start 2026-10-17T22:00:00Z
+NHL Steven Stamkos Shots on Goal prizepicks Under 2.5 ev -5.32 fair 52.1 n3 [draftkings 47.2, caesars 48.1, hardrock 48.4] start 2026-10-18T00:00:00Z
+NHL Mason Marchment Shots on Goal underdog Over 1.5 ev -5.39 fair 53.2 n3 [draftkings 54.4, caesars 53, hardrock 52.2] start 2026-10-17T23:00:00Z
+CFB Javarius Green Receptions prizepicks Under 3.5 ev -5.41 fair 52 n3 [fanduel 48.9, bet365 47.8, caesars 47.2] start 2026-10-17T16:00:00Z
+NHL Kirill Marchenko Shots on Goal underdog Over 2.5 ev -5.5 fair 53.1 n3 [draftkings 51.6, caesars 51.8, hardrock 56] start 2026-10-17T23:00:00Z
+MLB Taylor Walls Singles sleeper Under 0.5 ev -5.52 fair 67 n4 [bet365 34.3, draftkings 34, betmgm 29.3, caesars 34.4] start 2026-10-18T00:00:00.000Z
+NFL Chuba Hubbard Longest Rush prizepicks Over 14.5 ev -5.59 fair 51.9 n3 [draftkings 49.8, caesars 55, hardrock 51.1] start 2026-10-18T17:00:00Z
+NHL Fraser Minten Shots on Goal prizepicks Under 1.5 ev -5.62 fair 51.9 n3 [draftkings 48.9, caesars 47.5, hardrock 47.8] start 2026-10-18T01:00:00Z
+
+picks by kind/status {"gap-odd|open":411,"gap-stale|open":472,"stale-single|open":46,"sharp|open":17,"gap|open":17,"stale|open":6,"ev|open":20,"book-fair-single|open":8,"book-consensus|open":1,"book-fair|open":1,"p6-sharp|open":1,"gap-odd|locked":23,"gap-stale|locked":24,"sharp|locked":1,"gap|locked":1,"ev|locked":4,"stale|locked":1,"stale-single|locked":1,"ev|graded":17,"gap|graded":13,"gap-odd|graded":202,"gap-stale|graded":237,"sharp|graded":33,"stale-single|graded":14,"book-consensus|graded":1,"stale|graded":8,"book-fair-single|graded":12,"p6-sharp|graded":1,"gap|void":1,"gap-odd|void":3,"gap-stale|void":1}
+Best Plays kinds {"arb":3,"bookProp":67,"bookLine":2,"sportsProp":1}
+done 2026-10-17T13:48:28.704Z
