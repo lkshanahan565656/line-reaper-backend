@@ -1,0 +1,26 @@
+name: diag-fdalt2
+on:
+  push:
+    branches: [diag-fdalt2]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - run: |
+          set +e
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 60); do v=$(curl -s --max-time 20 $U/ | jq -r .version); echo "$v"; [ "$v" = "3.141.1" ] && break; sleep 20; done
+          mkdir out; echo "$v" > out/version.txt
+          g() { curl -s --max-time 120 "$U$1" > "out/$2"; echo "$2 $(wc -c < out/$2) $(jq '.bets|length' out/$2 2>/dev/null)"; }
+          g '/api/ev/record/bets?alt=1&limit=500&status=closed&book=fanduel&source=alt' fd-alt-closed.json
+          g '/api/ev/record/bets?alt=1&limit=500&status=open&book=fanduel&source=alt' fd-alt-open.json
+          g '/api/ev/record/bets?alt=1&limit=500&status=closed&book=betrivers&source=alt' br-alt-closed.json
+          g '/api/ev/record/bets?limit=500&status=closed&book=fanduel' fd-main-closed.json
+          g '/api/ev/record?book=fanduel&source=alt' ev-record-fd-alt.json
+          g /api/ev/scoreboard scoreboard.json
+          g /api/status status.json
+          date -u +%FT%TZ > out/at.txt
+          git init -q && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com && git checkout -q -b diag-fdalt2-out && git add out && git commit -qm out && git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-fdalt2-out
