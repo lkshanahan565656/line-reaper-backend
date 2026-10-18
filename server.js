@@ -4589,7 +4589,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.141.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.141.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4767,7 +4767,10 @@ app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
   const status = hasPro(req) ? req.query.status : 'closed';
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
-  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : evTracker).list({ status, limit: limit * 2 })).filter(evRowOk(licenceOf(req))).slice(0, limit);
+  // ?book=fanduel&source=alt&sport=nhl narrow the list; ?before=<flaggedAt> pages back
+  const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
+  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : evTracker)
+    .list({ status, limit: limit * 2, book: q('book'), source: q('source'), sport: q('sport'), before: q('before') })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
 // one subject's line history on every source (stale lines), e.g. ?key=pin-123|spread
@@ -6701,7 +6704,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.141.0',
+  version: '3.141.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
