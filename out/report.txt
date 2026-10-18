@@ -1,0 +1,13 @@
+version 3.142.0
+betrivers ev: 114 games, clv 3.32, 2min 2.42, mark proven
+fanduel ev: 93 games, clv 1.8, 2min 0.18, mark promising
+fanduel alt: 80 games, clv 2.46, 2min 1.78, mark promising
+betrivers alt: 36 games, clv 3.47, 2min 3.18, mark promising
+byBook fanduel promising, betrivers proven; proven rows: betrivers:ev
+alertBooks null
+props open: 1000 (NFL 795, NFL started 0)
+props locked: 326 (NFL 99, NFL started 99)
+props graded: 1000 (NFL 25, NFL started 25)
+props void: 19 (NFL 0, NFL started 0)
+phone text has proven: 
+desktop text has proven: 
