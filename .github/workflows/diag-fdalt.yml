@@ -1,0 +1,45 @@
+name: diag-fdalt
+on:
+  push:
+    branches: [diag-fdalt]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # run 2026-10-18 a
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set +e
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          g() { curl -s --max-time 120 "$U$1" > "out/$2"; echo "$2 $(wc -c < out/$2)"; }
+          g /api/status status.json
+          g /api/ev/scoreboard scoreboard.json
+          g /api/ev/record ev-record.json
+          g '/api/ev/record?book=fanduel' ev-record-fd.json
+          g '/api/ev/record?book=fanduel&source=alt' ev-record-fd-alt.json
+          g '/api/ev/record/bets?alt=1&limit=500&status=closed' alt-closed.json
+          g '/api/ev/record/bets?alt=1&limit=500&status=open' alt-open.json
+          g '/api/ev/record/bets?alt=1&limit=500' alt-all.json
+          g /api/ev ev-now.json
+          pushout() { rm -rf pub; mkdir pub; cp -r out pub/; (cd pub && git init -q && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com && git checkout -q -b $1 && git add out && git commit -qm out && git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git $1); }
+          date -u +%FT%TZ > out/at.txt
+          pushout diag-fdalt-out
+          MINUTES=16 node diag/poll.mjs &
+          POLL=$!
+          mkdir -p out/espn out/an
+          for sp in hockey/nhl football/nfl baseball/mlb basketball/wnba football/college-football; do for d in 20261013 20261014 20261015 20261016 20261017 20261018; do
+            f=out/espn/$(echo $sp | tr / _)-$d.json
+            if [ $sp = football/college-football ]; then q='&groups=80'; else q=''; fi
+            curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/scoreboard?dates=$d&limit=300$q" > $f
+            for id in $(jq -r '.events[]? | select(.status.type.completed==true) | .id' $f 2>/dev/null); do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/summary?event=$id" | gzip > out/espn/sum-$(echo $sp | tr / _)-$id.json.gz; done
+          done; done
+          for lg in nhl ncaaf nfl mlb wnba; do for d in 20261013 20261014 20261015 20261016 20261017 20261018; do
+            curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v2/scoreboard/$lg?bookIds=15,30,68,69,71,75,79,123,972,2988,2724,4620&periods=event&date=$d$([ $lg = ncaaf ] && echo '&division=FBS')" | gzip > out/an/$lg-$d.json.gz
+          done; done
+          ls out/espn | wc -l
+          wait $POLL
+          date -u +%FT%TZ > out/at2.txt
+          pushout diag-fdalt-out2
