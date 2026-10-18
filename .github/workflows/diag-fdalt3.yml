@@ -1,0 +1,22 @@
+name: diag-fdalt3
+on:
+  push:
+    branches: [diag-fdalt3]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: diagsrc }
+      - uses: actions/checkout@v4
+        with: { ref: claude/fanduel-alt-recheck-cxt1h3, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && npm ci --no-audit --no-fund
+      - run: cd app && cp ../diagsrc/diag/fdalt3.js . && RUNMIN=13 timeout 1500 node fdalt3.js || true
+      - run: |
+          cd app && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com
+          git checkout -q --orphan diag-fdalt3-out && git rm -rq --cached . && git add -f out && git commit -qm out && git push -q -f origin diag-fdalt3-out
