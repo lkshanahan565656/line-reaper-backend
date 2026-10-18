@@ -1,0 +1,10 @@
+prod records read: alt 3607, main 570
+BRANCH RULE betrivers ev: 114 games, clv 3.32, 2min 2.42, mark proven
+BRANCH RULE fanduel ev: 93 games, clv 1.8, 2min 0.18, mark promising
+BRANCH RULE fanduel alt: 80 games, clv 2.46, 2min 1.78, mark promising
+BRANCH RULE betrivers alt: 36 games, clv 3.47, 2min 3.18, mark promising
+BRANCH RULE byBook fanduel promising, betrivers proven; alertBooks betrivers
+PROD now: fanduel alt proven, byBook fanduel promising, betrivers ev proven
+
+branch 3.142.0: alt shown 238, clearing 44 {"betrivers:kalshi":33,"fanduel:kalshi":8,"betrivers:kalshi+pinnacle":1,"fanduel:kalshi+pinnacle":1,"fanduel:betrivers+kalshi":1}
+prod: alt shown 238, clearing 44 {"betrivers:kalshi":33,"fanduel:kalshi":8,"betrivers:kalshi+pinnacle":1,"fanduel:kalshi+pinnacle":1,"fanduel:betrivers+kalshi":1}
