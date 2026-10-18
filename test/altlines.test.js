@@ -115,6 +115,17 @@ test('screen: a ladder rung clears only when Kalshi prices that exact rung and a
   assert.strictEqual(alt.screen({ gamesBySport: { nfl: [fdOnly] }, now: NOW, leagueOf: () => 'NFL', o: { minEv: -100 } }).length, 0);
 });
 
+test('screen: another sportsbook\'s own number is not a sharp price, so a rung priced on it alone never clears (10-18)', () => {
+  // Pinnacle's 61.5 curve agrees with BetRivers' two-way 70.5, and FanDuel's 70+ rung beats it: shown, model-only
+  const pinProps = [{ key: 'rec_yds', outcomes: [{ name: 'Over', description: 'Parker Washington', price: -110, point: 61.5 }, { name: 'Under', description: 'Parker Washington', price: -110, point: 61.5 }] }];
+  const brMarkets = [{ key: 'rec_yds', outcomes: [{ name: 'Over', description: 'Parker Washington', price: 150, point: 70.5 }, { name: 'Under', description: 'Parker Washington', price: -190, point: 70.5 }] }];
+  const g = game({ pinProps, brMarkets, fdLadders: [{ player: 'Parker Washington', mkey: 'rec_yds', line: 70.5, price: 220 }] });
+  const [r] = alt.screen({ gamesBySport: { nfl: [g] }, now: NOW, leagueOf: () => 'NFL', o: { minEv: -100 } }).filter(x => x.book === 'fanduel');
+  assert.ok(r, 'priced');
+  assert.ok(r.sources.some(s => s.book === 'betrivers' && s.exact) && r.agree, JSON.stringify(r.sources));
+  assert.ok(!r.clears && r.source === 'alt-model', JSON.stringify(r));
+});
+
 test('bookmakerFor carries the one-way rungs in Pinnacle\'s team names; ev.screen never reads them', () => {
   const b = { book: 'fanduel', home: 'JAX Jaguars', away: 'HOU Texans', start: START, h2h: [], spreads: [], totals: [], props: [],
     ladders: [{ player: 'X', mkey: 'rec_yds', line: 49.5, price: 150 }], alts: [{ kind: 'spreads', type: 'AWAY', point: 7.5, price: -300 }] };

@@ -77,6 +77,13 @@ const KINDS = {
 };
 
 const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
+// An alt line's close is Kalshi's midpoint (a spread up to 6c wide) or a
+// sportsbook's own number at that rung; Pinnacle's two-way price is never at
+// the rung, only its curve. Scored and marked, but never proven, and never a
+// book's proof (10-18: FanDuel's alt lines read proven at 75 games, +2.6% CLV,
+// while 102 lines lost 24.6 units and today's clearing rungs were -3% against
+// Pinnacle's own curve).
+const CAPPED_KINDS = new Set(['alt']);
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
 const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
@@ -161,7 +168,7 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   const order = (a, b) => (a.mark === 'no sharp close') - (b.mark === 'no sharp close') || b.graded - a.graded || b.recorded - a.recorded;
   const rows = [...group(p => `${p.kind}|${p.book}`)].map(([k, l]) => {
     const [kind, book] = k.split('|');
-    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind), cap: RELAYED.has(book) }) };
+    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind), cap: RELAYED.has(book) || CAPPED_KINDS.has(kind) }) };
   }).sort(order);
   // a book's total is proven only through one of its own kinds
   const provenBooks = new Set(rows.filter(r => r.mark === 'proven' && !BOOK_CLOSE.has(r.kind)).map(r => r.book));

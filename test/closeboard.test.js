@@ -112,6 +112,19 @@ test('proven: one kind on one book we read ourselves; pooled totals and copied b
   assert.equal(mixed.byBook.betrivers.mark, 'promising');
 });
 
+// An alt line's close is Kalshi's midpoint or a sportsbook's own number at
+// that rung, never Pinnacle's two-way price there: on 10-18 FanDuel's alt lines
+// read proven at 75 games (+2.6% CLV) while losing 24.6 units on 102 lines.
+test('alt lines stop at promising, and a book is never proven through them', () => {
+  const alt = Array.from({ length: 60 }, (_, i) => ({ id: `a${i}`, status: 'closed', book: 'fanduel', source: 'alt', group: `alt|G${i}`, event: `G${i}`, start: START,
+    closeOk: true, clv: 2 + (i % 3), execClv: 1.5 + (i % 3), flaggedAt: START, sport: 'nhl', market: 'assists' }));
+  const b = closeBoard.scoreboard({ alt });
+  const row = b.rows.find(r => r.kind === 'alt' && r.book === 'fanduel');
+  assert.equal(row.graded, 60);
+  assert.equal(row.mark, 'promising');
+  assert.equal(b.byBook.fanduel.mark, 'promising');
+});
+
 // The webhook reaches other people, so it posts only what the scoreboard
 // marks proven: one kind on one book read direct (10-18: the old gate counted
 // raw lines per book, so Action Network's copies of Hard Rock, DraftKings,

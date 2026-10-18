@@ -51,6 +51,7 @@ const DEFAULTS = {
 // a sport's margin and total spread (points), for a ladder too short to fit
 const SD = { nfl: [13.5, 13.5], ncaaf: [16, 16.5], nba: [12.5, 18], wnba: [10, 15], nhl: [2.4, 2.3], mlb: [4.4, 4.3] };
 const FREE = ['fanduel', 'betrivers'];
+const SHARP = new Set(['pinnacle', 'kalshi']);
 
 const r2 = x => Math.round(x * 100) / 100;
 const half = x => Number.isFinite(x) && Math.abs(Math.abs(x % 1) - 0.5) < 1e-9;
@@ -171,7 +172,11 @@ function blend(sources, o) {
   const lo = Math.min(...ps), hi = Math.max(...ps);
   const spreadPts = s.length > 1 ? r2((hi - lo) * 100) : null;
   const agree = s.length > 1 && spreadPts <= o.agreePts && hi - lo <= o.agreeRel * lo;
-  return { fair, sources: s, agree, spreadPts, exact: ex.length > 0 };
+  // only Pinnacle's or Kalshi's own price at the rung can clear it: another
+  // sportsbook's number is a soft price (10-18: FanDuel rungs cleared on
+  // BetRivers' line alone, Jonathan Taylor 19.5 rec yds +2.8% vs BetRivers,
+  // -7.5% vs Pinnacle's curve)
+  return { fair, sources: s, agree, spreadPts, exact: ex.length > 0, sharpExact: ex.some(x => SHARP.has(x.book)) };
 }
 
 // one rung's row, or null when it's off the board's range
@@ -183,7 +188,7 @@ function rowFor(base, f, price, o, fairs, costs) {
   if (f.fair < o.minP || f.fair > o.maxP) return null;
   const ev = (f.fair * d - 1) * 100;
   if (ev < o.minEv || ev > o.maxEv) return null;
-  const clears = f.agree && f.exact;
+  const clears = f.agree && f.sharpExact;
   return {
     ...base, price, decimal: Math.round(d * 1000) / 1000, fairProb: r2(f.fair * 100), fairPrice: probToAmerican(f.fair), ev: r2(ev),
     kelly: r2(Math.max(0, (f.fair * d - 1) / (d - 1)) * 25),
