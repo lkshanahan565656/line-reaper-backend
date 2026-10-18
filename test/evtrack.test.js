@@ -150,3 +150,18 @@ test('execStillN counts the bets still at the flagged price or better at +2 min,
   assert.strictEqual(s.overall.execN, 2);
   assert.strictEqual(s.overall.execStillN, 1);
 });
+
+test('list filters by book, source and sport before the limit, and pages with before', async () => {
+  let t = T0;
+  const tr = createEvTracker({ now: () => t, minEv: 2 });
+  await tr.recordBoard([row({ book: 'fanduel', source: 'alt' })]);
+  t += 60e3;
+  await tr.recordBoard([row({ book: 'betrivers', source: 'alt' }), row({ group: 'g2', book: 'fanduel', source: 'alt-model' })]);
+  t += 60e3;
+  await tr.recordBoard([row({ group: 'g3', book: 'fanduel', source: 'alt', sport: 'nhl' })]);
+  assert.equal((await tr.list({ limit: 1, book: 'fanduel', source: 'alt' }))[0].group, 'g3', 'newest first');
+  assert.deepEqual((await tr.list({ book: 'fanduel', source: 'alt' })).map(b => b.group), ['g3', 'knicks@celtics|2026-10-08|h2h']);
+  assert.deepEqual((await tr.list({ book: 'fanduel', sport: 'nba' })).map(b => b.group), ['g2', 'knicks@celtics|2026-10-08|h2h']);
+  const before = new Date(T0 + 30e3).toISOString();
+  assert.deepEqual((await tr.list({ book: 'fanduel', before })).map(b => b.source), ['alt'], 'only rows flagged before the cursor');
+});

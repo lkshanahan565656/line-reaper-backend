@@ -257,9 +257,13 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
     return { open: all.filter(b => b.status === 'open').length, closeCheck: check, overall: stats(closed), bySport: by('sport'), byBook: by('book'), bySource: by('source'), byMarket: by('market'), bySourceClose };
   }
 
-  async function list({ status, limit = 100 } = {}) {
+  // newest first; book, source and sport filter before the limit, and
+  // before (an ISO time) pages back past the newest rows
+  async function list({ status, limit = 100, book, source, sport, before } = {}) {
     await loaded;
-    return (await store.all()).filter(b => !status || b.status === status)
+    const cut = before ? Date.parse(before) : NaN;
+    return (await store.all()).filter(b => (!status || b.status === status) && (!book || b.book === book) && (!source || b.source === source)
+      && (!sport || b.sport === sport) && !(Date.parse(b.flaggedAt) >= cut))
       .sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, limit);
   }
 
