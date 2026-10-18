@@ -1,0 +1,48 @@
+name: diag-brcheck
+on:
+  push:
+    branches: [diag-brcheck]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40  # run 2026-10-18 a
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          g() { curl -s --max-time 120 "$U$1" > "out/$2"; echo "$2 $(wc -c < out/$2)"; }
+          g /api/status status.json
+          g /api/ev/scoreboard scoreboard.json
+          g /api/results results.json
+          g /api/ev/record ev-record.json
+          g '/api/ev/record?book=betrivers' ev-record-br.json
+          g '/api/ev/record/bets?limit=500&status=closed' ev-bets.json
+          g '/api/ev/record/bets?limit=500&status=open' ev-open.json
+          g /api/ev ev-now.json
+          g /api/props/record props-record.json
+          g /api/props/coverage coverage.json
+          g /api/props/board props-board.json
+          g '/api/props/record/picks?limit=1000&status=open' picks-open.json
+          g '/api/props/record/picks?limit=1000&status=locked' picks-locked.json
+          g '/api/props/record/picks?limit=1000&status=graded' picks-graded.json
+          g '/api/props/record/picks?limit=1000&status=void' picks-void.json
+          g /api/bestplays bestplays.json
+          mkdir -p out/espn out/an
+          for sp in hockey/nhl football/nfl baseball/mlb basketball/wnba; do for d in 20261014 20261015 20261016 20261017 20261018; do
+            f=out/espn/$(echo $sp | tr / _)-$d.json; curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/scoreboard?dates=$d&limit=300" > $f
+            for id in $(jq -r '.events[]?.id' $f); do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/summary?event=$id" | gzip > out/espn/sum-$(echo $sp | tr / _)-$id.json.gz; done
+          done; done
+          for d in 20261014 20261015 20261016 20261017 20261018; do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=$d&groups=80&limit=300" > out/espn/football_college-football-$d.json; done
+          for lg in nhl ncaaf nfl mlb; do for d in 20261014 20261015 20261016 20261017 20261018; do
+            curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v2/scoreboard/$lg?bookIds=15,30,68,69,71,75,79,123,972,2988,2724,4620&periods=event&date=$d$([ $lg = ncaaf ] && echo '&division=FBS')" | gzip > out/an/$lg-$d.json.gz
+          done; done
+          ls out/espn | wc -l
+          MINUTES=14 node diag/poll.mjs
+          date -u +%FT%TZ > out/at.txt
+          mkdir pub; mv out pub/; cd pub
+          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -q -b diag-brcheck-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-brcheck-out
