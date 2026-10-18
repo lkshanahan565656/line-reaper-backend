@@ -7,18 +7,13 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - run: |
           set +e
-          mkdir -p out/an
-          B=15,30,68,69,71,75,79,123,972,2988,2724,4620
-          for d in 20261014 20261015 20261016 20261017; do
-            curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v2/scoreboard/nhl?bookIds=$B&periods=event&date=$d&customPickTypes=core_bet_type_26_assists" | gzip > out/an/nhl-ast-$d.json.gz
-          done
-          for w in 7 8; do curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v2/scoreboard/ncaaf?bookIds=$B&periods=event&division=FBS&week=$w&seasonType=reg" | gzip > out/an/ncaaf-w$w.json.gz; done
-          curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v1/books" | gzip > out/an/books.json.gz
-          ls -la out/an
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 80); do curl -s $U/api/status | grep -q '3.141.0' && break; sleep 20; done
+          mkdir out; curl -s $U/api/status > out/status.json; curl -s $U/api/ev/scoreboard > out/scoreboard.json; date -u +%FT%TZ > out/at.txt
           git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -q -b diag-brcheck2-out; git add out; git commit -qm out
-          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-brcheck2-out
+          git checkout -q -b diag-brcheck3-out; git add out; git commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-brcheck3-out
