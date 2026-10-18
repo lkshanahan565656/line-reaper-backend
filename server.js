@@ -3257,14 +3257,15 @@ const EV_ALERT_MIN = process.env.EV_ALERT_MIN != null ? parseFloat(process.env.E
 const evListeners = new Set();
 const evSeen = new Map();
 let evRecent = [];
-// Books whose +EV record has earned the webhook: EV_PROVEN_N closed bets with
-// a two-minute price, beating the close by EV_PROVEN_CLV % on average there.
-// Refreshed every 5 minutes from the tracker; empty until a book proves out.
-const EV_PROVEN_N = parseInt(process.env.EV_PROVEN_N) || 50, EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
+// Books whose record has earned the webhook: the close scoreboard's own
+// proven mark (closeboard.alertBooks: one kind on one book read direct, 50
+// graded games, CLV t of 2) and EV_PROVEN_CLV % still beaten at the price two
+// minutes on. Refreshed every 5 minutes; empty until a book proves out. Until
+// 10-18 this counted raw lines per book, so Action Network's copies posted too.
+const EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
 let evBookProven = new Set();
 async function refreshEvProof() {
-  const { byBook } = await evTracker.summary();
-  evBookProven = new Set(Object.entries(byBook || {}).filter(([, x]) => x.execN >= EV_PROVEN_N && x.avgExecClv >= EV_PROVEN_CLV).map(([b]) => b));
+  evBookProven = closeBoard.alertBooks(await closeBoardFor(), { minExecClv: EV_PROVEN_CLV });
 }
 const EV_WEIGHTS = { ...evScreen.SHARP_WEIGHTS, ...(Number.isFinite(parseFloat(process.env.EV_KALSHI_WEIGHT)) ? { kalshi_mid: parseFloat(process.env.EV_KALSHI_WEIGHT) } : {}) };
 function runEvScreen(force = false) {
@@ -3288,9 +3289,8 @@ function runEvScreen(force = false) {
       evRecent = [...fresh, ...evRecent].slice(0, 200);
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
-      // and only from a book whose own record, graded two minutes after each
-      // flag, beats Pinnacle's close (evBookProven)
-      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => r.dfs || evBookProven.has(r.book));
+      // and only from a book (or pick'em app) the scoreboard marks proven (evBookProven)
+      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => evBookProven.has(r.book));
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
@@ -4589,7 +4589,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.140.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.141.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4744,19 +4744,23 @@ app.get('/api/ev/record', async (req, res) => {
 // record. A Kalshi or Polymarket row needs its licence, as on /api/ev/record.
 const closeBoard = require('./closeboard');
 let closeBoardCache = { at: 0, key: '', body: null };
+// the scoreboard for a viewer's licences (the webhook's when none), cached a minute
+async function closeBoardFor(lic = webhookLicence(), days = 0) {
+  const ok = evRowOk(lic);
+  const key = `${JSON.stringify(lic)}|${days}`;
+  if (closeBoardCache.key !== key || Date.now() - closeBoardCache.at > 60e3) {
+    const all = { status: undefined, limit: 1e9 };
+    const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
+      esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
+    const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok), props, bigMoney },
+      { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    closeBoardCache = { at: Date.now(), key, body: { ...body, at: new Date().toISOString() } };
+  }
+  return closeBoardCache.body;
+}
 app.get('/api/ev/scoreboard', async (req, res) => {
   try {
-    const ok = evRowOk(licenceOf(req)), days = parseFloat(req.query.days) || 0;
-    const key = `${JSON.stringify(licenceOf(req))}|${days}`;
-    if (closeBoardCache.key !== key || Date.now() - closeBoardCache.at > 60e3) {
-      const all = { status: undefined, limit: 1e9 };
-      const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
-        esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
-      const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok), props, bigMoney },
-        { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
-      closeBoardCache = { at: Date.now(), key, body: { ...body, at: new Date().toISOString() } };
-    }
-    res.json(closeBoardCache.body);
+    res.json(await closeBoardFor(licenceOf(req), parseFloat(req.query.days) || 0));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
@@ -6697,7 +6701,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.140.0',
+  version: '3.141.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

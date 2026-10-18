@@ -111,3 +111,39 @@ test('proven: one kind on one book we read ourselves; pooled totals and copied b
   assert.equal(mixed.byBook.betrivers.graded, 60);
   assert.equal(mixed.byBook.betrivers.mark, 'promising');
 });
+
+// The webhook reaches other people, so it posts only what the scoreboard
+// marks proven: one kind on one book read direct (10-18: the old gate counted
+// raw lines per book, so Action Network's copies of Hard Rock, DraftKings,
+// bet365, theScore and Fanatics were posting alongside BetRivers).
+test('alert books: a proven main-lines row on a book read direct, never a copy, a lead or a pick\'em app short of proven', () => {
+  const board = { rows: [
+    { kind: 'ev', book: 'betrivers', relayed: false, mark: 'proven', avgExecClv: 2.4 },
+    { kind: 'ev', book: 'hardrock', relayed: true, mark: 'promising', avgExecClv: 3.4 },
+    { kind: 'ev', book: 'fanduel', relayed: false, mark: 'promising', avgExecClv: 0.5 },
+    { kind: 'alt', book: 'fanduel', relayed: false, mark: 'proven', avgExecClv: 1.9 },
+    { kind: 'ev', book: 'caesars', relayed: true, mark: 'proven', avgExecClv: 2 },
+    { kind: 'ev', book: 'bet365', relayed: false, mark: 'proven', avgExecClv: 0.4 },
+    { kind: 'props-ev', book: 'prizepicks', relayed: false, mark: 'promising', avgExecClv: 1.2 },
+    { kind: 'props-ev', book: 'sleeper', relayed: false, mark: 'proven', avgExecClv: 1.5 },
+  ] };
+  const a = closeBoard.alertBooks(board, { minExecClv: 1 });
+  assert.deepEqual([...a].sort(), ['betrivers', 'sleeper']);
+  assert.ok(!a.has('fanduel'), 'an alt-lines proof does not open main-line alerts');
+  assert.ok(!a.has('caesars'), 'a copied price never alerts, whatever its mark');
+  assert.ok(!a.has('bet365'), 'proven but under the two-minute bar');
+  assert.deepEqual([...closeBoard.alertBooks({ rows: [] })], []);
+});
+
+test('alert books from real records: BetRivers with 50 graded games alerts, a copied book with more does not', () => {
+  const evs = [];
+  for (let i = 0; i < 60; i++) {
+    const base = { status: 'closed', closeOk: true, start: `2026-10-${String(10 + (i % 9)).padStart(2, '0')}T23:00:00Z`, flaggedAt: '2026-10-10T12:00:00Z', source: 'sharp' };
+    evs.push({ ...base, book: 'betrivers', event: `G${i}`, clv: 3 + (i % 3), execClv: 2 + (i % 2), execPrice: 0.5 });
+    evs.push({ ...base, book: 'hardrock', event: `G${i}`, clv: 4 + (i % 3), execClv: 3 + (i % 2), execPrice: 0.5 });
+    if (i < 30) evs.push({ ...base, book: 'fanduel', event: `G${i}`, clv: 3 + (i % 3), execClv: 2, execPrice: 0.5 });
+  }
+  const board = closeBoard.scoreboard({ ev: evs });
+  const a = closeBoard.alertBooks(board, { minExecClv: 1 });
+  assert.deepEqual([...a], ['betrivers']);
+});

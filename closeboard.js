@@ -173,4 +173,14 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp, { cap: true }), rows, byBook, byKind };
 }
 
-module.exports = { scoreboard, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE };
+// Who the +EV webhook may post for. The webhook reaches other people, so it
+// carries only what this board marks proven: a book read direct whose main
+// lines (or, for a pick'em app, whose sharp-price legs) are proven here, and
+// still beating the close at the price two minutes on. A copied book never
+// does, and neither does a book proven only on another kind (alt lines).
+const ALERT_KINDS = new Set(['ev', 'props-ev']);
+function alertBooks(board, { minExecClv = 1 } = {}) {
+  return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
+}
+
+module.exports = { scoreboard, alertBooks, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE };
