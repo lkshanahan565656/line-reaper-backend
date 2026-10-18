@@ -7,10 +7,11 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 40  # run 2026-10-18 a
+    timeout-minutes: 45  # run 2026-10-18 b
     steps:
       - uses: actions/checkout@v4
       - run: |
+          set +e
           U=https://line-reaper-backend-production.up.railway.app
           mkdir out
           g() { curl -s --max-time 120 "$U$1" > "out/$2"; echo "$2 $(wc -c < out/$2)"; }
@@ -33,16 +34,16 @@ jobs:
           mkdir -p out/espn out/an
           for sp in hockey/nhl football/nfl baseball/mlb basketball/wnba; do for d in 20261014 20261015 20261016 20261017 20261018; do
             f=out/espn/$(echo $sp | tr / _)-$d.json; curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/scoreboard?dates=$d&limit=300" > $f
-            for id in $(jq -r '.events[]?.id' $f); do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/summary?event=$id" | gzip > out/espn/sum-$(echo $sp | tr / _)-$id.json.gz; done
+            for id in $(jq -r ".events[]?.id" $f 2>/dev/null); do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/$sp/summary?event=$id" | gzip > out/espn/sum-$(echo $sp | tr / _)-$id.json.gz; done
           done; done
           for d in 20261014 20261015 20261016 20261017 20261018; do curl -s --max-time 60 "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=$d&groups=80&limit=300" > out/espn/football_college-football-$d.json; done
           for lg in nhl ncaaf nfl mlb; do for d in 20261014 20261015 20261016 20261017 20261018; do
             curl -s --max-time 60 -A 'Mozilla/5.0' "https://api.actionnetwork.com/web/v2/scoreboard/$lg?bookIds=15,30,68,69,71,75,79,123,972,2988,2724,4620&periods=event&date=$d$([ $lg = ncaaf ] && echo '&division=FBS')" | gzip > out/an/$lg-$d.json.gz
           done; done
           ls out/espn | wc -l
-          MINUTES=14 node diag/poll.mjs
+          pushout() { rm -rf pub; mkdir pub; cp -r out pub/; (cd pub && git init -q && git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com && git checkout -q -b $1 && git add out && git commit -qm out && git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git $1); }
           date -u +%FT%TZ > out/at.txt
-          mkdir pub; mv out pub/; cd pub
-          git init -q; git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -q -b diag-brcheck-out; git add out; git commit -qm out
-          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git diag-brcheck-out
+          pushout diag-brcheck-out
+          MINUTES=14 node diag/poll.mjs
+          date -u +%FT%TZ > out/at2.txt
+          pushout diag-brcheck-out2
