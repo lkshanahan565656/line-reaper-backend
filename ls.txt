@@ -1,0 +1,14 @@
+total 1868
+drwxr-xr-x 2 runner runner    4096 Oct 19 12:33 .
+drwxr-xr-x 3 runner runner    4096 Oct 19 12:33 ..
+-rw-r--r-- 1 runner runner      29 Oct 19 12:33 at.txt
+-rw-r--r-- 1 runner runner      11 Oct 19 12:33 ev-betrivers-0.json
+-rw-r--r-- 1 runner runner      11 Oct 19 12:33 ev-fanduel-0.json
+-rw-r--r-- 1 runner runner       0 Oct 19 12:33 ls.txt
+-rw-r--r-- 1 runner runner      26 Oct 19 12:33 pages.txt
+-rw-r--r-- 1 runner runner 1229886 Oct 19 12:33 picks-graded.json
+-rw-r--r-- 1 runner runner  547213 Oct 19 12:33 picks-locked.json
+-rw-r--r-- 1 runner runner   26179 Oct 19 12:33 props-record.json
+-rw-r--r-- 1 runner runner   23233 Oct 19 12:33 record.json
+-rw-r--r-- 1 runner runner   23803 Oct 19 12:33 scoreboard.json
+-rw-r--r-- 1 runner runner   27042 Oct 19 12:33 status.json
