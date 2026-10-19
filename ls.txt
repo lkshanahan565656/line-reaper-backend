@@ -1,0 +1,14 @@
+total 852
+drwxr-xr-x 3 runner runner   4096 Oct 19 12:36 .
+drwxr-xr-x 3 runner runner   4096 Oct 19 12:35 ..
+-rw-r--r-- 1 runner runner     29 Oct 19 12:35 at.txt
+-rw-r--r-- 1 runner runner 368578 Oct 19 12:35 br-0.json
+-rw-r--r-- 1 runner runner 102442 Oct 19 12:35 br-1.json
+-rw-r--r-- 1 runner runner  86842 Oct 19 12:35 brstale-0.json
+drwxr-xr-x 2 runner runner  20480 Oct 19 12:36 espn
+-rw-r--r-- 1 runner runner 186560 Oct 19 12:35 fd-0.json
+-rw-r--r-- 1 runner runner  55257 Oct 19 12:35 fdstale-0.json
+-rw-r--r-- 1 runner runner      0 Oct 19 12:36 ls.txt
+-rw-r--r-- 1 runner runner     54 Oct 19 12:35 pages.txt
+-rw-r--r-- 1 runner runner  23803 Oct 19 12:35 scoreboard.json
+264
