@@ -4,34 +4,17 @@ permissions: { contents: write }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
+      - uses: actions/checkout@v4
+        with: { path: d }
       - uses: actions/checkout@v4
         with: { ref: claude/texas-venues-xeeezt, path: app }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: |
           set +e
-          cd app && npm ci --no-audit --no-fund >/dev/null 2>&1
-          mkdir -p ../out/snap
-          PINNACLE=on PORT=3999 LR_DATA_DIR=$RUNNER_TEMP/lr node server.js > ../out/server.log 2>&1 &
-          cd ../out
-          G=https://api.gemini.com/v1/prediction-markets/events
-          for i in $(seq 1 16); do
-            sleep 60
-            curl -s -m 30 localhost:3999/api/status | jq -c '{v:.version, gemini, fb:(.freeBooks.counts|map_values(.more.gemini // null))}' >> status-log.jsonl
-          done
-          for q in "ev?limit=1000" "ev?limit=1000&state=TX" "ev/scoreboard" "ev/scoreboard?state=TX" "ev/record?state=TX" "best?limit=500" "best?limit=500&state=TX" "status"; do
-            f=snap/$(echo "$q" | tr '/?&=' '____').json
-            curl -s -m 120 "localhost:3999/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt
-          done
-          curl -s -m 60 localhost:3999/app > snap/app.html
-          # Gemini order book depth on today's main game events
-          curl -s -m 60 "$G?status=active&sport=american_football&sport=hockey&sport=basketball&sports_market_type=moneyline&sports_market_scope=full_contest&limit=60" > gem-ml.json
-          for t in $(jq -r '.data[].ticker' gem-ml.json | head -12); do curl -s -m 30 "$G/$t" > gem-ev-$t.json; done
-          # production for comparison
-          B=https://line-reaper-backend-production.up.railway.app
-          curl -s -m 180 $B/api/ev/scoreboard > prod-scoreboard.json
-          tail -c 20000 server.log > server-tail.log; rm server.log
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-out2
+          cd app && npm ci --no-audit --no-fund >/dev/null 2>&1 && cd ..
+          mkdir -p out && cp -r d/scripts . && NODE_PATH=app/node_modules node scripts/gemdist.js > out/log.txt 2>&1
+          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-out3 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-out3
