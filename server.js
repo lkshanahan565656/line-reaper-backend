@@ -216,6 +216,7 @@ const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.stat
 const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, slimPlayers, sleeperPricing } = require('./pickem');
 const esmatch = require('./esmatch');
 const propsBoard = require('./propsboard');
+const venues = require('./venues');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
 // 2026-10-13). The whole board is about 19k lines and 23 MB, so it's pulled
@@ -4651,7 +4652,9 @@ app.post('/api/admin/comp', requireAdmin, async (req, res) => {
 // ?sport=nba&minEv=2&book=draftkings&market=points&props=1&dfs=1&source=sharp&limit=200
 app.get('/api/ev', (req, res) => {
   const { rows: all, feeds, at } = runEvScreen();
-  const rows = all.filter(evRowOk(licenceOf(req)));
+  // ?state=TX: only venues a resident of that state can use (venues.js)
+  const inState = venues.rowLegalIn(req.query.state);
+  const rows = all.filter(evRowOk(licenceOf(req))).filter(inState);
   const pro = hasPro(req);
   // free users can't filter by anything a locked row hides (book, EV, market, side)
   const q = pro ? req.query : { sport: req.query.sport, props: req.query.props, dfs: req.query.dfs, limit: req.query.limit };
@@ -4674,19 +4677,19 @@ app.get('/api/ev', (req, res) => {
     agree2Lines: clear.filter(r => r.agree && !r.player).length, agree2Props: clear.filter(r => r.agree && r.player).length };
   out = out.slice(0, Math.min(parseInt(q.limit) || 200, 1000));
   // ladders and alternate lines: their own list (clearing rungs first)
-  const alt = (runEvScreen().alt || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
+  const alt = (runEvScreen().alt || []).filter(evRowOk(licenceOf(req))).filter(inState).filter(r => !q.sport || r.sport === q.sport);
   counts.alt = alt.length; counts.altClear = alt.filter(r => r.clears).length;
   const altOut = alt.slice(0, 300);
   // BetRivers' esports lines: their own list too (esbooks.js)
-  const es = (esBooksState.rows || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
+  const es = (esBooksState.rows || []).filter(evRowOk(licenceOf(req))).filter(inState).filter(r => !q.sport || r.sport === q.sport);
   counts.esports = es.length; counts.esportsClear = es.filter(r => r.clears).length;
   const esOut = es.slice(0, 300);
   // books and apps still on the number Pinnacle just left (stalelines.js)
-  const stale = (staleState.rows || []).filter(evRowOk(licenceOf(req))).filter(r => !q.sport || r.sport === q.sport);
+  const stale = (staleState.rows || []).filter(evRowOk(licenceOf(req))).filter(inState).filter(r => !q.sport || r.sport === q.sport);
   counts.stale = stale.length; counts.staleClear = stale.filter(r => r.clears).length;
   const staleOut = stale.slice(0, 300);
   // esports: one pick'em app moved a kill line, another hasn't (esstale.js)
-  const esStale = (esStaleState.rows || []).filter(r => !q.sport || r.sport === q.sport).map(r => ({ ...r, es: true, book: r.app, marketLabel: r.market }));
+  const esStale = (esStaleState.rows || []).filter(r => !q.sport || r.sport === q.sport).map(r => ({ ...r, es: true, book: r.app, marketLabel: r.market })).filter(inState);
   counts.esStale = esStale.length; counts.esStaleClear = esStale.filter(r => r.clears).length;
   const esStaleOut = esStale.slice(0, 200);
   res.json({ rows: pro ? out : redactEv(out), alt: pro ? altOut : redactEv(altOut).map(r => ({ ...r, alt: true })),
@@ -4694,7 +4697,7 @@ app.get('/api/ev', (req, res) => {
     // free users see a lock per row the Pro view shows at its default floor (+1%)
     stale: pro ? staleOut : redactEv(staleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, stale: true })), staleAt: staleState.screenedAt, staleLag: staleState.enabled ? staleState.engine.lagSummary() : null,
     esStale: pro ? esStaleOut : redactEv(esStaleOut.filter(r => r.ev >= 1)).map(r => ({ ...r, es: true, stale: true })), esStaleAt: esStaleState.screenedAt, esStaleLag: esStaleState.enabled ? esStaleState.engine.lagSummary() : null,
-    count: total, counts, pro, updated: new Date(at).toISOString(), feeds });
+    count: total, counts, pro, updated: new Date(at).toISOString(), feeds, state: venues.stateInfo(req.query.state) });
 });
 // New edges as they appear: event "ev" carries an array of rows.
 // ?sport=nba&kind=steam,sharp_lead&limit=100. Open sharp leads (soft books
@@ -4725,7 +4728,9 @@ app.get('/api/ev/record', async (req, res) => {
   const out = await evTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   // an exchange's own line in the by-book table needs its licence
   const ok = evRowOk(licenceOf(req));
-  if (out?.byBook) out.byBook = Object.fromEntries(Object.entries(out.byBook).filter(([book]) => ok({ book })));
+  const inState = venues.legalIn(q.state);
+  if (out?.byBook) out.byBook = Object.fromEntries(Object.entries(out.byBook).filter(([book]) => ok({ book }) && inState(book)));
+  out.state = venues.stateInfo(q.state);
   // the ladders' and alternate lines' record, apart from the main lines'
   out.alt = await altTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
@@ -4743,24 +4748,29 @@ app.get('/api/ev/record', async (req, res) => {
 // 50, beat-the-close rate, CLV and the tracker's own mark. Free: it's the
 // record. A Kalshi or Polymarket row needs its licence, as on /api/ev/record.
 const closeBoard = require('./closeboard');
-let closeBoardCache = { at: 0, key: '', body: null };
+const closeBoardCache = new Map();   // key → { at, body }
 // the scoreboard for a viewer's licences (the webhook's when none), cached a minute
-async function closeBoardFor(lic = webhookLicence(), days = 0) {
-  const ok = evRowOk(lic);
-  const key = `${JSON.stringify(lic)}|${days}`;
-  if (closeBoardCache.key !== key || Date.now() - closeBoardCache.at > 60e3) {
+// state (venues.js): only the venues a resident there can use, every total
+// re-pooled from those; none for the alert gate, which is the same for everyone
+async function closeBoardFor(lic = webhookLicence(), days = 0, state = null) {
+  const inState = venues.rowLegalIn(state);
+  const ok = r => evRowOk(lic)(r) && inState(r);
+  const key = `${JSON.stringify(lic)}|${days}|${venues.stateOf(state) || ''}`;
+  const hit = closeBoardCache.get(key);
+  if (!hit || Date.now() - hit.at > 60e3) {
     const all = { status: undefined, limit: 1e9 };
     const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
       esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
-    const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok), props, bigMoney },
+    const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok),
+      props: props.filter(r => inState(closeBoard.propsVenue(r))), bigMoney: bigMoney.filter(inState) },
       { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
-    closeBoardCache = { at: Date.now(), key, body: { ...body, at: new Date().toISOString() } };
+    closeBoardCache.set(key, { at: Date.now(), body: { ...body, state: venues.stateInfo(state), at: new Date().toISOString() } });
   }
-  return closeBoardCache.body;
+  return closeBoardCache.get(key).body;
 }
 app.get('/api/ev/scoreboard', async (req, res) => {
   try {
-    res.json(await closeBoardFor(licenceOf(req), parseFloat(req.query.days) || 0));
+    res.json(await closeBoardFor(licenceOf(req), parseFloat(req.query.days) || 0, req.query.state));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
@@ -5609,6 +5619,24 @@ async function refreshExtraBooks() {
     Object.assign(xbooksState, { counts, errors: errors.slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { xbooksState.errors = [e.message]; }
 }
+// Gemini Predictions' game lines (geminibooks.js), a CFTC exchange a Texan
+// can trade: moneyline, and spread and total rungs at Pinnacle's own main
+// number, priced off Pinnacle like FanDuel and BetRivers and graded in the
+// main-lines record as book 'gemini'. A lead: no alerts (closeboard only
+// alerts what it marks proven) and kept out of Best Plays. Every other
+// minute; GEMINI=off stops it.
+const geminibooks = require('./geminibooks');
+const geminiState = { enabled: !envOff('GEMINI'), books: {}, events: 0, at: 0, errors: [], updated: null, ms: null };
+const GEMINI_EVERY_MS = 110e3, GEMINI_MAX_AGE_MS = 6 * 60e3;
+async function refreshGemini() {
+  if (!geminiState.enabled || Date.now() - geminiState.at < GEMINI_EVERY_MS) return;
+  const t0 = Date.now();
+  try {
+    const { books, events, errors } = await geminibooks.fetchGemini(axios);
+    if (events > 0) Object.assign(geminiState, { books, events, at: Date.now() });
+    Object.assign(geminiState, { errors: errors.slice(0, 5), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { geminiState.errors = [e.message]; }
+}
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
   freeBooksRunning = true;
@@ -5618,8 +5646,12 @@ async function refreshFreeBooks() {
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     await refreshExtraBooks();
-    const extra = Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {};
-    const { games, counts, errors } = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
+    await refreshGemini();
+    const extra = { ...(Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {}) };
+    if (Date.now() - geminiState.at < GEMINI_MAX_AGE_MS) for (const [s, gs] of Object.entries(geminiState.books)) extra[s] = [...(extra[s] || []), ...gs];
+    const read = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
+    // Gemini's rungs only at Pinnacle's main number: the close is Pinnacle's own price there
+    const games = geminibooks.mainLinesOnly(read.games, pin.games), { counts, errors } = read;
     if (fdProps) freeBooksPropsAt = Date.now();
     if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps, !pin.errors.length); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
@@ -6620,6 +6652,8 @@ app.get('/api/results', async (req, res) => {
 // working (bestplays.js). Each source goes through its own licence and region
 // gates first. The rows are what's being sold, so free users get the counts.
 const bestplays = require('./bestplays');
+// venues with a record of their own and nothing proven: never in Best Plays
+const BEST_PLAYS_LEADS = new Set(['pick6', 'gemini']);
 const BEST_FREE_PREVIEW = 3;
 app.get('/api/best', async (req, res) => {
   try {
@@ -6636,13 +6670,16 @@ app.get('/api/best', async (req, res) => {
       // the PROPS board's flagged sports plays; one priced on Kalshi needs its licence
       // Pick6 is a lead with a record of its own: not in Best Plays until it's proven
       sportProps: pro ? (propsBoardRows().sportPlays || []).filter(x => !x.research && x.play.book !== 'pick6' && (lic.kalshi || !x.play.sources.some(s => s.book === 'kalshi'))) : [],
-      lines: pro ? runEvScreen().rows.filter(r => !r.dfs).filter(evRowOk(lic)) : [],
+      // so is Gemini (geminibooks.js): its own record first
+      lines: pro ? runEvScreen().rows.filter(r => !r.dfs && !BEST_PLAYS_LEADS.has(r.book)).filter(evRowOk(lic)) : [],
       arbs: xarbState.arbs.filter(arbOk(lic)),
       value: [...xvalueState.edges, ...(xvalueState.moverBets || [])].filter(valueOk(lic)),
       middles: (xarbState.middles || []).filter(arbOk(lic)),
       plays,
-    }, { limit: Math.min(parseInt(req.query.limit) || 300, 500) });
-    const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION };
+    // ?state=TX: only plays at venues a resident there can use (venues.js)
+    }, { limit: Math.min(parseInt(req.query.limit) || 300, 500), venueOk: venues.stateOf(req.query.state) ? venues.legalIn(req.query.state) : null });
+    const body = { counts: out.counts, total: out.total, dropped: out.dropped.length, pro, updated: new Date().toISOString(), region: TAIL_REGION,
+      state: venues.stateInfo(req.query.state), outOfState: out.outOfState };
     // free preview: everyone sees the same top plays (the alert is the same for all), Pro sees the whole list
     const preview = out.rows.slice(0, BEST_FREE_PREVIEW);
     res.json(regionSafe(pro ? { ...body, rows: out.rows, droppedPlays: out.dropped.slice(0, 20) } : { ...body, rows: preview, locked: out.total - preview.length }));
@@ -6717,6 +6754,10 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
+  // Gemini Predictions (geminibooks.js): events read, games per sport, how many sit on Pinnacle's games after the main-line cut
+  gemini: { enabled: geminiState.enabled, events: geminiState.events, errors: geminiState.errors, updated: geminiState.updated, ms: geminiState.ms,
+    games: Object.fromEntries(Object.entries(geminiState.books).map(([k, v]) => [k, v.length])),
+    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'gemini')).length])) },
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },

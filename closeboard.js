@@ -43,6 +43,7 @@ const mean = a => (a.length ? a.reduce((x, v) => x + v, 0) / a.length : null);
 
 const BOOK = { fanduel: 'FanDuel', betrivers: 'BetRivers', draftkings: 'DraftKings', betmgm: 'BetMGM', caesars: 'Caesars', bet365: 'bet365',
   fanatics: 'Fanatics', hardrock: 'Hard Rock', thescore: 'theScore', kalshi: 'Kalshi', polymarket: 'Polymarket', matchbook: 'Matchbook',
+  gemini: 'Gemini', polymarketus: 'Polymarket US',
   prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6', PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
 // Action Network's copies: no direct read of the book's own price
 const RELAYED = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore']);
@@ -105,10 +106,13 @@ function evPlay(kind) {
     clv: b.clv ?? null, exec: b.execClv ?? null, win: null, bet: results.SOURCES.ev.bet(b) });
 }
 const evKind = b => (b.source === 'consensus' ? 'ev-consensus' : 'ev');
+// the app a props-record row was offered on
+const APP_CODES = { PP: 'prizepicks', UD: 'underdog', SL: 'sleeper', P6: 'pick6' };
+const propsVenue = b => b.book || APP_CODES[b.signalBook] || b.signalBook;
 function propsPlay(b) {
   const state = sporttrack.closeState(b);
   const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
-  return { kind: `props-${b.kind}`, book: b.book || ({ PP: 'prizepicks', UD: 'underdog', SL: 'sleeper', P6: 'pick6' })[b.signalBook] || b.signalBook,
+  return { kind: `props-${b.kind}`, book: propsVenue(b),
     cluster: `${b.sport}|${b.player}|${b.mkey}|${day(b.start)}`, state, clv: b.closeEv ?? null,
     exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null,
     p: b.closeFair ?? null, d: b.signalDecimal ?? null, bet: results.SOURCES.sportsProps.bet(b) };
@@ -205,4 +209,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS };
+module.exports = { scoreboard, alertBooks, propsVenue, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS };
