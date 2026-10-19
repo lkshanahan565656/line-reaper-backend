@@ -1,0 +1,29 @@
+name: diag-monday
+on: { push: { branches: [diag-monday] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir out && cd out
+          date -u > at.txt
+          curl -s -m 120 $B/api/status > status.json
+          curl -s -m 180 $B/api/ev/scoreboard > scoreboard.json
+          curl -s -m 180 $B/api/ev/record > record.json
+          curl -s -m 180 $B/api/props/record > props-record.json
+          for s in locked graded; do curl -s -m 180 "$B/api/props/record/picks?status=$s&limit=1000" > picks-$s.json; done
+          for bk in betrivers fanduel; do
+            before=""; i=0
+            while [ $i -lt 8 ]; do
+              curl -s -m 180 "$B/api/ev/record/bets?book=$bk&source=ev&limit=500${before:+&before=$before}" > ev-$bk-$i.json
+              n=$(jq '.bets|length' ev-$bk-$i.json); echo "$bk $i $n" >> pages.txt
+              [ "$n" -lt 500 ] && break
+              before=$(jq -r '.bets[-1].flaggedAt' ev-$bk-$i.json); i=$((i+1))
+            done
+          done
+          ls -la > ls.txt
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-monday-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-monday-out
