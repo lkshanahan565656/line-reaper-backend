@@ -1,0 +1,16 @@
+gem-sports HTTP/2 200  4916036 https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&category=sports
+gem-all HTTP/2 200  5740409 https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100
+gem-all2 HTTP/2 200  2332204 https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&offset=100
+gem-nfl HTTP/2 200  7300584 https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&search=NFL
+gem-cats HTTP/2 200  239 https://api.gemini.com/v1/prediction-markets/categories
+novig-home HTTP/2 200  2348 https://app.novig.us/
+novig-www HTTP/2 301  0 https://www.novig.us/
+novig-gql HTTP/2 200  100 https://api.novig.us/v1/graphql
+novig-gql2 HTTP/2 503  564 https://gql.novig.us/v1/graphql
+dkpred HTTP/2 403  380 https://predictions.draftkings.com/
+fdpred HTTP/2 302  194 https://predicts.fanduel.com/
+og HTTP/2 103  6844698 https://og.com/
+prophetx HTTP/2 200  1212750 https://www.prophetx.co/
+pmus HTTP/2 200  46831 https://gateway.polymarket.us/v1/events?limit=5
+kalshi HTTP/2 200  2412 https://api.elections.kalshi.com/trade-api/v2/events?limit=5&status=open&series_ticker=KXNFLGAME
+sporttrade HTTP/2 301  167 https://sporttrade.com/

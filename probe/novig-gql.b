@@ -1,0 +1,1 @@
+{"errors":[{"message":"query is not allowed","extensions":{"path":"$","code":"validation-failed"}}]}
