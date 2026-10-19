@@ -1,0 +1,19 @@
+name: diag-texas-live
+on: { push: { branches: [diag-texas-live] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out/snap && cd out
+          for i in $(seq 1 30); do v=$(curl -s -m 30 $B/api/status | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.144.0" ] && break; sleep 60; done
+          sleep 300
+          for q in "ev?limit=1000" "ev?limit=1000&state=TX" "ev/scoreboard" "ev/scoreboard?state=TX" "ev/record?state=TX" "best?limit=500" "best?limit=500&state=TX" "status"; do
+            f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 180 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
+          date -u > at.txt
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-live-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-live-out
