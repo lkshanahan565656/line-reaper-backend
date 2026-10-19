@@ -401,6 +401,7 @@ const BOOK_NAMES = {
   bovada: 'Bovada', betonlineag: 'BetOnline', lowvig: 'LowVig', mybookieag: 'MyBookie', betus: 'BetUS', betanysports: 'BetAnySports',
   prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper',
   pinnacle: 'Pinnacle', novig: 'Novig', prophetx: 'ProphetX', kalshi: 'Kalshi', kalshi_mid: 'Kalshi', polymarket: 'Polymarket', fliff: 'Fliff', bet365: 'Bet365',
+  gemini: 'Gemini', polymarketus: 'Polymarket US', pick6: 'DK Pick6',
 };
 const bookName = k => BOOK_NAMES[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const LINE_MARKETS = { h2h: 'moneyline', spreads: 'spread', totals: 'total' };
@@ -549,12 +550,14 @@ function bestPlays({ signals = [], matches = [], picks = [], props = [], sportPr
   const parts = [tailRows(signals, verdict, o, now), edgeRows(matches, verdict, o, now), propRows(picks, verdict, o, now), lineRows(lines, verdict, o, now), valueRows(value, verdict, o, now), middleRows(middles, verdict, o, now),
     board, bookPropRows(lines, verdict, record, o, now)];
   const propIds = new Set(parts[2].rows.map(r => r.id));
-  const rows = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now, board.keys), ...arbRows(arbs, esArbs, o)];
+  const every = [...parts.flatMap(p => p.rows), ...entryRows(picks, propIds, o, now), ...dfsRows(props, o, now, board.keys), ...arbRows(arbs, esArbs, o)];
+  // o.venueOk (venues.legalIn): only plays a viewer's state allows
+  const rows = o.venueOk ? every.filter(r => o.venueOk(r.venue)) : every;
   const tier = r => (r.verdict === 'arb' ? 0 : TIER[r.verdict] ?? 2);
   rows.sort((a, b) => tier(a) - tier(b) || (b.ev ?? -1) - (a.ev ?? -1));
   const counts = {};
   for (const r of rows) counts[r.kind] = (counts[r.kind] || 0) + 1;
-  return { rows: rows.slice(0, o.limit), total: rows.length, counts, dropped: parts.flatMap(p => p.dropped) };
+  return { rows: rows.slice(0, o.limit), total: rows.length, counts, outOfState: every.length - rows.length, dropped: parts.flatMap(p => p.dropped) };
 }
 
 module.exports = { bestPlays, verdictIndex, recordIndex, valueSignal, kellyUnits, DEFAULTS };

@@ -49,6 +49,7 @@ const BLOCKED = [
 // Still on with the paywall on, but their terms need a read (or attribution)
 // before charging. Listed in /api/status so nothing is forgotten.
 const REVIEW = [
+  { key: 'gemini', name: 'Gemini Predictions', note: 'Public prediction-markets REST (api.gemini.com, no key): check its API terms on redistribution before charging.' },
   { key: 'oddsapi', name: 'The Odds API', note: 'Paid plans allow use in apps; check the plan terms.' },
   { key: 'pandascore', name: 'PandaScore', note: 'Free tier terms: check commercial use.' },
   { key: 'lolesports', name: 'LoL Esports schedule', note: 'Unofficial use of the public key the lolesports site uses.' },

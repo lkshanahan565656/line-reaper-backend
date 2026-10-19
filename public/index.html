@@ -1367,8 +1367,10 @@ body.no-help .clv-info { display:none; }
   <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center">
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sportsbook</span><select id="bestBookSel" onchange="bestSet('book',this.value)"><option value="all">All books</option></select></label>
     <label class="es-field" style="flex:1 1 180px;max-width:260px"><span>Sort by</span><select id="bestSortSel" onchange="bestSet('sort',this.value)"><option value="rank">Best ranked</option><option value="edge">Biggest edge</option><option value="start">Starting soonest</option><option value="book">Sportsbook</option></select></label>
+    <label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="Show only the venues legal where you bet"><option value="">All states</option><option value="TX">Texas</option></select></label>
     <button class="sport-chip" onclick="myBooksToggle('bestMyBooks')">MY BOOKS</button>
   </div>
+  <div class="lr-state-note" data-state-note="best"></div>
   <div class="mybk-panel" id="bestMyBooks"></div>
   <div id="bestContent"></div>
 </div>
@@ -1539,6 +1541,8 @@ body.no-help .clv-info { display:none; }
     <label style="font-size:11px;color:#94a3b8;display:flex;gap:4px;align-items:center" title="Two sharp prices (Pinnacle and Kalshi) within 5 points of each other"><input type="checkbox" id="evAgreeOnly" onchange="evSet('agreeOnly', this.checked)"> two sharp sources agree</label>
     <input id="evSearch" placeholder="Search team, player or book" style="flex:1;min-width:160px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,.3);color:#f1f5f9" oninput="evSet('search', this.value.trim().toLowerCase())">
   </div>
+  <div class="row" style="margin:0 0 12px;gap:8px;flex-wrap:wrap;align-items:center"><label class="es-field" style="flex:0 1 190px"><span>Betting from</span><select class="lr-state" onchange="lrSetState(this.value)" title="Show only the venues legal where you bet"><option value="">All states</option><option value="TX">Texas</option></select></label></div>
+  <div class="lr-state-note" data-state-note="ev"></div>
   <div id="evBookRow" class="row" style="margin:0 0 12px;flex-wrap:wrap;gap:6px"></div>
   <div id="evContent"></div>
 </div>
@@ -5038,13 +5042,43 @@ function renderEsports() {
 }
 
 
+// ── BETTING FROM: one state for the +EV board, its record and Best Plays ────
+// The backend (venues.js) keeps only the venues a resident of that state can
+// use; no state shows everything. Alerts are the same for everyone.
+let lrState = '';
+try { lrState = localStorage.getItem('lr_state') || ''; } catch { /* private window */ }
+const stateQ = (sep = '&') => (lrState ? `${sep}state=${encodeURIComponent(lrState)}` : '');
+function lrSetState(v) {
+  lrState = v || '';
+  try { localStorage.setItem('lr_state', lrState); } catch { /* fine */ }
+  document.querySelectorAll('select.lr-state').forEach(x => { x.value = lrState; });
+  evState.rows = []; bestUi.data = null;
+  lrStateNotes(null);
+  if (document.getElementById('page-ev')?.classList.contains('active')) loadEv();
+  if (document.getElementById('page-best')?.classList.contains('active')) loadBest();
+}
+// the line under the picker: what the state allows and what we can't read there
+function lrStateNotes(info, which) {
+  document.querySelectorAll('[data-state-note]').forEach(el => {
+    if (which && el.dataset.stateNote !== which) return;
+    if (!lrState || !info) { el.innerHTML = ''; return; }
+    const read = info.venues.filter(v => v.read).map(v => v.name), unread = info.venues.filter(v => !v.read);
+    el.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.2)">
+      <b style="color:#e2e8f0">Betting from ${escAttr(info.name)}.</b> ${escAttr(info.note)} Shown here: ${escAttr(read.join(', '))}.
+      ${unread.length ? `<span title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal there, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</span>` : ''} <span style="color:#64748b">As of ${escAttr(info.asOf)}.</span></div>`;
+  });
+}
+document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('select.lr-state').forEach(x => { x.value = lrState; }));
+
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
 const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, esStale: [], esStaleLag: null, esStaleLagOpen: false, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
-const EV_BOOK_NAMES = { pick6:'DK Pick6', draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket' };
+const EV_BOOK_NAMES = { pick6:'DK Pick6', draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket', polymarketus:'Polymarket US', gemini:'Gemini' };
+// a Gemini price is its contract plus the 7% x p(1-p) taker fee: back to the contract's cents
+const gemCents = dec => { const c = 1 / dec; const p = (1.07 - Math.sqrt(1.07 * 1.07 - 0.28 * c)) / 0.14; return Number.isFinite(p) ? Math.round(p * 100) : null; };
 const evBookName = k => EV_BOOK_NAMES[k] || (k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 // each book's own no-vig chance of the row's side: the cross-comparison behind the fair
 const evSrcTxt = r => 'No-vig chance of this side: ' + Object.entries(r.srcP || {}).sort((a, b) => b[1] - a[1]).map(([b, p]) => `${evBookName(b)} ${p}%${(r.sharpBooks || []).includes(b) ? ' (in the fair)' : ''}`).join(' · ');
@@ -5060,10 +5094,11 @@ async function loadEv() {
   const el = document.getElementById('evContent');
   if (!evState.rows.length) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Scoring prices against the sharp line...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try {
-    const r = await fetch(`${BACKEND_URL}/api/ev?limit=1000`);
+    const r = await fetch(`${BACKEND_URL}/api/ev?limit=1000${stateQ()}`);
     if (r.status === 404) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">BACKEND TOO OLD</div><div class="empty-sub">The +EV screener needs backend v3.15 or later.</div></div>`; return; }
     const d = await r.json();
     Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
+    lrStateNotes(d.state, 'ev');
     renderEv();
   } catch (e) {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(e.message)}</div></div>`;
@@ -5110,12 +5145,14 @@ async function renderEvRecord(el) {
   let s, bets, board = null;
   try {
     [s, bets, board] = await Promise.all([
-      fetch(`${BACKEND_URL}/api/ev/record${evState.sport !== 'all' ? '?sport=' + encodeURIComponent(evState.sport) : ''}`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/api/ev/record${evState.sport !== 'all' ? '?sport=' + encodeURIComponent(evState.sport) + stateQ() : stateQ('?')}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/ev/record/bets?status=closed&limit=50`).then(r => r.json()),
-      fetch(`${BACKEND_URL}/api/ev/scoreboard`).then(r => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${BACKEND_URL}/api/ev/scoreboard${stateQ('?')}`).then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
   } catch { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div></div>`; return; }
   if (evState.kind !== 'record') return;
+  // with a state picked, the graded list keeps only its venues (the scoreboard and by-book table come cut from the backend)
+  if (lrState && board?.state) { const ok = new Set(board.state.venues.map(v => v.key)); bets = { ...bets, bets: (bets.bets || []).filter(b => ok.has(b.book)) }; }
   const o = s.overall || { n: 0 };
   const pct = v => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
   const tile = (v, label, color = '#f1f5f9') => `<div style="flex:1;min-width:120px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
@@ -5192,7 +5229,7 @@ function renderEv() {
   const when = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
   el.innerHTML = banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
     const what = r.player ? `${escAttr(r.player)} · ${escAttr(EV_MARKET[r.market] || r.market)} ${r.locked ? '' : escAttr(r.side) + ' ' + r.point}` : `${escAttr(EV_MARKET[r.market] || r.market)}${r.locked ? '' : ' · ' + escAttr(r.side)}`;
-    const price = r.locked ? '' : r.dfs ? (r.multiplier && r.multiplier !== 1 ? r.multiplier + 'x' : 'pick') : fmtAm(r.price);
+    const price = r.locked ? '' : r.dfs ? (r.multiplier && r.multiplier !== 1 ? r.multiplier + 'x' : 'pick') : r.book === 'gemini' && r.decimal ? `${gemCents(r.decimal)}¢<div style="font-size:9px;color:#64748b;font-weight:400">${fmtAm(r.price)} with fee</div>` : fmtAm(r.price);
     return `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px">
       <div style="min-width:70px;text-align:center">${r.locked ? `<span class="es-lock" onclick="acctNeedPro('The +EV screener')"><svg class="ic-lock" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 017 0v2M3.5 7h9v7h-9z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg> +EV</span>` : `<div style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:17px;color:${evColor(r.ev)}">+${r.ev.toFixed(1)}%</div>`}</div>
       <div style="flex:1;min-width:180px">
@@ -6320,7 +6357,7 @@ async function loadBest() {
   clearTimeout(bestUi.timer);
   const el = document.getElementById('bestContent');
   if (!bestUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
-  try { bestUi.data = await tailGet('/api/best?limit=500'); bestUi.error = null; }
+  try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; lrStateNotes(bestUi.data.state, 'best'); }
   catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : e.message; }
   renderBest();
   if (document.getElementById('page-best').classList.contains('active')) bestUi.timer = setTimeout(loadBest, 60000);
@@ -6373,7 +6410,7 @@ function renderBest() {
   const c = d.counts || {};
   const sum = [['tail', 'Sharp Tail'], ['exchangeValue', 'exchange value'], ['esportsEdge', 'esports edges'], ['esportsProp', 'esports props'], ['sportsProp', 'sports props'], ['bookLine', 'sportsbook lines'], ['bookProp', 'sportsbook props'], ['middle', 'middles'], ['arb', 'arbs']].map(([k, n]) => `${c[k] || 0} ${n}`).join(' · ');
   el.innerHTML = `
-    <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
+    <div style="font-size:11px;color:var(--text2)">${d.total} plays: ${sum}${d.dropped ? ` · ${d.dropped} left off as avoid` : ''}${d.outOfState ? ` · ${d.outOfState} at venues not legal in ${escAttr(d.state?.name || 'your state')}` : ''}${rows.length !== (d.rows || []).length ? ` · showing ${rows.length}` : ''} · updated ${escAttr(when(d.updated))}</div>
     ${body ? `<div style="overflow-x:auto"><table class="esm-table">
       <thead><tr><th></th><th>Bet</th><th class="bp-c">Where</th><th class="bp-c" style="text-align:right">Price</th><th class="bp-c" style="text-align:right">Size</th><th class="bp-c" style="text-align:right">Edge</th><th></th></tr></thead>
       <tbody>${body}</tbody></table></div>` : tailEmpty('NOTHING WORTH BETTING RIGHT NOW', 'Plays show up here as signals, edges and arbs come in. Nothing is better than a bad bet.')}
