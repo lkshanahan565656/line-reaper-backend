@@ -1,0 +1,183 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Line Reaper v3.92.0 on port 3999
+Tracker: store ready
+UD: 5300 lines (4044 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+Owls odds mma: 403 (auth) — 2 more failures until Owls disables itself
+Owls odds nhl: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+PP: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, CS2, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL
+Sleeper: 49 esports and 1660 sports lines from 1740 rows
+Startup complete
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 zweih: KPM=12.2 KPR=0.57 HS%=53 R=—
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+bo3 Jame: KPM=13.3 KPR=0.63 HS%=31 R=—
+bo3 xiELO: KPM=14.2 KPR=0.67 HS%=61 R=—
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+bo3 FL1T: KPM=13.0 KPR=0.61 HS%=56 R=—
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+bo3 HObbit: KPM=12.0 KPR=0.57 HS%=46 R=—
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+bo3 sFade8: KPM=13.6 KPR=0.60 HS%=59 R=—
+bo3 MaSvAl: KPM=14.2 KPR=0.63 HS%=60 R=—
+bo3 AW: KPM=15.2 KPR=0.67 HS%=57 R=—
+Esports board: 139 matches (52 on both exchanges, 2 edges) in 8444ms
+bo3 tENZY: KPM=16.9 KPR=0.74 HS%=61 R=—
+OpenDota: 7748 pro player names indexed
+bo3 Starry: KPM=15.9 KPR=0.71 HS%=61 R=—
+bo3 z4kr: KPM=15.3 KPR=0.68 HS%=32 R=—
+bo3 EmiliaQAQ: KPM=15.3 KPR=0.68 HS%=63 R=—
+bo3 Woro2k: KPM=17.3 KPR=0.78 HS%=35 R=—
+bo3 C4LLM3SU3: KPM=14.8 KPR=0.66 HS%=55 R=—
+bo3 Westmelon: KPM=14.5 KPR=0.64 HS%=61 R=—
+bo3 ChildKing: KPM=16.8 KPR=0.78 HS%=64 R=—
+bo3 XELLOW: no usable kill fields — inspect /api/esports/probe/cs/XELLOW
+bo3 L1haNg: KPM=15.3 KPR=0.72 HS%=57 R=—
+Sleeper: 49 esports and 1660 sports lines from 1740 rows
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, CS2, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL
+UD: 5300 lines (4044 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+bo3 kraghen: KPM=14.4 KPR=0.65 HS%=46 R=—
+bo3 kaze: KPM=15.8 KPR=0.77 HS%=34 R=—
+bo3 Summer: KPM=13.6 KPR=0.64 HS%=58 R=—
+bo3 M1key: KPM=16.4 KPR=0.72 HS%=50 R=—
+bo3 3gl: KPM=13.7 KPR=0.64 HS%=42 R=—
+bo3 Bielany: KPM=15.1 KPR=0.68 HS%=57 R=—
+bo3 Bielany: KPM=15.1 KPR=0.68 HS%=57 R=—
+bo3 Dytor: KPM=14.3 KPR=0.66 HS%=51 R=—
+bo3 Dytor: KPM=14.3 KPR=0.66 HS%=51 R=—
+Ratings LOL: 5213 maps → 298 teams
+bo3 raalz: KPM=14.4 KPR=0.65 HS%=64 R=—
+bo3 raalz: KPM=14.4 KPR=0.65 HS%=64 R=—
+bo3 notineki: KPM=14.4 KPR=0.67 HS%=59 R=—
+bo3 notineki: KPM=14.4 KPR=0.67 HS%=59 R=—
+bo3 bnox: KPM=14.8 KPR=0.69 HS%=54 R=—
+bo3 bnox: KPM=14.8 KPR=0.69 HS%=54 R=—
+gol.gg: 2181 LoL players (S16)
+bo3 ragga: KPM=14.4 KPR=0.69 HS%=35 R=—
+bo3 ragga: KPM=14.4 KPR=0.69 HS%=35 R=—
+bo3 2high: KPM=15.2 KPR=0.68 HS%=46 R=—
+bo3 2high: KPM=15.2 KPR=0.68 HS%=46 R=—
+Ratings DOTA: 913 maps → 143 teams
+Esports board: 139 matches (52 on both exchanges, 2 edges) in 3307ms
+bo3 Flayy: KPM=18.0 KPR=0.81 HS%=33 R=—
+bo3 Flayy: KPM=18.0 KPR=0.81 HS%=33 R=—
+bo3 Re1GN: KPM=15.3 KPR=0.72 HS%=— R=—
+bo3 Re1GN: KPM=15.3 KPR=0.72 HS%=— R=—
+bo3 fakerealityy: KPM=14.9 KPR=0.69 HS%=60 R=—
+bo3 fakerealityy: KPM=14.9 KPR=0.69 HS%=60 R=—
+bo3 meetyoxanaji: KPM=13.8 KPR=0.65 HS%=— R=—
+bo3 meetyoxanaji: KPM=13.8 KPR=0.65 HS%=— R=—
+bo3 ta9z: KPM=17.0 KPR=0.78 HS%=59 R=—
+bo3 ta9z: KPM=17.0 KPR=0.78 HS%=59 R=—
+bo3 waZz: KPM=13.1 KPR=0.63 HS%=56 R=—
+bo3 adamS-: no search hit
+bo3 adamS-: no search hit
+bo3 KWERTZZ: KPM=16.7 KPR=0.74 HS%=70 R=—
+bo3 KWERTZZ: KPM=16.7 KPR=0.74 HS%=70 R=—
+bo3 puuha: KPM=12.9 KPR=0.61 HS%=48 R=—
+bo3 puuha: KPM=12.9 KPR=0.61 HS%=48 R=—
+Warmer: +18 CS profiles (9 still queued)
+bo3 mhN1: KPM=12.0 KPR=0.60 HS%=51 R=—
+bo3 Sn0w: KPM=15.5 KPR=0.69 HS%=34 R=—
+bo3 Fluffy: KPM=19.0 KPR=0.77 HS%=41 R=—
+bo3 rim3: KPM=17.4 KPR=0.71 HS%=52 R=—
+bo3 Br4tkO: no usable kill fields — inspect /api/esports/probe/cs/Br4tkO
+Round model: 1 matches, 2 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 37 lines priced ({"CS":37}), 0 clear with a sharp price, 13 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+bo3 Sa1nty: KPM=13.8 KPR=0.65 HS%=65 R=—
+bo3 R4DYX: KPM=14.3 KPR=0.67 HS%=34 R=—
+bo3 Joey: KPM=15.2 KPR=0.71 HS%=50 R=—
+Ratings VAL: 1538 maps → 191 teams
+bo3 zewts: KPM=14.0 KPR=0.67 HS%=56 R=—
+bo3 b1elany: KPM=15.1 KPR=0.68 HS%=57 R=—
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 37 lines priced ({"CS":37}), 0 clear with a sharp price, 13 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Ratings CS: 9961 maps → 613 teams
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 46 lines priced ({"CS":46}), 0 clear with a sharp price, 13 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 46 lines priced ({"CS":46}), 0 clear with a sharp price, 13 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+Sleeper: 49 esports and 1660 sports lines from 1740 rows
+UD: 5303 lines (4048 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports board: 140 matches (52 on both exchanges, 2 edges) in 3306ms
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 56 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Sleeper: 49 esports and 1661 sports lines from 1741 rows
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5298 lines (4045 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+Sleeper: 49 esports and 1661 sports lines from 1741 rows
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5298 lines (4045 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports board: 140 matches (52 on both exchanges, 1 edges) in 3311ms
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 56 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 56 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+Sleeper: 49 esports and 1661 sports lines from 1741 rows
+UD: 5304 lines (4049 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+UD: 5304 lines (4049 boosted/demoted) · sports: NFL, MLB, NBA, WNBA, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports board: 140 matches (52 on both exchanges, 1 edges) in 3311ms
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 56 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5303 lines (4046 boosted/demoted) · sports: NFL, NBA, WNBA, CFB, MLB, NHL, FIFA, MMA, TENNIS, CS
+Sleeper: 49 esports and 1658 sports lines from 1738 rows
+Esports: PP=111 UD=50 SL=35/49 udMap=50
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"CS":46,"LOL":54}), 0 clear with a sharp price, 56 model-only at +2%
+Esports: generated 164 picks (50 UD-sourced, 3 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Esports board: 141 matches (52 on both exchanges, 1 edges) in 3311ms
+Sleeper: 49 esports and 1658 sports lines from 1738 rows
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5358 lines (4086 boosted/demoted) · sports: NFL, NBA, WNBA, MLB, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports: PP=111 UD=51 SL=35/49 udMap=51
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 57 model-only at +2%
+Esports: generated 164 picks (51 UD-sourced, 2 Sleeper-sourced, 32 Sleeper-priced, 0 manual, 0 need model input)
+Esports board: 140 matches (51 on both exchanges, 1 edges) in 3303ms
+Esports: PP=111 UD=51 SL=35/49 udMap=51
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 57 model-only at +2%
+Esports: generated 164 picks (51 UD-sourced, 2 Sleeper-sourced, 31 Sleeper-priced, 0 manual, 0 need model input)
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+Sleeper: 49 esports and 1669 sports lines from 1749 rows
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+Sleeper: 49 esports and 1669 sports lines from 1749 rows
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5214 lines (3959 boosted/demoted) · sports: NFL, NBA, WNBA, MLB, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports: PP=111 UD=52 SL=35/49 udMap=52
+Round model: 1 matches, 5 lines priced, 0 clear (2 teams with an unknown lineup)
+H2H kills: 100 lines priced ({"LOL":54,"CS":46}), 0 clear with a sharp price, 57 model-only at +2%
+Esports: generated 164 picks (52 UD-sourced, 1 Sleeper-sourced, 31 Sleeper-priced, 0 manual, 0 need model input)
+UD: 5214 lines (3959 boosted/demoted) · sports: NFL, NBA, WNBA, MLB, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports board: 139 matches (52 on both exchanges, 1 edges) in 3309ms
+PP league 121: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+Sleeper: 49 esports and 1669 sports lines from 1749 rows
+Sleeper: 49 esports and 1669 sports lines from 1749 rows
+PP league 265: 2536 lines (111 esports) · leagues: NBA, SOCCER, La Liga, EPL, NHL, WNBA, WNBA1H, WNBA1Q, MLB, MLBLIVE, NFL, NFL1H
+UD: 5188 lines (3934 boosted/demoted) · sports: NFL, NBA, WNBA, MLB, CFB, NHL, FIFA, MMA, TENNIS, CS
+UD: 5188 lines (3934 boosted/demoted) · sports: NFL, NBA, WNBA, MLB, CFB, NHL, FIFA, MMA, TENNIS, CS
+Esports board: 139 matches (52 on both exchanges, 1 edges) in 3305ms
