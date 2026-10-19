@@ -4590,7 +4590,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.144.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.144.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4762,7 +4762,7 @@ async function closeBoardFor(lic = webhookLicence(), days = 0, state = null) {
     const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
       esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
     const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok),
-      props: props.filter(r => inState(closeBoard.propsVenue(r))), bigMoney: bigMoney.filter(inState) },
+      props: props.filter(r => venues.legalIn(state)(closeBoard.propsVenue(r))), bigMoney: bigMoney.filter(inState) },
       { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
     closeBoardCache.set(key, { at: Date.now(), body: { ...body, state: venues.stateInfo(state), at: new Date().toISOString() } });
   }
@@ -6741,7 +6741,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.144.0',
+  version: '3.144.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

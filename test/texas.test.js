@@ -124,3 +124,11 @@ test('Best Plays keeps only the venues a state allows', () => {
   assert.equal(tx.outOfState, 2);
   assert.equal(tx.counts.arb, 1);
 });
+
+test('the props record keeps its apps when a state is picked', () => {
+  const tx = venues.legalIn('TX');
+  const props = [{ signalBook: 'PP' }, { book: 'underdog' }, { signalBook: 'P6' }, { book: 'fanduel' }];
+  assert.deepEqual(props.filter(r => tx(closeBoard.propsVenue(r))).length, 3);
+  // a row predicate given a venue string finds nothing: the 3.144.0 bug
+  assert.equal(venues.rowLegalIn('TX')('prizepicks'), false);
+});
