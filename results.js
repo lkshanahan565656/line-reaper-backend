@@ -67,6 +67,24 @@ function verdictOf(s) {
   return 'early';
 }
 
+// Results against what the close expected. A close the play really beat
+// predicts its wins; graded lines winning far less than that (1.5 sd under
+// in units, over 30+ lines) say the close itself is wrong, the way FanDuel's
+// alt lines (10-18) and BetRivers' stale lines (10-19) read +2% to +4% CLV
+// while losing. lines: [{ win, p (close chance 0-1), d (decimal paid) }]
+const SHORT_MIN_N = 30, SHORT_Z = -1.5;
+function resultsShortfall(lines) {
+  const l = (lines || []).filter(x => typeof x.win === 'boolean' && x.p > 0 && x.p < 1 && x.d > 1);
+  if (!l.length) return { n: 0, short: false };
+  const units = l.reduce((a, x) => a + (x.win ? x.d - 1 : -1), 0);
+  const exp = l.reduce((a, x) => a + x.p * x.d - 1, 0);
+  const sd = Math.sqrt(l.reduce((a, x) => a + x.p * (1 - x.p) * x.d * x.d, 0));
+  const z = sd > 0 ? (units - exp) / sd : 0;
+  const short = l.length >= SHORT_MIN_N && z <= SHORT_Z;
+  return { n: l.length, units: r2(units), expUnits: r2(exp), z: r2(z), short,
+    note: short ? `Not proven: ${l.length} graded lines made ${r2(units)} units where the close expected ${r2(exp) > 0 ? '+' : ''}${r2(exp)} (${r2(z)} sd), so the close is in doubt.` : null };
+}
+
 // bets → stats with a verdict
 function score(bets) {
   const graded = bets.filter(b => b.profit != null && b.staked > 0);
@@ -229,4 +247,4 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
   return { sources, plays };
 }
 
-module.exports = { scoreboard, score, tStat, verdictOf, SOURCES, EXEC_MIN_N, PROVEN_N, PROVEN_BOOK_N, BOOK_SOURCES, RELAYED_BOOKS };
+module.exports = { scoreboard, score, tStat, resultsShortfall, verdictOf, SOURCES, EXEC_MIN_N, PROVEN_N, PROVEN_BOOK_N, BOOK_SOURCES, RELAYED_BOOKS };

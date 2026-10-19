@@ -4,6 +4,7 @@ const { createEvTracker, closeState } = require('../evtrack');
 const { createSportTracker } = require('../sporttrack');
 const { createMemoryStore } = require('../evtrack');
 const closeBoard = require('../closeboard');
+const results = require('../results');
 
 const START = '2026-10-15T23:00:00Z';
 const row = (o = {}) => ({ group: 'a@b|2026-10-15|spreads|3.5', side: 'A +3.5', book: 'betrivers', sport: 'nfl', event: 'A @ B', market: 'spreads', point: 3.5,
@@ -159,4 +160,41 @@ test('alert books from real records: BetRivers with 50 graded games alerts, a co
   const board = closeBoard.scoreboard({ ev: evs });
   const a = closeBoard.alertBooks(board, { minExecClv: 1 });
   assert.deepEqual([...a], ['betrivers']);
+});
+
+// Stale lines are priced at the venue's own number, which Pinnacle has
+// usually just left: the close there is our curve. 10-19: BetRivers' stale
+// lines read proven at 65 games (+4.2% CLV) while 104 lines lost 16.9 units.
+test('stale lines stop at promising and say why', () => {
+  const stale = Array.from({ length: 60 }, (_, i) => ({ id: `s${i}`, status: 'closed', book: 'betrivers', source: 'stale-single', group: `stale-single|G${i}|1`, event: `G${i}`, start: START,
+    closeOk: true, clv: 3 + (i % 3), execClv: 3 + (i % 3), flaggedAt: START, sport: 'nfl', market: 'rec_yds' }));
+  const b = closeBoard.scoreboard({ stale });
+  const row = b.rows.find(r => r.kind === 'stale-single' && r.book === 'betrivers');
+  assert.equal(row.graded, 60);
+  assert.equal(row.mark, 'promising');
+  assert.match(row.note, /curve/);
+  assert.equal(b.byBook.betrivers.mark, 'promising', 'never a book\'s proof');
+  assert.deepEqual([...closeBoard.alertBooks(b)], []);
+});
+
+// A kind whose graded results sit far under what its close expected isn't
+// proven, whatever its CLV: the close is in doubt.
+test('results far under the close hold a kind at promising', () => {
+  const leg = (i, win) => ({ id: `p${i}`, status: 'graded', kind: 'ev', book: 'prizepicks', signalBook: 'PP', sport: 'NFL', player: `P${i}`, mkey: 'rec_yds', start: START,
+    closeOk: true, closeEv: 4, closeFair: 0.57, signalDecimal: 1.8247, execOk: true, outcome: win ? 'win' : 'loss', profit: win ? 0.8247 : -1, signalAt: START });
+  const losing = closeBoard.scoreboard({ props: Array.from({ length: 60 }, (_, i) => leg(i, i % 3 === 0)) });   // 20 of 60 won, 34 expected
+  const r = losing.rows.find(x => x.kind === 'props-ev');
+  assert.equal(r.mark, 'promising');
+  assert.match(r.note, /close is in doubt/);
+  assert.ok(r.resultsZ < -1.5);
+  const fine = closeBoard.scoreboard({ props: Array.from({ length: 60 }, (_, i) => leg(i, i % 7 < 4)) });   // about 57% won
+  assert.equal(fine.rows.find(x => x.kind === 'props-ev').mark, 'proven');
+});
+
+test('resultsShortfall: needs 30 lines and 1.5 sd under', () => {
+  const l = n => Array.from({ length: n }, (_, i) => ({ win: i % 3 === 0, p: 0.55, d: 1.9 }));
+  assert.equal(results.resultsShortfall(l(20)).short, false, 'too few');
+  const s = results.resultsShortfall(l(60));
+  assert.equal(s.short, true); assert.ok(s.z < -1.5);
+  assert.equal(results.resultsShortfall([]).n, 0);
 });
