@@ -4,43 +4,14 @@ permissions: { contents: write }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - run: |
           set +e
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/espn out/live && cd out
-          date -u > at.txt
-          curl -s -m 180 $B/api/ev/scoreboard > scoreboard.json
-          curl -s -m 180 "$B/api/ev/record" > record.json
-          curl -s -m 120 "$B/api/status" > status.json
-          page() { tag=$1; q=$2; before=""; i=0
-            while [ $i -lt 10 ]; do
-              curl -s -m 180 "$B/api/ev/record/bets?$q&limit=500${before:+&before=$before}" > $tag-$i.json
-              n=$(jq '.bets|length' $tag-$i.json); echo "$tag $i $n" >> pages.txt
-              [ "$n" -lt 500 ] && break
-              before=$(jq -r '.bets[-1].flaggedAt' $tag-$i.json); i=$((i+1))
-            done; }
-          page brstale "book=betrivers&stale=1"
-          curl -s -m 180 "$B/api/props/record/picks?status=graded&limit=1000" > picks-graded.json
-          curl -s -m 180 "$B/api/props/record/picks?status=locked&limit=1000" > picks-locked.json
-          cd espn
-          for d in 20261010 20261011 20261012 20261013 20261014 20261015 20261016 20261017 20261018 20261019; do
-            for sl in hockey/nhl football/nfl "football/college-football" baseball/mlb basketball/wnba; do
-              code=$(echo $sl | tr / _); x=""; [ "$sl" = "football/college-football" ] && x="&groups=80&limit=300"
-              curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/$sl/scoreboard?dates=$d$x" > $code-$d.json
-            done
-          done
-          for f in *-2026*.json; do code=${f%-*}; sl=$(echo $code | sed 's/_/\//'); jq -r '.events[]? | select(.status.type.completed) | .id' $f | sed "s|^|$code $sl |"; done | sort -u > ids.txt
-          cat ids.txt | xargs -P 16 -n 3 sh -c 'curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/$1/summary?event=$2" | gzip > sum-$0-$2.json.gz'
-          cd ../live
-          # live: every 60 s for 30 min, the stale rows the site shows now
-          for i in $(seq 1 30); do
-            t=$(date -u +%H%M%S)
-            curl -s -m 50 "$B/api/ev?limit=1" | jq -c '{at:.staleAt, stale:[.stale[]?|{group,venue,sport,event,market,player,point,side,price,ev,fairProb,preFair,pinPre,pinPost,pinNow,moveAt,mins,readMins,venueSince,source,clears,x,kind}], lag:(if '$i'==1 then .staleLag else null end)}' > s-$t.json
-            sleep 55
-          done
-          cd ..
-          ls -la > ls.txt; ls espn | wc -l >> ls.txt; ls live | wc -l >> ls.txt
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-brstale-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-brstale-out
+          mkdir -p out && cd out
+          for i in $(seq 1 25); do v=$(curl -s -m 30 $B/ | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.143.0" ] && break; sleep 60; done
+          curl -s -m 180 $B/api/ev/scoreboard | jq -c '{rows:[.rows[]|select(.graded>=20)|{kind,book,graded,avgClv,mark,resultsZ,note}],betrivers:.byBook.betrivers.mark}' > board.json
+          curl -s -m 120 $B/api/status | jq -c '{version, alert:(.ev.alertBooks // .alertBooks // null)}' > status.json
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-brstale-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-brstale-out2
