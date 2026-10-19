@@ -4,36 +4,34 @@ permissions: { contents: write }
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v4
+        with: { ref: claude/texas-venues-xeeezt, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
       - run: |
           set +e
+          cd app && npm ci --no-audit --no-fund >/dev/null 2>&1
+          mkdir -p ../out/snap
+          PINNACLE=on PORT=3999 LR_DATA_DIR=$RUNNER_TEMP/lr node server.js > ../out/server.log 2>&1 &
+          cd ../out
+          G=https://api.gemini.com/v1/prediction-markets/events
+          for i in $(seq 1 16); do
+            sleep 60
+            curl -s -m 30 localhost:3999/api/status | jq -c '{v:.version, gemini, fb:(.freeBooks.counts|map_values(.more.gemini // null))}' >> status-log.jsonl
+          done
+          for q in "ev?limit=1000" "ev?limit=1000&state=TX" "ev/scoreboard" "ev/scoreboard?state=TX" "ev/record?state=TX" "best?limit=500" "best?limit=500&state=TX" "status"; do
+            f=snap/$(echo "$q" | tr '/?&=' '____').json
+            curl -s -m 120 "localhost:3999/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt
+          done
+          curl -s -m 60 localhost:3999/app > snap/app.html
+          # Gemini order book depth on today's main game events
+          curl -s -m 60 "$G?status=active&sport=american_football&sport=hockey&sport=basketball&sports_market_type=moneyline&sports_market_scope=full_contest&limit=60" > gem-ml.json
+          for t in $(jq -r '.data[].ticker' gem-ml.json | head -12); do curl -s -m 30 "$G/$t" > gem-ev-$t.json; done
+          # production for comparison
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/probe && cd out
-          date -u > at.txt
-          curl -s -m 60 $B/api/status | head -c 4000 > status.json
-          curl -s -m 180 $B/api/ev/scoreboard > scoreboard.json
-          curl -s -m 180 $B/api/props/record > props-record.json
-          curl -s -m 180 "$B/api/props/record/picks?status=closed&limit=1000" > props-picks.json
-          curl -s -m 180 $B/api/results > results.json
-          cd probe
-          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
-          get() { n=$1; u=$2; shift 2; curl -s -m 40 -A "$UA" -D $n.h -o $n.b "$@" "$u"; echo "$n $(head -1 $n.h | tr -d '\r') $(wc -c < $n.b) $u" >> ../probe.txt; }
-          get gem-sports "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&category=sports"
-          get gem-all "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100"
-          get gem-all2 "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&offset=100"
-          get gem-nfl "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&search=NFL"
-          get gem-cats "https://api.gemini.com/v1/prediction-markets/categories"
-          get novig-home "https://app.novig.us/"
-          get novig-www "https://www.novig.us/"
-          get novig-gql "https://api.novig.us/v1/graphql" -X POST -H 'content-type: application/json' --data '{"query":"{ __typename }"}'
-          get novig-gql2 "https://gql.novig.us/v1/graphql" -X POST -H 'content-type: application/json' --data '{"query":"{ __typename }"}'
-          get dkpred "https://predictions.draftkings.com/"
-          get fdpred "https://predicts.fanduel.com/"
-          get og "https://og.com/"
-          get prophetx "https://www.prophetx.co/"
-          get pmus "https://gateway.polymarket.us/v1/events?limit=5"
-          get kalshi "https://api.elections.kalshi.com/trade-api/v2/events?limit=5&status=open&series_ticker=KXNFLGAME"
-          get sporttrade "https://sporttrade.com/"
-          cd ..
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-out
+          curl -s -m 180 $B/api/ev/scoreboard > prod-scoreboard.json
+          tail -c 20000 server.log > server-tail.log; rm server.log
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-out2
