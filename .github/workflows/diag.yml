@@ -1,0 +1,39 @@
+name: diag-texas
+on: { push: { branches: [diag-texas] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out/probe && cd out
+          date -u > at.txt
+          curl -s -m 60 $B/api/status | head -c 4000 > status.json
+          curl -s -m 180 $B/api/ev/scoreboard > scoreboard.json
+          curl -s -m 180 $B/api/props/record > props-record.json
+          curl -s -m 180 "$B/api/props/record/picks?status=closed&limit=1000" > props-picks.json
+          curl -s -m 180 $B/api/results > results.json
+          cd probe
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+          get() { n=$1; u=$2; shift 2; curl -s -m 40 -A "$UA" -D $n.h -o $n.b "$@" "$u"; echo "$n $(head -1 $n.h | tr -d '\r') $(wc -c < $n.b) $u" >> ../probe.txt; }
+          get gem-sports "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&category=sports"
+          get gem-all "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100"
+          get gem-all2 "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&offset=100"
+          get gem-nfl "https://api.gemini.com/v1/prediction-markets/events?status=active&limit=100&search=NFL"
+          get gem-cats "https://api.gemini.com/v1/prediction-markets/categories"
+          get novig-home "https://app.novig.us/"
+          get novig-www "https://www.novig.us/"
+          get novig-gql "https://api.novig.us/v1/graphql" -X POST -H 'content-type: application/json' --data '{"query":"{ __typename }"}'
+          get novig-gql2 "https://gql.novig.us/v1/graphql" -X POST -H 'content-type: application/json' --data '{"query":"{ __typename }"}'
+          get dkpred "https://predictions.draftkings.com/"
+          get fdpred "https://predicts.fanduel.com/"
+          get og "https://og.com/"
+          get prophetx "https://www.prophetx.co/"
+          get pmus "https://gateway.polymarket.us/v1/events?limit=5"
+          get kalshi "https://api.elections.kalshi.com/trade-api/v2/events?limit=5&status=open&series_ticker=KXNFLGAME"
+          get sporttrade "https://sporttrade.com/"
+          cd ..
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-texas-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-texas-out
