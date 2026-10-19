@@ -5239,7 +5239,7 @@ function evCloseBoard(b) {
     const graded = v.graded > 0;
     const w = Math.round(Math.min(1, v.graded / T) * 100);
     return `<div class="cb-row">
-      <div class="cb-name"><div style="color:#e2e8f0;font-weight:700">${escAttr(v.name)}</div>${v.sub ? `<div style="font-size:10px;color:#64748b">${escAttr(v.sub)}</div>` : ''}</div>
+      <div class="cb-name"><div style="color:#e2e8f0;font-weight:700">${escAttr(v.name)}</div>${v.sub ? `<div style="font-size:10px;color:#64748b">${escAttr(v.sub)}</div>` : ''}${v.note ? `<div style="font-size:10px;color:#f59e0b;margin-top:2px">${escAttr(v.note)}</div>` : ''}</div>
       <div class="cb-n" title="Graded: closes read within the hour before the start"><div style="font-family:'JetBrains Mono',monospace;color:#cbd5e1">${v.graded}/${T}</div>
         <div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:3px"><div style="height:4px;width:${w}%;background:${graded ? '#38bdf8' : 'transparent'};border-radius:2px"></div></div>
         <div style="font-size:10px;color:#64748b;margin-top:2px">${v.open} waiting${v.staleClose + v.unverified ? ` · ${v.staleClose + v.unverified} no close` : ''}</div></div>
@@ -5255,7 +5255,7 @@ function evCloseBoard(b) {
       <span style="font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;flex:1;min-width:180px">EVERY BOOK AGAINST THE CLOSE · ${o.graded || 0} GRADED · ${o.open || 0} WAITING</span>
       ${chip('book', 'BY BOOK')}${chip('kind', 'BY KIND')}${chip('all', 'BOOK × KIND')}</div>
     ${list.length ? list.map(row).join('') : `<div style="padding:12px 14px;font-size:12px;color:#64748b">Nothing recorded yet.</div>`}
-    <div style="padding:8px 14px;font-size:11px;color:#64748b;border-top:1px solid var(--border)">Every play the +EV tab, alt lines, stale lines, the pick'em apps and big money flag, at the book it was offered. A play is graded once its close is in: the sharp fair the play was priced on (Pinnacle first, with Kalshi where it prices the line) read within the hour before the start. A close read earlier than that, or from before this check, isn't counted. Lines on the same game or the same player's stat count as one play. PROVEN needs ${T} graded plays with CLV positive at a t-stat of 2, and nothing else here is a claim. MODEL CLOSE rows were closed on our own curve or soft books alone, so they never count.</div>
+    <div style="padding:8px 14px;font-size:11px;color:#64748b;border-top:1px solid var(--border)">Every play the +EV tab, alt lines, stale lines, the pick'em apps and big money flag, at the book it was offered. A play is graded once its close is in: the sharp fair the play was priced on (Pinnacle first, with Kalshi where it prices the line) read within the hour before the start. A close read earlier than that, or from before this check, isn't counted. Lines on the same game or the same player's stat count as one play. PROVEN needs ${T} graded plays with CLV positive at a t-stat of 2, and nothing else here is a claim. MODEL CLOSE rows were closed on our own curve or soft books alone, so they never count. Alt lines and stale lines stop at promising: their close is often our curve at the book's number, not Pinnacle's own price, and both lost money while reading positive against it.</div>
   </div>`;
 }
 
@@ -5344,7 +5344,8 @@ function evStaleRecord(a, apps, es) {
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:12px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:#94a3b8;font-weight:700;border-bottom:1px solid var(--border)">STALE LINES (OWN RECORD) · ${(a?.open || 0) + (apps?.stale?.open || 0) + (apps?.single?.open || 0) + (es?.open || 0)} WAITING FOR CLOSE</div>
     ${book('stale', 'Books, cleared: another sharp source moved too')}${book('stale-single', 'Books, single-source: Pinnacle alone')}
-    ${apps ? app(apps.stale, "Pick'em apps, cleared") + app(apps.single, "Pick'em apps, single-source") : ''}${evEsStaleRecord(es)}</div>`;
+    ${apps ? app(apps.stale, "Pick'em apps, cleared") + app(apps.single, "Pick'em apps, single-source") : ''}${evEsStaleRecord(es)}
+    <div style="padding:8px 14px;font-size:11px;color:#f59e0b;border-top:1px solid var(--border)">Not a proven edge. A stale line is priced at the book's own number, and where Pinnacle moved to another number that price is our curve, not Pinnacle's. Graded on box scores (10-19), BetRivers' stale lines won 47 of 104 where the close expected 58, for -16.9 units, while reading +5.7% against it.</div></div>`;
 }
 // esports legs at an app another app had just moved off: graded on the result,
 // the close on the app's own line by the start

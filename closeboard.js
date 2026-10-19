@@ -83,7 +83,17 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 // book's proof (10-18: FanDuel's alt lines read proven at 75 games, +2.6% CLV,
 // while 102 lines lost 24.6 units and today's clearing rungs were -3% against
 // Pinnacle's own curve).
-const CAPPED_KINDS = new Set(['alt']);
+// Stale lines are the same problem at the venue's own number: the venue is
+// still on the number Pinnacle just left, so where Pinnacle moved its number
+// the fair (and the close) is read off our stat curve, not Pinnacle's price
+// there. 10-19: BetRivers' stale lines read proven at 65 games, +4.2% CLV,
+// while 104 graded lines won 47 against 57.9 the close expected (-16.9 units);
+// of the props with Pinnacle's line on record, 19 of 27 sat at another number.
+const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single']);
+// why each capped kind stops at promising, shown on the record screen
+const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.";
+const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price.";
+const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE };
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
 const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
@@ -100,7 +110,8 @@ function propsPlay(b) {
   const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
   return { kind: `props-${b.kind}`, book: b.book || ({ PP: 'prizepicks', UD: 'underdog', SL: 'sleeper', P6: 'pick6' })[b.signalBook] || b.signalBook,
     cluster: `${b.sport}|${b.player}|${b.mkey}|${day(b.start)}`, state, clv: b.closeEv ?? null,
-    exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null, bet: results.SOURCES.sportsProps.bet(b) };
+    exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null,
+    p: b.closeFair ?? null, d: b.signalDecimal ?? null, bet: results.SOURCES.sportsProps.bet(b) };
 }
 function bigPlay(b) {
   const state = b.status === 'open' || b.status === 'void' ? null : sporttrack.closeState(b);
@@ -121,16 +132,19 @@ function clusterBets(lines) {
         profit: won.length ? won.reduce((a, b) => a + b.profit, 0) : null, staked: won.reduce((a, b) => a + b.staked, 0) } };
   });
 }
-function stats(plays, { noMark = false, cap = false } = {}) {
+function stats(plays, { noMark = false, cap = false, capNote = null } = {}) {
   const lines = plays.filter(p => p.state === 'ok' && p.clv != null);
   const g = clusterBets(lines);
   const ex = g.filter(p => p.exec != null);
   const won = plays.filter(p => p.win != null);
-  let mark = 'not graded yet';
+  let mark = 'not graded yet', note = null;
+  // results far under what the close expected: the close itself is in doubt
+  const short = results.resultsShortfall(lines.filter(p => p.win != null && p.p != null && p.d != null).map(p => ({ win: p.win, p: p.p, d: p.d })));
   if (noMark) mark = 'no sharp close';
   else if (g.length) {
     mark = results.score(g.map(p => p.bet)).verdict;
-    if (mark === 'proven' && (g.length < TARGET || cap)) mark = 'promising';
+    if (mark === 'proven' && (g.length < TARGET || cap)) { mark = 'promising'; if (cap && capNote) note = capNote; }
+    if (mark === 'proven' && short.short) { mark = 'promising'; note = short.note; }
   }
   return {
     recorded: plays.length, open: plays.filter(p => p.state == null).length,
@@ -140,7 +154,8 @@ function stats(plays, { noMark = false, cap = false } = {}) {
     avgClv: r2(mean(g.map(p => p.clv))),
     execN: ex.length, avgExecClv: r2(mean(ex.map(p => p.exec))),
     wins: won.filter(p => p.win).length, losses: won.filter(p => !p.win).length,
-    mark,
+    ...(short.n ? { resultsZ: short.z, resultsUnits: short.units, resultsExpUnits: short.expUnits } : {}),
+    mark, ...(note || (cap && capNote) ? { note: note || capNote } : {}),
   };
 }
 
@@ -168,14 +183,14 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   const order = (a, b) => (a.mark === 'no sharp close') - (b.mark === 'no sharp close') || b.graded - a.graded || b.recorded - a.recorded;
   const rows = [...group(p => `${p.kind}|${p.book}`)].map(([k, l]) => {
     const [kind, book] = k.split('|');
-    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind), cap: RELAYED.has(book) || CAPPED_KINDS.has(kind) }) };
+    return { kind, kindLabel: KINDS[kind] || kind, book, bookName: BOOK[book] || book, relayed: RELAYED.has(book), ...stats(l, { noMark: NO_SHARP_CLOSE.has(kind), cap: RELAYED.has(book) || CAPPED_KINDS.has(kind), capNote: CAP_NOTE[kind] || null }) };
   }).sort(order);
   // a book's total is proven only through one of its own kinds
   const provenBooks = new Set(rows.filter(r => r.mark === 'proven' && !BOOK_CLOSE.has(r.kind)).map(r => r.book));
   const byBook = Object.fromEntries([...group(p => p.book, sharp)].map(([k, l]) => [k, { bookName: BOOK[k] || k, relayed: RELAYED.has(k), ...stats(l, { cap: !provenBooks.has(k) }) }])
     .sort((a, b) => order(a[1], b[1])));
   // a kind's total pools its books
-  const byKind = Object.fromEntries([...group(p => p.kind)].map(([k, l]) => [k, { kindLabel: KINDS[k] || k, ...stats(l, { noMark: NO_SHARP_CLOSE.has(k), cap: true }) }])
+  const byKind = Object.fromEntries([...group(p => p.kind)].map(([k, l]) => [k, { kindLabel: KINDS[k] || k, ...stats(l, { noMark: NO_SHARP_CLOSE.has(k), cap: true, capNote: CAP_NOTE[k] || null }) }])
     .sort((a, b) => order(a[1], b[1])));
   return { target: TARGET, freshMin: evtrack.CLOSE_FRESH_MS / 60e3, overall: stats(sharp, { cap: true }), rows, byBook, byKind };
 }
@@ -190,4 +205,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE };
+module.exports = { scoreboard, alertBooks, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS };
