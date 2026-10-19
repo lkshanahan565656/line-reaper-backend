@@ -5065,7 +5065,7 @@ function lrStateNotes(info, which) {
     const read = info.venues.filter(v => v.read).map(v => v.name), unread = info.venues.filter(v => !v.read);
     el.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin:-4px 0 12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.2)">
       <b style="color:#e2e8f0">Betting from ${escAttr(info.name)}.</b> ${escAttr(info.note)} Shown here: ${escAttr(read.join(', '))}.
-      ${unread.length ? `Legal there but not priced here: ${unread.map(v => `${escAttr(v.name)} (${escAttr(v.why)})`).join(', ')}.` : ''} <span style="color:#64748b">List as of ${escAttr(info.asOf)}.</span></div>`;
+      ${unread.length ? `<span title="${escAttr(unread.map(v => `${v.name}: ${v.why}`).join('; '))}">Legal there, not priced here: ${escAttr(unread.map(v => v.name).join(', '))}.</span>` : ''} <span style="color:#64748b">As of ${escAttr(info.asOf)}.</span></div>`;
   });
 }
 document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('select.lr-state').forEach(x => { x.value = lrState; }));
