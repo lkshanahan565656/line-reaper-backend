@@ -1,0 +1,15 @@
+name: diag-stackcheck
+on: { push: { branches: [diag-stackcheck] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: mkdir -p out && node recheck.js
+      - run: |
+          cd out && git init -q && git checkout -q -b diag-stackcheck-out && git add . && git -c user.name=diag -c user.email=diag@x commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-stackcheck-out
