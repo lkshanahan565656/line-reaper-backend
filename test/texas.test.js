@@ -101,7 +101,7 @@ test('only rungs at Pinnacle\'s main number stay; the moneyline always does', ()
   assert.deepEqual(m('spreads').outcomes.map(o => o.point), [-6.5, 6.5]);   // -3.5 is Pinnacle's alternate, 1.5 Pinnacle doesn't price
   assert.deepEqual(m('totals').outcomes.map(o => o.point), [44.5, 44.5]);
   // and the screen prices them against Pinnacle's no-vig like any book
-  const rows = ev.screen({ feeds: [{ sport: 'nfl', label: 'free-odds', games: [cut] }], minEv: -100 });
+  const rows = ev.screen({ feeds: [{ sport: 'nfl', label: 'free-odds', games: [cut] }], minEv: -100, now: NOW });
   const gem = rows.filter(r => r.book === 'gemini');
   assert.ok(gem.length >= 4);
   assert.ok(gem.every(r => r.source === 'sharp' && (r.sharpBooks || []).includes('pinnacle')));
