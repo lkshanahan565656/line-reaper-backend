@@ -7,13 +7,13 @@ const esModels = Object.fromEntries(models.models.map(c => [c.key, { verdict: c.
   for (const [name, vp] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
     const ctx = await b.newContext({ viewport: vp, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
-    await page.addInitScript(() => { try { localStorage.setItem('lr_pb_lbook', 'prizepicks'); localStorage.setItem('lr_es_view', 'record'); } catch {} });
+    await page.addInitScript(() => { try { localStorage.setItem('lr_pb_lbook', 'prizepicks'); localStorage.setItem('lr_es_view', 'record'); sessionStorage.setItem('lr_welcomed', '1'); } catch {} });
     await page.route('**/api/esports/models*', r => r.fulfill({ json: models }));
     await page.route('**/api/esports/auto-slips*', async r => { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.stackNeeds = models.stacks; await r.fulfill({ json: j }); });
     await page.route('**/api/props/board*', async r => { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.esModels = esModels; await r.fulfill({ json: j }); });
     await page.goto('http://127.0.0.1:8080/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(4000);
-    const shot = async f => { await page.waitForTimeout(9000); await page.screenshot({ path: `out/${f}-${name}.png`, fullPage: true }); };
+    const shot = async f => { await page.waitForTimeout(9000); await page.screenshot({ path: `out/${f}-${name}.png`, fullPage: true }); fs.writeFileSync(`out/${f}-${name}.txt`, await page.evaluate(() => document.querySelector('.page.active')?.innerText.slice(0, 30000) || '')); };
     await page.evaluate(() => showTab('esports', document.querySelector(".tab[onclick*=esports]")));
     await page.waitForTimeout(3000);
     await page.evaluate(() => { try { setEsMode('props'); } catch (e) {} });
