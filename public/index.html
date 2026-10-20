@@ -555,6 +555,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .trm-list { border: 1px solid rgba(148,163,184,.14); border-radius: 10px; overflow: hidden; }
 .trm-row { display: grid; grid-template-columns: minmax(0, 2.4fr) repeat(4, minmax(0, .8fr)) minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 9px 12px; border-top: 1px solid rgba(148,163,184,.1); font-size: 12px; }
 .trm-row:first-child { border-top: 0; }
+.trm-head { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 7px 12px; }
 .trm-name b { display: block; color: #e2e8f0; font-size: 13px; }
 .trm-name span { color: #64748b; font-size: 11px; }
 .trm-c { color: #cbd5e1; font-variant-numeric: tabular-nums; }
@@ -563,6 +564,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 @media (max-width: 640px) {
   .trm-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .trm-name { grid-column: 1 / -1; }
+  .trm-head { display: none; }
   .trm-c::before { content: attr(data-l); display: block; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
 }
 .ln-num.good { color: #34d399; } .ln-num.thin { color: #fbbf24; } .ln-num.bf { color: #94a3b8; } .ln-num.bad { color: #f87171; } .ln-num.odd { color: #c084fc; }
@@ -6938,7 +6940,7 @@ function trModelsHTML(d) {
   };
   const st = (d.stacks || []).filter(s => s.stacks >= 10 && s.swept && s.needsPays != null);
   return `<div class="trm"><div class="es-hdr"><h3>ESPORTS MODELS</h3><span class="sub">Every esports model's legs, graded on box scores, against the hit rate its payouts need. Judged at ${d.minN} graded; a failed model's legs stop showing as plays.</span></div>
-    <div class="trm-list">${d.models.map(row).join('')}</div>
+    <div class="trm-list"><div class="trm-row trm-head"><div>Model</div><div>Graded</div><div>Record</div><div>Hit vs needed</div><div>Units</div><div>Verdict</div></div>${d.models.map(row).join('')}</div>
     ${st.length ? `<div class="tr-note">Same-match stacks: ${st.map(s => `${ES_STACK_APP[s.book] || s.book} ${s.size}-pick ${s.swept} swept of ${s.stacks}, pays if the app shows ${s.needsPays}x or more`).join('; ')}. A lead: the app's real payout for one match's picks decides it.</div>` : ''}</div>`;
 }
 async function renderTrackRecord(el) {
