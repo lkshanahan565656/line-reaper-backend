@@ -551,6 +551,22 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .ln-lean { font-weight: 800; font-size: 12px; letter-spacing: .04em; }
 .ln-lean.over { color: #34d399; } .ln-lean.under { color: #f472b6; }
 .ln-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; color: #94a3b8; }
+.trm { margin-bottom: 18px; }
+.trm-list { border: 1px solid rgba(148,163,184,.14); border-radius: 10px; overflow: hidden; }
+.trm-row { display: grid; grid-template-columns: minmax(0, 2.4fr) repeat(4, minmax(0, .8fr)) minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 9px 12px; border-top: 1px solid rgba(148,163,184,.1); font-size: 12px; }
+.trm-row:first-child { border-top: 0; }
+.trm-head { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 7px 12px; }
+.trm-name b { display: block; color: #e2e8f0; font-size: 13px; }
+.trm-name span { color: #64748b; font-size: 11px; }
+.trm-c { color: #cbd5e1; font-variant-numeric: tabular-nums; }
+.trm-c small { color: #64748b; }
+.trm-v { display: inline-block; border: 1px solid; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+@media (max-width: 640px) {
+  .trm-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trm-name { grid-column: 1 / -1; }
+  .trm-head { display: none; }
+  .trm-c::before { content: attr(data-l); display: block; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+}
 .ln-num.good { color: #34d399; } .ln-num.thin { color: #fbbf24; } .ln-num.bf { color: #94a3b8; } .ln-num.bad { color: #f87171; } .ln-num.odd { color: #c084fc; }
 .ln-used { width: 18px; height: 18px; accent-color: #34d399; cursor: pointer; }
 .ln-count { font-size: 12px; color: #94a3b8; margin: 0 0 8px; }
@@ -3765,7 +3781,8 @@ function lnRow(r, book) {
   const open = ev && (ev.side === 'Over' ? c.overOpen !== false : c.underOpen !== false);
   const go = sharp && open && ev.ev >= minEv;
   // FanDuel and BetRivers alone (college football, NHL): grey, never green
-  const evCls = ev == null ? '' : go ? 'good' : ev.ev > 0 ? (ev.bookFair ? 'bf' : 'thin') : 'bad';
+  const h2hDead = !!ev?.h2h && !ev.clears && pbH2hFailed();
+  const evCls = ev == null ? '' : go ? 'good' : ev.ev > 0 ? (ev.bookFair || h2hDead ? 'bf' : 'thin') : 'bad';
   const mult = book === 'prizepicks' ? null : ev ? (ev.side === 'Over' ? c.over : c.under) : null;
   const multTxt = book === 'prizepicks' ? 'Std' : mult != null ? `${(+mult).toFixed(2)}x` : '—';
   const h2 = r.model?.h2h;
@@ -3783,13 +3800,21 @@ function lnRow(r, book) {
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
     <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
-    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="Our head-to-head model: not graded yet, and a play only where Pinnacle agrees">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
+    <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="${escAttr(pbH2hTitle())}">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
-    <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
+    <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : h2hDead ? ` (our matchup model alone: ${escAttr(pbH2hTitle())}; grey, not a play)` : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
     <div class="c ln-usedc" data-l="Used"><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
+}
+// The matchup (H2H) model's record from /api/esports/models: once it fails at
+// 50+ graded, its model-only legs show grey, never as plays
+function pbH2hFailed() { return pbState.data?.esModels?.h2h?.verdict === 'failed'; }
+function pbH2hTitle() {
+  const h = pbState.data?.esModels?.h2h;
+  if (!h || !h.graded) return 'Our head-to-head model: not graded yet, and a play only where Pinnacle agrees';
+  return `Our head-to-head model alone: ${h.wins}-${h.losses} on ${h.graded} graded, ${h.hitPct}% against the ${h.breakEvenPct}% it needed (${h.units > 0 ? '+' : ''}${h.units}u)${h.verdict === 'failed' ? '. It failed its record, so its legs alone are not plays' : ''}. A play only where Pinnacle agrees`;
 }
 function renderLines() {
   const el = document.getElementById('pbContent'), d = pbState.data, book = pbState.lineBook;
@@ -3825,7 +3850,7 @@ function renderPropsBoard() {
     const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
     const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
     const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
-      : `<div class="pb-big" style="color:${b.source === 'books' ? (b.ev > 0 ? '#94a3b8' : '#64748b') : b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'books' ? `${pbSrcTxt(b.sources)} alone, not sharp` : b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${PB_LEAD[b.book] ? `<div class="pb-dim" title="${PB_LEAD[b.book]}">new app, not graded yet</div>` : ''}${b.source === 'books' ? `<div class="pb-dim" title="No sharp book posts this prop. The books' own price is a lead with its own record, judged at about 50 graded legs.">BOOK FAIR · lead, not graded yet</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
+      : `<div class="pb-big" style="color:${b.source === 'books' ? (b.ev > 0 ? '#94a3b8' : '#64748b') : b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 && !(b.source === 'h2h' && pbH2hFailed()) ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'books' ? `${pbSrcTxt(b.sources)} alone, not sharp` : b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : pbH2hFailed() ? 'matchup model only (failed its record)' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${PB_LEAD[b.book] ? `<div class="pb-dim" title="${PB_LEAD[b.book]}">new app, not graded yet</div>` : ''}${b.source === 'books' ? `<div class="pb-dim" title="No sharp book posts this prop. The books' own price is a lead with its own record, judged at about 50 graded legs.">BOOK FAIR · lead, not graded yet</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
     const am = v => (v > 0 ? `+${v}` : `${v}`);
     const proj = r.model?.h2h ? ` · proj ${r.model.proj} (matchup: ${r.model.h2h.share}% of ${r.model.h2h.teamKills} team kills a map${r.model.h2h.vs ? ` vs ${escAttr(r.model.h2h.vs)}` : ''}${r.model.pin ? `; Pinnacle ${r.model.pin.proj}` : ''})` : r.model?.share?.rounds ? ` · proj ${r.model.proj} (Pinnacle rounds × ${(+r.model.share.kpr).toFixed(2)} kills a round)` : r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? (r.pinnacle.over != null ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : ` · Pinnacle ${r.pinnacle.line}${r.pinnacle.rounds ? ` (${r.pinnacle.rounds} rounds)` : ''}: ${r.pinnacle.pOver}% over`) : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
@@ -6900,16 +6925,35 @@ function trReviewHTML(picks) {
     </div>`;
 }
 
+// ESPORTS MODELS: every esports record against what it needed (esmodels.js)
+const TR_VERDICT = { early: ['EARLY', '#94a3b8'], failed: ['FAILED', '#f87171'], losing: ['LOSING', '#f87171'], ahead: ['AHEAD, NOT PROVEN', '#fbbf24'], beats: ['BEATS BREAK-EVEN: RE-CHECK', '#34d399'] };
+function trModelsHTML(d) {
+  if (!d?.models?.length) return '';
+  const row = m => {
+    const [word, col] = TR_VERDICT[m.verdict] || [m.verdict, '#94a3b8'];
+    return `<div class="trm-row"><div class="trm-name"><b>${escEs(m.label)}</b><span>${escEs(m.what)}</span></div>
+      <div class="trm-c" data-l="Graded">${m.graded}${m.verdict === 'early' ? ` <small>of ${d.minN}</small>` : ''}</div>
+      <div class="trm-c" data-l="Record">${m.wins}-${m.losses}</div>
+      <div class="trm-c" data-l="Hit vs needed"><span style="color:${m.hitPct != null && m.hitPct >= m.breakEvenPct ? '#34d399' : '#f87171'}">${m.hitPct ?? '—'}%</span> <small>vs ${m.breakEvenPct ?? '—'}%</small></div>
+      <div class="trm-c" data-l="Units"><span style="color:${m.units >= 0 ? '#34d399' : '#f87171'}">${m.units > 0 ? '+' : ''}${m.units}u</span></div>
+      <div class="trm-c" data-l="Verdict"><span class="trm-v" style="color:${col};border-color:${col}66">${word}</span></div></div>`;
+  };
+  const st = (d.stacks || []).filter(s => s.stacks >= 10 && s.swept && s.needsPays != null);
+  return `<div class="trm"><div class="es-hdr"><h3>ESPORTS MODELS</h3><span class="sub">Every esports model's legs, graded on box scores, against the hit rate its payouts need. Judged at ${d.minN} graded; a failed model's legs stop showing as plays.</span></div>
+    <div class="trm-list"><div class="trm-row trm-head"><div>Model</div><div>Graded</div><div>Record</div><div>Hit vs needed</div><div>Units</div><div>Verdict</div></div>${d.models.map(row).join('')}</div>
+    ${st.length ? `<div class="tr-note">Same-match stacks: ${st.map(s => `${ES_STACK_APP[s.book] || s.book} ${s.size}-pick ${s.swept} swept of ${s.stacks}, pays if the app shows ${s.needsPays}x or more`).join('; ')}. A lead: the app's real payout for one match's picks decides it.</div>` : ''}</div>`;
+}
 async function renderTrackRecord(el) {
   el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">LOADING TRACK RECORD...</div></div>`;
   const q = new URLSearchParams();
   if (trState.sport) q.set('sport', trState.sport);
   if (trState.minEV !== '') q.set('minEV', trState.minEV);
   try {
-    const [sum, review, locked] = await Promise.all([
+    const [sum, review, locked, models] = await Promise.all([
       fetch(`${BACKEND_URL}/api/tracker/summary?${q}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/tracker/picks?status=review&limit=100${trState.sport ? '&sport=' + trState.sport : ''}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/tracker/picks?status=locked&limit=100${trState.sport ? '&sport=' + trState.sport : ''}`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/api/esports/models`).then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
     if (sum.error) throw new Error(sum.error);
     const o = sum.overall;
@@ -6918,6 +6962,7 @@ async function renderTrackRecord(el) {
     const chip = (v, label) => `<button class="sport-chip ${trState.sport === v ? 'active' : ''}" onclick="trState.sport='${v}';renderEsports()">${label}</button>`;
     const evChip = (v, label) => `<button class="sport-chip ${String(trState.minEV) === String(v) ? 'active' : ''}" onclick="trState.minEV='${v}';renderEsports()">${label}</button>`;
     el.innerHTML = `
+      ${trModelsHTML(models)}
       <div class="tr-chips">
         ${chip('', 'ALL')}${chip('CS', 'CS2')}${chip('VAL', 'VALORANT')}${chip('LOL', 'LOL')}${chip('DOTA', 'DOTA')}${chip('COD', 'COD')}
         <span class="lbl">MIN EV</span>
@@ -7180,9 +7225,25 @@ function esStacksHTML(d) {
   const recLine = rec && rec.slips
     ? `<span class="es-rec">Record at standard payouts: ${swept}${rec.expectedSwept != null ? ` (priced ${rec.expectedSwept}; ${rec.independentSwept} if the legs were independent)` : ''}, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${legs?.n ? ` · legs won ${legs.wonPct}% against ${legs.pricedPct}% priced${rec.matches ? `, from ${rec.matches} matches` : ''}` : ''}${closeBits ? ` · at the close: ${closeBits}` : ''}${rec.open ? ` · ${rec.open} pending` : ''} · <b>Not proven</b>: too few matches yet, and the apps may pay less than standard for same-match picks</span>`
     : `<span class="es-rec">Not graded yet: every stack shown is logged and graded${rec?.open ? `, ${rec.open} pending` : ''}</span>`;
-  const head = `<div class="es-hdr"><h3>MATCH STACKS</h3><span class="sub">One match, every leg the same way. When a match runs long, everyone's kills go over together. Every number assumes the app's standard payout, which it may cut for picks from one match: check the entry screen.</span>${recLine}</div>`;
+  const needs = esStackNeedsHTML(d.stackNeeds);
+  const head = `<div class="es-hdr"><h3>MATCH STACKS</h3><span class="sub">One match, every leg the same way. When a match runs long, everyone's kills go over together. Every number assumes the app's standard payout, which it may cut for picks from one match: check the entry screen.</span>${recLine}</div>${needs}`;
   if (!list.length) return head + `<div class="es-as-note" style="margin-bottom:12px">No same-match stack on PrizePicks, Underdog or Sleeper is +EV right now.</div>`;
   return head + `<div class="es-autoslips">${list.map((s, i) => esAsCard(s, i, d)).join('')}</div>`;
+}
+// What the stack record says each app must pay on a sweep, from finished
+// stacks (/api/esports/models stacks): stakes / sweeps on a fixed table
+const ES_STACK_APP = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK Pick6' };
+function esStackNeedsHTML(list) {
+  const rows = (list || []).filter(s => s.stacks >= 10).slice(0, 4);
+  if (!rows.length) return '';
+  const line = s => {
+    const app = ES_STACK_APP[s.book] || s.book;
+    const base = `<b style="color:#e2e8f0">${app} ${s.size}-pick</b>: ${s.swept} of ${s.stacks} swept (${s.matches} matches; ${s.expectedSwept} expected with the legs moving together, ${s.independentSwept} if they didn't)`;
+    if (!s.swept) return `${base}. No sweep yet, so no payout makes this record pay${s.flex ? '' : ''}.`;
+    if (s.needsPays == null) return `${base}.`;
+    return `${base}. Pays if ${app} shows at least <b style="color:#e2e8f0">${s.needsPays}x</b> for all ${s.size}${s.needsPaysOneFewer ? ` (${s.needsPaysOneFewer}x with one sweep fewer)` : ''}; standard is ${s.standardPays}x.`;
+  };
+  return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">WHAT THE STACK RECORD NEEDS</b> · ${rows.map(line).join('<br>')}<br>Only ${rows.reduce((a, s) => a + s.swept, 0)} sweeps so far: a lead, not proven. The number that decides it is the payout the app shows for these picks together.</div>`;
 }
 // What a stack card's numbers assume, and what to check in the app before playing it
 function esStackNote(s) {

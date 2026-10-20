@@ -4590,7 +4590,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.144.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.145.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5187,6 +5187,33 @@ app.get('/api/esports/rounds', async (req, res) => {
     res.json({ note: `Pinnacle's rounds on each map x the player's kills a round (CS2, Valorant). ${graded ? `${graded} graded` : 'Not graded yet'}; tracked, not alerted.`,
       now: esportsCache.rounds || null, minEv: ROUNDS_OPTS.minEv, agreePts: ROUNDS_OPTS.agreePts, books: esBooksState.summary?.roundModel || null,
       record: roundmodel.roundsRecord(rows), priced: hasPro(req) ? priced : priced.length, rows: hasPro(req) ? rows.slice(0, +req.query.limit || 500) : rows.filter(r => r.status === 'graded').slice(0, 500) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── ESPORTS MODEL REPORT CARD (esmodels.js, v3.145.0) ──
+// Every esports record against the break-even its payouts set, at the
+// 50-graded bar, and the same-match stacks' sweeps against the payout the
+// app must show. Rebuilt at most every 5 minutes; the Lines table reads the
+// verdicts (a failed model's legs stop showing as plays).
+const esmodels = require('./esmodels');
+const esModelsState = { at: 0, cards: null, stacks: null, error: null };
+async function esModelCards(force = false) {
+  if (!force && esModelsState.cards && Date.now() - esModelsState.at < 5 * 60e3) return esModelsState;
+  try {
+    const recs = { esports: tracker, h2h: h2hTracker, rounds: roundsTracker, share: shareTracker, esStale: esStaleTracker };
+    const rows = {};
+    for (const [k, t] of Object.entries(recs)) rows[k] = await t.list({ limit: 1e6 });
+    Object.assign(esModelsState, { at: Date.now(), cards: esmodels.modelCards(rows), stacks: esmodels.stackCards(await slipTracker.list()), error: null });
+  } catch (e) { esModelsState.error = e.message; }
+  return esModelsState;
+}
+if (require.main === module) setTimeout(() => esModelCards(true).catch(() => {}), 90e3);
+app.get('/api/esports/models', async (req, res) => {
+  try {
+    const s = await esModelCards();
+    if (!s.cards) return res.status(503).json({ error: s.error || 'not ready' });
+    res.json({ note: `Each esports record against the hit rate its payouts need, at ${esmodels.MIN_N} graded. failed = 2+ standard errors under break-even; beats = 2+ over, which still needs an independent re-check before anyone bets it. Rows from days a team played twice and priced before the match tag existed are left out. Stacks: the payout an all-legs-win entry needs for the record so far to have broken even.`,
+      at: new Date(s.at).toISOString(), minN: esmodels.MIN_N, models: s.cards, stacks: s.stacks });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -6187,6 +6214,8 @@ app.get('/api/props/board', (req, res) => {
   else if (!kalshiOk) page = page.map(r => (r.esports ? r : propsBoard.redactRow(r)));
   res.json({
     rows: page, total: hits.length, offset, limit, pro, counts, ...(lines ? { lines } : {}),
+    // the esports models' verdicts (esmodels.js): a failed one's legs are not plays
+    esModels: esModelsState.cards ? Object.fromEntries(esModelsState.cards.map(c => [c.key, { verdict: c.verdict, graded: c.graded, wins: c.wins, losses: c.losses, hitPct: c.hitPct, breakEvenPct: c.breakEvenPct, units: c.units }])) : null,
     coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
@@ -6601,7 +6630,9 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   if (!autoSlipMemo.data || autoSlipMemo.at !== at || Date.now() - autoSlipMemo.built > 120000) {
     autoSlipMemo = { at, built: Date.now(), data: autoSlips(esportsCache.picks || [], pick6SlipOpts(esportsCache.picks || [])) };
   }
-  res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null) });
+  res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null),
+    // per app and size: the payout a sweep needs for the stack record so far to break even
+    stackNeeds: (await esModelCards().catch(() => null))?.stacks || null });
 });
 
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
@@ -6741,7 +6772,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.144.1',
+  version: '3.145.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6904,6 +6935,8 @@ schedule('7,17,27,37,47,57 * * * *', () => pollSportsbooks());
 // Esports match prices and schedules a minute before picks rebuild.
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshMatchFeeds().catch(e => console.warn('Feeds:', e.message)));
 schedule('*/5 * * * *', () => esPicksOnce().catch(()=>{}));
+// the esports model report card (Lines reads its verdicts), every 10 min
+schedule('2,12,22,32,42,52 * * * *', () => esModelCards(true).catch(() => {}));
 
 // Profile warmer: every minute, fill a few more players' stats until the whole
 // board is priced. Self-limiting — it stops when the queue empties.
