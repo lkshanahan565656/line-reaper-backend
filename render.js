@@ -15,17 +15,17 @@ const esModels = Object.fromEntries(models.models.map(c => [c.key, { verdict: c.
     await page.route('**/api/props/board*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.esModels = esModels; await r.fulfill({ json: j }); } catch (e) {} });
     await page.goto('http://127.0.0.1:8080/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(4000);
-    const shot = async f => { await page.waitForTimeout(9000); await page.screenshot({ path: `out/${f}-${name}.png`, fullPage: true }); fs.writeFileSync(`out/${f}-${name}.txt`, await page.evaluate(() => document.querySelector('.page.active')?.innerText.slice(0, 30000) || '')); };
+    const shot = async (f, want) => { if (want) await page.waitForFunction(w => (document.querySelector('.page.active')?.innerText || '').includes(w), want, { timeout: 120000 }).catch(() => {}); await page.waitForTimeout(5000); await page.screenshot({ path: `out/${f}-${name}.png`, fullPage: true }); fs.writeFileSync(`out/${f}-${name}.txt`, await page.evaluate(() => document.querySelector('.page.active')?.innerText.slice(0, 30000) || '')); };
     await page.evaluate(() => showTab('esports', document.querySelector(".tab[onclick*=esports]")));
     await page.waitForTimeout(3000);
     await page.evaluate(() => { try { setEsMode('props'); } catch (e) {} });
     await page.waitForTimeout(3000);
     await page.evaluate(() => setEsportsView('record'));
-    await shot('record');
+    await shot('record', 'ESPORTS MODELS');
     await page.evaluate(() => setEsportsView('plays'));
-    await shot('plays');
+    await shot('plays', 'MATCH STACKS');
     await page.evaluate(() => showTab('props', document.querySelector(".tab[onclick*=props]")));
-    await shot('lines');
+    await shot('lines', 'PRIZEPICKS');
     fs.writeFileSync(`out/text-${name}.txt`, await page.evaluate(() => document.body.innerText.slice(0, 20000)));
     await page.unrouteAll({ behavior: 'ignoreErrors' }); await ctx.close();
   }
