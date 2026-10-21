@@ -1,4 +1,4 @@
-name: diag-nbanight2
+name: diag-nbanight3
 on: { push: { branches: [diag-nbanight] }, workflow_dispatch: {} }
 permissions: { contents: write }
 jobs:
@@ -8,22 +8,17 @@ jobs:
       - run: |
           set +e
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/fd && cd out
-          date -u > at.txt
-          g() { curl -s -m 120 "$B$2" > $1.json; }
-          for st in void open locked; do g picks-$st "/api/props/record/picks?status=$st&limit=1000"; done
-          for bk in fanduel betrivers; do g alt-$bk "/api/ev/record/bets?book=$bk&sport=nba&alt=1&limit=500"; done
-          for o in 0 500 1000 1500 2000 2500 3000; do g nbaboard-$o "/api/props/board?sport=NBA&limit=500&offset=$o"; done
-          cd fd
-          AK=FhMFpcPWXMeyZxOx
-          curl -s -m 60 "https://sbapi.nj.sportsbook.fanduel.com/api/content-managed-page?page=CUSTOM&customPageId=nba&pbHorizontal=false&_ak=$AK&timezone=America%2FNew_York" > page.json
-          jq -r '.attachments.events|to_entries[]|select(.value.openDate>"2026-10-21T20:00" and .value.openDate<"2026-10-22T04:00")|.key' page.json | head -3 > ev.txt
-          for e in $(cat ev.txt); do
-            for t in "" player-points player-rebounds player-assists player-threes player-combos player-defense player-specials; do
-              curl -s -m 60 "https://sbapi.nj.sportsbook.fanduel.com/api/event-page?_ak=$AK&eventId=$e&tab=$t" > "ev$e-t$t.json"
-              jq -r --arg e "$e" --arg t "$t" '.attachments.markets[]?|[$e,$t,.marketType,.marketName,(.runners|length),(.runners[0].runnerName//"")]|@tsv' "ev$e-t$t.json" >> markets.tsv
-            done
+          mkdir -p out && cd out
+          for i in $(seq 1 50); do
+            v=$(curl -s -m 30 $B/api/status | jq -r .version)
+            echo "$(date -u +%T) $v" >> wait.txt
+            [ "$v" = "3.146.0" ] && break
+            sleep 30
           done
-          cd ../..
-          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight2-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight2-out
+          sleep 150
+          curl -s -m 120 "$B/api/status" > status.json
+          for o in 0 500 1000 1500 2000 2500 3000; do curl -s -m 120 "$B/api/props/board?sport=NBA&limit=500&offset=$o" > nbaboard-$o.json; done
+          curl -s -m 120 "$B/api/props/coverage?sport=NBA" > coverage.json
+          cd ..
+          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight3-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight3-out
