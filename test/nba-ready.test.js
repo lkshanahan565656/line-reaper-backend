@@ -78,3 +78,54 @@ test('NBA box scores grade the extra stats the apps post, and a double-double re
 test('a double-double is priced only at a source\'s own line', () => {
   assert.ok(sp.EXACT.has('double_double') && sp.EXACT.has('triple_double'));
 });
+
+test('Sleeper\'s spelled-out NBA combos meet the other apps\' keys, so Pinnacle can price them (opening night, 10-21)', () => {
+  const k = m => B.sportMarketKey(m, 'NBA');
+  assert.strictEqual(k('Points And Rebounds'), 'pts_rebs');
+  assert.strictEqual(k('Points And Assists'), 'pts_asts');
+  assert.strictEqual(k('Rebounds And Assists'), 'rebs_asts');
+  assert.strictEqual(k('Blocks And Steals'), 'stocks');
+  assert.strictEqual(k('Blocks + Steals'), 'stocks');
+  // a first-quarter line keeps its period, so it never meets a full-game price
+  assert.strictEqual(k('First Qtr Points'), '1q|points');
+  assert.strictEqual(k('Points'), 'points');
+  // men's college basketball under the names an app may use in November
+  for (const n of ['NCAAM', 'NCAAMB', 'NCAA Basketball']) assert.strictEqual(B.boardSport(n).sport, 'CBB');
+  assert.strictEqual(B.boardSport('NCAAM1H').prefix, '1H ');
+});
+
+test('FanDuel NBA combo rungs and the double-double markets read as overs', () => {
+  const runner = (name, odds) => ({ runnerName: name, runnerStatus: 'ACTIVE', winRunnerOdds: { americanDisplayOdds: { americanOddsInt: odds } } });
+  const mk = (type, runners) => ({ marketType: type, marketName: type, bettingType: 'ODDS', marketStatus: 'OPEN', inPlay: false, runners });
+  const { ladders } = fb.parseFanDuelLadders({ attachments: { markets: {
+    a: mk('TO_RECORD_40+_PTS_+_REB_+_AST', [runner('Anthony Edwards', 132)]),
+    b: mk('TO_RECORD_25+_REB_+_AST', [runner('Josh Hart', 100)]),
+    c: mk('TO_RECORD_20+_PTS_+_AST', [runner('Jalen Brunson', -110)]),
+    d: mk('TO_RECORD_50+_PTS_+_REB', [runner('Karl-Anthony Towns', 900)]),
+    e: mk('TO_RECORD_A_DOUBLE_DOUBLE', [runner('Bam Adebayo', 112)]),
+    f: mk('TO_RECORD_A_TRIPLE_DOUBLE', [runner('Nikola Jokic', 150)]),
+  } } });
+  const by = (p, m) => ladders.find(l => l.player === p && l.mkey === m);
+  assert.strictEqual(by('Anthony Edwards', 'pra').line, 39.5);
+  assert.strictEqual(by('Josh Hart', 'rebs_asts').line, 24.5);
+  assert.strictEqual(by('Jalen Brunson', 'pts_asts').line, 19.5);
+  assert.strictEqual(by('Karl-Anthony Towns', 'pts_rebs').price, 900);
+  assert.strictEqual(by('Bam Adebayo', 'double_double').line, 0.5);
+  assert.strictEqual(by('Nikola Jokic', 'triple_double').line, 0.5);
+  assert.strictEqual(ladders.length, 6);
+});
+
+test('fantasy score and double-double rows say no sharp market lists them; PrizePicks rows carry the opponent', () => {
+  const t = Date.now() + 36e5;
+  const iso = new Date(t).toISOString();
+  const rows = B.buildRows([
+    { book: 'prizepicks', sport: 'NBA', player: 'Zion Williamson', team: 'NOP', opponent: 'IND', matchTitle: 'IND', market: 'Fantasy Score', line: 38.5, startTime: iso },
+    { book: 'prizepicks', sport: 'NBA', player: 'Zion Williamson', team: 'NOP', opponent: 'IND', matchTitle: 'IND', market: 'Points', line: 22.5, startTime: iso },
+    { book: 'pick6', sport: 'NBA', player: 'Bam Adebayo', team: 'MIA', market: 'To Record a Double Double', line: 0.5, startTime: iso },
+  ], { now: Date.now() });
+  const by = m => rows.find(r => r.market === m);
+  assert.strictEqual(by('Fantasy Score').noSharp, true);
+  assert.strictEqual(by('To Record a Double Double').noSharp, true);
+  assert.ok(!by('Points').noSharp);
+  assert.strictEqual(by('Points').opponent, 'IND');
+});

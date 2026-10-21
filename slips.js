@@ -72,8 +72,8 @@
   //   Josh Allen Over 245.5 Pass Yds        Josh Allen o245.5 pass yds (NFL)
   //   Josh Allen 245.5 Pass Yds More        NFL: Josh Allen Under 245.5 Pass Yards
   const SIDE = { over: 'Over', more: 'Over', higher: 'Over', o: 'Over', under: 'Under', less: 'Under', lower: 'Under', u: 'Under' };
-  const SPORTS = ['NFL', 'CFB', 'NCAAF', 'NBA', 'WNBA', 'CBB', 'NCAAB', 'MLB', 'NHL', 'MMA', 'UFC', 'SOCCER', 'TENNIS', 'GOLF', 'PGA', 'NASCAR', 'LOL', 'CS', 'CS2', 'VAL', 'VALORANT', 'DOTA', 'DOTA2', 'COD'];
-  const SPORT_FIX = { NCAAF: 'CFB', NCAAB: 'CBB', UFC: 'MMA', CS2: 'CS', PGA: 'GOLF', VALORANT: 'VAL', DOTA2: 'DOTA' };
+  const SPORTS = ['NFL', 'CFB', 'NCAAF', 'NBA', 'WNBA', 'CBB', 'NCAAB', 'NCAAM', 'MLB', 'NHL', 'MMA', 'UFC', 'SOCCER', 'TENNIS', 'GOLF', 'PGA', 'NASCAR', 'LOL', 'CS', 'CS2', 'VAL', 'VALORANT', 'DOTA', 'DOTA2', 'COD'];
+  const SPORT_FIX = { NCAAF: 'CFB', NCAAB: 'CBB', NCAAM: 'CBB', UFC: 'MMA', CS2: 'CS', PGA: 'GOLF', VALORANT: 'VAL', DOTA2: 'DOTA' };
   const sportRe = new RegExp(`(?:^|[\\s(\\[])(${SPORTS.join('|')})(?:[\\s)\\]:]|$)`, 'i');
   const NUM = '(\\d+(?:\\.\\d+)?)';
   const SIDE_W = '(over|under|more|less|higher|lower)';

@@ -3666,6 +3666,14 @@ function pbChips() {
 // How many of the apps' legs carry a sharp price (Pinnacle or Kalshi), per
 // league (/api/props/coverage). One league picked: its count on the app shown
 // and the stats no sharp market lists, so an unpriced leg reads as expected.
+// "ORL vs ATL": PrizePicks names only the opponent, so a row it opened shows
+// the two teams; other apps' "ATL @ ORL" titles stand as they are
+function pbMatchup(r, short) {
+  const mt = r.matchTitle || '';
+  if (r.opponent && r.team && !/ @ | vs\.? /i.test(mt)) return escAttr(`${r.team} vs ${r.opponent}`);
+  if (short) return mt ? escAttr(mt) : (r.team ? escAttr(r.team) : '');
+  return [r.team && !mt.includes(r.team) ? escAttr(r.team) : '', mt ? escAttr(mt) : ''].filter(Boolean).join(' · ');
+}
 const pbCover = { sport: '', never: null, seq: 0 };
 async function pbCoverNever(sport) {
   const seq = ++pbCover.seq;
@@ -3794,7 +3802,7 @@ function lnRow(r, book) {
   const key = `${r.key}|${book}|${c.line}`;
   const used = lnUsed.keys.has(key);
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
-  const meta = [r.matchTitle ? escAttr(r.matchTitle) : (r.team ? escAttr(r.team) : ''), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
+  const meta = [pbMatchup(r, true), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
   return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}">
     <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span></div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
@@ -3849,12 +3857,12 @@ function renderPropsBoard() {
     const plus = b && !b.locked && b.ev > 0;
     const PBN = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
     const gapTxt = b && !b.locked && b.gap ? `<div class="pb-dim">vs ${b.gap.vs.map(v => `${PBN[v.book] || v.book} ${v.line}`).join(', ')}</div>` : '';
-    const bestTxt = !b ? '<div class="pb-dim">no price</div>' : b.locked ? '<div class="pb-dim">Pro</div>'
+    const bestTxt = !b ? (r.noSharp && !r.esports ? '<div class="pb-dim" title="No sharp book or exchange lists this stat, so it is not priced and is never a play">no sharp market</div>' : '<div class="pb-dim">no price</div>') : b.locked ? '<div class="pb-dim">Pro</div>'
       : `<div class="pb-big" style="color:${b.source === 'books' ? (b.ev > 0 ? '#94a3b8' : '#64748b') : b.ev > 0 && (b.source !== 'h2h' || b.clears) ? 'var(--green)' : b.ev > 0 && !(b.source === 'h2h' && pbH2hFailed()) ? '#fbbf24' : '#64748b'}">${pbEvTxt(b.ev)}</div><div class="pb-what">${PB_BOOKS.find(x => x[0] === b.book)?.[2] || b.book} <span class="pb-side ${b.side === 'Over' ? 'over' : 'under'}">${pbSideWord(b.book, b.side)}</span> ${b.line}</div><div class="pb-dim">${b.source === 'books' ? `${pbSrcTxt(b.sources)} alone, not sharp` : b.source === 'consensus' ? pbSrcTxt(b.sources) : b.source === 'model' ? 'model' : b.source === 'share' ? (r.model?.share?.rounds ? 'Pinnacle rounds' : 'Pinnacle kill share') : b.source === 'h2h' ? (b.clears ? 'matchup model + Pinnacle' : pbH2hFailed() ? 'matchup model only (failed its record)' : 'matchup model only') : b.source === 'gap' ? 'other books' : b.source === 'pinnacle' ? 'Pinnacle + books' : 'Kalshi + books'} ${b.fair != null ? b.fair.toFixed(0) + '%' : ''}</div>${b.entry && b.kind ? `<div class="pb-dim">as a ${b.entry} leg</div>` : ''}${PB_LEAD[b.book] ? `<div class="pb-dim" title="${PB_LEAD[b.book]}">new app, not graded yet</div>` : ''}${b.source === 'books' ? `<div class="pb-dim" title="No sharp book posts this prop. The books' own price is a lead with its own record, judged at about 50 graded legs.">BOOK FAIR · lead, not graded yet</div>` : ''}${b.stale && b.kind ? `<div class="pb-dim" style="color:var(--green)">books moved ${b.stale.pts} pts, app line stood still</div>` : ''}${gapTxt}`;
     const am = v => (v > 0 ? `+${v}` : `${v}`);
     const proj = r.model?.h2h ? ` · proj ${r.model.proj} (matchup: ${r.model.h2h.share}% of ${r.model.h2h.teamKills} team kills a map${r.model.h2h.vs ? ` vs ${escAttr(r.model.h2h.vs)}` : ''}${r.model.pin ? `; Pinnacle ${r.model.pin.proj}` : ''})` : r.model?.share?.rounds ? ` · proj ${r.model.proj} (Pinnacle rounds × ${(+r.model.share.kpr).toFixed(2)} kills a round)` : r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? (r.pinnacle.over != null ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : ` · Pinnacle ${r.pinnacle.line}${r.pinnacle.rounds ? ` (${r.pinnacle.rounds} rounds)` : ''}: ${r.pinnacle.pOver}% over`) : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
-    const meta = [r.team && !(r.matchTitle || '').includes(r.team) ? escAttr(r.team) : '', r.matchTitle ? escAttr(r.matchTitle) : '', r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
+    const meta = [pbMatchup(r), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
       <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-meta">${meta}${proj}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>

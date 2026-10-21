@@ -27,7 +27,7 @@ function parsePrizePicksPayload(data) {
     const leagueId = proj.relationships?.league?.data?.id;
     const sport = leagues[leagueId] || player.league || attr.league || '';
     lines.push({ book: 'prizepicks', sport, leagueId: leagueId || null, player: player.name, team: player.team || '', market: attr.stat_type || '',
-      line: parseFloat(attr.line_score), startTime: attr.start_time || '', matchTitle: attr.description || '', gameId: attr.game_id || null });
+      line: parseFloat(attr.line_score), startTime: attr.start_time || '', matchTitle: attr.description || '', opponent: attr.description || '', gameId: attr.game_id || null });
   }
   return { lines, leagues };
 }

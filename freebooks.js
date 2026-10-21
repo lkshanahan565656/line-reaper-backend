@@ -209,6 +209,9 @@ const FD_PLAYER_RUNG = [
   // NBA: "To Score 20+ Points", "To Record 6+ Rebounds", "3+ Made Threes" (checked 2026-10-15, opening-week games)
   [/^TO_SCORE_(\d+)\+_POINTS$/, m => [Number(m[1]), 'POINTS']],
   [/^TO_RECORD_(\d+)\+_(ASSISTS|REBOUNDS|STEALS|BLOCKS)$/, m => [Number(m[1]), m[2]]],
+  // combo rungs ("To Record 40+ Pts + Reb + Ast") and the yes/no markets (every runner a player, priced to record one), checked 2026-10-21
+  [/^TO_RECORD_(\d+)\+_((?:PTS_\+_REB_\+_AST|PTS_\+_REB|PTS_\+_AST|REB_\+_AST))$/, m => [Number(m[1]), m[2]]],
+  [/^TO_RECORD_A_(DOUBLE|TRIPLE)_DOUBLE$/, m => [1, `${m[1]}_DOUBLE`]],
   [/^(\d+)\+_MADE_THREES$/, m => [Number(m[1]), 'THREES']],
 ];
 const FD_ALT_GAME = [[/^ALTERNATE_(HANDICAP|PUCK_LINE|RUN_LINE)$/, 'spreads'], [/^ALTERNATE_TOTAL(_GOALS|_RUNS|_POINTS)?$/, 'totals']];
