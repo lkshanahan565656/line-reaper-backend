@@ -1,0 +1,34 @@
+name: diag-nbanight
+on: { push: { branches: [diag-nbanight] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out/espn && cd out
+          date -u > at.txt
+          g() { curl -s -m 120 "$B$2" > $1.json; }
+          g status /api/status
+          g scoreboard /api/ev/scoreboard
+          g coverage "/api/props/coverage?sport=NBA"
+          g board "/api/props/board?sport=NBA&limit=500"
+          g board-pp "/api/props/board?sport=NBA&book=prizepicks&limit=500"
+          g precord /api/props/record
+          g slips /api/slips/record
+          for st in graded locked; do g picks-$st "/api/props/record/picks?status=$st&limit=1000"; done
+          for bk in fanduel betrivers gemini kalshi polymarket_us pmus; do g ev-$bk "/api/ev/record/bets?book=$bk&sport=nba&limit=500"; done
+          g ev-nba "/api/ev/record/bets?sport=nba&limit=500"
+          g evstale-nba "/api/ev/record/bets?sport=nba&stale=1&limit=500"
+          g evalt-nba "/api/ev/record/bets?sport=nba&alt=1&limit=500"
+          cd espn
+          for d in 20261019 20261020 20261021; do
+            curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=$d" > nba-$d.json
+          done
+          for f in nba-*.json; do jq -r '.events[]? | .id' $f; done | sort -u > ids.txt
+          cat ids.txt | xargs -P 8 -I{} sh -c 'curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event={}" | gzip > sum-{}.json.gz'
+          cd ../..
+          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight-out
