@@ -17,7 +17,9 @@ const PP_LEAGUES = [
   [/^(.+?)SZN$/, 'Season '], [/^(.+?)LIVE$/, ''], [/^(NBA|WNBA|NHL|NFL|MLB)P$/, ''],
 ];
 const SPORT_ALIASES = { CS2: 'CS', CSGO: 'CS', LOL: 'LOL', 'LEAGUE OF LEGENDS': 'LOL', VALORANT: 'VAL', DOTA2: 'DOTA',
-  FIFA: 'SOCCER', UFC: 'MMA', UCL: 'SOCCER', EPL: 'SOCCER', MLS: 'SOCCER', LALIGA: 'SOCCER', SERIEA: 'SOCCER', BUNDES: 'SOCCER', SOCCER: 'SOCCER', NCAAF: 'CFB', NCAAB: 'CBB' };
+  FIFA: 'SOCCER', UFC: 'MMA', UCL: 'SOCCER', EPL: 'SOCCER', MLS: 'SOCCER', LALIGA: 'SOCCER', SERIEA: 'SOCCER', BUNDES: 'SOCCER', SOCCER: 'SOCCER', NCAAF: 'CFB', NCAAB: 'CBB',
+  // men's college basketball under the names an app might use when the season opens in November (NCAAMB is Kalshi's series name)
+  NCAAM: 'CBB', NCAAMB: 'CBB', 'COLLEGE BASKETBALL': 'CBB', 'NCAA BASKETBALL': 'CBB' };
 const ESPORTS = new Set(['CS', 'LOL', 'VAL', 'DOTA', 'COD', 'R6', 'HALO', 'RL', 'OW']);
 
 function boardSport(sport) {
@@ -43,7 +45,12 @@ const BASKETBALL_ALIASES = { 'double-double': 'double_double', 'double-doubles':
   'triple-double': 'triple_double', 'triple-doubles': 'triple_double', triple_doubles: 'triple_double', fg_made: 'fgm', fg_attempted: 'fga',
   fg_attempts: 'fga', '3-pt_attempted': 'threes_att', '3-pt_attempts': 'threes_att', '3-pointers_attempted': 'threes_att',
   free_throws_attempted: 'fta', ft_attempted: 'fta', offensive_rebounds: 'off_rebounds', defensive_rebounds: 'def_rebounds',
-  personal_fouls: 'fouls', fantasy_points: 'fantasy_score' };
+  personal_fouls: 'fouls', fantasy_points: 'fantasy_score',
+  // DraftKings Pick6 spells the combos out ("Points And Rebounds"); the other apps use "+"
+  points_and_rebounds: 'pts_rebs', points_and_assists: 'pts_asts', rebounds_and_assists: 'rebs_asts', blocks_and_steals: 'stocks', 'blocks_+_steals': 'stocks',
+  'points_+_rebounds_+_assists': 'pra', points_rebounds_assists: 'pra', points_and_rebounds_and_assists: 'pra',
+  // first-quarter lines keep the period prefix so they never meet a full-game price
+  first_qtr_points: '1q|points', first_qtr_rebounds: '1q|rebounds', first_qtr_assists: '1q|assists' };
 const SPORT_MARKET_ALIASES = {
   NBA: BASKETBALL_ALIASES, WNBA: BASKETBALL_ALIASES, CBB: BASKETBALL_ALIASES,
   TENNIS: { total_games: 'games_played', total_games_won: 'games_won', '1st_set_total_games': '1st_set_games_played',
@@ -134,12 +141,16 @@ function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
       row = { key, sport: l.sport, esports: l.esports, player: l.player, team: l.team || '', market: l.market, mkey,
         ...(tag ? { matchTag: l.matchTag } : {}),
         startTime: l.startTime || '', matchTitle: l.matchTitle || '', books: {} };
+      // no sharp market lists this stat (fantasy score, season-long lines): the screen says so instead of leaving a blank price
+      if (!l.esports && noSharpMarket(row)) row.noSharp = true;
       rows.set(key, row);
     }
     // Underdog's wording reads best, so its stat name and match title win
     if (l.book === 'underdog') { row.market = l.market; if (l.matchTitle) row.matchTitle = l.matchTitle; if (l.team) row.team = l.team; }
     if (!row.startTime && l.startTime) row.startTime = l.startTime;
     if (!row.team && l.team) row.team = l.team;
+    // PrizePicks names the opponent on its own; its "description" is that team, not a game title
+    if (l.opponent && !row.opponent) row.opponent = l.opponent;
     const cell = {
       line: num(l.line),
       over: l.book === 'prizepicks' ? null : num(l.overMultiplier),
@@ -347,7 +358,7 @@ function lineFacets(rows, book, minEv) {
 // (their model prices them).
 // Stats no sharp market lists anywhere we read, so they stay unpriced on purpose.
 const NO_SHARP = {
-  ALL: [/fantasy/, /season|per_game|triple_doubles?|50\+/, /first_.*scorer|last_goal_scorer|first_td/, /^longest/, /^(1h|2h|1q|2q|3q|4q|1p)\|/,
+  ALL: [/fantasy/, /season|per_game|(double|triple)_doubles?|50\+/, /^to_record_a_/, /first_.*scorer|last_goal_scorer|first_td/, /^longest/, /^(1h|2h|1q|2q|3q|4q|1p)\|/,
     /kicking_points|fg_made|xp_made|pat_made/],
   MMA: [/significant_strikes|takedowns/],
   SOCCER: [/shots_attempted|passes|goals_against|tackles|clearances|crosses|^saves$/],
