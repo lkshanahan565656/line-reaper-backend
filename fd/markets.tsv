@@ -1,0 +1,657 @@
+35932897		2ND_QUARTER_POINTS_ODD/EVEN	2nd Quarter Total Points Odd / Even	2	Odd
+35932897		TOTAL_POINTS_ODD/EVEN	Total Points Odd / Even	2	Odd
+35932897		TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897		MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897		4TH_QUARTER_POINTS_ODD/EVEN	4th Quarter Total Points Odd / Even	2	Odd
+35932897		1ST_QUARTER_POINTS_ODD/EVEN	1st Quarter Total Points Odd / Even	2	Odd
+35932897		MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897		3RD_QUARTER_POINTS_ODD/EVEN	3rd Quarter Total Points Odd / Even	2	Odd
+35932897	player-points	PLAYER_K_TOTAL_POINTS	Bobby Portis - Points	2	Bobby Portis Over
+35932897	player-points	PLAYER_G_TOTAL_POINTS	Rudy Gobert - Points	2	Rudy Gobert Over
+35932897	player-points	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-points	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-points	PLAYER_G_1ST_QUARTER_POINTS	Rudy Gobert - 1st Qtr Points	2	Rudy Gobert Over
+35932897	player-points	PLAYER_A_1ST_QUARTER_POINTS	Giannis Antetokounmpo - 1st Qtr Points	2	Giannis Antetokounmpo Over
+35932897	player-points	PLAYER_F_1ST_QUARTER_POINTS	Andrew Wiggins - 1st Qtr Points	2	Andrew Wiggins Over
+35932897	player-points	TO_SCORE_50+_POINTS	To Score 50+ Points	2	Anthony Edwards
+35932897	player-points	PLAYER_O_TOTAL_POINTS	Joan Beringer - Points	2	Joan Beringer Over
+35932897	player-points	PLAYER_J_TOTAL_POINTS	Klay Thompson - Points	2	Klay Thompson Over
+35932897	player-points	PLAYER_C_TOTAL_POINTS	LaMelo Ball - Points	2	LaMelo Ball Over
+35932897	player-points	TO_SCORE_40+_POINTS	To Score 40+ Points	3	Anthony Edwards
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_2+_POINTS	1st Quarter - To Score 2+ Points	6	LaMelo Ball
+35932897	player-points	PLAYER_C_1ST_QUARTER_POINTS	LaMelo Ball - 1st Qtr Points	2	LaMelo Ball Over
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_10+_POINTS	1st Quarter - To Score 10+ Points	6	Anthony Edwards
+35932897	player-points	PLAYER_B_TOTAL_POINTS	Anthony Edwards - Points	2	Anthony Edwards Over
+35932897	player-points	PLAYER_B_1ST_QUARTER_POINTS	Anthony Edwards - 1st Qtr Points	2	Anthony Edwards Over
+35932897	player-points	TO_SCORE_5+_POINTS	To Score 5+ Points	10	Andrew Wiggins
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_8+_POINTS	1st Quarter - To Score 8+ Points	8	Anthony Edwards
+35932897	player-points	TO_SCORE_30+_POINTS	To Score 30+ Points	6	Giannis Antetokounmpo
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_4+_POINTS	1st Quarter - To Score 4+ Points	8	Anthony Edwards
+35932897	player-points	PLAYER_N_TOTAL_POINTS	Ayo Dosunmu - Points	2	Ayo Dosunmu Over
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_6+_POINTS	1st Quarter - To Score 6+ Points	8	Anthony Edwards
+35932897	player-points	PLAYER_D_1ST_QUARTER_POINTS	Bam Adebayo - 1st Qtr Points	2	Bam Adebayo Over
+35932897	player-points	PLAYER_H_TOTAL_POINTS	Davion Mitchell - Points	2	Davion Mitchell Over
+35932897	player-points	PLAYER_F_TOTAL_POINTS	Andrew Wiggins - Points	2	Andrew Wiggins Over
+35932897	player-points	PLAYER_M_TOTAL_POINTS	Pelle Larsson - Points	2	Pelle Larsson Over
+35932897	player-points	PLAYER_E_1ST_QUARTER_POINTS	Jaden McDaniels - 1st Qtr Points	2	Jaden McDaniels Over
+35932897	player-points	PLAYER_H_1ST_QUARTER_POINTS	Davion Mitchell - 1st Qtr Points	2	Davion Mitchell Over
+35932897	player-points	TO_SCORE_10+_POINTS	To Score 10+ Points	13	LaMelo Ball
+35932897	player-points	PLAYER_D_TOTAL_POINTS	Bam Adebayo - Points	2	Bam Adebayo Over
+35932897	player-points	PLAYER_E_TOTAL_POINTS	Jaden McDaniels - Points	2	Jaden McDaniels Over
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_15+_POINTS	1st Quarter - To Score 15+ Points	3	Anthony Edwards
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_20+_POINTS	1st Quarter - To Score 20+ Points	2	Anthony Edwards
+35932897	player-points	PLAYER_A_TOTAL_POINTS	Giannis Antetokounmpo - Points	2	Giannis Antetokounmpo Over
+35932897	player-points	1ST_QUARTER_-_TO_SCORE_12+_POINTS	1st Quarter - To Score 12+ Points	6	Anthony Edwards
+35932897	player-points	TO_SCORE_20+_POINTS	To Score 20+ Points	15	Giannis Antetokounmpo
+35932897	player-points	TO_SCORE_25+_POINTS	To Score 25+ Points	11	Anthony Edwards
+35932897	player-points	TO_SCORE_15+_POINTS	To Score 15+ Points	15	Giannis Antetokounmpo
+35932897	player-points	PLAYER_I_TOTAL_POINTS	Jonathan Kuminga - Points	2	Jonathan Kuminga Over
+35932897	player-points	PLAYER_L_TOTAL_POINTS	Tim Hardaway Jr. - Points	2	Tim Hardaway Jr. Over
+35932897	player-points	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-points	TO_SCORE_35+_POINTS	To Score 35+ Points	4	Anthony Edwards
+35932897	player-points	TO_SCORE_45+_POINTS	To Score 45+ Points	2	Anthony Edwards
+35932897	player-rebounds	PLAYER_G_TOTAL_REBOUNDS	Rudy Gobert - Rebounds	2	Rudy Gobert Over
+35932897	player-rebounds	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-rebounds	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-rebounds	PLAYER_F_TOTAL_REBOUNDS	Andrew Wiggins - Rebounds	2	Andrew Wiggins Over
+35932897	player-rebounds	PLAYER_O_TOTAL_REBOUNDS	Joan Beringer - Rebounds	2	Joan Beringer Over
+35932897	player-rebounds	PLAYER_B_TOTAL_REBOUNDS	Anthony Edwards - Rebounds	2	Anthony Edwards Over
+35932897	player-rebounds	PLAYER_J_TOTAL_REBOUNDS	Klay Thompson - Rebounds	2	Klay Thompson Over
+35932897	player-rebounds	TO_RECORD_4+_REBOUNDS	To Record 4+ Rebounds	12	Bobby Portis
+35932897	player-rebounds	TO_RECORD_10+_REBOUNDS	To Record 10+ Rebounds	10	Rudy Gobert
+35932897	player-rebounds	PLAYER_C_TOTAL_REBOUNDS	LaMelo Ball - Rebounds	2	LaMelo Ball Over
+35932897	player-rebounds	TO_RECORD_14+_REBOUNDS	To Record 14+ Rebounds	4	Rudy Gobert
+35932897	player-rebounds	PLAYER_H_TOTAL_REBOUNDS	Davion Mitchell - Rebounds	2	Davion Mitchell Over
+35932897	player-rebounds	PLAYER_M_TOTAL_REBOUNDS	Pelle Larsson - Rebounds	2	Pelle Larsson Over
+35932897	player-rebounds	PLAYER_E_TOTAL_REBOUNDS	Jaden McDaniels - Rebounds	2	Jaden McDaniels Over
+35932897	player-rebounds	PLAYER_D_TOTAL_REBOUNDS	Bam Adebayo - Rebounds	2	Bam Adebayo Over
+35932897	player-rebounds	TO_RECORD_12+_REBOUNDS	To Record 12+ Rebounds	7	Rudy Gobert
+35932897	player-rebounds	TO_RECORD_8+_REBOUNDS	To Record 8+ Rebounds	11	Rudy Gobert
+35932897	player-rebounds	TO_RECORD_16+_REBOUNDS	To Record 16+ Rebounds	3	Rudy Gobert
+35932897	player-rebounds	PLAYER_K_TOTAL_REBOUNDS	Bobby Portis - Rebounds	2	Bobby Portis Over
+35932897	player-rebounds	TO_RECORD_6+_REBOUNDS	To Record 6+ Rebounds	15	Giannis Antetokounmpo
+35932897	player-rebounds	PLAYER_I_TOTAL_REBOUNDS	Jonathan Kuminga - Rebounds	2	Jonathan Kuminga Over
+35932897	player-rebounds	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-rebounds	PLAYER_N_TOTAL_REBOUNDS	Ayo Dosunmu - Rebounds	2	Ayo Dosunmu Over
+35932897	player-rebounds	PLAYER_A_TOTAL_REBOUNDS	Giannis Antetokounmpo - Rebounds	2	Giannis Antetokounmpo Over
+35932897	player-assists	PLAYER_D_TOTAL_ASSISTS	Bam Adebayo - Assists	2	Bam Adebayo Over
+35932897	player-assists	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-assists	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-assists	TO_RECORD_14+_ASSISTS	To Record 14+ Assists	2	LaMelo Ball
+35932897	player-assists	TO_RECORD_12+_ASSISTS	To Record 12+ Assists	3	LaMelo Ball
+35932897	player-assists	PLAYER_A_TOTAL_ASSISTS	Giannis Antetokounmpo - Assists	2	Giannis Antetokounmpo Over
+35932897	player-assists	PLAYER_C_TOTAL_ASSISTS	LaMelo Ball - Assists	2	LaMelo Ball Over
+35932897	player-assists	TO_RECORD_8+_ASSISTS	To Record 8+ Assists	7	LaMelo Ball
+35932897	player-assists	PLAYER_B_TOTAL_ASSISTS	Anthony Edwards - Assists	2	Anthony Edwards Over
+35932897	player-assists	TO_RECORD_4+_ASSISTS	To Record 4+ Assists	9	LaMelo Ball
+35932897	player-assists	TO_RECORD_6+_ASSISTS	To Record 6+ Assists	9	LaMelo Ball
+35932897	player-assists	TO_RECORD_10+_ASSISTS	To Record 10+ Assists	3	LaMelo Ball
+35932897	player-assists	PLAYER_I_TOTAL_ASSISTS	Jaden McDaniels - Assists	2	Jaden McDaniels Over
+35932897	player-assists	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-assists	PLAYER_F_TOTAL_ASSISTS	Davion Mitchell - Assists	2	Davion Mitchell Over
+35932897	player-assists	PLAYER_H_TOTAL_ASSISTS	Ayo Dosunmu - Assists	2	Ayo Dosunmu Over
+35932897	player-assists	TO_RECORD_2+_ASSISTS	To Record 2+ Assists	6	Anthony Edwards
+35932897	player-assists	PLAYER_G_TOTAL_ASSISTS	Pelle Larsson - Assists	2	Pelle Larsson Over
+35932897	player-threes	PLAYER_K_TOTAL_MADE_3_POINT_FIELD_GOALS	Pelle Larsson - Made Threes	2	Pelle Larsson Over
+35932897	player-threes	PLAYER_E_TOTAL_MADE_3_POINT_FIELD_GOALS	Andrew Wiggins - Made Threes	2	Andrew Wiggins Over
+35932897	player-threes	PLAYER_C_TOTAL_MADE_3_POINT_FIELD_GOALS	Bam Adebayo - Made Threes	2	Bam Adebayo Over
+35932897	player-threes	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-threes	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-threes	PLAYER_A_TOTAL_MADE_3_POINT_FIELD_GOALS	Anthony Edwards - Made Threes	2	Anthony Edwards Over
+35932897	player-threes	6+_MADE_THREES	6+ Made Threes	6	Anthony Edwards
+35932897	player-threes	4+_MADE_THREES	4+ Made Threes	12	LaMelo Ball
+35932897	player-threes	5+_MADE_THREES	5+ Made Threes	8	LaMelo Ball
+35932897	player-threes	PLAYER_D_TOTAL_MADE_3_POINT_FIELD_GOALS	Jaden McDaniels - Made Threes	2	Jaden McDaniels Over
+35932897	player-threes	PLAYER_B_TOTAL_MADE_3_POINT_FIELD_GOALS	LaMelo Ball - Made Threes	2	LaMelo Ball Over
+35932897	player-threes	2+_MADE_THREES	2+ Made Threes	12	LaMelo Ball
+35932897	player-threes	9+_MADE_THREES	9+ Made Threes	1	LaMelo Ball
+35932897	player-threes	3+_MADE_THREES	3+ Made Threes	12	LaMelo Ball
+35932897	player-threes	7+_MADE_THREES	7+ Made Threes	3	Anthony Edwards
+35932897	player-threes	1+_MADE_THREES	1+ Made Threes	12	LaMelo Ball
+35932897	player-threes	8+_MADE_THREES	8+ Made Threes	3	Anthony Edwards
+35932897	player-threes	PLAYER_H_TOTAL_MADE_3_POINT_FIELD_GOALS	Klay Thompson - Made Threes	2	Klay Thompson Over
+35932897	player-threes	PLAYER_G_TOTAL_MADE_3_POINT_FIELD_GOALS	Jonathan Kuminga - Made Threes	2	Jonathan Kuminga Over
+35932897	player-threes	PLAYER_I_TOTAL_MADE_3_POINT_FIELD_GOALS	Bobby Portis - Made Threes	2	Bobby Portis Over
+35932897	player-threes	PLAYER_J_TOTAL_MADE_3_POINT_FIELD_GOALS	Tim Hardaway Jr. - Made Threes	2	Tim Hardaway Jr. Over
+35932897	player-threes	PLAYER_L_TOTAL_MADE_3_POINT_FIELD_GOALS	Ayo Dosunmu - Made Threes	2	Ayo Dosunmu Over
+35932897	player-threes	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-combos	PLAYER_E_TOTAL_POINTS_+_REB_+_AST	Andrew Wiggins - Pts + Reb + Ast	2	Andrew Wiggins Over
+35932897	player-combos	PLAYER_I_TOTAL_REBOUNDS_+_ASSISTS	Jaden McDaniels - Reb + Ast	2	Jaden McDaniels Over
+35932897	player-combos	TO_RECORD_20+_PTS_+_AST	To Record 20+ Pts + Ast	8	Anthony Edwards
+35932897	player-combos	PLAYER_O_TOTAL_POINTS_+_REBOUNDS	Joan Beringer - Pts + Reb	2	Joan Beringer Over
+35932897	player-combos	PLAYER_B_TOTAL_POINTS_+_REB_+_AST	Anthony Edwards - Pts + Reb + Ast	2	Anthony Edwards Over
+35932897	player-combos	TO_RECORD_10+_PTS_+_REB	To Record 10+ Pts + Reb	9	Andrew Wiggins
+35932897	player-combos	PLAYER_B_TOTAL_POINTS_+_ASSISTS	Anthony Edwards - Pts + Ast	2	Anthony Edwards Over
+35932897	player-combos	TO_RECORD_40+_PTS_+_AST	To Record 40+ Pts + Ast	3	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_30+_REB_+_AST	To Record 30+ Reb + Ast	1	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_30+_PTS_+_REB	To Record 30+ Pts + Reb	13	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_40+_PTS_+_REB	To Record 40+ Pts + Reb	6	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_A_TRIPLE_DOUBLE	Player Triple Double	3	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_45+_PTS_+_AST	To Record 45+ Pts + Ast	3	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_10+_PTS_+_REB_+_AST	To Record 10+ Pts + Reb + Ast	4	Andrew Wiggins
+35932897	player-combos	TO_RECORD_20+_PTS_+_REB	To Record 20+ Pts + Reb	14	Anthony Edwards
+35932897	player-combos	PLAYER_F_TOTAL_POINTS_+_REB_+_AST	Davion Mitchell - Pts + Reb + Ast	2	Davion Mitchell Over
+35932897	player-combos	PLAYER_F_TOTAL_POINTS_+_ASSISTS	Davion Mitchell - Pts + Ast	2	Davion Mitchell Over
+35932897	player-combos	PLAYER_D_TOTAL_POINTS_+_REB_+_AST	Bam Adebayo - Pts + Reb + Ast	2	Bam Adebayo Over
+35932897	player-combos	PLAYER_D_TOTAL_POINTS_+_REBOUNDS	Bam Adebayo - Pts + Reb	2	Bam Adebayo Over
+35932897	player-combos	PLAYER_E_TOTAL_POINTS_+_REBOUNDS	Jaden McDaniels - Pts + Reb	2	Jaden McDaniels Over
+35932897	player-combos	PLAYER_D_TOTAL_POINTS_+_ASSISTS	Bam Adebayo - Pts + Ast	2	Bam Adebayo Over
+35932897	player-combos	PLAYER_D_TOTAL_REBOUNDS_+_ASSISTS	Bam Adebayo - Reb + Ast	2	Bam Adebayo Over
+35932897	player-combos	TO_RECORD_10+_REB_+_AST	To Record 10+ Reb + Ast	8	LaMelo Ball
+35932897	player-combos	TO_RECORD_30+_PTS_+_REB_+_AST	To Record 30+ Pts + Reb + Ast	9	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_35+_PTS_+_AST	To Record 35+ Pts + Ast	5	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_15+_PTS_+_REB	To Record 15+ Pts + Reb	13	Bam Adebayo
+35932897	player-combos	TO_RECORD_30+_PTS_+_AST	To Record 30+ Pts + Ast	9	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_25+_REB_+_AST	To Record 25+ Reb + Ast	1	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_A_TOTAL_POINTS_+_REBOUNDS	Giannis Antetokounmpo - Pts + Reb	2	Giannis Antetokounmpo Over
+35932897	player-combos	TO_RECORD_A_DOUBLE_DOUBLE	Player Double Double	12	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_I_TOTAL_POINTS_+_REBOUNDS	Jonathan Kuminga - Pts + Reb	2	Jonathan Kuminga Over
+35932897	player-combos	PLAYER_K_TOTAL_POINTS_+_REBOUNDS	Bobby Portis - Pts + Reb	2	Bobby Portis Over
+35932897	player-combos	TO_RECORD_20+_PTS_+_REB_+_AST	To Record 20+ Pts + Reb + Ast	7	LaMelo Ball
+35932897	player-combos	PLAYER_F_TOTAL_REBOUNDS_+_ASSISTS	Davion Mitchell - Reb + Ast	2	Davion Mitchell Over
+35932897	player-combos	TO_RECORD_35+_PTS_+_REB_+_AST	To Record 35+ Pts + Reb + Ast	8	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_H_TOTAL_REBOUNDS_+_ASSISTS	Ayo Dosunmu - Reb + Ast	2	Ayo Dosunmu Over
+35932897	player-combos	TO_RECORD_25+_PTS_+_REB_+_AST	To Record 25+ Pts + Reb + Ast	8	Anthony Edwards
+35932897	player-combos	PLAYER_H_TOTAL_POINTS_+_REBOUNDS	Davion Mitchell - Pts + Reb	2	Davion Mitchell Over
+35932897	player-combos	PLAYER_G_TOTAL_POINTS_+_REBOUNDS	Rudy Gobert - Pts + Reb	2	Rudy Gobert Over
+35932897	player-combos	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-combos	PLAYER_G_TOTAL_POINTS_+_ASSISTS	Pelle Larsson - Pts + Ast	2	Pelle Larsson Over
+35932897	player-combos	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-combos	TO_RECORD_45+_PTS_+_REB	To Record 45+ Pts + Reb	4	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_C_TOTAL_POINTS_+_REBOUNDS	LaMelo Ball - Pts + Reb	2	LaMelo Ball Over
+35932897	player-combos	PLAYER_C_TOTAL_REBOUNDS_+_ASSISTS	LaMelo Ball - Reb + Ast	2	LaMelo Ball Over
+35932897	player-combos	PLAYER_J_TOTAL_POINTS_+_REBOUNDS	Klay Thompson - Pts + Reb	2	Klay Thompson Over
+35932897	player-combos	PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS	Giannis Antetokounmpo - Reb + Ast	2	Giannis Antetokounmpo Over
+35932897	player-combos	TO_RECORD_25+_PTS_+_REB	To Record 25+ Pts + Reb	15	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_10+_PTS_+_AST	To Record 10+ Pts + Ast	6	Bam Adebayo
+35932897	player-combos	PLAYER_C_TOTAL_POINTS_+_REB_+_AST	LaMelo Ball - Pts + Reb + Ast	2	LaMelo Ball Over
+35932897	player-combos	TO_RECORD_15+_PTS_+_REB_+_AST	To Record 15+ Pts + Reb + Ast	5	Jaden McDaniels
+35932897	player-combos	PLAYER_C_TOTAL_POINTS_+_ASSISTS	LaMelo Ball - Pts + Ast	2	LaMelo Ball Over
+35932897	player-combos	TO_RECORD_45+_PTS_+_REB_+_AST	To Record 45+ Pts + Reb + Ast	4	Anthony Edwards
+35932897	player-combos	PLAYER_N_TOTAL_POINTS_+_REBOUNDS	Ayo Dosunmu - Pts + Reb	2	Ayo Dosunmu Over
+35932897	player-combos	PLAYER_H_TOTAL_POINTS_+_REB_+_AST	Ayo Dosunmu - Pts + Reb + Ast	2	Ayo Dosunmu Over
+35932897	player-combos	PLAYER_H_TOTAL_POINTS_+_ASSISTS	Ayo Dosunmu - Pts + Ast	2	Ayo Dosunmu Over
+35932897	player-combos	TO_RECORD_70+_PTS_+_REB_+_AST	To Record 70+ Pts + Reb + Ast	1	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_65+_PTS_+_REB_+_AST	To Record 65+ Pts + Reb + Ast	2	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_20+_REB_+_AST	To Record 20+ Reb + Ast	3	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_G_TOTAL_POINTS_+_REB_+_AST	Pelle Larsson - Pts + Reb + Ast	2	Pelle Larsson Over
+35932897	player-combos	PLAYER_F_TOTAL_POINTS_+_REBOUNDS	Andrew Wiggins - Pts + Reb	2	Andrew Wiggins Over
+35932897	player-combos	TO_RECORD_50+_PTS_+_REB	To Record 50+ Pts + Reb	4	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS	Anthony Edwards - Reb + Ast	2	Anthony Edwards Over
+35932897	player-combos	TO_RECORD_25+_PTS_+_AST	To Record 25+ Pts + Ast	9	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_15+_REB_+_AST	To Record 15+ Reb + Ast	6	Giannis Antetokounmpo
+35932897	player-combos	TO_RECORD_55+_PTS_+_REB_+_AST	To Record 55+ Pts + Reb + Ast	3	Anthony Edwards
+35932897	player-combos	PLAYER_A_TOTAL_POINTS_+_ASSISTS	Giannis Antetokounmpo - Pts + Ast	2	Giannis Antetokounmpo Over
+35932897	player-combos	PLAYER_B_TOTAL_POINTS_+_REBOUNDS	Anthony Edwards - Pts + Reb	2	Anthony Edwards Over
+35932897	player-combos	TO_RECORD_15+_PTS_+_AST	To Record 15+ Pts + Ast	6	Bam Adebayo
+35932897	player-combos	TO_RECORD_50+_PTS_+_REB_+_AST	To Record 50+ Pts + Reb + Ast	4	Anthony Edwards
+35932897	player-combos	TO_RECORD_35+_PTS_+_REB	To Record 35+ Pts + Reb	9	Giannis Antetokounmpo
+35932897	player-combos	PLAYER_I_TOTAL_POINTS_+_REB_+_AST	Jaden McDaniels - Pts + Reb + Ast	2	Jaden McDaniels Over
+35932897	player-combos	TO_RECORD_60+_PTS_+_REB_+_AST	To Record 60+ Pts + Reb + Ast	2	Anthony Edwards
+35932897	player-combos	TO_RECORD_40+_PTS_+_REB_+_AST	To Record 40+ Pts + Reb + Ast	6	Anthony Edwards
+35932897	player-combos	PLAYER_I_TOTAL_POINTS_+_ASSISTS	Jaden McDaniels - Pts + Ast	2	Jaden McDaniels Over
+35932897	player-combos	TO_RECORD_5+_REB_+_AST	To Record 5+ Reb + Ast	6	Anthony Edwards
+35932897	player-combos	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-combos	PLAYER_G_TOTAL_REBOUNDS_+_ASSISTS	Pelle Larsson - Reb + Ast	2	Pelle Larsson Over
+35932897	player-combos	PLAYER_M_TOTAL_POINTS_+_REBOUNDS	Pelle Larsson - Pts + Reb	2	Pelle Larsson Over
+35932897	player-combos	PLAYER_A_TOTAL_POINTS_+_REB_+_AST	G Antetokounmpo - Pts + Reb + Ast	2	Giannis Antetokounmpo Over
+35932897	player-defense	PLAYER_B_TOTAL_BLOCKS	Rudy Gobert - Blocks	2	Rudy Gobert Over
+35932897	player-defense	PLAYER_F_TOTAL_STEALS	Jaden McDaniels - Steals	2	Jaden McDaniels Over
+35932897	player-defense	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-defense	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-defense	PLAYER_G_TOTAL_STEALS	Andrew Wiggins - Steals	2	Andrew Wiggins Over
+35932897	player-defense	PLAYER_D_TOTAL_STEALS	LaMelo Ball - Steals	2	LaMelo Ball Over
+35932897	player-defense	PLAYER_E_TOTAL_STEALS	Anthony Edwards - Steals	2	Anthony Edwards Over
+35932897	player-defense	PLAYER_A_TOTAL_BLOCKS	Giannis Antetokounmpo - Blocks	2	Giannis Antetokounmpo Over
+35932897	player-defense	PLAYER_A_TOTAL_STEALS	Giannis Antetokounmpo - Steals	2	Giannis Antetokounmpo Over
+35932897	player-defense	TO_RECORD_3+_STEALS	To Record 3+ Steals	8	Bam Adebayo
+35932897	player-defense	TO_RECORD_3+_BLOCKS	To Record 3+ Blocks	2	Rudy Gobert
+35932897	player-defense	TO_RECORD_1+_STEALS	To Record 1+ Steals	8	Bam Adebayo
+35932897	player-defense	TO_RECORD_2+_BLOCKS	To Record 2+ Blocks	2	Rudy Gobert
+35932897	player-defense	TO_RECORD_4+_BLOCKS	To Record 4+ Blocks	1	Rudy Gobert
+35932897	player-defense	TO_RECORD_5+_BLOCKS	To Record 5+ Blocks	1	Rudy Gobert
+35932897	player-defense	PLAYER_C_TOTAL_STEALS	Davion Mitchell - Steals	2	Davion Mitchell Over
+35932897	player-defense	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932897	player-defense	TO_RECORD_4+_STEALS	To Record 4+ Steals	2	Bam Adebayo
+35932897	player-defense	TO_RECORD_1+_BLOCKS	To Record 1+ Blocks	2	Rudy Gobert
+35932897	player-defense	TO_RECORD_2+_STEALS	To Record 2+ Steals	8	Bam Adebayo
+35932897	player-defense	PLAYER_B_TOTAL_STEALS	Bam Adebayo - Steals	2	Bam Adebayo Over
+35932897	player-specials	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932897	player-specials	MATCH_HANDICAP_(2-WAY)	Spread	2	Minnesota Timberwolves
+35932897	player-specials	MONEY_LINE	Moneyline	2	Minnesota Timberwolves
+35932904		TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904		2ND_QUARTER_POINTS_ODD/EVEN	2nd Quarter Total Points Odd / Even	2	Odd
+35932904		TOTAL_POINTS_ODD/EVEN	Total Points Odd / Even	2	Odd
+35932904		3RD_QUARTER_POINTS_ODD/EVEN	3rd Quarter Total Points Odd / Even	2	Odd
+35932904		MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904		4TH_QUARTER_POINTS_ODD/EVEN	4th Quarter Total Points Odd / Even	2	Odd
+35932904		MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904		1ST_QUARTER_POINTS_ODD/EVEN	1st Quarter Total Points Odd / Even	2	Odd
+35932904	player-points	TO_SCORE_25+_POINTS	To Score 25+ Points	9	Luka Doncic
+35932904	player-points	PLAYER_G_1ST_QUARTER_POINTS	Draymond Green - 1st Qtr Points	2	Draymond Green Over
+35932904	player-points	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_2+_POINTS	1st Quarter - To Score 2+ Points	5	Stephen Curry
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_20+_POINTS	1st Quarter - To Score 20+ Points	2	Luka Doncic
+35932904	player-points	PLAYER_E_TOTAL_POINTS	Sandro Mamukelashvili - Points	2	Sandro Mamukelashvili Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_4+_POINTS	1st Quarter - To Score 4+ Points	5	Stephen Curry
+35932904	player-points	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-points	TO_SCORE_50+_POINTS	To Score 50+ Points	1	Luka Doncic
+35932904	player-points	PLAYER_C_TOTAL_POINTS	Austin Reaves - Points	2	Austin Reaves Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_15+_POINTS	1st Quarter - To Score 15+ Points	3	Luka Doncic
+35932904	player-points	TO_SCORE_30+_POINTS	To Score 30+ Points	6	Luka Doncic
+35932904	player-points	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-points	TO_SCORE_45+_POINTS	To Score 45+ Points	3	Stephen Curry
+35932904	player-points	PLAYER_O_TOTAL_POINTS	Ziaire Williams - Points	2	Ziaire Williams Over
+35932904	player-points	PLAYER_L_TOTAL_POINTS	De'Anthony Melton - Points	2	De'Anthony Melton Over
+35932904	player-points	PLAYER_K_TOTAL_POINTS	Quentin Grimes - Points	2	Quentin Grimes Over
+35932904	player-points	PLAYER_I_TOTAL_POINTS	Draymond Green - Points	2	Draymond Green Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_8+_POINTS	1st Quarter - To Score 8+ Points	6	Luka Doncic
+35932904	player-points	PLAYER_D_1ST_QUARTER_POINTS	Walker Kessler - 1st Qtr Points	2	Walker Kessler Over
+35932904	player-points	PLAYER_D_TOTAL_POINTS	Walker Kessler - Points	2	Walker Kessler Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_12+_POINTS	1st Quarter - To Score 12+ Points	4	Luka Doncic
+35932904	player-points	TO_SCORE_10+_POINTS	To Score 10+ Points	12	Stephen Curry
+35932904	player-points	TO_SCORE_40+_POINTS	To Score 40+ Points	3	Luka Doncic
+35932904	player-points	PLAYER_J_TOTAL_POINTS	Gui Santos - Points	2	Gui Santos Over
+35932904	player-points	PLAYER_A_1ST_QUARTER_POINTS	Luka Doncic - 1st Qtr Points	2	Luka Doncic Over
+35932904	player-points	PLAYER_A_TOTAL_POINTS	Luka Doncic - Points	2	Luka Doncic Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_10+_POINTS	1st Quarter - To Score 10+ Points	5	Luka Doncic
+35932904	player-points	PLAYER_B_TOTAL_POINTS	Stephen Curry - Points	2	Stephen Curry Over
+35932904	player-points	PLAYER_N_TOTAL_POINTS	Al Horford - Points	2	Al Horford Over
+35932904	player-points	TO_SCORE_35+_POINTS	To Score 35+ Points	4	Luka Doncic
+35932904	player-points	PLAYER_H_TOTAL_POINTS	Yaxel Lendeborg - Points	2	Yaxel Lendeborg Over
+35932904	player-points	TO_SCORE_20+_POINTS	To Score 20+ Points	13	Luka Doncic
+35932904	player-points	PLAYER_F_1ST_QUARTER_POINTS	Yaxel Lendeborg - 1st Qtr Points	2	Yaxel Lendeborg Over
+35932904	player-points	PLAYER_M_TOTAL_POINTS	Brandon Williams - Points	2	Brandon Williams Over
+35932904	player-points	1ST_QUARTER_-_TO_SCORE_6+_POINTS	1st Quarter - To Score 6+ Points	6	Luka Doncic
+35932904	player-points	TO_SCORE_5+_POINTS	To Score 5+ Points	11	Yaxel Lendeborg
+35932904	player-points	PLAYER_C_1ST_QUARTER_POINTS	Stephen Curry - 1st Qtr Points	2	Stephen Curry Over
+35932904	player-points	PLAYER_B_1ST_QUARTER_POINTS	Austin Reaves - 1st Qtr Points	2	Austin Reaves Over
+35932904	player-points	TO_SCORE_15+_POINTS	To Score 15+ Points	13	Austin Reaves
+35932904	player-rebounds	TO_RECORD_16+_REBOUNDS	To Record 16+ Rebounds	2	Walker Kessler
+35932904	player-rebounds	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-rebounds	PLAYER_O_TOTAL_REBOUNDS	Ziaire Williams - Rebounds	2	Ziaire Williams Over
+35932904	player-rebounds	TO_RECORD_10+_REBOUNDS	To Record 10+ Rebounds	8	Walker Kessler
+35932904	player-rebounds	PLAYER_E_TOTAL_REBOUNDS	Sandro Mamukelashvili - Rebounds	2	Sandro Mamukelashvili Over
+35932904	player-rebounds	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-rebounds	TO_RECORD_8+_REBOUNDS	To Record 8+ Rebounds	12	Walker Kessler
+35932904	player-rebounds	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-rebounds	TO_RECORD_4+_REBOUNDS	To Record 4+ Rebounds	13	Luka Doncic
+35932904	player-rebounds	PLAYER_L_TOTAL_REBOUNDS	De'Anthony Melton - Rebounds	2	De'Anthony Melton Over
+35932904	player-rebounds	PLAYER_K_TOTAL_REBOUNDS	Quentin Grimes - Rebounds	2	Quentin Grimes Over
+35932904	player-rebounds	PLAYER_I_TOTAL_REBOUNDS	Draymond Green - Rebounds	2	Draymond Green Over
+35932904	player-rebounds	PLAYER_F_TOTAL_REBOUNDS	Matisse Thybulle - Rebounds	2	Matisse Thybulle Over
+35932904	player-rebounds	PLAYER_C_TOTAL_REBOUNDS	Austin Reaves - Rebounds	2	Austin Reaves Over
+35932904	player-rebounds	PLAYER_N_TOTAL_REBOUNDS	Al Horford - Rebounds	2	Al Horford Over
+35932904	player-rebounds	PLAYER_M_TOTAL_REBOUNDS	Brandon Williams - Rebounds	2	Brandon Williams Over
+35932904	player-rebounds	TO_RECORD_12+_REBOUNDS	To Record 12+ Rebounds	6	Walker Kessler
+35932904	player-rebounds	PLAYER_J_TOTAL_REBOUNDS	Gui Santos - Rebounds	2	Gui Santos Over
+35932904	player-rebounds	TO_RECORD_14+_REBOUNDS	To Record 14+ Rebounds	3	Walker Kessler
+35932904	player-rebounds	PLAYER_A_TOTAL_REBOUNDS	Luka Doncic - Rebounds	2	Luka Doncic Over
+35932904	player-rebounds	TO_RECORD_6+_REBOUNDS	To Record 6+ Rebounds	14	Walker Kessler
+35932904	player-rebounds	PLAYER_H_TOTAL_REBOUNDS	Yaxel Lendeborg - Rebounds	2	Yaxel Lendeborg Over
+35932904	player-rebounds	PLAYER_B_TOTAL_REBOUNDS	Stephen Curry - Rebounds	2	Stephen Curry Over
+35932904	player-rebounds	PLAYER_D_TOTAL_REBOUNDS	Walker Kessler - Rebounds	2	Walker Kessler Over
+35932904	player-assists	PLAYER_C_TOTAL_ASSISTS	Austin Reaves - Assists	2	Austin Reaves Over
+35932904	player-assists	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-assists	TO_RECORD_10+_ASSISTS	To Record 10+ Assists	4	Luka Doncic
+35932904	player-assists	PLAYER_L_TOTAL_ASSISTS	Brandon Williams - Assists	2	Brandon Williams Over
+35932904	player-assists	TO_RECORD_2+_ASSISTS	To Record 2+ Assists	8	Stephen Curry
+35932904	player-assists	TO_RECORD_12+_ASSISTS	To Record 12+ Assists	3	Luka Doncic
+35932904	player-assists	TO_RECORD_4+_ASSISTS	To Record 4+ Assists	11	Luka Doncic
+35932904	player-assists	PLAYER_A_TOTAL_ASSISTS	Luka Doncic - Assists	2	Luka Doncic Over
+35932904	player-assists	TO_RECORD_14+_ASSISTS	To Record 14+ Assists	2	Luka Doncic
+35932904	player-assists	PLAYER_G_TOTAL_ASSISTS	Gui Santos - Assists	2	Gui Santos Over
+35932904	player-assists	TO_RECORD_6+_ASSISTS	To Record 6+ Assists	10	Luka Doncic
+35932904	player-assists	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-assists	PLAYER_E_TOTAL_ASSISTS	Yaxel Lendeborg - Assists	2	Yaxel Lendeborg Over
+35932904	player-assists	TO_RECORD_8+_ASSISTS	To Record 8+ Assists	7	Luka Doncic
+35932904	player-assists	PLAYER_K_TOTAL_ASSISTS	Quentin Grimes - Assists	2	Quentin Grimes Over
+35932904	player-assists	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-assists	PLAYER_B_TOTAL_ASSISTS	Stephen Curry - Assists	2	Stephen Curry Over
+35932904	player-assists	PLAYER_F_TOTAL_ASSISTS	Draymond Green - Assists	2	Draymond Green Over
+35932904	player-assists	PLAYER_H_TOTAL_ASSISTS	De'Anthony Melton - Assists	2	De'Anthony Melton Over
+35932904	player-threes	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-threes	5+_MADE_THREES	5+ Made Threes	8	Stephen Curry
+35932904	player-threes	PLAYER_C_TOTAL_MADE_3_POINT_FIELD_GOALS	Austin Reaves - Made Threes	2	Austin Reaves Over
+35932904	player-threes	PLAYER_D_TOTAL_MADE_3_POINT_FIELD_GOALS	Sandro Mamukelashvili - Made Threes	2	Sandro Mamukelashvili Over
+35932904	player-threes	PLAYER_A_TOTAL_MADE_3_POINT_FIELD_GOALS	Luka Doncic - Made Threes	2	Luka Doncic Over
+35932904	player-threes	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-threes	2+_MADE_THREES	2+ Made Threes	13	Stephen Curry
+35932904	player-threes	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-threes	3+_MADE_THREES	3+ Made Threes	13	Stephen Curry
+35932904	player-threes	PLAYER_H_TOTAL_MADE_3_POINT_FIELD_GOALS	Draymond Green - Made Threes	2	Draymond Green Over
+35932904	player-threes	8+_MADE_THREES	8+ Made Threes	2	Stephen Curry
+35932904	player-threes	4+_MADE_THREES	4+ Made Threes	13	Stephen Curry
+35932904	player-threes	PLAYER_J_TOTAL_MADE_3_POINT_FIELD_GOALS	Quentin Grimes - Made Threes	2	Quentin Grimes Over
+35932904	player-threes	PLAYER_M_TOTAL_MADE_3_POINT_FIELD_GOALS	Al Horford - Made Threes	2	Al Horford Over
+35932904	player-threes	9+_MADE_THREES	9+ Made Threes	2	Stephen Curry
+35932904	player-threes	PLAYER_I_TOTAL_MADE_3_POINT_FIELD_GOALS	Gui Santos - Made Threes	2	Gui Santos Over
+35932904	player-threes	PLAYER_G_TOTAL_MADE_3_POINT_FIELD_GOALS	Yaxel Lendeborg - Made Threes	2	Yaxel Lendeborg Over
+35932904	player-threes	6+_MADE_THREES	6+ Made Threes	3	Stephen Curry
+35932904	player-threes	PLAYER_B_TOTAL_MADE_3_POINT_FIELD_GOALS	Stephen Curry - Made Threes	2	Stephen Curry Over
+35932904	player-threes	7+_MADE_THREES	7+ Made Threes	3	Stephen Curry
+35932904	player-threes	PLAYER_K_TOTAL_MADE_3_POINT_FIELD_GOALS	De'Anthony Melton - Made Threes	2	De'Anthony Melton Over
+35932904	player-threes	PLAYER_E_TOTAL_MADE_3_POINT_FIELD_GOALS	Matisse Thybulle - Made Threes	2	Matisse Thybulle Over
+35932904	player-threes	1+_MADE_THREES	1+ Made Threes	11	Austin Reaves
+35932904	player-threes	10+_MADE_THREES	10+ Made Threes	1	Stephen Curry
+35932904	player-combos	PLAYER_F_TOTAL_POINTS_+_REBOUNDS	Matisse Thybulle - Pts + Reb	2	Matisse Thybulle Over
+35932904	player-combos	TO_RECORD_45+_PTS_+_REB	To Record 45+ Pts + Reb	4	Luka Doncic
+35932904	player-combos	TO_RECORD_50+_PTS_+_REB_+_AST	To Record 50+ Pts + Reb + Ast	4	Stephen Curry
+35932904	player-combos	TO_RECORD_20+_PTS_+_AST	To Record 20+ Pts + Ast	10	Austin Reaves
+35932904	player-combos	TO_RECORD_20+_PTS_+_REB_+_AST	To Record 20+ Pts + Reb + Ast	9	Stephen Curry
+35932904	player-combos	PLAYER_C_TOTAL_REBOUNDS_+_ASSISTS	Austin Reaves - Reb + Ast	2	Austin Reaves Over
+35932904	player-combos	PLAYER_J_TOTAL_POINTS_+_REB_+_AST	Walker Kessler - Pts + Reb + Ast	2	Walker Kessler Over
+35932904	player-combos	PLAYER_C_TOTAL_POINTS_+_ASSISTS	Austin Reaves - Pts + Ast	2	Austin Reaves Over
+35932904	player-combos	PLAYER_K_TOTAL_POINTS_+_ASSISTS	Quentin Grimes - Pts + Ast	2	Quentin Grimes Over
+35932904	player-combos	PLAYER_C_TOTAL_POINTS_+_REB_+_AST	Austin Reaves - Pts + Reb + Ast	2	Austin Reaves Over
+35932904	player-combos	PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS	Luka Doncic - Reb + Ast	2	Luka Doncic Over
+35932904	player-combos	TO_RECORD_40+_PTS_+_REB	To Record 40+ Pts + Reb	6	Luka Doncic
+35932904	player-combos	PLAYER_O_TOTAL_POINTS_+_REBOUNDS	Ziaire Williams - Pts + Reb	2	Ziaire Williams Over
+35932904	player-combos	TO_RECORD_70+_PTS_+_REB_+_AST	To Record 70+ Pts + Reb + Ast	1	Luka Doncic
+35932904	player-combos	TO_RECORD_10+_PTS_+_REB_+_AST	To Record 10+ Pts + Reb + Ast	6	Draymond Green
+35932904	player-combos	TO_RECORD_25+_PTS_+_AST	To Record 25+ Pts + Ast	10	Austin Reaves
+35932904	player-combos	TO_RECORD_65+_PTS_+_REB_+_AST	To Record 65+ Pts + Reb + Ast	1	Luka Doncic
+35932904	player-combos	PLAYER_F_TOTAL_POINTS_+_REB_+_AST	Draymond Green - Pts + Reb + Ast	2	Draymond Green Over
+35932904	player-combos	PLAYER_I_TOTAL_POINTS_+_REB_+_AST	S Mamukelashvili - Pts + Reb + Ast	2	Sandro Mamukelashvili Over
+35932904	player-combos	PLAYER_F_TOTAL_POINTS_+_ASSISTS	Draymond Green - Pts + Ast	2	Draymond Green Over
+35932904	player-combos	PLAYER_F_TOTAL_REBOUNDS_+_ASSISTS	Draymond Green - Reb + Ast	2	Draymond Green Over
+35932904	player-combos	TO_RECORD_15+_PTS_+_REB_+_AST	To Record 15+ Pts + Reb + Ast	8	Yaxel Lendeborg
+35932904	player-combos	TO_RECORD_30+_PTS_+_REB	To Record 30+ Pts + Reb	10	Luka Doncic
+35932904	player-combos	TO_RECORD_20+_REB_+_AST	To Record 20+ Reb + Ast	5	Luka Doncic
+35932904	player-combos	TO_RECORD_15+_PTS_+_AST	To Record 15+ Pts + Ast	9	Stephen Curry
+35932904	player-combos	TO_RECORD_15+_REB_+_AST	To Record 15+ Reb + Ast	8	Luka Doncic
+35932904	player-combos	TO_RECORD_45+_PTS_+_REB_+_AST	To Record 45+ Pts + Reb + Ast	5	Stephen Curry
+35932904	player-combos	TO_RECORD_10+_PTS_+_REB	To Record 10+ Pts + Reb	9	Gui Santos
+35932904	player-combos	TO_RECORD_35+_PTS_+_AST	To Record 35+ Pts + Ast	6	Luka Doncic
+35932904	player-combos	TO_RECORD_40+_PTS_+_REB_+_AST	To Record 40+ Pts + Reb + Ast	7	Stephen Curry
+35932904	player-combos	PLAYER_A_TOTAL_POINTS_+_ASSISTS	Luka Doncic - Pts + Ast	2	Luka Doncic Over
+35932904	player-combos	TO_RECORD_25+_REB_+_AST	To Record 25+ Reb + Ast	1	Luka Doncic
+35932904	player-combos	PLAYER_A_TOTAL_POINTS_+_REBOUNDS	Luka Doncic - Pts + Reb	2	Luka Doncic Over
+35932904	player-combos	TO_RECORD_50+_PTS_+_REB	To Record 50+ Pts + Reb	4	Luka Doncic
+35932904	player-combos	TO_RECORD_15+_PTS_+_REB	To Record 15+ Pts + Reb	12	Stephen Curry
+35932904	player-combos	PLAYER_D_TOTAL_POINTS_+_REBOUNDS	Walker Kessler - Pts + Reb	2	Walker Kessler Over
+35932904	player-combos	PLAYER_H_TOTAL_POINTS_+_REB_+_AST	De'Anthony Melton - Pts + Reb + Ast	2	De'Anthony Melton Over
+35932904	player-combos	TO_RECORD_10+_REB_+_AST	To Record 10+ Reb + Ast	11	Luka Doncic
+35932904	player-combos	PLAYER_K_TOTAL_POINTS_+_REB_+_AST	Quentin Grimes - Pts + Reb + Ast	2	Quentin Grimes Over
+35932904	player-combos	PLAYER_K_TOTAL_REBOUNDS_+_ASSISTS	Quentin Grimes - Reb + Ast	2	Quentin Grimes Over
+35932904	player-combos	PLAYER_H_TOTAL_REBOUNDS_+_ASSISTS	De'Anthony Melton - Reb + Ast	2	De'Anthony Melton Over
+35932904	player-combos	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-combos	PLAYER_E_TOTAL_POINTS_+_REBOUNDS	Sandro Mamukelashvili - Pts + Reb	2	Sandro Mamukelashvili Over
+35932904	player-combos	TO_RECORD_35+_PTS_+_REB_+_AST	To Record 35+ Pts + Reb + Ast	10	Luka Doncic
+35932904	player-combos	PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS	Stephen Curry - Reb + Ast	2	Stephen Curry Over
+35932904	player-combos	TO_RECORD_30+_PTS_+_AST	To Record 30+ Pts + Ast	6	Luka Doncic
+35932904	player-combos	TO_RECORD_25+_PTS_+_REB	To Record 25+ Pts + Reb	12	Austin Reaves
+35932904	player-combos	PLAYER_B_TOTAL_POINTS_+_REBOUNDS	Stephen Curry - Pts + Reb	2	Stephen Curry Over
+35932904	player-combos	TO_RECORD_60+_PTS_+_REB_+_AST	To Record 60+ Pts + Reb + Ast	2	Luka Doncic
+35932904	player-combos	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-combos	TO_RECORD_5+_REB_+_AST	To Record 5+ Reb + Ast	6	Gui Santos
+35932904	player-combos	PLAYER_B_TOTAL_POINTS_+_REB_+_AST	Stephen Curry - Pts + Reb + Ast	2	Stephen Curry Over
+35932904	player-combos	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-combos	PLAYER_B_TOTAL_POINTS_+_ASSISTS	Stephen Curry - Pts + Ast	2	Stephen Curry Over
+35932904	player-combos	PLAYER_L_TOTAL_REBOUNDS_+_ASSISTS	Brandon Williams - Reb + Ast	2	Brandon Williams Over
+35932904	player-combos	PLAYER_L_TOTAL_POINTS_+_ASSISTS	Brandon Williams - Pts + Ast	2	Brandon Williams Over
+35932904	player-combos	PLAYER_H_TOTAL_POINTS_+_ASSISTS	De'Anthony Melton - Pts + Ast	2	De'Anthony Melton Over
+35932904	player-combos	PLAYER_L_TOTAL_POINTS_+_REBOUNDS	De'Anthony Melton - Pts + Reb	2	De'Anthony Melton Over
+35932904	player-combos	PLAYER_K_TOTAL_POINTS_+_REBOUNDS	Quentin Grimes - Pts + Reb	2	Quentin Grimes Over
+35932904	player-combos	TO_RECORD_30+_PTS_+_REB_+_AST	To Record 30+ Pts + Reb + Ast	10	Austin Reaves
+35932904	player-combos	TO_RECORD_A_TRIPLE_DOUBLE	Player Triple Double	4	Luka Doncic
+35932904	player-combos	PLAYER_M_TOTAL_POINTS_+_REBOUNDS	Brandon Williams - Pts + Reb	2	Brandon Williams Over
+35932904	player-combos	PLAYER_N_TOTAL_POINTS_+_REBOUNDS	Al Horford - Pts + Reb	2	Al Horford Over
+35932904	player-combos	PLAYER_H_TOTAL_POINTS_+_REBOUNDS	Yaxel Lendeborg - Pts + Reb	2	Yaxel Lendeborg Over
+35932904	player-combos	PLAYER_I_TOTAL_POINTS_+_REBOUNDS	Draymond Green - Pts + Reb	2	Draymond Green Over
+35932904	player-combos	PLAYER_G_TOTAL_POINTS_+_ASSISTS	Gui Santos - Pts + Ast	2	Gui Santos Over
+35932904	player-combos	PLAYER_J_TOTAL_POINTS_+_REBOUNDS	Gui Santos - Pts + Reb	2	Gui Santos Over
+35932904	player-combos	TO_RECORD_55+_PTS_+_REB_+_AST	To Record 55+ Pts + Reb + Ast	3	Stephen Curry
+35932904	player-combos	PLAYER_E_TOTAL_POINTS_+_REB_+_AST	Yaxel Lendeborg - Pts + Reb + Ast	2	Yaxel Lendeborg Over
+35932904	player-combos	PLAYER_L_TOTAL_POINTS_+_REB_+_AST	Brandon Williams - Pts + Reb + Ast	2	Brandon Williams Over
+35932904	player-combos	TO_RECORD_35+_PTS_+_REB	To Record 35+ Pts + Reb	8	Luka Doncic
+35932904	player-combos	PLAYER_E_TOTAL_REBOUNDS_+_ASSISTS	Yaxel Lendeborg - Reb + Ast	2	Yaxel Lendeborg Over
+35932904	player-combos	TO_RECORD_45+_PTS_+_AST	To Record 45+ Pts + Ast	3	Luka Doncic
+35932904	player-combos	TO_RECORD_40+_PTS_+_AST	To Record 40+ Pts + Ast	3	Luka Doncic
+35932904	player-combos	TO_RECORD_A_DOUBLE_DOUBLE	Player Double Double	9	Luka Doncic
+35932904	player-combos	TO_RECORD_20+_PTS_+_REB	To Record 20+ Pts + Reb	13	Austin Reaves
+35932904	player-combos	PLAYER_E_TOTAL_POINTS_+_ASSISTS	Yaxel Lendeborg - Pts + Ast	2	Yaxel Lendeborg Over
+35932904	player-combos	PLAYER_A_TOTAL_POINTS_+_REB_+_AST	Luka Doncic - Pts + Reb + Ast	2	Luka Doncic Over
+35932904	player-combos	TO_RECORD_10+_PTS_+_AST	To Record 10+ Pts + Ast	8	Yaxel Lendeborg
+35932904	player-combos	PLAYER_C_TOTAL_POINTS_+_REBOUNDS	Austin Reaves - Pts + Reb	2	Austin Reaves Over
+35932904	player-combos	TO_RECORD_25+_PTS_+_REB_+_AST	To Record 25+ Pts + Reb + Ast	10	Austin Reaves
+35932904	player-combos	PLAYER_G_TOTAL_POINTS_+_REB_+_AST	Gui Santos - Pts + Reb + Ast	2	Gui Santos Over
+35932904	player-combos	PLAYER_G_TOTAL_REBOUNDS_+_ASSISTS	Gui Santos - Reb + Ast	2	Gui Santos Over
+35932904	player-defense	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-defense	PLAYER_D_TOTAL_STEALS	Matisse Thybulle - Steals	2	Matisse Thybulle Over
+35932904	player-defense	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-defense	MONEY_LINE	Moneyline	2	Golden State Warriors
+35932904	player-defense	TO_RECORD_1+_STEALS	To Record 1+ Steals	7	Matisse Thybulle
+35932904	player-defense	TO_RECORD_2+_STEALS	To Record 2+ Steals	7	Matisse Thybulle
+35932904	player-defense	PLAYER_G_TOTAL_STEALS	Gui Santos - Steals	2	Gui Santos Over
+35932904	player-defense	TO_RECORD_4+_STEALS	To Record 4+ Steals	6	Matisse Thybulle
+35932904	player-defense	TO_RECORD_5+_STEALS	To Record 5+ Steals	2	Matisse Thybulle
+35932904	player-defense	TO_RECORD_2+_BLOCKS	To Record 2+ Blocks	1	Walker Kessler
+35932904	player-defense	TO_RECORD_3+_STEALS	To Record 3+ Steals	7	Matisse Thybulle
+35932904	player-defense	TO_RECORD_3+_BLOCKS	To Record 3+ Blocks	1	Walker Kessler
+35932904	player-defense	PLAYER_A_TOTAL_STEALS	Luka Doncic - Steals	2	Luka Doncic Over
+35932904	player-defense	PLAYER_A_TOTAL_BLOCKS	Walker Kessler - Blocks	2	Walker Kessler Over
+35932904	player-defense	TO_RECORD_4+_BLOCKS	To Record 4+ Blocks	1	Walker Kessler
+35932904	player-defense	TO_RECORD_1+_BLOCKS	To Record 1+ Blocks	1	Walker Kessler
+35932904	player-defense	TO_RECORD_5+_BLOCKS	To Record 5+ Blocks	1	Walker Kessler
+35932904	player-specials	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35932904	player-specials	MATCH_HANDICAP_(2-WAY)	Spread	2	Golden State Warriors
+35932904	player-specials	MONEY_LINE	Moneyline	2	Golden State Warriors
+35937399		MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399		4TH_QUARTER_POINTS_ODD/EVEN	4th Quarter Total Points Odd / Even	2	Odd
+35937399		TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399		3RD_QUARTER_POINTS_ODD/EVEN	3rd Quarter Total Points Odd / Even	2	Odd
+35937399		2ND_QUARTER_POINTS_ODD/EVEN	2nd Quarter Total Points Odd / Even	2	Odd
+35937399		1ST_QUARTER_POINTS_ODD/EVEN	1st Quarter Total Points Odd / Even	2	Odd
+35937399		MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399		TOTAL_POINTS_ODD/EVEN	Total Points Odd / Even	2	Odd
+35937399	player-points	PLAYER_D_TOTAL_POINTS	Nickeil Alexander-Walker - Points	2	Nickeil Alexander-Walker Over
+35937399	player-points	PLAYER_O_TOTAL_POINTS	Nikola Vucevic - Points	2	Nikola Vucevic Over
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_20+_POINTS	1st Quarter - To Score 20+ Points	2	Nickeil Alexander-Walker
+35937399	player-points	PLAYER_E_TOTAL_POINTS	Onyeka Okongwu - Points	2	Onyeka Okongwu Over
+35937399	player-points	PLAYER_A_1ST_QUARTER_POINTS	Jalen Johnson - 1st Qtr Points	2	Jalen Johnson Over
+35937399	player-points	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_8+_POINTS	1st Quarter - To Score 8+ Points	10	Paolo Banchero
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_6+_POINTS	1st Quarter - To Score 6+ Points	10	Paolo Banchero
+35937399	player-points	TO_SCORE_25+_POINTS	To Score 25+ Points	10	Paolo Banchero
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_4+_POINTS	1st Quarter - To Score 4+ Points	10	Paolo Banchero
+35937399	player-points	TO_SCORE_10+_POINTS	To Score 10+ Points	15	Paolo Banchero
+35937399	player-points	PLAYER_K_TOTAL_POINTS	Jock Landale - Points	2	Jock Landale Over
+35937399	player-points	TO_SCORE_5+_POINTS	To Score 5+ Points	9	Onyeka Okongwu
+35937399	player-points	TO_SCORE_40+_POINTS	To Score 40+ Points	3	Paolo Banchero
+35937399	player-points	PLAYER_H_1ST_QUARTER_POINTS	Jalen Suggs - 1st Qtr Points	2	Jalen Suggs Over
+35937399	player-points	PLAYER_H_TOTAL_POINTS	Jalen Suggs - Points	2	Jalen Suggs Over
+35937399	player-points	PLAYER_B_TOTAL_POINTS	Jalen Johnson - Points	2	Jalen Johnson Over
+35937399	player-points	TO_SCORE_20+_POINTS	To Score 20+ Points	13	Paolo Banchero
+35937399	player-points	PLAYER_G_1ST_QUARTER_POINTS	Paolo Banchero - 1st Qtr Points	2	Paolo Banchero Over
+35937399	player-points	PLAYER_I_1ST_QUARTER_POINTS	Dyson Daniels - 1st Qtr Points	2	Dyson Daniels Over
+35937399	player-points	PLAYER_C_1ST_QUARTER_POINTS	Onyeka Okongwu - 1st Qtr Points	2	Onyeka Okongwu Over
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_15+_POINTS	1st Quarter - To Score 15+ Points	5	Paolo Banchero
+35937399	player-points	TO_SCORE_30+_POINTS	To Score 30+ Points	7	Paolo Banchero
+35937399	player-points	PLAYER_E_1ST_QUARTER_POINTS	Franz Wagner - 1st Qtr Points	2	Franz Wagner Over
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_10+_POINTS	1st Quarter - To Score 10+ Points	10	Paolo Banchero
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_2+_POINTS	1st Quarter - To Score 2+ Points	10	Jalen Johnson
+35937399	player-points	PLAYER_D_1ST_QUARTER_POINTS	CJ McCollum - 1st Qtr Points	2	CJ McCollum Over
+35937399	player-points	PLAYER_F_1ST_QUARTER_POINTS	Desmond Bane - 1st Qtr Points	2	Desmond Bane Over
+35937399	player-points	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-points	PLAYER_B_1ST_QUARTER_POINTS	N Alexander-Walker - 1st Qtr Points	2	Nickeil Alexander-Walker Over
+35937399	player-points	PLAYER_C_TOTAL_POINTS	Franz Wagner - Points	2	Franz Wagner Over
+35937399	player-points	PLAYER_F_TOTAL_POINTS	CJ McCollum - Points	2	CJ McCollum Over
+35937399	player-points	1ST_QUARTER_-_TO_SCORE_12+_POINTS	1st Quarter - To Score 12+ Points	8	Paolo Banchero
+35937399	player-points	PLAYER_G_TOTAL_POINTS	Desmond Bane - Points	2	Desmond Bane Over
+35937399	player-points	TO_SCORE_35+_POINTS	To Score 35+ Points	6	Paolo Banchero
+35937399	player-points	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-points	PLAYER_N_TOTAL_POINTS	Tristan da Silva - Points	2	Tristan da Silva Over
+35937399	player-points	TO_SCORE_15+_POINTS	To Score 15+ Points	15	Paolo Banchero
+35937399	player-points	PLAYER_A_TOTAL_POINTS	Paolo Banchero - Points	2	Paolo Banchero Over
+35937399	player-points	PLAYER_J_1ST_QUARTER_POINTS	Wendell Carter Jr. - 1st Qtr Points	2	Wendell Carter Jr. Over
+35937399	player-points	PLAYER_I_TOTAL_POINTS	Dyson Daniels - Points	2	Dyson Daniels Over
+35937399	player-points	PLAYER_J_TOTAL_POINTS	Wendell Carter Jr. - Points	2	Wendell Carter Jr. Over
+35937399	player-points	PLAYER_L_TOTAL_POINTS	Luguentz Dort - Points	2	Luguentz Dort Over
+35937399	player-rebounds	TO_RECORD_10+_REBOUNDS	To Record 10+ Rebounds	8	Jalen Johnson
+35937399	player-rebounds	PLAYER_E_TOTAL_REBOUNDS	Onyeka Okongwu - Rebounds	2	Onyeka Okongwu Over
+35937399	player-rebounds	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-rebounds	PLAYER_N_TOTAL_REBOUNDS	Nikola Vucevic - Rebounds	2	Nikola Vucevic Over
+35937399	player-rebounds	PLAYER_D_TOTAL_REBOUNDS	Nickeil Alexander-Walker - Rebounds	2	Nickeil Alexander-Walker Over
+35937399	player-rebounds	PLAYER_M_TOTAL_REBOUNDS	Tristan da Silva - Rebounds	2	Tristan da Silva Over
+35937399	player-rebounds	PLAYER_L_TOTAL_REBOUNDS	Luguentz Dort - Rebounds	2	Luguentz Dort Over
+35937399	player-rebounds	TO_RECORD_16+_REBOUNDS	To Record 16+ Rebounds	2	Jalen Johnson
+35937399	player-rebounds	PLAYER_F_TOTAL_REBOUNDS	CJ McCollum - Rebounds	2	CJ McCollum Over
+35937399	player-rebounds	TO_RECORD_6+_REBOUNDS	To Record 6+ Rebounds	14	Jalen Johnson
+35937399	player-rebounds	TO_RECORD_12+_REBOUNDS	To Record 12+ Rebounds	7	Jalen Johnson
+35937399	player-rebounds	PLAYER_K_TOTAL_REBOUNDS	Jock Landale - Rebounds	2	Jock Landale Over
+35937399	player-rebounds	PLAYER_H_TOTAL_REBOUNDS	Jalen Suggs - Rebounds	2	Jalen Suggs Over
+35937399	player-rebounds	PLAYER_B_TOTAL_REBOUNDS	Jalen Johnson - Rebounds	2	Jalen Johnson Over
+35937399	player-rebounds	PLAYER_I_TOTAL_REBOUNDS	Dyson Daniels - Rebounds	2	Dyson Daniels Over
+35937399	player-rebounds	PLAYER_G_TOTAL_REBOUNDS	Desmond Bane - Rebounds	2	Desmond Bane Over
+35937399	player-rebounds	TO_RECORD_8+_REBOUNDS	To Record 8+ Rebounds	11	Jalen Johnson
+35937399	player-rebounds	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-rebounds	TO_RECORD_4+_REBOUNDS	To Record 4+ Rebounds	13	Paolo Banchero
+35937399	player-rebounds	TO_RECORD_14+_REBOUNDS	To Record 14+ Rebounds	5	Jalen Johnson
+35937399	player-rebounds	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-rebounds	PLAYER_C_TOTAL_REBOUNDS	Franz Wagner - Rebounds	2	Franz Wagner Over
+35937399	player-rebounds	PLAYER_A_TOTAL_REBOUNDS	Paolo Banchero - Rebounds	2	Paolo Banchero Over
+35937399	player-rebounds	PLAYER_J_TOTAL_REBOUNDS	Wendell Carter Jr. - Rebounds	2	Wendell Carter Jr. Over
+35937399	player-assists	PLAYER_H_TOTAL_ASSISTS	Jalen Suggs - Assists	2	Jalen Suggs Over
+35937399	player-assists	PLAYER_I_TOTAL_ASSISTS	Dyson Daniels - Assists	2	Dyson Daniels Over
+35937399	player-assists	PLAYER_E_TOTAL_ASSISTS	Onyeka Okongwu - Assists	2	Onyeka Okongwu Over
+35937399	player-assists	TO_RECORD_2+_ASSISTS	To Record 2+ Assists	12	Paolo Banchero
+35937399	player-assists	TO_RECORD_8+_ASSISTS	To Record 8+ Assists	8	Jalen Johnson
+35937399	player-assists	TO_RECORD_10+_ASSISTS	To Record 10+ Assists	5	Jalen Johnson
+35937399	player-assists	TO_RECORD_12+_ASSISTS	To Record 12+ Assists	2	Jalen Johnson
+35937399	player-assists	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-assists	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-assists	PLAYER_D_TOTAL_ASSISTS	Nickeil Alexander-Walker - Assists	2	Nickeil Alexander-Walker Over
+35937399	player-assists	TO_RECORD_14+_ASSISTS	To Record 14+ Assists	1	Jalen Johnson
+35937399	player-assists	PLAYER_G_TOTAL_ASSISTS	Desmond Bane - Assists	2	Desmond Bane Over
+35937399	player-assists	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-assists	TO_RECORD_6+_ASSISTS	To Record 6+ Assists	9	Jalen Johnson
+35937399	player-assists	PLAYER_A_TOTAL_ASSISTS	Paolo Banchero - Assists	2	Paolo Banchero Over
+35937399	player-assists	PLAYER_F_TOTAL_ASSISTS	CJ McCollum - Assists	2	CJ McCollum Over
+35937399	player-assists	PLAYER_C_TOTAL_ASSISTS	Franz Wagner - Assists	2	Franz Wagner Over
+35937399	player-assists	TO_RECORD_4+_ASSISTS	To Record 4+ Assists	13	Jalen Johnson
+35937399	player-assists	PLAYER_B_TOTAL_ASSISTS	Jalen Johnson - Assists	2	Jalen Johnson Over
+35937399	player-threes	PLAYER_H_TOTAL_MADE_3_POINT_FIELD_GOALS	Jalen Suggs - Made Threes	2	Jalen Suggs Over
+35937399	player-threes	3+_MADE_THREES	3+ Made Threes	14	Nickeil Alexander-Walker
+35937399	player-threes	PLAYER_D_TOTAL_MADE_3_POINT_FIELD_GOALS	Nickeil Alexander-Walker - Made Threes	2	Nickeil Alexander-Walker Over
+35937399	player-threes	5+_MADE_THREES	5+ Made Threes	7	Nickeil Alexander-Walker
+35937399	player-threes	PLAYER_E_TOTAL_MADE_3_POINT_FIELD_GOALS	Onyeka Okongwu - Made Threes	2	Onyeka Okongwu Over
+35937399	player-threes	PLAYER_A_TOTAL_MADE_3_POINT_FIELD_GOALS	Paolo Banchero - Made Threes	2	Paolo Banchero Over
+35937399	player-threes	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-threes	4+_MADE_THREES	4+ Made Threes	14	Nickeil Alexander-Walker
+35937399	player-threes	PLAYER_G_TOTAL_MADE_3_POINT_FIELD_GOALS	Desmond Bane - Made Threes	2	Desmond Bane Over
+35937399	player-threes	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-threes	PLAYER_J_TOTAL_MADE_3_POINT_FIELD_GOALS	Luguentz Dort - Made Threes	2	Luguentz Dort Over
+35937399	player-threes	PLAYER_F_TOTAL_MADE_3_POINT_FIELD_GOALS	CJ McCollum - Made Threes	2	CJ McCollum Over
+35937399	player-threes	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-threes	8+_MADE_THREES	8+ Made Threes	1	Nickeil Alexander-Walker
+35937399	player-threes	2+_MADE_THREES	2+ Made Threes	14	Nickeil Alexander-Walker
+35937399	player-threes	6+_MADE_THREES	6+ Made Threes	5	Nickeil Alexander-Walker
+35937399	player-threes	7+_MADE_THREES	7+ Made Threes	3	Nickeil Alexander-Walker
+35937399	player-threes	PLAYER_C_TOTAL_MADE_3_POINT_FIELD_GOALS	Franz Wagner - Made Threes	2	Franz Wagner Over
+35937399	player-threes	1+_MADE_THREES	1+ Made Threes	14	Nickeil Alexander-Walker
+35937399	player-threes	PLAYER_M_TOTAL_MADE_3_POINT_FIELD_GOALS	Tristan da Silva - Made Threes	2	Tristan da Silva Over
+35937399	player-threes	PLAYER_B_TOTAL_MADE_3_POINT_FIELD_GOALS	Jalen Johnson - Made Threes	2	Jalen Johnson Over
+35937399	player-combos	PLAYER_A_TOTAL_POINTS_+_REB_+_AST	Paolo Banchero - Pts + Reb + Ast	2	Paolo Banchero Over
+35937399	player-combos	TO_RECORD_10+_PTS_+_AST	To Record 10+ Pts + Ast	7	Jalen Suggs
+35937399	player-combos	TO_RECORD_25+_PTS_+_AST	To Record 25+ Pts + Ast	12	Jalen Johnson
+35937399	player-combos	TO_RECORD_40+_PTS_+_REB_+_AST	To Record 40+ Pts + Reb + Ast	9	Jalen Johnson
+35937399	player-combos	PLAYER_L_TOTAL_POINTS_+_REB_+_AST	Tristan da Silva - Pts + Reb + Ast	2	Tristan da Silva Over
+35937399	player-combos	PLAYER_D_TOTAL_REBOUNDS_+_ASSISTS	Nickeil Alexander-Walker - Reb + Ast	2	Nickeil Alexander-Walker Over
+35937399	player-combos	PLAYER_D_TOTAL_POINTS_+_ASSISTS	Nickeil Alexander-Walker - Pts + Ast	2	Nickeil Alexander-Walker Over
+35937399	player-combos	PLAYER_M_TOTAL_POINTS_+_REBOUNDS	Tristan da Silva - Pts + Reb	2	Tristan da Silva Over
+35937399	player-combos	TO_RECORD_10+_REB_+_AST	To Record 10+ Reb + Ast	12	Paolo Banchero
+35937399	player-combos	TO_RECORD_25+_PTS_+_REB_+_AST	To Record 25+ Pts + Reb + Ast	13	Jalen Johnson
+35937399	player-combos	TO_RECORD_30+_PTS_+_REB_+_AST	To Record 30+ Pts + Reb + Ast	12	Jalen Johnson
+35937399	player-combos	TO_RECORD_35+_PTS_+_REB	To Record 35+ Pts + Reb	10	Jalen Johnson
+35937399	player-combos	TO_RECORD_45+_PTS_+_AST	To Record 45+ Pts + Ast	3	Paolo Banchero
+35937399	player-combos	PLAYER_J_TOTAL_POINTS_+_REB_+_AST	Jock Landale - Pts + Reb + Ast	2	Jock Landale Over
+35937399	player-combos	TO_RECORD_25+_REB_+_AST	To Record 25+ Reb + Ast	2	Jalen Johnson
+35937399	player-combos	PLAYER_K_TOTAL_POINTS_+_REB_+_AST	Wendell Carter Jr. - Pts + Reb + Ast	2	Wendell Carter Jr. Over
+35937399	player-combos	PLAYER_K_TOTAL_POINTS_+_REBOUNDS	Jock Landale - Pts + Reb	2	Jock Landale Over
+35937399	player-combos	TO_RECORD_5+_REB_+_AST	To Record 5+ Reb + Ast	9	Onyeka Okongwu
+35937399	player-combos	PLAYER_I_TOTAL_POINTS_+_ASSISTS	Dyson Daniels - Pts + Ast	2	Dyson Daniels Over
+35937399	player-combos	PLAYER_I_TOTAL_POINTS_+_REB_+_AST	Dyson Daniels - Pts + Reb + Ast	2	Dyson Daniels Over
+35937399	player-combos	PLAYER_E_TOTAL_REBOUNDS_+_ASSISTS	Onyeka Okongwu - Reb + Ast	2	Onyeka Okongwu Over
+35937399	player-combos	PLAYER_E_TOTAL_POINTS_+_REBOUNDS	Onyeka Okongwu - Pts + Reb	2	Onyeka Okongwu Over
+35937399	player-combos	PLAYER_E_TOTAL_POINTS_+_ASSISTS	Onyeka Okongwu - Pts + Ast	2	Onyeka Okongwu Over
+35937399	player-combos	TO_RECORD_35+_PTS_+_AST	To Record 35+ Pts + Ast	7	Jalen Johnson
+35937399	player-combos	TO_RECORD_A_TRIPLE_DOUBLE	Player Triple Double	4	Jalen Johnson
+35937399	player-combos	TO_RECORD_20+_PTS_+_REB_+_AST	To Record 20+ Pts + Reb + Ast	11	Franz Wagner
+35937399	player-combos	PLAYER_C_TOTAL_POINTS_+_REBOUNDS	Franz Wagner - Pts + Reb	2	Franz Wagner Over
+35937399	player-combos	PLAYER_D_TOTAL_POINTS_+_REB_+_AST	N Alexander-Walker - Pts + Reb + Ast	2	Nickeil Alexander-Walker Over
+35937399	player-combos	PLAYER_F_TOTAL_POINTS_+_REB_+_AST	CJ McCollum - Pts + Reb + Ast	2	CJ McCollum Over
+35937399	player-combos	TO_RECORD_15+_PTS_+_REB	To Record 15+ Pts + Reb	12	Franz Wagner
+35937399	player-combos	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-combos	TO_RECORD_20+_PTS_+_REB	To Record 20+ Pts + Reb	14	Jalen Johnson
+35937399	player-combos	TO_RECORD_60+_PTS_+_REB_+_AST	To Record 60+ Pts + Reb + Ast	2	Jalen Johnson
+35937399	player-combos	PLAYER_F_TOTAL_POINTS_+_REBOUNDS	CJ McCollum - Pts + Reb	2	CJ McCollum Over
+35937399	player-combos	TO_RECORD_30+_PTS_+_AST	To Record 30+ Pts + Ast	9	Jalen Johnson
+35937399	player-combos	PLAYER_D_TOTAL_POINTS_+_REBOUNDS	Nickeil Alexander-Walker - Pts + Reb	2	Nickeil Alexander-Walker Over
+35937399	player-combos	TO_RECORD_25+_PTS_+_REB	To Record 25+ Pts + Reb	13	Jalen Johnson
+35937399	player-combos	TO_RECORD_15+_PTS_+_AST	To Record 15+ Pts + Ast	11	Franz Wagner
+35937399	player-combos	PLAYER_C_TOTAL_REBOUNDS_+_ASSISTS	Franz Wagner - Reb + Ast	2	Franz Wagner Over
+35937399	player-combos	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-combos	TO_RECORD_10+_PTS_+_REB	To Record 10+ Pts + Reb	8	CJ McCollum
+35937399	player-combos	PLAYER_C_TOTAL_POINTS_+_ASSISTS	Franz Wagner - Pts + Ast	2	Franz Wagner Over
+35937399	player-combos	TO_RECORD_45+_PTS_+_REB	To Record 45+ Pts + Reb	4	Paolo Banchero
+35937399	player-combos	TO_RECORD_15+_PTS_+_REB_+_AST	To Record 15+ Pts + Reb + Ast	10	Desmond Bane
+35937399	player-combos	PLAYER_J_TOTAL_POINTS_+_REBOUNDS	Wendell Carter Jr. - Pts + Reb	2	Wendell Carter Jr. Over
+35937399	player-combos	PLAYER_L_TOTAL_POINTS_+_REBOUNDS	Luguentz Dort - Pts + Reb	2	Luguentz Dort Over
+35937399	player-combos	PLAYER_C_TOTAL_POINTS_+_REB_+_AST	Franz Wagner - Pts + Reb + Ast	2	Franz Wagner Over
+35937399	player-combos	TO_RECORD_40+_PTS_+_REB	To Record 40+ Pts + Reb	7	Paolo Banchero
+35937399	player-combos	PLAYER_E_TOTAL_POINTS_+_REB_+_AST	Onyeka Okongwu - Pts + Reb + Ast	2	Onyeka Okongwu Over
+35937399	player-combos	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-combos	PLAYER_N_TOTAL_POINTS_+_REBOUNDS	Nikola Vucevic - Pts + Reb	2	Nikola Vucevic Over
+35937399	player-combos	PLAYER_A_TOTAL_POINTS_+_ASSISTS	Paolo Banchero - Pts + Ast	2	Paolo Banchero Over
+35937399	player-combos	TO_RECORD_A_DOUBLE_DOUBLE	Player Double Double	10	Jalen Johnson
+35937399	player-combos	TO_RECORD_55+_PTS_+_REB_+_AST	To Record 55+ Pts + Reb + Ast	3	Jalen Johnson
+35937399	player-combos	PLAYER_B_TOTAL_POINTS_+_REBOUNDS	Jalen Johnson - Pts + Reb	2	Jalen Johnson Over
+35937399	player-combos	TO_RECORD_10+_PTS_+_REB_+_AST	To Record 10+ Pts + Reb + Ast	5	Jalen Suggs
+35937399	player-combos	TO_RECORD_15+_REB_+_AST	To Record 15+ Reb + Ast	8	Jalen Johnson
+35937399	player-combos	PLAYER_F_TOTAL_POINTS_+_ASSISTS	CJ McCollum - Pts + Ast	2	CJ McCollum Over
+35937399	player-combos	TO_RECORD_50+_PTS_+_REB	To Record 50+ Pts + Reb	3	Paolo Banchero
+35937399	player-combos	PLAYER_F_TOTAL_REBOUNDS_+_ASSISTS	CJ McCollum - Reb + Ast	2	CJ McCollum Over
+35937399	player-combos	PLAYER_I_TOTAL_REBOUNDS_+_ASSISTS	Dyson Daniels - Reb + Ast	2	Dyson Daniels Over
+35937399	player-combos	PLAYER_B_TOTAL_REBOUNDS_+_ASSISTS	Jalen Johnson - Reb + Ast	2	Jalen Johnson Over
+35937399	player-combos	PLAYER_H_TOTAL_POINTS_+_REBOUNDS	Jalen Suggs - Pts + Reb	2	Jalen Suggs Over
+35937399	player-combos	PLAYER_I_TOTAL_POINTS_+_REBOUNDS	Dyson Daniels - Pts + Reb	2	Dyson Daniels Over
+35937399	player-combos	PLAYER_B_TOTAL_POINTS_+_REB_+_AST	Jalen Johnson - Pts + Reb + Ast	2	Jalen Johnson Over
+35937399	player-combos	PLAYER_H_TOTAL_POINTS_+_REB_+_AST	Jalen Suggs - Pts + Reb + Ast	2	Jalen Suggs Over
+35937399	player-combos	PLAYER_H_TOTAL_REBOUNDS_+_ASSISTS	Jalen Suggs - Reb + Ast	2	Jalen Suggs Over
+35937399	player-combos	PLAYER_B_TOTAL_POINTS_+_ASSISTS	Jalen Johnson - Pts + Ast	2	Jalen Johnson Over
+35937399	player-combos	TO_RECORD_45+_PTS_+_REB_+_AST	To Record 45+ Pts + Reb + Ast	5	Jalen Johnson
+35937399	player-combos	PLAYER_H_TOTAL_POINTS_+_ASSISTS	Jalen Suggs - Pts + Ast	2	Jalen Suggs Over
+35937399	player-combos	TO_RECORD_30+_PTS_+_REB	To Record 30+ Pts + Reb	12	Jalen Johnson
+35937399	player-combos	TO_RECORD_50+_PTS_+_REB_+_AST	To Record 50+ Pts + Reb + Ast	3	Jalen Johnson
+35937399	player-combos	PLAYER_G_TOTAL_REBOUNDS_+_ASSISTS	Desmond Bane - Reb + Ast	2	Desmond Bane Over
+35937399	player-combos	PLAYER_G_TOTAL_POINTS_+_ASSISTS	Desmond Bane - Pts + Ast	2	Desmond Bane Over
+35937399	player-combos	TO_RECORD_30+_REB_+_AST	To Record 30+ Reb + Ast	1	Jalen Johnson
+35937399	player-combos	PLAYER_G_TOTAL_POINTS_+_REBOUNDS	Desmond Bane - Pts + Reb	2	Desmond Bane Over
+35937399	player-combos	PLAYER_A_TOTAL_REBOUNDS_+_ASSISTS	Paolo Banchero - Reb + Ast	2	Paolo Banchero Over
+35937399	player-combos	PLAYER_M_TOTAL_POINTS_+_REB_+_AST	Nikola Vucevic - Pts + Reb + Ast	2	Nikola Vucevic Over
+35937399	player-combos	PLAYER_G_TOTAL_POINTS_+_REB_+_AST	Desmond Bane - Pts + Reb + Ast	2	Desmond Bane Over
+35937399	player-combos	TO_RECORD_20+_PTS_+_AST	To Record 20+ Pts + Ast	13	Jalen Johnson
+35937399	player-combos	TO_RECORD_20+_REB_+_AST	To Record 20+ Reb + Ast	4	Jalen Johnson
+35937399	player-combos	TO_RECORD_40+_PTS_+_AST	To Record 40+ Pts + Ast	5	Jalen Johnson
+35937399	player-combos	TO_RECORD_35+_PTS_+_REB_+_AST	To Record 35+ Pts + Reb + Ast	11	Jalen Johnson
+35937399	player-combos	PLAYER_A_TOTAL_POINTS_+_REBOUNDS	Paolo Banchero - Pts + Reb	2	Paolo Banchero Over
+35937399	player-defense	TO_RECORD_1+_STEALS	To Record 1+ Steals	8	Dyson Daniels
+35937399	player-defense	TO_RECORD_2+_STEALS	To Record 2+ Steals	8	Dyson Daniels
+35937399	player-defense	TO_RECORD_3+_BLOCKS	To Record 3+ Blocks	3	Onyeka Okongwu
+35937399	player-defense	PLAYER_H_TOTAL_STEALS	Jalen Suggs - Steals	2	Jalen Suggs Over
+35937399	player-defense	TO_RECORD_1+_BLOCKS	To Record 1+ Blocks	3	Onyeka Okongwu
+35937399	player-defense	TO_RECORD_4+_STEALS	To Record 4+ Steals	6	Dyson Daniels
+35937399	player-defense	TO_RECORD_3+_STEALS	To Record 3+ Steals	8	Dyson Daniels
+35937399	player-defense	PLAYER_F_TOTAL_STEALS	Franz Wagner - Steals	2	Franz Wagner Over
+35937399	player-defense	MONEY_LINE	Moneyline	2	Atlanta Hawks
+35937399	player-defense	TO_RECORD_2+_BLOCKS	To Record 2+ Blocks	3	Onyeka Okongwu
+35937399	player-defense	PLAYER_D_TOTAL_STEALS	Dyson Daniels - Steals	2	Dyson Daniels Over
+35937399	player-defense	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-defense	TO_RECORD_4+_BLOCKS	To Record 4+ Blocks	1	Onyeka Okongwu
+35937399	player-defense	TO_RECORD_5+_STEALS	To Record 5+ Steals	3	Dyson Daniels
+35937399	player-defense	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-defense	PLAYER_G_TOTAL_STEALS	Desmond Bane - Steals	2	Desmond Bane Over
+35937399	player-specials	MATCH_HANDICAP_(2-WAY)	Spread	2	Atlanta Hawks
+35937399	player-specials	TOTAL_POINTS_(OVER/UNDER)	Total Points	2	Over
+35937399	player-specials	MONEY_LINE	Moneyline	2	Atlanta Hawks
