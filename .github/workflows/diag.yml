@@ -1,6 +1,6 @@
-name: diag-nbanight3
+name: diag-nbanight4
 on: { push: { branches: [diag-nbanight] }, workflow_dispatch: {} }
-permissions: { contents: write }
+permissions: { contents: write, deployments: read, statuses: read }
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -8,17 +8,17 @@ jobs:
       - run: |
           set +e
           B=https://line-reaper-backend-production.up.railway.app
+          R=${{ github.repository }}
+          H="Authorization: Bearer ${{ github.token }}"
           mkdir -p out && cd out
-          for i in $(seq 1 50); do
-            v=$(curl -s -m 30 $B/api/status | jq -r .version)
-            echo "$(date -u +%T) $v" >> wait.txt
-            [ "$v" = "3.146.0" ] && break
-            sleep 30
-          done
-          sleep 150
+          date -u > at.txt
+          curl -s -m 60 -i $B/api/status | head -c 3000 > status-raw.txt
           curl -s -m 120 "$B/api/status" > status.json
           for o in 0 500 1000 1500 2000 2500 3000; do curl -s -m 120 "$B/api/props/board?sport=NBA&limit=500&offset=$o" > nbaboard-$o.json; done
           curl -s -m 120 "$B/api/props/coverage?sport=NBA" > coverage.json
+          curl -s -H "$H" "https://api.github.com/repos/$R/deployments?per_page=8" > deployments.json
+          curl -s -H "$H" "https://api.github.com/repos/$R/commits/f7289b2c4383788a97e84ed6d4005a69dcaf63ae/status" > commit-status.json
+          curl -s -H "$H" "https://api.github.com/repos/$R/commits/f7289b2c4383788a97e84ed6d4005a69dcaf63ae/check-runs" > check-runs.json
           cd ..
-          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight3-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight3-out
+          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight4-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight4-out
