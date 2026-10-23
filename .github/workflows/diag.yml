@@ -11,11 +11,11 @@ jobs:
           B=https://line-reaper-backend-production.up.railway.app
           mkdir -p out/snap && cd out
           date -u > at.txt
-          for q in "tail/record?book=fresh&limit=500" "tail/record?book=fresh&days=4" "whales?limit=5"; do
-            f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 180 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
+          for q in "tail/record?book=fresh&status=settled&limit=500"; do
+            f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 400 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
           page() { tag=$1; q=$2; before=""; i=0
             while [ $i -lt 10 ]; do
-              curl -s -m 180 "$B/api/ev/record/bets?$q&limit=500${before:+&before=$before}" > snap/$tag-$i.json
+              curl -s -m 400 "$B/api/ev/record/bets?$q&limit=500${before:+&before=$before}" > snap/$tag-$i.json
               n=$(jq '.bets|length' snap/$tag-$i.json); echo "$tag $i $n" >> pages.txt
               [ "$n" -lt 500 ] && break
               before=$(jq -r '.bets[-1].flaggedAt' snap/$tag-$i.json); i=$((i+1))
