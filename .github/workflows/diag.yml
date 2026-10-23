@@ -1,0 +1,27 @@
+name: diag-txread
+on: { push: { branches: [diag-txread] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out/snap && cd out
+          date -u > at.txt
+          for q in "status" "ev/scoreboard?state=TX" "ev/scoreboard" "ev/scoreboard?state=TX&days=4" "ev/record?state=TX" "ev?limit=1000&state=TX" "props/record" "props/record/picks?status=graded&limit=1000" "esports/models" "results"; do
+            f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 180 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
+          page() { tag=$1; q=$2; before=""; i=0
+            while [ $i -lt 10 ]; do
+              curl -s -m 180 "$B/api/ev/record/bets?$q&limit=500${before:+&before=$before}" > snap/$tag-$i.json
+              n=$(jq '.bets|length' snap/$tag-$i.json); echo "$tag $i $n" >> pages.txt
+              [ "$n" -lt 500 ] && break
+              before=$(jq -r '.bets[-1].flaggedAt' snap/$tag-$i.json); i=$((i+1))
+            done; }
+          page gem "book=gemini"
+          page kalshi "book=kalshi"
+          page polyus "book=polymarketus"
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-txread-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-txread-out
