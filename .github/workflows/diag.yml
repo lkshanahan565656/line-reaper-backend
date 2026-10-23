@@ -11,7 +11,7 @@ jobs:
           B=https://line-reaper-backend-production.up.railway.app
           mkdir -p out/snap && cd out
           date -u > at.txt
-          for q in "status" "ev/scoreboard?state=TX" "ev/scoreboard" "ev/scoreboard?state=TX&days=4" "ev/record?state=TX" "ev?limit=1000&state=TX" "props/record" "props/record/picks?status=graded&limit=1000" "esports/models" "results"; do
+          for q in "tail/record?book=fresh&limit=500" "tail/record?book=fresh&days=4" "whales?limit=5"; do
             f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 180 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
           page() { tag=$1; q=$2; before=""; i=0
             while [ $i -lt 10 ]; do
@@ -20,8 +20,5 @@ jobs:
               [ "$n" -lt 500 ] && break
               before=$(jq -r '.bets[-1].flaggedAt' snap/$tag-$i.json); i=$((i+1))
             done; }
-          page gem "book=gemini"
-          page kalshi "book=kalshi"
-          page polyus "book=polymarketus"
           cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-txread-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
           git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-txread-out
