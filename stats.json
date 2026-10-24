@@ -1,0 +1,27 @@
+{
+ "startedAt": "2026-10-24T22:24:47.915Z",
+ "ticks": {
+  "lolFrames": 45,
+  "kbooks": 12,
+  "kalshi": 45,
+  "dota": 23,
+  "lolLive": 12,
+  "val": 12,
+  "cs": 23
+ },
+ "errors": {
+  "feed.lolesports.com": "400 https://feed.lolesports.com/livestats/v1/window/115660540726095026?startingTime=2026-10-24T22:34:50.000Z"
+ },
+ "last": {
+  "lolFrames": "2026-10-24T22:35:48.418Z",
+  "kbooks": "2026-10-24T22:35:49.897Z",
+  "kalshi": "2026-10-24T22:35:48.362Z",
+  "dota": "2026-10-24T22:35:48.366Z",
+  "lolLive": "2026-10-24T22:35:48.433Z",
+  "val": "2026-10-24T22:35:48.494Z",
+  "cs": "2026-10-24T22:35:48.969Z"
+ },
+ "at": "2026-10-24T22:35:49.897Z",
+ "kLive": 20,
+ "lolGames": 1
+}
