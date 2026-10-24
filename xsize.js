@@ -198,7 +198,7 @@ function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX
     // a venue's books one after another (the polite client spaces each host), the venues side by side
     await Promise.all(VENUES.map(async v => { for (const c of todo.filter(x => x.venue === v)) await one(c); }));
     for (const b of changed.values()) await store.put(b);
-    state.scans++; state.lastScan = new Date(t).toISOString();
+    state.scans++; state.lastScan = new Date(t).toISOString(); state.lastScanMs = now() - t;
     return { sides: all.length, candidates: cands.length, read: todo.length };
   }
 

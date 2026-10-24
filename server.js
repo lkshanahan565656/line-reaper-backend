@@ -4604,7 +4604,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.158.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.158.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6066,7 +6066,10 @@ const xsize = require('./xsize');
 const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
 const xsizeTracker = xsize.createSizeTracker({
   store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
-  http: upstream,
+  // straight to the venues, not the polite queue: there a book read waited
+  // behind the exchange scans' thousands of Kalshi calls, so a minute's pass
+  // took ten (2 passes in the first 10 minutes live, 10-24). At most ~70 reads a minute.
+  http: { get: (url, cfg) => axios.get(url, cfg) },
 });
 xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
 let xsizeRunning = false;
@@ -7101,7 +7104,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.158.0',
+  version: '3.158.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
