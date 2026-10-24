@@ -9,7 +9,11 @@ while time.time()-t0<1800:
     v=get('/api/status').get('version'); print(time.strftime('%H:%M:%S'), v, flush=True)
     if v=='3.152.0': break
     time.sleep(60)
-time.sleep(300)  # let the board fill (Pick6 relay, FanDuel props)
+time.sleep(300)
+for i in range(20):
+    st=get('/api/status')
+    if st.get('version') and (st.get('pick6') or {}).get('lines'): break
+    print('waiting', st.get('error') or st.get('version'), flush=True); time.sleep(60)
 st=get('/api/status'); print('version', st.get('version'))
 p6=st.get('pick6') or {}
 print('pick6 status', json.dumps({k:p6.get(k) for k in ('lines','relay','bySport','payouts')})[:1500])
