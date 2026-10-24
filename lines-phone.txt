@@ -1,0 +1,2008 @@
+ABOUT THIS TAB
+PROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a
+Show
+LINES
+CARDS
+ALL 14392
+SPORTS
+ESPORTS
+NFL 4890
+CFB 2787
+NBA 1572
+WNBA 9
+MLB 244
+NHL 2081
+SOCCER 2017
+TENNIS 64
+MMA 174
+CS 146
+LOL 210
+VAL 21
+DOTA 58
+LA LIGA 44
+F1 31
+NASCAR 19
+BASKETBALL 12
+DARTS 8
+SERIE A 4
+BAD 1
+Legs with a sharp price NFL 1,578/7,118 · CFB 605/3,975 · NHL 1,368/3,161 · NBA 651/2,700 · SOCCER 0/2,041 · MLB 75/392 · MMA 18/233 · TENNIS 24/67 · LA LIGA 0/44 · F1 0/31
+UNDERDOG 11532
+PRIZEPICKS 4896
+SLEEPER 3718
+DK PICK6 361
+PROP
+Every prop
+Receiving Yards (235)
+Rush Yards (124)
+Points (112)
+Receptions (64)
+Kills on Map 1 (60)
+Pass Yards (57)
+Rebounds (49)
+Pts + Rebs + Asts (47)
+Shots on Goal (44)
+Kills on Maps 1+2 (39)
+Assists (39)
+Rush Attempts (31)
+Points + Rebounds (31)
+Longest Reception (29)
+Points + Assists (27)
+Passing Completions (25)
+Pass Attempts (25)
+Rebounds + Assists (24)
+Longest Rush (22)
+Pts+Asts (21)
+MAP 3 Kills (20)
+Pts+Rebs (19)
+Headshots on Maps 1+2 (18)
+MAP 3 Headshots (18)
+INTs Thrown (15)
+Rush + Rec Yards (13)
+3-Pointers Made (11)
+Rebs+Asts (8)
+Pass TDs (8)
+Anytime TD (8)
+Pass + Rush Yards (7)
+Longest Completion (6)
+Pts+Rebs+Asts (5)
+Pass+Rush Yds (3)
+Total Bases (3)
+3-PT Made (3)
+Singles (2)
+Hits (2)
+Strikeouts (2)
+Fight Time (Mins) (1)
+Saves (1)
+Goals (1)
+Shots On Goal (1)
+Pitching Outs Recorded (1)
+MAPS 1-2 Kills (1)
+SPORTS PROPS RECORD
+Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.
+708
+FLAGGED
+66%
+STILL UP 2 MIN ON
++1.1%
+EV AT CLOSE · 600
+287-272
+RECORD
+-2.4%
+ROI, STILL-UP LEGS
+142/461
+FAIR MOVED OUR WAY
+Sharp consensus 305 tracked, 108-113 · Line gaps 122 tracked, 53-45 · Sharp-priced 187 tracked, 78-69 · Unpriced gaps, odd app's side 5045 tracked, 2004-1529 · Unpriced gaps, other apps' side 5539 tracked, 2140-1847 · DK Pick6 sharp consensus 74 tracked, 36-37 · DK Pick6 sharp-priced 6 tracked, 4-2 · DK Pick6 line gaps 14 tracked, 8-6
+PrizePicks · Lines 1,282 shown · 25 bettable (+2% or better at PrizePicks's break-even on a sharp price; yellow EV is priced off one sharp source (Pinnacle or Kalshi) or the other apps alone; grey EV off FanDuel and BetRivers alone where nothing sharp posts the prop (college football, NHL), a lead not graded yet)
+LOL
+Hans Sama
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+5
+3.6
+H2H
+PIN 5.0
+UNDER
+76.3%
+Std
++35.8%
+LOL
+Knight
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+6
+4.4
+H2H
+PIN 5.5
+UNDER
+76.1%
+Std
++35.3%
+LOL
+Rookie
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+4.5
+3.1
+H2H
+PIN 4.2
+UNDER
+75.8%
+Std
++34.8%
+LOL
+BrokenBlade
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+3
+2.2
+H2H
+PIN 3.0
+UNDER
+75.3%
+Std
++33.9%
+LOL
+Xun
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+4
+3.0
+H2H
+PIN 3.7
+UNDER
+74.8%
+Std
++33.1%
+LOL
+Viper
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+5
+3.8
+H2H
+PIN 4.7
+UNDER
+74.5%
+Std
++32.5%
+LOL
+JiaQi
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+5.5
+4.0
+H2H
+PIN 5.5
+UNDER
+74.0%
+Std
++31.6%
+LOL
+Bin
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+3
+2.3
+H2H
+PIN 2.8
+UNDER
+73.2%
+Std
++30.2%
+LOL
+TheShy
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+3
+2.3
+H2H
+PIN 3.1
+UNDER
+73.0%
+Std
++29.8%
+LOL
+Myrwn
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+3
+2.5
+UNDER
+71.6%
+Std
++27.4%
+LOL
+kyeahoo
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+3
+2.4
+H2H
+PIN 2.7
+UNDER
+70.6%
+Std
++25.6%
+LOL
+SkewMond
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+4
+3.3
+H2H
+PIN 4.5
+UNDER
+70.4%
+Std
++25.3%
+LOL
+Caps
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+4.5
+3.6
+H2H
+PIN 4.9
+UNDER
+69.8%
+Std
++24.2%
+CS
+biguzera
+UD
+PP
+SL
+Kills on Maps 1+2 · Galorys vs paiN Gaming · 6:00 PM
+29.5
+25.9
+H2H
+PIN 29.2
+UNDER
+68.9%
+Std
++22.6%
+LOL
+Inspired
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+3
+2.6
+H2H
+PIN 2.6
+UNDER
+67.9%
+Std
++20.7%
+LOL
+Duduhh
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+2.5
+4.2
+H2H
+PIN 2.9
+OVER
+67.2%
+Std
++19.6%
+LOL
+Wei
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+3.5
+2.9
+H2H
+PIN 3.9
+UNDER
+67.2%
+Std
++19.6%
+LOL
+Dire
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+2.5
+4.2
+H2H
+PIN 2.9
+OVER
+67.1%
+Std
++19.4%
+LOL
+Eddie
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+3
+4.6
+H2H
+PIN 3.2
+OVER
+67.1%
+Std
++19.3%
+LOL
+Elyoya
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+3.5
+3.1
+UNDER
+66.8%
+Std
++18.8%
+LOL
+POUT
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+3
+2.7
+UNDER
+66.5%
+Std
++18.4%
+CS
+doc
+PP
+MAP 3 Kills · DENDELE vs FURIA MAP 3 · 6:00 PM
+13
+7.6
+H2H
+OVER
+66.2%
+Std
++17.8%
+LOL
+Doggo
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+4
+3.7
+UNDER
+65.8%
+Std
++17.1%
+LOL
+Delight
+UD
+PP
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+0.5
+0.4
+UNDER
+65.7%
+Std
++16.9%
+LOL
+Saint
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+4
+3.5
+H2H
+PIN 3.6
+UNDER
+65.6%
+Std
++16.8%
+LOL
+Zest
+UD
+PP
+P6
+Kills on Map 1 · LOS vs G2 Esports · 7:00 PM
+2
+3.2
+H2H
+PIN 2.1
+OVER
+64.9%
+Std
++15.5%
+LOL
+Duro
+UD
+PP
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+0.5
+0.4
+UNDER
+64.9%
+Std
++15.4%
+LOL
+Gumayusi
+UD
+PP
+P6
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+4
+3.6
+H2H
+PIN 3.1
+UNDER
+64.4%
+Std
++14.5%
+CS
+koala
+PP
+MAP 3 Kills · DENDELE vs FURIA MAP 3 · 6:00 PM
+12.5
+7.2
+H2H
+OVER
+64.1%
+Std
++14.0%
+LOL
+ON
+UD
+PP
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+0.5
+0.4
+UNDER
+63.9%
+Std
++13.7%
+LOL
+Shad0w
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+3
+2.9
+UNDER
+63.8%
+Std
++13.5%
+LOL
+Meiko
+UD
+PP
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+0.5
+0.5
+UNDER
+63.4%
+Std
++12.8%
+LOL
+Busio
+UD
+PP
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+0.5
+0.5
+UNDER
+63.2%
+Std
++12.4%
+LOL
+Hizto
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+2.5
+3.9
+H2H
+PIN 2.6
+OVER
+62.9%
+Std
++11.9%
+LOL
+Pun
+UD
+PP
+P6
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · 9:00 PM
+2
+3.0
+H2H
+PIN 2.1
+OVER
+62.9%
+Std
++11.8%
+CS
+maxxkor
+PP
+MAP 3 Kills · DENDELE vs FURIA MAP 3 · 6:00 PM
+11.5
+6.6
+H2H
+OVER
+62.9%
+Std
++11.8%
+LOL
+Siwoo
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+2.5
+2.3
+H2H
+PIN 2.0
+UNDER
+62.8%
+Std
++11.8%
+LOL
+Keria
+UD
+PP
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+0.5
+0.5
+UNDER
+62.8%
+Std
++11.7%
+CS
+Snow
+UD
+PP
+Kills on Maps 1+2 · Galorys vs paiN Gaming · 6:00 PM
+29.5
+27.2
+H2H
+PIN 27.9
+UNDER
+61.9%
+Std
++10.1%
+LOL
+Supa
+UD
+PP
+P6
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · 6:00 PM
+5
+4.4
+UNDER
+61.6%
+Std
++9.5%
+LOL
+Faker
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+3.5
+3.3
+H2H
+PIN 3.2
+UNDER
+61.5%
+Std
++9.3%
+VAL
+conir
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+30
+28.0
+H2H
+UNDER
+61.4%
+Std
++9.2%
+CS
+rdnzao
+PP
+MAP 3 Kills · DENDELE vs FURIA MAP 3 · 6:00 PM
+12
+6.7
+H2H
+OVER
+60.8%
+Std
++8.1%
+LOL
+Caliste
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+4
+3.8
+H2H
+PIN 4.3
+UNDER
+60.8%
+Std
++8.1%
+LOL
+Canyon
+UD
+PP
+P6
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+3.5
+3.4
+H2H
+PIN 3.3
+UNDER
+59.8%
+Std
++6.3%
+LOL
+Peyz
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+5.5
+5.3
+H2H
+PIN 5.2
+UNDER
+59.7%
+Std
++6.1%
+CS
+saadzin
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+32
+30.2
+H2H
+PIN 31.2
+UNDER
+59.5%
+Std
++5.9%
+CS
+gafolo
+PP
+MAP 3 Kills · DENDELE vs FURIA MAP 3 · 6:00 PM
+10.5
+5.8
+H2H
+OVER
+59.5%
+Std
++5.8%
+CFB
+TK Norman
+UD
+PP
+SL
+Receiving Yards · TXAM @ BAMA · 7:30 PM
+21.5
+25.2
+4 BK
+OVER
+57.8%
+Std
++5.0%
+CS
+deStiny
+UD
+PP
+SL
+Kills on Maps 1+2 · Galorys vs paiN Gaming · 6:00 PM
+28.5
+30.3
+H2H
+PIN 29.5
+OVER
+58.8%
+Std
++4.6%
+LOL
+Yike
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+3.5
+3.5
+H2H
+PIN 3.9
+UNDER
+58.5%
+Std
++4.1%
+LOL
+Canna
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+2.5
+2.5
+H2H
+PIN 2.8
+UNDER
+58.5%
+Std
++4.0%
+NFL
+Trey McBride
+UD
+PP
+SL
+Receiving Yards · DEN @ ARI · Sun 8:05 PM
+66.5
+61.2
+8 BK
+UNDER
+57.2%
+Std
++3.9%
+CFB
+Kewan Lacy
+UD
+PP
+SL
+Receiving Yards · MISS @ TEX · 11:30 PM
+12.5
+—
+UNDER
+58.4%
+Std
++3.8%
+LOL
+Chovy
+UD
+PP
+P6
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+4
+4.0
+H2H
+PIN 4.0
+UNDER
+58.4%
+Std
++3.8%
+CS
+FalleN
+PP
+MAP 3 Kills · FURIA vs DENDELE MAP 3 · 6:00 PM
+12
+5.5
+H2H
+UNDER
+58.3%
+Std
++3.8%
+CS
+chelo
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+27.5
+29.1
+H2H
+PIN 28.3
+OVER
+58.2%
+Std
++3.6%
+CS
+timo
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+29.5
+27.9
+H2H
+PIN 28.3
+UNDER
+58.1%
+Std
++3.3%
+CS
+PKL
+UD
+PP
+SL
+Kills on Maps 1+2 · Galorys vs paiN Gaming · 6:00 PM
+22.5
+23.9
+H2H
+PIN 24.2
+OVER
+58.0%
+Std
++3.2%
+CS
+kauez
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+28.5
+27.0
+H2H
+PIN 27.6
+UNDER
+58.0%
+Std
++3.2%
+NBA
+Giannis Antetokounmpo
+UD
+PP
+SL
+Assists · MIA @ CHA · 10:00 PM
+6
+—
+OVER
+57.9%
+Std
++3.0%
+LOL
+Berserker
+UD
+PP
+P6
+Kills on Map 1 · LYON vs Karmine Corp · 8:00 PM
+4
+4.0
+H2H
+PIN 4.1
+UNDER
+57.9%
+Std
++2.9%
+VAL
+fluxxy
+UD
+PP
+Kills on Maps 1+2 · SK Nebula vs Shopify Rebellion Gold · 9:00 PM
+27
+28.4
+H2H
+OVER
+57.8%
+Std
++2.8%
+NFL
+Woody Marks
+UD
+PP
+SL
+Receiving Yards · NYG @ HOU · Sun 5:00 PM
+14.5
+—
+UNDER
+57.7%
+Std
++2.6%
+NFL
+Ollie Gordon
+UD
+PP
+SL
+Receiving Yards · MIA @ NYJ · Sun 5:00 PM
+6.5
+9.5
+7 BK
+OVER
+56.4%
+Std
++2.6%
+LOL
+Yeon
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+3.5
+3.5
+H2H
+PIN 2.7
+UNDER
+57.6%
+Std
++2.5%
+NHL
+Timo Meier
+UD
+PP
+SL
+Points · LA @ NJ · 7:30 PM
+0.5
+—
+UNDER
+57.4%
+Std
++2.1%
+NFL
+Kyren Williams
+UD
+PP
+SL
+Receptions · LAR @ LV · Sun 8:25 PM
+4
+—
+UNDER
+57.4%
+Std
++2.1%
+NFL
+Lamar Jackson
+UD
+PP
+Pass Yards · CIN @ BAL · Sun 5:00 PM
+224.5
+—
+OVER
+57.1%
+Std
++1.6%
+CS
+Tatu
+UD
+PP
+Kills on Maps 1+2 · Galorys vs paiN Gaming · 6:00 PM
+26
+27.3
+H2H
+PIN 28.9
+OVER
+57.1%
+Std
++1.6%
+NFL
+Daniel Jones
+UD
+PP
+SL
+Rush Yards · IND @ MIN · Sun 5:00 PM
+7.5
+—
+UNDER
+57.1%
+Std
++1.5%
+NFL
+Michael Penix
+UD
+PP
+SL
+Passing Completions · SF @ ATL · Sun 5:00 PM
+19.5
+—
+OVER
+57.0%
+Std
++1.4%
+VAL
+waved
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+32
+30.8
+H2H
+UNDER
+56.9%
+Std
++1.1%
+VAL
+mimi
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+28
+26.9
+H2H
+UNDER
+56.7%
+Std
++0.9%
+NFL
+Kyren Williams
+UD
+PP
+SL
+Rush Attempts · LAR @ LV · Sun 8:25 PM
+14.5
+—
+OVER
+56.7%
+Std
++0.8%
+LOL
+Zeus
+UD
+PP
+P6
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+2.5
+2.6
+H2H
+PIN 2.3
+UNDER
+56.6%
+Std
++0.7%
+NBA
+Naz Reid
+UD
+PP
+SL
+Rebounds · MIA @ CHA · 10:00 PM
+8
+—
+UNDER
+56.5%
+Std
++0.4%
+CFB
+Noah Bennee
+UD
+PP
+SL
+Receiving Yards · HOU @ UTAH · Sun 2:15 AM
+27.5
+—
+UNDER
+56.4%
+Std
++0.4%
+LOL
+Oner
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+3.5
+3.6
+H2H
+PIN 3.6
+UNDER
+56.4%
+Std
++0.3%
+CFB
+Trech Kekahuna
+UD
+PP
+SL
+Receiving Yards · SYR @ UNC · 11:30 PM
+28.5
+—
+UNDER
+56.3%
+Std
++0.2%
+NFL
+Kenneth Walker III
+UD
+PP
+SL
+P6
+Rush Yards · KC @ SEA · Mon 12:20 AM
+84.5
+80.5
+8 BK
+UNDER
+55.1%
+Std
++0.2%
+NFL
+Jaylen Warren
+UD
+PP
+SL
+Receiving Yards · PIT @ NO · Sun 1:30 PM
+26.5
+24.1
+8 BK
+UNDER
+55.1%
+Std
++0.1%
+NFL
+Courtland Sutton
+UD
+PP
+SL
+Receiving Yards · DEN @ ARI · Sun 8:05 PM
+35.5
+32.8
+8 BK
+UNDER
+55.1%
+Std
++0.1%
+CFB
+Kedrick Reescano
+UD
+PP
+SL
+Rush Yards · ISU @ ARIZ · 11:30 PM
+51.5
+—
+OVER
+56.2%
+Std
+-0.1%
+NFL
+Sam Darnold
+UD
+PP
+Rush Yards · KC @ SEA · Mon 12:20 AM
+5.5
+6.9
+7 BK
+UNDER
+54.9%
+Std
+-0.2%
+NFL
+Chuba Hubbard
+UD
+PP
+SL
+Rush Attempts · TB @ CAR · Sun 5:00 PM
+17
+—
+UNDER
+56.1%
+Std
+-0.3%
+NBA
+Jalen Smith
+UD
+PP
+SL
+P6
+Points · WAS @ CHI · Sun 12:00 AM
+13.5
+—
+UNDER
+56.1%
+Std
+-0.3%
+NBA
+Khaman Maluach
+UD
+PP
+SL
+Rebounds · GSW @ PHX · Sun 2:00 AM
+8.5
+—
+OVER
+56.1%
+Std
+-0.3%
+NHL
+Jakob Chychrun
+UD
+PP
+SL
+Points · BUF @ WSH · 11:00 PM
+0.5
+—
+OVER
+56.1%
+Std
+-0.3%
+NFL
+Bo Nix
+UD
+PP
+SL
+Passing Completions · DEN @ ARI · Sun 8:05 PM
+21.5
+—
+UNDER
+56.1%
+Std
+-0.3%
+NFL
+Michael Penix
+UD
+PP
+Rush Yards · SF @ ATL · Sun 5:00 PM
+1.5
+—
+OVER
+56.0%
+Std
+-0.3%
+CFB
+Brandon Phelps
+UD
+PP
+SL
+Receiving Yards · ISU @ ARIZ · 11:30 PM
+47.5
+—
+UNDER
+56.0%
+Std
+-0.4%
+LOL
+ShowMaker
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+3.5
+3.6
+H2H
+PIN 3.2
+UNDER
+56.0%
+Std
+-0.5%
+VAL
+Vania
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+30.5
+29.4
+H2H
+UNDER
+55.9%
+Std
+-0.5%
+NFL
+Matthew Stafford
+UD
+PP
+SL
+Pass Yards · LAR @ LV · Sun 8:25 PM
+262.5
+255.4
+7 BK
+UNDER
+54.7%
+Std
+-0.5%
+LOL
+Doran
+UD
+PP
+P6
+Kills on Map 1 · T1 vs Dplus KIA · 11:00 PM
+2.5
+2.6
+H2H
+PIN 2.6
+UNDER
+55.8%
+Std
+-0.7%
+VAL
+Akita
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+35
+33.9
+H2H
+UNDER
+55.8%
+Std
+-0.7%
+VAL
+Noia
+UD
+PP
+Kills on Maps 1+2 · SK Nebula vs Shopify Rebellion Gold · 9:00 PM
+33.5
+32.4
+H2H
+UNDER
+55.8%
+Std
+-0.8%
+CS
+molodoy
+PP
+MAP 3 Kills · FURIA vs DENDELE MAP 3 · 6:00 PM
+16.5
+7.8
+H2H
+UNDER
+55.8%
+Std
+-0.8%
+VAL
+amy
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+30
+29.0
+H2H
+UNDER
+55.8%
+Std
+-0.8%
+CFB
+Tylik Hill
+UD
+PP
+SL
+Rush Yards · SYR @ UNC · 11:30 PM
+33.5
+—
+OVER
+55.7%
+Std
+-0.9%
+NBA
+Kyrie Irving
+PP
+SL
+Rebs+Asts · DAL vs SAS · Sun 12:00 AM
+7.5
+7.4
+3 BOOKS
+UNDER
+54.5%
+Std
+-0.9%
+NFL
+Chris Godwin
+UD
+PP
+SL
+Receiving Yards · TB @ CAR · Sun 5:00 PM
+44.5
+47.4
+8 BK
+OVER
+54.5%
+Std
+-1.0%
+LOL
+Morgan
+UD
+PP
+P6
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+1.5
+2.2
+H2H
+PIN 1.7
+OVER
+55.7%
+Std
+-1.0%
+NHL
+Collin Graf
+UD
+PP
+SL
+P6
+Shots on Goal · SJ @ BOS · 11:00 PM
+1.5
+—
+UNDER
+55.6%
+Std
+-1.1%
+CFB
+Jaziun Patterson
+UD
+PP
+SL
+Rush Yards · MSU @ UCLA · 7:30 PM
+58.5
+—
+UNDER
+55.6%
+Std
+-1.2%
+NBA
+Dennis Schroder
+UD
+PP
+SL
+Assists · MIA @ CHA · 10:00 PM
+6
+—
+UNDER
+55.5%
+Std
+-1.2%
+NBA
+Andrew Wiggins
+UD
+PP
+SL
+Rebounds · MIA @ CHA · 10:00 PM
+4.5
+4.6
+5 BOOKS
+UNDER
+54.4%
+Std
+-1.2%
+CFB
+Braylon Staley
+UD
+PP
+SL
+Receptions · TENN @ SCAR · 7:30 PM
+4.5
+5.0
+3 BOOKS
+OVER
+54.3%
+Std
+-1.3%
+NFL
+Bucky Irving
+UD
+PP
+SL
+Receiving Yards · TB @ CAR · Sun 5:00 PM
+17.5
+15.9
+8 BK
+UNDER
+54.3%
+Std
+-1.3%
+NFL
+Ashton Jeanty
+UD
+PP
+SL
+Rush Yards · LAR @ LV · Sun 8:25 PM
+56.5
+53.8
+6 BK
+UNDER
+54.3%
+Std
+-1.4%
+NHL
+Ivan Barbashev
+UD
+PP
+SL
+P6
+Shots on Goal · VGK @ CBJ · 11:00 PM
+1.5
+—
+UNDER
+55.4%
+Std
+-1.4%
+NHL
+Mats Zuccarello
+UD
+PP
+SL
+Points · LA @ NJ · 7:30 PM
+0.5
+—
+UNDER
+55.4%
+Std
+-1.4%
+NBA
+Nikola Jokic
+UD
+PP
+SL
+Assists · NOP @ DEN · Sun 1:00 AM
+10.5
+—
+UNDER
+55.4%
+Std
+-1.5%
+CS
+yuurih
+PP
+MAP 3 Kills · FURIA vs DENDELE MAP 3 · 6:00 PM
+13
+6.2
+H2H
+UNDER
+55.3%
+Std
+-1.6%
+NFL
+Dak Prescott
+UD
+PP
+SL
+Rush Yards · DAL @ PHI · Tue 12:15 AM
+8.5
+10.2
+7 BK
+OVER
+54.1%
+Std
+-1.6%
+CS
+VINI
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+28.5
+27.5
+H2H
+PIN 28.9
+UNDER
+55.3%
+Std
+-1.6%
+NFL
+Chase Brown
+UD
+PP
+SL
+Receiving Yards · CIN @ BAL · Sun 5:00 PM
+21.5
+19.8
+8 BK
+UNDER
+54.1%
+Std
+-1.7%
+NFL
+Kendre Miller
+UD
+PP
+SL
+Rush Attempts · PIT @ NO · Sun 1:30 PM
+12
+—
+UNDER
+55.3%
+Std
+-1.7%
+CS
+HeavyGod
+PP
+MAP 3 Kills · G2 vs Natus Vincere MAP 3 · 6:00 PM
+14.5
+6.9
+H2H
+UNDER
+55.2%
+Std
+-1.8%
+NFL
+Joe Burrow
+UD
+PP
+SL
+Pass Attempts · CIN @ BAL · Sun 5:00 PM
+37
+36.3
+6 BK
+UNDER
+54.0%
+Std
+-1.8%
+NHL
+Macklin Celebrini
+UD
+PP
+SL
+Assists · SJ @ BOS · 11:00 PM
+0.5
+1.0
+2 BK
+OVER
+54.0%
+Std
+-1.8%
+NFL
+Jahan Dotson
+UD
+PP
+SL
+Receiving Yards · SF @ ATL · Sun 5:00 PM
+27.5
+29.5
+8 BK
+OVER
+54.0%
+Std
+-1.9%
+VAL
+Eva
+UD
+PP
+Kills on Maps 1+2 · MIBR GC vs G2 Gozen · 6:00 PM
+27.5
+26.6
+H2H
+UNDER
+55.1%
+Std
+-1.9%
+NFL
+Patrick Mahomes
+UD
+PP
+SL
+P6
+Pass Yards · KC @ SEA · Mon 12:20 AM
+222.5
+217.0
+8 BK
+UNDER
+54.0%
+Std
+-1.9%
+CFB
+King Miller
+UD
+PP
+SL
+Rush Yards · USC @ WIS · 11:30 PM
+72.5
+—
+UNDER
+55.1%
+Std
+-2.0%
+CS
+drop
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+28.5
+27.5
+H2H
+PIN 27.3
+UNDER
+55.1%
+Std
+-2.0%
+NBA
+Kyrie Irving
+UD
+PP
+Rebounds · SAS @ DAL · Sun 12:00 AM
+3.5
+3.6
+4 BOOKS
+UNDER
+53.9%
+Std
+-2.0%
+NBA
+Josh Giddey
+UD
+PP
+SL
+Assists · WAS @ CHI · Sun 12:00 AM
+9.5
+—
+UNDER
+55.1%
+Std
+-2.0%
+NFL
+Austin Hooper
+UD
+PP
+Receiving Yards · SF @ ATL · Sun 5:00 PM
+3.5
+—
+OVER
+54.9%
+Std
+-2.3%
+CFB
+Jared Curtis
+UD
+PP
+SL
+Pass Yards · VAN @ UK · 11:30 PM
+216.5
+—
+OVER
+54.9%
+Std
+-2.3%
+NFL
+Brock Bowers
+UD
+PP
+SL
+Receiving Yards · LAR @ LV · Sun 8:25 PM
+73.5
+70.5
+8 BK
+UNDER
+53.7%
+Std
+-2.3%
+CS
+buda
+UD
+PP
+SL
+Kills on Maps 1+2 · BESTIA vs Imperial Esports · 9:00 PM
+27.5
+26.6
+H2H
+PIN 27.2
+UNDER
+54.9%
+Std
+-2.4%
+NBA
+Naji Marshall
+UD
+PP
+SL
+P6
+Points · SAS @ DAL · Sun 12:00 AM
+16.5
+—
+UNDER
+54.9%
+Std
+-2.4%
+NHL
+Sidney Crosby
+UD
+PP
+SL
+P6
+Shots on Goal · NSH @ PIT · 11:00 PM
+2.5
+—
+UNDER
+54.9%
+Std
+-2.4%
+CFB
+Mark Bowman
+UD
+PP
+SL
+Receiving Yards · USC @ WIS · 11:30 PM
+34.5
+—
+UNDER
+54.8%
+Std
+-2.5%
+NFL
+Samaje Perine
+UD
+PP
+SL
+Rush Yards · CIN @ BAL · Sun 5:00 PM
+28.5
+26.9
+7 BK
+UNDER
+53.6%
+Std
+-2.5%
+NFL
+Kyler Murray
+UD
+PP
+SL
+Pass Attempts · IND @ MIN · Sun 5:00 PM
+30.5
+—
+UNDER
+54.8%
+Std
+-2.5%
+NFL
+Dak Prescott
+UD
+PP
+SL
+Pass Attempts · DAL @ PHI · Tue 12:15 AM
+37
+36.4
+7 BK
+UNDER
+53.6%
+Std
+-2.5%
+NBA
+Tyrese Maxey
+PP
+SL
+Rebs+Asts · PHI vs MIL · 11:30 PM
+9.5
+10.0
+4 BOOKS
+OVER
+53.6%
+Std
+-2.6%
+CS
+w0nderful
+PP
+MAP 3 Kills · Natus Vincere vs G2 MAP 3 · 6:00 PM
+16.5
+7.9
+H2H
+UNDER
+54.8%
+Std
+-2.6%
+NFL
+Kirk Cousins
+UD
+PP
+SL
+Pass Attempts · LAR @ LV · Sun 8:25 PM
+34.5
+33.9
+7 BK
+UNDER
+53.6%
+Std
+-2.6%
+NFL
+Geno Smith
+UD
+PP
+SL
+Rush Yards · MIA @ NYJ · Sun 5:00 PM
+7.5
+—
+UNDER
+54.8%
+Std
+-2.6%
+NHL
+Mikhail Sergachev
+UD
+PP
+SL
+Assists · TB @ UTA · Sun 1:00 AM
+0.5
+1.0
+2 BK
+OVER
+53.6%
+Std
+-2.7%
+NFL
+CeeDee Lamb
+UD
+PP
+SL
+P6
+Receiving Yards · DAL @ PHI · Tue 12:15 AM
+82.5
+79.6
+8 BK
+UNDER
+53.5%
+Std
+-2.8%
+LOL
+Ruler
+UD
+PP
+P6
+Kills on Map 1 · Gen.G Esports vs Hanwha Life Esports · 10:00 PM
+4.5
+4.7
+H2H
+PIN 4.7
+UNDER
+54.6%
+Std
+-2.8%
+NFL
+Deshaun Watson
+UD
+PP
+SL
+Pass Attempts · CLE @ TEN · Sun 5:00 PM
+30
+—
+UNDER
+54.6%
+Std
+-2.8%
+NBA
+Kyle Kuzma
+UD
+PP
+SL
+Rebounds · MIL @ PHI · 11:30 PM
+4.5
+—
+OVER
+54.6%
+Std
+-2.8%
+NBA
+Dejounte Murray
+UD
+PP
+Points · NOP @ DEN · Sun 1:00 AM
+17.5
+—
+UNDER
+54.6%
+Std
+-2.8%
+CFB
+Dierre Hill
+UD
+PP
+SL
+Receptions · ORE @ ILL · 7:00 PM
+2.5
+2.6
+3 BOOKS
+UNDER
+53.5%
+Std
+-2.8%
+SHOW MORE (1132 LEFT)

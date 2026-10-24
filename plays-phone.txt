@@ -1,0 +1,1546 @@
+MATCHES
+PLAYER PROPS
+ABOUT THIS TAB
+PLAYER PROPS Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A p
+Show
+ALL 423 CS2 132 VALORANT 21 COD DOTA 60 LOL 210 R6 REFRESH
+PROP
+All props
+Kills
+Headshots
+Assists
+Fantasy
+Line gaps
+MAPS
+All maps
+Map 1
+Maps 1-2
+Maps 1-3
+SORT BY
+Best EV
+Win probability
+Model vs line
+Start time
+MIN EV
+Any +EV
+2%+
+5%+
+8%+
+Plays
+All lines
+Model entry
+Track record
+AUTO-BUILD SLIP
+ALERTS
+1
+423
+LINES
+52
++EV NOW
++29.3%
+CURSE
+Tap + to build a slip. EV includes payout boosts.
+BEST SLIPS
+The best entry on each book: one leg a match, each priced at the fair the Lines table shows
+Record: 50 of 314 cashed, -82.23u (ROI -26.2%, priced at +52.8%) · 200 pending
+P
+PrizePicks
+3-pick Power
++EV
++93.9%
+EXPECTED RETURN
+LESS
+3
+Myrwn
+MAP 1 Kills · LoL · KOI
+71.6%
+LESS
+3
+Inspired H2H MODEL
+MAP 1 Kills · LoL · LYON
+67.9%
+LESS
+0.5
+Delight
+MAP 1 Kills · LoL · HLE
+66.5%
+HIT ALL
+32.3%
+PAYS
+6X
+NEEDS
+3.09X
+¼ KELLY
+4.7%
+LOAD SLIP
+Also +EV on PrizePicks (this one grows a bankroll fastest):
+5-pick Power +168.6% · hits 13.4%
+4-pick Power +108.8% · hits 20.9%
+2-pick Power +45.9% · hits 48.6%
+6-pick Power +222.3% · hits 8.6%
+U
+Underdog
+2-pick Standard
++EV
++34.1%
+EXPECTED RETURN
+LOWER
+29.5
+snow H2H MODEL
+MAPS 1-2 Kills · CS2 · paiN
+62.1%
+HIGHER
+19.5
+lorenof KILL SHARE
+MAPS 1-2 Kills · Dota2 · Astra
+61.7%
+HIT ALL
+38.3%
+PAYS
+3.5X
+NEEDS
+2.61X
+¼ KELLY
+3.4%
+LOAD SLIP
+Also +EV on Underdog (this one grows a bankroll fastest):
+3-pick Standard +47.7% · hits 20.8%
+4-pick Standard +61.0% · hits 13.1%
+5-pick Standard +57.5% · hits 8.8%
+6-pick Standard +61.8% · hits 5.8%
+MATCH STACKS
+One match, every leg the same way. When a match runs long, everyone's kills go over together. Every number assumes the app's standard payout, which it may cut for picks from one match: check the entry screen.
+Record at standard payouts: 21 of 271 swept (priced 18.03; 9.66 if the legs were independent), +310.03u (ROI +114.4%, priced at +64.6%) · legs won 50.3% against 52.1% priced, from 87 matches · at the close: legs still on their line moved -0.6 pts by the start (1430), 235 lines moved, 109 our way · 163 pending · Not proven: too few matches yet, and the apps may pay less than standard for same-match picks
+WHAT THE STACK RECORD NEEDS · PrizePicks 6-pick: 6 of 78 swept (55 matches; 3.92 expected with the legs moving together, 1.56 if they didn't). Pays if PrizePicks shows at least 13x for all 6 (15.6x with one sweep fewer); standard is 37.5x, and about 14.9x if PrizePicks prices the legs moving together.
+Underdog 6-pick: 2 of 72 swept (60 matches; 3.44 expected with the legs moving together, 1.47 if they didn't).
+Sleeper 6-pick: 5 of 64 swept (56 matches; 3.02 expected with the legs moving together, 1.24 if they didn't). Pays if Sleeper shows at least 10.8x for all 6 (13.5x with one sweep fewer); standard is 32x, and about 13.1x if Sleeper prices the legs moving together.
+Underdog 5-pick: 0 of 15 swept (14 matches; 1.4 expected with the legs moving together, 0.55 if they didn't). No sweep yet, so no payout makes this record pay.
+Only 13 sweeps so far: a lead, not proven. The number that decides it is the payout the app shows for these picks together.
+P
+PrizePicks
+KOI vs CFO · 5-pick Power
++EV AS PRICED
++237.6%
+IF IT PAYS 20X
+LESS
+3
+Myrwn
+MAP 1 Kills · LoL · KOI
+71.6%
+LESS
+3
+Pout
+MAP 1 Kills · LoL · CFO
+66.5%
+LESS
+4
+Doggo
+MAP 1 Kills · LoL · CFO
+65.9%
+LESS
+3
+Shad0w
+MAP 1 Kills · LoL · CFO
+63.8%
+LESS
+3.5
+Elyoya
+MAP 1 Kills · LoL · KOI
+66.8%
+HIT ALL
+16.9%
+STANDARD PAYS
+20X
+NEEDS
+5.92X
+IF REPRICED
+15.9X
+Every number here assumes PrizePicks pays its standard 20x for a 5-pick Power. PrizePicks says it lowers the payout for several players from one team or game, so add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting. Play it only if it shows at least 5.92x. If the app prices these picks moving together, it would show about 15.9x, still enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (+167.6% if they were independent).
+P
+PrizePicks
+LYON vs KC · 3-pick Power
++EV AS PRICED
++77.3%
+IF IT PAYS 6X
+LESS
+3
+Inspired H2H MODEL
+MAP 1 Kills · LoL · LYON
+67.9%
+LESS
+0.5
+Busio
+MAP 1 Kills · LoL · KC
+63.4%
+LESS
+4
+Saint H2H MODEL
+MAP 1 Kills · LoL · LYON
+65.6%
+HIT ALL
+29.6%
+STANDARD PAYS
+6X
+NEEDS
+3.38X
+IF REPRICED
+5.7X
+Every number here assumes PrizePicks pays its standard 6x for a 3-pick Power. PrizePicks says it lowers the payout for several players from one team or game, so add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting. Play it only if it shows at least 3.38x. If the app prices these picks moving together, it would show about 5.7x, still enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (+69.4% if they were independent).
+P
+PrizePicks
+HLE vs GEN · 4-pick Power
++EV AS PRICED
++89.8%
+IF IT PAYS 10X
+LESS
+0.5
+Delight
+MAP 1 Kills · LoL · HLE
+66.5%
+LESS
+0.5
+Duro
+MAP 1 Kills · LoL · GEN
+64.7%
+LESS
+3.5
+Canyon H2H MODEL
+MAP 1 Kills · LoL · GEN
+59.8%
+LESS
+4
+Chovy H2H MODEL
+MAP 1 Kills · LoL · GEN
+58.4%
+HIT ALL
+19.0%
+STANDARD PAYS
+10X
+NEEDS
+5.27X
+IF REPRICED
+7.9X
+Every number here assumes PrizePicks pays its standard 10x for a 4-pick Power. PrizePicks says it lowers the payout for several players from one team or game, so add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting. Play it only if it shows at least 5.27x. If the app prices these picks moving together, it would show about 7.9x, still enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (+50.1% if they were independent).
+U
+Underdog
+CFO vs KOI · 4-pick Standard
++EV AS PRICED
++82.5%
+IF IT PAYS 11.38X
+LOWER
+2.5
+Shad0w 1.09x
+MAP 1 Kills · LoL · CFO
+54.4%
+LOWER
+5.5
+Supa 0.87x
+MAP 1 Kills · LoL · KOI
+67.1%
+LOWER
+3.5
+Doggo
+MAP 1 Kills · LoL · CFO
+57.8%
+LOWER
+2.5
+Pout
+MAP 1 Kills · LoL · CFO
+56.9%
+HIT ALL
+16.0%
+STANDARD PAYS
+11.38X
+NEEDS
+6.23X
+IF REPRICED
+8.5X
+Every number here assumes Underdog pays its standard 11.38x for a 4-pick Standard. The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 6.23x. If the app prices these picks moving together, it would show about 8.5x, still enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (+36.6% if they were independent).
+P
+PrizePicks
+Imperial vs BESTIA · 6-pick Power
++EV AS PRICED
++81.8%
+IF IT PAYS 37.5X
+MORE
+16.5
+noway
+MAPS 1-2 Headshots · CS2 · Imperial
+56.4%
+MORE
+17.5
+drop
+MAPS 1-2 Headshots · CS2 · BESTIA
+56.1%
+MORE
+9.5
+cass1n
+MAPS 1-2 Headshots · CS2 · BESTIA
+53.1%
+MORE
+14
+buda
+MAPS 1-2 Headshots · CS2 · BESTIA
+52.1%
+MORE
+16
+kauez
+MAPS 1-2 Headshots · CS2 · BESTIA
+50.9%
+MORE
+16.5
+timo
+MAPS 1-2 Headshots · CS2 · BESTIA
+50.1%
+HIT ALL
+4.9%
+STANDARD PAYS
+37.5X
+NEEDS
+20.63X
+IF REPRICED
+17.2X
+Every number here assumes PrizePicks pays its standard 37.5x for a 6-pick Power. PrizePicks says it lowers the payout for several players from one team or game, so add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting. Play it only if it shows at least 20.63x. If the app prices these picks moving together, it would show about 17.2x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-16.3% if they were independent).
+U
+Underdog
+Movistar KOI vs CTBC Flying Oyster · 2-pick Standard
++EV AS PRICED
++13.0%
+IF IT PAYS 2.5X
+LOWER
+0.5
+Alvaro 0.87x
+Kills on Map 1 · LOL · Movistar KOI
+66.1%
+LOWER
+0.5
+Kino 0.82x
+Kills on Map 1 · LOL · CTBC Flying Oyster
+69.8%
+HIT ALL
+45.3%
+STANDARD PAYS
+2.5X
+NEEDS
+2.21X
+IF REPRICED
+2.5X
+Every number here assumes Underdog pays its standard 2.5x for a 2-pick Standard. The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 2.21x. If the app prices these picks moving together, it would show about 2.5x, still enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (+15.2% if they were independent).
+P
+PrizePicks
+Galorys vs paiN · 6-pick Power
++EV AS PRICED
++60.0%
+IF IT PAYS 37.5X
+MORE
+15.5
+tomate
+MAPS 1-2 Headshots · CS2 · Galorys
+55.8%
+MORE
+17
+Rkzinho
+MAPS 1-2 Headshots · CS2 · paiN
+54.2%
+MORE
+10.5
+detr0ittJ
+MAPS 1-2 Headshots · CS2 · Galorys
+52.9%
+MORE
+11.5
+PKL
+MAPS 1-2 Headshots · CS2 · Galorys
+50.5%
+MORE
+14
+destiny
+MAPS 1-2 Headshots · CS2 · Galorys
+49.6%
+MORE
+14.5
+snow
+MAPS 1-2 Headshots · CS2 · paiN
+51.2%
+HIT ALL
+4.3%
+STANDARD PAYS
+37.5X
+NEEDS
+23.44X
+IF REPRICED
+18X
+Every number here assumes PrizePicks pays its standard 37.5x for a 6-pick Power. PrizePicks says it lowers the payout for several players from one team or game, so add each pick, open the lineup, choose Power Play, enter an amount and read the payout, then back out without submitting. Play it only if it shows at least 23.44x. If the app prices these picks moving together, it would show about 18x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-23.0% if they were independent).
+U
+Underdog
+Grêmio vs Yawara Esports · 6-pick Standard
++EV AS PRICED
++57.2%
+IF IT PAYS 35X
+HIGHER
+15.5
+spinnie
+Headshots on Maps 1+2 · CS · Grêmio
+53%
+HIGHER
+15.5
+deemO
+Headshots on Maps 1+2 · CS · Yawara Esports
+52.7%
+HIGHER
+16.5
+balencyy
+Headshots on Maps 1+2 · CS · Grêmio
+52.3%
+HIGHER
+14.5
+yeda
+Headshots on Maps 1+2 · CS · Grêmio
+51.9%
+HIGHER
+9.5
+MITHPUTTINI
+Headshots on Maps 1+2 · CS · Grêmio
+51.7%
+HIGHER
+12.5
+s1lent
+Headshots on Maps 1+2 · CS · Grêmio
+51.6%
+HIT ALL
+4.5%
+STANDARD PAYS
+35X
+NEEDS
+22.27X
+IF REPRICED
+15.7X
+Every number here assumes Underdog pays its standard 35x for a 6-pick Standard. The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 22.27x. If the app prices these picks moving together, it would show about 15.7x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-29.1% if they were independent).
+U
+Underdog
+Nuclear TigeRES vs ex-Zero Tenacity · 6-pick Standard
++EV AS PRICED
++50.0%
+IF IT PAYS 35X
+HIGHER
+17.5
+Djon8
+Headshots on Maps 1+2 · CS · Nuclear TigeRES
+52.8%
+HIGHER
+14.5
+Dragon
+Headshots on Maps 1+2 · CS · ex-Zero Tenacity
+49.7%
+HIGHER
+10.5
+tronic
+Headshots on Maps 1+2 · CS · Nuclear TigeRES
+52.5%
+HIGHER
+17.5
+ayukiii
+Headshots on Maps 1+2 · CS · Nuclear TigeRES
+52%
+HIGHER
+12.5
+senka
+Headshots on Maps 1+2 · CS · Nuclear TigeRES
+51.8%
+HIGHER
+15.5
+flouzer
+Headshots on Maps 1+2 · CS · Nuclear TigeRES
+51.5%
+HIT ALL
+4.3%
+STANDARD PAYS
+35X
+NEEDS
+23.34X
+IF REPRICED
+15.6X
+Every number here assumes Underdog pays its standard 35x for a 6-pick Standard. The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 23.34x. If the app prices these picks moving together, it would show about 15.6x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-33.0% if they were independent).
+U
+Underdog
+Alter Ego vs NEXVOID · 6-pick Flex
++EV AS PRICED
++32.4%
+AT THE STANDARD TABLE
+HIGHER
+10.5
+adeX
+Headshots on Maps 1+2 · CS · Alter Ego
+51.3%
+HIGHER
+16.5
+zesta
+Headshots on Maps 1+2 · CS · NEXVOID
+50.8%
+HIGHER
+16.5
+PokemoN
+Headshots on Maps 1+2 · CS · Alter Ego
+51.2%
+HIGHER
+14.5
+laxiee
+Headshots on Maps 1+2 · CS · Alter Ego
+50.8%
+HIGHER
+13.5
+shadiy
+Headshots on Maps 1+2 · CS · Alter Ego
+50.4%
+HIGHER
+15.5
+MiQ
+Headshots on Maps 1+2 · CS · NEXVOID
+50.8%
+HIT ALL
+3.8%
+STANDARD PAYS
+25X
+NEEDS
+18.88X
+IF REPRICED
+11.6X
+Every number here assumes Underdog pays its standard 6-pick Flex table (25x for 6 of 6). The app may pay less for picks from one match, so build the entry in the app and read the payout for 6 of 6 before you submit. Play it only if it shows at least 18.88x. If the app prices these picks moving together, it would show about 11.6x, not enough: the edge is only whatever it leaves out.
+Flex: pays on a miss too.
+Legs share a series, priced together (-24.4% if they were independent).
+S
+Sleeper
+Alter Ego vs NEXVOID · 6-pick Picks
++EV AS PRICED
++19.6%
+IF IT PAYS 31.81X
+HIGHER
+10.5
+adeX 1.78x
+Headshots on Maps 1+2 · CS · Alter Ego
+51.3%
+HIGHER
+16.5
+zesta 1.78x
+Headshots on Maps 1+2 · CS · NEXVOID
+50.8%
+HIGHER
+16.5
+PokemoN 1.78x
+Headshots on Maps 1+2 · CS · Alter Ego
+51.2%
+HIGHER
+14.5
+laxiee 1.78x
+Headshots on Maps 1+2 · CS · Alter Ego
+50.8%
+HIGHER
+13.5
+shadiy 1.78x
+Headshots on Maps 1+2 · CS · Alter Ego
+50.4%
+HIGHER
+15.5
+MiQ 1.78x
+Headshots on Maps 1+2 · CS · NEXVOID
+50.8%
+HIT ALL
+3.8%
+STANDARD PAYS
+31.81X
+NEEDS
+26.58X
+IF REPRICED
+14.7X
+Every number here assumes Sleeper pays its standard 31.81x (its picks' multipliers multiplied). The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 26.58x. If the app prices these picks moving together, it would show about 14.7x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-44.8% if they were independent).
+S
+Sleeper
+Brute vs Infinite Gaming · 6-pick Picks
++EV AS PRICED
++11.5%
+IF IT PAYS 31.81X
+HIGHER
+15.5
+tAk 1.78x
+Headshots on Maps 1+2 · CS · Brute
+50.6%
+HIGHER
+16.5
+kyuubii 1.78x
+Headshots on Maps 1+2 · CS · Infinite Gaming
+49.9%
+HIGHER
+14.5
+ZEDKO 1.78x
+Headshots on Maps 1+2 · CS · Brute
+50.5%
+HIGHER
+13.5
+nbqq 1.78x
+Headshots on Maps 1+2 · CS · Brute
+50.3%
+HIGHER
+10.5
+aidKiT 1.78x
+Headshots on Maps 1+2 · CS · Brute
+49.5%
+HIGHER
+11.5
+sl3nd 1.78x
+Headshots on Maps 1+2 · CS · Infinite Gaming
+49.8%
+HIT ALL
+3.5%
+STANDARD PAYS
+31.81X
+NEEDS
+28.52X
+IF REPRICED
+14.3X
+Every number here assumes Sleeper pays its standard 31.81x (its picks' multipliers multiplied). The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 28.52x. If the app prices these picks moving together, it would show about 14.3x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-49.7% if they were independent).
+S
+Sleeper
+Imperial vs BESTIA · 6-pick Picks
++EV AS PRICED
++10.7%
+IF IT PAYS 31.68X
+HIGHER
+16.5
+chelo 1.78x
+MAPS 1-2 Headshots · CS2 · Imperial
+50.7%
+HIGHER
+16.5
+kauez 1.85x
+MAPS 1-2 Headshots · CS2 · BESTIA
+48.3%
+HIGHER
+18.5
+decenty 1.84x
+MAPS 1-2 Headshots · CS2 · Imperial
+49%
+HIGHER
+10.5
+saadzin 1.78x
+MAPS 1-2 Headshots · CS2 · Imperial
+49.8%
+HIGHER
+13.5
+VINI 1.65x
+MAPS 1-2 Headshots · CS2 · Imperial
+52.7%
+HIGHER
+16.5
+timo 1.78x
+MAPS 1-2 Headshots · CS2 · BESTIA
+50.1%
+HIT ALL
+3.5%
+STANDARD PAYS
+31.68X
+NEEDS
+28.62X
+IF REPRICED
+14.3X
+Every number here assumes Sleeper pays its standard 31.68x (its picks' multipliers multiplied). The app may pay less for picks from one match, so build the entry in the app and read the payout before you submit. Play it only if it shows at least 28.62x. If the app prices these picks moving together, it would show about 14.3x, not enough: the edge is only whatever it leaves out.
+Legs share a series, priced together (-50.0% if they were independent).
+PrizePicks
+45 plays of 164 lines
++
+CurseLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LESS
+2
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.09
++29.3%
+73% to hit
++
+MyrwnLoL
+MAP 1 Kills · CFO MAP 1 · Sat 6:00 PM
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
++27.4%
+72% to hit
++
+SaintLoL
+MAP 1 Kills · KC MAP 1 · Sat 8:00 PM
+LYON 44% per map vs KC (exchanges) · -1.8% kills
+LESS
+4
+Gap · Underdog 3.5
+Gaps lose close 11/53
+Pinnacle team x1.10
++26.8%
+71% to hit
++
+SiwooLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LESS
+2.5
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.07
++25.8%
+71% to hit
++
+YeonLoL
+MAP 1 Kills · BLG MAP 1 · Sun 12:00 AM
+TL 27% per map vs BLG (exchanges) · -3.2% kills
+LESS
+3.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++25.1%
+70% to hit
++
+InspiredLoL
+MAP 1 Kills · KC MAP 1 · Sat 8:00 PM
+LYON 44% per map vs KC (exchanges) · -1.8% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.10
++24.7%
+70% to hit
++
+KanaviLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
++23.6%
+70% to hit
++
+BinLoL
+MAP 1 Kills · TL MAP 1 · Sun 12:00 AM
+BLG 74% per map vs TL (exchanges) · +3.2% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x0.94
++22.1%
+69% to hit
++
+YikeLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LESS
+3.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.06
++21.9%
+69% to hit
++
+FeistyLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.09
++19.4%
+67% to hit
++
+ZestLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LESS
+2
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.09
++19.3%
+67% to hit
++
+QuidLoL
+MAP 1 Kills · BLG MAP 1 · Sun 12:00 AM
+TL 27% per map vs BLG (exchanges) · -3.2% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
++19.0%
+67% to hit
++
+OnerLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LESS
+3.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.11
++18.9%
+67% to hit
++
+FakerLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LESS
+3.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.11
++18.9%
+67% to hit
++
+ElyoyaLoL
+MAP 1 Kills · CFO MAP 1 · Sat 6:00 PM
+LESS
+3.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++18.8%
+67% to hit
++
+PoutLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
++18.4%
+67% to hit
++
+kyeahooLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.06
++17.6%
+66% to hit
++
+PunLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LESS
+2
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.13
++17.4%
+66% to hit
++
+DoggoLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LESS
+4
+Gap · Underdog 3.5
+Gaps lose close 11/53
++17.1%
+66% to hit
++
+DuduhhLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.09
++16.9%
+66% to hit
++
+EddieLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.13
++16.9%
+66% to hit
++
+DelightLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LESS
+0.5
+Beats close 42/68
++16.9%
+66% to hit
++
+TheShyLoL
+MAP 1 Kills · TSW MAP 1 · Sat 9:00 PM
+IG 70% per map vs TSW (exchanges) · +2.7% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.04
++15.8%
+65% to hit
++
+ZekaLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LESS
+3.5
+Beats close 42/68
++15.7%
+65% to hit
++
+DuroLoL
+MAP 1 Kills · HLE MAP 1 · Sat 10:00 PM
+GEN 59% per map vs HLE (exchanges) · H2H 3-4 · +3.0% kills
+LESS
+0.5
+Beats close 42/68
+Pinnacle team x1.08
++15.4%
+65% to hit
++
+DoranLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.11
++15.4%
+65% to hit
++
+ZeusLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LESS
+2.5
+Beats close 42/68
++14.8%
+65% to hit
++
+SmashLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LESS
+4
+Underdog 3.5
+Beats close 42/68
+Pinnacle team x1.07
++14.7%
+64% to hit
++
+LucidLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.07
++14.5%
+64% to hit
++
+KiinLoL
+MAP 1 Kills · HLE MAP 1 · Sat 10:00 PM
+GEN 59% per map vs HLE (exchanges) · H2H 3-4 · +3.0% kills
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.08
++14.4%
+64% to hit
++
+JiaQiLoL
+MAP 1 Kills · TSW MAP 1 · Sat 9:00 PM
+IG 70% per map vs TSW (exchanges) · +2.7% kills
+LESS
+5.5
+Beats close 42/68
+Pinnacle team x1.04
++14.2%
+64% to hit
++
+ShowMakerLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LESS
+3.5
+Beats close 42/68
+Pinnacle team x1.07
++14.0%
+64% to hit
++
+ONLoL
+MAP 1 Kills · TL MAP 1 · Sun 12:00 AM
+BLG 74% per map vs TL (exchanges) · +3.2% kills
+LESS
+0.5
+Beats close 42/68
+Pinnacle team x0.94
++13.7%
+64% to hit
++
+Shad0wLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LESS
+3
+Gap · Underdog 2.5
+Gaps lose close 11/53
++13.5%
+64% to hit
++
+MeikoLoL
+MAP 1 Kills · TSW MAP 1 · Sat 9:00 PM
+IG 70% per map vs TSW (exchanges) · +2.7% kills
+LESS
+0.5
+Beats close 42/68
+Pinnacle team x1.04
++12.8%
+63% to hit
++
+BusioLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LESS
+0.5
+Beats close 42/68
+Pinnacle team x1.06
++12.4%
+63% to hit
++
+CannaLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.06
++12.4%
+63% to hit
++
+GumayusiLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LESS
+4
+Underdog 3.5
+Beats close 42/68
++12.3%
+63% to hit
++
+KeriaLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LESS
+0.5
+Beats close 42/68
+Pinnacle team x1.11
++11.7%
+63% to hit
++
+HiztoLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LESS
+2.5
+Beats close 42/68
+Pinnacle team x1.13
++11.6%
+63% to hit
++
+BerserkerLoL
+MAP 1 Kills · KC MAP 1 · Sat 8:00 PM
+LYON 44% per map vs KC (exchanges) · -1.8% kills
+LESS
+4
+Underdog 3.5
+Beats close 42/68
+Pinnacle team x1.10
++11.1%
+62% to hit
++
+SkewMondLoL
+MAP 1 Kills · LOS MAP 1 · Sat 7:00 PM
+G2 80% per map vs LOS (exchanges) · +3.4% kills
+LESS
+4
+Gap · Underdog 3.5
+Gaps lose close 11/53
+Pinnacle team x1.07
++10.3%
+62% to hit
++
+CanyonLoL
+MAP 1 Kills · HLE MAP 1 · Sat 10:00 PM
+GEN 59% per map vs HLE (exchanges) · H2H 3-4 · +3.0% kills
+LESS
+3.5
+Beats close 42/68
+Pinnacle team x1.08
++10.3%
+62% to hit
++
+SupaLoL
+MAP 1 Kills · CFO MAP 1 · Sat 6:00 PM
+LESS
+5
+Underdog 5.5
+Beats close 42/68
++9.5%
+62% to hit
++
+XunLoL
+MAP 1 Kills · TL MAP 1 · Sun 12:00 AM
+BLG 74% per map vs TL (exchanges) · +3.2% kills
+LESS
+4
+Underdog 3.5
+Beats close 42/68
+Pinnacle team x0.94
++9.2%
+61% to hit
+Underdog
+42 plays of 191 lines
++
+CurseLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LOWER
+1.5
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.09
++0.4%
+73% to hit
++
+YeonLoL
+MAP 1 Kills · BLG MAP 1 · Sun 12:00 AM
+TL 27% per map vs BLG (exchanges) · -3.2% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++1.6%
+70% to hit
++
+InspiredLoL
+MAP 1 Kills · KC MAP 1 · Sat 8:00 PM
+LYON 44% per map vs KC (exchanges) · -1.8% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.10
++0.8%
+70% to hit
++
+FeistyLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.09
++3.9%
+67% to hit
++
+ZestLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LOWER
+1.5
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.09
++8.8%
+67% to hit
++
+QuidLoL
+MAP 1 Kills · BLG MAP 1 · Sun 12:00 AM
+TL 27% per map vs BLG (exchanges) · -3.2% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++6.9%
+67% to hit
++
+OnerLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.11
++0.6%
+67% to hit
++
+FakerLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.11
++0.6%
+67% to hit
++
+ElyoyaLoL
+MAP 1 Kills · CFO MAP 1 · Sat 6:00 PM
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++0.4%
+67% to hit
++
+PoutLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++1.2%
+67% to hit
++
+kyeahooLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.06
++0.6%
+66% to hit
++
+PunLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LOWER
+1.5
+Gap · Underdog 1.5
+Gaps lose close 11/53
+Pinnacle team x1.13
++6.8%
+66% to hit
++
+DoggoLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LOWER
+3.5
+Gap · Underdog 3.5
+Gaps lose close 11/53
++2.7%
+66% to hit
++
+DuduhhLoL
+MAP 1 Kills · G2 MAP 1 · Sat 7:00 PM
+LOS 20% per map vs G2 (exchanges) · -5.0% kills
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.09
++6.3%
+66% to hit
++
+EddieLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.13
++7.8%
+66% to hit
++
+ZekaLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LOWER
+3.5
+Beats close 42/68
++1.8%
+65% to hit
++
+DoranLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.11
++0.3%
+65% to hit
++
+ZeusLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LOWER
+2.5
+Beats close 42/68
++2.1%
+65% to hit
++
+SmashLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LOWER
+3.5
+PrizePicks 4
+Beats close 42/68
+Pinnacle team x1.07
++6.5%
+64% to hit
++
+LucidLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.07
++3.0%
+64% to hit
++
+KiinLoL
+MAP 1 Kills · HLE MAP 1 · Sat 10:00 PM
+GEN 59% per map vs HLE (exchanges) · H2H 3-4 · +3.0% kills
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
+Pinnacle team x1.08
++1.5%
+64% to hit
++
+JiaQiLoL
+MAP 1 Kills · TSW MAP 1 · Sat 9:00 PM
+IG 70% per map vs TSW (exchanges) · +2.7% kills
+LOWER
+5.5
+Beats close 42/68
+Pinnacle team x1.04
++3.9%
+64% to hit
++
+ShowMakerLoL
+MAP 1 Kills · T1 MAP 1 · Sat 11:00 PM
+DK 44% per map vs T1 (exchanges) · -0.8% kills
+LOWER
+3.5
+Beats close 42/68
+Pinnacle team x1.07
++3.7%
+64% to hit
++
+Shad0wLoL
+MAP 1 Kills · KOI MAP 1 · Sat 6:00 PM
+LOWER
+2.5
+Gap · Underdog 2.5
+Gaps lose close 11/53
++5.5%
+64% to hit
++
+MeikoLoL
+MAP 1 Kills · TSW MAP 1 · Sat 9:00 PM
+IG 70% per map vs TSW (exchanges) · +2.7% kills
+LOWER
+0.5
+Beats close 42/68
+Pinnacle team x1.04
++0.3%
+63% to hit
++
+BusioLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LOWER
+0.5
+Beats close 42/68
+Pinnacle team x1.06
++2.3%
+63% to hit
++
+CannaLoL
+MAP 1 Kills · LYON MAP 1 · Sat 8:00 PM
+KC 56% per map vs LYON (exchanges) · +0.8% kills
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.06
++2.3%
+63% to hit
++
+GumayusiLoL
+MAP 1 Kills · GEN MAP 1 · Sat 10:00 PM
+HLE 41% per map vs GEN (exchanges) · H2H 4-3 · -0.7% kills
+LOWER
+3.5
+PrizePicks 4
+Beats close 42/68
++8.2%
+63% to hit
++
+KeriaLoL
+MAP 1 Kills · DK MAP 1 · Sat 11:00 PM
+T1 56% per map vs DK (exchanges)
+LOWER
+0.5
+Beats close 42/68
+Pinnacle team x1.11
++5.0%
+63% to hit
++
+HiztoLoL
+MAP 1 Kills · IG MAP 1 · Sat 9:00 PM
+TSW 30% per map vs IG (exchanges) · -2.7% kills
+LOWER
+2.5
+Beats close 42/68
+Pinnacle team x1.13
++11.6%
+63% to hit
++
+BerserkerLoL
+MAP 1 Kills · KC MAP 1 · Sat 8:00 PM
+LYON 44% per map vs KC (exchanges) · -1.8% kills
+LOWER
+3.5
+PrizePicks 4
+Beats close 42/68
+Pinnacle team x1.10
++10.8%
+62% to hit
++
+SkewMondLoL
+MAP 1 Kills · LOS MAP 1 · Sat 7:00 PM
+G2 80% per map vs LOS (exchanges) · +3.4% kills
+LOWER
+3.5
+Gap · Underdog 3.5
+Gaps lose close 11/53
+Pinnacle team x1.07
++1.4%
+62% to hit
++
+CanyonLoL
+MAP 1 Kills · HLE MAP 1 · Sat 10:00 PM
+GEN 59% per map vs HLE (exchanges) · H2H 3-4 · +3.0% kills
+LOWER
+3.5
+Beats close 42/68
+Pinnacle team x1.08
++0.4%
+62% to hit
++
+SupaLoL
+MAP 1 Kills · CFO MAP 1 · Sat 6:00 PM
+LOWER
+5.5
+PrizePicks 5
+Beats close 42/68
++3.8%
+62% to hit
++
+XunLoL
+MAP 1 Kills · TL MAP 1 · Sun 12:00 AM
+BLG 74% per map vs TL (exchanges) · +3.2% kills
+LOWER
+3.5
+PrizePicks 4
+Beats close 42/68
+Pinnacle team x0.94
++3.1%
+61% to hit
++
+JosedeodoLOL
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+Team Liquid Alienware 27% per map vs BILIBILI GAMING (exchanges) · -3.8% kills
+LOWER
+2.5
++7.2%
+66% to hit
++
+BieLOL
+Kills on Map 1 · Team Secret Whales vs Invictus Gaming · Sat 9:00 PM
+Team Secret Whales 30% per map vs Invictus Gaming (exchanges) · -3.5% kills
+LOWER
+0.5
+Pinnacle team x1.13
++4.3%
+67% to hit
++
+CareerLOL
+Kills on Map 1 · T1 vs Dplus KIA · Sat 11:00 PM
+Dplus KIA 44% per map vs T1 (exchanges) · H2H 3-9 · -1.2% kills
+LOWER
+0.5
+Pinnacle team x1.07
++4.3%
+66% to hit
++
+CoreJJLOL
+Kills on Map 1 · Team Liquid Alienware vs BILIBILI GAMING · Sun 12:00 AM
+Team Liquid Alienware 27% per map vs BILIBILI GAMING (exchanges) · -3.8% kills
+LOWER
+0.5
++2.7%
+70% to hit
++
+AlvaroLOL
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · Sat 6:00 PM
+Movistar KOI 69% per map vs CTBC Flying Oyster (exchanges) · +2.8% kills
+LOWER
+0.5
++2.3%
+66% to hit
++
+IslesLOL
+Kills on Map 1 · LYON vs Karmine Corp · Sat 8:00 PM
+LYON 44% per map vs Karmine Corp (exchanges) · -1.8% kills
+LOWER
+0.5
+Pinnacle team x1.10
++2.0%
+71% to hit
++
+KinoLOL
+Kills on Map 1 · Movistar KOI vs CTBC Flying Oyster · Sat 6:00 PM
+CTBC Flying Oyster 31% per map vs Movistar KOI (exchanges) · -2.4% kills
+LOWER
+0.5
++1.8%
+70% to hit
+Kalshi
+1 match play
+Bet
+Infinite vs BruteCS2
+NODWIN Clutch Series Playoffs · Bo3 · Sun 3:00 PM
+Infinite to win
+at 47c
++3.2%
+fair 48c
+EV is per leg against each book's payout. Exchange plays are priced against the fair price from the other venues.
+HOW IT

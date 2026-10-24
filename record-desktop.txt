@@ -1,0 +1,40 @@
+MATCHES
+PLAYER PROPS
+ABOUT THIS TAB
+PLAYER PROPS Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A p
+Show
+ALL CS2 VALORANT COD DOTA LOL R6 REFRESH
+PROP
+All props
+Kills
+Headshots
+Assists
+Fantasy
+Line gaps
+MAPS
+All maps
+Map 1
+Maps 1-2
+Maps 1-3
+SORT BY
+Best EV
+Win probability
+Model vs line
+Start time
+MIN EV
+Any +EV
+2%+
+5%+
+8%+
+Plays
+All lines
+Model entry
+Track record
+AUTO-BUILD SLIP
+ALERTS
+LOADING TRACK RECORD...
+HOW IT WORKS
+1. Lines come from Underdog and PrizePicks (CS2, Valorant, LoL, Dota). Match plays come from Kalshi and Polymarket.
+2. Fair is the books' consensus: Underdog's and Sleeper's payouts and PrizePicks' line each say where the player's middle sits. Our projection (recent maps from bo3.gg, vlr.gg, gol.gg and OpenDota, scaled by the match price) moves it only by the weight its graded record has earned.
+3. Plays lists only the +EV sides, grouped by where you'd bet them. All lines shows everything.
+4. Tap + to build a slip priced on every book at once, with quarter-Kelly sizing from your bankroll. Model entry lets you enter your own number.

@@ -1,0 +1,591 @@
+MATCHES
+PLAYER PROPS
+ABOUT THIS TAB
+PLAYER PROPS Every esports prop line, priced off where the books put it together (Underdog and Sleeper payouts, every book's line), nudged by our player model only as far as its record has earned. A p
+Show
+ALL CS2 VALORANT COD DOTA LOL R6 REFRESH
+PROP
+All props
+Kills
+Headshots
+Assists
+Fantasy
+Line gaps
+MAPS
+All maps
+Map 1
+Maps 1-2
+Maps 1-3
+SORT BY
+Best EV
+Win probability
+Model vs line
+Start time
+MIN EV
+Any +EV
+2%+
+5%+
+8%+
+Plays
+All lines
+Model entry
+Track record
+AUTO-BUILD SLIP
+ALERTS
+ESPORTS MODELS
+Every esports model's legs, graded on box scores, against the hit rate its payouts need. Judged at 50 graded; a failed model's legs stop showing as plays.
+Matchup kill model (H2H) alone
+our head-to-head model: the player's share of his team's kills x what his team makes against this opponent
+1125
+602-523
+53.5% vs 56.5%
+-57.24u
+FAILED
+Matchup model + Pinnacle agree
+H2H legs where the Pinnacle-based fair took the same side within 5 points
+76
+39-37
+51.3% vs 56.8%
+-8.02u
+LOSING
+Round model (CS2, Valorant)
+Pinnacle's rounds on each map x the player's kills a round
+93
+53-40
+57% vs 56.3%
++0.95u
+AHEAD, NOT PROVEN
+Kill share (LoL, Dota)
+Pinnacle's team kills x the player's share of them
+63
+45-18
+71.4% vs 57.2%
++15.71u
+BEATS BREAK-EVEN: RE-CHECK
+Stale app lines
+one app moved, another still had the old line
+167
+90-77
+53.9% vs 56.1%
+-6.64u
+LOSING
+Board picks (books' consensus)
+the board's +EV legs on the apps' consensus with calibration
+611
+301-310
+49.3% vs 55.9%
+-72.34u
+FAILED
+Same-match stacks: PrizePicks 6-pick 6 swept of 78, pays if the app shows 13x or more; Sleeper 6-pick 5 swept of 64, pays if the app shows 10.8x or more; Underdog 4-pick 3 swept of 11, pays if the app shows 3.7x or more. A lead: the app's real payout for one match's picks decides it.
+ALL
+CS2
+VALORANT
+LOL
+DOTA
+COD
+MIN EV
+ANY
+3%+
+6%+
+10%+
+317-343-6
+RECORD
+48.0%
+HIT RATE · B/E 55.9%
+-92.87u
+UNITS (1U / LEG)
+-14.1%
+ROI PER LEG
+37%
+CLOSE OUR WAY · 161/433
+-5.4%
+EV AT THE CLOSE · N=589
+19
+AWAITING RESULT
+Each pick is logged the first time the board shows it +EV and graded at that line and side. ROI treats every pick as a single 1-unit leg at the book's standard payout (PrizePicks ≈ 1.78x). Closing-line value: each pick's ticket (same side, same line, same book) is priced on the books' consensus when it is signaled and again at lock. "Close our way" is the share of picks whose chance moved half a point or more that moved in our favour, and "EV at the close" is what the ticket was worth on the closing market. Over hundreds of picks, beating the close is the surest sign of an edge, long before wins and losses settle it. Picks logged before this was measured show the line move only. Storage: file.
+NEEDS A RESULT · 30
+senzu CS
+Headshots on Maps 1+2 · UNDER 17.5 · 10/21/2026, 5:00:00 PM
+No result found automatically
+SAVE
+VOID
+TA2000 DOTA
+Kills on Maps 1+2 · OVER 17.5 · 10/19/2026, 12:10:00 PM
+No result found automatically
+SAVE
+VOID
+seraphicyy DOTA
+Kills on Maps 1+2 · OVER 9.5 · 10/19/2026, 12:10:00 PM
+No result found automatically
+SAVE
+VOID
+prblms DOTA
+Kills on Maps 1+2 · OVER 7.5 · 10/19/2026, 9:10:00 AM
+No result found automatically
+SAVE
+VOID
+erde VAL
+MAP 5 Kills · OVER 15 · 10/18/2026, 10:30:00 AM
+No result found automatically
+SAVE
+VOID
+erde VAL
+MAP 4 Kills · OVER 15 · 10/18/2026, 9:00:00 AM
+No result found automatically
+SAVE
+VOID
+max CS
+MAPS 1-2 Kills · OVER 22.5 · 10/15/2026, 11:00:00 AM
+No result found automatically
+SAVE
+VOID
+HUASOPEEK CS
+MAPS 1-2 Kills · OVER 27 · 10/15/2026, 11:00:00 AM
+No result found automatically
+SAVE
+VOID
+dgt CS
+MAPS 1-2 Kills · OVER 29.5 · 10/15/2026, 11:00:00 AM
+No result found automatically
+SAVE
+VOID
+luchov CS
+MAPS 1-2 Kills · OVER 29.5 · 10/15/2026, 11:00:00 AM
+No result found automatically
+SAVE
+VOID
+meyern CS
+MAPS 1-2 Kills · OVER 24.5 · 10/15/2026, 11:00:00 AM
+No result found automatically
+SAVE
+VOID
+13 LOL
+MAP 5 Kills · OVER 4 · 10/13/2026, 8:00:00 PM
+No result found automatically
+SAVE
+VOID
+XnS LOL
+MAP 5 Kills · OVER 3 · 10/13/2026, 8:00:00 PM
+No result found automatically
+SAVE
+VOID
+Fresskowy LOL
+MAP 5 Kills · OVER 3 · 10/13/2026, 8:00:00 PM
+No result found automatically
+SAVE
+VOID
+NightSlayer LOL
+MAP 5 Kills · OVER 2.5 · 10/13/2026, 8:00:00 PM
+No result found automatically
+SAVE
+VOID
+13 LOL
+MAP 4 Kills · OVER 4 · 10/13/2026, 7:00:00 PM
+No result found automatically
+SAVE
+VOID
+XnS LOL
+MAP 4 Kills · OVER 3 · 10/13/2026, 7:00:00 PM
+No result found automatically
+SAVE
+VOID
+Fresskowy LOL
+MAP 4 Kills · OVER 3 · 10/13/2026, 7:00:00 PM
+No result found automatically
+SAVE
+VOID
+NightSlayer LOL
+MAP 4 Kills · OVER 2.5 · 10/13/2026, 7:00:00 PM
+No result found automatically
+SAVE
+VOID
+Djon8 CS
+Headshots on Maps 1+2 · UNDER 18.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+sh1nejezzz CS
+Headshots on Maps 1+2 · UNDER 16.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+H4SAN4TOR CS
+Headshots on Maps 1+2 · UNDER 17.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+1eer CS
+Kills on Maps 1+2 · UNDER 27.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+flouzer CS
+Headshots on Maps 1+2 · UNDER 16.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+relaxxie CS
+Headshots on Maps 1+2 · UNDER 15.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+Brilliance CS
+Headshots on Maps 1+2 · UNDER 13.5 · 10/12/2026, 2:10:00 PM
+No result found automatically
+SAVE
+VOID
+damyo CS
+Headshots on Maps 1+2 · UNDER 16.5 · 10/12/2026, 9:10:00 AM
+No result found automatically
+SAVE
+VOID
+Myst CS
+Kills on Maps 1+2 · UNDER 29.5 · 10/12/2026, 9:10:00 AM
+No result found automatically
+SAVE
+VOID
+Myst CS
+Headshots on Maps 1+2+3 · UNDER 16.5 · 10/12/2026, 9:10:00 AM
+No result found automatically
+SAVE
+VOID
+Rain DOTA
+Kills on Maps 1+2+3 · UNDER 18.5 · 10/12/2026, 7:00:00 AM
+No result found automatically
+SAVE
+VOID
+LINE GAPS · 74 PLAYS
+41-15-3
+RECORD
++16.66u
+UNITS (1U / LEG)
+21%
+CLOSE OUR WAY · 11/53
+-1.9%
+EV AT THE CLOSE · N=70
+55%
+GAPS CLOSED OUR WAY · 16/29
+A line gap is a play where the book we took hung a softer line than another book on the same player and stat (an over below the others, an under above them). By lock, the book we took moved its line most of the way to the others on 14, pulled the line on 2, and stayed put while the others came to it on 13; 41 gaps held.
+BY SPORT
+CS
+44.7%
+55.9%
+-98.03u
+217-269-3 · 489/603 graded · ROI -20.2% · beat close 31% n=318
+LOL
+58.8%
+55.9%
++7.24u
+77-54-3 · 134/230 graded · ROI +5.5% · beat close 55% n=87
+DOTA
+51.9%
+56.2%
+-2.09u
+14-13-0 · 27/40 graded · ROI -7.8% · beat close 28% n=18
+VAL
+56.3%
+56.2%
++0.01u
+9-7-0 · 16/18 graded · ROI +0.1% · beat close 80% n=10
+CLOSING LINE BY KIND
+CS headshots · Underdog · Under
+41.2%
+56.2%
+-31.81u
+49-70-0 · 119/129 graded · ROI -26.7% · beat close 35% n=84
+CS headshots · PrizePicks · Under
+47.8%
+56.2%
+-17.17u
+55-60-2 · 117/175 graded · ROI -14.9% · beat close 22% n=89
+CS kills · PrizePicks · Over
+48.3%
+56.2%
+-8.42u
+29-31-0 · 60/62 graded · ROI -14.0% · beat close 35% n=51
+CS kills · Underdog · Over
+42.6%
+56.1%
+-11.41u
+20-27-0 · 47/53 graded · ROI -24.3% · beat close 45% n=40
+CS headshots · PrizePicks · Over
+55.0%
+56.2%
+-0.43u
+11-9-1 · 21/21 graded · ROI -2.2% · beat close 31% n=13
+CS kills · Sleeper · Over
+38.1%
+53.7%
+-6.25u
+8-13-0 · 21/24 graded · ROI -29.8% · beat close 39% n=18
+LOL kills · PrizePicks · Under
+87.5%
+56.2%
++8.90u
+14-2-1 · 17/83 graded · ROI +55.6% · beat close 62% n=68
+CS kills · PrizePicks · Under
+26.7%
+56.2%
+-7.89u
+4-11-0 · 15/22 graded · ROI -52.6% · beat close 0% n=11
+LOL kills · PrizePicks · Over
+70.0%
+56.2%
++2.45u
+7-3-2 · 12/13 graded · ROI +24.5% · beat close 25% n=8
+DOTA kills · Underdog · Over
+36.4%
+56.2%
+-3.88u
+4-7-0 · 11/17 graded · ROI -35.3% · beat close 43% n=7
+CS kills · Underdog · Under
+55.6%
+56.2%
+-0.10u
+5-4-0 · 9/10 graded · ROI -1.1% · beat close 0% n=5
+LOL kills · Underdog · Over
+22.2%
+58.7%
+-5.87u
+2-7-0 · 9/9 graded · ROI -65.2% · beat close 0% n=6
+VAL kills · PrizePicks · Over
+50.0%
+56.2%
+-0.89u
+4-4-0 · 8/10 graded · ROI -11.1% · beat close 71% n=7
+DOTA kills · PrizePicks · Under
+71.4%
+56.2%
++1.89u
+5-2-0 · 7/12 graded · ROI +27.1% · beat close 11% n=9
+VAL kills · Underdog · Over
+40.0%
+56.2%
+-1.44u
+2-3-0 · 5/5 graded · ROI -28.8% · beat close 100% n=3
+CS headshots · Sleeper · Under
+80.0%
+54.8%
++2.33u
+4-1-0 · 5/5 graded · ROI +46.6% · beat close 75% n=4
+LOL assists · Underdog · Over
+25.0%
+56.2%
+-2.22u
+1-3-0 · 4/4 graded · ROI -55.5% · beat close 100% n=1
+CS kills · Sleeper · Under
+0.0%
+48.4%
+-3.00u
+0-3-0 · 3/3 graded · ROI -100.0% · beat close 0% n=2
+CS headshots · Sleeper · Over
+50.0%
+58.4%
+-0.13u
+1-1-0 · 2/2 graded · ROI -6.5% · beat close 100% n=1
+DOTA kills · PrizePicks · Over
+100.0%
+56.2%
++1.56u
+2-0-0 · 2/3 graded · ROI +77.9% · beat close 50% n=2
+CS headshots · Underdog · Over
+0.0%
+56.2%
+-1.00u
+0-1-0 · 1/2 graded · ROI -100.0% · beat close — n=0
+LOL kills · Underdog · Under
+—
+—
+0.00u
+0-0-0 · 0/12 graded · ROI — · beat close 75% n=4
+BY EV AT SIGNAL
+0-3%
+49.2%
+55.9%
+-46.82u
+191-197-3 · 391/468 graded · ROI -12.1% · beat close 38% n=239
+10%+
+34.0%
+56.1%
+-39.31u
+34-66-2 · 102/189 graded · ROI -39.3% · beat close 32% n=131
+3-6%
+54.3%
+55.9%
+-2.66u
+50-42-0 · 92/129 graded · ROI -2.9% · beat close 31% n=29
+6-10%
+52.5%
+55.3%
+-4.09u
+42-38-1 · 81/105 graded · ROI -5.1% · beat close 59% n=34
+BY MATCHUP
+even-ish matchup
+45.9%
+56.1%
+-70.46u
+177-209-5 · 391/506 graded · ROI -18.3% · beat close 35% n=320
+before matchup pricing
+52.6%
+55.3%
+-8.09u
+90-81-0 · 171/215 graded · ROI -4.7% · beat close 13% n=190
+matchup-led (no edge without it)
+40.8%
+56.4%
+-13.42u
+20-29-0 · 49/58 graded · ROI -27.4% · beat close 53% n=34
+no match price
+62.1%
+56.0%
++3.02u
+18-11-1 · 30/50 graded · ROI +10.4% · beat close 34% n=44
+matchup moved price 2%+
+48.0%
+55.5%
+-3.92u
+12-13-0 · 25/62 graded · ROI -15.7% · beat close 49% n=35
+BY LINE GAP
+one book only
+43.7%
+56.3%
+-49.59u
+97-125-1 · 223/366 graded · ROI -22.3% · beat close 43% n=213
+before gap tracking
+50.0%
+55.3%
+-19.08u
+99-99-0 · 198/250 graded · ROI -9.6% · beat close 20% n=20
+no gap
+43.5%
+55.8%
+-40.86u
+80-104-2 · 186/201 graded · ROI -22.2% · beat close 37% n=147
+line gap
+73.2%
+56.7%
++16.66u
+41-15-3 · 59/74 graded · ROI +29.8% · beat close 21% n=53
+BY PINNACLE TEAM KILLS
+no Pinnacle team kills
+46.9%
+56.1%
+-71.93u
+207-234-6 · 447/612 graded · ROI -16.3% · beat close 38% n=399
+before Pinnacle team kills
+50.0%
+55.4%
+-20.63u
+106-106-0 · 212/267 graded · ROI -9.7% · beat close 36% n=28
+Pinnacle against the pick
+50.0%
+60.1%
+-0.87u
+2-2-0 · 4/6 graded · ROI -21.8% · beat close 20% n=5
+Pinnacle backs the pick
+100.0%
+56.2%
++1.56u
+2-0-0 · 2/3 graded · ROI +77.9% · beat close — n=0
+Pinnacle in line with the books
+0.0%
+56.2%
+-1.00u
+0-1-0 · 1/3 graded · ROI -100.0% · beat close 0% n=1
+BY STAT
+kills
+48.8%
+55.7%
+-41.72u
+161-169-3 · 333/471 graded · ROI -12.6% · beat close 43% n=241
+headshots
+46.7%
+56.1%
+-50.28u
+143-163-3 · 309/396 graded · ROI -16.4% · beat close 30% n=191
+assists
+54.2%
+56.2%
+-0.87u
+13-11-0 · 24/24 graded · ROI -3.6% · beat close 100% n=1
+BY SIDE
+UNDER
+48.3%
+55.8%
+-54.29u
+193-207-3 · 403/580 graded · ROI -13.6% · beat close 36% n=276
+OVER
+47.7%
+56.0%
+-38.58u
+124-136-3 · 263/311 graded · ROI -14.8% · beat close 40% n=157
+BY CONFIDENCE
+MED
+51.7%
+56.1%
+-34.78u
+230-215-3 · 448/577 graded · ROI -7.8% · beat close 39% n=241
+LOW
+43.4%
+54.6%
+-23.53u
+49-64-0 · 113/124 graded · ROI -20.8% · beat close 43% n=65
+HIGH
+37.3%
+56.4%
+-34.56u
+38-64-3 · 105/190 graded · ROI -33.9% · beat close 31% n=127
+BY PRICING
+Books' consensus (since v3.82)
+46.4%
+56.1%
+-85.00u
+228-263-6 · 497/679 graded · ROI -17.3% · beat close 37% n=433
+Old model price
+52.7%
+55.3%
+-7.87u
+89-80-0 · 169/212 graded · ROI -4.7% · beat close 12% n=188
+BY MODEL SOURCE
+auto
+47.4%
+55.9%
+-95.45u
+297-330-6 · 633/837 graded · ROI -15.2% · beat close 39% n=399
+market
+60.6%
+55.9%
++2.58u
+20-13-0 · 33/54 graded · ROI +7.8% · beat close 12% n=34
+BY MATCH CONTEXT
+exchanges
+44.8%
+55.9%
+-64.26u
+146-180-4 · 330/459 graded · ROI -19.7% · beat close 39% n=252
+pinnacle
+46.5%
+56.1%
+-21.87u
+60-69-1 · 130/146 graded · ROI -17.0% · beat close 42% n=77
+none
+52.6%
+55.8%
+-5.88u
+50-45-1 · 96/151 graded · ROI -6.2% · beat close 28% n=71
+elo
+53.3%
+56.0%
+-3.50u
+40-35-0 · 75/79 graded · ROI -4.7% · beat close 31% n=32
+even
+60.0%
+55.5%
++2.64u
+21-14-0 · 35/56 graded · ROI +7.5% · beat close 100% n=1
+19 picks are live or waiting for results.
+HOW IT WORKS
+1. Lines come from Underdog and PrizePicks (CS2, Valorant, LoL, Dota). Match plays come from Kalshi and Polymarket.
+2. Fair is the books' consensus: Underdog's and Sleeper's payouts and PrizePicks' line each say where the player's middle sits. Our projection (recent maps from bo3.gg, vlr.gg, gol.gg and OpenDota, scaled by the match price) moves it only by the weight its graded record has earned.
+3. Plays lists only the +EV sides, grouped by where you'd bet them. All lines shows everything.
+4. Tap + to build a slip priced on every book at once, with quarter-Kelly sizing from your bankroll. Model entry lets you enter your own number.

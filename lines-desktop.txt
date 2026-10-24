@@ -1,0 +1,2052 @@
+ABOUT THIS TAB
+PROPS ON EVERY BOOK Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side. Each book is priced at its own line on everything else on the row: the other books' lines a
+Show
+LINES
+CARDS
+ALL 14384
+SPORTS
+ESPORTS
+NFL 4889
+CFB 2786
+NBA 1569
+WNBA 9
+MLB 244
+NHL 2078
+SOCCER 2017
+TENNIS 64
+MMA 174
+CS 146
+LOL 210
+VAL 21
+DOTA 58
+LA LIGA 44
+F1 31
+NASCAR 19
+BASKETBALL 12
+DARTS 8
+SERIE A 4
+BAD 1
+Legs with a sharp price NFL 1,579/7,118 · CFB 606/3,975 · NHL 1,381/3,157 · NBA 656/2,698 · SOCCER 0/2,041 · MLB 75/392 · MMA 18/233 · TENNIS 24/67 · LA LIGA 0/44 · F1 0/31
+UNDERDOG 11529
+PRIZEPICKS 4896
+SLEEPER 3715
+DK PICK6 361
+PROP
+Every prop
+Receiving Yards (235)
+Rush Yards (126)
+Points (112)
+Receptions (64)
+Pass Yards (57)
+Rebounds (50)
+Pts + Rebs + Asts (49)
+Shots on Goal (44)
+Longest Reception (44)
+Assists (40)
+Rush Attempts (31)
+Points + Rebounds (29)
+Points + Assists (28)
+Passing Completions (25)
+Pass Attempts (25)
+Longest Rush (24)
+Rebounds + Assists (23)
+Pts+Asts (21)
+Pts+Rebs (19)
+INTs Thrown (15)
+Rush + Rec Yards (13)
+3-Pointers Made (11)
+Longest Completion (9)
+Rebs+Asts (8)
+Pass TDs (8)
+Anytime TD (8)
+Pass + Rush Yards (7)
+Pts+Rebs+Asts (5)
+Pass+Rush Yds (3)
+Total Bases (3)
+3-PT Made (3)
+Singles (2)
+Hits (2)
+Strikeouts (2)
+Fight Time (Mins) (1)
+Saves (1)
+Goals (1)
+Shots On Goal (1)
+Pitching Outs Recorded (1)
+SPORTS PROPS RECORD
+Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.
+708
+FLAGGED
+66%
+STILL UP 2 MIN ON
++1.1%
+EV AT CLOSE · 600
+287-272
+RECORD
+-2.4%
+ROI, STILL-UP LEGS
+142/461
+FAIR MOVED OUR WAY
+Sharp consensus 305 tracked, 108-113 · Line gaps 122 tracked, 53-45 · Sharp-priced 187 tracked, 78-69 · Unpriced gaps, odd app's side 5045 tracked, 2004-1529 · Unpriced gaps, other apps' side 5539 tracked, 2140-1847 · DK Pick6 sharp consensus 74 tracked, 36-37 · DK Pick6 sharp-priced 6 tracked, 4-2 · DK Pick6 line gaps 14 tracked, 8-6
+PrizePicks · Lines 1,150 shown · 3 bettable (+2% or better at PrizePicks's break-even on a sharp price; yellow EV is priced off one sharp source (Pinnacle or Kalshi) or the other apps alone; grey EV off FanDuel and BetRivers alone where nothing sharp posts the prop (college football, NHL), a lead not graded yet)
+PLAYER
+PROP
+PP
+MODEL
+LEAN
+PROB
+MULT
+EV ↓
+USED?
+CFB
+TK Norman
+UD
+PP
+SL
+TXAM @ BAMA · 7:30 PM
+Receiving Yards
+21.5
+25.24 BK
+OVER
+57.8%
+Std
++5.0%
+NBA
+Norman Powell
+UD
+PP
+SL
+P6
+WAS @ CHI · Sun 12:00 AM
+Points
+20.5
+—
+OVER
+59.0%
+Std
++4.9%
+NFL
+Trey McBride
+UD
+PP
+SL
+DEN @ ARI · Sun 8:05 PM
+Receiving Yards
+66.5
+61.28 BK
+UNDER
+57.2%
+Std
++3.9%
+CFB
+Kewan Lacy
+UD
+PP
+SL
+MISS @ TEX · 11:30 PM
+Receiving Yards
+12.5
+—
+UNDER
+58.4%
+Std
++3.8%
+NBA
+Giannis Antetokounmpo
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Assists
+6
+—
+OVER
+57.9%
+Std
++3.0%
+NFL
+Woody Marks
+UD
+PP
+SL
+NYG @ HOU · Sun 5:00 PM
+Receiving Yards
+14.5
+—
+UNDER
+57.7%
+Std
++2.6%
+NFL
+Ollie Gordon
+UD
+PP
+SL
+MIA @ NYJ · Sun 5:00 PM
+Receiving Yards
+6.5
+9.57 BK
+OVER
+56.4%
+Std
++2.6%
+NHL
+Timo Meier
+UD
+PP
+SL
+LA @ NJ · 7:30 PM
+Points
+0.5
+—
+UNDER
+57.4%
+Std
++2.1%
+NFL
+Kyren Williams
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Receptions
+4
+—
+UNDER
+57.4%
+Std
++2.1%
+NFL
+Lamar Jackson
+UD
+PP
+CIN @ BAL · Sun 5:00 PM
+Pass Yards
+224.5
+—
+OVER
+57.1%
+Std
++1.6%
+NFL
+Daniel Jones
+UD
+PP
+SL
+IND @ MIN · Sun 5:00 PM
+Rush Yards
+7.5
+—
+UNDER
+57.1%
+Std
++1.5%
+NFL
+Michael Penix
+UD
+PP
+SL
+SF @ ATL · Sun 5:00 PM
+Passing Completions
+19.5
+—
+OVER
+57.0%
+Std
++1.4%
+NFL
+Kyren Williams
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Rush Attempts
+14.5
+—
+OVER
+56.7%
+Std
++0.8%
+NBA
+Naz Reid
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Rebounds
+8
+—
+UNDER
+56.5%
+Std
++0.4%
+CFB
+Noah Bennee
+UD
+PP
+SL
+HOU @ UTAH · Sun 2:15 AM
+Receiving Yards
+27.5
+—
+UNDER
+56.4%
+Std
++0.4%
+CFB
+Trech Kekahuna
+UD
+PP
+SL
+SYR @ UNC · 11:30 PM
+Receiving Yards
+28.5
+—
+UNDER
+56.3%
+Std
++0.2%
+NFL
+Kenneth Walker III
+UD
+PP
+SL
+P6
+KC @ SEA · Mon 12:20 AM
+Rush Yards
+84.5
+80.58 BK
+UNDER
+55.1%
+Std
++0.2%
+NFL
+Jaylen Warren
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+Receiving Yards
+26.5
+24.18 BK
+UNDER
+55.1%
+Std
++0.1%
+NFL
+Courtland Sutton
+UD
+PP
+SL
+DEN @ ARI · Sun 8:05 PM
+Receiving Yards
+35.5
+32.88 BK
+UNDER
+55.1%
+Std
++0.1%
+CFB
+Kedrick Reescano
+UD
+PP
+SL
+ISU @ ARIZ · 11:30 PM
+Rush Yards
+51.5
+—
+OVER
+56.2%
+Std
+-0.1%
+NFL
+Sam Darnold
+UD
+PP
+KC @ SEA · Mon 12:20 AM
+Rush Yards
+5.5
+6.97 BK
+UNDER
+54.9%
+Std
+-0.2%
+NFL
+Chuba Hubbard
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+Rush Attempts
+17
+—
+UNDER
+56.1%
+Std
+-0.3%
+NBA
+Jalen Smith
+UD
+PP
+SL
+P6
+WAS @ CHI · Sun 12:00 AM
+Points
+13.5
+—
+UNDER
+56.1%
+Std
+-0.3%
+NBA
+Khaman Maluach
+UD
+PP
+SL
+GSW @ PHX · Sun 2:00 AM
+Rebounds
+8.5
+—
+OVER
+56.1%
+Std
+-0.3%
+NHL
+Jakob Chychrun
+UD
+PP
+SL
+BUF @ WSH · 11:00 PM
+Points
+0.5
+—
+OVER
+56.1%
+Std
+-0.3%
+NFL
+Bo Nix
+UD
+PP
+SL
+DEN @ ARI · Sun 8:05 PM
+Passing Completions
+21.5
+—
+UNDER
+56.1%
+Std
+-0.3%
+NFL
+Michael Penix
+UD
+PP
+SF @ ATL · Sun 5:00 PM
+Rush Yards
+1.5
+—
+OVER
+56.0%
+Std
+-0.3%
+CFB
+Brandon Phelps
+UD
+PP
+SL
+ISU @ ARIZ · 11:30 PM
+Receiving Yards
+47.5
+—
+UNDER
+56.0%
+Std
+-0.4%
+NFL
+Matthew Stafford
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Pass Yards
+262.5
+255.48 BK
+UNDER
+54.7%
+Std
+-0.5%
+CFB
+Tylik Hill
+UD
+PP
+SL
+SYR @ UNC · 11:30 PM
+Rush Yards
+33.5
+—
+OVER
+55.7%
+Std
+-0.9%
+NBA
+Kyrie Irving
+PP
+SL
+DAL vs SAS · Sun 12:00 AM
+Rebs+Asts
+7.5
+7.43 BOOKS
+UNDER
+54.5%
+Std
+-0.9%
+NFL
+Chris Godwin
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+Receiving Yards
+44.5
+47.48 BK
+OVER
+54.5%
+Std
+-1.0%
+NBA
+Fred VanVleet
+PP
+SL
+HOU vs ATL · Sun 12:30 AM
+Assists
+6
+—
+UNDER
+55.6%
+Std
+-1.1%
+NHL
+Collin Graf
+UD
+PP
+SL
+P6
+SJ @ BOS · 11:00 PM
+Shots on Goal
+1.5
+—
+UNDER
+55.6%
+Std
+-1.1%
+CFB
+Jaziun Patterson
+UD
+PP
+SL
+MSU @ UCLA · 7:30 PM
+Rush Yards
+58.5
+—
+UNDER
+55.6%
+Std
+-1.2%
+NBA
+Dennis Schroder
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Assists
+6
+—
+UNDER
+55.5%
+Std
+-1.2%
+NBA
+Andrew Wiggins
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Rebounds
+4.5
+4.65 BOOKS
+UNDER
+54.4%
+Std
+-1.2%
+CFB
+Braylon Staley
+UD
+PP
+SL
+TENN @ SCAR · 7:30 PM
+Receptions
+4.5
+5.03 BOOKS
+OVER
+54.3%
+Std
+-1.3%
+NFL
+Bucky Irving
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+Receiving Yards
+17.5
+15.98 BK
+UNDER
+54.3%
+Std
+-1.3%
+NFL
+Ashton Jeanty
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Rush Yards
+56.5
+53.86 BK
+UNDER
+54.3%
+Std
+-1.4%
+NHL
+Ivan Barbashev
+UD
+PP
+SL
+P6
+VGK @ CBJ · 11:00 PM
+Shots on Goal
+1.5
+—
+UNDER
+55.4%
+Std
+-1.4%
+NHL
+Mats Zuccarello
+UD
+PP
+SL
+LA @ NJ · 7:30 PM
+Points
+0.5
+—
+UNDER
+55.4%
+Std
+-1.4%
+NBA
+Nikola Jokic
+UD
+PP
+SL
+NOP @ DEN · Sun 1:00 AM
+Assists
+10.5
+—
+UNDER
+55.4%
+Std
+-1.5%
+NFL
+Dak Prescott
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Rush Yards
+8.5
+10.27 BK
+OVER
+54.1%
+Std
+-1.6%
+NFL
+Chase Brown
+UD
+PP
+SL
+CIN @ BAL · Sun 5:00 PM
+Receiving Yards
+21.5
+19.88 BK
+UNDER
+54.1%
+Std
+-1.7%
+NFL
+Kendre Miller
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+Rush Attempts
+12
+—
+UNDER
+55.3%
+Std
+-1.7%
+NFL
+Joe Burrow
+UD
+PP
+SL
+CIN @ BAL · Sun 5:00 PM
+Pass Attempts
+37
+36.36 BK
+UNDER
+54.0%
+Std
+-1.8%
+NHL
+Macklin Celebrini
+UD
+PP
+SL
+SJ @ BOS · 11:00 PM
+Assists
+0.5
+1.02 BK
+OVER
+54.0%
+Std
+-1.8%
+NFL
+Jahan Dotson
+UD
+PP
+SL
+SF @ ATL · Sun 5:00 PM
+Receiving Yards
+27.5
+29.58 BK
+OVER
+54.0%
+Std
+-1.9%
+NFL
+Patrick Mahomes
+UD
+PP
+SL
+P6
+KC @ SEA · Mon 12:20 AM
+Pass Yards
+222.5
+217.08 BK
+UNDER
+54.0%
+Std
+-1.9%
+CFB
+King Miller
+UD
+PP
+SL
+USC @ WIS · 11:30 PM
+Rush Yards
+72.5
+—
+UNDER
+55.1%
+Std
+-2.0%
+NBA
+Kyrie Irving
+UD
+PP
+SAS @ DAL · Sun 12:00 AM
+Rebounds
+3.5
+3.64 BOOKS
+UNDER
+53.9%
+Std
+-2.0%
+NBA
+Josh Giddey
+UD
+PP
+SL
+WAS @ CHI · Sun 12:00 AM
+Assists
+9.5
+—
+UNDER
+55.1%
+Std
+-2.0%
+NFL
+Austin Hooper
+UD
+PP
+SF @ ATL · Sun 5:00 PM
+Receiving Yards
+3.5
+—
+OVER
+54.9%
+Std
+-2.3%
+CFB
+Jared Curtis
+UD
+PP
+SL
+VAN @ UK · 11:30 PM
+Pass Yards
+216.5
+—
+OVER
+54.9%
+Std
+-2.3%
+NFL
+Brock Bowers
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Receiving Yards
+73.5
+70.58 BK
+UNDER
+53.7%
+Std
+-2.3%
+NBA
+Naji Marshall
+UD
+PP
+SL
+P6
+SAS @ DAL · Sun 12:00 AM
+Points
+16.5
+—
+UNDER
+54.9%
+Std
+-2.4%
+NHL
+Sidney Crosby
+UD
+PP
+SL
+P6
+NSH @ PIT · 11:00 PM
+Shots on Goal
+2.5
+—
+UNDER
+54.9%
+Std
+-2.4%
+CFB
+Mark Bowman
+UD
+PP
+SL
+USC @ WIS · 11:30 PM
+Receiving Yards
+34.5
+—
+UNDER
+54.8%
+Std
+-2.5%
+NFL
+Samaje Perine
+UD
+PP
+SL
+CIN @ BAL · Sun 5:00 PM
+Rush Yards
+28.5
+26.97 BK
+UNDER
+53.6%
+Std
+-2.5%
+NFL
+Kyler Murray
+UD
+PP
+SL
+IND @ MIN · Sun 5:00 PM
+Pass Attempts
+30.5
+—
+UNDER
+54.8%
+Std
+-2.5%
+NFL
+Dak Prescott
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Pass Attempts
+37
+36.47 BK
+UNDER
+53.6%
+Std
+-2.5%
+NBA
+Tyrese Maxey
+PP
+SL
+PHI vs MIL · 11:30 PM
+Rebs+Asts
+9.5
+10.04 BOOKS
+OVER
+53.6%
+Std
+-2.6%
+NFL
+Kirk Cousins
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Pass Attempts
+34.5
+33.97 BK
+UNDER
+53.6%
+Std
+-2.6%
+NFL
+Geno Smith
+UD
+PP
+SL
+MIA @ NYJ · Sun 5:00 PM
+Rush Yards
+7.5
+—
+UNDER
+54.8%
+Std
+-2.6%
+NHL
+Mikhail Sergachev
+UD
+PP
+SL
+TB @ UTA · Sun 1:00 AM
+Assists
+0.5
+1.02 BK
+OVER
+53.6%
+Std
+-2.7%
+NFL
+CeeDee Lamb
+UD
+PP
+SL
+P6
+DAL @ PHI · Tue 12:15 AM
+Receiving Yards
+82.5
+79.68 BK
+UNDER
+53.5%
+Std
+-2.8%
+NFL
+Deshaun Watson
+UD
+PP
+SL
+CLE @ TEN · Sun 5:00 PM
+Pass Attempts
+30
+—
+UNDER
+54.6%
+Std
+-2.8%
+NBA
+Kyle Kuzma
+UD
+PP
+SL
+MIL @ PHI · 11:30 PM
+Rebounds
+4.5
+—
+OVER
+54.6%
+Std
+-2.8%
+NBA
+Dejounte Murray
+UD
+PP
+NOP @ DEN · Sun 1:00 AM
+Points
+17.5
+—
+UNDER
+54.6%
+Std
+-2.8%
+CFB
+Dierre Hill
+UD
+PP
+SL
+ORE @ ILL · 7:00 PM
+Receptions
+2.5
+2.63 BOOKS
+UNDER
+53.5%
+Std
+-2.8%
+CFB
+Raleek Brown
+UD
+PP
+SL
+MISS @ TEX · 11:30 PM
+Rush Yards
+72.5
+—
+UNDER
+54.6%
+Std
+-2.9%
+NFL
+Josh Jacobs
+UD
+PP
+SL
+GB @ DET · Sun 8:25 PM
+Rush Attempts
+13
+—
+OVER
+54.6%
+Std
+-2.9%
+NFL
+Alvin Kamara
+UD
+PP
+PIT @ NO · Sun 1:30 PM
+Longest Rush
+7.5
+8.13 BOOKS
+UNDER
+53.4%
+Std
+-3.0%
+NFL
+Bryce Young
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+Rush Yards
+9.5
+10.78 BK
+OVER
+53.4%
+Std
+-3.0%
+NBA
+LeBron James
+PP
+PHI vs MIL · 11:30 PM
+Rebounds
+7
+—
+UNDER
+54.5%
+Std
+-3.0%
+NBA
+Caleb Wilson
+UD
+PP
+SL
+WAS @ CHI · Sun 12:00 AM
+Rebounds
+6
+—
+OVER
+54.5%
+Std
+-3.0%
+NFL
+Patrick Mahomes
+UD
+PP
+SL
+KC @ SEA · Mon 12:20 AM
+Pass Attempts
+32
+31.56 BK
+UNDER
+53.3%
+Std
+-3.1%
+NFL
+Jahmyr Gibbs
+UD
+PP
+SL
+GB @ DET · Sun 8:25 PM
+Rush + Rec Yards
+138.5
+135.0BR
+UNDER
+53.3%
+Std
+-3.1%
+NFL
+Matthew Stafford
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Pass Attempts
+35
+34.57 BK
+UNDER
+53.3%
+Std
+-3.2%
+NFL
+Jalen Royals
+UD
+PP
+SL
+KC @ SEA · Mon 12:20 AM
+Receiving Yards
+19.5
+20.97 BK
+OVER
+53.3%
+Std
+-3.2%
+NFL
+Javonte Williams
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Rush Yards
+65.5
+63.38 BK
+UNDER
+53.3%
+Std
+-3.2%
+NFL
+Kyren Williams
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Rush Yards
+65.5
+67.88 BK
+OVER
+53.2%
+Std
+-3.3%
+NFL
+Jaylen Waddle
+UD
+PP
+SL
+DEN @ ARI · Sun 8:05 PM
+Receiving Yards
+52.5
+50.48 BK
+UNDER
+53.2%
+Std
+-3.3%
+MMA
+Loneer Kavanagh
+UD
+PP
+SL
+Temirov vs Kavanagh · 6:40 PM
+Fight Time (Mins)
+12.5
+—
+OVER
+54.3%
+Std
+-3.3%
+NBA
+Matas Buzelis
+UD
+PP
+SL
+WAS @ CHI · Sun 12:00 AM
+Rebounds + Assists
+7.5
+7.53 BOOKS
+UNDER
+53.2%
+Std
+-3.3%
+NFL
+Aaron Rodgers
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+Pass TDs
+1.5
+1.67 BK
+UNDER
+53.2%
+Std
+-3.4%
+NBA
+Nikola Jokic
+UD
+PP
+SL
+NOP @ DEN · Sun 1:00 AM
+Pts + Rebs + Asts
+50.5
+—
+UNDER
+54.3%
+Std
+-3.4%
+NHL
+Brett Howden
+UD
+PP
+SL
+P6
+VGK @ CBJ · 11:00 PM
+Shots on Goal
+1.5
+—
+UNDER
+54.3%
+Std
+-3.4%
+NHL
+Kent Johnson
+UD
+PP
+SL
+VGK @ CBJ · 11:00 PM
+Points
+0.5
+—
+UNDER
+54.3%
+Std
+-3.4%
+CFB
+Fredrick Moore
+UD
+PP
+MSU @ UCLA · 7:30 PM
+Receptions
+2.5
+2.63 BOOKS
+UNDER
+53.1%
+Std
+-3.4%
+NBA
+Moussa Diabaté
+PP
+SL
+CHA vs MIA · 10:00 PM
+Pts+Rebs
+19.5
+18.93 BOOKS
+UNDER
+53.1%
+Std
+-3.4%
+NFL
+Jordan Love
+PP
+GB vs DET · Sun 8:25 PM
+Pass+Rush Yds
+294.5
+289.5BR
+UNDER
+53.1%
+Std
+-3.5%
+NHL
+Charlie McAvoy
+UD
+PP
+SL
+SJ @ BOS · 11:00 PM
+Assists
+0.5
+1.02 BK
+OVER
+53.1%
+Std
+-3.5%
+NFL
+Christian McCaffrey
+UD
+PP
+SL
+SF @ ATL · Sun 5:00 PM
+Receiving Yards
+42.5
+44.58 BK
+OVER
+53.1%
+Std
+-3.5%
+NFL
+Kirk Cousins
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Pass TDs
+1.5
+1.67 BK
+UNDER
+53.1%
+Std
+-3.5%
+NBA
+Naz Reid
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Rebounds + Assists
+11.5
+11.13 BOOKS
+UNDER
+53.1%
+Std
+-3.5%
+NFL
+Javonte Williams
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Longest Reception
+8.5
+8.83 BOOKS
+UNDER
+53.1%
+Std
+-3.5%
+NHL
+Kirill Kaprizov
+UD
+PP
+SL
+MIN @ SEA · Sun 2:00 AM
+Assists
+0.5
+0.82 BK
+UNDER
+53.1%
+Std
+-3.6%
+NFL
+Tanner McKee
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Pass Yards
+199.5
+203.67 BK
+OVER
+53.1%
+Std
+-3.6%
+NBA
+Jalen Smith
+UD
+PP
+SL
+WAS @ CHI · Sun 12:00 AM
+3-Pointers Made
+1.5
+1.75 BOOKS
+UNDER
+53.1%
+Std
+-3.6%
+NBA
+LeBron James
+PP
+PHI vs MIL · 11:30 PM
+Rebs+Asts
+13.5
+13.94 BOOKS
+OVER
+53.1%
+Std
+-3.6%
+NFL
+Tyler Shough
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+Passing Completions
+22.5
+—
+OVER
+54.2%
+Std
+-3.6%
+CFB
+Jayden Maiava
+UD
+PP
+SL
+USC @ WIS · 11:30 PM
+Pass TDs
+1.5
+—
+UNDER
+54.2%
+Std
+-3.6%
+NFL
+Bryce Young
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+INTs Thrown
+0.5
+0.76 BK
+UNDER
+53.0%
+Std
+-3.6%
+NBA
+Yaxel Lendeborg
+UD
+PP
+SL
+GSW @ PHX · Sun 2:00 AM
+Assists
+3.5
+4.03 BOOKS
+OVER
+53.0%
+Std
+-3.7%
+NBA
+Andrew Wiggins
+UD
+PP
+SL
+P6
+MIA @ CHA · 10:00 PM
+Points
+12.5
+—
+OVER
+54.1%
+Std
+-3.8%
+NBA
+Aaron Gordon
+UD
+PP
+SL
+P6
+NOP @ DEN · Sun 1:00 AM
+Points
+17.5
+—
+UNDER
+54.1%
+Std
+-3.8%
+NBA
+Davion Mitchell
+UD
+PP
+SL
+P6
+MIA @ CHA · 10:00 PM
+Points
+10.5
+—
+UNDER
+54.1%
+Std
+-3.8%
+CFB
+Kenny Minchey
+UD
+PP
+SL
+VAN @ UK · 11:30 PM
+Rush Yards
+9.5
+—
+UNDER
+54.1%
+Std
+-3.8%
+NFL
+J.J. McCarthy
+UD
+PP
+SL
+NYG @ HOU · Sun 5:00 PM
+Rush Attempts
+5.5
+—
+UNDER
+54.1%
+Std
+-3.8%
+NBA
+Aaron Wiggins
+PP
+SL
+ATL vs HOU · Sun 12:30 AM
+Pts+Rebs
+15.5
+15.03 BOOKS
+UNDER
+52.9%
+Std
+-3.8%
+NFL
+Isaiah Likely
+UD
+PP
+SL
+NYG @ HOU · Sun 5:00 PM
+Receiving Yards
+52.5
+50.67 BK
+UNDER
+52.9%
+Std
+-3.9%
+NBA
+De'Aaron Fox
+UD
+PP
+SL
+SAS @ DAL · Sun 12:00 AM
+Rebounds
+3.5
+4.05 BOOKS
+OVER
+52.9%
+Std
+-3.9%
+NFL
+Jaylen Wright
+UD
+PP
+SL
+MIA @ NYJ · Sun 5:00 PM
+Rush Yards
+14.5
+15.57 BK
+OVER
+52.9%
+Std
+-3.9%
+NFL
+Aaron Rodgers
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+INTs Thrown
+0.5
+0.75 BK
+UNDER
+52.9%
+Std
+-3.9%
+NBA
+Khaman Maluach
+UD
+PP
+SL
+P6
+GSW @ PHX · Sun 2:00 AM
+Points
+9.5
+—
+UNDER
+54.0%
+Std
+-3.9%
+NBA
+Egor Demin
+UD
+PP
+SL
+BKN @ CLE · 11:30 PM
+Assists
+3.5
+3.75 BOOKS
+UNDER
+52.8%
+Std
+-4.0%
+NHL
+Jack Hughes
+UD
+PP
+SL
+LA @ NJ · 7:30 PM
+Assists
+0.5
+1.02 BK
+OVER
+52.8%
+Std
+-4.0%
+CFB
+Mike Matthews
+UD
+PP
+SL
+TENN @ SCAR · 7:30 PM
+Receiving Yards
+55.5
+57.53 BK
+OVER
+52.8%
+Std
+-4.0%
+NFL
+Ashton Jeanty
+UD
+PP
+SL
+LAR @ LV · Sun 8:25 PM
+Anytime TD
+0.5
+—
+OVER
+53.9%
+Std
+-4.0%
+NHL
+Matt Boldy
+UD
+PP
+SL
+MIN @ SEA · Sun 2:00 AM
+Assists
+0.5
+0.82 BK
+UNDER
+52.8%
+Std
+-4.1%
+NBA
+Jeremiah Fears
+UD
+PP
+SL
+NOP @ DEN · Sun 1:00 AM
+Assists
+2.5
+3.03 BOOKS
+OVER
+52.8%
+Std
+-4.1%
+NFL
+Patrick Mahomes
+UD
+PP
+SL
+KC @ SEA · Mon 12:20 AM
+INTs Thrown
+0.5
+0.86 BK
+OVER
+52.8%
+Std
+-4.1%
+NFL
+Malik Willis
+UD
+PP
+SL
+MIA @ NYJ · Sun 5:00 PM
+INTs Thrown
+0.5
+0.76 BK
+UNDER
+52.8%
+Std
+-4.1%
+NBA
+Dylan Harper
+UD
+PP
+SL
+P6
+SAS @ DAL · Sun 12:00 AM
+Points
+17.5
+—
+UNDER
+53.9%
+Std
+-4.1%
+NBA
+Collin Gillespie
+UD
+PP
+SL
+GSW @ PHX · Sun 2:00 AM
+Points
+10.5
+—
+UNDER
+53.9%
+Std
+-4.1%
+NHL
+Brandon Montour
+UD
+PP
+SL
+P6
+MIN @ SEA · Sun 2:00 AM
+Shots on Goal
+2.5
+—
+UNDER
+53.9%
+Std
+-4.1%
+NHL
+Vasily Podkolzin
+UD
+PP
+SL
+TOR @ EDM · 11:00 PM
+Points
+0.5
+—
+OVER
+53.9%
+Std
+-4.1%
+NFL
+Ja'Marr Chase
+UD
+PP
+SL
+CIN @ BAL · Sun 5:00 PM
+Receptions
+7
+—
+OVER
+53.9%
+Std
+-4.2%
+NFL
+C.J. Stroud
+UD
+PP
+SL
+NYG @ HOU · Sun 5:00 PM
+Rush Yards
+8.5
+9.98 BK
+OVER
+52.7%
+Std
+-4.2%
+NFL
+Dak Prescott
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Passing Completions
+24
+—
+UNDER
+53.9%
+Std
+-4.2%
+NBA
+Trae Young
+UD
+PP
+SL
+WAS @ CHI · Sun 12:00 AM
+Rebounds + Assists
+13.5
+13.23 BOOKS
+UNDER
+52.7%
+Std
+-4.2%
+NBA
+Peyton Watson
+UD
+PP
+SL
+BKN @ CLE · 11:30 PM
+Rebounds
+4
+—
+OVER
+53.9%
+Std
+-4.2%
+CFB
+Deuce Alexander
+UD
+PP
+SL
+MISS @ TEX · 11:30 PM
+Receiving Yards
+70.5
+—
+UNDER
+53.8%
+Std
+-4.2%
+NFL
+Alvin Kamara
+UD
+PP
+SL
+PIT @ NO · Sun 1:30 PM
+Receptions
+2.5
+—
+OVER
+53.8%
+Std
+-4.2%
+NFL
+Evan Engram
+UD
+PP
+SL
+DEN @ ARI · Sun 8:05 PM
+Receptions
+2.5
+—
+UNDER
+53.8%
+Std
+-4.2%
+NFL
+Christian Watson
+UD
+PP
+SL
+P6
+GB @ DET · Sun 8:25 PM
+Receiving Yards
+76.5
+74.38 BK
+UNDER
+52.7%
+Std
+-4.2%
+CFB
+Dierre Hill
+UD
+PP
+SL
+ORE @ ILL · 7:00 PM
+Receiving Yards
+16.5
+17.64 BK
+OVER
+52.7%
+Std
+-4.3%
+NFL
+Tyrone Tracy
+UD
+PP
+SL
+NYG @ HOU · Sun 5:00 PM
+Receiving Yards
+8.5
+10.07 BK
+OVER
+52.7%
+Std
+-4.3%
+NFL
+Tanner McKee
+UD
+PP
+SL
+DAL @ PHI · Tue 12:15 AM
+Pass Attempts
+34
+33.66 BK
+UNDER
+52.6%
+Std
+-4.3%
+NHL
+Matt Boldy
+UD
+PP
+SL
+P6
+MIN @ SEA · Sun 2:00 AM
+Shots on Goal
+3.5
+—
+OVER
+53.8%
+Std
+-4.3%
+NHL
+Clayton Keller
+UD
+PP
+SL
+P6
+TB @ UTA · Sun 1:00 AM
+Shots on Goal
+2.5
+—
+UNDER
+53.8%
+Std
+-4.3%
+NHL
+Dylan Cozens
+UD
+PP
+SL
+P6
+NYR @ OTT · 11:00 PM
+Shots on Goal
+2.5
+—
+UNDER
+53.8%
+Std
+-4.3%
+NHL
+Alex DeBrincat
+UD
+PP
+SL
+P6
+DET @ CGY · Sun 2:00 AM
+Shots on Goal
+3.5
+—
+UNDER
+53.8%
+Std
+-4.3%
+NHL
+Adam Fox
+UD
+PP
+SL
+NYR @ OTT · 11:00 PM
+Assists
+0.5
+0.92 BK
+OVER
+52.6%
+Std
+-4.4%
+NBA
+Jamal Murray
+UD
+PP
+SL
+NOP @ DEN · Sun 1:00 AM
+Assists
+7
+—
+UNDER
+53.7%
+Std
+-4.4%
+CFB
+George MacIntyre
+UD
+PP
+SL
+TENN @ SCAR · 7:30 PM
+Pass Yards
+191.5
+194.94 BK
+OVER
+52.6%
+Std
+-4.4%
+NFL
+Baker Mayfield
+UD
+PP
+SL
+TB @ CAR · Sun 5:00 PM
+Pass Attempts
+33.5
+33.17 BK
+UNDER
+52.6%
+Std
+-4.4%
+NBA
+Dennis Schroder
+UD
+PP
+SL
+MIA @ CHA · 10:00 PM
+Rebounds
+3.5
+3.75 BOOKS
+UNDER
+52.6%
+Std
+-4.5%
+SHOW MORE (1000 LEFT)
