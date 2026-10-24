@@ -1,12 +1,26 @@
-const g = async (u) => { try { const r = await fetch(u, { signal: AbortSignal.timeout(20000) }); const t = await r.text(); return [r.status, t]; } catch (e) { return [0, e.message]; } };
+const g = async (u) => { try { const r = await fetch(u, { signal: AbortSignal.timeout(20000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return [r.status, j, t]; } catch (e) { return [0, null, e.message]; } };
+const G = 'https://gateway.polymarket.us';
 (async () => {
-  const [s1, sp] = await g('https://gamma-api.polymarket.com/sports'); console.log('sports', s1, sp.slice(0, 1500));
-  const [s2, ev] = await g('https://gamma-api.polymarket.com/events?series_id=10310&closed=true&limit=2&order=startDate&ascending=false'); console.log('events', s2, ev.slice(0, 3000));
-  let e; try { e = JSON.parse(ev)[0]; } catch {}
-  const m = e?.markets?.[0]; const tok = m && JSON.parse(m.clobTokenIds)[0]; const st = Math.floor(Date.parse(e?.startTime || m?.gameStartTime) / 1000);
-  console.log('market', m?.question, m?.sportsMarketType, e?.startTime, m?.gameStartTime, tok);
-  for (const u of [`https://clob.polymarket.com/prices-history?market=${tok}&startTs=${st - 7200}&endTs=${st + 600}&fidelity=1`, `https://clob.polymarket.com/prices-history?market=${tok}&interval=max&fidelity=60`, `https://data-api.polymarket.com/v2/prices-history?token_id=${tok}&bucket_seconds=60&start=${st - 7200}&end=${st + 600}&limit=1000`]) { const [s, t] = await g(u); console.log('hist', s, u.slice(0, 80), t.slice(0, 600)); }
-  const [s3, k] = await g('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXCS2TOTALMAPS&status=settled&limit=3'); console.log('ktot', s3, k.slice(0, 2500));
-  const [s4, k2] = await g('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXCS2SPREAD&status=settled&limit=3'); console.log('kspr', s4, k2.slice(0, 2500));
-  const [s5, ev2] = await g('https://gamma-api.polymarket.com/events?series_id=10310&closed=true&limit=100&offset=3000&order=startDate&ascending=false'); try { const a = JSON.parse(ev2); console.log('offset3000', s5, a.length, a[0]?.startTime, a.slice(-1)[0]?.startTime); } catch { console.log('offset3000', s5, ev2.slice(0, 300)); }
+  for (const lg of ['cs2', 'lol', 'dota2', 'val', 'valorant']) {
+    const [s, j, t] = await g(`${G}/v2/leagues/${lg}/events?limit=50&offset=0`);
+    const evs = j?.events || j?.data || (Array.isArray(j) ? j : []);
+    console.log('league', lg, s, 'events', evs.length, t.slice(0, s === 200 ? 0 : 300));
+    const types = {};
+    for (const e of evs) for (const m of e.markets || []) types[m.sportsMarketType] = (types[m.sportsMarketType] || 0) + 1;
+    console.log(' types', JSON.stringify(types));
+    if (evs[0]) console.log(' sample event', JSON.stringify(evs[0]).slice(0, 3000));
+    let shown = 0;
+    for (const e of evs.slice(0, 6)) for (const m of (e.markets || [])) {
+      if (shown > 14) break;
+      const [bs, bj] = await g(`${G}/v1/markets/${encodeURIComponent(m.slug)}/book`);
+      const bk = bj?.marketData || bj; shown++;
+      console.log(' book', e.slug, m.sportsMarketType, m.question || m.title, bs, JSON.stringify({ bids: (bk?.bids || []).slice(0, 3), offers: (bk?.offers || []).slice(0, 3) }).slice(0, 400));
+    }
+  }
+  for (const s of ['KXCS2TOTALMAPS', 'KXCS2SPREAD', 'KXCS2MAP', 'KXLOLTOTALMAPS', 'KXCS2GAME']) {
+    const [st, j] = await g(`https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=${s}&status=open&limit=200`);
+    const ms = j?.markets || []; const sp = ms.map(m => [+m.yes_ask_dollars, +m.yes_bid_dollars, +(m.yes_ask_size_fp || 0), +(m.yes_bid_size_fp || 0), +m.volume_fp]).filter(x => x[0] > 0 && x[0] < 1);
+    const med = a => a.sort((x, y) => x - y)[a.length >> 1];
+    console.log('kalshi open', s, st, ms.length, 'two-sided', sp.length, 'median spread', med(sp.map(x => x[0] - x[1])), 'median ask size', med(sp.map(x => x[2])), 'median vol', med(sp.map(x => x[4])));
+  }
 })();
