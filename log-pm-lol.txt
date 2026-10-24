@@ -1,0 +1,57 @@
+16:47:45 pm series lol 10311
+16:47:46 pm sample {"id":"222876","ticker":"lol-vy-lguide-2026-02-22","slug":"lol-vy-lguide-2026-02-22","title":"LoL: VARREL YOUTH vs L Guide Gaming (BO1) - LJL Stage 1 Group B","description":"This market refers to the LoL match between VARREL YOUTH and L Guide Gaming in the LJL Stage 1 Group B, scheduled for February 22 at 3:00AM ET.\n\nThis market will resolve to \"VARREL YOUTH\" if VARREL YOUTH win the match against L Guide Gaming.\n\nThis market will resolve to \"L Guide Gaming\" if L Guide Gaming win the match against VARREL YOUTH.\n\nIf the match is canceled (not played at all), ends in a tie, or is delayed beyond 7 days from the scheduled date without a winner determined, this market will resolve to 50-50. \n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://gol.gg/esports/home. However, if https://gol.gg/esports/home has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.","resolutionSource":"https://www.twitch.tv/leagueoflegendsjp","startDate":"2026-02-22T05:33:26.105043Z","creationDate":"2026-02-22T05:33:26.105037Z",
+16:47:46 pm week 2026-02-22 72
+16:47:46 pm week 2026-03-01 119
+16:47:46 pm week 2026-03-08 177
+16:47:46 pm week 2026-03-15 201
+16:47:47 pm week 2026-03-22 266
+16:47:48 pm week 2026-03-29 403
+16:47:49 pm week 2026-04-05 509
+16:47:50 pm week 2026-04-12 640
+16:47:50 pm week 2026-04-19 759
+16:47:52 pm week 2026-04-26 897
+16:47:53 pm week 2026-05-03 998
+16:47:53 pm week 2026-05-10 1087
+16:47:54 pm week 2026-05-17 1148
+16:47:54 pm week 2026-05-24 1199
+16:47:55 pm week 2026-05-31 1233
+16:47:55 pm week 2026-06-07 1311
+16:47:56 pm week 2026-06-14 1324
+16:47:56 pm week 2026-06-21 1341
+16:47:56 pm week 2026-06-28 1381
+16:47:56 pm week 2026-07-05 1419
+16:47:57 pm week 2026-07-12 1506
+16:47:58 pm week 2026-07-19 1624
+16:48:00 pm week 2026-07-26 1825
+16:48:01 pm week 2026-08-02 1973
+16:48:02 pm week 2026-08-09 2108
+16:48:02 pm week 2026-08-16 2188
+16:48:03 pm week 2026-08-23 2276
+16:48:03 pm week 2026-08-30 2350
+16:48:04 pm week 2026-09-06 2400
+16:48:04 pm week 2026-09-13 2449
+16:48:05 pm week 2026-09-20 2551
+16:48:05 pm week 2026-09-27 2650
+16:48:06 pm week 2026-10-04 2690
+16:48:06 pm week 2026-10-11 2708
+16:48:06 pm week 2026-10-18 2716
+16:48:06 pm events lol 2716
+16:48:06 pm hist sample LoL: Invictus Gaming vs Ninjas in Pyjamas (BO5) - LPL Playoffs 0 165 [[10,0.495],[11,0.495],[12,0.505],[14,0.505],[15,0.49]]
+16:49:36 pm lol 300 / 2716 calls 3108 errs 0
+16:49:36 saved pm-lol 300
+16:50:47 pm lol 600 / 2716 calls 5540 errs 0
+16:50:47 saved pm-lol 600
+16:52:13 pm lol 900 / 2716 calls 8516 errs 0
+16:52:14 saved pm-lol 900
+16:53:39 pm lol 1200 / 2716 calls 12367 errs 0
+16:53:39 saved pm-lol 1200
+16:54:28 pm lol 1500 / 2716 calls 14832 errs 0
+16:54:28 saved pm-lol 1500
+16:55:19 pm lol 1800 / 2716 calls 17088 errs 0
+16:55:20 saved pm-lol 1800
+16:56:45 pm lol 2100 / 2716 calls 20052 errs 0
+16:56:46 saved pm-lol 2100
+16:58:51 pm lol 2400 / 2716 calls 24233 errs 0
+16:58:53 saved pm-lol 2400
+17:00:03 saved pm-lol 2657
+17:00:03 done pm:lol calls 26476 errs 0 min 12.3
