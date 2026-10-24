@@ -1,0 +1,12 @@
+HTTP/2 200 
+access-control-allow-origin: *
+content-type: application/json; charset=utf-8
+date: Sat, 24 Oct 2026 18:12:21 GMT
+etag: W/"61-q4GS+0ji2Fts6jaO64aOqb3Wacs"
+server: railway-hikari
+x-powered-by: Express
+x-railway-request-id: 6sRFbU5iRAyL4cAaWUN5dQ
+content-length: 97
+x-hikari-trace: iad1.trg5
+x-railway-edge: iad1
+
