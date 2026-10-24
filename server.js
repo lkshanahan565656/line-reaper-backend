@@ -900,37 +900,7 @@ function predictEsportsSide(ppLine, modelPred, sport, propText, opts = {}) {
   return { ...r, side, ppLine, modelPred, ev: calcBookEV(r.prob, 'prizepicks') };
 }
 
-// ONE parser for map spans, used by both the predictor and the cross-book key.
-// Formats seen in the wild:
-//   "Kills on Maps 1+2"    → maps 1,2      (2 maps)
-//   "Kills on Maps 1+2+3"  → maps 1,2,3    (3 maps)  ← was silently read as 2
-//   "MAPS 1-2 Kills"       → range 1..2    (2 maps)
-//   "Kills on Maps 1-3"    → range 1..3    (3 maps)
-//   "Kills on Map 1"       → map 1         (1 map)
-//   "GAME 1+2+3 Kills"     → COD games     (3 maps)
-// Returns { count, label } — label is the canonical span for cross-book keys.
-function parseMapSpan(propText) {
-  // "Maps 1 2" (Sleeper) → treat the space as a plus
-  const t = (propText || '').toUpperCase().replace(/(\d)\s+(\d)/g, '$1+$2');
-  const m = t.match(/(?:MAPS?|GAMES?)\s*([\d\s+\-–]+)/);
-  if (!m) return { count: 1, label: '1' };
-  const body = m[1].replace(/\s+/g, '');
-
-  // Sum form: 1+2, 1+2+3 — count the terms
-  if (body.includes('+')) {
-    const nums = body.split('+').map(n => parseInt(n)).filter(n => isFinite(n));
-    if (nums.length >= 2) return { count: nums.length, label: `${Math.min(...nums)}-${Math.max(...nums)}` };
-  }
-  // Range form: 1-2, 1-3 — inclusive span
-  const r = body.match(/^(\d)[-–](\d)/);
-  if (r) {
-    const a = parseInt(r[1]), b = parseInt(r[2]);
-    if (isFinite(a) && isFinite(b) && b >= a) return { count: b - a + 1, label: `${a}-${b}` };
-  }
-  const single = body.match(/^(\d)/);
-  if (single) return { count: 1, label: single[1] };
-  return { count: 1, label: '1' };
-}
+const { parseMapSpan, normalizeName, normalizeMarket } = require('./esmarkets');
 
 function parseMapCount(propText) { return parseMapSpan(propText).count; }
 
@@ -1634,28 +1604,6 @@ function predictLoLStat(playerName, mapCount, stat = 'kills') {
   return perGame * (mapCount || 1);
 }
 function predictLoLKills(playerName, mapCount) { return predictLoLStat(playerName, mapCount, 'kills'); }
-
-// ─── CROSS-BOOK NORMALIZATION ─────────────────────────────────────────────────
-function normalizeName(n) {
-  return (n || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
-}
-
-// Handles: "MAPS 1-2 Kills" (PP), "Kills on Maps 1+2" (UD), "Kills Map 1+2" (Betr), "Kills Maps 1 2" (Sleeper)
-function normalizeMarket(m) {
-  const s = (m || '').toLowerCase();
-  const isHS       = s.includes('headshot') || /\bhs\b/.test(s);
-  const isAssists  = s.includes('assist');
-  const isFantasy  = s.includes('fantasy');
-  // "First Bloods" and "Deaths" are stats of their own: read as kills, a
-  // PrizePicks first-blood line (6 to 8) sat on Underdog's kills line (30)
-  const isFB       = /first ?(blood|kill)/.test(s);
-  const isDeaths   = s.includes('death');
-  // "Kills Maps 1 2" (Sleeper) uses spaces — normalize to the + form first
-  let mapCount = parseMapSpan(s.replace(/(\d)\s+(\d)/g, '$1+$2')).label;
-  let stat = isHS ? 'hs' : isFB ? 'fb' : isAssists ? 'ast' : isFantasy ? 'fp' : isDeaths ? 'death'
-    : s.includes('kill') ? 'k' : 'x:' + s.replace(/maps?\s*[\d+\-\s]+|games?\s*[\d+\-\s]+|on\b/g, '').replace(/[^a-z]/g, '');
-  return `${stat}|${mapCount}`;
-}
 
 // ─── MATCH CONTEXT STATE ──────────────────────────────────────────────────────
 // Elo per sport from recent results (refreshed every 6h) + odds entered by hand.
@@ -4627,7 +4575,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.153.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.154.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6945,7 +6893,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.153.1',
+  version: '3.154.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
