@@ -87,8 +87,10 @@ function pinClose(b, start) {
 const THREE = new Set(['sharp3', 'p6-sharp3']);
 // and a combo one (points + rebounds and the rest, off the books and Pinnacle's parts)
 const COMBO = new Set(['combo', 'p6-combo']);
-const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO]);
-const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
+// and a correlated-stack one (corrpairs.js): one row per stack it sits in
+const CORR = new Set(['corr']);
+const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...CORR]);
+const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}${CORR.has(kind) && p.stackId ? `|${p.stackId}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
 // Rows written before the fix stored a boosted Underdog leg's multiplier as its
@@ -155,6 +157,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         ...(baseKind(kind) === 'sharp3' ? { evMin: play.evMin ?? null } : {}),
         ...(COMBO.has(kind) ? { evMin: play.evMin ?? null, comboBooks: play.books ?? null, comboParts: play.parts ?? null, comboShadow: play.shadow ?? null, entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null } : {}),
         ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(CORR.has(kind) ? { stackId: play.stackId || null, stackShape: play.stackShape || null, stackRole: play.stackRole || null, stackLegs: play.stackLegs ?? null, stackPays: play.stackPays ?? null, stackRepriced: play.stackRepriced ?? null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null, signalPinLine: pinLineOf(play.stale) } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
@@ -316,7 +319,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
     // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
     // the three-sharps legs and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !CORR.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -335,4 +338,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { COMBO, THREE, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { CORR, COMBO, THREE, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

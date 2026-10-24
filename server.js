@@ -760,6 +760,21 @@ const slipLegTracker = createSportTracker({
 });
 slipLegTracker.ready().catch(e => console.error('Slip log: store failed to initialise:', e.message));
 const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
+// CORRELATED STACKS (corrpairs.js): a QB, his top two receivers and the other
+// QB, or three hitters and the other starter's earned runs, all More, on the
+// apps' standard lines. The legs hit together far more than coin flips
+// (ESPN 2023-2026), but no app is known to pay its standard table on them, so
+// it is a record of its own: no alerts, not in Best Plays, judged at 50 graded.
+// CORR_PAIRS=off stops it.
+const corrPairs = require('./corrpairs');
+const CORR_PAIRS_ON = !/^(off|0|false|no)$/i.test(String(process.env.CORR_PAIRS || '').trim());
+const corrTracker = createSportTracker({
+  store: resultsBackup.wrap('corrLegs', createEvStoreFromEnv(process.env, { table: 'corr_legs', fileVar: 'CORR_LEGS_FILE', file: 'corr-legs.json' })),
+  grader: createSportsGrader({ http: axios }),
+});
+corrTracker.ready().catch(e => console.error('Correlated stacks: store failed to initialise:', e.message));
+// each app's sweep table: PrizePicks Power, Underdog standard, Pick6 as last read
+const corrTables = () => ({ prizepicks: PAYOUTS.prizepicks_power, underdog: PAYOUTS.underdog_standard, pick6: pick6.state.payouts || require('./slip').PICK6_PAYOUTS });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -4575,7 +4590,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.154.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.155.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6296,6 +6311,13 @@ async function trackSportProps() {
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
+    if (CORR_PAIRS_ON) {
+      const sports = rows.filter(r => !r.esports);
+      const stacks = corrPairs.buildStacks(sportsPropLines(), sports, { tables: corrTables() });
+      await corrTracker.record({ rows: sports, flagged: corrPairs.flaggedLegs(stacks, new Map(sports.map(r => [r.key, r]))),
+        // each leg's close on the sharp consensus at its number, where one prices it
+        fairAt: (row, book, line) => sportFairAt(row, book, line, 'sharp'), updated });
+    }
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
@@ -6413,6 +6435,17 @@ app.get('/api/slips/record', async (req, res) => {
 // are today's plays, so only finished ones are free.
 app.get('/api/props/record', async (req, res) => {
   res.json({ ...(await sportTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), minEv: SPORT_OPTS.minEv, gapMinPts: SPORT_OPTS.minProbPts });
+});
+// Correlated stacks on the board now, at the standard and the repriced payout,
+// and their record (corrpairs.js). Never an alert.
+app.get('/api/props/corr', async (req, res) => {
+  try {
+    const { rows } = propsBoardRows();
+    const stacks = CORR_PAIRS_ON ? corrPairs.buildStacks(sportsPropLines(), rows.filter(r => !r.esports), { tables: corrTables() }) : [];
+    const record = corrPairs.summarize(await corrTracker.list({ limit: 1e9 }));
+    res.json({ on: CORR_PAIRS_ON, stacks, record: { ...record, stacks: record.stacks.slice(0, 50) }, history: corrPairs.HISTORY, proven: false,
+      note: 'Hits together far more than independent picks on 2023-2026 box scores. Beats the standard payout, loses at the repriced one; the app\'s real payout is not known. Not proven.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/props/record/picks', async (req, res) => {
   const status = hasPro(req) ? req.query.status : (['locked', 'graded'].includes(req.query.status) ? req.query.status : 'graded');
@@ -6893,7 +6926,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.154.0',
+  version: '3.155.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7009,6 +7042,7 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('8,38 * * * *', () => corrTracker.grade().catch(e => console.warn('Correlated stacks grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));

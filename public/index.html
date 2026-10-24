@@ -608,6 +608,16 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 @media (max-width: 520px) { .pb-recsum .pb-stat b i { font-size: 10px; white-space: normal; } }
 .pb-rechead b { font-size: 11px; letter-spacing: .12em; color: #e2e8f0; }
 .pb-rechead span { font-size: 11px; color: #64748b; }
+.cs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin: 0 0 12px; }
+.cs-card { background: rgba(0,0,0,.22); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-width: 0; font-size: 12px; color: #cbd5e1; }
+.cs-card h4 { margin: 0 0 4px; font-size: 12px; color: #e2e8f0; letter-spacing: .02em; }
+.cs-card ol { margin: 4px 0 6px; padding-left: 18px; }
+.cs-card li { margin: 1px 0; overflow-wrap: anywhere; }
+.cs-pay { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+.cs-pay div { background: rgba(255,255,255,.03); border-radius: 8px; padding: 5px 7px; }
+.cs-pay b { display: block; font-size: 14px; color: #e2e8f0; }
+.cs-pay .good b { color: #34d399; } .cs-pay .bad b { color: #f87171; }
+.cs-pay span { font-size: 10.5px; color: #94a3b8; }
 .pb-meta { color: #64748b; font-size: 11px; line-height: 1.45; }
 .pb-books { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .pb-bk { position: relative; min-width: 0; padding: 7px 8px 8px; border-radius: 10px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.05); text-align: center; }
@@ -1515,6 +1525,7 @@ body.no-help .clv-info { display:none; }
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
   <div id="pbRecord"></div>
+  <div id="pbCorr"></div>
   <div id="pbContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every book...</div></div></div>
 </div>
 
@@ -3609,6 +3620,7 @@ async function loadPropsBoard() {
   if (!lines && pbState.show === 'gaps') qs.set('gaps', '1');
   if (!lines && pbState.show === 'sharp') qs.set('sharp', '1');
   if (!pbState.record || Date.now() - pbState.recordAt > 120000) loadPropsRecord();
+  if (!pbState.corr || Date.now() - pbState.corrAt > 120000) loadCorrStacks(); else renderCorrStacks();
   try {
     const r = await fetch(`${BACKEND_URL}/api/props/board?${qs}`);
     if (!r.ok) throw new Error(r.status);
@@ -3646,6 +3658,37 @@ function renderPropsRecord() {
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
     ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;
+}
+// CORRELATED STACKS (/api/props/corr): same-game 4-picks whose legs hit
+// together, at the app's standard payout and the repriced one. A record, not a play.
+async function loadCorrStacks() {
+  pbState.corrAt = Date.now();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/corr`);
+    if (!r.ok) return;
+    pbState.corr = await r.json();
+    renderCorrStacks();
+  } catch (e) { /* the board still works */ }
+}
+function renderCorrStacks() {
+  const el = document.getElementById('pbCorr'), d = pbState.corr;
+  if (!el || !d || !d.on) { if (el) el.innerHTML = ''; return; }
+  const pct = v => (v == null ? '—' : `${(v * 100).toFixed(1)}%`);
+  const sgn = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}`);
+  const want = pbState.sport && !['ALL', 'SPORTS', 'ESPORTS'].includes(pbState.sport) ? pbState.sport : null;
+  if (pbState.sport === 'ESPORTS') { el.innerHTML = ''; return; }
+  const list = (d.stacks || []).filter(s => !want || s.sport === want).slice(0, 12);
+  const o = d.record?.overall || {};
+  const rec = o.graded ? `${o.swept} of ${o.graded} swept (${pct(o.sweepRate)}; needs ${pct(o.needStd)} at standard, ${pct(o.needRep)} if repriced) · units ${sgn(o.unitsStd)} at standard, ${sgn(o.unitsRep)} if repriced` : 'none graded yet';
+  const when = t => { try { return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); } catch { return ''; } };
+  const cards = list.map(s => `<div class="cs-card"><h4>${escAttr(s.appName)} · ${escAttr(s.sport)} · ${escAttr(s.team)} vs ${escAttr(s.opponent)}</h4>
+    <div class="pb-dim">${escAttr(s.entry)}, all More · ${escAttr(when(s.startTime))}</div>
+    <ol>${s.legs.map(l => `<li>${escAttr(l.player)} <b>More ${l.line}</b> ${escAttr(l.market)} <span class="pb-dim">(${escAttr(l.role)})</span></li>`).join('')}</ol>
+    <div class="cs-pay"><div class="${s.standard.ev > 0 ? 'good' : 'bad'}"><b>${s.standard.pays}x</b><span>if it pays the standard table: needs ${pct(s.standard.needSweep)}, hit ${pct(s.history.j50)} in ${s.history.stacks.toLocaleString()} past games</span></div>
+    <div class="${s.repriced.ev > 0 ? 'good' : 'bad'}"><b>${s.repriced.pays}x</b><span>if the app prices the link: needs ${pct(s.repriced.needSweep)}, ${s.repriced.ev > 0 ? 'clears' : 'loses'}</span></div></div></div>`).join('');
+  el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>CORRELATED STACKS</b><span>Same-game 4-picks whose legs hit together far more than separate picks (box scores, 2023-2026). They beat the standard payout and lose if the app reprices them; the real payout shows on the entry screen. Not proven, no alerts.</span></div>
+    <div class="pb-dim" style="margin:0 0 8px">Record: ${rec}. Judged at ${d.record?.provenAt || 50} graded.</div>
+    ${cards ? `<div class="cs-list">${cards}</div>` : '<div class="pb-dim" style="margin:0 0 12px">No stack on the apps right now.</div>'}</div>`;
 }
 function pbChips() {
   const d = pbState.data, c = d?.counts || { sports: {}, books: {} };
