@@ -2820,8 +2820,8 @@ function mybSet(k, v) { myb.ui[k] = v; if (k !== 'shown') myb.ui.shown = 50; myb
 function renderMyBets() {
   if (!myb.ready) return;
   const B = LRBets, ui = myb.ui, unit = mybUnit().unit;
-  const all = mybAll();
-  const scope = B.filter(all, { ...ui, status: 'all' });
+  const allBets = mybAll();
+  const scope = B.filter(allBets, { ...ui, status: 'all' });
   const rows = B.filter(scope, { status: ui.status });
   const s = B.stats(scope, { unitUsd: unit });
   const tile = (k, v, cls, sub) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="mb-sub">${sub}</div>` : ''}</div>`;
@@ -2836,7 +2836,7 @@ function renderMyBets() {
   document.getElementById('mybChart').innerHTML = mybChart(B.curve(scope));
 
   const opts = (k, label, all) => {
-    const vals = [...new Set(all.map(b => b[k]).filter(Boolean))].sort();
+    const vals = [...new Set(allBets.map(b => b[k]).filter(Boolean))].sort();
     if (ui[k] && !vals.includes(ui[k])) vals.push(ui[k]);
     return `<select onchange="mybSet('${k}',this.value)" aria-label="${label}"><option value="">${all}</option>${vals.map(v => `<option${v === ui[k] ? ' selected' : ''} value="${escAttr(v)}">${escAttr(v)}</option>`).join('')}</select>`;
   };
