@@ -1,0 +1,18 @@
+name: diag-p6re
+on:
+  push:
+    branches: [diag-p6re]
+permissions:
+  contents: write
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 fetch.py | tee report.txt
+      - run: |
+          mkdir -p out && cp report.txt out/
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-p6re-out; git rm -rq --cached . || true
+          git add -f out; git commit -qm out; git push -f origin diag-p6re-out
