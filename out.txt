@@ -1,0 +1,83 @@
+Sat Oct 24 17:12:39 UTC 2026
+17:12:39 record rows 0
+17:12:40 events sports 2026-09-24 markets 908 calls 12
+17:12:42 events sports 2026-09-25 markets 2062 calls 24
+17:12:44 events sports 2026-09-26 markets 4514 calls 45
+17:12:50 events sports 2026-09-27 markets 6772 calls 66
+17:12:55 events sports 2026-09-28 markets 7698 calls 78
+17:13:00 events sports 2026-09-29 markets 8864 calls 92
+17:13:04 events sports 2026-09-30 markets 9702 calls 104
+17:13:11 events sports 2026-10-01 markets 11233 calls 115
+17:13:15 events sports 2026-10-02 markets 13125 calls 128
+17:13:23 day capped sports 2026-10-03
+17:13:23 events sports 2026-10-03 markets 15989 calls 149
+17:13:33 events sports 2026-10-04 markets 18760 calls 167
+17:13:35 events sports 2026-10-05 markets 20120 calls 180
+17:13:40 events sports 2026-10-06 markets 21706 calls 192
+17:13:45 events sports 2026-10-07 markets 23074 calls 204
+17:13:50 events sports 2026-10-08 markets 24109 calls 214
+17:13:56 events sports 2026-10-09 markets 26246 calls 229
+17:14:04 day capped sports 2026-10-10
+17:14:04 events sports 2026-10-10 markets 29697 calls 250
+17:14:13 day capped sports 2026-10-11
+17:14:13 events sports 2026-10-11 markets 32613 calls 271
+17:14:19 events sports 2026-10-12 markets 34310 calls 286
+17:14:24 events sports 2026-10-13 markets 36280 calls 300
+17:14:30 events sports 2026-10-14 markets 38442 calls 315
+17:14:35 events sports 2026-10-15 markets 40518 calls 330
+17:14:41 events sports 2026-10-16 markets 42175 calls 344
+17:14:49 day capped sports 2026-10-17
+17:14:49 events sports 2026-10-17 markets 45244 calls 365
+17:14:56 day capped sports 2026-10-18
+17:14:56 events sports 2026-10-18 markets 48090 calls 386
+17:15:01 events sports 2026-10-19 markets 49703 calls 400
+17:15:07 events sports 2026-10-20 markets 51450 calls 415
+17:15:12 events sports 2026-10-21 markets 53626 calls 429
+17:15:16 events sports 2026-10-22 markets 55602 calls 441
+17:15:22 events sports 2026-10-23 markets 57655 calls 454
+17:15:27 events sports 2026-10-24 markets 59142 calls 468
+17:15:30 events sports 2026-10-25 markets 59447 calls 481
+17:15:33 events sports 2026-10-26 markets 59797 calls 491
+17:15:34 events esports 2026-09-24 markets 59797 calls 493
+17:15:34 events esports 2026-09-25 markets 59797 calls 495
+17:15:34 events esports 2026-09-26 markets 59797 calls 497
+17:15:35 events esports 2026-09-27 markets 59797 calls 499
+17:15:35 events esports 2026-09-28 markets 59797 calls 500
+17:15:36 events esports 2026-09-29 markets 59797 calls 502
+17:15:36 events esports 2026-09-30 markets 59797 calls 503
+17:15:36 events esports 2026-10-01 markets 59797 calls 504
+17:15:37 events esports 2026-10-02 markets 59797 calls 506
+17:15:37 events esports 2026-10-03 markets 59885 calls 508
+17:15:38 events esports 2026-10-04 markets 59885 calls 509
+17:15:38 events esports 2026-10-05 markets 59885 calls 510
+17:15:38 events esports 2026-10-06 markets 59885 calls 511
+17:15:38 events esports 2026-10-07 markets 59885 calls 512
+17:15:39 events esports 2026-10-08 markets 59885 calls 513
+17:15:39 events esports 2026-10-09 markets 59885 calls 515
+17:15:40 events esports 2026-10-10 markets 60086 calls 517
+17:15:40 events esports 2026-10-11 markets 60262 calls 518
+17:15:40 events esports 2026-10-12 markets 60262 calls 519
+17:15:41 events esports 2026-10-13 markets 60262 calls 520
+17:15:41 events esports 2026-10-14 markets 60262 calls 521
+17:15:43 events esports 2026-10-15 markets 60262 calls 522
+17:15:43 events esports 2026-10-16 markets 60262 calls 524
+17:15:44 events esports 2026-10-17 markets 60495 calls 526
+17:15:44 events esports 2026-10-18 markets 60622 calls 527
+17:15:44 events esports 2026-10-19 markets 60622 calls 528
+17:15:45 events esports 2026-10-20 markets 60622 calls 529
+17:15:45 events esports 2026-10-21 markets 60622 calls 530
+17:15:47 events esports 2026-10-22 markets 60622 calls 531
+17:15:47 events esports 2026-10-23 markets 60622 calls 532
+17:15:47 events esports 2026-10-24 markets 60622 calls 533
+17:15:47 events esports 2026-10-25 markets 60622 calls 534
+17:15:47 events esports 2026-10-26 markets 60622 calls 535
+17:15:47 markets 60622 calls 535 errs 0
+17:15:48 saved markets
+17:29:01 trades: markets read 7489 of 7489 buys 8048 truncated 0 calls 8864 errs 1 429 826
+17:29:01 saved buys
+17:31:48 wallets read 1562 of 1562 ok 1562 probe null calls 10591 errs 1 429 991
+17:31:49 saved wallets
+17:32:43 prices read 2441 of 2441 calls 12993 errs 1 429 991
+17:32:43 saved prices
+17:32:43 done in 20 min
+Sat Oct 24 17:32:43 UTC 2026
