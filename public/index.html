@@ -1385,10 +1385,12 @@ body.no-help .clv-info { display:none; }
   <div id="osContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every venue...</div></div></div>
   </div>
   <div id="shpView" style="display:none">
-    <div class="clv-info" style="margin:0 0 10px"><span style="color:#94a3b8;font-size:11px">Every number any venue hangs: alternate spreads and totals and player props too, not just the main line. The fair is Pinnacle's price with the margin out (Matchbook blended in beside it), else a labelled median of 4+ books. Ranked rows are leads, not a record: only a venue the tracker has proven says PROVEN. Prices are each feed's last read, so check the app before you bet.</span></div>
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5">Every number any venue hangs, alternate lines and player props included. Fair is Pinnacle's no-vig (Matchbook blended in beside it). Ranked rows are leads unless marked PROVEN; check the price in the app before you bet.</div>
     <div class="sport-row" id="shpModes"></div>
-    <div class="shp-bar" id="shpBar"></div>
-    <details class="shp-venues" id="shpVenues"><summary>VENUES</summary><div class="grid" id="shpVenueGrid"></div></details>
+    <details class="shp-venues" id="shpFilters" open><summary>FILTERS</summary>
+      <div class="shp-bar" id="shpBar" style="margin-top:8px"></div>
+      <details class="shp-venues" id="shpVenues"><summary>VENUES</summary><div class="grid" id="shpVenueGrid"></div></details>
+    </details>
     <div class="shp-health" id="shpHealth"></div>
     <div id="shpContent"></div>
   </div>
@@ -8126,6 +8128,8 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
 var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [] } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
+// phones open with the filters folded away
+try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.removeAttribute('open'); } catch {}
 // a saved shopper view comes back when the odds screen is already open
 setTimeout(() => { if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') oddsModeShow(); }, 0);
 const shpSave = () => { try { localStorage.setItem('lr_shopper', JSON.stringify(shpUi.opts)); } catch {} };
@@ -8250,7 +8254,7 @@ function shpOpps(d) {
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
     return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
-      <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt' : ''}</div></td>
+      <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
       <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
@@ -8281,7 +8285,7 @@ function shpMarketTable(m) {
 function shpMarkets(d) {
   if (!d.markets.length) return tailEmpty('NO MARKETS', 'Nothing matches these filters.');
   return d.markets.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(String(m.league || '').toUpperCase())} · ${shpWhen(m.start)}</span></h4>
-    <div class="shp-dim" style="margin:0 0 4px">${escAttr(shpMkt(m))} · ${m.venues} venues${m.fair ? ` · fair: ${escAttr(SHP_FAIR[m.fair.source] || m.fair.source)}` : ' · no fair on this line'}${m.hold != null ? ` · hold at best ${(m.hold * 100).toFixed(1)}%` : ''}${m.arb ? ' · <span class="shp-good">ARB</span>' : ''}</div>
+    <div class="shp-dim" style="margin:0 0 4px">${escAttr(shpMkt(m))} · ${m.venues} venues${m.fair ? ` · fair: ${escAttr(SHP_FAIR[m.fair.source] || m.fair.source)}` : ' · no fair on this line'}${m.hold != null ? ` · hold at best ${(m.hold * 100).toFixed(1)}%` : ''}${m.arb ? (m.arb.direct ? ' · <span class="shp-good">ARB</span>' : ' · <span class="shp-dim" title="One leg is a copied or stale price: check both apps">arb on a copied price, check it</span>') : ''}</div>
     ${shpMarketTable(m)}</div>`).join('');
 }
 function shpArbs(d) {

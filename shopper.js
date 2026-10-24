@@ -206,7 +206,14 @@ function build(quotes, opts = {}) {
   const minEdge = Number.isFinite(opts.minEdgePts) ? opts.minEdgePts : null;
   let opportunities = ranker.rankAll(cands, { proven: opts.proven, stake })
     .filter(o => o.ev >= minEv && (minEdge == null || o.edgePts >= minEdge) && (opts.minLiquidity == null || (o.liquidity != null && o.liquidity >= opts.minLiquidity)));
-  const arbs = all.filter(m => m.arb && m.arb.legs.every(l => !l.secondHand && l.freshness !== 'stale'))
+  // each market's best trust-weighted score: "Best EV" sorts on it, so a
+  // copied or mismatched price can't lead the board on raw EV alone
+  for (const c of cands) {
+    const m = c.view, r = ranker.rank({ ...c, proven: opts.proven, stake });
+    if (r.score != null && r.score > (m.score ?? -Infinity)) m.score = r.score;
+  }
+  for (const m of all) { if (m.score == null) m.score = 0; if (m.arb) m.arb.direct = m.arb.legs.every(l => !l.secondHand && l.freshness !== 'stale'); }
+  const arbs = all.filter(m => m.arb && m.arb.direct)
     .sort((a, b) => b.arb.profit - a.arb.profit);
   // the market list itself
   markets = all.filter(m =>
@@ -215,7 +222,7 @@ function build(quotes, opts = {}) {
     (minEdge == null || m.sides.some(s => s.edgePts != null && s.edgePts >= minEdge)) &&
     (opts.minLiquidity == null || m.sides.some(s => s.best?.liquidity != null && s.best.liquidity >= opts.minLiquidity)));
   const sorters = {
-    ev: (a, b) => b.maxEv - a.maxEv,
+    ev: (a, b) => b.score - a.score || b.maxEv - a.maxEv,
     start: (a, b) => ms(a.start) - ms(b.start) || a.key.localeCompare(b.key),
     hold: (a, b) => (a.hold ?? 9) - (b.hold ?? 9),
     gap: (a, b) => Math.max(...b.sides.map(s => s.discrepancy?.pts ?? -9)) - Math.max(...a.sides.map(s => s.discrepancy?.pts ?? -9)),
@@ -243,7 +250,7 @@ function build(quotes, opts = {}) {
 // free viewers: every price, no fair, EV or ranking
 function stripPro(view) {
   return { ...view, opportunities: [], arbs: [], locked: { opportunities: view.opportunities.length, arbs: view.arbs.length },
-    markets: view.markets.map(m => ({ ...m, maxEv: null, fair: m.fair ? { source: m.fair.source } : null, arb: null,
+    markets: view.markets.map(m => ({ ...m, maxEv: null, score: null, fair: m.fair ? { source: m.fair.source } : null, arb: null,
       sides: m.sides.map(s => ({ ...s, fair: null, fairAmerican: null, edgePts: null, kelly: null, best: s.best ? { ...s.best, ev: null, evAmount: null } : null,
         prices: s.prices.map(c => ({ ...c, ev: null, evAmount: null })) })) })) };
 }
