@@ -1,0 +1,254 @@
+[
+ {
+  "at": "2026-10-24T22:53:54.992Z",
+  "counts": {
+   "quotes": 0,
+   "markets": 0,
+   "shown": 0,
+   "matching": 0,
+   "priced": 0,
+   "plusEv": 0,
+   "opportunities": 0,
+   "arbs": 0,
+   "lowHold": 0,
+   "multiVenue": 0
+  },
+  "ms": 0,
+  "staticMs": 9,
+  "providers": [
+   "pinnacle:down:0",
+   "matchbook:empty:0",
+   "fanduel:down:0",
+   "betrivers:down:0",
+   "kalshi:down:0",
+   "gemini:empty:0",
+   "polymarketus:down:0",
+   "draftkings:empty:0",
+   "betmgm:empty:0",
+   "caesars:empty:0",
+   "bet365:empty:0",
+   "fanatics:empty:0",
+   "hardrock:empty:0",
+   "thescore:empty:0"
+  ]
+ },
+ {
+  "at": "2026-10-24T22:54:55.779Z",
+  "counts": {
+   "quotes": 38259,
+   "markets": 8331,
+   "shown": 5,
+   "matching": 8331,
+   "priced": 2255,
+   "plusEv": 451,
+   "opportunities": 120,
+   "arbs": 0,
+   "lowHold": 126,
+   "multiVenue": 2161
+  },
+  "ms": 1691,
+  "staticMs": 10,
+  "providers": [
+   "pinnacle:ok:8592",
+   "matchbook:ok:1614",
+   "fanduel:ok:5428",
+   "betrivers:ok:6364",
+   "kalshi:ok:210",
+   "gemini:ok:296",
+   "polymarketus:ok:466",
+   "draftkings:ok:3644",
+   "betmgm:ok:1784",
+   "caesars:ok:3150",
+   "bet365:ok:4858",
+   "fanatics:ok:2446",
+   "hardrock:ok:2228",
+   "thescore:ok:248"
+  ]
+ },
+ {
+  "at": "2026-10-24T22:55:56.134Z",
+  "counts": {
+   "quotes": 38259,
+   "markets": 8331,
+   "shown": 5,
+   "matching": 8331,
+   "priced": 2255,
+   "plusEv": 451,
+   "opportunities": 120,
+   "arbs": 0,
+   "lowHold": 126,
+   "multiVenue": 2161
+  },
+  "ms": 1691,
+  "staticMs": 18,
+  "providers": [
+   "pinnacle:ok:8592",
+   "matchbook:ok:1614",
+   "fanduel:ok:5428",
+   "betrivers:ok:6364",
+   "kalshi:ok:210",
+   "gemini:ok:296",
+   "polymarketus:ok:466",
+   "draftkings:ok:3644",
+   "betmgm:ok:1784",
+   "caesars:ok:3150",
+   "bet365:ok:4858",
+   "fanatics:ok:2446",
+   "hardrock:ok:2228",
+   "thescore:ok:248"
+  ]
+ },
+ {
+  "at": "2026-10-24T22:56:56.729Z",
+  "counts": {
+   "quotes": 32860,
+   "markets": 7210,
+   "shown": 5,
+   "matching": 7210,
+   "priced": 2008,
+   "plusEv": 330,
+   "opportunities": 128,
+   "arbs": 0,
+   "lowHold": 63,
+   "multiVenue": 1664
+  },
+  "ms": 3369,
+  "staticMs": 292,
+  "providers": [
+   "pinnacle:ok:8236",
+   "matchbook:ok:1612",
+   "fanduel:ok:5428",
+   "betrivers:ok:6384",
+   "kalshi:ok:1477",
+   "gemini:ok:296",
+   "polymarketus:ok:498",
+   "draftkings:ok:2344",
+   "betmgm:ok:1404",
+   "caesars:ok:2004",
+   "bet365:ok:2768",
+   "fanatics:ok:1314",
+   "hardrock:ok:2226",
+   "thescore:ok:248"
+  ]
+ },
+ {
+  "at": "2026-10-24T22:57:57.010Z",
+  "counts": {
+   "quotes": 32860,
+   "markets": 7211,
+   "shown": 5,
+   "matching": 7211,
+   "priced": 2008,
+   "plusEv": 332,
+   "opportunities": 129,
+   "arbs": 0,
+   "lowHold": 63,
+   "multiVenue": 1664
+  },
+  "ms": 778,
+  "staticMs": 8,
+  "providers": [
+   "pinnacle:ok:8236",
+   "matchbook:ok:1612",
+   "fanduel:ok:5428",
+   "betrivers:ok:6384",
+   "kalshi:ok:1477",
+   "gemini:ok:296",
+   "polymarketus:ok:498",
+   "draftkings:ok:2344",
+   "betmgm:ok:1404",
+   "caesars:ok:2004",
+   "bet365:ok:2768",
+   "fanatics:ok:1314",
+   "hardrock:ok:2226",
+   "thescore:ok:248"
+  ]
+ },
+ {
+  "at": "2026-10-24T22:58:57.320Z",
+  "counts": {
+   "quotes": 39356,
+   "markets": 8448,
+   "shown": 5,
+   "matching": 8448,
+   "priced": 2360,
+   "plusEv": 464,
+   "opportunities": 125,
+   "arbs": 0,
+   "lowHold": 129,
+   "multiVenue": 2219
+  },
+  "ms": 1052,
+  "staticMs": 12,
+  "providers": [
+   "pinnacle:ok:8592",
+   "matchbook:ok:1614",
+   "fanduel:ok:5428",
+   "betrivers:ok:6388",
+   "kalshi:ok:1477",
+   "gemini:ok:296",
+   "polymarketus:ok:498",
+   "draftkings:ok:3644",
+   "betmgm:ok:1848",
+   "caesars:ok:3152",
+   "bet365:ok:4860",
+   "fanatics:ok:2462",
+   "hardrock:ok:2228",
+   "thescore:ok:248"
+  ]
+ },
+ {
+  "view": "all",
+  "st": 200,
+  "bytes": 5496872,
+  "ms": 377
+ },
+ {
+  "view": "tx",
+  "st": 200,
+  "bytes": 4056396,
+  "ms": 337
+ },
+ {
+  "view": "props",
+  "st": 200,
+  "bytes": 1783309,
+  "ms": 205
+ },
+ {
+  "view": "arbs",
+  "st": 200,
+  "bytes": 742791,
+  "ms": 312
+ },
+ {
+  "view": "lowhold",
+  "st": 200,
+  "bytes": 1421980,
+  "ms": 297
+ },
+ {
+  "view": "shin",
+  "st": 200,
+  "bytes": 1386835,
+  "ms": 312
+ },
+ {
+  "view": "providers",
+  "st": 200,
+  "bytes": 4960,
+  "ms": 2
+ },
+ {
+  "view": "status",
+  "st": 200,
+  "bytes": 27398,
+  "ms": 16
+ },
+ {
+  "view": "ev",
+  "st": 200,
+  "bytes": 539341,
+  "ms": 13
+ }
+]
