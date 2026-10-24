@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --no-audit --no-fund --omit=dev --ignore-scripts
-      - run: node diag/p6cat.js || true
+      - run: node diag/p6js.js || true
       - run: |
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
           git checkout --orphan diag-p6cat-out; git rm -rq --cached . || true
