@@ -1,6 +1,6 @@
-const axios = require('axios');
-const esboard = require('./esboard');
-const D = require('./esmatchupdata');
+const axios = require(require.resolve('axios', { paths: [process.cwd()] }));
+const esboard = require(process.cwd() + '/esboard');
+const D = require(process.cwd() + '/esmatchupdata');
 (async () => {
   const board = esboard.createEsportsBoard({ http: axios, ratings: () => ({}), log: { log: () => {} } });
   await board.scan().catch(e => console.error('board', e.message));
