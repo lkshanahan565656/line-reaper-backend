@@ -1,0 +1,41 @@
+22:00:19 KXDOTA2MAP events 2128
+22:01:09 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT180900SBTALOHA-1-SBT/candlesticks?start_ts=1792326600&end_ts=1792325139&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:09 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT180900SBTALOHA-1-ALOHA/candlesticks?start_ts=1792326600&end_ts=1792325139&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:17 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT140600LYNXIC-1-LYNX/candlesticks?start_ts=1791970200&end_ts=1791964195&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:17 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT140600LYNXIC-2-LYNX/candlesticks?start_ts=1791970200&end_ts=1791967813&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:17 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT140600LYNXIC-2-IC/candlesticks?start_ts=1791970200&end_ts=1791967813&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:17 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26OCT140600LYNXIC-1-IC/candlesticks?start_ts=1791970200&end_ts=1791964195&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:04:25 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP260600XTREMEGL-1-XTREME/candlesticks?start_ts=1790415000&end_ts=1790409950&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:04:27 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP260600XTREMEGL-1-GL/candlesticks?start_ts=1790415000&end_ts=1790409950&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:04:29 KXDOTA2MAP 500 / 2128 calls 1772 errs 8
+22:04:29 saved kip-DOTA 500
+22:05:42 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191200YBLGD-1-YB/candlesticks?start_ts=1789831800&end_ts=1789830602&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:05:44 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191100URKALMY-1-UR/candlesticks?start_ts=1789828200&end_ts=1789679577&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:05:44 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191100URKALMY-2-UR/candlesticks?start_ts=1789828200&end_ts=1789682723&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:05:46 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191100URKALMY-1-KALMY/candlesticks?start_ts=1789828200&end_ts=1789679577&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:05:46 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191100URKALMY-2-KALMY/candlesticks?start_ts=1789828200&end_ts=1789682723&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:05:48 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP191200YBLGD-1-LGD/candlesticks?start_ts=1789831800&end_ts=1789830602&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:06:46 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP111700YBNCOO-1-YBN/candlesticks?start_ts=1789158600&end_ts=1789158599&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:06:48 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP111700YBNCOO-1-COO/candlesticks?start_ts=1789158600&end_ts=1789158599&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:06:48 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP111400VOOREC-1-VOO/candlesticks?start_ts=1789147800&end_ts=1789146402&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:06:50 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP111400VOOREC-1-REC/candlesticks?start_ts=1789147800&end_ts=1789146402&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:08 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP070500DFAMCARST-2-DFAM/candlesticks?start_ts=1788769800&end_ts=1788676527&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:08 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP070500DFAMCARST-1-DFAM/candlesticks?start_ts=1788769800&end_ts=1788676527&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:08 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP070500DFAMCARST-2-CARST/candlesticks?start_ts=1788769800&end_ts=1788676527&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:15 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26SEP070500DFAMCARST-1-CARST/candlesticks?start_ts=1788769800&end_ts=1788676527&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:50 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26AUG300700LVLUPLYNX-1-LYNX/candlesticks?start_ts=1788085800&end_ts=1788082546&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:52 4xx 400 /trade-api/v2/series/KXDOTA2MAP/markets/KXDOTA2MAP-26AUG300100XCTNICE-2-XCTN/candlesticks?start_ts=1788064200&end_ts=1788063009&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:38 KXDOTA2MAP 1000 / 2128 calls 3540 errs 34
+22:08:38 saved kip-DOTA 1000
+22:12:49 KXDOTA2MAP 1500 / 2128 calls 5287 errs 50
+22:12:50 saved kip-DOTA 1500
+22:16:58 KXDOTA2MAP 2000 / 2128 calls 7030 errs 68
+22:17:00 saved kip-DOTA 2000
+22:18:03 saved kip-DOTA 2128
+22:18:03 KXDOTA2GAME events 1200
+22:22:14 KXDOTA2GAME 500 / 1200 calls 9225 errs 80
+22:22:16 saved kip-DOTA 2628
+22:26:44 KXDOTA2GAME 1000 / 1200 calls 11154 errs 84
+22:26:47 saved kip-DOTA 3128
+22:28:26 saved kip-DOTA 3328
+22:28:26 done k:DOTA calls 11835 errs 84 min 28.1
