@@ -1,0 +1,20 @@
+16:45:45 pm series val 10369
+16:45:45 pm sample {"id":"1237081","ticker":"val-kbg-nova-2026-10-24","slug":"val-kbg-nova-2026-10-24","title":"Valorant: KeepBest Gaming vs Nova Esports (BO3) - VCT Threshold China Week 1","description":"This market refers to the Valorant Semifinal 2 match between KeepBest Gaming and Nova Esports in the VCT Threshold China Week 1, initially scheduled for October 24, 2026 at 5:00 AM ET.\n\nThis market will resolve to \"KeepBest Gaming\" if KeepBest Gaming win the match against Nova Esports.\n\nThis market will resolve to \"Nova Esports\" if Nova Esports win the match against KeepBest Gaming.\n\nIf the match is canceled (not played at all) or ends in a tie, this market will resolve to 50-50.\n\nIf the match is postponed, it must be rescheduled to a start time on or before November 7, 2026 at 11:59 PM ET (14 calendar days after the originally scheduled start of October 24, 2026 at 5:00 AM ET). If, by that deadline, the most recently announced rescheduled start time is on or before the deadline, this market resolves based on the result of the match as played. Otherwise, this market resolves 50-50, regardless of whether the match is subsequently played.\n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://vlr.gg. However, if https://vlr.gg has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.\n\nIn cases where a team’s listed name includes minor discrepancies from the resolution source, this market will resolve based on the underlying real-world match rather than exact name matching. Recognizable abbreviations, alternate or erroneous spellings, sponsor tags, affiliate or academy designations, regional identifiers, and minor formatting differences will be treated as referring to the same team, provided the intended team can be clearly and uniquely identified within the relevant competition. If a listed team name has no reasonable connection to any participating team, or if it matches or could reasonably refer to another team in the same competition such that the intended team cannot be unambiguously determined,
+16:46:04 4xx 422 /events?series_id=10369&closed=true&limit=100&offset=2100&order=startDate&ascending=false {"type":"validation error","error":"offset too large, use /events/keyset for deeper pagination"}
+
+16:46:04 pm events val 2100
+16:46:05 pm hist sample Valorant: FunPlus Phoenix vs Dragon Ranger Gaming - Map 1 Winner 196 165 [[10,0.33],[11,0.355],[12,0.385],[13,0.35],[14,0.45]]
+16:48:05 pm val 300 / 2100 calls 3476 errs 1
+16:48:06 saved pm-val 300
+16:50:10 pm val 600 / 2100 calls 7003 errs 1
+16:50:11 saved pm-val 600
+16:52:10 pm val 900 / 2100 calls 10375 errs 1
+16:52:11 saved pm-val 900
+16:54:12 pm val 1200 / 2100 calls 13955 errs 1
+16:54:13 saved pm-val 1200
+16:56:02 pm val 1500 / 2100 calls 17182 errs 1
+16:56:04 saved pm-val 1500
+16:58:01 pm val 1800 / 2100 calls 20518 errs 1
+16:58:03 saved pm-val 1800
+16:58:23 saved pm-val 1843
+16:58:23 done pm:val calls 20981 errs 1 min 12.6
