@@ -1,0 +1,20 @@
+16:45:43 pm series dota2 10309
+16:45:44 pm sample {"id":"1242966","ticker":"dota2-lynx-nemiga-2026-10-24","slug":"dota2-lynx-nemiga-2026-10-24","title":"Dota 2: Team Lynx vs Nemiga Gaming (BO3) - EPL Masters Group A","description":"This market refers to the Dota 2 match between Team Lynx and Nemiga Gaming in the EPL Masters Group A, initially scheduled for October 24, 2026 at 5:00 AM ET.\n\nThis market will resolve to \"Team Lynx\" if Team Lynx win the match against Nemiga Gaming.\n\nThis market will resolve to \"Nemiga Gaming\" if Nemiga Gaming win the match against Team Lynx.\n\nIf the match is canceled (not played at all) or ends in a tie, this market will resolve to 50-50.\n\nIf the match is postponed, it must be rescheduled to a start time on or before November 7, 2026 at 11:59 PM ET (14 calendar days after the originally scheduled start of October 24, 2026 at 5:00 AM ET). If, by that deadline, the most recently announced rescheduled start time is on or before the deadline, this market resolves based on the result of the match as played. Otherwise, this market resolves 50-50, regardless of whether the match is subsequently played.\n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://www.dotabuff.com. However, if https://www.dotabuff.com has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.\n\nIn cases where a team’s listed name includes minor discrepancies from the resolution source, this market will resolve based on the underlying real-world match rather than exact name matching. Recognizable abbreviations, alternate or erroneous spellings, sponsor tags, affiliate or academy designations, regional identifiers, and minor formatting differences will be treated as referring to the same team, provided the intended team can be clearly and uniquely identified within the relevant competition. If a listed team name has no reasonable connection to any participating team, or if it matches or could reasonably refer to another team in the same competition such that the intended team cannot be unambiguously determined, this market will resolve
+16:46:03 4xx 422 /events?series_id=10309&closed=true&limit=100&offset=2100&order=startDate&ascending=false {"type":"validation error","error":"offset too large, use /events/keyset for deeper pagination"}
+
+16:46:03 pm events dota2 2100
+16:46:04 pm hist sample Dota 2: Inner Circle vs HULIGANI - Game 1 Winner 132 164 [[10,0.305],[12,0.36],[12,0.36],[13,0.375],[14,0.375]]
+16:47:22 pm dota2 300 / 2100 calls 3207 errs 1
+16:47:22 saved pm-dota2 300
+16:48:41 pm dota2 600 / 2100 calls 6372 errs 1
+16:48:42 saved pm-dota2 600
+16:49:34 pm dota2 900 / 2100 calls 8533 errs 1
+16:49:35 saved pm-dota2 900
+16:50:50 pm dota2 1200 / 2100 calls 11585 errs 1
+16:50:51 saved pm-dota2 1200
+16:51:55 pm dota2 1500 / 2100 calls 14268 errs 1
+16:51:57 saved pm-dota2 1500
+16:53:12 pm dota2 1800 / 2100 calls 17507 errs 1
+16:53:13 saved pm-dota2 1800
+16:54:10 saved pm-dota2 2029
+16:54:10 done pm:dota2 calls 19733 errs 1 min 8.4
