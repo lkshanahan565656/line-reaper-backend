@@ -50,13 +50,18 @@ jobs:
           # Sunday night's last NBA tip is about 02:30Z Monday: record until 03:30Z, grade at 07:00Z
           STOP_AT=$(node -e "const w='$WEEK';console.log(new Date(Date.UTC(+w.slice(0,4),+w.slice(4,6)-1,+w.slice(6,8)+1,3,30)).toISOString())")
           GRADE_AT=$(node -e "console.log(new Date(Date.parse('$STOP_AT')+3.5*3600e3).toISOString())")
+          # a push (re)start takes the next free run number, so it never overwrites a recorded run
+          RUN="$RUN_N"
+          if [ "${{ github.event_name }}" = push ]; then RUN=1; while git ls-remote --exit-code --heads origin "$PREFIX-$WEEK-out-$RUN" >/dev/null 2>&1; do RUN=$((RUN+1)); done; fi
+          echo "RUN=$RUN" >> "$GITHUB_ENV"
           echo "WEEK=$WEEK" >> "$GITHUB_ENV"; echo "STOP_AT=$STOP_AT" >> "$GITHUB_ENV"; echo "GRADE_AT=$GRADE_AT" >> "$GITHUB_ENV"
-          echo "week $WEEK run $RUN_N mode $MODE leagues $LEAGUES stop $STOP_AT grade $GRADE_AT"
+          echo "week $WEEK run $RUN mode $MODE leagues $LEAGUES stop $STOP_AT grade $GRADE_AT"
       - name: Record the board
         if: env.MODE == 'record'
         run: timeout 20100 node scripts/nflsunday-record.js || true
         env:
           RUN_MIN: '330'
+          RUN_N: ${{ env.RUN }}
       - name: Wait for Sunday night's games to end
         if: env.MODE == 'final'
         run: |
@@ -75,4 +80,4 @@ jobs:
           if [ "$now" -ge "$stop" ]; then next=final; else next=record; fi
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/actions/workflows/weekend-board.yml/dispatches \
-            -d "{\"ref\":\"${{ github.ref_name }}\",\"inputs\":{\"run\":\"$((RUN_N+1))\",\"mode\":\"$next\",\"week\":\"$WEEK\",\"leagues\":\"$LEAGUES\"}}"
+            -d "{\"ref\":\"${{ github.ref_name }}\",\"inputs\":{\"run\":\"$((RUN+1))\",\"mode\":\"$next\",\"week\":\"$WEEK\",\"leagues\":\"$LEAGUES\"}}"

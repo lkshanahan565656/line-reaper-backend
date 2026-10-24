@@ -61,7 +61,7 @@ const holdUntil = {}, lastAt = {};
 // PrizePicks league ids by board sport (from its league list), read in turn
 let ppLeagues = process.env.PP_NFL_LEAGUE && !TAG ? { NFL: process.env.PP_NFL_LEAGUE } : null, ppNext = 0, slPlayers = null, slPlayersAt = 0;
 const ppLines = {};   // sport → its last PrizePicks read
-const propCache = new Map(), ladderCache = new Map();
+const caches = {};   // freebooks key → its FanDuel prop and ladder caches
 let pinProps = [];
 
 const retryMs = e => { const ra = Number(e?.response?.headers?.['retry-after']); return Number.isFinite(ra) && ra > 0 ? ra * 1000 : 0; };
@@ -164,10 +164,16 @@ async function readBooks() {
   const pinSports = Object.fromEntries([...new Set(LEAGUES.map(sp => PIN_SPORT[sp]).filter(Boolean))].map(k => [k, pingames.SPORTS[k]]));
   const pin = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: pinSports });
   if (!pin.games.length) throw new Error(`no Pinnacle games: ${pin.errors.join('; ')}`);
-  const read = await freebooks.fetchFreeBooks(axios, pin.games, { sports: fbs, fdProps: true, pinProps, propCache, ladderCache, maxFdEvents: TAG ? 30 : 20 });
-  if (read.errors.length) stats.errors.booksSoft = read.errors.slice(0, 4).join('; ');
+  // one read per league, each with its own FanDuel and BetRivers budget: in one
+  // read the day's 60 college games used every slot before the NBA's (10-24)
+  const soft = [];
   for (const fb of fbs) {
     const sp = FB_SPORT[fb];
+    const c = caches[fb] ||= { propCache: new Map(), ladderCache: new Map() };
+    let read;
+    try { read = await freebooks.fetchFreeBooks(axios, pin.games, { sports: [fb], fdProps: true, pinProps, ...c, maxFdEvents: TAG ? 25 : 20 }); }
+    catch (e) { soft.push(`${fb}: ${e.message}`); continue; }
+    soft.push(...read.errors.slice(0, 2));
     for (const b of ['fanduel', 'betrivers']) {
       const props = NS.gameProps(read.games[fb], b);
       // a book that returned nothing this read (blocked, or between slates) keeps its last numbers
@@ -175,7 +181,9 @@ async function readBooks() {
     }
     // FanDuel's one-sided rungs (combo ladders), raw, for the combo pricing
     if (TAG) { const rungs = NS.rungEntries(read.games[fb], 'fanduel', { sport: sp, tag: TAG }); if (rungs.size) changes.observe('fanduel-rungs', rungs, Date.now(), scope(sp)); }
+    stats.bookGames = { ...(stats.bookGames || {}), [sp]: (read.games[fb] || []).length };
   }
+  if (soft.length) stats.errors.booksSoft = soft.slice(0, 6).join('; ');
 }
 
 function pushOut(final) {
