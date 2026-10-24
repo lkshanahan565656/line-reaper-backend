@@ -713,8 +713,14 @@ const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
 const webhookOnly = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
-// Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on
-const push = require('./push').createPush({ store: require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' }) });
+// Every track record is backed up to the repo's results-data branch and
+// restored on boot, so deploys don't wipe them (backup.js).
+const { createBackup, axiosFetchJson } = require('./backup');
+const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
+// Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
+// The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
+const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
+const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pushStore : resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
 const webhook = require('./push').withPush(webhookOnly, push);
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
@@ -725,10 +731,6 @@ const bigMoney = require('./bigmoney');
 const altLines = require('./altlines');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
-// Every track record is backed up to the repo's results-data branch and
-// restored on boot, so deploys don't wipe them (backup.js).
-const { createBackup, axiosFetchJson } = require('./backup');
-const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
@@ -4508,12 +4510,39 @@ app.get('/api/push/key', async (req, res) => {
   if (!key) return res.status(503).json({ error: 'Push is not available right now' });
   res.json({ key, devices: push.devices() });
 });
+// the alert kinds a device can choose (Settings → Phone app)
+app.get('/api/push/kinds', (req, res) => res.json({ kinds: require('./push').KINDS.map(({ key, label }) => ({ key, label })) }));
 app.post('/api/push/subscribe', (req, res, next) => (hasPro(req) ? next() : requirePro(req, res, next)), async (req, res) => {
-  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent') })); } catch (e) { sendErr(res, e); }
+  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent'), kinds: req.body?.kinds })); } catch (e) { sendErr(res, e); }
 });
 app.post('/api/push/unsubscribe', async (req, res) => {
   try { res.json(await push.unsubscribe(req.body?.endpoint)); } catch (e) { sendErr(res, e); }
 });
+// this device's own state and choices: only the device knows its endpoint
+app.post('/api/push/device', async (req, res) => {
+  try { res.json(await push.device(String(req.body?.endpoint || ''))); } catch (e) { sendErr(res, e); }
+});
+app.post('/api/push/kinds', async (req, res) => {
+  try { res.json(await push.setKinds(String(req.body?.endpoint || ''), req.body?.kinds)); } catch (e) { sendErr(res, e); }
+});
+// "Send me a test": a real push to this one device; the service worker acks once it is on screen
+app.post('/api/push/test', async (req, res) => {
+  try { res.json(await push.test(String(req.body?.endpoint || ''))); } catch (e) { sendErr(res, e); }
+});
+app.post('/api/push/ack', (req, res) => res.json(push.ack(req.body?.nonce)));
+app.get('/api/push/test/:nonce', (req, res) => {
+  const t = push.testStatus(req.params.nonce);
+  if (!t) return res.status(404).json({ error: 'No such test' });
+  res.json(t);
+});
+// What is set up, what isn't, and the last deliveries. No endpoints, no keys.
+app.get('/api/push/selftest', async (req, res) => {
+  try {
+    const persistent = process.env.DATABASE_URL ? true : resultsBackup.status().state !== 'off';
+    res.json({ ...(await push.selfTest({ persistent })), backup: process.env.DATABASE_URL ? 'postgres' : resultsBackup.status().state });
+  } catch (e) { sendErr(res, e); }
+});
+app.get('/api/push/log', (req, res) => res.json({ deliveries: push.log(Math.min(200, parseInt(req.query.n) || 50)) }));
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -4575,7 +4604,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.157.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.158.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7072,7 +7101,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.157.0',
+  version: '3.158.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
