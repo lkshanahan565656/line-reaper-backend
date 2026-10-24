@@ -87,8 +87,12 @@ async function lolLive() {
 }
 async function lolFrames() {
   for (const g of lolGames) {
-    const st = new Date(Math.floor((Date.now() - 50e3) / 10e3) * 10e3).toISOString();
-    const d = await get(`https://feed.lolesports.com/livestats/v1/window/${g.id}?startingTime=${st}`, LK);
+    let d = null;
+    for (const back of [60e3, 120e3, 240e3]) {
+      const st = new Date(Math.floor((Date.now() - back) / 10e3) * 10e3).toISOString();
+      d = await get(`https://feed.lolesports.com/livestats/v1/window/${g.id}?startingTime=${st}`, LK);
+      if (d?.frames?.length) break;
+    }
     const fr = d?.frames || []; if (!fr.length) continue;
     const f = fr[fr.length - 1]; if (lolLastTs.get(g.id) === f.rfc460Timestamp) continue;
     lolLastTs.set(g.id, f.rfc460Timestamp);
@@ -109,13 +113,14 @@ async function dota() {
 }
 // CS2 via bo3
 const H3 = { origin: 'https://bo3.gg', referer: 'https://bo3.gg/', 'User-Agent': 'Mozilla/5.0 (LineReaper research)', Accept: 'application/json' };
-const cLast = new Map(), teamNames = new Map();
+const cLast = new Map(), teamNames = new Map(), csRaw = new Set();
 async function cs() {
   const d = await get('https://api.bo3.gg/api/v1/matches?page[limit]=50&filter[matches.status][in]=current&filter[matches.discipline_id][eq]=1', H3);
   for (const m of d?.results || []) {
     const gs = await get(`https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=${m.id}&page[limit]=10`, H3);
     const games = (gs?.results || []).map(g => [g.id, g.number, g.map_name, g.status, g.state, g.winner_clan_name, g.loser_clan_name, g.winner_clan_score, g.loser_clan_score, g.rounds_count, g.begin_at]);
     const live = (gs?.results || []).find(g => g.status === 'current' || g.state === 'live' || g.state === 'in_progress');
+    if (live && !csRaw.has(live.id)) { csRaw.add(live.id); W({ t: Date.now(), s: 'csraw', m, g: live }); }
     let rounds = null;
     if (live) { const r = await get(`https://api.bo3.gg/api/v1/games/${live.id}/rounds`, H3); rounds = (r?.game_rounds || []).map(x => [x.round_number, x.winner_clan_name, x.winner_clan_side, x.winner_clan_score, x.loser_clan_score, x.end_reason]); }
     const v = { s1: m.team1_score, s2: m.team2_score, l1: m.team1_last_game_score, l2: m.team2_last_game_score, lu: m.live_updates, games, rounds };
