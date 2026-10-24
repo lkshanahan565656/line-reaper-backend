@@ -1,4 +1,4 @@
-name: diag-nbanight7
+name: diag-nbanight8
 on: { push: { branches: [diag-nbanight] }, workflow_dispatch: {} }
 permissions: { contents: write }
 jobs:
@@ -10,18 +10,9 @@ jobs:
           B=https://line-reaper-backend-production.up.railway.app
           mkdir -p out && cd out
           date -u > at.txt
-          for i in $(seq 1 40); do
-            c=$(curl -s -m 20 -o body.txt -w "%{http_code}" $B/api/status)
-            echo "$(date -u +%T) $c $(jq -r .version body.txt 2>/dev/null | head -c 20)" >> wait.txt
-            [ "$c" = "200" ] && break
-            sleep 30
-          done
-          sleep 120
-          curl -s -m 120 "$B/api/status" > status.json
-          for o in 0 500 1000 1500 2000 2500 3000; do curl -s -m 120 "$B/api/props/board?sport=NBA&limit=500&offset=$o" > nbaboard-$o.json; done
-          curl -s -m 120 "$B/api/props/coverage?sport=NBA" > coverage.json
-          curl -s -m 120 "$B/api/ev/record" > evrecord.json
-          curl -s -m 120 "$B/api/ev/scoreboard" > scoreboard.json
+          curl -s -m 120 "$B/api/status" | jq -c '{version}' > version.json
+          curl -s -m 120 "$B/api/props/record" > precord.json
+          curl -s -m 120 "$B/api/tail/record" > tailrecord.json
           cd ..
-          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight7-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight7-out
+          git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-nbanight8-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbanight8-out
