@@ -271,7 +271,11 @@ function agreement(f, side, maxPts = AGREE_MAX_PTS) {
 // market priced, +EV or not, so a tracker can follow a price to the close.
 // costs (optional Map) gets `${group}|${side}|${book}` → 1 / decimal for every
 // book's best price, so a tracker can grade a bet at what it cost later.
-function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
+// pinFairs (optional Map) gets `${group}|${side}` → { p, raw } for every
+// market Pinnacle itself prices: its own no-vig chance of the side (%) and its
+// raw prices on every side, so a tracker can close a bet on Pinnacle's own
+// price there and nothing blended or interpolated.
+function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, pinFairs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
   const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
   const groups = new Map();
   for (const q of quotes) {
@@ -287,6 +291,11 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
     const f = fairForGroup(qs, { method, weights });
     if (!f) continue;
     if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
+    if (pinFairs && f.all?.pinnacle) {
+      const raw = {};
+      for (const q of qs) if (q.book === 'pinnacle' && raw[q.side] == null) raw[q.side] = q.price;
+      f.sides.forEach((side, i) => pinFairs.set(`${group}|${side}`, { p: round(f.all.pinnacle[i] * 100, 2), raw }));
+    }
     const head = qs[0];
     if (head.player) {
       const k = `${canonName(head.player)}|${head.market}|${head.point}`;

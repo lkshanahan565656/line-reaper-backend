@@ -117,9 +117,17 @@ const DUP_KINDS = new Set(['props-stale-exact']);
 const STALE_PROPS = new Set(['stale', 'stale-single']);
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }
-function evPlay(kind) {
-  return b => ({ kind, book: b.book, cluster: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`, state: evtrack.closeState(b),
-    clv: b.clv ?? null, exec: b.execClv ?? null, win: null, bet: results.SOURCES.ev.bet(b) });
+// Main lines (pin: true) grade the exchanges a Texan trades (Gemini,
+// Polymarket US, Kalshi) on Pinnacle's own close (evtrack.gradeOf), and every
+// main line with an ESPN final carries its result, so a close the results
+// don't back up (results.resultsShortfall) can't be proven.
+function evPlay(kind, { pin = false } = {}) {
+  return b => {
+    const g = pin ? evtrack.gradeOf(b) : { state: evtrack.closeState(b), clv: b.clv ?? null, exec: b.execClv ?? null, p: b.closeFair != null ? b.closeFair / 100 : null };
+    const won = pin && (b.outcome === 'win' || b.outcome === 'loss') ? b.outcome === 'win' : null;
+    return { kind, book: b.book, cluster: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`, state: g.state,
+      clv: g.clv, exec: g.exec, win: won, p: g.p, d: b.decimal ?? null, bet: results.SOURCES.ev.bet(b) };
+  };
 }
 const evKind = b => (b.source === 'consensus' ? 'ev-consensus' : 'ev');
 // the app a props-record row was offered on
@@ -191,7 +199,7 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   const at = b => Date.parse(b.flaggedAt || b.signalAt || '') || 0;
   const keep = b => !since || at(b) >= since;
   const plays = [
-    ...(lists.ev || []).filter(keep).map(b => evPlay(evKind(b))(b)),
+    ...(lists.ev || []).filter(keep).map(b => evPlay(evKind(b), { pin: true })(b)),
     ...(lists.alt || []).filter(keep).map(b => evPlay(b.source === 'alt' ? 'alt' : 'alt-model')(b)),
     ...(lists.stale || []).filter(keep).map(b => evPlay(b.source === 'stale' ? 'stale' : 'stale-single')(b)),
     ...(lists.esports || []).filter(keep).map(evPlay('esports')),

@@ -45,6 +45,34 @@ const LEAGUES = {
   nhl: { fd: 'nhl', kambi: 'ice_hockey/nhl', pin: 'hockey', league: /^NHL$/i, props: 'NHL', fdTabs: ['shots', 'goals', 'goalies', 'points-assists', 'popular'] },
   mlb: { fd: 'mlb', kambi: 'baseball/mlb', pin: 'baseball', league: /^MLB$/i, props: 'MLB', fdTabs: ['pitcher-props', 'hits-runs', 'popular'] },
 };
+// Leagues only the exchanges a Texan trades (Gemini, Polymarket US) are read
+// in, priced off Pinnacle like the rest (10-24): no FanDuel or BetRivers read
+// for them, and a game is kept only when an exchange lists it. pin is
+// Pinnacle's sport (soccer leagues come from their own league reads,
+// pinLeague), league its name there.
+const EXCHANGE_LEAGUES = {
+  ncaab: { pin: 'basketball', league: /^NCAA$/i },
+  epl: { pin: 'soccer', league: /^England - Premier League$/i, pinLeague: 1980 },
+  laliga: { pin: 'soccer', league: /^Spain - La Liga$/i, pinLeague: 2196 },
+  bundesliga: { pin: 'soccer', league: /^Germany - Bundesliga$/i, pinLeague: 1842 },
+  seriea: { pin: 'soccer', league: /^Italy - Serie A$/i, pinLeague: 2436 },
+  ligue1: { pin: 'soccer', league: /^France - Ligue 1$/i, pinLeague: 2036 },
+  mls: { pin: 'soccer', league: /^USA - Major League Soccer$/i, pinLeague: 2663 },
+  ligamx: { pin: 'soccer', league: /^Mexico - Liga MX$/i, pinLeague: 2242 },
+  eredivisie: { pin: 'soccer', league: /^Netherlands - Eredivisie$/i, pinLeague: 1928 },
+  brasileirao: { pin: 'soccer', league: /^Brazil - Serie A$/i, pinLeague: 1834 },
+  ucl: { pin: 'soccer', league: /^UEFA - Champions League$/i, pinLeague: 2627 },
+  uel: { pin: 'soccer', league: /^UEFA - Europa League$/i, pinLeague: 2630 },
+  // singles only: a doubles league names pairs
+  tennis: { pin: 'tennis', league: /^(ATP|WTA)\b(?!.*doubles)/i },
+  ufc: { pin: 'mma', league: /^UFC$/i },
+  khl: { pin: 'hockey', league: /^Russia - Kontinental Hockey League$/i },
+  ahl: { pin: 'hockey', league: /^USA - American Hockey League$/i },
+  shl: { pin: 'hockey', league: /^Sweden - SHL$/i },
+  kbo: { pin: 'baseball', league: /^Korea Professional Baseball$/i },
+  npb: { pin: 'baseball', league: /^Nippon Professional Baseball$/i },
+};
+const PIN_SOCCER_LEAGUES = [...new Set(Object.values(EXCHANGE_LEAGUES).map(l => l.pinLeague).filter(Boolean))];
 const TITLES = { pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers', ...require('./xbooks').TITLES };
 
 const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
@@ -329,6 +357,8 @@ function propMarkets(props) {
 function pinnacleBookmaker(g) {
   const markets = [];
   if (g.ml && g.ml.raw.length === 2) markets.push({ key: 'h2h', outcomes: [{ name: g.home, price: g.ml.raw[0] }, { name: g.away, price: g.ml.raw[1] }] });
+  // soccer's three-way result: the draw is its own side
+  else if (g.ml && g.ml.raw.length === 3) markets.push({ key: 'h2h', outcomes: [{ name: g.home, price: g.ml.raw[0] }, { name: g.away, price: g.ml.raw[1] }, { name: 'Draw', price: g.ml.raw[2] }] });
   const spreads = g.spreads.flatMap(s => [{ name: g.home, price: s.raw[0], point: s.home }, { name: g.away, price: s.raw[1], point: -s.home }]);
   if (spreads.length) markets.push({ key: 'spreads', outcomes: spreads });
   const totals = g.totals.flatMap(t => [{ name: 'Over', price: t.raw[0], point: t.line }, { name: 'Under', price: t.raw[1], point: t.line }]);
@@ -342,7 +372,9 @@ function bookmakerFor(b, pg) {
   const flip = sameTeam(b.home, pg.away) && sameTeam(b.away, pg.home);
   if (same === flip) return null;
   const rename = n => (n === b.home ? (same ? pg.home : pg.away) : n === b.away ? (same ? pg.away : pg.home) : n);
-  const markets = ['h2h', 'spreads', 'totals'].filter(k => b[k].length).map(k => ({ key: k, outcomes: b[k].map(o => ({ ...o, name: k === 'totals' ? o.name : rename(o.name) })) }));
+  // a three-way result only beside Pinnacle's three-way, a two-way beside its two-way
+  const h2hOk = !b.h2h.length || (b.h2h.length === 3) === (pg.ml?.raw?.length === 3);
+  const markets = ['h2h', 'spreads', 'totals'].filter(k => b[k].length && (k !== 'h2h' || h2hOk)).map(k => ({ key: k, outcomes: b[k].map(o => ({ ...o, name: k === 'totals' ? o.name : rename(o.name) })) }));
   markets.push(...propMarkets(b.props));
   // one-way rungs ride beside the markets (ev.screen never reads them):
   // altlines.js prices them. A spread rung takes Pinnacle's team name.
@@ -381,7 +413,8 @@ function mergeGames(sport, pinGames, bookGames, { maxGapMs = 3 * 3600e3, pinProp
   }
   return out;
 }
-const leagueGames = (pinGames, sport) => (pinGames || []).filter(g => g.sport === LEAGUES[sport].pin && LEAGUES[sport].league.test(g.league || ''));
+const leagueOf = sport => LEAGUES[sport] || EXCHANGE_LEAGUES[sport];
+const leagueGames = (pinGames, sport) => (pinGames || []).filter(g => g.sport === leagueOf(sport).pin && leagueOf(sport).league.test(g.league || ''));
 
 // ── fetch ──
 // http: axios-style. → { games: { nfl: [Odds API games], … }, counts, errors }
@@ -458,6 +491,15 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
     .flatMap(m => m.outcomes.filter(o => o.name === 'Over').map(o => `${m.key}|${canonName(o.description)}|${o.point}`)));
   const sameLine = (gs, key) => gs.reduce((n, g) => { const pin = propKeys(g.bookmakers[0]); return n + [...propKeys(g.bookmakers.find(b => b.key === key))].filter(k => pin.has(k)).length; }, 0);
   const games = {};
+  // the exchange-only leagues: Pinnacle's games an exchange lists, nothing else
+  for (const s of Object.keys(EXCHANGE_LEAGUES)) {
+    if (!(extra[s] || []).length) continue;
+    const merged = mergeGames(s, leagueGames(pinGames, s), extra[s]).filter(g => g.bookmakers.length > 1);
+    if (!merged.length) continue;
+    games[s] = merged;
+    counts[s] = { pinnacle: leagueGames(pinGames, s).length, exchangeOnly: true,
+      more: Object.fromEntries([...new Set(extra[s].map(b => b.book))].map(k => [k, { listed: extra[s].filter(b => b.book === k).length, games: merged.filter(g => g.bookmakers.some(b => b.key === k)).length }])) };
+  }
   for (const s of sports) {
     games[s] = resolveMatchbookNames(mergeGames(s, leagueGames(pinGames, s), books[s], { pinProps: pinProps.filter(p => p.sport === LEAGUES[s].props) }));
     const propN = key => games[s].reduce((n, g) => n + (g.bookmakers.find(b => b.key === key)?.markets || []).filter(m => !/^(h2h|spreads|totals)$/.test(m.key)).reduce((a, m) => a + m.outcomes.length / 2, 0), 0);
@@ -471,4 +513,4 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
   return { games, counts, errors };
 }
 
-module.exports = { LEAGUES, FD_URL, FD_EVENT_URL, KAMBI, STAT_FIX, parseFanDuelProps, parseFanDuelLadders, kambiLadders, kambiProps, propMarkets, parseFanDuel, parseKambiEvent, kambiEventIds, pinnacleBookmaker, bookmakerFor, mergeGames, leagueGames, fetchFreeBooks };
+module.exports = { LEAGUES, EXCHANGE_LEAGUES, PIN_SOCCER_LEAGUES, leagueOf, FD_URL, FD_EVENT_URL, KAMBI, STAT_FIX, parseFanDuelProps, parseFanDuelLadders, kambiLadders, kambiProps, propMarkets, parseFanDuel, parseKambiEvent, kambiEventIds, pinnacleBookmaker, bookmakerFor, mergeGames, leagueGames, fetchFreeBooks };
