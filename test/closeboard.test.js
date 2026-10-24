@@ -177,6 +177,56 @@ test('stale lines stop at promising and say why', () => {
   assert.deepEqual([...closeBoard.alertBooks(b)], []);
 });
 
+// 10-24: PrizePicks' stale legs re-checked from box scores. Where Pinnacle sat
+// elsewhere (our curve) they lost 2.2 sd under the close; at Pinnacle's own
+// number they held. A stale leg keeps Pinnacle's raw number to the start and
+// scores on Pinnacle's own price only when it sat on the app's line.
+test('stale legs keep Pinnacle\'s own number to the start; only exact ones score on its price', async () => {
+  let t = Date.parse('2026-10-15T20:00:00Z');
+  const tr = createSportTracker({ store: createMemoryStore(), now: () => t, log: { warn() {} } });
+  const mk = (player, line) => ({ key: `NFL|${player}|rec_yds`, sport: 'NFL', player, mkey: 'rec_yds', market: 'Receiving Yards', startTime: START, books: { prizepicks: { line, overOpen: true, underOpen: true } } });
+  const a = mk('A One', 50.5), b = mk('B Two', 60.5), c = mk('C Three', 40.5);
+  const play = (line, pinX) => ({ book: 'prizepicks', side: 'Under', line, mult: 1, fair: 0.58, ev: 5, decimal: 1 / 0.5503, signalAt: t,
+    stale: { pinPost: `o${pinX} 42.0%`, pinX } });
+  // a: Pinnacle on 50.5 at the flag and the close; b: Pinnacle on 61.5 (our curve); c: on 40.5, then moves to 41.5
+  const pins = { 'A One': { x: 50.5, p: 0.43 }, 'B Two': { x: 61.5, p: 0.45 }, 'C Three': { x: 40.5, p: 0.42 } };
+  const pinAt = r => pins[r.player];
+  await tr.record({ rows: [a, b, c], flagged: [{ row: a, play: play(50.5, 50.5), kind: 'stale-single' }, { row: b, play: play(60.5, 61.5), kind: 'stale-single' }, { row: c, play: play(40.5, 40.5), kind: 'stale' }], fairAt: () => 0.42, pinAt });
+  t = Date.parse(START) - 20 * 60e3;
+  pins['C Three'] = { x: 41.5, p: 0.5 };
+  await tr.record({ rows: [a, b, c], fairAt: () => 0.42, pinAt });
+  t = Date.parse(START) + 1000;
+  await tr.record({ rows: [a, b, c], fairAt: () => 0.42, pinAt });
+  const legs = await tr.list({});
+  const A = legs.find(x => x.player === 'A One'), B = legs.find(x => x.player === 'B Two'), C = legs.find(x => x.player === 'C Three');
+  assert.equal(A.signalPinLine, 50.5);
+  assert.equal(A.pinExact, true);
+  assert.equal(A.closePinFair, 0.57);
+  assert.equal(A.closePinEv, Math.round((0.57 / 0.5503 - 1) * 1e4) / 100);
+  assert.equal(B.pinExact, false, 'Pinnacle never on the app\'s number');
+  assert.equal(B.closePinEv, null);
+  assert.equal(C.pinExact, false, 'Pinnacle left the number before the close');
+  assert.equal(C.closePinLine, 41.5);
+  assert.equal((await tr.list({ kind: 'stale' })).length, 1, 'list narrows by kind');
+  // the board: exact legs score on their own row, not in the book's total twice
+  const graded = legs.map(x => ({ ...x, status: 'graded', outcome: 'win', profit: x.signalDecimal - 1 }));
+  const board = closeBoard.scoreboard({ props: graded });
+  const ex = board.rows.find(r => r.kind === 'props-stale-exact');
+  assert.equal(ex.graded, 1);
+  assert.equal(ex.avgClv, A.closePinEv);
+  assert.equal(ex.note, undefined, 'not capped');
+  assert.match(board.rows.find(r => r.kind === 'props-stale-single').note, /own row/);
+  assert.equal(board.byBook.prizepicks.graded, 3, 'each leg once in the book\'s total');
+});
+
+test('pinLineOf: the row\'s number, else the label', () => {
+  const { pinLineOf } = require('../sporttrack');
+  assert.equal(pinLineOf({ pinX: 14.5 }), 14.5);
+  assert.equal(pinLineOf({ pinPost: 'o24.5 55.3%' }), 24.5);
+  assert.equal(pinLineOf({ pinNow: 'o-3 50%' }), -3);
+  assert.equal(pinLineOf(null), null);
+});
+
 // A kind whose graded results sit far under what its close expected isn't
 // proven, whatever its CLV: the close is in doubt.
 test('results far under the close hold a kind at promising', () => {

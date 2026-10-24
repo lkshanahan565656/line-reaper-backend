@@ -556,6 +556,8 @@ function createStaleLines(opts = {}) {
           venueReadAt: new Date(e.seenAt).toISOString(), readMins: Math.max(0, Math.floor((t - e.seenAt) / 60e3)),
           moveSourceAt: new Date(mv.fromAt).toISOString(), dPts: r1(Math.abs(mv.d) * 100),
           pinPre: numberLabel(mv.from, s.meta), pinPost: numberLabel(mv.to, s.meta), pinNow: numberLabel(pin.q, s.meta),
+          // Pinnacle's own number now: where it is the venue's number, the fair is Pinnacle's price, not our curve
+          pinX: kind === 'prop' ? mainOf(pin.q)?.x ?? null : null,
           confirmedBy: conf, clears, single: conf.length === 0, source,
           sharpBooks: ['pinnacle', ...conf.map(c => (c === 'kalshi' ? (kind === 'prop' ? 'kalshi_props' : 'kalshi_mid') : c))],
           ...(s.meta.row ? { rowKey: s.meta.row.key } : {}),
@@ -572,6 +574,16 @@ function createStaleLines(opts = {}) {
     const s = subjects.get(key);
     const pin = s && latest(s, 'pinnacle');
     return s && !isAmbiguous(key, t) && pinFresh(s, pin, t) ? pAt(pin.q, x) : null;
+  }
+
+  // Pinnacle's own number and its chance of side 0 there, or null when its
+  // quote isn't fresh: the raw close a stale leg is re-checked on
+  function pinMain(key, t = Date.now()) {
+    const s = subjects.get(key);
+    const pin = s && latest(s, 'pinnacle');
+    if (!s || isAmbiguous(key, t) || !pinFresh(s, pin, t)) return null;
+    const m = mainOf(pin.q);
+    return m && m.x != null && m.p > 0 && m.p < 1 ? { x: m.x, p: m.p } : null;
   }
 
   // close-of-market fairs and the venues' prices now, for every bet a tracker
@@ -644,7 +656,7 @@ function createStaleLines(opts = {}) {
       sources: Object.fromEntries(Object.entries(s.src).map(([k, l]) => [k, l.map(e => ({ t: new Date(e.t).toISOString(), number: numberLabel(e.q, s.meta) }))])) };
   }
 
-  return { observe, step, rows, fairAt, marks, lagSummary, history, size: () => subjects.size, opts: o };
+  return { observe, step, rows, fairAt, pinMain, marks, lagSummary, history, size: () => subjects.size, opts: o };
 }
 
 module.exports = { DEFAULTS, VENUES, BOOK_VENUES, APP_VENUES, CONFIRM, devig2, pAt, shiftedAt, mainOf, fingerprint, dayOf, propKey, gameQuotes, bookPropQuotes, pinPropQuotes, appQuotes, numberLabel, createStaleLines };
