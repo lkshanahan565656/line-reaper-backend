@@ -225,6 +225,11 @@ test('pinLineOf: the row\'s number, else the label', () => {
   assert.equal(pinLineOf({ pinPost: 'o24.5 55.3%' }), 24.5);
   assert.equal(pinLineOf({ pinNow: 'o-3 50%' }), -3);
   assert.equal(pinLineOf(null), null);
+  const { pinClose } = require('../sporttrack');
+  const start = Date.parse(START);
+  const legacy = { signalLine: 14.5, signalDecimal: 1.8172, stale: { pinPost: 'o14.5 40%' }, closePinLine: 14.5, closePinFair: 0.6, closePinAt: new Date(start - 5 * 60e3).toISOString() };
+  assert.equal(pinClose(legacy, start).pinExact, true, 'a leg logged before the field reads its label');
+  assert.equal(pinClose({ ...legacy, closePinAt: new Date(start - 90 * 60e3).toISOString() }, start).pinExact, false, 'a Pinnacle read 90 min before the start is no close');
 });
 
 // A kind whose graded results sit far under what its close expected isn't
