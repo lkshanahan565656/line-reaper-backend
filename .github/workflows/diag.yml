@@ -10,11 +10,11 @@ jobs:
           set +e
           B=https://line-reaper-backend-production.up.railway.app
           mkdir -p out && cd out
-          for i in $(seq 1 40); do v=$(curl -s -m 30 $B/ | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.148.0" ] && break; sleep 60; done
-          curl -s -m 300 "$B/api/ev/scoreboard?state=TX" | jq -c '[.rows[]|select(.kind|test("stale"))]' > board.json
+          for i in $(seq 1 40); do v=$(curl -s -m 30 $B/ | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.148.1" ] && break; sleep 60; done
+          sleep 600; curl -s -m 300 "$B/api/ev/scoreboard?state=TX" | jq -c '[.rows[]|select(.kind|test("stale"))]' > board.json
           curl -s -m 300 "$B/api/props/record/picks?status=open&kind=stale-single&limit=50" | jq -c '[.picks[]|{id,signalPinLine,closePinLine,closePinFair,closePinAt,stale}]' > open-ss.json
           curl -s -m 300 "$B/api/props/record/picks?status=graded&kind=stale-single&limit=1000" > graded-ss.json
           curl -s -m 300 "$B/api/props/record/picks?status=graded&kind=stale&limit=1000" > graded-s.json
           curl -s -m 120 "$B/api/status" | jq -c '{version, stale:.ev.stale}' > status.json
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-ppstale-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-ppstale-out2
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-ppstale-out3 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-ppstale-out3
