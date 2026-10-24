@@ -1,0 +1,36 @@
+{
+  "sports": {
+    "CFB": 2793,
+    "MLB": 244,
+    "MMA": 148,
+    "NFL": 4897,
+    "NBA": 1529,
+    "NHL": 2046,
+    "SOCCER": 2002,
+    "TENNIS": 64,
+    "DARTS": 6,
+    "SERIE A": 4,
+    "WNBA": 21,
+    "LA LIGA": 44,
+    "F1": 31,
+    "NASCAR": 19,
+    "LOL": 210,
+    "CS": 132,
+    "VAL": 21,
+    "DOTA": 40
+  },
+  "books": {
+    "underdog": 11475,
+    "prizepicks": 4836,
+    "sleeper": 3746,
+    "pick6": 0
+  },
+  "priced": 1691,
+  "multi": 4307,
+  "rows": 14251,
+  "gaps": 2,
+  "sharp3": 0,
+  "sharp": 0,
+  "consensus": 0,
+  "researchGaps": 132
+}
