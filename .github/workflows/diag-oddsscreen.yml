@@ -1,0 +1,41 @@
+name: diag-oddsscreen
+on:
+  push:
+    branches: [diag-oddsscreen]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: diag }
+      - uses: actions/checkout@v4
+        with: { ref: "claude/project-thread-tlmgxj", path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && (npm ci --no-audit --no-fund || npm install --no-audit --no-fund)
+      - run: cd diag && npm init -y >/dev/null && npm i playwright@1.47.2 && npx playwright install --with-deps chromium
+      - run: |
+          mkdir -p diag/out
+          cd app && PORT=3999 PINNACLE=on LR_DATA_DIR=$RUNNER_TEMP/lr nohup node server.js > ../diag/out/server.log 2>&1 &
+          sleep 420
+          curl -s localhost:3999/api/status > diag/out/status.json
+          curl -s localhost:3999/api/odds-screen > diag/out/screen.json
+          curl -s "localhost:3999/api/odds-screen?state=TX" > diag/out/screen-tx.json
+          cd diag && node render.js || true
+          sleep 300
+          curl -s localhost:3999/api/status > out/status2.json
+          node render.js again || true
+          G=$(node -e "const d=require('./out/screen.json');console.log((d.games||[]).map(g=>g.id).slice(0,3).join(' '))")
+          for g in $G; do curl -s "localhost:3999/api/odds-screen/history/$g" > out/hist-$g.json; done
+      - run: |
+          cd diag
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-oddsscreen-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "odds screen output"
+          git push -f origin diag-oddsscreen-out
