@@ -109,10 +109,66 @@ function closeState(b, freshMs = CLOSE_FRESH_MS) {
   return start - seen <= freshMs ? 'ok' : b.fairSeenAt ? 'stale' : 'unverified';
 }
 
+// Pinnacle's own close (10-24). The fair a bet is flagged on blends Pinnacle
+// with Kalshi's mid and Matchbook, so for the exchanges a Texan can trade
+// (Gemini, Polymarket US, Kalshi) the record also keeps Pinnacle's own no-vig
+// chance of the side at the bet's exact number (ev.screen pinFairs), with
+// Pinnacle's raw prices, until the start: pinClose / pinRaw / pinSeenAt, and
+// at the close pinClv, execPinClv and pinCloseOk (Pinnacle still pricing that
+// number within CLOSE_FRESH_MS of the start). A row Pinnacle stopped pricing
+// at its number, or one logged before this existed, has no Pinnacle close and
+// is never graded on one.
+const PIN_CLOSE_BOOKS = new Set(['gemini', 'polymarketus', 'kalshi']);
+// 'ok' | 'stale' | 'unverified' (no Pinnacle close kept) | null (open)
+function pinCloseState(b) {
+  if (b.status !== 'closed') return null;
+  if (b.pinCloseOk == null || b.pinClv == null) return 'unverified';
+  return b.pinCloseOk ? 'ok' : 'stale';
+}
+// what a row is graded on: Pinnacle's own close for the exchange books, the
+// blended sharp fair for the rest → { state, clv, exec, p (fraction) }
+function gradeOf(b, freshMs = CLOSE_FRESH_MS) {
+  if (PIN_CLOSE_BOOKS.has(b.book)) return { state: pinCloseState(b), clv: b.pinClv ?? null, exec: b.execPinClv ?? null, p: b.pinClose != null ? b.pinClose / 100 : null, close: 'pinnacle' };
+  return { state: closeState(b, freshMs), clv: b.clv ?? null, exec: b.execClv ?? null, p: b.closeFair != null ? b.closeFair / 100 : null, close: 'sharp' };
+}
+
+// A game line's result from the final score (ESPN, sportgrade.gradeGame):
+// bet { market, side, point, event 'Away @ Home' } + { home, away } points →
+// 'win' | 'loss' | 'push' | null. Spreads read the side's own point; a
+// soccer moneyline's 'Draw' wins on a level score.
+function outcomeOf(b, score) {
+  if (!score || !Number.isFinite(score.home) || !Number.isFinite(score.away)) return null;
+  const [away, home] = String(b.event || '').split(' @ ');
+  if (!home || !away) return null;
+  const teamPts = name => (name === home ? score.home : name === away ? score.away : null);
+  const oppPts = name => (name === home ? score.away : name === away ? score.home : null);
+  const res = x => (x > 0 ? 'win' : x < 0 ? 'loss' : 'push');
+  if (b.market === 'h2h') {
+    if (/^draw$/i.test(b.side)) return score.home === score.away ? 'win' : 'loss';
+    const t = teamPts(b.side), o = oppPts(b.side);
+    return t == null ? null : res(t - o);
+  }
+  if (b.market === 'spreads') {
+    const pt = Number(b.point);
+    const team = String(b.side).replace(/\s+[+-]?\d+(?:\.\d+)?$/, '');
+    const t = teamPts(team), o = oppPts(team);
+    return t == null || !Number.isFinite(pt) ? null : res(t + pt - o);
+  }
+  if (b.market === 'totals') {
+    const pt = Number(b.point), tot = score.home + score.away;
+    if (!Number.isFinite(pt)) return null;
+    return /^over$/i.test(b.side) ? res(tot - pt) : /^under$/i.test(b.side) ? res(pt - tot) : null;
+  }
+  return null;
+}
+// 1u at the flagged price (decimal already carries an exchange's fee)
+const profitOf = (outcome, decimal) => (outcome === 'win' ? r2(decimal - 1) : outcome === 'loss' ? -1 : outcome === 'push' ? 0 : null);
+
 function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => Date.now(), log = console, closeFreshMs = CLOSE_FRESH_MS, freshCloseOnly = false } = {}) {
   const ready = store.init();
   const open = new Map();   // id → bet, for bets whose game hasn't started
   const seen = new Map();   // id → last time a screen priced its side (ms)
+  const pinSeen = new Map();   // id → last time Pinnacle itself priced it (ms)
 
   const loaded = ready.then(async () => {
     const fixes = [];
@@ -135,7 +191,9 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
   // grades it there. A scan landing a few seconds early still counts (slackMs).
   // sized (optional, bet id → execcheck.walkCost): what minUsd cost walking
   // the book at that same moment, the grade at real size (execSizedClv).
-  async function recordBoard(rows, fairs = null, { costs = null, sized = null, lagMs = 2 * 60e3, slackMs = 15e3 } = {}) {
+  // pinFairs (optional, ev.screen's): market side → { p, raw }, Pinnacle's own
+  // price there, kept as pinClose for the exchange books' grade
+  async function recordBoard(rows, fairs = null, { costs = null, sized = null, pinFairs = null, lagMs = 2 * 60e3, slackMs = 15e3 } = {}) {
     await loaded;
     const t = now();
     const fairBySide = new Map();
@@ -161,6 +219,8 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         // which contract on which venue market, so its book can be read again
         ...(r.contract ? { contract: r.contract, marketId: r.marketId ?? null, ...(r.yesSide ? { yesSide: r.yesSide } : {}) } : {}),
       };
+      const pf = pinFairs?.get(marketSide(r));
+      if (pf) { Object.assign(b, { pinAtFlag: pf.p, pinClose: pf.p, pinRaw: pf.raw, pinSeenAt: b.flaggedAt }); pinSeen.set(id, t); }
       open.set(id, b);
       seen.set(id, t);
       dirty.add(b);
@@ -184,6 +244,13 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
           if (fp !== b.closeFair) { b.closeFair = fp; b.closeAt = b.fairSeenAt = new Date(t).toISOString(); dirty.add(b); }
           else if (!(t - Date.parse(b.fairSeenAt || b.closeAt) < SEEN_SAVE_MS)) { b.fairSeenAt = new Date(t).toISOString(); dirty.add(b); }
         }
+        const pf = pinFairs?.get(marketSide(b));
+        if (pf) {
+          pinSeen.set(b.id, t);
+          if (b.pinAtFlag == null && b.pinClose == null) b.pinLate = true;   // Pinnacle priced it only after the flag
+          if (pf.p !== b.pinClose || JSON.stringify(pf.raw) !== JSON.stringify(b.pinRaw)) { Object.assign(b, { pinClose: pf.p, pinRaw: pf.raw, pinSeenAt: new Date(t).toISOString() }); dirty.add(b); }
+          else if (!(t - Date.parse(b.pinSeenAt || 0) < SEEN_SAVE_MS)) { b.pinSeenAt = new Date(t).toISOString(); dirty.add(b); }
+        }
         continue;
       }
       // the close: the last fair seen, and whether it was seen near the start
@@ -197,6 +264,15 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       b.fairMove = r2(b.closeFair - b.fairAtFlag);
       if (b.execPrice) b.execClv = r2((b.closeFair / 100) / b.execPrice * 100 - 100);   // + means the market moved toward our side
       if (b.execSized) b.execSizedClv = r2((b.closeFair / 100) / b.execSized * 100 - 100);
+      if (b.pinClose != null) {
+        const pinT = Math.max(pinSeen.get(b.id) || 0, Date.parse(b.pinSeenAt || 0) || 0);
+        b.pinSeenAt = new Date(pinT).toISOString();
+        b.pinCloseAgeMin = r2((Date.parse(b.start) - pinT) / 60e3);
+        b.pinCloseOk = Date.parse(b.start) - pinT <= closeFreshMs;
+        b.pinClv = r2((b.pinClose / 100) * b.decimal * 100 - 100);
+        if (b.execPrice) b.execPinClv = r2((b.pinClose / 100) / b.execPrice * 100 - 100);
+      }
+      pinSeen.delete(b.id);
       open.delete(b.id);
       dirty.add(b);
     }
@@ -237,7 +313,16 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
         execStillN: ex.filter(b => b.execPrice * b.decimal <= 1 + 5e-4).length } : { execN: 0 };
       const sz = list.filter(b => b.execSizedClv != null);
       if (sz.length) Object.assign(exec, { sizedN: sz.length, avgSizedClv: r2(sz.reduce((a, b) => a + b.execSizedClv, 0) / sz.length), sizedFullPct: r2(100 * sz.filter(b => b.execSizedUsd >= 99).length / sz.length) });
-      return { n, avgEvAtFlag: avg(b => b.evAtFlag), avgClv: avg(b => b.clv), beatClosePct: r2(100 * list.filter(b => b.clv > 0).length / n), ...exec };
+      // Pinnacle's own close where it was kept and fresh, and results from the finals
+      const pin = list.filter(b => b.pinCloseOk === true && b.pinClv != null), pinEx = pin.filter(b => b.execPinClv != null);
+      const res = list.filter(b => b.profit != null);
+      const extra = {
+        ...(pin.length ? { pinN: pin.length, avgPinClv: r2(pin.reduce((a, b) => a + b.pinClv, 0) / pin.length), pinBeatPct: r2(100 * pin.filter(b => b.pinClv > 0).length / pin.length),
+          ...(pinEx.length ? { execPinN: pinEx.length, avgExecPinClv: r2(pinEx.reduce((a, b) => a + b.execPinClv, 0) / pinEx.length) } : {}) } : {}),
+        ...(res.length ? { resultsN: res.length, wins: res.filter(b => b.outcome === 'win').length, losses: res.filter(b => b.outcome === 'loss').length, pushes: res.filter(b => b.outcome === 'push').length,
+          units: r2(res.reduce((a, b) => a + b.profit, 0)) } : {}),
+      };
+      return { n, avgEvAtFlag: avg(b => b.evAtFlag), avgClv: avg(b => b.clv), beatClosePct: r2(100 * list.filter(b => b.clv > 0).length / n), ...exec, ...extra };
     };
     const by = key => {
       const g = {};
@@ -267,7 +352,32 @@ function createEvTracker({ store = createMemoryStore(), minEv = 2, now = () => D
       .sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, limit);
   }
 
-  return { recordBoard, dueForExec, summary, list, ready: () => loaded, store };
+  // closed game lines with no result yet, started at least minAgeMs ago and
+  // no more than maxAgeMs: what the results job reads finals for
+  async function ungraded({ minAgeMs = 2.5 * 3600e3, maxAgeMs = 10 * 86400e3, limit = 60, sports = null } = {}) {
+    await loaded;
+    const t = now();
+    return (await store.all()).filter(b => b.status === 'closed' && b.outcome == null && (!sports || sports.has(b.sport)) && /^(h2h|spreads|totals)$/.test(b.market) && !b.player
+      && t - Date.parse(b.start) >= minAgeMs && t - Date.parse(b.start) <= maxAgeMs && !(b.resultTries >= 12))
+      .sort((a, b) => Date.parse(b.start) - Date.parse(a.start)).slice(0, limit);
+  }
+  // a final score for a closed bet: outcome, 1u profit at the flagged price
+  // and at the +2 min price. score null (no final found) counts a try.
+  // b: a row from ungraded() (changed in place and saved)
+  // save false: the caller saves a batch with saveMany
+  async function setResult(b, score, { source = 'espn', save = true } = {}) {
+    await loaded;
+    if (!b || b.status !== 'closed') return null;
+    const outcome = score ? outcomeOf(b, score) : null;
+    if (!outcome) b.resultTries = (b.resultTries || 0) + 1;
+    else Object.assign(b, { outcome, score: { home: score.home, away: score.away }, resultSource: source, gradedAt: new Date(now()).toISOString(),
+      profit: profitOf(outcome, b.decimal), ...(b.execPrice ? { execProfit: profitOf(outcome, 1 / b.execPrice) } : {}) });
+    if (save) await store.put(b);
+    return outcome ? b : null;
+  }
+  const saveMany = list => (store.putMany ? store.putMany(list) : Promise.all(list.map(b => store.put(b))));
+
+  return { recordBoard, dueForExec, summary, list, ungraded, setResult, saveMany, ready: () => loaded, store };
 }
 
-module.exports = { EXEC_WINDOW_MS, CLOSE_FRESH_MS, closeState, createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };
+module.exports = { EXEC_WINDOW_MS, CLOSE_FRESH_MS, PIN_CLOSE_BOOKS, closeState, pinCloseState, gradeOf, outcomeOf, profitOf, createEvTracker, createMemoryStore, createFileStore, createStoreFromEnv, betId };

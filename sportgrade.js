@@ -10,7 +10,10 @@ const { canonName } = require('./ev');
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports';
 const LEAGUES = { NFL: 'football/nfl', CFB: 'football/college-football', NBA: 'basketball/nba', WNBA: 'basketball/wnba',
-  CBB: 'basketball/mens-college-basketball', MLB: 'baseball/mlb', NHL: 'hockey/nhl' };
+  CBB: 'basketball/mens-college-basketball', MLB: 'baseball/mlb', NHL: 'hockey/nhl',
+  // soccer: game finals only (the main-lines record), regulation time in league play
+  EPL: 'soccer/eng.1', LALIGA: 'soccer/esp.1', BUNDESLIGA: 'soccer/ger.1', SERIEA: 'soccer/ita.1', LIGUE1: 'soccer/fra.1', MLS: 'soccer/usa.1',
+  LIGAMX: 'soccer/mex.1', EREDIVISIE: 'soccer/ned.1', BRASILEIRAO: 'soccer/bra.1', UCL: 'soccer/uefa.champions', UEL: 'soccer/uefa.europa' };
 
 const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
 // "12/19" → [12, 19]; "3-6" → [3, 6]

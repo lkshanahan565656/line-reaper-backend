@@ -61,6 +61,9 @@ const KINDS = {
   'props-gap': "Pick'em line gap",
   'props-stale': "Pick'em stale (confirmed)",
   'props-stale-single': "Pick'em stale (Pinnacle only)",
+  // the same stale legs where Pinnacle sat on the app's own number at the flag
+  // and at the close: closed on Pinnacle's own price there, no curve (closePinEv)
+  'props-stale-exact': "Pick'em stale at Pinnacle's own number",
   // DraftKings Pick6, a lead with its own record
   'props-p6-sharp': 'Pick6 sharp consensus',
   'props-p6-ev': 'Pick6 sharp price',
@@ -74,6 +77,10 @@ const KINDS = {
   // three or more sportsbooks at the app's own number, where nothing sharp prices it
   'props-book-consensus': "Pick'em vs 3+ books' consensus",
   'props-p6-book-consensus': "Pick6 vs 3+ books' consensus",
+  // Pinnacle and two of FanDuel, BetRivers and Kalshi at the app's own number,
+  // every one past break-even; the close is Pinnacle's own price there
+  'props-sharp3': "Pick'em vs three sharps (Pinnacle + 2)",
+  'props-p6-sharp3': 'Pick6 vs three sharps (Pinnacle + 2)',
   'bigmoney': 'Big money',
 };
 
@@ -93,17 +100,34 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single']);
 // why each capped kind stops at promising, shown on the record screen
 const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.";
-const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price.";
+// 10-24 re-check of PrizePicks' stale legs from ESPN box scores (all 249
+// graded): where Pinnacle sat elsewhere (our curve) 133 legs won 70 against
+// 76.5 the close expected (-5.8 units); at Pinnacle's own number 116 won 67
+// against 66.0 (+5.8 units). Those now score in their own kind, closed on
+// Pinnacle's own price.
+const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price. Legs at Pinnacle's own number score on their own row.";
 const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE };
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
 const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
 const day = t => String(t || '').slice(0, 10);
+// a second view of legs already counted in another kind: kept out of a book's
+// total and the headline, so no leg counts twice there
+const DUP_KINDS = new Set(['props-stale-exact']);
+const STALE_PROPS = new Set(['stale', 'stale-single']);
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }
-function evPlay(kind) {
-  return b => ({ kind, book: b.book, cluster: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`, state: evtrack.closeState(b),
-    clv: b.clv ?? null, exec: b.execClv ?? null, win: null, bet: results.SOURCES.ev.bet(b) });
+// Main lines (pin: true) grade the exchanges a Texan trades (Gemini,
+// Polymarket US, Kalshi) on Pinnacle's own close (evtrack.gradeOf), and every
+// main line with an ESPN final carries its result, so a close the results
+// don't back up (results.resultsShortfall) can't be proven.
+function evPlay(kind, { pin = false } = {}) {
+  return b => {
+    const g = pin ? evtrack.gradeOf(b) : { state: evtrack.closeState(b), clv: b.clv ?? null, exec: b.execClv ?? null, p: b.closeFair != null ? b.closeFair / 100 : null };
+    const won = pin && (b.outcome === 'win' || b.outcome === 'loss') ? b.outcome === 'win' : null;
+    return { kind, book: b.book, cluster: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`, state: g.state,
+      clv: g.clv, exec: g.exec, win: won, p: g.p, d: b.decimal ?? null, bet: results.SOURCES.ev.bet(b) };
+  };
 }
 const evKind = b => (b.source === 'consensus' ? 'ev-consensus' : 'ev');
 // the app a props-record row was offered on
@@ -116,6 +140,12 @@ function propsPlay(b) {
     cluster: `${b.sport}|${b.player}|${b.mkey}|${day(b.start)}`, state, clv: b.closeEv ?? null,
     exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null,
     p: b.closeFair ?? null, d: b.signalDecimal ?? null, bet: results.SOURCES.sportsProps.bet(b) };
+}
+// a stale leg closed on Pinnacle's own number (sporttrack pinClose): its CLV is
+// Pinnacle's price at the app's line, and it scores as a sharp close
+function propsExactPlay(b) {
+  const p = propsPlay(b);
+  return { ...p, kind: 'props-stale-exact', clv: b.closePinEv, exec: b.execOk === true ? b.closePinEv : null, p: b.closePinFair ?? null };
 }
 function bigPlay(b) {
   const state = b.status === 'open' || b.status === 'void' ? null : sporttrack.closeState(b);
@@ -169,12 +199,13 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
   const at = b => Date.parse(b.flaggedAt || b.signalAt || '') || 0;
   const keep = b => !since || at(b) >= since;
   const plays = [
-    ...(lists.ev || []).filter(keep).map(b => evPlay(evKind(b))(b)),
+    ...(lists.ev || []).filter(keep).map(b => evPlay(evKind(b), { pin: true })(b)),
     ...(lists.alt || []).filter(keep).map(b => evPlay(b.source === 'alt' ? 'alt' : 'alt-model')(b)),
     ...(lists.stale || []).filter(keep).map(b => evPlay(b.source === 'stale' ? 'stale' : 'stale-single')(b)),
     ...(lists.esports || []).filter(keep).map(evPlay('esports')),
     // the research kinds (gap-odd, gap-stale) price nothing, so they aren't plays
     ...(lists.props || []).filter(keep).filter(b => KINDS[`props-${b.kind}`] && b.status !== 'void').map(propsPlay),
+    ...(lists.props || []).filter(keep).filter(b => STALE_PROPS.has(b.kind) && b.pinExact === true && b.status !== 'void').map(propsExactPlay),
     ...(lists.bigMoney || []).filter(keep).filter(b => b.status !== 'void').map(bigPlay),
   ];
   const group = (f, list = plays) => {
@@ -183,7 +214,7 @@ function scoreboard(lists = {}, { since = 0 } = {}) {
     return m;
   };
   // a book's total and the headline count sharp closes only
-  const sharp = plays.filter(p => !NO_SHARP_CLOSE.has(p.kind) && !BOOK_CLOSE.has(p.kind));
+  const sharp = plays.filter(p => !NO_SHARP_CLOSE.has(p.kind) && !BOOK_CLOSE.has(p.kind) && !DUP_KINDS.has(p.kind));
   const order = (a, b) => (a.mark === 'no sharp close') - (b.mark === 'no sharp close') || b.graded - a.graded || b.recorded - a.recorded;
   const rows = [...group(p => `${p.kind}|${p.book}`)].map(([k, l]) => {
     const [kind, book] = k.split('|');
@@ -209,4 +240,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, propsVenue, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS };
+module.exports = { scoreboard, alertBooks, propsVenue, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };

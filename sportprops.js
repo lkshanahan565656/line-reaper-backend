@@ -446,6 +446,74 @@ function bookFairLineDiffers(row, quotes, opts = {}) {
 }
 const bookFairKind = p => (p.n >= 2 ? 'book-fair' : 'book-fair-single');
 
+// ── THREE SHARPS ──
+// A pick'em leg clears only where Pinnacle AND at least two of FanDuel,
+// BetRivers and Kalshi all hang the app's own number (lineTol: counting stats
+// and points exactly, yardage within 2.5%) and every one of them, on its own
+// two-way price with the vig out, puts the app's side past the app's
+// break-even at its payout. No curve, no weighted mean: each source is read
+// at its own line only, so no source can be stretched to a number it doesn't
+// post (the trap that sank alt and stale lines). Kind 'sharp3' in the record,
+// its close Pinnacle's own price at the app's number (threeSharpClose); a
+// lead with alerts off, judged at 50 graded.
+const THREE_SHARP = { anchor: 'pinnacle', others: ['fanduel', 'betrivers', 'kalshi'], minOthers: 2, minEv: 0, lineTolFrac: LINE_TOL_FRAC };
+// a source's own quote at the app's number: the nearest within lineTol
+function atNumber(quotes, mkey, line, o = THREE_SHARP) {
+  const tol = lineTol(mkey, line, o.lineTolFrac) + 1e-9;
+  let best = null;
+  for (const q of quotes || []) if (q && q.line != null && q.pOver > 0 && q.pOver < 1 && Math.abs(q.line - line) <= tol && (!best || Math.abs(q.line - line) < Math.abs(best.line - line))) best = q;
+  return best;
+}
+// sharp: [{ book, line, pOver }] (Pinnacle's lines, FanDuel's and BetRivers'
+// props); kalshi: line → P(over) at the row's lines (Kalshi's own rungs).
+// → { sources: [{ book, line, p }] } (Pinnacle first) or null
+function threeSharpAt(row, line, { sharp = [], kalshi = null, o = THREE_SHARP } = {}) {
+  if (!row?.mkey || row.mkey.includes('|')) return null;
+  const by = b => atNumber(sharp.filter(q => q && q.book === b), row.mkey, line, o);
+  const pin = by(o.anchor);
+  if (!pin) return null;
+  const others = [];
+  for (const b of o.others) {
+    const q = b === 'kalshi' ? atNumber(kalshi?.size ? [...kalshi].map(([l, p]) => ({ book: 'kalshi', line: l, pOver: p })) : [], row.mkey, line, o) : by(b);
+    if (q) others.push({ book: b, line: q.line, p: q.pOver });
+  }
+  if (others.length < o.minOthers) return null;
+  return { sources: [{ book: o.anchor, line: pin.line, p: pin.pOver }, ...others] };
+}
+// Pinnacle's own P(over) at the app's number, or null (the kind's close)
+function threeSharpClose(row, line, sharp, o = THREE_SHARP) {
+  const q = atNumber((sharp || []).filter(x => x && x.book === o.anchor), row?.mkey, line, o);
+  return q ? q.pOver : null;
+}
+// Every open side of every app on a row where all the sources clear.
+// dfsEv(p, book, mult, cell, side) as in consensusPlays. → plays, best first:
+// { book, side, line, mult, fair (Pinnacle's), ev (at Pinnacle's price),
+//   evMin (at the worst source's), decimal, entry, entries (every entry the
+//   worst source clears: power and flex), n, sources: [{ book, line, p, ev }] }
+function threeSharpPlays(row, { sharp = [], kalshi = null, dfsEv, o = THREE_SHARP } = {}) {
+  if (row.esports || !row.mkey || row.mkey.includes('|')) return [];
+  const out = [];
+  for (const [book, c] of Object.entries(row.books || {})) {
+    const f = threeSharpAt(row, c.line, { sharp, kalshi, o });
+    if (!f) continue;
+    for (const side of ['Over', 'Under']) {
+      if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
+      const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+      const evOf = p => { const fx = fixedLeg(book, p, mult); return fx ? fx.ev : dfsEv ? dfsEv(p, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side) : null; };
+      const srcs = f.sources.map(s => { const p = side === 'Over' ? s.p : 1 - s.p; return { book: s.book, line: s.line, p: +(s.p * 100).toFixed(1), ev: evOf(p), side: p }; });
+      if (srcs.some(s => s.ev == null || !Number.isFinite(s.ev) || !(s.ev > o.minEv))) continue;
+      const worst = srcs.reduce((a, s) => (s.side < a.side ? s : a));
+      const fair = srcs[0].side;
+      const fx = fixedLeg(book, fair, mult), fw = fixedLeg(book, worst.side, mult);
+      out.push({ book, side, line: c.line, mult, fair: +fair.toFixed(4), ev: +srcs[0].ev.toFixed(2), evMin: +worst.ev.toFixed(2),
+        decimal: fx ? fx.decimal : null, entry: fx ? fx.entry : null, entries: fw ? fw.entries : null,
+        n: srcs.length, spreadPts: +((Math.max(...srcs.map(s => s.side)) - worst.side) * 100).toFixed(1),
+        sources: srcs.map(({ book: b, line: l, p, ev }) => ({ book: b, line: l, p, at: p, ev: +ev.toFixed(2) })) });
+    }
+  }
+  return out.sort((a, b) => b.evMin - a.evMin);
+}
+
 // ── BOOK CONSENSUS ──
 // Where no sharp book prices a leg (college football and NHL props, mostly),
 // every sportsbook we read that posts the same stat at the app's own number:
@@ -608,4 +676,4 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
 }
 
 module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
-  SHARP_BOOKS, CONSENSUS, BOOK_FAIR, BOOK_CONSENSUS, bookConsensusAt, bookConsensusPlays, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };
+  THREE_SHARP, threeSharpAt, threeSharpClose, threeSharpPlays, SHARP_BOOKS, CONSENSUS, BOOK_FAIR, BOOK_CONSENSUS, bookConsensusAt, bookConsensusPlays, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

@@ -36,9 +36,20 @@
 
 const URL = 'https://api.gemini.com/v1/prediction-markets/events';
 const TAKER_RATE = 0.07;
-// Gemini's sport → its leagues (ticker prefix) → the free-books sport key
-const SPORTS = ['american_football', 'basketball', 'hockey', 'baseball'];
-const LEAGUES = { NFL: 'nfl', NCAAF: 'ncaaf', NBA: 'nba', WNBA: 'wnba', NHL: 'nhl', MLB: 'mlb' };
+// What we ask Gemini for, one query each (10-24: soccer's lines are
+// regulation-time contracts, a fight is one moneyline event with a contract per
+// fighter and no participants). Gemini's ticker prefix → the free-books sport.
+const QUERIES = [
+  { sports: ['american_football', 'basketball', 'hockey', 'baseball'], types: ['moneyline', 'spread', 'total'], scope: 'full_contest' },
+  { sports: ['soccer'], types: ['moneyline', 'spread', 'total'], scope: 'regulation' },
+  { sports: ['mixed_martial_arts'], types: ['moneyline'], scope: 'full_contest' },
+];
+const SPORTS = [...new Set(QUERIES.flatMap(q => q.sports))];
+const LEAGUES = { NFL: 'nfl', NCAAF: 'ncaaf', NBA: 'nba', WNBA: 'wnba', NHL: 'nhl', MLB: 'mlb', NCAAB: 'ncaab', CBB: 'ncaab',
+  EPL: 'epl', LALIGA: 'laliga', BUNDESLIGA: 'bundesliga', SERIEA: 'seriea', LIGUE1: 'ligue1', MLS: 'mls', LIGAMX: 'ligamx', UCL: 'ucl', UEL: 'uel',
+  EREDIVISIE: 'eredivisie', UFC: 'ufc' };
+// soccer: the result is three-way and every line is regulation time
+const SOCCER = new Set(['epl', 'laliga', 'bundesliga', 'seriea', 'ligue1', 'mls', 'ligamx', 'ucl', 'uel', 'eredivisie']);
 
 const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x : null; };
 const num = x => { const n = Number(x); return Number.isFinite(n) ? n : null; };
@@ -52,8 +63,8 @@ function american(cost) {
 // a buyable side: a price between 2c and 98c
 const side = p => { const x = num(p); return x != null && x >= 0.02 && x <= 0.98 ? x : null; };
 
-function eventUrl({ sports = SPORTS, types = ['moneyline', 'spread', 'total'], limit = 500, offset = 0 } = {}) {
-  const q = ['status=active', ...sports.map(s => `sport=${s}`), ...types.map(t => `sports_market_type=${t}`), 'sports_market_scope=full_contest', `limit=${limit}`, `offset=${offset}`];
+function eventUrl({ sports = QUERIES[0].sports, types = QUERIES[0].types, scope = 'full_contest', limit = 500, offset = 0 } = {}) {
+  const q = ['status=active', ...sports.map(s => `sport=${s}`), ...types.map(t => `sports_market_type=${t}`), `sports_market_scope=${scope}`, `limit=${limit}`, `offset=${offset}`];
   return `${URL}?${q.join('&')}`;
 }
 
@@ -69,10 +80,15 @@ function sideOf(short, ev) {
   if (t) { if (t[1].trim().toLowerCase() === s) return 'away'; if (t[2].trim().toLowerCase() === s) return 'home'; }
   return null;
 }
+// "UFC-VOL-EVL-20261024": a fight, its kind the whole event
+const FIGHT_RE = /^\d{8}$/;
+// soccer's kinds carry the regulation prefix: REGS spread, REGT total
+const KIND = { M: 'M', S: 'S', T: 'T', REGS: 'S', REGT: 'T' };
 
 // payload(s) of /events → { nfl: [book games], … }. Events are deduped by id,
 // nested ones (a moneyline event carries its spread and total) included.
-function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE } = {}) {
+// Unknown league prefixes are counted in skipped (what to add next).
+function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE, skipped = null } = {}) {
   const evs = new Map();
   const add = e => { if (e && e.id != null && !evs.has(String(e.id))) evs.set(String(e.id), e); for (const x of e?.events || []) add(x); };
   for (const p of [].concat(payloads || [])) for (const e of p?.data || []) add(e);
@@ -80,22 +96,43 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE } = {}) {
   for (const e of evs.values()) {
     const parts = String(e.ticker || '').split('-');
     const sport = LEAGUES[parts[0]];
-    const kind = parts[parts.length - 1];
-    if (!sport || !['M', 'S', 'T'].includes(kind) || (e.status && e.status !== 'active')) continue;
-    if (e.sportsMarket?.scope?.type && e.sportsMarket.scope.type !== 'full_contest') continue;
+    const last = parts[parts.length - 1];
+    const fight = sport === 'ufc' && FIGHT_RE.test(last);
+    const kind = fight ? 'F' : KIND[last];
+    if (!sport) { if (skipped && e.category === 'Sports') skipped[parts[0]] = (skipped[parts[0]] || 0) + 1; continue; }
+    if (!kind || (e.status && e.status !== 'active')) continue;
+    if ((kind === 'S' || kind === 'T') && last.startsWith('REG') !== SOCCER.has(sport)) continue;
+    const scope = e.sportsMarket?.scope?.type;
+    if (scope && scope !== (SOCCER.has(sport) ? 'regulation' : 'full_contest')) continue;
     const start = ms(e.startTime);
     if (!(start > now)) continue;
-    const home = (e.participants || []).find(p => p.side === 'home')?.name, away = (e.participants || []).find(p => p.side === 'away')?.name;
+    const open = (e.contracts || []).filter(c => !c.marketState || c.marketState === 'open');
+    let home = (e.participants || []).find(p => p.side === 'home')?.name, away = (e.participants || []).find(p => p.side === 'away')?.name;
+    // a fight lists no participants: its two contracts name the fighters
+    if (fight && open.length === 2 && !home && !away) { away = String(open[0].label || '').trim(); home = String(open[1].label || '').trim(); }
     if (!home || !away) continue;
-    const key = e.gameId || parts.slice(0, -1).join('-');
+    const key = e.gameId || (fight ? e.ticker : parts.slice(0, -1).join('-'));
     if (!games.has(key)) games.set(key, { sport, g: { book: 'gemini', eventId: `gem-${key}`, home, away, start: new Date(start).toISOString(), h2h: [], spreads: [], totals: [], props: [], ladders: [], alts: [] } });
     const g = games.get(key).g;
-    const open = (e.contracts || []).filter(c => !c.marketState || c.marketState === 'open');
     const cost = p => { const x = side(p); return x == null ? null : american(costOf(x, rate)); };
-    if (kind === 'M') {
-      if (open.some(c => c.sportsSide === 'tie') || g.h2h.length) continue;   // three-way: not a two-way moneyline
-      const h = open.find(c => c.sportsSide === 'home'), a = open.find(c => c.sportsSide === 'away');
+    if (kind === 'F') {
+      if (g.h2h.length) continue;
+      // a draw or no contest settles both NO: only each fighter's YES is a bet on him
+      const a = cost(open[0].prices?.buy?.yes), h = cost(open[1].prices?.buy?.yes);
+      if (a == null || h == null) continue;
+      g.h2h.push({ name: home, price: h }, { name: away, price: a });
+    } else if (kind === 'M') {
+      if (g.h2h.length) continue;
+      const h = open.find(c => c.sportsSide === 'home'), a = open.find(c => c.sportsSide === 'away'), tie = open.find(c => c.sportsSide === 'tie');
       if (!h || !a) continue;
+      if (tie) {
+        // three-way (soccer): each outcome's YES; a NO there is two outcomes, not one
+        if (!SOCCER.has(sport)) continue;
+        const ph = cost(h.prices?.buy?.yes), pa = cost(a.prices?.buy?.yes), pd = cost(tie.prices?.buy?.yes);
+        if (ph == null || pa == null || pd == null) continue;
+        g.h2h.push({ name: home, price: ph }, { name: away, price: pa }, { name: 'Draw', price: pd });
+        continue;
+      }
       // home wins: home's YES or away's NO, whichever is cheaper
       const best = (...ps) => { const xs = ps.map(side).filter(x => x != null); return xs.length ? Math.min(...xs) : null; };
       const ph = best(h.prices?.buy?.yes, a.prices?.buy?.no), pa = best(a.prices?.buy?.yes, h.prices?.buy?.no);
@@ -103,7 +140,7 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE } = {}) {
       g.h2h.push({ name: home, price: american(costOf(ph, rate)) }, { name: away, price: american(costOf(pa, rate)) });
     } else if (kind === 'S') {
       for (const c of open) {
-        const m = /^(.+?)\s+wins by more than\s+([\d.]+)/i.exec(String(c.label || ''));
+        const m = /^(?:reg(?:ulation)? time:\s*)?(.+?)\s+wins by more than\s+([\d.]+)/i.exec(String(c.label || ''));
         const x = num(c.strike?.value) ?? (m ? num(m[2]) : null);
         const who = m ? sideOf(m[1], e) : null;
         const yes = cost(c.prices?.buy?.yes), no = cost(c.prices?.buy?.no);
@@ -124,7 +161,7 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE } = {}) {
       }
     }
   }
-  const out = Object.fromEntries(Object.values(LEAGUES).map(s => [s, []]));
+  const out = Object.fromEntries([...new Set(Object.values(LEAGUES))].map(s => [s, []]));
   for (const { sport, g } of games.values()) if (g.h2h.length || g.spreads.length || g.totals.length) out[sport].push(g);
   return out;
 }
@@ -132,40 +169,48 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE } = {}) {
 // merged games (freebooks.mergeGames) + Pinnacle's games → the same games with
 // Gemini's spread and total rungs cut to Pinnacle's main number. The
 // moneyline stays. A Gemini bookmaker left with nothing is dropped.
-function mainLinesOnly(gamesBySport, pinGames) {
+function mainLinesOnly(gamesBySport, pinGames, books = ['gemini']) {
   const pin = new Map((pinGames || []).map(pg => [`pin-${pg.id}`, pg]));
   const out = {};
   for (const [s, games] of Object.entries(gamesBySport || {})) {
     out[s] = (games || []).map(g => {
-      const bm = (g.bookmakers || []).find(b => b.key === 'gemini');
-      const pg = pin.get(g.id);
-      if (!bm) return g;
-      const homePts = new Set((pg?.spreads || []).filter(x => !x.alt).map(x => x.home));
-      const lines = new Set((pg?.totals || []).filter(x => !x.alt).map(x => x.line));
-      const markets = bm.markets.map(m => {
-        if (m.key === 'spreads') return { ...m, outcomes: m.outcomes.filter(o => homePts.has(o.name === g.home_team ? o.point : -o.point)) };
-        if (m.key === 'totals') return { ...m, outcomes: m.outcomes.filter(o => lines.has(o.point)) };
-        return m;
-      }).filter(m => m.outcomes.length);
-      const rest = g.bookmakers.filter(b => b !== bm);
-      return { ...g, bookmakers: markets.length ? [...rest, { ...bm, markets }] : rest };
+      for (const key of books) g = cutBook(g, key);
+      return g;
     });
   }
   return out;
+  // a book's spread and total rungs at Pinnacle's main number only; the moneyline stays
+  function cutBook(g, key) {
+    const bm = (g.bookmakers || []).find(b => b.key === key);
+    const pg = pin.get(g.id);
+    if (!bm) return g;
+    const homePts = new Set((pg?.spreads || []).filter(x => !x.alt).map(x => x.home));
+    const lines = new Set((pg?.totals || []).filter(x => !x.alt).map(x => x.line));
+    const markets = bm.markets.map(m => {
+      if (m.key === 'spreads') return { ...m, outcomes: m.outcomes.filter(o => homePts.has(o.name === g.home_team ? o.point : -o.point)) };
+      if (m.key === 'totals') return { ...m, outcomes: m.outcomes.filter(o => lines.has(o.point)) };
+      return m;
+    }).filter(m => m.outcomes.length);
+    const rest = g.bookmakers.filter(b => b !== bm);
+    return { ...g, bookmakers: markets.length ? [...rest, { ...bm, markets }] : rest };
+  }
 }
 
-// → { books: { nfl: [book games], … }, events, errors }
-async function fetchGemini(http, { now = Date.now(), pages = 4 } = {}) {
+// → { books: { nfl: [book games], … }, events, errors, skipped }
+async function fetchGemini(http, { now = Date.now(), pages = 4, queries = QUERIES } = {}) {
   const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
   const payloads = [], errors = [];
-  for (let i = 0; i < pages; i++) {
-    try {
-      const d = (await http.get(eventUrl({ offset: i * 500 }), { headers, timeout: 30000 }))?.data;
-      payloads.push(d);
-      if (!d?.data?.length || (d.pagination && (i + 1) * 500 >= d.pagination.total)) break;
-    } catch (e) { errors.push(`gemini: ${e.response?.status || e.message}`); break; }
+  for (const q of queries) {
+    for (let i = 0; i < pages; i++) {
+      try {
+        const d = (await http.get(eventUrl({ ...q, offset: i * 500 }), { headers, timeout: 30000 }))?.data;
+        payloads.push(d);
+        if (!d?.data?.length || (d.pagination && (i + 1) * 500 >= d.pagination.total)) break;
+      } catch (e) { errors.push(`gemini ${q.sports.join('+')}: ${e.response?.status || e.message}`); break; }
+    }
   }
-  return { books: parseGemini(payloads, { now }), events: payloads.reduce((n, p) => n + (p?.data?.length || 0), 0), errors };
+  const skipped = {};
+  return { books: parseGemini(payloads, { now, skipped }), events: payloads.reduce((n, p) => n + (p?.data?.length || 0), 0), errors, skipped };
 }
 
-module.exports = { URL, TAKER_RATE, SPORTS, LEAGUES, costOf, american, eventUrl, sideOf, parseGemini, mainLinesOnly, fetchGemini };
+module.exports = { URL, TAKER_RATE, QUERIES, SPORTS, LEAGUES, SOCCER, costOf, american, eventUrl, sideOf, parseGemini, mainLinesOnly, fetchGemini };

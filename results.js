@@ -121,7 +121,12 @@ const tailBet = r => ({
 // evtrack: CLV in percent, no win/loss
 // game: one per event (or player) and day, the unit a book's 50 counts in
 const day = t => String(t || '').slice(0, 10);
-const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null,
+// Main lines graded from an ESPN final carry their 1u result (evtrack
+// setResult); the exchanges a Texan trades are graded on Pinnacle's own close
+const PIN_GRADED = new Set(['gemini', 'polymarketus', 'kalshi']);
+const evClv = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.pinClv : b.clv);
+const evExec = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.execPinClv : b.execClv);
+const evBet = b => ({ profit: b.profit ?? null, staked: b.profit != null ? 1 : 0, clv: evClv(b) != null ? evClv(b) / 100 : null, exec: evExec(b) != null ? evExec(b) / 100 : null,
   sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, game: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`,
   labels: { sport: b.sport, book: b.book, market: b.market } });
 // sports pick'em props (sporttrack.js): CLV is the leg's EV at the close (the
@@ -131,7 +136,7 @@ const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK P
 // research rows and the stale-line legs (stalelines.js, their own record on
 // the +EV tab) never count toward the sports props headline or its plays
 // leads with records of their own (stale lines, the books' fair) stay out of the verdict
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus']);
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3']);
 const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';

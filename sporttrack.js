@@ -64,8 +64,27 @@ function legDecimal(book, mult, other = null) {
 // a stale-line leg keeps its own id, so the same leg flagged on the consensus
 // and as stale lands in both records
 const STALE = new Set(['stale', 'stale-single', 'p6-stale', 'p6-stale-single']);
+// Pinnacle's number at the flag: the row's pinX, else its "o24.5 55.3%" label
+function pinLineOf(stale) {
+  if (!stale) return null;
+  if (Number.isFinite(stale.pinX)) return stale.pinX;
+  const m = /^o(-?\d+(?:\.\d+)?)\b/.exec(stale.pinNow || stale.pinPost || '');
+  return m ? Number(m[1]) : null;
+}
+// At the lock: a stale leg's raw close. pinExact = Pinnacle sat on the app's
+// own number at the flag and at its last read inside the hour before the
+// start, so closePinEv is Pinnacle's own price, no curve. Else closePinEv is null.
+function pinClose(b, start) {
+  const fresh = b.closePinAt != null && start - Date.parse(b.closePinAt) <= CLOSE_FRESH_MS;
+  // a leg logged before signalPinLine existed reads it off its stale label
+  const atFlag = b.signalPinLine ?? pinLineOf(b.stale);
+  const pinExact = !!(fresh && atFlag === b.signalLine && b.closePinLine === b.signalLine && b.closePinFair != null);
+  return { closePinOk: fresh, pinExact, closePinEv: pinExact ? r2((b.closePinFair * b.signalDecimal - 1) * 100) : null };
+}
 // a book-consensus leg too: the same leg can be a sharp or book-fair play and a consensus one
-const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus']);
+// and a three-sharps one (sharp3): the same leg can sit in the consensus record too
+const THREE = new Set(['sharp3', 'p6-sharp3']);
+const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus', ...THREE]);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
@@ -105,7 +124,10 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   // updated: { prizepicks: iso, ... } when each book's lines were last read.
   // sharpAt(row, line) → P(over) on a sharp price (Pinnacle or Kalshi), or
   // null: a book-fair leg keeps it as a second close when one appears
-  async function record({ rows = [], flagged = [], fairAt, sharpAt = null, updated = {} } = {}) {
+  // pinAt(row) → Pinnacle's own number on a stale leg's subject now, { x, p: P(over) },
+  // or null: the raw close, kept beside the curve's (closePin*), so a stale
+  // leg counts as a sharp close only where Pinnacle sat on the app's number
+  async function record({ rows = [], flagged = [], fairAt, sharpAt = null, pinAt = null, updated = {} } = {}) {
     await loaded;
     const t = now();
     const writes = [];
@@ -125,8 +147,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: play.fair == null ? null : r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
-        ...(baseKind(kind) === 'sharp' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
-        ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
+        ...(baseKind(kind) === 'sharp3' ? { evMin: play.evMin ?? null } : {}),
+        ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null, signalPinLine: pinLineOf(play.stale) } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
       open.set(id, b);
@@ -165,6 +188,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
           if (fair !== b.closeFair) { b.closeFair = fair; dirty = true; }
           if (dirty || !(t - Date.parse(b.closeSeenAt || b.closeAt) < SEEN_SAVE_MS)) { b.closeSeenAt = new Date(t).toISOString(); dirty = true; }
         }
+        const pin = pinAt && STALE.has(b.kind) ? pinAt(row) : null;
+        if (pin) {
+          const pf = r4(b.signalSide === 'Over' ? pin.p : 1 - pin.p);
+          if (pin.x !== b.closePinLine || pf !== b.closePinFair) { b.closePinLine = pin.x; b.closePinFair = pf; dirty = true; }
+          if (dirty || !(t - Date.parse(b.closePinAt || 0) < SEEN_SAVE_MS)) { b.closePinAt = new Date(t).toISOString(); dirty = true; }
+        }
         const sOver = sharpAt && BOOK_FAIR.has(baseKind(b.kind)) ? sharpAt(row, b.signalLine) : null;
         if (sOver != null) {
           const sf = r4(b.signalSide === 'Over' ? sOver : 1 - sOver);
@@ -186,6 +215,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       b.closeEv = b.closeFair == null ? null : r2((b.closeFair * b.signalDecimal - 1) * 100);
       b.fairMove = b.closeFair == null || b.signalFair == null ? null : r2((b.closeFair - b.signalFair) * 100);
       // a sharp close counts only when it was read in the last hour before the start
+      if (STALE.has(b.kind)) Object.assign(b, pinClose(b, start));
       if (b.closeSharpFair != null) { b.closeSharpOk = start - Date.parse(b.closeSharpAt) <= CLOSE_FRESH_MS; b.closeSharpEv = r2((b.closeSharpFair * b.signalDecimal - 1) * 100); }
       b.gapOutcome = gapOutcome({ gapVs: b.gapVs, signalLine: b.signalLine, signalBook: b.signalBook, closeLines: b.closeLines });
       writes.push(put(b));
@@ -271,9 +301,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
-    // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js)
-    // and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
+    // the three-sharps legs and the book-fair legs are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -284,11 +314,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
       voided: (await store.all()).filter(b => b.status === 'void').length };
   }
-  async function list({ status, limit = 100 } = {}) {
+  async function list({ status, kind, before, limit = 100 } = {}) {
     await loaded;
-    return (await store.all()).filter(b => !status || b.status === status).sort((a, b) => Date.parse(b.signalAt) - Date.parse(a.signalAt)).slice(0, limit);
+    const cut = before ? Date.parse(before) : NaN;
+    return (await store.all()).filter(b => (!status || b.status === status) && (!kind || b.kind === kind) && (!Number.isFinite(cut) || Date.parse(b.signalAt) < cut)).sort((a, b) => Date.parse(b.signalAt) - Date.parse(a.signalAt)).slice(0, limit);
   }
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { THREE, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
