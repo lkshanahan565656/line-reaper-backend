@@ -10,8 +10,8 @@ const esModels = Object.fromEntries(models.models.map(c => [c.key, { verdict: c.
     const ctx = await b.newContext({ viewport: vp, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     await page.addInitScript(() => { try { localStorage.setItem('lr_pb_lbook', 'prizepicks'); localStorage.setItem('lr_es_view', 'record'); sessionStorage.setItem('lr_welcomed', '1'); } catch {} });
-    await page.route('**/api/esports/models*', r => r.fulfill({ json: models }));
-    await page.route('**/api/esports/auto-slips*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.stackNeeds = models.stacks; await r.fulfill({ json: j }); } catch (e) {} });
+    
+    await page.route('**/api/esports/auto-slips*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} if (!j.stackNeeds) j.stackNeeds = models.stacks; await r.fulfill({ json: j }); } catch (e) {} });
     await page.route('**/api/props/board*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.esModels = esModels; await r.fulfill({ json: j }); } catch (e) {} });
     await page.goto('http://127.0.0.1:8080/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(4000);
