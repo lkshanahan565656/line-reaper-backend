@@ -12,8 +12,8 @@ const H = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit
     try {
       const js = (await axios.get('https://pick6.draftkings.com' + u, { headers: H, responseType: 'text', transformResponse: x => x })).data;
       for (const m of js.matchAll(/["'(\/]\.?\/?([A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.js)/g)) queue.push('/assets/' + m[1]);
-      for (const m of js.matchAll(/.{0,160}(pickCategory|category=|PickCategory|filterKey).{0,160}/g)) out.push(`${u}: ${m[0]}`);
-      if (/pickCategory|filterKey/.test(js)) fs.writeFileSync('out/js/' + u.split('/').pop(), js);
+      for (const m of js.matchAll(/.{0,200}(:categoryId|categoryId\/|\/category\/).{0,200}/g)) out.push(`${u}: ${m[0]}`);
+      if (/:categoryId/.test(js)) fs.writeFileSync('out/js/' + u.split('/').pop(), js);
     } catch (e) { out.push(`${u}: ERR ${e.message}`); }
   }
   fs.writeFileSync('out/report.txt', `files ${seen.size}\n` + out.join('\n'));
