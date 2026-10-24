@@ -1,0 +1,34 @@
+Sat Oct 24 17:08:42 UTC 2026
+17:08:43 record rows 195
+17:08:48 events sports 2026-09-24 markets 908 calls 12
+17:08:54 events sports 2026-09-25 markets 2062 calls 24
+17:09:05 events sports 2026-09-26 markets 4514 calls 45
+17:09:17 events sports 2026-09-27 markets 6772 calls 66
+17:09:24 events sports 2026-09-28 markets 7698 calls 78
+17:09:32 events sports 2026-09-29 markets 8864 calls 92
+17:09:36 events sports 2026-09-30 markets 9702 calls 104
+17:09:41 events sports 2026-10-01 markets 11233 calls 115
+17:09:47 events sports 2026-10-02 markets 13125 calls 128
+17:09:59 day capped sports 2026-10-03
+17:09:59 events sports 2026-10-03 markets 15989 calls 149
+17:10:11 events sports 2026-10-04 markets 18760 calls 167
+17:10:20 events sports 2026-10-05 markets 20120 calls 180
+17:10:25 events sports 2026-10-06 markets 21706 calls 192
+17:10:33 events sports 2026-10-07 markets 23074 calls 204
+17:10:37 events sports 2026-10-08 markets 24109 calls 214
+17:10:45 events sports 2026-10-09 markets 26246 calls 229
+17:10:56 day capped sports 2026-10-10
+17:10:56 events sports 2026-10-10 markets 29697 calls 250
+17:11:07 day capped sports 2026-10-11
+17:11:07 events sports 2026-10-11 markets 32613 calls 271
+17:11:17 events sports 2026-10-12 markets 34310 calls 286
+17:11:24 events sports 2026-10-13 markets 36280 calls 300
+17:11:32 events sports 2026-10-14 markets 38442 calls 315
+17:11:40 events sports 2026-10-15 markets 40518 calls 330
+17:11:47 events sports 2026-10-16 markets 42175 calls 344
+17:11:58 day capped sports 2026-10-17
+17:11:58 events sports 2026-10-17 markets 45244 calls 365
+17:12:09 day capped sports 2026-10-18
+17:12:09 events sports 2026-10-18 markets 48090 calls 386
+17:12:16 events sports 2026-10-19 markets 49703 calls 400
+17:12:23 events sports 2026-10-20 markets 51450 calls 415
