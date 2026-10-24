@@ -7101,6 +7101,7 @@ schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => {
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
+app.get('/api/diag/combo', (req, res) => { const { rows } = propsBoardRows(); const out = []; for (const r of rows) { if (r.esports || !sportProps.isCombo(r.mkey)) continue; out.push({ key: r.key, sport: r.sport, player: r.player, mkey: r.mkey, startTime: r.startTime, matchTitle: r.matchTitle, books: Object.fromEntries(Object.entries(r.books).map(([b, c]) => [b, { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen }])), quotes: comboQuotes(r), parts: pinParts(r), combo: r.combo || null }); } res.json({ at: new Date().toISOString(), counts: freeBooksState.counts, rows: out, p6: pick6.status() }); });
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.92.0 on port ${PORT}`);
