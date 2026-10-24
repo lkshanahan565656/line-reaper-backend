@@ -6,13 +6,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
       - run: |
           set +e
-          python3 fetch.py > fetch.txt 2>&1
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/snap
-          date -u > out/at.txt; cp fetch.txt out/
-          curl -s -m 400 "$B/api/status" > out/snap/status.json
-          cd out && git init -q && git checkout -q -b diag-3sharp-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-3sharp-out2
+          mkdir -p out
+          for i in $(seq 1 30); do v=$(curl -s -m 60 "$B/api/status" | jq -r .version); echo "$(date -u +%H:%M) $v" >> out/versions.txt; [ "$v" = "3.149.0" ] && break; sleep 60; done
+          curl -s -m 300 "$B/api/props/board?sport=SPORTS&limit=1" | jq '.counts' > out/counts.json
+          curl -s -m 300 "$B/api/props/record" | jq '.byKind | {sharp3, "p6-sharp3"}' > out/kinds.json
+          curl -s -m 300 "$B/api/props/board?sport=SPORTS&sharp3=1&limit=50" | jq '[.rows[] | {player, market, sport, threeSharp}]' > out/s3rows.json
+          cd out && git init -q && git checkout -q -b diag-3sharp-live && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-3sharp-live
