@@ -1,0 +1,22 @@
+16:45:44 pm series cs2 10310
+16:45:45 pm sample {"id":"1244707","ticker":"cs2-wal2-66661-2026-10-24","slug":"cs2-wal2-66661-2026-10-24","title":"Counter-Strike: Walczaki vs ex-6666 (BO3) - CCT Europe Series #12 Group Stage","description":"This market refers to the Counter-Strike Round 3 match between Walczaki and ex-6666 in the CCT Europe Series #12 Group Stage, initially scheduled for October 24, 2026 at 4:00 AM ET.\n\nThis market will resolve to \"Walczaki\" if Walczaki win the match against ex-6666.\n\nThis market will resolve to \"ex-6666\" if ex-6666 win the match against Walczaki.\n\nIf the match is canceled (not played at all) or ends in a tie, this market will resolve to 50-50.\n\nIf the match is postponed, it must be rescheduled to a start time on or before November 7, 2026 at 11:59 PM ET (14 calendar days after the originally scheduled start of October 24, 2026 at 4:00 AM ET). If, by that deadline, the most recently announced rescheduled start time is on or before the deadline, this market resolves based on the result of the match as played. Otherwise, this market resolves 50-50, regardless of whether the match is subsequently played.\n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://hltv.org. However, if https://hltv.org has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.\n\nIn cases where a team’s listed name includes minor discrepancies from the resolution source, this market will resolve based on the underlying real-world match rather than exact name matching. Recognizable abbreviations, alternate or erroneous spellings, sponsor tags, affiliate or academy designations, regional identifiers, and minor formatting differences will be treated as referring to the same team, provided the intended team can be clearly and uniquely identified within the relevant competition. If a listed team name has no reasonable connection to any participating team, or if it matches or could reasonably refer to another team in the same competition such that the intended team cannot be unambiguously determined, this market will resolve 50-5
+16:46:01 4xx 422 /events?series_id=10310&closed=true&limit=100&offset=2100&order=startDate&ascending=false {"type":"validation error","error":"offset too large, use /events/keyset for deeper pagination"}
+
+16:46:01 pm events cs2 2100
+16:46:01 pm hist sample Counter-Strike: Sökerorg vs WBT Academy - Map 1 Winner 3 44 [[10,0.66],[11,0.66],[12,0.66],[13,0.66],[15,0.66]]
+16:47:36 pm cs2 300 / 2100 calls 2829 errs 1
+16:47:36 saved pm-cs2 300
+16:49:03 pm cs2 600 / 2100 calls 5372 errs 1
+16:49:04 saved pm-cs2 600
+16:50:25 pm cs2 900 / 2100 calls 7733 errs 1
+16:50:25 saved pm-cs2 900
+16:51:44 pm cs2 1200 / 2100 calls 9985 errs 1
+16:51:45 saved pm-cs2 1200
+16:53:22 pm cs2 1500 / 2100 calls 12874 errs 1
+16:53:24 saved pm-cs2 1500
+16:54:59 pm cs2 1800 / 2100 calls 15720 errs 1
+16:55:01 saved pm-cs2 1800
+16:56:34 pm cs2 2100 / 2100 calls 18447 errs 1
+16:56:35 saved pm-cs2 2100
+16:56:37 saved pm-cs2 2100
+16:56:37 done pm:cs2 calls 18447 errs 1 min 10.9
