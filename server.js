@@ -3879,7 +3879,10 @@ const FRESH_BACKTEST = {
   firstBet: { games: 147, won: 91, expected: 82.4, units: 20.5, roi: 0.139, t: 1.78 },
   otherFresh: { games: 271, won: 154, expected: 154.9, units: -8.9, roi: -0.033, t: -0.62 },
   oldWallets: { games: 2912, won: 1733, expected: 1753.3, units: -52.4, roi: -0.018, t: -1.41 },
-  note: 'Following fresh wallets as a whole broke even. First-bet wallets (first trade within a day, one market) were up in every third of the month, but t 1.8 is not proof: judged at 50 graded games of its own.',
+  // 10-24 out-of-sample test, pre-registered before the pull (Apr 1 to Sep 23,
+  // 385,758 pregame $1k+ buys on 196,010 markets): the first-bet rule lost.
+  firstBetOos: { window: '2026-04-01 to 2026-09-23', games: 760, won: 433.7, expected: 434.6, units: -12.2, roi: -0.016, t: -0.49, verdict: 'killed' },
+  note: 'Following fresh wallets as a whole broke even. First-bet wallets looked ahead on Sep 24 to Oct 24 (147 games, +20.5u), but six months they were not fitted on (Apr to Sep, 760 games) went -12.2u, t -0.5: no edge. The FIRST BET record keeps counting as a check, not a bet.',
 };
 // Fresh-wallet webhook pings: off until the radar's record is proven (FRESH_ALERTS=on)
 const FRESH_ALERTS = /^(on|1|true|yes)$/i.test(String(process.env.FRESH_ALERTS || '').trim());
@@ -4624,7 +4627,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.153.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.153.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6942,7 +6945,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.153.0',
+  version: '3.153.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

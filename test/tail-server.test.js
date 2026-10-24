@@ -538,7 +538,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.153.0');
+  assert.equal(body.version, '3.153.1');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -565,8 +565,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.153.0');
-  assert.equal((await get('/')).body.version, '3.153.0');
+  assert.equal(require('../package.json').version, '3.153.1');
+  assert.equal((await get('/')).body.version, '3.153.1');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1151,6 +1151,9 @@ test('fresh wallets: a new wallet\'s whale buy is tagged, logged at 1u in its ow
   hasNoIdentity(free.body, W8, 'New-Deer');
   assert.equal((await get('/api/whales?fresh=1')).body.events.some(x => x.fresh), false, 'the filter is Pro only');
   assert.equal(free.body.freshRecord.open, 1);
+  // the out-of-sample test killed the first-bet lead; the API says so
+  assert.equal(free.body.freshRecord.backtest.firstBetOos.verdict, 'killed');
+  assert.ok(free.body.freshRecord.backtest.firstBetOos.units < 0);
 
   // settled: graded like any tail
   fx.markets = [texasMarket({ closed: true, prices: ['1', '0'], bestAsk: null, bestBid: null })];
