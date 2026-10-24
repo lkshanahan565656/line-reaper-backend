@@ -1,0 +1,101 @@
+16:47:48 pm series cs2 10310
+16:47:48 pm sample {"id":"222277","ticker":"cs2-skele-mf-2026-02-22","slug":"cs2-skele-mf-2026-02-22","title":"Counter-Strike: Skele vs Mindfreak (BO3) - ESL Challenger League Oceania Cup 1 Playoffs","description":"This market refers to the Counter-Strike match between Skele and Mindfreak in the ESL Challenger League Oceania Cup 1 Playoffs, scheduled for February 22 at 5:00AM ET.\n\nThis market will resolve to \"Skele\" if Skele win the match against Mindfreak.\n\nThis market will resolve to \"Mindfreak\" if Mindfreak win the match against Skele.\n\nIf the match is canceled (not played at all), ends in a tie, or is delayed beyond 7 days from the scheduled date without a winner determined, this market will resolve to 50-50. \n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://hltv.org. However, if https://hltv.org has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.","resolutionSource":"https://www.twitch.tv/dutchboycasts","startDate":"2026-02-22T00:17:52.11534Z","creationDate":"2026-02-22T00:17:52.115333Z","endDate":"2026-0
+16:47:49 pm week 2026-02-22 281
+16:47:50 pm week 2026-03-01 585
+16:47:52 pm week 2026-03-08 866
+16:47:53 pm week 2026-03-15 1143
+16:47:56 pm week 2026-03-22 1464
+16:47:58 pm week 2026-03-29 1918
+16:48:00 pm week 2026-04-05 2156
+16:48:01 pm week 2026-04-12 2329
+16:48:03 pm week 2026-04-19 2574
+16:48:05 pm week 2026-04-26 2888
+16:48:07 pm week 2026-05-03 3133
+16:48:08 pm week 2026-05-10 3382
+16:48:09 pm week 2026-05-17 3639
+16:48:11 pm week 2026-05-24 3875
+16:48:12 pm week 2026-05-31 4067
+16:48:13 pm week 2026-06-07 4254
+16:48:14 pm week 2026-06-14 4385
+16:48:16 pm week 2026-06-21 4508
+16:48:18 pm week 2026-06-28 4636
+16:48:19 pm week 2026-07-05 4760
+16:48:20 pm week 2026-07-12 4943
+16:48:21 pm week 2026-07-19 5142
+16:48:22 pm week 2026-07-26 5373
+16:48:24 pm week 2026-08-02 5693
+16:48:26 pm week 2026-08-09 5965
+16:48:28 pm week 2026-08-16 6239
+16:48:30 pm week 2026-08-23 6684
+16:48:32 pm week 2026-08-30 7004
+16:48:35 pm week 2026-09-06 7453
+16:48:39 pm week 2026-09-13 7694
+16:48:42 pm week 2026-09-20 8097
+16:48:43 pm week 2026-09-27 8386
+16:48:46 pm week 2026-10-04 8755
+16:48:47 pm week 2026-10-11 9051
+16:48:49 pm week 2026-10-18 9332
+16:48:49 pm events cs2 9332
+16:48:50 pm hist sample Counter-Strike: AaB esport vs 33 (BO3) - A1 Gaming League Playoffs 0 165 [[10,0.2],[11,0.245],[12,0.245],[13,0.245],[14,0.265]]
+16:50:19 pm cs2 300 / 9332 calls 3166 errs 0
+16:50:19 saved pm-cs2 300
+16:51:40 pm cs2 600 / 9332 calls 5943 errs 0
+16:51:40 saved pm-cs2 600
+16:53:01 pm cs2 900 / 9332 calls 8723 errs 0
+16:53:01 saved pm-cs2 900
+16:54:21 pm cs2 1200 / 9332 calls 11467 errs 0
+16:54:21 saved pm-cs2 1200
+16:55:46 pm cs2 1500 / 9332 calls 14410 errs 0
+16:55:46 saved pm-cs2 1500
+16:57:17 pm cs2 1800 / 9332 calls 17556 errs 0
+16:57:18 saved pm-cs2 1800
+16:58:29 pm cs2 2100 / 9332 calls 20008 errs 0
+16:58:29 saved pm-cs2 2100
+16:59:53 pm cs2 2400 / 9332 calls 22711 errs 0
+16:59:53 saved pm-cs2 2400
+17:01:16 pm cs2 2700 / 9332 calls 25481 errs 0
+17:01:17 saved pm-cs2 2700
+17:02:37 pm cs2 3000 / 9332 calls 28209 errs 0
+17:02:38 saved pm-cs2 3000
+17:03:52 pm cs2 3300 / 9332 calls 30733 errs 0
+17:03:53 saved pm-cs2 3300
+17:05:32 pm cs2 3600 / 9332 calls 33924 errs 0
+17:05:33 saved pm-cs2 3600
+17:06:56 pm cs2 3900 / 9332 calls 36679 errs 0
+17:06:57 saved pm-cs2 3900
+17:08:30 pm cs2 4200 / 9332 calls 39674 errs 0
+17:08:32 saved pm-cs2 4200
+17:09:57 pm cs2 4500 / 9332 calls 42623 errs 0
+17:09:59 saved pm-cs2 4500
+17:11:24 pm cs2 4800 / 9332 calls 45404 errs 0
+17:11:26 saved pm-cs2 4800
+17:12:46 pm cs2 5100 / 9332 calls 48133 errs 0
+17:12:48 saved pm-cs2 5100
+17:14:07 pm cs2 5400 / 9332 calls 50850 errs 0
+17:14:09 saved pm-cs2 5400
+17:15:17 pm cs2 5700 / 9332 calls 53191 errs 0
+17:15:19 saved pm-cs2 5700
+17:16:34 pm cs2 6000 / 9332 calls 55705 errs 0
+17:16:36 saved pm-cs2 6000
+17:17:45 pm cs2 6300 / 9332 calls 58021 errs 0
+17:17:48 saved pm-cs2 6300
+17:19:09 pm cs2 6600 / 9332 calls 60769 errs 0
+17:19:12 saved pm-cs2 6600
+17:20:34 pm cs2 6900 / 9332 calls 63516 errs 0
+17:20:37 saved pm-cs2 6900
+17:21:56 pm cs2 7200 / 9332 calls 66166 errs 0
+17:21:59 saved pm-cs2 7200
+17:23:28 pm cs2 7500 / 9332 calls 69100 errs 0
+17:23:31 saved pm-cs2 7500
+17:25:00 pm cs2 7800 / 9332 calls 71937 errs 0
+17:25:04 saved pm-cs2 7800
+17:26:19 pm cs2 8100 / 9332 calls 74247 errs 0
+17:26:22 saved pm-cs2 8100
+17:27:43 pm cs2 8400 / 9332 calls 76745 errs 0
+17:27:47 saved pm-cs2 8400
+17:28:57 pm cs2 8700 / 9332 calls 79082 errs 0
+17:29:01 saved pm-cs2 8700
+17:30:28 pm cs2 9000 / 9332 calls 81939 errs 0
+17:30:32 saved pm-cs2 9000
+17:31:00 saved pm-cs2 9087
+17:31:00 done pm:cs2 calls 82690 errs 0 min 43.2
