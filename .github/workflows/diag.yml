@@ -1,0 +1,36 @@
+name: diag-pairs
+on: { push: { branches: [diag-pairs] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - NFL 2023-09-07 2024-02-11
+          - NFL 2024-09-05 2025-02-09
+          - NFL 2025-09-04 2026-02-08
+          - NFL 2026-09-01 2026-10-24
+          - CFB 2024-08-24 2025-01-20
+          - CFB 2025-08-23 2026-01-19
+          - CFB 2026-08-22 2026-10-24
+          - NBA 2023-10-24 2024-06-17
+          - NBA 2024-10-22 2025-06-22
+          - NBA 2025-10-21 2026-06-20
+          - NBA 2026-10-15 2026-10-24
+          - NHL 2023-10-10 2024-06-24
+          - NHL 2024-10-04 2025-06-17
+          - NHL 2025-10-07 2026-06-20
+          - NHL 2026-10-01 2026-10-24
+          - MLB 2024-03-20 2024-10-30
+          - MLB 2025-03-18 2025-11-02
+          - MLB 2026-03-25 2026-10-24
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -- ${{ matrix.job }}
+          python3 fetch.py $1 $2 $3 > log.txt 2>&1 || true
+          tail -5 log.txt; cp log.txt out/log-$1-${2:0:4}.txt
+          cd out && git init -q && git checkout -q -b diag-pairs-out-$1-${2:0:4} && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-pairs-out-$1-${2:0:4}
