@@ -1,0 +1,119 @@
++ npm ci --silent
++ mkdir -p out
++ PORT=8080
++ node server.js
+++ seq 1 40
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=1 stacks=62'
+t=1 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 1 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=2 stacks=62'
+t=2 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 2 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=3 stacks=62'
+t=3 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 3 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=4 stacks=62'
+t=4 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 4 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=5 stacks=62'
+t=5 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 5 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=6 stacks=62'
+t=6 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 6 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=7 stacks=62'
+t=7 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 7 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=8 stacks=62'
+t=8 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 8 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=9 stacks=62'
+t=9 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 9 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=10 stacks=62'
+t=10 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 10 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=11 stacks=62'
+t=11 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 11 -ge 12 ']'
++ for i in $(seq 1 40)
++ sleep 30
++ curl -s localhost:8080/api/props/corr
+++ node -e 'try{const d=require('\''./out/corr.json'\'');console.log((d.stacks||[]).length)}catch(e){console.log(0)}'
++ n=62
++ echo 't=12 stacks=62'
+t=12 stacks=62
++ '[' 62 -gt 3 ']'
++ '[' 12 -ge 12 ']'
++ break
++ curl -s 'localhost:8080/api/props/board?sport=SPORTS&limit=50'
++ curl -s localhost:8080/api/status
++ curl -s localhost:8080/api/props/record
++ sleep 200
++ curl -s localhost:8080/api/props/corr
