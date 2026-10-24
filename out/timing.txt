@@ -1,0 +1,11 @@
+{"version":"3.156.0","oddsScreen":{"series":475,"points":475,"observedAt":"2026-10-24T22:47:05.996Z","errors":[]}}
+{"counts":{"games":125,"sides":475,"priced":475,"plusEv":22,"lowHold":11},"venues":["pinnacle","matchbook","polymarketus","gemini","fanduel","betrivers","draftkings","betmgm","bet365","caesars","hardrock","fanatics","thescore"],"first":"pin-1637753294"}
+{"tx":{"games":125,"sides":415,"priced":415,"plusEv":5,"lowHold":0}}
+{"series":6,"pts":6}
+0
+landing pikkit hits above
+4
+calc pickem above
+/calc.js 200 0.061442s
+/app 200 0.111259s
+/api/odds-screen 200 0.161321s
