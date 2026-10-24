@@ -128,7 +128,8 @@ const evClv = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.pinClv 
 const evExec = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.execPinClv : b.execClv);
 const evBet = b => ({ profit: b.profit ?? null, staked: b.profit != null ? 1 : 0, clv: evClv(b) != null ? evClv(b) / 100 : null, exec: evExec(b) != null ? evExec(b) / 100 : null,
   sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, game: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`,
-  labels: { sport: b.sport, book: b.book, market: b.market } });
+  line: !PIN_GRADED.has(b.book) && (b.outcome === 'win' || b.outcome === 'loss') && b.closeFair != null && b.decimal != null ? { win: b.outcome === 'win', p: b.closeFair / 100, d: b.decimal } : null,
+  labels: { sport: b.sport, book: b.book, market: b.market, kind: b.player ? 'player prop' : 'main line' } });
 // sports pick'em props (sporttrack.js): CLV is the leg's EV at the close (the
 // fair at the start times what the leg pays); the +2 min grade counts only legs
 // still up at the same line and payout two minutes after the flag
@@ -143,6 +144,7 @@ const sportPropBet = r => {
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
   return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
     game: `${r.sport}|${r.player}|${r.mkey}|${day(r.start || r.startTime)}`,
+    line: graded && r.closeFair != null && r.signalDecimal != null ? { win: r.outcome === 'win', p: r.closeFair, d: r.signalDecimal } : null,
     labels: { kind: SPORT_KIND[r.kind] || 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
 };
 const pickBet = r => ({
@@ -175,7 +177,7 @@ const SOURCES = {
   exchangeValue: { label: 'Exchange value', done: b => b.status === 'closed',
     bet: b => { const x = evBet(b); x.labels.signal = b.source === 'mover' ? 'line mover' : b.source === 'steam' ? 'steam' : b.source === 'kalshiref' ? 'Kalshi price' : 'price gap'; return x; },
     cuts: [['signal'], ['sport'], ['book'], ['market'], ['sport', 'book'], ['signal', 'sport']] },
-  ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market']] },
+  ev: { label: '+EV screener', done: b => b.status === 'closed', bet: evBet, cuts: [['sport'], ['book'], ['market'], ['book', 'kind']] },
   // a filled bid-then-hedge is graded on its lock at once (1u); unfilled and cancelled ones aren't bets
   bidArbs: { label: 'Bid, then hedge', done: r => r.status === 'filled' && r.lock != null, open: r => r.status === 'open',
     bet: r => ({ profit: r.lock / 100, staked: 1, clv: null, labels: { venue: r.maker?.venue === 'kalshi' ? 'bid on Kalshi' : 'bid on Polymarket US', market: r.kind } }),
@@ -207,16 +209,35 @@ const RELAYED_BOOKS = new Set(['draftkings', 'betmgm', 'caesars', 'bet365', 'fan
 const judgedN = s => (s.sizedN >= EXEC_MIN_N ? s.sizedN : s.execN >= EXEC_MIN_N ? s.execN : (s.clvN ?? s.graded ?? s.n));
 // games (one per event or player stat and day) among the bets that carry a CLV
 const gamesOf = bets => new Set(bets.filter(b => b.clv != null && Number.isFinite(b.clv)).map(b => b.game ?? b)).size;
-// a sportsbook play keeps 'proven' only as one book's own 50+ games, read at the book itself
-function bookGuard(source, by, s, { bets = null, book = null } = {}) {
-  if (!BOOK_SOURCES.has(source) || s.verdict === 'avoid') return s;
-  const ownBook = !!by && by.split('+').includes('book');
+// What may read 'proven' (the strict rule, closeboard.js): one kind on one book
+// read direct, 50+ games, CLV t of 2+ and positive, results not 1.5 sd under the
+// close. Pooled cuts, killed kinds and negative-CLV cuts stop at promising.
+// The sales page and the app show this label (10-24: 7 failing plays read proven).
+const KILLED_SOURCES = { fresh: 'Fresh-wallet following was killed out of sample 10-24 (no edge)' };
+function cap(s, why, extra = {}) {
+  return { ...s, verdict: s.verdict === 'proven' ? 'promising' : s.verdict, provenNote: why, ...extra };
+}
+function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
+  if (s.verdict === 'avoid') return s;
+  if (s.verdict === 'proven' && KILLED_SOURCES[source]) return cap(s, KILLED_SOURCES[source]);
+  if (s.verdict === 'proven' && s.avgClv != null && s.avgClv <= 0) return cap(s, `not proven: closes ${(s.avgClv * 100).toFixed(1)}% CLV, the price did not beat the close`);
+  if (!BOOK_SOURCES.has(source)) return s;
+  const cuts = by ? by.split('+') : [];
+  const book = vals && cuts.includes('book') ? vals[cuts.indexOf('book')] : null;
+  const kind = vals && cuts.includes('kind') ? vals[cuts.indexOf('kind')] : null;
+  const ownBook = cuts.length === 2 && book != null && kind != null;
   const games = bets ? Math.min(judgedN(s), gamesOf(bets)) : judgedN(s);
   const relayed = ownBook && RELAYED_BOOKS.has(book);
-  if (s.verdict === 'proven' && ownBook && !relayed && games >= PROVEN_BOOK_N) return s;
-  const verdict = s.verdict === 'proven' ? 'promising' : s.verdict;
+  const short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false, n: 0 };
   const clv = s.avgClv != null ? `, ${s.avgClv > 0 ? '+' : ''}${(s.avgClv * 100).toFixed(1)}% CLV` : '';
-  return { ...s, verdict, games, provenNote: `not proven yet: ${games} graded${clv}${relayed ? ', price copied via Action Network, never checked at the book' : ''}` };
+  const strictClv = (s.clvN ?? 0) >= PROVEN_N && (s.clvT ?? -Infinity) >= 2 && s.avgClv > 0;
+  if (ownBook && !relayed && games >= PROVEN_BOOK_N && strictClv && !short.short && !(source === 'ev' && kind !== 'main line')) return s;
+  const why = short.short ? short.note
+    : !ownBook ? `not proven yet: ${games} graded${clv}`
+    : source === 'ev' && kind !== 'main line' ? `not proven: ${kind} lines are not the proven kind, ${games} graded${clv}`
+    : !strictClv ? `not proven yet: ${games} graded${clv}, CLV t ${s.clvT ?? 'n/a'}`
+    : `not proven yet: ${games} graded${clv}${relayed ? ', price copied via Action Network, never checked at the book' : ''}`;
+  return cap(s, why, { games });
 }
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
@@ -242,8 +263,7 @@ function scoreboard(lists, { sinceMs = 0, minN = 3 } = {}) {
       }
       for (const [k, list] of g) {
         if (list.length < minN) continue;
-        const book = cut.length === 1 && cut[0] === 'book' ? k : null;
-        plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...bookGuard(name, cut.join('+'), score(list), { bets: list, book }) });
+        plays.push({ source: name, label: def.label, play: k, by: cut.join('+'), ...bookGuard(name, cut.join('+'), score(list), { bets: list, vals: cut.map(k2 => list[0].labels[k2]) }) });
       }
     }
   }
