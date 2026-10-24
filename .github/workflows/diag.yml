@@ -9,11 +9,11 @@ jobs:
       - run: |
           B=https://line-reaper-backend-production.up.railway.app
           mkdir out
-          for i in $(seq 1 90); do v=$(curl -s $B/ | grep -o '"version":"[^"]*"'); echo "$v"; echo "$v" | grep -q 3\. && break; sleep 20; done
+          for i in $(seq 1 90); do v=$(curl -s $B/ | grep -o '"version":"[^"]*"'); echo "$v"; echo "$v" | grep -q 3.150.1 && break; sleep 20; done
           sleep 1
           for i in 1 2 3 4 5 6; do curl -s $B/api/esports/models > out/models.json; grep -q '"models"' out/models.json && break; sleep 60; done
           curl -s "$B/api/props/board?book=prizepicks&priced=1&facets=1&limit=5" | head -c 200000 > out/board.json
           curl -s $B/api/esports/auto-slips > out/slips.json
-          curl -s -D out/headers.txt $B/ > out/root.json
+          curl -s -D out/headers.txt $B/ > out/root.json; curl -s $B/ | grep -c "If repriced" > out/html-has.txt || true; curl -s $B/app | grep -c "esRepriced" >> out/html-has.txt || true
           cd out && git init -q && git checkout -q -b diag-esmodels-live-out && git add . && git -c user.name=diag -c user.email=diag@x commit -qm out
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-esmodels-live-out
