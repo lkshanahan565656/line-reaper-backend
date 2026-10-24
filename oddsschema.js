@@ -50,11 +50,9 @@ const PROVIDERS = {
 const SECOND_HAND_NOTE = "Read second-hand from Action Network: it can be minutes old, so it is never a play on its own.";
 for (const p of Object.values(PROVIDERS)) if (p.access === 'second_hand') p.note = SECOND_HAND_NOTE;
 const TX_OK = venues.legalIn('TX');
-function provider(id) {
-  const p = PROVIDERS[id];
-  if (!p) return null;
-  return { id, ...p, texas: TX_OK(id) };
-}
+// the registry is fixed, so each provider's view is built once (frozen: callers share it)
+const PROVIDER_VIEW = new Map(Object.entries(PROVIDERS).map(([id, p]) => [id, Object.freeze({ id, ...p, texas: TX_OK(id) })]));
+const provider = id => PROVIDER_VIEW.get(id) || null;
 const providerList = () => Object.keys(PROVIDERS).map(provider);
 
 // ── odds formats ──
@@ -143,7 +141,7 @@ function makeQuote(f) {
   q.commission = q.commission || (p ? { ...p.fee } : null);
   q.marketStatus = q.marketStatus || 'open';
   q.available = q.available == null ? q.marketStatus === 'open' : !!q.available;
-  q.provenance = { access: p?.access || 'unknown', feed: p?.feed || null, ...(f.provenance || {}) };
+  q.provenance = f.provenance ? { access: p?.access || 'unknown', feed: p?.feed || null, ...f.provenance } : { access: p?.access || 'unknown', feed: p?.feed || null };
   q.oneWay = !!f.oneWay;
   return q;
 }

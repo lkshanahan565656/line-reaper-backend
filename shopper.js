@@ -28,11 +28,13 @@ const ms = t => { const x = Date.parse(t || ''); return Number.isFinite(x) ? x :
 const r4 = engine.r4, r2 = engine.r2;
 const SIDE_ORDER = { moneyline: ['home', 'draw', 'away'], spread: ['home', 'away'], total: ['over', 'under'], player_prop: ['over', 'under'] };
 
+const nameKeys = new Map();
+const canonPlayer = n => { let v = nameKeys.get(n); if (v === undefined) { if (nameKeys.size > 50000) nameKeys.clear(); v = canonName(n); nameKeys.set(n, v); } return v; };
 function groupOf(q) {
   if (q.marketType === 'moneyline') return { key: q.marketId || `${q.eventId}|ml`, line: null };
   if (q.marketType === 'spread') { const homeLine = q.side === 'home' ? q.line : -q.line; return { key: `${q.eventId}|spread|${homeLine}`, line: homeLine }; }
   if (q.marketType === 'total') return { key: `${q.eventId}|total|${q.line}`, line: q.line };
-  if (q.marketType === 'player_prop') return { key: `${q.eventId}|prop|${q.marketName}|${canonName(q.player)}|${q.line}`, line: q.line };
+  if (q.marketType === 'player_prop') return { key: `${q.eventId}|prop|${q.marketName}|${canonPlayer(q.player)}|${q.line}`, line: q.line };
   return null;
 }
 function median(xs) {

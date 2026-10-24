@@ -32,6 +32,8 @@ function sideOfName(name, g) {
 }
 function fromFreeGames(gamesByLeague = {}, { readAt = null, sportOf = lg => lg } = {}) {
   const quotes = [];
+  const mk = new Map();
+  const canonM = k => { let v = mk.get(k); if (v === undefined) { v = canonMarket(k); mk.set(k, v); } return v; };
   const seen = {};
   for (const [league, games] of Object.entries(gamesByLeague || {})) {
     for (const g of games || []) {
@@ -71,7 +73,7 @@ function fromFreeGames(gamesByLeague = {}, { readAt = null, sportOf = lg => lg }
               const pt = num(o.point);
               if (pt == null) continue;
               const side = o.name.toLowerCase();
-              push({ price: o.price, q: { marketType: 'player_prop', marketName: canonMarket(m.key), player: o.description,
+              push({ price: o.price, q: { marketType: 'player_prop', marketName: canonM(m.key), player: o.description,
                 selectionName: `${o.description} ${side === 'over' ? 'Over' : 'Under'} ${pt}`, side, line: pt, period: 'full_game' } });
             }
           }

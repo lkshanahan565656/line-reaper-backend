@@ -6147,17 +6147,40 @@ function shopReadAt() {
   return { default: at, pinnacle: at, fanduel: at, betrivers: at, matchbook: xb, draftkings: xb, betmgm: xb, caesars: xb, bet365: xb, fanatics: xb, hardrock: xb, thescore: xb,
     gemini: geminiState.at ? iso(geminiState.at) : at, polymarketus: pmusBooksState.at ? iso(pmusBooksState.at) : at, kalshi: xarbState.rows?.at ? iso(xarbState.rows.at) : null };
 }
+const shopKey = () => `${Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? freeBooksState.gamesAt : ''}|${xarbState.rows?.at || 0}`;
+// After each free-books read (the 40-second chain): the quotes are rebuilt one
+// league at a time with a yield between, so no request waits on a long block.
+async function prebuildShopQuotes() {
+  const key = shopKey();
+  if (shopState.key === key || !freeBooksState.gamesAt) return;
+  const t0 = Date.now();
+  const readAt = shopReadAt();
+  const fresh = !key.startsWith('|');
+  const out = { quotes: [], stats: {} };
+  try {
+    for (const [lg, games] of fresh ? Object.entries(freeBooksState.games || {}) : []) {
+      const r = oddsProviders.fromFreeGames({ [lg]: games }, { readAt });
+      for (const q of r.quotes) out.quotes.push(q);
+      for (const [k, v] of Object.entries(r.stats)) { const a = out.stats[k] || (out.stats[k] = { events: 0, quotes: 0 }); a.events += v.events; a.quotes += v.quotes; }
+      await new Promise(r2 => setImmediate(r2));
+    }
+  } catch (e) { console.warn('Shopper free books:', e.message); out.error = e.message; }
+  let kal = { quotes: [], stats: {} };
+  try { if (fresh && xarbState.rows?.at) kal = oddsProviders.fromKalshiBets(bigGames().bets, { readAt: readAt.kalshi }); }
+  catch (e) { console.warn('Shopper Kalshi:', e.message); kal = { quotes: [], stats: {}, error: e.message }; }
+  Object.assign(shopState, { key, free: out, kalshi: kal, builtAt: new Date().toISOString(), ms: Date.now() - t0, views: new Map() });
+}
 function shopQuotes() {
-  const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
-  const key = `${fresh ? freeBooksState.gamesAt : ''}|${xarbState.rows?.at || 0}`;
-  if (shopState.key !== key) {
+  const key = shopKey();
+  const fresh = !key.startsWith('|');
+  if (shopState.key !== key && !(shopState.key && Date.now() - Date.parse(shopState.builtAt || 0) < 90e3)) {
     const t0 = Date.now();
     const readAt = shopReadAt();
     try { shopState.free = fresh ? oddsProviders.fromFreeGames(freeBooksState.games, { readAt }) : { quotes: [], stats: {} }; }
     catch (e) { console.warn('Shopper free books:', e.message); shopState.free = { quotes: [], stats: {}, error: e.message }; }
     try { shopState.kalshi = fresh && xarbState.rows?.at ? oddsProviders.fromKalshiBets(bigGames().bets, { readAt: readAt.kalshi }) : { quotes: [], stats: {} }; }
     catch (e) { console.warn('Shopper Kalshi:', e.message); shopState.kalshi = { quotes: [], stats: {}, error: e.message }; }
-    Object.assign(shopState, { key, builtAt: new Date().toISOString(), ms: Date.now() - t0 });
+    Object.assign(shopState, { key, builtAt: new Date().toISOString(), ms: Date.now() - t0, views: new Map() });
   }
   return shopState;
 }
@@ -6181,6 +6204,11 @@ app.get('/api/shopper', (req, res) => {
   const q = req.query;
   const st = shopQuotes();
   const lic = licenceOf(req);
+  const pro = hasPro(req);
+  // the same question within 30 s of the same read is answered from memory
+  const vkey = `${lic.kalshi ? 1 : 0}|${pro ? 1 : 0}|${Object.keys(q).sort().map(k => `${k}=${q[k]}`).join('&')}`;
+  const hit = st.views?.get(vkey);
+  if (hit && Date.now() - hit.at < 30e3) return res.type('json').send(hit.body);
   const quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
   const hours = shopNum(q.hours);
   const minEv = shopNum(q.minEv);
@@ -6191,10 +6219,11 @@ app.get('/api/shopper', (req, res) => {
     maxAgeSec: shopNum(q.maxAge) ?? undefined, pricedOnly: q.priced === '1', arbsOnly: q.arbs === '1', sort: q.sort || 'ev', stake: shopNum(q.stake) || 100,
     method: q.method, limit: parseInt(q.limit) || 200, proven: evBookProven,
   });
-  const pro = hasPro(req);
-  res.json({ ...(pro ? view : shopper.stripPro(view)), pro, builtAt: st.builtAt, buildMs: st.ms, providers: shopHealth(), formats: oddsSchema.FORMATS,
+  const body = JSON.stringify({ ...(pro ? view : shopper.stripPro(view)), pro, builtAt: st.builtAt, buildMs: st.ms, providers: shopHealth(), formats: oddsSchema.FORMATS,
     devigMethods: oddsEngine.DEVIG_METHODS, stateInfo: venues.stateInfo(q.state),
     note: 'Prices are what each feed showed at its last read. Nothing here is a proven edge unless its label says proven; check the price in the app before you bet.' });
+  if (st.views) { if (st.views.size > 40) st.views.clear(); st.views.set(vkey, { at: Date.now(), body }); }
+  res.type('json').send(body);
 });
 // provider health on its own (status, last read, errors, fee handling)
 app.get('/api/providers', (req, res) => res.json({ providers: shopHealth(), builtAt: shopQuotes().builtAt }));
@@ -7164,7 +7193,7 @@ schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => conso
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message))));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)

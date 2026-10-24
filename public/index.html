@@ -1342,7 +1342,6 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('odds',this)">ODDS SCREEN</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
-    <button class="tab" onclick="showTab('shopper',this)">SHOPPER</button>
     <button class="tab" onclick="showTab('big',this)">BIG MONEY</button>
     <button class="tab" onclick="showTab('gas',this)">GAS LOCKS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
@@ -1373,6 +1372,8 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair.
     <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. Pick "Texas" to see only venues you can use there. A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
+  <div class="sport-row" id="oddsModes"></div>
+  <div id="osView">
   <div class="pb-chips" id="osLeagues" style="margin:12px 0 8px"></div>
   <div class="os-ctrl">
     <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Betting from</span><select id="osState" onchange="osSet('state',this.value)"><option value="">Anywhere (every venue)</option><option value="TX">Texas</option></select></label>
@@ -1382,6 +1383,15 @@ body.no-help .clv-info { display:none; }
   </div>
   <div class="os-sum" id="osSum"></div>
   <div id="osContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every venue...</div></div></div>
+  </div>
+  <div id="shpView" style="display:none">
+    <div class="clv-info" style="margin:0 0 10px"><span style="color:#94a3b8;font-size:11px">Every number any venue hangs: alternate spreads and totals and player props too, not just the main line. The fair is Pinnacle's price with the margin out (Matchbook blended in beside it), else a labelled median of 4+ books. Ranked rows are leads, not a record: only a venue the tracker has proven says PROVEN. Prices are each feed's last read, so check the app before you bet.</span></div>
+    <div class="sport-row" id="shpModes"></div>
+    <div class="shp-bar" id="shpBar"></div>
+    <details class="shp-venues" id="shpVenues"><summary>VENUES</summary><div class="grid" id="shpVenueGrid"></div></details>
+    <div class="shp-health" id="shpHealth"></div>
+    <div id="shpContent"></div>
+  </div>
 </div>
 
 <!-- LINES PAGE -->
@@ -1498,18 +1508,6 @@ body.no-help .clv-info { display:none; }
     <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
   </div>
   <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
-</div>
-
-<div class="page" id="page-shopper">
-  <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">EXCHANGE SHOPPER</strong> — The same bet at every venue we read, on one row: Kalshi, Gemini and Polymarket US (fees already in the price), FanDuel and BetRivers read direct, Action Network's copies of the other US books, with Pinnacle and Matchbook as the sharp reference. Main lines, alternate numbers and player props.<br>
-    <span style="color:#94a3b8;font-size:11px">Fair = Pinnacle's price with the margin taken out (Matchbook blended in when it prices the same line). EV is what a bet at the best price returns at that fair. Rankings are leads, not a record: only a venue the tracker has proven says PROVEN. Prices are each feed's last read, so check the price in the app before you bet.</span>
-  </div>
-  <div class="sport-row" id="shpModes"></div>
-  <div class="shp-bar" id="shpBar"></div>
-  <details class="shp-venues" id="shpVenues"><summary>VENUES</summary><div class="grid" id="shpVenueGrid"></div></details>
-  <div class="shp-health" id="shpHealth"></div>
-  <div id="shpContent"></div>
 </div>
 
 <div class="page" id="page-big">
@@ -1876,10 +1874,9 @@ function showTab(name, el) {
   if (name === 'results') loadResults();
   if (name === 'gas') loadGas(); else clearTimeout(gasUi.timer);
   if (name === 'big') loadBig(); else clearTimeout(bigUi.timer);
-  if (name === 'shopper') shpLoad(); else clearTimeout(shpUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
-  if (name === 'odds') loadOdds(); else clearTimeout(osUi.timer);
+  if (name === 'odds') oddsModeShow(); else { clearTimeout(osUi.timer); if (window.shpUi) clearTimeout(shpUi.timer); }
   if (name === 'betlog') mybOpen();
   if (name === 'myslips') msOpen();
   if (name === 'clv') mybReady().then(renderCLV);
@@ -3189,7 +3186,7 @@ function shopSet(k, v) {
 function renderShop(games, query='') {
   const el = document.getElementById('shopContent');
   if (!games.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">This tab reads the paid Odds API, which is off. The <a href="#" onclick="event.preventDefault();showTab('shopper',[...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === &quot;showTab('shopper',this)&quot;))" style="color:var(--green)">SHOPPER</a> tab compares every venue we read for free.</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">This tab reads the paid Odds API, which is off. The <a href="#" onclick="event.preventDefault();shpUi.opts.mode='markets';shpSave();showTab('odds',[...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === &quot;showTab('odds',this)&quot;))" style="color:var(--green)">ODDS SCREEN</a> compares every venue we read for free, alternate lines and props included.</div></div>`;
     return;
   }
 
@@ -8127,10 +8124,25 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
-const shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'opps', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [] } };
+var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [] } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
+// a saved shopper view comes back when the odds screen is already open
+setTimeout(() => { if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') oddsModeShow(); }, 0);
 const shpSave = () => { try { localStorage.setItem('lr_shopper', JSON.stringify(shpUi.opts)); } catch {} };
-function shpSet(k, v, reload = true) { shpUi.opts[k] = v; shpSave(); if (reload) shpLoad(); else shpRender(); }
+function shpSet(k, v, reload = true) { shpUi.opts[k] = v; shpSave(); if (k === 'mode') return oddsModeShow(); if (reload) shpLoad(); else shpRender(); }
+// the odds screen's views: GAME LINES is oddsscreen.js; the rest are the shopper
+function oddsModeShow() {
+  const mode = window.shpUi ? shpUi.opts.mode : 'lines';
+  const lines = !mode || mode === 'lines';
+  const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
+  const bar = document.getElementById('oddsModes');
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS');
+  const ov = document.getElementById('osView'), sv = document.getElementById('shpView');
+  if (ov) ov.style.display = lines ? '' : 'none';
+  if (sv) sv.style.display = lines ? 'none' : '';
+  if (lines) { if (window.shpUi) clearTimeout(shpUi.timer); loadOdds(); }
+  else { clearTimeout(osUi.timer); shpLoad(); }
+}
 let shpTyping = null;
 function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
 function shpToggleVenue(id, on) {
@@ -8164,7 +8176,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
   shpRender();
-  if (document.getElementById('page-shopper')?.classList.contains('active')) shpUi.timer = setTimeout(shpLoad, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {
@@ -8193,9 +8205,7 @@ const SHP_FAIR = { pinnacle: 'Pinnacle no-vig', pinnacle_matchbook: 'Pinnacle + 
 function shpControls() {
   const o = shpUi.opts, d = shpUi.data;
   const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
-  document.getElementById('shpModes').innerHTML = [['opps', 'BEST PRICES ABOVE FAIR'], ['markets', 'ALL MARKETS'], ['arb', 'ARBS']].map(([k, l]) => chip(o.mode === k, l, `shpSet('mode','${k}')`)).join('')
-    + '<span class="tab-sep" style="margin:0 2px"></span>'
-    + chip(o.state === 'TX', 'Texas venues', `shpSet('state','TX')`) + chip(!o.state, 'All venues', `shpSet('state','')`)
+  document.getElementById('shpModes').innerHTML = chip(o.state === 'TX', 'Texas venues', `shpSet('state','TX')`) + chip(!o.state, 'All venues', `shpSet('state','')`)
     + '<span class="tab-sep" style="margin:0 2px"></span>'
     + [['', 'All'], ['moneyline', 'Moneyline'], ['spread', 'Spread'], ['total', 'Total'], ['player_prop', 'Props']].map(([k, l]) => chip(o.markets === k, l, `shpSet('markets','${k}')`)).join('');
   const sel = (k, opts, label) => `<label>${label}<select onchange="shpSet('${k}',this.value)">${opts.map(([v, l]) => `<option value="${escAttr(v)}"${String(o[k]) === String(v) ? ' selected' : ''}>${escAttr(l)}</option>`).join('')}</select></label>`;
