@@ -352,3 +352,19 @@ test('records from before fees and venues still settle at their entry', () => {
   assert.equal(settle(old, T.parseGammaMarket(gamma({ closed: true, outcomePrices: '["1","0"]' })), NOW), true);
   assert.equal(old.profit, r4(1.6 * (1 / 0.42 - 1)));
 });
+
+test('clustered fresh record: wallets on one side of a market are one bet', async () => {
+  const { createTailTracker: mk } = require('../tailtrack');
+  const rec = (id, o = {}) => ({ id, status: 'settled', result: 'win', units: 1, profit: 0.5, clv: 0.02, eventSlug: 'cs2-a-b', conditionId: '0xm', outcome: 'Falcons', recordedAt: new Date(NOW).toISOString(), ...o });
+  const rows = [rec('1'), rec('2'), rec('3'), rec('4', { outcome: 'BetBoom', result: 'loss', profit: -1, clv: -0.01 }), rec('5', { eventSlug: 'x', conditionId: '0xn', profit: 2 })];
+  const store = { init() {}, all: async () => rows, put: async () => {} };
+  const s = await mk({ store, now: () => NOW + 1000 }).summary({});
+  assert.equal(s.overall.n, 5);
+  assert.equal(s.clustered.n, 3);
+  assert.equal(s.clustered.wins, 2);
+  assert.equal(s.clustered.losses, 1);
+  assert.equal(s.clustered.units, 1.5);
+  assert.equal(s.clustered.mark, '3 of 50 graded');
+  const empty = await mk({ store: { init() {}, all: async () => [], put: async () => {} } }).summary({});
+  assert.equal(empty.clustered.mark, 'not graded yet');
+});

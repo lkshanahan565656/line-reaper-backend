@@ -6034,7 +6034,7 @@ function tailWhalesHTML() {
     d.state?.lastHour ? `<span>LAST HOUR ${d.state.lastHour.whales} · ${tailUsd(d.state.lastHour.usd)}</span>` : '',
     `<span>${tailUsd(d.minUsd || 5000)}+ PRINTS</span>`,
     d.state?.lastHour?.fresh ? `<span style="color:#fbbf24">${d.state.lastHour.fresh} FRESH WALLET${d.state.lastHour.fresh === 1 ? '' : 'S'} THIS HOUR</span>` : '',
-    d.freshRecord?.overall?.n ? `<span title="Every followable fresh-wallet buy logged as a flat 1u at the price a follower could get, graded when its market resolves">FRESH RADAR ${d.freshRecord.overall.wins}-${d.freshRecord.overall.losses} · ROI ${tailPct(d.freshRecord.overall.roi)}</span>` : '',
+    d.freshRecord?.clustered ? `<span title="Fresh-wallet buys, one bet per market and side (several wallets on the same side of a market count once), 1u each at the price a follower could get, graded when the market resolves. 50 graded bets is the bar.">FRESH RADAR ${d.freshRecord.clustered.n ? `${d.freshRecord.clustered.wins}-${d.freshRecord.clustered.losses} · ${d.freshRecord.clustered.units >= 0 ? '+' : ''}${d.freshRecord.clustered.units}u · ${d.freshRecord.clustered.n} of ${d.freshRecord.clustered.target} bets (${d.freshRecord.clustered.rows} buys)` : 'not graded yet'}</span>` : '',
   ]);
   const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');
