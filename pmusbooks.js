@@ -59,6 +59,9 @@ const longSide = m => (m.marketSides || []).find(s => s?.long === true || s?.lon
 const shortSide = m => (m.marketSides || []).find(s => s && (s.long === false || s.long === 'false'));
 const teamName = s => s?.team?.name || s?.description || null;
 
+// the market behind an outcome, so a size check can read its book
+// (GET /v1/markets/{slug}/book): long takes the offers, short the bids
+const refOf = (m, buy, rate) => (m?.slug ? { ref: { venue: 'polymarketus', id: m.slug, buy, rate } } : {});
 // one league event (or a /v1/events/slug payload) → a book game or null
 function gameOf(payload, { league = null, now = Date.now() } = {}) {
   const e = payload?.event || payload;
@@ -84,21 +87,22 @@ function gameOf(payload, { league = null, now = Date.now() } = {}) {
     const pl = priceOf(amount(winner.bestAskQuote), rate);
     const bid = unit(amount(winner.bestBidQuote));
     const ps = bid != null ? priceOf(1 - bid, rate) : null;
-    if (pl != null && ps != null) g.h2h.push({ name: lName, price: pl }, { name: sName, price: ps });
+    if (pl != null && ps != null) g.h2h.push({ name: lName, price: pl, ...refOf(winner, 'long', rate) }, { name: sName, price: ps, ...refOf(winner, 'short', rate) });
   } else if (result.length === 3) {
     // three YES/NO markets: each team to win, and the draw (a market without a team)
     const teams = (Array.isArray(e.teams) ? e.teams : []).filter(t => t?.name);
     const home = teams.find(t => norm(t.ordering) === 'home')?.name || teams[0]?.name, away = teams.find(t => norm(t.ordering) === 'away')?.name || teams[1]?.name;
     if (!home || !away || home === away) return null;
     g.home = home; g.away = away;
-    const out = {};
+    const out = {}, refs = {};
     for (const m of result) {
       const name = longSide(m)?.team?.name || null;
       const key = name === home ? 'home' : name === away ? 'away' : name == null ? 'draw' : null;
       if (!key || out[key] !== undefined) return null;
       out[key] = priceOf(amount(m.bestAskQuote), feeOf(m));
+      refs[key] = refOf(m, 'long', feeOf(m));
     }
-    if (out.home != null && out.away != null && out.draw != null) g.h2h.push({ name: home, price: out.home }, { name: away, price: out.away }, { name: 'Draw', price: out.draw });
+    if (out.home != null && out.away != null && out.draw != null) g.h2h.push({ name: home, price: out.home, ...refs.home }, { name: away, price: out.away, ...refs.away }, { name: 'Draw', price: out.draw, ...refs.draw });
   } else return null;
   // spreads and totals, where the payload carries them (the slug read)
   for (const m of markets) {
@@ -111,13 +115,13 @@ function gameOf(payload, { league = null, now = Date.now() } = {}) {
     if (line == null || pl == null || ps == null) continue;
     if (k[2] === 'total') {
       const x = Math.abs(line);
-      if (!g.totals.some(o => o.point === x)) g.totals.push({ name: 'Over', price: pl, point: x }, { name: 'Under', price: ps, point: x });
+      if (!g.totals.some(o => o.point === x)) g.totals.push({ name: 'Over', price: pl, point: x, ...refOf(m, 'long', rate) }, { name: 'Under', price: ps, point: x, ...refOf(m, 'short', rate) });
       continue;
     }
     const lName = teamName(longSide(m)), sName = teamName(shortSide(m));
     if (!lName || !sName) continue;
     // the line is signed from the long team's side ("cover −1.5")
-    if (!g.spreads.some(o => o.name === lName && o.point === line)) g.spreads.push({ name: lName, price: pl, point: line }, { name: sName, price: ps, point: -line });
+    if (!g.spreads.some(o => o.name === lName && o.point === line)) g.spreads.push({ name: lName, price: pl, point: line, ...refOf(m, 'long', rate) }, { name: sName, price: ps, point: -line, ...refOf(m, 'short', rate) });
   }
   return g.h2h.length || g.spreads.length || g.totals.length ? g : null;
 }
