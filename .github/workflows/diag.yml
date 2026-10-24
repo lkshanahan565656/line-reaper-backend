@@ -13,7 +13,7 @@ jobs:
       - run: |
           set +e
           U=https://line-reaper-backend-production.up.railway.app
-          for i in $(seq 1 60); do curl -sS -m 20 $U/api/status | grep -q "3.155.1" && break; sleep 30; done
+          for i in $(seq 1 60); do curl -sS -m 20 $U/api/status | grep -q "3.156.1" && break; sleep 30; done
           sleep 60
           {
             date -u
