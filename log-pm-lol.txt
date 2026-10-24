@@ -1,0 +1,22 @@
+16:45:43 pm series lol 10311
+16:45:44 pm sample {"id":"1214246","ticker":"lol-blg-mkoi-2026-10-23","slug":"lol-blg-mkoi-2026-10-23","title":"LoL: Bilibili Gaming vs Movistar KOI (BO1) - Worlds Group Stage","description":"This market refers to the LoL Round 1 match between Bilibili Gaming and Movistar KOI in the Worlds Group Stage, initially scheduled for October 23, 2026 at 8:00 PM ET.\n\nThis market will resolve to \"Bilibili Gaming\" if Bilibili Gaming win the match against Movistar KOI.\n\nThis market will resolve to \"Movistar KOI\" if Movistar KOI win the match against Bilibili Gaming.\n\nIf the match is canceled (not played at all) or ends in a tie, this market will resolve to 50-50.\n\nIf the match is postponed, it must be rescheduled to a start time on or before November 6, 2026 at 11:59 PM ET (14 calendar days after the originally scheduled start of October 23, 2026 at 8:00 PM ET). If, by that deadline, the most recently announced rescheduled start time is on or before the deadline, this market resolves based on the result of the match as played. Otherwise, this market resolves 50-50, regardless of whether the match is subsequently played.\n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://gol.gg/esports/home. However, if https://gol.gg/esports/home has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.\n\nIn cases where a team’s listed name includes minor discrepancies from the resolution source, this market will resolve based on the underlying real-world match rather than exact name matching. Recognizable abbreviations, alternate or erroneous spellings, sponsor tags, affiliate or academy designations, regional identifiers, and minor formatting differences will be treated as referring to the same team, provided the intended team can be clearly and uniquely identified within the relevant competition. If a listed team name has no reasonable connection to any participating team, or if it matches or could reasonably refer to another team in the same competition such that the intended team cannot be unambiguously determined, thi
+16:45:59 4xx 422 /events?series_id=10311&closed=true&limit=100&offset=2100&order=startDate&ascending=false {"type":"validation error","error":"offset too large, use /events/keyset for deeper pagination"}
+
+16:45:59 pm events lol 2100
+16:46:00 pm hist sample LoL: Team Secret Whales vs LYON (BO1) - Worlds Group Stage 259 154 [[10,0.395],[12,0.365],[13,0.365],[13,0.395],[14,0.205]]
+16:47:01 pm lol 300 / 2100 calls 2661 errs 1
+16:47:02 saved pm-lol 300
+16:48:43 pm lol 600 / 2100 calls 6964 errs 1
+16:48:44 saved pm-lol 600
+16:49:51 pm lol 900 / 2100 calls 9838 errs 1
+16:49:53 saved pm-lol 900
+16:50:41 pm lol 1200 / 2100 calls 11900 errs 1
+16:50:43 saved pm-lol 1200
+16:51:45 pm lol 1500 / 2100 calls 14574 errs 1
+16:51:47 saved pm-lol 1500
+16:53:03 pm lol 1800 / 2100 calls 18465 errs 1
+16:53:06 saved pm-lol 1800
+16:53:47 pm lol 2100 / 2100 calls 21387 errs 1
+16:53:50 saved pm-lol 2100
+16:53:54 saved pm-lol 2100
+16:53:54 done pm:lol calls 21387 errs 1 min 8.2
