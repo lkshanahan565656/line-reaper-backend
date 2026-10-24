@@ -1,0 +1,23 @@
+name: diag-esh2h-log
+on:
+  push:
+    branches: [diag-esh2h-log]
+permissions:
+  contents: write
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --omit=dev || npm install --omit=dev
+      - run: |
+          set +e
+          URL=$(git remote get-url origin); HDR=$(git config --get http.https://github.com/.extraheader)
+          pub() { rm -rf /tmp/pub; mkdir -p /tmp/pub/out; cp eslog.txt /tmp/pub/ 2>/dev/null; cp out/eslog.json.gz /tmp/pub/out/ 2>/dev/null; cd /tmp/pub; git init -q; git checkout -q -b diag-esh2h-log-out; git add -A; git -c user.name=diag-bot -c user.email=diag-bot@users.noreply.github.com commit -qm "log $1"; git -c http.https://github.com/.extraheader="$HDR" push -qf "$URL" diag-esh2h-log-out; cd - >/dev/null; }
+          ( LOG_MIN=325 node diag/eslog.js > eslog.txt 2>&1 ) &
+          P=$!
+          while kill -0 $P 2>/dev/null; do sleep 600; pub tick; done
+          pub final
