@@ -4575,7 +4575,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.155.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.156.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6089,6 +6089,48 @@ function bigGames() {
   bigState.gamesKey = key;
   return bigState.games;
 }
+// ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
+// Every venue we price on one row per side (oddsscreen.js): Pinnacle's no-vig
+// fair, the US exchanges, FanDuel and BetRivers, Matchbook, Action Network's
+// copies. ?league=nfl&state=TX&q=cowboys. Free: prices; Pro: fair and EV.
+// The line history behind each row's chart rides the results backup.
+const oddsScreen = require('./oddsscreen');
+const oddsHistory = oddsScreen.createHistory();
+let oddsHistoryBooted = false;
+const oddsHistoryStore = resultsBackup.wrap('oddsHistory', {
+  init: async () => {}, all: async () => (oddsHistoryBooted ? oddsHistory.dump() : []),
+  put: async d => { oddsHistory.load([d]); }, putMany: async ds => { oddsHistory.load(ds); },
+}, { appendOnly: false });
+oddsHistoryStore.init().catch(e => console.warn('Odds history: restore failed:', e.message)).finally(() => { oddsHistoryBooted = true; });
+const oddsScreenState = { at: 0, observedAt: null, errors: [] };
+function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } = {}) {
+  const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
+  let kalshi = null;
+  try { kalshi = kalshiOk ? bigGames().bets : null; } catch (e) { oddsScreenState.errors = [e.message]; }
+  const screen = oddsScreen.build(freeBooksState.games || {}, { kalshi, league, state, q });
+  return { ...screen, updated: freeBooksState.gamesAt || null, stale: !fresh };
+}
+function observeOddsHistory() {
+  if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
+  try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
+  catch (e) { oddsScreenState.errors = [e.message]; }
+}
+app.get('/api/odds-screen', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const league = /^[a-z0-9]+$/.test(String(req.query.league || '')) ? String(req.query.league) : null;
+  const state = venues.stateOf(req.query.state);
+  const screen = oddsScreenFor({ league, state, q: String(req.query.q || '').slice(0, 60), kalshiOk: !!lic.kalshi });
+  const body = { ...(pro ? screen : oddsScreen.stripPro(screen)), pro, state, stateInfo: state ? venues.stateInfo(state) : null };
+  res.json(regionSafe(body));
+});
+// one game's line history: every side's fair and venue prices over time
+app.get('/api/odds-screen/history/:id', (req, res) => {
+  const id = String(req.params.id || '').slice(0, 80);
+  const lic = licenceOf(req), pro = hasPro(req);
+  const series = oddsHistory.forGame(id).map(x => ({ ...x, pts: x.pts.map(([t, point, fair, px]) => [t, point, pro ? fair : null,
+    lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+  res.json({ id, series, pro });
+});
 // ─── BOOK ARBS AND MIDDLES ────────────────────────────────────────────────────
 // FanDuel's and BetRivers' main and alternate lines and player props against
 // each other and against Kalshi and Polymarket US (bookarbs.js). Each exchange
@@ -6934,7 +6976,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.155.1',
+  version: '3.156.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6945,6 +6987,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   kalshiExtra: kxExtraState,
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
+  oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
@@ -7054,7 +7097,7 @@ schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => conso
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)

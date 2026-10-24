@@ -165,3 +165,18 @@ test('CSV: export round-trips, formulas are defused, other trackers\' exports im
   assert.equal(r.skipped.length, 1); assert.equal(r.skipped[0].line, 5);
   assert.equal(B.fromCSV('only,a,header').bets.length, 0);
 });
+
+test('a MY SLIPS slip reads as a read-only bet with its close EV as CLV', () => {
+  const v = { id: 's1', app: 'prizepicks', placedAt: '2026-10-20T18:00:00Z', stake: 10, payout: 60, flex: false, result: 'win', closeEv: 0.2, table: { 3: 6 },
+    legs: [{ player: 'Josh Allen', side: 'Over', line: 245.5, sport: 'NFL' }, { player: 'Bo Nix', side: 'Under', line: 220.5, sport: 'NFL' }, { player: 'Diggs', side: 'Over', line: 60.5, sport: 'NFL' }] };
+  const b = B.fromSlip(v);
+  assert.equal(b.id, 'slip:s1'); assert.equal(b.tool, "Pick'em slip"); assert.equal(b.book, 'PrizePicks'); assert.equal(b.sport, 'NFL');
+  near(b.odds, 6); near(B.clv(b), 0.2, 1e-3); near(B.profit(b), 50);
+  assert.ok(b.pick.startsWith('3-pick: Josh Allen o245.5'));
+  // no payout typed: the table's; no stake: not a bet
+  near(B.fromSlip({ ...v, payout: null }).odds, 6);
+  assert.equal(B.fromSlip({ ...v, stake: null }), null);
+  assert.equal(B.fromSlip({ ...v, result: 'open' }).result, 'open');
+  const s = B.stats([b]);
+  near(s.profit, 50);
+});
