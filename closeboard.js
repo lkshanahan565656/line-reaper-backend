@@ -77,6 +77,10 @@ const KINDS = {
   // three or more sportsbooks at the app's own number, where nothing sharp prices it
   'props-book-consensus': "Pick'em vs 3+ books' consensus",
   'props-p6-book-consensus': "Pick6 vs 3+ books' consensus",
+  // Pinnacle and two of FanDuel, BetRivers and Kalshi at the app's own number,
+  // every one past break-even; the close is Pinnacle's own price there
+  'props-sharp3': "Pick'em vs three sharps (Pinnacle + 2)",
+  'props-p6-sharp3': 'Pick6 vs three sharps (Pinnacle + 2)',
   'bigmoney': 'Big money',
 };
 
