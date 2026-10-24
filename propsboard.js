@@ -45,7 +45,7 @@ const BASKETBALL_ALIASES = { 'double-double': 'double_double', 'double-doubles':
   'triple-double': 'triple_double', 'triple-doubles': 'triple_double', triple_doubles: 'triple_double', fg_made: 'fgm', fg_attempted: 'fga',
   fg_attempts: 'fga', '3-pt_attempted': 'threes_att', '3-pt_attempts': 'threes_att', '3-pointers_attempted': 'threes_att',
   free_throws_attempted: 'fta', ft_attempted: 'fta', offensive_rebounds: 'off_rebounds', defensive_rebounds: 'def_rebounds',
-  personal_fouls: 'fouls', fantasy_points: 'fantasy_score',
+  personal_fouls: 'fouls', fantasy_points: 'fantasy_score', '3-pointers': 'threes', '3-pointers_made': 'threes',
   // DraftKings Pick6 spells the combos out ("Points And Rebounds"); the other apps use "+"
   points_and_rebounds: 'pts_rebs', points_and_assists: 'pts_asts', rebounds_and_assists: 'rebs_asts', blocks_and_steals: 'stocks', 'blocks_+_steals': 'stocks',
   'points_+_rebounds_+_assists': 'pra', points_rebounds_assists: 'pra', points_and_rebounds_and_assists: 'pra',
