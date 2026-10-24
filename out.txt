@@ -1,0 +1,13 @@
+Sat Oct 24 20:58:01 UTC 2026
+20:58:01 todo 547
+20:58:37 4xx 404 /trade-api/v2/series/KXWCGAME/markets/KXWCGAME-26JUN25JPNSWE-SWE/candlesticks?start_ts=1782372755&end_ts=1782375455&period_interval=1 {"error":{"code":"not_found","message":"not found"}}
+20:59:36 done 200 empty 1 calls 871 errs 1
+20:59:54 4xx 404 /trade-api/v2/series/KXWT20MATCH/markets/KXWT20MATCH-26JUL221000WELSOU-SOU/candlesticks?start_ts=1784739600&end_ts=1784741460&period_interval=1 {"error":{"code":"not_found","message":"not found"}}
+21:00:41 4xx 404 /trade-api/v2/historical/markets/KXCS2GAME-26SEP170500M80NIP-NIP/candlesticks?start_ts=1789630614&end_ts=1789633314&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:01:17 done 400 empty 2 calls 1787 errs 3
+21:02:26 4xx 404 /trade-api/v2/historical/markets/KXITFMATCH-26OCT08MOURIC-RIC/candlesticks?start_ts=1791445113&end_ts=1791447813&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:29 4xx 404 /trade-api/v2/historical/markets/KXEBASKETBALLGAME-26OCT211650SHAQJASO-JASO/candlesticks?start_ts=1792586438&end_ts=1792589138&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:30 4xx 404 /trade-api/v2/historical/markets/KXEBASKETBALLGAME-26OCT211650SHAQJASO-JASO/candlesticks?start_ts=1792625400&end_ts=1792627260&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:32 4xx 404 /trade-api/v2/historical/markets/KXITFMATCH-26OCT08MOURIC-RIC/candlesticks?start_ts=1791445200&end_ts=1791447060&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:34 done 547 empty buy windows 4 calls 2449 errs 7
+Sat Oct 24 21:02:34 UTC 2026
