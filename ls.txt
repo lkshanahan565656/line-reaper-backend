@@ -1,0 +1,18 @@
+total 3296
+drwxr-xr-x 4 runner runner    4096 Oct 24 16:46 .
+drwxr-xr-x 3 runner runner    4096 Oct 24 16:44 ..
+-rw-r--r-- 1 runner runner      29 Oct 24 16:44 at.txt
+drwxr-xr-x 2 runner runner   36864 Oct 24 16:46 espn
+-rw-r--r-- 1 runner runner    5340 Oct 24 16:46 ev-stale.json
+drwxr-xr-x 2 runner runner    4096 Oct 24 16:44 hist
+-rw-r--r-- 1 runner runner   20233 Oct 24 16:46 keys-raw.txt
+-rw-r--r-- 1 runner runner       0 Oct 24 16:46 ls.txt
+-rw-r--r-- 1 runner runner 1220260 Oct 24 16:45 picks-graded.json
+-rw-r--r-- 1 runner runner  370679 Oct 24 16:46 picks-locked.json
+-rw-r--r-- 1 runner runner  970508 Oct 24 16:46 picks-open.json
+-rw-r--r-- 1 runner runner  633846 Oct 24 16:46 picks-void.json
+-rw-r--r-- 1 runner runner   31882 Oct 24 16:46 props-record.json
+-rw-r--r-- 1 runner runner   20554 Oct 24 16:45 scoreboard-tx.json
+-rw-r--r-- 1 runner runner   30625 Oct 24 16:45 status.json
+-rw-r--r-- 1 runner runner       0 Oct 24 16:44 version.json
+485
