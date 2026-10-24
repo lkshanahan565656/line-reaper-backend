@@ -3641,8 +3641,8 @@ function renderPropsRecord() {
   const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
   const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
   const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
-  const KN = { 'book-consensus': '3+ books\' consensus (lead, not sharp)', 'p6-book-consensus': 'DK Pick6 vs 3+ books', 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
-  const kinds = ['sharp', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-ev', 'p6-gap'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
+  const KN = { combo: 'Combos vs FanDuel/BetRivers + Pinnacle\'s parts (lead)', 'p6-combo': 'DK Pick6 combos vs the books', sharp3: 'Pinnacle + 2 sharps at the app\'s number (lead)', 'p6-sharp3': 'DK Pick6 vs Pinnacle + 2 sharps', 'book-consensus': '3+ books\' consensus (lead, not sharp)', 'p6-book-consensus': 'DK Pick6 vs 3+ books', 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
+  const kinds = ['sharp', 'sharp3', 'combo', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-sharp3', 'p6-combo', 'p6-ev', 'p6-gap'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
     ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;
@@ -3862,9 +3862,15 @@ function renderPropsBoard() {
     const am = v => (v > 0 ? `+${v}` : `${v}`);
     const proj = r.model?.h2h ? ` · proj ${r.model.proj} (matchup: ${r.model.h2h.share}% of ${r.model.h2h.teamKills} team kills a map${r.model.h2h.vs ? ` vs ${escAttr(r.model.h2h.vs)}` : ''}${r.model.pin ? `; Pinnacle ${r.model.pin.proj}` : ''})` : r.model?.share?.rounds ? ` · proj ${r.model.proj} (Pinnacle rounds × ${(+r.model.share.kpr).toFixed(2)} kills a round)` : r.model?.share ? ` · proj ${r.model.proj} (Pinnacle team kills × ${r.model.share.pct}% share)` : r.model?.proj != null ? ` · proj ${r.model.proj}` : r.consensus ? ` · ${pbBooksTxt(r.consensus.sources)}` : r.pinnacle ? (r.pinnacle.over != null ? ` · Pinnacle ${r.pinnacle.line} O ${am(r.pinnacle.over)} / U ${am(r.pinnacle.under)}` : ` · Pinnacle ${r.pinnacle.line}${r.pinnacle.rounds ? ` (${r.pinnacle.rounds} rounds)` : ''}: ${r.pinnacle.pOver}% over`) : '';
     const gap = b?.kind === 'sharp' ? `<span class="pb-gap lg">SHARP CONSENSUS</span>` : b?.kind === 'gap' ? `<span class="pb-gap lg">LINE GAP</span>` : r.gap > 0 && r.gapPriced ? `<span class="pb-gap dim" title="The lines differ, but the payouts put every book on the same median">GAP ${r.gap}, PAYOUTS EVEN IT</span>` : r.gap > 0 ? `<span class="pb-gap">GAP ${r.gap}</span>` : '';
+    // Pinnacle and two more sharps at this app's number, each past break-even: a lead, grey
+    const t3 = r.threeSharp && !r.threeSharp.locked ? r.threeSharp : null;
+    const s3 = t3 ? `<span class="pb-gap dim" title="${escAttr(`Pinnacle and two more sharps all post ${t3.line} and each, on its own price, puts ${pbSideWord(t3.book, t3.side)} past the app's break-even: ${t3.sources.map(x => `${x.book} ${x.p}% over`).join(', ')}. Its own record, judged at 50 graded; not a proven play.`)}">3 SHARPS ${PBN[t3.book] || t3.book} ${pbSideWord(t3.book, t3.side)} ${t3.line}</span>` : '';
+    // a combo every source (FanDuel, BetRivers, Pinnacle's parts) puts past break-even: a lead, grey
+    const cbx = r.combo && !r.combo.locked ? r.combo : null;
+    const cbs = cbx ? `<span class="pb-gap dim" title="${escAttr(`At ${cbx.line}, ${cbx.sources.map(x => `${x.book === 'pinnacle-parts' ? "Pinnacle's parts added up" : x.book} ${x.p}% over`).join(', ')}: each one, on its own price, puts ${pbSideWord(cbx.book, cbx.side)} past the app's break-even. Its own record, judged at 50 graded; not a proven play.`)}">COMBO ${PBN[cbx.book] || cbx.book} ${pbSideWord(cbx.book, cbx.side)} ${cbx.line}</span>` : '';
     const meta = [pbMatchup(r), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
-      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}</div><div class="pb-meta">${meta}${proj}</div></div>
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
       <div class="pb-play">${bestTxt}</div></div>`;
   }).join('');
@@ -6042,7 +6048,7 @@ function tailWhalesHTML() {
     d.state?.lastHour?.fresh ? `<span style="color:#fbbf24">${d.state.lastHour.fresh} FRESH WALLET${d.state.lastHour.fresh === 1 ? '' : 'S'} THIS HOUR</span>` : '',
     d.freshRecord?.clustered ? `<span title="Fresh-wallet buys, one bet per game (every buy on the same game counts once), 1u each at the price a follower could get, graded when the market resolves. CLV: the price paid vs Polymarket's last price before the start. 50 graded games is the bar; not proven.">FRESH RADAR ${freshLine(d.freshRecord.clustered)}</span>` : '',
     d.freshRecord?.texas ? `<span style="color:#93c5fd" title="The same games graded at the cheapest price you could get from Texas when the buy went out (Kalshi or Polymarket US). Buys with no Texas market are left out.">FROM TEXAS ${freshLine(d.freshRecord.texas)}</span>` : '',
-    d.freshRecord?.firstBet ? `<span style="color:#fbbf24" title="Wallets on their first bet: first trade within a day and this is their only market. The 30-day backtest's one fresh kind that was ahead (147 games, +20.5u, t 1.8), not proven: judged at 50 graded games of its own. Counted from v3.150.0.">FIRST BET ${freshLine(d.freshRecord.firstBet)}</span>` : '',
+    d.freshRecord?.firstBet ? `<span style="color:#fbbf24" title="Wallets on their first bet: first trade within a day and this is their only market. The 30-day backtest's one fresh kind that was ahead (147 games, +20.5u, t 1.8), not proven: judged at 50 graded games of its own. Counted from v3.153.0.">FIRST BET ${freshLine(d.freshRecord.firstBet)}</span>` : '',
   ]);
   const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');
@@ -7257,9 +7263,19 @@ function esStackNeedsHTML(list) {
     const base = `<b style="color:#e2e8f0">${app} ${s.size}-pick</b>: ${s.swept} of ${s.stacks} swept (${s.matches} matches; ${s.expectedSwept} expected with the legs moving together, ${s.independentSwept} if they didn't)`;
     if (!s.swept) return `${base}. No sweep yet, so no payout makes this record pay${s.flex ? '' : ''}.`;
     if (s.needsPays == null) return `${base}.`;
-    return `${base}. Pays if ${app} shows at least <b style="color:#e2e8f0">${s.needsPays}x</b> for all ${s.size}${s.needsPaysOneFewer ? ` (${s.needsPaysOneFewer}x with one sweep fewer)` : ''}; standard is ${s.standardPays}x.`;
+    const rep = s.standardPays && s.expectedSwept ? +(s.standardPays * s.independentSwept / s.expectedSwept).toFixed(1) : null;
+    return `${base}. Pays if ${app} shows at least <b style="color:#e2e8f0">${s.needsPays}x</b> for all ${s.size}${s.needsPaysOneFewer ? ` (${s.needsPaysOneFewer}x with one sweep fewer)` : ''}; standard is ${s.standardPays}x${rep ? `, and about ${rep}x if ${app} prices the legs moving together` : ''}.`;
   };
   return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">WHAT THE STACK RECORD NEEDS</b> · ${rows.map(line).join('<br>')}<br>Only ${rows.reduce((a, s) => a + s.swept, 0)} sweeps so far: a lead, not proven. The number that decides it is the payout the app shows for these picks together.</div>`;
+}
+// The payout if the app priced the legs moving together (Underdog's help
+// center says it does; PrizePicks says same-game picks "often" pay less but
+// shows the number only on a signed-in entry, behind its bot wall). Our own
+// correlation model gives it: standard x P(all, independent) / P(all, together).
+// At that payout a stack is worth only what its legs are worth one by one.
+function esRepriced(s) {
+  if (!s.paysAll || !s.probAll || s.probAllIndependent == null) return null;
+  return +(s.paysAll * s.probAllIndependent / s.probAll).toFixed(1);
 }
 // What a stack card's numbers assume, and what to check in the app before playing it
 function esStackNote(s) {
@@ -7269,7 +7285,7 @@ function esStackNote(s) {
   const how = s.book === 'PP'
     ? `add each pick, open the lineup, choose ${flex ? 'Flex Play' : 'Power Play'}, enter an amount and read the payout${flex ? ` for ${s.legs} of ${s.legs}` : ''}, then back out without submitting`
     : `build the entry in the app and read the payout${flex ? ` for ${s.legs} of ${s.legs}` : ''} before you submit`;
-  return `Every number here assumes ${escEs(s.bookName)} pays its standard ${std}. ${s.book === 'PP' ? 'PrizePicks says it lowers the payout for several players from one team or game' : 'The app may pay less for picks from one match'}, so ${how}. Play it only if it shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b>.`;
+  return `Every number here assumes ${escEs(s.bookName)} pays its standard ${std}. ${s.book === 'PP' ? 'PrizePicks says it lowers the payout for several players from one team or game' : 'The app may pay less for picks from one match'}, so ${how}. Play it only if it shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b>.${esRepriced(s) != null ? ` If the app prices these picks moving together, it would show about ${esRepriced(s)}x, ${esRepriced(s) >= s.breakEvenPays ? 'still enough, because the legs are +EV on their own' : 'not enough: the edge is only the part of that it leaves out'}.` : ''}`;
 }
 function esAsCard(s, i, d) {
     const stack = s.kind === 'stack';
@@ -7292,7 +7308,7 @@ function esAsCard(s, i, d) {
         <div class="es-as-stat">Hit all<b>${(s.probAll * 100).toFixed(1)}%</b></div>
         <div class="es-as-stat">${stack ? 'Standard pays' : 'Pays'}<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
         <div class="es-as-stat">Needs<b>${s.breakEvenPays ? s.breakEvenPays + 'x' : '—'}</b></div>
-        ${stack ? `<div class="es-as-stat">If independent<b>${s.probAllIndependent != null ? (s.probAllIndependent * 100).toFixed(1) + '%' : '—'}</b></div>`
+        ${stack ? `<div class="es-as-stat" title="What the app would pay if it priced these picks moving together, the way Underdog says it does: standard x ${s.probAllIndependent != null ? (s.probAllIndependent * 100).toFixed(1) : '—'}% if independent / ${(s.probAll * 100).toFixed(1)}% together">If repriced<b>${esRepriced(s) != null ? esRepriced(s) + 'x' : '—'}</b></div>`
           : `<div class="es-as-stat">¼ Kelly<b>${s.status === 'plus' && s.kelly > 0 ? (s.kelly * 25).toFixed(1) + '%' : '—'}</b></div>`}
         ${stack || s.book === 'P6' ? '' : `<button class="es-as-load" onclick="esLoadAutoSlip(${i})">LOAD SLIP</button>`}
       </div>

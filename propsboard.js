@@ -45,7 +45,7 @@ const BASKETBALL_ALIASES = { 'double-double': 'double_double', 'double-doubles':
   'triple-double': 'triple_double', 'triple-doubles': 'triple_double', triple_doubles: 'triple_double', fg_made: 'fgm', fg_attempted: 'fga',
   fg_attempts: 'fga', '3-pt_attempted': 'threes_att', '3-pt_attempts': 'threes_att', '3-pointers_attempted': 'threes_att',
   free_throws_attempted: 'fta', ft_attempted: 'fta', offensive_rebounds: 'off_rebounds', defensive_rebounds: 'def_rebounds',
-  personal_fouls: 'fouls', fantasy_points: 'fantasy_score',
+  personal_fouls: 'fouls', fantasy_points: 'fantasy_score', '3-pointers': 'threes', '3-pointers_made': 'threes',
   // DraftKings Pick6 spells the combos out ("Points And Rebounds"); the other apps use "+"
   points_and_rebounds: 'pts_rebs', points_and_assists: 'pts_asts', rebounds_and_assists: 'rebs_asts', blocks_and_steals: 'stocks', 'blocks_+_steals': 'stocks',
   'points_+_rebounds_+_assists': 'pra', points_rebounds_assists: 'pra', points_and_rebounds_and_assists: 'pra',
@@ -303,7 +303,7 @@ function evOf(row, book) {
   const v = book ? row.books[book]?.ev?.ev : row.best?.ev;
   return v == null ? -1e9 : v;
 }
-function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, market = '' } = {}) {
+function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, sharp3 = false, combo = false, market = '' } = {}) {
   const s = String(sport || '').toUpperCase();
   const needle = String(q || '').toLowerCase().trim();
   let out = rows;
@@ -315,6 +315,10 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
   if (priced) out = out.filter(r => (book ? r.books[book]?.ev : r.best));
   if (gaps) out = out.filter(r => r.best?.kind === 'gap' && (!book || r.best.book === book));
   if (sharp) out = out.filter(r => r.best?.kind === 'sharp' && (!book || r.best.book === book));
+  // Pinnacle and two more sharps at the app's own number, all past break-even
+  if (sharp3) out = out.filter(r => r.threeSharp && (!book || r.threeSharp.plays.some(p => p.book === book)));
+  // combos priced off FanDuel, BetRivers and Pinnacle's parts, every source past break-even
+  if (combo) out = out.filter(r => r.combo && (!book || r.combo.plays.some(p => p.book === book)));
   if (needle) out = out.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(needle));
   if (market) out = out.filter(r => r.market === market);
   return [...out].sort((SORTS[sort] || SORTS.ev)(book));
@@ -405,7 +409,7 @@ function coverage(rows) {
 function redactRow(r) {
   const books = {};
   for (const [k, c] of Object.entries(r.books)) books[k] = { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen };
-  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null };
+  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null, threeSharp: r.threeSharp ? { locked: true } : null, combo: r.combo ? { locked: true } : null };
 }
 
 module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };

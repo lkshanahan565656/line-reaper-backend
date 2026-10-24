@@ -21,6 +21,19 @@ const SPORTS_EVERY_MS = 3 * 3600e3;     // the sport list and payout table
 const STALE_MS = 45 * 60e3;             // a sport unread this long drops off the board
 const BACKOFF_MS = 5 * 60e3, BACKOFF_MAX_MS = 2 * 3600e3;
 const MAX_GROUPS = 8, GROUP_GAP_MS = 1200;
+// A board answer carries only its first stat tab (NBA: Points). The other tabs
+// (Rebounds, Assists, Pts+Rebs+Asts, Combos, 3-Pointers, ...) come from the
+// site's own resource route, one tab a read, for the first pick group (the
+// all-day slate holds every game's players). Tabs that aren't a stat line
+// (quick hits, the first 3 minutes, a player picker, favourites) are skipped.
+const MAX_CATEGORIES = 10, CATEGORY_GAP_MS = 1000;
+const SKIP_CATEGORY = /quick hits|1st \d+ min|picks by player|favorite|bag builder|playoff/i;
+// the tabs to read after the board: every stat tab but the one it came with
+function extraCategories(pc) {
+  const by = pc?.pickCategoryById || {};
+  const order = (pc?.orderedPickCategoryIds?.length ? pc.orderedPickCategoryIds : Object.keys(by).map(Number)).filter(id => id > 0);
+  return order.filter(id => id !== pc?.pickCategoryId && by[id] && !SKIP_CATEGORY.test(by[id].categoryName || '')).slice(0, MAX_CATEGORIES);
+}
 
 function retryAfterMs(headers) {
   const v = headers?.['retry-after'];
@@ -37,6 +50,13 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
     bySport: {},          // label → { lines, at, groups }
     fail: { limited: 0, until: 0 }, lastError: null, reads: 0, running: false,
     relay: { at: null, reads: 0, error: null },
+  };
+  // one stat tab of a pick group: plain JSON, the cards in the board's shape
+  const getCategory = async (groupId, categoryId) => {
+    const res = await axios.get(`${BASE}/resources/pickCardsByCategory/${groupId}/${categoryId}`, { headers: { ...HEADERS, Accept: 'application/json' }, timeout: 20000, maxContentLength: 20e6 });
+    st.reads++;
+    const d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+    return d?.pickCardByPickableId ? d : d?.pickCardsResponse || null;
   };
   const get = async (params) => {
     const res = await axios.get(`${BASE}/_root.data`, { params, headers: HEADERS, timeout: 20000, responseType: 'text', transformResponse: x => x, maxContentLength: 20e6 });
@@ -82,6 +102,14 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
       const groups = (first.pickGroups || []).map(g => g.pickGroupId).filter(Boolean);
       let lines = parsePick6Board(first, sport.label);
       const read = new Set([first.selectedPickGroup?.pickGroupId]);
+      // the first group's other stat tabs
+      const gid = first.selectedPickGroup?.pickGroupId;
+      let tabs = 0;
+      if (gid) for (const cid of extraCategories(first.pickCardsResponse)) {
+        await sleep(CATEGORY_GAP_MS);
+        const pc = await getCategory(gid, cid);
+        if (pc) { lines = lines.concat(parsePick6Board({ pickCardsResponse: pc }, sport.label)); tabs++; }
+      }
       for (const id of groups.slice(0, MAX_GROUPS)) {
         if (read.has(id)) continue;
         await sleep(GROUP_GAP_MS);
@@ -92,10 +120,10 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
       // a player in two pick groups (one game, and the all-day slate) once
       const seen = new Set();
       lines = lines.filter(l => { const k = `${l.player}|${l.market}|${l.line}|${l.startTime}`; if (seen.has(k)) return false; seen.add(k); return true; });
-      st.bySport[sport.label] = { lines, at: now(), groups: read.size };
+      st.bySport[sport.label] = { lines, at: now(), groups: read.size, tabs };
       st.fail = { limited: 0, until: 0 };
       st.lastError = null;
-      log.log?.(`Pick6 ${sport.label}: ${lines.length} lines from ${read.size} pick group${read.size === 1 ? '' : 's'}`);
+      log.log?.(`Pick6 ${sport.label}: ${lines.length} lines from ${read.size} pick group${read.size === 1 ? '' : 's'} and ${tabs} more stat tab${tabs === 1 ? '' : 's'}`);
     } catch (e) {
       const s = e.response?.status;
       st.lastError = { status: s ?? null, message: String(e.message).slice(0, 200), at: new Date(now()).toISOString() };
@@ -133,4 +161,4 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
   return { tick, readRelay, lines, readTimes, snapshot, status, state: st };
 }
 
-module.exports = { createPick6Reader, retryAfterMs };
+module.exports = { createPick6Reader, retryAfterMs, extraCategories };

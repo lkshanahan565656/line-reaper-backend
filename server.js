@@ -3264,6 +3264,9 @@ let evRecent = [];
 // minutes on. Refreshed every 5 minutes; empty until a book proves out. Until
 // 10-18 this counted raw lines per book, so Action Network's copies posted too.
 const EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
+// leads with their own record (Gemini, Polymarket US): never an alert, never
+// in Best Plays, whatever the board says, until a raw re-check backs them
+const EV_LEAD_BOOKS = new Set(['gemini', 'polymarketus']);
 let evBookProven = new Set();
 async function refreshEvProof() {
   evBookProven = closeBoard.alertBooks(await closeBoardFor(), { minExecClv: EV_PROVEN_CLV });
@@ -3276,12 +3279,13 @@ function runEvScreen(force = false) {
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
   const feeds = evFeeds().map(f => (/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f));
   const dfsLines = sportsPropLines();
-  const fairs = new Map(), costs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, weights: EV_WEIGHTS });
+  const fairs = new Map(), costs = new Map(), pinFairs = new Map();
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, pinFairs, weights: EV_WEIGHTS });
   const prev = evCache.at ? evCache.rows : null;
   const alt = runAltScreen(kmid);
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
-  evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
+  // Pinnacle's own price at each number rides along: the exchanges' rows close on it
+  evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     // DK Pick6 is a lead: on the board and in the record, never an alert
@@ -3291,7 +3295,7 @@ function runEvScreen(force = false) {
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
       // and only from a book (or pick'em app) the scoreboard marks proven (evBookProven)
-      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => evBookProven.has(r.book));
+      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => evBookProven.has(r.book) && !EV_LEAD_BOOKS.has(r.book));
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
@@ -4620,7 +4624,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.150.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.153.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5442,7 +5446,7 @@ function propsBoardRows() {
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
   observeStaleApps(rows);
-  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, combo: sportPlays.filter(x => x.kind === 'combo').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -5469,6 +5473,10 @@ function stalePinAt(row) {
 }
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
+  // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
+  if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
+  // a combo leg closes on the same books and Pinnacle's parts at its own number
+  if (kind === 'combo') return sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.p ?? null;
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a book-fair leg closes on the books' own fair at its line (and on
   // Pinnacle's or Kalshi's, sportSharpAt, when one appears before the start)
@@ -5531,6 +5539,31 @@ const bookFairPlays = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairPlays(r
 // consensus at the close, until about 50 graded legs say whether it is an edge.
 // BOOK_CONSENSUS=off turns it off.
 const BOOK_CONS_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_CONSENSUS || '').trim());
+// ── THREE SHARPS: Pinnacle and two of FanDuel, BetRivers and Kalshi at the app's own number ──
+// (sportprops.threeSharpPlays) every source on its own price past the app's
+// break-even; kind 'sharp3' (Pick6 'p6-sharp3'), its close Pinnacle's own
+// price at that number. A lead: grey on PROPS, never in Best Plays or alerts,
+// judged at 50 graded. THREE_SHARP=off turns it off.
+const THREE_SHARP_ON = !/^(off|0|false|no)$/i.test(String(process.env.THREE_SHARP || '').trim());
+const THREE_SHARP_OPTS = { ...sportProps.THREE_SHARP, ...(process.env.THREE_SHARP_MIN_EV != null ? { minEv: parseFloat(process.env.THREE_SHARP_MIN_EV) } : {}) };
+// ── COMBOS: points + rebounds and the rest off FanDuel, BetRivers and Pinnacle's parts ──
+// (sportprops.comboPlays) two or more sources at the app's own number, one a
+// book read direct, each past the app's break-even on its own price. Kind
+// 'combo' (Pick6 'p6-combo'), its close the same sources, each stored. A lead:
+// grey on PROPS, never in Best Plays or alerts, judged at 50 graded. COMBOS=off turns it off.
+const COMBO_ON = !/^(off|0|false|no)$/i.test(String(process.env.COMBOS || '').trim());
+const COMBO_OPTS = { ...sportProps.COMBO, ...(process.env.COMBO_MIN_EV != null ? { minEv: parseFloat(process.env.COMBO_MIN_EV) } : {}) };
+// Pinnacle's quotes for each part of a combo row, same game: { points: [...], rebounds: [...] }
+function pinParts(row) {
+  const want = sportProps.COMBO_PARTS[row?.mkey];
+  if (!want) return null;
+  const out = {};
+  for (const m of want) out[m] = pinprops.quotesForGame(pinPropsIndex, { ...row, key: String(row.key).replace(/\|[^|]*$/, `|${m}`) }) || [];
+  return out;
+}
+// Pinnacle's own combo quotes and the books' at every line they hang
+const comboQuotes = row => [...(pinprops.quotesForGame(pinPropsIndex, row) || []).map(q => ({ book: 'pinnacle', line: q.line, pOver: q.pOver })), ...bookLineQuotes(row)];
+const comboSourcesAt = (row, line, kind) => (baseSportKind(kind) === 'combo' ? sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.sources ?? null : null);
 // every book quote on the row's player and stat in the same game, at every line it hangs
 function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   if (!(Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)) return [];
@@ -5573,6 +5606,16 @@ function priceSportRows(rows) {
       consensusMoves.observe(row, cplays[0].mean);
       row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
     } else consensusMoves.observe(row, null);
+    // every source on its own price at the app's number: a lead of its own
+    const s3 = THREE_SHARP_ON ? sportProps.threeSharpPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: THREE_SHARP_OPTS }) : [];
+    if (s3.length) row.threeSharp = { book: s3[0].book, side: s3[0].side, line: s3[0].line, ev: s3[0].ev, evMin: s3[0].evMin, entries: s3[0].entries, sources: s3[0].sources, plays: s3.map(p => ({ book: p.book, side: p.side, line: p.line, ev: p.ev, evMin: p.evMin })) };
+    else delete row.threeSharp;
+    for (const p of s3) flagged.push({ row, play: p, kind: 'sharp3' });
+    // combos: the books at the app's number and Pinnacle's parts added up
+    const cb = COMBO_ON && sportProps.isCombo(row.mkey) ? sportProps.comboPlays(row, { sharp: comboQuotes(row), parts: pinParts(row), dfsEv: dfsLegEv, o: COMBO_OPTS }) : [];
+    if (cb.length) row.combo = { book: cb[0].book, side: cb[0].side, line: cb[0].line, ev: cb[0].ev, evMin: cb[0].evMin, entries: cb[0].entries, sources: cb[0].sources, parts: cb[0].parts, plays: cb.map(p => ({ book: p.book, side: p.side, line: p.line, ev: p.ev, evMin: p.evMin })) };
+    else delete row.combo;
+    for (const p of cb) flagged.push({ row, play: p, kind: 'combo' });
     const sharpTaken = new Set();
     let sharpBest = null;
     for (const p of cplays) {
@@ -5689,15 +5732,45 @@ async function refreshExtraBooks() {
 // minute; GEMINI=off stops it.
 const geminibooks = require('./geminibooks');
 const geminiState = { enabled: !envOff('GEMINI'), books: {}, events: 0, at: 0, errors: [], updated: null, ms: null };
-const GEMINI_EVERY_MS = 110e3, GEMINI_MAX_AGE_MS = 6 * 60e3;
+const GEMINI_EVERY_MS = 50e3, GEMINI_MAX_AGE_MS = 6 * 60e3;
 async function refreshGemini() {
   if (!geminiState.enabled || Date.now() - geminiState.at < GEMINI_EVERY_MS) return;
   const t0 = Date.now();
   try {
-    const { books, events, errors } = await geminibooks.fetchGemini(axios);
-    if (events > 0) Object.assign(geminiState, { books, events, at: Date.now() });
+    const { books, events, errors, skipped } = await geminibooks.fetchGemini(axios);
+    if (events > 0) Object.assign(geminiState, { books, events, skipped, at: Date.now() });
     Object.assign(geminiState, { errors: errors.slice(0, 5), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { geminiState.errors = [e.message]; }
+}
+// Polymarket US's game lines as a book (pmusbooks.js): the same CFTC
+// exchange a Texan trades, never polymarket.com. Moneylines for every league
+// Pinnacle prices, spreads and totals for games inside 36 hours, merged and
+// graded like Gemini's. Every other minute; POLYMARKET_US_BOOK=off stops it.
+const pmusbooks = require('./pmusbooks');
+const pmusBooksState = { enabled: pmusbooks.enabledFromEnv(), books: {}, at: 0, games: 0, withLines: 0, slugReads: 0, counts: {}, errors: [], updated: null, ms: null };
+const pmusBooksReader = pmusBooksState.enabled ? pmusbooks.createPolymarketUsBooks({ http: upstream }) : null;
+const PMUS_BOOKS_EVERY_MS = 50e3;
+async function refreshPmusBooks() {
+  if (!pmusBooksReader || Date.now() - pmusBooksState.at < PMUS_BOOKS_EVERY_MS) return;
+  const t0 = Date.now();
+  try {
+    const r = await pmusBooksReader.read();
+    if (r.games > 0) Object.assign(pmusBooksState, { books: r.books, at: Date.now() });
+    Object.assign(pmusBooksState, { games: r.games, withLines: r.withLines, slugReads: r.slugReads, counts: r.counts, errors: r.errors.slice(0, 5), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { pmusBooksState.errors = [e.message]; }
+}
+// Pinnacle's soccer, tennis and UFC for the exchange-only leagues
+// (freebooks.EXCHANGE_LEAGUES): soccer league by league (the whole sport is
+// 80+ MB), every other minute, only while an exchange book is on.
+const PIN_EXTRA_GAMES_EVERY_MS = 110e3, PIN_EXTRA_GAMES_MAX_AGE_MS = 6 * 60e3;
+const pinExtraGames = { games: [], at: 0, tried: 0, errors: [] };
+async function refreshPinExtraGames() {
+  if (!(geminiState.enabled || pmusBooksState.enabled) || Date.now() - pinExtraGames.tried < PIN_EXTRA_GAMES_EVERY_MS) return;
+  pinExtraGames.tried = Date.now();
+  const r = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: { tennis: pingames.SPORTS.tennis, mma: pingames.SPORTS.mma },
+    leagues: { soccer: freebooks.PIN_SOCCER_LEAGUES } });
+  if (r.games.length) Object.assign(pinExtraGames, { games: r.games, at: Date.now() });
+  pinExtraGames.errors = r.errors.slice(0, 5);
 }
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
@@ -5708,14 +5781,18 @@ async function refreshFreeBooks() {
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     await refreshExtraBooks();
-    await refreshGemini();
+    await Promise.all([refreshGemini(), refreshPmusBooks(), refreshPinExtraGames().catch(e => { pinExtraGames.errors = [e.message]; })]);
     const extra = { ...(Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {}) };
     if (Date.now() - geminiState.at < GEMINI_MAX_AGE_MS) for (const [s, gs] of Object.entries(geminiState.books)) extra[s] = [...(extra[s] || []), ...gs];
-    const read = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
-    // Gemini's rungs only at Pinnacle's main number: the close is Pinnacle's own price there
-    const games = geminibooks.mainLinesOnly(read.games, pin.games), { counts, errors } = read;
+    if (Date.now() - pmusBooksState.at < GEMINI_MAX_AGE_MS) for (const [s, gs] of Object.entries(pmusBooksState.books)) extra[s] = [...(extra[s] || []), ...gs];
+    const pinAll = Date.now() - pinExtraGames.at < PIN_EXTRA_GAMES_MAX_AGE_MS ? [...pin.games, ...pinExtraGames.games] : pin.games;
+    const read = await freebooks.fetchFreeBooks(axios, pinAll, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
+    // the exchanges' rungs only at Pinnacle's main number: the close is Pinnacle's own price there
+    const games = geminibooks.mainLinesOnly(read.games, pinAll, ['gemini', 'polymarketus']), { counts, errors } = read;
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps, !pin.errors.length); }
+    // the stale-lines engine watches the sportsbooks' leagues only
+    const bookLeagues = Object.fromEntries(Object.entries(games).filter(([k]) => freebooks.LEAGUES[k]));
+    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pinAll, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(bookLeagues, fdProps, !pin.errors.length); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
@@ -5746,7 +5823,9 @@ async function refreshPinnacleProps() {
   try { await refreshPinnacleExtra(); } catch (e) { pinExtra.errors = [e.message]; }
   const extra = Date.now() - pinExtra.at < PIN_PROPS_MAX_AGE_MS ? pinExtra.props : [];
   const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
-  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps([...props, ...extra]); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
+  // the stale engine watches Pinnacle's tennis and UFC lines too (read as props,
+  // every sixth minute), so the apps' tennis and UFC legs can go stale at its number
+  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps([...props, ...extra]); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes([...props, ...extra]), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
   // an outage keeps the last read a while, never as the fair for long
   else if (Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) pinPropsIndex = new Map();
   const bySport = {};
@@ -5883,10 +5962,17 @@ function observeStaleApps(rows) {
   const all = staleLines.appQuotes(sports, { pOverOf: sportProps.bookPOver, kalshiOf: rowKalshi });
   // each app's read covers the board rows the engine can key (a start time
   // and one stat): a row there without the app's line means the app dropped it
-  const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime).map(r => r.key);
+  const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime);
   for (const book of staleLines.APP_VENUES) {
+    if (book === 'pick6') continue;
     const t = readAt[book];
-    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(k => `${book}|prop|row:${k}`));
+    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(r => `${book}|prop|row:${r.key}`));
+  }
+  // DK Pick6 reads one sport at a time (through the relay): each sport at its own read time
+  for (const [k, iso] of Object.entries(pick6.readTimes())) {
+    const sport = k.slice('pick6|'.length), t = Date.parse(iso || '');
+    if (!Number.isFinite(t)) continue;
+    observeStale(all.filter(q => q.source === 'pick6' && q.meta.sport === sport), t, 'pick6', false, keyed.filter(r => r.sport === sport).map(r => `pick6|prop|row:${r.key}`));
   }
   const kt = Date.parse(kpropsState.updated || '');
   if (Number.isFinite(kt)) observeStale(all.filter(q => q.source === 'kalshi'), kt, 'kalshi-props', false);
@@ -5900,6 +5986,11 @@ function stalePriceApp(book, fair, c, side) {
     return { ev: (fair / be - 1) * 100, decimal: 1 / be, entry: sportProps.PP_GRADE.name, entries: sportProps.PP_ENTRIES.filter(e => fair > e.be).map(e => e.name) };
   }
   const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+  // DK Pick6: its table times the pick's own multiplier, graded at the 3-pick entry
+  if (book === 'pick6') {
+    const fx = sportProps.fixedLeg('pick6', fair, mult);
+    return fx ? { ev: fx.ev, decimal: fx.decimal, entry: fx.entry, entries: fx.entries } : null;
+  }
   const ev = dfsLegEv(fair, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side);
   return ev == null ? null : { ev, decimal: sportTrackLegDecimal(book, mult) };
 }
@@ -5954,6 +6045,37 @@ function staleAppPlays(boardRows) {
 const BIG_OPTS = { ...bigMoney.DEFAULTS, ...bigMoney.optsFromEnv() };
 const BIG_LEAGUE = { nfl: 'NFL', ncaaf: 'CFB', nba: 'NBA', wnba: 'WNBA', nhl: 'NHL', mlb: 'MLB' };
 const bigGrader = createSportsGrader({ http: axios });
+// Main-line results from ESPN finals (10-24): every closed game line in the
+// +EV record (moneyline, spread, total) gets its outcome and 1u result at the
+// flagged price and at the +2 min price, so the scoreboard can check the close
+// against what happened (results.resultsShortfall). Leagues ESPN doesn't
+// score (tennis, UFC, KHL, KBO …) keep CLV only.
+const EV_RESULT_LEAGUE = { ...BIG_LEAGUE, ncaab: 'CBB', epl: 'EPL', laliga: 'LALIGA', bundesliga: 'BUNDESLIGA', seriea: 'SERIEA', ligue1: 'LIGUE1',
+  mls: 'MLS', ligamx: 'LIGAMX', eredivisie: 'EREDIVISIE', brasileirao: 'BRASILEIRAO', ucl: 'UCL', uel: 'UEL' };
+const evResultsState = { runs: 0, graded: 0, lastRun: null, lastGraded: 0, pending: 0, notFound: 0, errors: [] };
+let evResultsRunning = false;
+async function gradeEvResults() {
+  if (evResultsRunning) return;
+  evResultsRunning = true;
+  try {
+    const due = await evTracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
+    const done = [];
+    let graded = 0, pending = 0, notFound = 0;
+    for (const b of due) {
+      const [away, home] = String(b.event || '').split(' @ ');
+      let sc = null;
+      try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
+      catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
+      if (sc?.pending) { pending++; continue; }
+      if (!sc) notFound++;
+      if (await evTracker.setResult(b, sc, { save: false })) graded++;
+      done.push(b);
+    }
+    if (done.length) await evTracker.saveMany(done);
+    Object.assign(evResultsState, { runs: evResultsState.runs + 1, graded: evResultsState.graded + graded, lastGraded: graded, pending, notFound, lastRun: new Date().toISOString() });
+  } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
+  finally { evResultsRunning = false; }
+}
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -6218,9 +6340,9 @@ async function trackSportProps() {
     // when each app's lines were last read (a PrizePicks pull that failed read nothing)
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
-    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
+    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
@@ -6233,7 +6355,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1' };
+  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1', combo: req.query.combo === '1' };
   const market = String(req.query.market || '').slice(0, 80);
   const hits = propsBoard.queryRows(rows, { ...qo, market });
   // the Lines view: one app's lines, with the header count and the prop filter
@@ -6346,6 +6468,17 @@ app.get('/api/props/record/picks', async (req, res) => {
   // ?kind=stale-single narrows the list; ?before=<signalAt> pages back
   const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
   res.json({ picks: await sportTracker.list({ status, kind: q('kind'), before: q('before'), limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
+});
+
+// Pick'em stale at Pinnacle's own number (staleexact.js): the daily check on
+// the one pick'em kind still standing, live legs apart from the 10-24 backfit.
+// Free, like the record; today's open legs only with Pro.
+const staleExact = require('./staleexact');
+app.get('/api/props/stale-exact', async (req, res) => {
+  try {
+    const legs = await sportTracker.list({ limit: 1e9 });
+    res.json(staleExact.report(legs, { showOpen: hasPro(req) }));
+  } catch (e) { sendErr(res, e); }
 });
 
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
@@ -6721,7 +6854,7 @@ app.get('/api/results', async (req, res) => {
 // gates first. The rows are what's being sold, so free users get the counts.
 const bestplays = require('./bestplays');
 // venues with a record of their own and nothing proven: never in Best Plays
-const BEST_PLAYS_LEADS = new Set(['pick6', 'gemini']);
+const BEST_PLAYS_LEADS = new Set(['pick6', 'gemini', 'polymarketus']);
 const BEST_FREE_PREVIEW = 3;
 app.get('/api/best', async (req, res) => {
   try {
@@ -6809,7 +6942,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.150.0',
+  version: '3.153.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6825,7 +6958,14 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   // Gemini Predictions (geminibooks.js): events read, games per sport, how many sit on Pinnacle's games after the main-line cut
   gemini: { enabled: geminiState.enabled, events: geminiState.events, errors: geminiState.errors, updated: geminiState.updated, ms: geminiState.ms,
     games: Object.fromEntries(Object.entries(geminiState.books).map(([k, v]) => [k, v.length])),
-    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'gemini')).length])) },
+    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'gemini')).length]).filter(([, n]) => n)),
+    skipped: geminiState.skipped || {} },
+  // Polymarket US's game lines as a book (pmusbooks.js): games listed per league, with lines, paired to Pinnacle
+  polymarketUsBooks: { enabled: pmusBooksState.enabled, games: pmusBooksState.games, withLines: pmusBooksState.withLines, slugReads: pmusBooksState.slugReads,
+    byLeague: pmusBooksState.counts, errors: pmusBooksState.errors, updated: pmusBooksState.updated, ms: pmusBooksState.ms,
+    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'polymarketus')).length]).filter(([, n]) => n)) },
+  pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
+  evResults: evResultsState,
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -6918,6 +7058,7 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));

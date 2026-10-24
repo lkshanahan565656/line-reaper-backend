@@ -430,7 +430,7 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
     return {
       open: all.filter(r => r.status !== 'settled').length, overall: stats(done), clustered: clusterStats(done.filter(r => r.result === 'win' || r.result === 'loss')),
       texas: clusterStats(done.filter(r => r.result === 'win' || r.result === 'loss'), { texas: true }),
-      // first-bet wallets (recorded from v3.149.0; older rows carry no wallet age)
+      // first-bet wallets (recorded from v3.153.0; older rows carry no wallet age)
       firstBet: clusterStats(done.filter(r => (r.result === 'win' || r.result === 'loss') && r.fresh?.firstBet)),
       firstBetTexas: clusterStats(done.filter(r => (r.result === 'win' || r.result === 'loss') && r.fresh?.firstBet), { texas: true }),
       closing: { n: closed.length, avgClv: closed.length ? r4(closed.reduce((a, r) => a + r.clv, 0) / closed.length) : null,
