@@ -6,7 +6,7 @@
 <title>Line Reaper: every alert graded on whether you could get the price</title>
 <meta name="description" content="Line Reaper grades every alert on whether you could still get the price two minutes later, by signal and venue, with the whole record public, losers included.">
 <meta property="og:title" content="Line Reaper">
-<meta property="og:description" content="Made for sharps, by sharps. Exchanges, arbs, middles, Sharp Tail and esports props. Every alert graded on whether you could still get the price, losers included.">
+<meta property="og:description" content="Made for sharps, by sharps. An odds screen with every venue beside Pinnacle's fair, pick'em payouts, exchanges, arbs and esports props. Every alert graded in public, losers included.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="{{ORIGIN}}/og.png">
 <meta property="og:url" content="{{ORIGIN}}/">
@@ -222,7 +222,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
 <header class="hero">
   <div class="wrap">
     <div>
-      <div class="eyebrow">Kalshi, Polymarket US and esports</div>
+      <div class="eyebrow">Pick'em apps, Kalshi, Polymarket US and esports</div>
       <h1>Made for sharps,<br>by sharps.</h1>
       <p class="lede">A price that moved before you could click is not an edge. Line Reaper grades every alert on whether you could still get the price two minutes after it fired, by signal and venue, and keeps the whole record public, losers included. Signals that fail the test stop alerting.</p>
       <div class="cta-row">
@@ -231,18 +231,18 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       </div>
       <p class="hero-fine">No card needed for the free plan. 21+ where legal.</p>
     </div>
-    <div class="panel" aria-label="Our 2026 record">
-      <div class="panel-head"><span>OUR 2026 RECORD</span><span>TRACKED ON PIKKIT</span></div>
+    <div class="panel" aria-label="The live record">
+      <div class="panel-head"><span>THE LIVE RECORD</span><span>READ FROM THE APP</span></div>
       <div class="stat-grid">
-        <div class="stat"><div class="v up">+850u</div><div class="k">Profit</div></div>
-        <div class="stat"><div class="v up">+24.9%</div><div class="k">Return on stake</div></div>
-        <div class="stat"><div class="v">71.6%</div><div class="k">Bets beating the closing line</div></div>
+        <div class="stat"><div class="v" id="heroGraded">&nbsp;</div><div class="k">Alerts graded so far</div></div>
+        <div class="stat"><div class="v" id="heroBeat">&nbsp;</div><div class="k">Beat the close at the alert</div></div>
+        <div class="stat"><div class="v" id="heroProven">&nbsp;</div><div class="k">Plays proven by the record</div></div>
       </div>
       <div class="panel-rows">
         <div class="prow"><span class="l"><span class="dot"></span>Plays on the board right now</span><span class="r" id="liveTotal">&nbsp;</span></div>
-        <div class="prow"><span class="l">App alerts graded so far</span><span class="r" id="liveTracked">&nbsp;</span></div>
+        <div class="prow"><span class="l">Games on the odds screen</span><span class="r" id="liveGames">&nbsp;</span></div>
       </div>
-      <div class="panel-foot">Profit and ROI are our own bets on Pikkit. The two live rows read straight from the app.</div>
+      <div class="panel-foot">Every number here reads live from the app, losers included. A play counts as proven only once 50 graded bets beat the close and its results are not running short of it. Beating the close is not a promise of profit.</div>
     </div>
   </div>
 </header>
@@ -277,24 +277,24 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p>Cross-exchange and multi-outcome arbitrage, middles on totals and spreads, and bid-then-hedge plans that turn a resting order into an arb.</p>
       </div>
       <div class="feat">
-        <div class="tag">PRICES</div>
-        <h3>An odds screen for the exchanges.</h3>
-        <p>Kalshi and Polymarket side by side with a fair price and the EV of every side, plus a combo builder that shows the most a Kalshi quote is worth.</p>
+        <div class="tag">ODDS SCREEN</div>
+        <h3>Every venue on one row.</h3>
+        <p>Pinnacle's no-vig fair next to Kalshi, Polymarket US, Gemini, FanDuel, BetRivers and the big books on every game, the best price marked, and a chart of how each line moved. One tap shows only the venues legal in Texas.</p>
       </div>
       <div class="feat">
         <div class="tag">SHARP TAIL</div>
-        <h3>See what the best accounts bet.</h3>
-        <p>Polymarket trades are public, so we grade accounts on return, sample size and a luck test, and watch Kalshi for whale-sized orders. Its alerts are graded like everything else.</p>
+        <h3>See what the biggest accounts bet.</h3>
+        <p>Polymarket trades are public, so we grade accounts on return, sample size and a luck test, and watch Kalshi for whale-sized orders. Following them has not beaten the close in our own tests, and its record says so: it is a research tool, not a signal to copy.</p>
       </div>
       <div class="feat">
         <div class="tag">ESPORTS</div>
-        <h3>Props priced by a model.</h3>
-        <p>CS2, League of Legends, Valorant and Dota 2 props across the major pick'em apps, priced from the books' consensus and each player's history, with the best slip for each app.</p>
+        <h3>Every prop, every app, priced.</h3>
+        <p>CS2, League of Legends, Valorant and Dota 2 props, and the sports boards, across PrizePicks, Underdog, Sleeper and DK Pick6, priced against Pinnacle and the books, with what each slip pays and needs to break even.</p>
       </div>
       <div class="feat">
         <div class="tag">TOOLS AND MY BETS</div>
         <h3>The math, done for you.</h3>
-        <p>Twelve calculators: EV and Kelly, no-vig, arbs, hedges, middles, parlays, free bets, boosts, CLV and exchange fees. Log your own bets and see your CLV.</p>
+        <p>Thirteen calculators: EV and Kelly, no-vig, arbs, hedges, middles, parlays, free bets, boosts, CLV, exchange fees and every pick'em app's payouts and break-even. Log your bets and slips and see your CLV.</p>
       </div>
       <div class="feat dark">
         <div class="tag">ALERTS</div>
@@ -338,7 +338,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <thead><tr><th>Play</th><th class="n">Alerts</th><th class="n hide-sm">Beat close</th><th class="n">Edge at alert</th><th class="n">After 2 min</th><th class="n">Status</th></tr></thead>
         <tbody><tr><td colspan="6" style="color:var(--muted)">Loading the live record...</td></tr></tbody>
       </table>
-      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; "not graded yet" means that play has no two-minute grade so far. Exchange value plays are listed only once their two-minute record has 8 bets and is positive. Plays need at least 8 alerts to be listed. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
+      <p class="track-note">Read live from the app's tracker. Edge at alert is the average closing line value, or return on stake where a play has no closing price. After 2 min is the same grade at the price available two minutes later; "not graded yet" means that play has no two-minute grade so far. Only proven plays are listed: 50 or more graded alerts, a closing line value well clear of chance, results not running short of the close, and no negative two-minute grade. Everything else is still building its sample. Tools and plays with a losing record are cut from Best Plays until they recover. <a class="textlink" href="/app?start=results">See every tool's full record, losers included</a>.</p>
     </div>
   </div>
 </section>
@@ -358,6 +358,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p class="pdesc">See how it works and follow the record before you pay anything.</p>
         <ul>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Top 3 Best Plays</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The odds screen with every venue's price</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>How many exchange edges are open, and how big</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>Sharp Tail alerts on a 30 minute delay</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#94a3b8" stroke-width="1.6" fill="none"/></svg>The profit on every open arb</li>
@@ -373,6 +374,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <p class="pdesc">Every play, the moment it qualifies.</p>
         <ul>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every Best Play, ranked by its record</li>
+          <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>The fair price, EV and line history on the odds screen</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Exchange alerts for signals that pass the two-minute test</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Real-time Sharp Tail alerts with the trader, price and units</li>
           <li><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 6.5l3 3 6-7" stroke="#10b981" stroke-width="1.6" fill="none"/></svg>Every arb and middle with its legs, prices and stakes</li>
@@ -404,7 +406,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       <details><summary>What do I need to get started?</summary><div class="a"><p>An account on at least one exchange such as Kalshi, and a bankroll you can afford to lose. For esports props, an account on a pick'em app. The free plan needs no card.</p></div></details>
       <details><summary>Can I get alerts on my phone?</summary><div class="a"><p>Yes. Open the app on your phone, add it to your home screen, and turn on alerts. Pro plays then arrive as push notifications.</p></div></details>
       <details><summary>Can I cancel?</summary><div class="a"><p>Yes, any time, from your account. Details are in our <a href="/refunds">refund policy</a>.</p></div></details>
-      <details><summary>Who builds it?</summary><div class="a"><p>A bettor who bets the exchanges every day and built this to do it better. The record at the top of this page is our own, tracked on Pikkit.</p></div></details>
+      <details><summary>Who builds it?</summary><div class="a"><p>A bettor who bets the exchanges every day and built this to do it better. Every number on this page reads live from the app's own tracker.</p></div></details>
     </div>
   </div>
 </section>
@@ -448,7 +450,6 @@ const pct = x => (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const WORD = { kalshi: 'Kalshi', polymarket: 'Polymarket', polymarketus: 'Polymarket US', moneyline: 'Moneyline', steam: 'Steam moves', sports: 'Sports', over: 'Over', under: 'Under' };
 const nice = k => String(k).split(' · ').map(w => WORD[w.toLowerCase()] || (/^[a-z0-9]{2,5}$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(', ');
-const RANK = { proven: 0, promising: 1 };
 
 fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   const src = d.sources || {};
@@ -459,14 +460,18 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
     if (o.clvN && o.beatClosePct != null) { clvN += o.clvN; beat += o.beatClosePct * o.clvN; }
     if (o.execN && o.execBeatPct != null) { execN += o.execN; execBeat += o.execBeatPct * o.execN; }
   }
-  document.getElementById('liveTracked').textContent = graded.toLocaleString();
-  // plays the record backs: proven or promising with a real sample, a positive
-  // edge, one row per distinct result (a cut that equals its parent is skipped)
+  document.getElementById('heroGraded').textContent = graded.toLocaleString();
+  document.getElementById('heroBeat').textContent = clvN ? Math.round(beat / clvN * 100) + '%' : '-';
+  // only plays the record proves: the tracker's "proven", 50+ alerts, a
+  // positive closing line value at least two standard errors clear of zero,
+  // results not losing, and no negative two-minute grade. "Promising" is not
+  // shown here: it is not an edge yet.
   const seen = new Set(), rows = [];
-  const plays = (d.plays || []).filter(p => RANK[p.verdict] != null && p.n >= 8)
-    .map(p => ({ ...p, edge: p.avgClv != null ? p.avgClv : p.roi, kind: p.avgClv != null ? 'CLV' : 'ROI' }))
-    .filter(p => p.edge > 0 && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0)) && !(p.source === 'exchangeValue' && !(p.execN >= 8)))
-    .sort((a, b) => RANK[a.verdict] - RANK[b.verdict] || b.n - a.n);
+  const plays = (d.plays || []).filter(p => p.verdict === 'proven' && p.n >= 50 && p.avgClv != null)
+    .map(p => ({ ...p, edge: p.avgClv, kind: 'CLV' }))
+    .filter(p => p.edge > 0 && (p.clvT == null || p.clvT >= 2) && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0)) && !(p.source === 'exchangeValue' && !(p.execN >= 8)))
+    .sort((a, b) => b.n - a.n);
+  const building = (d.plays || []).filter(p => p.verdict === 'promising' || p.verdict === 'early').length;
   const backed = plays.filter(p => { const k = `${p.source}|${p.n}|${p.edge}`; return !seen.has(k) && seen.add(k); });
   for (const p of backed) {
     const label = src[p.source]?.label || p.label || p.source;
@@ -479,21 +484,25 @@ fetch('/api/results').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
     if (rows.length >= 7) break;
   }
   document.querySelector('#trackTable tbody').innerHTML = rows.join('')
-    || '<tr><td colspan="6" style="color:var(--muted)">No play has a big enough sample yet. They appear here as alerts settle.</td></tr>';
+    || `<tr><td colspan="6" style="color:var(--muted)">Nothing is proven yet. ${building.toLocaleString()} plays are still building their samples; a play shows here once its record proves it. <a class="textlink" href="/app?start=results">See them all in the app</a>.</td></tr>`;
+  document.getElementById('heroProven').textContent = String(backed.length);
   const stats = [[graded.toLocaleString(), 'App alerts graded so far']];
   if (clvN) stats.push([Math.round(beat / clvN * 100) + '%', 'Beat the close at the alert']);
   if (execN) stats.push([Math.round(execBeat / execN * 100) + '%', 'Still beat it 2 minutes later']);
-  stats.push([String(backed.length), 'Plays the record backs today']);
+  stats.push([String(backed.length), 'Plays the record proves today']);
   document.getElementById('recStats').style.gridTemplateColumns = `repeat(${stats.length},1fr)`;
   document.getElementById('recStats').innerHTML = stats.map(([v, k]) => `<div><b>${v}</b>${k}</div>`).join('');
 }).catch(() => {
   document.querySelector('#trackTable tbody').innerHTML = '<tr><td colspan="6" style="color:var(--muted)">The live record is loading slowly. <a href="/app?start=results">See it in the app</a>.</td></tr>';
-  document.getElementById('liveTracked').textContent = '-';
+  ['heroGraded', 'heroBeat', 'heroProven'].forEach(id => { document.getElementById(id).textContent = '-'; });
 });
 
 fetch('/api/best?limit=1').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   document.getElementById('liveTotal').textContent = (d.total || 0).toLocaleString();
 }).catch(() => { document.getElementById('liveTotal').textContent = '-'; });
+fetch('/api/odds-screen').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+  document.getElementById('liveGames').textContent = (d.counts?.games || 0).toLocaleString();
+}).catch(() => { document.getElementById('liveGames').textContent = '-'; });
 </script>
 </body>
 </html>
