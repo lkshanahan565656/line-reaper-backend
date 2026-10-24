@@ -87,26 +87,30 @@ const PMS = { cs2: 10310, lol: 10311, dota2: 10309, val: 10369 };
 const pj = s => { try { return typeof s === 'string' ? JSON.parse(s) : s; } catch { return null; } };
 async function history(token, startMs) {
   const s0 = Math.floor(startMs / 1000);
-  // long window, 10 minute points; short window, 1 minute points
-  const a = await get(`${CLOB}/prices-history`, { market: token, startTs: s0 - 48 * 3600, endTs: s0 + 600, fidelity: 10 });
+  // long window in 10 minute buckets (data API), short window in minutes (CLOB)
+  const a = await get(`${DATA}/v2/prices-history`, { token_id: token, bucket_seconds: 600, start: s0 - 48 * 3600, end: s0 + 600, limit: 1000 });
   const b = await get(`${CLOB}/prices-history`, { market: token, startTs: s0 - 150 * 60, endTs: s0 + 15 * 60, fidelity: 1 });
-  const rows = x => (x?.history || []).map(r => [Math.round((r.t * 1000 - startMs) / 60e3), r.p]);
-  return { h: rows(a), mi: rows(b) };
+  const ra = (a?.data || []).filter(r => Number(r.resolution_seconds) !== 0).map(r => [Math.round((r.timestamp * 1000 - startMs) / 60e3), r.price]);
+  const rb = (b?.history || []).map(r => [Math.round((r.t * 1000 - startMs) / 60e3), r.p]);
+  return { h: ra, mi: rb };
 }
 async function polymarket(code) {
   let series = PMS[code];
   const sp = await get(`${GAMMA}/sports`);
   const row = (sp || []).find(x => x.sport === code); if (row?.series) series = Number(String(row.series).split(',')[0]) || series;
   log('pm series', code, series);
-  const evs = [];
-  for (let off = 0; off < 30000; off += 100) {
-    const d = await get(`${GAMMA}/events`, { series_id: series, closed: true, limit: 100, offset: off, order: 'startDate', ascending: false });
-    if (!d || !d.length) break;
-    evs.push(...d);
-    const oldest = Math.min(...d.map(e => Date.parse(e.startDate || e.startTime || '') || Infinity));
-    if (off === 0) log('pm sample', JSON.stringify(d[0]).slice(0, 2500));
-    if (oldest < SINCE - 30 * 86400e3) break;
-    await sleep(150);
+  const evs = [], seen = new Set();
+  // weekly windows (Gamma refuses deep offsets)
+  for (let w0 = SINCE - 7 * 86400e3; w0 < Date.now(); w0 += 7 * 86400e3) {
+    for (let off = 0; off < 2000; off += 100) {
+      const d = await get(`${GAMMA}/events`, { series_id: series, closed: true, limit: 100, offset: off, start_date_min: new Date(w0).toISOString(), start_date_max: new Date(w0 + 7 * 86400e3).toISOString() });
+      if (!d || !d.length) break;
+      for (const e of d) if (!seen.has(e.id)) { seen.add(e.id); evs.push(e); }
+      if (!evs.sampled) { evs.sampled = 1; log('pm sample', JSON.stringify(d[0]).slice(0, 1500)); }
+      if (d.length < 100) break;
+      await sleep(120);
+    }
+    log('pm week', new Date(w0).toISOString().slice(0, 10), evs.length);
   }
   log('pm events', code, evs.length);
   const out = []; let done = 0, tested = false;
