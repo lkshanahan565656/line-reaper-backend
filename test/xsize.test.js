@@ -60,6 +60,8 @@ test('scan: a tier is a bet only when it all fills at +1%; first flag kept; star
   const tr = X.createSizeTracker({ store, http, now: () => t });
   const r = await tr.scan({ games: bare, pinGames: [pg], kalshiRows: [krow, kteam] });
   assert.equal(r.read, 1);
+  assert.equal(tr.state.byVenue.kalshi.sides, 4);
+  assert.equal(tr.state.byVenue.kalshi.mainAtFlag, 1);
   const bets = await tr.list();
   // $50 fills at 47c + fee (+5.0%); $200 and $1,000 run into 50c: under +1%
   assert.deepEqual(bets.map(b => b.tier), [50]);
