@@ -3594,11 +3594,42 @@ async function pushSub() {
   if (!pushOk()) return null;
   try { return await (await navigator.serviceWorker.ready).pushManager.getSubscription(); } catch { return null; }
 }
+const pushJson = async (path, body) => {
+  const r = await fetch(`${BACKEND_URL}${path}`, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Server answered ${r.status}`);
+  return j;
+};
+const bytesToB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+let pushKindList = null, pushState = null;
+const pushSavedKinds = () => { try { const k = JSON.parse(localStorage.getItem('lr_push_kinds') || 'null'); return Array.isArray(k) ? k : undefined; } catch { return undefined; } };
+const pushSaveKinds = k => { try { localStorage.setItem('lr_push_kinds', JSON.stringify(k)); } catch {} };
+// Keeps this device signed up: after a server key change it re-subscribes, and
+// if the server lost the device it signs it up again with its saved choices.
+async function pushSync() {
+  if (!pushOk() || Notification.permission !== 'granted') return null;
+  let sub = await pushSub();
+  if (!sub) return null;
+  try {
+    const k = await pushJson('/api/push/key');
+    const mine = sub.options && sub.options.applicationServerKey ? bytesToB64(sub.options.applicationServerKey) : null;
+    if (mine && k.key && mine !== k.key) {
+      await sub.unsubscribe().catch(() => {});
+      sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) });
+    }
+    let st = await pushJson('/api/push/device', { endpoint: sub.endpoint });
+    if (!st.active) { await pushJson('/api/push/subscribe', { subscription: sub.toJSON(), kinds: pushSavedKinds() }); st = await pushJson('/api/push/device', { endpoint: sub.endpoint }); }
+    if (st.kinds) pushSaveKinds(st.kinds);
+    pushState = st;
+    return st;
+  } catch { return null; }
+}
 async function pushRefresh() {
-  const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote'), row = document.getElementById('pwaInstallRow');
+  const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote'), row = document.getElementById('pwaInstallRow'), more = document.getElementById('pushMore');
   if (!btn) return;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   row.style.display = pwaPrompt && !pwaStandalone() ? '' : 'none';
+  more.style.display = 'none';
   if (!pushOk()) {
     btn.disabled = true; btn.textContent = 'NOT AVAILABLE'; btn.classList.remove('on');
     note.textContent = ios && !pwaStandalone() ? 'On iPhone, tap Share, then Add to Home Screen, and open Line Reaper from your home screen to turn on push alerts.' : 'This browser does not support push alerts.';
@@ -3607,6 +3638,42 @@ async function pushRefresh() {
   if (Notification.permission === 'denied') { btn.disabled = true; btn.textContent = 'BLOCKED'; btn.classList.remove('on'); note.textContent = 'Notifications are blocked for this site. Allow them in your browser settings, then come back.'; return; }
   const sub = await pushSub();
   btn.disabled = false; btn.textContent = sub ? 'ON' : 'TURN ON'; btn.classList.toggle('on', !!sub);
+  if (!sub) return;
+  more.style.display = '';
+  if (!pushKindList) { try { pushKindList = (await pushJson('/api/push/kinds')).kinds; } catch { pushKindList = []; } }
+  const st = pushState || await pushSync();
+  const on = new Set(st?.kinds || pushSavedKinds() || pushKindList.map(k => k.key));
+  document.getElementById('pushKinds').innerHTML = pushKindList.map(k => `<div class="lay-row"><span class="lay-name" style="font-weight:500">${escAttr(k.label)}</span><button class="lay-b${on.has(k.key) ? ' on' : ''}" onclick="pushKind('${k.key}')">${on.has(k.key) ? 'ON' : 'OFF'}</button></div>`).join('') ||
+    '<div class="lay-row"><span class="lay-name" style="font-weight:500">Could not load the alert kinds. Close and reopen this panel.</span></div>';
+}
+async function pushKind(key) {
+  const sub = await pushSub(), note = document.getElementById('pushTestNote');
+  if (!sub) return pushRefresh();
+  const cur = new Set(pushState?.kinds || pushSavedKinds() || (pushKindList || []).map(k => k.key));
+  cur.has(key) ? cur.delete(key) : cur.add(key);
+  try {
+    const r = await pushJson('/api/push/kinds', { endpoint: sub.endpoint, kinds: [...cur] });
+    pushSaveKinds(r.kinds); pushState = { ...(pushState || {}), active: true, kinds: r.kinds };
+  } catch (e) { note.textContent = e.message; }
+  pushRefresh();
+}
+async function pushTest() {
+  const btn = document.getElementById('pushTestBtn'), note = document.getElementById('pushTestNote');
+  const sub = await pushSub();
+  if (!sub) { note.textContent = 'Turn push alerts on first.'; return; }
+  btn.disabled = true; note.textContent = 'Sending…';
+  try {
+    await pushSync();
+    const r = await pushJson('/api/push/test', { endpoint: sub.endpoint });
+    note.textContent = 'The push service took it. Waiting for this device to show it…';
+    let shown = false;
+    for (let i = 0; i < 10 && !shown; i++) {
+      await new Promise(res => setTimeout(res, 1500));
+      try { shown = (await pushJson(`/api/push/test/${encodeURIComponent(r.nonce)}`)).shown; } catch {}
+    }
+    note.textContent = shown ? 'Delivered: this device showed the test alert.' : 'Sent and accepted by the push service, but this device has not confirmed it yet. If nothing showed up, check that notifications for Line Reaper are allowed in your phone settings.';
+  } catch (e) { note.textContent = e.message || 'The test did not send.'; }
+  setTimeout(() => { btn.disabled = false; }, 3000);
 }
 async function pushToggle() {
   const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote');
@@ -3616,18 +3683,24 @@ async function pushToggle() {
     if (sub) {
       await fetch(`${BACKEND_URL}/api/push/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) });
       await sub.unsubscribe();
+      pushState = null;
     } else {
       if (await Notification.requestPermission() !== 'granted') throw new Error('Notifications were not allowed.');
       const k = await (await fetch(`${BACKEND_URL}/api/push/key`)).json();
       if (!k.key) throw new Error(k.error || 'Push is not available right now.');
       const reg = await navigator.serviceWorker.ready;
       const fresh = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) });
-      const r = await fetch(`${BACKEND_URL}/api/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: fresh.toJSON() }) });
-      if (!r.ok) { await fresh.unsubscribe(); throw new Error((await r.json().catch(() => ({}))).error || 'Could not turn alerts on.'); }
+      const r = await fetch(`${BACKEND_URL}/api/push/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: fresh.toJSON(), kinds: pushSavedKinds() }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { await fresh.unsubscribe(); throw new Error(j.error || 'Could not turn alerts on.'); }
+      pushSaveKinds(j.kinds); pushState = { active: true, kinds: j.kinds };
+      note.textContent = 'Push alerts are on for this device. Tap SEND TEST to check it.';
     }
   } catch (e) { note.textContent = e.message || 'Could not change push alerts.'; }
   await pushRefresh();
 }
+// every app open re-checks the device, so a server that lost it signs it up again
+if (location.protocol !== 'file:') setTimeout(() => { pushSync(); }, 4000);
 function layClose() { document.getElementById('layModal').classList.remove('open'); }
 function layRenderList() {
   const names = layNames();
@@ -8304,9 +8377,15 @@ function shpArbs(d) {
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <h3 style="margin-top:18px">Phone app</h3>
-    <p id="pwaNote">Install Line Reaper on your home screen and get a push when Sharp Tail or Best Plays has a new signal. Everyone gets the same alert.</p>
+    <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
     <div class="lay-row"><span class="lay-name">Push alerts</span><button class="lay-b" id="pushBtn" onclick="pushToggle()">TURN ON</button></div>
+    <div id="pushMore" style="display:none">
+      <p style="margin:10px 0 2px">Alerts to get on this device. Everyone gets the same text for each alert.</p>
+      <div id="pushKinds"></div>
+      <div class="lay-row"><span class="lay-name">Check this device</span><button class="lay-b" id="pushTestBtn" onclick="pushTest()">SEND TEST</button></div>
+      <p id="pushTestNote" style="margin:4px 0 0"></p>
+    </div>
     <div class="lay-foot"><button onclick="layReset()">RESET</button><button class="primary" onclick="layClose()">DONE</button></div>
   </div>
 </div>
