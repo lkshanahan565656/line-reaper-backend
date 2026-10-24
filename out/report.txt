@@ -1,0 +1,12 @@
+20261024T182539 rows 337 combo 0 quotes {"pinnacle":33,"fanduel":271,"draftkings":265,"bet365":334,"caesars":272,"fanatics":276}
+20261024T183540 rows 337 combo 0 quotes {"pinnacle":33,"fanduel":271,"draftkings":265,"bet365":335,"caesars":270,"fanatics":276}
+20261024T184540 rows 339 combo 0 quotes {"pinnacle":33,"fanduel":270,"draftkings":264,"bet365":336,"caesars":270,"fanatics":272}
+20261024T185540 rows 339 combo 0 quotes {"pinnacle":33,"fanduel":79}
+20261024T190539 rows 346 combo 0 quotes {"pinnacle":33,"draftkings":265,"bet365":336,"caesars":270,"fanatics":271,"fanduel":84}
+20261024T191539 rows 351 combo 0 quotes {"pinnacle":33,"draftkings":265,"bet365":337,"caesars":269,"fanatics":276}
+20261024T192541 rows 353 combo 0 quotes {"pinnacle":33,"draftkings":266,"bet365":339,"caesars":268,"fanatics":281}
+20261024T193539 rows 354 combo 0 quotes {"pinnacle":33,"draftkings":270,"bet365":340,"caesars":272,"fanatics":280,"fanduel":47}
+20261024T194543 rows 358 combo 0 quotes {"pinnacle":33,"draftkings":282,"bet365":340,"caesars":279,"fanatics":284}
+20261024T195539 rows 359 combo 0 quotes {"pinnacle":33,"draftkings":282,"bet365":343,"caesars":281,"fanatics":283}
+20261024T200540 rows 362 combo 0 quotes {"pinnacle":33,"draftkings":282,"bet365":344,"caesars":281,"fanatics":285}
+20261024T201543 rows 363 combo 0 quotes {"pinnacle":33,"draftkings":282,"bet365":345,"caesars":276,"fanatics":291}
