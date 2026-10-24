@@ -1,0 +1,11 @@
+22:00:54 cs matches 4407
+22:02:14 cs 500 / 2203 calls 1625 errs 0
+22:02:14 saved csr-1 500
+22:03:41 cs 1000 / 2203 calls 3216 errs 0
+22:03:41 saved csr-1 1000
+22:05:19 cs 1500 / 2203 calls 4796 errs 0
+22:05:19 saved csr-1 1500
+22:06:40 cs 2000 / 2203 calls 6336 errs 0
+22:06:40 saved csr-1 2000
+22:07:09 saved csr-1 2203
+22:07:09 done cs calls 6965 errs 0 min 6.9
