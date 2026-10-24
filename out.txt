@@ -1,0 +1,36 @@
+Sat Oct 24 20:19:01 UTC 2026
+range 2026-08-07T00:00:00Z 2026-08-15T00:00:00Z
+20:19:02 record rows 0
+20:19:03 events sports 2026-08-06 markets 0 calls 3
+20:19:10 events sports 2026-08-07 markets 110 calls 19
+20:19:21 events sports 2026-08-08 markets 1329 calls 37
+20:19:37 window capped sports 2026-08-08
+20:19:42 events sports 2026-08-09 markets 3558 calls 76
+20:19:53 events sports 2026-08-10 markets 5605 calls 99
+20:19:57 events sports 2026-08-11 markets 6265 calls 112
+20:20:06 events sports 2026-08-12 markets 7269 calls 128
+20:20:18 events sports 2026-08-13 markets 8189 calls 142
+20:20:26 events sports 2026-08-14 markets 9533 calls 157
+20:20:33 events sports 2026-08-15 markets 11128 calls 173
+20:20:49 events sports 2026-08-16 markets 11462 calls 204
+20:20:57 events esports 2026-08-06 markets 11690 calls 225
+20:20:59 events esports 2026-08-07 markets 11690 calls 229
+20:21:01 events esports 2026-08-08 markets 11690 calls 233
+20:21:02 events esports 2026-08-09 markets 11767 calls 237
+20:21:04 events esports 2026-08-10 markets 11767 calls 241
+20:21:05 events esports 2026-08-11 markets 11767 calls 245
+20:21:07 events esports 2026-08-12 markets 11767 calls 249
+20:21:08 events esports 2026-08-13 markets 11767 calls 253
+20:21:10 events esports 2026-08-14 markets 11767 calls 257
+20:21:11 events esports 2026-08-15 markets 11767 calls 261
+20:21:13 events esports 2026-08-16 markets 11767 calls 265
+20:21:14 markets 11767 calls 268 errs 0
+20:21:14 saved markets
+20:32:01 trades: markets read 11767 of 11767 buys 9603 truncated 0 calls 12280 errs 0 429 228
+20:32:01 saved buys
+20:33:21 wallets read 1206 of 1206 ok 1206 probe null calls 13486 errs 0 429 228
+20:33:22 saved wallets
+20:34:52 prices read 2629 of 2629 calls 16102 errs 0 429 228
+20:34:52 saved prices
+20:34:52 done in 16 min
+Sat Oct 24 20:34:52 UTC 2026
