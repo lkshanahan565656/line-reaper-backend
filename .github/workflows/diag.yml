@@ -4,13 +4,16 @@ permissions: { contents: write }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/project-thread-u85mwt, path: app }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
           set +e
-          node dump.js
+          (cd app && npm ci --silent)
+          node live.js
           git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-gempm-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
           git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-gempm-out
