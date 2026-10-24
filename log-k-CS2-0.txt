@@ -1,0 +1,69 @@
+22:29:07 KXCS2MAP events 6469
+22:29:08 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241800REDAISG-2-REDA/candlesticks?start_ts=1792877400&end_ts=1792855514&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:08 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241800REDAISG-1-REDA/candlesticks?start_ts=1792877400&end_ts=1792852231&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:10 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241800REDAISG-2-ISG/candlesticks?start_ts=1792877400&end_ts=1792855514&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:10 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241800REDAISG-1-ISG/candlesticks?start_ts=1792877400&end_ts=1792852231&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:20 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241000FORZERACE-1-FORZER/candlesticks?start_ts=1792848600&end_ts=1792831522&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:21 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241000FORZERACE-1-ACE/candlesticks?start_ts=1792848600&end_ts=1792831522&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:25 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241000FORZERACE-2-FORZER/candlesticks?start_ts=1792848600&end_ts=1792834557&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:25 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT241000FORZERACE-2-ACE/candlesticks?start_ts=1792848600&end_ts=1792834557&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:48 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231300REVRGG-2-RGG/candlesticks?start_ts=1792773000&end_ts=1792759813&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:49 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231300REVRGG-1-RGG/candlesticks?start_ts=1792773000&end_ts=1792756205&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:49 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231300REVRGG-2-REV/candlesticks?start_ts=1792773000&end_ts=1792759813&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:51 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000SKRFORZER-2-SKR/candlesticks?start_ts=1792762200&end_ts=1792749020&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:53 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000SKRFORZER-1-SKR/candlesticks?start_ts=1792762200&end_ts=1792745713&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:53 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000SKRFORZER-2-FORZER/candlesticks?start_ts=1792762200&end_ts=1792749020&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:55 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231300REVRGG-1-REV/candlesticks?start_ts=1792773000&end_ts=1792756205&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:59 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000SKRFORZER-1-FORZER/candlesticks?start_ts=1792762200&end_ts=1792745713&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:59 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000DUCRCA-2-RCA/candlesticks?start_ts=1792762200&end_ts=1792750819&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:59 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000DUCRCA-2-DUC/candlesticks?start_ts=1792762200&end_ts=1792750819&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:29:59 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000DUCRCA-1-RCA/candlesticks?start_ts=1792762200&end_ts=1792746927&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:30:01 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT231000DUCRCA-1-DUC/candlesticks?start_ts=1792762200&end_ts=1792746927&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:30:08 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT230400ILLACES-2-ILL/candlesticks?start_ts=1792740600&end_ts=1792673144&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:30:08 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT230400ILLACES-1-ILL/candlesticks?start_ts=1792740600&end_ts=1792671031&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:30:10 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT230400ILLACES-1-ACES/candlesticks?start_ts=1792740600&end_ts=1792671031&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:30:10 4xx 400 /trade-api/v2/series/KXCS2MAP/markets/KXCS2MAP-26OCT230400ILLACES-2-ACES/candlesticks?start_ts=1792740600&end_ts=1792673144&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:33:17 KXCS2MAP 500 / 6469 calls 1773 errs 56
+22:33:17 saved kip-CS2 500
+22:37:28 KXCS2MAP 1000 / 6469 calls 3509 errs 64
+22:37:28 saved kip-CS2 1000
+22:41:39 KXCS2MAP 1500 / 6469 calls 5231 errs 100
+22:41:39 saved kip-CS2 1500
+22:45:48 KXCS2MAP 2000 / 6469 calls 6957 errs 130
+22:45:49 saved kip-CS2 2000
+22:49:59 KXCS2MAP 2500 / 6469 calls 8680 errs 150
+22:50:01 saved kip-CS2 2500
+22:54:08 KXCS2MAP 3000 / 6469 calls 10405 errs 170
+22:54:09 saved kip-CS2 3000
+22:58:19 KXCS2MAP 3500 / 6469 calls 12140 errs 232
+22:58:21 saved kip-CS2 3500
+23:02:28 KXCS2MAP 4000 / 6469 calls 13873 errs 274
+23:02:30 saved kip-CS2 4000
+23:06:38 KXCS2MAP 4500 / 6469 calls 15624 errs 290
+23:06:40 saved kip-CS2 4500
+23:10:49 KXCS2MAP 5000 / 6469 calls 17369 errs 352
+23:10:51 saved kip-CS2 5000
+23:15:00 KXCS2MAP 5500 / 6469 calls 19109 errs 384
+23:15:02 saved kip-CS2 5500
+23:19:09 KXCS2MAP 6000 / 6469 calls 20840 errs 410
+23:19:12 saved kip-CS2 6000
+23:23:07 saved kip-CS2 6469
+23:23:10 KXCS2GAME events 4091
+23:27:19 KXCS2GAME 500 / 4091 calls 24213 errs 448
+23:27:23 saved kip-CS2 6969
+23:31:30 KXCS2GAME 1000 / 4091 calls 25949 errs 456
+23:31:34 saved kip-CS2 7469
+23:35:42 KXCS2GAME 1500 / 4091 calls 27700 errs 468
+23:35:47 saved kip-CS2 7969
+23:39:55 KXCS2GAME 2000 / 4091 calls 29441 errs 482
+23:40:00 saved kip-CS2 8469
+23:44:06 KXCS2GAME 2500 / 4091 calls 31175 errs 514
+23:44:12 saved kip-CS2 8969
+23:48:20 KXCS2GAME 3000 / 4091 calls 32901 errs 528
+23:48:26 saved kip-CS2 9469
+23:52:33 KXCS2GAME 3500 / 4091 calls 34610 errs 560
+23:52:39 saved kip-CS2 9969
+23:56:48 KXCS2GAME 4000 / 4091 calls 36341 errs 572
+23:56:54 saved kip-CS2 10469
+23:57:45 saved kip-CS2 10560
+23:57:45 done k:CS2 calls 36641 errs 576 min 88.7
