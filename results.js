@@ -222,6 +222,8 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
   if (s.verdict === 'proven' && KILLED_SOURCES[source]) return cap(s, KILLED_SOURCES[source]);
   if (s.verdict === 'proven' && s.avgClv != null && s.avgClv <= 0) return cap(s, `not proven: closes ${(s.avgClv * 100).toFixed(1)}% CLV, the price did not beat the close`);
   if (!BOOK_SOURCES.has(source)) return s;
+  // pick'em legs: flagged legs do not beat Pinnacle's price (10-24 checks), nothing here is proven
+  if (source === 'sportsProps' && s.verdict === 'proven') return cap(s, "not proven: flagged pick'em legs have not beaten Pinnacle's price on results (10-24 checks)");
   const cuts = by ? by.split('+') : [];
   const book = vals && cuts.includes('book') ? vals[cuts.indexOf('book')] : null;
   const kind = vals && cuts.includes('kind') ? vals[cuts.indexOf('kind')] : null;

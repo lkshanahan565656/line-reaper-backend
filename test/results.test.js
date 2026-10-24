@@ -119,6 +119,9 @@ test('the 7 plays that read proven on 10-24 are capped; BetRivers main lines sti
   assert.equal(props.filter(p => p.verdict === 'proven').length, 0);
   assert.equal(props.find(p => p.by === 'book' && p.play === 'PrizePicks').verdict === 'proven', false);
   assert.equal(props.find(p => p.by === 'kind+book' && p.play === 'sharp consensus · PrizePicks').verdict, 'promising');
+  // results only mildly under the close (not 1.5 sd): still not proven, pick'em legs have no proven kind
+  const mild = scoreboard({ sportsProps: sp(166, 'sharp', { outcome: 'win', profit: 0.8, closeFair: 0.5 }).map((r, i) => i % 2 ? { ...r, outcome: 'loss', profit: -1 } : r) }).plays.filter(p => p.source === 'sportsProps');
+  assert.equal(mild.filter(p => p.verdict === 'proven').length, 0);
   // fresh wallets: killed 10-24, capped even on ROI
   const fresh = Array.from({ length: 60 }, (_, i) => tail(i, { category: 'sports', venue: 'Kalshi', profit: 0.9, clv: 0.05 + (i % 4) * 0.01 }));
   const fp = scoreboard({ fresh }).plays.filter(p => p.source === 'fresh');
