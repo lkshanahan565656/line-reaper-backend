@@ -1,0 +1,36 @@
+name: diag-whoright
+on:
+  push:
+    branches: [diag-whoright]
+  workflow_dispatch:
+    inputs:
+      run:
+        default: '1'
+      left:
+        default: '6'
+permissions:
+  contents: write
+  actions: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: timeout 20400 node diag/whoright.js || true
+        env:
+          RUN_N: ${{ inputs.run || '1' }}
+      - name: dispatch the next run
+        if: ${{ always() && (inputs.left || '6') != '0' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.run || '1' }}
+          LEFT: ${{ inputs.left || '6' }}
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/diag-whoright.yml/dispatches \
+            -d "{\"ref\":\"diag-whoright\",\"inputs\":{\"run\":\"$((RUN+1))\",\"left\":\"$((LEFT-1))\"}}"
