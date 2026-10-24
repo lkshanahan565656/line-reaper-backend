@@ -96,10 +96,11 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single']);
 // why each capped kind stops at promising, shown on the record screen
 const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.";
-// 10-24 re-check of PrizePicks' stale legs from ESPN box scores: where Pinnacle
-// sat elsewhere (our curve) 87 legs won 40 against 50.1 the close expected
-// (-14.3 units, z -2.2); at Pinnacle's own number 79 won 45 against 44.8
-// (+2.8 units). Those now score in their own kind, closed on Pinnacle's price.
+// 10-24 re-check of PrizePicks' stale legs from ESPN box scores (all 249
+// graded): where Pinnacle sat elsewhere (our curve) 133 legs won 70 against
+// 76.5 the close expected (-5.8 units); at Pinnacle's own number 116 won 67
+// against 66.0 (+5.8 units). Those now score in their own kind, closed on
+// Pinnacle's own price.
 const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price. Legs at Pinnacle's own number score on their own row.";
 const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE };
 // closes on the soft books' own fair: scored and marked, but kept out of a

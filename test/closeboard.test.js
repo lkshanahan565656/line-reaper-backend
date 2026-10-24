@@ -178,8 +178,8 @@ test('stale lines stop at promising and say why', () => {
 });
 
 // 10-24: PrizePicks' stale legs re-checked from box scores. Where Pinnacle sat
-// elsewhere (our curve) they lost 2.2 sd under the close; at Pinnacle's own
-// number they held. A stale leg keeps Pinnacle's raw number to the start and
+// elsewhere (our curve) they lost 5.8 units against +6.0 the close expected;
+// at Pinnacle's own number they held. A stale leg keeps Pinnacle's raw number to the start and
 // scores on Pinnacle's own price only when it sat on the app's line.
 test('stale legs keep Pinnacle\'s own number to the start; only exact ones score on its price', async () => {
   let t = Date.parse('2026-10-15T20:00:00Z');
