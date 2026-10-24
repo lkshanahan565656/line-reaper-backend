@@ -1,0 +1,13 @@
+22:00:53 val ids 1750
+22:04:52 val 300 / 1750
+22:04:52 saved valr 300
+22:08:50 val 600 / 1750
+22:08:50 saved valr 600
+22:12:50 val 900 / 1750
+22:12:50 saved valr 900
+22:16:50 val 1200 / 1750
+22:16:50 saved valr 1200
+22:20:48 val 1500 / 1750
+22:20:48 saved valr 1500
+22:23:59 saved valr 1737
+22:23:59 done val calls 1772 errs 0 min 23.7
