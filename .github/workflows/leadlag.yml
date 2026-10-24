@@ -3,7 +3,7 @@ on:
   push: { branches: [diag-leadlag] }
   workflow_dispatch: { inputs: { n: { default: '1' } } }
 permissions: { contents: write, actions: write }
-concurrency: { group: diag-leadlag, cancel-in-progress: false }
+concurrency: { group: diag-leadlag, cancel-in-progress: "${{ github.event_name == 'push' }}" }
 jobs:
   run:
     runs-on: ubuntu-latest

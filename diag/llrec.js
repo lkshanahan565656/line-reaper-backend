@@ -84,19 +84,27 @@ async function readPm() {
   if (r.games > 0) pm = { books: r.books, at: Date.now() };
   stats.counts.pm = { games: r.games, withLines: r.withLines, slugReads: r.slugReads };
 }
+// Kalshi's rate limit: retry a 429 with backoff, three series at a time
+const kget = async (url, opts) => {
+  for (let i = 0; ; i++) {
+    try { return await axios.get(url, opts); }
+    catch (e) { if (e.response?.status !== 429 || i >= 5) throw e; stats.counts.k429 = (stats.counts.k429 || 0) + 1; await wait(800 * (i + 1)); }
+  }
+};
+const khttp = { get: kget };
 async function readKalshi() {
   if (!kseries.length || Date.now() - kseriesAt > 6 * 3600e3) {
-    const all = await xarb.fetchKalshiGameSeries(axios);
+    const all = await xarb.fetchKalshiGameSeries(khttp);
     kseries = all.filter(x => KROOT[kroot(x)]); kseriesAt = Date.now();
     stats.counts.kseries = kseries.length;
   }
   const rows = [];
   let i = 0, failed = 0;
-  await Promise.all(Array.from({ length: 6 }, async () => {
+  await Promise.all(Array.from({ length: 3 }, async () => {
     while (i < kseries.length) {
       const x = kseries[i++];
-      const r = await xarb.fetchKalshiEvents(axios, { seriesTicker: x, maxPages: 5, onPage: page => rows.push(...xarb.parseKalshiBinaries(page).map(r => ({ ...r, series: x }))) });
-      if (r.errors.length) failed++;
+      const r = await xarb.fetchKalshiEvents(khttp, { seriesTicker: x, maxPages: 5, onPage: page => rows.push(...xarb.parseKalshiBinaries(page).map(r => ({ ...r, series: x }))) });
+      if (r.errors.length) { failed++; stats.errors.kalshiSoft = `${x}: ${r.errors[0].message}`.slice(0, 200); }
     }
   }));
   stats.counts.kalshi = { rows: rows.length, failed };
