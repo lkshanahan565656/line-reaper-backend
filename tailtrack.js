@@ -132,6 +132,12 @@ function toRecord(s, t = Date.now()) {
     entry, fee: r6(fee), cost: r6(entry + fee), units, edge: s.edge ?? null, kelly: s.kelly ?? null, q: s.q ?? s.prob ?? null,
     consensus, isConsensus: s.isConsensus ?? consensus.length >= 2,
     ...(limit ? { order: 'limit', filled: false, filledAt: null, until: limit.until || s.gameStartTime || null } : {}),
+    // a fresh-wallet buy: how new the wallet was (first-bet: today, one market)
+    ...(s.fresh && typeof s.fresh === 'object' ? { fresh: { ageDays: num(s.fresh.ageDays), markets: num(s.fresh.markets), firstBet: !!s.fresh.firstBet } } : {}),
+    // the cheapest Texas-placeable price (Kalshi, Polymarket US) when the
+    // signal went out, graded on its own beside the headline venue's
+    ...(s.texas && inUnit(num(s.texas.price)) && num(s.texas.price) + Math.max(0, num(s.texas.fee) ?? 0) < 1
+      ? { texas: { venue: String(s.texas.name || s.texas.key || 'venue'), entry: num(s.texas.price), fee: r6(Math.max(0, num(s.texas.fee) ?? 0)), cost: r6(num(s.texas.price) + Math.max(0, num(s.texas.fee) ?? 0)) } } : {}),
     closePrice: null, closeAt: null, closeFrozen: false, profit: null, clv: null, settledAt: null,
   };
 }
@@ -171,11 +177,13 @@ function settle(rec, market, t = Date.now()) {
   if (!res) return false;
   if (res.void) {
     Object.assign(rec, { status: 'settled', result: 'void', profit: 0 });
+    if (rec.texas) rec.texas.profit = 0;
   } else {
     const idx = outcomeIndexOf(market, rec);
     if (idx == null) return false;
     const won = idx === res.winner;
     Object.assign(rec, { status: 'settled', result: won ? 'win' : 'loss', profit: r4(won ? rec.units * (1 / costOf(rec) - 1) : -rec.units) });
+    if (rec.texas?.cost > 0) rec.texas.profit = r4(won ? rec.units * (1 / rec.texas.cost - 1) : -rec.units);
   }
   const base = clvBase(rec);
   rec.clv = rec.closePrice != null && base > 0 ? r4(rec.closePrice / base - 1) : null;
@@ -243,26 +251,39 @@ function groupBy(list, key) {
   return g;
 }
 
-// One bet per market and side: a CS2 match that 17 wallets bought the same
-// side of is one bet, not 17 (10-23 audit: 46-12 +54u unclustered, 19-8 +10.9u
-// clustered). Each cluster stakes 1u at the mean of its rows' per-unit result,
-// and its CLV is the mean of theirs. 50 clustered bets is the bar.
+// One bet per game: a CS2 match that 17 wallets bought the same side of is one
+// bet, not 17, and so are a game's moneyline, spread and total bought by fresh
+// wallets around the same time (10-24 re-check: by eventSlug+outcome name the
+// "Yes" of two different markets of one UCL game were merged while the game's
+// O/U and moneyline stayed apart). Each game stakes 1u at the mean of its rows'
+// per-unit result; its CLV and expected wins (the price paid) are the mean of
+// theirs. t is the units' t-stat over games. 50 graded games is the bar.
 const CLUSTER_TARGET = 50;
-const clusterKey = r => `${r.eventSlug || r.conditionId || r.market}|${r.outcome ?? r.outcomeIndex ?? ''}`;
-function clusterStats(list) {
+const gameKey = r => String(r.eventSlug || r.conditionId || r.market || '').replace(/-more-markets$/, '');
+// Texas-placeable: the follower's price was at Kalshi or Polymarket US (not
+// polymarket.com, not a sportsbook Texas doesn't have)
+const TEXAS_VENUES = new Set(['Kalshi', 'Polymarket US']);
+// texas: grade each row at its Texas price (rec.texas, or the headline venue
+// when that was Kalshi or Polymarket US); rows with neither are left out.
+const texasRow = r => (r.texas?.cost > 0 && r.texas.profit != null ? { ...r, cost: r.texas.cost, profit: r.texas.profit, venue: r.texas.venue }
+  : TEXAS_VENUES.has(r.venue) ? r : null);
+function clusterStats(list, { texas = false } = {}) {
+  if (texas) list = list.map(texasRow).filter(Boolean);
   const m = new Map();
-  for (const r of list) { const k = clusterKey(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
+  for (const r of list) { const k = gameKey(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
+  const mean = a => (a.length ? a.reduce((x, v) => x + v, 0) / a.length : null);
   const bets = [...m.values()].map(rows => {
-    const g = rows.filter(r => r.result === 'win' || r.result === 'loss' || r.result === 'void');
-    const per = rows.filter(r => r.result === 'win' || r.result === 'loss').map(r => (r.profit || 0) / r.units);
-    const clvs = rows.filter(r => r.clv != null).map(r => r.clv);
-    return { rows: rows.length, graded: g.length, profit: per.length ? per.reduce((a, v) => a + v, 0) / per.length : null,
-      clv: clvs.length ? clvs.reduce((a, v) => a + v, 0) / clvs.length : null };
+    const g = rows.filter(r => r.result === 'win' || r.result === 'loss');
+    return { rows: rows.length, profit: mean(g.map(r => (r.profit || 0) / r.units)), win: mean(g.map(r => (r.result === 'win' ? 1 : 0))),
+      paid: mean(g.map(r => r.cost ?? r.entry).filter(v => v != null)), clv: mean(rows.filter(r => r.clv != null).map(r => r.clv)) };
   });
   const gr = bets.filter(b => b.profit != null), cl = bets.filter(b => b.clv != null);
   const units = gr.reduce((a, b) => a + b.profit, 0);
+  const mu = gr.length ? units / gr.length : null;
+  const sd = gr.length > 1 ? Math.sqrt(gr.reduce((a, b) => a + (b.profit - mu) ** 2, 0) / (gr.length - 1)) : null;
   return { rows: list.length, n: gr.length, wins: gr.filter(b => b.profit > 0).length, losses: gr.filter(b => b.profit <= 0).length,
-    units: r2(units), roi: gr.length ? r4(units / gr.length) : null,
+    units: r2(units), roi: gr.length ? r4(mu) : null, t: sd > 0 ? r2(mu / (sd / Math.sqrt(gr.length))) : null,
+    winShare: gr.length ? r2(gr.reduce((a, b) => a + b.win, 0)) : null, expWins: gr.length ? r2(gr.reduce((a, b) => a + (b.paid ?? 0), 0)) : null,
     avgClv: cl.length ? r4(cl.reduce((a, b) => a + b.clv, 0) / cl.length) : null,
     beatClosePct: cl.length ? r4(cl.filter(b => b.clv > 0).length / cl.length) : null, clvN: cl.length,
     target: CLUSTER_TARGET, toTarget: Math.min(1, r2(gr.length / CLUSTER_TARGET)),
@@ -408,6 +429,10 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
     const closed = all.filter(r => r.clv != null && r.result !== 'unfilled' && !waiting(r));
     return {
       open: all.filter(r => r.status !== 'settled').length, overall: stats(done), clustered: clusterStats(done.filter(r => r.result === 'win' || r.result === 'loss')),
+      texas: clusterStats(done.filter(r => r.result === 'win' || r.result === 'loss'), { texas: true }),
+      // first-bet wallets (recorded from v3.149.0; older rows carry no wallet age)
+      firstBet: clusterStats(done.filter(r => (r.result === 'win' || r.result === 'loss') && r.fresh?.firstBet)),
+      firstBetTexas: clusterStats(done.filter(r => (r.result === 'win' || r.result === 'loss') && r.fresh?.firstBet), { texas: true }),
       closing: { n: closed.length, avgClv: closed.length ? r4(closed.reduce((a, r) => a + r.clv, 0) / closed.length) : null,
         beatClosePct: closed.length ? r4(closed.filter(r => r.clv > 0).length / closed.length) : null }, byGrade: by('grade'), byCategory: by('category'),
       byConsensus: { consensus: stats(done.filter(r => r.isConsensus)), single: stats(done.filter(r => !r.isConsensus)) },

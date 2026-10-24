@@ -708,7 +708,7 @@ test('walletHistory / freshOf: a whole, recent, narrow history is fresh', () => 
   ];
   const h = W.walletHistory(W.parsePolymarketTrades(rows), { rows: rows.length });
   assert.deepEqual(h, { trades: 3, markets: 2, firstAt: (sec(NOW - 2 * 86400e3)) * 1000, full: true });
-  assert.deepEqual(W.freshOf(h, { now: NOW }), { firstAt: new Date(h.firstAt).toISOString(), ageDays: 2, markets: 2, trades: 3 });
+  assert.deepEqual(W.freshOf(h, { now: NOW }), { firstAt: new Date(h.firstAt).toISOString(), ageDays: 2, markets: 2, trades: 3, firstBet: false });
 
   assert.equal(W.freshOf({ ...h, full: false }, { now: NOW }), null, 'a full page: there is older history');
   assert.equal(W.freshOf(h, { now: NOW + 6 * 86400e3 }), null, 'first trade 8 days ago');
@@ -756,7 +756,7 @@ test('watcher: an ungraded whale buy from a fresh wallet is tagged; old wallets 
   const out = await w.pollPolymarket();
   assert.deepEqual(out.map(e => [e.wallet.slice(-2), e.tag]),
     [['f1', 'fresh wallet'], ['f2', 'unknown whale'], ['aa', 'graded whale'], ['f1', 'unknown whale'], ['f3', 'unknown whale'], ['f4', 'unknown whale']]);
-  assert.deepEqual(out[0].fresh, { firstAt: new Date(NOW - 86400e3).toISOString(), ageDays: 1, markets: 1, trades: 2 });
+  assert.deepEqual(out[0].fresh, { firstAt: new Date(NOW - 86400e3).toISOString(), ageDays: 1, markets: 1, trades: 2, firstBet: true });
   assert.deepEqual(asked.map(a => a.slice(-2)), ['f1', 'f2', 'f3'], 'three reads a poll');
   const st = w.state();
   assert.equal(st.freshSkipped, 1);
@@ -772,12 +772,12 @@ test('watcher: an ungraded whale buy from a fresh wallet is tagged; old wallets 
   state.polymarket = [pt({ proxyWallet: old, size: 30000, timestamp: sec(NOW + 10e3) }), pt({ proxyWallet: fresh, size: 30000, timestamp: sec(NOW + 20e3) })];
   const again = await w.pollPolymarket();
   assert.deepEqual(again.map(e => e.tag), ['unknown whale', 'fresh wallet']);
-  assert.equal(asked.length, 3, 'no new reads');
+  assert.deepEqual(asked.map(a => a.slice(-2)), ['f1', 'f2', 'f3', 'f4'], 'only the buy skipped last poll is read');
   t += 11 * MIN;
   state.polymarket = [pt({ proxyWallet: fresh, size: 30000, timestamp: sec(t - 5e3) })];
   const later = await w.pollPolymarket();
   assert.equal(later[0].tag, 'unknown whale', 'read again: nine markets now');
-  assert.equal(asked.length, 4);
+  assert.equal(asked.length, 5);
 
   // the first fresh print growing (more fills of the same order) keeps its tag
   state.polymarket = [{ ...first, size: '60000' }];
@@ -786,6 +786,67 @@ test('watcher: an ungraded whale buy from a fresh wallet is tagged; old wallets 
   assert.equal(grown.notional, 9000);
   assert.equal(grown.tag, 'fresh wallet');
   assert.equal(grown.fresh.markets, 1);
+});
+
+test('watcher: a fresh buy skipped for lack of reads is read next poll and still announced', async () => {
+  let t = NOW;
+  const { http, state } = exchangesHttp();
+  const ws = ['e1', 'e2', 'e3'].map(x => `0x000000000000000000000000000000000000${x.padStart(4, '0')}`);
+  const walletHistory = async () => ({ trades: 1, markets: 1, firstAt: NOW - 86400e3, full: true });
+  const w = W.createWhaleWatcher({ http, now: () => t, walletHistory, opts: { freshLookupsPerPoll: 1 }, log: quiet });
+  state.polymarket = ws.map((wl, i) => pt({ proxyWallet: wl, size: 20000, timestamp: sec(NOW - 30e3 + i * 1000) }));
+  const one = await w.pollPolymarket();
+  assert.deepEqual(one.filter(e => e.fresh).map(e => e.wallet), [ws[0]]);
+  assert.equal(w.state().fresh.pending, 2);
+  t += 30e3;
+  state.polymarket = [];
+  const two = await w.pollPolymarket();
+  assert.deepEqual(two.map(e => [e.wallet, e.tag]), [[ws[1], 'fresh wallet']], 'the oldest skipped one, tagged late');
+  t += 30e3;
+  assert.deepEqual((await w.pollPolymarket()).map(e => e.wallet), [ws[2]]);
+  assert.equal(w.state().freshRetried, 2);
+  assert.equal(w.state().fresh.pending, 0);
+  assert.equal(w.events({ fresh: true }).length, 3);
+  // too old by the time a read is free: dropped, not announced
+  const late = W.createWhaleWatcher({ http, now: () => t, walletHistory, opts: { freshLookupsPerPoll: 1 }, log: quiet });
+  state.polymarket = ws.map((wl, i) => pt({ proxyWallet: wl, size: 20000, timestamp: sec(t - 30e3 + i * 1000) }));
+  await late.pollPolymarket();
+  t += 11 * MIN;
+  state.polymarket = [];
+  assert.deepEqual(await late.pollPolymarket(), []);
+  assert.equal(late.state().fresh.pending, 0);
+});
+
+test('watcher: under whale size, only a first-bet wallet (first trade today, one market) is an event', async () => {
+  let t = NOW;
+  const { http, state } = exchangesHttp();
+  const wl = x => `0x0000000000000000000000000000000000${x.padStart(6, '0')}`;
+  const hist = {
+    [wl('b1')]: { trades: 1, markets: 1, firstAt: NOW - 3 * 3600e3, full: true },       // first bet: tagged
+    [wl('b2')]: { trades: 4, markets: 3, firstAt: NOW - 2 * 86400e3, full: true },      // fresh but not first-bet: not an event
+    [wl('b3')]: { trades: 1, markets: 1, firstAt: NOW - 3600e3, full: true },           // first bet, but under $1k
+  };
+  const asked = [];
+  const walletHistory = async w => { asked.push(w); return hist[w]; };
+  const w = W.createWhaleWatcher({ http, now: () => t, walletHistory, log: quiet });
+  state.polymarket = [
+    pt({ proxyWallet: wl('b1'), size: 3000, price: 0.5, timestamp: sec(NOW - 30e3) }),   // $1,500
+    pt({ proxyWallet: wl('b2'), size: 3000, price: 0.5, timestamp: sec(NOW - 20e3) }),
+    pt({ proxyWallet: wl('b3'), size: 1000, price: 0.5, timestamp: sec(NOW - 10e3) }),   // $500
+  ];
+  const out = await w.pollPolymarket();
+  assert.deepEqual(out.map(e => [e.wallet, e.tag, e.fresh.firstBet]), [[wl('b1'), 'fresh wallet', true]]);
+  assert.deepEqual(asked, [wl('b1'), wl('b2')], 'no read under $1k');
+  assert.equal(w.events().length, 1);
+  // a whale-size buy by a fresh, not first-bet wallet is still tagged fresh
+  t += 30e3;
+  state.polymarket = [pt({ proxyWallet: wl('b2'), size: 20000, price: 0.5, timestamp: sec(NOW + 10e3) })];
+  const big = await w.pollPolymarket();
+  assert.deepEqual(big.map(e => [e.tag, e.fresh.firstBet]), [['fresh wallet', false]]);
+  // WHALE_FIRST_BET_MIN_USD=0 turns the small reads off
+  const off = W.createWhaleWatcher({ http, now: () => t, walletHistory, opts: W.optionsFromEnv({ WHALE_FIRST_BET_MIN_USD: '0' }), log: quiet });
+  state.polymarket = [pt({ proxyWallet: wl('b1'), size: 3000, price: 0.5, timestamp: sec(t - 5e3) })];
+  assert.deepEqual(await off.pollPolymarket(), []);
 });
 
 test('watcher: no walletHistory, or WHALE_FRESH_DAYS=0, means no radar', async () => {

@@ -14,6 +14,7 @@ const ADMIN_TOKEN = 'test-admin-token';
 const WEBHOOK = 'https://discord.example/api/webhooks/1/test';
 for (const k of ['DATABASE_URL', 'TAIL_WEBHOOK', 'ODDS_API_KEY', 'OWLS_API_KEY', 'WHALE_MIN_USD', 'XARB_MIN_PCT', 'XARB_ALERT_MIN', 'POLYMARKET_DISPLAY_OK', 'KALSHI_DISPLAY_OK']) delete process.env[k];
 for (const k of Object.keys(process.env)) if (/^TAIL_/.test(k)) delete process.env[k];
+process.env.FRESH_ALERTS = 'on';   // the ping path is tested here; it ships off
 Object.assign(process.env, {
   PAYWALL: 'on', AUTH_SECRET: 'test-secret', TRACKER_ADMIN_TOKEN: ADMIN_TOKEN, ALERT_WEBHOOK_URL: WEBHOOK, UPSTREAM_GAP_MS: '0', XARB_PMUS_LEAGUES: 'nba',
   TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'),
@@ -537,7 +538,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.148.1');
+  assert.equal(body.version, '3.150.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -564,8 +565,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.148.1');
-  assert.equal((await get('/')).body.version, '3.148.1');
+  assert.equal(require('../package.json').version, '3.150.0');
+  assert.equal((await get('/')).body.version, '3.150.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1240,6 +1241,37 @@ test('where to tail: Polymarket US, the same game market, when it gives the most
   assert.ok(st.polymarketUs.quoted >= 1);
   assert.ok(st.routing.byVenue.polymarketus >= 1);
   fx.pmus = null;
+});
+
+test('fresh wallets: the same bet on Polymarket US is the Texas price', async () => {
+  const usd = v => ({ value: v, currency: 'USD' });
+  fx.pmus = {
+    event: { event: { slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', markets: [{
+      slug: 'aec-nba-nyk-bos-2026-10-10', question: 'Who will win Knicks vs Celtics?', sportsMarketType: 'basketball_team_full_game_winner', active: true, closed: false,
+      status: 'MARKET_STATUS_OPEN', bestBidQuote: usd('0.5300'), bestAskQuote: usd('0.5400'),
+      marketSides: [{ description: 'Celtics', long: true, team: { name: 'Boston Celtics', abbreviation: 'bos', ordering: 'home' } },
+        { description: 'Knicks', long: false, team: { name: 'New York Knicks', abbreviation: 'nyk', ordering: 'away' } }] }] } },
+    book: { marketData: { bids: [{ px: usd('0.5400'), qty: '5000' }], offers: [{ px: usd('0.5500'), qty: '4000' }], state: 'MARKET_STATE_OPEN' } },
+  };
+  const game = { ...texasMarket(), question: 'Knicks vs. Celtics', outcomes: '["Knicks","Celtics"]', sportsMarketType: 'moneyline',
+    gameStartTime: iso(Date.now() + 3 * 3600e3), events: [{ id: 'e1', slug: 'nba-nyk-bos-2026-10-10', title: 'Knicks vs. Celtics', category: 'Sports' }] };
+  fx.markets = [game];
+  tick(6e3);
+  const e = { id: 'polymarket|0xfus', exchange: 'polymarket', wallet: '0x78', side: 'BUY', outcome: 'Celtics', outcomeIndex: 1, price: 0.52, notional: 9000,
+    at: iso(Date.now() - 10e3), title: 'Knicks vs. Celtics', conditionId: COND2, asset: `${TEXAS.asset}9`, eventSlug: 'nba-nyk-bos-2026-10-10', fresh: { markets: 1, trades: 1, ageDays: 0.5 } };
+  const sig = await S.freshSignal(e);
+  assert.ok(sig, 'followable');
+  assert.equal(sig.texas.name, 'Polymarket US');
+  assert.equal(sig.texas.price, 0.55);
+  assert.ok(e.venues.some(v => v.key === 'polymarketus'), 'shown as a venue');
+  const rec = require('../tailtrack').toRecord(sig, Date.now());
+  assert.equal(rec.texas.venue, 'Polymarket US');
+  assert.ok(Math.abs(rec.texas.cost - (0.55 + 0.0695 * 0.55 * 0.45)) < 1e-5);
+  fx.pmus = null;
+  fx.markets = [{ ...game, events: [{ id: 'e2', slug: 'nba-nyk-bos-2026-10-11', title: 'Knicks vs. Celtics', category: 'Sports' }] }];
+  tick(6e3);
+  const none = await S.freshSignal({ ...e, id: 'polymarket|0xfus2', eventSlug: 'nba-nyk-bos-2026-10-11' });
+  assert.equal(none.texas, null, 'no Kalshi or Polymarket US market: no Texas price');
 });
 
 test('exchange arbs: Kalshi against the games Polymarket US lists, re-priced on its live book before it counts', async () => {
