@@ -1,0 +1,17 @@
+name: diag-esh2h-probe
+on:
+  push:
+    branches: [diag-esh2h-probe]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          node diag/probe.js > probe.txt 2>&1; cat probe.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esh2h-probe-out; git add -f probe.txt; git commit -qm probe; git push -qf origin diag-esh2h-probe-out
