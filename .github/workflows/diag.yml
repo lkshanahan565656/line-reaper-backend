@@ -6,12 +6,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v4
       - run: |
           set +e
+          python3 fetch.py > fetch.txt 2>&1
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/snap && cd out
-          date -u > at.txt
-          for q in "status" "props/record" "props/record/picks?status=graded&limit=1000" "props/record/picks?status=locked&limit=1000" "ev/scoreboard?state=TX"; do
-            f=snap/$(echo "$q" | tr '/?&=' '____').json; curl -s -m 400 "$B/api/$q" > $f; echo "$q $(wc -c < $f)" >> snaps.txt; done
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-3sharp-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-3sharp-out
+          mkdir -p out/snap
+          date -u > out/at.txt; cp fetch.txt out/
+          curl -s -m 400 "$B/api/status" > out/snap/status.json
+          cd out && git init -q && git checkout -q -b diag-3sharp-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-3sharp-out2
