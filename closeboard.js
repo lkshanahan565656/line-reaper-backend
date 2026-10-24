@@ -68,6 +68,8 @@ const KINDS = {
   'props-p6-sharp': 'Pick6 sharp consensus',
   'props-p6-ev': 'Pick6 sharp price',
   'props-p6-gap': 'Pick6 line gap',
+  'props-p6-stale': 'Pick6 stale (confirmed)',
+  'props-p6-stale-single': 'Pick6 stale (Pinnacle only)',
   // FanDuel and BetRivers alone where nothing sharp prices the leg (college
   // football, NHL): the apps' margin against the soft books, judged on their close
   'props-book-fair': "Pick'em vs FanDuel + BetRivers",
@@ -97,7 +99,7 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 // there. 10-19: BetRivers' stale lines read proven at 65 games, +4.2% CLV,
 // while 104 graded lines won 47 against 57.9 the close expected (-16.9 units);
 // of the props with Pinnacle's line on record, 19 of 27 sat at another number.
-const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single']);
+const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single', 'props-p6-stale', 'props-p6-stale-single']);
 // why each capped kind stops at promising, shown on the record screen
 const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.";
 // 10-24 re-check of PrizePicks' stale legs from ESPN box scores (all 249
@@ -106,7 +108,7 @@ const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's numb
 // against 66.0 (+5.8 units). Those now score in their own kind, closed on
 // Pinnacle's own price.
 const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price. Legs at Pinnacle's own number score on their own row.";
-const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE };
+const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE, 'props-p6-stale': STALE_NOTE, 'props-p6-stale-single': STALE_NOTE };
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
 const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);
@@ -114,7 +116,11 @@ const day = t => String(t || '').slice(0, 10);
 // a second view of legs already counted in another kind: kept out of a book's
 // total and the headline, so no leg counts twice there
 const DUP_KINDS = new Set(['props-stale-exact']);
-const STALE_PROPS = new Set(['stale', 'stale-single']);
+const STALE_PROPS = new Set(['stale', 'stale-single', 'p6-stale', 'p6-stale-single']);
+// a stat both players share (a tennis match's total games, a fight's length)
+// is one bet on the match, whichever player the app lists it under
+const MATCH_MKEYS = new Set(['games_played', '1st_set_games_played', 'sets_played', 'fight_time', 'tiebreakers_played']);
+const legCluster = b => `${b.sport}|${MATCH_MKEYS.has(b.mkey) && b.matchTitle ? b.matchTitle : b.player}|${b.mkey}|${day(b.start)}`;
 
 // one line: { kind, book, cluster, state: null (open) | 'ok' | 'stale' | 'unverified', clv, exec, win, bet }
 // Main lines (pin: true) grade the exchanges a Texan trades (Gemini,
@@ -137,7 +143,7 @@ function propsPlay(b) {
   const state = sporttrack.closeState(b);
   const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
   return { kind: `props-${b.kind}`, book: propsVenue(b),
-    cluster: `${b.sport}|${b.player}|${b.mkey}|${day(b.start)}`, state, clv: b.closeEv ?? null,
+    cluster: legCluster(b), state, clv: b.closeEv ?? null,
     exec: b.execOk === true ? b.closeEv ?? null : null, win: graded ? b.outcome === 'win' : null,
     p: b.closeFair ?? null, d: b.signalDecimal ?? null, bet: results.SOURCES.sportsProps.bet(b) };
 }
@@ -240,4 +246,4 @@ function alertBooks(board, { minExecClv = 1 } = {}) {
   return new Set((board?.rows || []).filter(r => ALERT_KINDS.has(r.kind) && !r.relayed && !RELAYED.has(r.book) && r.mark === 'proven' && (r.avgExecClv ?? -Infinity) >= minExecClv).map(r => r.book));
 }
 
-module.exports = { scoreboard, alertBooks, propsVenue, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };
+module.exports = { scoreboard, alertBooks, propsVenue, legCluster, STALE_PROPS, KINDS, TARGET, NO_SHARP_CLOSE, BOOK_CLOSE, CAPPED_KINDS, DUP_KINDS };

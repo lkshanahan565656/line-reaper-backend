@@ -385,3 +385,32 @@ test('the +2 min price comes from a venue read at least 105 s after the flag, ne
   assert.ok(Math.abs(costs.get(`${r.group}|Kansas City Chiefs|fanduel`) - 1 / 1.9091) < 1e-3);
   assert.ok(fairs.get(`${r.group}|Kansas City Chiefs`) > 53);
 });
+
+// 10-24: Pinnacle's tennis and UFC lines (pinextra: no American prices, alt
+// lines too) feed the engine, and DK Pick6 is a venue like the other apps
+test('a Pick6 tennis leg left on Pinnacle\'s old total games is stale at Pinnacle\'s own number', () => {
+  const eng = S.createStaleLines();
+  const start = '2026-10-25T12:00:00Z';
+  const pin = p => [37.5, 38.5, 39.5].map((line, i) => ({ sport: 'TENNIS', player: 'Jannik Sinner', mkey: 'games_played', key: 'TENNIS|jannik sinner|games_played', line, pOver: +(p + 0.2 * (1 - i)).toFixed(4), start }));
+  const row = { key: 'TENNIS|jannik sinner|games_played', sport: 'TENNIS', player: 'Jannik Sinner', mkey: 'games_played', market: 'Total Games', matchTitle: 'Sinner vs Alcaraz', startTime: start,
+    books: { pick6: { line: 38.5, over: 1, under: 1, overOpen: true, underOpen: true } } };
+  const apps = () => S.appQuotes([row], { pOverOf: () => 0.5 });
+  eng.observe(S.pinPropQuotes(pin(0.52)), min(0));
+  eng.observe(apps(), min(0));
+  eng.observe(S.pinPropQuotes(pin(0.42)), min(6));
+  eng.step(min(7));
+  const priceApp = (book, fair, c, side) => (book === 'pick6' ? { ev: (fair / 0.5503 - 1) * 100, decimal: 1 / 0.5503, entry: '3-pick' } : null);
+  const rows = eng.rows(min(7), { priceApp });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].venue, 'pick6');
+  assert.equal(rows[0].side, 'Under');
+  assert.equal(rows[0].pinX, 38.5, 'Pinnacle\'s main is the app\'s number');
+  assert.equal(rows[0].fairProb, 58);
+  assert.deepEqual(eng.pinMain(S.propKey('TENNIS', 'Jannik Sinner', 'games_played', start), min(7)), { x: 38.5, p: 0.42 });
+  // Pick6 read half an hour ago still counts as quoting; past 35 minutes it doesn't
+  assert.equal(eng.rows(min(30), { priceApp }).length, 0, 'Pinnacle\'s read is past 10 minutes');
+  eng.observe(S.pinPropQuotes(pin(0.42)), min(34));
+  assert.equal(eng.rows(min(34), { priceApp }).length, 1);
+  eng.observe(S.pinPropQuotes(pin(0.42)), min(40));
+  assert.equal(eng.rows(min(40), { priceApp }).length, 0);
+});
