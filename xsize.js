@@ -143,6 +143,15 @@ function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX
     const t = now();
     const all = sidesOf(input);
     state.sides = all.length;
+    // per venue: sides priced, how many at Pinnacle's fair or better at the top, the best top EV
+    state.byVenue = {};
+    for (const x of all) {
+      const v = (state.byVenue[x.venue] ||= { sides: 0, atFair: 0, mainAtFlag: 0, bestEv: null });
+      v.sides++;
+      if (x.ev >= 0) v.atFair++;
+      if (x.ev >= D.FLAG_EV && !x.alt) v.mainAtFlag++;
+      if (v.bestEv == null || x.ev > v.bestEv) v.bestEv = x.ev;
+    }
     const bySide = new Map(all.map(s => [s.sideKey, s]));
     const bets = await store.all();
     const changed = new Map();
