@@ -5416,7 +5416,7 @@ function propsBoardRows() {
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
   observeStaleApps(rows);
-  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, combo: sportPlays.filter(x => x.kind === 'combo').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -5445,6 +5445,8 @@ function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
   if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
+  // a combo leg closes on the same books and Pinnacle's parts at its own number
+  if (kind === 'combo') return sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.p ?? null;
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a book-fair leg closes on the books' own fair at its line (and on
   // Pinnacle's or Kalshi's, sportSharpAt, when one appears before the start)
@@ -5514,6 +5516,24 @@ const BOOK_CONS_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_CONSENS
 // judged at 50 graded. THREE_SHARP=off turns it off.
 const THREE_SHARP_ON = !/^(off|0|false|no)$/i.test(String(process.env.THREE_SHARP || '').trim());
 const THREE_SHARP_OPTS = { ...sportProps.THREE_SHARP, ...(process.env.THREE_SHARP_MIN_EV != null ? { minEv: parseFloat(process.env.THREE_SHARP_MIN_EV) } : {}) };
+// ── COMBOS: points + rebounds and the rest off FanDuel, BetRivers and Pinnacle's parts ──
+// (sportprops.comboPlays) two or more sources at the app's own number, one a
+// book read direct, each past the app's break-even on its own price. Kind
+// 'combo' (Pick6 'p6-combo'), its close the same sources, each stored. A lead:
+// grey on PROPS, never in Best Plays or alerts, judged at 50 graded. COMBOS=off turns it off.
+const COMBO_ON = !/^(off|0|false|no)$/i.test(String(process.env.COMBOS || '').trim());
+const COMBO_OPTS = { ...sportProps.COMBO, ...(process.env.COMBO_MIN_EV != null ? { minEv: parseFloat(process.env.COMBO_MIN_EV) } : {}) };
+// Pinnacle's quotes for each part of a combo row, same game: { points: [...], rebounds: [...] }
+function pinParts(row) {
+  const want = sportProps.COMBO_PARTS[row?.mkey];
+  if (!want) return null;
+  const out = {};
+  for (const m of want) out[m] = pinprops.quotesForGame(pinPropsIndex, { ...row, key: String(row.key).replace(/\|[^|]*$/, `|${m}`) }) || [];
+  return out;
+}
+// Pinnacle's own combo quotes and the books' at every line they hang
+const comboQuotes = row => [...(pinprops.quotesForGame(pinPropsIndex, row) || []).map(q => ({ book: 'pinnacle', line: q.line, pOver: q.pOver })), ...bookLineQuotes(row)];
+const comboSourcesAt = (row, line, kind) => (baseSportKind(kind) === 'combo' ? sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.sources ?? null : null);
 // every book quote on the row's player and stat in the same game, at every line it hangs
 function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   if (!(Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)) return [];
@@ -5561,6 +5581,11 @@ function priceSportRows(rows) {
     if (s3.length) row.threeSharp = { book: s3[0].book, side: s3[0].side, line: s3[0].line, ev: s3[0].ev, evMin: s3[0].evMin, entries: s3[0].entries, sources: s3[0].sources, plays: s3.map(p => ({ book: p.book, side: p.side, line: p.line, ev: p.ev, evMin: p.evMin })) };
     else delete row.threeSharp;
     for (const p of s3) flagged.push({ row, play: p, kind: 'sharp3' });
+    // combos: the books at the app's number and Pinnacle's parts added up
+    const cb = COMBO_ON && sportProps.isCombo(row.mkey) ? sportProps.comboPlays(row, { sharp: comboQuotes(row), parts: pinParts(row), dfsEv: dfsLegEv, o: COMBO_OPTS }) : [];
+    if (cb.length) row.combo = { book: cb[0].book, side: cb[0].side, line: cb[0].line, ev: cb[0].ev, evMin: cb[0].evMin, entries: cb[0].entries, sources: cb[0].sources, parts: cb[0].parts, plays: cb.map(p => ({ book: p.book, side: p.side, line: p.line, ev: p.ev, evMin: p.evMin })) };
+    else delete row.combo;
+    for (const p of cb) flagged.push({ row, play: p, kind: 'combo' });
     const sharpTaken = new Set();
     let sharpBest = null;
     for (const p of cplays) {
@@ -6285,9 +6310,9 @@ async function trackSportProps() {
     // when each app's lines were last read (a PrizePicks pull that failed read nothing)
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
-    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
+    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
@@ -6300,7 +6325,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1' };
+  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1', combo: req.query.combo === '1' };
   const market = String(req.query.market || '').slice(0, 80);
   const hits = propsBoard.queryRows(rows, { ...qo, market });
   // the Lines view: one app's lines, with the header count and the prop filter

@@ -514,6 +514,98 @@ function threeSharpPlays(row, { sharp = [], kalshi = null, dfsEv, o = THREE_SHAR
   return out.sort((a, b) => b.evMin - a.evMin);
 }
 
+// ── COMBOS: points + rebounds and the rest, priced off the books and Pinnacle's parts ──
+// Pinnacle doesn't post most NBA combo props (pts+rebs, pts+asts, rebs+asts,
+// steals+blocks), but FanDuel and BetRivers, read direct, do, and Pinnacle
+// posts each part. A combo leg's sources: each book's own two-way price at the
+// app's exact number (vig out), Pinnacle's own combo there if it hangs one,
+// else Pinnacle's parts added up (each part's line and no-vig price read as a
+// mean on its curve; means add whatever the correlation, and the combo's own
+// spread prices the sum at the app's line). A leg clears only where at least
+// two sources, one of them a book read direct, all put the app's side past its
+// break-even on their own and sit within maxSpreadPts of each other; the fair
+// is their mean. Kind 'combo' (Pick6 'p6-combo'), its close the same sources at
+// the start, each one stored (never our curve alone). A lead: alerts off, its
+// own record, judged at 50 graded on win rate vs break-even and the close.
+const COMBO_PARTS = { pts_rebs: ['points', 'rebounds'], pts_asts: ['points', 'assists'], rebs_asts: ['rebounds', 'assists'], pra: ['points', 'rebounds', 'assists'], stocks: ['steals', 'blocks'] };
+const COMBO = { books: ['fanduel', 'betrivers'], shadow: SOFT_BOOKS, minSources: 2, minBooks: 1, maxSpreadPts: 8, minEv: 0 };
+const isCombo = mkey => Object.prototype.hasOwnProperty.call(COMBO_PARTS, mkey);
+// Pinnacle's main quote of a part: the line it prices nearest even
+const mainQuote = list => (list || []).filter(q => q && q.line != null && q.pOver > 0 && q.pOver < 1).reduce((a, q) => (!a || Math.abs(q.pOver - 0.5) < Math.abs(a.pOver - 0.5) ? q : a), null);
+// parts: { points: [{ line, pOver }], rebounds: [...] } (Pinnacle's quotes for this game)
+// → { p, mean, parts: [{ mkey, line, p, mean }] } or null
+function composedAt(row, line, parts) {
+  const want = COMBO_PARTS[row?.mkey];
+  if (!want || !parts) return null;
+  const used = [];
+  for (const m of want) {
+    const q = mainQuote(parts[m]);
+    const mean = q ? meanFor(m, row.sport, q.line, q.pOver) : null;
+    if (mean == null) return null;
+    used.push({ mkey: m, line: q.line, p: +(q.pOver * 100).toFixed(1), mean: +mean.toFixed(2) });
+  }
+  const mean = used.reduce((a, x) => a + x.mean, 0);
+  return { p: pOver(row.mkey, row.sport, mean, line), mean: +mean.toFixed(2), parts: used };
+}
+// sharp: [{ book, line, pOver }] (Pinnacle's and the books' combo quotes);
+// parts: Pinnacle's part quotes. → { p, n, books, spreadPts, sources: [{ book, line, p }], parts } or null
+function comboAt(row, line, { sharp = [], parts = null, o = COMBO } = {}) {
+  if (row?.esports || !isCombo(row?.mkey)) return null;
+  const srcs = [];
+  for (const b of o.books) {
+    const q = atNumber((sharp || []).filter(x => x && x.book === b), row.mkey, line, { lineTolFrac: LINE_TOL_FRAC });
+    if (q) srcs.push({ book: b, line: q.line, p: q.pOver });
+  }
+  const books = srcs.length;
+  if (books < o.minBooks) return null;
+  const pin = atNumber((sharp || []).filter(x => x && x.book === 'pinnacle'), row.mkey, line, { lineTolFrac: LINE_TOL_FRAC });
+  let comp = null;
+  if (pin) srcs.push({ book: 'pinnacle', line: pin.line, p: pin.pOver });
+  else if ((comp = composedAt(row, line, parts))) srcs.push({ book: 'pinnacle-parts', line, p: comp.p });
+  if (srcs.length < o.minSources) return null;
+  // Action Network's copies at the number: kept on the leg to be scored, never counted
+  const shadow = [];
+  for (const b of o.shadow || []) {
+    const q = atNumber((sharp || []).filter(x => x && x.book === b), row.mkey, line, { lineTolFrac: LINE_TOL_FRAC });
+    if (q) shadow.push({ book: b, line: q.line, p: q.pOver });
+  }
+  const ps = srcs.map(x => x.p);
+  const spreadPts = +((Math.max(...ps) - Math.min(...ps)) * 100).toFixed(1);
+  if (spreadPts > o.maxSpreadPts) return null;
+  return { p: ps.reduce((a, x) => a + x, 0) / ps.length, n: srcs.length, books, spreadPts, sources: srcs, shadow, parts: comp ? comp.parts : null };
+}
+// the close: the same sources at the app's number now → { p, sources: { book: P(over) } } or null
+function comboClose(row, line, opts = {}) {
+  const f = comboAt(row, line, { ...opts, o: { ...(opts.o || COMBO), maxSpreadPts: Infinity } });
+  return f ? { p: f.p, sources: Object.fromEntries(f.sources.map(s => [s.book, +s.p.toFixed(4)])) } : null;
+}
+// Every open side of every app on a combo row where every source clears.
+// → plays, best first (threeSharpPlays' shape: ev at the sources' mean, evMin at the worst)
+function comboPlays(row, { sharp = [], parts = null, dfsEv, o = COMBO } = {}) {
+  if (row?.esports || !isCombo(row?.mkey)) return [];
+  const out = [];
+  for (const [book, c] of Object.entries(row.books || {})) {
+    const f = comboAt(row, c.line, { sharp, parts, o });
+    if (!f) continue;
+    for (const side of ['Over', 'Under']) {
+      if (side === 'Over' ? !c.overOpen : !c.underOpen) continue;
+      const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+      const evOf = p => { const fx = fixedLeg(book, p, mult); return fx ? fx.ev : dfsEv ? dfsEv(p, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side) : null; };
+      const fair = side === 'Over' ? f.p : 1 - f.p;
+      const ev = evOf(fair);
+      const srcs = f.sources.map(s => { const p = side === 'Over' ? s.p : 1 - s.p; return { book: s.book, line: s.line, p: +(s.p * 100).toFixed(1), side: p, ev: evOf(p) }; });
+      if (ev == null || !Number.isFinite(ev) || srcs.some(s => s.ev == null || !Number.isFinite(s.ev) || !(s.ev > o.minEv))) continue;
+      const worst = srcs.reduce((a, s) => (s.side < a.side ? s : a));
+      const fx = fixedLeg(book, fair, mult), fw = fixedLeg(book, worst.side, mult);
+      out.push({ book, side, line: c.line, mult, fair: +fair.toFixed(4), ev: +ev.toFixed(2), evMin: +worst.ev.toFixed(2),
+        decimal: fx ? fx.decimal : null, entry: fx ? fx.entry : null, entries: fw ? fw.entries : null,
+        n: f.n, books: f.books, spreadPts: f.spreadPts, parts: f.parts, shadow: f.shadow.map(s => ({ book: s.book, line: s.line, p: +(s.p * 100).toFixed(1) })),
+        sources: srcs.map(({ book: b, line: l, p, ev: e }) => ({ book: b, line: l, p, at: p, ev: +e.toFixed(2) })) });
+    }
+  }
+  return out.sort((a, b) => b.evMin - a.evMin);
+}
+
 // ── BOOK CONSENSUS ──
 // Where no sharp book prices a leg (college football and NHL props, mostly),
 // every sportsbook we read that posts the same stat at the app's own number:
@@ -675,5 +767,5 @@ function createMoveTracker({ windowMs = 60 * 60e3, now = () => Date.now() } = {}
   return { observe, stale, prune, size: () => hist.size };
 }
 
-module.exports = { EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
+module.exports = { COMBO, COMBO_PARTS, isCombo, composedAt, comboAt, comboClose, comboPlays, EXACT, promoteShadows, K, kFor, pOver, meanFor, bookPOver, fairFor, rowPlays, playKind, researchGap, DEFAULTS,
   THREE_SHARP, threeSharpAt, threeSharpClose, threeSharpPlays, SHARP_BOOKS, CONSENSUS, BOOK_FAIR, BOOK_CONSENSUS, bookConsensusAt, bookConsensusPlays, sharpBacked, bookFairPlays, bookFairLineDiffers, lineTol, LINE_TOL_FRAC, bookFairKind, PP_ENTRIES, PP_GRADE, FIXED, fixedLeg, setPick6Payouts, tableBreakEven, consensusFor, consensusPlays, bookPropQuotes, quotesFor, parseWeights, createMoveTracker };

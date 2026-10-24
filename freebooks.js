@@ -443,7 +443,14 @@ async function fetchFreeBooks(http, pinGames, { sports = Object.keys(LEAGUES), m
       return books[s].filter(g => ms(g.start) - now < propWithinMs).map(g => [s, g, ts.some(t => Math.abs(t - ms(g.start)) <= 3 * 3600e3)])
         .filter(([, g, pin]) => pin || ms(g.start) - now < nearWithinMs);
     })
-      .sort((a, b) => (b[2] - a[2]) || ms(a[1].start) - ms(b[1].start)).slice(0, maxFdEvents);
+      .sort((a, b) => (b[2] - a[2]) || ms(a[1].start) - ms(b[1].start));
+    // every league gets its turn under the cap: the soonest of each sport first,
+    // then the second of each, ... (a Saturday's 30 college games took all 40
+    // slots and tonight's NBA games, combos and all, went unread; 10-24)
+    const rank = new Map(), per = {};
+    for (const x of want) rank.set(x, (per[`${x[0]}|${x[2]}`] = (per[`${x[0]}|${x[2]}`] || 0) + 1));
+    want.sort((a, b) => (b[2] - a[2]) || rank.get(a) - rank.get(b) || ms(a[1].start) - ms(b[1].start));
+    want.splice(maxFdEvents);
     const fresh = new Map(), freshL = new Map();
     await pool(want, 4, async ([s, g]) => {
       const props = [], ladders = [], alts = [];

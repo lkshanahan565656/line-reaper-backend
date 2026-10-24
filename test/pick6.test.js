@@ -194,3 +194,26 @@ test('Pick6 reader: blocked, it takes the relayed board, newer sports only', asy
   t = Date.parse('2026-10-15T17:10:00Z');
   assert.strictEqual(r.lines().length, 0);
 });
+
+test('Pick6 reader: the first group\'s other stat tabs from the site\'s resource route, quick hits skipped', async () => {
+  const { extraCategories } = require('../pick6');
+  const cats = { 121: { pickCategoryId: 121, categoryName: 'Points' }, 17: { pickCategoryId: 17, categoryName: 'Rebounds' }, 20: { pickCategoryId: 20, categoryName: 'Quick Hits' }, 28: { pickCategoryId: 28, categoryName: '1st 3 Min' }, 123: { pickCategoryId: 123, categoryName: 'Combos' } };
+  const pcBase = home(nflCards).pickCardsResponse;
+  assert.deepStrictEqual(extraCategories({ pickCategoryId: 121, pickCategoryById: cats, orderedPickCategoryIds: [121, -100, 17, 20, 123, 28] }), [17, 123]);
+  assert.deepStrictEqual(extraCategories({}), []);
+  const h = home(nflCards, {});
+  h.pickCardsResponse = { ...pcBase, pickCategoryId: 121, pickCategoryById: cats, orderedPickCategoryIds: [121, 17, 20, 123] };
+  const tab = { ...pcBase, pickCategoryId: 17, pickCardByPickableId: { 9: { entities: [{ dkId: 11, compIds: [6176816] }], activePickableMarkets: [
+    { pickSixMarketId: 18, promoPickTypeId: 1, targetValue: 230.5, activeSelections: [sel(1, 1), sel(2, 1)] }] } } };
+  const urls = [];
+  const axios = { get: async (url, { params } = {}) => {
+    urls.push(url.replace('https://pick6.draftkings.com', '') + (params?.pickGroup ? `?g=${params.pickGroup}` : ''));
+    if (url.includes('/resources/pickCardsByCategory/')) return { data: url.endsWith('/17') ? tab : { ...tab, pickCategoryId: 123, pickCardByPickableId: {} } };
+    return { data: encode({ 'routes/_homeShared': { data: h } }) };
+  } };
+  const r = createPick6Reader(axios, { enabled: true, sleep: async () => {}, log: {} });
+  await r.tick();
+  assert.deepStrictEqual(urls.filter(u => u.includes('resources')), ['/resources/pickCardsByCategory/1/17', '/resources/pickCardsByCategory/1/123']);
+  assert.strictEqual(r.lines().length, 2, 'the board\'s line and the Rebounds tab\'s');
+  assert.strictEqual(r.state.bySport.NFL.tabs, 2);
+});
