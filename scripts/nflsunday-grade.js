@@ -6,6 +6,10 @@
 // break-even), report.txt, legs.json.gz (every leg with its prices and result)
 // and the ESPN boxes it graded from (espn/), so a later check can re-grade
 // without asking ESPN again.
+// The esports board (LEAGUES=CS,LOL,VAL,DOTA,R6,COD) grades from the esports
+// graders instead (graders.js: bo3.gg for CS2, lolesports then Leaguepedia
+// for LoL, OpenDota for Dota 2, vlr.gg for Valorant; R6 and CoD have none),
+// reusing the results an earlier run of this report already settled.
 // Local use: node scripts/nflsunday-grade.js <dir with changes*.jsonl> [out dir]
 const fs = require('fs');
 const zlib = require('zlib');
@@ -14,6 +18,9 @@ const { execSync } = require('child_process');
 const axios = require('axios');
 const SG = require('../sportgrade');
 const NS = require('../nflsunday');
+const ER = require('../esrecord');
+const { canonName } = require('../ev');
+const LEAGUES = String(process.env.LEAGUES || 'NFL').toUpperCase().split(/[\s,]+/).filter(Boolean);
 
 const WEEK = process.env.WEEK || require('./nflsunday-week')();
 const PREFIX = process.env.PREFIX || 'nflsun';
@@ -43,8 +50,85 @@ function readLogs() {
   return recs;
 }
 
+// ── the esports board ──
+// what an earlier report already settled (a result or a void), by leg id
+function earlier() {
+  const out = new Map();
+  if (process.argv[2]) return out;
+  try {
+    sh(`git fetch -q origin "+refs/heads/${PREFIX}-${WEEK}-report:refs/remotes/origin/${PREFIX}-${WEEK}-report"`);
+    const legs = JSON.parse(zlib.gunzipSync(execSync(`git show origin/${PREFIX}-${WEEK}-report:legs.json.gz`, { maxBuffer: 1 << 30 })).toString());
+    for (const l of legs) if (l.graded && (l.graded.result != null || l.graded.void != null) && !l.graded.guard) out.set(`${l.app}|${l.key}`, l.graded);
+  } catch (e) { console.log('no earlier report:', e.message.slice(0, 120)); }
+  return out;
+}
+async function gradeEsports(series, meta) {
+  const G = require('../graders');
+  const legs = ER.buildEsLegs(series, meta);
+  // OpenDota's pro list names each player's account (as the server's dotaLoadProPlayers)
+  let pros = null;
+  const vlrKey = n => String(n || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const dotaId = async name => {
+    if (!pros) {
+      pros = {};
+      try { for (const p of (await axios.get('https://api.opendota.com/api/proPlayers', { timeout: 30000 })).data || []) for (const n of [p.name, p.personaname]) if (n && !pros[vlrKey(n)]) pros[vlrKey(n)] = p.account_id; }
+      catch (e) { console.log('OpenDota pro players', e.message); }
+    }
+    await new Promise(r => setTimeout(r, 1100));   // OpenDota's free limit: 60 calls a minute
+    return pros[vlrKey(name)] || pros[vlrKey(String(name || '').split(/\s+/).pop())] || null;
+  };
+  const graders = {
+    CS: G.createCsGrader(axios), VAL: G.createValGrader(axios), DOTA: G.createDotaGrader(axios, dotaId),
+    LOL: G.createLoLGraderChain(G.createLoLesportsGrader(axios), G.createLoLGrader(axios)),
+  };
+  const before = earlier();
+  const results = new Map(), why = {}, asked = new Map();
+  const note = k => { why[k] = (why[k] || 0) + 1; };
+  const t0 = Date.now();
+  for (const leg of legs) {
+    const id = `${leg.app}|${leg.key}`;
+    const grader = graders[leg.sport];
+    if (!leg.stat || !grader) { note(`no grader: ${leg.sport} ${leg.mkey}`); results.set(id, { skip: true }); continue; }
+    if (before.has(id)) { results.set(id, before.get(id)); note('settled earlier'); continue; }
+    if (Date.parse(leg.start) > Date.now() - 2 * 3600e3) { note('not over yet'); results.set(id, { pending: true }); continue; }
+    if (Date.now() - t0 > 40 * 60e3) { note('out of time this run'); results.set(id, { pending: true }); continue; }
+    // one grader call per player, stat and match, shared by every app's leg
+    const pick = { sport: leg.sport, player: leg.player, team: leg.team, matchTitle: leg.matchTitle, startTime: leg.start, stat: leg.stat, market: leg.market, book: leg.app === 'sleeper' ? 'x' : leg.app };
+    const ck = `${leg.sport}|${canonName(leg.player)}|${leg.stat}|${leg.tag || leg.start}|${canonName(leg.opp || '')}`;
+    if (!asked.has(ck)) asked.set(ck, grader(pick).catch(e => { note(`grader error ${leg.sport}`); return null; }));
+    const res = await asked.get(ck);
+    const r = ER.resultFromMaps(res, leg.market);
+    note(r.result != null ? 'graded' : r.void != null ? 'void' : 'waiting for results');
+    results.set(id, r.result != null ? { ...r, matchId: res?.matchId || null } : r);
+  }
+  const guarded = ER.lineupGuard(legs, results);
+  for (const [id, r] of results) if (r.void === 'whole lineup graded 0 (wrong match)') r.guard = true;
+  const rep = ER.summarize(legs, results);
+  Object.assign(rep, { week: WEEK, at: new Date().toISOString(), why, guarded, sources: Object.fromEntries(Object.entries(series).map(([s, m]) => [s, m.size])) });
+  fs.mkdirSync(OUT, { recursive: true });
+  const { rows, ...stackSum } = rep.stacks;
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ ...rep, stacks: stackSum }, null, 1));
+  fs.writeFileSync(path.join(OUT, 'stacks.json'), JSON.stringify(rows));
+  fs.writeFileSync(path.join(OUT, 'report.txt'), `${ER.reportText(rep, { title: `Esports board ${WEEK}` })}\n\nwhy: ${JSON.stringify(why)}\nlineup guard voided: ${guarded}\nsources (keys seen): ${JSON.stringify(rep.sources)}\n`);
+  fs.writeFileSync(path.join(OUT, 'legs.json.gz'), zlib.gzipSync(JSON.stringify(legs.map(l => ({ ...l, graded: results.get(`${l.app}|${l.key}`) || null })))));
+  console.log(fs.readFileSync(path.join(OUT, 'report.txt'), 'utf8').slice(0, 4000));
+}
+
+function pushReport(stamp) {
+  if (process.argv[2] || !process.env.GITHUB_REPOSITORY) return;
+  const hdr = sh('git config --get http.https://github.com/.extraheader').trim();
+  const d = `/tmp/${PREFIX}-report`;
+  sh(`rm -rf ${d} && mkdir -p ${d} && cp -r ${OUT}/. ${d}/`);
+  const g = c => sh(`git -C ${d} ${c}`);
+  g('init -q'); g('config user.name nfl-sunday'); g('config user.email nfl-sunday@users.noreply.github.com');
+  g('add -A'); g(`commit -qm "${PREFIX} ${WEEK} report ${stamp}"`);
+  sh(`git -C ${d} -c http.extraheader="${hdr}" push -fq https://github.com/${process.env.GITHUB_REPOSITORY}.git HEAD:refs/heads/${PREFIX}-${WEEK}-report`);
+  console.log('pushed report');
+}
+
 (async () => {
   const { series, meta } = NS.replay(readLogs());
+  if (ER.isEsBoard(LEAGUES)) { await gradeEsports(series, meta); pushReport(new Date().toISOString()); return; }
   if (pick6Payouts) require('../sportprops').setPick6Payouts(pick6Payouts);
   const legs = NS.buildLegs(series, meta);
   fs.mkdirSync(path.join(OUT, 'espn'), { recursive: true });
@@ -99,13 +183,5 @@ function readLogs() {
   fs.writeFileSync(path.join(OUT, 'report.txt'), `${NS.reportText(rep, { title: multi ? `Weekend board ${[...new Set(graded.map(l => l.sport))].join('/')} ${WEEK}` : `NFL Sunday ${WEEK}` })}\n\nwhy not graded: ${JSON.stringify(why)}\nsources (keys seen): ${JSON.stringify(rep.sources)}\n`);
   fs.writeFileSync(path.join(OUT, 'legs.json.gz'), zlib.gzipSync(JSON.stringify(legs.map(l => ({ ...l, graded: results.get(`${l.app}|${l.key}`) || null })))));
   console.log(fs.readFileSync(path.join(OUT, 'report.txt'), 'utf8').slice(0, 4000));
-  if (process.argv[2] || !process.env.GITHUB_REPOSITORY) return;
-  const hdr = sh('git config --get http.https://github.com/.extraheader').trim();
-  const d = `/tmp/${PREFIX}-report`;
-  sh(`rm -rf ${d} && mkdir -p ${d} && cp -r ${OUT}/. ${d}/`);
-  const g = c => sh(`git -C ${d} ${c}`);
-  g('init -q'); g('config user.name nfl-sunday'); g('config user.email nfl-sunday@users.noreply.github.com');
-  g('add -A'); g(`commit -qm "nfl sunday ${WEEK} report ${rep.at}"`);
-  sh(`git -C ${d} -c http.extraheader="${hdr}" push -fq https://github.com/${process.env.GITHUB_REPOSITORY}.git HEAD:refs/heads/${PREFIX}-${WEEK}-report`);
-  console.log('pushed report');
+  pushReport(rep.at);
 })().catch(e => { console.error(e); process.exit(1); });

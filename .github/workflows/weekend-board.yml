@@ -6,12 +6,17 @@
 # (board-<WEEK>-report) and starts the next; the last run waits for Sunday
 # night's games to end and grades the weekend. Starts itself every Saturday
 # 14:00Z; a push to diag-boards (or a manual run) starts it any other time.
+# The esports board (esrecord.js: CS2, LoL, Valorant, Dota 2, R6, CoD on the
+# same four apps, next to Pinnacle, BetRivers, Kalshi and Polymarket US) is
+# the same chain with LEAGUES=CS,LOL,VAL,DOTA,R6,COD and PREFIX=esboard:
+# Saturdays 14:20Z, or a push to diag-esboard.
 name: weekend-board
 on:
   schedule:
     - cron: '0 14 * * 6'
+    - cron: '20 14 * * 6'
   push:
-    branches: [diag-boards]
+    branches: [diag-boards, diag-esboard]
   workflow_dispatch:
     inputs:
       run:
@@ -22,12 +27,14 @@ on:
         default: ''
       leagues:
         default: 'NBA,CFB,NHL'
+      prefix:
+        default: ''
 permissions:
   contents: write
   actions: write
 # one chain per branch; a new push to diag-nflsun replaces the run in progress
 concurrency:
-  group: weekend-board-${{ github.ref_name }}
+  group: weekend-board-${{ github.ref_name }}-${{ inputs.prefix || ((contains(inputs.leagues || '', 'LOL') || github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'esboard') || 'board' }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 jobs:
   run:
@@ -36,8 +43,8 @@ jobs:
     env:
       RUN_N: ${{ inputs.run || '1' }}
       MODE: ${{ inputs.mode || 'record' }}
-      LEAGUES: ${{ inputs.leagues || 'NBA,CFB,NHL' }}
-      PREFIX: board
+      LEAGUES: ${{ inputs.leagues || ((github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'CS,LOL,VAL,DOTA,R6,COD') || 'NBA,CFB,NHL' }}
+      PREFIX: ${{ inputs.prefix || ((contains(inputs.leagues || '', 'LOL') || github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'esboard') || 'board' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,7 +67,8 @@ jobs:
         if: env.MODE == 'record'
         run: timeout 20100 node scripts/nflsunday-record.js || true
         env:
-          RUN_MIN: '330'
+          # the esports grade can take up to 45 minutes, so its runs record a little less
+          RUN_MIN: ${{ env.PREFIX == 'esboard' && '290' || '330' }}
           RUN_N: ${{ env.RUN }}
       - name: Wait for Sunday night's games to end
         if: env.MODE == 'final'
@@ -69,7 +77,7 @@ jobs:
           [ "$left" -gt 0 ] && sleep $(( left < 19800 ? left : 19800 )) || true
       - name: Grade what has finished
         if: ${{ !cancelled() }}
-        run: timeout 900 node scripts/nflsunday-grade.js || true
+        run: timeout 2900 node scripts/nflsunday-grade.js || true
       - name: Start the next run
         if: ${{ !cancelled() }}
         env:
@@ -80,4 +88,4 @@ jobs:
           if [ "$now" -ge "$stop" ]; then next=final; else next=record; fi
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/actions/workflows/weekend-board.yml/dispatches \
-            -d "{\"ref\":\"${{ github.ref_name }}\",\"inputs\":{\"run\":\"$((RUN+1))\",\"mode\":\"$next\",\"week\":\"$WEEK\",\"leagues\":\"$LEAGUES\"}}"
+            -d "{\"ref\":\"${{ github.ref_name }}\",\"inputs\":{\"run\":\"$((RUN+1))\",\"mode\":\"$next\",\"week\":\"$WEEK\",\"leagues\":\"$LEAGUES\",\"prefix\":\"$PREFIX\"}}"
