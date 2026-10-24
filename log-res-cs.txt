@@ -1,0 +1,19 @@
+16:45:47 bo3 sample {"id":131978,"slug":"6yubojlbl-vs-saint-sinners-24-10-2026","round_id":40969,"team1_id":25420,"team2_id":25223,"winner_team_id":25223,"loser_team_id":25420,"tournament_id":5626,"team1_score":1,"team2_score":2,"status":"finished","bo_type":3,"start_date":"2026-10-24T14:10:00.000+00:00","end_date":"2026-10-24T16:39:06.000+00:00","stage_id":11010,"maps_score":[false,true,false],"parsed_status":"waiting","tier":"b","tier_rank":3,"position":null,"points":null,"rating":0.08571428571428572,"stars":0,"team1_last_game_score":null,"team2_last_game_score":null,"live_updates":null,"live_coverage":false,"live_coverage_advantage":false,"live_coverage_source":null,"discipline_id":1,"prev_match1_winner":false,"prev_match2_winner":false,"prev_match1_id":null,"prev_match2_id":null,"game_version":2,"team1_new_participant":false,"team2_new_participant":false,"comments_count":0,"bet_updates":null,"comments":[]}
+16:45:47 bo3 page 0 2026-10-22T13:10:00.000+00:00
+16:46:27 bo3 page 50 2026-06-10T11:30:00.000+00:00
+16:47:20 bo3 page 100 2026-02-25T19:00:00.000+00:00
+16:48:11 bo3 page 150 2025-10-18T14:10:00.000+00:00
+16:48:50 bo3 page 200 2025-06-03T16:00:00.000+00:00
+16:49:26 bo3 page 250 2025-02-12T07:00:00.000+00:00
+16:49:58 bo3 page 300 2024-10-04T17:00:00.000+00:00
+16:50:35 bo3 page 350 2024-06-21T17:00:00.000+00:00
+16:51:08 bo3 page 400 2024-03-06T18:00:00.000+00:00
+16:51:54 bo3 games chunks 100 / 715
+16:52:09 bo3 games chunks 200 / 715
+16:52:27 bo3 games chunks 300 / 715
+16:52:43 bo3 games chunks 400 / 715
+16:52:58 bo3 games chunks 500 / 715
+16:53:12 bo3 games chunks 600 / 715
+16:53:27 bo3 games chunks 700 / 715
+16:53:29 saved res-cs 42842
+16:53:29 done res:cs calls 1744 errs 0 min 7.7
