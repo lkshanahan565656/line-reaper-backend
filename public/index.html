@@ -1245,6 +1245,7 @@ body.no-help .clv-info { display:none; }
 .os-tbl td.ref { color:#64748b; }
 .os-tbl td.best { color:#06110d; background:#34d399; font-weight:700; border-radius:4px; }
 .os-tbl td.best a { color:#06110d; }
+.os-tbl td.top { color:#34d399; box-shadow:inset 0 0 0 1px rgba(52,211,153,.55); border-radius:4px; }
 .os-tbl td a { color:inherit; text-decoration:none; }
 .os-tbl td .ev { display:block; font-size:9px; opacity:.85; }
 .os-tbl td.diff { color:#475569; font-size:11px; }
@@ -1337,7 +1338,7 @@ body.no-help .clv-info { display:none; }
 <!-- ODDS SCREEN PAGE -->
 <div class="page" id="page-odds">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The green cell is the best price you can bet; EV is that price against the fair.
+    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair.
     <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. Pick "Texas" to see only venues you can use there. A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
   <div class="pb-chips" id="osLeagues" style="margin:12px 0 8px"></div>
@@ -1905,7 +1906,7 @@ function osGame(g, cols, pro) {
         if (!x) return '<td>·</td>';
         if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${osAm(x.american)}</td>`;
         const inner = `${osAm(x.american)}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? 'best' : x.ref ? 'ref' : ''}">${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}" ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -1937,7 +1938,8 @@ function osDrawChart(id) {
   for (const v of shown) lines.push({ key: v, name: (osUi.data?.venues || []).find(x => x.key === v)?.name || v, color: OS_COLORS[v], pts: s.pts.filter(p => p[3]?.[v] != null).map(p => [p[0], osProb(p[3][v])]) });
   const all = lines.flatMap(l => l.pts);
   if (!all.length) { el.innerHTML = '<div class="os-note">No prices saved for this side yet.</div>'; return; }
-  const W = 720, H = 220, L = 44, R = 12, T = 12, B = 26;
+  // drawn at the box's own width so the text stays 10px on any screen
+  const W = Math.max(300, Math.round(el.clientWidth - 24) || 720), H = W < 500 ? 190 : 230, L = 40, R = 10, T = 12, B = 26;
   const t0 = Math.min(...all.map(p => p[0])), t1 = Math.max(...all.map(p => p[0]), t0 + 60e3);
   let y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
   const pad = Math.max(0.01, (y1 - y0) * 0.15); y0 = Math.max(0, y0 - pad); y1 = Math.min(1, y1 + pad);
@@ -1952,10 +1954,24 @@ function osDrawChart(id) {
     `<line class="osx" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#94a3b8" stroke-width="1" style="display:none"/></svg>`;
   const sideChips = series.map(x => `<button class="os-btn${x.id === sid ? ' on' : ''}" onclick="osUi.side['${escAttr(id)}']='${escAttr(x.id)}';osDrawChart('${escAttr(id)}')">${escAttr(x.label)}</button>`).join(' ');
   const legend = lines.filter(l => l.key === 'fair').map(l => `<button disabled><i style="background:${l.color}"></i>${escAttr(l.name)}</button>`).join('') +
-    venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osUi.hidden['${v}']=!osUi.hidden['${v}']${shown.includes(v) ? '' : ";osUi.hidden['" + v + "']=false"};osSave();osDrawChart('${escAttr(id)}')"><i style="background:${OS_COLORS[v]}"></i>${escAttr((osUi.data?.venues || []).find(x => x.key === v)?.name || v)}</button>`).join('');
+    venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osLegend('${escAttr(id)}','${v}')" aria-pressed="${shown.includes(v)}"><i style="background:${OS_COLORS[v]}"></i>${escAttr((osUi.data?.venues || []).find(x => x.key === v)?.name || v)}</button>`).join('');
   el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px">${sideChips}</div><div style="position:relative">${svg}<div class="os-tip"></div></div><div class="os-legend">${legend}</div>` +
     `<div class="os-note">Chance each price implies (fees in), over time. Lower means a better price for this side. Up to four venues at once; tap one to swap it in. ${s.pts.length} reads since ${new Date(s.pts[0][0]).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</div>`;
-  osUi.chart = osUi.chart || {}; osUi.chart[id] = { lines, X, t0, t1, W, L, R };
+  osUi.chart = osUi.chart || {}; osUi.chart[id] = { lines, X, t0, t1, W, L, R, shown, venuesIn };
+}
+// a venue on: shown (the oldest shown one makes room past four); on again: hidden
+function osLegend(id, v) {
+  const c = osUi.chart?.[id]; if (!c) return;
+  if (c.shown.includes(v)) osUi.hidden[v] = true;
+  else {
+    osUi.hidden[v] = false;
+    const on = c.venuesIn.filter(x => !osUi.hidden[x]);
+    // keep at most four on: the first shown other than this one steps out
+    if (on.length > 4) { const out = c.shown.find(x => x !== v); if (out) osUi.hidden[out] = true; }
+    // venues ahead of it in the list that weren't shown stay off
+    for (const x of c.venuesIn) if (x !== v && !c.shown.includes(x)) osUi.hidden[x] = true;
+  }
+  osSave(); osDrawChart(id);
 }
 function osHover(ev, id) {
   const el = document.getElementById('osc-' + id), c = osUi.chart?.[id]; if (!el || !c) return;
