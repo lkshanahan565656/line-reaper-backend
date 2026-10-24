@@ -6042,6 +6042,47 @@ async function gradeEvResults() {
   } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
   finally { evResultsRunning = false; }
 }
+// ─── EXCHANGE LINES AT REAL SIZE (xsize.js) ───────────────────────────────────
+// Kalshi, Gemini and Polymarket US game lines at the price $50, $200 and
+// $1,000 actually fill at (the book walked, fee in) against Pinnacle's no-vig
+// at the same line, each venue and size its own record, graded on Pinnacle's
+// close and the ESPN final. A record only: no alerts, not in Best Plays.
+// EXCHANGE_SIZE=off stops it.
+const xsize = require('./xsize');
+const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
+const xsizeTracker = xsize.createSizeTracker({
+  store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
+  http: upstream,
+});
+xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
+let xsizeRunning = false;
+async function scanExchangeSize() {
+  if (!xsizeOn() || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  xsizeRunning = true;
+  try {
+    const kalshiRows = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS && licences.isOn('kalshi') ? kalshiGameRows.rows : [];
+    await xsizeTracker.scan({ games: freeBooksState.games, pinGames: freeBooksState.pinGames || [], kalshiRows });
+  } catch (e) { xsizeTracker.state.errors = [e.message, ...xsizeTracker.state.errors].slice(0, 5); }
+  finally { xsizeRunning = false; }
+}
+async function gradeExchangeSize() {
+  if (!xsizeOn()) return;
+  try { xsizeTracker.state.results = await xsizeTracker.gradeResults(bigGrader, s => EV_RESULT_LEAGUE[s] || null); }
+  catch (e) { xsizeTracker.state.errors = [e.message, ...xsizeTracker.state.errors].slice(0, 5); }
+}
+// the record, per venue and size; closed bets free, open ones Pro
+app.get('/api/exchange-size', async (req, res) => {
+  try {
+    const lic = licenceOf(req);
+    const ok = b => b.venue !== 'kalshi' || lic.kalshi;
+    const all = (await xsizeTracker.list()).filter(ok);
+    const bets = all.filter(b => hasPro(req) || b.status === 'closed').sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt))
+      .slice(0, Math.min(parseInt(req.query.limit) || 200, 2000));
+    res.json({ venues: xsize.VENUES, tiers: require('./depthfill').TIERS, summary: xsize.summarize(all),
+      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets,
+      note: 'A record, not a tip sheet: no alerts until a venue and size passes at 50 graded (checks/xsize-2026-10-24/PREREGISTERED.md).' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -6932,6 +6973,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
+  exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   kalshiExtra: kxExtraState,
@@ -7044,8 +7086,9 @@ schedule('*/5 * * * *', async () => {
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,38 * * * *', () => corrTracker.grade().catch(e => console.warn('Correlated stacks grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
+schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
