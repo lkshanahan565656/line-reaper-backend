@@ -4278,9 +4278,29 @@ function esportsBidFills(matches, venueOk = () => true, now = Date.now()) {
   for (const [key, b] of esportsBidLedger) if (Date.parse(b.start) <= now) esportsBidLedger.delete(key);
   return rows;
 }
+// ── Esports: Polymarket US match winners against Kalshi's mid (esxv.js) ──
+// ESPORTS_XVENUE=off stops it; POLYMARKET_US=off also does (no quotes)
+const esxv = require('./esxv');
+const ESXV_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_XVENUE || '').trim()) && pmus.enabledFromEnv();
+const esxvTracker = esxv.createXvTracker({
+  store: resultsBackup.wrap('esXvenue', createEvStoreFromEnv(process.env, { table: 'es_xvenue', fileVar: 'ES_XVENUE_FILE', file: 'es-xvenue.json' })),
+  http: upstream,
+});
+esxvTracker.ready().catch(e => console.error('Esports cross-venue tracker: store failed to initialise:', e.message));
+const esxvState = { quotes: [], at: null, error: null, gradedAt: 0 };
+async function esxvScan(matches, now = Date.now()) {
+  try { esxvState.quotes = await esxv.fetchPmusEsports(upstream); esxvState.at = new Date(now).toISOString(); esxvState.error = null; }
+  catch (e) { esxvState.error = e.message; return; }
+  await esxvTracker.record(matches, esxvState.quotes);
+  if (now - esxvState.gradedAt > 10 * 60e3) { esxvState.gradedAt = now; await esxvTracker.grade(); }
+}
 async function scanEsportsBoard() {
   const st = await esportsBoard.scan();
   const now = Date.now();
+  // Kalshi-led Polymarket US match winners (esxv.js): logged and graded, alerts off
+  if (ESXV_ON) {
+    esxvScan(st.matches, now).catch(e => console.warn('Esports cross-venue:', e.message));
+  }
   const { rows: edgeRows, fairs: edgeFairs, costs: edgeCosts } = esportsEdgeRows(st.matches, tradableVenue);
   edgeRows.push(...esportsBidFills(st.matches, tradableVenue, now));
   esportsEdgeTracker.recordBoard(edgeRows, edgeFairs, { costs: edgeCosts }).catch(e => console.warn('Esports edge tracker:', e.message));
@@ -4590,7 +4610,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.148.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.149.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5214,6 +5234,27 @@ app.get('/api/esports/models', async (req, res) => {
     if (!s.cards) return res.status(503).json({ error: s.error || 'not ready' });
     res.json({ note: `Each esports record against the hit rate its payouts need, at ${esmodels.MIN_N} graded. failed = 2+ standard errors under break-even; beats = 2+ over, which still needs an independent re-check before anyone bets it. Rows from days a team played twice and priced before the match tag existed are left out. Stacks: the payout an all-legs-win entry needs for the record so far to have broken even.`,
       at: new Date(s.at).toISOString(), minN: esmodels.MIN_N, models: s.cards, stacks: s.stacks });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Kalshi-led Polymarket US (esxv.js): the record, its backtest and the rows;
+// ungraded rows say "not graded yet". Free: the record; Pro: the open rows.
+app.get('/api/esports/xvenue', async (req, res) => {
+  try {
+    const rows = await esxvTracker.list();
+    const pro = hasPro(req);
+    const show = rows.slice().sort((a, b) => String(b.flaggedAt).localeCompare(String(a.flaggedAt))).slice(0, 200).map(r => {
+      const base = { id: r.id, game: r.game, teams: r.teams, team: r.team, start: r.start, flaggedAt: r.flaggedAt, minsBefore: r.minsBefore, status: r.status,
+        result: r.status === 'graded' ? r.outcome : r.status === 'void' ? 'void' : 'not graded yet', profit: r.status === 'graded' ? r.profit : null };
+      if (!pro && (r.status === 'open')) return { ...base, locked: true };
+      return { ...base, price: r.price, cost: r.cost, fair: r.fair, edge: r.edge, closeFair: r.closeFair, clvCents: r.closeFair != null ? Math.round((r.closeFair - r.cost) * 1e4) / 100 : null,
+        pinFair: r.pinFair, closePin: r.closePin, kalshiSpread: r.kalshiSpread, url: r.event ? `https://polymarket.us/event/${r.event}` : null };
+    });
+    res.json({
+      note: `Polymarket US esports match winners whose ask (fee in) sits ${Math.round(esxv.DEFAULTS.minEdge * 100)}c+ under Kalshi's mid in the last ${esxv.DEFAULTS.windowMin} minutes. Closing value against Kalshi's mid at the start; results from Kalshi's settlement. Alerts off; judged at ${esxv.DEFAULTS.minN} graded.`,
+      on: ESXV_ON, scan: { ...esxvTracker.status(), quotesAt: esxvState.at, error: esxvState.error },
+      record: await esxvTracker.summary(), backtest: esxv.BACKTEST, rows: show,
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -6779,7 +6820,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.148.1',
+  version: '3.149.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

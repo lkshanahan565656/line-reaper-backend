@@ -6951,6 +6951,35 @@ function trModelsHTML(d) {
     <div class="trm-list"><div class="trm-row trm-head"><div>Model</div><div>Graded</div><div>Record</div><div>Hit vs needed</div><div>Units</div><div>Verdict</div></div>${d.models.map(row).join('')}</div>
     ${st.length ? `<div class="tr-note">Same-match stacks: ${st.map(s => `${ES_STACK_APP[s.book] || s.book} ${s.size}-pick ${s.swept} swept of ${s.stacks}, pays if the app shows ${s.needsPays}x or more`).join('; ')}. A lead: the app's real payout for one match's picks decides it.</div>` : ''}</div>`;
 }
+// KALSHI-LED POLYMARKET US: esports match winners where Polymarket US's ask
+// sits under Kalshi's mid near the start (esxv.js, /api/esports/xvenue)
+const XV_GAME = { CS2: 'CS2', LOL: 'LoL', VAL: 'Valorant', DOTA: 'Dota 2' };
+function trXvenueHTML(d) {
+  if (!d?.record) return '';
+  const r = d.record, [word, col] = TR_VERDICT[r.verdict] || [r.verdict, '#94a3b8'];
+  const signed = (x, u = '') => (x == null ? '—' : `${x > 0 ? '+' : ''}${x}${u}`);
+  const bt = (d.backtest?.rows || []).map(b => `${XV_GAME[b.game] || b.game} ${b.at} ${signed(b.centsPerContract, 'c')} a contract over ${b.n} (t ${b.t})`).join('; ');
+  const rows = (d.rows || []).slice(0, 12).map(x => {
+    const when = x.start ? new Date(x.start).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET' : '';
+    const res = x.result === 'win' ? '<span style="color:#34d399">WON</span>' : x.result === 'loss' ? '<span style="color:#f87171">LOST</span>' : `<span style="color:#94a3b8">${escEs(x.result)}</span>`;
+    return `<div class="trm-row"><div class="trm-name"><b>${escEs(x.team)}</b><span>${escEs(XV_GAME[x.game] || x.game)} · ${escEs((x.teams || []).join(' vs '))} · ${escEs(when)}</span></div>
+      <div class="trm-c" data-l="Bought">${x.locked ? 'Pro' : x.cost != null ? Math.round(x.cost * 100) + '¢' : '—'}</div>
+      <div class="trm-c" data-l="Kalshi fair">${x.locked ? '—' : x.fair != null ? Math.round(x.fair * 1000) / 10 + '¢' : '—'}</div>
+      <div class="trm-c" data-l="Close">${x.clvCents != null ? signed(x.clvCents, '¢') : '—'}</div>
+      <div class="trm-c" data-l="Result">${res}</div>
+      <div class="trm-c" data-l="Units">${x.profit != null ? signed(Math.round(x.profit * 100) / 100, 'u') : '—'}</div></div>`;
+  }).join('');
+  return `<div class="trm"><div class="es-hdr"><h3>KALSHI-LED POLYMARKET US · MATCH WINNERS</h3><span class="sub">Polymarket US's esports match-winner ask, fee in, ${Math.round((d.minEdge || 0.02) * 100) || 2}¢+ under Kalshi's mid in the last 90 minutes. Kalshi is the sharper esports book on this year's history. Alerts off; judged at ${r.minN} graded on the close and on results.</span></div>
+    <div class="pb-sum tr-sum">
+      <div class="pb-stat"><b>${r.graded}${r.verdict === 'early' ? ` <small>of ${r.minN}</small>` : ''}</b><span>Graded · ${r.open} not graded yet</span></div>
+      <div class="pb-stat"><b>${r.wins}-${r.losses}</b><span>Record · needs ${r.breakEvenPct ?? '—'}%</span></div>
+      <div class="pb-stat ${r.units > 0 ? 'good' : r.units < 0 ? 'bad' : ''}"><b>${signed(r.units, 'u')}</b><span>Units (1u a bet)</span></div>
+      <div class="pb-stat ${r.clvCents > 0 ? 'good' : r.clvCents < 0 ? 'bad' : ''}"><b>${signed(r.clvCents, '¢')}</b><span>vs Kalshi close · n=${r.clvN}${r.clvT != null ? ` · t ${r.clvT}` : ''}</span></div>
+      <div class="pb-stat"><b><span class="trm-v" style="color:${col};border-color:${col}66">${word}</span></b><span>Verdict</span></div>
+    </div>
+    ${rows ? `<div class="trm-list"><div class="trm-row trm-head"><div>Team bought</div><div>Bought</div><div>Kalshi fair</div><div>Close</div><div>Result</div><div>Units</div></div>${rows}</div>` : '<div class="tr-note">No match has flagged yet.</div>'}
+    ${bt ? `<div class="tr-note">Backtest (${escEs(d.backtest.source)}): ${escEs(bt)}. History used Polymarket's price, not a live Polymarket US ask, so this record decides it.</div>` : ''}</div>`;
+}
 async function renderTrackRecord(el) {
   el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">LOADING TRACK RECORD...</div></div>`;
   const q = new URLSearchParams();
@@ -6963,6 +6992,7 @@ async function renderTrackRecord(el) {
       fetch(`${BACKEND_URL}/api/tracker/picks?status=locked&limit=100${trState.sport ? '&sport=' + trState.sport : ''}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/esports/models`).then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
+    const xvenue = await fetch(`${BACKEND_URL}/api/esports/xvenue`).then(r => (r.ok ? r.json() : null)).catch(() => null);
     if (sum.error) throw new Error(sum.error);
     const o = sum.overall;
     const cell = (num, label, tone = '') => `<div class="pb-stat ${tone}"><b>${num}</b><span>${label}</span></div>`;
@@ -6970,6 +7000,7 @@ async function renderTrackRecord(el) {
     const chip = (v, label) => `<button class="sport-chip ${trState.sport === v ? 'active' : ''}" onclick="trState.sport='${v}';renderEsports()">${label}</button>`;
     const evChip = (v, label) => `<button class="sport-chip ${String(trState.minEV) === String(v) ? 'active' : ''}" onclick="trState.minEV='${v}';renderEsports()">${label}</button>`;
     el.innerHTML = `
+      ${trXvenueHTML(xvenue)}
       ${trModelsHTML(models)}
       <div class="tr-chips">
         ${chip('', 'ALL')}${chip('CS', 'CS2')}${chip('VAL', 'VALORANT')}${chip('LOL', 'LOL')}${chip('DOTA', 'DOTA')}${chip('COD', 'COD')}
