@@ -33,35 +33,57 @@ const num = v => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : 
 // One app's lines → Map(key → { v, m }). key = player|stat, v = [line, over
 // multiplier, under multiplier, over open, under open] (PrizePicks has no
 // multipliers: null), m = what the grader needs the first time a key shows.
-function appEntries(lines, sport = 'NFL') {
+// tag: keys start with the sport ("NBA|lebronjames|points"), for a board
+// that records several leagues in one log (the weekend board, 10-24)
+const keyOf = (sport, player, mkey, tag) => `${tag ? `${sport}|` : ''}${canonName(player)}|${mkey}`;
+function appEntries(lines, sport = 'NFL', { tag = false } = {}) {
   const out = new Map();
   for (const l of lines || []) {
     if (!l?.player || String(l.sport || '').toUpperCase() !== sport) continue;
     const line = num(l.line);
     if (line == null) continue;
     const mkey = sportMarketKey(l.market, sport);
-    const key = `${canonName(l.player)}|${mkey}`;
+    const key = keyOf(sport, l.player, mkey, tag);
     const pp = l.book === 'prizepicks';
     const v = [line, pp ? null : num(l.overMultiplier), pp ? null : num(l.underMultiplier), l.overOpen === false ? 0 : 1, l.underOpen === false ? 0 : 1];
     const old = out.get(key);
     // a stat listed twice: keep the line with both sides open, then the lower
     if (old && (old.v[3] + old.v[4] > v[3] + v[4] || (old.v[3] + old.v[4] === v[3] + v[4] && old.v[0] <= v[0]))) continue;
-    out.set(key, { v, m: { p: l.player, tm: l.team || '', st: l.startTime || '', mt: l.matchTitle || l.opponent || '', mk: l.market || '', mkey } });
+    out.set(key, { v, m: { p: l.player, tm: l.team || '', st: l.startTime || '', mt: l.matchTitle || l.opponent || '', mk: l.market || '', mkey, ...(tag ? { sp: sport } : {}) } });
   }
   return out;
 }
 
 // One book's two-sided props ({ player, mkey, line, over, under, start } with
 // American prices) → Map(key → { v: [[line, over, under], …] by line, m })
-function bookEntries(props) {
+function bookEntries(props, { sport = 'NFL', tag = false } = {}) {
   const out = new Map();
   for (const p of props || []) {
     const line = num(p.line), over = num(p.over), under = num(p.under);
     if (!p?.player || !p.mkey || line == null || over == null || under == null) continue;
-    const key = `${canonName(p.player)}|${p.mkey}`;
-    if (!out.has(key)) out.set(key, { v: [], m: { p: p.player, st: p.start || '', mkey: p.mkey } });
+    const key = keyOf(sport, p.player, p.mkey, tag);
+    if (!out.has(key)) out.set(key, { v: [], m: { p: p.player, st: p.start || '', mkey: p.mkey, ...(tag ? { sp: sport } : {}) } });
     const e = out.get(key);
     if (!e.v.some(x => x[0] === line)) e.v.push([line, over, under]);
+  }
+  for (const e of out.values()) e.v.sort((a, b) => a[0] - b[0]);
+  return out;
+}
+
+// FanDuel's one-sided "N+" rungs (combo ladders like "To Record 30+ Pts + Reb")
+// → Map(key → { v: [[line, price], …], m }): kept raw for the combo pricing
+function rungEntries(games, book, { sport = 'NFL', tag = false } = {}) {
+  const out = new Map();
+  for (const g of games || []) {
+    const bm = (g.bookmakers || []).find(b => b.key === book);
+    for (const r of bm?.ladders || []) {
+      const line = num(r.line), price = num(r.price);
+      if (!r.player || !r.mkey || line == null || price == null) continue;
+      const key = keyOf(sport, r.player, r.mkey, tag);
+      if (!out.has(key)) out.set(key, { v: [], m: { p: r.player, st: g.commence_time || '', mkey: r.mkey, ...(tag ? { sp: sport } : {}) } });
+      const e = out.get(key);
+      if (!e.v.some(x => x[0] === line)) e.v.push([line, price]);
+    }
   }
   for (const e of out.values()) e.v.sort((a, b) => a[0] - b[0]);
   return out;
@@ -95,7 +117,9 @@ function gameProps(games, book) {
 function createChangeLog(write) {
   const last = {};   // source → Map(key → json)
   let lines = 0;
-  function observe(src, entries, t = Date.now()) {
+  // scope: only keys starting with it can go (one league's read on a board
+  // that logs several leagues per source)
+  function observe(src, entries, t = Date.now(), { scope = '' } = {}) {
     const seen = last[src] || (last[src] = new Map());
     for (const [k, { v, m }] of entries) {
       const j = JSON.stringify(v);
@@ -104,7 +128,7 @@ function createChangeLog(write) {
       seen.set(k, j);
       write({ t, s: src, k, v, ...(first ? { m } : {}) }); lines++;
     }
-    for (const k of [...seen.keys()]) if (!entries.has(k)) { seen.delete(k); write({ t, s: src, k, gone: 1 }); lines++; }
+    for (const k of [...seen.keys()]) if (!entries.has(k) && k.startsWith(scope)) { seen.delete(k); write({ t, s: src, k, gone: 1 }); lines++; }
   }
   return { observe, size: () => Object.fromEntries(Object.entries(last).map(([s, m]) => [s, m.size])), lines: () => lines };
 }
@@ -190,7 +214,7 @@ function buildLeg(app, key, list, series, meta, { betLeadMs = BET_LEAD_MS } = {}
   const bet = { t: betT, v: at(list, betT) || close.v };
   const price = (t, line) => Object.fromEntries(BOOKS.map(b => [b, bookAt(at(series[b]?.get(key), t), line)]).filter(([, q]) => q));
   return {
-    app, key, player: m.p, team: m.tm, mkey: m.mkey, market: m.mk, matchTitle: m.mt, start: new Date(start).toISOString(),
+    app, key, sport: m.sp || 'NFL', player: m.p, team: m.tm, mkey: m.mkey, market: m.mk, matchTitle: m.mt, start: new Date(start).toISOString(),
     open: { t: open.t, line: open.v[0] }, bet: { t: bet.t, v: bet.v, books: price(bet.t, bet.v[0]) },
     close: { t: close.t, v: close.v, books: price(start - 1, close.v[0]) },
     moves: listed.reduce((n, x, i) => n + (i && x.v[0] !== listed[i - 1].v[0] ? 1 : 0), 0),
@@ -245,7 +269,22 @@ const KINDS = {
 // passing yards Over on PrizePicks, every leg, standard line
 const PREREG = {
   'pp-qb-pass-over': (leg, s) => leg.app === 'prizepicks' && leg.mkey === 'pass_yds' && s.side === 'Over',
+  // pre-registered 10-24 for the weekend board (NBA, CFB, NHL), before any
+  // result: (a) every leg whose number Pinnacle hangs too, Overs and Unders
+  // apart (Pinnacle's Over leans ran 49.2% vs 53.4% on the who-is-right check)
+  'pin-same-over': (leg, s) => s.fair.pinnacle != null && s.side === 'Over',
+  'pin-same-under': (leg, s) => s.fair.pinnacle != null && s.side === 'Under',
+  // (b) Sleeper's NBA combo legs FanDuel or BetRivers price at Sleeper's own
+  // number, and the ones where those books' average clears Sleeper's multiplier
+  'sl-combo-books': (leg, s) => slCombo(leg, s) != null,
+  'sl-combo-books-backed': (leg, s) => { const f = slCombo(leg, s); return f != null && f >= s.be; },
 };
+const COMBOS = new Set(['pts_rebs', 'pts_asts', 'rebs_asts', 'pra', 'stocks']);
+function slCombo(leg, s) {
+  if (leg.app !== 'sleeper' || leg.sport !== 'NBA' || !COMBOS.has(leg.mkey)) return null;
+  const f = ['fanduel', 'betrivers'].map(b => s.fair[b]).filter(x => x != null);
+  return f.length ? f.reduce((a, b) => a + b, 0) / f.length : null;
+}
 
 // a better number than Pinnacle's: the app's line sits on this side of
 // Pinnacle's main line at bet time (app 245.5 vs Pinnacle 252.5 → Over)
@@ -277,7 +316,8 @@ function tally(rows) {
 // legs + graded results (Map leg.key|app → { result } | { void } | { pending }) → the report
 // clv: Pinnacle's no-vig chance for the side at the close minus at bet time,
 // same number (points of win chance)
-function summarize(legs, results) {
+// bySport: every group key starts with the leg's sport ("NBA|prizepicks|all")
+function summarize(legs, results, { bySport = false } = {}) {
   const rows = [], pending = { legs: 0 }, voided = { legs: 0 };
   const byPlayer = new Map();   // prizepicks pass/rec Overs for the stack slice
   for (const leg of legs) {
@@ -287,7 +327,7 @@ function summarize(legs, results) {
     for (const s of sides(leg)) {
       const out = outcome(s.side, s.line, r.result);
       const clv = s.fair.pinnacle != null && s.closeFair.pinnacle != null ? s.closeFair.pinnacle - s.fair.pinnacle : null;
-      const base = { app: leg.app, side: s.side, be: s.be, out, clv, mkey: leg.mkey };
+      const base = { app: leg.app, side: s.side, be: s.be, out, clv, mkey: leg.mkey, sport: leg.sport || 'NFL' };
       for (const [kind, rule] of Object.entries(KINDS)) if (rule(s, leg)) rows.push({ ...base, kind });
       for (const [kind, rule] of Object.entries(PREREG)) if (rule(leg, s)) rows.push({ ...base, kind, prereg: true });
       const bn = betterNumber(leg, s);
@@ -299,12 +339,14 @@ function summarize(legs, results) {
   // per app and kind, plus per app, kind and stat for the bigger kinds
   const group = (keyOf) => {
     const g = new Map();
-    for (const r of rows) { const k = keyOf(r); if (!k) continue; if (!g.has(k)) g.set(k, []); g.get(k).push(r); }
+    for (const r of rows) { let k = keyOf(r); if (!k) continue; if (bySport) k = `${r.sport}|${k}`; if (!g.has(k)) g.set(k, []); g.get(k).push(r); }
     return Object.fromEntries([...g].map(([k, v]) => [k, tally(v)]).sort((a, b) => b[1].n - a[1].n));
   };
   const byKind = group(r => `${r.app}|${r.kind}`);
   const byStat = group(r => (['all', 'pin-backed', 'over', 'under'].includes(r.kind) ? `${r.app}|${r.kind}|${r.mkey}` : null));
-  return { byKind, byStat, stack: qbStack(byPlayer), pending, voided, legs: legs.length,
+  const sportsSeen = [...new Set(legs.map(l => l.sport || 'NFL'))];
+  const stacks = Object.fromEntries(sportsSeen.map(sp => [sp, qbStack(new Map([...byPlayer].filter(([, x]) => (x.leg.sport || 'NFL') === sp)))]));
+  return { byKind, byStat, stack: qbStack(byPlayer), stacks, pending, voided, legs: legs.length,
     breakEvens: breakEvenTable() };
 }
 
@@ -344,15 +386,19 @@ function reportText(rep, { title = 'NFL Sunday pick\'em board' } = {}) {
   const row = (k, t) => `${k.padEnd(44)} ${String(t.n).padStart(5)}  ${`${t.w}-${t.l}${t.p ? `-${t.p}` : ''}`.padEnd(11)} ${pct(t.hit).padStart(6)} vs ${pct(t.be).padStart(6)}  z ${String(t.z ?? '-').padStart(5)}  ${String(t.units).padStart(7)}u  clv ${t.clv == null ? '-' : `${t.clv}pt (${t.clvN})`}`;
   const L = [`${title}: ${rep.legs} legs, ${rep.pending.legs} not graded yet, ${rep.voided.legs} void (player not in the box)`, ''];
   L.push('Pre-registered 10-24:');
-  const qp = rep.byKind['prizepicks|pp-qb-pass-over'];
-  L.push(qp ? row('PP QB pass yds Over (3-pick power 55.0%)', qp) : 'PP QB pass yds Over: none graded');
-  const st = rep.stack;
-  L.push(`PP QB pass Over + own receiver Over: ${st.both} of ${st.pairs} pairs (${pct(st.hit)}) on ${st.games} games vs ${pct(st.bar)} for a 2-pick at 3x, z ${st.z ?? '-'} (payout cut for same-team picks not applied)`);
-  L.push('', 'Per app and kind (graded at bet time, an hour before kickoff; units at 1u a leg at the break-even price):');
-  for (const [k, t] of Object.entries(rep.byKind)) if (!k.endsWith('pp-qb-pass-over')) L.push(row(k, t));
+  const pre = Object.keys(PREREG);
+  const isPre = k => pre.includes(k.split('|').pop());
+  const preRows = Object.entries(rep.byKind).filter(([k]) => isPre(k));
+  if (!preRows.length) L.push('none graded yet');
+  for (const [k, t] of preRows) L.push(row(k, t));
+  const stacks = rep.stacks && Object.keys(rep.stacks).length ? rep.stacks : { '': rep.stack };
+  for (const [sp, st] of Object.entries(stacks)) if (!sp || st.pairs || sp === 'NFL' || sp === 'CFB')
+    L.push(`${sp ? `${sp} ` : ''}PP QB pass Over + own receiver Over: ${st.both} of ${st.pairs} pairs (${pct(st.hit)}) on ${st.games} games vs ${pct(st.bar)} for a 2-pick at 3x, z ${st.z ?? '-'} (payout cut for same-team picks not applied)`);
+  L.push('', 'Per app and kind (graded at bet time, an hour before the start; units at 1u a leg at the break-even price):');
+  for (const [k, t] of Object.entries(rep.byKind)) if (!isPre(k)) L.push(row(k, t));
   L.push('', 'Break-evens:', JSON.stringify(rep.breakEvens));
   return L.join('\n');
 }
 
-module.exports = { APPS, BOOKS, BET_LEAD_MS, KINDS, PREREG, appEntries, bookEntries, gameProps, createChangeLog, replay, at, bookAt, breakEven,
+module.exports = { APPS, BOOKS, BET_LEAD_MS, KINDS, PREREG, COMBOS, appEntries, bookEntries, rungEntries, gameProps, createChangeLog, replay, at, bookAt, breakEven,
   buildLeg, buildLegs, sides, betterNumber, outcome, tally, summarize, qbStack, breakEvenTable, reportText };
