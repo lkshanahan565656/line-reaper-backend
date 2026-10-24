@@ -95,6 +95,15 @@ async function lolFrames() {
     if (Math.min(...evs.map(e => Date.parse(e.startTime) || Infinity)) < SINCE) break;
     await sleep(150);
   }
+  // optional: only matches whose teams sit on a Kalshi LoL event within 12 h; shard by index
+  if (process.env.KFILTER) {
+    const kev = [];
+    for (const sr of ['KXLOLGAME', 'KXLOLMAP']) for (const m of [...await listMarkets(sr, false), ...await listMarkets(sr, true)]) { const st = startFromTicker(m.event_ticker); if (st && st >= SINCE) kev.push({ st, sub: squash(m.yes_sub_title) }); }
+    const hit = e => { const t = Date.parse(e.startTime); return (e.match.teams || []).some(tm => [tm.name, tm.code].some(n => { const q = squash(n); return q.length >= 2 && kev.some(k => Math.abs(k.st - t) < 12 * 3600e3 && (k.sub === q || (q.length >= 4 && (k.sub.includes(q) || q.includes(k.sub))))); })); };
+    const before = matches.length; matches.splice(0, matches.length, ...matches.filter(hit));
+    log('kalshi filter', before, '->', matches.length);
+  }
+  { const sh = +(process.env.SHARD || 0), nsh = +(process.env.NSHARD || 1); const mine = matches.filter((m, i) => i % nsh === sh); matches.splice(0, matches.length, ...mine); }
   log('lol matches', matches.length);
   const out = []; let done = 0;
   const side = x => [x.totalGold, x.totalKills, x.towers, x.inhibitors, x.barons, (x.dragons || []).length];
@@ -125,7 +134,7 @@ async function lolFrames() {
       cursor = tEnd;
     }
     out.push(rec);
-    if (++done % 100 === 0) { log('lol', done, '/', matches.length, 'calls', calls, 'errs', errs); save(`lolf-${process.env.SHARD || 0}`, out); }
+    if (++done % 25 === 0) { log('lol', done, '/', matches.length, 'calls', calls, 'errs', errs); save(`lolf-${process.env.SHARD || 0}`, out); }
   });
   save(`lolf-${process.env.SHARD || 0}`, out);
 }

@@ -1,36 +1,24 @@
-name: diag-iphist
+name: diag-iphist2
 on:
-  push: { branches: [diag-iphist] }
+  push: { branches: [diag-iphist2] }
 permissions: { contents: write }
 jobs:
   pull:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { part: 'k:LOL', since: '2026-04-01', shard: 0, nshard: 1 }
-          - { part: 'k:DOTA', since: '2026-04-01', shard: 0, nshard: 1 }
-          - { part: 'k:VAL', since: '2026-04-01', shard: 0, nshard: 1 }
-          - { part: 'k:CS2', since: '2026-07-15', shard: 0, nshard: 1 }
-          - { part: 'lol', since: '2026-03-25', shard: 0, nshard: 1 }
-          - { part: 'lol', since: '2025-01-01', until: '2026-03-25', shard: 1, nshard: 1 }
-          - { part: 'dota', since: '2026-04-01', shard: 0, nshard: 4 }
-          - { part: 'dota', since: '2026-04-01', shard: 1, nshard: 4 }
-          - { part: 'dota', since: '2026-04-01', shard: 2, nshard: 4 }
-          - { part: 'dota', since: '2026-04-01', shard: 3, nshard: 4 }
-          - { part: 'cs', since: '2026-07-15', shard: 0, nshard: 2 }
-          - { part: 'cs', since: '2026-07-15', shard: 1, nshard: 2 }
-          - { part: 'val', since: '2026-04-01', shard: 0, nshard: 1 }
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
-          set +e
-          N=$(echo "${{ matrix.part }}-${{ matrix.shard }}" | tr ':' '-')
-          PART="${{ matrix.part }}" SINCE="${{ matrix.since }}" UNTIL="${{ matrix.until }}" SHARD=${{ matrix.shard }} NSHARD=${{ matrix.nshard }} BUDGET_MIN=315 timeout 330m node diag/iphist.js 2>&1 | tee log-$N.txt
-          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-iphist-out-$N; git add -f log-$N.txt data/*.json.gz; git commit -qm "pull $N"
-          for i in 1 2 3 4; do git push -qf origin diag-iphist-out-$N && break; sleep $((i*5)); done
+          N=lolk-${{ matrix.shard }}
+          ( PART=lol SINCE=2026-06-01 KFILTER=1 SHARD=${{ matrix.shard }} NSHARD=4 BUDGET_MIN=280 timeout 290m node diag/iphist.js > log-$N.txt 2>&1 ) &
+          R=$!
+          push() { rm -rf /tmp/o && mkdir -p /tmp/o/data && cp log-$N.txt /tmp/o/ && cp data/*.json.gz /tmp/o/data/ 2>/dev/null; cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $N" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-iphist2-out-$N; cd -; }
+          sleep 300; push
+          while kill -0 $R 2>/dev/null; do sleep 300; push; done
+          push
