@@ -1,0 +1,16 @@
+name: diag-llhist
+on: { push: { branches: [diag-llhist] } }
+permissions: { contents: write }
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy: { fail-fast: false, matrix: { shard: [0, 1, 2, 3] } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node llhist.js
+        env: { SHARD: '${{ matrix.shard }}', SHARDS: '4' }
+      - run: |
+          cd data && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "hist ${{ matrix.shard }}" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-llhist-out-${{ matrix.shard }}
