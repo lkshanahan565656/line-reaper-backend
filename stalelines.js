@@ -5,8 +5,9 @@
 //
 //   1. keeps a rolling history of every source's line on every subject (a
 //      game's moneyline, spread or total; a player's prop), changes only, with
-//      the time each was read: Pinnacle, FanDuel, BetRivers, Kalshi's mids,
-//      PrizePicks, Underdog and Sleeper
+//      the time each was read: Pinnacle (its player props, and its tennis and
+//      UFC match lines read as props), FanDuel, BetRivers, Kalshi's mids,
+//      PrizePicks, Underdog, Sleeper and DK Pick6
 //   2. calls a Pinnacle MOVE when its chance at its old number shifts by
 //      moveProbPts (2 points of win chance), or its number moves half a point
 //      or more and that chance shifts lineMovePts (1 point) with it
@@ -51,14 +52,15 @@ const DEFAULTS = {
   histCap: 40,
   logMs: 2 * 86400e3,      // closed moves kept for the lag table
   logCap: 20000,
-  venueMaxAgeMs: { fanduel: 6 * 60e3, betrivers: 6 * 60e3, prizepicks: 25 * 60e3, underdog: 20 * 60e3, sleeper: 20 * 60e3 },
+  // DK Pick6 comes through the GitHub relay one sport at a time (pick6.js), so a sport's read can be half an hour old
+  venueMaxAgeMs: { fanduel: 6 * 60e3, betrivers: 6 * 60e3, prizepicks: 25 * 60e3, underdog: 20 * 60e3, sleeper: 20 * 60e3, pick6: 35 * 60e3 },
   // Pinnacle's quote stops being the fair this long after its last read, as on
   // the +EV board (game lines 5 minutes, props 10)
   pinMaxAgeMs: { game: 5 * 60e3, prop: 10 * 60e3 },
   sportKey: null,          // the board's sport name → the key rows carry ('NFL' → 'nfl')
 };
 const BOOK_VENUES = ['fanduel', 'betrivers'];
-const APP_VENUES = ['prizepicks', 'underdog', 'sleeper'];
+const APP_VENUES = ['prizepicks', 'underdog', 'sleeper', 'pick6'];
 const VENUES = [...BOOK_VENUES, ...APP_VENUES];
 const CONFIRM = ['kalshi', 'fanduel', 'betrivers'];
 

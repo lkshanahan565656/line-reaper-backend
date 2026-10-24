@@ -4594,7 +4594,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.150.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.151.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5768,7 +5768,9 @@ async function refreshPinnacleProps() {
   try { await refreshPinnacleExtra(); } catch (e) { pinExtra.errors = [e.message]; }
   const extra = Date.now() - pinExtra.at < PIN_PROPS_MAX_AGE_MS ? pinExtra.props : [];
   const { props, errors } = await pinprops.fetchPinnacleProps(axios, process.env.PINNACLE_GUEST_KEY);
-  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps([...props, ...extra]); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes(props), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
+  // the stale engine watches Pinnacle's tennis and UFC lines too (read as props,
+  // every sixth minute), so the apps' tennis and UFC legs can go stale at its number
+  if (props.length || !errors.length) { pinPropsIndex = pinprops.indexProps([...props, ...extra]); pinPropsAt = Date.now(); observeStale(staleLines.pinPropQuotes([...props, ...extra]), pinPropsAt, 'pinnacle-props', true, errors.length ? [] : ['pinnacle|prop']); }
   // an outage keeps the last read a while, never as the fair for long
   else if (Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) pinPropsIndex = new Map();
   const bySport = {};
@@ -5905,10 +5907,17 @@ function observeStaleApps(rows) {
   const all = staleLines.appQuotes(sports, { pOverOf: sportProps.bookPOver, kalshiOf: rowKalshi });
   // each app's read covers the board rows the engine can key (a start time
   // and one stat): a row there without the app's line means the app dropped it
-  const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime).map(r => r.key);
+  const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime);
   for (const book of staleLines.APP_VENUES) {
+    if (book === 'pick6') continue;
     const t = readAt[book];
-    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(k => `${book}|prop|row:${k}`));
+    if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(r => `${book}|prop|row:${r.key}`));
+  }
+  // DK Pick6 reads one sport at a time (through the relay): each sport at its own read time
+  for (const [k, iso] of Object.entries(pick6.readTimes())) {
+    const sport = k.slice('pick6|'.length), t = Date.parse(iso || '');
+    if (!Number.isFinite(t)) continue;
+    observeStale(all.filter(q => q.source === 'pick6' && q.meta.sport === sport), t, 'pick6', false, keyed.filter(r => r.sport === sport).map(r => `pick6|prop|row:${r.key}`));
   }
   const kt = Date.parse(kpropsState.updated || '');
   if (Number.isFinite(kt)) observeStale(all.filter(q => q.source === 'kalshi'), kt, 'kalshi-props', false);
@@ -5922,6 +5931,11 @@ function stalePriceApp(book, fair, c, side) {
     return { ev: (fair / be - 1) * 100, decimal: 1 / be, entry: sportProps.PP_GRADE.name, entries: sportProps.PP_ENTRIES.filter(e => fair > e.be).map(e => e.name) };
   }
   const mult = (side === 'Over' ? c.over : c.under) ?? 1;
+  // DK Pick6: its table times the pick's own multiplier, graded at the 3-pick entry
+  if (book === 'pick6') {
+    const fx = sportProps.fixedLeg('pick6', fair, mult);
+    return fx ? { ev: fx.ev, decimal: fx.decimal, entry: fx.entry, entries: fx.entries } : null;
+  }
   const ev = dfsLegEv(fair, book, mult, { overMultiplier: c.over, underMultiplier: c.under }, side);
   return ev == null ? null : { ev, decimal: sportTrackLegDecimal(book, mult) };
 }
@@ -6401,6 +6415,17 @@ app.get('/api/props/record/picks', async (req, res) => {
   res.json({ picks: await sportTracker.list({ status, kind: q('kind'), before: q('before'), limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
 });
 
+// Pick'em stale at Pinnacle's own number (staleexact.js): the daily check on
+// the one pick'em kind still standing, live legs apart from the 10-24 backfit.
+// Free, like the record; today's open legs only with Pro.
+const staleExact = require('./staleexact');
+app.get('/api/props/stale-exact', async (req, res) => {
+  try {
+    const legs = await sportTracker.list({ limit: 1e9 });
+    res.json(staleExact.report(legs, { showOpen: hasPro(req) }));
+  } catch (e) { sendErr(res, e); }
+});
+
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
 app.get('/api/props/:sport', async (req, res) => {
   const sport = req.params.sport;
@@ -6862,7 +6887,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.150.1',
+  version: '3.151.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
