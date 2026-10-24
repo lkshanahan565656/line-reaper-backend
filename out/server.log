@@ -1,0 +1,334 @@
+Line Reaper v3.92.0 on port 3999
+Tracker: store ready
+UD: 11744 lines (8561 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+PP: 4876 lines (113 esports) · leagues: UFC, Serie A, SOCCER, CS2, CFB2H, WNBA2H, La Liga, Dota2, LoL, CFB, DARTS, NHL
+Sleeper: 71 esports and 3741 sports lines from 3812 rows
+Startup complete
+Esports: PP=113 UD=346 SL=54/71 udMap=346
+bo3 schema — general: games_count,games_won_count,games_lost_count,matches_count,matches_won_count,matches_lost_count,events_count,events_won_count,kills_sum,deaths_sum,assists_sum,damage_sum,rounds_count,rounds_won_count,player_id,player_nickname | map: map_name,maps_count,avg_player_rating_value,avg_player_rating,avg_kills,avg_damage | accuracy: hit_group,hits_sum,damage_sum,kills_sum
+bo3 r1nkle: KPM=13.3 KPR=0.63 HS%=31 R=—
+Esports board: 140 matches (58 on both exchanges, 2 edges) in 8171ms
+gol.gg: 2181 LoL players (S16)
+bo3 MATYS: KPM=13.3 KPR=0.63 HS%=65 R=—
+VLR: 0 players across 0 regions (errors: na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402)
+bo3 huNter-: KPM=13.2 KPR=0.62 HS%=57 R=—
+bo3 NertZ: KPM=15.6 KPR=0.74 HS%=52 R=—
+bo3 HeavyGod: KPM=14.0 KPR=0.66 HS%=58 R=—
+OpenDota: 7751 pro player names indexed
+bo3 Aleksib: KPM=10.0 KPR=0.49 HS%=53 R=—
+bo3 iM: KPM=13.5 KPR=0.65 HS%=45 R=—
+bo3 b1t: KPM=13.7 KPR=0.66 HS%=61 R=—
+bo3 kauez: KPM=14.5 KPR=0.67 HS%=56 R=—
+bo3 w0nderful: KPM=15.6 KPR=0.75 HS%=40 R=—
+bo3 nbqq: KPM=14.8 KPR=0.69 HS%=47 R=—
+bo3 makazze: KPM=13.9 KPR=0.67 HS%=54 R=—
+OpenDota Nightfall: 8.3 kills/game over 40 matches
+bo3 ZEDKO: KPM=13.9 KPR=0.65 HS%=55 R=—
+OpenDota lorenof: 9.1 kills/game over 40 matches
+OpenDota DM: 4.7 kills/game over 40 matches
+OpenDota OmaR: 3.1 kills/game over 40 matches
+OpenDota GH: 1.9 kills/game over 40 matches
+bo3 shadiy: KPM=16.5 KPR=0.74 HS%=45 R=—
+OpenDota Darklord^: 7.5 kills/game over 40 matches
+OpenDota Stojkov: 8.0 kills/game over 40 matches
+OpenDota SaberLight: 6.5 kills/game over 40 matches
+OpenDota Kidaro: 2.2 kills/game over 40 matches
+bo3 cass1n: KPM=14.3 KPR=0.63 HS%=34 R=—
+bo3 decenty: KPM=15.7 KPR=0.73 HS%=59 R=—
+bo3 ScrunK: KPM=10.7 KPR=0.48 HS%=52 R=—
+bo3 blytz: KPM=14.6 KPR=0.65 HS%=56 R=—
+Ratings LOL: 5048 maps → 298 teams
+bo3 kyuubii: KPM=14.8 KPR=0.65 HS%=55 R=—
+bo3 buda: KPM=14.8 KPR=0.66 HS%=49 R=—
+bo3 saadzin: KPM=15.7 KPR=0.73 HS%=33 R=—
+bo3 VINI: KPM=14.4 KPR=0.67 HS%=49 R=—
+bo3 drop: KPM=13.7 KPR=0.66 HS%=49 R=—
+Ratings DOTA: 912 maps → 137 teams
+bo3 noway: KPM=15.2 KPR=0.71 HS%=54 R=—
+bo3 sl3nd: KPM=17.3 KPR=0.76 HS%=33 R=—
+bo3 timo: KPM=15.5 KPR=0.69 HS%=55 R=—
+bo3 hfah: KPM=12.4 KPR=0.59 HS%=60 R=—
+bo3 chelo: KPM=14.1 KPR=0.65 HS%=61 R=—
+bo3 laxiee: KPM=14.8 KPR=0.67 HS%=56 R=—
+bo3 laxiee: KPM=14.8 KPR=0.67 HS%=56 R=—
+bo3 MITHPUTTINI: KPM=15.4 KPR=0.67 HS%=33 R=—
+bo3 xerolte: KPM=15.8 KPR=0.73 HS%=55 R=—
+bo3 MITHPUTTINI: KPM=15.4 KPR=0.67 HS%=33 R=—
+Warmer: +20 CS profiles (19 still queued)
+bo3 tele D: KPM=14.3 KPR=0.64 HS%=51 R=—
+bo3 j0w: KPM=14.4 KPR=0.65 HS%=56 R=—
+bo3 MiQ: KPM=15.5 KPR=0.71 HS%=53 R=—
+bo3 spinnie: KPM=16.3 KPR=0.72 HS%=54 R=—
+bo3 zesta: KPM=14.7 KPR=0.68 HS%=60 R=—
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+H2H kills: 65 lines priced ({"VAL":28,"CS":37}), 0 clear with a sharp price, 22 model-only at +2%
+Esports: generated 376 picks (263 UD-sourced, 0 Sleeper-sourced, 52 Sleeper-priced, 0 manual, 100 need model input)
+Esports: PP=113 UD=346 SL=54/71 udMap=346
+bo3 mlhzin: KPM=15.5 KPR=0.73 HS%=49 R=—
+bo3 tAk: KPM=15.5 KPR=0.70 HS%=53 R=—
+bo3 brn$: KPM=13.4 KPR=0.60 HS%=32 R=—
+bo3 AccuracyTG: KPM=14.6 KPR=0.67 HS%=32 R=—
+bo3 adeX: KPM=19.9 KPR=0.92 HS%=31 R=—
+bo3 erkaSt: KPM=14.6 KPR=0.67 HS%=53 R=—
+bo3 yeda: KPM=13.3 KPR=0.58 HS%=58 R=—
+Ratings VAL: 1533 maps → 190 teams
+bo3 aidKiT: KPM=15.7 KPR=0.73 HS%=33 R=—
+bo3 deemO: KPM=14.6 KPR=0.66 HS%=57 R=—
+bo3 PokemoN: KPM=15.4 KPR=0.71 HS%=61 R=—
+bo3 balencyy: KPM=16.7 KPR=0.72 HS%=53 R=—
+PP league 121: 4876 lines (113 esports) · leagues: UFC, Serie A, SOCCER, CS2, CFB2H, WNBA2H, La Liga, Dota2, CFB, DARTS, NHL, NHL1P
+PP league 159: 4886 lines (123 esports) · leagues: UFC, Serie A, SOCCER, CS2, CFB2H, WNBA2H, La Liga, Dota2, CFB, DARTS, NHL, NHL1P
+UD: 11745 lines (8562 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Sleeper: 71 esports and 3741 sports lines from 3812 rows
+UD: 11745 lines (8562 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 CFB: 2 lines from 1 pick group and 10 more stat tabs
+Esports board: 140 matches (58 on both exchanges, 2 edges) in 4072ms
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (1 teams with an unknown lineup)
+H2H kills: 83 lines priced ({"DOTA":5,"VAL":41,"CS":37}), 0 clear with a sharp price, 26 model-only at +2%
+Esports: generated 376 picks (263 UD-sourced, 0 Sleeper-sourced, 54 Sleeper-priced, 0 manual, 100 need model input)
+Ratings CS: 10406 maps → 614 teams
+Esports: PP=123 UD=346 SL=54/71 udMap=346
+Sleeper: 71 esports and 3741 sports lines from 3812 rows
+PP league 174: 4886 lines (123 esports) · leagues: UFC, Serie A, SOCCER, CS2, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA
+PP league 265: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11744 lines (8563 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11744 lines (8563 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 NBA: 325 lines from 1 pick group and 7 more stat tabs
+OpenDota watson: 10.0 kills/game over 40 matches
+OpenDota Dukalis: 3.2 kills/game over 40 matches
+OpenDota not me: 6.6 kills/game over 30 matches
+OpenDota Saksa: 3.7 kills/game over 40 matches
+OpenDota Malr1ne: 7.8 kills/game over 40 matches
+OpenDota skem: 3.1 kills/game over 40 matches
+OpenDota OneJey: 4.0 kills/game over 40 matches
+OpenDota Rue: 2.5 kills/game over 40 matches
+OpenDota Boxi: 3.1 kills/game over 40 matches
+OpenDota bzm: 7.1 kills/game over 40 matches
+OpenDota No[o]ne-: 8.2 kills/game over 40 matches
+OpenDota Whitemon: 3.6 kills/game over 40 matches
+OpenDota Natsumi: 6.8 kills/game over 40 matches
+OpenDota Pure: 7.6 kills/game over 40 matches
+OpenDota Noticed: 6.7 kills/game over 40 matches
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 109 lines priced ({"CS":47,"DOTA":5,"VAL":57}), 0 clear with a sharp price, 30 model-only at +2%
+Esports: generated 386 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Esports: PP=141 UD=346 SL=54/71 udMap=346
+bo3 PKL: KPM=12.1 KPR=0.56 HS%=51 R=—
+bo3 detr0ittJ: KPM=14.5 KPR=0.67 HS%=35 R=—
+bo3 tomate: KPM=15.5 KPR=0.72 HS%=50 R=—
+bo3 gbb: KPM=15.4 KPR=0.71 HS%=51 R=—
+bo3 destiny: KPM=15.0 KPR=0.69 HS%=47 R=—
+Esports board: 140 matches (58 on both exchanges, 2 edges) in 7093ms
+bo3 Rkzinho: KPM=14.8 KPR=0.69 HS%=60 R=—
+bo3 biguzera: KPM=14.1 KPR=0.66 HS%=54 R=—
+bo3 saffee: KPM=13.7 KPR=0.64 HS%=26 R=—
+bo3 Tatu: KPM=14.1 KPR=0.65 HS%=61 R=—
+bo3 snow: KPM=14.5 KPR=0.61 HS%=35 R=—
+OpenDota Ari: 3.7 kills/game over 40 matches
+OpenDota Kataomi`: 2.2 kills/game over 40 matches
+OpenDota Kiritych~: 6.4 kills/game over 40 matches
+OpenDota MieRo`: 4.3 kills/game over 40 matches
+OpenDota tOfu: 4.8 kills/game over 40 matches
+OpenDota Topson: 6.9 kills/game over 40 matches
+OpenDota Yatoro: 7.4 kills/game over 40 matches
+OpenDota SSS: 10.8 kills/game over 40 matches
+OpenDota 33: 5.1 kills/game over 40 matches
+OpenDota 9Class: 4.2 kills/game over 40 matches
+OpenDota larl: 8.1 kills/game over 40 matches
+OpenDota CHIRA_JUNIOR: 8.1 kills/game over 40 matches
+OpenDota Satanic: 2.0 kills/game over 40 matches
+OpenDota Batyuk: 6.6 kills/game over 40 matches
+OpenDota Save~: 3.5 kills/game over 40 matches
+OpenDota Wisper: 6.0 kills/game over 40 matches
+OpenDota swedenstrong: 3.0 kills/game over 40 matches
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 119 lines priced ({"VAL":57,"DOTA":5,"CS":57}), 0 clear with a sharp price, 31 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 54 Sleeper-priced, 0 manual, 100 need model input)
+Sleeper: 71 esports and 3742 sports lines from 3813 rows
+PP league 159: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+PP league 121: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11744 lines (8562 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11744 lines (8562 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 MLB: 42 lines from 1 pick group and 9 more stat tabs
+Esports board: 140 matches (58 on both exchanges, 2 edges) in 7115ms
+Esports: PP=141 UD=346 SL=54/71 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 119 lines priced ({"DOTA":5,"CS":57,"VAL":57}), 0 clear with a sharp price, 31 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 54 Sleeper-priced, 0 manual, 100 need model input)
+PP league 174: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+PP league 265: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+Sleeper: 70 esports and 3741 sports lines from 3811 rows
+UD: 11744 lines (8561 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 119 lines priced ({"VAL":57,"DOTA":5,"CS":57}), 0 clear with a sharp price, 31 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+UD: 11744 lines (8561 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 WNBA: 0 lines from 1 pick group and 6 more stat tabs
+Esports board: 139 matches (57 on both exchanges, 2 edges) in 4750ms
+Sleeper: 70 esports and 3759 sports lines from 3829 rows
+PP league 159: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+PP league 121: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11744 lines (8559 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11744 lines (8559 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 UFC: 12 lines from 1 pick group and 5 more stat tabs
+Esports board: 143 matches (61 on both exchanges, 2 edges) in 7551ms
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"DOTA":9,"CS":57,"VAL":57,"LOL":48}), 6 clear with a sharp price, 54 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 22 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"DOTA":9,"CS":57,"VAL":57,"LOL":48}), 6 clear with a sharp price, 54 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+PP league 174: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11752 lines (8565 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Sleeper: 70 esports and 3762 sports lines from 3832 rows
+Pick6 NHL: 530 lines from 1 pick group and 6 more stat tabs
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 21 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"CS":57,"VAL":57,"LOL":48,"DOTA":9}), 6 clear with a sharp price, 54 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Ratings LOL: 5048 maps → 298 teams
+Ratings DOTA: 912 maps → 137 teams
+Esports board: 145 matches (61 on both exchanges, 3 edges) in 7748ms
+Ratings VAL: 1533 maps → 190 teams
+PP league 265: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+Sleeper: 70 esports and 3758 sports lines from 3828 rows
+PP league 121: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11756 lines (8568 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11756 lines (8568 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 NFL: 283 lines from 2 pick groups and 10 more stat tabs
+Ratings CS: 10400 maps → 614 teams
+Esports board: 146 matches (61 on both exchanges, 3 edges) in 5465ms
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"VAL":57,"DOTA":9,"CS":57,"LOL":48}), 6 clear with a sharp price, 54 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Sleeper: 70 esports and 3757 sports lines from 3827 rows
+PP league 159: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11754 lines (8570 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"DOTA":9,"CS":57,"LOL":48,"VAL":57}), 6 clear with a sharp price, 53 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Pick6 SOCCER: 0 lines from 2 pick groups and 9 more stat tabs
+Esports board: 148 matches (61 on both exchanges, 3 edges) in 7509ms
+Esports: PP=141 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 171 lines priced ({"DOTA":9,"CS":57,"LOL":48,"VAL":57}), 6 clear with a sharp price, 53 model-only at +2%
+Esports: generated 404 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+PP league 174: 4904 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+PP league 265: 4922 lines (159 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11563 lines (8392 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11563 lines (8392 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Esports: PP=159 UD=346 SL=53/70 udMap=346
+Sleeper: 70 esports and 3757 sports lines from 3827 rows
+Pick6 LOL: 48 lines from 1 pick group and 2 more stat tabs
+bo3 Liazz: KPM=16.3 KPR=0.81 HS%=51 R=—
+bo3 Gratisfaction: KPM=14.1 KPR=0.70 HS%=40 R=—
+bo3 dexter: KPM=15.2 KPR=0.74 HS%=56 R=—
+bo3 damyo: KPM=13.8 KPR=0.67 HS%=53 R=—
+bo3 viridian: KPM=10.5 KPR=0.52 HS%=50 R=—
+bo3 sliimey: KPM=17.7 KPR=0.85 HS%=56 R=—
+bo3 vision: KPM=13.5 KPR=0.65 HS%=58 R=—
+bo3 Omichella: KPM=13.3 KPR=0.64 HS%=58 R=—
+bo3 tucks: KPM=13.7 KPR=0.71 HS%=36 R=—
+bo3 apocdud: KPM=12.6 KPR=0.60 HS%=32 R=—
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 181 lines priced ({"LOL":48,"VAL":57,"DOTA":9,"CS":67}), 6 clear with a sharp price, 59 model-only at +2%
+Esports: generated 422 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Esports board: 148 matches (62 on both exchanges, 2 edges) in 4314ms
+PP league 159: 4922 lines (159 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+PP league 121: 4922 lines (159 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11563 lines (8394 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11563 lines (8394 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Sleeper: 70 esports and 3757 sports lines from 3827 rows
+Pick6 CFB: 2 lines from 1 pick group and 10 more stat tabs
+Esports: PP=159 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 181 lines priced ({"DOTA":9,"CS":67,"VAL":57,"LOL":48}), 6 clear with a sharp price, 59 model-only at +2%
+Esports: generated 422 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Esports board: 154 matches (62 on both exchanges, 2 edges) in 7494ms
+Esports: PP=159 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 181 lines priced ({"DOTA":9,"CS":67,"VAL":57,"LOL":48}), 6 clear with a sharp price, 59 model-only at +2%
+Esports: generated 422 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+PP league 174: 4922 lines (159 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, WNBA2H, La Liga, CFB, DARTS, NHL, NHL1P, NBA, NBA1H
+UD: 11567 lines (8398 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11567 lines (8398 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Sleeper: 70 esports and 3758 sports lines from 3828 rows
+PP: 4917 lines (141 esports) · leagues: UFC, Serie A, SOCCER, CS2, CFB2H, La Liga, Dota2, LoL, CFB, DARTS, NHL, NHL1P
+Pick6 NBA: 336 lines from 1 pick group and 7 more stat tabs
+Esports: PP=121 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 161 lines priced ({"DOTA":9,"LOL":48,"VAL":57,"CS":47}), 6 clear with a sharp price, 53 model-only at +2%
+Esports: generated 384 picks (263 UD-sourced, 0 Sleeper-sourced, 53 Sleeper-priced, 0 manual, 100 need model input)
+Esports board: 154 matches (63 on both exchanges, 3 edges) in 4369ms
+Sleeper: 70 esports and 3758 sports lines from 3828 rows
+PP league 265: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, Dota2, LoL, CFB, DARTS, NHL, NHL1P, WNBA4Q
+PP league 121: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, Dota2, CFB, DARTS, NHL, NHL1P, WNBA4Q, VAL
+UD: 11586 lines (8423 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11586 lines (8423 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Esports: PP=168 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 181 lines priced ({"DOTA":9,"VAL":57,"CS":67,"LOL":48}), 6 clear with a sharp price, 61 model-only at +2%
+Esports: generated 423 picks (255 UD-sourced, 0 Sleeper-sourced, 52 Sleeper-priced, 0 manual, 100 need model input)
+Pick6 MLB: 43 lines from 1 pick group and 9 more stat tabs
+Esports board: 155 matches (63 on both exchanges, 2 edges) in 5206ms
+PP league 159: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, Dota2, CFB, DARTS, NHL, NHL1P, WNBA4Q, NBA
+Sleeper: 70 esports and 3754 sports lines from 3824 rows
+UD: 11600 lines (8440 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 WNBA: 0 lines from 1 pick group and 6 more stat tabs
+Esports board: 155 matches (63 on both exchanges, 2 edges) in 7801ms
+Esports: PP=168 UD=346 SL=53/70 udMap=346
+Esports: 1 picks rescaled — line implied a longer map span than the market label claimed
+Kill share: 12 teams, 48 lines priced, 20 clear (0 teams with an unknown lineup)
+Round model: 2 matches, 10 lines priced, 1 clear (2 teams with an unknown lineup)
+H2H kills: 181 lines priced ({"DOTA":9,"CS":67,"LOL":48,"VAL":57}), 6 clear with a sharp price, 61 model-only at +2%
+Esports: generated 423 picks (255 UD-sourced, 0 Sleeper-sourced, 52 Sleeper-priced, 0 manual, 100 need model input)
+PP league 265: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, Dota2, CFB, DARTS, NHL, NHL1P, WNBA4Q, NBA
+PP league 174: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, CFB, DARTS, NHL, NHL1P, WNBA4Q, NBA, NBA1H
+Sleeper: 70 esports and 3752 sports lines from 3822 rows
+UD: 11600 lines (8442 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+UD: 11600 lines (8442 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Pick6 UFC: 10 lines from 1 pick group and 5 more stat tabs
+Esports board: 155 matches (64 on both exchanges, 2 edges) in 4618ms
+PP league 121: 4944 lines (168 esports) · leagues: UFC, Serie A, SOCCER, CFB2H, La Liga, CFB, DARTS, NHL, NHL1P, WNBA4Q, NBA, NBA1H
+UD: 11598 lines (8440 boosted/demoted) · sports: CFB, MLB, MMA, NFL, NBA, NHL, FIFA, LOL, TENNIS, CS, VAL, DOTA
+Sleeper: 70 esports and 3756 sports lines from 3826 rows
+Pick6 NHL: 568 lines from 1 pick group and 6 more stat tabs
+Esports board: 158 matches (66 on both exchanges, 3 edges) in 11995ms

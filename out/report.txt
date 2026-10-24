@@ -1,0 +1,32 @@
+relay read took 83 s
+P6 CFB: 2 lines, undefined tabs: Passing TDs 1, Rushing Yards 1
+P6 NBA: 315 lines, undefined tabs: Points 67, Pts + Rebs + Asts 58, Rebounds 65, Assists 54, 3-Pointers Made 55, Steals 16
+P6 MLB: 42 lines, undefined tabs: Hits + Runs + RBIs 18, Strikeouts Thrown 2, Hits 18, Total Bases (From Hits) 3, Stolen Bases 1
+P6 WNBA: 0 lines, undefined tabs: 
+P6 UFC: 12 lines, undefined tabs: 5 RDS Significant Strikes 2, 3 RDS Significant Strikes 2, 5 RDS Takedowns 3, 3 RDS Takedowns 1, 5 RDS Fantasy Points 2, 3 RDS Fantasy Points 2
+P6 NHL: 530 lines, undefined tabs: Shots on Goal 164, Points 193, Saves 14, Assists 159
+P6 NFL: 283 lines, undefined tabs: Receiving Yards 137, Passing Yards 23, Rushing Yards 67, Receptions 1, Field Goals Made 23, Rush + Rec Yards 32
+P6 SOCCER: 0 lines, undefined tabs: 
+P6 LOL: 48 lines, undefined tabs: MAP 1 Kills 48
+
+2026-10-24T18:34:20.480Z combo rows 338 (by app {"underdog":242,"prizepicks":301,"sleeper":308,"pick6":58}); rows with a quote from {"pinnacle":33,"fanduel":271,"draftkings":265,"bet365":334,"caesars":270,"fanatics":276}; Pinnacle parts on 123; NBA props read {"pinnacle":224,"fanduel":544,"betrivers":0,"matched":{"fanduel":198,"betrivers":0}}
+combo clears 0
+v3.151.0 pick6 {"enabled":true,"relay":{"at":null,"reads":0,"error":null,"sports":[]},"sports":["CFB","NBA","MLB","WNBA","UFC","NHL","NFL","SOCCER","LOL"],"reads":30,"payouts":{"2":{"2":3},"3":{"3":5.5},"4":{"4":10},"5":{"4":1,"5":12},"6":{"5":1.5,"6":25}},"bySport":{"CFB":{"lines":2,"groups":1,"at":"2026-10-24T18
+
+2026-10-24T18:40:26.415Z combo rows 338 (by app {"underdog":243,"prizepicks":301,"sleeper":307,"pick6":58}); rows with a quote from {"pinnacle":33,"fanduel":271,"draftkings":264,"bet365":334,"caesars":270,"fanatics":276}; Pinnacle parts on 123; NBA props read {"pinnacle":224,"fanduel":544,"betrivers":0,"matched":{"fanduel":195,"betrivers":0}}
+combo clears 0
+v3.151.0 pick6 {"enabled":true,"relay":{"at":null,"reads":0,"error":null,"sports":[]},"sports":["CFB","NBA","MLB","WNBA","UFC","NHL","NFL","SOCCER","LOL"],"reads":50,"payouts":{"2":{"2":3},"3":{"3":5.5},"4":{"4":10},"5":{"4":1,"5":12},"6":{"5":1.5,"6":25}},"bySport":{"CFB":{"lines":2,"groups":1,"at":"2026-10-24T18
+
+2026-10-24T18:46:26.549Z combo rows 338 (by app {"underdog":243,"prizepicks":301,"sleeper":307,"pick6":58}); rows with a quote from {"pinnacle":33,"fanduel":247,"draftkings":264,"bet365":334,"caesars":270,"fanatics":272}; Pinnacle parts on 123; NBA props read {"pinnacle":224,"fanduel":507,"betrivers":0,"matched":{"fanduel":175,"betrivers":0}}
+combo clears 0
+v3.151.0 pick6 {"enabled":true,"relay":{"at":null,"reads":0,"error":null,"sports":[]},"sports":["CFB","NBA","MLB","WNBA","UFC","NHL","NFL","SOCCER","LOL"],"reads":76,"payouts":{"2":{"2":3},"3":{"3":5.5},"4":{"4":10},"5":{"4":1,"5":12},"6":{"5":1.5,"6":25}},"bySport":{"CFB":{"lines":2,"groups":1,"at":"2026-10-24T18
+
+2026-10-24T18:52:31.802Z combo rows 340 (by app {"underdog":242,"prizepicks":307,"sleeper":307,"pick6":62}); rows with a quote from {"pinnacle":33,"draftkings":264,"bet365":334,"caesars":269,"fanatics":272,"fanduel":144}; Pinnacle parts on 123; NBA props read {"pinnacle":224,"fanduel":304,"betrivers":0,"matched":{"fanduel":99,"betrivers":0}}
+combo clears 0
+v3.151.0 pick6 {"enabled":true,"relay":{"at":null,"reads":0,"error":null,"sports":[]},"sports":["CFB","NBA","MLB","WNBA","UFC","NHL","NFL","SOCCER","LOL"],"reads":105,"payouts":{"2":{"2":3},"3":{"3":5.5},"4":{"4":10},"5":{"4":1,"5":12},"6":{"5":1.5,"6":25}},"bySport":{"CFB":{"lines":2,"groups":1,"at":"2026-10-24T1
+
+2026-10-24T18:58:33.455Z combo rows 344 (by app {"underdog":242,"prizepicks":307,"sleeper":311,"pick6":62}); rows with a quote from {"pinnacle":33,"draftkings":264,"bet365":335,"caesars":269,"fanatics":272,"fanduel":83}; Pinnacle parts on 123; NBA props read {"pinnacle":224,"fanduel":180,"betrivers":0,"matched":{"fanduel":55,"betrivers":0}}
+combo clears 0
+v3.151.0 pick6 {"enabled":true,"relay":{"at":null,"reads":0,"error":null,"sports":[]},"sports":["CFB","NBA","MLB","WNBA","UFC","NHL","NFL","SOCCER","LOL"],"reads":125,"payouts":{"2":{"2":3},"3":{"3":5.5},"4":{"4":10},"5":{"4":1,"5":12},"6":{"5":1.5,"6":25}},"bySport":{"CFB":{"lines":2,"groups":1,"at":"2026-10-24T1
+record byKind combo: null p6-combo null
+renders done
