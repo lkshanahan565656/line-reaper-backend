@@ -65,7 +65,9 @@ function legDecimal(book, mult, other = null) {
 // and as stale lands in both records
 const STALE = new Set(['stale', 'stale-single', 'p6-stale', 'p6-stale-single']);
 // a book-consensus leg too: the same leg can be a sharp or book-fair play and a consensus one
-const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus']);
+// and a three-sharps one (sharp3): the same leg can sit in the consensus record too
+const THREE = new Set(['sharp3', 'p6-sharp3']);
+const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus', ...THREE]);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
@@ -125,7 +127,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         signalMult: play.mult, signalDecimal: r4(decimal), signalFair: play.fair == null ? null : r4(play.fair), signalEv: play.ev, sources: play.sources,
         signalLines: linesOf(row), gapVs: play.gap ? play.gap.vs.map(v => ({ book: CODE[v.book] || v.book, line: v.line })) : null,
         gapPts: play.gap?.pts ?? null, gapProbPts: play.gap?.probPts ?? null,
-        ...(baseKind(kind) === 'sharp' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
+        ...(baseKind(kind) === 'sharp3' ? { evMin: play.evMin ?? null } : {}),
+        ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
@@ -271,9 +274,9 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     await loaded;
     const cut = sinceDays ? now() - sinceDays * 86400e3 : 0;
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
-    // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js)
-    // and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
+    // the three-sharps legs and the book-fair legs are their own kinds, never the headline
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -291,4 +294,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { THREE, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

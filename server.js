@@ -4590,7 +4590,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.147.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.148.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5412,7 +5412,7 @@ function propsBoardRows() {
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   const sportPlays = priceSportRows(rows);
   observeStaleApps(rows);
-  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -5434,6 +5434,8 @@ function sportSharpAt(row, line) {
 }
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
+  // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
+  if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
   if (kind === 'sharp') { const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS }); return f ? f.p : null; }
   // a book-fair leg closes on the books' own fair at its line (and on
   // Pinnacle's or Kalshi's, sportSharpAt, when one appears before the start)
@@ -5496,6 +5498,13 @@ const bookFairPlays = (row, sharp) => (BOOK_FAIR_ON ? sportProps.bookFairPlays(r
 // consensus at the close, until about 50 graded legs say whether it is an edge.
 // BOOK_CONSENSUS=off turns it off.
 const BOOK_CONS_ON = !/^(off|0|false|no)$/i.test(String(process.env.BOOK_CONSENSUS || '').trim());
+// ── THREE SHARPS: Pinnacle and two of FanDuel, BetRivers and Kalshi at the app's own number ──
+// (sportprops.threeSharpPlays) every source on its own price past the app's
+// break-even; kind 'sharp3' (Pick6 'p6-sharp3'), its close Pinnacle's own
+// price at that number. A lead: grey on PROPS, never in Best Plays or alerts,
+// judged at 50 graded. THREE_SHARP=off turns it off.
+const THREE_SHARP_ON = !/^(off|0|false|no)$/i.test(String(process.env.THREE_SHARP || '').trim());
+const THREE_SHARP_OPTS = { ...sportProps.THREE_SHARP, ...(process.env.THREE_SHARP_MIN_EV != null ? { minEv: parseFloat(process.env.THREE_SHARP_MIN_EV) } : {}) };
 // every book quote on the row's player and stat in the same game, at every line it hangs
 function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   if (!(Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)) return [];
@@ -5538,6 +5547,11 @@ function priceSportRows(rows) {
       consensusMoves.observe(row, cplays[0].mean);
       row.consensus = { n: cplays[0].n, mean: cplays[0].mean, spreadPts: cplays[0].spreadPts, sources: cplays[0].sources.map(({ book, line, p, shadow }) => ({ book, line, p, ...(shadow ? { shadow } : {}) })) };
     } else consensusMoves.observe(row, null);
+    // every source on its own price at the app's number: a lead of its own
+    const s3 = THREE_SHARP_ON ? sportProps.threeSharpPlays(row, { sharp, kalshi, dfsEv: dfsLegEv, o: THREE_SHARP_OPTS }) : [];
+    if (s3.length) row.threeSharp = { book: s3[0].book, side: s3[0].side, line: s3[0].line, ev: s3[0].ev, evMin: s3[0].evMin, entries: s3[0].entries, sources: s3[0].sources, plays: s3.map(p => ({ book: p.book, side: p.side, line: p.line, ev: p.ev, evMin: p.evMin })) };
+    else delete row.threeSharp;
+    for (const p of s3) flagged.push({ row, play: p, kind: 'sharp3' });
     const sharpTaken = new Set();
     let sharpBest = null;
     for (const p of cplays) {
@@ -6183,7 +6197,7 @@ async function trackSportProps() {
     // when each app's lines were last read (a PrizePicks pull that failed read nothing)
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
-    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
+    const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
@@ -6198,7 +6212,7 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1' };
+  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1' };
   const market = String(req.query.market || '').slice(0, 80);
   const hits = propsBoard.queryRows(rows, { ...qo, market });
   // the Lines view: one app's lines, with the header count and the prop filter
@@ -6772,7 +6786,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.147.0',
+  version: '3.148.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
