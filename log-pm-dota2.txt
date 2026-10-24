@@ -1,0 +1,53 @@
+16:47:46 pm series dota2 10309
+16:47:46 pm sample {"id":"222875","ticker":"dota2-stels-wb-2026-02-22","slug":"dota2-stels-wb-2026-02-22","title":"Dota 2: Team Stels vs Winter Bear (BO3) - EPL Championship Playoffs","description":"This market refers to the Dota 2 match between Team Stels and Winter Bear in the EPL Championship Playoffs, scheduled for February 22 at 8:00AM ET.\n\nThis market will resolve to \"Team Stels\" if Team Stels win the match against Winter Bear.\n\nThis market will resolve to \"Winter Bear\" if Winter Bear win the match against Team Stels.\n\nIf the match is canceled (not played at all), ends in a tie, or is delayed beyond 7 days from the scheduled date without a winner determined, this market will resolve to 50-50. \n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://www.dotabuff.com. However, if https://www.dotabuff.com has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.","resolutionSource":"https://www.twitch.tv/epl_dota","startDate":"2026-02-22T05:33:26.123166Z","creationDate":"2026-02-22T05:33:26.123154Z","endDate":"2026-02-2
+16:47:46 pm week 2026-02-22 38
+16:47:47 pm week 2026-03-01 62
+16:47:47 pm week 2026-03-08 112
+16:47:48 pm week 2026-03-15 215
+16:47:48 pm week 2026-03-22 291
+16:47:49 pm week 2026-03-29 335
+16:47:49 pm week 2026-04-05 404
+16:47:50 pm week 2026-04-12 493
+16:47:50 pm week 2026-04-19 577
+16:47:51 pm week 2026-04-26 627
+16:47:52 pm week 2026-05-03 681
+16:47:53 pm week 2026-05-10 752
+16:47:54 pm week 2026-05-17 810
+16:47:54 pm week 2026-05-24 895
+16:47:54 pm week 2026-05-31 969
+16:47:55 pm week 2026-06-07 1016
+16:47:55 pm week 2026-06-14 1091
+16:47:56 pm week 2026-06-21 1128
+16:47:56 pm week 2026-06-28 1176
+16:47:57 pm week 2026-07-05 1289
+16:47:57 pm week 2026-07-12 1305
+16:47:57 pm week 2026-07-19 1344
+16:47:58 pm week 2026-07-26 1435
+16:47:58 pm week 2026-08-02 1476
+16:47:58 pm week 2026-08-09 1537
+16:47:59 pm week 2026-08-16 1550
+16:47:59 pm week 2026-08-23 1617
+16:47:59 pm week 2026-08-30 1651
+16:48:00 pm week 2026-09-06 1697
+16:48:00 pm week 2026-09-13 1760
+16:48:00 pm week 2026-09-20 1837
+16:48:01 pm week 2026-09-27 1871
+16:48:01 pm week 2026-10-04 1907
+16:48:02 pm week 2026-10-11 2039
+16:48:02 pm week 2026-10-18 2066
+16:48:02 pm events dota2 2066
+16:48:03 pm hist sample Dota 2: Team Liquid vs Aurora (BO3) - DreamLeague Playoffs 0 165 [[11,0.62],[11,0.62],[13,0.62],[14,0.605],[15,0.58]]
+16:49:45 pm dota2 300 / 2066 calls 3058 errs 0
+16:49:45 saved pm-dota2 300
+16:51:33 pm dota2 600 / 2066 calls 6332 errs 0
+16:51:34 saved pm-dota2 600
+16:52:55 pm dota2 900 / 2066 calls 8915 errs 0
+16:52:56 saved pm-dota2 900
+16:54:18 pm dota2 1200 / 2066 calls 11542 errs 0
+16:54:18 saved pm-dota2 1200
+16:55:48 pm dota2 1500 / 2066 calls 14285 errs 0
+16:55:49 saved pm-dota2 1500
+16:57:31 pm dota2 1800 / 2066 calls 17350 errs 0
+16:57:32 saved pm-dota2 1800
+16:58:55 saved pm-dota2 2029
+16:58:55 done pm:dota2 calls 19749 errs 0 min 11.2
