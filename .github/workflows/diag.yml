@@ -1,0 +1,13 @@
+name: diag-corrstack
+on: { push: { branches: [diag-corrstack] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: mkdir -p out; bash diag/run.sh > out/run.log 2>&1 || true; cp out/server.log out/server-head.log; tail -c 300000 out/server.log > out/server-tail.log; rm out/server.log
+      - run: cd out && git init -q && git checkout -q -b diag-corrstack-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-corrstack-out
