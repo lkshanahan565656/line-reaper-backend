@@ -121,7 +121,12 @@ const tailBet = r => ({
 // evtrack: CLV in percent, no win/loss
 // game: one per event (or player) and day, the unit a book's 50 counts in
 const day = t => String(t || '').slice(0, 10);
-const evBet = b => ({ profit: null, staked: 0, clv: b.clv != null ? b.clv / 100 : null, exec: b.execClv != null ? b.execClv / 100 : null,
+// Main lines graded from an ESPN final carry their 1u result (evtrack
+// setResult); the exchanges a Texan trades are graded on Pinnacle's own close
+const PIN_GRADED = new Set(['gemini', 'polymarketus', 'kalshi']);
+const evClv = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.pinClv : b.clv);
+const evExec = b => (PIN_GRADED.has(b.book) && b.pinClv !== undefined ? b.execPinClv : b.execClv);
+const evBet = b => ({ profit: b.profit ?? null, staked: b.profit != null ? 1 : 0, clv: evClv(b) != null ? evClv(b) / 100 : null, exec: evExec(b) != null ? evExec(b) / 100 : null,
   sized: b.execSizedClv != null ? b.execSizedClv / 100 : null, game: `${b.event || b.group}|${b.player || 'game'}|${day(b.start)}`,
   labels: { sport: b.sport, book: b.book, market: b.market } });
 // sports pick'em props (sporttrack.js): CLV is the leg's EV at the close (the

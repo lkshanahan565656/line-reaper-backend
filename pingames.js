@@ -288,9 +288,20 @@ function withKalshiMid(games, rows, o = KALSHI_MID) {
 
 // Fetch every sport → { games, errors }. The feed answered without a key from
 // GitHub's runners (2026-10-14); PINNACLE_GUEST_KEY is sent when set.
-async function fetchPinnacleGames(http, { key = '', sports = SPORTS, now = Date.now() } = {}) {
+// leagues ({ soccer: [Pinnacle league ids] }) reads only those leagues of a
+// sport (/leagues/{id}/…): every soccer league at once is 80+ MB.
+async function fetchPinnacleGames(http, { key = '', sports = SPORTS, leagues = {}, now = Date.now() } = {}) {
   const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0', ...(key ? { 'X-API-Key': key } : {}) };
   const games = [], errors = [];
+  await Promise.all(Object.entries(leagues).flatMap(([sport, ids]) => ids.map(async id => {
+    try {
+      const [mu, mk] = await Promise.all([
+        http.get(`${PIN}/leagues/${id}/matchups`, { headers, timeout: 20000 }),
+        http.get(`${PIN}/leagues/${id}/markets/straight`, { headers, timeout: 20000 }),
+      ]);
+      games.push(...parseGames(sport, mu?.data, mk?.data, now));
+    } catch (e) { errors.push(`${sport} ${id}: ${e.response?.status || e.message}`); }
+  })));
   await Promise.all(Object.entries(sports).map(async ([sport, id]) => {
     try {
       const [mu, mk] = await Promise.all([

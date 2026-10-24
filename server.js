@@ -3264,6 +3264,9 @@ let evRecent = [];
 // minutes on. Refreshed every 5 minutes; empty until a book proves out. Until
 // 10-18 this counted raw lines per book, so Action Network's copies posted too.
 const EV_PROVEN_CLV = parseFloat(process.env.EV_PROVEN_CLV) || 1;
+// leads with their own record (Gemini, Polymarket US): never an alert, never
+// in Best Plays, whatever the board says, until a raw re-check backs them
+const EV_LEAD_BOOKS = new Set(['gemini', 'polymarketus']);
 let evBookProven = new Set();
 async function refreshEvProof() {
   evBookProven = closeBoard.alertBooks(await closeBoardFor(), { minExecClv: EV_PROVEN_CLV });
@@ -3276,12 +3279,13 @@ function runEvScreen(force = false) {
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
   const feeds = evFeeds().map(f => (/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f));
   const dfsLines = sportsPropLines();
-  const fairs = new Map(), costs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, weights: EV_WEIGHTS });
+  const fairs = new Map(), costs = new Map(), pinFairs = new Map();
+  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, pinFairs, weights: EV_WEIGHTS });
   const prev = evCache.at ? evCache.rows : null;
   const alt = runAltScreen(kmid);
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
-  evTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('EV tracker:', e.message));
+  // Pinnacle's own price at each number rides along: the exchanges' rows close on it
+  evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     // DK Pick6 is a lead: on the board and in the record, never an alert
@@ -3291,7 +3295,7 @@ function runEvScreen(force = false) {
       for (const fn of evListeners) { try { fn(fresh); } catch { /* keep going */ } }
       // the webhook can reach other people: it gets what the public may see
       // and only from a book (or pick'em app) the scoreboard marks proven (evBookProven)
-      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => evBookProven.has(r.book));
+      const posted = fresh.filter(evRowOk(webhookLicence())).filter(r => evBookProven.has(r.book) && !EV_LEAD_BOOKS.has(r.book));
       if (webhook.enabled && posted.length) {
         const lines = posted.slice(0, 10).map(evScreen.describeEv);
         if (posted.length > 10) lines.push(`…and ${posted.length - 10} more`);
@@ -4590,7 +4594,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.148.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.149.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5659,15 +5663,45 @@ async function refreshExtraBooks() {
 // minute; GEMINI=off stops it.
 const geminibooks = require('./geminibooks');
 const geminiState = { enabled: !envOff('GEMINI'), books: {}, events: 0, at: 0, errors: [], updated: null, ms: null };
-const GEMINI_EVERY_MS = 110e3, GEMINI_MAX_AGE_MS = 6 * 60e3;
+const GEMINI_EVERY_MS = 50e3, GEMINI_MAX_AGE_MS = 6 * 60e3;
 async function refreshGemini() {
   if (!geminiState.enabled || Date.now() - geminiState.at < GEMINI_EVERY_MS) return;
   const t0 = Date.now();
   try {
-    const { books, events, errors } = await geminibooks.fetchGemini(axios);
-    if (events > 0) Object.assign(geminiState, { books, events, at: Date.now() });
+    const { books, events, errors, skipped } = await geminibooks.fetchGemini(axios);
+    if (events > 0) Object.assign(geminiState, { books, events, skipped, at: Date.now() });
     Object.assign(geminiState, { errors: errors.slice(0, 5), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { geminiState.errors = [e.message]; }
+}
+// Polymarket US's game lines as a book (pmusbooks.js): the same CFTC
+// exchange a Texan trades, never polymarket.com. Moneylines for every league
+// Pinnacle prices, spreads and totals for games inside 36 hours, merged and
+// graded like Gemini's. Every other minute; POLYMARKET_US_BOOK=off stops it.
+const pmusbooks = require('./pmusbooks');
+const pmusBooksState = { enabled: pmusbooks.enabledFromEnv(), books: {}, at: 0, games: 0, withLines: 0, slugReads: 0, counts: {}, errors: [], updated: null, ms: null };
+const pmusBooksReader = pmusBooksState.enabled ? pmusbooks.createPolymarketUsBooks({ http: upstream }) : null;
+const PMUS_BOOKS_EVERY_MS = 50e3;
+async function refreshPmusBooks() {
+  if (!pmusBooksReader || Date.now() - pmusBooksState.at < PMUS_BOOKS_EVERY_MS) return;
+  const t0 = Date.now();
+  try {
+    const r = await pmusBooksReader.read();
+    if (r.games > 0) Object.assign(pmusBooksState, { books: r.books, at: Date.now() });
+    Object.assign(pmusBooksState, { games: r.games, withLines: r.withLines, slugReads: r.slugReads, counts: r.counts, errors: r.errors.slice(0, 5), updated: new Date().toISOString(), ms: Date.now() - t0 });
+  } catch (e) { pmusBooksState.errors = [e.message]; }
+}
+// Pinnacle's soccer, tennis and UFC for the exchange-only leagues
+// (freebooks.EXCHANGE_LEAGUES): soccer league by league (the whole sport is
+// 80+ MB), every other minute, only while an exchange book is on.
+const PIN_EXTRA_GAMES_EVERY_MS = 110e3, PIN_EXTRA_GAMES_MAX_AGE_MS = 6 * 60e3;
+const pinExtraGames = { games: [], at: 0, tried: 0, errors: [] };
+async function refreshPinExtraGames() {
+  if (!(geminiState.enabled || pmusBooksState.enabled) || Date.now() - pinExtraGames.tried < PIN_EXTRA_GAMES_EVERY_MS) return;
+  pinExtraGames.tried = Date.now();
+  const r = await pingames.fetchPinnacleGames(axios, { key: process.env.PINNACLE_GUEST_KEY || '', sports: { tennis: pingames.SPORTS.tennis, mma: pingames.SPORTS.mma },
+    leagues: { soccer: freebooks.PIN_SOCCER_LEAGUES } });
+  if (r.games.length) Object.assign(pinExtraGames, { games: r.games, at: Date.now() });
+  pinExtraGames.errors = r.errors.slice(0, 5);
 }
 async function refreshFreeBooks() {
   if (!freeBooksState.enabled || freeBooksRunning || !licences.isOn('pinnacle')) return;
@@ -5678,14 +5712,18 @@ async function refreshFreeBooks() {
     // FanDuel's prop pages every other minute; Pinnacle's props come from refreshPinnacleProps
     const fdProps = Date.now() - freeBooksPropsAt > 110e3;
     await refreshExtraBooks();
-    await refreshGemini();
+    await Promise.all([refreshGemini(), refreshPmusBooks(), refreshPinExtraGames().catch(e => { pinExtraGames.errors = [e.message]; })]);
     const extra = { ...(Date.now() - xbooksState.at < XBOOKS_MAX_AGE_MS ? xbooksState.books : {}) };
     if (Date.now() - geminiState.at < GEMINI_MAX_AGE_MS) for (const [s, gs] of Object.entries(geminiState.books)) extra[s] = [...(extra[s] || []), ...gs];
-    const read = await freebooks.fetchFreeBooks(axios, pin.games, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
-    // Gemini's rungs only at Pinnacle's main number: the close is Pinnacle's own price there
-    const games = geminibooks.mainLinesOnly(read.games, pin.games), { counts, errors } = read;
+    if (Date.now() - pmusBooksState.at < GEMINI_MAX_AGE_MS) for (const [s, gs] of Object.entries(pmusBooksState.books)) extra[s] = [...(extra[s] || []), ...gs];
+    const pinAll = Date.now() - pinExtraGames.at < PIN_EXTRA_GAMES_MAX_AGE_MS ? [...pin.games, ...pinExtraGames.games] : pin.games;
+    const read = await freebooks.fetchFreeBooks(axios, pinAll, { pinProps: [...pinPropsIndex.values()].flat(), fdProps, propCache: freeBooksPropCache, ladderCache: freeBooksLadderCache, extra });
+    // the exchanges' rungs only at Pinnacle's main number: the close is Pinnacle's own price there
+    const games = geminibooks.mainLinesOnly(read.games, pinAll, ['gemini', 'polymarketus']), { counts, errors } = read;
     if (fdProps) freeBooksPropsAt = Date.now();
-    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pin.games, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(games, fdProps, !pin.errors.length); }
+    // the stale-lines engine watches the sportsbooks' leagues only
+    const bookLeagues = Object.fromEntries(Object.entries(games).filter(([k]) => freebooks.LEAGUES[k]));
+    if (pin.games.length) { Object.assign(freeBooksState, { games, pinGames: pinAll, gamesAt: new Date().toISOString() }); refreshBookPropsIndex(); observeStaleBooks(bookLeagues, fdProps, !pin.errors.length); }
     Object.assign(freeBooksState, { counts, errors: [...pin.errors.map(e => `pinnacle ${e}`), ...errors].slice(0, 8), updated: new Date().toISOString(), ms: Date.now() - t0 });
   } catch (e) { freeBooksState.errors = [e.message]; }
   finally { freeBooksRunning = false; }
@@ -5924,6 +5962,37 @@ function staleAppPlays(boardRows) {
 const BIG_OPTS = { ...bigMoney.DEFAULTS, ...bigMoney.optsFromEnv() };
 const BIG_LEAGUE = { nfl: 'NFL', ncaaf: 'CFB', nba: 'NBA', wnba: 'WNBA', nhl: 'NHL', mlb: 'MLB' };
 const bigGrader = createSportsGrader({ http: axios });
+// Main-line results from ESPN finals (10-24): every closed game line in the
+// +EV record (moneyline, spread, total) gets its outcome and 1u result at the
+// flagged price and at the +2 min price, so the scoreboard can check the close
+// against what happened (results.resultsShortfall). Leagues ESPN doesn't
+// score (tennis, UFC, KHL, KBO …) keep CLV only.
+const EV_RESULT_LEAGUE = { ...BIG_LEAGUE, ncaab: 'CBB', epl: 'EPL', laliga: 'LALIGA', bundesliga: 'BUNDESLIGA', seriea: 'SERIEA', ligue1: 'LIGUE1',
+  mls: 'MLS', ligamx: 'LIGAMX', eredivisie: 'EREDIVISIE', brasileirao: 'BRASILEIRAO', ucl: 'UCL', uel: 'UEL' };
+const evResultsState = { runs: 0, graded: 0, lastRun: null, lastGraded: 0, pending: 0, notFound: 0, errors: [] };
+let evResultsRunning = false;
+async function gradeEvResults() {
+  if (evResultsRunning) return;
+  evResultsRunning = true;
+  try {
+    const due = await evTracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
+    const done = [];
+    let graded = 0, pending = 0, notFound = 0;
+    for (const b of due) {
+      const [away, home] = String(b.event || '').split(' @ ');
+      let sc = null;
+      try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
+      catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
+      if (sc?.pending) { pending++; continue; }
+      if (!sc) notFound++;
+      if (await evTracker.setResult(b, sc, { save: false })) graded++;
+      done.push(b);
+    }
+    if (done.length) await evTracker.saveMany(done);
+    Object.assign(evResultsState, { runs: evResultsState.runs + 1, graded: evResultsState.graded + graded, lastGraded: graded, pending, notFound, lastRun: new Date().toISOString() });
+  } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
+  finally { evResultsRunning = false; }
+}
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -6691,7 +6760,7 @@ app.get('/api/results', async (req, res) => {
 // gates first. The rows are what's being sold, so free users get the counts.
 const bestplays = require('./bestplays');
 // venues with a record of their own and nothing proven: never in Best Plays
-const BEST_PLAYS_LEADS = new Set(['pick6', 'gemini']);
+const BEST_PLAYS_LEADS = new Set(['pick6', 'gemini', 'polymarketus']);
 const BEST_FREE_PREVIEW = 3;
 app.get('/api/best', async (req, res) => {
   try {
@@ -6779,7 +6848,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.148.1',
+  version: '3.149.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -6795,7 +6864,14 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   // Gemini Predictions (geminibooks.js): events read, games per sport, how many sit on Pinnacle's games after the main-line cut
   gemini: { enabled: geminiState.enabled, events: geminiState.events, errors: geminiState.errors, updated: geminiState.updated, ms: geminiState.ms,
     games: Object.fromEntries(Object.entries(geminiState.books).map(([k, v]) => [k, v.length])),
-    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'gemini')).length])) },
+    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'gemini')).length]).filter(([, n]) => n)),
+    skipped: geminiState.skipped || {} },
+  // Polymarket US's game lines as a book (pmusbooks.js): games listed per league, with lines, paired to Pinnacle
+  polymarketUsBooks: { enabled: pmusBooksState.enabled, games: pmusBooksState.games, withLines: pmusBooksState.withLines, slugReads: pmusBooksState.slugReads,
+    byLeague: pmusBooksState.counts, errors: pmusBooksState.errors, updated: pmusBooksState.updated, ms: pmusBooksState.ms,
+    paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'polymarketus')).length]).filter(([, n]) => n)) },
+  pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
+  evResults: evResultsState,
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null,
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -6888,6 +6964,7 @@ schedule('*/5 * * * *', async () => {
 });
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
+schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
