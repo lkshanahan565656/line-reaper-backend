@@ -1225,6 +1225,37 @@ body.no-help .clv-info { display:none; }
 .cb-name{flex:1;min-width:150px}.cb-n{min-width:96px}.cb-stat{min-width:70px;text-align:right;font-family:'JetBrains Mono',monospace}.cb-wide{min-width:226px}
 .cb-k{font-size:9px;letter-spacing:1.2px;color:#64748b;font-family:inherit}.cb-mark{min-width:110px;text-align:right}
 @media (max-width:600px){.cb-name{min-width:100%}.cb-n{min-width:100%}.cb-stat{min-width:60px;text-align:left}.cb-wide{min-width:0}.cb-mark{min-width:0;margin-left:auto}}
+/* EXCHANGE SHOPPER */
+.shp-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 8px; }
+.shp-bar select, .shp-bar input { background:var(--surface); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:6px 8px; font:12px 'Inter',sans-serif; min-width:0; }
+.shp-bar input[type=number] { width:76px; }
+.shp-bar label { font-size:10px; letter-spacing:1px; color:var(--text2); display:flex; gap:4px; align-items:center; }
+.shp-health { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 10px; }
+.shp-pill { font:10px 'JetBrains Mono',monospace; padding:3px 7px; border-radius:10px; border:1px solid var(--border2); color:var(--text2); cursor:default; }
+.shp-pill i { display:inline-block; width:6px; height:6px; border-radius:3px; margin-right:4px; vertical-align:1px; }
+.shp-venues { margin:0 0 10px; font-size:12px; }
+.shp-venues summary { cursor:pointer; color:var(--text2); font-size:11px; letter-spacing:1px; }
+.shp-venues .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:4px 10px; padding:8px 0; }
+.shp-venues .grid label { display:flex; gap:6px; align-items:center; color:var(--text); }
+.shp-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.shp-tbl th { text-align:left; font-size:10px; letter-spacing:1px; color:var(--text2); font-weight:600; padding:6px; border-bottom:1px solid var(--border2); white-space:nowrap; }
+.shp-tbl td { padding:6px; border-bottom:1px solid var(--border); vertical-align:top; }
+.shp-tbl tr.shp-row { cursor:pointer; }
+.shp-tbl tr.shp-row:hover td { background:var(--card); }
+.shp-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.shp-num { font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+.shp-good { color:var(--green); font-weight:700; }
+.shp-bad { color:#f87171; }
+.shp-dim { color:var(--text2); font-size:11px; }
+.shp-tag { display:inline-block; font-size:9px; letter-spacing:1px; padding:1px 5px; border-radius:4px; border:1px solid var(--border2); color:var(--text2); margin-left:4px; }
+.shp-tag.tx { border-color:rgba(16,185,129,.5); color:var(--green); }
+.shp-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin:0 0 8px; }
+.shp-card h4 { font-size:12px; margin:0 0 4px; color:var(--text); font-weight:700; }
+.shp-cell { padding:5px 6px; text-align:center; border-left:1px solid var(--border); }
+.shp-cell.best { background:rgba(16,185,129,.12); outline:1px solid rgba(16,185,129,.5); }
+.shp-cell.ref { color:var(--text2); }
+.shp-detail td { background:var(--surface); }
+@media (max-width:640px) { .shp-hide-sm { display:none; } .shp-tbl td, .shp-tbl th { padding:5px 4px; } }
 </style>
 </head>
 <body>
@@ -1272,6 +1303,7 @@ body.no-help .clv-info { display:none; }
     <button class="tab" onclick="showTab('best',this)">BEST PLAYS</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
+    <button class="tab" onclick="showTab('shopper',this)">SHOPPER</button>
     <button class="tab" onclick="showTab('big',this)">BIG MONEY</button>
     <button class="tab" onclick="showTab('gas',this)">GAS LOCKS</button>
     <button class="tab" onclick="showTab('esports',this)">ESPORTS</button>
@@ -1410,6 +1442,18 @@ body.no-help .clv-info { display:none; }
     <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
   </div>
   <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
+</div>
+
+<div class="page" id="page-shopper">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">EXCHANGE SHOPPER</strong> — The same bet at every venue we read, on one row: Kalshi, Gemini and Polymarket US (fees already in the price), FanDuel and BetRivers read direct, Action Network's copies of the other US books, with Pinnacle and Matchbook as the sharp reference. Main lines, alternate numbers and player props.<br>
+    <span style="color:#94a3b8;font-size:11px">Fair = Pinnacle's price with the margin taken out (Matchbook blended in when it prices the same line). EV is what a bet at the best price returns at that fair. Rankings are leads, not a record: only a venue the tracker has proven says PROVEN. Prices are each feed's last read, so check the price in the app before you bet.</span>
+  </div>
+  <div class="sport-row" id="shpModes"></div>
+  <div class="shp-bar" id="shpBar"></div>
+  <details class="shp-venues" id="shpVenues"><summary>VENUES</summary><div class="grid" id="shpVenueGrid"></div></details>
+  <div class="shp-health" id="shpHealth"></div>
+  <div id="shpContent"></div>
 </div>
 
 <div class="page" id="page-big">
@@ -1776,6 +1820,7 @@ function showTab(name, el) {
   if (name === 'results') loadResults();
   if (name === 'gas') loadGas(); else clearTimeout(gasUi.timer);
   if (name === 'big') loadBig(); else clearTimeout(bigUi.timer);
+  if (name === 'shopper') shpLoad(); else clearTimeout(shpUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
   if (name === 'betlog') mybOpen();
@@ -2902,7 +2947,7 @@ function shopSet(k, v) {
 function renderShop(games, query='') {
   const el = document.getElementById('shopContent');
   if (!games.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">Sportsbook lines load from the Lines tab once the server has an Odds API key</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">This tab reads the paid Odds API, which is off. The <a href="#" onclick="event.preventDefault();showTab('shopper',[...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === &quot;showTab('shopper',this)&quot;))" style="color:var(--green)">SHOPPER</a> tab compares every venue we read for free.</div></div>`;
     return;
   }
 
@@ -7828,6 +7873,163 @@ startSharpPolling();    // REST polling — always works regardless of WS
 // Odds auto-refresh: every 10 min, only while the tab is visible — protects the free 500/mo quota
 setInterval(() => { if (apiKey && !document.hidden && netFails.size < 2) loadData(); }, 600000);
 setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 120000);
+// ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
+// /api/shopper: every venue's price for the same bet, best first after fees,
+// with the fair, EV, hold and ranked leads. Choices live in localStorage.
+const shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'opps', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [] } };
+try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
+const shpSave = () => { try { localStorage.setItem('lr_shopper', JSON.stringify(shpUi.opts)); } catch {} };
+function shpSet(k, v, reload = true) { shpUi.opts[k] = v; shpSave(); if (reload) shpLoad(); else shpRender(); }
+let shpTyping = null;
+function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
+function shpToggleVenue(id, on) {
+  const ex = new Set(shpUi.opts.excluded || []);
+  if (on) ex.delete(id); else ex.add(id);
+  shpSet('excluded', [...ex]);
+}
+function shpQuery() {
+  const o = shpUi.opts, p = new URLSearchParams();
+  if (o.state) p.set('state', o.state);
+  if (o.markets) p.set('markets', o.markets);
+  if (o.league) p.set('league', o.league);
+  if (o.q) p.set('q', o.q);
+  if (o.minEv !== '') p.set('minEv', o.minEv);
+  if (o.minEdge !== '') p.set('minEdge', o.minEdge);
+  if (o.maxAge) p.set('maxAge', o.maxAge);
+  if (o.hours) p.set('hours', o.hours);
+  if (o.stake) p.set('stake', o.stake);
+  if (o.method) p.set('method', o.method);
+  if ((o.excluded || []).length) p.set('exclude', o.excluded.join(','));
+  if (o.mode === 'arb') p.set('arbs', '1');
+  p.set('sort', o.sort || 'ev');
+  p.set('limit', o.mode === 'markets' ? '150' : '200');
+  return p.toString();
+}
+async function shpLoad() {
+  clearTimeout(shpUi.timer);
+  const el = document.getElementById('shpContent');
+  shpControls();
+  if (!shpUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
+  catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
+  shpRender();
+  if (document.getElementById('page-shopper')?.classList.contains('active')) shpUi.timer = setTimeout(shpLoad, 60000);
+}
+// decimal → the chosen format (the same conversions as oddsschema.js)
+function shpOdds(d) {
+  if (!(d > 1)) return '—';
+  switch (shpUi.opts.fmt) {
+    case 'decimal': return d.toFixed(2);
+    case 'probability': return `${(100 / d).toFixed(1)}%`;
+    case 'hongkong': return (d - 1).toFixed(2);
+    case 'indonesian': return (d >= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
+    case 'malay': return (d <= 2 ? d - 1 : -1 / (d - 1)).toFixed(2);
+    case 'fractional': {
+      let best = [Math.round(d - 1), 1], err = Infinity;
+      for (let den = 1; den <= 100; den++) { const nu = Math.round((d - 1) * den), e = Math.abs(nu / den - (d - 1)); if (nu > 0 && e < err - 1e-12) { err = e; best = [nu, den]; } }
+      const g = (a, b) => (b ? g(b, a % b) : a), k = g(best[0], best[1]);
+      return `${best[0] / k}/${best[1] / k}`;
+    }
+    default: { const a = d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)); return a > 0 ? `+${a}` : `${a}`; }
+  }
+}
+const shpPct = x => (x == null ? '—' : `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
+const shpUsd = x => (x == null ? '—' : `${x >= 0 ? '+' : '−'}$${Math.abs(x).toFixed(2)}`);
+const shpWhen = t => { const m = Math.round((Date.parse(t) - Date.now()) / 60000); return m <= 0 ? 'starting' : m < 60 ? `in ${m}m` : m < 1440 ? `in ${Math.floor(m / 60)}h ${m % 60}m` : new Date(t).toLocaleDateString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
+const SHP_MARKET = { moneyline: 'Moneyline', spread: 'Spread', total: 'Total', player_prop: 'Prop' };
+const shpMkt = m => m.marketType === 'player_prop' ? `${m.player} · ${String(m.marketName || '').replace(/_/g, ' ')} ${m.line}` : m.marketType === 'moneyline' ? m.marketName || 'Moneyline' : `${SHP_MARKET[m.marketType]} ${m.marketType === 'spread' ? (m.line > 0 ? '+' : '') + m.line + ' (home)' : m.line}`;
+const SHP_FAIR = { pinnacle: 'Pinnacle no-vig', pinnacle_matchbook: 'Pinnacle + Matchbook', consensus: 'Median of 4+ books' };
+function shpControls() {
+  const o = shpUi.opts, d = shpUi.data;
+  const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
+  document.getElementById('shpModes').innerHTML = [['opps', 'BEST PRICES ABOVE FAIR'], ['markets', 'ALL MARKETS'], ['arb', 'ARBS']].map(([k, l]) => chip(o.mode === k, l, `shpSet('mode','${k}')`)).join('')
+    + '<span class="tab-sep" style="margin:0 2px"></span>'
+    + chip(o.state === 'TX', 'Texas venues', `shpSet('state','TX')`) + chip(!o.state, 'All venues', `shpSet('state','')`)
+    + '<span class="tab-sep" style="margin:0 2px"></span>'
+    + [['', 'All'], ['moneyline', 'Moneyline'], ['spread', 'Spread'], ['total', 'Total'], ['player_prop', 'Props']].map(([k, l]) => chip(o.markets === k, l, `shpSet('markets','${k}')`)).join('');
+  const sel = (k, opts, label) => `<label>${label}<select onchange="shpSet('${k}',this.value)">${opts.map(([v, l]) => `<option value="${escAttr(v)}"${String(o[k]) === String(v) ? ' selected' : ''}>${escAttr(l)}</option>`).join('')}</select></label>`;
+  const inp = (k, label, ph, step = 'any') => `<label>${label}<input type="number" step="${step}" value="${escAttr(o[k])}" placeholder="${ph}" oninput="shpType('${k}',this.value)"></label>`;
+  const leagues = Object.entries(d?.facets?.leagues || {}).sort((a, b) => b[1] - a[1]);
+  if (o.league && !leagues.some(([k]) => k === o.league)) leagues.push([o.league, 0]);
+  document.getElementById('shpBar').innerHTML = [
+    `<input type="search" placeholder="Team or player" value="${escAttr(o.q)}" oninput="shpType('q',this.value)" style="flex:1 1 140px">`,
+    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, `${k.toUpperCase()} (${n})`])], ''),
+    sel('sort', [['ev', 'Best EV'], ['start', 'Starting soon'], ['hold', 'Lowest hold'], ['gap', 'Biggest price gap'], ['venues', 'Most venues']], 'SORT'),
+    sel('hours', [['6', '6h'], ['24', '24h'], ['48', '48h'], ['168', '7 days']], 'STARTS IN'),
+    inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
+    sel('maxAge', [['', 'Any age'], ['180', '≤ 3 min'], ['600', '≤ 10 min']], 'FRESH'),
+    inp('stake', 'EV ON $', '100', '1'),
+    sel('method', [['power', 'Power'], ['multiplicative', 'Multiplicative'], ['additive', 'Additive'], ['shin', 'Shin']], 'DEVIG'),
+    `<label>ODDS<select onchange="shpSet('fmt',this.value,false)">${[['american', 'American'], ['decimal', 'Decimal'], ['fractional', 'Fractional'], ['probability', 'Implied %'], ['hongkong', 'Hong Kong'], ['indonesian', 'Indonesian'], ['malay', 'Malay']].map(([v, l]) => `<option value="${v}"${o.fmt === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`,
+  ].join('');
+  const provs = d?.providers || [];
+  const ex = new Set(o.excluded || []);
+  document.getElementById('shpVenueGrid').innerHTML = provs.length ? provs.map(p => `<label title="${escAttr(p.note || '')}"><input type="checkbox"${ex.has(p.id) ? '' : ' checked'} onchange="shpToggleVenue('${p.id}',this.checked)">${escAttr(p.name)}${p.texas ? '<span class="shp-tag tx">TX</span>' : ''}${p.reference ? '<span class="shp-tag">REF</span>' : ''}${p.access === 'second_hand' ? '<span class="shp-tag">COPY</span>' : ''}</label>`).join('') : '<span class="shp-dim">Loads with the board.</span>';
+  const col = { ok: 'var(--green)', degraded: 'var(--gold)', stale: 'var(--gold)', empty: 'var(--muted2)', down: 'var(--red)', off: 'var(--muted2)' };
+  document.getElementById('shpHealth').innerHTML = provs.map(p => `<span class="shp-pill" title="${escAttr(`${p.name}: ${p.status}${p.ageSec != null ? `, read ${Math.round(p.ageSec / 60)} min ago` : ''}, ${p.quotes} prices on ${p.events} events${p.errors.length ? `. ${p.errors.join('; ')}` : ''}`)}"><i style="background:${col[p.status] || 'var(--muted2)'}"></i>${escAttr(p.name)} ${p.status === 'ok' ? p.quotes : p.status.toUpperCase()}</span>`).join('');
+}
+function shpRender() {
+  shpControls();
+  const el = document.getElementById('shpContent'), d = shpUi.data, o = shpUi.opts;
+  if (shpUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(shpUi.error)); return; }
+  if (!d) return;
+  const c = d.counts || {};
+  const head = `<div class="shp-dim" style="margin:0 0 8px">${c.markets || 0} markets from ${c.quotes || 0} prices · ${c.priced || 0} with a fair · ${c.multiVenue || 0} at 3+ venues · ${c.opportunities || 0} best prices above the fair · ${c.arbs || 0} arbs${d.builtAt ? ` · built ${Math.max(0, Math.round((Date.now() - Date.parse(d.builtAt)) / 60000))} min ago` : ''}${d.state ? ` · ${escAttr(d.stateInfo?.name || d.state)} venues can be best` : ''}</div>`;
+  const lock = !d.pro ? `<div class="clv-info" style="margin:0 0 8px">Fair prices, EV and the ranked list are Pro. Every venue's price is free.${d.locked ? ` ${d.locked.opportunities} ranked prices and ${d.locked.arbs} arbs are hidden.` : ''}</div>` : '';
+  if (!c.markets) { el.innerHTML = head + tailEmpty('NO MARKETS', 'Nothing in this window matches the filters, or the feeds have not been read yet. The venue pills above say which feeds are up.'); return; }
+  if (o.mode === 'opps' && d.pro) el.innerHTML = head + shpOpps(d);
+  else if (o.mode === 'arb' && d.pro) el.innerHTML = head + shpArbs(d);
+  else el.innerHTML = head + lock + shpMarkets(d);
+}
+function shpOpps(d) {
+  if (!d.opportunities.length) return tailEmpty('NOTHING ABOVE THE FAIR', 'No best price beats the fair at these filters. Try All venues, a longer window or a lower minimum EV.');
+  const rows = d.opportunities.map(x => {
+    const open = shpUi.open.has(x.key);
+    const m = open ? (x.view || d.markets.find(mm => mm.key === x.market)) : null;
+    const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
+    return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
+      <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
+      <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt' : ''}</div></td>
+      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}</td>
+      <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
+      <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
+      <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
+      <td title="${escAttr(why)}"><span class="shp-num">${Math.round(x.rank.confidence * 100)}%</span><span class="shp-tag${x.rank.label === 'proven' ? ' tx' : ''}">${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}</span></td>
+    </tr>${m ? `<tr class="shp-detail"><td colspan="7">${shpMarketTable(m)}<div class="shp-dim" style="margin-top:4px">${escAttr(why).replace(/\n/g, ' · ')}</div></td></tr>` : ''}`;
+  }).join('');
+  return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr><th>EVENT</th><th>BET</th><th>BEST PRICE</th><th class="shp-hide-sm">FAIR</th><th>EV</th><th class="shp-hide-sm">EDGE</th><th title="How much the fair and the price can be trusted: hover a row for the reasons">TRUST</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function shpOpen(key) { if (shpUi.open.has(key)) shpUi.open.delete(key); else shpUi.open.add(key); shpRender(); }
+// one market: sides as rows, venues as columns, best outlined
+function shpMarketTable(m) {
+  const cols = [];
+  for (const s of m.sides) for (const p of s.prices) if (!cols.some(c => c.provider === p.provider)) cols.push({ provider: p.provider, name: p.name, ref: p.ref, texas: p.texas, secondHand: p.secondHand });
+  cols.sort((a, b) => (b.ref - a.ref) || (b.texas - a.texas) || a.name.localeCompare(b.name));
+  const th = cols.map(cc => `<th class="shp-cell" title="${cc.secondHand ? 'Copy read from Action Network' : cc.ref ? 'Sharp reference, not a place to bet' : ''}">${escAttr(cc.name)}${cc.texas ? '<span class="shp-tag tx">TX</span>' : ''}</th>`).join('');
+  const tr = m.sides.map(s => {
+    const cells = cols.map(cc => {
+      const p = s.prices.find(x => x.provider === cc.provider);
+      if (!p) return '<td class="shp-cell shp-dim">—</td>';
+      const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}</td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
+  }).join('');
+  return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr><th></th>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+function shpMarkets(d) {
+  if (!d.markets.length) return tailEmpty('NO MARKETS', 'Nothing matches these filters.');
+  return d.markets.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(String(m.league || '').toUpperCase())} · ${shpWhen(m.start)}</span></h4>
+    <div class="shp-dim" style="margin:0 0 4px">${escAttr(shpMkt(m))} · ${m.venues} venues${m.fair ? ` · fair: ${escAttr(SHP_FAIR[m.fair.source] || m.fair.source)}` : ' · no fair on this line'}${m.hold != null ? ` · hold at best ${(m.hold * 100).toFixed(1)}%` : ''}${m.arb ? ' · <span class="shp-good">ARB</span>' : ''}</div>
+    ${shpMarketTable(m)}</div>`).join('');
+}
+function shpArbs(d) {
+  if (!d.arbs.length) return tailEmpty('NO ARBS RIGHT NOW', "No market's best prices add up to under 100% at venues read direct. Copies from Action Network never count as an arb leg.");
+  return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
+    <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
+    ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective)}</div>`).join('')}
+    <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
+}
 </script>
 
 <div class="lay-modal" id="layModal" onclick="if(event.target===this)layClose()">

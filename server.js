@@ -6048,6 +6048,73 @@ function bigGames() {
   bigState.gamesKey = key;
   return bigState.games;
 }
+// ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
+// Every venue's price for the same bet on one row (shopper.js), built from
+// what the reads above left in memory: no extra requests. Quotes are rebuilt
+// only when a feed has a newer read. Kalshi needs its data licence.
+const oddsSchema = require('./oddsschema');
+const oddsProviders = require('./oddsproviders');
+const shopper = require('./shopper');
+const oddsEngine = require('./oddsengine');
+const shopState = { key: null, free: { quotes: [], stats: {} }, kalshi: { quotes: [], stats: {} }, builtAt: null, ms: null };
+const iso = t => (t ? new Date(t).toISOString() : null);
+function shopReadAt() {
+  const at = freeBooksState.gamesAt || null;
+  const xb = xbooksState.at ? iso(xbooksState.at) : at;
+  return { default: at, pinnacle: at, fanduel: at, betrivers: at, matchbook: xb, draftkings: xb, betmgm: xb, caesars: xb, bet365: xb, fanatics: xb, hardrock: xb, thescore: xb,
+    gemini: geminiState.at ? iso(geminiState.at) : at, polymarketus: pmusBooksState.at ? iso(pmusBooksState.at) : at, kalshi: xarbState.rows?.at ? iso(xarbState.rows.at) : null };
+}
+function shopQuotes() {
+  const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
+  const key = `${fresh ? freeBooksState.gamesAt : ''}|${xarbState.rows?.at || 0}`;
+  if (shopState.key !== key) {
+    const t0 = Date.now();
+    const readAt = shopReadAt();
+    try { shopState.free = fresh ? oddsProviders.fromFreeGames(freeBooksState.games, { readAt }) : { quotes: [], stats: {} }; }
+    catch (e) { console.warn('Shopper free books:', e.message); shopState.free = { quotes: [], stats: {}, error: e.message }; }
+    try { shopState.kalshi = fresh && xarbState.rows?.at ? oddsProviders.fromKalshiBets(bigGames().bets, { readAt: readAt.kalshi }) : { quotes: [], stats: {} }; }
+    catch (e) { console.warn('Shopper Kalshi:', e.message); shopState.kalshi = { quotes: [], stats: {}, error: e.message }; }
+    Object.assign(shopState, { key, builtAt: new Date().toISOString(), ms: Date.now() - t0 });
+  }
+  return shopState;
+}
+function shopHealth() {
+  const st = shopQuotes();
+  const errors = [...(freeBooksState.errors || []), ...(xbooksState.errors || []).map(e => (/^(action|matchbook)/i.test(e) ? e : `action ${e}`)),
+    ...(geminiState.errors || []).map(e => `gemini ${e}`), ...(pmusBooksState.errors || []).map(e => `polymarketus ${e}`), ...(st.free.error ? [`pinnacle ${st.free.error}`] : []),
+    ...((xarbState.errors || []).filter(e => /kalshi/i.test(String(e))).map(e => `kalshi ${e}`)), ...(st.kalshi.error ? [`kalshi ${st.kalshi.error}`] : [])];
+  const enabled = { pinnacle: freeBooksState.enabled, fanduel: freeBooksState.enabled, betrivers: freeBooksState.enabled, gemini: geminiState.enabled, polymarketus: pmusBooksState.enabled,
+    matchbook: xbooksState.enabled && xbooksState.matchbook, kalshi: true,
+    ...Object.fromEntries(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'].map(k => [k, xbooksState.enabled && xbooksState.action])) };
+  return oddsProviders.health({ stats: { ...st.free.stats, ...st.kalshi.stats }, errors, readAt: shopReadAt(), enabled });
+}
+const shopList = v => (v ? String(v).toLowerCase().split(',').map(x => x.trim()).filter(Boolean) : null);
+const shopNum = v => (v == null || v === '' ? null : Number.isFinite(parseFloat(v)) ? parseFloat(v) : null);
+// GET /api/shopper?sport=&league=&q=&markets=moneyline,spread,total,player_prop
+// &providers=&exclude=&state=TX&hours=48&minEv=1 (percent)&minEdge= (points)
+// &minLiquidity=&maxAge= (seconds)&priced=1&arbs=1&sort=ev|start|hold|gap|venues
+// &stake=100&method=power|multiplicative|additive|shin&limit=200
+app.get('/api/shopper', (req, res) => {
+  const q = req.query;
+  const st = shopQuotes();
+  const lic = licenceOf(req);
+  const quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+  const hours = shopNum(q.hours);
+  const minEv = shopNum(q.minEv);
+  const view = shopper.build(quotes, {
+    sport: q.sport || null, league: q.league || null, q: q.q || '', marketTypes: shopList(q.markets), providers: shopList(q.providers), exclude: shopList(q.exclude),
+    state: q.state || null, toMs: hours != null && hours > 0 ? Date.now() + Math.min(hours, 24 * 14) * 3600e3 : undefined,
+    minEv: minEv == null ? undefined : minEv / 100, minEdgePts: shopNum(q.minEdge) ?? undefined, minLiquidity: shopNum(q.minLiquidity) ?? undefined,
+    maxAgeSec: shopNum(q.maxAge) ?? undefined, pricedOnly: q.priced === '1', arbsOnly: q.arbs === '1', sort: q.sort || 'ev', stake: shopNum(q.stake) || 100,
+    method: q.method, limit: parseInt(q.limit) || 200, proven: evBookProven,
+  });
+  const pro = hasPro(req);
+  res.json({ ...(pro ? view : shopper.stripPro(view)), pro, builtAt: st.builtAt, buildMs: st.ms, providers: shopHealth(), formats: oddsSchema.FORMATS,
+    devigMethods: oddsEngine.DEVIG_METHODS, stateInfo: venues.stateInfo(q.state),
+    note: 'Prices are what each feed showed at its last read. Nothing here is a proven edge unless its label says proven; check the price in the app before you bet.' });
+});
+// provider health on its own (status, last read, errors, fee handling)
+app.get('/api/providers', (req, res) => res.json({ providers: shopHealth(), builtAt: shopQuotes().builtAt }));
 // ─── BOOK ARBS AND MIDDLES ────────────────────────────────────────────────────
 // FanDuel's and BetRivers' main and alternate lines and player props against
 // each other and against Kalshi and Polymarket US (bookarbs.js). Each exchange
