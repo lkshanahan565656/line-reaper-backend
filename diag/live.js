@@ -8,7 +8,8 @@ const get = async p => { const t = Date.now(); try { const r = await fetch(B + p
   fs.mkdirSync('out', { recursive: true });
   const polls = [];
   for (let i = 0; i < 40; i++) { const s = await get('/api/status'); let S = {}; try { S = JSON.parse(s.tx); } catch {} polls.push({ at: new Date().toISOString(), v: S.version }); fs.writeFileSync('out/polls.json', JSON.stringify(polls, null, 1)); if (S.version === '3.157.0') break; await wait(30e3); }
-  await wait(90e3);
+  await wait(5e3);
+  for (const [n, u] of [['status', '/api/status']]) { const r = await get(u); fs.writeFileSync(`out/${n}.json`, r.tx); polls.push({ view: n, st: r.st, ms: r.ms }); }
   for (const [n, u] of [['shopper', '/api/shopper?limit=300'], ['tx', '/api/shopper?state=TX&limit=300'], ['providers', '/api/providers'], ['shopper2', '/api/shopper?limit=300'], ['calc', '/calc.js'], ['app', '/app']]) {
     const r = await get(u); fs.writeFileSync(`out/${n}.${/calc|app/.test(n) ? 'txt' : 'json'}`, r.tx); polls.push({ view: n, st: r.st, bytes: r.tx.length, ms: r.ms });
   }
