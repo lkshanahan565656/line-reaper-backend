@@ -1,0 +1,25 @@
+name: diag-esh2h
+on:
+  push:
+    branches: [diag-esh2h]
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['k:CS2', 'k:LOL', 'k:VAL', 'k:DOTA', 'pm:cs2', 'pm:lol', 'pm:val', 'pm:dota2', 'res:cs', 'res:lol', 'res:val', 'res:dota']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          P="${{ matrix.part }}"; N=$(echo "$P" | tr ':' '-')
+          PART="$P" BUDGET_MIN=300 timeout 315m node diag/pull.js 2>&1 | tee log-$N.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-esh2h-out-$N; git add -f log-$N.txt data/*.json.gz; git commit -qm "pull $P"
+          for i in 1 2 3 4; do git push -qf origin diag-esh2h-out-$N && break; sleep $((i*5)); done
