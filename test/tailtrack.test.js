@@ -353,18 +353,56 @@ test('records from before fees and venues still settle at their entry', () => {
   assert.equal(old.profit, r4(1.6 * (1 / 0.42 - 1)));
 });
 
-test('clustered fresh record: wallets on one side of a market are one bet', async () => {
+test('clustered fresh record: every buy on one game is one bet', async () => {
   const { createTailTracker: mk } = require('../tailtrack');
-  const rec = (id, o = {}) => ({ id, status: 'settled', result: 'win', units: 1, profit: 0.5, clv: 0.02, eventSlug: 'cs2-a-b', conditionId: '0xm', outcome: 'Falcons', recordedAt: new Date(NOW).toISOString(), ...o });
-  const rows = [rec('1'), rec('2'), rec('3'), rec('4', { outcome: 'BetBoom', result: 'loss', profit: -1, clv: -0.01 }), rec('5', { eventSlug: 'x', conditionId: '0xn', profit: 2 })];
+  const rec = (id, o = {}) => ({ id, status: 'settled', result: 'win', units: 1, profit: 0.5, cost: 0.6, clv: 0.02, eventSlug: 'cs2-a-b', conditionId: '0xm', outcome: 'Falcons', venue: 'Kalshi', recordedAt: new Date(NOW).toISOString(), ...o });
+  const rows = [rec('1'), rec('2'), rec('3'), rec('4', { outcome: 'BetBoom', result: 'loss', profit: -1, clv: -0.01 }),
+    // two different markets of one UCL game, both "Yes", plus its O/U in the -more-markets event: one game
+    rec('5', { eventSlug: 'ucl-a-b', conditionId: '0xn', outcome: 'Yes', profit: 2, venue: 'Polymarket' }),
+    rec('6', { eventSlug: 'ucl-a-b', conditionId: '0xo', outcome: 'Yes', result: 'loss', profit: -1, venue: 'Polymarket' }),
+    rec('7', { eventSlug: 'ucl-a-b-more-markets', conditionId: '0xp', outcome: 'Over', profit: 2, venue: 'Polymarket' }),
+    rec('8', { eventSlug: 'nba-x-y', conditionId: '0xq', result: 'loss', profit: -1 })];
   const store = { init() {}, all: async () => rows, put: async () => {} };
   const s = await mk({ store, now: () => NOW + 1000 }).summary({});
-  assert.equal(s.overall.n, 5);
+  assert.equal(s.overall.n, 8);
   assert.equal(s.clustered.n, 3);
   assert.equal(s.clustered.wins, 2);
   assert.equal(s.clustered.losses, 1);
-  assert.equal(s.clustered.units, 1.5);
+  assert.equal(s.clustered.units, 0.13);   // 0.125 + 1 - 1
+  assert.equal(s.clustered.expWins, 1.8);
   assert.equal(s.clustered.mark, '3 of 50 graded');
+  assert.ok(Number.isFinite(s.clustered.t));
+  // Texas: only bets priced at Kalshi or Polymarket US
+  assert.equal(s.texas.n, 2);
+  assert.equal(s.texas.units, -0.87);
   const empty = await mk({ store: { init() {}, all: async () => [], put: async () => {} } }).summary({});
   assert.equal(empty.clustered.mark, 'not graded yet');
+  assert.equal(empty.texas.n, 0);
+});
+
+test('fresh record: the Texas price is kept and graded beside the headline venue', async () => {
+  const sig = signal({ grade: 'fresh', units: 1, venue: { name: 'BetMGM', price: 0.4, units: 1 }, texas: { key: 'polymarketus', name: 'Polymarket US', price: 0.45, fee: 0.0172 } });
+  const rec = toRecord(sig, NOW);
+  assert.equal(rec.venue, 'BetMGM');
+  assert.deepEqual(rec.texas, { venue: 'Polymarket US', entry: 0.45, fee: 0.0172, cost: 0.4672 });
+  assert.equal(toRecord(signal({ texas: { name: 'Kalshi', price: 0.99, fee: 0.02 } }), NOW).texas, undefined, 'no Texas price that costs a dollar or more');
+  assert.equal(settle(rec, T.parseGammaMarket(gamma({ closed: true, outcomePrices: '["1","0"]' })), NOW), true);
+  assert.equal(rec.profit, 1.5);
+  assert.equal(rec.texas.profit, Math.round((1 / 0.4672 - 1) * 1e4) / 1e4);
+  const lost = toRecord(sig, NOW);
+  settle(lost, T.parseGammaMarket(gamma({ closed: true, outcomePrices: '["0","1"]' })), NOW);
+  assert.equal(lost.texas.profit, -1);
+
+  // summary: Texas rows at their Texas price; a Kalshi headline venue counts as is; others are left out
+  const { createTailTracker: mk } = require('../tailtrack');
+  const base = { status: 'settled', units: 1, recordedAt: new Date(NOW).toISOString(), outcome: 'Yes' };
+  const rows = [{ ...base, id: 'a', eventSlug: 'g1', result: 'win', profit: 1.5, cost: 0.4, venue: 'BetMGM', texas: { venue: 'Polymarket US', cost: 0.5, profit: 1 } },
+    { ...base, id: 'b', eventSlug: 'g2', result: 'loss', profit: -1, cost: 0.5, venue: 'Kalshi' },
+    { ...base, id: 'c', eventSlug: 'g3', result: 'win', profit: 1, cost: 0.5, venue: 'Polymarket' }];
+  const s = await mk({ store: { init() {}, all: async () => rows, put: async () => {} }, now: () => NOW + 1000 }).summary({});
+  assert.equal(s.clustered.n, 3);
+  assert.equal(s.clustered.units, 1.5);
+  assert.equal(s.texas.n, 2);
+  assert.equal(s.texas.units, 0);
+  assert.equal(s.texas.expWins, 1);
 });

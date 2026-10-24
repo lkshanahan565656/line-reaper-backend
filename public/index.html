@@ -5714,6 +5714,12 @@ const tailLockBanner = (text, what) => `<div style="display:flex;justify-content
     <div style="font-size:13px;color:#fcd34d">${text}</div>
     <button class="acct-btn pro" onclick="acctNeedPro('${escAttr(what)}')">${acct.user ? 'UPGRADE' : 'GO PRO'}</button></div>`;
 const tailEmpty = (big, sub) => `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">${big}</div><div class="empty-sub">${sub}</div></div>`;
+// "21-10 · +8.6u · 31 of 50 games (47 buys) · CLV -1.6%"
+function freshLine(c) {
+  if (!c || !c.n) return 'not graded yet';
+  const clv = c.avgClv != null ? ` · CLV ${c.avgClv >= 0 ? '+' : ''}${(c.avgClv * 100).toFixed(1)}%` : '';
+  return `${c.wins}-${c.losses} · ${c.units >= 0 ? '+' : ''}${c.units}u · ${c.n >= c.target ? `${c.n} games` : `${c.n} of ${c.target} games`} (${c.rows} buys)${clv}`;
+}
 const tailStrip = parts => `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;letter-spacing:1.5px;margin-bottom:12px;background:rgba(0,0,0,.2);border-radius:8px;border:1px solid var(--border)">
     ${parts.filter(Boolean).join('')}<span style="margin-left:auto;color:${evLive && tailState.pro ? '#10b981' : '#94a3b8'}">${evLive && tailState.pro ? '● LIVE' : 'REFRESHES EVERY 30s'}</span></div>`;
 
@@ -6040,7 +6046,9 @@ function tailWhalesHTML() {
     d.state?.lastHour ? `<span>LAST HOUR ${d.state.lastHour.whales} · ${tailUsd(d.state.lastHour.usd)}</span>` : '',
     `<span>${tailUsd(d.minUsd || 5000)}+ PRINTS</span>`,
     d.state?.lastHour?.fresh ? `<span style="color:#fbbf24">${d.state.lastHour.fresh} FRESH WALLET${d.state.lastHour.fresh === 1 ? '' : 'S'} THIS HOUR</span>` : '',
-    d.freshRecord?.clustered ? `<span title="Fresh-wallet buys, one bet per market and side (several wallets on the same side of a market count once), 1u each at the price a follower could get, graded when the market resolves. 50 graded bets is the bar.">FRESH RADAR ${d.freshRecord.clustered.n ? `${d.freshRecord.clustered.wins}-${d.freshRecord.clustered.losses} · ${d.freshRecord.clustered.units >= 0 ? '+' : ''}${d.freshRecord.clustered.units}u · ${d.freshRecord.clustered.n} of ${d.freshRecord.clustered.target} bets (${d.freshRecord.clustered.rows} buys)` : 'not graded yet'}</span>` : '',
+    d.freshRecord?.clustered ? `<span title="Fresh-wallet buys, one bet per game (every buy on the same game counts once), 1u each at the price a follower could get, graded when the market resolves. CLV: the price paid vs Polymarket's last price before the start. 50 graded games is the bar; not proven.">FRESH RADAR ${freshLine(d.freshRecord.clustered)}</span>` : '',
+    d.freshRecord?.texas ? `<span style="color:#93c5fd" title="The same games graded at the cheapest price you could get from Texas when the buy went out (Kalshi or Polymarket US). Buys with no Texas market are left out.">FROM TEXAS ${freshLine(d.freshRecord.texas)}</span>` : '',
+    d.freshRecord?.firstBet ? `<span style="color:#fbbf24" title="Wallets on their first bet: first trade within a day and this is their only market. The 30-day backtest's one fresh kind that was ahead (147 games, +20.5u, t 1.8), not proven: judged at 50 graded games of its own. Counted from v3.153.0.">FIRST BET ${freshLine(d.freshRecord.firstBet)}</span>` : '',
   ]);
   const banner = !tailState.pro ? tailLockBanner('<b>Whale wallets are hidden</b> <span style="color:#cbd5e1">and graded-sharp and fresh-wallet tags show 30 minutes late. Pro shows them live.</span>', 'Whale flow') : '';
   const note = tailWithheld('whales');

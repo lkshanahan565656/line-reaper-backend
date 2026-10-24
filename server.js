@@ -3827,16 +3827,31 @@ async function pollWhales() {
 // (the cheapest venue, else Polymarket's ask plus its taker fee) and pinged.
 // → the record's signal, or null when it isn't followable.
 const FRESH_UNITS = 1;
+// Texas-placeable venues for a fresh buy (no sportsbooks, never polymarket.com)
+const FRESH_TEXAS_KEYS = new Set(['kalshi', 'polymarketus']);
 async function freshSignal(e, { now = Date.now() } = {}) {
   let quotes = [];
   try { quotes = xarb.venueQuotes(e, xarbState.venues, { ...XARB_OPTS, now }); } catch (err) { console.warn('Fresh venues:', err.message); }
-  quotes.sort((a, b) => (a.cost - b.cost) || (a.price - b.price));
-  e.venues = quotes.map(v => venueView({ ...v, units: FRESH_UNITS }));
-  e.venue = e.venues[0] || null;
+  const view = () => {
+    quotes.sort((a, b) => (a.cost - b.cost) || (a.price - b.price));
+    e.venues = quotes.map(v => venueView({ ...v, units: FRESH_UNITS }));
+    e.venue = e.venues[0] || null;
+  };
+  view();
   const o = tailEngine.settings();
   let market = null;
   try { market = e.conditionId ? await tail.fetchMarket(upstream, e.conditionId) : null; } catch (err) { console.warn('Fresh market:', err.message); }
   if (!market || market.closed || market.active === false) return null;
+  // the same bet on Polymarket US (a Texas venue), matched by event slug
+  if (polymarketUs) {
+    try {
+      const q = await polymarketUs.quoteFor({ market: market.question || e.title, sportsMarketType: market.sportsMarketType, line: market.line,
+        outcome: e.outcome, outcomes: market.outcomes, eventSlug: e.eventSlug || market.eventSlug });
+      if (q && q.cost > 0 && q.cost < 1) quotes.push(q);
+    } catch (err) { console.warn('Fresh Polymarket US:', err.message); }
+  }
+  view();
+  const tx = quotes.find(v => FRESH_TEXAS_KEYS.has(v.key)) || null;
   const end = tail.toMs(market.gameStartTime) == null ? tail.toMs(market.endDate) : null;
   if (end != null && end - now < o.minCloseMs) return null;
   const started = tail.toMs(market.gameStartTime);
@@ -3851,13 +3866,28 @@ async function freshSignal(e, { now = Date.now() } = {}) {
     market: e.title || market.question || '', eventSlug: e.eventSlug || market.eventSlug || null, conditionId: e.conditionId, asset: e.asset,
     outcome: e.outcome, outcomeIndex: e.outcomeIndex, url: e.url || null, theirPrice: e.price, theirNotional: e.notional,
     currentPrice: ask, fee: ask == null ? 0 : tail.polymarketFee(ask, market.fee), units: FRESH_UNITS, venue: e.venue, at: e.at, fresh: e.fresh,
+    texas: tx ? { key: tx.key, name: tx.name, price: tx.price, fee: tx.fee } : null,
   };
 }
+// 10-24 backtest from raw Polymarket data (Sep 24 - Oct 24, 61,977 pregame
+// $1k+ buys on 60,665 sports and esports markets, one bet per game at the
+// price 2 min after the buy plus a Kalshi-size fee): fresh wallets as a whole
+// broke even; first-bet wallets were the one kind ahead, not proven (t < 2).
+const FRESH_BACKTEST = {
+  window: '2026-09-24 to 2026-10-24', buys: 61977, markets: 60665,
+  fresh: { games: 359, won: 209, expected: 204.1, units: 2.0, roi: 0.005, t: 0.12 },
+  firstBet: { games: 147, won: 91, expected: 82.4, units: 20.5, roi: 0.139, t: 1.78 },
+  otherFresh: { games: 271, won: 154, expected: 154.9, units: -8.9, roi: -0.033, t: -0.62 },
+  oldWallets: { games: 2912, won: 1733, expected: 1753.3, units: -52.4, roi: -0.018, t: -1.41 },
+  note: 'Following fresh wallets as a whole broke even. First-bet wallets (first trade within a day, one market) were up in every third of the month, but t 1.8 is not proof: judged at 50 graded games of its own.',
+};
+// Fresh-wallet webhook pings: off until the radar's record is proven (FRESH_ALERTS=on)
+const FRESH_ALERTS = /^(on|1|true|yes)$/i.test(String(process.env.FRESH_ALERTS || '').trim());
 async function publishFresh(e) {
   const sig = await freshSignal(e);
   if (!sig || !(await freshTracker.record(sig))) return false;
   const lic = webhookLicence();
-  if (lic.polymarket) postAlert([describeFresh(e, lic)], 'Fresh wallet alerts');
+  if (FRESH_ALERTS && lic.polymarket) postAlert([describeFresh(e, lic)], 'Fresh wallet alerts');
   return true;
 }
 // "🆕 Fresh wallet (first trade 2.1 days ago, 1 market) bought Yes on "…" at 18¢ ($12,400) · Kalshi: YES … 20¢ <url>"
@@ -4594,7 +4624,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.152.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.153.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4948,7 +4978,7 @@ app.get('/api/whales', async (req, res) => {
     .filter(shown).map(kalshiVenuesOk(lic)) : [];
   const flow = whaleWatcher.flow({ exchange, limit: Math.min(parseInt(q.flowLimit) || 50, 200) }).filter(f => shown(f));
   let freshRecord = null;
-  try { const r = await freshTracker.summary({}); freshRecord = { overall: r.overall, clustered: r.clustered, open: r.open }; } catch { /* store down */ }
+  try { const r = await freshTracker.summary({}); freshRecord = { overall: r.overall, clustered: r.clustered, texas: r.texas, firstBet: r.firstBet, firstBetTexas: r.firstBetTexas, backtest: FRESH_BACKTEST, open: r.open }; } catch { /* store down */ }
   res.json(regionSafe({
     freshRecord,
     events: pro ? events : events.map(e => maskWhale(e, t)),
@@ -6912,7 +6942,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.152.0',
+  version: '3.153.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

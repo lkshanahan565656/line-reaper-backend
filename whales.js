@@ -74,8 +74,16 @@ const DEFAULTS = {
   freshDays: 7,                // a wallet whose first trade is this recent is fresh; 0 = no radar (WHALE_FRESH_DAYS)
   freshMaxMarkets: 5,          // ...if it has traded this many markets or fewer (WHALE_FRESH_MAX_MARKETS)
   freshMinUsd: null,           // smallest buy looked into; default minUsd (WHALE_FRESH_MIN_USD)
+  // first-bet wallets: first trade within firstBetDays and this is their only
+  // market. The one fresh kind the 10-24 backtest liked (147 games +20.5u,
+  // t 1.8, every third of the month up; the other fresh wallets -8.9u), and
+  // most of it under $5k, so buys from firstBetMinUsd up are looked into too
+  // and tagged only when the wallet is first-bet (WHALE_FIRST_BET_MIN_USD; 0 = off)
+  firstBetMinUsd: 1000,
+  firstBetDays: 1,
+  firstBetMarkets: 1,
   freshHistoryLimit: 500,      // trades read for a history; a full page is too much history to be fresh
-  freshLookupsPerPoll: 10,     // histories read a poll, so a burst of whales can't stall it
+  freshLookupsPerPoll: 20,     // histories read a poll, so a burst of whales can't stall it
   freshCacheMs: 10 * 60e3,     // a fresh wallet's history is read again after this (an old one never is)
   maxWallets: 20000,           // memory cap on remembered histories
 };
@@ -94,7 +102,8 @@ function optionsFromEnv(env = process.env) {
   const out = {};
   const minUsd = f('WHALE_MIN_USD');
   if (minUsd > 0) out.minUsd = minUsd;
-  const days = f('WHALE_FRESH_DAYS'), markets = f('WHALE_FRESH_MAX_MARKETS'), freshMin = f('WHALE_FRESH_MIN_USD');
+  const days = f('WHALE_FRESH_DAYS'), markets = f('WHALE_FRESH_MAX_MARKETS'), freshMin = f('WHALE_FRESH_MIN_USD'), firstMin = f('WHALE_FIRST_BET_MIN_USD');
+  if (firstMin >= 0) out.firstBetMinUsd = firstMin;
   if (days >= 0) out.freshDays = days;
   if (markets >= 1) out.freshMaxMarkets = Math.floor(markets);
   if (freshMin > 0) out.freshMinUsd = freshMin;
@@ -445,6 +454,7 @@ async function fetchPolymarketTrades(http, { limit = DEFAULTS.polymarketLimit, m
 }
 
 // ── fresh wallets ──
+const SKIPPED = Symbol('history read skipped: out of reads this poll');
 // One wallet's trades (parsed) → { trades, markets, firstAt, full }. full: the
 // read came back short of its limit (rows counted before fills are merged),
 // so the oldest trade is its first.
@@ -457,12 +467,14 @@ function walletHistory(trades, { rows = null, limit = DEFAULTS.freshHistoryLimit
 
 // → { firstAt, ageDays, markets, trades } when the history is whole, began
 // within freshDays and spans at most freshMaxMarkets markets; else null.
-function freshOf(history, { now = Date.now(), freshDays = DEFAULTS.freshDays, freshMaxMarkets = DEFAULTS.freshMaxMarkets } = {}) {
+function freshOf(history, { now = Date.now(), freshDays = DEFAULTS.freshDays, freshMaxMarkets = DEFAULTS.freshMaxMarkets,
+  firstBetDays = DEFAULTS.firstBetDays, firstBetMarkets = DEFAULTS.firstBetMarkets } = {}) {
   const h = history;
   if (!h || !h.full || h.firstAt == null || !(freshDays > 0)) return null;
   const age = now - h.firstAt;
   if (age > freshDays * 86400e3 || !(h.markets >= 1) || h.markets > freshMaxMarkets) return null;
-  return { firstAt: iso(h.firstAt), ageDays: round(Math.max(0, age) / 86400e3, 1), markets: h.markets, trades: h.trades };
+  const firstBet = age <= firstBetDays * 86400e3 && h.markets <= firstBetMarkets;
+  return { firstAt: iso(h.firstAt), ageDays: round(Math.max(0, age) / 86400e3, 1), markets: h.markets, trades: h.trades, firstBet };
 }
 
 // A wallet's trades, maker fills included, newest first, one read →
@@ -494,8 +506,9 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
   let version = 0;                 // bumped whenever prints change (flow cache)
   const busy = { kalshi: false, polymarket: false };
   const histories = new Map();    // wallet → { at, history, fresh } (fresh ones expire; old ones don't)
+  const pendingFresh = new Map();  // trade key → { p, ev }: buys whose history read waits for the next poll
   const health = { lastKalshiPollAt: null, lastPolymarketPollAt: null, lastWhaleAt: null, kalshiPages: 0, kalshiTruncated: false,
-    freshLookups: 0, freshSkipped: 0, errors: [] };
+    freshLookups: 0, freshSkipped: 0, freshRetried: 0, errors: [] };
   // the log gets the whole message; state() (public) gets it without wallets
   const warn = msg => { health.errors.push({ at: iso(now()), message: String(msg).replace(/0x[0-9a-f]{8,}/gi, '0x…') }); health.errors = health.errors.slice(-20); log?.warn?.(`Whales: ${msg}`); };
 
@@ -544,30 +557,44 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
 
   // an ungraded whale buy → its wallet's fresh info, or null. budget: the
   // history reads this poll has left.
-  async function freshFor(p, t, budget) {
-    if (typeof historyOf !== 'function' || !(o.freshDays > 0) || p.side !== 'BUY' || !(p.notional >= (o.freshMinUsd ?? o.minUsd) - EPS)) return null;
+  const freshOpts = t => ({ now: t, freshDays: o.freshDays, freshMaxMarkets: o.freshMaxMarkets, firstBetDays: o.firstBetDays, firstBetMarkets: o.firstBetMarkets });
+  async function freshFor(p, t, budget, min = o.freshMinUsd ?? o.minUsd) {
+    if (typeof historyOf !== 'function' || !(o.freshDays > 0) || p.side !== 'BUY' || !(p.notional >= min - EPS)) return null;
     let hit = histories.get(p.wallet);
     if (hit && hit.fresh && t - hit.at > o.freshCacheMs) hit = null;
     if (!hit) {
-      if (budget.left <= 0) { health.freshSkipped++; return null; }
+      if (budget.left <= 0) { health.freshSkipped++; return SKIPPED; }
       budget.left--;
       health.freshLookups++;
       let history;
       try { history = await historyOf(p.wallet); } catch (e) { warn(`wallet history ${p.wallet}: ${errText(e)}`); return null; }
       if (!history) return null;
-      hit = { at: t, history, fresh: !!freshOf(history, { now: t, freshDays: o.freshDays, freshMaxMarkets: o.freshMaxMarkets }) };
+      hit = { at: t, history, fresh: !!freshOf(history, freshOpts(t)) };
       histories.delete(p.wallet);
       histories.set(p.wallet, hit);
       for (const k of histories.keys()) { if (histories.size <= o.maxWallets) break; histories.delete(k); }
     }
-    return hit.fresh ? freshOf(hit.history, { now: t, freshDays: o.freshDays, freshMaxMarkets: o.freshMaxMarkets }) : null;
+    return hit.fresh ? freshOf(hit.history, freshOpts(t)) : null;
   }
 
-  // parsed Polymarket trades → new whale events, oldest first
+  // parsed Polymarket trades → new whale events, oldest first. A buy whose
+  // wallet history didn't fit this poll's reads waits for the next poll's
+  // (oldest first) instead of being dropped; one tagged fresh then is still
+  // returned as new while it's within maxNewAgeMs.
   async function ingestPolymarket(trades, t = now()) {
     const horizon = t - o.seenTtlMs;
     const budget = { left: o.freshLookupsPerPoll };
     const fresh = [];
+    for (const [k, w] of [...pendingFresh]) {
+      if (t - w.p.at > o.maxNewAgeMs || w.ev.graded) { pendingFresh.delete(k); continue; }
+      const f = await freshFor(w.p, t, budget, w.small ? o.firstBetMinUsd : undefined);
+      if (f === SKIPPED) break;
+      pendingFresh.delete(k);
+      if (!f || (w.small && !f.firstBet)) continue;
+      Object.assign(w.ev, { fresh: f, tag: 'fresh wallet' });
+      health.freshRetried++;
+      if (w.small) { w.p.event = w.ev; emitted.set(k, w.ev); emit(w.ev, w.p.at, t, fresh); } else { fresh.push(w.ev); health.lastWhaleAt = iso(t); }
+    }
     for (const raw of [...(trades || [])].sort((a, b) => (a.at ?? 0) - (b.at ?? 0))) {
       const tr = raw.at == null ? { ...raw, at: t } : raw;
       if (tr.at < horizon) continue;
@@ -581,7 +608,19 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
       if (known) p.event = known;
       prints.delete(tr.key);
       prints.set(tr.key, p);
-      if (!isWhale(p, o.minUsd)) continue;
+      if (!isWhale(p, o.minUsd) && !known) {
+        // under whale size: an event only when a first-bet wallet bought it
+        if (!(o.firstBetMinUsd > 0) || p.side !== 'BUY' || !(p.notional >= o.firstBetMinUsd - EPS)) continue;
+        const ev = polymarketWhaleEvent(p);
+        const f = await freshFor(p, t, budget, o.firstBetMinUsd);
+        if (f === SKIPPED) { if (pendingFresh.size < 500) pendingFresh.set(tr.key, { p, ev, small: true }); continue; }
+        if (!f || !f.firstBet) continue;
+        Object.assign(ev, { fresh: f, tag: 'fresh wallet' });
+        p.event = ev;
+        emitted.set(tr.key, ev);
+        emit(ev, p.at, t, fresh);
+        continue;
+      }
       if (known) {   // grew: refresh the numbers, keep the grade (and fresh tag) it was given
         const { grade, graded, known: k, tag, name, fresh: f } = known;
         Object.assign(known, polymarketWhaleEvent(p), { grade, graded, known: k, tag, name: p.name || name }, f ? { fresh: f } : {});
@@ -594,7 +633,8 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
       const ev = polymarketWhaleEvent(p, lookup);
       if (!ev.graded) {
         const f = await freshFor(p, t, budget);
-        if (f) Object.assign(ev, { fresh: f, tag: 'fresh wallet' });
+        if (f === SKIPPED) { if (pendingFresh.size < 500) pendingFresh.set(tr.key, { p, ev }); }
+        else if (f) Object.assign(ev, { fresh: f, tag: 'fresh wallet' });
       }
       p.event = ev;
       emitted.set(tr.key, ev);
@@ -704,7 +744,7 @@ function createWhaleWatcher({ http, now = () => Date.now(), opts = {}, gradeOf =
     return {
       minUsd: o.minUsd, windowMs: o.windowMs, events: feed.length, prints: prints.size,
       lastHour: { whales: recent.length, usd: r2(sum(recent.map(e => e.notional))), graded: recent.filter(e => e.graded).length, fresh: recent.filter(e => e.fresh).length },
-      fresh: { days: o.freshDays, maxMarkets: o.freshMaxMarkets, on: typeof historyOf === 'function' && o.freshDays > 0, wallets: histories.size },
+      fresh: { days: o.freshDays, maxMarkets: o.freshMaxMarkets, on: typeof historyOf === 'function' && o.freshDays > 0, wallets: histories.size, pending: pendingFresh.size },
       seen: { kalshi: kalshiSeen.size, polymarket: pmSeen.size }, kalshiMark: iso(kalshiMark),
       ...health, errors: health.errors.slice(-5),
     };
