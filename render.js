@@ -11,7 +11,9 @@ const esModels = Object.fromEntries(models.models.map(c => [c.key, { verdict: c.
     const page = await ctx.newPage();
     await page.addInitScript(() => { try { localStorage.setItem('lr_pb_lbook', 'prizepicks'); localStorage.setItem('lr_es_view', 'record'); sessionStorage.setItem('lr_welcomed', '1'); } catch {} });
     
-    await page.route('**/api/esports/auto-slips*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} if (!j.stackNeeds) j.stackNeeds = models.stacks; await r.fulfill({ json: j }); } catch (e) {} });
+    const SL = JSON.parse(fs.readFileSync('slips.json'));
+    await page.route('**/api/esports/auto-slips*', r => r.fulfill({ json: SL }));
+    if (0) await page.route('**/api/esports/auto-slips*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} if (!j.stackNeeds) j.stackNeeds = models.stacks; await r.fulfill({ json: j }); } catch (e) {} });
     await page.route('**/api/props/board*', async r => { try { const resp = await r.fetch(); let j = {}; try { j = await resp.json(); } catch {} j.esModels = esModels; await r.fulfill({ json: j }); } catch (e) {} });
     await page.goto('http://127.0.0.1:8080/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(4000);
@@ -23,7 +25,7 @@ const esModels = Object.fromEntries(models.models.map(c => [c.key, { verdict: c.
     await page.evaluate(() => setEsportsView('record'));
     await shot('record', 'ESPORTS MODELS');
     await page.evaluate(() => setEsportsView('plays'));
-    await shot('plays', 'MATCH STACKS');
+    await page.waitForFunction(() => (document.querySelector('.page.active')?.innerText || '').includes('Plays'), null, { timeout: 200000 }).catch(() => {}); await shot('plays', 'If repriced');
     await page.evaluate(() => showTab('props', document.querySelector(".tab[onclick*=props]")));
     await shot('lines', 'PRIZEPICKS');
     fs.writeFileSync(`out/text-${name}.txt`, await page.evaluate(() => document.body.innerText.slice(0, 20000)));
