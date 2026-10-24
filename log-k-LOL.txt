@@ -1,0 +1,26 @@
+16:45:44 KXLOLGAME live 1332 hist 4746 events 2355 sample {"can_close_early":true,"close_time":"2026-10-23T19:53:23Z","created_time":"2026-10-19T22:30:44.285222Z","custom_strike":{"esports_competitor":"e37b5a80-ee93-4468-b264-1a11c49156b4"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXLOLGAME-26OCT232000MKOIBLG","exchange_index":0,"expected_expiration_time":"2026-10-24T04:00:00Z","expiration_time":"2026-10-26T00:00:00Z","expiration_value":"Movistar KOI","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-26T00:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Movistar KOI","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T04:00:00Z","open_interest_fp":"379719.77","open_time":"2026-10-19T22:35:00Z","previous_price_dollars":"0.1900","previous_yes_ask_dollars":"0.1900","previous_yes_bid_dollars":"0.1800","pric
+16:50:44 KXLOLGAME 300 / 2355 calls 2013 errs 0
+16:55:49 KXLOLGAME 600 / 2355 calls 4070 errs 0
+17:00:57 KXLOLGAME 900 / 2355 calls 6024 errs 0
+17:05:58 KXLOLGAME 1200 / 2355 calls 8014 errs 0
+17:10:58 KXLOLGAME 1500 / 2355 calls 10005 errs 0
+17:15:57 KXLOLGAME 1800 / 2355 calls 12022 errs 0
+17:20:58 KXLOLGAME 2100 / 2355 calls 14005 errs 0
+17:25:12 saved k-LOL 2355
+17:25:12 KXLOLTOTALMAPS live 807 hist 2099 events 1763 sample {"can_close_early":true,"close_time":"2026-10-22T16:40:01Z","created_time":"2026-10-19T00:11:37.692379Z","early_close_condition":"This market will close and expire after the event occurs.","event_ticker":"KXLOLTOTALMAPS-26OCT220800SLYGAL","exchange_index":0,"expected_expiration_time":"2026-10-22T16:00:00Z","expiration_time":"2026-10-24T12:00:00Z","expiration_value":"5 maps","floor_strike":4.5,"last_price_dollars":"0.9900","latest_expiration_time":"2026-10-24T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Over 4.5 games","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-22T16:00:00Z","open_interest_fp":"4177.34","open_time":"2026-10-19T00:16:00Z","previous_price_dollars":"0.9900","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000",
+17:28:01 KXLOLTOTALMAPS 300 / 1763 calls 16744 errs 0
+17:30:40 KXLOLTOTALMAPS 600 / 1763 calls 17818 errs 0
+17:34:18 KXLOLTOTALMAPS 900 / 1763 calls 19262 errs 0
+17:36:57 KXLOLTOTALMAPS 1200 / 1763 calls 20311 errs 0
+17:40:05 KXLOLTOTALMAPS 1500 / 1763 calls 21556 errs 0
+17:43:43 saved k-LOL 4118
+17:43:43 KXLOLSPREAD live 52 hist 0 events 13 sample {"can_close_early":true,"close_time":"2026-10-22T16:44:41Z","created_time":"2026-10-21T12:01:22.571636Z","custom_strike":{"esports_competitor":"fab1d50e-5462-4d84-a6f6-90d094b04df3"},"early_close_condition":"This market will close and expire after the match result is declared.","event_ticker":"KXLOLSPREAD-26OCT220800SLYGAL","exchange_index":0,"expected_expiration_time":"2026-10-22T16:00:00Z","expiration_time":"2026-10-24T12:00:00Z","expiration_value":"-1","floor_strike":2.5,"last_price_dollars":"0.0100","latest_expiration_time":"2026-10-24T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Solary wins by over 2.5 games","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-22T16:00:00Z","open_interest_fp":"935.19","open_time":"2026-10-21T12:16:00Z","previous_price_dollars":"0.0100","previous_yes_ask_dollars":"1.0000","previous
+17:44:13 saved k-LOL 4131
+17:44:14 KXLOLMAP live 2990 hist 7888 events 1788 sample {"can_close_early":true,"close_time":"2026-10-22T15:50:24Z","created_time":"2026-10-22T13:50:38.3491Z","custom_strike":{"esports_competitor":"fab1d50e-5462-4d84-a6f6-90d094b04df3"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXLOLMAP-26OCT220800SLYGAL-4","exchange_index":0,"expected_expiration_time":"2026-10-22T15:20:00Z","expiration_time":"2026-10-24T12:20:00Z","expiration_value":"Solary","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-24T12:20:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Solary","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-22T15:20:00Z","open_interest_fp":"36409.99","open_time":"2026-10-22T13:55:00Z","previous_price_dollars":"0.9900","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structu
+17:49:17 KXLOLMAP 300 / 1788 calls 25180 errs 0
+17:54:16 KXLOLMAP 600 / 1788 calls 27185 errs 0
+17:59:15 KXLOLMAP 900 / 1788 calls 29138 errs 0
+18:04:17 KXLOLMAP 1200 / 1788 calls 31145 errs 0
+18:09:15 KXLOLMAP 1500 / 1788 calls 33127 errs 0
+18:14:07 saved k-LOL 5919
+18:14:07 done k:LOL calls 35002 errs 0 min 88.4
