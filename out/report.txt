@@ -1,0 +1,22 @@
+
+2026-10-24T17:02:30.796Z v3.148.0 rows 13894, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 139/3/0/0  MMA|prizepicks 48/1/0/0  MMA|sleeper 39/3/0/0  CFB|prizepicks 864/147/64/0  CFB|underdog 2366/175/77/0  CFB|sleeper 730/103/39/0  NHL|underdog 1832/493/324/143  NHL|prizepicks 354/94/47/14  NHL|sleeper 799/583/406/143  TENNIS|underdog 57/24/0/0  NBA|underdog 746/209/103/0  NBA|prizepicks 1216/128/45/0  NBA|sleeper 735/176/83/0  NBA|pick6 73/46/18/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4171/353/322/54  NFL|sleeper 1065/437/370/65  NFL|prizepicks 1826/250/190/38
+
+2026-10-24T17:07:35.897Z v3.148.0 rows 13926, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 139/3/0/0  MMA|prizepicks 48/1/0/0  MMA|sleeper 39/3/0/0  CFB|prizepicks 864/147/70/0  CFB|underdog 2366/175/84/0  CFB|sleeper 731/103/44/0  NHL|underdog 1833/493/332/143  NHL|prizepicks 354/94/48/14  NHL|sleeper 799/583/415/143  TENNIS|underdog 57/24/0/0  NBA|underdog 701/193/96/0  NBA|prizepicks 1216/128/45/0  NBA|sleeper 713/169/81/0  NBA|pick6 73/46/16/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4171/353/322/54  NFL|sleeper 1097/439/371/65  NFL|prizepicks 1826/250/190/38
+
+2026-10-24T17:12:39.709Z v3.148.0 rows 13932, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 139/3/0/0  MMA|sleeper 39/3/0/0  MMA|prizepicks 45/1/0/0  CFB|prizepicks 864/147/70/0  CFB|underdog 2367/174/83/0  CFB|sleeper 732/103/44/0  NHL|underdog 1839/493/332/143  NHL|prizepicks 354/94/48/14  NHL|sleeper 804/583/415/143  NHL|pick6 160/148/5/0  TENNIS|underdog 57/24/0/0  NBA|underdog 736/204/102/0  NBA|prizepicks 1216/126/45/0  NBA|sleeper 715/168/82/0  NBA|pick6 73/45/16/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4172/353/322/54  NFL|sleeper 1096/439/371/65  NFL|prizepicks 1826/250/190/38  NFL|pick6 24/8/8/2
+
+2026-10-24T17:17:43.530Z v3.148.0 rows 13917, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 120/3/0/0  MMA|prizepicks 45/1/0/0  MMA|sleeper 33/3/0/0  CFB|prizepicks 864/147/70/0  CFB|underdog 2367/174/83/0  CFB|sleeper 730/103/44/0  NHL|underdog 1839/493/333/142  NHL|prizepicks 354/94/48/14  NHL|sleeper 806/583/420/142  NHL|pick6 160/148/5/0  TENNIS|underdog 57/24/0/0  NBA|underdog 736/202/101/0  NBA|prizepicks 1216/126/46/0  NBA|sleeper 733/171/82/0  NBA|pick6 73/45/17/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4173/353/323/54  NFL|sleeper 1112/439/373/66  NFL|prizepicks 1826/250/190/39  NFL|pick6 24/8/8/2
+
+2026-10-24T17:22:44.784Z v3.148.0 rows 13869, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 120/3/0/0  MMA|prizepicks 45/1/0/0  MMA|sleeper 33/3/0/0  CFB|prizepicks 882/145/69/0  CFB|underdog 2367/173/83/0  CFB|sleeper 735/104/45/0  NHL|underdog 1834/493/334/142  NHL|prizepicks 351/94/47/13  NHL|sleeper 806/583/422/142  NHL|pick6 160/148/5/0  TENNIS|underdog 57/24/0/0  NBA|underdog 738/201/102/0  NBA|prizepicks 1117/111/39/0  NBA|sleeper 733/169/82/0  NBA|pick6 72/39/13/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4171/352/322/54  NFL|sleeper 1120/439/373/66  NFL|prizepicks 1826/249/189/38  NFL|pick6 24/8/8/2
+
+2026-10-24T17:27:52.016Z v3.148.0 rows 13854, three-sharps rows 0
+coverage sport|app cells / Pinnacle at number / +1 / +2: MMA|underdog 120/3/0/0  MMA|prizepicks 45/1/0/0  MMA|sleeper 34/3/0/0  CFB|prizepicks 882/145/69/0  CFB|underdog 2367/173/83/0  CFB|sleeper 736/104/45/0  NHL|underdog 1834/493/334/142  NHL|prizepicks 351/94/47/13  NHL|sleeper 807/583/421/142  NHL|pick6 160/148/5/0  TENNIS|underdog 57/24/0/0  NBA|underdog 737/210/107/0  NBA|prizepicks 1117/114/40/0  NBA|sleeper 732/179/88/0  NBA|pick6 72/43/17/0  CFB|pick6 2/2/0/0  MLB|underdog 173/43/19/2  MLB|sleeper 133/24/6/2  MLB|prizepicks 68/3/0/0  NFL|underdog 4164/352/322/53  NFL|sleeper 1120/439/373/66  NFL|prizepicks 1826/249/189/38  NFL|pick6 24/8/8/2
+
+record byKind sharp3: null p6: null
+TX scoreboard sharp3 rows: []
+renders done
