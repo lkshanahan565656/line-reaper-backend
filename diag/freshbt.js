@@ -52,17 +52,22 @@ function marketRow(m, e, tag) {
   try { record = JSON.parse(fs.readFileSync('data/record.json')).signals || []; } catch { }
   log('record rows', record.length);
   // ── 1. markets ──
+  const DAY = 86400e3;
   for (const tag of (process.env.TAGS || 'sports,esports').split(',')) {
-    for (let off = 0; off < 40000; off += 100) {
-      const d = await get(q(`${G}/events`, { tag_slug: tag, closed: 'true', end_date_min: new Date(START).toISOString(), end_date_max: new Date(END + 7 * 86400e3).toISOString(), limit: 100, offset: off }));
-      if (!Array.isArray(d) || !d.length) { log('events', tag, 'stop at', off, d && d.err); break; }
-      for (const e of d) for (const m of e.markets || []) {
-        if (!m.conditionId || markets.has(m.conditionId)) continue;
-        const r = marketRow(m, e, tag);
-        if (r.start == null || r.start < START || r.start > END || r.win < 0 || r.vol < MIN_USD) continue;
-        markets.set(m.conditionId, r);
+    for (let d0 = START; d0 < END + 2 * DAY; d0 += DAY) {
+      for (let off = 0; off <= 2000; off += 100) {
+        const d = await get(q(`${G}/events`, { tag_slug: tag, closed: 'true', end_date_min: new Date(d0).toISOString(), end_date_max: new Date(d0 + DAY).toISOString(), limit: 100, offset: off }));
+        if (!Array.isArray(d) || !d.length) break;
+        for (const e of d) for (const m of e.markets || []) {
+          if (!m.conditionId || markets.has(m.conditionId)) continue;
+          const r = marketRow(m, e, tag);
+          if (r.start == null || r.start < START || r.start > END || r.win < 0 || r.vol < MIN_USD) continue;
+          markets.set(m.conditionId, r);
+        }
+        if (d.length < 100) break;
+        if (off === 2000) log('day capped', tag, new Date(d0).toISOString().slice(0, 10));
       }
-      if (off % 2000 === 0) log('events', tag, off, 'markets', markets.size);
+      log('events', tag, new Date(d0).toISOString().slice(0, 10), 'markets', markets.size, 'calls', calls);
     }
   }
   // record rows' markets (any category)
