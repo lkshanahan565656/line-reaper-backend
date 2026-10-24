@@ -42,7 +42,7 @@ function marketRow(m, e, tag) {
   const start = ms(m.gameStartTime) ?? ms(e?.startTime) ?? null;
   return { cid: m.conditionId, q: m.question, ev: e?.slug || null, tag, smt: m.sportsMarketType || null, start, end: ms(m.endDate),
     outcomes, tokens, win, closed: !!m.closed, vol: Number(m.volumeNum || m.volume || 0), feeBps: m.takerBaseFee ?? null,
-    series: e?.seriesSlug || (e?.series && e.series[0]?.slug) || null, tags: (e?.tags || []).map(t => t.slug).slice(0, 8) };
+    line: m.line ?? null, slug: m.slug || null, title: e?.title || null, gti: m.groupItemTitle || null, series: e?.seriesSlug || (e?.series && e.series[0]?.slug) || null, tags: (e?.tags || []).map(t => t.slug).slice(0, 8) };
 }
 
 (async () => {
@@ -54,10 +54,11 @@ function marketRow(m, e, tag) {
   log('record rows', record.length);
   // ── 1. markets ──
   const DAY = 86400e3;
+  const WIN = Number(process.env.WIN_H || 6) * 3600e3;
   for (const tag of (process.env.TAGS || 'sports,esports').split(',')) {
-    for (let d0 = START; d0 < END + 2 * DAY; d0 += DAY) {
+    for (let d0 = START - DAY; d0 < END + 2 * DAY; d0 += WIN) {
       for (let off = 0; off <= 2000; off += 100) {
-        const d = await get(q(`${G}/events`, { tag_slug: tag, closed: 'true', end_date_min: new Date(d0).toISOString(), end_date_max: new Date(d0 + DAY).toISOString(), limit: 100, offset: off }));
+        const d = await get(q(`${G}/events`, { tag_slug: tag, closed: 'true', end_date_min: new Date(d0).toISOString(), end_date_max: new Date(d0 + WIN).toISOString(), limit: 100, offset: off }));
         if (!Array.isArray(d) || !d.length) break;
         for (const e of d) for (const m of e.markets || []) {
           if (!m.conditionId || markets.has(m.conditionId)) continue;
@@ -66,9 +67,9 @@ function marketRow(m, e, tag) {
           markets.set(m.conditionId, r);
         }
         if (d.length < 100) break;
-        if (off === 2000) log('day capped', tag, new Date(d0).toISOString().slice(0, 10));
+        if (off === 2000) log('window capped', tag, new Date(d0).toISOString().slice(0, 10));
       }
-      log('events', tag, new Date(d0).toISOString().slice(0, 10), 'markets', markets.size, 'calls', calls);
+      if ((d0 - START) % DAY === 0) log('events', tag, new Date(d0).toISOString().slice(0, 10), 'markets', markets.size, 'calls', calls);
     }
   }
   // record rows' markets (any category)
@@ -135,14 +136,15 @@ function marketRow(m, e, tag) {
   const done4 = await pool(todo, Number(process.env.CONC || 8), async b => {
     const m = markets.get(b.cid); if (!m) return;
     const k = `${b.a}|${b.at}`; if (prices.has(k)) return;
-    const s = Math.floor((b.at - 60e3) / 1000), e = Math.floor(Math.min(m.start, b.at + 7 * 86400e3) / 1000);
+    const s = Math.floor((b.at - 3600e3) / 1000), e = Math.floor(Math.min(m.start, b.at + 7 * 86400e3) / 1000);
     const d = await get(q(`${C}/prices-history`, { market: b.a, startTs: s, endTs: e, fidelity: 1 }));
     let h = (d && d.history) || [];
     if (!h.length) { const d2 = await get(q(`${C}/prices-history`, { market: b.a, startTs: s, endTs: e, fidelity: 10 })); h = (d2 && d2.history) || []; }
     if (!h.length) { prices.set(k, null); return; }
     const after = x => h.find(p => p.t * 1000 >= x);
-    const p2 = after(b.at + 120e3), p10 = after(b.at + 600e3), close = h[h.length - 1];
-    prices.set(k, { p2: p2 ? p2.p : null, p10: p10 ? p10.p : null, close: close.p, closeAt: close.t, n: h.length });
+    const p2 = after(b.at + 120e3), p10 = after(b.at + 600e3), p60 = after(b.at + 3600e3), close = h[h.length - 1];
+    const pre = h.filter(p => p.t * 1000 < b.at - 30e3).pop();
+    prices.set(k, { pre: pre ? pre.p : null, preAt: pre ? pre.t : null, p2: p2 ? p2.p : null, p2At: p2 ? p2.t : null, p10: p10 ? p10.p : null, p60: p60 ? p60.p : null, close: close.p, closeAt: close.t, n: h.length });
   }, 60e3);
   log('prices read', done4, 'of', todo.length, 'calls', calls, 'errs', errs, '429', r429);
   save('prices', [...prices.entries()]);
