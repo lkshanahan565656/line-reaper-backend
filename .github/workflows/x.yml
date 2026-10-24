@@ -9,8 +9,8 @@ jobs:
       - run: |
           B=https://line-reaper-backend-production.up.railway.app
           mkdir o
-          for i in $(seq 1 60); do curl -s "$B/api/status" > o/status.json; if grep -q '"exchangeSize"' o/status.json && grep -q '"byVenue"' o/status.json; then break; fi; sleep 30; done
-          sleep 600
+          for i in $(seq 1 60); do curl -s "$B/api/status" > o/status.json; if grep -q '"exchangeSize"' o/status.json && grep -q '"lastScanMs"' o/status.json; then break; fi; sleep 30; done
+          sleep 900
           curl -s "$B/api/status" > o/status.json
           curl -s "$B/api/exchange-size?limit=300" > o/xsize.json
           python3 -c "import json;s=json.load(open('o/status.json'));print(s.get('version'));print(json.dumps(s.get('exchangeSize'),indent=1))" > o/summary.txt 2>&1
