@@ -1,0 +1,18 @@
+name: diag-fbcheck
+on: { push: { branches: [diag-fbcheck] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 60); do v=$(curl -s -m 20 $B/api/status | grep -o '"version":"[^"]*"' | head -1); echo "$(date -u +%T) $v" >> out.txt; echo "$v" | grep -q 3.153.1 && break; sleep 30; done
+          curl -s -m 60 "$B/api/whales" > whales.json
+          node -e "const d=require('./whales.json');console.log(JSON.stringify(d.freshRecord&&d.freshRecord.backtest&&d.freshRecord.backtest.firstBetOos), JSON.stringify(d.freshRecord&&d.freshRecord.firstBet))" >> out.txt
+          curl -s -m 60 "$B/" | grep -o 'FIRST BET (NO EDGE)' | head -1 >> out.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-fbcheck-out; git add -f out.txt; git commit -qm out; git push -f origin diag-fbcheck-out
