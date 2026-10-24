@@ -1,0 +1,36 @@
+sharp graded 222
+sharp locked 19
+p6-sharp graded 73
+p6-sharp locked 0
+sharp3 graded 0
+sharp3 locked 0
+p6-sharp3 graded 0
+p6-sharp3 locked 0
+ev graded 148
+ev locked 15
+p6-ev graded 6
+p6-ev locked 0
+gap graded 98
+gap locked 5
+p6-gap graded 14
+p6-gap locked 0
+gap-odd graded 3621
+gap-odd locked 176
+gap-stale graded 4040
+gap-stale locked 180
+stale graded 96
+stale locked 4
+stale-single graded 255
+stale-single locked 14
+book-fair-single graded 201
+book-fair-single locked 7
+p6-book-fair-single graded 3
+p6-book-fair-single locked 0
+book-fair graded 3
+book-fair locked 0
+book-consensus graded 37
+book-consensus locked 2
+p6-book-consensus graded 0
+p6-book-consensus locked 0
+events 299
+boxes 232
