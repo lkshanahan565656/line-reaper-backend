@@ -113,7 +113,6 @@ const cLast = new Map(), teamNames = new Map();
 async function cs() {
   const d = await get('https://api.bo3.gg/api/v1/matches?page[limit]=50&filter[matches.status][in]=current&filter[matches.discipline_id][eq]=1', H3);
   for (const m of d?.results || []) {
-    for (const id of [m.team1_id, m.team2_id]) if (id && !teamNames.has(id)) { const t = await get(`https://api.bo3.gg/api/v1/teams/${id}`, H3); teamNames.set(id, t?.name || null); }
     const gs = await get(`https://api.bo3.gg/api/v1/games?filter[games.match_id][eq]=${m.id}&page[limit]=10`, H3);
     const games = (gs?.results || []).map(g => [g.id, g.number, g.map_name, g.status, g.state, g.winner_clan_name, g.loser_clan_name, g.winner_clan_score, g.loser_clan_score, g.rounds_count, g.begin_at]);
     const live = (gs?.results || []).find(g => g.status === 'current' || g.state === 'live' || g.state === 'in_progress');
@@ -126,7 +125,7 @@ async function cs() {
 }
 // Valorant via vlr.gg (scraped page; research only)
 const strip = h => String(h).replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
-const vLast = new Map();
+const vLast = new Map(), vSaved = new Set();
 async function val() {
   const html = await get('https://www.vlr.gg/matches', { 'User-Agent': 'Mozilla/5.0 (LineReaper research)' }, true);
   if (!html) return;
@@ -135,6 +134,7 @@ async function val() {
     const id = mm[1];
     const page = await get(`https://www.vlr.gg/${id}`, { 'User-Agent': 'Mozilla/5.0 (LineReaper research)' }, true);
     if (!page) continue;
+    if (!vSaved.has(id) && vSaved.size < 6) { vSaved.add(id); fs.writeFileSync(`out/vlr-${id}-${Date.now()}.html`, page); }
     const teams = [...page.matchAll(/<div class="wf-title-med[^"]*">([\s\S]*?)<\/div>/g)].map(x => strip(x[1])).slice(0, 2);
     const maps = [...page.matchAll(/<div class="vm-stats-game-header">([\s\S]*?)<div class="vm-stats-game-header-pick|<div class="vm-stats-game-header">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g)].length;
     const sc = [...page.matchAll(/<div class="score[^"]*">\s*(\d+)\s*<\/div>/g)].map(x => +x[1]);
@@ -155,7 +155,7 @@ async function guard(name, fn) { try { await fn(); stats.ticks[name] = (stats.ti
     if (i % 2 === 0) jobs.push(guard('dota', dota), guard('cs', cs));
     if (i % 4 === 0) jobs.push(guard('kbooks', kbooks), guard('lolLive', lolLive), guard('val', val));
     await Promise.all(jobs);
-    if (i % 20 === 0) { stats.at = new Date().toISOString(); stats.kLive = kLive.length; stats.lolGames = lolGames.length; fs.writeFileSync('out/stats.json', JSON.stringify(stats, null, 1)); }
+    if (i % 4 === 0) { stats.at = new Date().toISOString(); stats.kLive = kLive.length; stats.lolGames = lolGames.length; fs.writeFileSync('out/stats.json', JSON.stringify(stats, null, 1)); }
     i++;
     const w = 15e3 - (Date.now() - t); if (w > 0) await sleep(w);
   }
