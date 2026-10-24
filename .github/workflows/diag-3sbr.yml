@@ -1,0 +1,28 @@
+name: diag-3sbr
+on:
+  push:
+    branches: [diag-3sbr]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: npm i --no-save playwright@1.47.2 && npx playwright install --with-deps chromium
+      - run: RUNMIN=26 timeout 2700 node diag/s3live.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          gzip -9 out/*.json 2>/dev/null || true
+          git checkout --orphan diag-3sbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-3sbr-out
