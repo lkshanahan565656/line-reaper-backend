@@ -4590,7 +4590,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.148.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.149.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5432,6 +5432,11 @@ function sportSharpAt(row, line) {
   const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
   return f && sportProps.sharpBacked(f) ? f.p : null;
 }
+// Pinnacle's own number on a stale leg's subject now ({ x, p: P(over) }), the raw close
+function stalePinAt(row) {
+  if (!staleState.enabled) return null;
+  return staleState.engine.pinMain(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime));
+}
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
@@ -5917,7 +5922,7 @@ function staleAppPlays(boardRows) {
     out.push({ row: br, kind: r.source,
       play: { book: r.venue, side: r.side, line: r.point, mult: r.mult, fair: r.fairProb / 100, ev: r.ev, decimal: r.decimal, entry: r.entry, entries: r.entries, signalAt: at,
         sources: [{ book: 'pinnacle', line: null, p: r.fairProb }],
-        stale: { mins: r.mins, dPts: r.dPts, pinPre: r.pinPre, pinPost: r.pinPost, confirmedBy: r.confirmedBy, moveAt: r.moveAt } } });
+        stale: { mins: r.mins, dPts: r.dPts, pinPre: r.pinPre, pinPost: r.pinPost, pinNow: r.pinNow, pinX: r.pinX ?? null, confirmedBy: r.confirmedBy, moveAt: r.moveAt } } });
   }
   staleAppPending.clear();
   return out;
@@ -6199,7 +6204,7 @@ async function trackSportProps() {
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
   } catch (e) { console.warn('Sports props record:', e.message); }
@@ -6322,7 +6327,9 @@ app.get('/api/props/record', async (req, res) => {
 });
 app.get('/api/props/record/picks', async (req, res) => {
   const status = hasPro(req) ? req.query.status : (['locked', 'graded'].includes(req.query.status) ? req.query.status : 'graded');
-  res.json({ picks: await sportTracker.list({ status, limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
+  // ?kind=stale-single narrows the list; ?before=<signalAt> pages back
+  const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
+  res.json({ picks: await sportTracker.list({ status, kind: q('kind'), before: q('before'), limit: Math.min(parseInt(req.query.limit) || 100, 1000) }) });
 });
 
 // ── MAIN PROPS — merges Owls + Odds API for 24/7 coverage ────────────────────
@@ -6786,7 +6793,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.148.0',
+  version: '3.149.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

@@ -140,6 +140,11 @@ test('props: a pick\'em line left behind by Pinnacle\'s prop is priced through t
   assert.equal(r.single, true);
   assert.equal(r.rowKey, row.key);
   assert.equal(r.readMins, 3);   // PrizePicks last read at the start: its line may have moved since
+  assert.equal(r.pinX, 256.5, 'Pinnacle\'s own number: not the app\'s, so the fair is our curve');
+  const pm = eng.pinMain(S.propKey('NFL', 'Josh Allen', 'pass_yds', START), min(3));
+  assert.equal(pm.x, 256.5);
+  assert.ok(pm.p > 0.45 && pm.p < 0.55);
+  assert.equal(eng.pinMain(S.propKey('NFL', 'Josh Allen', 'pass_yds', START), min(30)), null, 'a Pinnacle read 28 min old is no close');
   // the app moves: it followed
   row.books.prizepicks.line = 254.5;
   eng.observe(apps(), min(20));
