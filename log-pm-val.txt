@@ -1,0 +1,53 @@
+16:47:46 pm series val 10369
+16:47:47 pm sample {"id":"222998","ticker":"val-ep1-jl-2026-02-22","slug":"val-ep1-jl-2026-02-22","title":"Valorant: Enterprise Esports vs Joblife (BO3) - VCT EMEA Clash Group Omega","description":"This market refers to the Valorant match between Enterprise Esports and Joblife in the VCT EMEA Clash Group Omega, scheduled for February 22 at 1:00PM ET.\n\nThis market will resolve to \"Enterprise Esports\" if Enterprise Esports win the match against Joblife.\n\nThis market will resolve to \"Joblife\" if Joblife win the match against Enterprise Esports.\n\nIf the match is canceled (not played at all), ends in a tie, or is delayed beyond 7 days from the scheduled date without a winner determined, this market will resolve to 50-50. \n\nIf the match begins but is not completed, and one team wins due to the opponent's forfeiture, disqualification, or walkover, this market will resolve to the team who wins. \n\nIf the match ends in a forfeit, disqualification, or walkover (team withdraws before the start and the other wins automatically), this market will resolve to 50-50. \n\nThe resolution source for this market will be official information from https://vlr.gg. However, if https://vlr.gg has not published final results within 2 hours after the event’s conclusion, a consensus of credible reporting may be used instead including video evidence.","resolutionSource":"https://www.twitch.tv/valorant_emea","startDate":"2026-02-22T07:03:21.911809Z","creationDate":"2026-02-22T07:03:21.911803Z","endDate":"2026-0
+16:47:47 pm week 2026-02-22 39
+16:47:47 pm week 2026-03-01 92
+16:47:47 pm week 2026-03-08 139
+16:47:48 pm week 2026-03-15 239
+16:47:48 pm week 2026-03-22 319
+16:47:48 pm week 2026-03-29 391
+16:47:49 pm week 2026-04-05 500
+16:47:49 pm week 2026-04-12 595
+16:47:50 pm week 2026-04-19 652
+16:47:50 pm week 2026-04-26 724
+16:47:50 pm week 2026-05-03 786
+16:47:51 pm week 2026-05-10 859
+16:47:51 pm week 2026-05-17 946
+16:47:52 pm week 2026-05-24 1039
+16:47:53 pm week 2026-05-31 1072
+16:47:53 pm week 2026-06-07 1103
+16:47:53 pm week 2026-06-14 1154
+16:47:54 pm week 2026-06-21 1205
+16:47:54 pm week 2026-06-28 1276
+16:47:55 pm week 2026-07-05 1352
+16:47:55 pm week 2026-07-12 1383
+16:47:55 pm week 2026-07-19 1450
+16:47:55 pm week 2026-07-26 1499
+16:47:56 pm week 2026-08-02 1551
+16:47:56 pm week 2026-08-09 1623
+16:47:57 pm week 2026-08-16 1671
+16:47:57 pm week 2026-08-23 1698
+16:47:57 pm week 2026-08-30 1748
+16:47:58 pm week 2026-09-06 1777
+16:47:58 pm week 2026-09-13 1801
+16:47:58 pm week 2026-09-20 1807
+16:47:59 pm week 2026-09-27 1821
+16:47:59 pm week 2026-10-04 1840
+16:47:59 pm week 2026-10-11 1849
+16:48:00 pm week 2026-10-18 1872
+16:48:00 pm events val 1872
+16:48:00 pm hist sample Valorant: CGN Esports vs Eintracht Frankfurt (BO5) - VCL DACH: Evolution Playoffs 0 165 [[10,0.29],[11,0.48],[12,0.48],[13,0.505],[14,0.54]]
+16:49:40 pm val 300 / 1872 calls 3438 errs 0
+16:49:41 saved pm-val 300
+16:51:15 pm val 600 / 1872 calls 6669 errs 0
+16:51:16 saved pm-val 600
+16:52:57 pm val 900 / 1872 calls 10176 errs 0
+16:52:58 saved pm-val 900
+16:54:31 pm val 1200 / 1872 calls 13575 errs 0
+16:54:31 saved pm-val 1200
+16:56:13 pm val 1500 / 1872 calls 17145 errs 0
+16:56:14 saved pm-val 1500
+16:57:55 pm val 1800 / 1872 calls 20529 errs 0
+16:57:56 saved pm-val 1800
+16:58:11 saved pm-val 1838
+16:58:11 done pm:val calls 20942 errs 0 min 10.4
