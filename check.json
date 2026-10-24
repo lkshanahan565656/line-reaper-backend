@@ -1,0 +1,908 @@
+{
+ "polls": [
+  [
+   "17:49:38",
+   null
+  ],
+  [
+   "17:54:03",
+   "3.150.0"
+  ]
+ ],
+ "version": "3.150.0",
+ "gemini": {
+  "enabled": true,
+  "events": 418,
+  "errors": [],
+  "updated": "2026-10-24T17:57:54.434Z",
+  "ms": 4876,
+  "games": {
+   "nfl": 14,
+   "ncaaf": 35,
+   "nba": 27,
+   "wnba": 0,
+   "nhl": 15,
+   "mlb": 3,
+   "ncaab": 0,
+   "epl": 5,
+   "laliga": 6,
+   "bundesliga": 0,
+   "seriea": 0,
+   "ligue1": 0,
+   "mls": 25,
+   "ligamx": 8,
+   "ucl": 0,
+   "uel": 0,
+   "eredivisie": 0,
+   "ufc": 5
+  },
+  "paired": {
+   "epl": 5,
+   "laliga": 6,
+   "mls": 13,
+   "ligamx": 7,
+   "ufc": 5,
+   "nfl": 12,
+   "ncaaf": 29,
+   "nba": 8,
+   "nhl": 11,
+   "mlb": 1
+  },
+  "skipped": {}
+ },
+ "polymarketUsBooks": {
+  "enabled": true,
+  "games": 516,
+  "withLines": 45,
+  "slugReads": 30,
+  "byLeague": {
+   "nfl": 27,
+   "wnba": 1,
+   "nhl": 34,
+   "mlb": 3,
+   "epl": 14,
+   "lal": 13,
+   "bun": 11,
+   "sea": 21,
+   "mls": 14,
+   "ere": 6,
+   "bra": 9,
+   "wta": 22,
+   "ufc": 18,
+   "khl": 9,
+   "ahl": 16,
+   "kbo": 2,
+   "npb": 2,
+   "nba": 41,
+   "atp": 71,
+   "cfb": 182
+  },
+  "errors": [],
+  "updated": "2026-10-24T17:57:56.439Z",
+  "ms": 6881,
+  "paired": {
+   "epl": 14,
+   "laliga": 12,
+   "bundesliga": 11,
+   "seriea": 16,
+   "mls": 13,
+   "eredivisie": 6,
+   "brasileirao": 7,
+   "tennis": 14,
+   "ufc": 10,
+   "khl": 7,
+   "ahl": 16,
+   "kbo": 1,
+   "nfl": 12,
+   "ncaaf": 28,
+   "nba": 8,
+   "nhl": 11,
+   "mlb": 1
+  }
+ },
+ "pinnacleExtraGames": {
+  "games": 175,
+  "at": "2026-10-24T17:57:49.858Z",
+  "errors": [
+   "soccer 2627: 401"
+  ]
+ },
+ "evResults": {
+  "runs": 1,
+  "graded": 76,
+  "lastRun": "2026-10-24T17:58:01.150Z",
+  "lastGraded": 76,
+  "pending": 0,
+  "notFound": 4,
+  "errors": []
+ },
+ "freeBooksErrors": [],
+ "freeBooksCounts": {
+  "epl": {
+   "pinnacle": 15,
+   "exchangeOnly": true,
+   "more": {
+    "gemini": {
+     "listed": 5,
+     "games": 5
+    },
+    "polymarketus": {
+     "listed": 14,
+     "games": 14
+    }
+   }
+  },
+  "laliga": {
+   "pinnacle": 15,
+   "exchangeOnly": true,
+   "more": {
+    "gemini": {
+     "listed": 6,
+     "games": 6
+    },
+    "polymarketus": {
+     "listed": 13,
+     "games": 12
+    }
+   }
+  },
+  "bundesliga": {
+   "pinnacle": 11,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 11,
+     "games": 11
+    }
+   }
+  },
+  "seriea": {
+   "pinnacle": 16,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 21,
+     "games": 16
+    }
+   }
+  },
+  "mls": {
+   "pinnacle": 14,
+   "exchangeOnly": true,
+   "more": {
+    "gemini": {
+     "listed": 25,
+     "games": 13
+    },
+    "polymarketus": {
+     "listed": 14,
+     "games": 13
+    }
+   }
+  },
+  "ligamx": {
+   "pinnacle": 7,
+   "exchangeOnly": true,
+   "more": {
+    "gemini": {
+     "listed": 8,
+     "games": 7
+    }
+   }
+  },
+  "eredivisie": {
+   "pinnacle": 8,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 6,
+     "games": 6
+    }
+   }
+  },
+  "brasileirao": {
+   "pinnacle": 9,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 9,
+     "games": 7
+    }
+   }
+  },
+  "tennis": {
+   "pinnacle": 15,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 91,
+     "games": 14
+    }
+   }
+  },
+  "ufc": {
+   "pinnacle": 17,
+   "exchangeOnly": true,
+   "more": {
+    "gemini": {
+     "listed": 5,
+     "games": 5
+    },
+    "polymarketus": {
+     "listed": 18,
+     "games": 10
+    }
+   }
+  },
+  "khl": {
+   "pinnacle": 10,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 9,
+     "games": 7
+    }
+   }
+  },
+  "ahl": {
+   "pinnacle": 16,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 16,
+     "games": 16
+    }
+   }
+  },
+  "kbo": {
+   "pinnacle": 1,
+   "exchangeOnly": true,
+   "more": {
+    "polymarketus": {
+     "listed": 2,
+     "games": 1
+    }
+   }
+  }
+ },
+ "evTX": [
+  {
+   "book": "polymarketus",
+   "sport": "laliga",
+   "event": "Alaves @ Barcelona",
+   "market": "h2h",
+   "side": "Draw",
+   "price": 756,
+   "ev": 4.99,
+   "fairProb": 12.26
+  },
+  {
+   "book": "polymarketus",
+   "sport": "ufc",
+   "event": "Julian Erosa @ Jeong Yeong Lee",
+   "market": "h2h",
+   "side": "Jeong Yeong Lee",
+   "price": -161,
+   "ev": 1.84,
+   "fairProb": 62.82
+  },
+  {
+   "book": "polymarketus",
+   "sport": "ufc",
+   "event": "Nick Klein @ Joseph Kropschot",
+   "market": "h2h",
+   "side": "Joseph Kropschot",
+   "price": -276,
+   "ev": 1.1,
+   "fairProb": 74.21
+  },
+  {
+   "book": "gemini",
+   "sport": "ncaaf",
+   "event": "UL Monroe @ Troy",
+   "market": "h2h",
+   "side": "Troy",
+   "price": -564,
+   "ev": 0.57,
+   "fairProb": 85.42
+  },
+  {
+   "book": "gemini",
+   "sport": "ncaaf",
+   "event": "Oregon @ Illinois",
+   "market": "h2h",
+   "side": "Oregon",
+   "price": -360,
+   "ev": 0.46,
+   "fairProb": 78.62
+  },
+  {
+   "book": "polymarketus",
+   "sport": "ufc",
+   "event": "Lucia Szabova @ Tainara Lisboa",
+   "market": "h2h",
+   "side": "Lucia Szabova",
+   "price": -489,
+   "ev": 0.43,
+   "fairProb": 83.38
+  },
+  {
+   "book": "polymarketus",
+   "sport": "ahl",
+   "event": "Cleveland Monsters @ Grand Rapids Griffins",
+   "market": "h2h",
+   "side": "Cleveland Monsters",
+   "price": 110,
+   "ev": 0.38,
+   "fairProb": 47.8
+  },
+  {
+   "book": "polymarketus",
+   "sport": "epl",
+   "event": "Manchester United @ Chelsea",
+   "market": "h2h",
+   "side": "Chelsea",
+   "price": -107,
+   "ev": 0.15,
+   "fairProb": 51.77
+  },
+  {
+   "book": "gemini",
+   "sport": "ncaaf",
+   "event": "Michigan State @ UCLA",
+   "market": "h2h",
+   "side": "UCLA",
+   "price": -660,
+   "ev": 0.07,
+   "fairProb": 86.9
+  }
+ ],
+ "evTXcount": 9,
+ "bets_gemini": {
+  "bets": [
+   {
+    "id": "anaheimducks@philadelphiaflyers|2026-10-24|spreads|-1.5|Anaheim Ducks +1.5|gemini",
+    "group": "anaheimducks@philadelphiaflyers|2026-10-24|spreads|-1.5",
+    "status": "closed",
+    "flaggedAt": "2026-10-24T13:11:31.539Z",
+    "start": "2026-10-24T17:07:00.000Z",
+    "sport": "nhl",
+    "event": "Anaheim Ducks @ Philadelphia Flyers",
+    "market": "spreads",
+    "player": null,
+    "point": 1.5,
+    "side": "Anaheim Ducks +1.5",
+    "book": "gemini",
+    "price": -218,
+    "decimal": 1.459,
+    "source": "sharp",
+    "evAtFlag": 2.61,
+    "fairAtFlag": 70.34,
+    "closeFair": 70.52,
+    "closeAt": "2026-10-24T17:05:55.945Z",
+    "fairSeenAt": "2026-10-24T17:06:31.928Z",
+    "srcP": {
+     "pinnacle": 70.5,
+     "fanduel": 69.4,
+     "betrivers": 70.2,
+     "draftkings": 69.3,
+     "betmgm": 68.5,
+     "bet365": 69.7,
+     "hardrock": 68.5,
+     "fanatics": 69.8,
+     "thescore": 69.8,
+     "matchbook": 70,
+     "gemini": 67.2
+    },
+    "execPrice": 0.6855,
+    "execAt": "2026-10-24T13:13:31.353Z",
+    "closeAgeMin": 0.47,
+    "closeOk": true,
+    "clv": 2.89,
+    "fairMove": 0.18,
+    "execClv": 2.87
+   },
+   {
+    "id": "baylor@kansas|2026-10-24|h2h|Kansas|gemini",
+    "group": "baylor@kansas|2026-10-24|h2h",
+    "status": "closed",
+    "flaggedAt": "2026-10-23T18:20:01.589Z",
+    "start": "2026-10-24T17:00:00.000Z",
+    "sport": "ncaaf",
+    "event": "Baylor @ Kansas",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Kansas",
+    "book": "gemini",
+    "price": 114,
+    "decimal": 2.14,
+    "source": "sharp",
+    "evAtFlag": 2.16,
+    "fairAtFlag": 47.74,
+    "closeFair": 51.56,
+    "closeAt": "2026-10-24T16:43:02.651Z",
+    "fairSeenAt": "2026-10-24T16:43:02.651Z",
+    "srcP": {
+     "pinnacle": 48.2,
+     "fanduel": 49.7,
+     "betrivers": 47.9,
+     "draftkings": 44.5,
+     "betmgm": 45,
+     "bet365": 45,
+     "caesars": 44,
+     "fanatics": 45.5,
+     "thescore": 46.5,
+     "matchbook": 46.9,
+     "gemini": 44.9
+    },
+    "execPrice": 0.4785,
+    "execAt": "2026-10-23T18:22:01.451Z",
+    "closeAgeMin": 16.96,
+    "closeOk": true,
+    "clv": 10.34,
+    "fairMove": 3.82,
+    "execClv": 7.75
+   },
+   {
+    "id": "memphisgrizzlies@goldenstatewarriors|2026-10-24|h2h|Memphis Grizzlies|gemini",
+    "group": "memphisgrizzlies@goldenstatewarriors|2026-10-24|h2h",
+    "status": "closed",
+    "flaggedAt": "2026-10-23T13:16:02.218Z",
+    "start": "2026-10-24T02:10:00.000Z",
+    "sport": "nba",
+    "event": "Memphis Grizzlies @ Golden State Warriors",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Memphis Grizzlies",
+    "book": "gemini",
+    "price": 152,
+    "decimal": 2.52,
+    "source": "sharp",
+    "evAtFlag": 2.48,
+    "fairAtFlag": 40.67,
+    "closeFair": 39.6,
+    "closeAt": "2026-10-24T02:05:30.826Z",
+    "fairSeenAt": "2026-10-24T02:08:01.556Z",
+    "srcP": {
+     "pinnacle": 42.7,
+     "fanduel": 38.3,
+     "betrivers": 38.9,
+     "matchbook": 38.4,
+     "draftkings": 42.3,
+     "betmgm": 38.3,
+     "bet365": 42.6,
+     "caesars": 42,
+     "fanatics": 43,
+     "thescore": 42.5,
+     "gemini": 38.4,
+     "kalshi": 38.4,
+     "polymarket": 39.5,
+     "kalshi_mid": 40
+    },
+    "execPrice": 0.3968,
+    "execAt": "2026-10-23T13:17:56.329Z",
+    "closeAgeMin": 1.97,
+    "closeOk": true,
+    "clv": -0.21,
+    "fairMove": -1.07,
+    "execClv": -0.2,
+    "outcome": "win",
+    "score": {
+     "home": 108,
+     "away": 111
+    },
+    "resultSource": "espn",
+    "gradedAt": "2026-10-24T17:58:01.126Z",
+    "profit": 1.52,
+    "execProfit": 1.52
+   },
+   {
+    "id": "portlandtrailblazers@sacramentokings|2026-10-24|h2h|Portland Trail Blazers|gemini",
+    "group": "portlandtrailblazers@sacramentokings|2026-10-24|h2h",
+    "status": "closed",
+    "flaggedAt": "2026-10-22T08:13:36.949Z",
+    "start": "2026-10-24T02:00:00.000Z",
+    "sport": "nba",
+    "event": "Portland Trail Blazers @ Sacramento Kings",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Portland Trail Blazers",
+    "book": "gemini",
+    "price": -263,
+    "decimal": 1.38,
+    "source": "sharp",
+    "evAtFlag": 2.69,
+    "fairAtFlag": 74.4,
+    "closeFair": 79.54,
+    "closeAt": "2026-10-24T01:57:39.905Z",
+    "fairSeenAt": "2026-10-24T01:59:19.778Z",
+    "srcP": {
+     "pinnacle": 74.4,
+     "fanduel": 68.9,
+     "betrivers": 71.1,
+     "draftkings": 70.3,
+     "caesars": 71.7,
+     "fanatics": 71.5,
+     "gemini": 69.2,
+     "kalshi": 74.4,
+     "polymarket": 72.6
+    },
+    "execPrice": 0.7245,
+    "execAt": "2026-10-22T08:15:31.754Z",
+    "closeAgeMin": 0.67,
+    "closeOk": true,
+    "clv": 9.77,
+    "fairMove": 5.14,
+    "execClv": 9.79,
+    "outcome": "win",
+    "score": {
+     "home": 120,
+     "away": 128
+    },
+    "resultSource": "espn",
+    "gradedAt": "2026-10-24T17:58:01.127Z",
+    "profit": 0.38,
+    "execProfit": 0.38
+   },
+   {
+    "id": "utahstate@texasstate|2026-10-24|h2h|Texas State|gemini",
+    "group": "utahstate@texasstate|2026-10-24|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-20T23:03:30.642Z",
+    "start": "2026-10-24T23:30:00.000Z",
+    "sport": "ncaaf",
+    "event": "Utah State @ Texas State",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Texas State",
+    "book": "gemini",
+    "price": -430,
+    "decimal": 1.233,
+    "source": "sharp",
+    "evAtFlag": 2.04,
+    "fairAtFlag": 82.79,
+    "closeFair": 82.91,
+    "closeAt": "2026-10-24T17:55:31.951Z",
+    "fairSeenAt": "2026-10-24T17:55:31.951Z",
+    "srcP": {
+     "pinnacle": 82.8,
+     "fanduel": 82.4,
+     "betrivers": 82.4,
+     "draftkings": 82.5,
+     "betmgm": 82,
+     "bet365": 82.6,
+     "caesars": 81.9,
+     "fanatics": 82.6,
+     "thescore": 83.9,
+     "gemini": 80.7
+    },
+    "execPrice": 0.8113,
+    "execAt": "2026-10-20T23:05:30.787Z",
+    "pinLate": true,
+    "pinClose": 83.65,
+    "pinRaw": {
+     "Texas State": -553,
+     "Utah State": 440
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z"
+   },
+   {
+    "id": "boisestate@washingtonstate|2026-10-24|h2h|Washington State|gemini",
+    "group": "boisestate@washingtonstate|2026-10-24|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-20T21:23:31.096Z",
+    "start": "2026-10-24T22:00:00.000Z",
+    "sport": "ncaaf",
+    "event": "Boise State @ Washington State",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Washington State",
+    "book": "gemini",
+    "price": 756,
+    "decimal": 8.56,
+    "source": "sharp",
+    "evAtFlag": 48.77,
+    "fairAtFlag": 17.38,
+    "closeFair": 15.18,
+    "closeAt": "2026-10-24T17:55:31.951Z",
+    "fairSeenAt": "2026-10-24T17:55:31.951Z",
+    "srcP": {
+     "pinnacle": 17.3,
+     "fanduel": 16.9,
+     "betrivers": 13.1,
+     "draftkings": 17.5,
+     "betmgm": 17.3,
+     "bet365": 16.9,
+     "caesars": 17.2,
+     "fanatics": 17.4,
+     "thescore": 19.7,
+     "gemini": 10.7,
+     "kalshi_mid": 17.5
+    },
+    "execPrice": 0.1168,
+    "execAt": "2026-10-20T21:25:33.931Z",
+    "pinLate": true,
+    "pinClose": 14.54,
+    "pinRaw": {
+     "Washington State": 497,
+     "Boise State": -638
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z"
+   },
+   {
+    "id": "iowa@minnesota|2026-10-24|h2h|Minnesota|gemini",
+    "group": "iowa@minnesota|2026-10-24|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-20T19:35:31.799Z",
+    "start": "2026-10-24T19:30:00.000Z",
+    "sport": "ncaaf",
+    "event": "Iowa @ Minnesota",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Minnesota",
+    "book": "gemini",
+    "price": 229,
+    "decimal": 3.29,
+    "source": "sharp",
+    "evAtFlag": 2.2,
+    "fairAtFlag": 31.06,
+    "closeFair": 26.93,
+    "closeAt": "2026-10-24T17:20:31.585Z",
+    "fairSeenAt": "2026-10-24T17:54:31.512Z",
+    "srcP": {
+     "pinnacle": 31.1,
+     "fanduel": 29.6,
+     "betrivers": 26.8,
+     "draftkings": 28.7,
+     "betmgm": 30.1,
+     "bet365": 28.7,
+     "caesars": 28.1,
+     "fanatics": 29.1,
+     "thescore": 27.1,
+     "gemini": 28.7
+    },
+    "execPrice": 0.304,
+    "execAt": "2026-10-20T19:37:31.211Z",
+    "pinLate": true,
+    "pinClose": 26.7,
+    "pinRaw": {
+     "Minnesota": 251,
+     "Iowa": -291
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z"
+   },
+   {
+    "id": "iowastate@arizona|2026-10-24|h2h|Iowa State|gemini",
+    "group": "iowastate@arizona|2026-10-24|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-20T12:58:02.121Z",
+    "start": "2026-10-24T23:30:00.000Z",
+    "sport": "ncaaf",
+    "event": "Iowa State @ Arizona",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Iowa State",
+    "book": "gemini",
+    "price": 280,
+    "decimal": 3.8,
+    "source": "sharp",
+    "evAtFlag": 2.79,
+    "fairAtFlag": 27.05,
+    "closeFair": 23.02,
+    "closeAt": "2026-10-24T17:54:31.512Z",
+    "fairSeenAt": "2026-10-24T17:54:31.512Z",
+    "srcP": {
+     "pinnacle": 27.1,
+     "fanduel": 24.2,
+     "betrivers": 22.5,
+     "draftkings": 25.1,
+     "betmgm": 25.1,
+     "bet365": 24.3,
+     "caesars": 24.6,
+     "fanatics": 26,
+     "thescore": 26.4,
+     "gemini": 24.7
+    },
+    "execPrice": 0.2632,
+    "execAt": "2026-10-20T13:00:00.966Z",
+    "pinLate": true,
+    "pinClose": 23.28,
+    "pinRaw": {
+     "Arizona": -351,
+     "Iowa State": 297
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z"
+   },
+   {
+    "id": "vanderbilt@kentucky|2026-10-24|h2h|Vanderbilt|gemini",
+    "group": "vanderbilt@kentucky|2026-10-24|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-20T08:02:00.622Z",
+    "start": "2026-10-24T23:30:00.000Z",
+    "sport": "ncaaf",
+    "event": "Vanderbilt @ Kentucky",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Vanderbilt",
+    "book": "gemini",
+    "price": 425,
+    "decimal": 5.25,
+    "source": "sharp",
+    "evAtFlag": 3.11,
+    "fairAtFlag": 19.64,
+    "closeFair": 20.18,
+    "closeAt": "2026-10-24T16:04:43.348Z",
+    "fairSeenAt": "2026-10-24T17:54:31.512Z",
+    "srcP": {
+     "pinnacle": 19.6,
+     "fanduel": 18.5,
+     "betrivers": 20,
+     "draftkings": 19,
+     "betmgm": 18.9,
+     "bet365": 19,
+     "caesars": 20,
+     "fanatics": 19.7,
+     "thescore": 20.7,
+     "gemini": 14.9
+    },
+    "execPrice": 0.1905,
+    "execAt": "2026-10-20T08:04:01.598Z",
+    "pinLate": true,
+    "pinClose": 20.01,
+    "pinRaw": {
+     "Kentucky": -428,
+     "Vanderbilt": 354
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z"
+   }
+  ]
+ },
+ "bets_polymarketus": {
+  "bets": [
+   {
+    "id": "alaves@barcelona|2026-10-31|h2h|Draw|polymarketus",
+    "group": "alaves@barcelona|2026-10-31|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-24T17:54:31.512Z",
+    "start": "2026-10-31T20:00:00.000Z",
+    "sport": "laliga",
+    "event": "Alaves @ Barcelona",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Draw",
+    "book": "polymarketus",
+    "price": 756,
+    "decimal": 8.56,
+    "source": "sharp",
+    "evAtFlag": 4.99,
+    "fairAtFlag": 12.26,
+    "closeFair": 12.26,
+    "closeAt": "2026-10-24T17:54:31.512Z",
+    "fairSeenAt": "2026-10-24T17:54:31.512Z",
+    "srcP": {
+     "pinnacle": 12.3,
+     "polymarketus": 9.4
+    },
+    "pinAtFlag": 12.26,
+    "pinClose": 12.26,
+    "pinRaw": {
+     "Barcelona": -626,
+     "Alaves": 2236,
+     "Draw": 556
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z",
+    "execPrice": 0.1168,
+    "execAt": "2026-10-24T17:57:35.842Z"
+   },
+   {
+    "id": "luciaszabova@tainaralisboa|2026-10-31|h2h|Lucia Szabova|polymarketus",
+    "group": "luciaszabova@tainaralisboa|2026-10-31|h2h",
+    "status": "open",
+    "flaggedAt": "2026-10-24T17:54:31.512Z",
+    "start": "2026-10-31T21:00:00.000Z",
+    "sport": "ufc",
+    "event": "Lucia Szabova @ Tainara Lisboa",
+    "market": "h2h",
+    "player": null,
+    "point": null,
+    "side": "Lucia Szabova",
+    "book": "polymarketus",
+    "price": -429,
+    "decimal": 1.233,
+    "source": "sharp",
+    "evAtFlag": 2.81,
+    "fairAtFlag": 83.38,
+    "closeFair": 83.38,
+    "closeAt": "2026-10-24T17:54:31.512Z",
+    "fairSeenAt": "2026-10-24T17:54:31.512Z",
+    "srcP": {
+     "pinnacle": 83.4,
+     "polymarketus": 80
+    },
+    "pinAtFlag": 83.38,
+    "pinClose": 83.38,
+    "pinRaw": {
+     "Tainara Lisboa": 420,
+     "Lucia Szabova": -550
+    },
+    "pinSeenAt": "2026-10-24T17:54:31.512Z",
+    "execPrice": 0.8302,
+    "execAt": "2026-10-24T17:57:35.842Z"
+   }
+  ]
+ },
+ "scoreboardTX": [
+  {
+   "kind": "ev",
+   "kindLabel": "Main lines vs the sharp fair",
+   "book": "gemini",
+   "bookName": "Gemini",
+   "relayed": false,
+   "recorded": 9,
+   "open": 5,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 4,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 2,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  {
+   "kind": "ev",
+   "kindLabel": "Main lines vs the sharp fair",
+   "book": "kalshi",
+   "bookName": "Kalshi",
+   "relayed": false,
+   "recorded": 4,
+   "open": 0,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 4,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 1,
+   "losses": 0,
+   "mark": "not graded yet"
+  },
+  {
+   "kind": "ev",
+   "kindLabel": "Main lines vs the sharp fair",
+   "book": "polymarketus",
+   "bookName": "Polymarket US",
+   "relayed": false,
+   "recorded": 2,
+   "open": 2,
+   "graded": 0,
+   "gradedLines": 0,
+   "toTarget": 0,
+   "staleClose": 0,
+   "unverified": 0,
+   "beatPct": null,
+   "avgClv": null,
+   "execN": 0,
+   "avgExecClv": null,
+   "wins": 0,
+   "losses": 0,
+   "mark": "not graded yet"
+  }
+ ]
+}
