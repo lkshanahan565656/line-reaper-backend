@@ -1,0 +1,28 @@
+name: diag-freshrec
+on: { push: { branches: [diag-freshrec] }, workflow_dispatch: {} }
+concurrency: { group: freshrec, cancel-in-progress: true }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          mkdir -p data
+          B=https://line-reaper-backend-production.up.railway.app
+          curl -s -m 300 "$B/api/tail/record?book=fresh&limit=500" > data/record.json
+          curl -s -m 300 "$B/api/tail/record?book=fresh&status=settled&limit=500" > data/record-settled.json
+          curl -s -m 120 "$B/api/whales?limit=200" > data/whales.json
+          curl -s -m 60 "$B/api/status" > data/status.json
+          { date -u; env $(cat diag/ENV 2>/dev/null) node --max-old-space-size=6000 diag/freshbt.js; date -u; } > out.txt 2>&1
+          true
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-freshrec-out
+          git add -f out.txt data/ ; git commit -qm "freshbt output"; git push -f origin diag-freshrec-out
