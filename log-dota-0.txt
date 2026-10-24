@@ -1,0 +1,18 @@
+22:02:50 kalshi dota markets 7269
+22:05:23 dota pro 8300 near kalshi 3011 mine 753
+22:08:14 dota 100 / 753 calls 201 errs 0
+22:08:14 saved dota-0 100
+22:11:09 dota 200 / 753 calls 301 errs 0
+22:11:09 saved dota-0 200
+22:14:21 dota 300 / 753 calls 404 errs 1
+22:14:21 saved dota-0 299
+22:17:15 dota 400 / 753 calls 504 errs 1
+22:17:15 saved dota-0 399
+22:20:08 dota 500 / 753 calls 604 errs 1
+22:20:08 saved dota-0 499
+22:23:01 dota 600 / 753 calls 704 errs 1
+22:23:01 saved dota-0 599
+22:26:04 dota 700 / 753 calls 804 errs 1
+22:26:04 saved dota-0 699
+22:27:38 saved dota-0 752
+22:27:38 done dota calls 857 errs 1 min 24.8
