@@ -1,0 +1,25 @@
+name: diag-fbkal
+on: { push: { branches: [diag-fbkal] }, workflow_dispatch: {} }
+concurrency: { group: fbkal, cancel-in-progress: true }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy: { fail-fast: false, matrix: { shard: [0, 1, 2, 3] } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          mkdir -p data
+          { date -u; SHARD=${{ matrix.shard }} NSHARD=4 node --max-old-space-size=6000 diag/${SCRIPT:-kdisc}.js; date -u; } > out.txt 2>&1
+          true
+        env: { SCRIPT: kdisc }
+      - if: always()
+        run: |
+          set +e
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-fbkal-out-${{ matrix.shard }}
+          git add -f out.txt data/ ; git commit -qm "fbkal output"; git push -f origin diag-fbkal-out-${{ matrix.shard }}
