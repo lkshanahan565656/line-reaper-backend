@@ -25,7 +25,8 @@ jobs:
             sleep 60
           fi
           curl -s $U/api/status > out/status.json
-          node render.js "$(cat TAG)" || true
+          bash timing.sh > out/timing.txt 2>&1 || true
+          [ -f SKIPRENDER ] || node render.js "$(cat TAG)" || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
