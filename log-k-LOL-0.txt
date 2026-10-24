@@ -1,0 +1,53 @@
+22:00:18 KXLOLMAP events 4194
+22:00:31 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-3-KC/candlesticks?start_ts=1792103400&end_ts=1792098331&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:31 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-4-KC/candlesticks?start_ts=1792103400&end_ts=1792101803&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:31 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT161900C9FUR-1-FUR/candlesticks?start_ts=1792189800&end_ts=1792186784&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:33 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-1-KC/candlesticks?start_ts=1792103400&end_ts=1792090795&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:33 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-3-C9/candlesticks?start_ts=1792103400&end_ts=1792098331&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:33 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-1-C9/candlesticks?start_ts=1792103400&end_ts=1792090795&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:33 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT161900C9FUR-1-C9/candlesticks?start_ts=1792189800&end_ts=1792186784&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:33 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-4-C9/candlesticks?start_ts=1792103400&end_ts=1792101803&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:37 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-2-KC/candlesticks?start_ts=1792103400&end_ts=1792094396&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:37 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT151900KCC9-2-C9/candlesticks?start_ts=1792103400&end_ts=1792094396&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:51 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT121530AZREG2H-1-G2H/candlesticks?start_ts=1791831600&end_ts=1791830716&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:54 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT121530AZREG2H-1-AZRE/candlesticks?start_ts=1791831600&end_ts=1791830716&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:56 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT120500VITKT-2-VIT/candlesticks?start_ts=1791793800&end_ts=1791791728&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:56 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT120500VITKT-2-KT/candlesticks?start_ts=1791793800&end_ts=1791791728&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:56 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT120500VITKT-1-VIT/candlesticks?start_ts=1791793800&end_ts=1791788153&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:00:58 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT120500VITKT-1-KT/candlesticks?start_ts=1791793800&end_ts=1791788153&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:28 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT080700REDFLY-1-RED/candlesticks?start_ts=1791455400&end_ts=1791453326&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:28 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT080700REDFLY-1-FLY/candlesticks?start_ts=1791455400&end_ts=1791453326&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:47 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT060700REDVIT-1-VIT/candlesticks?start_ts=1791282600&end_ts=1791282322&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:53 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT060700REDVIT-1-RED/candlesticks?start_ts=1791282600&end_ts=1791282322&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:55 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT050500VITGAM-1-VIT/candlesticks?start_ts=1791189000&end_ts=1791186597&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:01:57 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT050500VITGAM-1-GAM/candlesticks?start_ts=1791189000&end_ts=1791186597&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:03 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT040700FOXLGD-1-LGD/candlesticks?start_ts=1791109800&end_ts=1791099593&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:02:03 4xx 400 /trade-api/v2/series/KXLOLMAP/markets/KXLOLMAP-26OCT040700FOXLGD-2-LGD/candlesticks?start_ts=1791109800&end_ts=1791102918&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:04:29 KXLOLMAP 500 / 4194 calls 1784 errs 54
+22:04:29 saved kip-LOL 500
+22:08:39 KXLOLMAP 1000 / 4194 calls 3527 errs 80
+22:08:40 saved kip-LOL 1000
+22:12:50 KXLOLMAP 1500 / 4194 calls 5280 errs 102
+22:12:51 saved kip-LOL 1500
+22:16:59 KXLOLMAP 2000 / 4194 calls 7017 errs 120
+22:17:00 saved kip-LOL 2000
+22:21:09 KXLOLMAP 2500 / 4194 calls 8760 errs 151
+22:21:10 saved kip-LOL 2500
+22:25:18 KXLOLMAP 3000 / 4194 calls 10527 errs 202
+22:25:19 saved kip-LOL 3000
+22:29:29 KXLOLMAP 3500 / 4194 calls 12290 errs 221
+22:29:31 saved kip-LOL 3500
+22:33:39 KXLOLMAP 4000 / 4194 calls 14042 errs 247
+22:33:40 saved kip-LOL 4000
+22:35:16 saved kip-LOL 4194
+22:35:17 KXLOLGAME events 2356
+22:39:28 KXLOLGAME 500 / 2356 calls 16485 errs 282
+22:39:30 saved kip-LOL 4694
+22:43:40 KXLOLGAME 1000 / 2356 calls 18204 errs 288
+22:43:42 saved kip-LOL 5194
+22:47:56 KXLOLGAME 1500 / 2356 calls 19904 errs 294
+22:47:59 saved kip-LOL 5694
+22:52:07 KXLOLGAME 2000 / 2356 calls 21638 errs 306
+22:52:10 saved kip-LOL 6194
+22:55:09 saved kip-LOL 6550
+22:55:09 done k:LOL calls 22851 errs 314 min 54.9
