@@ -1,0 +1,61 @@
+16:45:45 KXCS2GAME live 6732 hist 9083 events 6017 sample {"can_close_early":true,"close_time":"2026-10-24T15:49:52Z","created_time":"2026-10-24T08:05:53.596279Z","custom_strike":{"esports_competitor":"9e258f00-e21a-4a20-8bb7-4dc9463e0dc8"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXCS2GAME-26OCT240800G2ATLR","exchange_index":0,"expected_expiration_time":"2026-10-24T16:00:00Z","expiration_time":"2026-10-26T12:00:00Z","expiration_value":"The Last Resort","last_price_dollars":"0.9900","latest_expiration_time":"2026-10-26T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"The Last Resort","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T16:00:00Z","open_interest_fp":"4709.34","open_time":"2026-10-24T08:10:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","p
+16:50:46 KXCS2GAME 300 / 6017 calls 2000 errs 0
+16:55:47 KXCS2GAME 600 / 6017 calls 3986 errs 0
+17:00:49 KXCS2GAME 900 / 6017 calls 5985 errs 0
+17:05:47 KXCS2GAME 1200 / 6017 calls 7947 errs 0
+17:10:48 KXCS2GAME 1500 / 6017 calls 9949 errs 0
+17:15:48 KXCS2GAME 1800 / 6017 calls 11920 errs 0
+17:20:48 KXCS2GAME 2100 / 6017 calls 13880 errs 0
+17:25:48 KXCS2GAME 2400 / 6017 calls 15853 errs 0
+17:30:46 KXCS2GAME 2700 / 6017 calls 17818 errs 0
+17:35:47 KXCS2GAME 3000 / 6017 calls 19772 errs 0
+17:40:47 KXCS2GAME 3300 / 6017 calls 21739 errs 0
+17:45:46 KXCS2GAME 3600 / 6017 calls 23707 errs 0
+17:50:47 KXCS2GAME 3900 / 6017 calls 25712 errs 0
+17:55:46 KXCS2GAME 4200 / 6017 calls 27692 errs 0
+18:00:48 KXCS2GAME 4500 / 6017 calls 29702 errs 0
+18:05:49 KXCS2GAME 4800 / 6017 calls 31710 errs 0
+18:10:48 KXCS2GAME 5100 / 6017 calls 33712 errs 0
+18:15:47 KXCS2GAME 5400 / 6017 calls 35717 errs 0
+18:20:48 KXCS2GAME 5700 / 6017 calls 37715 errs 0
+18:25:46 KXCS2GAME 6000 / 6017 calls 39671 errs 0
+18:26:04 saved k-CS2 6017
+18:26:04 KXCS2TOTALMAPS live 2652 hist 3757 events 4884 sample {"can_close_early":true,"close_time":"2026-10-24T15:44:55Z","created_time":"2026-10-24T08:20:45.649192Z","early_close_condition":"This market will close and expire after the event occurs.","event_ticker":"KXCS2TOTALMAPS-26OCT240800G2ATLR","exchange_index":0,"expected_expiration_time":"2026-10-24T16:00:00Z","expiration_time":"2026-10-26T12:00:00Z","expiration_value":"3 maps","floor_strike":2.5,"last_price_dollars":"0.9900","latest_expiration_time":"2026-10-26T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Over 2.5 maps","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T16:00:00Z","open_interest_fp":"27.00","open_time":"2026-10-24T08:25:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","st
+18:28:36 KXCS2TOTALMAPS 300 / 4884 calls 40766 errs 0
+18:31:05 KXCS2TOTALMAPS 600 / 4884 calls 41760 errs 0
+18:33:36 KXCS2TOTALMAPS 900 / 4884 calls 42776 errs 0
+18:36:08 KXCS2TOTALMAPS 1200 / 4884 calls 43782 errs 0
+18:38:41 KXCS2TOTALMAPS 1500 / 4884 calls 44794 errs 0
+18:41:12 KXCS2TOTALMAPS 1800 / 4884 calls 45811 errs 0
+18:43:43 KXCS2TOTALMAPS 2100 / 4884 calls 46816 errs 0
+18:46:17 KXCS2TOTALMAPS 2400 / 4884 calls 47811 errs 0
+18:48:48 KXCS2TOTALMAPS 2700 / 4884 calls 48796 errs 0
+18:51:19 KXCS2TOTALMAPS 3000 / 4884 calls 49811 errs 0
+18:53:49 KXCS2TOTALMAPS 3300 / 4884 calls 50802 errs 0
+18:56:22 KXCS2TOTALMAPS 3600 / 4884 calls 51816 errs 0
+18:58:52 KXCS2TOTALMAPS 3900 / 4884 calls 52829 errs 0
+19:01:23 KXCS2TOTALMAPS 4200 / 4884 calls 53853 errs 0
+19:03:54 KXCS2TOTALMAPS 4500 / 4884 calls 54840 errs 0
+19:06:24 KXCS2TOTALMAPS 4800 / 4884 calls 55828 errs 0
+19:07:07 saved k-CS2 10901
+19:07:07 KXCS2SPREAD live 352 hist 0 events 164 sample {"can_close_early":true,"close_time":"2026-10-24T16:59:42Z","created_time":"2026-10-23T22:50:52.54458Z","custom_strike":{"esports_competitor":"6194b4b3-70a8-41d6-9351-797f4eaecf6a"},"early_close_condition":"This market will close and expire after the match result is declared.","event_ticker":"KXCS2SPREAD-26OCT241000BRUTEINOX","exchange_index":0,"expected_expiration_time":"2026-10-24T18:00:00Z","expiration_time":"2026-10-26T14:00:00Z","expiration_value":"1","floor_strike":1.5,"last_price_dollars":"0.0000","latest_expiration_time":"2026-10-26T14:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"INOX Division wins by over 1.5 maps","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T18:00:00Z","open_interest_fp":"0.00","open_time":"2026-10-23T23:05:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","pre
+19:09:53 saved k-CS2 11065
+19:09:58 KXCS2MAP live 10632 hist 15052 events 5001 sample {"can_close_early":true,"close_time":"2026-10-24T13:40:27Z","created_time":"2026-10-24T08:20:39.877887Z","custom_strike":{"esports_competitor":"9e258f00-e21a-4a20-8bb7-4dc9463e0dc8"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXCS2MAP-26OCT240800G2ATLR-2","exchange_index":0,"expected_expiration_time":"2026-10-24T15:00:00Z","expiration_time":"2026-10-26T12:00:00Z","expiration_value":"G2 Ares","last_price_dollars":"0.0100","latest_expiration_time":"2026-10-26T12:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"The Last Resort","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T15:00:00Z","open_interest_fp":"200.00","open_time":"2026-10-24T08:35:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_lev
+19:15:01 KXCS2MAP 300 / 5001 calls 59252 errs 0
+19:20:00 KXCS2MAP 600 / 5001 calls 61235 errs 0
+19:25:01 KXCS2MAP 900 / 5001 calls 63216 errs 0
+19:29:59 KXCS2MAP 1200 / 5001 calls 65170 errs 0
+19:35:00 KXCS2MAP 1500 / 5001 calls 67159 errs 0
+19:39:59 KXCS2MAP 1800 / 5001 calls 69122 errs 0
+19:44:59 KXCS2MAP 2100 / 5001 calls 71088 errs 0
+19:50:02 KXCS2MAP 2400 / 5001 calls 73092 errs 0
+19:55:00 KXCS2MAP 2700 / 5001 calls 75039 errs 0
+19:59:59 KXCS2MAP 3000 / 5001 calls 76993 errs 0
+20:05:01 KXCS2MAP 3300 / 5001 calls 79008 errs 0
+20:09:59 KXCS2MAP 3600 / 5001 calls 80972 errs 0
+20:15:00 KXCS2MAP 3900 / 5001 calls 82931 errs 0
+20:20:00 KXCS2MAP 4200 / 5001 calls 84931 errs 0
+20:24:59 KXCS2MAP 4500 / 5001 calls 86918 errs 0
+20:29:59 KXCS2MAP 4800 / 5001 calls 88857 errs 0
+20:33:21 saved k-CS2 16066
+20:33:21 done k:CS2 calls 90174 errs 0 min 227.6
