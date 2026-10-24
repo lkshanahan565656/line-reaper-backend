@@ -1,0 +1,161 @@
+{
+  "sha": "5c56b2bb7a573d5901e902c6626fceb1039b806b",
+  "node_id": "C_kwDOSC84edoAKDVjNTZiMmJiN2E1NzNkNTkwMWU5MDJjNjYyNmZjZWIxMDM5YjgwNmI",
+  "commit": {
+    "author": {
+      "name": "lkshanahan565656",
+      "email": "lkshanahan06@gmail.com",
+      "date": "2026-10-24T17:00:40Z"
+    },
+    "committer": {
+      "name": "GitHub",
+      "email": "noreply@github.com",
+      "date": "2026-10-24T17:00:40Z"
+    },
+    "message": "Stale legs logged before v3.148.0 can still close at Pinnacle's own number (v3.148.1) (#191)\n\n* Stale legs logged before v3.148.0 read Pinnacle's flag number off their label, so today's open legs can close exact (v3.148.1)\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01JFZxUwSjS2V8fsdvepMZTK\n\n* Re-check numbers on the full graded set\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01JFZxUwSjS2V8fsdvepMZTK\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+    "tree": {
+      "sha": "b4838e66a6caf7958c26b84d7456b8888993337d",
+      "url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/git/trees/b4838e66a6caf7958c26b84d7456b8888993337d"
+    },
+    "url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/git/commits/5c56b2bb7a573d5901e902c6626fceb1039b806b",
+    "comment_count": 0,
+    "verification": {
+      "verified": true,
+      "reason": "valid",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq3OQ4CRC1aQ7uu5UhlAAAx70QAGhODFJZAXqOAZ6ENjXaNVZ/\nV1AI8FQyWoUegLzySgIa6stN5aq8qkPJdI5FvbU83rdKYwegi/LvX2oYflHJjsL/\n008SqqeWkcKfir5LooH0hr3czS0HswZg5ezJ/l+IWxvVl0FgzZZj1iVxC6p541Vd\nW9z6JXq95WWRBm+EH5Bd6VqAMN5YREjQV7oT2+1SHQDMPNcu0s3/RpThWgaeBIic\n81cdMaS+LXS+p8p+dsUWnREP+Kt+sHcIAYAl8uRdSvKbnylFcQZD9LAQJoVpp/f+\nQXcRdRtVp72gqxPhPluPp1hhtPpPru3OsjGh20NEN7nwfgFWl7hJ7S+fWd8hjTRf\nPKv/QlxAC3Qfmqo6hdx4asrIlwpISpzGH/ucfJJC3Y5eX8gqB6FPrGbLnzqGF4gM\nwtGROxsel9cqayXtsffOSv85QOsafwqX/LfOhehCNsqJnIPFU/l8XG0NALQNfU7k\n6kE0hTOO/epfO3OnyMAyqdA7VdIgDLOlzMCS35D4+y++oCEc84djx2xF5vRzjxY/\nai57xKfzyIwLA8XIDgKqQxMy+nsBTRPlZc9ABnd+YnYIJWdRn9m0Ihsj0LF00gSC\n+/ELskrvwPQ+EcvMY4jDsaK1jSp2SOelsJA3rLjfeFbKqTyIEt8QMxaBKt2lnHfk\nUyDl5R51Rznm85LUR39j\n=R4q0\n-----END PGP SIGNATURE-----\n",
+      "payload": "tree b4838e66a6caf7958c26b84d7456b8888993337d\nparent 2a910bacb6bb460da2c792cd2207d3c4e76b8bd3\nauthor lkshanahan565656 <lkshanahan06@gmail.com> 1792861240 -0500\ncommitter GitHub <noreply@github.com> 1792861240 -0500\n\nStale legs logged before v3.148.0 can still close at Pinnacle's own number (v3.148.1) (#191)\n\n* Stale legs logged before v3.148.0 read Pinnacle's flag number off their label, so today's open legs can close exact (v3.148.1)\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01JFZxUwSjS2V8fsdvepMZTK\n\n* Re-check numbers on the full graded set\n\nCo-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01JFZxUwSjS2V8fsdvepMZTK\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+      "verified_at": "2026-10-24T17:00:41Z"
+    }
+  },
+  "url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/commits/5c56b2bb7a573d5901e902c6626fceb1039b806b",
+  "html_url": "https://github.com/lkshanahan565656/line-reaper-backend/commit/5c56b2bb7a573d5901e902c6626fceb1039b806b",
+  "comments_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/commits/5c56b2bb7a573d5901e902c6626fceb1039b806b/comments",
+  "author": {
+    "login": "lkshanahan565656",
+    "id": 276158822,
+    "node_id": "U_kgDOEHXZZg",
+    "avatar_url": "https://avatars.githubusercontent.com/u/276158822?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/lkshanahan565656",
+    "html_url": "https://github.com/lkshanahan565656",
+    "followers_url": "https://api.github.com/users/lkshanahan565656/followers",
+    "following_url": "https://api.github.com/users/lkshanahan565656/following{/other_user}",
+    "gists_url": "https://api.github.com/users/lkshanahan565656/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/lkshanahan565656/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/lkshanahan565656/subscriptions",
+    "organizations_url": "https://api.github.com/users/lkshanahan565656/orgs",
+    "repos_url": "https://api.github.com/users/lkshanahan565656/repos",
+    "events_url": "https://api.github.com/users/lkshanahan565656/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/lkshanahan565656/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "committer": {
+    "login": "web-flow",
+    "id": 19864447,
+    "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+    "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/web-flow",
+    "html_url": "https://github.com/web-flow",
+    "followers_url": "https://api.github.com/users/web-flow/followers",
+    "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+    "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+    "organizations_url": "https://api.github.com/users/web-flow/orgs",
+    "repos_url": "https://api.github.com/users/web-flow/repos",
+    "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/web-flow/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false
+  },
+  "parents": [
+    {
+      "sha": "2a910bacb6bb460da2c792cd2207d3c4e76b8bd3",
+      "url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/commits/2a910bacb6bb460da2c792cd2207d3c4e76b8bd3",
+      "html_url": "https://github.com/lkshanahan565656/line-reaper-backend/commit/2a910bacb6bb460da2c792cd2207d3c4e76b8bd3"
+    }
+  ],
+  "stats": {
+    "total": 34,
+    "additions": 21,
+    "deletions": 13
+  },
+  "files": [
+    {
+      "sha": "5653294f027bceb80f5aabdee9e9b9cfd158d789",
+      "filename": "closeboard.js",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "changes": 9,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/closeboard.js",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/closeboard.js",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/closeboard.js?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -96,10 +96,11 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);\n const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single']);\n // why each capped kind stops at promising, shown on the record screen\n const ALT_NOTE = \"Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.\";\n-// 10-24 re-check of PrizePicks' stale legs from ESPN box scores: where Pinnacle\n-// sat elsewhere (our curve) 87 legs won 40 against 50.1 the close expected\n-// (-14.3 units, z -2.2); at Pinnacle's own number 79 won 45 against 44.8\n-// (+2.8 units). Those now score in their own kind, closed on Pinnacle's price.\n+// 10-24 re-check of PrizePicks' stale legs from ESPN box scores (all 249\n+// graded): where Pinnacle sat elsewhere (our curve) 133 legs won 70 against\n+// 76.5 the close expected (-5.8 units); at Pinnacle's own number 116 won 67\n+// against 66.0 (+5.8 units). Those now score in their own kind, closed on\n+// Pinnacle's own price.\n const STALE_NOTE = \"Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price. Legs at Pinnacle's own number score on their own row.\";\n const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE };\n // closes on the soft books' own fair: scored and marked, but kept out of a"
+    },
+    {
+      "sha": "0077a8230dfc8e92fcb72b93d742bc59b1941dfc",
+      "filename": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/package.json",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/package.json",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/package.json?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -1,6 +1,6 @@\n {\n   \"name\": \"line-reaper-backend\",\n-  \"version\": \"3.148.0\",\n+  \"version\": \"3.148.1\",\n   \"description\": \"Line Reaper backend - scrapes DFS books and proxies sharp API calls\",\n   \"main\": \"server.js\",\n   \"scripts\": {"
+    },
+    {
+      "sha": "54082eb68392ed984d5e1d69619ae2032f266620",
+      "filename": "server.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "changes": 4,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/server.js",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/server.js",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/server.js?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -4590,7 +4590,7 @@ app.get('/', (req, res) => {\n     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);\n     if (loadApp()) return res.redirect('/app');\n   }\n-  res.json({ status: 'Line Reaper backend running', version: '3.148.0', updated: new Date().toISOString() });\n+  res.json({ status: 'Line Reaper backend running', version: '3.148.1', updated: new Date().toISOString() });\n });\n \n // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────\n@@ -6779,7 +6779,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {\n });\n \n app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({\n-  version: '3.148.0',\n+  version: '3.148.1',\n   modelWeight: MODEL_WEIGHT,\n   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },\n   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },"
+    },
+    {
+      "sha": "96cc8627b34f46b9b017469bfd0380e1dddd756c",
+      "filename": "sporttrack.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "changes": 4,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/sporttrack.js",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/sporttrack.js",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/sporttrack.js?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -76,7 +76,9 @@ function pinLineOf(stale) {\n // start, so closePinEv is Pinnacle's own price, no curve. Else closePinEv is null.\n function pinClose(b, start) {\n   const fresh = b.closePinAt != null && start - Date.parse(b.closePinAt) <= CLOSE_FRESH_MS;\n-  const pinExact = !!(fresh && b.signalPinLine === b.signalLine && b.closePinLine === b.signalLine && b.closePinFair != null);\n+  // a leg logged before signalPinLine existed reads it off its stale label\n+  const atFlag = b.signalPinLine ?? pinLineOf(b.stale);\n+  const pinExact = !!(fresh && atFlag === b.signalLine && b.closePinLine === b.signalLine && b.closePinFair != null);\n   return { closePinOk: fresh, pinExact, closePinEv: pinExact ? r2((b.closePinFair * b.signalDecimal - 1) * 100) : null };\n }\n // a book-consensus leg too: the same leg can be a sharp or book-fair play and a consensus one"
+    },
+    {
+      "sha": "16be26d57128f6e3c5608c919cf92b4bcc11e551",
+      "filename": "test/closeboard.test.js",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "changes": 9,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/test%2Fcloseboard.test.js",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/test%2Fcloseboard.test.js",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/test%2Fcloseboard.test.js?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -178,8 +178,8 @@ test('stale lines stop at promising and say why', () => {\n });\n \n // 10-24: PrizePicks' stale legs re-checked from box scores. Where Pinnacle sat\n-// elsewhere (our curve) they lost 2.2 sd under the close; at Pinnacle's own\n-// number they held. A stale leg keeps Pinnacle's raw number to the start and\n+// elsewhere (our curve) they lost 5.8 units against +6.0 the close expected;\n+// at Pinnacle's own number they held. A stale leg keeps Pinnacle's raw number to the start and\n // scores on Pinnacle's own price only when it sat on the app's line.\n test('stale legs keep Pinnacle\\'s own number to the start; only exact ones score on its price', async () => {\n   let t = Date.parse('2026-10-15T20:00:00Z');\n@@ -225,6 +225,11 @@ test('pinLineOf: the row\\'s number, else the label', () => {\n   assert.equal(pinLineOf({ pinPost: 'o24.5 55.3%' }), 24.5);\n   assert.equal(pinLineOf({ pinNow: 'o-3 50%' }), -3);\n   assert.equal(pinLineOf(null), null);\n+  const { pinClose } = require('../sporttrack');\n+  const start = Date.parse(START);\n+  const legacy = { signalLine: 14.5, signalDecimal: 1.8172, stale: { pinPost: 'o14.5 40%' }, closePinLine: 14.5, closePinFair: 0.6, closePinAt: new Date(start - 5 * 60e3).toISOString() };\n+  assert.equal(pinClose(legacy, start).pinExact, true, 'a leg logged before the field reads its label');\n+  assert.equal(pinClose({ ...legacy, closePinAt: new Date(start - 90 * 60e3).toISOString() }, start).pinExact, false, 'a Pinnacle read 90 min before the start is no close');\n });\n \n // A kind whose graded results sit far under what its close expected isn't"
+    },
+    {
+      "sha": "dd175d1d2a89d2fcf742dae9c7e726382c611bbe",
+      "filename": "test/tail-server.test.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "changes": 6,
+      "blob_url": "https://github.com/lkshanahan565656/line-reaper-backend/blob/5c56b2bb7a573d5901e902c6626fceb1039b806b/test%2Ftail-server.test.js",
+      "raw_url": "https://github.com/lkshanahan565656/line-reaper-backend/raw/5c56b2bb7a573d5901e902c6626fceb1039b806b/test%2Ftail-server.test.js",
+      "contents_url": "https://api.github.com/repos/lkshanahan565656/line-reaper-backend/contents/test%2Ftail-server.test.js?ref=5c56b2bb7a573d5901e902c6626fceb1039b806b",
+      "patch": "@@ -537,7 +537,7 @@ test('track record: logged at the follower price, graded when the market resolve\n \n test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {\n   const { body } = await get('/api/status');\n-  assert.equal(body.version, '3.148.0');\n+  assert.equal(body.version, '3.148.1');\n   assert.equal(body.tail.scored, 1);\n   assert.equal(body.tail.graded.A, 1);\n   assert.ok(body.tail.jobs.signals.lastRun);\n@@ -564,8 +564,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates\n   assert.equal(typeof pro.whales.lastHour.graded, 'number');\n   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);\n   assert.equal(body.live.webhook, true);\n-  assert.equal(require('../package.json').version, '3.148.0');\n-  assert.equal((await get('/')).body.version, '3.148.0');\n+  assert.equal(require('../package.json').version, '3.148.1');\n+  assert.equal((await get('/')).body.version, '3.148.1');\n });\n \n test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {"
+    }
+  ]
+}
