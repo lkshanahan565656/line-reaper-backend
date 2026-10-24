@@ -1,8 +1,8 @@
 # DraftKings Pick6 answers GitHub's servers but blocks Railway's. This reads
-# the Pick6 board here every 10 minutes (relay/pick6.js) and force-pushes it as
+# the Pick6 board here every 4 minutes (relay/pick6.js) and force-pushes it as
 # the only commit on the pick6-data branch, which the app reads while its own
 # read is blocked (pick6.js). GitHub fires this repo's schedules hours apart, not
-# every 10 minutes, so each run keeps reading every 10 minutes for about 5.5
+# every 10 minutes, so each run keeps reading every 4 minutes for about 5.6
 # hours and the schedule only restarts it. A read that gets nothing (DraftKings
 # blocking GitHub too) leaves the last board in place; the app drops it 45
 # minutes after it was read. Added on Logan's OK, 10-15. Free: public repo.
@@ -26,10 +26,10 @@ jobs:
         with:
           node-version: 20
       - run: npm ci --omit=dev --ignore-scripts
-      - name: Read the board every 10 minutes and push it to pick6-data
+      - name: Read the board every 4 minutes and push it to pick6-data
         run: |
           url="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
-          for i in $(seq 1 33); do
+          for i in $(seq 1 84); do
             start=$(date +%s)
             rm -rf out && mkdir -p out
             if timeout 300 node relay/pick6.js out/pick6.json; then
@@ -39,5 +39,5 @@ jobs:
             else
               echo "::warning::Pick6 read nothing this time"
             fi
-            [ "$i" = 33 ] || sleep $(( 600 - ($(date +%s) - start) > 0 ? 600 - ($(date +%s) - start) : 0 ))
+            [ "$i" = 84 ] || sleep $(( 240 - ($(date +%s) - start) > 0 ? 240 - ($(date +%s) - start) : 0 ))
           done

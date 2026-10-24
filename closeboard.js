@@ -81,6 +81,9 @@ const KINDS = {
   // every one past break-even; the close is Pinnacle's own price there
   'props-sharp3': "Pick'em vs three sharps (Pinnacle + 2)",
   'props-p6-sharp3': 'Pick6 vs three sharps (Pinnacle + 2)',
+  // combos (pts+rebs, pts+asts, rebs+asts, steals+blocks) off FanDuel, BetRivers and Pinnacle's parts
+  'props-combo': "Pick'em combos vs the books + Pinnacle's parts",
+  'props-p6-combo': "Pick6 combos vs the books + Pinnacle's parts",
   'bigmoney': 'Big money',
 };
 

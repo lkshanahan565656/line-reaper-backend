@@ -303,7 +303,7 @@ function evOf(row, book) {
   const v = book ? row.books[book]?.ev?.ev : row.best?.ev;
   return v == null ? -1e9 : v;
 }
-function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, sharp3 = false, market = '' } = {}) {
+function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = false, priced = false, gaps = false, sharp = false, sharp3 = false, combo = false, market = '' } = {}) {
   const s = String(sport || '').toUpperCase();
   const needle = String(q || '').toLowerCase().trim();
   let out = rows;
@@ -317,6 +317,8 @@ function queryRows(rows, { sport = '', book = '', q = '', sort = 'ev', multi = f
   if (sharp) out = out.filter(r => r.best?.kind === 'sharp' && (!book || r.best.book === book));
   // Pinnacle and two more sharps at the app's own number, all past break-even
   if (sharp3) out = out.filter(r => r.threeSharp && (!book || r.threeSharp.plays.some(p => p.book === book)));
+  // combos priced off FanDuel, BetRivers and Pinnacle's parts, every source past break-even
+  if (combo) out = out.filter(r => r.combo && (!book || r.combo.plays.some(p => p.book === book)));
   if (needle) out = out.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(needle));
   if (market) out = out.filter(r => r.market === market);
   return [...out].sort((SORTS[sort] || SORTS.ev)(book));
@@ -407,7 +409,7 @@ function coverage(rows) {
 function redactRow(r) {
   const books = {};
   for (const [k, c] of Object.entries(r.books)) books[k] = { line: c.line, over: c.over, under: c.under, overOpen: c.overOpen, underOpen: c.underOpen };
-  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null, threeSharp: r.threeSharp ? { locked: true } : null };
+  return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null, threeSharp: r.threeSharp ? { locked: true } : null, combo: r.combo ? { locked: true } : null };
 }
 
 module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };
