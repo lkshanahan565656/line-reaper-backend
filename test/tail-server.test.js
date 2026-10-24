@@ -565,8 +565,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.154.0');
-  assert.equal((await get('/')).body.version, '3.154.0');
+  assert.equal(require('../package.json').version, '3.155.0');
+  assert.equal((await get('/')).body.version, '3.155.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
