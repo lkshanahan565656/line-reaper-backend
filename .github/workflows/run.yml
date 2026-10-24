@@ -1,0 +1,20 @@
+name: diag-lolmu
+on: { push: { branches: [diag-lolmu] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: ${{ github.sha }}, path: diag }
+      - uses: actions/checkout@v4
+        with: { ref: claude/project-thread-c9tpzl, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd app && npm ci --no-audit --no-fund
+      - run: cd app && node ../diag/diag/live.js > ../out.json 2> ../log.txt || true
+      - run: |
+          mkdir pub && cp out.json log.txt pub/ && cd pub && git init -q && git checkout -q -b diag-lolmu-out
+          git -c user.name=diag -c user.email=diag@x add . && git -c user.name=diag -c user.email=diag@x commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-lolmu-out
