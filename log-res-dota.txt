@@ -1,0 +1,26 @@
+16:45:43 saved res-dota 100
+16:45:43 dota page 0 2026-10-19T13:25:45.000Z
+16:46:47 saved res-dota 5100
+16:46:47 dota page 50 2026-05-10T10:03:45.000Z
+16:47:50 saved res-dota 10100
+16:47:50 dota page 100 2026-03-08T16:02:48.000Z
+16:50:36 saved res-dota 15000
+16:50:36 dota page 150 2026-01-07T13:15:18.000Z
+16:51:40 saved res-dota 20000
+16:51:40 dota page 200 2025-11-03T08:47:58.000Z
+16:52:43 saved res-dota 25000
+16:52:43 dota page 250 2025-09-13T13:24:43.000Z
+16:53:46 saved res-dota 30000
+16:53:46 dota page 300 2025-07-20T07:04:35.000Z
+16:54:49 saved res-dota 35000
+16:54:49 dota page 350 2025-05-15T20:02:32.000Z
+16:55:52 saved res-dota 40000
+16:55:52 dota page 400 2025-03-16T07:58:39.000Z
+16:56:55 saved res-dota 45000
+16:56:55 dota page 450 2025-01-14T05:02:33.000Z
+16:57:58 saved res-dota 50000
+16:57:58 dota page 500 2024-11-13T09:54:58.000Z
+16:59:01 saved res-dota 55000
+16:59:01 dota page 550 2024-09-11T22:15:42.000Z
+16:59:11 saved res-dota 55800
+16:59:11 done res:dota calls 569 errs 1 min 13.5
