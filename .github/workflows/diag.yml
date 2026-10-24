@@ -1,0 +1,45 @@
+name: diag-proven
+on:
+  push:
+    branches: [diag-proven]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set +e
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 60); do curl -sS -m 20 $U/api/status | grep -q "3.155.1" && break; sleep 30; done
+          sleep 60
+          {
+            date -u
+            curl -sS -m 20 $U/api/status; echo
+            curl -sS -m 60 $U/api/results -o results.json
+            curl -sS -m 60 $U/api/best -o best.json
+            node -e '
+              const r=JSON.parse(require("fs").readFileSync("results.json"));
+              const pr=r.plays.filter(p=>p.verdict==="proven");
+              console.log("results plays",r.plays.length,"proven",pr.length);
+              for(const p of pr)console.log(" PROVEN",p.source,p.by||"",p.play,"n",p.n,"clv",p.avgClv,"roi",p.roi);
+              const capped=r.plays.filter(p=>p.provenNote);
+              console.log("with provenNote",capped.length);
+              let b;try{b=JSON.parse(require("fs").readFileSync("best.json"))}catch(e){console.log("best parse fail");process.exit()}
+              const rows=b.plays||b.rows||b.best||[];
+              console.log("best keys",Object.keys(b).join(","),"rows",rows.length);
+              console.log("best proven rows",rows.filter(x=>x.verdict==="proven").length);
+              console.log("best counts",JSON.stringify(b.counts||b.summary||null));
+            '
+            date -u
+          } > diag-out.txt 2>&1
+      - if: always()
+        run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-proven-out
+          git add -f diag-out.txt
+          git commit -m "diag output"
+          git push -f origin diag-proven-out
