@@ -1,0 +1,25 @@
+Sat Oct 24 20:20:38 UTC 2026
+20:20:38 cutoff {"market_positions_last_updated_ts":"2026-08-25T00:00:00Z","market_settled_ts":"2026-08-25T00:00:00Z","orders_updated_ts":"2026-10-10T00:00:00Z","trades_created_ts":"2026-08-25T00:00:00Z"}
+20:20:39 sports series 4047 mine 1012
+20:21:02 series 50 markets 12869 calls 197 errs 0
+20:21:32 series 100 markets 32801 calls 428 errs 0
+20:21:58 series 150 markets 40950 calls 631 errs 0
+20:22:26 series 200 markets 62335 calls 852 errs 0
+20:22:53 series 250 markets 81652 calls 1067 errs 0
+20:23:23 series 300 markets 104160 calls 1298 errs 0
+20:23:51 series 350 markets 118327 calls 1507 errs 0
+20:24:16 series 400 markets 127661 calls 1709 errs 0
+20:24:44 series 450 markets 146654 calls 1923 errs 0
+20:25:11 series 500 markets 154117 calls 2132 errs 0
+20:25:39 series 550 markets 175898 calls 2344 errs 0
+20:26:09 series 600 markets 203449 calls 2576 errs 0
+20:26:35 series 650 markets 216496 calls 2780 errs 0
+20:27:08 series 700 markets 248319 calls 3035 errs 0
+20:27:44 series 750 markets 295776 calls 3311 errs 0
+20:28:22 series 800 markets 358890 calls 3615 errs 0
+20:28:55 series 850 markets 397344 calls 3870 errs 0
+20:29:31 series 900 markets 443946 calls 4154 errs 0
+20:30:04 series 950 markets 485008 calls 4404 errs 1
+20:30:31 series 1000 markets 500835 calls 4617 errs 1
+20:30:40 done markets 502849 calls 4673 errs 1
+Sat Oct 24 20:30:44 UTC 2026
