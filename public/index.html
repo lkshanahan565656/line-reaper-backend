@@ -1225,6 +1225,43 @@ body.no-help .clv-info { display:none; }
 .cb-name{flex:1;min-width:150px}.cb-n{min-width:96px}.cb-stat{min-width:70px;text-align:right;font-family:'JetBrains Mono',monospace}.cb-wide{min-width:226px}
 .cb-k{font-size:9px;letter-spacing:1.2px;color:#64748b;font-family:inherit}.cb-mark{min-width:110px;text-align:right}
 @media (max-width:600px){.cb-name{min-width:100%}.cb-n{min-width:100%}.cb-stat{min-width:60px;text-align:left}.cb-wide{min-width:0}.cb-mark{min-width:0;margin-left:auto}}
+/* ODDS SCREEN */
+.os-ctrl { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin:0 0 10px; }
+.os-ctrl .key-input { flex:2 1 200px; min-width:0; }
+.os-sum { font:11px 'JetBrains Mono',monospace; color:var(--text2); margin:0 0 12px; display:flex; gap:14px; flex-wrap:wrap; }
+.os-sum b { color:var(--text); font-weight:600; }
+.os-game { background:var(--card); border:1px solid var(--border); border-radius:12px; margin:0 0 12px; overflow:hidden; }
+.os-gh { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.os-gt { font-weight:600; font-size:14px; color:var(--text); }
+.os-gm { font:10px 'JetBrains Mono',monospace; color:var(--text2); letter-spacing:.06em; }
+.os-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.os-tbl { border-collapse:collapse; width:100%; font-size:12px; min-width:max-content; }
+.os-tbl th { font:600 9px 'JetBrains Mono',monospace; letter-spacing:.08em; color:#64748b; text-transform:uppercase; padding:7px 8px; text-align:center; border-bottom:1px solid var(--border); white-space:nowrap; }
+.os-tbl th.tx { color:#34d399; }
+.os-tbl td { padding:7px 8px; text-align:center; border-bottom:1px solid rgba(30,39,56,.6); font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--text2); }
+.os-tbl tr:last-child td { border-bottom:none; }
+.os-tbl td.side, .os-tbl th.side { text-align:left; position:sticky; left:0; background:var(--card); z-index:1; font-family:'Inter',system-ui,sans-serif; color:var(--text); font-size:12px; min-width:130px; max-width:190px; white-space:normal; }
+.os-tbl td.fair { color:#e2e8f0; }
+.os-tbl td.ref { color:#64748b; }
+.os-tbl td.best { color:#06110d; background:#34d399; font-weight:700; border-radius:4px; }
+.os-tbl td.best a { color:#06110d; }
+.os-tbl td a { color:inherit; text-decoration:none; }
+.os-tbl td .ev { display:block; font-size:9px; opacity:.85; }
+.os-tbl td.diff { color:#475569; font-size:11px; }
+.os-tbl tr.mk td { background:rgba(15,23,42,.6); font:600 9px 'JetBrains Mono',monospace; letter-spacing:.1em; color:#64748b; text-align:left; text-transform:uppercase; padding:5px 8px; }
+.os-tbl tr.mk td.side { background:#0f1622; }
+.os-copy { font-size:8px; vertical-align:super; color:#64748b; margin-left:1px; }
+.os-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; padding:4px 10px; font:600 10px 'JetBrains Mono',monospace; letter-spacing:.06em; cursor:pointer; }
+.os-btn.on { border-color:var(--text); color:var(--text); }
+.os-chart { padding:10px 12px 12px; border-top:1px solid var(--border); }
+.os-chart svg { display:block; width:100%; height:auto; }
+.os-legend { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 0; }
+.os-legend button { display:inline-flex; align-items:center; gap:6px; background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:14px; padding:3px 9px; font-size:11px; cursor:pointer; }
+.os-legend button.off { opacity:.45; }
+.os-legend i { display:inline-block; width:12px; height:2px; border-radius:1px; }
+.os-tip { position:absolute; pointer-events:none; background:#0b1220; border:1px solid var(--border2); border-radius:6px; padding:6px 8px; font:11px 'JetBrains Mono',monospace; color:var(--text); white-space:nowrap; z-index:5; display:none; }
+.os-note { font-size:11px; color:#64748b; margin:6px 0 0; line-height:1.5; }
+@media (max-width:640px) { .os-tbl td, .os-tbl th { padding:6px 6px; } .os-tbl td.side, .os-tbl th.side { min-width:104px; max-width:120px; font-size:11px; } }
 </style>
 </head>
 <body>
@@ -1234,25 +1271,25 @@ body.no-help .clv-info { display:none; }
   <div class="wl-wrap">
     <div class="wl-brand"><svg class="lr-mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></div>
     <h1 class="wl-h">Made for sharps,<br>by sharps.</h1>
-    <p class="wl-sub">We bet on the exchanges every day. Line Reaper is the tracker we built for it: sharp money flagged and graded, arbs and edges priced, every result kept on the record.</p>
+    <p class="wl-sub">An odds screen, a pick'em pricer and a public record in one app: every venue's price beside Pinnacle's fair, what each slip pays and needs to break even, and every alert graded against the close, losers included.</p>
     <div class="wl-rec">
-      <div class="wl-rec-top"><span id="wlYear">2026 RECORD</span><span>TRACKED ON PIKKIT</span></div>
-      <div class="wl-row"><span>Profit</span><span class="v up" id="wlProfit">+850.00u</span></div>
-      <div class="wl-row"><span>ROI</span><span class="v up" id="wlRoi">+24.90%</span></div>
-      <div class="wl-row"><span>Bets beating closing line</span><span class="v" id="wlClv">71.64%</span></div>
+      <div class="wl-rec-top"><span>THE LIVE RECORD</span><span>READ FROM THE APP</span></div>
+      <div class="wl-row"><span>Alerts graded so far</span><span class="v" id="wlGraded">...</span></div>
+      <div class="wl-row"><span>Beat the close at the alert</span><span class="v" id="wlBeat">...</span></div>
+      <div class="wl-row"><span>Kinds of play proven so far</span><span class="v" id="wlProven">...</span></div>
     </div>
-    <p class="wl-note">Our own bets, verified on Pikkit. Alerts in the app are graded the same way, win or lose.</p>
+    <p class="wl-note">A play is proven only once its own graded sample beats the close by more than chance. Everything else is still building its record, and the app says so on every row.</p>
     <ul class="wl-list">
-      <li><span><b>Sharp Tail.</b> Follow the exchange accounts that win, with sized units and a live grade on every alert.</span></li>
-      <li><span><b>Arbs and edges.</b> Cross-book and exchange arbitrage, plus +EV across sportsbooks.</span></li>
-      <li><span><b>Esports.</b> Match boards, props and model edges for CS2, LoL, Valorant and Dota.</span></li>
+      <li><span><b>Odds screen.</b> Every venue we read on one row, the best price marked, a chart of each line's moves, and a Texas filter.</span></li>
+      <li><span><b>Pick'em.</b> PrizePicks, Underdog, Sleeper and DK Pick6 props priced against the books, with payouts and break-evens for every slip.</span></li>
+      <li><span><b>Exchanges and esports.</b> Kalshi and Polymarket US prices, arbs and middles, and esports match boards and props.</span></li>
     </ul>
     <div class="wl-actions">
       <label class="wl-agree" id="wlAgreeRow"><input type="checkbox" id="wlAgree" onchange="welcomeAgree()"><span>I am 21 or older and I agree to the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
       <button class="wl-btn primary" id="wlCreate" style="display:none" onclick="welcomeGo('signup')">Create account</button>
       <button class="wl-btn" id="wlLogin" style="display:none" onclick="welcomeGo('login')">Log in</button>
       <button class="wl-skip solo" id="wlEnter" onclick="welcomeGo()">Enter the app</button>
-      <div class="wl-fine">Line Reaper is an information tool, not a sportsbook, and nothing here is betting advice. Betting involves risk and past results, including the record above, are not typical and do not guarantee future returns. 21+ where legal. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a> · <a href="/refunds" target="_blank" rel="noopener">Refunds</a> · <a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a>. Gambling problem? Call or text 1-800-GAMBLER.</div>
+      <div class="wl-fine">Line Reaper is an information tool, not a sportsbook, and nothing here is betting advice. Betting involves risk, and past results do not guarantee future returns. 21+ where legal. <a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a> · <a href="/refunds" target="_blank" rel="noopener">Refunds</a> · <a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a>. Gambling problem? Call or text 1-800-GAMBLER.</div>
     </div>
   </div>
 </div>
@@ -1270,6 +1307,7 @@ body.no-help .clv-info { display:none; }
   </div>
   <div class="tab-row">
     <button class="tab" onclick="showTab('best',this)">BEST PLAYS</button>
+    <button class="tab" onclick="showTab('odds',this)">ODDS SCREEN</button>
     <button class="tab active" onclick="showTab('tail',this)">SHARP TAIL</button>
     <button class="tab" onclick="showTab('arb',this)">ARBS</button>
     <button class="tab" onclick="showTab('big',this)">BIG MONEY</button>
@@ -1294,6 +1332,23 @@ body.no-help .clv-info { display:none; }
   <span style="color:#cbd5e1">If you opened this file inside the Claude app's preview, that sandbox blocks all internet access — <strong>download the file and open it in Chrome, or deploy it to Netlify</strong> like your live version.</span><br>
   <span style="color:#94a3b8;font-size:11px">Backend check: open <span style="font-family:'JetBrains Mono',monospace;color:#e2e8f0">line-reaper-backend-production.up.railway.app/api/status</span> in a normal browser tab — if JSON comes back, the backend is alive. The esports tab only needs that backend — it never touches the paid Odds API.</span>
   <span onclick="this.parentElement.style.display='none'" style="position:absolute;top:8px;right:12px;cursor:pointer;color:#64748b;font-weight:800">✕</span>
+</div>
+
+<!-- ODDS SCREEN PAGE -->
+<div class="page" id="page-odds">
+  <div class="clv-info" style="border-left:3px solid var(--green)">
+    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The green cell is the best price you can bet; EV is that price against the fair.
+    <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. Pick "Texas" to see only venues you can use there. A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
+  </div>
+  <div class="pb-chips" id="osLeagues" style="margin:12px 0 8px"></div>
+  <div class="os-ctrl">
+    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Betting from</span><select id="osState" onchange="osSet('state',this.value)"><option value="">Anywhere (every venue)</option><option value="TX">Texas</option></select></label>
+    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Market</span><select id="osMarket" onchange="osSet('market',this.value)"><option value="">Every market</option><option value="ml">Moneyline</option><option value="spread">Spread</option><option value="total">Total</option></select></label>
+    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Sort games by</span><select id="osSort" onchange="osSet('sort',this.value)"><option value="start">Starting soonest</option><option value="ev">Best EV</option><option value="venues">Most venues</option></select></label>
+    <input class="key-input" id="osSearch" placeholder="Search a team" oninput="osSearchInput(this.value)"/>
+  </div>
+  <div class="os-sum" id="osSum"></div>
+  <div id="osContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every venue...</div></div></div>
 </div>
 
 <!-- LINES PAGE -->
@@ -1778,9 +1833,146 @@ function showTab(name, el) {
   if (name === 'big') loadBig(); else clearTimeout(bigUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
+  if (name === 'odds') loadOdds(); else clearTimeout(osUi.timer);
   if (name === 'betlog') mybOpen();
   if (name === 'myslips') msOpen();
   if (name === 'clv') mybReady().then(renderCLV);
+}
+
+// ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
+// /api/odds-screen: every venue on one row per side, Pinnacle's no-vig fair,
+// the best bettable price in green. A game's MOVES button draws its line
+// history (/api/odds-screen/history/:id). Refreshes every minute while open.
+const osUi = { league: '', state: '', market: '', sort: 'start', q: '', data: null, timer: null, open: {}, hist: {}, side: {}, hidden: {} };
+try { Object.assign(osUi, JSON.parse(localStorage.getItem('lr_os') || '{}'), { data: null, timer: null, open: {}, hist: {}, side: {} }); } catch {}
+// chart colours follow the venue (fixed, never by rank); venues past these stay in the table
+const OS_COLORS = { kalshi: '#3987e5', polymarketus: '#d95926', gemini: '#199e70', fanduel: '#c98500', betrivers: '#d55181', draftkings: '#008300', matchbook: '#9085e9', betmgm: '#e66767' };
+const osSave = () => { try { localStorage.setItem('lr_os', JSON.stringify({ league: osUi.league, state: osUi.state, market: osUi.market, sort: osUi.sort, hidden: osUi.hidden })); } catch {} };
+const osAm = a => (a == null ? '—' : a > 0 ? '+' + a : String(a));
+const osPct = x => (x == null ? '' : (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%');
+const osWhen = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
+function osSet(k, v) { osUi[k] = v; osSave(); if (k === 'state' || k === 'league') loadOdds(); else renderOdds(); }
+let osSearchT = null;
+function osSearchInput(v) { clearTimeout(osSearchT); osSearchT = setTimeout(() => { osUi.q = v.trim().toLowerCase(); renderOdds(); }, 200); }
+async function loadOdds() {
+  clearTimeout(osUi.timer);
+  const st = document.getElementById('osState'); if (st) st.value = osUi.state;
+  ['osMarket', 'osSort'].forEach((id, i) => { const el = document.getElementById(id); if (el) el.value = [osUi.market, osUi.sort][i]; });
+  const qs = new URLSearchParams();
+  if (osUi.league) qs.set('league', osUi.league);
+  if (osUi.state) qs.set('state', osUi.state);
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    osUi.data = await r.json();
+  } catch (e) {
+    if (!osUi.data) document.getElementById('osContent').innerHTML = `<div class="error-box">Could not load the odds screen (${escAttr(e.message)}). <button class="key-btn" onclick="loadOdds()">RETRY</button></div>`;
+  }
+  if (osUi.data) renderOdds();
+  if (document.getElementById('page-odds')?.classList.contains('active')) osUi.timer = setTimeout(() => { if (!document.hidden) loadOdds(); else osUi.timer = setTimeout(loadOdds, 60e3); }, 60e3);
+}
+function renderOdds() {
+  const d = osUi.data; if (!d) return;
+  const lg = document.getElementById('osLeagues');
+  const leagues = d.leagues || [];
+  lg.innerHTML = `<button class="sport-chip${!osUi.league ? ' active' : ''}" onclick="osSet('league','')">ALL</button>` +
+    leagues.map(l => `<button class="sport-chip${osUi.league === l.key ? ' active' : ''}" onclick="osSet('league','${escAttr(l.key)}')">${escAttr(l.label)} <span style="opacity:.6">${l.games}</span></button>`).join('');
+  let games = (d.games || []).filter(g => !osUi.q || `${g.home} ${g.away}`.toLowerCase().includes(osUi.q))
+    .map(g => ({ ...g, markets: g.markets.filter(m => !osUi.market || m.key === osUi.market) })).filter(g => g.markets.length);
+  if (osUi.sort === 'ev') games.sort((a, b) => (b.maxEv ?? -9) - (a.maxEv ?? -9));
+  else if (osUi.sort === 'venues') games.sort((a, b) => b.venues - a.venues);
+  const c = d.counts || {};
+  const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
+  document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> games</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
+    (d.pro ? `<span><b>${c.plusEv ?? 0}</b> sides priced above the fair</span>` : `<span>Fair and EV: <a href="#" onclick="acctUpgrade();return false" style="color:#34d399">Pro</a></span>`) +
+    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
+  const box = document.getElementById('osContent');
+  if (!games.length) {
+    box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : osUi.state ? 'No game in the next two days has a venue legal in this state priced yet.' : 'No game in the next two days is priced yet.'}</div></div>`;
+    return;
+  }
+  const cols = (d.venues || []).filter(v => games.some(g => g.markets.some(m => m.sides.some(s => s.venues.some(x => x.venue === v.key)))));
+  box.innerHTML = games.slice(0, 80).map(g => osGame(g, cols, d.pro)).join('') + (games.length > 80 ? `<div class="os-note">Showing the first 80 games: pick a league or search a team for the rest.</div>` : '');
+  for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
+}
+function osGame(g, cols, pro) {
+  const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.tx ? 'tx' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.tx ? 'Legal in Texas' : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}</th>`).join('')}</tr>`;
+  const rows = g.markets.map(m => {
+    const mk = g.markets.length > 1 ? `<tr class="mk"><td class="side">${escAttr(m.label)}</td><td colspan="${cols.length + (pro ? 1 : 0)}"></td></tr>` : '';
+    return mk + m.sides.map(s => `<tr><td class="side">${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
+      cols.map(v => {
+        const x = s.venues.find(y => y.venue === v.key);
+        if (!x) return '<td>·</td>';
+        if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${osAm(x.american)}</td>`;
+        const inner = `${osAm(x.american)}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
+        return `<td class="${x.best ? 'best' : x.ref ? 'ref' : ''}">${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
+      }).join('') + '</tr>').join('');
+  }).join('');
+  const open = !!osUi.open[g.id];
+  return `<div class="os-game"><div class="os-gh"><div><div class="os-gt">${escAttr(g.away)} @ ${escAttr(g.home)}</div><div class="os-gm">${escAttr(g.leagueLabel)} · ${osWhen(g.start)}${pro && g.maxEv > 0 ? ` · best ${osPct(g.maxEv)}` : ''}</div></div>` +
+    `<button class="os-btn${open ? ' on' : ''}" onclick="osToggle('${escAttr(g.id)}')">${open ? 'HIDE MOVES' : 'LINE MOVES'}</button></div>` +
+    `<div class="os-scroll"><table class="os-tbl">${head}${rows}</table></div>${open ? `<div class="os-chart" id="osc-${escAttr(g.id)}"><div class="os-note">Loading the line history...</div></div>` : ''}</div>`;
+}
+async function osToggle(id) {
+  osUi.open[id] = !osUi.open[id];
+  renderOdds();
+  if (osUi.open[id]) {
+    try { const r = await fetch(`${BACKEND_URL}/api/odds-screen/history/${encodeURIComponent(id)}`); osUi.hist[id] = await r.json(); } catch { osUi.hist[id] = { series: [] }; }
+    osDrawChart(id);
+  }
+}
+// implied chance of an American price (the fee is already in an exchange's)
+const osProb = a => (a == null ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
+function osDrawChart(id) {
+  const el = document.getElementById('osc-' + id); if (!el) return;
+  const h = osUi.hist[id]; if (!h) return;
+  const series = (h.series || []).filter(x => x.pts.length);
+  if (!series.length) { el.innerHTML = `<div class="os-note">No history for this game yet. We save each side's prices every few minutes from when a game first shows up, so check back soon.</div>`; return; }
+  const sid = osUi.side[id] && series.some(x => x.id === osUi.side[id]) ? osUi.side[id] : series[0].id;
+  const s = series.find(x => x.id === sid);
+  const venuesIn = [...new Set(s.pts.flatMap(p => Object.keys(p[3] || {})))].filter(v => OS_COLORS[v]);
+  const shown = venuesIn.filter(v => !osUi.hidden[v]).slice(0, 4);
+  const lines = [];
+  if (s.pts.some(p => p[2] != null)) lines.push({ key: 'fair', name: 'Fair (Pinnacle, no vig)', color: '#e2e8f0', dash: '4 3', pts: s.pts.filter(p => p[2] != null).map(p => [p[0], p[2]]) });
+  for (const v of shown) lines.push({ key: v, name: (osUi.data?.venues || []).find(x => x.key === v)?.name || v, color: OS_COLORS[v], pts: s.pts.filter(p => p[3]?.[v] != null).map(p => [p[0], osProb(p[3][v])]) });
+  const all = lines.flatMap(l => l.pts);
+  if (!all.length) { el.innerHTML = '<div class="os-note">No prices saved for this side yet.</div>'; return; }
+  const W = 720, H = 220, L = 44, R = 12, T = 12, B = 26;
+  const t0 = Math.min(...all.map(p => p[0])), t1 = Math.max(...all.map(p => p[0]), t0 + 60e3);
+  let y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
+  const pad = Math.max(0.01, (y1 - y0) * 0.15); y0 = Math.max(0, y0 - pad); y1 = Math.min(1, y1 + pad);
+  const X = t => L + (t - t0) / (t1 - t0) * (W - L - R), Y = p => T + (1 - (p - y0) / (y1 - y0)) * (H - T - B);
+  const ticks = [0, 1, 2, 3].map(i => y0 + (y1 - y0) * i / 3);
+  const grid = ticks.map(p => `<line x1="${L}" x2="${W - R}" y1="${Y(p)}" y2="${Y(p)}" stroke="#1e2738" stroke-width="1"/><text x="${L - 6}" y="${Y(p) + 3}" fill="#64748b" font-size="10" text-anchor="end">${(p * 100).toFixed(0)}%</text>`).join('');
+  const xt = [t0, (t0 + t1) / 2, t1].map((t, i) => `<text x="${X(t)}" y="${H - 8}" fill="#64748b" font-size="10" text-anchor="${['start', 'middle', 'end'][i]}">${new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</text>`).join('');
+  // a price holds until the next read: step lines
+  const path = l => l.pts.map((p, i) => (i ? `H${X(p[0]).toFixed(1)}V${Y(p[1]).toFixed(1)}` : `M${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`)).join('') + (l.pts.length ? `H${X(t1).toFixed(1)}` : '');
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line history for ${escAttr(s.label)}" onmousemove="osHover(event,'${escAttr(id)}')" onmouseleave="osHover(null,'${escAttr(id)}')" ontouchstart="osHover(event,'${escAttr(id)}')">${grid}${xt}` +
+    lines.map(l => `<path d="${path(l)}" fill="none" stroke="${l.color}" stroke-width="2" ${l.dash ? `stroke-dasharray="${l.dash}"` : ''} stroke-linejoin="round"/>`).join('') +
+    `<line class="osx" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#94a3b8" stroke-width="1" style="display:none"/></svg>`;
+  const sideChips = series.map(x => `<button class="os-btn${x.id === sid ? ' on' : ''}" onclick="osUi.side['${escAttr(id)}']='${escAttr(x.id)}';osDrawChart('${escAttr(id)}')">${escAttr(x.label)}</button>`).join(' ');
+  const legend = lines.filter(l => l.key === 'fair').map(l => `<button disabled><i style="background:${l.color}"></i>${escAttr(l.name)}</button>`).join('') +
+    venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osUi.hidden['${v}']=!osUi.hidden['${v}']${shown.includes(v) ? '' : ";osUi.hidden['" + v + "']=false"};osSave();osDrawChart('${escAttr(id)}')"><i style="background:${OS_COLORS[v]}"></i>${escAttr((osUi.data?.venues || []).find(x => x.key === v)?.name || v)}</button>`).join('');
+  el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px">${sideChips}</div><div style="position:relative">${svg}<div class="os-tip"></div></div><div class="os-legend">${legend}</div>` +
+    `<div class="os-note">Chance each price implies (fees in), over time. Lower means a better price for this side. Up to four venues at once; tap one to swap it in. ${s.pts.length} reads since ${new Date(s.pts[0][0]).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</div>`;
+  osUi.chart = osUi.chart || {}; osUi.chart[id] = { lines, X, t0, t1, W, L, R };
+}
+function osHover(ev, id) {
+  const el = document.getElementById('osc-' + id), c = osUi.chart?.[id]; if (!el || !c) return;
+  const tip = el.querySelector('.os-tip'), cross = el.querySelector('.osx'), svg = el.querySelector('svg');
+  if (!ev) { tip.style.display = 'none'; cross.style.display = 'none'; return; }
+  const pt = ev.touches ? ev.touches[0] : ev, box = svg.getBoundingClientRect();
+  const sx = (pt.clientX - box.left) / box.width * c.W;
+  const t = c.t0 + (Math.min(Math.max(sx, c.L), c.W - c.R) - c.L) / (c.W - c.L - c.R) * (c.t1 - c.t0);
+  const at = l => { let v = null; for (const p of l.pts) { if (p[0] <= t) v = p[1]; else break; } return v; };
+  const rows = c.lines.map(l => ({ l, v: at(l) })).filter(x => x.v != null);
+  if (!rows.length) return;
+  cross.setAttribute('x1', c.X(t)); cross.setAttribute('x2', c.X(t)); cross.style.display = '';
+  tip.innerHTML = `<div style="color:#94a3b8">${new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</div>` +
+    rows.map(x => `<div><i style="display:inline-block;width:10px;height:2px;background:${x.l.color};vertical-align:middle;margin-right:6px"></i>${escAttr(x.l.name)} ${(x.v * 100).toFixed(1)}% (${osAm(x.v >= 0.5 ? -Math.round(100 * x.v / (1 - x.v)) : Math.round(100 * (1 - x.v) / x.v))})</div>`).join('');
+  tip.style.display = 'block';
+  const left = (c.X(t) / c.W) * box.width;
+  tip.style.left = Math.min(left + 10, box.width - tip.offsetWidth - 4) + 'px'; tip.style.top = '6px';
 }
 
 // ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
@@ -1792,6 +1984,7 @@ try { Object.assign(tools.vals, JSON.parse(localStorage.getItem('lr_tools') || '
 try { tools.active = localStorage.getItem('lr_tool') || 'ev'; } catch {}
 
 function loadTools() {
+  if (!tools.p6Tried) { tools.p6Tried = true; fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(d => { const t = d?.pick6?.payouts; if (t && Object.keys(t).length) { tools.pick6Payouts = t; if (tools.ready) toolCompute(); } }).catch(() => {}); }
   if (window.LRCalc) { tools.ready = true; return renderTools(); }
   if (tools.loading) return;
   tools.loading = new Promise((resolve) => {
@@ -1855,6 +2048,26 @@ const TOOL_DEFS = [
     run(v) {
       const h = LRCalc.hedge(tlNum(v.stake), LRCalc.parseOdds(v.open), LRCalc.parseOdds(v.hedge), v.mode); if (!h) return null;
       return { stats: [['Hedge stake', tlUsd(h.hedgeStake)], ['If open bet wins', tlUsd(h.ifOpenWins), tlSgn(h.ifOpenWins)], ['If hedge wins', tlUsd(h.ifHedgeWins), tlSgn(h.ifHedgeWins)], ['Guaranteed', tlUsd(h.guaranteed), tlSgn(h.guaranteed)]] };
+    } },
+  { id: 'pickem', name: "Pick'em payouts", sub: 'Break-even per slip',
+    blurb: "What each pick'em slip pays, the chance every pick needs to break even, and the EV at your own hit rate. PrizePicks, Underdog, DK Pick6 and Betr tables from each app's help page (Pick6's read live from its entry screen). Picks from one team or game often pay less: type the payout the app shows to price that slip.",
+    fields: [['type', 'Slip', 'prizepicks_power', [['prizepicks_power', 'PrizePicks Power'], ['prizepicks_flex', 'PrizePicks Flex'], ['underdog_standard', 'Underdog Standard'], ['underdog_flex', 'Underdog Flex'], ['pick6', 'DK Pick6'], ['betr', 'Betr Picks']]],
+      ['n', 'Picks', '3', [['2', '2'], ['3', '3'], ['4', '4'], ['5', '5'], ['6', '6'], ['7', '7'], ['8', '8']]], ['p', 'Your hit chance per pick (optional)', '55%'], ['shown', 'Payout the app shows (optional)', ''], ['stake', 'Stake $', '10']],
+    run(v) {
+      const tables = v.type === 'pick6' && tools.pick6Payouts ? tools.pick6Payouts : null;
+      const p = tlOptPct(v.p), n = parseInt(v.n), stake = tlNum(v.stake) || 10;
+      const s = LRCalc.pickemSlip(v.type, n, { p: p > 0 && p < 1 ? p : null, shown: tlNum(String(v.shown).replace(/x$/i, '')), tables });
+      if (!s) return { stats: [['Not offered', `${n}-pick`]], note: `${LRCalc.PICKEM[v.type]?.label || 'This slip'} has no ${n}-pick table. Pick another size.` };
+      const st = [['Top payout', s.top + 'x'], ['Break-even per pick', tlProb(s.breakeven, 1)], ['Same as odds of', s.breakevenAmerican > 0 ? '+' + s.breakevenAmerican : String(s.breakevenAmerican)], ['Pays if all hit', tlUsd(stake * s.top)]];
+      if (s.ev != null) st.push(['EV at your chance', tlPct(s.ev), tlSgn(s.ev)], ['EV in dollars', tlUsd(stake * s.ev), tlSgn(s.ev)]);
+      const rows = s.outcomes.map(o => `<tr><td>${o.hits} of ${n}</td><td>${o.pays}x</td><td>${tlUsd(stake * o.pays)}</td><td>${o.chance == null ? '—' : tlProb(o.chance, 1)}</td></tr>`).join('');
+      // every slip at this size, side by side
+      const grid = LRCalc.pickemGrid({ p: p > 0 && p < 1 ? p : null, tables: tools.pick6Payouts ? { pick6: tools.pick6Payouts } : {} }).filter(x => x.n === n);
+      const gridRows = grid.map(x => `<tr${x.type === v.type ? ' style="color:#e2e8f0"' : ''}><td>${x.label}</td><td>${x.top}x</td><td>${tlProb(x.breakeven, 1)}</td><td>${x.ev == null ? '—' : `<span class="${tlSgn(x.ev)}">${tlPct(x.ev, 1)}</span>`}</td></tr>`).join('');
+      return { stats: st,
+        table: `<table class="tl-table"><tr><th>HITS</th><th>PAYS</th><th>ON ${tlUsd(stake)}</th><th>CHANCE</th></tr>${rows}</table>`
+          + `<table class="tl-table"><tr><th>EVERY ${n}-PICK SLIP</th><th>TOP</th><th>BREAK-EVEN</th><th>EV AT YOURS</th></tr>${gridRows}</table>`,
+        note: `Legs are taken as independent. A pick at -110 on a book is about 52.4%, at -130 about 56.5%: a leg is only worth a slip when its chance clears the break-even. Pick6 also multiplies by each pick's own multiplier (0.9x on a favoured side).` };
     } },
   { id: 'parlay', name: 'Parlay', sub: 'Payout and true EV',
     blurb: 'Leg prices multiply into the parlay price. Add a fair win % for each leg (from the no-vig tool) to see whether the parlay is actually +EV.',
@@ -2550,9 +2763,18 @@ async function mybOpen() {
   const el = document.getElementById('mybList');
   if (!myb.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your bets...</div></div>`;
   if (!(await mybReady())) { if (el) el.innerHTML = tailEmpty('COULD NOT LOAD', 'My Bets loads its math from the Line Reaper server, which isn\'t reachable right now.'); return; }
+  // MY SLIPS' slips join the record (read-only here; they're edited there)
+  await msReady().catch(() => false);
   renderMyBets();
   mybAutoSettle();
 }
+// every bet, plus the pick'em slips from MY SLIPS unless they're switched off
+function mybAll() {
+  const out = [...myb.list];
+  if (myb.ui.slips !== false && ms.ready && window.LRSlips) for (const sl of ms.slips) { const b = LRBets.fromSlip(LRSlips.slipView(sl, ms.grades)); if (b) out.push(b); }
+  return LRBets.sortNewest(out);
+}
+const mybSlipCount = () => (ms.ready && window.LRSlips ? ms.slips.filter(sl => LRBets.fromSlip(LRSlips.slipView(sl, ms.grades))).length : 0);
 
 // ── auto-settle from the trackers ──
 async function mybAutoSettle(force) {
@@ -2580,7 +2802,8 @@ function mybSet(k, v) { myb.ui[k] = v; if (k !== 'shown') myb.ui.shown = 50; myb
 function renderMyBets() {
   if (!myb.ready) return;
   const B = LRBets, ui = myb.ui, unit = mybUnit().unit;
-  const scope = B.filter(myb.list, { ...ui, status: 'all' });
+  const all = mybAll();
+  const scope = B.filter(all, { ...ui, status: 'all' });
   const rows = B.filter(scope, { status: ui.status });
   const s = B.stats(scope, { unitUsd: unit });
   const tile = (k, v, cls, sub) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="mb-sub">${sub}</div>` : ''}</div>`;
@@ -2595,7 +2818,7 @@ function renderMyBets() {
   document.getElementById('mybChart').innerHTML = mybChart(B.curve(scope));
 
   const opts = (k, label, all) => {
-    const vals = [...new Set(myb.list.map(b => b[k]).filter(Boolean))].sort();
+    const vals = [...new Set(all.map(b => b[k]).filter(Boolean))].sort();
     if (ui[k] && !vals.includes(ui[k])) vals.push(ui[k]);
     return `<select onchange="mybSet('${k}',this.value)" aria-label="${label}"><option value="">${all}</option>${vals.map(v => `<option${v === ui[k] ? ' selected' : ''} value="${escAttr(v)}">${escAttr(v)}</option>`).join('')}</select>`;
   };
@@ -2604,15 +2827,16 @@ function renderMyBets() {
   document.getElementById('mybBar').innerHTML = seg('status', [['open', `Open ${nOpen}`], ['settled', `Settled ${scope.length - nOpen}`], ['all', `All ${scope.length}`]])
     + seg('days', [[7, '7D'], [30, '30D'], [90, '90D'], [0, 'All time']])
     + `<div class="mb-filters">${opts('tool', 'Tool', 'All tools')}${opts('book', 'Book', 'All books')}${opts('sport', 'Sport', 'All sports')}
-      <input type="search" placeholder="Search bets" value="${escAttr(ui.q)}" oninput="myb.ui.q=this.value;myb.ui.shown=50;mybRenderList()" aria-label="Search bets"></div>`;
+      <input type="search" placeholder="Search bets" value="${escAttr(ui.q)}" oninput="myb.ui.q=this.value;myb.ui.shown=50;mybRenderList()" aria-label="Search bets"></div>`
+    + (mybSlipCount() ? `<div class="mb-seg"><button class="${ui.slips !== false ? 'on' : ''}" onclick="mybSet('slips',${ui.slips === false})" title="Slips you pasted or imported in MY SLIPS">Pick'em slips ${mybSlipCount()} ${ui.slips !== false ? 'in' : 'out'}</button></div>` : '');
   mybRenderList(rows);
   mybRenderBreak(scope);
 }
 
 function mybRenderList(rows) {
   const B = LRBets, ui = myb.ui, el = document.getElementById('mybList');
-  if (!rows) rows = B.filter(B.filter(myb.list, { ...ui, status: 'all' }), { status: ui.status });
-  if (!myb.list.length) {
+  if (!rows) rows = B.filter(B.filter(mybAll(), { ...ui, status: 'all' }), { status: ui.status });
+  if (!myb.list.length && !rows.length) {
     el.innerHTML = `<div class="mb-empty"><b>No bets yet.</b><span>Add one by hand, tap LOG on any play in Best Plays or Sharp Tail, or import a CSV from another tracker. Bets from our plays settle on their own once our tracker grades them.</span>
       <div><button class="mb-btn primary" onclick="mybForm()">ADD A BET</button></div></div>`;
     return;
@@ -2624,7 +2848,7 @@ function mybRenderList(rows) {
     const p = B.profit(b), c = B.clv(b), u = b.unitUsd || unit, open = b.result === 'open';
     const res = open ? `<span class="mb-res open">To win ${mybUsd(B.toWin(b))}</span>`
       : `<span class="mb-res ${b.result}">${escAttr(B.RESULT_LABEL[b.result])}</span>${b.settledBy === 'auto' ? '<span class="mb-auto" title="Graded by our tracker">AUTO</span>' : ''}`;
-    const act = open ? `<div class="mb-quick">
+    const act = b.fromSlip ? '' : open ? `<div class="mb-quick">
         <button class="w" onclick="mybResult('${b.id}','win')" title="Won">W</button><button class="l" onclick="mybResult('${b.id}','loss')" title="Lost">L</button><button onclick="mybResult('${b.id}','push')" title="Push">P</button></div>` : '';
     return `<div class="mb-row ${open ? 'is-open' : ''}">
       <span class="mb-when">${escAttr(mybDate(b.placedAt))}</span>
@@ -2635,7 +2859,7 @@ function mybRenderList(rows) {
       <span class="r" data-k="Result">${res}</span>
       <span class="r mono ${mybCls(p)}" data-k="Profit">${p == null ? '—' : mybUsd(p, true)}</span>
       <span class="r mono ${mybCls(c)}" data-k="CLV">${mybPct(c)}</span>
-      <span class="mb-act">${act}<button class="mb-more" onclick="mybForm('${b.id}')" title="Edit or settle">Edit</button></span>
+      <span class="mb-act">${act}${b.fromSlip ? `<button class="mb-more" onclick="showTab('myslips',[...document.querySelectorAll('.tab')].find(x=>x.getAttribute('onclick')===&quot;showTab('myslips',this)&quot;))" title="Graded leg by leg in MY SLIPS">Slip</button>` : `<button class="mb-more" onclick="mybForm('${b.id}')" title="Edit or settle">Edit</button>`}</span>
     </div>`;
   }).join('');
   el.innerHTML = `<div class="mb-table">${head}${body}</div>`
@@ -3455,6 +3679,15 @@ function welcomeInit() {
   w.classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('wlAgree').checked = termsAccepted();
+  // the record box reads the live tracker, the same strict "proven" as the sales page
+  fetch(`${BACKEND_URL}/api/results`).then(r => r.json()).then(d => {
+    let graded = 0, clvN = 0, beat = 0;
+    for (const x of Object.values(d.sources || {})) { const o = x.overall || {}; graded += Math.max(o.clvN || 0, o.graded || 0); if (o.clvN && o.beatClosePct != null) { clvN += o.clvN; beat += o.beatClosePct * o.clvN; } }
+    const proven = (d.plays || []).filter(p => p.verdict === 'proven' && p.n >= 50 && p.avgClv > 0 && (p.clvT == null || p.clvT >= 2) && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0))).length;
+    document.getElementById('wlGraded').textContent = graded.toLocaleString();
+    document.getElementById('wlBeat').textContent = clvN ? `${Math.round(beat / clvN * 100)}%` : '-';
+    document.getElementById('wlProven').textContent = String(proven);
+  }).catch(() => { ['wlGraded', 'wlBeat', 'wlProven'].forEach(id => { document.getElementById(id).textContent = '-'; }); });
   fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => {
     if (s.accounts?.authSecretSet) {
       document.getElementById('wlCreate').style.display = 'block';

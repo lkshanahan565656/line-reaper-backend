@@ -355,8 +355,72 @@
     };
   }
 
+
+  // ── pick'em slips ──
+  // Each app's payout table { picks: { hits: multiple } }, from the apps'
+  // help pages (kept equal to slip.js PAYOUTS and slips.js POWER/FLEX by a
+  // test). The app can show a lower number for correlated picks (same team or
+  // game), and Pick6 multiplies by each pick's own multiplier: the payout the
+  // app shows on the slip is the one that counts (pickemSlip's `shown`).
+  const PICKEM = {
+    prizepicks_power: { label: 'PrizePicks Power', app: 'prizepicks', tables: { 2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 20 }, 6: { 6: 37.5 } } },
+    prizepicks_flex: { label: 'PrizePicks Flex', app: 'prizepicks', tables: { 3: { 3: 3, 2: 1 }, 4: { 4: 6, 3: 1.5 }, 5: { 5: 10, 4: 2, 3: 0.4 }, 6: { 6: 25, 5: 2, 4: 0.4 } } },
+    underdog_standard: { label: 'Underdog Standard', app: 'underdog', tables: { 2: { 2: 3.5 }, 3: { 3: 6.5 }, 4: { 4: 12 }, 5: { 5: 20 }, 6: { 6: 35 } } },
+    underdog_flex: { label: 'Underdog Flex', app: 'underdog', tables: { 3: { 3: 3.25, 2: 1.09 }, 4: { 4: 6, 3: 1.4 }, 5: { 5: 10, 4: 2.5 }, 6: { 6: 25, 5: 2.6, 4: 0.25 } } },
+    pick6: { label: 'DK Pick6', app: 'pick6', tables: { 2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 12, 4: 1 }, 6: { 6: 25, 5: 1.5 }, 7: { 7: 40, 6: 2 }, 8: { 8: 80, 7: 3, 6: 1 } } },
+    betr: { label: 'Betr Picks', app: 'betr', tables: { 2: { 2: 3 }, 3: { 3: 6 }, 4: { 4: 10 }, 5: { 5: 20 }, 6: { 6: 37.5 } } },
+  };
+  // P(k of n hit) with every leg at chance p
+  function binom(n, k, p) {
+    let c = 1;
+    for (let i = 1; i <= k; i++) c = c * (n - k + i) / i;
+    return c * p ** k * (1 - p) ** (n - k);
+  }
+  // a slip's EV per $1 when each leg hits with chance p (legs independent)
+  function pickemEv(table, n, p) {
+    if (!table || !(n >= 1) || !okProb(p)) return null;
+    let back = 0;
+    for (let k = 0; k <= n; k++) back += binom(n, k, p) * (table[k] || 0);
+    return back - 1;
+  }
+  // the per-leg chance where the slip breaks even
+  function pickemBreakeven(table, n) {
+    if (!table || !(n >= 1) || !(pickemEv(table, n, 0.999) > 0)) return null;
+    let lo = 0.001, hi = 0.999;
+    for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (pickemEv(table, n, m) > 0) hi = m; else lo = m; }
+    return (lo + hi) / 2;
+  }
+  // One slip type at n picks: the table (the top multiple replaced by `shown`
+  // when the app shows another), the break-even per leg as a chance and as
+  // American odds, and at `p` (the user's chance per leg) the EV and the
+  // chance of each payout.
+  function pickemSlip(type, n, { p = null, shown = null, tables = null } = {}) {
+    const def = PICKEM[type];
+    const base = (tables && tables[n]) || def?.tables[n];
+    if (!base) return null;
+    const table = { ...base };
+    if (shown > 1) table[n] = shown;
+    const be = pickemBreakeven(table, n);
+    const out = {
+      type, label: def?.label || type, n, table, top: table[n], breakeven: be == null ? null : round(be, 4),
+      breakevenAmerican: be == null ? null : Math.round(decimalToAmerican(1 / be)),
+      outcomes: Object.keys(table).map(Number).sort((a, b) => b - a).map(k => ({ hits: k, pays: table[k], chance: okProb(p) ? round(binom(n, k, p), 4) : null })),
+    };
+    if (okProb(p)) { out.ev = round(pickemEv(table, n, p), 4); out.chanceAny = round(out.outcomes.reduce((a, o) => a + (o.chance || 0), 0), 4); }
+    return out;
+  }
+  // every slip type an app offers, every size
+  function pickemGrid({ p = null, tables = {} } = {}) {
+    const rows = [];
+    for (const type of Object.keys(PICKEM)) for (const n of Object.keys(tables[type] || PICKEM[type].tables).map(Number)) {
+      const s = pickemSlip(type, n, { p, tables: tables[type] });
+      if (s) rows.push(s);
+    }
+    return rows;
+  }
+
   return { comboFair, americanToDecimal, decimalToAmerican, decimalToFractional, decimalToProb, probToDecimal,
     parseOdds, fmtAmerican, convert, hold, devig, ev, kelly, arbitrage, hedge, parlay, middle,
     freeBet, profitBoost, clv, kalshiFee, polymarketFee, exchangeBuy, poissonPmf, normalCdf, propLine,
-    windowProb, round };
+    windowProb, round, PICKEM, pickemEv, pickemBreakeven, pickemSlip, pickemGrid };
 }));
