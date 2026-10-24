@@ -1,0 +1,43 @@
+22:07:20 KXVALORANTMAP events 2773
+22:07:22 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT240930BBLGX-1-GX/candlesticks?start_ts=1792846800&end_ts=1792843210&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:24 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT240930BBLGX-1-BBL/candlesticks?start_ts=1792846800&end_ts=1792843210&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:39 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT221000JLSGE-1-SGE/candlesticks?start_ts=1792675800&end_ts=1792675543&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:07:39 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT221000JLSGE-1-JL/candlesticks?start_ts=1792675800&end_ts=1792675543&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:02 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT110800NRG100T-2-NRG/candlesticks?start_ts=1791718200&end_ts=1791716116&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:02 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT110800NRG100T-2-100T/candlesticks?start_ts=1791718200&end_ts=1791716116&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:04 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT110800NRG100T-1-NRG/candlesticks?start_ts=1791718200&end_ts=1791713135&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:06 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT100800LOUDNRG-2-NRG/candlesticks?start_ts=1791631800&end_ts=1791630002&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:06 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT121200NVUBBL-1-NVU/candlesticks?start_ts=1791819000&end_ts=1791818984&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:06 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT110800NRG100T-1-100T/candlesticks?start_ts=1791718200&end_ts=1791713135&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:06 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT121200NVUBBL-1-BBL/candlesticks?start_ts=1791819000&end_ts=1791818984&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:06 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT100800LOUDNRG-2-LOUD/candlesticks?start_ts=1791631800&end_ts=1791630002&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:10 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT100800LOUDNRG-1-NRG/candlesticks?start_ts=1791631800&end_ts=1791626409&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:10 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT100800LOUDNRG-1-LOUD/candlesticks?start_ts=1791631800&end_ts=1791626409&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:12 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT090800PRT1-1-T1/candlesticks?start_ts=1791545400&end_ts=1791539747&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:12 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT090800PRT1-1-PR/candlesticks?start_ts=1791545400&end_ts=1791539747&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:14 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT090800PRT1-2-T1/candlesticks?start_ts=1791545400&end_ts=1791543004&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:14 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26OCT090800PRT1-2-PR/candlesticks?start_ts=1791545400&end_ts=1791543004&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:31 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26SEP281500TTNKVT-1-TT/candlesticks?start_ts=1790620200&end_ts=1790618107&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:33 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26SEP300800LOUDVIT-1-VIT/candlesticks?start_ts=1790767800&end_ts=1790762117&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:33 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26SEP300800LOUDVIT-1-LOUD/candlesticks?start_ts=1790767800&end_ts=1790762117&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:08:37 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26SEP281500TTNKVT-1-NKVT/candlesticks?start_ts=1790620200&end_ts=1790618107&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:11:26 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26AUG201400EPVIT-2-VIT/candlesticks?start_ts=1787247000&end_ts=1787245216&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:11:26 4xx 400 /trade-api/v2/series/KXVALORANTMAP/markets/KXVALORANTMAP-26AUG201400EPVIT-1-VIT/candlesticks?start_ts=1787247000&end_ts=1787241327&period_interval=1 {"error":{"code":"bad_request","message":"bad request","details":"end_ts must be after start_ts"}}
+22:11:30 KXVALORANTMAP 500 / 2773 calls 1776 errs 26
+22:11:31 saved kip-VAL 500
+22:15:40 KXVALORANTMAP 1000 / 2773 calls 3537 errs 34
+22:15:41 saved kip-VAL 1000
+22:19:50 KXVALORANTMAP 1500 / 2773 calls 5289 errs 66
+22:19:51 saved kip-VAL 1500
+22:24:00 KXVALORANTMAP 2000 / 2773 calls 7039 errs 76
+22:24:00 saved kip-VAL 2000
+22:28:10 KXVALORANTMAP 2500 / 2773 calls 8797 errs 96
+22:28:11 saved kip-VAL 2500
+22:30:28 saved kip-VAL 2773
+22:30:28 KXVALORANTGAME events 1330
+22:34:39 KXVALORANTGAME 500 / 1330 calls 11530 errs 96
+22:34:40 saved kip-VAL 3273
+22:38:48 KXVALORANTGAME 1000 / 1330 calls 13296 errs 106
+22:38:50 saved kip-VAL 3773
+22:41:35 saved kip-VAL 4103
+22:41:35 done k:VAL calls 14434 errs 112 min 34.3
