@@ -6978,6 +6978,7 @@ schedule('20 7,17,27,37,47,57 * * * *', () => runTailJob('record', async () => {
 schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refreshCandidates()));
 
 // ─── START ────────────────────────────────────────────────────────────────────
+app.get('/api/diag/q', (req, res) => { refreshBookPropsIndex(); res.json({ book: [...bookPropsIndex.entries()].filter(([k]) => /^NBA\|/.test(k)), pin: [...pinPropsIndex.entries()].filter(([k]) => /^NBA\|/.test(k)), gamesAt: freeBooksState.gamesAt, counts: freeBooksState.counts }); });
 if (require.main === module || process.env.LR_DESKTOP) {
   app.listen(PORT, async () => {
     console.log(`Line Reaper v3.92.0 on port ${PORT}`);
