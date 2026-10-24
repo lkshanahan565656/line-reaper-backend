@@ -45,10 +45,17 @@ const r4 = x => Math.round(x * 1e4) / 1e4;
 // What one leg pays per unit if it wins, as decimal odds: the book's own
 // per-leg price (PrizePicks legs are priced at
 // the 56.22% breakeven the app's EV math uses, 1.78 a leg).
-function legDecimal(book, mult) {
+// Underdog's multiplier is a decimal payout only when the other side doesn't
+// pay under 1x; a boost past 1.35 on a lopsided line (Under 1.44x, Over 0.7x)
+// pays mult / 0.5623, the regime server.js udPricing prices it in.
+function udIsDecimal(m, other) {
+  const o = Number(other);
+  return m > UD_DECIMAL && !(o > 0 && o < 1);
+}
+function legDecimal(book, mult, other = null) {
   const m = Number(mult) || 1;
   if (book === 'prizepicks') return 1 / PP_IMPLIED;
-  if (book === 'underdog') return m > UD_DECIMAL ? m : m / UD_IMPLIED;
+  if (book === 'underdog') return udIsDecimal(m, other) ? m : m / UD_IMPLIED;
   // a Pick6 pick pays its table times its own multiplier: at the 3-pick 6x, 1.817 a leg
   if (book === 'pick6') return m / P6_BE;
   return m;
@@ -62,11 +69,35 @@ const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus']);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
+// Rows written before the fix stored a boosted Underdog leg's multiplier as its
+// decimal price (1.44x paid 0.44u, closeEv about -45%). The signal's own EV says
+// which regime it was priced in: (fair x m - 1) is the decimal regime, (fair x m
+// / 0.5623 - 1) the boost. Where the stored EV matches the boost, the decimal is
+// m / 0.5623; the close EV and a graded win's profit are redone. → the fixed
+// row, or null when nothing changed.
+function fixUnderdogDecimal(b) {
+  if (b.book !== 'underdog' || b.udFixed || !(b.signalMult > UD_DECIMAL) || b.signalFair == null || b.signalEv == null) return null;
+  if (Math.abs(b.signalDecimal - b.signalMult) > 0.001) return null;
+  const dec = (b.signalFair * b.signalMult - 1) * 100, boost = (b.signalFair * b.signalMult / UD_IMPLIED - 1) * 100;
+  if (!(Math.abs(b.signalEv - boost) + 0.5 < Math.abs(b.signalEv - dec))) return null;
+  const fixed = { ...b, udFixed: true, signalDecimal: r4(b.signalMult / UD_IMPLIED) };
+  if (b.closeFair != null && b.closeEv != null) fixed.closeEv = r2((b.closeFair * fixed.signalDecimal - 1) * 100);
+  if (b.closeSharpFair != null && b.closeSharpEv != null) fixed.closeSharpEv = r2((b.closeSharpFair * fixed.signalDecimal - 1) * 100);
+  if (b.status === 'graded' && b.outcome === 'win') fixed.profit = r4(fixed.signalDecimal - 1);
+  return fixed;
+}
+
 function createSportTracker({ store, grader = null, now = () => Date.now(), lagMs = 2 * 60e3, voidAfterMs = 3 * 86400e3, log = console } = {}) {
   const ready = store.init();
   const open = new Map();
   const seen = new Map();   // id → last read that priced the leg (ms)
-  const loaded = ready.then(async () => { for (const b of await store.all()) if (b.status === 'open' || b.status === 'locked') open.set(b.id, b); });
+  const loaded = ready.then(async () => {
+    for (const b of await store.all()) {
+      const fix = fixUnderdogDecimal(b);
+      if (fix) { Object.assign(b, fix); await store.put(b).catch(e => log.warn?.(`Sports record: ${e.message}`)); }
+      if (b.status === 'open' || b.status === 'locked') open.set(b.id, b);
+    }
+  });
   const put = b => store.put(b).catch(e => log.warn?.(`Sports record: ${e.message}`));
 
   // rows: the props board's sports rows. flagged: [{ row, play, kind }].
@@ -84,7 +115,8 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       const start = Date.parse(row.startTime || '');
       if (!(start > t)) continue;
       // a consensus PrizePicks leg is priced at the entry it's graded on (play.decimal)
-      const decimal = play.decimal ?? legDecimal(play.book, play.mult);
+      const cell = row.books?.[play.book];
+      const decimal = play.decimal ?? legDecimal(play.book, play.mult, cell ? (play.side === 'Over' ? cell.under : cell.over) : null);
       const b = {
         id, status: 'open', kind, sport: row.sport, player: row.player, team: row.team || '', matchTitle: row.matchTitle || '',
         market: row.market, mkey: row.mkey, start: row.startTime, startTime: row.startTime, rowKey: row.key,
@@ -259,4 +291,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { BOOK_FAIR, createSportTracker, legDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

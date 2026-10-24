@@ -243,6 +243,32 @@ function groupBy(list, key) {
   return g;
 }
 
+// One bet per market and side: a CS2 match that 17 wallets bought the same
+// side of is one bet, not 17 (10-23 audit: 46-12 +54u unclustered, 19-8 +10.9u
+// clustered). Each cluster stakes 1u at the mean of its rows' per-unit result,
+// and its CLV is the mean of theirs. 50 clustered bets is the bar.
+const CLUSTER_TARGET = 50;
+const clusterKey = r => `${r.eventSlug || r.conditionId || r.market}|${r.outcome ?? r.outcomeIndex ?? ''}`;
+function clusterStats(list) {
+  const m = new Map();
+  for (const r of list) { const k = clusterKey(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
+  const bets = [...m.values()].map(rows => {
+    const g = rows.filter(r => r.result === 'win' || r.result === 'loss' || r.result === 'void');
+    const per = rows.filter(r => r.result === 'win' || r.result === 'loss').map(r => (r.profit || 0) / r.units);
+    const clvs = rows.filter(r => r.clv != null).map(r => r.clv);
+    return { rows: rows.length, graded: g.length, profit: per.length ? per.reduce((a, v) => a + v, 0) / per.length : null,
+      clv: clvs.length ? clvs.reduce((a, v) => a + v, 0) / clvs.length : null };
+  });
+  const gr = bets.filter(b => b.profit != null), cl = bets.filter(b => b.clv != null);
+  const units = gr.reduce((a, b) => a + b.profit, 0);
+  return { rows: list.length, n: gr.length, wins: gr.filter(b => b.profit > 0).length, losses: gr.filter(b => b.profit <= 0).length,
+    units: r2(units), roi: gr.length ? r4(units / gr.length) : null,
+    avgClv: cl.length ? r4(cl.reduce((a, b) => a + b.clv, 0) / cl.length) : null,
+    beatClosePct: cl.length ? r4(cl.filter(b => b.clv > 0).length / cl.length) : null, clvN: cl.length,
+    target: CLUSTER_TARGET, toTarget: Math.min(1, r2(gr.length / CLUSTER_TARGET)),
+    mark: gr.length ? (gr.length < CLUSTER_TARGET ? `${gr.length} of ${CLUSTER_TARGET} graded` : 'graded') : 'not graded yet' };
+}
+
 function stats(list) {
   const wins = list.filter(r => r.result === 'win').length;
   const losses = list.filter(r => r.result === 'loss').length;
@@ -381,7 +407,7 @@ function createTailTracker({ store = createMemoryStore(), http, now = () => Date
     // beat the close: every bet with its close in, settled or not
     const closed = all.filter(r => r.clv != null && r.result !== 'unfilled' && !waiting(r));
     return {
-      open: all.filter(r => r.status !== 'settled').length, overall: stats(done),
+      open: all.filter(r => r.status !== 'settled').length, overall: stats(done), clustered: clusterStats(done.filter(r => r.result === 'win' || r.result === 'loss')),
       closing: { n: closed.length, avgClv: closed.length ? r4(closed.reduce((a, r) => a + r.clv, 0) / closed.length) : null,
         beatClosePct: closed.length ? r4(closed.filter(r => r.clv > 0).length / closed.length) : null }, byGrade: by('grade'), byCategory: by('category'),
       byConsensus: { consensus: stats(done.filter(r => r.isConsensus)), single: stats(done.filter(r => !r.isConsensus)) },
