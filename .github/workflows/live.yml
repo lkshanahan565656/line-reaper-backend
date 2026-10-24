@@ -1,0 +1,19 @@
+name: diag-freshlive
+on: { push: { branches: [diag-freshlive] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out && cd out
+          for i in $(seq 1 30); do curl -s -m 30 "$B/api/status" > status.json; v=$(jq -r .version status.json); echo "$(date -u +%T) $v" >> versions.txt; [ "$v" = "3.153.0" ] && break; sleep 60; done
+          sleep 240
+          curl -s -m 120 "$B/api/whales?limit=200" > whales.json
+          curl -s -m 300 "$B/api/tail/record?book=fresh&limit=500" > record.json
+          curl -s -m 60 "$B/api/status" > status2.json
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-freshlive-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-freshlive-out
