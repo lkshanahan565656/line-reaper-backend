@@ -1,0 +1,2 @@
+16:46:43 saved res-lol 11426
+16:46:43 done res:lol calls 144 errs 0 min 1.0
