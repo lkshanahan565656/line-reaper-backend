@@ -17,9 +17,9 @@ jobs:
           N=${{ inputs.n || '1' }}
           if [ "${{ github.event_name }}" = push ]; then N=1; while git ls-remote --exit-code --heads origin "diag-leadlag-out-$N" >/dev/null 2>&1; do N=$((N+1)); done; fi
           mkdir -p out
-          ( timeout 20000 node diag/llrec.js ) &
+          ( timeout 20000 env DEPTH=on node diag/llrec.js ) &
           R=$!
-          push() { rm -rf /tmp/o && mkdir /tmp/o && cp -r out/* /tmp/o/ 2>/dev/null; gzip -kf /tmp/o/changes.jsonl 2>/dev/null && rm -f /tmp/o/changes.jsonl; cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $N $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-leadlag-out-$N; cd -; }
+          push() { rm -rf /tmp/o && mkdir /tmp/o && cp -r out/* /tmp/o/ 2>/dev/null; for f in changes depth watch; do gzip -f /tmp/o/$f.jsonl 2>/dev/null; done; cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $N $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-leadlag-out-$N; cd -; }
           while kill -0 $R 2>/dev/null; do sleep 600; push; done
           push
           if [ "$(date +%s)" -lt "$(date -d "$STOP_AT" +%s)" ]; then gh workflow run leadlag.yml --ref diag-leadlag -f n=$((N+1)) -R ${{ github.repository }}; fi

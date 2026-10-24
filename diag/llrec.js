@@ -13,6 +13,7 @@ const freebooks = require('../freebooks');
 const geminibooks = require('../geminibooks');
 const pmusbooks = require('../pmusbooks');
 const xarb = require('../xarb');
+const lldepth = require('./lldepth');
 
 const RUN_MS = +(process.env.RUN_MIN || 330) * 60e3;
 const STOP_AT = Date.parse(process.env.STOP_AT || '') || Infinity;
@@ -47,6 +48,7 @@ function observe(src, entries, t) {
   stats.keys[src] = seen.size;
 }
 
+const depth = process.env.DEPTH === 'on' ? lldepth.createDepth({ http: axios, kget: (u, o) => kget(u, o), stats }) : null;
 let pinMain = { games: [], at: 0 }, pinExtra = { games: [], at: 0 }, gem = { books: {}, at: 0 }, pm = { books: {}, at: 0 };
 let kseries = [], kseriesAt = 0, krows = [], krowsAt = 0;
 const pmReader = pmusbooks.createPolymarketUsBooks({ http: axios });
@@ -111,6 +113,7 @@ async function readKalshi() {
   if (rows.length) { krows = rows; krowsAt = Date.now(); }
 }
 
+const kref = (id, buy) => (id ? { venue: 'kalshi', id, buy } : null);
 // Kalshi rows → per merged game: entries keyed like the books'
 function kalshiEntries(games, rows, t) {
   const out = new Map();
@@ -139,17 +142,20 @@ function kalshiEntries(games, rows, t) {
       if (r.tradable === false) continue;
       if (r.kind === 'teams' || r.game3) {
         if (r.game3?.pick === 'draw') ml.draw = buyYes(r);
-        else { const h = isHome(r.outcomeLabel); if (h != null) ml[h ? 'home' : 'away'] = [buyYes(r), buyNo(r), r.yesAsk, r.noAsk]; }
-      } else if (r.kind === 'total' && Number.isFinite(r.line)) out.set(`${base}|totals|${r.line}`, { v: [buyYes(r), buyNo(r), r.yesAsk, r.noAsk], m });
+        else { const h = isHome(r.outcomeLabel); if (h != null) ml[h ? 'home' : 'away'] = [buyYes(r), buyNo(r), r.yesAsk, r.noAsk, r.id]; }
+        if (r.game3?.pick === 'draw') ml.drawId = r.id;
+      } else if (r.kind === 'total' && Number.isFinite(r.line)) out.set(`${base}|totals|${r.line}`, { v: [buyYes(r), buyNo(r), r.yesAsk, r.noAsk], m, r: [kref(r.id, 'yes'), kref(r.id, 'no')] });
       else if (r.kind === 'spread' && Number.isFinite(r.line) && r.lineTeam) {
         const h = isHome(r.lineTeam);
         if (h == null) continue;
         const homePt = h ? -r.line : r.line;
         // YES = lineTeam covers; v in home/away order
-        out.set(`${base}|spreads|${homePt}`, { v: h ? [buyYes(r), buyNo(r), r.yesAsk, r.noAsk] : [buyNo(r), buyYes(r), r.noAsk, r.yesAsk], m });
+        out.set(`${base}|spreads|${homePt}`, { v: h ? [buyYes(r), buyNo(r), r.yesAsk, r.noAsk] : [buyNo(r), buyYes(r), r.noAsk, r.yesAsk], m,
+          r: h ? [kref(r.id, 'yes'), kref(r.id, 'no')] : [kref(r.id, 'no'), kref(r.id, 'yes')] });
       }
     }
-    if (ml.home || ml.away) out.set(`${base}|h2h|`, { v: [ml.home?.[0] ?? null, ml.away?.[0] ?? null, ml.draw ?? null, ml.home?.[2] ?? null, ml.away?.[2] ?? null], m });
+    if (ml.home || ml.away) out.set(`${base}|h2h|`, { v: [ml.home?.[0] ?? null, ml.away?.[0] ?? null, ml.draw ?? null, ml.home?.[2] ?? null, ml.away?.[2] ?? null], m,
+      r: [ml.home ? kref(ml.home[4], 'yes') : null, ml.away ? kref(ml.away[4], 'yes') : null, ml.drawId ? kref(ml.drawId, 'yes') : null] });
   }
   return out;
 }
@@ -164,16 +170,16 @@ function bookEntries(games) {
       for (const mk of bm.markets || []) {
         if (mk.key === 'h2h') {
           const h = mk.outcomes.find(o => o.name === game.home_team), a = mk.outcomes.find(o => o.name === game.away_team), d = mk.outcomes.find(o => o.name === 'Draw');
-          if (h && a) e.set(`${base}|h2h|`, { v: [h.price, a.price, d?.price ?? null], m });
+          if (h && a) e.set(`${base}|h2h|`, { v: [h.price, a.price, d?.price ?? null], m, r: [h.ref || null, a.ref || null, d?.ref || null] });
         } else if (mk.key === 'spreads') {
           for (const o of mk.outcomes) if (o.name === game.home_team) {
             const a = mk.outcomes.find(x => x.name === game.away_team && x.point === -o.point);
-            if (a) e.set(`${base}|spreads|${o.point}`, { v: [o.price, a.price], m });
+            if (a) e.set(`${base}|spreads|${o.point}`, { v: [o.price, a.price], m, r: [o.ref || null, a.ref || null] });
           }
         } else if (mk.key === 'totals') {
           for (const o of mk.outcomes) if (o.name === 'Over') {
             const u = mk.outcomes.find(x => x.name === 'Under' && x.point === o.point);
-            if (u) e.set(`${base}|totals|${o.point}`, { v: [o.price, u.price], m });
+            if (u) e.set(`${base}|totals|${o.point}`, { v: [o.price, u.price], m, r: [o.ref || null, u.ref || null] });
           }
         }
       }
@@ -213,11 +219,14 @@ async function tick() {
   const t = Date.now();
   const books = bookEntries(games);
   delete books.pinnacle;   // Pinnacle from its own parse (limit, alt)
-  observe('pinnacle', pinEntries(pinAll, g => (sportOf.has(`pin-${g.id}`) ? { sport: sportOf.get(`pin-${g.id}`) } : null)), t);
+  const pinE = pinEntries(pinAll, g => (sportOf.has(`pin-${g.id}`) ? { sport: sportOf.get(`pin-${g.id}`) } : null));
+  observe('pinnacle', pinE, t);
   for (const b of ['fanduel', 'betrivers']) observe(b, books[b] || new Map(), t);
-  if (now - gem.at < 5 * 60e3) observe('gemini', books.gemini || new Map(), t);
-  if (now - pm.at < 6 * 60e3) observe('polymarketus', books.polymarketus || new Map(), t);
-  if (now - krowsAt < 3 * 60e3) observe('kalshi', kalshiEntries(games, krows, t), t);
+  const venues = {};
+  if (now - gem.at < 5 * 60e3) observe('gemini', venues.gemini = books.gemini || new Map(), t);
+  if (now - pm.at < 6 * 60e3) observe('polymarketus', venues.polymarketus = books.polymarketus || new Map(), t);
+  if (now - krowsAt < 3 * 60e3) observe('kalshi', venues.kalshi = kalshiEntries(games, krows, t), t);
+  if (depth) { try { await depth.scan(t, pinE, venues); stats.reads.depth = new Date().toISOString(); } catch (e) { stats.errors.depth = String(e.stack || e).slice(0, 300); } }
 }
 
 function pushOut() {
@@ -235,6 +244,7 @@ function pushOut() {
     await wait(Math.max(2000, 60e3 - (Date.now() - s)));
   }
   await new Promise(r => log.end(r));
+  if (depth) await depth.end();
   stats.endedAt = new Date().toISOString();
   pushOut();
   process.exit(0);
