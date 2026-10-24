@@ -9,7 +9,7 @@ jobs:
       - run: |
           B=https://line-reaper-backend-production.up.railway.app
           mkdir o
-          for i in $(seq 1 60); do curl -s "$B/api/status" > o/status.json; if grep -q '"exchangeSize"' o/status.json && grep -q '"scans":[1-9]' o/status.json; then break; fi; sleep 30; done
+          for i in $(seq 1 60); do curl -s "$B/api/status" > o/status.json; if grep -q '"exchangeSize"' o/status.json && grep -q '"byVenue"' o/status.json; then break; fi; sleep 30; done
           sleep 600
           curl -s "$B/api/status" > o/status.json
           curl -s "$B/api/exchange-size?limit=300" > o/xsize.json
