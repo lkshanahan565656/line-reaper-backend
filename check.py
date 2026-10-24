@@ -8,7 +8,7 @@ out = {'polls': []}
 end = time.time() + 30 * 60
 while time.time() < end:
     s = get('/api/status'); v = s.get('version'); out['polls'].append([time.strftime('%H:%M:%S'), v])
-    if v == '3.149.0': break
+    if v == '3.150.0': break
     time.sleep(60)
 time.sleep(240)   # let the free-books loop run a few times
 s = get('/api/status')
