@@ -76,7 +76,9 @@ function pinLineOf(stale) {
 // start, so closePinEv is Pinnacle's own price, no curve. Else closePinEv is null.
 function pinClose(b, start) {
   const fresh = b.closePinAt != null && start - Date.parse(b.closePinAt) <= CLOSE_FRESH_MS;
-  const pinExact = !!(fresh && b.signalPinLine === b.signalLine && b.closePinLine === b.signalLine && b.closePinFair != null);
+  // a leg logged before signalPinLine existed reads it off its stale label
+  const atFlag = b.signalPinLine ?? pinLineOf(b.stale);
+  const pinExact = !!(fresh && atFlag === b.signalLine && b.closePinLine === b.signalLine && b.closePinFair != null);
   return { closePinOk: fresh, pinExact, closePinEv: pinExact ? r2((b.closePinFair * b.signalDecimal - 1) * 100) : null };
 }
 // a book-consensus leg too: the same leg can be a sharp or book-fair play and a consensus one

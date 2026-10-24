@@ -178,8 +178,8 @@ test('stale lines stop at promising and say why', () => {
 });
 
 // 10-24: PrizePicks' stale legs re-checked from box scores. Where Pinnacle sat
-// elsewhere (our curve) they lost 2.2 sd under the close; at Pinnacle's own
-// number they held. A stale leg keeps Pinnacle's raw number to the start and
+// elsewhere (our curve) they lost 5.8 units against +6.0 the close expected;
+// at Pinnacle's own number they held. A stale leg keeps Pinnacle's raw number to the start and
 // scores on Pinnacle's own price only when it sat on the app's line.
 test('stale legs keep Pinnacle\'s own number to the start; only exact ones score on its price', async () => {
   let t = Date.parse('2026-10-15T20:00:00Z');
@@ -225,6 +225,11 @@ test('pinLineOf: the row\'s number, else the label', () => {
   assert.equal(pinLineOf({ pinPost: 'o24.5 55.3%' }), 24.5);
   assert.equal(pinLineOf({ pinNow: 'o-3 50%' }), -3);
   assert.equal(pinLineOf(null), null);
+  const { pinClose } = require('../sporttrack');
+  const start = Date.parse(START);
+  const legacy = { signalLine: 14.5, signalDecimal: 1.8172, stale: { pinPost: 'o14.5 40%' }, closePinLine: 14.5, closePinFair: 0.6, closePinAt: new Date(start - 5 * 60e3).toISOString() };
+  assert.equal(pinClose(legacy, start).pinExact, true, 'a leg logged before the field reads its label');
+  assert.equal(pinClose({ ...legacy, closePinAt: new Date(start - 90 * 60e3).toISOString() }, start).pinExact, false, 'a Pinnacle read 90 min before the start is no close');
 });
 
 // A kind whose graded results sit far under what its close expected isn't
