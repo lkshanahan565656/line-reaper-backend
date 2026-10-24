@@ -50,6 +50,7 @@ function marketRow(m, e, tag) {
   // ── 0. the live record rows ──
   let record = [];
   try { record = JSON.parse(fs.readFileSync('data/record.json')).signals || []; } catch { }
+  if (Number(process.env.SHARD || 0) > 0) record = [];
   log('record rows', record.length);
   // ── 1. markets ──
   const DAY = 86400e3;
@@ -83,7 +84,9 @@ function marketRow(m, e, tag) {
 
   // ── 2. pregame taker buys ──
   const buys = [];
-  let list = [...markets.values()].filter(m => m.tag !== 'record');
+  const NSH = Number(process.env.NSHARD || 1), SH = Number(process.env.SHARD || 0);
+  const hash = c => parseInt(String(c).slice(-6), 16) || 0;
+  let list = [...markets.values()].filter(m => m.tag !== 'record' && hash(m.cid) % NSH === SH);
   if (process.env.LIMIT) list = list.sort(() => Math.random() - 0.5).slice(0, Number(process.env.LIMIT));
   let truncated = 0;
   const done2 = await pool(list, Number(process.env.CONC || 8), async m => {

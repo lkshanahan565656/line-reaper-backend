@@ -5,7 +5,8 @@ permissions: { contents: write }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 355
+    timeout-minutes: 200
+    strategy: { fail-fast: false, matrix: { shard: [0, 1, 2, 3, 4, 5, 6, 7] } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,15 +15,15 @@ jobs:
           set +e
           mkdir -p data
           B=https://line-reaper-backend-production.up.railway.app
-          curl -s -m 300 "$B/api/tail/record?book=fresh&limit=500" > data/record.json
-          curl -s -m 300 "$B/api/tail/record?book=fresh&status=settled&limit=500" > data/record-settled.json
-          curl -s -m 120 "$B/api/whales?limit=200" > data/whales.json
-          curl -s -m 60 "$B/api/status" > data/status.json
-          { date -u; env $(cat diag/ENV 2>/dev/null) node --max-old-space-size=6000 diag/freshbt.js; date -u; } > out.txt 2>&1
+          if [ "${{ matrix.shard }}" = "0" ]; then
+            curl -s -m 300 "$B/api/tail/record?book=fresh&limit=500" > data/record.json
+            curl -s -m 60 "$B/api/status" > data/status.json
+          fi
+          { date -u; env $(cat diag/ENV 2>/dev/null) SHARD=${{ matrix.shard }} NSHARD=8 node --max-old-space-size=6000 diag/freshbt.js; date -u; } > out.txt 2>&1
           true
       - if: always()
         run: |
           set +e
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-freshbt-out
-          git add -f out.txt data/ ; git commit -qm "freshbt output"; git push -f origin diag-freshbt-out
+          git checkout -B diag-freshbt-out-${{ matrix.shard }}
+          git add -f out.txt data/ ; git commit -qm "freshbt output"; git push -f origin diag-freshbt-out-${{ matrix.shard }}
