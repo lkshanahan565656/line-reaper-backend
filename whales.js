@@ -75,10 +75,10 @@ const DEFAULTS = {
   freshMaxMarkets: 5,          // ...if it has traded this many markets or fewer (WHALE_FRESH_MAX_MARKETS)
   freshMinUsd: null,           // smallest buy looked into; default minUsd (WHALE_FRESH_MIN_USD)
   // first-bet wallets: first trade within firstBetDays and this is their only
-  // market. The one fresh kind the 10-24 backtest liked (147 games +20.5u,
-  // t 1.8, every third of the month up; the other fresh wallets -8.9u), and
-  // most of it under $5k, so buys from firstBetMinUsd up are looked into too
-  // and tagged only when the wallet is first-bet (WHALE_FIRST_BET_MIN_USD; 0 = off)
+  // market. Ahead on the 30-day backtest (147 games +20.5u) but it lost out of
+  // sample (Apr to Sep: 760 games -12.2u, t -0.5), so it is a check, not a bet.
+  // Buys from firstBetMinUsd up are looked into and tagged only when the wallet
+  // is first-bet (WHALE_FIRST_BET_MIN_USD; 0 = off)
   firstBetMinUsd: 1000,
   firstBetDays: 1,
   firstBetMarkets: 1,
