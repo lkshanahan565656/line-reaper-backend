@@ -1,0 +1,21 @@
+name: diag-p6cat
+on:
+  push:
+    branches: [diag-p6cat]
+permissions:
+  contents: write
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --no-audit --no-fund --omit=dev --ignore-scripts
+      - run: node diag/p6cat.js || true
+      - run: |
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-p6cat-out; git rm -rq --cached . || true
+          git add -f out; git commit -qm out; git push -f origin diag-p6cat-out
