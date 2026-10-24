@@ -20,6 +20,7 @@ const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const OUT = process.argv[3] || 'report';
 const sh = c => execSync(c, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 }).toString();
 
+let pick6Payouts = null;
 function readLogs() {
   const recs = [];
   const add = txt => { for (const l of txt.split('\n')) { if (!l) continue; try { recs.push(JSON.parse(l)); } catch { /* a cut-off last line */ } } };
@@ -29,13 +30,18 @@ function readLogs() {
   }
   sh(`git fetch -q origin "+refs/heads/nflsun-${WEEK}-out-*:refs/remotes/origin/nflsun-${WEEK}-out-*" || true`);
   const refs = sh(`git for-each-ref --format='%(refname:short)' "refs/remotes/origin/nflsun-${WEEK}-out-*"`).split('\n').filter(Boolean);
-  for (const r of refs) { try { add(sh(`git show ${r}:out/changes.jsonl`)); } catch (e) { console.log('no log on', r); } }
+  for (const r of refs) {
+    try { add(sh(`git show ${r}:out/changes.jsonl`)); } catch (e) { console.log('no log on', r); }
+    // Pick6's own payout table as the recorder read it (3-pick was 5.5x on 10-24, not 6x)
+    try { const st = JSON.parse(sh(`git show ${r}:out/stats.json`)); if (st.p6Payouts && Object.keys(st.p6Payouts).length) pick6Payouts = st.p6Payouts; } catch { /* none */ }
+  }
   console.log('read', refs.length, 'runs,', recs.length, 'log lines');
   return recs;
 }
 
 (async () => {
   const { series, meta } = NS.replay(readLogs());
+  if (pick6Payouts) require('../sportprops').setPick6Payouts(pick6Payouts);
   const legs = NS.buildLegs(series, meta);
   fs.mkdirSync(path.join(OUT, 'espn'), { recursive: true });
   // ESPN's scoreboards for every date a leg starts on (US Eastern)
