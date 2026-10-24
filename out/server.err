@@ -1,0 +1,540 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Owls odds mlb: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Polymarket US: book aec-wnba-gsv-atl-2026-10-24: Request failed with status code 429
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+OddsAPI props basketball_nba: 429 Request failed with status code 429
+Tail: score 0x265fb5e346a3b8d50f7c36b117682b50a5f5a448: timeout of 10000ms exceeded
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+UD error: timeout of 10000ms exceeded undefined
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Tail: score 0x4b59e178095b9bb5ba97598244f2ca8b02fc3aa6: timeout of 10000ms exceeded
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: book aec-cfb-webst-monst-2026-10-24: Request failed with status code 429
+Tail: score 0x2ed94d1a460379292d2e3b46f2cf7d94b033f271: Request failed with status code 503
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x01e6e3c5cfe50943e7721398054cb1e22032e7e0: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x7f9e2d1df78614564a70becc7fa14aa9a6623a0e: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+Tail: score 0xb6077a100f16016e2e88149f4567ad4360c260fb: timeout of 10000ms exceeded
+Tail: clv 0xa5a822f64402d2f5c2b30c0dd3651e61de2a8aed: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Polymarket US: book aec-nhl-ana-phi-2026-10-24: Request failed with status code 429
+Tail: clv 0xe05655e23c0be00824c119ff0bdb69b5d7ac8120: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x521bf1c6a5435219b599127d85b7afe28758db60: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0x81525952f172646a4104030e9a9ef1e769c7bfda: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0xc004b035b67be284e0d1db56c39e865df6cac095: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail: score 0xd426adbc3c4461c86099c26221c877f20e42334a: timeout of 10000ms exceeded
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Tail: score 0xe0969a9ad466da69e034b271ef4e74ebd592be8e: timeout of 10000ms exceeded
+Tail: score 0xb619ed5b378053f8309c307d2f7adf9c13665068: timeout of 10000ms exceeded
+Tail: score 0xeff9837de49ff99f1a2e5f7fa03e27a07b3c05fd: timeout of 10000ms exceeded
+Polymarket US: book aec-cfb-semst-eill-2026-10-24: Request failed with status code 429
+Tail: clv 0x49f206f4fb2210a28af4795e4e0b6532cf0bd7b4: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0xd76050f456aa9e28fa6b60fe94a6dbb746a1f7f5: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: score 0x2ed94d1a460379292d2e3b46f2cf7d94b033f271: Request failed with status code 503
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x054a07d270153e642535feabf941a4f2e29ef218: timeout of 10000ms exceeded
+Tail: score 0x88b21efc4aa4e08cdc125300ad6b3a520811e1d1: timeout of 10000ms exceeded
+Tail: clv 0x712433f69c169ebaaa67ce13f3f66f54575e70c1: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x269ced0ede348b4b3f8fd8470b19f65508f79017: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0xede186f37ead91aa618cf8101db2bfe6b6c57dd1: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0x45bbe85e001a1b1626e94349d45ad6a09f9241a7: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0x0c28d976bbfaad597a678f6fc3794d6ba56a9844: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: score 0xdc902b2c2d4f22425e305cf81d2859072e986eb4: timeout of 10000ms exceeded
+Tail: score 0xa8c63f775ddbbe66b56614191747def3021444e8: aborted
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+Tail: clv 0xe234959595e01dacd391a9502a6ad0edf4e3304a: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+Tail: score 0xb6077a100f16016e2e88149f4567ad4360c260fb: timeout of 10000ms exceeded
+Tail: score 0x0787a58e205a70320db638113fe8da18c8800ca3: timeout of 10000ms exceeded
+Tail: score 0x1c02727dab2f29c501cd5100e0b80e75077d8649: timeout of 10000ms exceeded
+Polymarket US: book aec-cfb-webst-monst-2026-10-24: Request failed with status code 429
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xac4a1fabdac2438d6afa2a9e8e83845310a0bf1e: timeout of 10000ms exceeded
+Tail: clv 0xaee70f0835f8d20e617e41bfe49d55d4a75837fe: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0xe74d4976e5e034182d708a3b9df602e72d4722fd: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x77fbd6bdba89da0ce4ae6e5bee380d6a51de266c: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0xf036f9631ae2fc83821b3a8581892109d506b8f1: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail: clv 0x66cb857b5b20bdbebddd27a88289db3298e43dd2: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x215adbb63b47d0ca92f849fe2c2dc1adb0f6254c: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x6d9fc316c3b8377060a44b852ba664adbfd59790: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0xa58d4f278d7953cd38eeb929f7e242bfc7c0b9b8: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail: clv 0x54525ee78bd513b0bf75f94e560158f6fc35d448: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Tail: score 0xa9034e238fed10467376d43d15f3aa9181c69985: timeout of 10000ms exceeded
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 Zont1x: no usable kill fields — inspect /api/esports/probe/cs/Zont1x
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 rdnzao-: no search hit
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: score 0x2277c18fb73d4cfbd61384be80ef9339a9496604: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x2ed94d1a460379292d2e3b46f2cf7d94b033f271: Request failed with status code 503
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x1a17514b0e68d6054cdba279f6f47107e3a738b0: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x48ac40fc545cf327edd5365435c3a9f385614a7e: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xce44f784bf221b40261b473857fd4fd9fc8fe9a4: timeout of 10000ms exceeded
+Tail: score 0xb17edd2dd1a681526b21ea6689170cc4a07222be: timeout of 10000ms exceeded
+Tail: score 0x20b80d56bd33017243f9b3fedc800ff594800b16: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xf163625aa894e79b73629926992e142b740eca34: timeout of 10000ms exceeded
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: clv 0x6114ab1b41a31643998b1cfe021ec6562a48cff0: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Polymarket US: book aec-cfb-ntx-navy-2026-10-24: Request failed with status code 429
+Polymarket US: book aec-cfb-chsou-tenst-2026-10-24: Request failed with status code 429
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x951fff108e601c7ee0081d96c6016e4eaeace430: timeout of 10000ms exceeded
+Tail: clv 0xb077e7482c6bea18f75e33bf823cbbe59cda8fe8: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x996ac56c9e72b6ca38a30ae9f6e85152d9afe3cc: aborted
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+bo3 oz1k: timeout of 12000ms exceeded
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x5eabf200b1dca40e2ec95e0d4e90e6c1900ed552: timeout of 10000ms exceeded
+Tail: score 0x0d15e2724df455f9e65b15104d21d76412a2c454: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: clv 0x31f60af21eabb2f85e94bd79f94f189ac4ff80e0: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail: score 0xccd81fbd3395dc43a0531f8484b21c2462daf4de: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xa71093cafc0c099b4ccab24c3cb8018d817923c4: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Polymarket US: book aec-cfb-vamil-chat-2026-10-31: Request failed with status code 429
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail: clv 0x1f0a343513aa6060488fabe96960e6d1e177f7aa: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: score 0xba8c5fbcc5f58b0e4ae0c1413e0413f8c803e77d: timeout of 10000ms exceeded
+Tail: score 0x201cbc10410f6900090edf68515f62190e8158bf: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xd1c769317bd15de7768a70d0214cf0bbcc531d2b: 1 of 6 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+Tail stream: no messages for 15s, reconnecting
+bo3 rdnzao-: no search hit
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xe015b5a2a299167be835a2fd1e86f09c49e06ffd: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xd691b451dfd421e85de2799bf8a718c09cd0961b: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Polymarket US: book atc-lal-atm-dep-2026-10-24-draw: Request failed with status code 429
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x6e5499610351827c22d83a6570b738e40a2f511e: timeout of 10000ms exceeded
+Tail: score 0x6abdff9b3ffef2140cde4ad5786108f7484e94ec: timeout of 10000ms exceeded
+Tail: clv 0xe557e4a25d385bf03395153a32faa989f5999597: 1 of 5 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail: clv 0xee7c748761cd39ff8bc8ce5fc6d298fd91a870f2: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: score 0xd619b68e64f256f8ddd185b261c8679eacf0c461: timeout of 10000ms exceeded
+Tail: score 0xcf6c5492124794394dd9eac46498a8babbe47e66: timeout of 10000ms exceeded
+Tail: score 0x21b70de5fa3532afbf51a5d177e76b1e7e17c861: timeout of 10000ms exceeded
+Tail: clv 0xe0806820274d891642338ecc9bb9a38ceff67fee: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail: score 0x9219dd565d7521e95f273b7eea68dbb08d40027c: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x9609d30d4ab2c72992c86b5559343bbb8feba48d: aborted
+Tail: clv 0x54ce7dd357766fc3255645e55ef41edd51cc9f80: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+Tail stream: no messages for 15s, reconnecting
+Esports: 1 lines skipped as implausible (market string may be parsed wrong) e.g. donk · Headshots on Maps 1+2 · line 24.5 / 2 maps
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x655cfdb07874f3f8a53486989f805aa7c99d4420: timeout of 10000ms exceeded
+Tail: score 0x0e62671015e00e3826b200e39ea07bd3884e17c2: timeout of 10000ms exceeded
+Tail: clv 0xa16a1302ca05463f30faebeb5c045767fde233a1: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x524d636c66c2e19e893acdf1ea8aecfea0d4c430: timeout of 10000ms exceeded
+Tail: score 0x300b4292912c123066a380a344b505b0f353f636: timeout of 10000ms exceeded
+Tail: score 0xe36ce8f3081070ca28f576bae4582f50c0b5a856: aborted
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+UD error: timeout of 10000ms exceeded undefined
+Tail: score 0x5b624e3e0426f7aa2ca57f7451fbcea4b125d87f: timeout of 10000ms exceeded
+Tail: score 0x823e59eea68af6d2ac29fa11f1c705db741f2f70: timeout of 10000ms exceeded
+Tail: score 0x6236891cd7ccae9ab16d00a5f1f70ded0816cbd2: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xa99562acf3a4b891ad8c09cd67af20b86cd51be0: aborted
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xdd882a70680633a75516f6ed5fce443e2d96dadb: timeout of 10000ms exceeded
+Tail: score 0x8b3234f9027f4e994e949df4b48b90ab79015950: timeout of 10000ms exceeded
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x880dbf161120207d47aef05ec774b331bcec39bc: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+Tail: clv 0x1510d5ea67bbc0b441e4154c7ed4150c4584fe91: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+bo3 rdnzao-: no search hit
+Tail: clv 0xcf19c420814435ffb1c459588208ed23a7ee6402: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+UD error: timeout of 10000ms exceeded undefined
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xfb48c8e007a8e45700b39191bad0904c80cd6ad1: timeout of 10000ms exceeded
+Tail: score 0xeba0dcefbb0f450dc22a51e0632639a0c0b24586: timeout of 10000ms exceeded
+Tail: clv 0x6519259c2b215ee3c958e57276ac9d679d3e611b: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x62c68066fe7466ad3048a4adff9ad18cfecdab7b: timeout of 10000ms exceeded
+Tail: score 0xe2d0f0580716e47979206dcff5220695e7967bbf: timeout of 10000ms exceeded
+Tail: clv 0x45efe2e1d98bf977e6a9602ad236e0e2b3339037: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: score 0x7a5d94f83ff0195387eaf9f4463433d03eda54db: timeout of 10000ms exceeded
+Tail: score 0x55941ce9f9029293c4c5385fcfcec36e41dfb390: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xb3cfe7615d64db8dfa743a1b1a2b976911460ebd: aborted
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+Tail: score 0xf636933aa8b33f3b9670f8a9f2d46c1ca5835465: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xd24b95551eb288ff82bb625dcd7f32f62abdef76: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail: score 0xcf6c5492124794394dd9eac46498a8babbe47e66: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x2cb256064f192c16bab846ac83aa3f9120f5ee14: timeout of 10000ms exceeded
+Tail: score 0xd06c49e1c86f970bc5c48f91169a607e9b03cdaf: timeout of 10000ms exceeded
+Tail: score 0x9219dd565d7521e95f273b7eea68dbb08d40027c: timeout of 10000ms exceeded
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x6c158caf6430a91a846ac4ea9652dcb23dd87d2d: timeout of 10000ms exceeded
+Tail: score 0x744c072005bde6ddab8764a7477f61d3d22ae37f: timeout of 10000ms exceeded
+Tail: score 0xe2160eb837cd17de5915d460b1d69b5ba2ac7448: aborted
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail: clv 0xe6c6f1d992367fb31219ae05464fdcfd2b7577b7: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x12ec6d71325afac2b4d25b3de94185e2c48d41ae: timeout of 10000ms exceeded
+Tail: score 0xf7f67ecde5cfb6fd4e30edadb19a7c53f9e8e517: aborted
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail: clv 0x6d04bfd2f0d6a7fd04ba4309c28f908d5e2d7a5f: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xa832e7afb91c8083d42474faaf05f9abfaf8abf8: timeout of 10000ms exceeded
+Tail: score 0xa2fc0448a1dce9258ebb91b2f3abcddb98a0b1b4: timeout of 10000ms exceeded
+Tail: score 0x4edd3aba2dfe51fdfd878648a09104581044ddf1: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: timeout of 10000ms exceeded
+Tail: clv 0xea8e9d6ebea9eb507e6e743f0b2306e7188aee37: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: clv 0x0705f583abb7d79e7c0e608be2f678bf78991175: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 rdnzao-: no search hit
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x07b31abaa54862cb4103ccf7ae7dc1f316a020fb: timeout of 10000ms exceeded
+Tail: score 0x0df8e5405a85b1de2b175002b30696b7fe86b67e: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x0d6c47a08f0ace3d80331d875d1b21df91d34dba: timeout of 10000ms exceeded
+Tail: score 0x2c8a235232c27f5eb153847274c2ed412e814c20: timeout of 10000ms exceeded
+Tail: score 0xb6353a9608eccba83323bdb7ee4ec8b7af68bef0: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail: clv 0x6260ce9e19379808f5e3f8569c31db5f294ffccb: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xb0456f2ceed9e7b3ab5736798185952de53ed4ce: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x495d6693c96ef98746d007caae82a2055dcc68d8: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xe1aff568c9ce89fbd38e89071515f1d75aefd23b: timeout of 10000ms exceeded
+Tail: score 0xb1a279adb096d316b1b168993e8ed976d3cd372a: timeout of 10000ms exceeded
+Tail: clv 0xcd0e49bdd7e8abed92bda5bf3431cb0b144d46e7: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Polymarket US: book aec-cfb-lehi-vill-2026-10-24: Request failed with status code 429
+Polymarket US: book atc-mls-nyr-mia-2026-10-24-nyr: Request failed with status code 429
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+bo3 s1lent: no usable kill fields — inspect /api/esports/probe/cs/s1lent
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x3e9f9ef866c4f864a1e8e4cc386b948e7eb63988: timeout of 10000ms exceeded
+Tail: score 0x2687cb380661a0041bf4c4cf3945a034b79e1363: timeout of 10000ms exceeded
+Tail: clv 0x4609338471bd663f5be86a135cc677b1211f17a7: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x4d4815122c826e1ca6bc5d63f36e3b3a0c5c66ab: timeout of 10000ms exceeded
+Tail: clv 0x76f91265718c709ed707c6cbe0eac4142527f701: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xca0167538e6595736d75b08d5635d3b08ec5c0f7: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xd81e5bc01e4a98d0af93d82dc2c542a4c0f9e3d0: aborted
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xa45e8cbcfa0717376b107e840d326c796e268176: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail: score 0xdbdd45150249e229eb4ca8aa48a30dca21faa5de: timeout of 10000ms exceeded
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xd0394bd0de8d901c3fde039a86bf08e6aa4a2532: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xf886736d4bf5982c29cb68735fb777298f172620: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+bo3 Zero: no usable kill fields — inspect /api/esports/probe/cs/Zero
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xc6f8ddaba6a90c54f99f1b1461bae85a4dd17fa1: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+bo3 rdnzao-: no search hit
+Tail: clv 0x989a204f454e686daf237f5dee60222427a02221: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x5f0c78fdbcb51952413f2ac61ff804d5f32d7047: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x9c2617462567859fcf5764e03b9a687ebca274bc: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x7c14bdd7d62b9a7824c220ee39a9b58773f05783: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail: clv 0x246be8a4e3805e318801b79ad1ee1268d5fbfb5b: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x4f8c04bf164c3ff8b6965a6477c9e39dbd9c0e0c: timeout of 10000ms exceeded
+Tail: score 0xa39a38fbb98ad026c5a6b126d74d891e1be51246: timeout of 10000ms exceeded
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xdacf9f8d0341fa3770fae5c7ccd9dcfed23e3c74: timeout of 10000ms exceeded
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: timeout of 10000ms exceeded
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+bo3 rdnzao-: no search hit
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x52d93dcf81444f793dda7fedc370f7a35101fb1a: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0x2ce8505aa641791eb8460f6ac6bf5c0511e34527: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail: score 0x45bc74efa620b45c02308acaecdff1f7c06f978b: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xad96914d7762dac84ebbabafe366ae8ff24dd498: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail: score 0x80a9d470cb6c261a36302ffa745b9d4032ffad8b: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Whales: kalshi trades page 10: timeout of 10000ms exceeded
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x6c2be10fb07747a3c751c77774938a15fbcf36f4: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xafecac457501505ad6d1677d6b8f43b2cad30e74: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xa62a6c400f7d13c1c0d113e1a0a9700e147df05b: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Polymarket US: league nfl: timeout of 4000ms exceeded
+Tail: score 0x576b0696fd5a9225d66fd9500fd98f5be10b0cab: Request failed with status code 503
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 Zero: no usable kill fields — inspect /api/esports/probe/cs/Zero
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x37bdf9681cecfebe1f5709d2aed823e0063c2a26: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+bo3 rdnzao-: no search hit
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0x21280fd5af62b925dc06f77015fa244c9fefda98: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xe70d6840c812364bd41a304564918519a8e8dd35: timeout of 10000ms exceeded
+Tail: score 0xc0e4f49b80a2162aa8c1c1ad1bd0867574e3dd38: timeout of 10000ms exceeded
+Tail: score 0xbcd671efdc5dd18016e7577c8f05e2db8452f3c8: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Tail: clv 0x60f100f5112b42e2ef89036d8b9c6877757dcb3e: 1 of 25 lookups failed (timeout of 10000ms exceeded from data-api.polymarket.com/v2/prices-history)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: clv 0xff36c717909a7bad60e74eed3418009ff481e757: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Tail stream: no messages for 15s, reconnecting
+Tail: score 0xf03b3be0a0e7026bc41bbfcdc286129962833ba1: timeout of 10000ms exceeded
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 SunPayus: no usable kill fields — inspect /api/esports/probe/cs/SunPayus
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+bo3 zero: no usable kill fields — inspect /api/esports/probe/cs/zero
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+bo3 rdnzao-: no search hit
+Tail stream: no messages for 15s, reconnecting
+Tail stream: no messages for 15s, reconnecting
