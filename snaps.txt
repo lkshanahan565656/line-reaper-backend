@@ -1,0 +1,5 @@
+status 30477
+props/record 31882
+props/record/picks?status=graded&limit=1000 1220260
+props/record/picks?status=locked&limit=1000 370679
+ev/scoreboard?state=TX 20554
