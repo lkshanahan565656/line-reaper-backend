@@ -154,6 +154,11 @@ function finish(markets, { state = null } = {}) {
     s.best = top ? { venue: top.venue, name: top.name, american: top.american, ev: top.ev } : null;
     s.venues.sort((a, b) => ORDER.indexOf(a.venue) - ORDER.indexOf(b.venue));
   }
+  // the hold at the best bettable price on every side: low is cheap to bet, under 0 an arb
+  for (const m of markets) {
+    const best = m.sides.map(s => s.venues.find(v => v.best));
+    m.bestHold = best.every(Boolean) ? r4(best.reduce((a, v) => a + 1 / v.decimal, 0) - 1) : null;
+  }
   return markets.filter(m => m.sides.some(s => s.venues.some(v => !v.ref)));
 }
 
@@ -183,7 +188,7 @@ function build(gamesByLeague = {}, { kalshi = null, now = Date.now(), horizonMs 
   const cols = ORDER.filter(k => seen.has(k)).map(k => ({ key: k, name: NAME(k), ref: REFS.has(k), secondHand: SECOND_HAND.has(k), tx: venues.legalIn('TX')(k) }));
   const sides = games.flatMap(g => g.markets.flatMap(m => m.sides));
   return { games, venues: cols, leagues: Object.entries(leagues).map(([k, n]) => ({ key: k, label: LEAGUE_LABEL[k] || k.toUpperCase(), games: n })).sort((a, b) => b.games - a.games),
-    counts: { games: games.length, sides: sides.length, priced: sides.filter(s => s.fair != null).length, plusEv: sides.filter(s => s.best?.ev > 0).length } };
+    counts: { games: games.length, sides: sides.length, priced: sides.filter(s => s.fair != null).length, plusEv: sides.filter(s => s.best?.ev > 0).length, lowHold: games.flatMap(g => g.markets).filter(m => m.bestHold != null && m.bestHold < 0.01).length } };
 }
 
 // Free viewers see every price; the fair and the EV are Pro.

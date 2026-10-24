@@ -1345,7 +1345,7 @@ body.no-help .clv-info { display:none; }
   <div class="os-ctrl">
     <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Betting from</span><select id="osState" onchange="osSet('state',this.value)"><option value="">Anywhere (every venue)</option><option value="TX">Texas</option></select></label>
     <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Market</span><select id="osMarket" onchange="osSet('market',this.value)"><option value="">Every market</option><option value="ml">Moneyline</option><option value="spread">Spread</option><option value="total">Total</option></select></label>
-    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Sort games by</span><select id="osSort" onchange="osSet('sort',this.value)"><option value="start">Starting soonest</option><option value="ev">Best EV</option><option value="venues">Most venues</option></select></label>
+    <label class="es-field" style="flex:1 1 140px;max-width:200px"><span>Sort games by</span><select id="osSort" onchange="osSet('sort',this.value)"><option value="start">Starting soonest</option><option value="ev">Best EV</option><option value="venues">Most venues</option><option value="hold">Lowest hold</option></select></label>
     <input class="key-input" id="osSearch" placeholder="Search a team" oninput="osSearchInput(this.value)"/>
   </div>
   <div class="os-sum" id="osSum"></div>
@@ -1882,6 +1882,7 @@ function renderOdds() {
     .map(g => ({ ...g, markets: g.markets.filter(m => !osUi.market || m.key === osUi.market) })).filter(g => g.markets.length);
   if (osUi.sort === 'ev') games.sort((a, b) => (b.maxEv ?? -9) - (a.maxEv ?? -9));
   else if (osUi.sort === 'venues') games.sort((a, b) => b.venues - a.venues);
+  else if (osUi.sort === 'hold') { const lo = g => Math.min(...g.markets.map(m => m.bestHold ?? 9)); games.sort((a, b) => lo(a) - lo(b)); }
   const c = d.counts || {};
   const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
   document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> games</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
@@ -1899,7 +1900,8 @@ function renderOdds() {
 function osGame(g, cols, pro) {
   const head = `<tr><th class="side">${g.markets.length > 1 ? 'Side' : escAttr(g.markets[0].label)}</th>${pro ? '<th>Fair</th>' : ''}${cols.map(v => `<th class="${v.tx ? 'tx' : ''}" title="${v.ref ? 'Sharp reference, not a play' : v.secondHand ? 'Copy read through Action Network' : v.tx ? 'Legal in Texas' : ''}">${escAttr(v.name)}${v.secondHand ? '<span class="os-copy">c</span>' : ''}</th>`).join('')}</tr>`;
   const rows = g.markets.map(m => {
-    const mk = g.markets.length > 1 ? `<tr class="mk"><td class="side">${escAttr(m.label)}</td><td colspan="${cols.length + (pro ? 1 : 0)}"></td></tr>` : '';
+    const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
+    const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
     return mk + m.sides.map(s => `<tr><td class="side">${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
@@ -8067,12 +8069,12 @@ document.querySelectorAll('.sport-row .sport-chip').forEach(c => {
 loadData();
 checkBackend();
 startSharpPolling();    // REST polling — always works regardless of WS
-// open on the last tab used; the first time, Sharp Tail (it needs no odds key)
+// open on the last tab used; the first time, the odds screen
 (() => {
-  let name = 'tail';
-  try { name = localStorage.getItem('lr_tab') || 'tail'; } catch {}
+  let name = 'odds';
+  try { name = localStorage.getItem('lr_tab') || 'odds'; } catch {}
   const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${name}',this)`);
-  if (btn) showTab(name, btn); else showTab('tail', document.querySelector('.tab'));
+  if (btn) showTab(name, btn); else showTab('best', document.querySelector('.tab'));
 })();
 // Odds auto-refresh: every 10 min, only while the tab is visible — protects the free 500/mo quota
 setInterval(() => { if (apiKey && !document.hidden && netFails.size < 2) loadData(); }, 600000);

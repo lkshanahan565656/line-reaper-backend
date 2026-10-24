@@ -64,6 +64,9 @@ test('a venue at another number shows it, with no EV and never best', () => {
   const tot = g.markets.find(m => m.key === 'total');
   assert.equal(tot.sides[0].best.venue, 'fanduel');
   assert.equal(tot.sides[0].label, 'Over 44.5');
+  // both FanDuel -110s: 4.76% hold
+  assert.ok(Math.abs(tot.bestHold - 0.0476) < 1e-3);
+  assert.equal(sp.bestHold, null);
 });
 
 test('Texas shows only Texas venues next to the fair', () => {
