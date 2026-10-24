@@ -185,7 +185,8 @@ function buildLeg(app, key, list, series, meta, { betLeadMs = BET_LEAD_MS } = {}
   if (!listed.length) return null;
   const close = before[before.length - 1].v ? before[before.length - 1] : listed[listed.length - 1];
   const open = listed[0];
-  const betT = Math.max(open.t, Math.min(start - betLeadMs, close.t));
+  // the line still up an hour out is bettable then, even if it last changed long before
+  const betT = Math.max(open.t, start - betLeadMs);
   const bet = { t: betT, v: at(list, betT) || close.v };
   const price = (t, line) => Object.fromEntries(BOOKS.map(b => [b, bookAt(at(series[b]?.get(key), t), line)]).filter(([, q]) => q));
   return {
