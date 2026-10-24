@@ -9,28 +9,12 @@ jobs:
       - run: |
           set +e
           B=https://line-reaper-backend-production.up.railway.app
-          mkdir -p out/espn out/hist && cd out
-          date -u > at.txt
-          curl -s -m 60 $B/ | jq -c '{version}' > version.json
-          curl -s -m 120 "$B/api/status" > status.json
-          curl -s -m 300 "$B/api/ev/scoreboard?state=TX" > scoreboard-tx.json
-          for s in graded locked open void; do curl -s -m 300 "$B/api/props/record/picks?status=$s&limit=1000" > picks-$s.json; done
-          curl -s -m 120 "$B/api/props/record" > props-record.json
-          curl -s -m 120 "$B/api/ev?limit=1" | jq -c '{at:.staleAt, stale:.stale, lag:.staleLag}' > ev-stale.json
-          # Pinnacle's 3 h line history for every open stale leg
-          jq -r '.picks[]|select(.kind|test("stale"))|"\(.sport)|\(.player)|\(.mkey)|\(.start)"' picks-open.json picks-locked.json | sort -u > keys-raw.txt
-          wc -l keys-raw.txt
-          cd espn
-          for d in $(seq 0 17); do day=$(date -u -d "2026-10-07 +$d day" +%Y%m%d)
-            for sl in hockey/nhl football/nfl "football/college-football" baseball/mlb basketball/nba "basketball/mens-college-basketball"; do
-              code=$(echo $sl | tr / _); x=""; [ "$sl" = "football/college-football" ] && x="&groups=80&limit=300"
-              curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/$sl/scoreboard?dates=$day$x" > $code-$day.json
-            done
-          done
-          for f in *-2026*.json; do code=${f%-*}; sl=$(echo $code | sed 's/_/\//'); jq -r '.events[]? | select(.status.type.completed) | .id' $f | sed "s|^|$code $sl |"; done | sort -u > ids.txt
-          wc -l ids.txt
-          cat ids.txt | xargs -P 16 -n 3 sh -c 'curl -s -m 60 "https://site.api.espn.com/apis/site/v2/sports/$1/summary?event=$2" | gzip > sum-$0-$2.json.gz'
-          cd ..
-          ls -la > ls.txt; ls espn | wc -l >> ls.txt
-          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-ppstale-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
-          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-ppstale-out
+          mkdir -p out && cd out
+          for i in $(seq 1 40); do v=$(curl -s -m 30 $B/ | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.148.0" ] && break; sleep 60; done
+          curl -s -m 300 "$B/api/ev/scoreboard?state=TX" | jq -c '[.rows[]|select(.kind|test("stale"))]' > board.json
+          curl -s -m 300 "$B/api/props/record/picks?status=open&kind=stale-single&limit=50" | jq -c '[.picks[]|{id,signalPinLine,closePinLine,closePinFair,closePinAt,stale}]' > open-ss.json
+          curl -s -m 300 "$B/api/props/record/picks?status=graded&kind=stale-single&limit=1000" > graded-ss.json
+          curl -s -m 300 "$B/api/props/record/picks?status=graded&kind=stale&limit=1000" > graded-s.json
+          curl -s -m 120 "$B/api/status" | jq -c '{version, stale:.ev.stale}' > status.json
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-ppstale-out2 && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-ppstale-out2
