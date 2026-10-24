@@ -73,8 +73,10 @@ function marketRow(m, e, tag) {
   // record rows' markets (any category)
   const need = [...new Set(record.map(r => r.conditionId).filter(c => c && !markets.has(c)))];
   for (let i = 0; i < need.length; i += 20) {
-    const d = await get(`${G}/markets?${need.slice(i, i + 20).map(c => `condition_ids=${c}`).join('&')}&limit=50`);
-    for (const m of Array.isArray(d) ? d : []) { const e = (m.events || [])[0]; const r = marketRow(m, e, 'record'); markets.set(m.conditionId, r); }
+    for (const closed of ['true', 'false']) {
+      const d = await get(`${G}/markets?${need.slice(i, i + 20).map(c => `condition_ids=${c}`).join('&')}&limit=50&closed=${closed}`);
+      for (const m of Array.isArray(d) ? d : []) { const e = (m.events || [])[0]; const r = marketRow(m, e, 'record'); markets.set(m.conditionId, r); }
+    }
   }
   log('markets', markets.size, 'calls', calls, 'errs', errs);
   save('markets', [...markets.values()]);
