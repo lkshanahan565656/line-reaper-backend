@@ -1,0 +1,12 @@
+19:39:15 None
+19:42:15 None
+19:45:16 None
+19:48:16 None
+19:49:38 3.152.0
+version 3.152.0
+pick6 status {"lines": 1225, "relay": {"at": "2026-10-24T19:52:55.573Z", "reads": 7, "error": null, "sports": ["CFB", "NBA", "MLB", "WNBA", "UFC", "NHL", "NFL", "SOCCER", "LOL"]}, "bySport": {"CFB": {"lines": 2, "groups": 1, "at": "2026-10-24T19:51:56.460Z"}, "NBA": {"lines": 339, "groups": 1, "at": "2026-10-24T19:52:04.721Z"}, "MLB": {"lines": 43, "groups": 1, "at": "2026-10-24T19:52:14.618Z"}, "WNBA": {"lines": 0, "groups": 1, "at": "2026-10-24T19:16:24.613Z"}, "UFC": {"lines": 3, "groups": 1, "at": "2026-10-24T19:52:20.163Z"}, "NHL": {"lines": 519, "groups": 1, "at": "2026-10-24T19:52:27.490Z"}, "NFL": {"lines": 279, "groups": 2, "at": "2026-10-24T19:52:40.577Z"}, "SOCCER": {"lines": 0, "groups": 2, "at": "2026-10-24T19:52:53.111Z"}, "LOL": {"lines": 40, "groups": 1, "at": "2026-10-24T19:52:55.573Z"}}, "payouts": {"2": {"2": 3}, "3": {"3": 5.5}, "4": {"4": 10}, "5": {"4": 1, "5": 12}, "6": {"5": 1.5, "6": 25}}}
+board rows 12424 counts {"sports": {"CFB": 1332, "MLB": 250, "MMA": 59, "NFL": 5011, "NBA": 1636, "NHL": 1932, "SOCCER": 1756, "TENNIS": 378, "DARTS": 2, "NASCAR": 19, "LA LIGA": 34, "F1": 15, "LOL": 150, "CS": 113, "VAL": 60, "DOTA": 80}, "books": {"underdog": 10155, "prizepicks": 4445, "sleeper": 3462, "pick6": 1224}, "priced": 2367, "multi": 3900, "rows": 12827, "gaps": 0, "sharp3": 0, "combo": 0, "sharp": 1, "consensus": 1100, "researchGaps": 142}
+pick6 cells by stat [(('NHL', 'points'), 196), (('NHL', 'shots_on_goal'), 155), (('NHL', 'assists'), 153), (('NFL', 'rec_yds'), 136), (('NBA', 'points'), 72), (('NBA', 'rebounds'), 69), (('NFL', 'rush_yds'), 66), (('NBA', 'pra'), 64), (('NBA', 'threes'), 62), (('NBA', 'assists'), 56), (('NFL', 'rush_rec_yds'), 31), (('NFL', 'pass_yds'), 23), (('NFL', 'fg_made'), 21), (('MLB', 'hits_runs_rbis'), 18), (('MLB', 'hits'), 18), (('NBA', 'steals'), 16), (('NHL', 'saves'), 15), (('MLB', 'total_bases_(from_hits)'), 4), (('MLB', 'strikeouts_thrown'), 2), (('MMA', '5_rds_significant_strikes'), 1), (('MMA', '5_rds_takedowns'), 1), (('MMA', '5_rds_fantasy_points'), 1), (('CFB', 'rush_yds'), 1), (('CFB', 'pass_tds'), 1), (('MLB', 'stolen_bases'), 1), (('NFL', 'receptions'), 1)]
+NBA combo rows Counter({'pra': 90, 'pts_rebs': 85, 'rebs_asts': 78, 'pts_asts': 73, 'stocks': 34})
+combo chips (pro-redacted rows show locked) 0
+record combo None p6-combo None
