@@ -1,0 +1,14 @@
+Sat Oct 24 20:58:00 UTC 2026
+20:58:00 todo 546
+20:58:10 4xx 404 /trade-api/v2/series/KXCS2GAME/markets/KXCS2GAME-26APR131130FAL3DMAX-FAL/candlesticks?start_ts=1776069293&end_ts=1776071993&period_interval=1 {"error":{"code":"not_found","message":"not found"}}
+20:59:36 done 200 empty 1 calls 888 errs 1
+20:59:58 4xx 404 /trade-api/v2/series/KXCS2GAME/markets/KXCS2GAME-26AUG120920K27FAL-FAL/candlesticks?start_ts=1786395507&end_ts=1786398207&period_interval=1 {"error":{"code":"not_found","message":"not found"}}
+21:00:43 4xx 404 /trade-api/v2/historical/markets/KXCS2GAME-26SEP170500M80NIP-NIP/candlesticks?start_ts=1789631470&end_ts=1789634170&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:00:44 4xx 404 /trade-api/v2/historical/markets/KXITFMATCH-26SEP20VANBRE-BRE/candlesticks?start_ts=1789830351&end_ts=1789833051&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:00:46 4xx 404 /trade-api/v2/historical/markets/KXWNBAGAME-26SEP17PHXPDX-PHX/candlesticks?start_ts=1789161969&end_ts=1789164669&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:01:16 done 400 empty 5 calls 1799 errs 5
+21:02:28 4xx 404 /trade-api/v2/historical/markets/KXEBASKETBALLGAME-26OCT211650SHAQJASO-SHAQ/candlesticks?start_ts=1792555491&end_ts=1792558191&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:29 4xx 404 /trade-api/v2/historical/markets/KXEBASKETBALLGAME-26OCT211650SHAQJASO-SHAQ/candlesticks?start_ts=1792625400&end_ts=1792627260&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:30 4xx 404 /trade-api/v2/historical/markets/KXCS2GAME-26OCT191400MGCPRV-PRV/candlesticks?start_ts=1792018738&end_ts=1792021438&period_interval=1 {"error":{"code":"failed_to_get_market_by_ticker:_not_found","message":"failed to get market by ticker: not found"}}
+21:02:34 done 546 empty buy windows 7 calls 2488 errs 8
+Sat Oct 24 21:02:34 UTC 2026
