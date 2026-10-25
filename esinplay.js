@@ -282,11 +282,12 @@ function alignTeams(kTeams, sTeams) {
 const INPLAY_FITS = {
   DOTA: { data: 'OpenDota gold curves for 1,342 Kalshi Dota 2 maps, Apr to Oct 2026, Kalshi minute prices', verdict: 'no edge', note: 'Kalshi settles about 15 minutes after the real end: the spectator delay everyone (and the free live feed) watches on. Gold-lead model at Kalshi\'s ask, books 4c wide or less, from minute 10, held-out 40%: 279 maps -6.7%; buying the live favourite at the ask breaks even' },
   CS2: { data: 'bo3.gg rounds, 2,203 matches Jul 15 to Oct 24 2026, 49,578 round states', prior: 'bookmaker match odds via the series model', note: 'independent rounds overreact to the score: the swing is cut to 70% (log loss 0.4254 vs 0.4365 uncut; a Beta update on rounds made it worse)' },
+  LOL: { data: 'lolesports live-stats frames for 259 Kalshi LoL maps, Jun to Oct 2026, Kalshi minute prices', verdict: 'no edge', note: 'the free feed reaches us about 55 s late and Kalshi has already moved. Gold, towers, dragons, barons and kills model anchored on Kalshi\'s pre-map mid, acting at the next minute\'s ask after the frame arrives, held-out 104 maps: -40% at 3c edge (t -3.9); log loss 0.471 vs Kalshi mid 0.435. Even reading frames a minute early it loses (-19%)' },
 };
 const MODELS = {
   CS2: { kind: 'rounds', shrink: 0.7 },
   VAL: null,     // no live Valorant feed without scraping vlr.gg
-  LOL: null,
+  LOL: null,     // backtest: no edge (see INPLAY_FITS)
   DOTA: null,    // backtest: no edge (see INPLAY_FITS)
 };
 // P(team A wins the live map), from its pre-map price p0 and the state (from A's side)
