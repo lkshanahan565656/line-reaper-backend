@@ -1,0 +1,575 @@
+{
+ "generated": "2026-10-25T00:08:59.535Z",
+ "model": {
+  "opts": {
+   "r0": 1500,
+   "rdNew": 260,
+   "rdUnknown": 330,
+   "rdMax": 330,
+   "rdMin": 45,
+   "rdPerDay": 13,
+   "mapWeight": 0.6,
+   "breakDays": 40,
+   "breakShrink": 0.4,
+   "newOffset": -80,
+   "scale": 0.9,
+   "kappa": 10,
+   "h2hWeight": 1,
+   "h2hDays": 730,
+   "h2hShrink": 4,
+   "minMaps": 8,
+   "recentDays": 300,
+   "maxRdPriced": 200,
+   "lowRdBoth": 215,
+   "homeN": 12,
+   "leaguePrior": null,
+   "unknownPrior": 1420,
+   "leagueEta": 1.2,
+   "leagueCap": 200
+  },
+  "fittedOn": "2024-07-01 to 2025-12-31 series (walk-forward log loss); 2026 is out of sample"
+ },
+ "data": {
+  "series": 11426,
+  "from": "2023-10-21",
+  "to": "2026-10-24",
+  "kalshiEvents": 2329,
+  "kalshiJoined": 1899
+ },
+ "allSeries": {
+  "train": {
+   "n": 4511,
+   "logLoss": 0.5805,
+   "brier": 0.1986,
+   "favHit": 0.6899
+  },
+  "test": {
+   "n": 3525,
+   "logLoss": 0.589,
+   "brier": 0.2023,
+   "favHit": 0.6755
+  },
+  "testPriced": {
+   "n": 2995,
+   "logLoss": 0.5844,
+   "brier": 0.2004,
+   "favHit": 0.6835
+  },
+  "coinFlip": 0.6931,
+  "testIndependentMaps": {
+   "n": 3525,
+   "logLoss": 0.5921,
+   "brier": 0.2031,
+   "favHit": 0.6752
+  },
+  "testNoH2h": {
+   "n": 3525,
+   "logLoss": 0.589,
+   "brier": 0.2024,
+   "favHit": 0.6794
+  },
+  "seriesShape": {
+   "kappa10": 1.3117,
+   "kappa4": 1.3094,
+   "independent": 1.3298,
+   "note": "mean -log P(exact score) on 2026 Bo3/Bo5"
+  },
+  "calibration": [
+   {
+    "bucket": "50-60%",
+    "n": 831,
+    "predicted": 0.5493,
+    "actual": 0.5367
+   },
+   {
+    "bucket": "60-70%",
+    "n": 747,
+    "predicted": 0.6486,
+    "actual": 0.6265
+   },
+   {
+    "bucket": "70-80%",
+    "n": 687,
+    "predicted": 0.7484,
+    "actual": 0.7511
+   },
+   {
+    "bucket": "80-90%",
+    "n": 491,
+    "predicted": 0.8463,
+    "actual": 0.8004
+   },
+   {
+    "bucket": "90-100%",
+    "n": 239,
+    "predicted": 0.9347,
+    "actual": 0.9372
+   }
+  ]
+ },
+ "kalshi": {
+  "T-6h": {
+   "n": 1562,
+   "logLoss": {
+    "model": 0.5724,
+    "kalshi": 0.5434,
+    "blend": 0.5456
+   },
+   "brier": {
+    "model": 0.1949,
+    "kalshi": 0.1833
+   },
+   "llGapT": 4.7,
+   "blendWeightLast": 0.05,
+   "bets": [
+    {
+     "edgePts": 3,
+     "bets": 1100,
+     "won": 491,
+     "roi": -5.8,
+     "clv": -5.1
+    },
+    {
+     "edgePts": 5,
+     "bets": 880,
+     "won": 382,
+     "roi": -5.2,
+     "clv": -5.8
+    },
+    {
+     "edgePts": 8,
+     "bets": 592,
+     "won": 232,
+     "roi": -5.6,
+     "clv": -6.8
+    },
+    {
+     "edgePts": 12,
+     "bets": 332,
+     "won": 127,
+     "roi": -4,
+     "clv": -5.8
+    }
+   ],
+   "major": {
+    "n": 643,
+    "logLoss": {
+     "model": 0.5857,
+     "kalshi": 0.5635,
+     "blend": 0.5641
+    },
+    "brier": {
+     "model": 0.1986,
+     "kalshi": 0.1909
+    },
+    "llGapT": 2.8,
+    "blendWeightLast": -0.1,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 419,
+      "won": 195,
+      "roi": -5.5,
+      "clv": -3
+     },
+     {
+      "edgePts": 5,
+      "bets": 312,
+      "won": 146,
+      "roi": -5.7,
+      "clv": -3.5
+     },
+     {
+      "edgePts": 8,
+      "bets": 198,
+      "won": 81,
+      "roi": -5.5,
+      "clv": -3.4
+     },
+     {
+      "edgePts": 12,
+      "bets": 96,
+      "won": 38,
+      "roi": -1.8,
+      "clv": -3.7
+     }
+    ]
+   },
+   "other": {
+    "n": 919,
+    "logLoss": {
+     "model": 0.5631,
+     "kalshi": 0.5293,
+     "blend": 0.5354
+    },
+    "brier": {
+     "model": 0.1924,
+     "kalshi": 0.1779
+    },
+    "llGapT": 3.8,
+    "blendWeightLast": 0.1,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 681,
+      "won": 296,
+      "roi": -5.9,
+      "clv": -6.5
+     },
+     {
+      "edgePts": 5,
+      "bets": 568,
+      "won": 236,
+      "roi": -5,
+      "clv": -7.1
+     },
+     {
+      "edgePts": 8,
+      "bets": 394,
+      "won": 151,
+      "roi": -5.6,
+      "clv": -8.5
+     },
+     {
+      "edgePts": 12,
+      "bets": 236,
+      "won": 89,
+      "roi": -4.9,
+      "clv": -6.7
+     }
+    ]
+   }
+  },
+  "T-60": {
+   "n": 1636,
+   "logLoss": {
+    "model": 0.574,
+    "kalshi": 0.537,
+    "blend": 0.5385
+   },
+   "brier": {
+    "model": 0.1954,
+    "kalshi": 0.1806
+   },
+   "llGapT": 5.8,
+   "blendWeightLast": -0.05,
+   "bets": [
+    {
+     "edgePts": 3,
+     "bets": 1168,
+     "won": 482,
+     "roi": -9.8,
+     "clv": -7
+    },
+    {
+     "edgePts": 5,
+     "bets": 918,
+     "won": 362,
+     "roi": -9.2,
+     "clv": -6.6
+    },
+    {
+     "edgePts": 8,
+     "bets": 631,
+     "won": 226,
+     "roi": -9.7,
+     "clv": -7.4
+    },
+    {
+     "edgePts": 12,
+     "bets": 370,
+     "won": 128,
+     "roi": -6.9,
+     "clv": -9
+    }
+   ],
+   "major": {
+    "n": 644,
+    "logLoss": {
+     "model": 0.5862,
+     "kalshi": 0.5623,
+     "blend": 0.5629
+    },
+    "brier": {
+     "model": 0.1987,
+     "kalshi": 0.19
+    },
+    "llGapT": 2.9,
+    "blendWeightLast": -0.2,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 430,
+      "won": 199,
+      "roi": -6.8,
+      "clv": -3.9
+     },
+     {
+      "edgePts": 5,
+      "bets": 322,
+      "won": 143,
+      "roi": -7.7,
+      "clv": -3.5
+     },
+     {
+      "edgePts": 8,
+      "bets": 197,
+      "won": 76,
+      "roi": -9.7,
+      "clv": -3.3
+     },
+     {
+      "edgePts": 12,
+      "bets": 90,
+      "won": 31,
+      "roi": -11.1,
+      "clv": -6.9
+     }
+    ]
+   },
+   "other": {
+    "n": 992,
+    "logLoss": {
+     "model": 0.5661,
+     "kalshi": 0.5206,
+     "blend": 0.5262
+    },
+    "brier": {
+     "model": 0.1932,
+     "kalshi": 0.1744
+    },
+    "llGapT": 5,
+    "blendWeightLast": 0,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 738,
+      "won": 283,
+      "roi": -11.6,
+      "clv": -8.9
+     },
+     {
+      "edgePts": 5,
+      "bets": 596,
+      "won": 219,
+      "roi": -9.9,
+      "clv": -8.3
+     },
+     {
+      "edgePts": 8,
+      "bets": 434,
+      "won": 150,
+      "roi": -9.7,
+      "clv": -9.3
+     },
+     {
+      "edgePts": 12,
+      "bets": 280,
+      "won": 97,
+      "roi": -5.5,
+      "clv": -9.7
+     }
+    ]
+   }
+  },
+  "T-30": {
+   "n": 1633,
+   "logLoss": {
+    "model": 0.5713,
+    "kalshi": 0.524,
+    "blend": 0.5244
+   },
+   "brier": {
+    "model": 0.1944,
+    "kalshi": 0.1755
+   },
+   "llGapT": 7.4,
+   "blendWeightLast": -0.15,
+   "bets": [
+    {
+     "edgePts": 3,
+     "bets": 1169,
+     "won": 463,
+     "roi": -14.8,
+     "clv": -8.1
+    },
+    {
+     "edgePts": 5,
+     "bets": 927,
+     "won": 347,
+     "roi": -15.1,
+     "clv": -8.3
+    },
+    {
+     "edgePts": 8,
+     "bets": 633,
+     "won": 212,
+     "roi": -17.8,
+     "clv": -9.4
+    },
+    {
+     "edgePts": 12,
+     "bets": 388,
+     "won": 126,
+     "roi": -12.8,
+     "clv": -9.6
+    }
+   ],
+   "major": {
+    "n": 642,
+    "logLoss": {
+     "model": 0.5855,
+     "kalshi": 0.556,
+     "blend": 0.5559
+    },
+    "brier": {
+     "model": 0.1985,
+     "kalshi": 0.1878
+    },
+    "llGapT": 3.6,
+    "blendWeightLast": -0.2,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 431,
+      "won": 195,
+      "roi": -11.2,
+      "clv": -4.5
+     },
+     {
+      "edgePts": 5,
+      "bets": 324,
+      "won": 139,
+      "roi": -13.7,
+      "clv": -4.6
+     },
+     {
+      "edgePts": 8,
+      "bets": 192,
+      "won": 71,
+      "roi": -19.4,
+      "clv": -4.4
+     },
+     {
+      "edgePts": 12,
+      "bets": 95,
+      "won": 31,
+      "roi": -14.9,
+      "clv": -4.7
+     }
+    ]
+   },
+   "other": {
+    "n": 991,
+    "logLoss": {
+     "model": 0.5622,
+     "kalshi": 0.5033,
+     "blend": 0.5073
+    },
+    "brier": {
+     "model": 0.1917,
+     "kalshi": 0.1675
+    },
+    "llGapT": 6.4,
+    "blendWeightLast": -0.15,
+    "bets": [
+     {
+      "edgePts": 3,
+      "bets": 738,
+      "won": 268,
+      "roi": -17,
+      "clv": -10.3
+     },
+     {
+      "edgePts": 5,
+      "bets": 603,
+      "won": 208,
+      "roi": -15.9,
+      "clv": -10.4
+     },
+     {
+      "edgePts": 8,
+      "bets": 441,
+      "won": 141,
+      "roi": -17.1,
+      "clv": -11.6
+     },
+     {
+      "edgePts": 12,
+      "bets": 293,
+      "won": 95,
+      "roi": -12.1,
+      "clv": -11.3
+     }
+    ]
+   }
+  }
+ },
+ "kalshiCalibration": {
+  "model": [
+   {
+    "bucket": "50-60%",
+    "n": 421,
+    "predicted": 0.5499,
+    "actual": 0.5321
+   },
+   {
+    "bucket": "60-70%",
+    "n": 398,
+    "predicted": 0.6496,
+    "actual": 0.6583
+   },
+   {
+    "bucket": "70-80%",
+    "n": 380,
+    "predicted": 0.7506,
+    "actual": 0.7447
+   },
+   {
+    "bucket": "80-90%",
+    "n": 293,
+    "predicted": 0.8467,
+    "actual": 0.8123
+   },
+   {
+    "bucket": "90-100%",
+    "n": 144,
+    "predicted": 0.9317,
+    "actual": 0.9306
+   }
+  ],
+  "kalshi": [
+   {
+    "bucket": "50-60%",
+    "n": 348,
+    "predicted": 0.5517,
+    "actual": 0.5431
+   },
+   {
+    "bucket": "60-70%",
+    "n": 386,
+    "predicted": 0.6526,
+    "actual": 0.658
+   },
+   {
+    "bucket": "70-80%",
+    "n": 380,
+    "predicted": 0.7484,
+    "actual": 0.7474
+   },
+   {
+    "bucket": "80-90%",
+    "n": 377,
+    "predicted": 0.85,
+    "actual": 0.8541
+   },
+   {
+    "bucket": "90-100%",
+    "n": 145,
+    "predicted": 0.9321,
+    "actual": 0.9655
+   }
+  ]
+ },
+ "verdict": "Kalshi's price beats the model: log loss 0.537 vs 0.574 an hour out on 1636 series (t 5.8), 0.524 vs 0.5713 at 30 minutes. Betting the model's side when it was 5+ points off Kalshi: 918 bets, ROI -9.2% after the fee, -6.6% against Kalshi's close. Blending the model into Kalshi's price (weight fitted on earlier months) gives 0.5385, no better than Kalshi alone. The model is a research and explanation tool, not a betting signal."
+}

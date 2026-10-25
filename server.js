@@ -4192,6 +4192,16 @@ const ESPORTS_REALERT_MS = 6 * 3600e3;
 // Pinnacle's no-vig price is the board's fair where it lists the market (PINNACLE=on).
 const esportsBoard = esboard.createEsportsBoard({ http: upstream, ratings: () => ratingsState.elo, opts: ESPORTS_OPTS, pinnacle: () => ({ on: PINNACLE_ON, key: process.env.PINNACLE_GUEST_KEY || '' }) });
 const esportsEdgeSeen = new Map();
+// LoL head-to-head matchup engine (esmatchup.js, esmatchupdata.js): our own
+// team ratings and series math for every upcoming LoL series, next to
+// Kalshi's price. A model view: the backtest says Kalshi's price is better.
+// ESPORTS_MATCHUPS=off turns it off.
+const esmatchupdata = require('./esmatchupdata');
+const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
+const matchupEngine = MATCHUPS_ON ? esmatchupdata.createMatchupEngine({
+  http: upstream, board: () => esportsBoard.state.matches,
+  store: resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))),
+}) : null;
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
 const esportsEdgeTracker = createEvTracker({
@@ -4604,7 +4614,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.158.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.159.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5115,6 +5125,59 @@ app.get('/api/esports/matches', (req, res) => {
     games: Object.fromEntries(Object.entries(esboard.GAMES).map(([k, g]) => [k, g.label])),
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
+});
+// ── LoL matchups (head-to-head engine) ──
+const MATCHUP_NOTE = "Our own model: team ratings from every finished LoL series, a series-shape adjustment and a small head-to-head term. It is a model, not a proven edge: in the walk-forward backtest Kalshi's price beat it, and betting its side lost after fees.";
+function matchupBacktestSummary() {
+  const b = matchupEngine?.state.backtest;
+  if (!b) return null;
+  const k = b.kalshi?.['T-60'], k30 = b.kalshi?.['T-30'];
+  return {
+    generated: b.generated, verdict: b.verdict, data: b.data,
+    allSeries: { test: b.allSeries?.test, coinFlip: b.allSeries?.coinFlip },
+    kalshi: k ? { n: k.n, logLoss: k.logLoss, brier: k.brier, t: k.llGapT, sides5: k.bets?.find(x => x.edgePts === 5) || null, major: k.major?.logLoss, other: k.other?.logLoss } : null,
+    kalshi30: k30 ? { n: k30.n, logLoss: k30.logLoss } : null,
+  };
+}
+const matchupOff = res => res.status(503).json({ error: 'Matchups are off (ESPORTS_MATCHUPS=off).' });
+app.get('/api/esports/matchups', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  const days = Math.min(14, Math.max(1, parseInt(req.query.days, 10) || 8));
+  const league = req.query.league ? String(req.query.league) : null;
+  const matchups = matchupEngine.list({ days, league, board: esportsBoardFor(req) });
+  res.json({
+    game: 'LOL', label: 'model', note: MATCHUP_NOTE, status: matchupEngine.status(), count: matchups.length,
+    priced: matchups.filter(m => m.model.priced).length, withKalshi: matchups.filter(m => m.compare).length,
+    leagues: [...new Set(matchupEngine.state.upcoming.map(u => u.lg).filter(Boolean))].sort(),
+    matchups, backtest: matchupBacktestSummary(), record: matchupEngine.record().summary, licence: licenceState(req),
+  });
+});
+app.get('/api/esports/matchups/backtest', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  res.json(matchupEngine.state.backtest || { error: 'No backtest file (seeds/lol-matchup-backtest.json).' });
+});
+app.get('/api/esports/matchups/record', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  res.json({ note: 'Model number frozen 10-45 minutes before each LoL series with a Kalshi price, Kalshi followed to the start, graded on the result. Model view, not a bet.', ...matchupEngine.record() });
+});
+app.get('/api/esports/matchups/ratings', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  const R = matchupEngine.ratings();
+  const league = req.query.league ? String(req.query.league) : null;
+  res.json({ game: 'LOL', label: 'model', leagues: R.leagues(), teams: R.table({ league }).slice(0, 300), opts: R.opts });
+});
+app.get('/api/esports/matchups/team/:name', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  const R = matchupEngine.ratings();
+  const tm = R.find(req.params.name);
+  if (!tm) return res.status(404).json({ error: 'No such team in our LoL data.' });
+  res.json({ game: 'LOL', label: 'model', team: R.teamView(tm) });
+});
+app.get('/api/esports/matchups/:id', (req, res) => {
+  if (!matchupEngine) return matchupOff(res);
+  const m = matchupEngine.get(req.params.id, { board: esportsBoardFor(req) });
+  if (!m) return res.status(404).json({ error: 'No upcoming LoL series with that id.' });
+  res.json({ game: 'LOL', label: 'model', note: MATCHUP_NOTE, matchup: m });
 });
 // one build at a time: a page load and a refresh share a run in flight.
 // Two builds at once (new stats landing during a lines rebuild) could finish
@@ -7104,7 +7167,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.158.1',
+  version: '3.159.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7177,6 +7240,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
+  matchups: matchupEngine ? matchupEngine.status() : { off: true },
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: !licences.isOn('owls') ? 'paused: waiting on data permission' : owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -7196,6 +7260,8 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
 // stepped range wrong: '7-59/10' runs at 10,20,…,50, so minutes are listed.)
 const schedule = (expr, fn) => cron.schedule(expr, fn, { recoverMissedExecutions: true });
 
+// LoL matchups: schedule, results and the forward record, every 10 minutes.
+if (matchupEngine) schedule('3,13,23,33,43,53 * * * *', () => matchupEngine.refresh().catch(() => {}));
 // Team ratings for match context, every 6 hours.
 schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
@@ -7357,6 +7423,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
       .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => esPicksRebuild()).catch(()=>{}), 25000);
     setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
     setTimeout(() => refreshH2H().then(() => esPicksRebuild()).catch(() => {}), 35000);
+    if (matchupEngine) setTimeout(() => matchupEngine.refresh().catch(() => {}), 40000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
@@ -7364,7 +7431,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, matchupEngine, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
