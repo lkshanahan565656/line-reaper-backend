@@ -551,6 +551,12 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .pb-cover { font-size: 11px; color: #94a3b8; margin: 0 0 8px; line-height: 1.5; overflow-wrap: anywhere; } .pb-cover:empty { display: none; } .pb-cover b { color: #cbd5e1; font-weight: 600; } .pb-cover .z { color: #f87171; }
 /* LINES: one app's lines as a table, best EV first */
 #page-props.lines .pb-conly, #page-props:not(.lines) .pb-lonly { display: none; }
+#page-props.model .pb-conly, #page-props.model .pb-lonly, #page-props.model #pbSports, #page-props.model #pbBooks, #page-props.model #pbCover, #page-props.model #pbRecord { display: none; }
+.nbm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
+.nbm-note b { color:#fde68a; letter-spacing:1px; }
+.nbm-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; }
+.nbm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
+.nbm-p.lean { color:#fbbf24; }
 /* SHOP: the softest number across the apps (aps- prefix; shop- is the odds screen's) */
 #page-props.cfbm .pb-conly, #page-props.cfbm .pb-lonly, #page-props.cfbm #pbSports, #page-props.cfbm #pbBooks, #page-props.cfbm #pbCover, #page-props.cfbm #pbRecord { display: none; }
 .cfm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
@@ -1248,6 +1254,28 @@ body.no-help .clv-info { display:none; }
 .os-log:hover { color:#34d399; border-color:#34d399; }
 .ln-add { cursor:pointer; width:22px; height:22px; border-radius:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; font:800 13px/1 'Inter',sans-serif; margin-right:6px; vertical-align:middle; }
 .ln-add:hover, .ln-add.on { color:#06110d; background:#34d399; border-color:#34d399; }
+/* PROMOS strip: the apps' discounted and boosted legs at their own payout */
+.pm-wrap { border:1px solid var(--border); background:var(--card); border-radius:10px; padding:10px 12px; margin:0 0 12px; font-family:'JetBrains Mono',monospace; }
+.pm-head { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin-bottom:6px; }
+.pm-head b { font-size:11px; letter-spacing:.14em; color:#fbbf24; }
+.pm-head span { font-size:10.5px; color:#64748b; }
+.pm-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+.pm-chips .sport-chip { font-size:10px; padding:3px 8px; }
+.pm-list { display:grid; gap:2px; }
+.pm-row { display:grid; grid-template-columns: 112px minmax(0,1fr) 62px 62px 86px 84px 30px; gap:6px; align-items:center; padding:5px 4px; border-top:1px solid var(--border); font-size:11px; color:#cbd5e1; }
+.pm-row.hd { color:#64748b; font-size:9.5px; letter-spacing:.08em; border-top:0; }
+.pm-row .pm-type { font-size:9.5px; letter-spacing:.06em; color:#94a3b8; }
+.pm-row .pm-type b { color:#e2e8f0; }
+.pm-row .pm-who b { color:#e2e8f0; }
+.pm-row .pm-who span { color:#64748b; }
+.pm-row .pos { color:#34d399; } .pm-row .neg { color:#f87171; } .pm-row .dim { color:#64748b; }
+.pm-note { color:#64748b; font-size:10px; margin-top:6px; line-height:1.5; }
+@media (max-width: 640px) {
+  .pm-row { grid-template-columns: minmax(0,1fr) 58px 64px 30px; }
+  .pm-row .pm-c-mult, .pm-row .pm-c-req, .pm-row.hd .pm-c-mult, .pm-row.hd .pm-c-req { display:none; }
+  .pm-row .pm-type { grid-column: 1 / -1; }
+  .pm-row.hd { display:none; }
+}
 .ms-res { display:inline-flex; gap:4px; margin-left:8px; vertical-align:1px; }
 .ms-res button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:5px; font:700 9.5px 'JetBrains Mono',monospace; padding:2px 6px; }
 .ms-res button.on { color:#06110d; background:#94a3b8; }
@@ -1693,6 +1721,7 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
   </div>
+  <div id="pmStrip" style="margin-top:12px"></div>
   <div class="pb-chips" id="pbView" style="margin:12px 0 8px"></div>
   <div class="pb-chips" id="pbSports" style="margin:0 0 8px"></div>
   <div class="pb-cover" id="pbCover"></div>
@@ -4128,7 +4157,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'cfbmodel'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', cfmStat: '', cfm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cfbmodel'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4143,11 +4172,14 @@ function pbSet(k, v) {
 }
 function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
 async function loadPropsBoard() {
+  if (!pmState.at || Date.now() - pmState.at > 120000) loadPromos();
   const seq = ++pbState.seq;
   const lines = pbState.view === 'lines';
   document.getElementById('page-props')?.classList.toggle('lines', lines);
   document.getElementById('page-props')?.classList.toggle('shop', pbState.view === 'shop');
   if (pbState.view === 'shop') return loadShop(seq);
+  document.getElementById('page-props')?.classList.toggle('model', pbState.view === 'model');
+  if (pbState.view === 'model') return loadNbaModel(seq);
   document.getElementById('page-props')?.classList.toggle('cfbm', pbState.view === 'cfbmodel');
   if (pbState.view === 'cfbmodel') return loadCfbModel(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
@@ -4192,8 +4224,8 @@ function renderPropsRecord() {
   const stat = (v, label, cls = '') => `<div class="pb-stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
   const rec = o.graded ? `${o.wins}-${o.losses}` : '<i>not graded yet</i>';
   const roi = o.execGraded ? sgn(o.execRoi * 100) : '<i>not graded yet</i>';
-  const KN = { combo: 'Combos vs FanDuel/BetRivers + Pinnacle\'s parts (lead)', 'p6-combo': 'DK Pick6 combos vs the books', sharp3: 'Pinnacle + 2 sharps at the app\'s number (lead)', 'p6-sharp3': 'DK Pick6 vs Pinnacle + 2 sharps', 'book-consensus': '3+ books\' consensus (lead, not sharp)', 'p6-book-consensus': 'DK Pick6 vs 3+ books', 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps' };
-  const kinds = ['sharp', 'sharp3', 'combo', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-sharp3', 'p6-combo', 'p6-ev', 'p6-gap'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
+  const KN = { combo: 'Combos vs FanDuel/BetRivers + Pinnacle\'s parts (lead)', 'p6-combo': 'DK Pick6 combos vs the books', sharp3: 'Pinnacle + 2 sharps at the app\'s number (lead)', 'p6-sharp3': 'DK Pick6 vs Pinnacle + 2 sharps', 'book-consensus': '3+ books\' consensus (lead, not sharp)', 'p6-book-consensus': 'DK Pick6 vs 3+ books', 'book-fair': 'FanDuel + BetRivers fair (lead, not sharp)', 'book-fair-single': 'One book\'s fair (lead, not counted)', 'p6-book-fair': 'DK Pick6 vs FanDuel + BetRivers', 'p6-book-fair-single': 'DK Pick6 vs one book', sharp: 'Sharp consensus', gap: 'Line gaps', ev: 'Sharp-priced', 'gap-odd': 'Unpriced gaps, odd app\'s side', 'gap-stale': 'Unpriced gaps, other apps\' side', 'p6-sharp': 'DK Pick6 sharp consensus', 'p6-ev': 'DK Pick6 sharp-priced', 'p6-gap': 'DK Pick6 line gaps', 'nba-model': 'NBA model (model, not an edge)', 'p6-nba-model': 'DK Pick6 NBA model' };
+  const kinds = ['sharp', 'sharp3', 'combo', 'gap', 'ev', 'gap-odd', 'gap-stale', 'p6-sharp', 'p6-sharp3', 'p6-combo', 'p6-ev', 'p6-gap', 'nba-model', 'p6-nba-model'].filter(x => k[x]).map(x => `${KN[x]} ${k[x].signals} tracked, ${k[x].graded ? `${k[x].wins}-${k[x].losses}` : 'not graded yet'}`).join(' · ');
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SPORTS PROPS RECORD</b><span>Every flagged leg, at the line shown: still up two minutes on, priced at the close, graded off the box score.</span></div>
     <div class="pb-sum tr-sum pb-recsum">${stat(o.signals.toLocaleString(), 'flagged')}${stat(pct(o.execShare), 'still up 2 min on')}${stat(sgn(o.closeEvAvg), o.closed ? `EV at close · ${o.closed}` : 'EV at close')}${stat(rec, 'record')}${stat(roi, 'ROI, still-up legs', o.execRoi > 0 ? 'good' : '')}${stat(o.closed ? `${o.movedOurWay}/${o.movedOurWay + o.movedAgainst}` : '—', 'fair moved our way')}</div>
     ${kinds ? `<div class="pb-dim" style="margin:-4px 0 12px">${kinds}</div>` : ''}</div>`;
@@ -4209,7 +4241,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')")].join('');
   pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
@@ -4367,6 +4399,84 @@ function lnRow(r, book) {
     <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
 }
+// ── PROMOS: the apps' discounted and boosted legs (/api/props/promos, promos.js) ──
+// PrizePicks goblins, demons and promos, Underdog discounted lines, alternates
+// and boosted sides, Sleeper's boosted lines, Pick6's Gimme Pick, Stat Slice,
+// Power Up and alt ladders. Each leg at its own payout's required hit rate
+// against Pinnacle's no-vig (FanDuel/BetRivers where Pinnacle has none). A lead
+// with its own record, no alerts: nothing here is proven.
+const pmState = { at: 0, data: null, record: null, app: '', open: false, limit: 8 };
+async function loadPromos() {
+  pmState.at = Date.now();
+  try {
+    const qs = new URLSearchParams({ limit: pmState.open ? 120 : 40 });
+    if (pmState.app) qs.set('app', pmState.app);
+    const [a, b] = await Promise.all([fetch(`${BACKEND_URL}/api/props/promos?${qs}`), fetch(`${BACKEND_URL}/api/props/promos/record`)]);
+    if (a.ok) pmState.data = await a.json();
+    if (b.ok) pmState.record = await b.json();
+  } catch {}
+  renderPromos();
+}
+function pmSet(k, v) { pmState[k] = v; pmState.at = 0; loadPromos(); }
+const PM_APPS = [['prizepicks', 'PP'], ['underdog', 'UD'], ['sleeper', 'SL'], ['pick6', 'P6']];
+function renderPromos() {
+  const el = document.getElementById('pmStrip');
+  if (!el) return;
+  const d = pmState.data;
+  if (!d) { el.innerHTML = ''; return; }
+  const c = d.counts || { total: 0, priced: 0, plusEv: 0, byApp: {}, byType: [] };
+  const chip = (on, label, n, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}${n != null ? ` <span style="opacity:.55">${n}</span>` : ''}</button>`;
+  const chips = [chip(!pmState.app, 'ALL APPS', c.total, "pmSet('app','')"), ...PM_APPS.filter(([k]) => c.byApp?.[k]).map(([k, ab]) => chip(pmState.app === k, ab, c.byApp[k], `pmSet('app','${k}')`))].join('');
+  const types = (c.byType || []).slice(0, 8).map(t => `${escAttr(t.label)} ${t.n.toLocaleString()} (${t.priced} priced)`).join(' · ');
+  const pct = v => (v == null ? '—' : `${(v * 100).toFixed(1)}%`);
+  const rows = (d.rows || []).slice(0, pmState.open ? 120 : pmState.limit);
+  const row = p => {
+    const rk = `promo:${p.id}`;
+    const fairSrc = p.fair == null ? '' : `${p.fairBooks.map(b => ({ pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers' })[b] || b).join(' + ')} ${p.fairExact ? 'at this number' : `read along the curve from ${p.fairFrom}`}, vig out`;
+    const edge = !d.pro ? '<span class="dim">Pro</span>' : p.ev != null ? `<span class="${p.ev > 0 ? 'pos' : 'neg'}" title="EV at this leg's own payout">${p.ev > 0 ? '+' : ''}${p.ev.toFixed(1)}%</span>`
+      : p.beMult != null ? `<span class="dim" title="PrizePicks does not publish goblin and demon payouts. This leg breaks even only if PrizePicks pays at least ${p.beMult}x per leg on a 3-pick Power">needs ${p.beMult}x</span>` : '<span class="dim">—</span>';
+    const mult = p.mult != null ? `${(+p.mult).toFixed(2)}x` : '<span class="dim" title="PrizePicks does not publish this payout">?</span>';
+    const req = p.req == null ? '<span class="dim">—</span>' : p.canPay === false ? '<span class="neg" title="At this multiplier the leg would have to hit more than 100% of the time">can\'t pay</span>' : pct(p.req);
+    const word = pbSideWord(p.app, p.side).toUpperCase();
+    return `<div class="pm-row">
+      <div class="pm-type"><b>${escAttr(p.appLabel)}</b> ${escAttr(p.typeLabel)}${p.note ? ` · ${escAttr(p.note)}` : ''}</div>
+      <div class="pm-who"><b>${escAttr(p.player)}</b> <span>${escAttr(p.sport)} · ${escAttr(p.market)} · ${pbFmtStart(p.startTime)}</span><br>${word} ${escAttr(p.line)}${p.baseLine != null ? ` <span title="The app cut this line from ${escAttr(p.baseLine)}">(was ${escAttr(p.baseLine)})</span>` : ''}</div>
+      <div class="pm-c-mult">${mult}</div>
+      <div class="pm-c-req" title="Hit rate this leg needs at its own payout">${req}</div>
+      <div title="${escAttr(fairSrc)}">${!d.pro ? '<span class="dim">Pro</span>' : p.fair != null ? pct(p.fair) : '<span class="dim">no sharp</span>'}</div>
+      <div>${edge}</div>
+      <div><button class="ln-add${pkHas(rk, p.app) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAddPromo('${escAttr(p.id)}')">+</button></div>
+    </div>`;
+  };
+  const rec = pmState.record;
+  const recTxt = rec?.slices?.length ? rec.slices.slice(0, 6).map(x => `${escAttr(x.kind.replace(/^promo-/, ''))} ${x.n ? `${x.w}-${x.l}` : '0 graded'}${x.vs === 'sharp fair' ? ' vs fair' : ''}`).join(' · ') : 'started, nothing graded yet';
+  const head = `<div class="pm-row hd"><div>APP · TYPE</div><div>LEG</div><div class="pm-c-mult">MULT</div><div class="pm-c-req">NEEDS</div><div>SHARP</div><div>EV</div><div></div></div>`;
+  const more = (d.total || 0) > rows.length ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=true;pmState.limit=120;pmState.at=0;loadPromos()">SHOW ${Math.min(120, d.total)} OF ${d.total.toLocaleString()} PRICED</button>` : pmState.open ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=false;pmState.limit=8;renderPromos()">SHOW FEWER</button>` : '';
+  el.innerHTML = `<div class="pm-wrap">
+    <div class="pm-head"><b>PROMOS</b><span>${c.total.toLocaleString()} discounted or boosted legs on the apps now · ${c.priced.toLocaleString()} with a sharp price · ${c.plusEv} above the hit rate their payout needs</span></div>
+    <div class="pm-chips">${chips}</div>
+    ${rows.length ? `<div class="pm-list">${head}${rows.map(row).join('')}</div>` : `<div class="pm-note">No promo leg has a sharp price right now${pmState.app ? ' on this app' : ''}.</div>`}${more}
+    <div class="pm-note">${types ? `${types}.<br>` : ''}Each leg at its own payout: a goblin, Power Up or boosted side needs the hit rate its multiplier sets, not the standard slip's. PrizePicks does not publish goblin and demon payouts, so those show the multiplier they would need. <b style="color:#fbbf24">Not a bet:</b> on last weekend's boards Underdog boosted sides won 41.7% of 247 vs 49.5% needed. Record (alerts off until 50 graded live): ${recTxt}.</div>
+  </div>`;
+}
+function pkAddPromo(id) {
+  const p = (pmState.data?.rows || []).find(x => x.id === id);
+  if (!p) return;
+  const rk = `promo:${p.id}`;
+  if (pk.app === p.app && pk.legs.some(l => l.rk === rk)) return pkAdd(rk, p.app);
+  if (pk.app && pk.app !== p.app && pk.legs.length) { showToast(`Your slip is on ${PB_BOOKS.find(x => x[0] === pk.app)?.[1]}. Save or clear it first`, 'danger'); return; }
+  if (pk.legs.length >= (PK_MAX[p.app] || 6)) { showToast('That slip is full', 'danger'); return; }
+  if (pk.legs.some(l => l.player === p.player)) { showToast(`${p.player} is already in the slip`, 'danger'); return; }
+  pk.app = p.app;
+  const over = p.side === 'Over';
+  pk.legs.push({ rk, player: p.player, market: p.market, line: p.line, side: p.side, sport: p.sport, team: p.team || '', start: p.startTime || null,
+    game: p.matchTitle || (p.startTime ? `${p.sport}|${p.startTime}` : ''), prob: p.fair, over: over ? p.mult : p.otherMult, under: over ? p.otherMult : p.mult, promo: p.typeLabel });
+  pk.payout = '';
+  pkSave(); renderPkTray(); renderPromos();
+  if (p.mult != null && Math.abs(p.mult - 1) > 0.001 && p.app !== 'sleeper') showToast(`${p.typeLabel} pays ${p.mult}x: set the payout to what the app shows`);
+  else if (p.mult == null) showToast(`${p.typeLabel}: set the payout to what PrizePicks shows`);
+}
+
 // ── SLIP TRAY: legs tapped on the Lines table → one slip in MY SLIPS ──
 // A slip is placed on one app, so the tray holds one app's legs at that app's
 // line. Saving it hands the slip to MY SLIPS, which logs every leg with the
@@ -4380,6 +4490,14 @@ const pkSave = () => lsSet(PK_KEY, JSON.stringify({ app: pk.app, legs: pk.legs, 
 const pkHas = (rk, book) => pk.app === book && pk.legs.some(l => l.rk === rk);
 const PK_MAX = { pick6: 8 };
 function pkAdd(rk, book) {
+  // a leg already in the slip comes out, whichever list it was added from (PROMOS legs have no board row)
+  const i0 = pk.legs.findIndex(l => l.rk === rk);
+  if (pk.app === book && i0 >= 0) {
+    pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pkSave(); renderPkTray();
+    if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard();
+    renderPromos();
+    return;
+  }
   const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book] || r?.apps?.[book];
   if (!r || !c || c.line == null) return;
   const i = pk.legs.findIndex(l => l.rk === rk);
@@ -4537,6 +4655,72 @@ function renderShop() {
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   el.innerHTML = `<div class="aps-note"><b>Research, not a play.</b> The softest number per side across PrizePicks, Underdog, Sleeper and DK Pick6, where two apps sit a full line or more apart. ${d.total.toLocaleString()} props${d.middles ? `, ${d.middles} with a middle worth more than zero` : ''}. On the recorded boards the softest number did not reach any app's break-even, so nothing here is alerted; the SHOP RECORD above follows every leg live. <b>+ LOG</b> adds the leg to a slip on that app (tray below), saved to MY SLIPS.</div>
     <div class="aps-list"><div class="aps-head"><div>Player</div><div>Prop · apps</div><div>Softest number per side</div><div style="text-align:right">Gap ↓</div></div>${body}</div>${more}`;
+}
+// ─── NBA MODEL (/api/props/nbamodel): our own projection at each app's number ──
+// A model view: labelled "model, not an edge" until its own record (kinds
+// nba-model, p6-nba-model) has 50+ graded live legs with the hit rate 2+
+// standard errors past the app's break-even. No alerts, no bet buttons.
+const NBM_STATS = [['', 'ALL'], ['points', 'PTS'], ['rebounds', 'REB'], ['assists', 'AST'], ['threes', '3PM'], ['pra', 'PRA'], ['pts_rebs', 'PTS+REB'], ['pts_asts', 'PTS+AST'], ['rebs_asts', 'REB+AST'], ['steals', 'STL'], ['blocks', 'BLK'], ['stocks', 'STL+BLK'], ['turnovers', 'TO']];
+async function loadNbaModel(seq) {
+  const qs = new URLSearchParams({ limit: 300 });
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.nbmStat) qs.set('stat', pbState.nbmStat);
+  pbChips();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/nbamodel?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.nbm = d;
+    renderNbaModel();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the NBA model (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+function nbmRecTxt(k, be) {
+  if (!k || !k.signals) return 'nothing logged yet';
+  if (!k.graded) return `${k.signals} logged, none graded yet`;
+  const n = k.wins + k.losses, hit = n ? k.wins / n : 0;
+  const z = n ? (hit - be) / Math.sqrt(be * (1 - be) / n) : 0;
+  return `${k.wins}-${k.losses} (${(hit * 100).toFixed(1)}% vs ${(be * 100).toFixed(2)}% break-even, z ${z.toFixed(2)}) of ${n} graded`;
+}
+function renderNbaModel() {
+  const el = document.getElementById('pbContent'), d = pbState.nbm;
+  if (!el || !d) return;
+  const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${NBM_STATS.map(([k, lab]) => chip(pbState.nbmStat === k, lab, `pbState.nbmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const note = `<div class="nbm-note"><b>MODEL, NOT AN EDGE.</b> Our own NBA projection from ESPN box scores (recent minutes, per-minute rates, pace, the opponent, teammates listed Out), priced at each app's own number. Fitted on two seasons, it gives rest, the pre-game total and the spread no weight; its backtest is below. ${escAttr(d.bar || '')} Its legs at ${Math.round((d.pickMin || 0.58) * 100)}%+ on PrizePicks and Pick6 keep their own record; no alerts.</div>`;
+  if (!d.on) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">${escAttr(d.note || 'The NBA model is off.')}</div></div>`; return; }
+  const rec = `<div class="pb-dim" style="margin:0 0 10px">Model record, PrizePicks: ${nbmRecTxt(d.record?.prizepicks, 0.5503)} · Pick6: ${nbmRecTxt(d.record?.pick6, 0.567)}</div>`;
+  const bt = d.backtest?.lines?.length ? `<div class="nbm-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
+  const st = d.status || {};
+  const rows = d.rows || [];
+  if (!rows.length) {
+    el.innerHTML = note + rec + bt + stats + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO NBA LINES PRICED</div><div class="empty-sub">${pbState.q || pbState.nbmStat ? 'Nothing matches these filters.' : `No NBA game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
+    return;
+  }
+  const pc = p => `${Math.round(p * 100)}%`;
+  const body = rows.map(r => {
+    const cells = PB_BOOKS.map(([k, , ab]) => {
+      const a = r.apps[k];
+      const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
+      if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
+      const lean = a.pSide >= (d.pickMin || 0.58);
+      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="nbm-p${lean ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div></div>`;
+    }).join('');
+    const pin = r.pinnacle ? `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${r.pinnacle.line}</div><div class="pb-dim">Pinnacle ${pc(r.pinnacle.pOver)} over</div>${r.pinnacle.model != null ? `<div class="pb-dim">model ${pc(r.pinnacle.model)}</div>` : ''}</div>`
+      : `<div class="pb-bk none"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">—</div><div class="pb-dim">no prop</div></div>`;
+    const ctx = [`${r.minutes} min (±${r.minutesSd})`, r.b2b ? 'back-to-back' : '', r.teammatesOut ? `${r.teammatesOut} teammate${r.teammatesOut > 1 ? 's' : ''} out` : '', r.total != null ? `total ${r.total}` : '', r.spread != null ? `spread ${r.home ? r.spread : -r.spread > 0 ? '+' + -r.spread : -r.spread}` : ''].filter(Boolean).join(' · ');
+    const meta = `${escAttr(r.team)} ${r.home ? 'vs' : '@'} ${escAttr(r.opp)} · ${pbFmtStart(r.start)}`;
+    return `<div class="pb-card">
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport">NBA</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${meta}</div><div class="pb-meta">proj ${r.mean} (median ${r.median}) · ${ctx}</div></div>
+      <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div>
+      <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="nbm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div><div class="pb-dim">model, not an edge</div></div></div>`;
+  }).join('');
+  const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
+  const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
+  el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'NBA lines priced')}${stat(leans, `model ${Math.round((d.pickMin || 0.58) * 100)}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.teamsWithOuts ?? '—', 'teams with players out')}</div><div class="pb-list">${body}</div>`;
 }
 // ─── CFB MODEL (/api/props/cfbmodel): our own projection at each app's number ──
 // Same layout as the NBA model's view. Labelled "model, not an edge" until its

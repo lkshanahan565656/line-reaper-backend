@@ -10,7 +10,7 @@
 // workflow saves on the pick6-data branch (relayUrl), each sport stamped with
 // when GitHub read it.
 
-const { decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board } = require('./pickem');
+const { decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board, parsePick6Promos } = require('./pickem');
 
 const BASE = 'https://pick6.draftkings.com';
 const HEADERS = {
@@ -77,7 +77,7 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
       for (const [label, v] of Object.entries(d?.bySport || {})) {
         const at = Date.parse(v.at);
         if (!Number.isFinite(at) || !Array.isArray(v.lines)) continue;
-        if (!st.bySport[label] || st.bySport[label].at < at) st.bySport[label] = { lines: v.lines, at, groups: v.groups || 0, relay: true };
+        if (!st.bySport[label] || st.bySport[label].at < at) st.bySport[label] = { lines: v.lines, promos: Array.isArray(v.promos) ? v.promos : [], at, groups: v.groups || 0, relay: true };
       }
       if (d?.payouts && Object.keys(d.payouts).length) st.payouts = d.payouts;
       if (!st.sports.length && Array.isArray(d?.sports)) st.sports = d.sports;
@@ -101,6 +101,7 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
       const first = await get({ sport: sport.label });
       const groups = (first.pickGroups || []).map(g => g.pickGroupId).filter(Boolean);
       let lines = parsePick6Board(first, sport.label);
+      let promos = parsePick6Promos(first, sport.label);
       const read = new Set([first.selectedPickGroup?.pickGroupId]);
       // the first group's other stat tabs
       const gid = first.selectedPickGroup?.pickGroupId;
@@ -108,7 +109,7 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
       if (gid) for (const cid of extraCategories(first.pickCardsResponse)) {
         await sleep(CATEGORY_GAP_MS);
         const pc = await getCategory(gid, cid);
-        if (pc) { lines = lines.concat(parsePick6Board({ pickCardsResponse: pc }, sport.label)); tabs++; }
+        if (pc) { lines = lines.concat(parsePick6Board({ pickCardsResponse: pc }, sport.label)); promos = promos.concat(parsePick6Promos({ pickCardsResponse: pc }, sport.label)); tabs++; }
       }
       for (const id of groups.slice(0, MAX_GROUPS)) {
         if (read.has(id)) continue;
@@ -116,11 +117,14 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
         const h = await get({ sport: sport.label, pickGroup: id });
         read.add(id);
         lines = lines.concat(parsePick6Board(h, sport.label));
+        promos = promos.concat(parsePick6Promos(h, sport.label));
       }
       // a player in two pick groups (one game, and the all-day slate) once
       const seen = new Set();
       lines = lines.filter(l => { const k = `${l.player}|${l.market}|${l.line}|${l.startTime}`; if (seen.has(k)) return false; seen.add(k); return true; });
-      st.bySport[sport.label] = { lines, at: now(), groups: read.size, tabs };
+      const seenP = new Set();
+      promos = promos.filter(l => { const k = `${l.player}|${l.market}|${l.line}|${l.side}|${l.type}|${l.startTime}`; if (seenP.has(k)) return false; seenP.add(k); return true; });
+      st.bySport[sport.label] = { lines, promos, at: now(), groups: read.size, tabs };
       st.fail = { limited: 0, until: 0 };
       st.lastError = null;
       log.log?.(`Pick6 ${sport.label}: ${lines.length} lines from ${read.size} pick group${read.size === 1 ? '' : 's'} and ${tabs} more stat tab${tabs === 1 ? '' : 's'}`);
@@ -142,6 +146,12 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
     for (const v of Object.values(st.bySport)) if (t - v.at <= STALE_MS) out.push(...v.lines);
     return out;
   }
+  // every fresh promo leg (pickem.parsePick6Promos): Gimme Pick, Stat Slice, Power Up, alt ladders
+  function promos(t = now()) {
+    const out = [];
+    for (const v of Object.values(st.bySport)) if (t - v.at <= STALE_MS) out.push(...(v.promos || []));
+    return out;
+  }
   // when each sport was last read, keyed `pick6|SPORT` for the record's executable check
   function readTimes() {
     const out = {};
@@ -151,14 +161,14 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
   // what the relay workflow saves: every sport it read, stamped with when
   function snapshot() {
     return { at: new Date(now()).toISOString(), payouts: st.payouts, sports: st.sports,
-      bySport: Object.fromEntries(Object.entries(st.bySport).map(([k, v]) => [k, { at: new Date(v.at).toISOString(), groups: v.groups, lines: v.lines }])) };
+      bySport: Object.fromEntries(Object.entries(st.bySport).map(([k, v]) => [k, { at: new Date(v.at).toISOString(), groups: v.groups, lines: v.lines, promos: v.promos || [] }])) };
   }
   function status() {
     return { enabled: st.enabled, relay: relayUrl ? { ...st.relay, sports: Object.entries(st.bySport).filter(([, v]) => v.relay).map(([k]) => k) } : null, sports: st.sports.map(s => s.label), reads: st.reads, payouts: st.payouts,
       bySport: Object.fromEntries(Object.entries(st.bySport).map(([k, v]) => [k, { lines: v.lines.length, groups: v.groups, at: new Date(v.at).toISOString() }])),
-      lines: lines().length, blockedUntil: st.fail.until > now() ? new Date(st.fail.until).toISOString() : null, lastError: st.lastError };
+      lines: lines().length, promos: promos().length, blockedUntil: st.fail.until > now() ? new Date(st.fail.until).toISOString() : null, lastError: st.lastError };
   }
-  return { tick, readRelay, lines, readTimes, snapshot, status, state: st };
+  return { tick, readRelay, lines, promos, readTimes, snapshot, status, state: st };
 }
 
 module.exports = { createPick6Reader, retryAfterMs, extraCategories };

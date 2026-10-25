@@ -18,8 +18,10 @@ const D = require('./depthfill');
 const r4 = x => Math.round(x * 1e4) / 1e4;
 const r2 = x => Math.round(x * 100) / 100;
 const EXCHANGES = new Set(['kalshi', 'gemini', 'polymarketus']);
-// reads a minute on top of the size record's (Polymarket US 429s past ~7 a pass with its board reads; the record takes 3)
-const READ_BUDGET = { kalshi: 25, gemini: 25, polymarketus: 2 };
+// reads a minute on top of the size record's. Polymarket US: none of the shopper's own. Its gateway
+// answered 429 to the record's 3 a pass and the shopper's 2 alike (live 03:14Z 10-25), so the shopper
+// only keeps the books the record reads and never takes reads away from the record.
+const READ_BUDGET = { kalshi: 25, gemini: 25, polymarketus: 0 };
 const MAX_AGE_MS = 5 * 60e3;
 const REFRESH_MS = 3 * 60e3;
 
