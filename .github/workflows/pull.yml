@@ -1,7 +1,7 @@
 name: diag-soccer
 on:
   push:
-    branches: [diag-soccer]
+    branches: [diag-soccer-fd]
 permissions:
   contents: write
 jobs:
@@ -13,11 +13,6 @@ jobs:
       matrix:
         include:
           - { tag: fd, part: 'res:fd' }
-          - { tag: k1, part: 'k:^KX(EPL|EFLCHAMPIONSHIP|LALIGA)GAME$' }
-          - { tag: k2, part: 'k:^KX(SERIEA|BUNDESLIGA|LIGUE1|EREDIVISIE|LIGAPORTUGAL|PRIMEIRALIGA|PORTUGAL[A-Z0-9]*)GAME$' }
-          - { tag: k3, part: 'k:^KX(MLS|LIGAMX|BRASILEIRO|BUNDESLIGA2|SERIEB|LIGUE2|SCOTTISHPREM|LALIGA2|EFLLEAGUEONE|ARGPD|JLEAGUE|ALLSVENSKAN|ELITESERIEN)GAME$' }
-          - { tag: pm1, part: 'pm:epl,lal,elc' }
-          - { tag: pm2, part: 'pm:sea,bun,fl1,ere,por,mls,mex' }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,5 +21,5 @@ jobs:
           set +e
           PART='${{ matrix.part }}' SINCE=2025-07-01 BUDGET_MIN=140 timeout 150m node diag/pull.js 2>&1 | tee log-${{ matrix.tag }}.txt
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          git checkout -B diag-soccer-out-${{ matrix.tag }}; git add -f log-${{ matrix.tag }}.txt data; git commit -qm "soccer ${{ matrix.tag }}"
-          for i in 1 2 3 4; do git push -qf origin diag-soccer-out-${{ matrix.tag }} && break; sleep $((i*5)); done
+          git checkout -B diag-soccer-out2-${{ matrix.tag }}; git add -f log-${{ matrix.tag }}.txt data; git commit -qm "soccer ${{ matrix.tag }}"
+          for i in 1 2 3 4; do git push -qf origin diag-soccer-out2-${{ matrix.tag }} && break; sleep $((i*5)); done

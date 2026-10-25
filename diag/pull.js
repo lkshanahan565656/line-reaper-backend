@@ -31,7 +31,7 @@ const num = v => (v == null || v === '' ? null : Number(v));
 async function footballData() {
   fs.mkdirSync('data/fd', { recursive: true });
   const divs = ['E0', 'E1', 'E2', 'SP1', 'SP2', 'D1', 'D2', 'I1', 'I2', 'F1', 'F2', 'N1', 'P1', 'B1', 'T1', 'G1', 'SC0'];
-  const seasons = []; for (let y = 12; y <= 26 - 1; y++) seasons.push(`${String(y).padStart(2, '0')}${String(y + 1).padStart(2, '0')}`);
+  const seasons = []; for (let y = 12; y <= 26; y++) seasons.push(`${String(y).padStart(2, '0')}${String(y + 1).padStart(2, '0')}`);
   const jobs = [];
   for (const s of seasons) for (const d of divs) jobs.push([`${d}-${s}.csv`, `https://www.football-data.co.uk/mmz4281/${s}/${d}.csv`]);
   for (const c of ['USA', 'MEX', 'BRA', 'ARG', 'JPN', 'NOR', 'SWE', 'DNK', 'AUT', 'SWZ', 'POL', 'IRL', 'CHN', 'FIN', 'ROU']) jobs.push([`new-${c}.csv`, `https://www.football-data.co.uk/new/${c}.csv`]);
