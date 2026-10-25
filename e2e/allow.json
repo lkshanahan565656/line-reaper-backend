@@ -1,0 +1,65 @@
+{
+  "dead": [],
+  "issues": [
+    {
+      "kind": "covered",
+      "match": {
+        "by": "toast"
+      },
+      "why": "a toast sits over the slip bar for its few seconds; the crawl's clock is frozen, so it stays"
+    }
+  ],
+  "proven": [
+    {
+      "text": "^GUARANTEED$",
+      "why": "TOOLS hedge calculator: the profit a full hedge locks in is guaranteed by the arithmetic, not a betting claim"
+    },
+    {
+      "text": "PROVEN needs \\d+ graded",
+      "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
+    }
+  ],
+  "misses": [],
+  "mustHaveData": [
+    {
+      "tab": "best",
+      "empty": "NOTHING WORTH BETTING|COULD NOT LOAD",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "odds",
+      "empty": "NO MARKETS|COULD NOT LOAD|LOADING",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "props",
+      "empty": "NO LINES|NO .* PRICED|LOADING",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "esports",
+      "empty": "NO |COULD NOT LOAD|LOADING",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "results",
+      "empty": "NO |COULD NOT LOAD",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "tail",
+      "empty": "NO |COULD NOT LOAD",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "big",
+      "empty": "NO |COULD NOT LOAD",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    },
+    {
+      "tab": "ev",
+      "empty": "NO \\+EV|COULD NOT LOAD",
+      "why": "the snapshot holds rows for this view, so its empty state means the page failed to show them"
+    }
+  ]
+}
