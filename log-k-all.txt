@@ -1,0 +1,151 @@
+09:21:29 kalshi series 4047 tennis 178
+09:21:29 saved k-series 178
+09:21:29 match series KXTABLETENNISMATCH:Men's Table Tennis Match | KXITFMATCH:ITF Men's Match | KXMADWOMEN:Madrid Open Winner (Women's) | KXMOMEN:Miami Open Winner (Men's) | KXATPGWINNER:ATP Game Winner | KXWTAEXACTMATCH:WTA Exact Match Score | KXUNITEDCUPMATCH:United Cup Match | KXITTFMEN:ITTF Men Tournament Winner | KXMCMMEN:ATP Monte-Carlo Masters Winner | KXATPGRANDSLAMFIELD:ATP Grand Slam Field Winner | KXWTAMATCH:WTA Tennis Match | KXSIXKINGSSLAMMATCH:Six Kings Slam Match | KXATPSETSWEEP:Winner without dropping a set | KXTABLETENNIS:Table Tennis Match | KXEXHIBITIONMEN:Men's Tennis Exhibition Match | KXATPGAME:ATP Tennis Winner | KXFIRSTUSOPEN:First time US open winner | KXATP:Men's Tournament Winner | KXATPCHALLENGERDOUBLES:ATP Challenger Doubles Match | KXITFWMATCH:ITF Women's Match | KXDAVISCUPMATCH:Davis Cup Match | KXWTTMATCH:Women's Table Tennis Match | KXATPS1GWINNER:ATP set 1 game winner | KXSIXKINGSMATCH:Six Kings Slam Match | KXATPFINALS:ATP Finals Winner | KXUSOPENCUP1H:1st Half Winner | KXATPEXACTMATCH:ATP Exact Match Score | KXLAVERCUPMATCH:Laver Cup Tennis Match | KXWTACHALLENGERMATCH:Challenger WTA | KXITTFMENMATCH:ITTF Table Tennis | KXATPANYSET:ATP Any Set Winner | KXMCMEN:ATP Monte-Carlo Winner | KXATPS4GWINNER:ATP set 4 game winner | KXATPMEN:Mens ATP Tournament Winner | KXTTSTARMATCH:TT Star Series Match | KXATPNATWINNER:Nationality of Tennis Tournament Winner  | KXATPSETWINNER:ATP Set Winner | KXMADMEN:Men's Madrid Open Winner | KXITFDOUBLES:ITF Doubles Match | KXATPTIEBREAK:Tiebreak to occur in Match | KXTENNISEXHIBITION:Tennis Exhibition Match | KXTTMATCH:Men's Table Tennis Match | KXWTASETWINNER:WTA Set Winner | KXTTELITEMATCH:TT Elite Series Match | KXCHALLENGERMATCH:Challenger ATP  | KXEXHIBITIONWOMEN:Women's Tennis Exhibition Match | KXATPS5GWINNER:ATP set 5 game winner | KXWTABLETENNISMATCH:Women's Table Tennis Match | KXLIGAPROMATCH:Russia Liga Pro Match | KXWTAGAME:WTA Tennis Winner | KXBATTLEOFSEXESSET:Battle of the Sexes Set Winner | KXGOLFTENNISMAJORS:More Major Wins, Tennis vs Golf | KXWTADOUBLES:WTA Doubles Tennis Match | KXSIXKINGSSLAM:Six Kings Slam Winner | KXATPS3GWINNER:ATP set 3 game winner | KXBATTLEOFSEXES:Battle of the Sexes Tennis Match | KXATPDOUBLES:ATP Doubles Tennis Match | KXATPS2GWINNER:ATP set 2 game winner | KXPICKLEBALLMATCH:Pickleball Match | KXATPWTA:Men and Women Tournament Winners | KXLAVERCUPDOUBLESMATCH:Laver Cup Doubles Match | KXITTFWOMENMATCH:ITTF Women Match | KXATPCHALLENGERMATCH:Challenger ATP  | KXMIXEDDOUBLESMATCH:Mixed Doubles Tennis Match | KXATPMATCH:ATP Tennis Match | KXITFWDOUBLES:ITF Women's Doubles Match | KXWTA:Women's Tournament Winner | KXMOWOMEN:Miami Open Winner (Women's)
+09:21:29 KXTABLETENNISMATCH live 0 hist 422 settled since 422 sample {"can_close_early":true,"close_time":"2026-07-29T16:00:08Z","created_time":"2026-07-29T14:00:37.40532Z","custom_strike":{"table_tennis_competitor":"f99e6dbe-56f4-4ee0-b601-d6bbd0c4de55"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXTABLETENNISMATCH-26JUL291100SPRVAN","exchange_index":0,"expected_expiration_time":"2026-07-29T18:00:00Z","expiration_time":"2026-08-12T15:00:00Z","expiration_value":"Vitalii Ananiev","last_price_dollars":"0.9900","latest_expiration_time":"2026-08-12T15:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Vitalii Ananiev","notional_value_dollars":"1.0000","occurrence_datetime":"2026-07-29T18:00:00Z","open_interest_fp":"0.00","open_time":"2026-07-29T14:02:00Z","previous_price_dollars":"0.9900","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If Vitalii Ananiev wins the Serhii Priadko vs Vitalii Ananiev Setka Cup men's table tennis match originally scheduled for Jul 29, 2026 at 11:00 AM EDT, then the market resolves to Yes.","rules_secondary":"The following market refers to the Serhii Priadko vs Vitalii Ananiev Setka Cup men's table tennis match originally scheduled for Jul 29, 2026 at 11:00 AM EDT. If this match is postponed or delayed, the market will remain open and close after the resc
+09:23:16 saved k-tennis 422
+09:23:26 KXITFMATCH live 11246 hist 31122 settled since 41580 sample {"can_close_early":true,"close_time":"2026-10-25T08:45:52Z","created_time":"2026-10-24T14:32:48.707837Z","custom_strike":{"tennis_competitor":"c8aae080-4bb7-4bb5-a5e1-ce3653168f34"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXITFMATCH-26OCT25KOTSUR","exchange_index":3,"expected_expiration_time":"2026-10-25T12:30:00Z","expiration_time":"2026-11-08T06:30:00Z","expiration_value":"Darrshan Suresh","last_price_dollars":"0.9900","latest_expiration_time":"2026-11-08T06:30:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Darrshan Suresh","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-25T12:30:00Z","open_interest_fp":"7970.90","open_time":"2026-10-24T14:42:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"yes","rules_primary":"If Darrshan Suresh wins the Kothari vs Suresh professional tennis match in the 2026 M15 Singapore Round of 32 after a ball has been played, then the market resolves to Yes.","rules_secondary":"The following market refers to the Kothari vs Suresh professional tennis match in the 2026 M15 Singapore Round of 32 after a ball has been played. If the match does not occur (signaled by a ball being played) due to a player injury, walkover, forfeiture, or any other cancella
+09:25:29 KXITFMATCH 500 / 41580 calls 1672 errs 0
+09:25:29 saved k-tennis 922
+09:27:35 KXITFMATCH 1000 / 41580 calls 2561 errs 0
+09:27:35 saved k-tennis 1422
+09:29:41 KXITFMATCH 1500 / 41580 calls 3438 errs 0
+09:29:41 saved k-tennis 1922
+09:31:46 KXITFMATCH 2000 / 41580 calls 4326 errs 0
+09:31:46 saved k-tennis 2422
+09:33:51 KXITFMATCH 2500 / 41580 calls 5196 errs 0
+09:33:51 saved k-tennis 2922
+09:35:54 KXITFMATCH 3000 / 41580 calls 6081 errs 0
+09:35:55 saved k-tennis 3422
+09:38:00 KXITFMATCH 3500 / 41580 calls 6965 errs 0
+09:38:00 saved k-tennis 3922
+09:40:05 KXITFMATCH 4000 / 41580 calls 7832 errs 0
+09:40:05 saved k-tennis 4422
+09:42:10 KXITFMATCH 4500 / 41580 calls 8727 errs 0
+09:42:11 saved k-tennis 4922
+09:44:16 KXITFMATCH 5000 / 41580 calls 9606 errs 0
+09:44:16 saved k-tennis 5422
+09:46:19 KXITFMATCH 5500 / 41580 calls 10483 errs 0
+09:46:19 saved k-tennis 5922
+09:48:25 KXITFMATCH 6000 / 41580 calls 11363 errs 0
+09:48:25 saved k-tennis 6422
+09:50:30 KXITFMATCH 6500 / 41580 calls 12225 errs 0
+09:50:30 saved k-tennis 6922
+09:52:35 KXITFMATCH 7000 / 41580 calls 13099 errs 0
+09:52:36 saved k-tennis 7422
+09:54:41 KXITFMATCH 7500 / 41580 calls 13974 errs 0
+09:54:41 saved k-tennis 7922
+09:56:46 KXITFMATCH 8000 / 41580 calls 14835 errs 0
+09:56:46 saved k-tennis 8422
+09:58:50 KXITFMATCH 8500 / 41580 calls 15714 errs 0
+09:58:50 saved k-tennis 8922
+10:00:55 KXITFMATCH 9000 / 41580 calls 16583 errs 0
+10:00:55 saved k-tennis 9422
+10:03:00 KXITFMATCH 9500 / 41580 calls 17451 errs 0
+10:03:01 saved k-tennis 9922
+10:05:06 KXITFMATCH 10000 / 41580 calls 18336 errs 0
+10:05:06 saved k-tennis 10422
+10:07:09 KXITFMATCH 10500 / 41580 calls 19213 errs 0
+10:07:10 saved k-tennis 10922
+10:09:15 KXITFMATCH 11000 / 41580 calls 20086 errs 0
+10:09:15 saved k-tennis 11422
+10:11:20 KXITFMATCH 11500 / 41580 calls 20959 errs 0
+10:11:20 saved k-tennis 11922
+10:13:26 KXITFMATCH 12000 / 41580 calls 21845 errs 0
+10:13:26 saved k-tennis 12422
+10:15:31 KXITFMATCH 12500 / 41580 calls 22732 errs 0
+10:15:31 saved k-tennis 12922
+10:17:35 KXITFMATCH 13000 / 41580 calls 23597 errs 0
+10:17:35 saved k-tennis 13422
+10:19:40 KXITFMATCH 13500 / 41580 calls 24480 errs 0
+10:19:40 saved k-tennis 13922
+10:21:46 KXITFMATCH 14000 / 41580 calls 25353 errs 0
+10:21:46 saved k-tennis 14422
+10:23:51 KXITFMATCH 14500 / 41580 calls 26220 errs 0
+10:23:51 saved k-tennis 14922
+10:25:55 KXITFMATCH 15000 / 41580 calls 27079 errs 0
+10:25:55 saved k-tennis 15422
+10:28:00 KXITFMATCH 15500 / 41580 calls 27957 errs 0
+10:28:00 saved k-tennis 15922
+10:30:05 KXITFMATCH 16000 / 41580 calls 28824 errs 0
+10:30:06 saved k-tennis 16422
+10:32:11 KXITFMATCH 16500 / 41580 calls 29719 errs 0
+10:32:11 saved k-tennis 16922
+10:34:15 KXITFMATCH 17000 / 41580 calls 30582 errs 0
+10:34:15 saved k-tennis 17422
+10:36:20 KXITFMATCH 17500 / 41580 calls 31471 errs 0
+10:36:21 saved k-tennis 17922
+10:38:26 KXITFMATCH 18000 / 41580 calls 32331 errs 0
+10:38:26 saved k-tennis 18422
+10:40:29 KXITFMATCH 18500 / 41580 calls 33202 errs 0
+10:40:30 saved k-tennis 18922
+10:42:35 KXITFMATCH 19000 / 41580 calls 34095 errs 0
+10:42:35 saved k-tennis 19422
+10:44:41 KXITFMATCH 19500 / 41580 calls 34975 errs 0
+10:44:41 saved k-tennis 19922
+10:46:44 KXITFMATCH 20000 / 41580 calls 35850 errs 0
+10:46:45 saved k-tennis 20422
+10:48:50 KXITFMATCH 20500 / 41580 calls 36719 errs 0
+10:48:50 saved k-tennis 20922
+10:50:56 KXITFMATCH 21000 / 41580 calls 37600 errs 0
+10:50:56 saved k-tennis 21422
+10:52:59 KXITFMATCH 21500 / 41580 calls 38488 errs 0
+10:53:00 saved k-tennis 21922
+10:55:05 KXITFMATCH 22000 / 41580 calls 39374 errs 0
+10:55:05 saved k-tennis 22422
+10:57:11 KXITFMATCH 22500 / 41580 calls 40248 errs 0
+10:57:11 saved k-tennis 22922
+10:59:16 KXITFMATCH 23000 / 41580 calls 41126 errs 0
+10:59:17 saved k-tennis 23422
+11:01:20 KXITFMATCH 23500 / 41580 calls 42004 errs 0
+11:01:20 saved k-tennis 23922
+11:03:26 KXITFMATCH 24000 / 41580 calls 42895 errs 0
+11:03:26 saved k-tennis 24422
+11:05:30 KXITFMATCH 24500 / 41580 calls 43774 errs 0
+11:05:30 saved k-tennis 24922
+11:07:35 KXITFMATCH 25000 / 41580 calls 44649 errs 0
+11:07:36 saved k-tennis 25422
+11:09:39 KXITFMATCH 25500 / 41580 calls 45514 errs 0
+11:09:40 saved k-tennis 25922
+11:11:45 KXITFMATCH 26000 / 41580 calls 46398 errs 0
+11:11:46 saved k-tennis 26422
+11:13:51 KXITFMATCH 26500 / 41580 calls 47271 errs 0
+11:13:52 saved k-tennis 26922
+11:15:55 KXITFMATCH 27000 / 41580 calls 48135 errs 0
+11:15:56 saved k-tennis 27422
+11:18:01 KXITFMATCH 27500 / 41580 calls 49012 errs 0
+11:18:02 saved k-tennis 27922
+11:20:05 KXITFMATCH 28000 / 41580 calls 49882 errs 0
+11:20:05 saved k-tennis 28422
+11:22:10 KXITFMATCH 28500 / 41580 calls 50746 errs 0
+11:22:11 saved k-tennis 28922
+11:24:14 KXITFMATCH 29000 / 41580 calls 51617 errs 0
+11:24:15 saved k-tennis 29422
+11:26:20 KXITFMATCH 29500 / 41580 calls 52473 errs 0
+11:26:21 saved k-tennis 29922
+11:28:26 KXITFMATCH 30000 / 41580 calls 53354 errs 0
+11:28:27 saved k-tennis 30422
+11:30:30 KXITFMATCH 30500 / 41580 calls 54225 errs 0
+11:30:30 saved k-tennis 30922
+11:32:36 KXITFMATCH 31000 / 41580 calls 55121 errs 0
+11:32:37 saved k-tennis 31422
+11:34:40 KXITFMATCH 31500 / 41580 calls 55996 errs 0
+11:34:41 saved k-tennis 31922
+11:36:45 KXITFMATCH 32000 / 41580 calls 56881 errs 0
+11:36:45 saved k-tennis 32422
+11:38:50 KXITFMATCH 32500 / 41580 calls 57794 errs 0
+11:38:51 saved k-tennis 32922
+11:40:55 KXITFMATCH 33000 / 41580 calls 58678 errs 0
+11:40:55 saved k-tennis 33422
+11:43:01 KXITFMATCH 33500 / 41580 calls 59554 errs 0
+11:43:02 saved k-tennis 33922
+11:45:05 KXITFMATCH 34000 / 41580 calls 60426 errs 0
+11:45:06 saved k-tennis 34422
+11:47:10 KXITFMATCH 34500 / 41580 calls 61298 errs 0
+11:47:10 saved k-tennis 34922
+11:49:16 KXITFMATCH 35000 / 41580 calls 62185 errs 0
+11:49:17 saved k-tennis 35422
+11:51:20 KXITFMATCH 35500 / 41580 calls 63057 errs 0
+11:51:21 saved k-tennis 35922
+11:51:32 saved k-tennis 35961
+11:51:33 saved k-tennis 35961
+11:51:33 done k:all calls 63120 errs 0 min 150
