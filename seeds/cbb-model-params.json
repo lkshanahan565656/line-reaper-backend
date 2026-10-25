@@ -1,0 +1,112 @@
+{
+ "minHalfLife": 3,
+ "rateHalfLife": 10,
+ "priorSeasonWeight": 0.25,
+ "minPriorGames": 1,
+ "recentK": 600,
+ "rateK": {
+  "points": 84,
+  "rebounds": 84,
+  "assists": 84,
+  "threes": 175,
+  "steals": 350,
+  "blocks": 280,
+  "turnovers": 210
+ },
+ "oppK": 5,
+ "oppWeight": {
+  "points": 1,
+  "rebounds": 1,
+  "assists": 1,
+  "threes": 1,
+  "steals": 1,
+  "blocks": 1,
+  "turnovers": 1
+ },
+ "totalWeight": 0.7,
+ "b2b": 1,
+ "blowoutPerPt": 0,
+ "freedShare": 0,
+ "usageBump": 0.25,
+ "minSdFloor": 8,
+ "minSdScale": 1,
+ "longGapSd": 1,
+ "posWeight": 0,
+ "priorDecayK": 0,
+ "priorMovedWeight": 0.5,
+ "outRecency": 1,
+ "phi": {
+  "points": 0.132,
+  "rebounds": 0.0096,
+  "assists": 0.02,
+  "threes": 0.0504,
+  "steals": 0.03,
+  "blocks": 0.119,
+  "turnovers": 0.018,
+  "pra": 0.064,
+  "pts_rebs": 0.08,
+  "pts_asts": 0.096,
+  "rebs_asts": 0.014,
+  "stocks": 0.024
+ },
+ "teamMinutes": 200,
+ "maxMin": 40,
+ "gameMin": 45,
+ "minPoss": 45,
+ "cal": {
+  "a": -0.0209,
+  "b": 0.245,
+  "range": 1.5,
+  "stat": {
+   "points": [
+    -0.021,
+    0.0658
+   ],
+   "assists": [
+    -0.0243,
+    0.313
+   ],
+   "rebounds": [
+    -0.0469,
+    0.3494
+   ],
+   "threes": [
+    0.0095,
+    0.5366
+   ],
+   "steals": [
+    0.0759,
+    0.6529
+   ],
+   "blocks": [
+    -0.0007,
+    0.7044
+   ],
+   "turnovers": [
+    0.0603,
+    0.6033
+   ],
+   "pts_asts": [
+    -0.0269,
+    0.008
+   ],
+   "pts_rebs": [
+    -0.0347,
+    0.0538
+   ],
+   "rebs_asts": [
+    -0.1015,
+    0.1149
+   ],
+   "pra": [
+    -0.0399,
+    -0.0046
+   ],
+   "stocks": [
+    0.0168,
+    0.469
+   ]
+  }
+ },
+ "calSource": "NBA v2 calibration (fitted on ESPN BET NBA lines 2024-11-20..2025-12-02); no CBB book lines exist"
+}

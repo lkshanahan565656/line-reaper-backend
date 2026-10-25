@@ -1,0 +1,14 @@
+{
+ "asOf": "2026-10-25, scripts and outputs in checks/cbb-model-2026-10-25",
+ "version": "v1",
+ "verdict": "Bar not cleared: untested. No college basketball prop line from any book or app exists for us to test on, so the backtest bar cannot be met; the live record from 0 is the only test.",
+ "prereg": "checks/cbb-model-2026-10-25/PREREGISTERED.md",
+ "lines": [
+  "Data: ESPN men's D1 box scores 2023-24 to 2025-26 (18,835 games); 2025-26 ships as the seed (6,300 games).",
+  "Book lines: none. ESPN keeps no college player props (empty for 11,000+ games, a server error for 1,613 more); we never recorded app CBB lines. Held-out slices: 0 near-even lines.",
+  "Tuned on November to January 2024-25 against stand-in lines (a player's last-10 average); calibration borrowed from the NBA v2 model's fit on real NBA book lines (conservative: points and combos sit near 50%).",
+  "Stand-in lines, Feb-Apr 2025 (137,592) and 2025-26 (311,141): Brier 0.2447 and 0.2447 vs a flat 50% 0.2500. Beating a naive average says nothing about beating an app's line.",
+  "The pre-game total and what the opponent allows carry real weight in college (unlike the NBA fit): totalWeight 0.7, opponent weight 1.",
+  "Live record: kinds cbb-model (PrizePicks 58%+), p6-cbb-model (Pick6 58%+), ud-cbb-model (Underdog +5% at the real multiplier), from 0 when the apps post lines (season opens 2026-11-03). A bet only at 50+ graded on one app, z 2+ over break-even, plus a raw re-check."
+ ]
+}

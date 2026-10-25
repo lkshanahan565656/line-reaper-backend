@@ -90,13 +90,15 @@ const THREE = new Set(['sharp3', 'p6-sharp3']);
 const COMBO = new Set(['combo', 'p6-combo']);
 // the CFB model's legs (cfbdata.js): a record of their own, never in the headline until proven
 const CFB_MODEL = new Set(['cfb-model', 'p6-cfb-model', 'ud-cfb-model']);
+// the college basketball model's legs (cbbdata.js): the same, from 0
+const CBB_MODEL = new Set(['cbb-model', 'p6-cbb-model', 'ud-cbb-model']);
 // the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
 const MODEL = new Set(['nba-model', 'p6-nba-model', 'ud-nba-model']);
 // app lines far from the NBA/CFB model's projection (farlines.js): research kinds per app, never the headline
 const FAR = require('./farlines').ALL_KINDS;
 // every MLB leg against Pinnacle's own number (mlbboard.js): research kinds per app, never the headline
 const MLB = new Set(['mlb-pin', 'p6-mlb-pin', 'ud-mlb-pin', 'sl-mlb-pin', 'mlb-even', 'p6-mlb-even', 'ud-mlb-even', 'sl-mlb-even']);
-const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL, ...CFB_MODEL, ...FAR, ...MLB]);
+const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL, ...CFB_MODEL, ...CBB_MODEL, ...FAR, ...MLB]);
 // At the lock: an MLB leg's raw Pinnacle close. pinExact = Pinnacle's last read
 // inside the hour before the start sat on the leg's own number, so closePinEv is
 // Pinnacle's own price there, no curve. pinMove: Pinnacle's line from the flag
@@ -176,7 +178,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         ...(COMBO.has(kind) ? { evMin: play.evMin ?? null, comboBooks: play.books ?? null, comboParts: play.parts ?? null, comboShadow: play.shadow ?? null, entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null } : {}),
         ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null, signalPinLine: pinLineOf(play.stale) } : {}),
-        ...(MODEL.has(kind) || CFB_MODEL.has(kind) ? { modelVersion: play.modelVersion ?? null } : {}),
+        ...(MODEL.has(kind) || CFB_MODEL.has(kind) || CBB_MODEL.has(kind) ? { modelVersion: play.modelVersion ?? null } : {}),
         ...(FAR.has(kind) ? { modelVersion: play.modelVersion ?? null, farD: play.farD ?? null, signalPinLine: play.pinLine ?? null, pinAgree: play.pinAgree ?? null } : {}),
         ...(MLB.has(kind) ? { signalPinLine: play.pinLine ?? null, signalPinOver: play.pinOver ?? null, gapPts: play.gapPts ?? null, signalExact: !!play.exact } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
@@ -340,7 +342,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
     // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
     // the three-sharps legs and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !MODEL.has(b.kind) && !CFB_MODEL.has(b.kind) && !FAR.has(b.kind) && !MLB.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !MODEL.has(b.kind) && !CFB_MODEL.has(b.kind) && !CBB_MODEL.has(b.kind) && !FAR.has(b.kind) && !MLB.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -350,7 +352,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     for (const b of every) (byKind[b.kind] ||= []).push(b);
     return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])),
       // the model kinds split by the model version that priced each leg (a leg logged before versions were saved is v1)
-      byModelVersion: Object.fromEntries(Object.entries(byKind).filter(([k]) => MODEL.has(k) || CFB_MODEL.has(k)).flatMap(([k, l]) => {
+      byModelVersion: Object.fromEntries(Object.entries(byKind).filter(([k]) => MODEL.has(k) || CFB_MODEL.has(k) || CBB_MODEL.has(k)).flatMap(([k, l]) => {
         const v = {}; for (const b of l) (v[b.modelVersion || 'v1'] ||= []).push(b);
         return Object.entries(v).map(([ver, g]) => [`${k}@${ver}`, stats(g)]);
       })), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
@@ -364,4 +366,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { MLB, mlbPinClose, COMBO, THREE, MODEL, CFB_MODEL, FAR, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { MLB, mlbPinClose, COMBO, THREE, MODEL, CFB_MODEL, CBB_MODEL, FAR, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

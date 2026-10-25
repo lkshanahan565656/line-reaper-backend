@@ -59,10 +59,11 @@ const pair = v => String(v ?? '').split(/[/-]/).map(num);
 // home favoured by 6.5), stype, players: [{ key, name, team, starter, min,
 // points, rebounds, assists, threes, steals, blocks, turnovers, fga, fta,
 // oreb }], dnp: { team: [key] } }
-function spreadOf(pc, home, away) {
+// minTotal: a total under it is a misread (the college game sits lower)
+function spreadOf(pc, home, away, minTotal = 150) {
   const p = Array.isArray(pc) ? pc.find(x => x && (x.spread != null || x.details)) : null;
   if (!p) return { total: null, spread: null };
-  const total = Number.isFinite(+p.overUnder) && +p.overUnder > 150 ? +p.overUnder : null;
+  const total = Number.isFinite(+p.overUnder) && +p.overUnder > minTotal ? +p.overUnder : null;
   let spread = null;
   // "BOS -6.5": the favourite's abbreviation and its number; "EVEN" is 0
   const m = /^([A-Z]{2,4})\s+(-?\d+(?:\.\d+)?)$/.exec(String(p.details || '').trim());
@@ -82,22 +83,27 @@ function posOf(athlete) {
   const c = a.replace(/^(P|S)(?=[GF])/, '')[0];
   return c === 'G' || c === 'F' || c === 'C' ? c : null;
 }
-function compactGame(sum) {
+// opts (the college model): keyOf(athlete) for the player key (default his
+// canonical name), teamOf(team) for the team key (default its abbreviation),
+// minTotal for the pre-game total
+function compactGame(sum, opts = {}) {
+  const teamOf = opts.teamOf || (t => t?.abbreviation);
+  const keyOf = opts.keyOf || (a => canonName(a.displayName));
   const comp = sum?.comp || sum?.header?.competitions?.[0] || {};
   const cs = comp.competitors || [];
   const h = cs.find(c => c.homeAway === 'home'), a = cs.find(c => c.homeAway === 'away');
   if (!h || !a) return null;
-  const home = h.team?.abbreviation, away = a.team?.abbreviation;
+  const home = teamOf(h.team), away = teamOf(a.team);
   const players = [], dnp = {}, inj = {};
   for (const tm of sum?.players || sum?.boxscore?.players || []) {
-    const team = tm.team?.abbreviation;
+    const team = teamOf(tm.team);
     for (const g of tm.statistics || []) {
       const keys = g.keys || [];
       if (!keys.includes('points')) continue;
       for (const at of g.athletes || []) {
         const name = at.athlete?.displayName;
         if (!name) continue;
-        const key = canonName(name);
+        const key = keyOf(at.athlete);
         const s = {}; keys.forEach((k, i) => { s[k] = at.stats?.[i]; });
         const min = num(s.minutes);
         if (at.didNotPlay || !at.stats?.length || !(min > 0)) {
@@ -118,7 +124,7 @@ function compactGame(sum) {
     }
   }
   if (!players.length) return null;
-  const { total, spread } = spreadOf(sum?.pickcenter, home, away);
+  const { total, spread } = spreadOf(sum?.pickcenter, home, away, opts.minTotal);
   return { id: String(sum.id || comp.id || ''), t: Date.parse(comp.date || sum.date || ''), home, away,
     homePts: num(h.score), awayPts: num(a.score), total, spread, players, dnp, inj };
 }
@@ -127,13 +133,15 @@ function compactGame(sum) {
 // games (any order) → { players: Map(key → [{ t, gid, team, opp, home, ...stats }]),
 // teams: Map(abbr → [{ t, poss, pts, allowed: { stat: per-poss } }]), league: [{ t, per-minute rates, poss, total }] }
 const poss = ps => ps.reduce((s, p) => s + p.fga + 0.44 * p.fta - p.oreb + p.turnovers, 0);
-function buildHistory(games) {
+// P.minPoss: a game whose possessions read under it is a broken box
+function buildHistory(games, P = PARAMS) {
+  const minPoss = P.minPoss ?? 60;
   const players = new Map(), teams = new Map(), league = [];
   for (const g of [...games].filter(Boolean).sort((x, y) => x.t - y.t)) {
     const side = { [g.home]: g.players.filter(p => p.team === g.home), [g.away]: g.players.filter(p => p.team === g.away) };
     const pz = { [g.home]: poss(side[g.home]), [g.away]: poss(side[g.away]) };
     const gp = (pz[g.home] + pz[g.away]) / 2;
-    if (!(gp > 60)) continue;   // a broken box (no shooting lines) never feeds the averages
+    if (!(gp > minPoss)) continue;   // a broken box (no shooting lines) never feeds the averages
     for (const tm of [g.home, g.away]) {
       const opp = tm === g.home ? g.away : g.home;
       const allowed = {}, allowedPos = {};
@@ -220,7 +228,7 @@ function oppFactor(H, opp, t, P, lg, pos = null) {
     for (const s of BASE) lgPos[s] = use.length ? use.reduce((a, x) => a + x.posPer[pos][s], 0) / use.length : null;
   }
   for (const s of BASE) {
-    const lgPer = lg.rates[s] != null ? lg.rates[s] * 240 / lg.poss : null;   // league per possession (240 player-minutes a game)
+    const lgPer = lg.rates[s] != null ? lg.rates[s] * (P.teamMinutes || 240) / lg.poss : null;   // league per possession (240 player-minutes a game, 200 in college)
     if (!lgPer) { out[s] = 1; continue; }
     const e = ewMean(list, x => x.allowed[s], 15, t, P);
     const n = Math.min(list.length, 40);
@@ -314,11 +322,11 @@ function project(H, key, ctx, P = PARAMS) {
     }
     if (freedMin > 0) {
       // the rotation's minutes this player sits in (240 a game)
-      const share = Math.max(0, Math.min(0.3, mMean / 240 * 1.6));
-      mMean = Math.min(42, mMean + P.freedShare * freedMin * share);
+      const share = Math.max(0, Math.min(0.3, mMean / (P.teamMinutes || 240) * 1.6));
+      mMean = Math.min((P.maxMin || 44) - 2, mMean + P.freedShare * freedMin * share);
     }
   }
-  mMean = Math.max(1, Math.min(44, mMean));
+  mMean = Math.max(1, Math.min(P.maxMin || 44, mMean));
   // minutes spread: the player's own recent deviations, floored
   const dev = Math.sqrt(ewMean(recent.slice(-15), g => (g.min - ewMin.mean) ** 2, 8, t, P).mean || 0);
   let mSd = Math.max(P.minSdFloor, P.minSdScale * dev);
@@ -394,10 +402,10 @@ function statMean(proj, stat, m) {
   const parts = COMBOS[stat] || [stat];
   return parts.reduce((a, s) => a + proj.rate[s] * proj.mult[s] * m, 0);
 }
-function expected(proj, stat) {
+function expected(proj, stat, P = PARAMS) {
   let e = 0;
   for (let i = 0; i < NODES.length; i++) {
-    const m = Math.max(0, Math.min(48, proj.minutes.mean + proj.minutes.sd * NODES[i]));
+    const m = Math.max(0, Math.min(P.gameMin || 48, proj.minutes.mean + proj.minutes.sd * NODES[i]));
     e += WEIGHTS[i] * statMean(proj, stat, m);
   }
   return e;
@@ -410,7 +418,7 @@ function probOver(proj, stat, line, P = PARAMS) {
   const whole = Math.abs(line - k) < 1e-9;
   let over = 0, push = 0;
   for (let i = 0; i < NODES.length; i++) {
-    const m = Math.max(0, Math.min(48, proj.minutes.mean + proj.minutes.sd * NODES[i]));
+    const m = Math.max(0, Math.min(P.gameMin || 48, proj.minutes.mean + proj.minutes.sd * NODES[i]));
     const mu = statMean(proj, stat, m);
     if (whole) {
       const below = countCdf(k - 1, mu, phi).cdf, at = countCdf(k, mu, phi);
@@ -423,7 +431,7 @@ function probOver(proj, stat, line, P = PARAMS) {
 }
 // the median of the projection (the number we'd hang)
 function median(proj, stat, P = PARAMS) {
-  const mean = expected(proj, stat);
+  const mean = expected(proj, stat, P);
   let k = Math.max(0, Math.floor(mean));
   for (let step = 0; step < 200; step++) {
     const below = 1 - probOver(proj, stat, k + 0.5, P).over;   // P(X <= k)
@@ -448,7 +456,7 @@ function priceLine(proj, stat, line, P = PARAMS) {
   const raw = n > 0 ? p.over / n : 0.5;   // a push is a void on the apps
   const pOver = calibrate(raw, stat, P);
   // raw: the model's own P(over) before calibration (farlines.js reads the line's distance from it)
-  return { stat, line, mean: Math.round(expected(proj, stat) * 10) / 10, pOver: Math.round(pOver * 1e4) / 1e4, raw: Math.round(raw * 1e4) / 1e4,
+  return { stat, line, mean: Math.round(expected(proj, stat, P) * 10) / 10, pOver: Math.round(pOver * 1e4) / 1e4, raw: Math.round(raw * 1e4) / 1e4,
     side: pOver >= 0.5 ? 'Over' : 'Under', pSide: Math.round(Math.max(pOver, 1 - pOver) * 1e4) / 1e4,
     minutes: Math.round(proj.minutes.mean * 10) / 10 };
 }
