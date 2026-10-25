@@ -1,0 +1,4282 @@
+{
+ "start": "2026-10-25T00:25:23.303Z",
+ "samples": [
+  {
+   "at": "2026-10-25T00:25:23.304Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 283,
+     "bytes": 31057
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 257,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 361,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 228,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:28.719Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 186,
+     "bytes": 31062
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 184,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 330,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 183,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:34.054Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 423,
+     "bytes": 31063
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 416,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 534,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 388,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:39.593Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 758,
+     "bytes": 31058
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 766,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 878,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 740,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:45.474Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 1710,
+     "bytes": 31062
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 1704,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 1826,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 1679,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:52.304Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 1177,
+     "bytes": 31057
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 1194,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 1300,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 1160,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:25:58.609Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 191,
+     "bytes": 31074
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 175,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 337,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 186,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:03.951Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 7770,
+     "bytes": 30988
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 7773,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 7885,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 7745,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:16.839Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 2955,
+     "bytes": 31184
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 2955,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 3078,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 2926,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:24.921Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 191,
+     "bytes": 32133
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 185,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 331,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 189,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:30.256Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 320,
+     "bytes": 32126
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 312,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 429,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 284,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:35.688Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 194,
+     "bytes": 32127
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 186,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 331,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 186,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:41.023Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 227,
+     "bytes": 32130
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 170,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 399,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 252,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:46.427Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 194,
+     "bytes": 32145
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 191,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 333,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 185,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:51.763Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 197,
+     "bytes": 32146
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 189,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 339,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 188,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:26:57.106Z",
+   "ver": "3.159.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 194,
+    "maxMs": 254745,
+    "until": "2026-10-25T00:21:02.514Z"
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 337,
+     "bytes": 32143
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 339,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 450,
+     "bytes": 709312
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 306,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:02.559Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 21,
+    "p99Ms": 5633,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 3989,
+     "bytes": 11804
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 4040,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 4166,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 4000,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:11.730Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 149,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 168,
+     "bytes": 12432
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 202,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 330,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 188,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:17.064Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 130,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 157,
+     "bytes": 12671
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 184,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 340,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 187,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:22.408Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 92,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 176,
+     "bytes": 13416
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 201,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 336,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 188,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:27.749Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 92,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 187,
+     "bytes": 13903
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 190,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 352,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 201,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:33.107Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 130,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 981,
+     "bytes": 13904
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 1028,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 1136,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 999,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:39.247Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 113,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 189,
+     "bytes": 13960
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 218,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 352,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 199,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:44.602Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 124,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 227,
+     "bytes": 14112
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 280,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 393,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 239,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:50.000Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 132,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 297,
+     "bytes": 15240
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 346,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 466,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 305,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:27:55.469Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 173,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 662,
+     "bytes": 15846
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 683,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 792,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 651,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:28:01.265Z",
+   "ver": "3.160.0",
+   "loop": {
+    "p50Ms": 20,
+    "p99Ms": 206,
+    "maxMs": 5633
+   },
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 200,
+     "ms": 906,
+     "bytes": 16249
+    },
+    {
+     "p": "/calc.js",
+     "code": 200,
+     "ms": 956,
+     "bytes": 21782
+    },
+    {
+     "p": "/app",
+     "code": 200,
+     "ms": 1085,
+     "bytes": 710376
+    },
+    {
+     "p": "/api/health",
+     "code": 404,
+     "ms": 931,
+     "bytes": 149
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:28:07.355Z",
+   "ver": null,
+   "loop": null,
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/calc.js",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/app",
+     "code": 0,
+     "ms": 60002,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/api/health",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:29:12.361Z",
+   "ver": null,
+   "loop": null,
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/calc.js",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/app",
+     "code": 0,
+     "ms": 60000,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/api/health",
+     "code": 0,
+     "ms": 60002,
+     "err": "The operation was aborted due to timeout"
+    }
+   ]
+  },
+  {
+   "at": "2026-10-25T00:30:17.367Z",
+   "ver": null,
+   "loop": null,
+   "r": [
+    {
+     "p": "/api/status",
+     "code": 0,
+     "ms": 60000,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/calc.js",
+     "code": 0,
+     "ms": 60000,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/app",
+     "code": 0,
+     "ms": 60000,
+     "err": "The operation was aborted due to timeout"
+    },
+    {
+     "p": "/api/health",
+     "code": 0,
+     "ms": 60001,
+     "err": "The operation was aborted due to timeout"
+    }
+   ]
+  }
+ ],
+ "statuses": [
+  {
+   "at": "2026-10-25T00:25:23.304Z",
+   "j": {
+    "version": "3.159.0",
+    "modelWeight": 0.35,
+    "prizepicks": {
+     "count": 3898,
+     "updated": "2026-10-25T00:24:06.546Z",
+     "blocked": false,
+     "retryAt": null,
+     "inUse": 3898,
+     "lastError": null
+    },
+    "underdog": {
+     "count": 7591,
+     "updated": "2026-10-25T00:24:13.301Z",
+     "sports": [
+      "CFB",
+      "NFL",
+      "NBA",
+      "NHL",
+      "FIFA",
+      "TENNIS",
+      "MOTORSPORTS",
+      "CS",
+      "VAL",
+      "DOTA",
+      "KBO"
+     ],
+     "lastError": null
+    },
+    "sleeper": {
+     "count": 36,
+     "sports": 2235,
+     "rows": 2271,
+     "updated": "2026-10-25T00:24:09.765Z",
+     "lastError": null
+    },
+    "pick6": {
+     "enabled": true,
+     "relay": {
+      "at": "2026-10-25T00:20:55.168Z",
+      "reads": 7,
+      "error": null,
+      "sports": [
+       "NBA",
+       "CFB",
+       "MLB",
+       "NHL",
+       "NFL",
+       "WNBA",
+       "SOCCER",
+       "LOL",
+       "CS"
+      ]
+     },
+     "sports": [
+      "NBA",
+      "CFB",
+      "MLB",
+      "NHL",
+      "NFL",
+      "WNBA",
+      "SOCCER",
+      "LOL",
+      "CS"
+     ],
+     "reads": 0,
+     "payouts": {
+      "2": {
+       "2": 3
+      },
+      "3": {
+       "3": 6
+      },
+      "4": {
+       "4": 10
+      },
+      "5": {
+       "4": 1,
+       "5": 12
+      },
+      "6": {
+       "5": 1.5,
+       "6": 25
+      },
+      "7": {
+       "6": 2,
+       "7": 40
+      },
+      "8": {
+       "6": 1,
+       "7": 3,
+       "8": 80
+      }
+     },
+     "bySport": {
+      "NBA": {
+       "lines": 122,
+       "groups": 1,
+       "at": "2026-10-25T00:19:54.270Z"
+      },
+      "CFB": {
+       "lines": 0,
+       "groups": 1,
+       "at": "2026-10-25T00:20:04.181Z"
+      },
+      "MLB": {
+       "lines": 0,
+       "groups": 1,
+       "at": "2026-10-25T00:20:14.251Z"
+      },
+      "NHL": {
+       "lines": 141,
+       "groups": 1,
+       "at": "2026-10-25T00:20:21.383Z"
+      },
+      "NFL": {
+       "lines": 296,
+       "groups": 2,
+       "at": "2026-10-25T00:20:34.853Z"
+      },
+      "WNBA": {
+       "lines": 37,
+       "groups": 1,
+       "at": "2026-10-25T00:20:40.517Z"
+      },
+      "SOCCER": {
+       "lines": 0,
+       "groups": 2,
+       "at": "2026-10-25T00:20:51.766Z"
+      },
+      "LOL": {
+       "lines": 8,
+       "groups": 1,
+       "at": "2026-10-25T00:08:57.176Z"
+      },
+      "CS": {
+       "lines": 194,
+       "groups": 1,
+       "at": "2026-10-25T00:20:55.168Z"
+      }
+     },
+     "lines": 798,
+     "blockedUntil": "2026-10-25T00:28:01.457Z",
+     "lastError": {
+      "status": 403,
+      "message": "Request failed with status code 403",
+      "at": "2026-10-25T00:18:01.457Z"
+     }
+    },
+    "exchangeSize": {
+     "on": true,
+     "scans": 14,
+     "lastScan": "2026-10-25T00:24:47.384Z",
+     "sides": 1812,
+     "candidates": {
+      "kalshi": 9,
+      "polymarketus": 6
+     },
+     "reads": {
+      "polymarketus": 6,
+      "gemini": 6,
+      "kalshi": 18
+     },
+     "flags": 10,
+     "errors": [
+      "polymarketus: 429"
+     ],
+     "results": {
+      "due": 0,
+      "graded": 0
+     },
+     "byVenue": {
+      "polymarketus": {
+       "sides": 441,
+       "atFair": 14,
+       "mainAtFlag": 10,
+       "bestEv": 0.123
+      },
+      "gemini": {
+       "sides": 206,
+       "atFair": 1,
+       "mainAtFlag": 1,
+       "bestEv": 2.3101
+      },
+      "kalshi": {
+       "sides": 1165,
+       "atFair": 20,
+       "mainAtFlag": 2,
+       "bestEv": 2.3126
+      }
+     },
+     "lastScanMs": 1020
+    },
+    "resultsBackup": {
+     "state": "ready",
+     "snapshotAt": "2026-10-24T23:47:15.926Z",
+     "note": null,
+     "restored": {
+      "steamHistory": 2170,
+      "oddsHistory": 509,
+      "ev": 7044,
+      "evAlt": 14273,
+      "evEsports": 393,
+      "evStale": 576,
+      "sportProps": 13266,
+      "esportsPicks": 923,
+      "esportsSlips": 1326,
+      "esportsPinGaps": 365,
+      "esportsShare": 105,
+      "esportsRounds": 142,
+      "esportsH2H": 1844,
+      "esportsStale": 204,
+      "esportsPinTotals": 482,
+      "tailTraders": 6499,
+      "tail": 422,
+      "fresh": 215,
+      "exchangeValue": 1927,
+      "bidArbs": 3462,
+      "middles": 253,
+      "gasLocks": 328,
+      "esportsEdges": 2088,
+      "xsize": 33,
+      "bigMoney": 368,
+      "bookArbs": 1745
+     },
+     "stores": [
+      "push",
+      "ev",
+      "evAlt",
+      "evEsports",
+      "evStale",
+      "sportProps",
+      "slipLegs",
+      "esportsPicks",
+      "esportsSlips",
+      "esportsPinGaps",
+      "esportsShare",
+      "esportsRounds",
+      "esportsH2H",
+      "esportsStale",
+      "esportsSlipLegs",
+      "esportsPinTotals",
+      "tailTraders",
+      "tail",
+      "fresh",
+      "steamHistory",
+      "exchangeValue",
+      "bidArbs",
+      "middles",
+      "gasLocks",
+      "esportsMatchups",
+      "esportsEdges",
+      "xsize",
+      "bigMoney",
+      "oddsHistory",
+      "bookArbs"
+     ]
+    },
+    "kalshiProps": {
+     "updated": "2026-10-25T00:24:46.524Z",
+     "counts": {
+      "events": 233,
+      "ladders": 1545,
+      "matched": 1972,
+      "interpolated": 373
+     },
+     "errors": [
+      "KXNHLPTS: timeout of 20000ms exceeded"
+     ]
+    },
+    "kalshiExtra": {
+     "quotes": 71,
+     "bySport": {
+      "MOTORSPORTS finishing_position": 35,
+      "TENNIS games_played": 36
+     },
+     "events": 24,
+     "updated": "2026-10-25T00:17:45.074Z",
+     "errors": []
+    },
+    "bigMoney": {
+     "updated": "2026-10-25T00:24:46.769Z",
+     "counts": {
+      "prints": 2353,
+      "big": 692,
+      "plays": 25,
+      "flagged": 0,
+      "marketMaker": 7,
+      "props": 6,
+      "games": 19,
+      "rungs": 7634,
+      "gameRows": 1489,
+      "bets": 1469
+     },
+     "errors": []
+    },
+    "oddsScreen": {
+     "series": 573,
+     "points": 2933,
+     "observedAt": "2026-10-25T00:24:49.455Z",
+     "errors": []
+    },
+    "bookArbs": {
+     "updated": "2026-10-25T00:24:02.955Z",
+     "dataAt": "2026-10-25T00:21:59.102Z",
+     "reads": 20,
+     "counts": {
+      "subjects": 2329,
+      "quotes": 29570,
+      "pairs": 79856,
+      "arbs": 24,
+      "middles": 46,
+      "tooGood": 0,
+      "byVenue": {
+       "fanduel": 11658,
+       "betrivers": 7708,
+       "polymarketus": 50,
+       "kalshi": 10154
+      },
+      "arbPairs": {
+       "betrivers+kalshi": 20,
+       "betrivers+fanduel": 1,
+       "fanduel+kalshi": 3
+      },
+      "middlePairs": {
+       "betrivers+kalshi": 23,
+       "betrivers+fanduel": 18,
+       "fanduel+kalshi": 5
+      },
+      "arbKinds": {
+       "prop": 23,
+       "total": 1
+      },
+      "middleKinds": {
+       "prop": 31,
+       "spread": 12,
+       "total": 3
+      },
+      "medianArbPct": 0.27,
+      "medianMiddleEv": 1.77,
+      "medianMiddleMiss": -9.16,
+      "stale": 7
+     }
+    },
+    "pinnacleProps": {
+     "enabled": true,
+     "props": 913,
+     "bySport": {
+      "NFL": 625,
+      "NBA": 96,
+      "NHL": 173,
+      "CFB": 19
+     },
+     "updated": "2026-10-25T00:24:21.758Z",
+     "errors": [],
+     "extra": {
+      "props": 1993,
+      "bySport": {
+       "TENNIS games_won": 434,
+       "TENNIS games_played": 748,
+       "TENNIS 1st_set_games_played": 360,
+       "TENNIS sets_won": 301,
+       "TENNIS sets_played": 150
+      },
+      "errors": []
+     }
+    },
+    "freeBooks": {
+     "enabled": true,
+     "counts": {
+      "epl": {
+       "pinnacle": 15,
+       "exchangeOnly": true,
+       "more": {
+        "gemini": {
+         "listed": 5,
+         "games": 5
+        },
+        "polymarketus": {
+         "listed": 14,
+         "games": 14
+        }
+       }
+      },
+      "laliga": {
+       "pinnacle": 14,
+       "exchangeOnly": true,
+       "more": {
+        "gemini": {
+         "listed": 5,
+         "games": 5
+        },
+        "polymarketus": {
+         "listed": 14,
+         "games": 13
+        }
+       }
+      },
+      "bundesliga": {
+       "pinnacle": 11,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 11,
+         "games": 11
+        }
+       }
+      },
+      "seriea": {
+       "pinnacle": 15,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 22,
+         "games": 15
+        }
+       }
+      },
+      "mls": {
+       "pinnacle": 14,
+       "exchangeOnly": true,
+       "more": {
+        "gemini": {
+         "listed": 20,
+         "games": 14
+        },
+        "polymarketus": {
+         "listed": 8,
+         "games": 7
+        }
+       }
+      },
+      "ligamx": {
+       "pinnacle": 6,
+       "exchangeOnly": true,
+       "more": {
+        "gemini": {
+         "listed": 7,
+         "games": 6
+        }
+       }
+      },
+      "eredivisie": {
+       "pinnacle": 8,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 5,
+         "games": 5
+        }
+       }
+      },
+      "brasileirao": {
+       "pinnacle": 8,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 4,
+         "games": 3
+        }
+       }
+      },
+      "ucl": {
+       "pinnacle": 18,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 9,
+         "games": 9
+        }
+       }
+      },
+      "tennis": {
+       "pinnacle": 65,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 117,
+         "games": 50
+        }
+       }
+      },
+      "ufc": {
+       "pinnacle": 12,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 13,
+         "games": 5
+        }
+       }
+      },
+      "khl": {
+       "pinnacle": 10,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 11,
+         "games": 9
+        }
+       }
+      },
+      "ahl": {
+       "pinnacle": 4,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 6,
+         "games": 3
+        }
+       }
+      },
+      "kbo": {
+       "pinnacle": 1,
+       "exchangeOnly": true,
+       "more": {
+        "polymarketus": {
+         "listed": 2,
+         "games": 1
+        }
+       }
+      },
+      "nfl": {
+       "pinnacle": 13,
+       "fanduel": 13,
+       "betrivers": 13,
+       "props": {
+        "pinnacle": 599,
+        "fanduel": 465,
+        "betrivers": 505,
+        "matched": {
+         "fanduel": 358,
+         "betrivers": 114
+        }
+       },
+       "more": {
+        "draftkings": {
+         "games": 13,
+         "props": 830,
+         "matched": 298
+        },
+        "betmgm": {
+         "games": 13,
+         "props": 478,
+         "matched": 211
+        },
+        "bet365": {
+         "games": 13,
+         "props": 1008,
+         "matched": 258
+        },
+        "caesars": {
+         "games": 13,
+         "props": 593,
+         "matched": 323
+        },
+        "hardrock": {
+         "games": 13,
+         "props": 536,
+         "matched": 152
+        },
+        "fanatics": {
+         "games": 13,
+         "props": 469,
+         "matched": 191
+        },
+        "thescore": {
+         "games": 13,
+         "props": 0,
+         "matched": 0
+        },
+        "matchbook": {
+         "games": 13,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 13,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 13,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      },
+      "ncaaf": {
+       "pinnacle": 2,
+       "fanduel": 2,
+       "betrivers": 2,
+       "props": {
+        "pinnacle": 19,
+        "fanduel": 45,
+        "betrivers": 0,
+        "matched": {
+         "fanduel": 9,
+         "betrivers": 0
+        }
+       },
+       "more": {
+        "draftkings": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "betmgm": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "bet365": {
+         "games": 2,
+         "props": 48,
+         "matched": 5
+        },
+        "caesars": {
+         "games": 2,
+         "props": 40,
+         "matched": 9
+        },
+        "fanatics": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "thescore": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "matchbook": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 2,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      },
+      "nba": {
+       "pinnacle": 3,
+       "fanduel": 3,
+       "betrivers": 3,
+       "props": {
+        "pinnacle": 96,
+        "fanduel": 227,
+        "betrivers": 0,
+        "matched": {
+         "fanduel": 84,
+         "betrivers": 0
+        }
+       },
+       "more": {
+        "matchbook": {
+         "games": 3,
+         "props": 0,
+         "matched": 0
+        },
+        "draftkings": {
+         "games": 3,
+         "props": 252,
+         "matched": 74
+        },
+        "betmgm": {
+         "games": 3,
+         "props": 105,
+         "matched": 60
+        },
+        "bet365": {
+         "games": 3,
+         "props": 374,
+         "matched": 61
+        },
+        "caesars": {
+         "games": 3,
+         "props": 211,
+         "matched": 77
+        },
+        "fanatics": {
+         "games": 3,
+         "props": 221,
+         "matched": 75
+        },
+        "thescore": {
+         "games": 3,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 3,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 3,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      },
+      "wnba": {
+       "pinnacle": 1,
+       "fanduel": 1,
+       "betrivers": 1,
+       "props": {
+        "pinnacle": 0,
+        "fanduel": 0,
+        "betrivers": 0,
+        "matched": {
+         "fanduel": 0,
+         "betrivers": 0
+        }
+       },
+       "more": {
+        "matchbook": {
+         "games": 0,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 1,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 1,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      },
+      "nhl": {
+       "pinnacle": 6,
+       "fanduel": 6,
+       "betrivers": 6,
+       "props": {
+        "pinnacle": 170,
+        "fanduel": 80,
+        "betrivers": 58,
+        "matched": {
+         "fanduel": 15,
+         "betrivers": 40
+        }
+       },
+       "more": {
+        "draftkings": {
+         "games": 6,
+         "props": 43,
+         "matched": 38
+        },
+        "bet365": {
+         "games": 6,
+         "props": 0,
+         "matched": 0
+        },
+        "caesars": {
+         "games": 6,
+         "props": 43,
+         "matched": 38
+        },
+        "hardrock": {
+         "games": 4,
+         "props": 150,
+         "matched": 71
+        },
+        "fanatics": {
+         "games": 6,
+         "props": 0,
+         "matched": 0
+        },
+        "betmgm": {
+         "games": 5,
+         "props": 0,
+         "matched": 0
+        },
+        "matchbook": {
+         "games": 6,
+         "props": 0,
+         "matched": 0
+        },
+        "thescore": {
+         "games": 3,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 6,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 6,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      },
+      "mlb": {
+       "pinnacle": 0,
+       "fanduel": 0,
+       "betrivers": 0,
+       "props": {
+        "pinnacle": 0,
+        "fanduel": 0,
+        "betrivers": 0,
+        "matched": {
+         "fanduel": 0,
+         "betrivers": 0
+        }
+       },
+       "more": {
+        "matchbook": {
+         "games": 0,
+         "props": 0,
+         "matched": 0
+        },
+        "gemini": {
+         "games": 0,
+         "props": 0,
+         "matched": 0
+        },
+        "polymarketus": {
+         "games": 0,
+         "props": 0,
+         "matched": 0
+        }
+       }
+      }
+     },
+     "errors": [],
+     "updated": "2026-10-25T00:24:47.383Z",
+     "gamesAt": "2026-10-25T00:24:47.288Z",
+     "ms": 44169
+    },
+    "gemini": {
+     "enabled": true,
+     "events": 373,
+     "errors": [],
+     "updated": "2026-10-25T00:24:27.732Z",
+     "ms": 3604,
+     "games": {
+      "nfl": 14,
+      "ncaaf": 11,
+      "nba": 23,
+      "wnba": 1,
+      "nhl": 8,
+      "mlb": 2,
+      "ncaab": 0,
+      "epl": 5,
+      "laliga": 5,
+      "bundesliga": 0,
+      "seriea": 0,
+      "ligue1": 0,
+      "mls": 20,
+      "ligamx": 7,
+      "ucl": 0,
+      "uel": 0,
+      "eredivisie": 0,
+      "ufc": 0
+     },
+     "paired": {
+      "epl": 5,
+      "laliga": 5,
+      "mls": 14,
+      "ligamx": 6,
+      "nfl": 13,
+      "ncaaf": 2,
+      "nba": 3,
+      "wnba": 1,
+      "nhl": 6
+     },
+     "skipped": {}
+    },
+    "polymarketUsBooks": {
+     "enabled": true,
+     "games": 469,
+     "withLines": 15,
+     "slugReads": 30,
+     "byLeague": {
+      "nfl": 27,
+      "wnba": 1,
+      "mlb": 2,
+      "nhl": 26,
+      "epl": 14,
+      "lal": 14,
+      "bun": 11,
+      "sea": 22,
+      "ere": 5,
+      "mls": 8,
+      "bra": 4,
+      "ucl": 9,
+      "wta": 24,
+      "ufc": 13,
+      "khl": 11,
+      "ahl": 6,
+      "shl": 2,
+      "kbo": 2,
+      "npb": 1,
+      "nba": 36,
+      "atp": 93,
+      "cfb": 138
+     },
+     "errors": [],
+     "updated": "2026-10-25T00:24:39.193Z",
+     "ms": 15065,
+     "paired": {
+      "epl": 14,
+      "laliga": 13,
+      "bundesliga": 11,
+      "seriea": 15,
+      "mls": 7,
+      "eredivisie": 5,
+      "brasileirao": 3,
+      "ucl": 9,
+      "tennis": 50,
+      "ufc": 5,
+      "khl": 9,
+      "ahl": 3,
+      "kbo": 1,
+      "nfl": 13,
+      "ncaaf": 2,
+      "nba": 3,
+      "wnba": 1,
+      "nhl": 6
+     }
+    },
+    "pinnacleExtraGames": {
+     "games": 235,
+     "at": "2026-10-25T00:24:24.819Z",
+     "errors": []
+    },
+    "evResults": {
+     "runs": 1,
+     "graded": 46,
+     "lastRun": "2026-10-25T00:18:01.492Z",
+     "lastGraded": 46,
+     "pending": 23,
+     "notFound": 11,
+     "errors": []
+    },
+    "moreBooks": {
+     "sharpPromoted": [
+      "draftkings",
+      "bet365",
+      "caesars",
+      "fanatics"
+     ],
+     "enabled": true,
+     "action": true,
+     "matchbook": true,
+     "counts": {
+      "action": 750,
+      "matchbook": 29
+     },
+     "errors": [],
+     "updated": "2026-10-25T00:24:24.128Z",
+     "ms": 15525
+    },
+    "propsBoard": {
+     "sports": {
+      "CFB": 290,
+      "NFL": 5305,
+      "NBA": 712,
+      "NHL": 553,
+      "SOCCER": 1703,
+      "TENNIS": 575,
+      "MOTORSPORTS": 22,
+      "KBO": 15,
+      "EUROGOLF": 32,
+      "NASCAR": 19,
+      "LA LIGA": 33,
+      "F1": 15,
+      "WNBA": 62,
+      "CS": 311,
+      "VAL": 40,
+      "DOTA": 80
+     },
+     "books": {
+      "underdog": 7587,
+      "prizepicks": 3531,
+      "sleeper": 2268,
+      "pick6": 790
+     },
+     "priced": 1768,
+     "multi": 2742,
+     "rows": 9767,
+     "gaps": 1,
+     "sharp3": 0,
+     "combo": 0,
+     "sharp": 0,
+     "consensus": 928,
+     "researchGaps": 61
+    },
+    "esportsBoard": {
+     "updated": "2026-10-25T00:24:25.659Z",
+     "durationMs": 10810,
+     "counts": {
+      "matches": 144,
+      "byGame": {
+       "OW": 13,
+       "CS2": 84,
+       "LOL": 3,
+       "DOTA": 18,
+       "MLBB": 6,
+       "HOK": 8,
+       "VAL": 7,
+       "R6": 1,
+       "SC2": 4
+      },
+      "polymarketEvents": 136,
+      "kalshiEvents": 343,
+      "bookMatches": 29,
+      "both": 88,
+      "withBook": 28,
+      "pinnacleMatches": 18,
+      "withPinnacle": 15,
+      "edges": 3,
+      "arbs": 0,
+      "rated": 84,
+      "tracked": 174
+     },
+     "calibration": {
+      "LOL": {
+       "scale": 1,
+       "n": 1,
+       "maeRaw": 0.2494,
+       "maeCal": 0.2494,
+       "maeHoldout": null,
+       "fitted": false
+      },
+      "DOTA": {
+       "scale": 1,
+       "n": 8,
+       "maeRaw": 0.1185,
+       "maeCal": 0.1185,
+       "maeHoldout": null,
+       "fitted": false
+      },
+      "CS2": {
+       "scale": 0.5815,
+       "n": 38,
+       "maeRaw": 0.1436,
+       "maeCal": 0.1262,
+       "maeHoldout": 0.1304,
+       "fitted": true
+      }
+     },
+     "errors": []
+    },
+    "esports": {
+     "picks": 366,
+     "updated": "2026-10-25T00:25:01.847Z",
+     "ppEsportsLines": 271,
+     "udEsportsLines": 306,
+     "sleeperEsportsLines": 36,
+     "ppEsportsLeagues": [
+      "121",
+      "174",
+      "265"
+     ]
+    },
+    "lolData": {
+     "players": 2181,
+     "teams": 0,
+     "games": 16589,
+     "updated": "2026-10-25T00:11:22.584Z",
+     "state": "ready",
+     "error": null,
+     "source": "gol.gg"
+    },
+    "implausibleLines": [],
+    "spanInferredCount": 3,
+    "priceMismatchCount": 0,
+    "killShare": {
+     "teams": 0,
+     "unknownLineup": 2,
+     "priced": 0,
+     "clear": 0,
+     "byGame": {}
+    },
+    "roundModel": {
+     "matches": 7,
+     "teams": 9,
+     "unknownLineup": 5,
+     "priced": 57,
+     "clear": 4,
+     "byGame": {
+      "CS2": 57
+     },
+     "noRounds": 5
+    },
+    "h2h": {
+     "on": true,
+     "priced": 187,
+     "clear": 4,
+     "modelOnly": 83,
+     "byGame": {
+      "DOTA": 32,
+      "CS": 118,
+      "VAL": 37
+     },
+     "why": {
+      "player": 6,
+      "team": 10,
+      "no line": 1
+     },
+     "stores": {
+      "CS": {
+       "maps": 18726,
+       "players": 2519,
+       "through": "2026-10-14T20:20:06.000Z"
+      },
+      "DOTA": {
+       "maps": 7339,
+       "players": 2299,
+       "through": "2026-10-15T01:20:26.000Z"
+      },
+      "VAL": {
+       "maps": 9466,
+       "players": 1428,
+       "through": "2026-10-12T02:00:00.000Z"
+      }
+     },
+     "coverage": {
+      "DOTA": {
+       "lines": 40,
+       "h2h": 32,
+       "pinOnly": 0,
+       "none": 8,
+       "apps": {
+        "PP": {
+         "lines": 40,
+         "h2h": 32,
+         "pinOnly": 0,
+         "none": 8
+        },
+        "UD": {
+         "lines": 39,
+         "h2h": 32,
+         "pinOnly": 0,
+         "none": 7
+        }
+       },
+       "why": {
+        "player": 3,
+        "team": 5
+       }
+      },
+      "CS": {
+       "lines": 124,
+       "h2h": 118,
+       "pinOnly": 1,
+       "none": 5,
+       "apps": {
+        "PP": {
+         "lines": 117,
+         "h2h": 111,
+         "pinOnly": 1,
+         "none": 5
+        },
+        "UD": {
+         "lines": 96,
+         "h2h": 96,
+         "pinOnly": 0,
+         "none": 0
+        },
+        "SL": {
+         "lines": 18,
+         "h2h": 18,
+         "pinOnly": 0,
+         "none": 0
+        }
+       },
+       "why": {
+        "player": 1,
+        "team": 5
+       }
+      },
+      "VAL": {
+       "lines": 40,
+       "h2h": 37,
+       "pinOnly": 0,
+       "none": 3,
+       "apps": {
+        "UD": {
+         "lines": 40,
+         "h2h": 37,
+         "pinOnly": 0,
+         "none": 3
+        }
+       },
+       "why": {
+        "no line": 1,
+        "player": 2
+       }
+      }
+     },
+     "gol": null,
+     "refreshedAt": {},
+     "errors": {}
+    },
+    "warmer": {
+     "filled": 49,
+     "misses": 4,
+     "queued": 0,
+     "lastRun": "2026-10-25T00:25:04.924Z"
+    },
+    "valData": {
+     "players": 0,
+     "regions": {},
+     "updated": "2026-10-25T00:20:01.852Z",
+     "error": "na:402, eu:402, ap:402, sa:402, jp:402, oce:402, mn:402",
+     "vlrPages": {
+      "profiles": 38,
+      "misses": 2,
+      "lastError": null,
+      "cached": 40
+     }
+    },
+    "dotaData": {
+     "indexed": 7756,
+     "profiles": 36,
+     "error": "GH: timeout of 20000ms exceeded"
+    },
+    "bo3": {
+     "profiles": 132,
+     "predsAccepted": 1124,
+     "predsRejected": 0,
+     "lastRejected": null,
+     "lastError": "no search hit for \"rdnzao-\""
+    },
+    "tracker": {
+     "lastRun": "2026-10-25T00:25:15.955Z",
+     "last": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 9,
+      "errors": 0,
+      "slips": {
+       "graded": 0,
+       "void": 0,
+       "waiting": 20
+      }
+     },
+     "error": null,
+     "pinGaps": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 17,
+      "errors": 0
+     },
+     "share": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 0,
+      "errors": 0
+     },
+     "rounds": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 6,
+      "errors": 0
+     },
+     "h2h": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 25,
+      "errors": 0
+     },
+     "esStale": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 4,
+      "errors": 0
+     },
+     "esSlipLegs": {
+      "locked": 0,
+      "graded": 0,
+      "review": 0,
+      "void": 0,
+      "waiting": 0,
+      "errors": 0
+     },
+     "pinTotals": {
+      "looked": 0,
+      "graded": 0,
+      "notPlayed": 0,
+      "ungradable": 0,
+      "errors": 0,
+      "at": "2026-10-25T00:25:15.955Z"
+     }
+    },
+    "sameDay": {
+     "split": {
+      "players": 204,
+      "unplaced": 0
+     },
+     "record": {
+      "mode": "count",
+      "at": "2026-10-25T00:11:48.864Z",
+      "exposed": {
+       "esports": 61,
+       "pinGaps": 5,
+       "share": 2,
+       "rounds": 22,
+       "h2h": 26,
+       "esStale": 0
+      },
+      "graded": {
+       "esports": 61,
+       "pinGaps": 5,
+       "share": 2,
+       "rounds": 22,
+       "h2h": 26,
+       "esStale": 0
+      },
+      "voided": {},
+      "error": null
+     }
+    },
+    "sharp": {
+     "games": 0,
+     "series": 0,
+     "events": 0,
+     "byKind": {},
+     "openLeads": 0,
+     "lastIngest": {}
+    },
+    "exchanges": {
+     "markets": 674,
+     "updated": "2026-10-25T00:24:21.663Z",
+     "errors": []
+    },
+    "ev": {
+     "rows": 379,
+     "computedAt": "2026-10-25T00:25:01.446Z",
+     "feeds": [
+      {
+       "sport": null,
+       "source": "kalshi-props",
+       "games": 160,
+       "updated": "2026-10-25T00:24:46.524Z"
+      },
+      {
+       "sport": "epl",
+       "source": "free-odds",
+       "games": 14,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "laliga",
+       "source": "free-odds",
+       "games": 13,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "bundesliga",
+       "source": "free-odds",
+       "games": 11,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "seriea",
+       "source": "free-odds",
+       "games": 15,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "mls",
+       "source": "free-odds",
+       "games": 14,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "ligamx",
+       "source": "free-odds",
+       "games": 6,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "eredivisie",
+       "source": "free-odds",
+       "games": 5,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "brasileirao",
+       "source": "free-odds",
+       "games": 3,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "ucl",
+       "source": "free-odds",
+       "games": 9,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "tennis",
+       "source": "free-odds",
+       "games": 50,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "ufc",
+       "source": "free-odds",
+       "games": 5,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "khl",
+       "source": "free-odds",
+       "games": 9,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "ahl",
+       "source": "free-odds",
+       "games": 3,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "kbo",
+       "source": "free-odds",
+       "games": 1,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "nfl",
+       "source": "free-odds",
+       "games": 13,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "ncaaf",
+       "source": "free-odds",
+       "games": 2,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "nba",
+       "source": "free-odds",
+       "games": 3,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "wnba",
+       "source": "free-odds",
+       "games": 1,
+       "updated": "2026-10-25T00:24:47.288Z"
+      },
+      {
+       "sport": "nhl",
+       "source": "free-odds",
+       "games": 6,
+       "updated": "2026-10-25T00:24:47.288Z"
+      }
+     ],
+     "alt": {
+      "ladders": 11653,
+      "altLines": 3352,
+      "priced": 8335,
+      "shown": 380,
+      "clear": 66,
+      "byBook": {
+       "betrivers": 201,
+       "fanduel": 179
+      },
+      "bySport": {
+       "nfl": 220,
+       "nba": 62,
+       "nhl": 33,
+       "ncaaf": 64,
+       "wnba": 1
+      },
+      "byMarket": {
+       "receptions": 43,
+       "pass_yds": 29,
+       "pass_att": 16,
+       "pass_tds": 7,
+       "spreads": 35,
+       "rush_yds": 30,
+       "pass_ints": 5,
+       "anytime_td": 25,
+       "pass_comp": 21,
+       "rec_yds": 43,
+       "rush_att": 12,
+       "points": 12,
+       "assists": 35,
+       "rebounds": 13,
+       "threes": 11,
+       "totals": 21,
+       "pra": 11,
+       "shots_on_goal": 9,
+       "goals": 2
+      }
+     },
+     "esports": {
+      "enabled": true,
+      "updated": "2026-10-25T00:21:51.789Z",
+      "screenedAt": "2026-10-25T00:24:50.469Z",
+      "ms": 29,
+      "summary": {
+       "events": 0,
+       "lines": 0,
+       "matched": 0,
+       "withKalshi": 0,
+       "withPolymarket": 0,
+       "clearBySources": {},
+       "priced": 0,
+       "shown": 0,
+       "clear": 0,
+       "byGame": {},
+       "byMarket": {},
+       "linesByMarket": {},
+       "killShare": null,
+       "roundModel": {
+        "shown": 0,
+        "clear": 0,
+        "bothSources": 0
+       }
+      },
+      "errors": []
+     },
+     "stale": {
+      "enabled": true,
+      "screenedAt": "2026-10-25T00:24:47.375Z",
+      "rows": 1,
+      "clear": 0,
+      "errors": [],
+      "lag": {
+       "since": "2026-10-25T00:11:02.682Z",
+       "hours": 0.24,
+       "moves24h": 7,
+       "movesPerDay": 703,
+       "byKind": {
+        "prop": 6,
+        "total": 1
+       },
+       "bySport": {
+        "tennis": 6,
+        "ncaaf": 1
+       },
+       "lag": [
+        {
+         "venue": "fanduel",
+         "kind": "total",
+         "moves": 1,
+         "followed": 0,
+         "led": 0,
+         "never": 0,
+         "open": 1,
+         "reverted": 0,
+         "started": 0,
+         "pulled": 0,
+         "medianMin": null,
+         "p75Min": null,
+         "within2": 0,
+         "within5": 0,
+         "within15": null,
+         "neverPct": null
+        },
+        {
+         "venue": "betrivers",
+         "kind": "total",
+         "moves": 1,
+         "followed": 0,
+         "led": 0,
+         "never": 0,
+         "open": 1,
+         "reverted": 0,
+         "started": 0,
+         "pulled": 0,
+         "medianMin": null,
+         "p75Min": null,
+         "within2": 0,
+         "within5": 0,
+         "within15": null,
+         "neverPct": null
+        }
+       ],
+       "cadence": {
+        "pinnacle-props": {
+         "reads": 11,
+         "medianGapMin": 0.1,
+         "last": "2026-10-25T00:24:21.731Z"
+        },
+        "prizepicks": {
+         "reads": 1,
+         "medianGapMin": null,
+         "last": "2026-10-25T00:11:06.918Z"
+        },
+        "underdog": {
+         "reads": 8,
+         "medianGapMin": 2,
+         "last": "2026-10-25T00:24:13.301Z"
+        },
+        "sleeper": {
+         "reads": 7,
+         "medianGapMin": 2,
+         "last": "2026-10-25T00:24:09.765Z"
+        },
+        "pick6": {
+         "reads": 30,
+         "medianGapMin": 0.2,
+         "last": "2026-10-25T00:20:40.517Z"
+        },
+        "books": {
+         "reads": 7,
+         "medianGapMin": 1,
+         "last": "2026-10-25T00:24:47.326Z"
+        },
+        "kalshi-props": {
+         "reads": 1,
+         "medianGapMin": null,
+         "last": "2026-10-25T00:17:37.288Z"
+        }
+       },
+       "subjects": 8285,
+       "openMoves": 7,
+       "movesSeen": 7,
+       "thresholds": {
+        "moveProbPts": 2,
+        "lineMovePts": 1,
+        "followFrac": 0.5,
+        "minFollowPts": 1,
+        "windowMin": 60,
+        "minEv": 2
+       }
+      }
+     },
+     "esStale": {
+      "enabled": true,
+      "screenedAt": "2026-10-25T00:25:01.847Z",
+      "rows": 1,
+      "clear": 1,
+      "errors": [],
+      "twoMatchPlayers": 0,
+      "engine": {
+       "subjects": 326,
+       "open": 5,
+       "pending": 2,
+       "unstable": 0,
+       "log": 5
+      },
+      "lag": {
+       "lag": [
+        {
+         "leader": "underdog",
+         "app": "prizepicks",
+         "moves": 3,
+         "followed": 0,
+         "opposite": 0,
+         "pulled": 0,
+         "none": 0,
+         "led": 0,
+         "ahead": 3,
+         "reverted": 0,
+         "sameWayPct": null,
+         "medianMin": null,
+         "within2": 0,
+         "within15": 0
+        },
+        {
+         "leader": "prizepicks",
+         "app": "underdog",
+         "moves": 1,
+         "followed": 0,
+         "opposite": 0,
+         "pulled": 0,
+         "none": 0,
+         "led": 0,
+         "ahead": 1,
+         "reverted": 0,
+         "sameWayPct": null,
+         "medianMin": null,
+         "within2": 0,
+         "within15": 0
+        },
+        {
+         "leader": "underdog",
+         "app": "sleeper",
+         "moves": 1,
+         "followed": 0,
+         "opposite": 0,
+         "pulled": 0,
+         "none": 0,
+         "led": 0,
+         "ahead": 1,
+         "reverted": 0,
+         "sameWayPct": null,
+         "medianMin": null,
+         "within2": 0,
+         "within15": 0
+        }
+       ],
+       "unstable": 0,
+       "leads": {
+        "prizepicks": 1,
+        "underdog": 3
+       },
+       "open": 7,
+       "hours": 0.12,
+       "reads": {
+        "sleeper": "2026-10-25T00:24:09.765Z",
+        "prizepicks": "2026-10-25T00:24:06.546Z",
+        "underdog": "2026-10-25T00:24:13.301Z"
+       },
+       "thresholds": {
+        "moveProbPts": 3,
+        "followFrac": 0.5,
+        "windowMin": 60
+       }
+      }
+     }
+    },
+    "tail": {
+     "candidates": 6585,
+     "scored": 6499,
+     "pending": 86,
+     "graded": {
+      "A": 1,
+      "B": 121,
+      "anyCategory": 157
+     },
+     "marketMakers": 505,
+     "signals": 46,
+     "seenTrades": 8510,
+     "clvCached": 17855,
+     "lastRefreshAt": "2026-10-25T00:16:20.282Z",
+     "lastScoreAt": "2026-10-25T00:24:32.316Z",
+     "lastPollAt": "2026-10-25T00:25:12.343Z",
+     "lastSignalAt": "2026-10-25T00:25:11.789Z",
+     "lastClvAt": "2026-10-25T00:24:32.040Z",
+     "clvRequests": 854,
+     "errors": [
+      {
+       "at": "2026-10-25T00:24:29.023Z",
+       "message": "book 10605400993852370799949611581668658471478591708636052709652682644673205441884: Request failed with status code 404"
+      },
+      {
+       "at": "2026-10-25T00:24:29.023Z",
+       "message": "book 10605400993852370799949611581668658471478591708636052709652682644673205441884: Request failed with status code 404"
+      },
+      {
+       "at": "2026-10-25T00:24:29.407Z",
+       "message": "book 104498772769267079998745132904567885115636482243979452792322798147472788036492: Request failed with status code 404"
+      },
+      {
+       "at": "2026-10-25T00:24:29.407Z",
+       "message": "book 104498772769267079998745132904567885115636482243979452792322798147472788036492: Request failed with status code 404"
+      },
+      {
+       "at": "2026-10-25T00:24:32.040Z",
+       "message": "clv 0x…: 1 of 25 lookups failed (timeout of 10000ms exceeded from gamma-api.polymarket.com/markets)"
+      }
+     ],
+     "streamed": 6807,
+     "lastStreamAt": "2026-10-25T00:25:22.566Z",
+     "record": {
+      "open": 164,
+      "lastCheck": "2026-10-25T00:17:57.892Z"
+     },
+     "jobs": {
+      "stream": {
+       "lastRun": "2026-10-25T00:25:22.569Z",
+       "ms": 3,
+       "error": null
+      },
+      "whales": {
+       "lastRun": "2026-10-25T00:25:11.936Z",
+       "ms": 11,
+       "error": null
+      },
+      "signals": {
+       "lastRun": "2026-10-25T00:25:12.358Z",
+       "ms": 432,
+       "error": null
+      },
+      "esports": {
+       "lastRun": "2026-10-25T00:24:36.481Z",
+       "ms": 10822,
+       "error": null
+      },
+      "score": {
+       "lastRun": "2026-10-25T00:24:32.325Z",
+       "ms": 187252,
+       "error": null
+      },
+      "candidates": {
+       "lastRun": "2026-10-25T00:16:20.282Z",
+       "ms": 281586,
+       "error": null
+      },
+      "bigMoney": {
+       "lastRun": "2026-10-25T00:24:46.815Z",
+       "ms": 46,
+       "error": null
+      },
+      "xarb": {
+       "lastRun": "2026-10-25T00:24:41.146Z",
+       "ms": 170458,
+       "error": null
+      },
+      "bookArbs": {
+       "lastRun": "2026-10-25T00:24:42.970Z",
+       "ms": 40015,
+       "error": null
+      },
+      "gas": {
+       "lastRun": "2026-10-25T00:24:42.810Z",
+       "ms": 41627,
+       "error": null
+      },
+      "board": {
+       "lastRun": "2026-10-25T00:24:32.547Z",
+       "ms": 26515,
+       "error": null
+      },
+      "record": {
+       "lastRun": "2026-10-25T00:19:58.251Z",
+       "ms": 158188,
+       "error": null
+      }
+     },
+     "routing": {
+      "routed": 43,
+      "withVenue": 24,
+      "lastAt": "2026-10-25T00:25:11.792Z",
+      "byCategory": {
+       "politics": {
+        "routed": 1,
+        "withVenue": 0
+       },
+       "other": {
+        "routed": 2,
+        "withVenue": 0
+       },
+       "sports": {
+        "routed": 40,
+        "withVenue": 24
+       }
+      },
+      "byVenue": {
+       "polymarketus": 14,
+       "kalshi": 10
+      }
+     },
+     "stream": {
+      "running": true,
+      "connected": true,
+      "connects": 4,
+      "drops": 3,
+      "messages": 17714,
+      "trades": 16870,
+      "batches": 161,
+      "connectedAt": "2026-10-25T00:24:08.219Z",
+      "lastMessageAt": "2026-10-25T00:25:22.285Z",
+      "lastTradeAt": "2026-10-25T00:25:22.566Z",
+      "lastError": "no messages for 15s, reconnecting"
+     },
+     "polymarketUs": {
+      "lookups": 15,
+      "matched": 14,
+      "quoted": 14,
+      "errors": [
+       {
+        "at": "2026-10-25T00:24:17.546Z",
+        "message": "book aec-nba-sa-dal-2026-10-24: timeout of 4000ms exceeded"
+       }
+      ],
+      "arbs": {
+       "scans": 3,
+       "rows": 641,
+       "games": {
+        "nfl": 28,
+        "cfb": 201,
+        "nba": 111,
+        "nhl": 33,
+        "mlb": 3,
+        "wnba": 1,
+        "mls": 17,
+        "epl": 14,
+        "ucl": 9,
+        "lal": 14,
+        "bun": 11,
+        "sea": 23
+       },
+       "confirmed": 12,
+       "skipped": 0
+      },
+      "events": 5
+     }
+    },
+    "whales": {
+     "minUsd": 5000,
+     "windowMs": 3600000,
+     "events": 109,
+     "prints": 30491,
+     "lastHour": {
+      "whales": 109,
+      "usd": 1503955.05,
+      "graded": 4,
+      "fresh": 2
+     },
+     "fresh": {
+      "days": 7,
+      "maxMarkets": 5,
+      "on": true,
+      "wallets": 131,
+      "pending": 0
+     },
+     "seen": {
+      "kalshi": 52039,
+      "polymarket": 818
+     },
+     "kalshiMark": "2026-10-25T00:24:42.746Z",
+     "lastKalshiPollAt": "2026-10-25T00:24:40.585Z",
+     "lastPolymarketPollAt": "2026-10-25T00:25:11.926Z",
+     "lastWhaleAt": "2026-10-25T00:24:40.585Z",
+     "kalshiPages": 10,
+     "kalshiTruncated": true,
+     "freshLookups": 132,
+     "freshSkipped": 202,
+     "freshRetried": 2,
+     "errors": [
+      {
+       "at": "2026-10-25T00:16:19.223Z",
+       "message": "kalshi trades page 1: socket hang up"
+      },
+      {
+       "at": "2026-10-25T00:16:38.190Z",
+       "message": "wallet history 0x…: aborted"
+      },
+      {
+       "at": "2026-10-25T00:24:26.789Z",
+       "message": "kalshi trades page 7: Request failed with status code 429"
+      }
+     ]
+    },
+    "xarb": {
+     "arbs": 6,
+     "updated": "2026-10-25T00:24:03.840Z",
+     "durationMs": 170457,
+     "running": true,
+     "counts": {
+      "kalshiEvents": 200,
+      "kalshiPages": 1,
+      "kalshiTruncated": false,
+      "kalshiMarkets": 6734,
+      "polymarketEvents": 1500,
+      "polymarketPages": 15,
+      "polymarketTruncated": true,
+      "polymarketMarkets": 26189,
+      "games": 183,
+      "arbs": 6,
+      "kalshiSwept": 4940,
+      "kalshiTail": 0,
+      "matches": 1288,
+      "matchesBy": {
+       "teams": 110,
+       "teams3": 93,
+       "line": 1085
+      },
+      "polymarketUs": {
+       "rows": 641,
+       "games": 465,
+       "matches": 426,
+       "screened": 7,
+       "arbs": 6,
+       "byLeague": {
+        "nfl": {
+         "games": 28,
+         "paired": 27
+        },
+        "cfb": {
+         "games": 201,
+         "paired": 0
+        },
+        "nba": {
+         "games": 111,
+         "paired": 34
+        },
+        "nhl": {
+         "games": 33,
+         "paired": 31
+        },
+        "mlb": {
+         "games": 3,
+         "paired": 3
+        },
+        "wnba": {
+         "games": 1,
+         "paired": 1
+        },
+        "mls": {
+         "games": 17,
+         "paired": 16
+        },
+        "epl": {
+         "games": 14,
+         "paired": 14
+        },
+        "ucl": {
+         "games": 9,
+         "paired": 8
+        },
+        "lal": {
+         "games": 14,
+         "paired": 11
+        },
+        "bun": {
+         "games": 11,
+         "paired": 9
+        },
+        "sea": {
+         "games": 23,
+         "paired": 20
+        }
+       }
+      },
+      "near": 25,
+      "bids": 25,
+      "middles": 0
+     },
+     "errors": [
+      {
+       "exchange": "kalshi",
+       "key": "events page 2",
+       "message": "timeout of 15000ms exceeded"
+      }
+     ],
+     "venueMarkets": 26149,
+     "gameSweep": {
+      "series": 732,
+      "listed": "kalshi",
+      "reads": 111,
+      "failed": 23,
+      "rows": 4940,
+      "lastError": "KXNCAAFGAME: timeout of 15000ms exceeded",
+      "withGames": 52
+     },
+     "tailSweep": {
+      "cycles": 0,
+      "pages": 6,
+      "events": 883,
+      "rows": 6575,
+      "failed": 0,
+      "lastError": null,
+      "position": 6
+     }
+    },
+    "region": "us",
+    "eventLoop": {
+     "p50Ms": 20,
+     "p99Ms": 194,
+     "maxMs": 254745,
+     "until": "2026-10-25T00:21:02.514Z"
+    },
+    "licence": {
+     "paywall": false,
+     "polymarketDisplayOk": false,
+     "kalshiDisplayOk": false,
+     "polymarket": "shown",
+     "kalshi": "shown",
+     "viewer": {
+      "polymarket": true,
+      "kalshi": true
+     },
+     "note": null
+    },
+    "dataLicences": {
+     "paywall": false,
+     "paused": [],
+     "sources": [
+      {
+       "key": "owls",
+       "name": "Owls Insight",
+       "flag": "OWLS_DATA_OK",
+       "state": "on",
+       "why": "The Owls licence covers one user, not a product others pay for."
+      },
+      {
+       "key": "prizepicks",
+       "name": "PrizePicks",
+       "flag": "PRIZEPICKS_DATA_OK",
+       "state": "on",
+       "why": "PrizePicks terms ban scraping."
+      },
+      {
+       "key": "sleeper",
+       "name": "Sleeper",
+       "flag": "SLEEPER_DATA_OK",
+       "state": "on",
+       "why": "Sleeper has no public lines API licence; its app API is used unofficially."
+      },
+      {
+       "key": "underdog",
+       "name": "Underdog",
+       "flag": "UNDERDOG_DATA_OK",
+       "state": "on",
+       "why": "Underdog terms ban scraping."
+      },
+      {
+       "key": "vlr",
+       "name": "VLR.gg",
+       "flag": "VLR_DATA_OK",
+       "state": "on",
+       "why": "VLR.gg terms ban scraping (vlrggapi is a scraper of it)."
+      },
+      {
+       "key": "bo3",
+       "name": "bo3.gg",
+       "flag": "BO3_DATA_OK",
+       "state": "on",
+       "why": "bo3.gg has no public API licence; its site API is used unofficially."
+      },
+      {
+       "key": "hltv",
+       "name": "HLTV",
+       "flag": "HLTV_DATA_OK",
+       "state": "on",
+       "why": "HLTV terms ban scraping."
+      },
+      {
+       "key": "golgg",
+       "name": "Games of Legends (gol.gg)",
+       "flag": "GOLGG_DATA_OK",
+       "state": "on",
+       "why": "gol.gg pages are scraped; no data licence."
+      },
+      {
+       "key": "pinnacle",
+       "name": "Pinnacle",
+       "flag": "PINNACLE_DATA_OK",
+       "state": "on",
+       "why": "Pinnacle closed its public API on 2025-07-23; the guest API is unofficial."
+      },
+      {
+       "key": "fanduel",
+       "name": "FanDuel",
+       "flag": "FANDUEL_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the page JSON its site uses: no licence for a paid product."
+      },
+      {
+       "key": "betrivers",
+       "name": "BetRivers (Kambi)",
+       "flag": "BETRIVERS_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the Kambi offering API its site uses: no licence for a paid product."
+      },
+      {
+       "key": "actionnetwork",
+       "name": "Action Network",
+       "flag": "ACTIONNETWORK_DATA_OK",
+       "state": "on",
+       "why": "DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock and theScore prices read from the JSON its odds pages use: no licence for a paid product."
+      },
+      {
+       "key": "matchbook",
+       "name": "Matchbook",
+       "flag": "MATCHBOOK_DATA_OK",
+       "state": "on",
+       "why": "Matchbook's public REST prices; its API terms cover account holders, not a redistributed feed."
+      },
+      {
+       "key": "pick6",
+       "name": "DraftKings Pick6",
+       "flag": "PICK6_DATA_OK",
+       "state": "on",
+       "why": "Lines read from the loader data its site uses: no licence for a paid product."
+      },
+      {
+       "key": "bovada",
+       "name": "Bovada",
+       "flag": "BOVADA_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the JSON its site uses; an offshore book, never a venue for US subscribers."
+      }
+     ],
+     "review": [
+      {
+       "key": "gemini",
+       "name": "Gemini Predictions",
+       "note": "Public prediction-markets REST (api.gemini.com, no key): check its API terms on redistribution before charging."
+      },
+      {
+       "key": "oddsapi",
+       "name": "The Odds API",
+       "note": "Paid plans allow use in apps; check the plan terms."
+      },
+      {
+       "key": "pandascore",
+       "name": "PandaScore",
+       "note": "Free tier terms: check commercial use."
+      },
+      {
+       "key": "lolesports",
+       "name": "LoL Esports schedule",
+       "note": "Unofficial use of the public key the lolesports site uses."
+      },
+      {
+       "key": "oracleselixir",
+       "name": "Oracle's Elixir",
+       "note": "Free downloads; check terms and credit."
+      },
+      {
+       "key": "leaguepedia",
+       "name": "Leaguepedia",
+       "note": "CC BY-SA: credited on /data-sources."
+      },
+      {
+       "key": "opendota",
+       "name": "OpenDota",
+       "note": "Free API: credited on /data-sources."
+      }
+     ]
+    },
+    "upstream": {
+     "gapMs": {
+      "api.elections.kalshi.com": 250,
+      "data-api.polymarket.com": 150,
+      "gamma-api.polymarket.com": 250,
+      "clob.polymarket.com": 200,
+      "api.bo3.gg": 1000,
+      "guest.api.arcadia.pinnacle.com": 1000,
+      "esports-api.lolesports.com": 1000,
+      "gateway.polymarket.us": 100
+     },
+     "requests": 3319,
+     "shared": 320,
+     "failed": 69,
+     "retried429": 108,
+     "byHost": {
+      "api.elections.kalshi.com": 747,
+      "data-api.polymarket.com": 947,
+      "gamma-api.polymarket.com": 773,
+      "clob.polymarket.com": 403,
+      "api.bo3.gg": 15,
+      "guest.api.arcadia.pinnacle.com": 10,
+      "esports-api.lolesports.com": 6,
+      "gateway.polymarket.us": 418
+     },
+     "backlogMs": {
+      "api.elections.kalshi.com": 5197,
+      "data-api.polymarket.com": 0,
+      "gamma-api.polymarket.com": 0,
+      "clob.polymarket.com": 0,
+      "api.bo3.gg": 0,
+      "guest.api.arcadia.pinnacle.com": 0,
+      "esports-api.lolesports.com": 0,
+      "gateway.polymarket.us": 0
+     }
+    },
+    "live": {
+     "listeners": 0,
+     "webhook": true,
+     "webhookKinds": [],
+     "webhookStats": {
+      "sent": 0,
+      "failed": 0,
+      "lastError": null,
+      "lastAt": null
+     },
+     "push": {
+      "sent": 0,
+      "failed": 0,
+      "dropped": 0,
+      "retried": 0,
+      "alerts": 0,
+      "lastError": null,
+      "lastAt": null,
+      "devices": 0,
+      "keySource": "none"
+     }
+    },
+    "accounts": {
+     "paywall": false,
+     "billing": false,
+     "authSecretSet": false,
+     "webhookSecretSet": false
+    },
+    "alerts": {
+     "recent": 0,
+     "liveListeners": 0,
+     "webhook": true
+    },
+    "feeds": {
+     "pandascore": false,
+     "pinnacle": true,
+     "pinnacleMatches": 18
+    },
+    "matchups": {
+     "game": "LOL",
+     "ready": true,
+     "updated": "2026-10-25T00:24:03.208Z",
+     "error": null,
+     "series": 11433,
+     "seedSeries": 11426,
+     "fetched": 7,
+     "lastResult": "2026-10-24T23:00:00.000Z",
+     "upcoming": 4,
+     "teams": 547,
+     "providers": [
+      {
+       "id": "lolesports",
+       "name": "LoL Esports schedule",
+       "type": "results and schedule",
+       "state": "on",
+       "note": "Unofficial use of the public key lolesports.com's own site uses; finished series and upcoming matches."
+      },
+      {
+       "id": "kalshi",
+       "name": "Kalshi",
+       "type": "exchange",
+       "state": "on",
+       "note": "Match winner books (KXLOLGAME) via the esports board; the market price the model is judged against."
+      },
+      {
+       "id": "polymarket",
+       "name": "Polymarket (global)",
+       "type": "exchange",
+       "state": "reference",
+       "note": "Reference price only; not a venue for US users and never linked."
+      },
+      {
+       "id": "riot",
+       "name": "Riot developer API",
+       "type": "stats",
+       "state": "missing key",
+       "note": "Serves public ranked games, not pro match results; nothing here reads it. Set RIOT_API_KEY only if a ranked-play feature is built."
+      }
+     ]
+    },
+    "matchContext": {
+     "ratings": {
+      "LOL": {
+       "games": 5053,
+       "teams": 298,
+       "updated": "2026-10-25T00:11:50.295Z",
+       "error": null
+      },
+      "DOTA": {
+       "games": 912,
+       "teams": 137,
+       "updated": "2026-10-25T00:12:03.460Z",
+       "error": null
+      },
+      "VAL": {
+       "error": "402 Request failed with status code 402"
+      },
+      "CS": {
+       "games": 10399,
+       "teams": 613,
+       "updated": "2026-10-25T00:17:51.019Z",
+       "error": null
+      }
+     },
+     "picks": {
+      "exchanges": 249,
+      "none": 24,
+      "elo": 28
+     },
+     "manualMatches": 64
+    },
+    "sharpMoves": 0,
+    "owls": "DISABLED — dead key (repeated 403s)",
+    "oddsApiQuotaRemaining": null,
+    "oddsApiBudget": {
+     "lowUsage": false,
+     "reason": null,
+     "plan": null,
+     "remaining": null,
+     "used": 0,
+     "creditsPerDay": null,
+     "nextCallIn": 0,
+     "skippedCalls": 0
+    },
+    "sportsbookPoll": {
+     "lastSport": null,
+     "lastAt": null,
+     "pulls": 0,
+     "skipped": 0,
+     "error": null
+    },
+    "owlsProps": "none",
+    "oddsApiProps": "none"
+   }
+  },
+  {
+   "at": "2026-10-25T00:27:02.559Z",
+   "j": {
+    "version": "3.160.0",
+    "modelWeight": 0.35,
+    "prizepicks": {
+     "count": 0,
+     "updated": null,
+     "blocked": false,
+     "retryAt": null,
+     "inUse": 0,
+     "lastError": null
+    },
+    "underdog": {
+     "count": 7591,
+     "updated": "2026-10-25T00:27:00.091Z",
+     "sports": [
+      "CFB",
+      "NFL",
+      "NBA",
+      "NHL",
+      "FIFA",
+      "TENNIS",
+      "MOTORSPORTS",
+      "CS",
+      "VAL",
+      "DOTA",
+      "KBO"
+     ],
+     "lastError": null
+    },
+    "sleeper": {
+     "count": 0,
+     "sports": 0,
+     "rows": 0,
+     "updated": null,
+     "lastError": null
+    },
+    "pick6": {
+     "enabled": true,
+     "relay": {
+      "at": null,
+      "reads": 0,
+      "error": null,
+      "sports": []
+     },
+     "sports": [],
+     "reads": 0,
+     "payouts": null,
+     "bySport": {},
+     "lines": 0,
+     "blockedUntil": null,
+     "lastError": null
+    },
+    "exchangeSize": {
+     "on": true,
+     "scans": 0,
+     "lastScan": null,
+     "sides": 0,
+     "candidates": {},
+     "reads": {},
+     "flags": 0,
+     "errors": []
+    },
+    "resultsBackup": {
+     "state": "ready",
+     "snapshotAt": "2026-10-25T00:25:38.180Z",
+     "note": null,
+     "restored": {
+      "steamHistory": 2213,
+      "oddsHistory": 573,
+      "ev": 7074,
+      "evAlt": 14307,
+      "evEsports": 393,
+      "evStale": 577,
+      "sportProps": 13285,
+      "esportsPicks": 923,
+      "esportsSlips": 1334,
+      "esportsPinGaps": 370,
+      "esportsShare": 105,
+      "esportsRounds": 144,
+      "esportsH2H": 1844,
+      "esportsStale": 205,
+      "esportsPinTotals": 482,
+      "tailTraders": 6499,
+      "tail": 424,
+      "fresh": 216,
+      "exchangeValue": 1930,
+      "bidArbs": 3470,
+      "middles": 253,
+      "gasLocks": 328,
+      "esportsEdges": 2088,
+      "xsize": 43,
+      "bigMoney": 368,
+      "bookArbs": 1751
+     },
+     "stores": [
+      "push",
+      "ev",
+      "evAlt",
+      "evEsports",
+      "evStale",
+      "sportProps",
+      "slipLegs",
+      "esportsPicks",
+      "esportsSlips",
+      "esportsPinGaps",
+      "esportsShare",
+      "esportsRounds",
+      "esportsH2H",
+      "esportsStale",
+      "esportsSlipLegs",
+      "esportsPinTotals",
+      "tailTraders",
+      "tail",
+      "fresh",
+      "steamHistory",
+      "exchangeValue",
+      "bidArbs",
+      "middles",
+      "gasLocks",
+      "esportsMatchups",
+      "esportsEdges",
+      "xsize",
+      "bigMoney",
+      "oddsHistory",
+      "bookArbs"
+     ]
+    },
+    "kalshiProps": {
+     "updated": null,
+     "counts": null,
+     "errors": []
+    },
+    "kalshiExtra": {
+     "quotes": 0,
+     "bySport": {},
+     "events": 0,
+     "updated": null,
+     "errors": []
+    },
+    "bigMoney": {
+     "updated": null,
+     "counts": null,
+     "errors": []
+    },
+    "oddsScreen": {
+     "series": 573,
+     "points": 2933,
+     "observedAt": null,
+     "errors": []
+    },
+    "bookArbs": {
+     "updated": null,
+     "dataAt": null,
+     "reads": 0,
+     "counts": null
+    },
+    "pinnacleProps": {
+     "enabled": true,
+     "props": 0,
+     "bySport": {},
+     "updated": null,
+     "errors": []
+    },
+    "freeBooks": {
+     "enabled": true,
+     "counts": {},
+     "errors": [],
+     "updated": null,
+     "gamesAt": null,
+     "ms": null
+    },
+    "gemini": {
+     "enabled": true,
+     "events": 0,
+     "errors": [],
+     "updated": null,
+     "ms": null,
+     "games": {},
+     "paired": {},
+     "skipped": {}
+    },
+    "polymarketUsBooks": {
+     "enabled": true,
+     "games": 0,
+     "withLines": 0,
+     "slugReads": 0,
+     "byLeague": {},
+     "errors": [],
+     "updated": null,
+     "ms": null,
+     "paired": {}
+    },
+    "pinnacleExtraGames": {
+     "games": 0,
+     "at": null,
+     "errors": []
+    },
+    "evResults": {
+     "runs": 0,
+     "graded": 0,
+     "lastRun": null,
+     "lastGraded": 0,
+     "pending": 0,
+     "notFound": 0,
+     "errors": []
+    },
+    "moreBooks": {
+     "sharpPromoted": [],
+     "enabled": true,
+     "action": true,
+     "matchbook": true,
+     "counts": {},
+     "errors": [],
+     "updated": null,
+     "ms": null
+    },
+    "propsBoard": null,
+    "esportsBoard": {
+     "updated": null,
+     "durationMs": null,
+     "counts": null,
+     "calibration": {},
+     "errors": []
+    },
+    "esports": {
+     "picks": 0,
+     "updated": null,
+     "ppEsportsLines": 0,
+     "udEsportsLines": 306,
+     "sleeperEsportsLines": 0,
+     "ppEsportsLeagues": []
+    },
+    "lolData": {
+     "players": 0,
+     "teams": 0,
+     "games": 0,
+     "updated": null,
+     "state": "idle",
+     "error": null,
+     "source": null
+    },
+    "implausibleLines": [],
+    "spanInferredCount": 0,
+    "priceMismatchCount": 0,
+    "killShare": null,
+    "roundModel": null,
+    "h2h": {
+     "on": true,
+     "refreshedAt": {},
+     "errors": {}
+    },
+    "warmer": {
+     "filled": 0,
+     "misses": 0,
+     "queued": 96,
+     "lastRun": null
+    },
+    "valData": {
+     "players": 0,
+     "regions": {},
+     "updated": null,
+     "error": null,
+     "vlrPages": {
+      "profiles": 0,
+      "misses": 0,
+      "lastError": null,
+      "cached": 0
+     }
+    },
+    "dotaData": {
+     "indexed": 0,
+     "profiles": 0,
+     "error": null
+    },
+    "bo3": {
+     "profiles": 0,
+     "predsAccepted": 0,
+     "predsRejected": 0,
+     "lastRejected": null,
+     "lastError": null
+    },
+    "tracker": {
+     "lastRun": null,
+     "last": null,
+     "error": null
+    },
+    "sameDay": {
+     "split": null,
+     "record": {
+      "mode": "count",
+      "at": null,
+      "exposed": {},
+      "graded": {},
+      "voided": {},
+      "error": null
+     }
+    },
+    "sharp": {
+     "games": 0,
+     "series": 0,
+     "events": 0,
+     "byKind": {},
+     "openLeads": 0,
+     "lastIngest": {}
+    },
+    "exchanges": {
+     "markets": 0,
+     "updated": null,
+     "errors": []
+    },
+    "ev": {
+     "rows": 0,
+     "computedAt": "2026-10-25T00:27:06.459Z",
+     "feeds": [],
+     "alt": null,
+     "esports": {
+      "enabled": true,
+      "updated": null,
+      "screenedAt": null,
+      "ms": null,
+      "summary": null,
+      "errors": []
+     },
+     "stale": {
+      "enabled": true,
+      "screenedAt": null,
+      "rows": 0,
+      "clear": 0,
+      "errors": [],
+      "lag": {
+       "since": "2026-10-25T00:26:58.954Z",
+       "hours": 0.02,
+       "moves24h": 0,
+       "movesPerDay": 0,
+       "byKind": {},
+       "bySport": {},
+       "lag": [],
+       "cadence": {},
+       "subjects": 0,
+       "openMoves": 0,
+       "movesSeen": 0,
+       "thresholds": {
+        "moveProbPts": 2,
+        "lineMovePts": 1,
+        "followFrac": 0.5,
+        "minFollowPts": 1,
+        "windowMin": 60,
+        "minEv": 2
+       }
+      }
+     },
+     "esStale": {
+      "enabled": true,
+      "screenedAt": null,
+      "rows": 0,
+      "clear": 0,
+      "errors": [],
+      "twoMatchPlayers": null,
+      "engine": {
+       "subjects": 0,
+       "open": 0,
+       "pending": 0,
+       "unstable": 0,
+       "log": 0
+      },
+      "lag": {
+       "lag": [],
+       "unstable": 0,
+       "leads": {},
+       "open": 0,
+       "hours": 0,
+       "reads": {},
+       "thresholds": {
+        "moveProbPts": 3,
+        "followFrac": 0.5,
+        "windowMin": 60
+       }
+      }
+     }
+    },
+    "tail": {
+     "candidates": 6499,
+     "scored": 6499,
+     "pending": 0,
+     "graded": {
+      "A": 1,
+      "B": 121,
+      "anyCategory": 157
+     },
+     "marketMakers": 505,
+     "signals": 0,
+     "seenTrades": 20,
+     "clvCached": 17419,
+     "lastRefreshAt": null,
+     "lastScoreAt": null,
+     "lastPollAt": null,
+     "lastSignalAt": null,
+     "lastClvAt": null,
+     "clvRequests": 0,
+     "errors": [],
+     "streamed": 20,
+     "lastStreamAt": "2026-10-25T00:27:06.466Z",
+     "record": {
+      "open": 164,
+      "lastCheck": null
+     },
+     "jobs": {
+      "stream": {
+       "lastRun": "2026-10-25T00:27:06.477Z",
+       "ms": 12,
+       "error": null
+      }
+     },
+     "routing": {
+      "routed": 0,
+      "withVenue": 0,
+      "lastAt": null,
+      "byCategory": {},
+      "byVenue": {}
+     },
+     "stream": {
+      "running": true,
+      "connected": true,
+      "connects": 1,
+      "drops": 0,
+      "messages": 62,
+      "trades": 49,
+      "batches": 1,
+      "connectedAt": "2026-10-25T00:26:59.552Z",
+      "lastMessageAt": "2026-10-25T00:27:06.488Z",
+      "lastTradeAt": "2026-10-25T00:27:06.465Z",
+      "lastError": null
+     },
+     "polymarketUs": {
+      "lookups": 0,
+      "matched": 0,
+      "quoted": 0,
+      "errors": [],
+      "arbs": {
+       "scans": 0,
+       "rows": 0,
+       "games": {},
+       "confirmed": 0,
+       "skipped": 0
+      },
+      "events": 0
+     }
+    },
+    "whales": {
+     "minUsd": 5000,
+     "windowMs": 3600000,
+     "events": 0,
+     "prints": 0,
+     "lastHour": {
+      "whales": 0,
+      "usd": 0,
+      "graded": 0,
+      "fresh": 0
+     },
+     "fresh": {
+      "days": 7,
+      "maxMarkets": 5,
+      "on": true,
+      "wallets": 0,
+      "pending": 0
+     },
+     "seen": {
+      "kalshi": 0,
+      "polymarket": 0
+     },
+     "kalshiMark": null,
+     "lastKalshiPollAt": null,
+     "lastPolymarketPollAt": null,
+     "lastWhaleAt": null,
+     "kalshiPages": 0,
+     "kalshiTruncated": false,
+     "freshLookups": 0,
+     "freshSkipped": 0,
+     "freshRetried": 0,
+     "errors": []
+    },
+    "xarb": {
+     "arbs": 0,
+     "updated": null,
+     "durationMs": null,
+     "running": false,
+     "counts": null,
+     "errors": [],
+     "venueMarkets": 0,
+     "gameSweep": {
+      "series": 18,
+      "listed": "built-in",
+      "reads": 0,
+      "failed": 0,
+      "rows": 0,
+      "lastError": null,
+      "withGames": 0
+     },
+     "tailSweep": {
+      "cycles": 0,
+      "pages": 0,
+      "events": 0,
+      "rows": 0,
+      "failed": 0,
+      "lastError": null,
+      "position": 0
+     }
+    },
+    "region": "us",
+    "eventLoop": {
+     "p50Ms": 21,
+     "p99Ms": 5633,
+     "maxMs": 5633
+    },
+    "licence": {
+     "paywall": false,
+     "polymarketDisplayOk": false,
+     "kalshiDisplayOk": false,
+     "polymarket": "shown",
+     "kalshi": "shown",
+     "viewer": {
+      "polymarket": true,
+      "kalshi": true
+     },
+     "note": null
+    },
+    "dataLicences": {
+     "paywall": false,
+     "paused": [],
+     "sources": [
+      {
+       "key": "owls",
+       "name": "Owls Insight",
+       "flag": "OWLS_DATA_OK",
+       "state": "on",
+       "why": "The Owls licence covers one user, not a product others pay for."
+      },
+      {
+       "key": "prizepicks",
+       "name": "PrizePicks",
+       "flag": "PRIZEPICKS_DATA_OK",
+       "state": "on",
+       "why": "PrizePicks terms ban scraping."
+      },
+      {
+       "key": "sleeper",
+       "name": "Sleeper",
+       "flag": "SLEEPER_DATA_OK",
+       "state": "on",
+       "why": "Sleeper has no public lines API licence; its app API is used unofficially."
+      },
+      {
+       "key": "underdog",
+       "name": "Underdog",
+       "flag": "UNDERDOG_DATA_OK",
+       "state": "on",
+       "why": "Underdog terms ban scraping."
+      },
+      {
+       "key": "vlr",
+       "name": "VLR.gg",
+       "flag": "VLR_DATA_OK",
+       "state": "on",
+       "why": "VLR.gg terms ban scraping (vlrggapi is a scraper of it)."
+      },
+      {
+       "key": "bo3",
+       "name": "bo3.gg",
+       "flag": "BO3_DATA_OK",
+       "state": "on",
+       "why": "bo3.gg has no public API licence; its site API is used unofficially."
+      },
+      {
+       "key": "hltv",
+       "name": "HLTV",
+       "flag": "HLTV_DATA_OK",
+       "state": "on",
+       "why": "HLTV terms ban scraping."
+      },
+      {
+       "key": "golgg",
+       "name": "Games of Legends (gol.gg)",
+       "flag": "GOLGG_DATA_OK",
+       "state": "on",
+       "why": "gol.gg pages are scraped; no data licence."
+      },
+      {
+       "key": "pinnacle",
+       "name": "Pinnacle",
+       "flag": "PINNACLE_DATA_OK",
+       "state": "on",
+       "why": "Pinnacle closed its public API on 2025-07-23; the guest API is unofficial."
+      },
+      {
+       "key": "fanduel",
+       "name": "FanDuel",
+       "flag": "FANDUEL_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the page JSON its site uses: no licence for a paid product."
+      },
+      {
+       "key": "betrivers",
+       "name": "BetRivers (Kambi)",
+       "flag": "BETRIVERS_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the Kambi offering API its site uses: no licence for a paid product."
+      },
+      {
+       "key": "actionnetwork",
+       "name": "Action Network",
+       "flag": "ACTIONNETWORK_DATA_OK",
+       "state": "on",
+       "why": "DraftKings, BetMGM, Caesars, bet365, Fanatics, Hard Rock and theScore prices read from the JSON its odds pages use: no licence for a paid product."
+      },
+      {
+       "key": "matchbook",
+       "name": "Matchbook",
+       "flag": "MATCHBOOK_DATA_OK",
+       "state": "on",
+       "why": "Matchbook's public REST prices; its API terms cover account holders, not a redistributed feed."
+      },
+      {
+       "key": "pick6",
+       "name": "DraftKings Pick6",
+       "flag": "PICK6_DATA_OK",
+       "state": "on",
+       "why": "Lines read from the loader data its site uses: no licence for a paid product."
+      },
+      {
+       "key": "bovada",
+       "name": "Bovada",
+       "flag": "BOVADA_DATA_OK",
+       "state": "on",
+       "why": "Prices read from the JSON its site uses; an offshore book, never a venue for US subscribers."
+      }
+     ],
+     "review": [
+      {
+       "key": "gemini",
+       "name": "Gemini Predictions",
+       "note": "Public prediction-markets REST (api.gemini.com, no key): check its API terms on redistribution before charging."
+      },
+      {
+       "key": "oddsapi",
+       "name": "The Odds API",
+       "note": "Paid plans allow use in apps; check the plan terms."
+      },
+      {
+       "key": "pandascore",
+       "name": "PandaScore",
+       "note": "Free tier terms: check commercial use."
+      },
+      {
+       "key": "lolesports",
+       "name": "LoL Esports schedule",
+       "note": "Unofficial use of the public key the lolesports site uses."
+      },
+      {
+       "key": "oracleselixir",
+       "name": "Oracle's Elixir",
+       "note": "Free downloads; check terms and credit."
+      },
+      {
+       "key": "leaguepedia",
+       "name": "Leaguepedia",
+       "note": "CC BY-SA: credited on /data-sources."
+      },
+      {
+       "key": "opendota",
+       "name": "OpenDota",
+       "note": "Free API: credited on /data-sources."
+      }
+     ]
+    },
+    "upstream": {
+     "gapMs": {},
+     "requests": 0,
+     "shared": 0,
+     "failed": 0,
+     "retried429": 0,
+     "byHost": {},
+     "backlogMs": {}
+    },
+    "live": {
+     "listeners": 0,
+     "webhook": true,
+     "webhookKinds": [],
+     "webhookStats": {
+      "sent": 0,
+      "failed": 0,
+      "lastError": null,
+      "lastAt": null
+     },
+     "push": {
+      "sent": 0,
+      "failed": 0,
+      "dropped": 0,
+      "retried": 0,
+      "alerts": 0,
+      "lastError": null,
+      "lastAt": null,
+      "devices": 0,
+      "keySource": "none"
+     }
+    },
+    "accounts": {
+     "paywall": false,
+     "billing": false,
+     "authSecretSet": false,
+     "webhookSecretSet": false
+    },
+    "alerts": {
+     "recent": 0,
+     "liveListeners": 0,
+     "webhook": true
+    },
+    "feeds": {
+     "pandascore": false,
+     "pinnacle": true,
+     "pinnacleMatches": 0
+    },
+    "matchups": {
+     "game": "LOL",
+     "ready": false,
+     "updated": null,
+     "error": null,
+     "series": 11426,
+     "seedSeries": 11426,
+     "fetched": 0,
+     "lastResult": "2026-10-24T00:00:00.000Z",
+     "upcoming": 0,
+     "teams": 547,
+     "providers": [
+      {
+       "id": "lolesports",
+       "name": "LoL Esports schedule",
+       "type": "results and schedule",
+       "state": "on",
+       "note": "Unofficial use of the public key lolesports.com's own site uses; finished series and upcoming matches."
+      },
+      {
+       "id": "kalshi",
+       "name": "Kalshi",
+       "type": "exchange",
+       "state": "on",
+       "note": "Match winner books (KXLOLGAME) via the esports board; the market price the model is judged against."
+      },
+      {
+       "id": "polymarketus",
+       "name": "Polymarket US",
+       "type": "exchange",
+       "state": "on",
+       "note": "LoL match winner markets (esports_match_winner) from the US exchange, with its taker fee; a second Texas venue next to Kalshi. POLYMARKET_US=off turns it off."
+      },
+      {
+       "id": "polymarket",
+       "name": "Polymarket (global)",
+       "type": "exchange",
+       "state": "reference",
+       "note": "Reference price only; not a venue for US users and never linked."
+      },
+      {
+       "id": "riot",
+       "name": "Riot developer API",
+       "type": "stats",
+       "state": "missing key",
+       "note": "Serves public ranked games, not pro match results; nothing here reads it. Set RIOT_API_KEY only if a ranked-play feature is built."
+      }
+     ],
+     "pmus": {
+      "on": true,
+      "markets": 0,
+      "at": null,
+      "error": null
+     }
+    },
+    "matchContext": {
+     "ratings": {},
+     "picks": {},
+     "manualMatches": 0
+    },
+    "sharpMoves": 0,
+    "owls": "DISABLED — dead key (repeated 403s)",
+    "oddsApiQuotaRemaining": null,
+    "oddsApiBudget": {
+     "lowUsage": false,
+     "reason": null,
+     "plan": null,
+     "remaining": null,
+     "used": 0,
+     "creditsPerDay": null,
+     "nextCallIn": 0,
+     "skippedCalls": 0
+    },
+    "sportsbookPoll": {
+     "lastSport": null,
+     "lastAt": null,
+     "pulls": 0,
+     "skipped": 0,
+     "error": null
+    },
+    "owlsProps": "none",
+    "oddsApiProps": "none"
+   }
+  }
+ ]
+}
