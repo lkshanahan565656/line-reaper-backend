@@ -189,7 +189,8 @@ test('candidates from the v2 leaderboard, then a scoring batch grades the wallet
   assert.ok(pos.every(c => (c.params.status === 'CLOSED' || c.params.status === 'OPEN') !== (c.params.include_archived === true)), 'archived only on the unclaimed lists (CLOSED with it is a 400)');
   assert.ok(calls.some(c => c.url.endsWith('/v2/prices-history')), 'closing lines measured');
   assert.ok(!calls.some(c => /data-api\.polymarket\.com\/(?!v2\/)/.test(c.url)), 'v1 is retired: every data-API call is v2');
-  // scores survive a restart
+  // scores survive a restart (once the coalesced write lands)
+  await require('../jsonstore').flushAll();
   const saved = JSON.parse(fs.readFileSync(process.env.TAIL_TRADERS_FILE, 'utf8'));
   assert.equal(saved[0].wallet, W1);
 });
@@ -538,7 +539,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.160.0');
+  assert.equal(body.version, '3.160.1');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -565,8 +566,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.160.0');
-  assert.equal((await get('/')).body.version, '3.160.0');
+  assert.equal(require('../package.json').version, '3.160.1');
+  assert.equal((await get('/')).body.version, '3.160.1');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {

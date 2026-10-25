@@ -173,12 +173,12 @@ test('survives a restart from the file store; env picks the store', async () => 
   const file = path.join(os.tmpdir(), `tailtrack-${process.pid}-${Date.now()}.json`);
   const a = createTailTracker({ store: createFileStore(file), http: fakeGamma({}), now: () => NOW });
   await a.record(signal());
-  await new Promise(r => setTimeout(r, 20));
+  await require('../jsonstore').flushAll();
   const b = createTailTracker({ store: createFileStore(file), http: fakeGamma({ '0xm1': gamma({ closed: true, outcomePrices: '["1","0"]' }) }), now: () => NOW + 1 });
   assert.equal(await b.record(signal()), false, 'reloaded signal is not logged twice');
   assert.equal((await b.check()).settled, 1);
   assert.equal((await b.summary()).overall.wins, 1);
-  await new Promise(r => setTimeout(r, 20));
+  await require('../jsonstore').flushAll();
   const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
   assert.equal(saved[0].result, 'win');
   fs.unlinkSync(file);

@@ -8,6 +8,24 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+// health, event-loop stalls, slow requests and the boot timeline (ops.js)
+const ops = require('./ops').createOps();
+ops.start();
+app.use(ops.middleware);
+// Answered before anything else is mounted, and from memory only: Railway's
+// health check and the uptime probe get an answer while feeds are still warming.
+app.get('/api/health', (req, res) => {
+  const o = ops.state();
+  res.set('Cache-Control', 'no-store').json({
+    ok: true, version: require('./package.json').version, uptimeS: o.uptimeS,
+    listening: o.boot.some(b => b.mark === 'listening'), boot: o.boot,
+    stalls: { count: o.stalls.count, worstMs: o.stalls.worstMs, last: o.stalls.recent[0] || null },
+    inFlight: o.requests.inFlight, memory: o.memory,
+    backup: typeof resultsBackup !== 'undefined' ? resultsBackup.status().state : 'loading',
+    stores: require('./jsonstore').storeStats(),
+  });
+});
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats() }));
 
 // Keys come from the environment only (Railway variables / local .env).
 // Never commit a fallback key: anything in source ships to every buyer.
@@ -3642,7 +3660,7 @@ const tailJobs = {};
 async function runTailJob(name, fn) {
   const j = tailJobs[name] ||= { lastRun: null, ms: null, error: null };
   const t0 = Date.now();
-  try { const out = await fn(); j.error = null; return out; }
+  try { const out = await ops.job(`tail:${name}`, fn)(); j.error = null; return out; }
   catch (e) { j.error = e?.message || String(e); console.warn(`Tail ${name}:`, j.error); return null; }
   finally { j.lastRun = new Date().toISOString(); j.ms = Date.now() - t0; }
 }
@@ -4614,7 +4632,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.160.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.160.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7064,13 +7082,19 @@ app.get('/api/esports/context', (req, res) => res.json({
 // What's winning: every track record scored and cut into plays (results.js).
 // ?days=30 limits it to records from the last 30 days.
 const results = require('./results');
+// The scoreboard reads every record (50,000+ rows) and runs synchronously, so
+// each visit used to hold the event loop while it built. Records change on
+// 10-minute grading passes; one build per 30 s is shared by every visitor.
+const scoreboardMemo = require('./ops').createMemo({ ttlMs: 30e3 });
 app.get('/api/results', async (req, res) => {
   try {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list()]);
-    const board = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows] = await Promise.all([
+        tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list()]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -7085,9 +7109,11 @@ app.get('/api/best', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
     const all = { limit: 1e9 };
-    const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps] = await Promise.all([
-      tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), sportTracker.list(all)]);
-    const { plays } = results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps });
+    const { plays } = await scoreboardMemo('best', async () => {
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps] = await Promise.all([
+        tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), sportTracker.list(all)]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, sportsProps });
+    });
     const out = bestplays.bestPlays({
       signals: lic.polymarket ? tailEngine.signals({ limit: 500 }).map(s => venueFor(s, lic)) : [],
       matches: esportsBoardFor(req),
@@ -7167,7 +7193,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.160.0',
+  version: '3.160.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7258,7 +7284,9 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
 // around :20) made the 10-minute settle job miss every slot from 06:50 to
 // 18:20 on 10-10. Every job here runs late instead. (node-cron 3 also gets a
 // stepped range wrong: '7-59/10' runs at 10,20,…,50, so minutes are listed.)
-const schedule = (expr, fn) => cron.schedule(expr, fn, { recoverMissedExecutions: true });
+// each job is named in /api/ops (and in a stall's report) by its first line of code
+const jobLabel = (expr, fn) => `${expr} ${String(fn).replace(/^\s*(async\s*)?\(\)\s*=>\s*/, '').replace(/\s+/g, ' ').slice(0, 60)}`;
+const schedule = (expr, fn) => cron.schedule(expr, ops.job(jobLabel(expr, fn), fn), { recoverMissedExecutions: true });
 
 // LoL matchups: schedule, results and the forward record, every 10 minutes.
 if (matchupEngine) schedule('3,13,23,33,43,53 * * * *', () => matchupEngine.refresh().catch(() => {}));
@@ -7388,11 +7416,14 @@ schedule('35 25 */6 * * *', () => runTailJob('candidates', () => tailEngine.refr
 
 // ─── START ────────────────────────────────────────────────────────────────────
 if (require.main === module || process.env.LR_DESKTOP) {
-  app.listen(PORT, async () => {
-    console.log(`Line Reaper v3.92.0 on port ${PORT}`);
+  ops.mark('modules loaded');
+  resultsBackup.load().then(() => ops.mark('backup read'), () => {});
+  const server = app.listen(PORT, async () => {
+    ops.mark('listening');
+    console.log(`Line Reaper v${require('./package.json').version} on port ${PORT} (${ops.state().boot.map(b => `${b.mark} ${b.ms} ms`).join(', ')})`);
     // one line per deploy, so a new webhook (or phone) knows it's wired up
     if (webhookOnly.enabled && !/^(off|0|false|no)$/i.test(String(process.env.ALERT_STARTUP || '').trim())) {
-      webhook.send(`Line Reaper v3.92.0 is live. Sharp Tail alerts will come here.`, 'Startup');
+      webhook.send(`Line Reaper v${require('./package.json').version} is live. Sharp Tail alerts will come here.`, 'Startup');
     }
     if (tailStreamOn) tailStream.start();
     await Promise.all([scrapePrizePicks(), scrapeUnderdog(), scrapeSleeper()]);
@@ -7428,6 +7459,19 @@ if (require.main === module || process.env.LR_DESKTOP) {
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
   });
+  // Railway stops the old container with SIGTERM: stop taking requests, put
+  // pending record writes on disk (jsonstore.js), then exit.
+  let stopping = false;
+  const shutdown = sig => {
+    if (stopping) return;
+    stopping = true;
+    console.log(`${sig}: shutting down`);
+    server.close();
+    setTimeout(() => process.exit(0), 8000).unref();
+    require('./jsonstore').flushAll().catch(() => {}).finally(() => process.exit(0));
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = {

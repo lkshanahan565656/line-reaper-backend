@@ -20,6 +20,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createJsonFileStore } = require('./jsonstore');
 const { bookLines, gapOutcome } = require('./esgaps');
 
 // PrizePicks standard pick'em at 1.00x implies 56.22% per leg (≈ -128).
@@ -40,34 +41,9 @@ function createMemoryStore(initial = []) {
   };
 }
 
-function createFileStore(file) {
-  const rows = new Map();
-  let writing = Promise.resolve();
-  const store = {
-    kind: 'file',
-    async init() {
-      try {
-        const arr = JSON.parse(fs.readFileSync(file, 'utf8'));
-        for (const p of arr) rows.set(p.id, p);
-      } catch (e) {
-        if (e.code !== 'ENOENT') console.warn(`Tracker: could not read ${file}: ${e.message}`);
-      }
-    },
-    async all() { return [...rows.values()]; },
-    async put(p) { return store.putMany([p]); },
-    async putMany(list) {
-      for (const p of list) rows.set(p.id, p);
-      // serialize writes; write to a temp file then rename so a crash can't truncate it
-      writing = writing.then(() => {
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        const tmp = `${file}.tmp`;
-        fs.writeFileSync(tmp, JSON.stringify([...rows.values()]));
-        fs.renameSync(tmp, file);
-      }).catch(e => console.warn(`Tracker: write failed: ${e.message}`));
-      return writing;
-    },
-  };
-  return store;
+// coalesced, chunked writes (jsonstore.js)
+function createFileStore(file, opts = {}) {
+  return createJsonFileStore(file, { label: 'Tracker', ...opts });
 }
 
 function createPgStore(connectionString) {

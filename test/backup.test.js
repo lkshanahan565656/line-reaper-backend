@@ -83,5 +83,15 @@ test('file stores restore in one write', async () => {
   await store.init();
   await store.putMany([{ id: 1 }, { id: 2 }]);
   await store.put({ id: 3 });
+  await store.flush();   // writes are coalesced (jsonstore.js)
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).length, 3);
+});
+
+test('the async envelope matches the sync one both ways', async () => {
+  const { sealAsync, openAsync, seal, open, payloadChunks } = require('../backup');
+  const key = require('crypto').randomBytes(32);
+  const payload = { stores: { a: [{ id: 1, s: 'x"y' }, { id: 2, n: null }], b: [], c: Array.from({ length: 1000 }, (_, i) => ({ id: i, v: i / 3 })) } };
+  assert.equal([...payloadChunks(payload)].join(''), JSON.stringify(payload));
+  assert.deepEqual(open(key, await sealAsync(key, payload)), payload);
+  assert.deepEqual(await openAsync(key, seal(key, payload)), payload);
 });
