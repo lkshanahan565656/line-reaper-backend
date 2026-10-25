@@ -129,10 +129,12 @@ test('engine: board, freeze in the hour before kickoff, close, grade on the fina
     { venue: 'polymarketus', implied: 0.9, price: 0.89, mid: 0.88, marketId: `U-${side}`, side: 'yes', url: 'https://polymarket.us/x' }] });
   const bets = [bet('home', 0.4, 0.62, 'https://kalshi.com/markets/x'), bet('draw', 0.3, 0.22), bet('away', 0.3, 0.16)];
   let espn = { events: [] };
-  const http = { get: async url => (url.includes('football-data') ? { data: 'Div,Date,Time,HomeTeam,AwayTeam,FTHG,FTAG\n' } : { data: espn }) };
+  const asked = [];
+  const http = { get: async (url, o) => { if (url.includes('espn')) asked.push(o?.params?.dates); return url.includes('football-data') ? { data: 'Div,Date,Time,HomeTeam,AwayTeam,FTHG,FTAG\n' } : { data: espn }; } };
   const store = fakeStore();
   const E = G.createSoccerModel({ http, store, bets: () => bets, now: () => t, seed, fill: async (ref, usd) => (usd <= 200 ? { usd, cost: 0.41 } : null) });
   await E.refresh();
+  assert.ok(asked.length && asked.every(d => /^\d{8}$/.test(d)), 'ESPN is asked one day at a time (a range answers 400)');
   const board = E.view();
   assert.equal(board.length, 1);
   assert.deepEqual(board[0].rated, { home: 'Arsenal', away: 'Fulham' });

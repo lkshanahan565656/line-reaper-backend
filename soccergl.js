@@ -125,11 +125,14 @@ function createSoccerModel({ http, store = null, bets = () => [], fill = null, n
       if (files) { state.fd = rows; state.fdAt = t; state.fdFiles = files; }
     }
     const espn = [];
+    // one day a call: ESPN's soccer scoreboards answer 400 to a date range
     for (const [, code, slug] of PIN_LEAGUES) {
-      try {
-        const r = await http.get(`${ESPN}/${slug}/scoreboard`, { params: { dates: `${ymd(t - 3 * 86400e3)}-${ymd(t)}` }, timeout: 20000 });
-        espn.push(...parseEspn(r.data, code));
-      } catch (e) { errors.push(`espn ${slug}: ${e.response?.status || e.message}`); }
+      for (const d of [0, 1, 2]) {
+        try {
+          const r = await http.get(`${ESPN}/${slug}/scoreboard`, { params: { dates: ymd(t - d * 86400e3) }, timeout: 20000 });
+          espn.push(...parseEspn(r.data, code));
+        } catch (e) { errors.push(`espn ${slug} ${ymd(t - d * 86400e3)}: ${e.response?.status || e.message}`); }
+      }
     }
     if (espn.length || !state.espn.length) state.espn = espn;
     state.espnAt = new Date(t).toISOString();
