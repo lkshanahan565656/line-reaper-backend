@@ -1,0 +1,19 @@
+name: diag-brmoney
+on: { push: { branches: [diag-brmoney] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: |
+          set +e
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out && cd out
+          curl -s -m 60 $B/ -o root.json
+          curl -s -m 240 "$B/api/results" -o results.json
+          curl -s -m 120 "$B/api/big-money?mm=1" -o bigmoney.json
+          curl -s -m 240 "$B/api/ev/scoreboard" -o scoreboard.json
+          ls -la
+          cd .. && git init -q o && cp -r out/* o/ && cd o && git checkout -q -b diag-brmoney-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-brmoney-out
