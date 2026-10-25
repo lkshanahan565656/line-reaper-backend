@@ -515,7 +515,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .emu-conf.ok { background: rgba(16,185,129,.12); color: #34d399; }
 .emu-conf.low { background: rgba(245,158,11,.12); color: #fbbf24; }
 .emu-conf.insufficient { background: rgba(148,163,184,.12); color: #94a3b8; }
-.emu-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 70px 70px; gap: 10px; align-items: center; }
+.emu-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 64px 64px 64px; gap: 10px; align-items: center; }
 .emu-num { text-align: right; }
 .emu-num b { display: block; font: 800 19px 'JetBrains Mono', monospace; color: #f1f5f9; line-height: 1; }
 .emu-num small { display: block; font-size: 8.5px; letter-spacing: .12em; color: #64748b; font-weight: 700; margin-top: 3px; }
@@ -534,7 +534,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .emu-hist .w { color: #34d399; } .emu-hist .l { color: #f87171; }
 .emu-ratings { margin: 14px 0 6px; font-size: 12px; color: #cbd5e1; }
 .emu-ratings summary { cursor: pointer; color: #c4b5fd; font-weight: 700; }
-@media (max-width: 560px) { .emu-verdict .nums { grid-template-columns: repeat(2, minmax(0, 1fr)); } .emu-cols { grid-template-columns: 1fr; } .emu-row { grid-template-columns: 30px minmax(0, 1fr) 58px 58px; gap: 8px; } .emu-num b { font-size: 16px; } }
+@media (max-width: 560px) { .emu-verdict .nums { grid-template-columns: repeat(2, minmax(0, 1fr)); } .emu-cols { grid-template-columns: 1fr; } .emu-row { grid-template-columns: 30px minmax(0, 1fr) 50px 50px 50px; gap: 8px; } .emu-num b { font-size: 16px; } }
 .esm-btn { background: #8b5cf6; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .esm-foot { font-size: 11px; color: #64748b; line-height: 1.6; margin-top: 18px; }
 .esm-sharp { color: #f59e0b; }
@@ -5072,7 +5072,7 @@ function emuHist(t) {
   return (t?.form?.series || []).slice(0, 6).map(h => { const [w, l] = h.score.split('-').map(Number); return `<div><span class="${w > l ? 'w' : w < l ? 'l' : ''}">${escEs(h.score)}</span> vs ${escEs(h.opp)} <span style="color:#64748b">${escEs(h.lg || '')} · ${new Date(h.t).toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${h.change >= 0 ? '+' : ''}${h.change}</span></div>`; }).join('') || '<div style="color:#64748b">No recent series</div>';
 }
 function emuCard(mu) {
-  const md = mu.model || {}, k = mu.markets?.kalshi, c = mu.compare, tv = mu.teamViews || [];
+  const md = mu.model || {}, k = mu.markets?.kalshi, u = mu.markets?.pmus, c = mu.compare, tv = mu.teamViews || [];
   const open = emuState.open.has(mu.id);
   const conf = md.confidence || 'insufficient';
   const confLabel = conf === 'ok' ? 'MODEL' : conf === 'low' ? 'LOW CONFIDENCE' : 'NO MODEL PRICE';
@@ -5081,23 +5081,27 @@ function emuCard(mu) {
     const v = tv[i];
     const mp = md.priced ? (i === 0 ? md.win : 1 - md.win - (md.draw || 0)) : null;
     const kk = kp != null ? (i === 0 ? kp : 1 - kp) : null;
+    const up = u?.prob != null ? (i === 0 ? u.prob : 1 - u.prob) : null;
     const meta = v ? `${v.rating}${v.rd ? ` ±${v.rd}` : ''} · ${escEs(v.home || '—')} · last 10 ${escEs(v.form?.last10 || '—')}` : 'not in our data';
     return `<div class="emu-row">${esmAvatar(t.code || t.name)}<div class="esm-name"><b>${escEs(t.name)}</b><div class="emu-meta">${meta}</div></div>
       <div class="emu-num model">${mp != null ? `<b>${esmPct(mp)}</b><small>MODEL</small>` : '<b>—</b><small>MODEL</small>'}</div>
-      <div class="emu-num mkt">${kk != null ? `<b>${esmPct(kk)}</b><small>KALSHI</small>` : '<b>—</b><small>KALSHI</small>'}</div></div>`;
+      <div class="emu-num mkt">${kk != null ? `<b>${esmPct(kk)}</b><small>KALSHI</small>` : '<b>—</b><small>KALSHI</small>'}</div>
+      <div class="emu-num mkt">${up != null ? `<b>${esmPct(up)}</b><small>PM US</small>` : '<b>—</b><small>PM US</small>'}</div></div>`;
   }).join('');
   const meter = md.priced ? `<div class="esm-split" title="Model: ${escEs(mu.teams[0].name)} ${Math.round(md.win * 100)}%"><i style="width:${Math.round(md.win * 100)}%"></i><i style="flex:1"></i></div>` : '';
   const sub = [];
-  if (c) sub.push(`<span>Model vs Kalshi: <b class="emu-diff" style="color:${Math.abs(c.diff) >= 0.05 ? '#fbbf24' : '#cbd5e1'}">${emuPts(c.diff)} pts</b> on ${escEs(mu.teams[0].name)} <span style="color:#64748b">(model view)</span></span>`);
+  if (c) sub.push(`<span>Model vs ${escEs(c.vs || 'Kalshi')}: <b class="emu-diff" style="color:${Math.abs(c.diff) >= 0.05 ? '#fbbf24' : '#cbd5e1'}">${emuPts(c.diff)} pts</b> on ${escEs(mu.teams[0].name)} <span style="color:#64748b">(model view)</span></span>`);
   if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
-  if (!k && md.priced) sub.push('<span style="color:#64748b">Kalshi has no book on this series yet</span>');
+  if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
+  if (c?.best && k?.sides && u?.sides) sub.push(`<span>Cheapest: ${c.best.map((b, i) => b ? `${escEs(mu.teams[i].code || mu.teams[i].name)} on ${escEs(b.venue)}` : null).filter(Boolean).join(' · ')}</span>`);
+  if (!k && !u && md.priced) sub.push('<span style="color:#64748b">Neither Kalshi nor Polymarket US has a book on this series yet</span>');
   if (mu.h2h?.series) sub.push(`<span>H2H 2y: ${mu.h2h.series} series, maps ${mu.h2h.maps[0]}-${mu.h2h.maps[1]}</span>`);
   const detail = open ? `<ul class="emu-why">${(mu.explain || []).map(x => `<li>${escEs(x)}</li>`).join('')}</ul>
     ${md.priced ? `<div class="emu-chips">${(md.scores || []).map(s => `<span class="emu-chip"><small>${escEs(s.score)}</small>${esmPct(s.prob)}</span>`).join('')}${md.totalMaps?.over != null ? `<span class="emu-chip"><small>Over ${md.totalMaps.line} maps</small>${esmPct(md.totalMaps.over)}</span>` : ''}${md.minus1p5 ? `<span class="emu-chip"><small>${escEs(mu.teams[0].code || mu.teams[0].name)} -1.5</small>${esmPct(md.minus1p5[0])}</span><span class="emu-chip"><small>${escEs(mu.teams[1].code || mu.teams[1].name)} -1.5</small>${esmPct(md.minus1p5[1])}</span>` : ''}${md.band ? `<span class="emu-chip"><small>Rating range (±1 RD)</small>${esmPct(md.band[0])}–${esmPct(md.band[1])}</span>` : ''}</div>` : ''}
     ${mu.h2h?.last?.length ? `<div class="emu-chips">${mu.h2h.last.map(h => `<span class="emu-chip"><small>${new Date(h.t).toLocaleDateString([], { month: 'short', year: '2-digit' })}</small>${escEs(h.score)}</span>`).join('')}</div>` : ''}
     <div class="emu-cols">${mu.teams.map((t, i) => `<div><h4>${escEs(t.name)}: recent series</h4><div class="emu-hist">${emuHist(tv[i])}</div></div>`).join('')}</div>
     ${mu.markets?.polymarketRef != null ? `<div class="esm-sub">Polymarket's global book (reference only, not a US venue): ${escEs(mu.teams[0].name)} ${esmPct(mu.markets.polymarketRef)}</div>` : ''}
-    ${k?.url ? `<div class="esm-sub"><a class="esm-more" style="margin-left:0;text-decoration:none" href="${escEs(k.url)}" target="_blank" rel="noopener">Open on Kalshi</a></div>` : ''}` : '';
+    ${k?.url || u?.url ? `<div class="esm-sub">${k?.url ? `<a class="esm-more" style="margin-left:0;text-decoration:none" href="${escEs(k.url)}" target="_blank" rel="noopener">Open on Kalshi</a>` : ''}${u?.url ? `<a class="esm-more" style="margin-left:${k?.url ? '8px' : '0'};text-decoration:none" href="${escEs(u.url)}" target="_blank" rel="noopener">Open on Polymarket US</a>` : ''}</div>` : ''}` : '';
   return `<div class="esm-card">
     <div class="esm-top"><span class="esm-game">LoL</span><span class="emu-conf ${conf}">${confLabel}</span><span>${escEs(mu.league || '')}${mu.block ? ` · ${escEs(mu.block)}` : ''}${mu.bestOf ? ` · Bo${mu.bestOf}` : ''}</span><span class="esm-time">${esmWhen(mu.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
@@ -5119,7 +5123,7 @@ function renderEsMatchups() {
     `<button class="sport-chip" onclick="loadEsMatchups()" style="margin-left:auto">Refresh</button>`].join('');
   const list = all.filter(m => emuState.league === 'ALL' || (m.league || 'Other') === emuState.league);
   const st = d.status || {};
-  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.compare).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${st.error ? `<div class="esm-note">Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.</div>` : ''}`;
+  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.kalshi).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.pmus).length}</b><span>With PM US</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${st.error ? `<div class="esm-note">Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.</div>` : ''}`;
   if (!list.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No upcoming LoL series</div><div class="empty-sub">${st.ready ? 'lolesports lists nothing in the next week.' : 'The schedule loads a minute after a restart.'}</div></div>`; return; }
   let html = '', day = null;
   for (const m of list) {

@@ -4199,7 +4199,7 @@ const esportsEdgeSeen = new Map();
 const esmatchupdata = require('./esmatchupdata');
 const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
 const matchupEngine = MATCHUPS_ON ? esmatchupdata.createMatchupEngine({
-  http: upstream, board: () => esportsBoard.state.matches,
+  http: upstream, board: () => esportsBoard.state.matches, pmusOn: pmus.enabledFromEnv(),
   store: resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))),
 }) : null;
 // Every board edge is logged and graded on closing-line value like the +EV
@@ -4614,7 +4614,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.159.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.160.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7167,7 +7167,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.159.0',
+  version: '3.160.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
