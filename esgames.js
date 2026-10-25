@@ -30,6 +30,15 @@ const GAMES = {
     // fitted 2024-09..2025-12: LoL's settings ran overconfident (train log loss 0.684); these 0.659
     model: { leaguePrior: {}, unknownPrior: 1500, leagueEta: 0, offsetIntlOnly: true, tier2Re: null, scale: 0.6, mapWeight: 0.35, rdUnknown: 250, rdMax: 250 },
   },
+  DOTA: {
+    id: 'DOTA', label: 'Dota 2', board: 'DOTA', pmLeague: 'dota2', seed: seed('dota-series.json.gz'), backtest: seed('dota-matchup-backtest.json'),
+    mapMinutes: 40, trainFrom: '2024-12-01', testFrom: '2026-01-01',
+    // tier-one events by name (OpenDota lists tournaments, not leagues)
+    major: /international|dreamleague|esl one|pgl wallachia|blast slam|fissure|esports world cup|riyadh|betboom dacha|clavision/i,
+    // fitted 2024-12..2025-12 only (train log loss 0.6721 with VALORANT's
+    // settings to 0.6700; renames by OpenDota team id did not help, 0.6712)
+    model: { leaguePrior: {}, unknownPrior: 1500, leagueEta: 0, offsetIntlOnly: true, tier2Re: null, scale: 0.6, mapWeight: 0.6, kappa: 4, breakShrink: 0 },
+  },
 };
 
 module.exports = { GAMES, CS_PRIOR };

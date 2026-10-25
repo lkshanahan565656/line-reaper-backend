@@ -214,6 +214,33 @@ function seriesFromGames(games, game) {
   return out;
 }
 
+// Dota 2: OpenDota's pro games carry a series id and type (0 Bo1, 1 Bo3,
+// 2 Bo5, 3 Bo2), so games fold into series exactly. The tournament name goes
+// in stage: Dota has no fixed leagues, so lg stays empty (like VALORANT).
+// games: [{ id, sid, st, a, b, aWon, t, lg }] → [{ id, t, lg, stage, bo, a, b, s1, s2 }]
+const DOTA_BO = { 0: 1, 1: 3, 2: 5, 3: 2 };
+function dotaSeriesFromGames(games) {
+  const by = new Map();
+  for (const g of games || []) {
+    if (!g?.a || !g?.b || !Number.isFinite(g.t) || g.t <= 0) continue;
+    const key = g.sid ? `od:${g.sid}` : `od:m${g.id ?? `${M.teamKey(g.a)}-${M.teamKey(g.b)}-${g.t}`}`;
+    let r = by.get(key);
+    if (!r) { r = { id: key, t: g.t, a: g.a, b: g.b, s1: 0, s2: 0, bo: g.sid ? DOTA_BO[g.st] ?? null : 1, stage: g.lg || null, games: new Set() }; by.set(key, r); }
+    if (g.id != null) { if (r.games.has(g.id)) continue; r.games.add(g.id); }
+    r.t = Math.min(r.t, g.t);
+    const aIsA = M.teamKey(g.a) === M.teamKey(r.a);
+    if (!aIsA && M.teamKey(g.b) !== M.teamKey(r.a)) continue;   // a roster renamed mid-series: leave the game out
+    if (g.aWon === aIsA) r.s1++; else r.s2++;
+  }
+  const out = [];
+  for (const r of by.values()) {
+    if (r.s1 + r.s2 === 0) continue;
+    const bo = r.bo != null && r.bo >= r.s1 + r.s2 ? r.bo : r.s1 + r.s2 <= 1 ? 1 : Math.max(r.s1, r.s2) * 2 - 1;
+    out.push({ id: r.id, t: new Date(r.t).toISOString(), lg: null, stage: r.stage, bo, a: r.a, b: r.b, s1: r.s1, s2: r.s2 });
+  }
+  return out;
+}
+
 // The matches a venue lists for one game (Kalshi via the esports board, then
 // Polymarket US's own list), as series rows the model can price. CS2 and
 // VALORANT have no schedule feed we read, so the venues are the schedule:
@@ -241,13 +268,16 @@ function venueUpcoming(game, board, pmEvents, { now = Date.now(), o = DEFAULTS }
   return out.sort((x, y) => Date.parse(x.t) - Date.parse(y.t));
 }
 
+// a series whose result we have only in part (OpenDota lists Dota games one
+// by one, and can miss some) never grades
+const seriesComplete = s => !s.bo || s.bo % 2 === 0 || Math.max(s.s1, s.s2) >= (s.bo + 1) / 2;
 // a finished series for a venue match: both teams fit, within 12 hours
 function findResult(seriesList, row, o = DEFAULTS) {
   const t = Date.parse(row.start);
   let best = null;
   for (const s of seriesList) {
     const st = Date.parse(s.t);
-    if (!Number.isFinite(st) || Math.abs(st - t) > 12 * 3600e3) continue;
+    if (!Number.isFinite(st) || Math.abs(st - t) > 12 * 3600e3 || !seriesComplete(s)) continue;
     const [a, b] = row.teams;
     const d = Math.min(M.nameScore(a, s.a), M.nameScore(b, s.b)), f = Math.min(M.nameScore(a, s.b), M.nameScore(b, s.a));
     const sc = Math.max(d, f);
@@ -416,9 +446,12 @@ function createMatchupEngine({ game = 'LOL', http, board = () => [], results = n
       const raw = typeof results === 'function' ? results() : null;
       let added = 0;
       if (raw?.games?.length && raw.at !== state.resultsAt) {
-        for (const s of seriesFromGames(raw.games, G.id)) {
+        for (const s of G.id === 'DOTA' ? dotaSeriesFromGames(raw.games) : seriesFromGames(raw.games, G.id)) {
           const k = sameKey(s);
-          if (series.has(s.id) || seen.has(k)) continue;
+          const had = series.get(s.id);
+          // OpenDota lists a series game by game: a later read with more games replaces the partial one
+          if (had && G.id === 'DOTA' && s.s1 + s.s2 > had.s1 + had.s2) { seen.delete(sameKey(had)); series.set(s.id, s); seen.add(k); added++; continue; }
+          if (had || seen.has(k)) continue;
           series.set(s.id, s); seen.add(k); added++;
         }
         state.resultsAt = raw.at;
@@ -508,7 +541,7 @@ function createMatchupEngine({ game = 'LOL', http, board = () => [], results = n
       let row = state.record.get(id);
       if (!row && mins <= o.freezeFrom && mins >= o.freezeTo && mu.compare?.kalshi != null && mu.model.priced) {
         row = {
-          id, game: G.id, matchId: mu.id, start: mu.start, league: mu.league, bestOf: mu.bestOf, teams: mu.teams.map(x => x.name),
+          id, game: G.id, kind: `${G.id.toLowerCase()}-matchups`, matchId: mu.id, start: mu.start, league: mu.league, bestOf: mu.bestOf, teams: mu.teams.map(x => x.name),
           model: mu.compare.model, band: mu.model.band, confidence: mu.model.confidence, kalshi: mu.compare.kalshi,
           costA: mu.markets.kalshi?.sides?.[0]?.cost ?? null, costB: mu.markets.kalshi?.sides?.[1]?.cost ?? null,
           pmus: mu.compare.pmus ?? null, pmusCostA: mu.markets.pmus?.sides?.[0]?.cost ?? null, pmusCostB: mu.markets.pmus?.sides?.[1]?.cost ?? null,
@@ -554,12 +587,14 @@ function createMatchupEngine({ game = 'LOL', http, board = () => [], results = n
 // what the engine reads, and what it can't
 function providers(env = process.env, pm = null, game = 'LOL') {
   const pmus = { id: 'polymarketus', name: 'Polymarket US', type: 'exchange', state: pm && !pm.on ? 'off' : pm?.error ? 'error' : 'on', note: `${GAMES[game]?.label || game} match winner markets (esports_match_winner) from the US exchange, with its taker fee; a second Texas venue next to Kalshi. POLYMARKET_US=off turns it off.` };
-  if (game === 'CS2' || game === 'VAL') {
+  if (game === 'CS2' || game === 'VAL' || game === 'DOTA') {
     const src = game === 'CS2'
       ? { id: 'bo3gg', name: 'bo3.gg results', type: 'results', state: 'on', note: "Finished CS2 series from bo3.gg's public API, read by the team ratings refresh every six hours (no second read); seeded with 42.8k series from 2024." }
+      : game === 'DOTA'
+      ? { id: 'opendota', name: 'OpenDota pro matches', type: 'results', state: 'on', note: "Finished Dota 2 pro games from OpenDota's free public API (api.opendota.com/api/proMatches), folded into series by OpenDota's series id; read by the team ratings refresh every six hours (no second read); seeded with 26.5k series from 2024-09." }
       : { id: 'vlrgg', name: 'vlr.gg results', type: 'results', state: 'on', note: "Finished VALORANT series from vlr.gg's results list, read by the team ratings refresh every six hours (no second read); seeded with 8.1k series from 2024-05." };
     return [src,
-      { id: 'kalshi', name: 'Kalshi', type: 'exchange', state: 'on', note: `Match winner books (${game === 'CS2' ? 'KXCS2GAME' : 'KXVALORANTGAME'}) via the esports board: the schedule and the market price the model is judged against.` },
+      { id: 'kalshi', name: 'Kalshi', type: 'exchange', state: 'on', note: `Match winner books (${game === 'CS2' ? 'KXCS2GAME' : game === 'DOTA' ? 'KXDOTA2GAME; Bo2 matches with a third Tie book are left out' : 'KXVALORANTGAME'}) via the esports board: the schedule and the market price the model is judged against.` },
       pmus];
   }
   return [
@@ -571,4 +606,4 @@ function providers(env = process.env, pm = null, game = 'LOL') {
   ];
 }
 
-module.exports = { DEFAULTS, parseSchedule, loadSeed, loadBacktest, kalshiPrice, polymarketProb, parsePmusEvents, pmusPrice, pairList, pairBoard, seriesFromGames, venueUpcoming, findResult, buildMatchup, summarize, createMatchupEngine, providers, SEED, BACKTEST };
+module.exports = { DEFAULTS, parseSchedule, loadSeed, loadBacktest, kalshiPrice, polymarketProb, parsePmusEvents, pmusPrice, pairList, pairBoard, seriesFromGames, dotaSeriesFromGames, seriesComplete, venueUpcoming, findResult, buildMatchup, summarize, createMatchupEngine, providers, SEED, BACKTEST };

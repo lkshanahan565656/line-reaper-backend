@@ -5528,11 +5528,12 @@ function renderArbTool() {
 // ─── ESPORTS: MATCH BOARD ────────────────────────────────────────────────────
 const esmState = { mode: lsGet('lr_es_mode') || 'matches', data: null, game: lsGet('lr_esm_game') || 'ALL', edgesOnly: false, hideLive: lsGet('lr_esm_live') === '1', open: new Set(), loading: false, at: 0 };
 // LoL head-to-head matchups (model): see loadEsMatchups below
-const EMU_GAMES = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
+const EMU_GAMES = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT', DOTA: 'Dota 2' };
 const EMU_INTRO = {
   LOL: "Every upcoming League of Legends series, rated by <b>our own model</b>: team ratings from every finished series since 2024 (lolesports results), league strength learned from international games, how often favourites sweep, and a small head-to-head term. Each matchup shows why the model says what it says, with Kalshi's and Polymarket US's prices next to it.",
   CS2: "Every CS2 match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 42,000+ finished series since 2024 (bo3.gg results), new teams starting at the level of the events they play, how often favourites sweep, and a small head-to-head term, next to both venues' prices.",
   VAL: "Every VALORANT match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 8,000+ finished series since mid-2024 (vlr.gg results), how often favourites sweep, and a small head-to-head term, next to both venues' prices. Fewer results than CS2, so wider ranges.",
+  DOTA: "Every Dota 2 match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 26,000+ finished pro series since September 2024 (OpenDota results), how often favourites sweep, and a small head-to-head term, next to both venues' prices. <b>Model, not an edge</b>: in the 2026 backtest Kalshi's price beat it on 556 series and betting its side lost after fees.",
 };
 const emuState = { game: EMU_GAMES[lsGet('lr_emu_game')] ? lsGet('lr_emu_game') : 'LOL', data: null, at: 0, loading: false, league: lsGet('lr_emu_league') || 'ALL', open: new Set(), ratings: null };
 function setEsMode(mode, fromTab) {
@@ -5696,7 +5697,7 @@ function renderEsMatches() {
   el.innerHTML = html;
 }
 
-// ─── ESPORTS: LOL HEAD-TO-HEAD MATCHUPS (model) ──────────────────────────────
+// ─── ESPORTS: HEAD-TO-HEAD MATCHUPS, LOL / CS2 / VALORANT / DOTA 2 (model) ──────────────────────────────
 async function loadEsMatchups() {
   renderEmuGames();
   if (emuState.loading) return;
@@ -5818,12 +5819,13 @@ async function loadEmuRatings() {
     if (!emuState.ratings) { const r = await fetch(`${BACKEND_URL}/api/esports/matchups/ratings?game=${encodeURIComponent(game)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d0 = await r.json(); if (game !== emuState.game) return; emuState.ratings = d0; }
     const d = emuState.ratings;
     const MAJOR = game === 'CS2' ? ['CS2 S-tier', 'CS2 A-tier'] : ['LCK', 'LPL', 'LEC', 'LCS', 'LTA North', 'LTA South', 'LCP', 'CBLOL', 'PCS', 'VCS', 'LJL'];
-    const scope = emuState.ratingScope || (game === 'VAL' ? 'all' : 'major');
+    const scope = emuState.ratingScope || (game === 'VAL' || game === 'DOTA' ? 'all' : 'major');
     const intro = game === 'CS2' ? "CS2 has no leagues: bo3.gg's event tier stands in, so a team new to our data starts at the level of the events it plays (S-tier 1800, A 1640, B 1470, C 1350) and results move it from there. Ratings are on a chess-style scale: 100 points is about a 64% map."
       : game === 'VAL' ? "VALORANT results come without a league or tier here, so every team starts at the same rating and results alone sort them. Ratings are on a chess-style scale: 100 points is about a 64% map."
+      : game === 'DOTA' ? "Dota 2 has no fixed leagues: OpenDota lists tournaments, so every team starts at the same rating and results alone sort them. Rosters move often in Dota, which is one reason team ratings trail Kalshi's price. Ratings are on a chess-style scale: 100 points is about a 64% map."
       : 'Each league starts at a prior set from its international record; cross-league results at international events move it from there ("learned", capped at 150). Ratings are on a chess-style scale: 100 points is about a 64% map. Regional leagues (LFL, Prime League, ...) only meet each other at EMEA Masters, so their teams can\'t be ranked against the LEC or LCK with any confidence.';
     const teams = (d.teams || []).filter(t => scope === 'all' || (scope === 'major' ? MAJOR.includes(t.home) : t.home === scope));
-    const scopes = game === 'VAL' ? ['all'] : ['major', 'all', ...(d.leagues || []).map(l => l.league)];
+    const scopes = game === 'VAL' || game === 'DOTA' ? ['all'] : ['major', 'all', ...(d.leagues || []).map(l => l.league)];
     el.innerHTML = `<div class="esm-sub" style="margin-top:6px">${intro}</div>
       <div class="esm-bar" style="margin-top:8px"><label class="es-field" style="flex:0 1 220px"><span>Teams from</span><select onchange="emuState.ratingScope=this.value;loadEmuRatings()">${scopes.map(x => `<option value="${escEs(x)}" ${x === scope ? 'selected' : ''}>${x === 'major' ? (game === 'CS2' ? 'S and A tier' : 'Major leagues') : x === 'all' ? (game === 'LOL' ? 'Every league' : 'Every team') : escEs(x)}</option>`).join('')}</select></label></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>League</th><th>Avg</th><th>Prior</th><th>Learned</th><th>Teams</th></tr>${(d.leagues || []).slice(0, 30).map(l => `<tr><td>${escEs(l.league)}</td><td>${l.avg}</td><td>${l.prior ?? '—'}</td><td>${l.learned >= 0 ? '+' : ''}${l.learned}</td><td>${l.teams}</td></tr>`).join('')}</table></div>

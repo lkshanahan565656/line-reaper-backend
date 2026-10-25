@@ -2,13 +2,13 @@
 // Walk-forward backtest of the head-to-head engine (esmatchup.js) for one
 // game, with that game's settings from esgames.js:
 //
-//   node scripts/esmatchup-backtest.js <LOL|CS2|VAL> <kalshi.json.gz> [out.json]
+//   node scripts/esmatchup-backtest.js <LOL|CS2|VAL|DOTA> <kalshi.json.gz> [out.json]
 //
 // series: the game's seed (seeds/<game>-series.json.gz).
 // kalshi: settled match-winner events with hourly (-48h..+1h) and minute
 //         (-150..+15 min) candles [minute, yes ask, yes bid, volume, price],
 //         from the diag-esh2h workflow (branches diag-esh2h-out-k-LOL, -k-CS2,
-//         -k-VAL). MU_OPTS (JSON) overrides model settings for a grid run.
+//         -k-VAL, -k-DOTA). Bo2 events (a third, Tie book) are left out. MU_OPTS (JSON) overrides model settings for a grid run.
 //
 // No leakage: ratings only ever see series that finished (start + 45 min a
 // map) before the moment priced. The model's settings were fitted on
@@ -24,7 +24,7 @@ const { GAMES } = require('../esgames');
 
 const [gameId, kFile, outArg] = process.argv.slice(2);
 const G = GAMES[String(gameId || '').toUpperCase()];
-if (!G || !kFile) { console.error('usage: esmatchup-backtest.js <LOL|CS2|VAL> <kalshi.json.gz> [out.json]'); process.exit(1); }
+if (!G || !kFile) { console.error('usage: esmatchup-backtest.js <LOL|CS2|VAL|DOTA> <kalshi.json.gz> [out.json]'); process.exit(1); }
 const sFile = G.seed, outFile = outArg || G.backtest;
 const BASE = { ...G.model, ...JSON.parse(process.env.MU_OPTS || '{}') };
 const gz = f => JSON.parse(zlib.gunzipSync(fs.readFileSync(f)));
@@ -38,6 +38,9 @@ const ll = (p, y) => { p = Math.min(1 - 1e-6, Math.max(1e-6, p)); return -(y ? M
 const fee = p => 0.07 * p * (1 - p);
 const mean = (a, f) => (a.length ? a.reduce((s, x) => s + f(x), 0) / a.length : null);
 const MAJOR = G.major || /(?!)/;
+// a series whose result we only partly have (OpenDota misses some Dota games):
+// its maps still move ratings, but it is never scored as a result
+const complete = s => s.s1 !== s.s2 && (!s.bo || s.bo % 2 === 0 || Math.max(s.s1, s.s2) >= (s.bo + 1) / 2);
 
 // 1. every series, predicted before it was played
 function walk(opts) {
@@ -48,7 +51,7 @@ function walk(opts) {
     while (j < series.length && series[j].t === series[i].t) j++;
     for (let k = i; k < j; k++) {
       const s = series[k];
-      if (s.s1 === s.s2) continue;
+      if (!complete(s)) continue;
       const p = R.predict(s.a, s.b, { bestOf: s.bo, t: s.t });
       if (p.series) out.push({ t: s.t, lg: s.lg, bo: s.bo, y: s.s1 > s.s2 ? 1 : 0, p: p.series.win, priced: p.priced, map: p.map, s1: s.s1, s2: s.s2 });
     }
@@ -115,12 +118,12 @@ const rows = [];
 for (const e of ev) {
   if (e.kind === 'done') { R.update(e.s); continue; }
   const s = e.j.s;
-  if (s.s1 === s.s2) continue;
+  if (!complete(s)) continue;
   const f = fair(e.j, e.t), close = fair(e.j, s.t - 60e3);
   if (!f) continue;
   const p = R.predict(s.a, s.b, { bestOf: s.bo, t: e.t });
   if (!p.series || !p.priced) continue;
-  rows.push({ lab: e.lab, t: s.t, lg: s.lg, bo: s.bo, y: s.s1 > s.s2 ? 1 : 0, p: p.series.win, k: f.p, askA: f.askA, askB: f.askB, close: close?.p ?? null });
+  rows.push({ lab: e.lab, t: s.t, lg: s.lg || s.stage, bo: s.bo, y: s.s1 > s.s2 ? 1 : 0, p: p.series.win, k: f.p, askA: f.askA, askB: f.askB, close: close?.p ?? null });
 }
 // walk-forward blend: logit(kalshi) + w (logit(model) - logit(kalshi)), w fitted on earlier months only
 function blend(list) {

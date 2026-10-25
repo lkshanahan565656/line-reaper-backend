@@ -372,9 +372,9 @@ test('LoL and CS2 engines share a store without reading each other\'s rows', asy
 
 test('CS2 and VALORANT seeds and backtests ship with the repo, each saying Kalshi is better', () => {
   const { GAMES } = require('../esgames');
-  for (const g of ['CS2', 'VAL']) {
+  for (const g of ['CS2', 'VAL', 'DOTA']) {
     const seed = D.loadSeed(GAMES[g].seed);
-    assert.ok(seed.length > (g === 'CS2' ? 40000 : 8000), `${g} seed ${seed.length}`);
+    assert.ok(seed.length > ({ CS2: 40000, VAL: 8000, DOTA: 25000 })[g], `${g} seed ${seed.length}`);
     assert.ok(seed.every(s => s.id && s.a && s.b && s.s1 != null && s.s2 != null));
     const bt = D.loadBacktest(GAMES[g].backtest);
     assert.equal(bt.game, g);
@@ -382,4 +382,61 @@ test('CS2 and VALORANT seeds and backtests ship with the repo, each saying Kalsh
     assert.ok(bt.kalshi['T-60'].logLoss.kalshi < bt.kalshi['T-60'].logLoss.model);
     assert.match(bt.verdict, /Kalshi's price beats the model/);
   }
+});
+
+test('Dota 2: OpenDota games fold into series by series id; a partial series never grades', () => {
+  const t = Date.parse('2026-10-24T14:00:00Z');
+  const g = (id, sid, st, a, b, aWon, dt = 0) => ({ id, sid, st, a, b, aWon, t: t + dt, lg: 'PARI UNIVERSE' });
+  const rows = D.dotaSeriesFromGames([
+    g(1, 50, 1, 'Team Spirit', 'BetBoom Team', true),
+    g(2, 50, 1, 'BetBoom Team', 'Team Spirit', true, 50 * 60e3),   // sides swap between games
+    g(3, 50, 1, 'Team Spirit', 'BetBoom Team', true, 100 * 60e3),
+    g(3, 50, 1, 'Team Spirit', 'BetBoom Team', true, 100 * 60e3),  // the same game twice counts once
+    g(4, null, 0, 'Tundra', 'Falcons', false),
+    g(5, 60, 1, 'OG', 'Liquid', true),
+    g(6, 61, 3, 'Nigma', 'Aurora', true), g(7, 61, 3, 'Nigma', 'Aurora', false, 50 * 60e3),
+  ]);
+  const by = Object.fromEntries(rows.map(r => [r.id, r]));
+  assert.deepEqual([by['od:50'].s1, by['od:50'].s2, by['od:50'].bo, by['od:50'].t, by['od:50'].stage, by['od:50'].lg], [2, 1, 3, new Date(t).toISOString(), 'PARI UNIVERSE', null]);
+  assert.deepEqual([by['od:m4'].bo, by['od:m4'].s1, by['od:m4'].s2], [1, 0, 1]);
+  assert.equal(by['od:61'].bo, 2);
+  assert.equal(D.seriesComplete(by['od:50']), true);
+  assert.equal(D.seriesComplete(by['od:60']), false, 'a Bo3 at 1-0 is not over');
+  assert.equal(D.seriesComplete(by['od:61']), true, 'a Bo2 can end 1-1');
+  assert.equal(D.findResult([by['od:60']], { start: by['od:60'].t, teams: ['OG', 'Team Liquid'] }), null);
+});
+
+test('Dota 2 engine: Kalshi lists the match, OpenDota games grade it once the series is over', async () => {
+  const seed = league(null, ['Team Spirit', 'BetBoom Team', 'Tundra', 'Falcons'], 4, Date.parse('2026-09-01T00:00:00Z')).map(s => ({ ...s, id: `od:${s.id}` }));
+  let now = Date.parse('2026-10-25T07:30:00Z');
+  const board = [{ ...boardMatch('2026-10-25T08:00:00Z', 'Team Spirit', 'BetBoom', { bid: 0.6, ask: 0.62 }, { bid: 0.37, ask: 0.4 }), game: 'DOTA' }];
+  const gm = (id, a, b, aWon, dt) => ({ id, sid: 900, st: 1, a, b, aWon, t: Date.parse('2026-10-25T08:00:00Z') + dt, lg: 'PARI' });
+  let raw = { games: [], at: 1 };
+  const http = { async get(url) { assert.ok(url.includes('/v2/leagues/dota2/events')); return { data: { events: [] } }; } };
+  const store = memStore();
+  const E = D.createMatchupEngine({ game: 'DOTA', http, seed, board: () => board, results: () => raw, store, now: () => now, log: {} });
+  await E.refresh();
+  assert.deepEqual(E.status().providers.map(p => p.id), ['opendota', 'kalshi', 'polymarketus']);
+  const [mu] = E.list();
+  assert.equal(mu.game, 'DOTA');
+  assert.equal(mu.bestOfAssumed, 3);
+  assert.equal(mu.model.priced, true);
+  assert.ok(mu.markets.kalshi);
+  const id = [...store.rows.keys()][0];
+  assert.ok(id.startsWith('dota:'));
+  assert.equal(store.rows.get(id).kind, 'dota-matchups');
+  // game one in: 1-0 of a Bo3 does not grade
+  now = Date.parse('2026-10-25T09:00:00Z');
+  raw = { games: [gm(1, 'Team Spirit', 'BetBoom Team', true, 0)], at: 2 };
+  await E.refresh();
+  assert.equal(store.rows.get(id).status, 'open');
+  // the next read has game two: the partial series is replaced and the record grades
+  now = Date.parse('2026-10-25T10:00:00Z');
+  raw = { games: [gm(1, 'Team Spirit', 'BetBoom Team', true, 0), gm(2, 'BetBoom Team', 'Team Spirit', false, 50 * 60e3)], at: 3 };
+  await E.refresh();
+  const r = store.rows.get(id);
+  assert.equal(r.status, 'graded');
+  assert.equal(r.result, '2-0');
+  assert.equal(r.y, 1);
+  assert.equal(E.series.get('od:900').s1 + E.series.get('od:900').s2, 2);
 });

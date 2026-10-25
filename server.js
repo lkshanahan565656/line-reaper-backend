@@ -4368,10 +4368,11 @@ const esmatchupdata = require('./esmatchupdata');
 const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
 // CS2 and VALORANT run on the same engine (esgames.js): the venues list the
 // matches, the ratings refresh's bo3.gg / vlr.gg reads give the results.
-// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL).
+// Dota 2 the same way from the OpenDota read. ESPORTS_MATCHUPS_GAMES picks
+// the games (default LOL,CS2,VAL,DOTA).
 const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))) : null;
-const MATCHUP_GAMES = String(process.env.ESPORTS_MATCHUPS_GAMES || 'LOL,CS2,VAL').toUpperCase().split(/[\s,]+/).filter(g => ['LOL', 'CS2', 'VAL'].includes(g));
-const RAW_OF = { CS2: 'CS', VAL: 'VAL' };
+const MATCHUP_GAMES = String(process.env.ESPORTS_MATCHUPS_GAMES || 'LOL,CS2,VAL,DOTA').toUpperCase().split(/[\s,]+/).filter(g => ['LOL', 'CS2', 'VAL', 'DOTA'].includes(g));
+const RAW_OF = { CS2: 'CS', VAL: 'VAL', DOTA: 'DOTA' };
 const matchupEngines = Object.fromEntries((MATCHUPS_ON ? MATCHUP_GAMES : []).map(game => [game, esmatchupdata.createMatchupEngine({
   game, http: upstream, board: () => esportsBoard.state.matches, pmusOn: pmus.enabledFromEnv(), store: matchupStore,
   results: RAW_OF[game] ? () => ratingsState.raw?.[RAW_OF[game]] || null : null,
@@ -4803,7 +4804,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.171.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.172.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5342,8 +5343,8 @@ app.get('/api/esports/matches', (req, res) => {
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
 });
-// ── matchups (head-to-head engine): LoL, CS2, VALORANT ──
-const GAME_WORD = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
+// ── matchups (head-to-head engine): LoL, CS2, VALORANT, Dota 2 ──
+const GAME_WORD = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT', DOTA: 'Dota 2' };
 const matchupNote = game => `Our own model: team ratings from every finished ${GAME_WORD[game] || game} series, a series-shape adjustment and a small head-to-head term. It is a model, not a proven edge: in the walk-forward backtest Kalshi's price beat it, and betting its side lost after fees.`;
 // ?game= picks the engine (default LoL); null when that game is off
 const engineFor = req => matchupEngines[String(req.query.game || 'LOL').toUpperCase()] || null;
@@ -7847,7 +7848,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.171.1',
+  version: '3.172.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

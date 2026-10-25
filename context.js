@@ -290,6 +290,8 @@ function lolGamesFromRows(rows) {
 function dotaGamesFromRows(rows) {
   return (rows || []).filter(m => m.radiant_name && m.dire_name).map(m => ({
     a: m.radiant_name, b: m.dire_name, aWon: !!m.radiant_win, t: (m.start_time || 0) * 1000,
+    // series fields for the Dota matchup engine (esmatchupdata.dotaSeriesFromGames)
+    id: m.match_id ?? null, sid: m.series_id || null, st: m.series_type ?? null, lg: m.league_name || null,
   }));
 }
 

@@ -150,7 +150,7 @@ test('result rows parse into map-level games', () => {
 
   assert.deepEqual(
     dotaGamesFromRows([{ radiant_name: 'Spirit', dire_name: 'Falcons', radiant_win: true, start_time: 100 }, { radiant_name: null }]),
-    [{ a: 'Spirit', b: 'Falcons', aWon: true, t: 100000 }]);
+    [{ a: 'Spirit', b: 'Falcons', aWon: true, t: 100000, id: null, sid: null, st: null, lg: null }]);
 
   const val = valGamesFromRows([{ team1: 'SEN', team2: 'LOUD', score1: '2', score2: '1', unix_timestamp: '1760000000' }]);
   assert.equal(val.length, 3);
