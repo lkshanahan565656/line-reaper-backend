@@ -1323,6 +1323,13 @@ body.no-help .clv-info { display:none; }
 .shp-cell.best { background:rgba(16,185,129,.12); outline:1px solid rgba(16,185,129,.5); }
 .shp-cell.ref { color:var(--text2); }
 .shp-detail td { background:var(--surface); }
+.shp-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; padding:6px 10px; font:600 10px 'JetBrains Mono',monospace; letter-spacing:.06em; cursor:pointer; white-space:nowrap; }
+.shp-btn:hover { color:var(--text); border-color:var(--text2); }
+.shp-star { background:transparent; border:1px solid transparent; color:var(--muted2); border-radius:6px; padding:2px 6px; font:12px 'JetBrains Mono',monospace; cursor:pointer; white-space:nowrap; }
+.shp-bar .shp-star { border-color:var(--border2); padding:5px 8px; font-size:11px; }
+.shp-star.on { color:#fbbf24; }
+.shp-tbl th.shp-sort { cursor:pointer; user-select:none; }
+.shp-tbl th.shp-sort:hover, .shp-tbl th.shp-sort.on { color:var(--text); }
 @media (max-width:640px) { .shp-hide-sm { display:none; } .shp-tbl td, .shp-tbl th { padding:5px 4px; } }
 </style>
 </head>
@@ -1399,7 +1406,7 @@ body.no-help .clv-info { display:none; }
 <!-- ODDS SCREEN PAGE -->
 <div class="page" id="page-odds">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair.
+    <strong style="color:#e8e8e8">ODDS SCREEN</strong> Every venue we read, side by side on each game's moneyline, spread and total, with Pinnacle's price with the margin taken out as the fair. The best price you can bet on each side is outlined in green, and filled green when it beats the fair. EV is each price against the fair. <a href="/learn/no-vig-fair-odds" target="_blank" rel="noopener" style="color:var(--green)">How the fair works</a>.
     <span style="color:#94a3b8;font-size:11px">Exchange prices include their fees. A number in grey is a venue hanging another line, so it has no EV. <sup>c</sup> marks a copy of a book's price read through Action Network: it can be minutes old, so check it in the app first. Pick "Texas" to see only venues you can use there. A positive EV here is a price, not a proven edge: see Results for what the record backs.</span>
   </div>
   <div class="sport-row" id="oddsModes"></div>
@@ -1537,7 +1544,7 @@ body.no-help .clv-info { display:none; }
 <div class="page" id="page-tools">
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">BETTING TOOLS</strong> — the calculators sharps use every day: fair odds, EV and Kelly, arbs, hedges, middles, promos, CLV and prop lines. Exchange prices include Kalshi and Polymarket fees.
-    <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser.</span>
+    <span style="color:#94a3b8;font-size:11px">Type odds any way: -110, +150, 1.91, 3/2, 45% or 45c. Everything updates as you type and runs in your browser. New to the math? <a href="/learn" target="_blank" rel="noopener" style="color:var(--green)">LEARN</a> walks through no-vig, EV, CLV, arbs, middles, Kelly, exchange fees and pick'em break-evens.</span>
   </div>
   <div class="tools-wrap"><div class="tools-list" id="toolsList"></div><div class="tools-panel" id="toolsPanel"><div class="tl-err">Loading calculators...</div></div></div>
 </div>
@@ -2010,20 +2017,22 @@ async function osToggle(id) {
     osDrawChart(id);
   }
 }
+// a venue's display name from whichever board loaded it
+const osVenueName = v => (osUi.data?.venues || []).find(x => x.key === v)?.name || (window.shpUi?.data?.providers || []).find(x => x.id === v)?.name || v;
 // implied chance of an American price (the fee is already in an exchange's)
 const osProb = a => (a == null ? null : a > 0 ? 100 / (a + 100) : -a / (-a + 100));
 function osDrawChart(id) {
   const el = document.getElementById('osc-' + id); if (!el) return;
   const h = osUi.hist[id]; if (!h) return;
   const series = (h.series || []).filter(x => x.pts.length);
-  if (!series.length) { el.innerHTML = `<div class="os-note">No history for this game yet. We save each side's prices every few minutes from when a game first shows up, so check back soon.</div>`; return; }
+  if (!series.length) { el.innerHTML = `<div class="os-note">No history for this ${h.player ? 'prop' : 'game'} yet. We save each side's prices every few minutes from when it first shows up, so check back soon.</div>`; return; }
   const sid = osUi.side[id] && series.some(x => x.id === osUi.side[id]) ? osUi.side[id] : series[0].id;
   const s = series.find(x => x.id === sid);
   const venuesIn = [...new Set(s.pts.flatMap(p => Object.keys(p[3] || {})))].filter(v => OS_COLORS[v]);
   const shown = venuesIn.filter(v => !osUi.hidden[v]).slice(0, 4);
   const lines = [];
-  if (s.pts.some(p => p[2] != null)) lines.push({ key: 'fair', name: 'Fair (Pinnacle, no vig)', color: '#e2e8f0', dash: '4 3', pts: s.pts.filter(p => p[2] != null).map(p => [p[0], p[2]]) });
-  for (const v of shown) lines.push({ key: v, name: (osUi.data?.venues || []).find(x => x.key === v)?.name || v, color: OS_COLORS[v], pts: s.pts.filter(p => p[3]?.[v] != null).map(p => [p[0], osProb(p[3][v])]) });
+  if (s.pts.some(p => p[2] != null)) lines.push({ key: 'fair', name: h.player ? 'Fair (no vig)' : 'Fair (Pinnacle, no vig)', color: '#e2e8f0', dash: '4 3', pts: s.pts.filter(p => p[2] != null).map(p => [p[0], p[2]]) });
+  for (const v of shown) lines.push({ key: v, name: osVenueName(v), color: OS_COLORS[v], pts: s.pts.filter(p => p[3]?.[v] != null).map(p => [p[0], osProb(p[3][v])]) });
   const all = lines.flatMap(l => l.pts);
   if (!all.length) { el.innerHTML = '<div class="os-note">No prices saved for this side yet.</div>'; return; }
   // drawn at the box's own width so the text stays 10px on any screen
@@ -2042,7 +2051,7 @@ function osDrawChart(id) {
     `<line class="osx" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#94a3b8" stroke-width="1" style="display:none"/></svg>`;
   const sideChips = series.map(x => `<button class="os-btn${x.id === sid ? ' on' : ''}" onclick="osUi.side['${escAttr(id)}']='${escAttr(x.id)}';osDrawChart('${escAttr(id)}')">${escAttr(x.label)}</button>`).join(' ');
   const legend = lines.filter(l => l.key === 'fair').map(l => `<button disabled><i style="background:${l.color}"></i>${escAttr(l.name)}</button>`).join('') +
-    venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osLegend('${escAttr(id)}','${v}')" aria-pressed="${shown.includes(v)}"><i style="background:${OS_COLORS[v]}"></i>${escAttr((osUi.data?.venues || []).find(x => x.key === v)?.name || v)}</button>`).join('');
+    venuesIn.map(v => `<button class="${shown.includes(v) ? '' : 'off'}" onclick="osLegend('${escAttr(id)}','${v}')" aria-pressed="${shown.includes(v)}"><i style="background:${OS_COLORS[v]}"></i>${escAttr(osVenueName(v))}</button>`).join('');
   el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px">${sideChips}</div><div style="position:relative">${svg}<div class="os-tip"></div></div><div class="os-legend">${legend}</div>` +
     `<div class="os-note">Chance each price implies (fees in), over time. Lower means a better price for this side. Up to four venues at once; tap one to swap it in. ${s.pts.length} reads since ${new Date(s.pts[0][0]).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</div>`;
   osUi.chart = osUi.chart || {}; osUi.chart[id] = { lines, X, t0, t1, W, L, R, shown, venuesIn };
@@ -3546,6 +3555,19 @@ document.addEventListener('DOMContentLoaded', acctInit);
 // pinned from CUSTOMIZE. Help panels fold up. All of it is remembered locally.
 const LAY_KEY = 'lr_layout';
 const LAY_MORE_DEFAULT = ['lines', 'shop', 'props', 'ev', 'sharp', 'clv'];
+// tabs that only read the paid Odds API: hidden while the server has no key,
+// unless the viewer chose to show them in CUSTOMIZE
+const LAY_ODDS_API = ['lines', 'shop', 'clv'];
+let layNoOddsApi = false;
+const layIsHidden = n => (n in layout.hidden ? !!layout.hidden[n] : layNoOddsApi && LAY_ODDS_API.includes(n));
+fetch(`${BACKEND_URL}/api/features`).then(r => (r.ok ? r.json() : null)).then(f => {
+  if (!f || f.oddsApi !== false) return;
+  layNoOddsApi = true;
+  if (!Object.keys(layTabs).length) return;
+  layApply();
+  const cur = LAY_ODDS_API.find(n => layTabs[n]?.classList.contains('active') && layIsHidden(n));
+  if (cur) showTab('odds', layTabs.odds);
+}).catch(() => {});
 const layTabs = {};   // name -> button, captured once from the static markup
 let layout = { order: [], more: {}, hidden: {}, help: true, folds: {} };
 
@@ -3571,7 +3593,7 @@ function layApply() {
   menu.querySelector('.more-cust')?.remove();
   for (const n of names) {
     const b = layTabs[n];
-    if (layout.hidden[n]) { b.style.display = 'none'; menu.appendChild(b); continue; }
+    if (layIsHidden(n)) { b.style.display = 'none'; menu.appendChild(b); continue; }
     b.style.display = '';
     if (layIsMore(n)) { inMore.push(n); menu.appendChild(b); } else row.appendChild(b);
   }
@@ -3747,8 +3769,9 @@ function layClose() { document.getElementById('layModal').classList.remove('open
 function layRenderList() {
   const names = layNames();
   document.getElementById('layList').innerHTML = names.map((n, i) => {
-    const off = !!layout.hidden[n], more = layIsMore(n);
-    return `<div class="lay-row${off ? ' off' : ''}"><span class="lay-name">${escAttr(layTabs[n].textContent.trim())}</span>
+    const off = layIsHidden(n), more = layIsMore(n);
+    const why = layNoOddsApi && LAY_ODDS_API.includes(n) ? '<span style="display:block;font-size:10px;color:var(--muted2)">Needs the Odds API, which is off: ODDS SCREEN covers it</span>' : '';
+    return `<div class="lay-row${off ? ' off' : ''}"><span class="lay-name">${escAttr(layTabs[n].textContent.trim())}${why}</span>
       <button class="lay-b" onclick="layMove('${n}',-1)" ${i === 0 ? 'disabled' : ''}>UP</button>
       <button class="lay-b" onclick="layMove('${n}',1)" ${i === names.length - 1 ? 'disabled' : ''}>DOWN</button>
       <button class="lay-b${more ? '' : ' on'}" onclick="layPin('${n}')">${more ? 'MORE' : 'BAR'}</button>
@@ -3764,9 +3787,9 @@ function layMove(n, d) {
 }
 function layPin(n) { layout.more[n] = !layIsMore(n); laySave(); layApply(); layRenderList(); }
 function layHide(n) {
-  layout.hidden[n] = !layout.hidden[n]; laySave(); layApply(); layRenderList();
+  layout.hidden[n] = !layIsHidden(n); laySave(); layApply(); layRenderList();
   if (layout.hidden[n] && layTabs[n].classList.contains('active')) {
-    const next = layNames().find(x => !layout.hidden[x]);
+    const next = layNames().find(x => !layIsHidden(x));
     if (next) showTab(next, layTabs[next]);
   }
 }
@@ -8387,7 +8410,7 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
-var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [] } };
+var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
 // phones open with the filters folded away
 try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.removeAttribute('open'); } catch {}
@@ -8419,7 +8442,9 @@ function shpQuery() {
   const o = shpUi.opts, p = new URLSearchParams();
   if (o.state) p.set('state', o.state);
   if (o.markets) p.set('markets', o.markets);
-  if (o.league) p.set('league', o.league);
+  const favL = o.favOnly ? (o.favLeagues || []) : [];
+  if (o.league) p.set('league', o.league); else if (favL.length) p.set('league', favL.join(','));
+  if (o.favOnly && (o.favVenues || []).length) p.set('providers', o.favVenues.join(','));
   if (o.q) p.set('q', o.q);
   if (o.minEv !== '') p.set('minEv', o.minEv);
   if (o.minEdge !== '') p.set('minEdge', o.minEdge);
@@ -8471,6 +8496,7 @@ function shpControls() {
   const o = shpUi.opts, d = shpUi.data;
   const chip = (on, label, js) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${js}">${label}</button>`;
   document.getElementById('shpModes').innerHTML = chip(o.state === 'TX', 'Texas venues', `shpSet('state','TX')`) + chip(!o.state, 'All venues', `shpSet('state','')`)
+    + ((o.favLeagues || []).length || (o.favVenues || []).length ? chip(!!o.favOnly, '★ Favorites', `shpSet('favOnly',${!o.favOnly})`) : '')
     + '<span class="tab-sep" style="margin:0 2px"></span>'
     + [['', 'All'], ['moneyline', 'Moneyline'], ['spread', 'Spread'], ['total', 'Total'], ['player_prop', 'Props']].map(([k, l]) => chip(o.markets === k, l, `shpSet('markets','${k}')`)).join('');
   const sel = (k, opts, label) => `<label>${label}<select onchange="shpSet('${k}',this.value)">${opts.map(([v, l]) => `<option value="${escAttr(v)}"${String(o[k]) === String(v) ? ' selected' : ''}>${escAttr(l)}</option>`).join('')}</select></label>`;
@@ -8479,18 +8505,20 @@ function shpControls() {
   if (o.league && !leagues.some(([k]) => k === o.league)) leagues.push([o.league, 0]);
   document.getElementById('shpBar').innerHTML = [
     `<input type="search" placeholder="Team or player" value="${escAttr(o.q)}" oninput="shpType('q',this.value)" style="flex:1 1 140px">`,
-    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, `${k.toUpperCase()} (${n})`])], ''),
+    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, `${(o.favLeagues || []).includes(k) ? '★ ' : ''}${k.toUpperCase()} (${n})`])], ''),
+    o.league ? `<button class="shp-star${(o.favLeagues || []).includes(o.league) ? ' on' : ''}" onclick="shpFav('favLeagues','${escAttr(o.league)}')" title="${(o.favLeagues || []).includes(o.league) ? 'Remove from' : 'Add to'} favorite leagues">★ ${escAttr(o.league.toUpperCase())}</button>` : '',
     sel('sort', [['ev', 'Best EV'], ['start', 'Starting soon'], ['hold', 'Lowest hold'], ['gap', 'Biggest price gap'], ['venues', 'Most venues']], 'SORT'),
     sel('hours', [['6', '6h'], ['24', '24h'], ['48', '48h'], ['168', '7 days']], 'STARTS IN'),
     inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
     sel('maxAge', [['', 'Any age'], ['180', '≤ 3 min'], ['600', '≤ 10 min']], 'FRESH'),
     inp('stake', 'EV ON $', '100', '1'),
     sel('method', [['power', 'Power'], ['multiplicative', 'Multiplicative'], ['additive', 'Additive'], ['shin', 'Shin']], 'DEVIG'),
+    shpPresetBar(),
     `<label>ODDS<select onchange="shpSet('fmt',this.value,false)">${[['american', 'American'], ['decimal', 'Decimal'], ['fractional', 'Fractional'], ['probability', 'Implied %'], ['hongkong', 'Hong Kong'], ['indonesian', 'Indonesian'], ['malay', 'Malay']].map(([v, l]) => `<option value="${v}"${o.fmt === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`,
   ].join('');
   const provs = d?.providers || [];
   const ex = new Set(o.excluded || []);
-  document.getElementById('shpVenueGrid').innerHTML = provs.length ? provs.map(p => `<label title="${escAttr(p.note || '')}"><input type="checkbox"${ex.has(p.id) ? '' : ' checked'} onchange="shpToggleVenue('${p.id}',this.checked)">${escAttr(p.name)}${p.texas ? '<span class="shp-tag tx">TX</span>' : ''}${p.reference ? '<span class="shp-tag">REF</span>' : ''}${p.access === 'second_hand' ? '<span class="shp-tag">COPY</span>' : ''}</label>`).join('') : '<span class="shp-dim">Loads with the board.</span>';
+  document.getElementById('shpVenueGrid').innerHTML = provs.length ? provs.map(p => `<label title="${escAttr(p.note || '')}"><input type="checkbox"${ex.has(p.id) ? '' : ' checked'} onchange="shpToggleVenue('${p.id}',this.checked)"><button type="button" class="shp-star${(o.favVenues || []).includes(p.id) ? ' on' : ''}" onclick="event.preventDefault();shpFav('favVenues','${p.id}')" title="Favorite venue: its column comes first">★</button>${escAttr(p.name)}${p.texas ? '<span class="shp-tag tx">TX</span>' : ''}${p.reference ? '<span class="shp-tag">REF</span>' : ''}${p.access === 'second_hand' ? '<span class="shp-tag">COPY</span>' : ''}</label>`).join('') : '<span class="shp-dim">Loads with the board.</span>';
   const col = { ok: 'var(--green)', degraded: 'var(--gold)', stale: 'var(--gold)', empty: 'var(--muted2)', down: 'var(--red)', off: 'var(--muted2)' };
   document.getElementById('shpHealth').innerHTML = provs.map(p => `<span class="shp-pill" title="${escAttr(`${p.name}: ${p.status}${p.ageSec != null ? `, read ${Math.round(p.ageSec / 60)} min ago` : ''}, ${p.quotes} prices on ${p.events} events${p.errors.length ? `. ${p.errors.join('; ')}` : ''}`)}"><i style="background:${col[p.status] || 'var(--muted2)'}"></i>${escAttr(p.name)} ${p.status === 'ok' ? p.quotes : p.status.toUpperCase()}</span>`).join('');
 }
@@ -8506,10 +8534,11 @@ function shpRender() {
   if (o.mode === 'opps' && d.pro) el.innerHTML = head + shpOpps(d);
   else if (o.mode === 'arb' && d.pro) el.innerHTML = head + shpArbs(d);
   else el.innerHTML = head + lock + shpMarkets(d);
+  for (const hid of shpUi.moves) if (document.getElementById('osc-' + hid) && osUi.hist[hid]) osDrawChart(hid);
 }
 function shpOpps(d) {
   if (!d.opportunities.length) return tailEmpty('NOTHING ABOVE THE FAIR', 'No best price beats the fair at these filters. Try All venues, a longer window or a lower minimum EV.');
-  const rows = d.opportunities.map(x => {
+  const rows = shpSorted(d.opportunities).map(x => {
     const open = shpUi.open.has(x.key);
     const m = open ? (x.view || d.markets.find(mm => mm.key === x.market)) : null;
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
@@ -8521,16 +8550,17 @@ function shpOpps(d) {
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
       <td title="${escAttr(why)}"><span class="shp-num">${Math.round(x.rank.confidence * 100)}%</span><span class="shp-tag${x.rank.label === 'proven' ? ' tx' : ''}">${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}</span></td>
-    </tr>${m ? `<tr class="shp-detail"><td colspan="7">${shpMarketTable(m)}<div class="shp-dim" style="margin-top:4px">${escAttr(why).replace(/\n/g, ' · ')}</div></td></tr>` : ''}`;
+    </tr>${m ? `<tr class="shp-detail"><td colspan="7">${shpMarketTable(m)}<div class="shp-dim" style="margin-top:4px">${escAttr(why).replace(/\n/g, ' · ')}</div>${shpMovesBlock(m)}</td></tr>` : ''}`;
   }).join('');
-  return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr><th>EVENT</th><th>BET</th><th>BEST PRICE</th><th class="shp-hide-sm">FAIR</th><th>EV</th><th class="shp-hide-sm">EDGE</th><th title="How much the fair and the price can be trusted: hover a row for the reasons">TRUST</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr>${shpTh('start', 'EVENT')}${shpTh('bet', 'BET')}${shpTh('price', 'BEST PRICE')}${shpTh('fair', 'FAIR', 'shp-hide-sm')}${shpTh('ev', 'EV')}${shpTh('edge', 'EDGE', 'shp-hide-sm')}${shpTh('trust', 'TRUST', '', 'How much the fair and the price can be trusted: hover a row for the reasons')}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function shpOpen(key) { if (shpUi.open.has(key)) shpUi.open.delete(key); else shpUi.open.add(key); shpRender(); }
 // one market: sides as rows, venues as columns, best outlined
 function shpMarketTable(m) {
   const cols = [];
   for (const s of m.sides) for (const p of s.prices) if (!cols.some(c => c.provider === p.provider)) cols.push({ provider: p.provider, name: p.name, ref: p.ref, texas: p.texas, secondHand: p.secondHand });
-  cols.sort((a, b) => (b.ref - a.ref) || (b.texas - a.texas) || a.name.localeCompare(b.name));
+  const fv = shpUi.opts.favVenues || [];
+  cols.sort((a, b) => (b.ref - a.ref) || (fv.includes(b.provider) - fv.includes(a.provider)) || (b.texas - a.texas) || a.name.localeCompare(b.name));
   const th = cols.map(cc => `<th class="shp-cell" title="${cc.secondHand ? 'Copy read from Action Network' : cc.ref ? 'Sharp reference, not a place to bet' : ''}">${escAttr(cc.name)}${cc.texas ? '<span class="shp-tag tx">TX</span>' : ''}</th>`).join('');
   const tr = m.sides.map(s => {
     const cells = cols.map(cc => {
@@ -8547,7 +8577,78 @@ function shpMarkets(d) {
   if (!d.markets.length) return tailEmpty('NO MARKETS', 'Nothing matches these filters.');
   return d.markets.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(String(m.league || '').toUpperCase())} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-dim" style="margin:0 0 4px">${escAttr(shpMkt(m))} · ${m.venues} venues${m.fair ? ` · fair: ${escAttr(SHP_FAIR[m.fair.source] || m.fair.source)}` : ' · no fair on this line'}${m.hold != null ? ` · hold at best ${(m.hold * 100).toFixed(1)}%` : ''}${m.arb ? (m.arb.direct ? ' · <span class="shp-good">ARB</span>' : ' · <span class="shp-dim" title="One leg is a copied or stale price: check both apps">arb on a copied price, check it</span>') : ''}</div>
-    ${shpMarketTable(m)}</div>`).join('');
+    ${shpMarketTable(m)}${shpMovesBlock(m)}</div>`).join('');
+}
+// ── shopper: favorites, saved views, sortable columns, prop line moves ──
+// Favorites and saved views stay on this device (localStorage), like every
+// other choice on this page.
+shpUi.moves = new Set(); shpUi.hids = new Map(); shpUi.osort = { k: null, dir: -1 };
+function shpFav(list, id) {
+  const cur = new Set(shpUi.opts[list] || []);
+  if (cur.has(id)) cur.delete(id); else cur.add(id);
+  shpUi.opts[list] = [...cur];
+  if (!shpUi.opts.favLeagues.length && !shpUi.opts.favVenues.length) shpUi.opts.favOnly = false;
+  shpSave();
+  if (shpUi.opts.favOnly) shpLoad(); else shpRender();
+}
+const SHP_PRESET_KEY = 'lr_shopper_views';
+const shpPresets = () => { try { const v = JSON.parse(localStorage.getItem(SHP_PRESET_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
+const shpPresetsSave = v => { try { localStorage.setItem(SHP_PRESET_KEY, JSON.stringify(v.slice(0, 20))); } catch {} };
+// what a saved view keeps: the filters, not the odds format or favorites
+const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'method', 'excluded', 'favOnly'];
+function shpPresetBar() {
+  const list = shpPresets();
+  return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}">${escAttr(p.name)}</option>`).join('')}</select></label>` +
+    `<label>NAME<input id="shpPresetName" type="text" maxlength="30" placeholder="e.g. Texas props"></label><button class="shp-btn" onclick="shpPresetAdd()">SAVE VIEW</button>` +
+    (list.length ? `<button class="shp-btn" onclick="shpPresetsSave([]);shpRender()" title="Delete every saved view on this device">CLEAR VIEWS</button>` : '');
+}
+function shpPresetAdd() {
+  const name = (document.getElementById('shpPresetName')?.value || '').trim() || `View ${shpPresets().length + 1}`;
+  const view = Object.fromEntries(SHP_VIEW_KEYS.map(k => [k, shpUi.opts[k]]));
+  shpPresetsSave([{ name, opts: view }, ...shpPresets().filter(p => p.name !== name)]);
+  shpRender();
+}
+function shpPresetLoad(i) {
+  const p = shpPresets()[+i];
+  if (!p) return;
+  Object.assign(shpUi.opts, Object.fromEntries(SHP_VIEW_KEYS.filter(k => k in p.opts).map(k => [k, p.opts[k]])));
+  shpSave();
+  oddsModeShow();
+}
+// opportunities sort in the browser: tap a header, tap again to flip
+const SHP_SORT = {
+  start: x => -Date.parse(x.start), bet: x => String(x.selection || ''), price: x => x.effective, fair: x => x.fair ?? -1,
+  ev: x => x.ev ?? -9, edge: x => x.edgePts ?? -99, trust: x => x.rank?.confidence ?? 0,
+};
+function shpTh(k, label, cls = '', title = '') {
+  const on = shpUi.osort.k === k;
+  return `<th class="shp-sort${cls ? ' ' + cls : ''}${on ? ' on' : ''}" onclick="shpSortBy('${k}')"${title ? ` title="${escAttr(title)}"` : ''} aria-sort="${on ? (shpUi.osort.dir < 0 ? 'descending' : 'ascending') : 'none'}">${label}${on ? (shpUi.osort.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
+}
+function shpSortBy(k) {
+  shpUi.osort = shpUi.osort.k === k ? { k, dir: -shpUi.osort.dir } : { k, dir: k === 'bet' ? 1 : -1 };
+  shpRender();
+}
+function shpSorted(xs) {
+  const { k, dir } = shpUi.osort, f = SHP_SORT[k];
+  if (!f) return xs;
+  return xs.slice().sort((a, b) => { const va = f(a), vb = f(b); return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * dir; });
+}
+// a prop market's line moves, drawn by the odds screen's chart
+function shpHid(key) { if (!shpUi.hids.has(key)) shpUi.hids.set(key, 'shp' + shpUi.hids.size); return shpUi.hids.get(key); }
+function shpMovesBlock(m) {
+  if (m.marketType !== 'player_prop') return '';
+  const hid = shpHid(m.key), open = shpUi.moves.has(hid);
+  return `<div style="margin-top:6px"><button class="os-btn${open ? ' on' : ''}" onclick="event.stopPropagation();shpMoves('${hid}')">${open ? 'HIDE MOVES' : 'LINE MOVES'}</button></div>` +
+    (open ? `<div class="os-chart" id="osc-${hid}" onclick="event.stopPropagation()"><div class="os-note">Loading the line history...</div></div>` : '');
+}
+async function shpMoves(hid) {
+  if (shpUi.moves.has(hid)) { shpUi.moves.delete(hid); return shpRender(); }
+  shpUi.moves.add(hid);
+  shpRender();
+  const key = [...shpUi.hids].find(([, v]) => v === hid)?.[0];
+  try { const d = await tailGet(`/api/shopper/history?key=${encodeURIComponent(key)}`); osUi.hist[hid] = { ...d, player: d.player || 'prop' }; }
+  catch { osUi.hist[hid] = { series: [], player: 'prop' }; }
+  osDrawChart(hid);
 }
 function shpArbs(d) {
   if (!d.arbs.length) return tailEmpty('NO ARBS RIGHT NOW', "No market's best prices add up to under 100% at venues read direct. Copies from Action Network never count as an arb leg.");

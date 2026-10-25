@@ -161,7 +161,7 @@ function selectionName(m, s) {
 }
 
 // The whole shopper.
-// opts: sport, league, q (team or player text), marketTypes [], providers [],
+// opts: sport, league (one, or a comma list), q (team or player text), marketTypes [], providers [],
 // exclude [], state, fromMs / toMs (start window), minEv, minEdgePts (fair
 // minus the best price's implied chance, points), minLiquidity, maxAgeSec,
 // pricedOnly, arbsOnly, sort (score | ev | start | hold | gap), stake, method,
@@ -173,12 +173,15 @@ function build(quotes, opts = {}) {
   const from = opts.fromMs ?? now - 5 * 60e3, to = opts.toMs ?? now + 48 * 3600e3;
   const want = String(opts.q || '').trim().toLowerCase();
   const types = opts.marketTypes && opts.marketTypes.length ? new Set(opts.marketTypes) : null;
+  // one league, or a list (a viewer's favourites): 'nfl' or ['nfl', 'nba'] or 'nfl,nba'
+  const lgList = Array.isArray(opts.league) ? opts.league : opts.league ? String(opts.league).split(',') : [];
+  const leagues = lgList.map(x => String(x).trim()).filter(Boolean).length ? new Set(lgList.map(x => String(x).trim()).filter(Boolean)) : null;
   const filter = providerFilter(opts);
   const kept = (quotes || []).filter(q => {
     const t = ms(q.startUtc);
     if (t == null || t < from || t > to) return false;
     if (opts.sport && q.sport !== opts.sport) return false;
-    if (opts.league && q.league !== opts.league) return false;
+    if (leagues && !leagues.has(q.league)) return false;
     if (types && !types.has(q.marketType)) return false;
     if (q.marketStatus !== 'open' || q.available === false) return false;
     if (opts.maxAgeSec != null && q.updatedAt && (now - ms(q.updatedAt)) / 1000 > opts.maxAgeSec && !schema.PROVIDERS[q.providerId]?.reference) return false;
@@ -255,4 +258,80 @@ function stripPro(view) {
         prices: s.prices.map(c => ({ ...c, ev: null, evAmount: null })) })) })) };
 }
 
-module.exports = { SHARP_WEIGHTS, groupOf, groupMarkets, fairOf, providerFilter, viewMarket, build, stripPro };
+// ── line history for player props ──
+// The odds screen's charts cover game lines (oddsscreen.createHistory); this
+// keeps the same for props: per prop market (one player, stat and line), the
+// fair chance of Over and each venue's Over and Under price, a point when
+// anything moved and minGapMs has passed, or every heartbeatMs. Only markets
+// with a fair or at least two venues are kept, at most maxSeries (the soonest
+// to start win), and a market is dropped keepMs after it starts.
+// series: { id: market key, event, start, player, stat, line, pts: [[t, fairOver, { venue: [overAm, underAm] }]] }
+function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepMs = 6 * 3600e3, maxPts = 120, maxSeries = 3000 } = {}) {
+  const series = new Map();
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // views: viewMarket outputs (any market type; only player_prop is kept)
+  function observe(views, now = Date.now()) {
+    let added = 0;
+    for (const m of views || []) {
+      if (!m || m.marketType !== 'player_prop') continue;
+      const over = m.sides.find(s => s.side === 'over'), under = m.sides.find(s => s.side === 'under');
+      if (!over || !under) continue;
+      const px = {};
+      for (const [k, s] of [[0, over], [1, under]]) for (const c of s.prices) {
+        if (!(c.effective > 1)) continue;
+        (px[c.provider] || (px[c.provider] = [null, null]))[k] = schema.fromDecimal(c.effective, 'american');
+      }
+      const fair = over.fair == null ? null : r4(over.fair);
+      if (fair == null && Object.keys(px).length < 2) continue;
+      const pt = [now, fair, px];
+      let x = series.get(m.key);
+      if (!x) {
+        if (series.size >= maxSeries && !evictFor(m.start)) continue;
+        x = { id: m.key, event: m.event, league: m.league, start: m.start, player: m.player, stat: m.marketName, line: m.line, pts: [] };
+        series.set(m.key, x);
+      }
+      x.start = m.start;
+      const last = x.pts[x.pts.length - 1];
+      const moved = !last || last[1] !== pt[1] || !same(last[2], pt[2]);
+      if (!last || (moved && now - last[0] >= minGapMs) || now - last[0] >= heartbeatMs) {
+        x.pts.push(pt); added++;
+        if (x.pts.length > maxPts) x.pts.splice(0, x.pts.length - maxPts);
+      }
+    }
+    prune(now);
+    return added;
+  }
+  // full: make room for a market starting at `start` by dropping the one that starts last, if later
+  function evictFor(start) {
+    let worst = null;
+    for (const x of series.values()) if (!worst || (ms(x.start) ?? 0) > (ms(worst.start) ?? 0)) worst = x;
+    if (!worst || (ms(worst.start) ?? 0) <= (ms(start) ?? 0)) return false;
+    series.delete(worst.id);
+    return true;
+  }
+  function prune(now = Date.now()) {
+    for (const [k, x] of series) if (ms(x.start) != null && ms(x.start) < now - keepMs) series.delete(k);
+  }
+  // one market as the odds screen's chart reads it: a series per side,
+  // points [t, line, fair chance of that side, { venue: american }]
+  function forMarket(key) {
+    const x = series.get(String(key));
+    if (!x) return null;
+    const side = (i, label) => ({ id: `${x.id}|${i ? 'under' : 'over'}`, label, market: 'prop',
+      pts: x.pts.map(([t, f, px]) => [t, x.line, f == null ? null : r4(i ? 1 - f : f), Object.fromEntries(Object.entries(px).filter(([, a]) => a[i] != null).map(([v, a]) => [v, a[i]]))]) });
+    return { id: x.id, event: x.event, start: x.start, player: x.player, stat: x.stat, line: x.line, series: [side(0, `Over ${x.line}`), side(1, `Under ${x.line}`)] };
+  }
+  const dump = () => [...series.values()];
+  function load(docs) {
+    for (const d of docs || []) {
+      if (!d || !d.id || !Array.isArray(d.pts)) continue;
+      const had = series.get(d.id);
+      if (!had) { if (series.size < maxSeries) series.set(d.id, { ...d, pts: d.pts.slice(-maxPts) }); continue; }
+      const first = had.pts[0]?.[0] ?? Infinity;
+      had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts].slice(-maxPts);
+    }
+  }
+  return { observe, prune, forMarket, dump, load, has: k => series.has(String(k)), size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };
+}
+
+module.exports = { SHARP_WEIGHTS, groupOf, groupMarkets, fairOf, providerFilter, viewMarket, build, stripPro, createLineHistory };

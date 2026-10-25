@@ -321,3 +321,50 @@ test('build: no sharp line and fewer than 4 books means no fair and no EV', () =
   assert.ok(v.markets.every(m => m.fair == null && m.sides.every(s => s.best == null || s.best.ev == null)));
   assert.equal(v.opportunities.length, 0);
 });
+
+// ── prop line history ──
+test('line history: prop markets keep fair and venue prices over time, both sides', () => {
+  const H = SH.createLineHistory({ minGapMs: 60e3, heartbeatMs: 600e3, maxSeries: 2 });
+  const view = (key, fair, fd, start = START) => ({ key, marketType: 'player_prop', event: 'A @ B', league: 'nba', start, player: 'Jay Doe', marketName: 'points', line: 24.5,
+    sides: [{ side: 'over', fair, prices: [{ provider: 'pinnacle', effective: 1.91 }, { provider: 'fanduel', effective: fd }] },
+      { side: 'under', fair: fair == null ? null : 1 - fair, prices: [{ provider: 'pinnacle', effective: 1.91 }, { provider: 'fanduel', effective: 1.8 }] }] });
+  assert.equal(H.observe([view('p1', 0.5, 2.0)], NOW), 1);
+  assert.equal(H.observe([view('p1', 0.5, 2.0)], NOW + 120e3), 0, 'nothing moved, inside the heartbeat');
+  assert.equal(H.observe([view('p1', 0.52, 2.0)], NOW + 30e3), 0, 'moved, but inside the gap');
+  assert.equal(H.observe([view('p1', 0.52, 2.05)], NOW + 180e3), 1);
+  assert.equal(H.observe([view('p1', 0.52, 2.05)], NOW + 900e3), 1, 'heartbeat');
+  const h = H.forMarket('p1');
+  assert.equal(h.series.length, 2);
+  const [over, under] = h.series;
+  assert.equal(over.label, 'Over 24.5');
+  assert.deepEqual(over.pts[0], [NOW, 24.5, 0.5, { pinnacle: -110, fanduel: 100 }]);
+  assert.equal(over.pts[1][3].fanduel, 105);
+  close(under.pts[1][2], 0.48);
+  assert.equal(under.pts[0][3].fanduel, -125);
+  // game lines are not kept here, nor a prop with one venue and no fair
+  H.observe([{ ...view('g1', 0.5, 2), marketType: 'total' }, { ...view('p2', null, 2), sides: view('p2', null, 2).sides.map(s => ({ ...s, prices: s.prices.slice(1) })) }], NOW);
+  assert.equal(H.has('g1'), false); assert.equal(H.has('p2'), false);
+  // full: a sooner market pushes out the latest one; a later one is skipped
+  H.observe([view('p3', 0.5, 2, '2026-10-25T18:00:00Z')], NOW);
+  H.observe([view('p4', 0.5, 2, '2026-10-26T18:00:00Z')], NOW);
+  assert.equal(H.size(), 2); assert.ok(H.has('p3') && H.has('p1') && !H.has('p4'));
+  // dropped hours after the start; dump and load round-trip
+  const H2 = SH.createLineHistory();
+  H2.load(H.dump());
+  assert.equal(H2.forMarket('p1').series[0].pts.length, 3);
+  H2.prune(Date.parse(START) + 7 * 3600e3);
+  assert.equal(H2.has('p1'), false);
+});
+
+test('shopper league filter takes one league or a list (favorites)', () => {
+  const mk = (lg, ev) => [S.makeQuote({ providerId: 'pinnacle', eventId: ev, sport: 'x', league: lg, home: 'H', away: 'A', marketType: 'moneyline', side: 'home', selectionName: 'H', decimal: 1.9, startUtc: START, updatedAt: READ }),
+    S.makeQuote({ providerId: 'pinnacle', eventId: ev, sport: 'x', league: lg, home: 'H', away: 'A', marketType: 'moneyline', side: 'away', selectionName: 'A', decimal: 2.0, startUtc: START, updatedAt: READ }),
+    S.makeQuote({ providerId: 'fanduel', eventId: ev, sport: 'x', league: lg, home: 'H', away: 'A', marketType: 'moneyline', side: 'home', selectionName: 'H', decimal: 1.95, startUtc: START, updatedAt: READ }),
+    S.makeQuote({ providerId: 'fanduel', eventId: ev, sport: 'x', league: lg, home: 'H', away: 'A', marketType: 'moneyline', side: 'away', selectionName: 'A', decimal: 1.9, startUtc: START, updatedAt: READ })];
+  const qs = [...mk('nfl', 'e1'), ...mk('nba', 'e2'), ...mk('nhl', 'e3')];
+  const leagues = o => new Set(SH.build(qs, { now: NOW, ...o }).markets.map(m => m.league));
+  assert.deepEqual([...leagues({ league: 'nba' })], ['nba']);
+  assert.deepEqual([...leagues({ league: 'nfl,nhl' })].sort(), ['nfl', 'nhl']);
+  assert.deepEqual([...leagues({ league: ['nba', 'nhl'] })].sort(), ['nba', 'nhl']);
+  assert.equal(leagues({}).size, 3);
+});
