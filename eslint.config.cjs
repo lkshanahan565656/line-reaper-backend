@@ -27,6 +27,11 @@ module.exports = [
     languageOptions: { sourceType: 'script', globals: { ...globals.browser, ...globals.serviceworker } },
   },
   {
+    // browser tests: Node scripts whose page.evaluate callbacks run in the app
+    files: ['e2e/**/*.js'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node, showTab: 'readonly', shpUi: 'readonly' } },
+  },
+  {
     files: ['calc.js', 'bets.js', 'slips.js'],   // also served to the page
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },

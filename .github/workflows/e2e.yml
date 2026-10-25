@@ -1,0 +1,29 @@
+# Browser tests (e2e/): the offline server on the recorded snapshot, every tab
+# clicked at phone and desktop size, the form flows. Kept under 5 minutes:
+# Playwright's headless shell is cached, nothing reaches a live site.
+name: e2e
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency: { group: 'e2e-${{ github.ref }}', cancel-in-progress: true }
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm install --no-audit --no-fund
+      - uses: actions/cache@v4
+        id: pw
+        with: { path: ~/.cache/ms-playwright, key: 'pw-${{ runner.os }}-1.63.0-shell' }
+      - if: steps.pw.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: steps.pw.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: e2e-report, path: e2e/out, retention-days: 7 }

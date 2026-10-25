@@ -1982,7 +1982,8 @@ const SPORT_KEYS = {
   americanfootball_nfl: ['americanfootball_nfl'],
   icehockey_nhl: ['icehockey_nhl'],
   esports: ['basketball_nba','baseball_mlb'],
-  basketball_ncaab: ['basketball_ncaab']
+  basketball_ncaab: ['basketball_ncaab'],
+  mma_mixed_martial_arts: ['mma_mixed_martial_arts'],
 };
 
 const SPORT_LABEL = {
@@ -2488,14 +2489,14 @@ function updateApiQuota(rem) {
 }
 
 async function loadData() {
-  if (!apiKey) return;
+  if (!apiKey) { if (layNoOddsApi) document.getElementById('linesContent').innerHTML = ODDS_API_OFF_HTML; return; }
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = 'LOADING...';
 
   document.getElementById('linesContent').innerHTML = `<div class="loading-wrap"><div class="loading-label">Scanning sharp action...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
 
   try {
-    const sports = currentSport === 'all' ? inSeasonSports() : SPORT_KEYS[currentSport];
+    const sports = currentSport === 'all' ? inSeasonSports() : SPORT_KEYS[currentSport] || [currentSport];
     const results = await Promise.all(sports.map(s => fetchSport(s).catch(e => { console.warn('Failed:', s, e); return []; })));
     const fresh = results.flat();
     if (currentSport === 'all') {
@@ -3710,14 +3711,18 @@ const LAY_MORE_DEFAULT = ['lines', 'shop', 'props', 'ev', 'sharp', 'clv'];
 const LAY_ODDS_API = ['lines', 'shop', 'clv'];
 let layNoOddsApi = false;
 const layIsHidden = n => (n in layout.hidden ? !!layout.hidden[n] : layNoOddsApi && LAY_ODDS_API.includes(n));
-fetch(`${BACKEND_URL}/api/features`).then(r => (r.ok ? r.json() : null)).then(f => {
+// resolves once we know whether the server has the paid Odds API: while it is
+// off nothing calls /api/odds-feed (each call would only come back 503)
+const featuresReady = fetch(`${BACKEND_URL}/api/features`).then(r => (r.ok ? r.json() : null)).then(f => {
   if (!f || f.oddsApi !== false) return;
   layNoOddsApi = true;
+  apiKey = '';
   if (!Object.keys(layTabs).length) return;
   layApply();
   const cur = LAY_ODDS_API.find(n => layTabs[n]?.classList.contains('active') && layIsHidden(n));
   if (cur) showTab('odds', layTabs.odds);
 }).catch(() => {});
+const ODDS_API_OFF_HTML = `<div class="empty-wrap"><div class="empty-big">ODDS API OFF</div><div class="empty-sub">This tab reads the paid Odds API, which is off on this server. The ODDS SCREEN compares every venue we read for free.</div></div>`;
 const layTabs = {};   // name -> button, captured once from the static markup
 let layout = { order: [], more: {}, hidden: {}, help: true, folds: {} };
 
@@ -3916,6 +3921,16 @@ async function pushToggle() {
 // every app open re-checks the device, so a server that lost it signs it up again
 if (location.protocol !== 'file:') setTimeout(() => { pushSync(); }, 4000);
 function layClose() { document.getElementById('layModal').classList.remove('open'); }
+// Escape closes whatever is open on top: the bet form, the layout panel, the
+// account box, the MORE menu
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const open = id => document.getElementById(id)?.classList.contains('open');
+  if (open('mybModal')) mybFormClose();
+  else if (open('acctModal')) acctClose();
+  else if (open('layModal')) layClose();
+  else if (open('moreMenu')) document.getElementById('moreMenu').classList.remove('open');
+});
 function layRenderList() {
   const names = layNames();
   document.getElementById('layList').innerHTML = names.map((n, i) => {
@@ -4559,11 +4574,20 @@ function renderPkTray() {
     <div class="sb-legs">${pk.legs.map((l, i) => `<span class="slip-leg"><b>${escAttr(l.player)}</b> <span class="sd ${l.side === 'Over' ? 'over' : 'under'}" title="Tap to switch" onclick="pkFlip(${i})">${pbSideWord(pk.app, l.side).toUpperCase()} ${escAttr(l.line)}</span> <span style="color:#64748b">${escAttr(String(l.market).slice(0, 20))}</span><span class="slip-x" title="Remove" onclick="pkAdd('${escAttr(l.rk)}','${pk.app}')">✕</span></span>`).join('')}</div>
     <div class="sb-act">
       ${canFlex ? `<div class="mb-seg"><button class="${!pk.flex ? 'on' : ''}" onclick="pk.flex=false;pk.payout='';pkSave();renderPkTray()">Power</button><button class="${pk.flex ? 'on' : ''}" onclick="pk.flex=true;pk.payout='';pkSave();renderPkTray()">Flex</button></div>` : ''}
-      <label class="sb-in">STAKE $<input class="key-input" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pk.stake)}" onchange="pk.stake=this.value;pk.payout='';pkSave();renderPkTray()"/></label>
+      <label class="sb-in">STAKE $<input class="key-input" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pk.stake)}" oninput="pkStake(this.value)"/></label>
       <label class="sb-in">${pk.flex ? 'TOP PAYOUT' : 'PAYOUT'} $<input class="key-input" id="pkPay" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pay)}" onchange="pk.payout=this.value"/></label>
       <span class="sb-btns"><button class="slip-btn primary" onclick="pkLog()" ${n < 2 ? 'disabled' : ''}>＋ LOG SLIP</button></span>
     </div>
     <div class="sb-note">${rp ? `<b style="color:#fbbf24">Linked picks from one game:</b> payout set to our repriced estimate (${rp.mult}x, standard ${std}x). Change it to what the app shows. ` : same ? '<b style="color:#fbbf24">Picks from one game:</b> no measured link between these stats, so the standard table is used; the app may still pay less. ' : ''}Logged to MY SLIPS: every pick is followed on the sharp price at your line from now to the start, then graded from the box score. Payout is the app's standard table at your stake; change it to what the app shows.</div></div>`;
+}
+// typing a stake only refreshes the payout box: rebuilding the tray on its
+// change event swapped the LOG SLIP button out from under the tap that blurred
+// the stake box, so that first tap was lost
+function pkStake(v) {
+  pk.stake = v; pk.payout = ''; pkSave();
+  const std = pkMult(), rp = pkReprice(std), mult = rp ? rp.mult : std, stake = parseFloat(v);
+  const box = document.getElementById('pkPay');
+  if (box) box.value = stake > 0 && mult > 0 ? (stake * mult).toFixed(2) : '';
 }
 async function pkLog() {
   if (pk.legs.length < 2) return;
@@ -5339,7 +5363,7 @@ function mergeScanIntoLines(scanned) {
 
 async function scanArbs() {
   if (arbState.scanning) return;
-  if (!apiKey) { showToast('Connect your Odds API key on the Lines tab first', 'danger'); return; }
+  if (!apiKey) { showToast(layNoOddsApi ? 'The Odds API is off on this server: the ODDS SCREEN arbs cover the venues we read for free' : 'Connect your Odds API key on the Lines tab first', 'danger'); return; }
   arbState.scanning = true;
   const btn = document.getElementById('arbScanBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'SCANNING...'; }
@@ -9035,7 +9059,7 @@ document.querySelectorAll('.sport-row .sport-chip').forEach(c => {
     c.title = 'Off-season — tap to load anyway (uses 1 API request)';
   }
 });
-loadData();
+featuresReady.then(() => loadData());
 checkBackend();
 startSharpPolling();    // REST polling — always works regardless of WS
 // open on the last tab used; the first time, the odds screen
