@@ -7,6 +7,8 @@
 // box scores; the fetcher is a thin wrapper the server calls once a game ends.
 
 const { canonName } = require('./ev');
+const { parseMlbBox, mlbStat, MLB_MARKETS } = require('./mlbboard');
+const MLB_API = 'https://statsapi.mlb.com/api/v1';
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports';
 const LEAGUES = { NFL: 'football/nfl', CFB: 'football/college-football', NBA: 'basketball/nba', WNBA: 'basketball/wnba',
@@ -100,11 +102,11 @@ function statValue(sport, market, groups) {
       const map = {};
       if (has(bat)) {
         const h = n(bat.hits), r = n(bat.runs), rbi = n(bat.RBIs);
-        Object.assign(map, { hits: h, runs: r, rbis: rbi, home_runs: n(bat.homeRuns), hits_runs_rbis: h + r + rbi, batter_walks: n(bat.walks), batter_strikeouts: n(bat.strikeouts) });
+        Object.assign(map, { hits: h, runs: r, rbis: rbi, home_runs: n(bat.homeRuns), hits_runs_rbis: h + r + rbi, batter_walks: n(bat.walks), walks: n(bat.walks), batter_strikeouts: n(bat.strikeouts), hitter_strikeouts: n(bat.strikeouts) });
       }
       if (has(pit)) {
         Object.assign(map, { strikeouts: n(pit.strikeouts), pitcher_outs: outs(pit['fullInnings.partInnings']), hits_allowed: n(pit.hits),
-          earned_runs: n(pit.earnedRuns), walks_allowed: n(pit.walks) });
+          earned_runs: n(pit.earnedRuns), walks_allowed: n(pit.walks), pitcher_walks_allowed: n(pit.walks) });
       }
       return map[market] ?? null;
     }
@@ -126,7 +128,8 @@ const BB = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 't
 const FB = ['pass_yds', 'pass_tds', 'pass_comp', 'pass_att', 'pass_ints', 'rush_yds', 'rush_att', 'rec_yds', 'receptions', 'targets',
   'rush_rec_yds', 'pass_rush_yds', 'anytime_td', 'longest_rec', 'longest_rush', 'fg_made', 'kicking_points'];
 const MARKETS = { NBA: BB, WNBA: BB, CBB: BB, NFL: FB, CFB: FB,
-  MLB: ['hits', 'runs', 'rbis', 'home_runs', 'hits_runs_rbis', 'batter_walks', 'batter_strikeouts', 'strikeouts', 'pitcher_outs', 'hits_allowed', 'earned_runs', 'walks_allowed'],
+  // MLB: ESPN's stats, plus what only the MLB Stats API box carries (total bases, singles, ...; mlbboard.js)
+  MLB: [...new Set(['hits', 'runs', 'rbis', 'home_runs', 'hits_runs_rbis', 'batter_walks', 'walks', 'batter_strikeouts', 'hitter_strikeouts', 'strikeouts', 'pitcher_outs', 'hits_allowed', 'earned_runs', 'walks_allowed', 'pitcher_walks_allowed', ...MLB_MARKETS])],
   NHL: ['saves', 'goals_against', 'goals', 'assists', 'points', 'shots_on_goal', 'blocks', 'hits'] };
 const canGrade = pick => !!MARKETS[pick.sport]?.includes(pick.mkey);
 
@@ -171,8 +174,40 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
   };
   const board = (league, d) => cached(boards, `${league}|${d}`, async () => (await http.get(`${ESPN}/${LEAGUES[league]}/scoreboard`, { params: { dates: d }, timeout: 20000 }))?.data?.events || []);
   const box = (league, id) => cached(boxes, `${league}|${id}`, async () => parseBox((await http.get(`${ESPN}/${LEAGUES[league]}/summary`, { params: { event: id }, timeout: 20000 }))?.data?.boxscore));
+  // MLB: the MLB Stats API first (its box has total bases, singles, doubles,
+  // stolen bases), ESPN when it has no answer. A game: within 3 hours of the
+  // pick's start, naming its team (or the only game in that window).
+  const mlbDay = d => cached(boards, `mlbapi|${d}`, async () => ((await http.get(`${MLB_API}/schedule`, { params: { sportId: 1, date: d, hydrate: 'team' }, timeout: 20000 }))?.data?.dates || []).flatMap(x => x.games || []));
+  const mlbBox = pk => cached(boxes, `mlbapi|${pk}`, async () => parseMlbBox((await http.get(`${MLB_API}/game/${pk}/boxscore`, { timeout: 20000 }))?.data));
+  async function gradeMlbApi(pick) {
+    const t = Date.parse(pick.startTime || '');
+    const days = new Set([ymd(t), ymd(t + 6 * 3600e3)].map(d => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`));
+    const games = [];
+    for (const d of days) games.push(...await mlbDay(d));
+    const asEvents = games.filter(g => Math.abs(Date.parse(g.gameDate) - t) < 3 * 3600e3).map(g => ({ g, date: g.gameDate, competitions: [{ competitors: ['home', 'away'].map(s => ({ team: {
+      displayName: g.teams?.[s]?.team?.name, abbreviation: g.teams?.[s]?.team?.abbreviation, name: g.teams?.[s]?.team?.teamName, location: g.teams?.[s]?.team?.locationName, shortDisplayName: g.teams?.[s]?.team?.shortName } })) }] }));
+    // a postponed game is never final here: the leg waits, then voids like the apps
+    const ev = findEvent(asEvents, pick) || (asEvents.length === 1 ? asEvents[0] : null);
+    if (!ev) return null;
+    if (ev.g.status?.abstractGameState !== 'Final' || /postponed|suspended|cancel/i.test(ev.g.status?.detailedState || '')) return { pending: true };
+    const v = mlbStat(pick.mkey, (await mlbBox(ev.g.gamePk)).get(canonName(pick.player)));
+    if (v == null) return null;
+    const line = Number(pick.signalLine);
+    return { result: v, outcome: v === line ? 'push' : (v > line) === (pick.signalSide === 'Over') ? 'win' : 'loss', eventId: `mlb-${ev.g.gamePk}`, source: 'mlb-statsapi' };
+  }
   // → { result, outcome, eventId } | { pending: true } (game not final) | null
   async function grade(pick) {
+    if (pick.sport === 'MLB') {
+      let g = null;
+      try { g = await gradeMlbApi(pick); } catch { g = null; }
+      if (g && !g.pending) return g;
+      // ESPN's box as the second source (and the only one if the MLB API is down)
+      const e = await gradeEspn(pick);
+      return e || g;
+    }
+    return gradeEspn(pick);
+  }
+  async function gradeEspn(pick) {
     if (!LEAGUES[pick.sport]) return null;
     const t = Date.parse(pick.startTime || '');
     if (!t) return null;
@@ -210,4 +245,4 @@ function scoreOf(ev, game) {
   return Number.isFinite(hp) && Number.isFinite(ap) ? { home: hp, away: ap } : null;
 }
 
-module.exports = { LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };
+module.exports = { MLB_API, LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };

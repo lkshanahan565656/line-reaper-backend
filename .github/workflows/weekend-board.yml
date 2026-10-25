@@ -1,5 +1,5 @@
 # Weekend board (nflsunday.js, the NFL Sunday recorder with LEAGUES set):
-# every NBA, college football and NHL leg on PrizePicks, Underdog, Sleeper and
+# every NBA, college football, NHL and MLB (postseason) leg on PrizePicks, Underdog, Sleeper and
 # DK Pick6 next to Pinnacle, FanDuel and BetRivers from Saturday until the
 # last Sunday night game, graded from ESPN after every run. Same chain as
 # nfl-sunday.yml: each run records about 5.5 hours, grades what has finished
@@ -26,7 +26,7 @@ on:
       week:
         default: ''
       leagues:
-        default: 'NBA,CFB,NHL'
+        default: 'NBA,CFB,NHL,MLB'
       prefix:
         default: ''
 permissions:
@@ -43,7 +43,7 @@ jobs:
     env:
       RUN_N: ${{ inputs.run || '1' }}
       MODE: ${{ inputs.mode || 'record' }}
-      LEAGUES: ${{ inputs.leagues || ((github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'CS,LOL,VAL,DOTA,R6,COD') || 'NBA,CFB,NHL' }}
+      LEAGUES: ${{ inputs.leagues || ((github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'CS,LOL,VAL,DOTA,R6,COD') || 'NBA,CFB,NHL,MLB' }}
       PREFIX: ${{ inputs.prefix || ((contains(inputs.leagues || '', 'LOL') || github.ref_name == 'diag-esboard' || github.event.schedule == '20 14 * * 6') && 'esboard') || 'board' }}
     steps:
       - uses: actions/checkout@v4
