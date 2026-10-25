@@ -1,0 +1,628 @@
+{
+ "verdict": "FAIL",
+ "testFrom": "2025-07-01",
+ "split": "2026-04-01",
+ "testTo": "2026-10-25",
+ "params": {
+  "k": 0.0225,
+  "kb": 0,
+  "kh": 0.00125,
+  "shrink": 0.075,
+  "promo": 0.2375,
+  "wSot": 0.35,
+  "sotConv": 0.3925,
+  "rho": -0.0875,
+  "base0": -0.0825,
+  "hfa0": 0.3,
+  "maxGoals": 10,
+  "tierShift": 0.2875
+ },
+ "fitted": {
+  "on": "2013-07-01..2022-07-01",
+  "matches": 91115,
+  "logLoss": 1.0155,
+  "check": {
+   "on": "2022-07-01..2025-07-01",
+   "matches": 31820,
+   "logLoss": 1.01236,
+   "pinnacleClose": 0.99294
+  }
+ },
+ "matched": {
+  "kalshi": 0,
+  "pm": 2548
+ },
+ "unmatched": {
+  "kalshi": 0,
+  "pm": 399,
+  "pmTime": 16,
+  "pmBook": 1
+ },
+ "venues": {
+  "kalshi": null,
+  "polymarket": {
+   "all": {
+    "contracts": 7591,
+    "games": 2531,
+    "logLoss": {
+     "model": 0.5923,
+     "exchange": 0.5851,
+     "n": 7591,
+     "modelOnPin": 0.5921,
+     "pinnacleClose": 0.5843,
+     "nPin": 7000
+    },
+    "blend": {
+     "market": 1.043,
+     "model": -0.1413,
+     "modelT": -1.2766
+    },
+    "exchangeVsPinnacle": {
+     "n": 7000,
+     "meanGap": 0
+    },
+    "bets3": {
+     "n": 1226,
+     "wins": 302,
+     "roi": -0.115,
+     "z": -2.2687,
+     "clvPin": {
+      "n": 1125,
+      "mean": -0.0748,
+      "t": -40.0543
+     },
+     "clvExchange": {
+      "n": 1226,
+      "mean": -0.0719,
+      "t": -39.7088
+     }
+    },
+    "bets5": {
+     "n": 641,
+     "wins": 167,
+     "roi": -0.0741,
+     "z": -1.2632,
+     "clvPin": {
+      "n": 579,
+      "mean": -0.0728,
+      "t": -27.1729
+     },
+     "clvExchange": {
+      "n": 641,
+      "mean": -0.0687,
+      "t": -26.0068
+     }
+    },
+    "byPick": {
+     "h": {
+      "n": 525,
+      "wins": 147,
+      "roi": -0.1905,
+      "z": -2.6661,
+      "clvPin": {
+       "n": 486,
+       "mean": -0.0659,
+       "t": -26.0919
+      },
+      "clvExchange": {
+       "n": 525,
+       "mean": -0.0637,
+       "t": -24.9387
+      }
+     },
+     "d": {
+      "n": 173,
+      "wins": 37,
+      "roi": 0.2075,
+      "z": 1.1367,
+      "clvPin": {
+       "n": 152,
+       "mean": -0.0812,
+       "t": -14.7148
+      },
+      "clvExchange": {
+       "n": 173,
+       "mean": -0.0795,
+       "t": -16.1963
+      }
+     },
+     "a": {
+      "n": 528,
+      "wins": 118,
+      "roi": -0.1456,
+      "z": -1.2705,
+      "clvPin": {
+       "n": 487,
+       "mean": -0.0817,
+       "t": -27.1669
+      },
+      "clvExchange": {
+       "n": 528,
+       "mean": -0.0776,
+       "t": -26.6897
+      }
+     }
+    }
+   },
+   "slice1": {
+    "contracts": 3410,
+    "games": 1137,
+    "logLoss": {
+     "model": 0.5858,
+     "exchange": 0.5782,
+     "n": 3410,
+     "modelOnPin": 0.5858,
+     "pinnacleClose": 0.5782,
+     "nPin": 3410
+    },
+    "blend": {
+     "market": 1.2194,
+     "model": -0.261,
+     "modelT": -1.3953
+    },
+    "exchangeVsPinnacle": {
+     "n": 3410,
+     "meanGap": -0.0001
+    },
+    "bets3": {
+     "n": 515,
+     "wins": 122,
+     "roi": -0.1824,
+     "z": -2.1081,
+     "clvPin": {
+      "n": 515,
+      "mean": -0.0737,
+      "t": -29.4595
+     },
+     "clvExchange": {
+      "n": 515,
+      "mean": -0.0717,
+      "t": -28.3625
+     }
+    },
+    "bets5": {
+     "n": 248,
+     "wins": 67,
+     "roi": -0.0593,
+     "z": -0.499,
+     "clvPin": {
+      "n": 248,
+      "mean": -0.0721,
+      "t": -20.3103
+     },
+     "clvExchange": {
+      "n": 248,
+      "mean": -0.0681,
+      "t": -18.5728
+     }
+    },
+    "byPick": {
+     "h": {
+      "n": 235,
+      "wins": 72,
+      "roi": -0.117,
+      "z": -0.8577,
+      "clvPin": {
+       "n": 235,
+       "mean": -0.0621,
+       "t": -17.8434
+      },
+      "clvExchange": {
+       "n": 235,
+       "mean": -0.06,
+       "t": -16.4163
+      }
+     },
+     "d": {
+      "n": 57,
+      "wins": 10,
+      "roi": -0.0406,
+      "z": -0.2172,
+      "clvPin": {
+       "n": 57,
+       "mean": -0.0889,
+       "t": -12.4398
+      },
+      "clvExchange": {
+       "n": 57,
+       "mean": -0.0865,
+       "t": -12.6475
+      }
+     },
+     "a": {
+      "n": 223,
+      "wins": 40,
+      "roi": -0.2876,
+      "z": -2.2571,
+      "clvPin": {
+       "n": 223,
+       "mean": -0.0821,
+       "t": -20.8376
+      },
+      "clvExchange": {
+       "n": 223,
+       "mean": -0.0802,
+       "t": -20.6573
+      }
+     }
+    }
+   },
+   "slice2": {
+    "contracts": 4181,
+    "games": 1394,
+    "logLoss": {
+     "model": 0.5977,
+     "exchange": 0.5907,
+     "n": 4181,
+     "modelOnPin": 0.5981,
+     "pinnacleClose": 0.5901,
+     "nPin": 3590
+    },
+    "blend": {
+     "market": 0.9502,
+     "model": -0.0978,
+     "modelT": -0.7104
+    },
+    "exchangeVsPinnacle": {
+     "n": 3590,
+     "meanGap": 0
+    },
+    "bets3": {
+     "n": 711,
+     "wins": 180,
+     "roi": -0.0662,
+     "z": -1.1831,
+     "clvPin": {
+      "n": 610,
+      "mean": -0.0757,
+      "t": -27.8227
+     },
+     "clvExchange": {
+      "n": 711,
+      "mean": -0.0721,
+      "t": -28.477
+     }
+    },
+    "bets5": {
+     "n": 393,
+     "wins": 100,
+     "roi": -0.0835,
+     "z": -1.2184,
+     "clvPin": {
+      "n": 331,
+      "mean": -0.0734,
+      "t": -18.9837
+     },
+     "clvExchange": {
+      "n": 393,
+      "mean": -0.069,
+      "t": -18.9854
+     }
+    },
+    "byPick": {
+     "h": {
+      "n": 290,
+      "wins": 75,
+      "roi": -0.2501,
+      "z": -2.8131,
+      "clvPin": {
+       "n": 251,
+       "mean": -0.0695,
+       "t": -19.0867
+      },
+      "clvExchange": {
+       "n": 290,
+       "mean": -0.0667,
+       "t": -18.8045
+      }
+     },
+     "d": {
+      "n": 116,
+      "wins": 27,
+      "roi": 0.3294,
+      "z": 1.5538,
+      "clvPin": {
+       "n": 95,
+       "mean": -0.0766,
+       "t": -9.9348
+      },
+      "clvExchange": {
+       "n": 116,
+       "mean": -0.0761,
+       "t": -11.7047
+      }
+     },
+     "a": {
+      "n": 305,
+      "wins": 78,
+      "roi": -0.0419,
+      "z": 0.2432,
+      "clvPin": {
+       "n": 264,
+       "mean": -0.0814,
+       "t": -18.3052
+      },
+      "clvExchange": {
+       "n": 305,
+       "mean": -0.0757,
+       "t": -18.2055
+      }
+     }
+    }
+   },
+   "byLeague": {
+    "D1": {
+     "contracts": 669,
+     "logLoss": {
+      "model": 0.5845,
+      "exchange": 0.5785,
+      "n": 669,
+      "modelOnPin": 0.5745,
+      "pinnacleClose": 0.5748,
+      "nPin": 621
+     },
+     "bets3": {
+      "n": 86,
+      "wins": 26,
+      "roi": -0.1295,
+      "z": -0.7986,
+      "clvPin": {
+       "n": 80,
+       "mean": -0.0678,
+       "t": -9.2942
+      },
+      "clvExchange": {
+       "n": 86,
+       "mean": -0.0647,
+       "t": -10.1678
+      }
+     }
+    },
+    "E1": {
+     "contracts": 1257,
+     "logLoss": {
+      "model": 0.6159,
+      "exchange": 0.6075,
+      "n": 1257,
+      "modelOnPin": 0.6193,
+      "pinnacleClose": 0.6127,
+      "nPin": 1149
+     },
+     "bets3": {
+      "n": 192,
+      "wins": 40,
+      "roi": -0.2797,
+      "z": -1.6953,
+      "clvPin": {
+       "n": 170,
+       "mean": -0.0697,
+       "t": -17.2806
+      },
+      "clvExchange": {
+       "n": 192,
+       "mean": -0.0659,
+       "t": -16.6479
+      }
+     }
+    },
+    "E0": {
+     "contracts": 933,
+     "logLoss": {
+      "model": 0.6046,
+      "exchange": 0.6025,
+      "n": 933,
+      "modelOnPin": 0.6089,
+      "pinnacleClose": 0.6073,
+      "nPin": 867
+     },
+     "bets3": {
+      "n": 175,
+      "wins": 36,
+      "roi": -0.1058,
+      "z": -0.8425,
+      "clvPin": {
+       "n": 158,
+       "mean": -0.0862,
+       "t": -21.1217
+      },
+      "clvExchange": {
+       "n": 175,
+       "mean": -0.081,
+       "t": -20.2151
+      }
+     }
+    },
+    "N1": {
+     "contracts": 558,
+     "logLoss": {
+      "model": 0.5689,
+      "exchange": 0.5692,
+      "n": 558,
+      "modelOnPin": 0.5689,
+      "pinnacleClose": 0.5699,
+      "nPin": 516
+     },
+     "bets3": {
+      "n": 79,
+      "wins": 26,
+      "roi": 0.2846,
+      "z": 1.3237,
+      "clvPin": {
+       "n": 74,
+       "mean": -0.0834,
+       "t": -9.4966
+      },
+      "clvExchange": {
+       "n": 79,
+       "mean": -0.0813,
+       "t": -9.6458
+      }
+     }
+    },
+    "F1": {
+     "contracts": 573,
+     "logLoss": {
+      "model": 0.5902,
+      "exchange": 0.5845,
+      "n": 573,
+      "modelOnPin": 0.5873,
+      "pinnacleClose": 0.5856,
+      "nPin": 528
+     },
+     "bets3": {
+      "n": 106,
+      "wins": 21,
+      "roi": -0.2062,
+      "z": -1.5013,
+      "clvPin": {
+       "n": 96,
+       "mean": -0.0569,
+       "t": -7.976
+      },
+      "clvExchange": {
+       "n": 106,
+       "mean": -0.0557,
+       "t": -7.738
+      }
+     }
+    },
+    "SP1": {
+     "contracts": 907,
+     "logLoss": {
+      "model": 0.5681,
+      "exchange": 0.5569,
+      "n": 907,
+      "modelOnPin": 0.573,
+      "pinnacleClose": 0.5571,
+      "nPin": 814
+     },
+     "bets3": {
+      "n": 142,
+      "wins": 44,
+      "roi": -0.0854,
+      "z": -0.1993,
+      "clvPin": {
+       "n": 130,
+       "mean": -0.0665,
+       "t": -17.1799
+      },
+      "clvExchange": {
+       "n": 142,
+       "mean": -0.0656,
+       "t": -15.6386
+      }
+     }
+    },
+    "MEX": {
+     "contracts": 756,
+     "logLoss": {
+      "model": 0.6088,
+      "exchange": 0.599,
+      "n": 756,
+      "modelOnPin": 0.6076,
+      "pinnacleClose": 0.5892,
+      "nPin": 669
+     },
+     "bets3": {
+      "n": 130,
+      "wins": 38,
+      "roi": -0.085,
+      "z": -0.8915,
+      "clvPin": {
+       "n": 114,
+       "mean": -0.0825,
+       "t": -10.1064
+      },
+      "clvExchange": {
+       "n": 130,
+       "mean": -0.0752,
+       "t": -10.0474
+      }
+     }
+    },
+    "USA": {
+     "contracts": 549,
+     "logLoss": {
+      "model": 0.6243,
+      "exchange": 0.6157,
+      "n": 549,
+      "modelOnPin": 0.6243,
+      "pinnacleClose": 0.6105,
+      "nPin": 549
+     },
+     "bets3": {
+      "n": 51,
+      "wins": 11,
+      "roi": -0.3612,
+      "z": -1.8115,
+      "clvPin": {
+       "n": 51,
+       "mean": -0.0703,
+       "t": -8.6397
+      },
+      "clvExchange": {
+       "n": 51,
+       "mean": -0.0689,
+       "t": -7.8918
+      }
+     }
+    },
+    "P1": {
+     "contracts": 531,
+     "logLoss": {
+      "model": 0.5473,
+      "exchange": 0.5367,
+      "n": 531,
+      "modelOnPin": 0.5414,
+      "pinnacleClose": 0.5297,
+      "nPin": 486
+     },
+     "bets3": {
+      "n": 103,
+      "wins": 26,
+      "roi": -0.0938,
+      "z": 0.2286,
+      "clvPin": {
+       "n": 98,
+       "mean": -0.0776,
+       "t": -11.2555
+      },
+      "clvExchange": {
+       "n": 103,
+       "mean": -0.0772,
+       "t": -12.9414
+      }
+     }
+    },
+    "I1": {
+     "contracts": 858,
+     "logLoss": {
+      "model": 0.5857,
+      "exchange": 0.5769,
+      "n": 858,
+      "modelOnPin": 0.582,
+      "pinnacleClose": 0.5732,
+      "nPin": 801
+     },
+     "bets3": {
+      "n": 162,
+      "wins": 34,
+      "roi": -0.0435,
+      "z": -0.7153,
+      "clvPin": {
+       "n": 154,
+       "mean": -0.0807,
+       "t": -17.5475
+      },
+      "clvExchange": {
+       "n": 162,
+       "mean": -0.0799,
+       "t": -16.4332
+      }
+     }
+    }
+   },
+   "verdict": "FAIL"
+  }
+ }
+}
