@@ -1,0 +1,10 @@
+name: diag-nbalive
+on: { push: { branches: [diag-nbalive] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 check.py > log.txt 2>&1; mkdir -p out; cp log.txt out/; cp *.json out/ 2>/dev/null; cd out && git init -q && git checkout -q -b diag-nbalive-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-nbalive-out
