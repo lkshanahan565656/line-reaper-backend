@@ -11,7 +11,7 @@ jobs:
           mkdir out
           for i in $(seq 1 30); do
             v=$(curl -s -m 20 $U/api/health | tee out/health.json | grep -o '"version":"[^"]*"')
-            echo "$i $v"; case "$v" in *3.164*) break;; esac; sleep 60
+            echo "$i $v"; case "$v" in *3.164.[3-9]*|*3.16[5-9]*) break;; esac; sleep 60
           done
           sleep 120
           curl -s -m 30 $U/api/esports/inplay > out/inplay.json; head -c 1500 out/inplay.json; echo
