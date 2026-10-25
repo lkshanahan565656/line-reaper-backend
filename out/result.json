@@ -1,0 +1,204 @@
+{
+  "checks": {
+    "/learn": {
+      "status": 200,
+      "ms": 194,
+      "h1": "The math behind sharp betting",
+      "bad": false
+    },
+    "/learn/no-vig-fair-odds": {
+      "status": 200,
+      "ms": 201,
+      "h1": "No-vig fair odds",
+      "bad": false
+    },
+    "/learn/expected-value": {
+      "status": 200,
+      "ms": 101,
+      "h1": "Expected value (EV)",
+      "bad": false
+    },
+    "/learn/closing-line-value": {
+      "status": 200,
+      "ms": 100,
+      "h1": "Closing line value (CLV)",
+      "bad": false
+    },
+    "/learn/hold-and-arbitrage": {
+      "status": 200,
+      "ms": 98,
+      "h1": "Hold and arbitrage",
+      "bad": false
+    },
+    "/learn/middles": {
+      "status": 200,
+      "ms": 101,
+      "h1": "Middles",
+      "bad": false
+    },
+    "/learn/kelly-criterion": {
+      "status": 200,
+      "ms": 242,
+      "h1": "Kelly staking",
+      "bad": false
+    },
+    "/learn/exchange-fees": {
+      "status": 200,
+      "ms": 136,
+      "h1": "Exchange fees and effective odds",
+      "bad": false
+    },
+    "/learn/pickem-math": {
+      "status": 200,
+      "ms": 133,
+      "h1": "Pick’em break-evens",
+      "bad": false
+    },
+    "/learn/how-the-record-works": {
+      "status": 200,
+      "ms": 134,
+      "h1": "How the record works",
+      "bad": false
+    },
+    "redirect": {
+      "status": 301,
+      "location": "/learn/closing-line-value"
+    },
+    "features": "{\"oddsApi\":false}",
+    "sitemapHasLearn": true,
+    "landingLinksLearn": true,
+    "appHasNewCode": [
+      [
+        "shpPresetBar",
+        true
+      ],
+      [
+        "shpMovesBlock",
+        true
+      ],
+      [
+        "LAY_ODDS_API",
+        true
+      ]
+    ],
+    "propHistory": {
+      "series": 1410,
+      "points": 4429,
+      "observedAt": "2026-10-25T02:28:58.602Z",
+      "markets": 2889,
+      "ms": 88,
+      "error": null
+    },
+    "shopperProps": {
+      "status": 200,
+      "counts": {
+        "quotes": 11820,
+        "markets": 2758,
+        "shown": 5,
+        "matching": 2758,
+        "priced": 588,
+        "plusEv": 128,
+        "opportunities": 24,
+        "arbs": 0,
+        "lowHold": 32,
+        "multiVenue": 727
+      },
+      "firstKeys": [
+        "pin-1638073192|prop|rec_yds|johnmetchie|10.5",
+        "pin-1638032133|prop|pass_tds|aaronrodgers|1.5",
+        "pin-1638073192|prop|pass_tds|bakermayfield|1.5",
+        "pin-1638073192|prop|pass_tds|bryceyoung|1.5",
+        "pin-1638073190|prop|pass_tds|joeburrow|1.5"
+      ]
+    },
+    "history": [
+      {
+        "key": "pin-1638073192|prop|rec_yds|johnmetchie|10.5",
+        "sides": 2,
+        "pts": 3,
+        "venues": [
+          "pinnacle",
+          "hardrock",
+          "fanduel",
+          "draftkings",
+          "caesars",
+          "betrivers",
+          "betmgm",
+          "bet365",
+          "fanatics"
+        ],
+        "fair": 0.5417
+      },
+      {
+        "key": "pin-1638032133|prop|pass_tds|aaronrodgers|1.5",
+        "sides": 2,
+        "pts": 6,
+        "venues": [
+          "pinnacle",
+          "betrivers",
+          "draftkings",
+          "caesars",
+          "betmgm",
+          "fanduel",
+          "fanatics",
+          "bet365"
+        ],
+        "fair": 0.4794
+      },
+      {
+        "key": "pin-1638073192|prop|pass_tds|bakermayfield|1.5",
+        "sides": 2,
+        "pts": 3,
+        "venues": [
+          "pinnacle",
+          "betrivers",
+          "fanduel",
+          "betmgm",
+          "caesars",
+          "bet365",
+          "fanatics",
+          "draftkings"
+        ],
+        "fair": 0.36
+      },
+      {
+        "key": "pin-1638073192|prop|pass_tds|bryceyoung|1.5",
+        "sides": 2,
+        "pts": 3,
+        "venues": [
+          "pinnacle",
+          "bet365",
+          "draftkings",
+          "betmgm",
+          "caesars",
+          "fanduel",
+          "betrivers",
+          "fanatics"
+        ],
+        "fair": 0.5728
+      },
+      {
+        "key": "pin-1638073190|prop|pass_tds|joeburrow|1.5",
+        "sides": 2,
+        "pts": 3,
+        "venues": [
+          "pinnacle",
+          "betrivers",
+          "bet365",
+          "fanduel",
+          "betmgm",
+          "draftkings",
+          "caesars",
+          "fanatics"
+        ],
+        "fair": 0.6127
+      }
+    ],
+    "leagueList": [
+      "nfl",
+      "nba"
+    ]
+  },
+  "version": "3.164.4",
+  "waitedS": 1505
+}
