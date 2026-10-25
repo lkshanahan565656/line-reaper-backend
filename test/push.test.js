@@ -25,7 +25,7 @@ test('subscriptions are validated', () => {
   assert.ok(validSubscription(sub(1)));
   assert.ok(!validSubscription({ endpoint: 'http://x.com/a', keys: sub(1).keys }));
   assert.ok(!validSubscription({ endpoint: 'https://x.com/a' }));
-  assert.ok(!validSubscription(null || {}));
+  assert.ok(!validSubscription({}));
 });
 
 test('keys are made once and kept; env keys override', async () => {

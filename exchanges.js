@@ -190,7 +190,23 @@ const initials = s => s.split(' ').filter(Boolean).map(w => w[0]).join('');
 // "la" for Los Angeles, "okc" for Oklahoma City, "st louis" for St. Louis
 const cityMatches = (label, city) => !!city && (label === city || label === initials(city) || CITY_ALIASES[label] === city);
 
+// Matching a market list asks the same (label, team) questions thousands of
+// times a scan, so the answers are kept (strings only; the memo is dropped
+// whole when it fills). The answer depends on nothing but the two names.
+const TEAM_MEMO_MAX = 100000;
+const teamMemo = new Map();
 function teamMatches(exchangeTeam, fullName) {
+  if (typeof exchangeTeam !== 'string' || typeof fullName !== 'string') return teamMatchesOnce(exchangeTeam, fullName);
+  const key = `${exchangeTeam}\u0000${fullName}`;
+  let v = teamMemo.get(key);
+  if (v === undefined) {
+    v = teamMatchesOnce(exchangeTeam, fullName);
+    if (teamMemo.size >= TEAM_MEMO_MAX) teamMemo.clear();
+    teamMemo.set(key, v);
+  }
+  return v;
+}
+function teamMatchesOnce(exchangeTeam, fullName) {
   let label = norm(exchangeTeam);
   const { full, nick, city } = splitName(fullName);
   if (!label || !full) return false;

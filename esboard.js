@@ -107,7 +107,7 @@ const parseJson = v => { if (Array.isArray(v)) return v; try { return JSON.parse
 // ── team names ──
 // "⁠Movistar KOI Fénix" (with a word joiner) is "Movistar KOI Fenix".
 function cleanName(n) {
-  return String(n || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[​-‏⁠-⁤﻿]/g, '').replace(/\s+/g, ' ').trim();
+  return String(n || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
 }
 const sameTeam = (a, b) => teamsMatch(cleanName(a), cleanName(b));
 // orientation of [x0, x1] against canonical [A, B]: 'same', 'flipped' or null

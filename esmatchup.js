@@ -96,7 +96,7 @@ const isIntl = lg => INTL_RE.test(String(lg || ''));
 // "T1", "Gen.G", "Movistar KOI Fénix" → stable keys. Academy rosters keep their
 // suffix, so "T1 Academy" never becomes T1.
 function teamKey(n) {
-  return String(n || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[​-‏⁠-⁤﻿]/g, '')
+  return String(n || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[\u200B-\u200F\u2060-\u2064\uFEFF]/g, '')
     .toLowerCase().replace(/['’]s\b/g, '').replace(/\b(team|esports?|gaming|club)\b/g, '').replace(/[^a-z0-9]/g, '');
 }
 

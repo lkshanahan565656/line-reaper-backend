@@ -88,8 +88,9 @@ const DEFAULTS = {
   sportsWindowMs: 4 * 3600e3, titleWindowMs: 3 * DAY, minSimilarity: 0.6, nearPct: 3, nearMax: 25,
 };
 // undefined in opts keeps the default
+/** @returns {any} */
 function withDefaults(opts = {}) {
-  const o = { ...DEFAULTS };
+  const o = /** @type {any} */ ({ ...DEFAULTS });
   for (const [k, v] of Object.entries(opts || {})) if (v !== undefined) o[k] = v;
   o.now = typeof o.now === 'function' ? o.now() : o.now ?? Date.now();
   return o;
@@ -115,14 +116,29 @@ const jsonList = v => {
   if (Array.isArray(v)) return v;
   try { const x = JSON.parse(v); return Array.isArray(x) ? x : null; } catch { return null; }
 };
-const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const normOnce = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
   .replace(/[^a-z0-9]+/g, ' ').trim();
+// the matcher normalizes the same team and market names over and over: the
+// answers are kept (strings only; dropped whole when the memo fills)
+const NORM_MEMO_MAX = 100000;
+const normMemo = new Map();
+const norm = s => {
+  if (typeof s !== 'string') return normOnce(s);
+  let v = normMemo.get(s);
+  if (v === undefined) {
+    v = normOnce(s);
+    if (normMemo.size >= NORM_MEMO_MAX) normMemo.clear();
+    normMemo.set(s, v);
+  }
+  return v;
+};
 const push = (map, key, v) => { if (!map.has(key)) map.set(key, []); map.get(key).push(v); };
 const later = (...ts) => ts.filter(Boolean).sort((a, b) => (ms(b) ?? 0) - (ms(a) ?? 0))[0] || null;
 
 // ── categories ──
 // Labels are tried in order (the exchange's own category first, then tags),
 // and the first one that names a category wins.
+/** @type {Array<[string, RegExp]>} */
 const CATEGORIES = [
   ['sports', /sport|world cup|\b(nba|nfl|mlb|nhl|wnba|ncaa|mls|ufc|mma|f1|epl)\b|soccer|football|basketball|baseball|hockey|tennis|golf|boxing|racing|cricket|esports/],
   ['crypto', /crypto|bitcoin|ethereum|solana|\b(btc|eth|xrp|doge)\b/],
@@ -455,6 +471,7 @@ const POLARITY = {
   hold: 'hold', unchanged: 'hold', pause: 'hold', not: 'not', no: 'not', never: 'not', without: 'not',
   after: 'after', following: 'after', between: 'between', exactly: 'exactly',
 };
+/** @type {Array<[RegExp, string]>} */
 const PHRASES = [
   [/\bu\.s\.(?:a\.)?/g, 'us'],
   [/n't\b/g, ' not'],
@@ -605,7 +622,16 @@ function teamContext(games = []) {
     if (!cache.has(key)) cache.set(key, new Set(namesFor(league).filter(full => teamMatches(label, full)).map(norm)));
     return cache.get(key);
   };
+  // one match pass asks about the same two labels many times
+  const sameMemo = new Map();
   function same(a, b, league = null) {
+    if (typeof a !== 'string' || typeof b !== 'string') return sameOnce(a, b, league);
+    const key = `${league || '*'}\u0000${a}\u0000${b}`;
+    let v = sameMemo.get(key);
+    if (v === undefined) { v = sameOnce(a, b, league); sameMemo.set(key, v); }
+    return v;
+  }
+  function sameOnce(a, b, league) {
     const x = norm(a), y = norm(b);
     if (!x || !y || stateTwin(a, b)) return false;
     if (x === y || teamMatches(a, b) || teamMatches(b, a)) return true;
@@ -761,6 +787,7 @@ const US_STATES = ['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'co
   'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire', 'new jersey', 'new mexico', 'new york',
   'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
   'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia', 'wisconsin', 'wyoming'];
+/** @type {Array<[string, RegExp]>} */
 const STATE_RES = US_STATES.map(n => [n, new RegExp(`\\b${n}\\b`)]);
 const NOT_A_RACE_RE = /\b(primary|primaries|nominee|nomination|nominated|runoff|margin|turnout|percent|share|by more than|combo|popular vote|lieutenant|state senate|state house|house of delegates|control|majority|seats|endorse|debate|poll|drop out|run for|recount|called|calls|voters?|county|counties)\b/;
 // → { key: 'senate|texas|D|' , year } | null
@@ -792,10 +819,16 @@ function raceKey(r) {
   return { key: `${office}|${place}|${party}|${/\bspecial\b/.test(t) ? 'special' : ''}`, year };
 }
 
-function matchMarkets(kalshiRows, polyRows, opts = {}) {
+// The matching runs as a generator that yields every few hundred rows, so the
+// server can run it in slices (matchMarketsAsync) instead of holding the event
+// loop for the whole of a 70k-row Kalshi list. matchMarkets runs the same
+// steps straight through: both return the same pairs.
+const MATCH_STEP = 32;
+function* matchSteps(kalshiRows, polyRows, opts = {}) {
   const o = withDefaults(opts);
   const teams = teamContext(o.games);
   const out = [];
+  let steps = 0;
 
   // sports games: both teams line up, the same game number when both say,
   // start times within 4h (any time on the ticker's date for sports outside
@@ -804,10 +837,12 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
     .map(r => ({ r, t: ms(r.startTime || r.closeTime) })).sort((a, b) => a.t - b.t);
   const games = [];
   for (const k of kalshiRows || []) {
+    if (++steps % MATCH_STEP === 0) yield;
     if (k.kind !== 'teams' || k.hasDraw || !k.noLabel) continue;
     const w = kalshiWindow(k, o);
     if (!w) continue;
     for (let i = firstAtOrAfter(pm, w.lo); i < pm.length && pm[i].t <= w.hi; i++) {
+      if (++steps % MATCH_STEP === 0) yield;
       const p = pm[i].r;
       if (k.league && p.league && k.league !== p.league) continue;
       if (k.gameNo != null && p.gameNo != null && k.gameNo !== p.gameNo) continue;
@@ -830,9 +865,11 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   const pm3 = events3(polyRows).map(rs => ({ rs, t: ms(rs[0].startTime || rs[0].closeTime) })).filter(e => e.t != null).sort((a, b) => a.t - b.t);
   const pairs3 = [];
   for (const ks of events3(kalshiRows)) {
+    if (++steps % MATCH_STEP === 0) yield;
     const w = kalshiWindow(ks[0], o);
     if (!w) continue;
     for (let i = firstAtOrAfter(pm3, w.lo); i < pm3.length && pm3[i].t <= w.hi; i++) {
+      if (++steps % MATCH_STEP === 0) yield;
       const ps = pm3[i].rs;
       if (ks[0].league && ps[0].league && ks[0].league !== ps[0].league) continue;
       const pair = pairTeams(ks[0].game3.teams, ps[0].game3.teams, teams, ks[0].league || ps[0].league);
@@ -862,6 +899,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
       seen.add(key);
       const ps = pLines.get(g.pGame) || [];
       for (const k of kLines.get(g.kGame) || []) {
+        if (++steps % MATCH_STEP === 0) yield;
         let p;
         if (k.kind === 'total') p = ps.find(r => r.kind === 'total' && r.line === k.line);
         else {
@@ -877,6 +915,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   // US races: office, place, party and year (raceKey)
   const races = new Map(), raced = new Set();
   for (const p of polyRows || []) {
+    if (++steps % MATCH_STEP === 0) yield;
     if (p.kind !== 'yesno' || p.game3) continue;
     const rk = raceKey(p);
     if (rk) push(races, `${rk.key}|${rk.year}`, p);
@@ -884,6 +923,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   if (races.size) {
     const kRaced = [];
     for (const k of kalshiRows || []) {
+      if (++steps % MATCH_STEP === 0) yield;
       if (k.kind !== 'yesno' || k.game3) continue;
       const rk = raceKey(k);
       if (rk) kRaced.push([k, rk]);
@@ -906,6 +946,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   // handful of candidates.
   const index = new Map();
   for (const p of polyRows || []) {
+    if (++steps % MATCH_STEP === 0) yield;
     const t = ms(p.closeTime);
     if (p.kind !== 'yesno' || p.game3 || t == null || raced.has(p.id)) continue;
     const key = titleKey(proposition(p));
@@ -913,7 +954,10 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   }
   const span = Math.ceil(o.titleWindowMs / DAY);
   const titled = [];
-  for (const k of kalshiRows || []) {
+  // no Polymarket market to meet (the Polymarket US list is games only): the
+  // Kalshi titles needn't be read at all
+  for (const k of index.size ? kalshiRows || [] : []) {
+    if (++steps % MATCH_STEP === 0) yield;
     const t = ms(k.closeTime);
     if (k.kind !== 'yesno' || k.game3 || t == null || raced.has(k.id)) continue;
     const key = titleKey(proposition(k));
@@ -922,6 +966,7 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
     const day = Math.floor(t / DAY);
     for (let d = day - span; d <= day + span; d++) {
       for (const c of index.get(`${key.sig}|${d}`) || []) {
+        if (++steps % MATCH_STEP === 0) yield;
         if (Math.abs(c.t - t) > o.titleWindowMs) continue;
         const sim = titleSimilarity(key, c.key);
         if (sim == null || sim < o.minSimilarity) continue;
@@ -934,6 +979,33 @@ function matchMarkets(kalshiRows, polyRows, opts = {}) {
   }
   for (const e of mutualBest(titled, e => e.m.kalshi.id, e => e.m.polymarket.id)) out.push(e.m);
   return out;
+}
+function matchMarkets(kalshiRows, polyRows, opts = {}) {
+  const it = matchSteps(kalshiRows, polyRows, opts);
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+// The same pairs as matchMarkets, handing the event loop back whenever a
+// slice has run sliceMs (other requests and jobs run in between).
+// → Promise<pairs>; opts.sliceMs (default 20), opts.stats gets { ms, slices, maxSliceMs }
+async function matchMarketsAsync(kalshiRows, polyRows, opts = {}) {
+  const sliceMs = opts.sliceMs > 0 ? opts.sliceMs : 20;
+  const it = matchSteps(kalshiRows, polyRows, opts);
+  const t0 = performance.now();
+  let start = t0, slices = 1, maxSliceMs = 0;
+  for (;;) {
+    const r = it.next();
+    if (r.done) {
+      maxSliceMs = Math.max(maxSliceMs, performance.now() - start);
+      if (opts.stats) Object.assign(opts.stats, { ms: Math.round(performance.now() - t0), slices, maxSliceMs: Math.round(maxSliceMs) });
+      return r.value;
+    }
+    if (performance.now() - start >= sliceMs) {
+      maxSliceMs = Math.max(maxSliceMs, performance.now() - start);
+      await new Promise(resolve => setImmediate(resolve));
+      start = performance.now();
+      slices++;
+    }
+  }
 }
 
 // ── pricing ──
@@ -1029,6 +1101,7 @@ const expired = (r, now) => { const t = ms(r.closeTime); return t != null && t <
 
 // 1. YES on one exchange + the opposite side on the other, both directions
 // → [fields, legs] for each direction
+/** @returns {Array<[any, any[]]>} */
 function crossSets(match, o) {
   const { kalshi: k, polymarket: p, same } = match;
   if (!k.tradable || !p.tradable || expired(k, o.now) || expired(p, o.now)) return [];
@@ -1642,6 +1715,7 @@ async function fetchKalshiGameSeries(http) {
 const PRIORITY_ROOTS = ['KXNFL', 'KXNCAAF', 'KXNBA', 'KXNHL', 'KXMLB', 'KXWNBA', 'KXNCAAMB', 'KXNCAAWB', 'KXMLS', 'KXEPL', 'KXUCL', 'KXLALIGA',
   'KXBUNDESLIGA', 'KXSERIEA', 'KXLIGUE1', 'KXLOL', 'KXCS2', 'KXVALORANT', 'KXCOD'];
 const seriesRoot = x => String(x || '').toUpperCase().replace(/(GAME|MATCH|FIGHT|TOTAL|SPREAD)$/, '');
+/** @param {any} [opts] */
 function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs = 6 * 3600e3, retryMs = 10 * 60e3, keepMs = 30 * 60e3,
   seeds = SEED_GAME_SERIES, priorityRoots = PRIORITY_ROOTS, priorityMs = 3 * 60e3, now = () => Date.now() } = {}) {
   const roots = new Set(priorityRoots);
@@ -1698,6 +1772,7 @@ function createKalshiGameSweep({ http, perScan = 40, quietSlots = 5, refreshMs =
 // scan, to the end of the list and round again, keeping the events worth
 // pairing (anything but sports: the game sweep has the games) for keepMs.
 // step(startCursor): startCursor is where this scan's main read stopped.
+/** @param {any} [opts] */
 function createKalshiTailSweep({ http, perScan = 6, keepMs = 30 * 60e3, maxEvents = 20000, now = () => Date.now(),
   keep = ev => ev?.category !== 'Sports' } = {}) {
   const cache = new Map();   // event ticker → { rows, at }
@@ -1730,7 +1805,7 @@ function createKalshiTailSweep({ http, perScan = 6, keepMs = 30 * 60e3, maxEvent
 }
 
 module.exports = {
-  parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets,
+  parseKalshiBinaries, parsePolymarketBinaries, normalizeCategory, titleKey, titleSimilarity, matchMarkets, matchMarketsAsync, _matchSteps: matchSteps,
   findCrossArbs, findUnderrounds, findUsArbs, findBookArbs, findArbs, findNearArbs, findBidArbs, bidLock, findMiddles, exchangeScreen, stakeArb, fetchKalshiEvents, fetchPolymarketEvents,
   fetchKalshiGameSeries, createKalshiGameSweep, PRIORITY_ROOTS, createKalshiTailSweep, kalshiTickerTime, nameMatch, SEED_GAME_SERIES, KALSHI_SERIES_URL,
   polymarketFeeSchedule, polymarketFee, raceKey, isUsVenue, usPlaceable, venueIndex, venueQuotes, pickVenue, regionFromEnv,

@@ -15,7 +15,7 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.LRCalc = factory();
-}(typeof self !== 'undefined' ? self : this, function () {
+}(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
   const ok = x => typeof x === 'number' && Number.isFinite(x);

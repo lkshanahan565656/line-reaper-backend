@@ -1,0 +1,23 @@
+{
+  // `npm run typecheck`: TypeScript reads the JavaScript (JSDoc and inferred
+  // types) without compiling anything. It covers the shared betting math the
+  // server, the tests and the page all use; add a file here once it passes.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "files": [
+    "calc.js", "ev.js", "dist.js", "slip.js", "exchanges.js", "oddsengine.js", "oddsschema.js", "oddsrank.js",
+    "venues.js", "bets.js", "slips.js", "xarb.js", "esmodels.js", "h2hmodel.js", "ratings.js", "roundmodel.js", "sharemodel.js", "esmatchup.js"
+  ]
+}

@@ -23,7 +23,7 @@
 // (+EV, alt lines, book arbs, the sharp consensus) sees them.
 // Pure parsing plus the fetchers; the server decides how often.
 
-const { canonMarket, canonName } = require('./ev');
+const { canonMarket } = require('./ev');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36';
 const AN = 'https://api.actionnetwork.com/web/v2/scoreboard';

@@ -75,6 +75,7 @@ const TEAM_SD = { LOL: 6, DOTA: 8 };
 // `maps` maps at kill share `share`: a negative binomial with the player's
 // own spread plus the team total's (share² × sd² a map), read as a mean, not
 // a median (players go over their share × team kills 46% of the time).
+/** @param {any} mean @param {any} line @param {any} side @param {any} [opts] */
 function shareProb(mean, line, side, { game = 'LOL', share = 0.2, maps = 1, o = {} } = {}) {
   if (!(mean > 0) || !(line > 0)) return null;
   const k0 = o.playerK ?? PLAYER_K[game] ?? 1.35, sd = o.teamSd ?? TEAM_SD[game] ?? 7;
@@ -96,6 +97,7 @@ function shareMean(pinPerMap, share) {
 //              board's kills curve with that mean
 //   books:     [{ book: 'PP'|'UD'|'SL', line, open: { OVER, UNDER }, evAt(prob, side) → % }]
 // → { side, line, book, ev, prob, pinProb, clears, cells: { [book]: { side, ev, prob, pinProb } } } or null
+/** @param {any} p @param {any} [opts] */
 function priceShare(p, { fairAt, books, o: opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const s = p?.share;
@@ -104,7 +106,7 @@ function priceShare(p, { fairAt, books, o: opts = {} } = {}) {
   let best = null;
   for (const b of books || []) {
     if (!(b.line > 0)) continue;
-    let cell = null;
+    let cell = /** @type {any} */ (null);
     for (const side of ['OVER', 'UNDER']) {
       if (b.open && b.open[side] === false) continue;
       const prob = fairAt(s.mean, b.line, side);
@@ -151,6 +153,7 @@ function sharePlay(p, priced) {
 // start, pinByMap: { [map]: Pinnacle's team total }, booksPerMap (Pinnacle
 // split the books' way, a map) }. sameTeam(a, b) matches team names;
 // toDecimal(american). Rows in the +EV tab's esports shape (esbooks.screen).
+/** @param {any} books @param {any} index @param {any} [opts] */
 function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const rows = [];
@@ -199,7 +202,7 @@ function priceBookPlayers(books, index, { nameKey, sameTeam, toDecimal, now = Da
   for (const r of rows) {
     const k = `${r.group.split('|').slice(0, 5).join('|')}`;
     const b = best.get(k);
-    if (!b || (r.clears - b.clears || r.ev - b.ev) > 0) best.set(k, r);
+    if (!b || (Number(r.clears) - Number(b.clears) || r.ev - b.ev) > 0) best.set(k, r);
   }
   return { rows: [...best.values()], priced, teams: new Set([...best.values()].filter(r => r.clears).map(r => `${r.event}|${r.team}`)).size };
 }

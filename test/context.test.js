@@ -5,13 +5,6 @@ const C = require('../context');
 const { valGamesFromRows, lolGamesFromRows, dotaGamesFromRows } = C;
 
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
-// the same normal CDF the server uses
-function erf(x) {
-  const s = x >= 0 ? 1 : -1; x = Math.abs(x);
-  const t = 1 / (1 + 0.3275911 * x);
-  return s * (1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x));
-}
-const normalCDF = (x, m, sd) => 0.5 * (1 + erf((x - m) / (sd * Math.SQRT2)));
 
 test('odds conversion and devig', () => {
   close(C.americanToProb(-200), 2 / 3);

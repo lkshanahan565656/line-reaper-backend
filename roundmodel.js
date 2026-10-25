@@ -249,6 +249,7 @@ function matchScale(team0, team1, game, o = DEFAULTS) {
 // One pick priced on the round model (as sharemodel.priceShare)
 //   p.rounds: { ctx, pinCtx (the apps' kills a round on Pinnacle's rounds), lineup }
 //   books:    [{ book, line, open: { OVER, UNDER }, evAt(prob, side) → % }]
+/** @param {any} p @param {any} [opts] */
 function priceRounds(p, { books, o: opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const r = p?.rounds;
@@ -257,7 +258,7 @@ function priceRounds(p, { books, o: opts = {} } = {}) {
   let best = null;
   for (const b of books || []) {
     if (!(b.line > 0)) continue;
-    let cell = null;
+    let cell = /** @type {any} */ (null);
     for (const side of ['OVER', 'UNDER']) {
       if (b.open && b.open[side] === false) continue;
       const prob = sideProb(r.ctx, b.line, side, o);

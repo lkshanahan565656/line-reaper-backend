@@ -74,6 +74,7 @@ function sleeperTeams(lines) {
 // it. A Sleeper line that can't be placed in a multi-match day gets null:
 // it has no start of its own and the board leaves it out.
 // playerOf(l) and sportOf(l) say whose line it is (callers normalise names).
+/** @param {any} lines @param {any} [opts] */
 function matchTags(lines, { playerOf, sportOf = l => l.sport } = {}) {
   const slOpp = sleeperTeams(lines);
   const byPlayer = new Map();
@@ -96,7 +97,7 @@ function matchTags(lines, { playerOf, sportOf = l => l.sport } = {}) {
     };
     const pending = [];
     // Sleeper last: its opponent comes from the other team's lines and its names differ most
-    list.sort((a, b) => (a.book === 'sleeper') - (b.book === 'sleeper'));
+    list.sort((a, b) => Number(a.book === 'sleeper') - Number(b.book === 'sleeper'));
     // first the lines that name their opponent (or share a game id with one that does)
     for (const l of list) {
       const opp = lineOpponent(l, slOpp), id = idOf(l);

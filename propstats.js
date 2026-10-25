@@ -111,6 +111,7 @@ function parseVlrPlayer(html) {
 // Looks a player up on vlr.gg: search, then read up to three exact-name hits
 // and keep the one on the line's team, else the one with the most rounds.
 // Results (and misses) are cached so a refresh costs nothing once warm.
+/** @param {any} [opts] */
 function createVlrStats({ http, ttlMs = 12 * 3600e3, missTtlMs = 3600e3, gapMs = 1200, now = () => Date.now() } = {}) {
   const cache = new Map();
   const health = { profiles: 0, misses: 0, lastError: null };

@@ -136,6 +136,7 @@ function scenariosFor(maps, bestOf, pMap = 0.5) {
 //   books:   [{ book, line, open: { OVER, UNDER }, evAt(prob 0-1, side) → % }]
 //   sharp:   (line, side) → { src, prob 0-1 } or null: a Pinnacle-based fair at that line
 // → { side, line, book, ev, prob, sharp, clears, cells } or null
+/** @param {any} p @param {any} [opts] */
 function priceH2H(p, { books, sharp = null, o: opts = {} } = {}) {
   const o = { ...DEFAULTS, ...opts };
   const h = p?.h2h;
@@ -144,7 +145,7 @@ function priceH2H(p, { books, sharp = null, o: opts = {} } = {}) {
   let best = null;
   for (const b of books || []) {
     if (!(b.line > 0)) continue;
-    let cell = null;
+    let cell = /** @type {any} */ (null);
     for (const side of ['OVER', 'UNDER']) {
       if (b.open && b.open[side] === false) continue;
       const prob = h2hProb(h.game, h.perMap, b.line, side, h.scenarios);

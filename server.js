@@ -3900,7 +3900,7 @@ async function polymarketUsArbs(kalshi, now) {
   const rows = await polymarketUs.arbRows({ leagues: XARB_PMUS_LEAGUES });
   if (!rows.length) return none;
   const o = { ...XARB_OPTS, now };
-  const matches = xarb.matchMarkets(kalshi, rows, o);
+  const matches = await xarb.matchMarketsAsync(kalshi, rows, o);
   const screened = xarb.findUsArbs(kalshi, rows, { ...o, matches });
   // per league (the slug's first word): games listed, and games with a Kalshi pair
   const byLeague = {};
@@ -4148,7 +4148,10 @@ async function scanXarbs() {
     catch (e) { console.warn('Exchange arbs: game feeds:', e.message); }
     const now = Date.now();
     // matched once: the cross-exchange arbs (intl) and signal routing both use it
-    const matches = xarb.matchMarkets(kalshi, polymarket, { ...XARB_OPTS, now, games });
+    // in slices of about 20 ms, so pages and other jobs aren't held up for the
+    // 2 s a full Kalshi list takes to match
+    const matchStats = {};
+    const matches = await xarb.matchMarketsAsync(kalshi, polymarket, { ...XARB_OPTS, now, games, stats: matchStats });
     let us = { arbs: [], rows: 0, games: 0, matches: 0, screened: 0, rowList: [], matchList: [] };
     try { us = await polymarketUsArbs(kalshi, now); } catch (e) { console.warn('Exchange arbs: Polymarket US:', e.message); }
     const arbs = dedupeArbs([...xarb.findArbs({ kalshi, polymarket, games }, { ...XARB_OPTS, now, matches }), ...us.arbs]);
@@ -4193,7 +4196,7 @@ async function scanXarbs() {
       arbs, near, bids, middles, screen, errors: [...k.errors, ...p.errors], updated: new Date(now).toISOString(), durationMs: Date.now() - t0,
       counts: { kalshiEvents: k.count, kalshiPages: k.pages, kalshiTruncated: k.truncated, kalshiMarkets: kalshi.length,
         polymarketEvents: p.count, polymarketPages: p.pages, polymarketTruncated: p.truncated, polymarketMarkets: polymarket.length, games: games.length, arbs: arbs.length,
-        kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by),
+        kalshiSwept: sweptIn, kalshiTail: tailIn, matches: matches.length, matchesBy: countBy(matches, m => m.by), matchStats,
         polymarketUs: { rows: us.rows, games: us.games, matches: us.matches, screened: us.screened, arbs: us.arbs.length, byLeague: us.byLeague || null }, near: near.length, bids: bids.length, middles: middles.length },
     });
     const fresh = arbs.filter(a => !xarbSeen.has(a.id) || now - xarbSeen.get(a.id) > XARB_REALERT_MS);
@@ -4679,7 +4682,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.163.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.164.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5210,7 +5213,6 @@ app.get('/api/esports/matches', (req, res) => {
 // ── matchups (head-to-head engine): LoL, CS2, VALORANT ──
 const GAME_WORD = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
 const matchupNote = game => `Our own model: team ratings from every finished ${GAME_WORD[game] || game} series, a series-shape adjustment and a small head-to-head term. It is a model, not a proven edge: in the walk-forward backtest Kalshi's price beat it, and betting its side lost after fees.`;
-const MATCHUP_NOTE = matchupNote('LOL');
 // ?game= picks the engine (default LoL); null when that game is off
 const engineFor = req => matchupEngines[String(req.query.game || 'LOL').toUpperCase()] || null;
 function matchupBacktestSummary(engine = matchupEngine) {
@@ -7326,7 +7328,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.163.0',
+  version: '3.164.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

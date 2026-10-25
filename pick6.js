@@ -145,7 +145,7 @@ function createPick6Reader(axios, { enabled = false, relayUrl = null, now = () =
   // when each sport was last read, keyed `pick6|SPORT` for the record's executable check
   function readTimes() {
     const out = {};
-    for (const [label, v] of Object.entries(st.bySport)) for (const l of v.lines.slice(0, 1)) out[`pick6|${l.sport}`] = new Date(v.at).toISOString();
+    for (const v of Object.values(st.bySport)) for (const l of v.lines.slice(0, 1)) out[`pick6|${l.sport}`] = new Date(v.at).toISOString();
     return out;
   }
   // what the relay workflow saves: every sport it read, stamped with when

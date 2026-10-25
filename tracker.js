@@ -18,7 +18,6 @@
 // stood at lock: line moves, payout moves and the other books all count, in
 // the one unit a bettor cares about (chance our side wins, and EV at the close).
 
-const fs = require('fs');
 const path = require('path');
 const { createJsonFileStore } = require('./jsonstore');
 const { bookLines, gapOutcome } = require('./esgaps');
