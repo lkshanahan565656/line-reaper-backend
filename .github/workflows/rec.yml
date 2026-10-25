@@ -1,0 +1,19 @@
+name: diag-tailrec
+on: { push: { branches: [diag-tailrec] } }
+permissions: { contents: write }
+jobs:
+  rec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: main, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node rec.js
+      - run: |
+          mkdir o && cp tailrec.json.gz o/ && cd o
+          git init -q && git checkout -q -b diag-tailrec-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out
+          git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          git push -qf origin HEAD:diag-tailrec-out
