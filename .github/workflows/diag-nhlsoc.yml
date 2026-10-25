@@ -1,0 +1,24 @@
+name: diag-nhlsoc
+on:
+  push:
+    branches: [diag-nhlsoc]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: timeout 1200 node diag/nhlsoc.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          gzip -9 out/*.json 2>/dev/null || true
+          git checkout --orphan diag-nhlsoc-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-nhlsoc-out
