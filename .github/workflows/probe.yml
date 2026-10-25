@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node prof.js
-        env: { WAIT_VERSION: "3.171.0", SETTLE_S: "60" }
+        env: { WAIT_VERSION: "3.171.2", SETTLE_S: "160" }
       - run: |
           mkdir o && cp probe.json o/probe-$(git rev-parse --short HEAD).json && cd o
           git init -q && git checkout -q -b diag-stall3-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out
