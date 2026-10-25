@@ -59,7 +59,7 @@ function calib(rows, key = 'p') {
   return Object.entries(b).map(([k, v]) => ({ bucket: `${k * 10}-${k * 10 + 10}%`, n: v.length, predicted: r4(mean(v, q => q[0])), actual: r4(mean(v, q => q[1])) }));
 }
 
-const all = walk({});
+const all = walk(JSON.parse(process.env.MU_OPTS || "{}"));
 const train = all.filter(x => x.t >= TRAIN[0] && x.t < TRAIN[1]), test = all.filter(x => x.t >= TRAIN[1]);
 const indep = walk({ kappa: Infinity }).filter(x => x.t >= TRAIN[1]);
 const noH2h = walk({ h2hWeight: 0 }).filter(x => x.t >= TRAIN[1]);
