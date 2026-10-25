@@ -17,10 +17,6 @@
     {
       "text": "PROVEN needs \\d+ graded",
       "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
-    },
-    {
-      "text": "^Proven: 50 graded games of one kind",
-      "why": "RESULTS states the public record's rule (claims.publicRecord rule.text); a definition, not a claim"
     }
   ],
   "misses": [
