@@ -1556,6 +1556,12 @@ body.no-help .clv-info { display:none; }
     <div class="sport-row" id="nflmModes"></div>
     <div id="nflmContent"></div>
   </div>
+  <div id="ortView" style="display:none">
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">RESEARCH, NOT A BET</span> F1 and golf outrights (winner, podium, top 5/10/20, head-to-heads) on Kalshi and Polymarket US, each runner priced against Pinnacle's no-vig fair for the same market with fees in and the size the book holds. Pinnacle takes small limits on these markets, so its fair is weaker than on game lines. Season futures are shown for reference and never flagged. Nothing here places an order.</div>
+    <div class="sport-row" id="ortModes"></div>
+    <div class="shp-bar" id="ortBar" style="margin-top:8px"></div>
+    <div id="ortContent"></div>
+  </div>
   <div id="kmkView" style="display:none">
     <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">RESEARCH, NOT A BET</span> A resting Kalshi bid on each NFL, CFB, NBA and NHL game side, 2%+ under Pinnacle's no-vig fair after Kalshi's maker fee. Taking Kalshi's ask has lost to Pinnacle's close; this tests whether waiting for a seller does better. The record counts a bid only when a Kalshi trade printed through it. Nothing here places an order.</div>
     <div class="sport-row" id="kmkModes"></div>
@@ -9600,6 +9606,82 @@ function kmkRender() {
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
+// ─── EXCHANGE OUTRIGHTS (ODDS SCREEN > OUTRIGHTS) ──────────────────────────────
+// /api/outrights: each Kalshi and Polymarket US F1/golf runner against
+// Pinnacle's no-vig fair, and the record of the flagged prices (kind exchange-outrights).
+var ortUi = { view: 'board', sport: '', minSize: '', minEv: '', data: null, error: null, timer: null };
+try { Object.assign(ortUi, JSON.parse(localStorage.getItem('lr_outrights') || '{}'), { data: null, error: null, timer: null }); } catch {}
+function ortSet(k, v) { ortUi[k] = v; try { localStorage.setItem('lr_outrights', JSON.stringify({ view: ortUi.view, sport: ortUi.sport, minSize: ortUi.minSize, minEv: ortUi.minEv })); } catch {} if (k === 'view') ortRender(); else ortLoad(); }
+async function ortLoad() {
+  clearTimeout(ortUi.timer);
+  const el = document.getElementById('ortContent');
+  if (!el) return;
+  ortModes();
+  if (!ortUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  const q = new URLSearchParams();
+  if (ortUi.sport) q.set('sport', ortUi.sport);
+  if (ortUi.minSize) q.set('minSize', ortUi.minSize);
+  if (ortUi.minEv !== '') q.set('minEv', ortUi.minEv);
+  try { ortUi.data = await tailGet(`/api/outrights?${q}`); ortUi.error = null; }
+  catch (e) { ortUi.error = e.old ? 'The outrights view needs a newer backend.' : e.message; }
+  ortRender();
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'outrights') ortUi.timer = setTimeout(() => { if (!document.hidden) ortLoad(); else ortUi.timer = setTimeout(ortLoad, 60e3); }, 60e3);
+}
+function ortModes() {
+  const bar = document.getElementById('ortModes');
+  if (!bar) return;
+  const v = (k, l) => `<button class="sport-chip${ortUi.view === k ? ' active' : ''}" onclick="ortSet('view','${k}')">${l}</button>`;
+  const sp = (k, l) => `<button class="sport-chip${ortUi.sport === k ? ' active' : ''}" onclick="ortSet('sport','${k}')">${l}</button>`;
+  const sel = (k, opts, label) => `<label>${label}<select onchange="ortSet('${k}', this.value)">${opts.map(([val, l]) => `<option value="${val}"${String(ortUi[k]) === val ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  bar.innerHTML = v('board', 'PRICES NOW') + v('record', 'RECORD') + (ortUi.view === 'board' ? '<span style="width:10px"></span>' + sp('', 'ALL') + sp('f1', 'F1') + sp('golf', 'GOLF') + sp('season', 'SEASON FUTURES') : '');
+  const fb = document.getElementById('ortBar');
+  if (fb) fb.innerHTML = ortUi.view === 'board' ? sel('minSize', [['', 'Any size'], ['50', '$50'], ['200', '$200'], ['1000', '$1,000']], 'MIN BET SIZE') + sel('minEv', [['', 'Any'], ['0', '0%+'], ['2', '+2%'], ['3', '+3%'], ['5', '+5%']], 'MIN EV') : '';
+}
+const ortType = t => ({ winner: 'Winner', pole: 'Pole', h2h: 'Head-to-head', season: 'Season', top3: 'Podium / top 3' }[t] || (/^top\d+$/.test(t) ? `Top ${t.slice(3)}` : t));
+const ortVenue = v => (v === 'kalshi' ? 'Kalshi' : v === 'polymarketus' ? 'Polymarket US' : v);
+const ortPct = x => (x == null ? '—' : `${(x * 100).toFixed(1)}%`);
+function ortCard(title, r) {
+  if (!r) return '';
+  const pct = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
+  return `<div class="nflm-card"><div><b>${escEs(title)}</b> <span class="nflm-tag">${escEs(String(r.verdict || 'lead').toUpperCase())}</span></div>
+    <div>${r.flagged} flagged · ${r.open} still open · ${r.closeMissing} without a Pinnacle close</div>
+    <div>${r.graded} of ${r.of} graded vs Pinnacle's close · CLV ${pct(r.clv)} (t ${r.clvT ?? '—'})${r.beatClose == null ? '' : ` · ${Math.round(r.beatClose * 100)}% beat it`} · EV at the flag ${pct(r.evAtFlag)}</div>
+    <div>Results ${r.won}-${r.lost}${r.results ? ` · ${r.profit >= 0 ? '+' : ''}${r.profit.toFixed(2)}u vs ${r.expected >= 0 ? '+' : ''}${r.expected.toFixed(2)}u the close expects` : ''}</div></div>`;
+}
+function ortRender() {
+  ortModes();
+  const el = document.getElementById('ortContent');
+  if (!el) return;
+  if (ortUi.error) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">${escEs(ortUi.error)}</div></div>`; return; }
+  const d = ortUi.data;
+  if (!d) return;
+  if (ortUi.view === 'record') {
+    const rows = (d.recent || []).map(r => `<tr><td>${escEs(r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(ortVenue(r.venue))}</div></td>
+      <td>${ortPct(r.cost)}</td><td>${ortPct(r.fairAtFlag)}</td><td>${r.closeFair == null ? '—' : ortPct(r.closeFair)}</td><td>${escEs(r.outcome || (r.closeMissing ? 'no close' : r.status))}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
+      <div class="nflm-cards">${(d.bySport || []).map(x => ortCard(`${x.key === 'f1' ? 'F1' : 'Golf'} (kind ${x.kind})`, x)).join('')}</div>
+      ${(d.byVenue || []).length ? `<div class="nflm-cards">${d.byVenue.map(x => ortCard(x.key.replace('polymarketus', 'Polymarket US').replace('kalshi', 'Kalshi').replace(/^f1/, 'F1').replace(/^golf/, 'Golf'), x)).join('')}</div>` : ''}
+      ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Cost at $50</th><th>Fair at flag</th><th>Pin close</th><th>Result</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No flag has closed yet. A price is flagged when $50 fills at +3% over Pinnacle\'s fair (+2% on head-to-heads), 2 min to 7 days before Pinnacle\'s cutoff.</div></div>'}`;
+    return;
+  }
+  if (!d.kalshi && !d.polymarketus) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">EXCHANGES OFF</div><div class="empty-sub">Exchange prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
+  const rows = d.board || [];
+  if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO MARKETS</div><div class="empty-sub">No F1 or golf market is priced by both Pinnacle and an exchange right now${d.boardAt ? '' : ' (the first pass runs two minutes after a restart)'}${ortUi.minSize || ortUi.minEv !== '' ? ', or none passes the filters' : ''}. Pinnacle posts each race and tournament a few days out.</div></div>`; return; }
+  const flagEdge = r => (r.family === 'h2h' ? d.edge.h2h : d.edge.outright);
+  const body = rows.map(r => {
+    const t = r.tiers || {};
+    const fill = n => (t[n] ? `${t[n].full ? '' : '<span class="shp-dim">part </span>'}${nflPts(t[n].ev)}%` : '<span class="shp-dim">—</span>');
+    const ev = r.at ? r.at.ev : r.ev;
+    const hot = !r.season && r.fair >= d.minFair && t[d.flagTier]?.full && t[d.flagTier].ev >= flagEdge(r);
+    return `<tr class="${hot ? 'nflm-gap' : ''}"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
+      <td>${escEs(ortVenue(r.venue))}</td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div></td>
+      <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
+      <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
+  }).join('');
+  const flagged = rows.filter(r => !r.season && r.fair >= d.minFair && r.tiers?.[d.flagTier]?.full && r.tiers[d.flagTier].ev >= flagEdge(r)).length;
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} runner sides priced${flagged ? ` · ${flagged} clear the record's bar ($50 at +${Math.round(d.edge.outright * 100)}% over fair, +${Math.round(d.edge.h2h * 100)}% head-to-heads)` : ''}. Fair is the lower of the power and Shin no-vig prices for a YES. Pinnacle read ${escEs(d.pinAt ? new Date(d.pinAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')}.</div>
+    <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Venue</th><th>Pinnacle fair</th><th>Ask</th><th>EV top${ortUi.minSize ? ` / $${ortUi.minSize}` : ''}</th><th>$50</th><th>$200</th><th>$1K</th><th>Pinnacle</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
@@ -9617,17 +9699,19 @@ function oddsModeShow() {
   const lines = !mode || mode === 'lines';
   const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
   const bar = document.getElementById('oddsModes');
-  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('nflmodel', 'NFL MODEL');
-  const nfl = mode === 'nflmodel', mk = mode === 'maker';
-  const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView'), kv = document.getElementById('kmkView');
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('outrights', 'OUTRIGHTS') + chip('nflmodel', 'NFL MODEL');
+  const nfl = mode === 'nflmodel', mk = mode === 'maker', ort = mode === 'outrights';
+  const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView'), kv = document.getElementById('kmkView'), rv = document.getElementById('ortView');
   if (ov) ov.style.display = lines ? '' : 'none';
-  if (sv) sv.style.display = lines || nfl || mk ? 'none' : '';
+  if (sv) sv.style.display = lines || nfl || mk || ort ? 'none' : '';
   if (nv) nv.style.display = nfl ? '' : 'none';
   if (kv) kv.style.display = mk ? '' : 'none';
-  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); };
+  if (rv) rv.style.display = ort ? '' : 'none';
+  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); if (window.ortUi) clearTimeout(ortUi.timer); };
   if (lines) { stop(); loadOdds(); }
   else if (nfl) { clearTimeout(osUi.timer); stop(); nflmLoad(); }
   else if (mk) { clearTimeout(osUi.timer); stop(); kmkLoad(); }
+  else if (ort) { clearTimeout(osUi.timer); stop(); ortLoad(); }
   else { clearTimeout(osUi.timer); stop(); shpLoad(); }
 }
 let shpTyping = null;
@@ -9666,7 +9750,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
   shpRender();
-  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {

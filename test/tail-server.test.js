@@ -539,7 +539,7 @@ test('track record: logged at the follower price, graded when the market resolve
 
 test('status reports tail, whales, exchange arbs, the region, the licence gates and the upstream queue', async () => {
   const { body } = await get('/api/status');
-  assert.equal(body.version, '3.182.1');
+  assert.equal(body.version, '3.183.0');
   assert.equal(body.tail.scored, 1);
   assert.equal(body.tail.graded.A, 1);
   assert.ok(body.tail.jobs.signals.lastRun);
@@ -566,8 +566,8 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.182.1');
-  assert.equal((await get('/')).body.version, '3.182.1');
+  assert.equal(require('../package.json').version, '3.183.0');
+  assert.equal((await get('/')).body.version, '3.183.0');
 });
 
 test('US mode: Polymarket-only arbs are hidden (its rows still feed routing); a new Kalshi arb is news', async () => {
@@ -1471,4 +1471,17 @@ test('Kalshi maker: research label, empty record, the backtest seed, no orders a
   assert.match(body.note, /Nothing here places an order/);
   const st = await get('/api/status');
   assert.equal(st.body.kalshiMaker.on, true);
+});
+
+test('Exchange outrights: research label, empty record per sport, no orders anywhere', async () => {
+  const { status, body } = await get('/api/outrights');
+  assert.equal(status, 200);
+  assert.equal(body.label, 'research');
+  assert.equal(body.kind, 'exchange-outrights');
+  assert.deepEqual(body.bySport.map(x => x.kind), ['exchange-outrights:f1', 'exchange-outrights:golf']);
+  assert.ok(body.bySport.every(x => x.of === 50 && x.verdict === 'lead' && x.graded === 0));
+  assert.ok(Array.isArray(body.board));
+  assert.match(body.note, /proven only at 50 graded/);
+  const st = await get('/api/status');
+  assert.equal(st.body.exchangeOutrights.on, true);
 });

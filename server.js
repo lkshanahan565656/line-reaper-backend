@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.182.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.183.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6589,6 +6589,66 @@ app.get('/api/kalshi-maker', async (req, res) => {
         byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, kinds: x.kinds, kindsAtBid: x.kindsAtBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } : null });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ─── EXCHANGE OUTRIGHTS (outrights.js) ───────────────────────────────────────
+// F1 and golf winners, top N, podium and head-to-heads on Kalshi and
+// Polymarket US against Pinnacle's no-vig fair (power and Shin, the side's
+// lower), fees in, at a real fill size (ODDS SCREEN > OUTRIGHTS). The record
+// (kind exchange-outrights:f1 / :golf, judged at 50 graded) flags the first
+// $50 fill at +3% over fair (+2% head-to-heads) and grades it on Pinnacle's
+// close and the settlement. Season futures are shown, never flagged.
+// Research: no alerts, no orders. EXCHANGE_OUTRIGHTS=off stops it.
+const outrights = require('./outrights');
+const outrightsOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_OUTRIGHTS || '').trim());
+const outrightsStore = resultsBackup.wrap('exchangeOutrights', createEvStoreFromEnv(process.env, { table: 'exchange_outrights', fileVar: 'EXCHANGE_OUTRIGHTS_FILE', file: 'exchange-outrights.json' }));
+const outrightsTracker = outrights.createOutrightsTracker({ store: outrightsStore, http: upstream });
+outrightsTracker.ready().catch(e => console.error('Exchange outrights: store failed to initialise:', e.message));
+const outrightsFeed = outrights.createOutrightsFeed({ http: upstream, key: process.env.PINNACLE_GUEST_KEY || '',
+  kalshiAsks: execcheck.kalshiAsks, pmusParseBook: pmus.parseBook, pmusAsks: execcheck.pmusAsks });
+let outrightsRunning = false;
+async function scanOutrights() {
+  if (!outrightsOn() || outrightsRunning || !licences.isOn('pinnacle')) return;
+  outrightsRunning = true;
+  try {
+    const input = await outrightsFeed.read({ kalshi: licences.isOn('kalshi'), polymarketus: pmus.enabledFromEnv() });
+    await outrightsTracker.scan(input);
+  } catch (e) { outrightsTracker.state.errors = [e.message, ...outrightsTracker.state.errors].slice(0, 5); }
+  finally { outrightsRunning = false; }
+}
+async function settleOutrights() {
+  if (!outrightsOn()) return;
+  try { await outrightsTracker.settle(); } catch (e) { outrightsTracker.state.errors = [e.message, ...outrightsTracker.state.errors].slice(0, 5); }
+}
+const OUTRIGHTS_NOTE = 'Research, not a tip: each Kalshi and Polymarket US runner priced against Pinnacle\'s no-vig fair for the same market (the margin taken out by the power and Shin methods, the lower fair kept), fees in, at the size the book holds. Pinnacle takes small limits on these markets ($500 on an F1 race winner), so its fair is weaker here than on game lines. The record flags the first $50 fill at +3% over fair (+2% on head-to-heads) and grades it on Pinnacle\'s close and the settlement; it is proven only at 50 graded a sport with CLV t 2+.';
+const outrightsSlim = b => { const { fairs, ...x } = b; return x; };
+app.get('/api/outrights', async (req, res) => {
+  if (!outrightsOn()) return res.status(503).json({ error: 'The exchange outrights record is off on this server (EXCHANGE_OUTRIGHTS=off).' });
+  try {
+    const lic = licenceOf(req);
+    const all = await outrightsTracker.list();
+    const sport = typeof req.query.sport === 'string' && /^(f1|golf|nfl|nba|nhl|season)$/.test(req.query.sport) ? req.query.sport : null;
+    const minSize = [50, 200, 1000].includes(parseInt(req.query.minSize)) ? parseInt(req.query.minSize) : null;
+    const minEv = Number.isFinite(parseFloat(req.query.minEv)) ? parseFloat(req.query.minEv) / 100 : null;
+    const t = Date.now();
+    const shown = x => (x.venue === 'kalshi' ? lic.kalshi : lic.polymarket) && Date.parse(x.cutoff) > t;
+    const board = (outrightsTracker.state.board || []).filter(x => shown(x) && (!sport || (sport === 'season' ? x.season : x.sport === sport && !x.season)))
+      .map(x => {
+        const tier = minSize ? x.tiers?.[minSize] : null;
+        return { ...x, at: minSize ? (tier && tier.full ? { size: minSize, cost: tier.cost, ev: tier.ev } : null) : null };
+      })
+      .filter(x => !minSize || x.at)
+      .filter(x => minEv == null || (x.at ? x.at.ev : x.ev) >= minEv)
+      .sort((a, b) => (b.at ? b.at.ev : b.ev) - (a.at ? a.at.ev : a.ev)).slice(0, Math.min(parseInt(req.query.limit) || 300, 600));
+    const done = all.filter(b => b.status !== 'open');
+    const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt)).slice(0, Math.min(parseInt(req.query.recent) || 100, 500)).map(outrightsSlim);
+    const fs0 = outrightsFeed.state;
+    res.json({ label: 'research', kind: outrights.KIND, note: OUTRIGHTS_NOTE, edge: outrights.EDGE, flagTier: outrights.FLAG_TIER, minFair: outrights.MIN_FAIR, kalshi: !!lic.kalshi, polymarketus: !!lic.polymarket,
+      record: outrights.summarize(all), bySport: outrights.SPORTS.map(sp => ({ key: sp, kind: `${outrights.KIND}:${sp}`, ...outrights.summarize(all.filter(b => b.sport === sp)) })),
+      byVenue: outrights.summarizeBy(all, b => `${b.sport} ${b.venue}`), byType: outrights.summarizeBy(all, b => `${b.sport} ${b.type}`),
+      board, boardAt: outrightsTracker.state.boardAt, pinAt: outrightsTracker.state.pinAt,
+      state: (({ board: _b, ...s }) => s)(outrightsTracker.state), feed: { pinAt: fs0.pinAt ? new Date(fs0.pinAt).toISOString() : null, kalshiAt: fs0.kalshiAt ? new Date(fs0.kalshiAt).toISOString() : null, pmusAt: fs0.pmusAt ? new Date(fs0.pmusAt).toISOString() : null, reads: fs0.reads, errors: fs0.errors, books: fs0.books.size },
+      recent });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -8198,10 +8258,10 @@ app.get('/api/results', async (req, res) => {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
     const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
-      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows] = await Promise.all([
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows, outrightRows] = await Promise.all([
         tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list(),
-        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => [])]);
-      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => []), outrightsTracker.list().catch(() => [])]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows, exchangeOutrights: outrightRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8303,7 +8363,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.182.1',
+  version: '3.183.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8311,6 +8371,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   pick6: pick6.status(),
   exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
   kalshiMaker: { on: kmakerOn(), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
+  exchangeOutrights: { on: outrightsOn(), ...(({ board: _b, ...st }) => st)(outrightsTracker.state), feed: { pinAt: outrightsFeed.state.pinAt, kalshiAt: outrightsFeed.state.kalshiAt, pmusAt: outrightsFeed.state.pmusAt, reads: outrightsFeed.state.reads, errors: outrightsFeed.state.errors } },
   shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
@@ -8471,6 +8532,8 @@ schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => conso
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('7,17,27,37,47,57 * * * *', () => settleKalshiMaker());
+schedule('20 */2 * * * *', () => scanOutrights());
+schedule('4,14,24,34,44,54 * * * *', () => settleOutrights());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('7,17,27,37,47,57 * * * *', () => shopTracker.grade().catch(e => console.warn('Shop grader:', e.message)));
