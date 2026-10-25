@@ -311,13 +311,41 @@
       for (const l of legs) { const p = l.g.closeFair; const nx = Array(dist.length + 1).fill(0); dist.forEach((q, k) => { nx[k] += q * (1 - p); nx[k + 1] += q * p; }); dist = nx; }
       closeEv = r4(dist.reduce((a, q, k) => a + q * (table[k] || 0), 0) - 1);
     }
-    const outs = legs.map(l => l.g?.outcome || null);
-    let result = slip.result || null;
-    if (!result) {
-      if (outs.includes('loss') && !slip.flex) result = 'loss';
-      else if (outs.length && outs.every(o => o === 'win')) result = 'win';
+    const st = settleSlip(slip, legs, table);
+    // legs from one game move together: the close EV above treats them as
+    // independent, and the apps pay less for same-game picks than their table
+    const games = new Map();
+    for (const l of legs) { const m = l.g?.matched; if (m?.start) { const k = `${m.matchTitle || m.sport}|${m.start}`; games.set(k, (games.get(k) || 0) + 1); } }
+    const sameGame = [...games.values()].filter(n => n > 1).reduce((a, n) => a + n, 0);
+    return { ...slip, legs, table, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, sameGame, ...st };
+  }
+
+  // How a slip settled, from its legs: a voided or tied pick drops out and the
+  // app pays the smaller entry's table (fewer than 2 picks left: refunded); a
+  // power slip loses on its first miss; a flex slip pays its table at the hits.
+  // The user's own result wins over all of it. → { result, hits, live,
+  // multiple (returned per $1), returned ($, when the stake is known) }
+  // result: 'open' | 'win' (every live pick hit) | 'paid' (a flex partial) | 'loss' | 'push' | 'void'
+  const legFinal = g => !!g && (['win', 'loss', 'push'].includes(g.outcome) || g.status === 'void');
+  function settleSlip(slip, legs, table) {
+    const n = legs.length, stake = slip.stake > 0 ? slip.stake : null;
+    const back = m => (stake != null && m != null ? r2(stake * m) : null);
+    const user = slip.result;
+    if (user === 'win' || user === 'loss' || user === 'push' || user === 'void') {
+      const m = user === 'win' ? (slip.payout > 0 && stake ? slip.payout / stake : table?.[n] ?? null) : user === 'loss' ? 0 : 1;
+      return { result: user, hits: null, live: n, multiple: m == null ? null : r4(m), returned: back(m), by: 'user' };
     }
-    return { ...slip, legs, table, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, result: result || 'open' };
+    const gs = legs.map(l => l.g);
+    if (!slip.flex && gs.some(g => g?.outcome === 'loss')) return { result: 'loss', hits: gs.filter(g => g?.outcome === 'win').length, live: n, multiple: 0, returned: back(0), by: 'legs' };
+    if (!n || !gs.every(legFinal)) return { result: 'open', hits: null, live: null, multiple: null, returned: null, by: null };
+    const live = gs.filter(g => g.outcome === 'win' || g.outcome === 'loss').length;
+    const hits = gs.filter(g => g.outcome === 'win').length;
+    if (live < 2) return { result: 'void', hits, live, multiple: 1, returned: back(1), by: 'legs' };
+    // a dropped pick: the app's own table for the smaller entry (the user's payout was for all n)
+    const t = live === n ? table : payTable({ app: slip.app, flex: slip.flex, legs: Array(live).fill(0) });
+    if (!t) return { result: hits === live ? 'win' : 'open', hits, live, multiple: null, returned: null, by: 'legs' };
+    const m = t[hits] || 0;
+    return { result: hits === live && m > 0 ? 'win' : m > 0 ? 'paid' : 'loss', hits, live, multiple: r4(m), returned: back(m), by: 'legs' };
   }
   // totals over every leg by app, league or market
   function legTotals(views, by = 'app') {
@@ -342,14 +370,52 @@
       a.beat += (x.beatShare || 0) * x.priced; a.ev += (x.closeEv || 0) * x.priced; a.wins += (x.hitRate || 0) * x.graded; return a;
     }, { legs: 0, priced: 0, noHistory: 0, graded: 0, beat: 0, ev: 0, wins: 0 });
     const closed = views.filter(s => s.closeEv != null);
-    const settled = views.filter(s => (s.result === 'win' || s.result === 'loss') && s.stake > 0);
+    const settled = views.filter(s => ['win', 'loss', 'paid'].includes(s.result) && s.stake > 0 && s.returned != null);
     const staked = settled.reduce((a, s) => a + s.stake, 0);
-    const profit = settled.reduce((a, s) => a + (s.result === 'win' ? (s.payout || s.stake * (s.table?.[s.legs.length] || 0)) - s.stake : -s.stake), 0);
+    const profit = settled.reduce((a, s) => a + s.returned - s.stake, 0);
     return { slips: views.length, legs: t.legs, priced: t.priced, noHistory: t.noHistory, beatShare: t.priced ? r4(t.beat / t.priced) : null, closeEv: t.priced ? r2(t.ev / t.priced) : null,
       graded: t.graded, hitRate: t.graded ? r4(t.wins / t.graded) : null, slipsClosed: closed.length, slipsPlusEv: closed.filter(s => s.closeEv > 0).length,
       slipCloseEv: closed.length ? r4(closed.reduce((a, s) => a + s.closeEv, 0) / closed.length) : null, settled: settled.length, staked: r2(staked), profit: r2(profit), roi: staked ? r4(profit / staked) : null };
   }
 
+  // Slip by slip, grouped by app, sport or month: record, money, units, and
+  // the close. unitUsd turns profit into units (the user's unit, else none).
+  const slipSport = v => { const ss = [...new Set(v.legs.map(l => l.g?.matched?.sport || l.sport).filter(Boolean))]; return ss.length === 1 ? ss[0] : ss.length ? 'Mixed' : 'Unknown'; };
+  function slipTotals(views, by = 'app', { unitUsd = null } = {}) {
+    const keyOf = { app: v => appLabel(v.app), sport: slipSport, month: v => String(v.placedAt || '').slice(0, 7) || 'Unknown' }[by] || (v => appLabel(v.app));
+    const m = new Map();
+    for (const v of views) {
+      const k = keyOf(v);
+      const a = m.get(k) || { key: k, slips: 0, open: 0, won: 0, lost: 0, push: 0, staked: 0, profit: 0, closed: 0, evSum: 0, plusEv: 0, legsPriced: 0, legsBeat: 0, legEv: 0 };
+      a.slips++;
+      if (v.result === 'open') a.open++;
+      else if (v.result === 'win' || (v.result === 'paid' && v.multiple > 1)) a.won++;
+      else if (v.result === 'loss' || (v.result === 'paid' && v.multiple < 1)) a.lost++;
+      else a.push++;
+      if (['win', 'loss', 'paid'].includes(v.result) && v.stake > 0 && v.returned != null) { a.staked += v.stake; a.profit += v.returned - v.stake; }
+      if (v.closeEv != null) { a.closed++; a.evSum += v.closeEv; if (v.closeEv > 0) a.plusEv++; }
+      for (const l of v.legs) if (hasClose(l.g) && l.g.status !== 'open') { a.legsPriced++; a.legEv += l.g.closeEv; if (l.g.closeEv > 0) a.legsBeat++; }
+      m.set(k, a);
+    }
+    return [...m.values()].map(a => ({
+      key: a.key, slips: a.slips, open: a.open, record: `${a.won}-${a.lost}${a.push ? `-${a.push}` : ''}`, won: a.won, lost: a.lost, push: a.push,
+      staked: r2(a.staked), profit: r2(a.profit), units: unitUsd > 0 ? r2(a.profit / unitUsd) : null, roi: a.staked ? r4(a.profit / a.staked) : null,
+      slipsClosed: a.closed, slipCloseEv: a.closed ? r4(a.evSum / a.closed) : null, slipsPlusEv: a.plusEv,
+      legsPriced: a.legsPriced, legBeatShare: a.legsPriced ? r4(a.legsBeat / a.legsPriced) : null, legCloseEv: a.legsPriced ? r2(a.legEv / a.legsPriced) : null,
+    })).sort((a, b) => (by === 'month' ? b.key.localeCompare(a.key) : b.slips - a.slips));
+  }
+
+  // A slip built in the app (a PROPS or esports board leg tray): the same
+  // shape a pasted slip has, so it grades the same way
+  function makeSlip({ app, legs, stake = null, payout = null, mult = null, flex = false, placedAt = null, source = 'board', now = Date.now() } = {}) {
+    if (!APPS[app] || !Array.isArray(legs) || !legs.length) return null;
+    const clean = legs.map(l => ({ player: String(l.player || '').trim(), side: l.side === 'Under' ? 'Under' : 'Over', line: Number(l.line), market: String(l.market || '').trim(),
+      sport: l.sport ? (SPORT_FIX[String(l.sport).toUpperCase()] || String(l.sport).toUpperCase()) : null, ...(l.opp ? { opp: String(l.opp) } : {}) }))
+      .filter(l => l.player && l.market && ok(l.line));
+    if (clean.length !== legs.length) return null;
+    return { id: newId(now), app, stake: num(stake), payout: num(payout), mult: num(mult), flex: !!flex, placedAt: new Date(placedAt ?? now).toISOString(), legs: clean, source };
+  }
+
   return { APPS, appOf, appLabel, LEG_BE, legDecimal, POWER, FLEX, payTable, parseLeg, parseWhen, parseHeader, parseSlips, parseCsv, columns, parsePikkitCsv, slipFromPikkit,
-    pikkitBreakdown, legKey, gradeRequest, slipView, legTotals, summary, newId };
+    pikkitBreakdown, legKey, gradeRequest, slipView, settleSlip, legTotals, slipTotals, makeSlip, summary, newId };
 }));

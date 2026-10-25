@@ -825,13 +825,17 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .bookbar-tile.sel .bookbar-name { color:#fff; }
 
 /* ── ESPORTS: SLIP BUILDER + BEST BOARD ── */
-#esSlipBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+#esSlipBar, #pkTray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
   background: rgba(8,11,16,.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border2); padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   box-shadow: 0 -12px 40px rgba(0,0,0,.5); }
 body.lr-slip-open #page-esports { padding-bottom: 300px; }
 body.lr-slip-open.lr-slip-min #page-esports { padding-bottom: 90px; }
-#esSlipBar .sb-wrap { max-width: 1240px; margin: 0 auto; }
+#esSlipBar .sb-wrap, #pkTray .sb-wrap { max-width: 1240px; margin: 0 auto; }
+body.lr-tray-open #page-props { padding-bottom: 230px; }
+#pkTray .slip-leg .sd { cursor:pointer; }
+#pkTray .sb-in input { width:96px; }
+#pkTray .pk-apps { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 .sb-head { display:flex; align-items:center; gap:10px; }
 .sb-title { font-size:12px; font-weight:800; letter-spacing:.16em; color:#f8fafc; white-space:nowrap; }
 .sb-title span { color:#64748b; }
@@ -1203,6 +1207,22 @@ body.no-help .clv-info { display:none; }
 .mb-res { font-weight:600; font-size:11px; }
 .mb-res.win, .mb-res.half_win { color:#34d399; } .mb-res.loss, .mb-res.half_loss { color:#f87171; }
 .mb-res.open { color:var(--gold); font-weight:500; } .mb-res.push, .mb-res.void, .mb-res.cashout { color:var(--text2); }
+.mb-res.paid { color:#a7f3d0; }
+/* bet tracker: a game line's follow to Pinnacle's close */
+.mb-line { display:block; font:500 10.5px 'JetBrains Mono',monospace; color:#7dd3fc; margin-top:2px; }
+.mb-line.dim { color:var(--muted2); }
+.mb-now { display:block; font-size:9px; color:var(--muted2); font-weight:500; }
+.mb-venues { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
+.mb-venues button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:8px; padding:5px 9px; font:600 11px 'JetBrains Mono',monospace; }
+.mb-venues button.on { border-color:#34d399; color:#34d399; background:rgba(52,211,153,.08); }
+.os-log { cursor:pointer; margin-right:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; border-radius:5px; font:700 9px 'JetBrains Mono',monospace; letter-spacing:.06em; padding:2px 5px; vertical-align:1px; }
+.os-log:hover { color:#34d399; border-color:#34d399; }
+.ln-add { cursor:pointer; width:22px; height:22px; border-radius:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; font:800 13px/1 'Inter',sans-serif; margin-right:6px; vertical-align:middle; }
+.ln-add:hover, .ln-add.on { color:#06110d; background:#34d399; border-color:#34d399; }
+.ms-res { display:inline-flex; gap:4px; margin-left:8px; vertical-align:1px; }
+.ms-res button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:5px; font:700 9.5px 'JetBrains Mono',monospace; padding:2px 6px; }
+.ms-res button.on { color:#06110d; background:#94a3b8; }
+.ms-sg { color:#fbbf24; font-size:10.5px; margin-top:3px; }
 .mb-auto { display:inline-block; margin-left:6px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:#7dd3fc; border:1px solid rgba(125,211,252,.35); border-radius:4px; padding:1px 4px; vertical-align:1px; }
 .mb-act { display:flex; gap:6px; justify-content:flex-end; align-items:center; }
 .mb-quick { display:inline-flex; border:1px solid var(--border2); border-radius:6px; overflow:hidden; }
@@ -1621,6 +1641,8 @@ body.no-help .clv-info { display:none; }
     <div class="mb-hint" id="msHint"></div>
   </div>
   <div class="tl-out mb-stats" id="msStats"></div>
+  <div class="mb-bar" id="msSlipBar"></div>
+  <div id="msSlipTot"></div>
   <div class="mb-bar" id="msBar"></div>
   <div id="msTotals"></div>
   <div class="section-head" style="margin-top:18px">Slips</div>
@@ -1630,6 +1652,7 @@ body.no-help .clv-info { display:none; }
 
 <!-- PROPS PAGE -->
 <div class="page" id="page-props">
+  <div id="pkTray" style="display:none"></div>
   <div class="clv-info" style="border-left:3px solid var(--green)">
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
@@ -1988,7 +2011,7 @@ function osGame(g, cols, pro) {
   const rows = g.markets.map(m => {
     const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
     const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
-    return mk + m.sides.map(s => `<tr><td class="side">${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
+    return mk + m.sides.map((s, si) => `<tr><td class="side"><button class="os-log" title="Log this bet in MY BETS: it follows Pinnacle's price at this number to the close and grades from the final" onclick="osLog('${escAttr(g.id)}','${m.key}',${si})">LOG</button>${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
@@ -2001,6 +2024,19 @@ function osGame(g, cols, pro) {
   return `<div class="os-game"><div class="os-gh"><div><div class="os-gt">${escAttr(g.away)} @ ${escAttr(g.home)}</div><div class="os-gm">${escAttr(g.leagueLabel)} · ${osWhen(g.start)}${pro && g.maxEv > 0 ? ` · best ${osPct(g.maxEv)}` : ''}</div></div>` +
     `<button class="os-btn${open ? ' on' : ''}" onclick="osToggle('${escAttr(g.id)}')">${open ? 'HIDE MOVES' : 'LINE MOVES'}</button></div>` +
     `<div class="os-scroll"><table class="os-tbl">${head}${rows}</table></div>${open ? `<div class="os-chart" id="osc-${escAttr(g.id)}"><div class="os-note">Loading the line history...</div></div>` : ''}</div>`;
+}
+// LOG: MY BETS opens prefilled at the best price you can bet (tap another venue
+// in the form to switch); the server follows the line to Pinnacle's close
+async function osLog(gid, mkey, si) {
+  const g = (osUi.data?.games || []).find(x => String(x.id) === String(gid));
+  const m = g?.markets.find(x => x.key === mkey), s = m?.sides[si];
+  if (!s) return;
+  if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
+  const pre = LRBets.fromLine(g, m, s);
+  const u = mybUnit();
+  if (u.set) pre.stake = u.unit;
+  pre.venues = s.venues.filter(v => !v.ref && !v.lineDiffers && v.decimal > 1).map(v => ({ name: v.name, decimal: v.decimal, american: v.american }));
+  mybForm(null, pre);
 }
 async function osToggle(id) {
   osUi.open[id] = !osUi.open[id];
@@ -2667,7 +2703,7 @@ function renderArb(games) {
 // props record follows our own plays. The parsing and math are slips.js on
 // the backend (tested there).
 const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
-const ms = { slips: [], grades: {}, pikkit: null, ready: false, loading: null, by: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
+const ms = { slips: [], grades: {}, pikkit: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
 const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
   market: 'no line history: that stat isn\'t on our board for this player', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
 function msReady() {
@@ -2729,6 +2765,12 @@ async function msPasteSave() {
   renderMySlips();
   msGrade(true);
 }
+function msMark(id, r) {
+  const sl = ms.slips.find(x => x.id === id);
+  if (!sl) return;
+  sl.result = sl.result === r ? null : r;
+  msSave(); renderMySlips();
+}
 function msDelete(id) {
   if (!confirm('Remove this slip?')) return;
   ms.slips = ms.slips.filter(s => s.id !== id);
@@ -2770,10 +2812,18 @@ function renderMySlips() {
     tile('Leg CLV', msPct(s.closeEv), msCls(s.closeEv), 'vs the app\'s break-even'),
     tile('Slips +EV at close', s.slipsClosed ? `${s.slipsPlusEv}/${s.slipsClosed}` : '—', '', s.slipCloseEv != null ? `avg ${msPct(s.slipCloseEv * 100)}` : 'every leg needs a close'),
     tile('Legs hit', msShare(s.hitRate), '', s.graded ? `${s.graded} graded` : 'no results yet'),
-    tile('Profit', s.settled ? mybUsd(s.profit, true) : '—', msCls(s.profit), s.settled ? `ROI ${mybPct(s.roi)} on ${s.settled}` : `${s.noHistory} legs with no line history`),
+    tile('Profit', s.settled ? mybUsd(s.profit, true) : '—', msCls(s.profit), s.settled ? `${mybUnit().set ? `${(s.profit / mybUnit().unit) > 0 ? '+' : ''}${(s.profit / mybUnit().unit).toFixed(2)}u · ` : ''}ROI ${mybPct(s.roi)} on ${s.settled}` : `${s.noHistory} legs with no line history`),
   ].join('');
+  // slip by slip: record, money, units and the close, by app, sport or month
+  const seg2 = (k, list) => `<div class="mb-seg">${list.map(([v, l]) => `<button class="${ms[k] === v ? 'on' : ''}" onclick="msSet('${k}','${v}')">${l}</button>`).join('')}</div>`;
+  document.getElementById('msSlipBar').innerHTML = views.length ? `<span class="section-head" style="margin:0 8px 0 0">Slips</span>` + seg2('sby', [['app', 'By app'], ['sport', 'By sport'], ['month', 'By month']]) : '';
+  const st = views.length ? L.slipTotals(views, ms.sby, { unitUsd: mybUnit().set ? mybUnit().unit : null }) : [];
+  const mLabel = k => (ms.sby === 'month' && /^\d{4}-\d{2}$/.test(k) ? new Date(`${k}-01T12:00:00`).toLocaleDateString([], { month: 'short', year: 'numeric' }) : k);
+  document.getElementById('msSlipTot').innerHTML = st.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', sport: 'Sport', month: 'Month' }[ms.sby]}</th><th class="r">Slips</th><th class="r">W-L</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">Units</th><th class="r">ROI</th><th class="r">Slip CLV</th><th class="r">Legs beat close</th><th class="r">Leg CLV</th></tr></thead><tbody>${
+    st.map(t => `<tr><td>${escAttr(mLabel(t.key))}</td><td class="r">${t.slips}${t.open ? `<small> (${t.open} open)</small>` : ''}</td><td class="r">${t.record}</td><td class="r">${t.staked ? mybUsd(t.staked) : '—'}</td><td class="r ${msCls(t.profit)}">${t.staked ? mybUsd(t.profit, true) : '—'}</td><td class="r ${msCls(t.units)}">${t.units != null && t.staked ? `${t.units > 0 ? '+' : ''}${t.units.toFixed(2)}u` : '—'}</td><td class="r ${msCls(t.roi)}">${mybPct(t.roi)}</td><td class="r ${msCls(t.slipCloseEv)}">${t.slipCloseEv != null ? `${msPct(t.slipCloseEv * 100)} <small>of ${t.slipsClosed}</small>` : '—'}</td><td class="r">${t.legsPriced ? `${msShare(t.legBeatShare)} <small>of ${t.legsPriced}</small>` : '—'}</td><td class="r ${msCls(t.legCloseEv)}">${msPct(t.legCloseEv)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tl-note">Profit counts slips with a stake, settled at the app's own table: a voided or tied pick drops to the smaller entry, a flex slip pays at its hits. Units use your unit${mybUnit().set ? ` ($${mybUnit().unit})` : ' (set it in the bankroll box to see them)'}. Slip CLV prices the slip on its legs' closing fairs, legs independent.</div>` : '';
   const seg = (k, list) => `<div class="mb-seg">${list.map(([v, l]) => `<button class="${ms[k] === v ? 'on' : ''}" onclick="msSet('${k}','${v}')">${l}</button>`).join('')}</div>`;
-  document.getElementById('msBar').innerHTML = views.length ? seg('by', [['app', 'By app'], ['league', 'By league'], ['market', 'By stat']]) : '';
+  document.getElementById('msBar').innerHTML = views.length ? `<span class="section-head" style="margin:0 8px 0 0">Legs</span>` + seg('by', [['app', 'By app'], ['league', 'By league'], ['market', 'By stat']]) : '';
   const tot = views.length ? L.legTotals(views, ms.by) : [];
   document.getElementById('msTotals').innerHTML = tot.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Stat' }[ms.by]}</th><th class="r">Legs</th><th class="r">With a close</th><th class="r">Beat it</th><th class="r">Leg CLV</th><th class="r">Fair moved</th><th class="r">Hit</th><th class="r">No history</th></tr></thead><tbody>${
     tot.map(t => `<tr><td>${escAttr(t.key)}</td><td class="r">${t.legs}</td><td class="r">${t.priced}</td><td class="r">${msShare(t.beatShare)}</td><td class="r ${msCls(t.closeEv)}">${msPct(t.closeEv)}</td><td class="r ${msCls(t.fairMove)}">${t.fairMove == null ? '—' : `${t.fairMove > 0 ? '+' : ''}${t.fairMove.toFixed(1)} pts`}</td><td class="r">${t.graded ? `${msShare(t.hitRate)} <small>of ${t.graded}</small>` : '—'}</td><td class="r">${t.noHistory || ''}</td></tr>`).join('')}</tbody></table></div>
@@ -2790,9 +2840,13 @@ function msSlipHtml(v) {
   const L = LRSlips;
   const when = new Date(v.placedAt);
   const pay = v.stake ? `${mybUsd(v.stake)}${v.payout ? ` to win ${mybUsd(v.payout)}` : ''}` : '';
-  const res = v.result && v.result !== 'open' ? `<span class="ms-tag ${v.result === 'win' ? 'pos' : v.result === 'loss' ? 'neg' : ''}">${v.result.toUpperCase()}</span>` : '';
+  const back = v.returned > 0 && v.stake ? ` ${mybUsd(v.returned)} back` : '';
+  const res = v.result && v.result !== 'open' ? `<span class="ms-tag ${v.result === 'win' || (v.result === 'paid' && v.multiple > 1) ? 'pos' : v.result === 'loss' || (v.result === 'paid' && v.multiple < 1) ? 'neg' : ''}">${v.result === 'paid' ? `PAID ${v.multiple}x` : v.result.toUpperCase()}${back}</span>` : '';
+  // the user's own result, for legs we can't grade (no line history) or a payout the app changed
+  const mark = `<span class="ms-res" title="Mark the result yourself (tap again to undo)">${[['win', 'W'], ['loss', 'L'], ['void', 'VOID']].map(([r, l]) => `<button class="${v.by === 'user' && v.result === r ? 'on' : ''}" onclick="msMark('${escAttr(v.id)}','${r}')">${l}</button>`).join('')}</span>`;
+  const sg = v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: they move together, so the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table. Type the payout the app showed in the slip if it differs.</div>` : '';
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
-  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : ''}</div></div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
+  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
   return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l)).join('')}</div>`;
 }
@@ -2883,7 +2937,9 @@ const mybSlipCount = () => (ms.ready && window.LRSlips ? ms.slips.filter(sl => L
 // ── auto-settle from the trackers ──
 async function mybAutoSettle(force) {
   if (!myb.ready || myb.settling || (!force && Date.now() - myb.lastSettle < 120e3)) return;
-  const want = myb.list.filter(b => b.track && (b.result === 'open' || !b.closeOdds)).slice(0, 200).map(b => ({ id: b.id, track: b.track }));
+  // a game line stops asking once its close and result are in, or it was logged too late to follow
+  const lineDone = b => b.track?.kind === 'line' && (['late', 'nopin'].includes(b.lineClose?.status) || (b.lineClose?.status === 'closed' && b.result !== 'open'));
+  const want = myb.list.filter(b => b.track && (b.result === 'open' || !b.closeOdds) && !lineDone(b)).slice(0, 200).map(b => ({ id: b.id, track: b.track }));
   if (!want.length) return;
   myb.settling = true; myb.lastSettle = Date.now();
   try {
@@ -2949,7 +3005,7 @@ function mybRenderList(rows) {
   const unit = mybUnit().unit;
   const head = `<div class="mb-row mb-th"><span>Placed</span><span>Bet</span><span class="r">Odds</span><span class="r">Stake</span><span class="r">Result</span><span class="r">Profit</span><span class="r">CLV</span><span></span></div>`;
   const body = rows.slice(0, ui.shown).map(b => {
-    const p = B.profit(b), c = B.clv(b), u = b.unitUsd || unit, open = b.result === 'open';
+    const p = B.profit(b), c = B.clv(b), cNow = c == null ? B.clvNow(b) : null, u = b.unitUsd || unit, open = b.result === 'open';
     const res = open ? `<span class="mb-res open">To win ${mybUsd(B.toWin(b))}</span>`
       : `<span class="mb-res ${b.result}">${escAttr(B.RESULT_LABEL[b.result])}</span>${b.settledBy === 'auto' ? '<span class="mb-auto" title="Graded by our tracker">AUTO</span>' : ''}`;
     const act = b.fromSlip ? '' : open ? `<div class="mb-quick">
@@ -2957,12 +3013,12 @@ function mybRenderList(rows) {
     return `<div class="mb-row ${open ? 'is-open' : ''}">
       <span class="mb-when">${escAttr(mybDate(b.placedAt))}</span>
       <span class="mb-bet"><b>${escAttr(b.pick)}</b>${b.event ? `<em>${escAttr(b.event)}</em>` : ''}
-        <small>${[b.book, b.sport, b.tool !== 'Manual' ? b.tool : ''].filter(Boolean).map(escAttr).join(' · ')}${b.notes ? ` · ${escAttr(b.notes)}` : ''}</small></span>
+        <small>${[b.book, b.sport, b.tool !== 'Manual' ? b.tool : ''].filter(Boolean).map(escAttr).join(' · ')}${b.notes ? ` · ${escAttr(b.notes)}` : ''}</small>${mybLineTxt(b)}</span>
       <span class="r mono" data-k="Odds">${escAttr(mybPrice(b))}</span>
       <span class="r mono" data-k="Stake">${mybUsd(b.stake)}<small>${u > 0 ? `${(b.stake / u).toFixed(2)}u` : ''}</small></span>
       <span class="r" data-k="Result">${res}</span>
       <span class="r mono ${mybCls(p)}" data-k="Profit">${p == null ? '—' : mybUsd(p, true)}</span>
-      <span class="r mono ${mybCls(c)}" data-k="CLV">${mybPct(c)}</span>
+      <span class="r mono ${mybCls(c ?? cNow)}" data-k="CLV">${c != null ? mybPct(c) : cNow != null ? `${mybPct(cNow)}<span class="mb-now">vs Pinnacle now</span>` : '—'}</span>
       <span class="mb-act">${act}${b.fromSlip ? `<button class="mb-more" onclick="showTab('myslips',[...document.querySelectorAll('.tab')].find(x=>x.getAttribute('onclick')===&quot;showTab('myslips',this)&quot;))" title="Graded leg by leg in MY SLIPS">Slip</button>` : `<button class="mb-more" onclick="mybForm('${b.id}')" title="Edit or settle">Edit</button>`}</span>
     </div>`;
   }).join('');
@@ -2970,6 +3026,20 @@ function mybRenderList(rows) {
     + (rows.length > ui.shown ? `<button class="mb-btn mb-moreall" onclick="mybSet('shown',${ui.shown + 100})">Show ${Math.min(100, rows.length - ui.shown)} more of ${rows.length - ui.shown}</button>` : '');
 }
 
+// a game line's follow: Pinnacle when logged, now or at the close, the final
+function mybLineTxt(b) {
+  const lc = b.lineClose;
+  if (b.track?.kind !== 'line') return '';
+  if (!lc) return '<span class="mb-line dim">following Pinnacle at this number...</span>';
+  const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+  const log = b.logFair ?? lc.logFair;
+  const why = { late: 'logged after the start: no close to grade', nopin: 'Pinnacle doesn\'t hang this number: no close', unknown: 'game not on the odds screen right now' }[lc.status];
+  if (why) return `<span class="mb-line dim">${why}</span>`;
+  if (lc.status === 'open') return `<span class="mb-line">Pinnacle ${lc.pin != null ? osAm(lc.pin) + ' · ' : ''}fair ${pct(lc.fair)} now${log != null ? ` (${pct(log)} when logged)` : ''}</span>`;
+  const sc = lc.score ? ` · final ${lc.score.away}-${lc.score.home}` : lc.outcome ? '' : ' · waiting on the final';
+  if (!lc.closeOk) return `<span class="mb-line dim">close read ${Math.round(lc.closeAgeMin)} min before the start: not counted${sc}</span>`;
+  return `<span class="mb-line">Pinnacle close ${lc.pin != null ? osAm(lc.pin) + ' · ' : ''}fair ${pct(lc.fair)}${log != null ? ` (${pct(log)} when logged)` : ''}${sc}</span>`;
+}
 function mybRenderBreak(scope) {
   const by = myb.ui.by, el = document.getElementById('mybBreak');
   const rows = LRBets.breakdown(scope, by, { unitUsd: mybUnit().unit });
@@ -3021,7 +3091,8 @@ async function mybForm(id, prefill) {
   const f = b ? { ...b, odds: b.cents ? `${+(100 / b.odds).toFixed(2)}c` : mybAm(b.odds), closeOdds: b.closeOdds ? mybAm(b.closeOdds) : '' }
     : { event: '', pick: '', odds: '', stake: '', book: '', sport: '', tool: 'Manual', result: 'open', notes: '', closeOdds: '', placedAt: new Date().toISOString(), ...(prefill || {}) };
   if (!b && prefill?.odds > 1) f.odds = prefill.cents ? `${+(100 / prefill.odds).toFixed(2)}c` : mybAm(prefill.odds);
-  myb.edit = { id: b?.id || null, track: b?.track || prefill?.track || null };
+  myb.edit = { id: b?.id || null, track: b?.track || prefill?.track || null, logFair: b?.logFair ?? prefill?.logFair ?? null, lineClose: b?.lineClose || null };
+  const venues = !b && prefill?.venues?.length ? `<div class="mb-venues" role="group" aria-label="Venue">${prefill.venues.map((v, i) => `<button type="button" class="${v.name === f.book ? 'on' : ''}" onclick="mybPickVenue(this,'${escAttr(v.name)}',${v.decimal})">${escAttr(v.name)} ${escAttr(mybAm(v.decimal))}</button>`).join('')}</div>` : '';
   const local = new Date(f.placedAt); local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
   const list = k => [...new Set([...myb.list.map(x => x[k]), ...(k === 'book' ? ['Kalshi', 'Polymarket', 'Underdog', 'PrizePicks', 'DraftKings', 'FanDuel', 'Novig', 'ProphetX'] : ['NFL', 'NBA', 'MLB', 'NHL', 'CS', 'LoL', 'Valorant', 'Dota'])].filter(Boolean))]
     .map(v => `<option value="${escAttr(v)}">`).join('');
@@ -3029,7 +3100,7 @@ async function mybForm(id, prefill) {
   const inp = (k, v, attrs = '') => `<input id="mb_${k}" value="${escAttr(v ?? '')}" ${attrs}>`;
   document.getElementById('mybModal').innerHTML = `<div class="lay-box mb-box" role="dialog" aria-label="${b ? 'Edit bet' : 'Log a bet'}">
     <h3>${b ? 'Edit bet' : prefill ? 'Log this bet' : 'Add a bet'}</h3>
-    <p>${myb.edit.track ? 'This play is tracked: it settles on its own once our tracker grades it. ' : ''}Enter the price and stake you actually got.</p>
+    <p>${myb.edit.track?.kind === 'line' ? 'Tracked: we follow Pinnacle\'s price at this number to the start (your CLV) and grade it from the final score. ' : myb.edit.track ? 'This play is tracked: it settles on its own once our tracker grades it. ' : ''}Enter the price and stake you actually got.</p>${venues}
     <div class="tl-fields">
       ${fld('pick', 'Bet', inp('pick', f.pick, 'placeholder="Chiefs -3, Over 38.5 kills, Yes"'), true)}
       ${fld('event', 'Event', inp('event', f.event, 'placeholder="Optional"'), true)}
@@ -3068,6 +3139,12 @@ function mybFormHint() {
   if (d && stake > 0) parts.push(`to win ${mybUsd(stake * (d - 1))}`);
   el.textContent = parts.join(' · ');
 }
+function mybPickVenue(el, name, dec) {
+  document.getElementById('mb_book').value = name;
+  document.getElementById('mb_odds').value = mybAm(dec);
+  el.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === el));
+  mybFormHint();
+}
 function mybFormClose() { document.getElementById('mybModal').classList.remove('open'); myb.edit = null; }
 function mybFormSave() {
   const v = k => document.getElementById(`mb_${k}`)?.value ?? '';
@@ -3077,16 +3154,19 @@ function mybFormSave() {
   const b = LRBets.make({
     id: prev?.id, pick: v('pick'), event: v('event'), odds: v('odds'), stake: v('stake'), book: v('book'), sport: v('sport'),
     tool: v('tool'), placedAt: v('placedAt') ? new Date(v('placedAt')).toISOString() : undefined, result, cashout: v('cashout'),
-    closeOdds: v('closeOdds') || null, notes: v('notes'), track: myb.edit?.track || null,
+    closeOdds: v('closeOdds') || null, notes: v('notes'), track: myb.edit?.track || null, logFair: myb.edit?.logFair ?? null, lineClose: myb.edit?.lineClose || null,
     settledAt: keepSettle ? prev.settledAt : undefined, settledBy: keepSettle ? prev.settledBy : 'manual',
   }, { unitUsd: prev?.unitUsd || mybUnit().unit });
   if (b.error) { showToast(b.error, 'danger'); return; }
   if (prev) myb.list = myb.list.map(x => (x.id === prev.id ? b : x));
   else myb.list.unshift(b);
   myb.list = LRBets.sortNewest(myb.list);
+  const tracked = !prev && b.track;
   mybSave(); mybFormClose();
   if (document.getElementById('page-betlog')?.classList.contains('active')) renderMyBets();
   renderCLV();
+  // a new tracked bet: the server logs the line now, before anything moves
+  if (tracked) mybAutoSettle(true);
   showToast(prev ? 'Bet saved' : `Logged: ${b.pick} at ${mybPrice(b)}, ${mybUsd(b.stake)}`);
 }
 
@@ -4223,8 +4303,83 @@ function lnRow(r, book) {
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
     <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : h2hDead ? ` (our matchup model alone: ${escAttr(pbH2hTitle())}; grey, not a play)` : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
-    <div class="c ln-usedc" data-l="Used"><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
+    <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
+}
+// ── SLIP TRAY: legs tapped on the Lines table → one slip in MY SLIPS ──
+// A slip is placed on one app, so the tray holds one app's legs at that app's
+// line. Saving it hands the slip to MY SLIPS, which logs every leg with the
+// server now (the sharp price at your line from this moment) and grades it to
+// the close and the box score. Payout: the app's table at the stake (Sleeper:
+// its pick multipliers), editable to what the app actually shows.
+const PK_KEY = 'lr_pk_tray';
+const pk = { app: null, legs: [], flex: false, stake: '', payout: '' };
+try { Object.assign(pk, JSON.parse(lsGet(PK_KEY) || '{}')); } catch {}
+const pkSave = () => lsSet(PK_KEY, JSON.stringify({ app: pk.app, legs: pk.legs, flex: pk.flex, stake: pk.stake }));
+const pkHas = (rk, book) => pk.app === book && pk.legs.some(l => l.rk === rk);
+const PK_MAX = { pick6: 8 };
+function pkAdd(rk, book) {
+  const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book];
+  if (!r || !c || c.line == null) return;
+  const i = pk.legs.findIndex(l => l.rk === rk);
+  if (pk.app === book && i >= 0) { pk.legs.splice(i, 1); }
+  else {
+    if (pk.app && pk.app !== book && pk.legs.length) { showToast(`Your slip is on ${PB_BOOKS.find(x => x[0] === pk.app)?.[1]}. Save or clear it first`, 'danger'); return; }
+    if (pk.legs.length >= (PK_MAX[book] || 6)) { showToast('That slip is full', 'danger'); return; }
+    if (pk.legs.some(l => l.player === r.player)) { showToast(`${r.player} is already in the slip`, 'danger'); return; }
+    const side = c.ev?.side || 'Over';
+    pk.app = book;
+    pk.legs.push({ rk, player: r.player, market: r.market, line: c.line, side, sport: r.sport, start: r.startTime || null, game: r.matchTitle || '', over: c.over ?? null, under: c.under ?? null });
+  }
+  if (!pk.legs.length) pk.app = null;
+  pk.payout = '';
+  pkSave(); renderPkTray();
+  if (pbState.view === 'lines') renderPropsBoard();
+}
+function pkFlip(i) { const l = pk.legs[i]; if (!l) return; l.side = l.side === 'Over' ? 'Under' : 'Over'; pk.payout = ''; pkSave(); renderPkTray(); }
+function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines') renderPropsBoard(); }
+// what the slip pays per $1 when every pick hits, from the app's own table
+function pkMult() {
+  const n = pk.legs.length;
+  if (pk.app === 'sleeper') return pk.legs.reduce((a, l) => a * (Number(l.side === 'Over' ? l.over : l.under) || NaN), 1);
+  if (!window.LRSlips) return null;
+  const t = LRSlips.payTable({ app: pk.app, flex: pk.flex, legs: Array(n).fill(0) });
+  return t ? t[n] : null;
+}
+function renderPkTray() {
+  const bar = document.getElementById('pkTray');
+  if (!bar) return;
+  if (!pk.legs.length) { bar.style.display = 'none'; document.body.classList.remove('lr-tray-open'); return; }
+  if (!window.LRSlips) { msReady().then(ok => ok && renderPkTray()); }
+  bar.style.display = 'block'; document.body.classList.add('lr-tray-open');
+  const name = PB_BOOKS.find(x => x[0] === pk.app)?.[1] || pk.app;
+  const n = pk.legs.length, mult = pkMult(), canFlex = !!(window.LRSlips && LRSlips.FLEX[pk.app]?.[n]);
+  if (!canFlex) pk.flex = false;
+  const stake = parseFloat(pk.stake), pay = pk.payout !== '' ? pk.payout : stake > 0 && mult > 0 ? (stake * mult).toFixed(2) : '';
+  const games = {}; for (const l of pk.legs) if (l.game) games[l.game] = (games[l.game] || 0) + 1;
+  const same = Object.values(games).some(x => x > 1);
+  bar.innerHTML = `<div class="sb-wrap">
+    <div class="sb-head"><span class="sb-title">${escAttr(name.toUpperCase())} SLIP <span>· ${n} PICK${n === 1 ? '' : 'S'}</span></span><span class="sb-sum">${n < 2 ? 'Add one more pick' : mult > 0 ? `pays <b>${(+mult).toFixed(2)}x</b>${pk.flex ? ' flex' : ''}` : ''}</span>
+      <button class="sb-icon" title="Clear the slip" onclick="pkClear()">✕</button></div>
+    <div class="sb-legs">${pk.legs.map((l, i) => `<span class="slip-leg"><b>${escAttr(l.player)}</b> <span class="sd ${l.side === 'Over' ? 'over' : 'under'}" title="Tap to switch" onclick="pkFlip(${i})">${pbSideWord(pk.app, l.side).toUpperCase()} ${escAttr(l.line)}</span> <span style="color:#64748b">${escAttr(String(l.market).slice(0, 20))}</span><span class="slip-x" title="Remove" onclick="pkAdd('${escAttr(l.rk)}','${pk.app}')">✕</span></span>`).join('')}</div>
+    <div class="sb-act">
+      ${canFlex ? `<div class="mb-seg"><button class="${!pk.flex ? 'on' : ''}" onclick="pk.flex=false;pk.payout='';pkSave();renderPkTray()">Power</button><button class="${pk.flex ? 'on' : ''}" onclick="pk.flex=true;pk.payout='';pkSave();renderPkTray()">Flex</button></div>` : ''}
+      <label class="sb-in">STAKE $<input class="key-input" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pk.stake)}" onchange="pk.stake=this.value;pk.payout='';pkSave();renderPkTray()"/></label>
+      <label class="sb-in">${pk.flex ? 'TOP PAYOUT' : 'PAYOUT'} $<input class="key-input" id="pkPay" type="number" min="0" step="any" inputmode="decimal" value="${escAttr(pay)}" onchange="pk.payout=this.value"/></label>
+      <span class="sb-btns"><button class="slip-btn primary" onclick="pkLog()" ${n < 2 ? 'disabled' : ''}>＋ LOG SLIP</button></span>
+    </div>
+    <div class="sb-note">${same ? '<b style="color:#fbbf24">Picks from one game:</b> the app may pay less than its table for these. Type the payout the app shows. ' : ''}Logged to MY SLIPS: every pick is followed on the sharp price at your line from now to the start, then graded from the box score. Payout is the app's standard table at your stake; change it to what the app shows.</div></div>`;
+}
+async function pkLog() {
+  if (pk.legs.length < 2) return;
+  if (!(await msReady())) { showToast('My Slips could not load from the server', 'danger'); return; }
+  const stake = parseFloat(pk.stake), payout = parseFloat(document.getElementById('pkPay')?.value);
+  const slip = LRSlips.makeSlip({ app: pk.app, legs: pk.legs, stake: stake > 0 ? stake : null, payout: !pk.flex && payout > 0 ? payout : null, flex: pk.flex });
+  if (!slip) { showToast('Could not read one of the picks', 'danger'); return; }
+  ms.slips.unshift(slip); msSave();
+  showToast(`Logged a ${slip.legs.length}-pick ${LRSlips.appLabel(slip.app)} slip to MY SLIPS${stake > 0 ? ` ($${stake})` : ''}`);
+  pkClear();
+  msGrade(true);
 }
 // The matchup (H2H) model's record from /api/esports/models: once it fails at
 // 50+ graded, its model-only legs show grey, never as plays
@@ -4253,6 +4408,7 @@ function renderLines() {
   el.innerHTML = `${count}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
 }
 function renderPropsBoard() {
+  renderPkTray();
   pbChips();
   if (pbState.view === 'lines') return renderLines();
   const el = document.getElementById('pbContent'), d = pbState.data;
@@ -8316,6 +8472,16 @@ async function esLogSlip() {
   const stake = parseFloat(document.getElementById('esSlipStake')?.value);
   if (!isFinite(stake) || stake <= 0) { showToast('Enter a stake first', 'danger'); return; }
   if (!(sel.fullMult > 1)) { showToast('Payout multiplier looks off: check ES_BOOKS', 'danger'); return; }
+  // an app MY SLIPS knows: logged leg by leg there, so every pick is followed to the close and graded
+  if (['prizepicks', 'underdog', 'sleeper', 'betr'].includes(esportsState.slipBook) && (await msReady())) {
+    const slip = LRSlips.makeSlip({ app: esportsState.slipBook, stake, flex: sel.mode === 'FLEX', payout: sel.mode === 'FLEX' ? null : Math.round(stake * sel.fullMult * 100) / 100,
+      legs: esportsState.slip.map(l => ({ player: l.player, market: l.market, line: l.line, side: /^u/i.test(l.side) ? 'Under' : 'Over', sport: l.sport })) });
+    if (slip) {
+      ms.slips.unshift(slip); msSave(); msGrade(true);
+      showToast(`Logged ${sel.n}-leg ${sel.book.name} to MY SLIPS: $${stake} to win $${(stake * (sel.fullMult - 1)).toFixed(2)}, every pick followed to the close`);
+      return;
+    }
+  }
   if (!(await mybReady())) { showToast('My Bets could not load from the server', 'danger'); return; }
   const b = LRBets.make({ pick: esSlipLabel(sel), odds: sel.fullMult, stake, sport: 'Esports', tool: 'Esports slip',
     book: sel.book.name.charAt(0) + sel.book.name.slice(1).toLowerCase() }, { unitUsd: mybUnit().unit });

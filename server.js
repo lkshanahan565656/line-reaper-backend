@@ -4639,7 +4639,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.161.2', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.162.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6245,6 +6245,18 @@ function observeOddsHistory() {
   if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
   try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
   catch (e) { oddsScreenState.errors = [e.message]; }
+  lineBets.observe(freeBooksState.games || {}).catch(e => console.warn('Line bets: observe:', e.message));
+}
+// MY BETS' game-line bets (linebets.js): a moneyline, spread or total logged
+// from the odds screen is followed on Pinnacle's no-vig price at its exact
+// number to the start, then graded from ESPN's final. Rows hold the line, never
+// the user, the price or the stake.
+const lineBets = require('./linebets').createLineBets({
+  store: resultsBackup.wrap('lineBets', createEvStoreFromEnv(process.env, { table: 'line_bets', fileVar: 'LINE_BETS_FILE', file: 'line-bets.json' })),
+});
+lineBets.ready().catch(e => console.error('Line bets: store failed to initialise:', e.message));
+async function gradeLineBets() {
+  try { await lineBets.grade(bigGrader, lg => EV_RESULT_LEAGUE[lg] || null); } catch (e) { console.warn('Line bets: grade:', e.message); }
 }
 app.get('/api/odds-screen', (req, res) => {
   const pro = hasPro(req), lic = licenceOf(req);
@@ -7165,10 +7177,12 @@ app.post('/api/bets/settle', async (req, res) => {
     const list = (Array.isArray(req.body?.bets) ? req.body.bets : []).slice(0, 200).filter(b => b && typeof b === 'object');
     const lic = licenceOf(req), all = { limit: 1e9 };
     const wants = k => list.some(b => b.track?.kind === k);
-    const [tail, picks] = await Promise.all([
+    const [tail, picks, lines] = await Promise.all([
       wants('tail') && lic.polymarket ? tailTracker.list(all) : [],
-      wants('prop') ? tracker.list(all) : []]);
-    res.set('Cache-Control', 'no-store').json({ results: betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }) });
+      wants('prop') ? tracker.list(all) : [],
+      // game lines from the odds screen: logged on first sight, graded on Pinnacle's close and the final
+      wants('line') ? lineBets.settle(list.filter(b => b.track?.kind === 'line'), { games: freeBooksState.games || {} }) : {}]);
+    res.set('Cache-Control', 'no-store').json({ results: { ...betsLib.matchTracked(list, { tail, picks, sportKey: pickSportKey, outcomeFor: pickOutcomeFor }), ...lines } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // The encrypted snapshot the results-backup Action keeps (backup.js).
@@ -7211,7 +7225,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.161.2',
+  version: '3.162.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7223,6 +7237,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   kalshiExtra: kxExtraState,
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
+  lineBets: lineBets.counts(),
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
@@ -7337,6 +7352,7 @@ schedule('*/5 * * * *', async () => {
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
+schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message))));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
