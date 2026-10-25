@@ -91,7 +91,7 @@ const COMBO = new Set(['combo', 'p6-combo']);
 // the CFB model's legs (cfbdata.js): a record of their own, never in the headline until proven
 const CFB_MODEL = new Set(['cfb-model', 'p6-cfb-model']);
 // the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
-const MODEL = new Set(['nba-model', 'p6-nba-model']);
+const MODEL = new Set(['nba-model', 'p6-nba-model', 'ud-nba-model']);
 // every MLB leg against Pinnacle's own number (mlbboard.js): research kinds per app, never the headline
 const MLB = new Set(['mlb-pin', 'p6-mlb-pin', 'ud-mlb-pin', 'sl-mlb-pin', 'mlb-even', 'p6-mlb-even', 'ud-mlb-even', 'sl-mlb-even']);
 const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL, ...CFB_MODEL, ...MLB]);
@@ -174,6 +174,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         ...(COMBO.has(kind) ? { evMin: play.evMin ?? null, comboBooks: play.books ?? null, comboParts: play.parts ?? null, comboShadow: play.shadow ?? null, entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null } : {}),
         ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null, signalPinLine: pinLineOf(play.stale) } : {}),
+        ...(MODEL.has(kind) || CFB_MODEL.has(kind) ? { modelVersion: play.modelVersion ?? null } : {}),
         ...(MLB.has(kind) ? { signalPinLine: play.pinLine ?? null, signalPinOver: play.pinOver ?? null, gapPts: play.gapPts ?? null, signalExact: !!play.exact } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
@@ -344,7 +345,12 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     };
     const byKind = {};
     for (const b of every) (byKind[b.kind] ||= []).push(b);
-    return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
+    return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])),
+      // the model kinds split by the model version that priced each leg (a leg logged before versions were saved is v1)
+      byModelVersion: Object.fromEntries(Object.entries(byKind).filter(([k]) => MODEL.has(k)).flatMap(([k, l]) => {
+        const v = {}; for (const b of l) (v[b.modelVersion || 'v1'] ||= []).push(b);
+        return Object.entries(v).map(([ver, g]) => [`${k}@${ver}`, stats(g)]);
+      })), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),
       voided: (await store.all()).filter(b => b.status === 'void').length };
   }
   async function list({ status, kind, before, limit = 100 } = {}) {

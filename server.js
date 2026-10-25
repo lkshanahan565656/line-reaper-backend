@@ -4819,7 +4819,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.172.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.173.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5803,7 +5803,7 @@ function sportFairAt(row, book, line, kind) {
   // a CFB model leg closes on the model's own number at the start (the record is its hit rate)
   if (kind === 'cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
   // an NBA model leg closes on the model's own number at the start (its CLV is the model against itself: the record is the hit rate)
-  if (kind === 'nba-model') return nbaModel ? nbaModel.fairAt(row, line) : null;
+  if (kind === 'nba-model' || kind === 'ud-nba-model') return nbaModel ? nbaModel.fairAt(row, line) : null;
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
   if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
   // a combo leg closes on the same books and Pinnacle's parts at its own number
@@ -7028,10 +7028,13 @@ app.get('/api/props/nbamodel', async (req, res) => {
   const q = String(req.query.q || '').toLowerCase().trim();
   if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
   if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
-  const kinds = (await sportTracker.summary()).byKind || {};
-  res.json({ on: true, label: 'model, not an edge', status: nbaModel.status(), pickMin: nbadata.PICK_MIN,
-    bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%), and an independent re-check of the results.',
-    record: { prizepicks: kinds['nba-model'] || null, pick6: kinds['p6-nba-model'] || null },
+  const sum = await sportTracker.summary();
+  const kinds = sum.byKind || {}, byVer = sum.byModelVersion || {};
+  res.json({ on: true, label: 'model, not an edge', status: nbaModel.status(), pickMin: nbadata.PICK_MIN, udEvMin: nbadata.UD_EV_MIN,
+    version: nbadata.MODEL_VERSION, versionAt: nbadata.VERSION_AT, versionNote: nbadata.VERSION_NOTE,
+    bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%; Underdog judged on profit at its real multipliers), and an independent re-check of the results.',
+    record: { prizepicks: kinds['nba-model'] || null, pick6: kinds['p6-nba-model'] || null, underdog: kinds['ud-nba-model'] || null },
+    recordByVersion: { prizepicks: byVer[`nba-model@${nbadata.MODEL_VERSION}`] || null, pick6: byVer[`p6-nba-model@${nbadata.MODEL_VERSION}`] || null, underdog: byVer[`ud-nba-model@${nbadata.MODEL_VERSION}`] || null },
     backtest: nbaModel.state.backtest, count: list.length, rows: list.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)) });
 });
 app.get('/api/props/board', (req, res) => {
@@ -7092,7 +7095,7 @@ app.get('/api/props/cfbmodel', async (req, res) => {
     if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
     const kinds = (await sportTracker.summary()).byKind || {};
     res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), pickMin: cfbdata.PICK_MIN,
-      bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%), and an independent re-check of the results.',
+      bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%; Underdog judged on profit at its real multipliers), and an independent re-check of the results.',
       record: { prizepicks: kinds['cfb-model'] || null, pick6: kinds['p6-cfb-model'] || null },
       backtest: cfbModel.state.backtest, count: list.length, rows: list.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)) });
   } catch (e) { sendErr(res, e); }
@@ -7899,7 +7902,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.172.0',
+  version: '3.173.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

@@ -29,6 +29,29 @@ const MODEL_STATS = new Set(M.STATS);
 // the confident side the record logs: the model's side at or above this, on
 // PrizePicks and Pick6 standard lines (pre-registered 10-25, PREREGISTERED.md)
 const PICK_MIN = 0.58;
+// Underdog pays its own multiplier per leg, so its legs are logged on value at
+// that payout instead: the model's side worth UD_EV_MIN or more per unit at the
+// real multiplier (pre-registered 10-25, checks/nba-model-v2-2026-10-25)
+const UD_EV_MIN = 0.05;
+// The model's version on every row and logged leg. The live record is never
+// reset: legs logged before VERSION_AT were priced by v1.
+const MODEL_VERSION = 'v2';
+const VERSION_AT = '2026-10-25';
+const VERSION_NOTE = 'v2 from 2026-10-25: adds teammates out for injury (refitted), defence by position, last season fading as this season\'s games pile up, and a calibration fitted on 2024-25 sportsbook lines (v1 was overconfident). Legs logged before then were priced by v1; the record carries on, never reset.';
+const { legDecimal } = require('./sporttrack');
+const PP_BE = 0.5503;
+// the model's value at an app's real payout for the side it leans: the leg's
+// decimal (PrizePicks 3-pick Power, Pick6 3-pick table times its multiplier,
+// Underdog's multiplier, Sleeper's) and P(side) x decimal - 1
+function payoutFor(book, side, pSide, cell) {
+  const mult = side === 'Over' ? cell?.over : cell?.under;
+  const other = side === 'Over' ? cell?.under : cell?.over;
+  if (mult === 0 || mult === false) return null;   // that side isn't offered
+  // PrizePicks: the 3-pick Power break-even the record is judged on (55.03%)
+  const dec = book === 'prizepicks' ? 1 / PP_BE : legDecimal(book, mult == null ? 1 : mult, other == null ? null : other);
+  if (!(dec > 1)) return null;
+  return { decimal: Math.round(dec * 1000) / 1000, breakEven: Math.round(1e4 / dec) / 1e4, ev: Math.round((pSide * dec - 1) * 1e4) / 1e4 };
+}
 
 function loadSeed(file = SEED) {
   try { return JSON.parse(zlib.gunzipSync(fs.readFileSync(file))); } catch { return []; }
@@ -176,17 +199,24 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
       for (const [book, cell] of Object.entries(row.books || {})) {
         if (!Number.isFinite(cell?.line)) continue;
         const pr = M.priceLine(p.proj, row.mkey, cell.line, params);
-        if (pr) apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null };
+        if (!pr) continue;
+        const pay = payoutFor(book, pr.side, pr.pSide, cell);
+        apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null,
+          decimal: pay?.decimal ?? null, breakEven: pay?.breakEven ?? null, ev: pay?.ev ?? null };
       }
       if (!Object.keys(apps).length) continue;
       const pin = pinAt(row);
       const best = Object.entries(apps).sort((a, b) => b[1].pSide - a[1].pSide)[0];
+      // the best payout for the model's view: highest value per unit across the apps
+      const bestPay = Object.entries(apps).filter(([, a]) => a.ev != null).sort((a, b) => b[1].ev - a[1].ev)[0] || null;
       out.push({ key: row.key, player: row.player, team: p.game.team, opp: p.game.opp, home: p.game.isHome, start: new Date(p.game.t).toISOString(),
         mkey: row.mkey, market: row.market || row.mkey, mean: Math.round(M.expected(p.proj, row.mkey) * 10) / 10,
         median: M.median(p.proj, row.mkey, params), minutes: Math.round(p.proj.minutes.mean * 10) / 10, minutesSd: Math.round(p.proj.minutes.sd * 10) / 10,
         b2b: p.proj.b2b, teammatesOut: p.outs.length, total: p.game.total, spread: p.game.spread,
         apps, pinnacle: pin && Number.isFinite(pin.line) ? { line: pin.line, pOver: pin.pOver, model: M.priceLine(p.proj, row.mkey, pin.line, params)?.pOver ?? null } : null,
-        bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide });
+        bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide,
+        bestPay: bestPay ? { book: bestPay[0], side: bestPay[1].side, line: bestPay[1].line, ev: bestPay[1].ev, breakEven: bestPay[1].breakEven } : null,
+        version: MODEL_VERSION });
     }
     return out.sort((a, b) => b.bestP - a.bestP);
   }
@@ -211,7 +241,19 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
         if (book === 'pick6' && mult != null && Number(mult) !== 1) continue;
         if (pr.side === 'Over' ? cell.overOpen === false : cell.underOpen === false) continue;
         flagged.push({ row, kind: book === 'pick6' ? 'p6-nba-model' : 'nba-model', research: true,
-          play: { book, side: pr.side, line: cell.line, mult: 1, ev: +((pr.pSide / 0.5503 - 1) * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean } });
+          play: { book, side: pr.side, line: cell.line, mult: 1, ev: +((pr.pSide / 0.5503 - 1) * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
+      }
+      // Underdog: the model's side at UD's real multiplier, logged when it is worth UD_EV_MIN or more
+      const ud = row.books?.underdog;
+      if (ud && Number.isFinite(ud.line)) {
+        const p = projectionFor(row);
+        const pr = p.proj ? M.priceLine(p.proj, row.mkey, ud.line, params) : null;
+        const pay = pr ? payoutFor('underdog', pr.side, pr.pSide, ud) : null;
+        if (pr && pay && pay.ev >= UD_EV_MIN && !(pr.side === 'Over' ? ud.overOpen === false : ud.underOpen === false)) {
+          const mult = pr.side === 'Over' ? ud.over : ud.under;
+          flagged.push({ row, kind: 'ud-nba-model', research: true,
+            play: { book: 'underdog', side: pr.side, line: ud.line, mult: mult == null ? 1 : mult, ev: +(pay.ev * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
+        }
       }
     }
     return flagged;
@@ -229,4 +271,4 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
   return { refresh, projectionFor, section, plays, fairAt, status, state, history: () => H };
 }
 
-module.exports = { createNbaModel, scheduleOf, outsOf, fixAbbr, teamMatches, loadSeed, PICK_MIN, MODEL_STATS };
+module.exports = { createNbaModel, scheduleOf, outsOf, fixAbbr, teamMatches, loadSeed, payoutFor, PICK_MIN, UD_EV_MIN, MODEL_VERSION, VERSION_AT, VERSION_NOTE, MODEL_STATS };
