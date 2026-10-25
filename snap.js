@@ -22,5 +22,13 @@ const http = { get: async (url, cfg = {}) => {
     const rows = await us.arbRows({});
     console.log('pmus rows', rows.length);
   } catch (e) { console.log('pmus', e.message); }
+  try {
+    const pg = R('pingames.js'), fb = R('freebooks.js');
+    const sports = Object.fromEntries(Object.entries(pg.SPORTS).filter(([k]) => k !== 'soccer'));
+    const a = await pg.fetchPinnacleGames(axios, { sports });
+    const b = await pg.fetchPinnacleGames(axios, { sports: {}, leagues: { soccer: fb.PIN_SOCCER_LEAGUES } });
+    console.log('pinnacle', a.games.length, b.games.length, a.errors, b.errors);
+    lines.push(JSON.stringify({ url: 'pinnacle:games', at: new Date().toISOString(), data: [...a.games, ...b.games] }));
+  } catch (e) { console.log('pin', e.message); }
   fs.writeFileSync(`snap-${Date.now()}.jsonl.gz`, zlib.gzipSync(lines.join('\n')));
 })();
