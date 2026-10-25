@@ -1,0 +1,20 @@
+name: diag-soccer
+on:
+  push:
+    branches: [diag-soccer]
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          timeout 15m node diag/probe.js 2>&1 | tee log-probe.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-soccer-out-probe; git add -f log-probe.txt; git commit -qm "soccer probe"
+          for i in 1 2 3 4; do git push -qf origin diag-soccer-out-probe && break; sleep $((i*5)); done
