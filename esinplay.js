@@ -476,9 +476,9 @@ function createInplay({ http, tracker, now = () => Date.now(), log = console, mo
       const fr = w?.frames || [];
       if (!fr.length) continue;
       if (!lolFirst.has(g.id)) {
-        // first frame: step forward from an hour back until frames appear
-        let t = now() - 65 * 60e3, first = null;
-        for (let i = 0; i < 14 && !first; i++, t += 5 * 60e3) { const ww = await get(`${LFEED}/${g.id}`, { startingTime: iso10(t) }, LH).catch(() => null); if (ww?.frames?.length) first = Date.parse(ww.frames[0].rfc460Timestamp); }
+        // the window with no start time returns the game's first frames
+        const w0 = await get(`${LFEED}/${g.id}`, {}, LH).catch(() => null);
+        const first = w0?.frames?.length ? Date.parse(w0.frames[0].rfc460Timestamp) : null;
         lolFirst.set(g.id, first);
       }
       const st = lolState(e, det, fr[fr.length - 1], w.gameMetadata, lolFirst.get(g.id));
