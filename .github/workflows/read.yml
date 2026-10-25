@@ -1,0 +1,26 @@
+name: diag-nflgl-live
+on:
+  push:
+    branches: [diag-nflgl-live]
+permissions:
+  contents: write
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir -p out
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -s "$B/api/nfl/model" -o out/model.json
+            curl -s "$B/api/nfl/model/record" -o out/record.json
+            n=$(jq '[.games[]?.rows[]? | select(.kalshi != null)] | length' out/model.json 2>/dev/null || echo 0)
+            echo "try $i: games $(jq '.count' out/model.json) kalshi rows $n"
+            [ "${n:-0}" -gt 0 ] && break
+            sleep 90
+          done
+          jq '.status' out/model.json
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-nflgl-live-out; git add -f out; git commit -qm out; git push -qf origin diag-nflgl-live-out
