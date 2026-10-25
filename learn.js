@@ -205,12 +205,34 @@ ${tool('Open the pick’em calculator')}`;
 <li>Kinds are never pooled to reach ${results.PROVEN_N}, and alternate lines, stale lines and pick’em props are judged on their own.</li>
 </ul>
 <p>Everything else is a <b>lead</b>: a price the math likes that the record has not yet backed. The app labels every ranked row LEAD or PROVEN, and the Results tab shows the count for each kind as it builds.</p>
+<h2 id="today">Today</h2>
+${LIVE_CLAIMS}
 <h2 id="limits">What it does not mean</h2>
 <p>Proven means a kind of bet has beaten the close over the sample so far. It does not promise future results, and a proven kind can stop working as venues adjust. Bet only what you can afford to lose.</p>
 ${tool('Open Results', '/app?start=results')}`;
     },
   },
 };
+// What the record proves today, read live from /api/claims (claims.js) when the
+// page opens, so the cached page never states a stale record. Without script
+// it says where to look instead of showing a number.
+const LIVE_CLAIMS = `<div class="ex" id="lrClaims"><div class="ex-h">What the record proves today</div>
+<p id="lrClaimsBody">The live record shows in the app's Results tab.</p>
+<p class="note" id="lrClaimsTx">In Texas no sportsbook is legal: pick’em apps and CFTC exchanges (Kalshi, Polymarket US, Gemini) are.</p></div>
+<script>
+fetch('/api/claims').then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
+  function e(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function p(x) { return (x > 0 ? '+' : '') + Number(x).toFixed(1) + '%'; }
+  var pr = d.proven || [], tx = d.texas || {};
+  var body = pr.length
+    ? 'Proven: ' + pr.map(function (r) { return '<b>' + e(r.kindLabel) + ' at ' + e(r.bookName) + '</b> (' + r.graded + ' graded games, ' + p(r.clv) + ' CLV' + (r.profitShown ? '' : ', profit not shown yet') + (r.texas ? '' : ', not a Texas venue') + ')'; }).join('; ') + '. Everything else is a lead, a model or research.'
+    : 'Nothing is proven yet. ' + (d.building || 0) + ' kinds of bet are still building their samples.';
+  document.getElementById('lrClaimsBody').innerHTML = body + ' <a href="/app?start=results">Full record</a>.';
+  var names = function (l) { return (l || []).filter(function (v) { return v.read; }).map(function (v) { return e(v.name); }).join(', '); };
+  document.getElementById('lrClaimsTx').innerHTML = e(tx.note || '') + ' We price ' + names(tx.pickem) + ' and ' + names(tx.exchanges) + '. '
+    + ((tx.proven || []).length ? 'Proven at a Texas venue: ' + tx.proven.map(function (r) { return e(r.kindLabel) + ' at ' + e(r.bookName); }).join(', ') + '.' : 'Nothing is proven yet at a Texas venue.');
+}).catch(function () {});
+</script>`;
 const ORDER = ['no-vig-fair-odds', 'expected-value', 'closing-line-value', 'hold-and-arbitrage', 'middles', 'kelly-criterion', 'exchange-fees', 'pickem-math', 'how-the-record-works'];
 const ALIASES = { 'no-vig': 'no-vig-fair-odds', devig: 'no-vig-fair-odds', ev: 'expected-value', clv: 'closing-line-value', arbs: 'hold-and-arbitrage', arbitrage: 'hold-and-arbitrage', hold: 'hold-and-arbitrage',
   middle: 'middles', kelly: 'kelly-criterion', fees: 'exchange-fees', pickem: 'pickem-math', record: 'how-the-record-works' };
@@ -295,7 +317,7 @@ function render(slug = '', { origin = '' } = {}) {
   if (!slug) {
     return shell({ title: 'The math behind sharp betting', kicker: 'Learn', canonical: o ? `${o}/learn` : null,
       lead: 'Short guides to every number Line Reaper shows: fair prices, EV, CLV, hold, arbs, middles, staking, exchange fees and pick’em break-evens. Each example is worked with the same code the app runs.',
-      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}</ul>` });
+      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}</ul>${LIVE_CLAIMS}` });
   }
   const key = ALIASES[slug] || slug;
   const page = PAGES[key];

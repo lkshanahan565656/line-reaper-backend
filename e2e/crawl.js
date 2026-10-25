@@ -69,6 +69,8 @@ async function settle(page, w, opts, min = 120) {
 
 async function openTab(page, name, w, opts) {
   w.tab = name;
+  // the tour (opened by HELP, or its NEXT switching tabs) covers the bar: close it as a viewer would
+  if (await page.locator('#tour.open').count().catch(() => 0)) { await page.keyboard.press('Escape'); await settle(page, w, opts, 60); }
   const how = await page.evaluate(n => {
     const want = `showTab('${n}',this)`;
     const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === want);
@@ -287,6 +289,18 @@ async function enterApp(page, w, opts, rep) {
     await page.locator('#wlEnter').click();
     await settle(page, w, opts, 150);
     if (await page.evaluate(() => document.getElementById('welcome')?.classList.contains('open'))) issue(rep, 'welcome', { message: 'Enter did not close the welcome screen' });
+  }
+  // the first-run tour: a new device must get it, and SKIP must close it for good
+  const seen = await page.evaluate(() => { try { return !!localStorage.getItem('lr_tour'); } catch { return true; } });
+  if (!seen) {
+    const tourUp = await page.locator('#tour.open').waitFor({ timeout: 3000 }).then(() => true, () => false);
+    if (!tourUp) issue(rep, 'tour', { message: 'the first-run tour did not open on a new device' });
+    else {
+      await page.locator('#tourSkip').click();
+      await settle(page, w, opts, 80);
+      const after = await page.evaluate(() => ({ open: document.getElementById('tour').classList.contains('open'), kept: localStorage.getItem('lr_tour') }));
+      if (after.open || !after.kept) issue(rep, 'tour', { message: `SKIP left the tour ${after.open ? 'open' : 'closed'} and ${after.kept ? 'remembered' : 'not remembered'}` });
+    }
   }
   await checkText(page, rep, 'app load');
 }

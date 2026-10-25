@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
 const { crawl, makeReport, TABS } = require('./crawl');
 const { READ_ONLY_POSTS } = require('./live-safety');
 
-const FAIL = new Set(['page-error', 'console-error', 'bad-text', 'http-5xx', 'http-404', 'broken-link', 'tab-missing', 'tab-open', 'forbidden-link', 'welcome', 'sweep-crash', 'left-site']);
+const FAIL = new Set(['page-error', 'console-error', 'bad-text', 'http-5xx', 'http-404', 'broken-link', 'tab-missing', 'tab-open', 'forbidden-link', 'welcome', 'tour', 'sweep-crash', 'left-site']);
 
 async function waitForVersion(base, want, maxMin = 25) {
   const t0 = Date.now();

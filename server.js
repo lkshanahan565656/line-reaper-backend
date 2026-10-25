@@ -5041,6 +5041,17 @@ app.get('/api/ev/scoreboard', async (req, res) => {
     res.json(await closeBoardFor(licenceOf(req), parseFloat(req.query.days) || 0, req.query.state));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// What a public page may claim (claims.js): the scoreboard's proven rows of
+// the kinds that close on Pinnacle's own price, the Texas cut, and the labels
+// every other tool wears. The sales page, /learn and the welcome screen read it.
+const claims = require('./claims');
+app.get('/api/claims', async (req, res) => {
+  try {
+    const lic = webhookLicence();
+    const [board, txBoard] = await Promise.all([closeBoardFor(lic, 0, null), closeBoardFor(lic, 0, 'TX')]);
+    res.set('Cache-Control', 'public, max-age=60').json(claims.publicClaims({ board, txBoard, alertBooks: evBookProven }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
   const status = hasPro(req) ? req.query.status : 'closed';
