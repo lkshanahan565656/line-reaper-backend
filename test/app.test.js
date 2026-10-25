@@ -61,3 +61,11 @@ test('MY BETS tab: on the main bar, loads bets.js after calc.js, LOG buttons on 
   assert.match(server, /app\.get\('\/bets\.js'/);
   assert.match(server, /app\.post\('\/api\/bets\/settle'/);
 });
+
+// 10-25: a stray backslash in id="layModal\" (PR 233) made CUSTOMIZE throw and
+// do nothing, push alert settings included
+test('no element id carries a backslash or a quote', () => {
+  const bad = [...html.matchAll(/\bid="([^"]*)"/g)].map(m => m[1]).filter(id => /[\\'`]/.test(id) && !id.includes('${'));
+  assert.deepStrictEqual(bad, []);
+  assert.ok(html.includes('<div class="lay-modal" id="layModal" '), 'the CUSTOMIZE panel has its id');
+});
