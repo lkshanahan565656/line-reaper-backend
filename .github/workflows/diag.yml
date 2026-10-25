@@ -1,5 +1,5 @@
-name: diag-cfbmodel
-on: { push: { branches: [diag-cfbmodel] }, workflow_dispatch: {} }
+name: diag-cfbmodel23
+on: { push: { branches: [diag-cfbmodel23] }, workflow_dispatch: {} }
 permissions: { contents: write }
 jobs:
   run:
@@ -7,4 +7,4 @@ jobs:
     timeout-minutes: 170
     steps:
       - uses: actions/checkout@v4
-      - run: python3 fetch.py > log.txt 2>&1 || true; mkdir -p out; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-cfbmodel-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-cfbmodel-out
+      - run: python3 fetch.py > log.txt 2>&1 || true; mkdir -p out; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-cfbmodel23-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-cfbmodel-out
