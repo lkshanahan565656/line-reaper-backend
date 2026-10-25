@@ -1,0 +1,22 @@
+name: diag-kmaker
+on:
+  push: { branches: [diag-kmaker] }
+permissions: { contents: write }
+concurrency: { group: diag-kmaker, cancel-in-progress: true }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          mkdir -p in out
+          N=1; while git ls-remote --exit-code --heads origin "diag-leadlag-out-$N" >/dev/null 2>&1; do
+            git fetch -q --depth 1 origin diag-leadlag-out-$N && git show FETCH_HEAD:changes.jsonl.gz > in/c$N.jsonl.gz; N=$((N+1)); done
+          ls -la in
+          node pull.mjs 2>&1 | tee out/log.txt
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "kmaker $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-kmaker-out
