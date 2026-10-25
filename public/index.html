@@ -8706,7 +8706,7 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
-var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
+var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', minSize: '', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
 // phones open with the filters folded away
 try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.removeAttribute('open'); } catch {}
@@ -8747,6 +8747,7 @@ function shpQuery() {
   if (o.maxAge) p.set('maxAge', o.maxAge);
   if (o.hours) p.set('hours', o.hours);
   if (o.stake) p.set('stake', o.stake);
+  if (o.minSize) p.set('minSize', o.minSize);
   if (o.method) p.set('method', o.method);
   if ((o.excluded || []).length) p.set('exclude', o.excluded.join(','));
   if (o.mode === 'arb') p.set('arbs', '1');
@@ -8808,6 +8809,7 @@ function shpControls() {
     inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
     sel('maxAge', [['', 'Any age'], ['180', '≤ 3 min'], ['600', '≤ 10 min']], 'FRESH'),
     inp('stake', 'EV ON $', '100', '1'),
+    sel('minSize', [['', 'Any size'], ['50', '$50'], ['200', '$200'], ['1000', '$1,000']], 'MIN BET SIZE'),
     sel('method', [['power', 'Power'], ['multiplicative', 'Multiplicative'], ['additive', 'Additive'], ['shin', 'Shin']], 'DEVIG'),
     shpPresetBar(),
     `<label>ODDS<select onchange="shpSet('fmt',this.value,false)">${[['american', 'American'], ['decimal', 'Decimal'], ['fractional', 'Fractional'], ['probability', 'Implied %'], ['hongkong', 'Hong Kong'], ['indonesian', 'Indonesian'], ['malay', 'Malay']].map(([v, l]) => `<option value="${v}"${o.fmt === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`,
@@ -8824,7 +8826,7 @@ function shpRender() {
   if (shpUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(shpUi.error)); return; }
   if (!d) return;
   const c = d.counts || {};
-  const head = `<div class="shp-dim" style="margin:0 0 8px">${c.markets || 0} markets from ${c.quotes || 0} prices · ${c.priced || 0} with a fair · ${c.multiVenue || 0} at 3+ venues · ${c.opportunities || 0} best prices above the fair · ${c.arbs || 0} arbs${d.builtAt ? ` · built ${Math.max(0, Math.round((Date.now() - Date.parse(d.builtAt)) / 60000))} min ago` : ''}${d.state ? ` · ${escAttr(d.stateInfo?.name || d.state)} venues can be best` : ''}</div>`;
+  const head = `<div class="shp-dim" style="margin:0 0 8px">${c.markets || 0} markets from ${c.quotes || 0} prices · ${c.priced || 0} with a fair · ${c.multiVenue || 0} at 3+ venues · ${c.opportunities || 0} best prices above the fair · ${c.arbs || 0} arbs${c.sized != null ? ` · ${c.sized} markets with an exchange book read` : ''}${d.minSize ? ` · exchange prices shown at what $${d.minSize} fills at` : ''}${d.builtAt ? ` · built ${Math.max(0, Math.round((Date.now() - Date.parse(d.builtAt)) / 60000))} min ago` : ''}${d.state ? ` · ${escAttr(d.stateInfo?.name || d.state)} venues can be best` : ''}</div>`;
   const lock = !d.pro ? `<div class="clv-info" style="margin:0 0 8px">Fair prices, EV and the ranked list are Pro. Every venue's price is free.${d.locked ? ` ${d.locked.opportunities} ranked prices and ${d.locked.arbs} arbs are hidden.` : ''}</div>` : '';
   if (!c.markets) { el.innerHTML = head + tailEmpty('NO MARKETS', 'Nothing in this window matches the filters, or the feeds have not been read yet. The venue pills above say which feeds are up.'); return; }
   if (o.mode === 'opps' && d.pro) el.innerHTML = head + shpOpps(d);
@@ -8841,7 +8843,7 @@ function shpOpps(d) {
     return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}</td>
+      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -8863,7 +8865,7 @@ function shpMarketTable(m) {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
@@ -8891,7 +8893,7 @@ const SHP_PRESET_KEY = 'lr_shopper_views';
 const shpPresets = () => { try { const v = JSON.parse(localStorage.getItem(SHP_PRESET_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
 const shpPresetsSave = v => { try { localStorage.setItem(SHP_PRESET_KEY, JSON.stringify(v.slice(0, 20))); } catch {} };
 // what a saved view keeps: the filters, not the odds format or favorites
-const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'method', 'excluded', 'favOnly'];
+const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'minSize', 'method', 'excluded', 'favOnly'];
 function shpPresetBar() {
   const list = shpPresets();
   return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}">${escAttr(p.name)}</option>`).join('')}</select></label>` +
@@ -8951,11 +8953,47 @@ function shpArbs(d) {
   return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
     ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective)}</div>`).join('')}
+    ${shpArbSize(m.arb)}
     <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
+}
+
+// ── order-book size on exchange prices (depthbook.js) ──
+const shpK = t => (t >= 1000 ? `$${t / 1000}K` : `$${t}`);
+function shpSizeTip(z, sizedAt) {
+  return `Order book read ${Math.round(z.ageSec / 60)} min ago: $${z.topUsd} at the top price, $${z.depthUsd} on the whole book${z.atFairUsd != null ? `, $${z.atFairUsd} at or above the fair` : ''}. `
+    + [50, 200, 1000].map(t => { const w = z.tiers?.[t]; return !w ? `${shpK(t)}: nothing` : w.full ? `${shpK(t)} fills at ${shpOdds(w.decimal)}${w.ev != null ? ` (${shpPct(w.ev)})` : ''}` : `${shpK(t)}: only $${Math.round(w.usd)} on the book`; }).join(', ')
+    + `. Each size is the book walked cheapest first in whole contracts, fee in.${sizedAt ? ` The price shown is what $${sizedAt} fills at.` : ''}`;
+}
+function shpSizeLine(z, sizedAt) {
+  if (!z) return '';
+  if (z.unread) return '<div class="shp-dim" style="font-size:10px" title="This venue\'s order book has not been read in the last 5 minutes, so its size is unknown">size not read yet</div>';
+  if (z.empty) return '<div class="shp-bad" style="font-size:10px">book empty</div>';
+  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
+  return `<div class="shp-dim" style="font-size:10px;white-space:normal" title="${escAttr(shpSizeTip(z, sizedAt))}">${parts.join(' · ')}</div>`;
+}
+// a venue cell: the biggest size its book fills
+function shpSizeCell(p) {
+  const z = p.size;
+  if (!z) return '';
+  if (z.unread) return `<div class="shp-dim" style="font-size:9px" title="Order book not read in the last 5 minutes">size ?</div>${p.sizeOk === false ? '<div class="shp-bad" style="font-size:9px">NOT SIZED</div>' : ''}`;
+  const top = [1000, 200, 50].find(t => z.tiers?.[t]?.full);
+  const lab = top ? `fills ${shpK(top)}` : `only $${Math.round(z.depthUsd)}`;
+  return `<div class="${top ? 'shp-dim' : 'shp-bad'}" style="font-size:9px" title="${escAttr(shpSizeTip(z, p.sizedAt))}">${lab}${p.sizedAt ? ` · at $${p.sizedAt}` : ''}</div>${p.sizeOk === false ? `<div class="shp-bad" style="font-size:9px">CAN'T FILL $${escAttr(shpUi.opts.minSize)}</div>` : ''}`;
+}
+// an arb's size: the thinner side's book sets it
+function shpArbSize(a) {
+  const z = a && a.size;
+  if (!z) return '';
+  const nm = id => a.legs?.find(l => l.provider === id)?.name || id;
+  z.thin = z.thin && nm(z.thin); z.unread = (z.unread || []).map(nm);
+  if (!z.sized) return `<div class="shp-dim" style="margin-top:4px">Size: ${z.unread?.length ? `${escAttr(z.unread.join(', '))} book not read yet, so the size is unknown` : 'sportsbook limits are not published'}.</div>`;
+  if (!z.maxTotal) return `<div class="shp-bad" style="margin-top:4px">The books don't hold it: at $10 total the set no longer locks a profit${z.thin ? ` (${escAttr(z.thin)} is the thin side)` : ''}.</div>`;
+  const at = z.atStake;
+  return `<div class="${at?.ok ? 'shp-good' : 'shp-bad'}" style="margin-top:4px;font-size:12px">Fills up to $${z.maxTotal.toLocaleString()}${z.capped ? '+' : ''} in total${z.atMax?.pct != null ? ` (locks ${shpPct(z.atMax.pct)} there)` : ''}${z.thin ? `; ${escAttr(z.thin)} is the thin side` : ''}.${at ? (at.ok ? ` At $${a.total}: locks ${shpUsd(at.profit)} after fees.` : ` $${a.total} does not fill.`) : ''}${z.unread?.length ? ` ${escAttr(z.unread.join(', '))} not read.` : ''}</div>`;
 }
 </script>
 
-<div class="lay-modal" id="layModal" onclick="if(event.target===this)layClose()">
+<div class="lay-modal" id="layModal\" onclick="if(event.target===this)layClose()">
   <div class="lay-box" role="dialog" aria-label="Customize layout">
     <h3>Customize your layout</h3>
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>
