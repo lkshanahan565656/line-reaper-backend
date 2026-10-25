@@ -1,0 +1,27 @@
+name: diag-gaps2
+on:
+  push:
+    branches: [diag-gaps2]
+concurrency:
+  group: diag-gaps2
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: timeout 2100 node diag/live.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-gaps2-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-gaps2-out
