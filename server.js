@@ -4402,6 +4402,18 @@ const matchupEngines = Object.fromEntries((MATCHUPS_ON ? MATCHUP_GAMES : []).map
   results: RAW_OF[game] ? () => ratingsState.raw?.[RAW_OF[game]] || null : null,
 })]));
 const matchupEngine = matchupEngines.LOL || null;
+// Tennis match winners (tennismodel.js, tennisdata.js): our own surface Elo +
+// form model from ESPN's ATP/WTA results, next to Kalshi, Polymarket US and
+// Pinnacle's no-vig (the exchange-leagues Pinnacle read). A model view: the
+// held-out backtest is seeds/tennis-matchup-backtest.json. Own record (kind
+// tennis-matchups), no alerts. TENNIS_MATCHUPS=off turns it off.
+const tennisdata = require('./tennisdata');
+const TENNIS_MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.TENNIS_MATCHUPS || '').trim());
+const tennisEngine = TENNIS_MATCHUPS_ON ? tennisdata.createTennisEngine({
+  http: upstream, pmusOn: pmus.enabledFromEnv(),
+  store: resultsBackup.wrap('tennisMatchups', createPickFileStore(process.env.TENNIS_MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'tennis-matchups.json'))),
+  pinnacle: () => (Date.now() - pinExtraGames.at < PIN_EXTRA_GAMES_MAX_AGE_MS ? pinExtraGames.games : []),
+}) : null;
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
 const esportsEdgeTracker = createEvTracker({
@@ -4828,7 +4840,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.176.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.177.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5366,6 +5378,38 @@ app.get('/api/esports/matches', (req, res) => {
     games: Object.fromEntries(Object.entries(esboard.GAMES).map(([k, g]) => [k, g.label])),
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
+});
+// ── tennis matchups (model, not an edge) ──
+const tennisOff = res => res.status(503).json({ error: 'Tennis matchups are off (TENNIS_MATCHUPS=off).' });
+const tennisNote = 'Our own model: overall and surface Elo ratings from every ATP/WTA match on ESPN since 2016, plus 60-day form, fitted on 2019-2023 only. A model, not a proven edge: see the held-out test against Kalshi and Polymarket.';
+app.get('/api/tennis/matchups', (req, res) => {
+  if (!tennisEngine) return tennisOff(res);
+  const days = Math.min(7, Math.max(1, parseInt(req.query.days, 10) || 3));
+  const tour = /^(atp|wta)$/i.test(String(req.query.tour || '')) ? String(req.query.tour).toLowerCase() : null;
+  const matchups = tennisEngine.list({ days, tour });
+  const b = tennisEngine.state.backtest;
+  res.json({
+    game: 'TEN', label: 'model', note: tennisNote, status: tennisEngine.status(), count: matchups.length,
+    priced: matchups.filter(m => m.model.priced).length, withKalshi: matchups.filter(m => m.markets.kalshi).length, withPmus: matchups.filter(m => m.markets.pmus).length, withPinnacle: matchups.filter(m => m.markets.pinnacle).length,
+    matchups, backtest: b ? { generated: b.generated, verdict: b.verdict, headline: b.headline || null, rule: b.rule } : null, record: tennisEngine.record().summary, licence: licenceState(req),
+  });
+});
+app.get('/api/tennis/matchups/backtest', (req, res) => {
+  if (!tennisEngine) return tennisOff(res);
+  res.json(tennisEngine.state.backtest || { error: 'No tennis backtest file.' });
+});
+app.get('/api/tennis/matchups/record', (req, res) => {
+  if (!tennisEngine) return tennisOff(res);
+  res.json({ note: 'A row when the model is 3+ points over the cost to buy on Kalshi or Polymarket US, 60+ minutes before the start; graded on ESPN\'s result, CLV against Pinnacle\'s last no-vig before the start. Model view, not a bet; alerts off.', ...tennisEngine.record() });
+});
+app.get('/api/tennis/matchups/ratings', (req, res) => {
+  if (!tennisEngine) return tennisOff(res);
+  const surf = ['hard', 'clay', 'grass'].includes(String(req.query.surface)) ? String(req.query.surface) : null;
+  const tour = /^(atp|wta)$/i.test(String(req.query.tour || '')) ? String(req.query.tour).toLowerCase() : null;
+  const since = Date.now() - 180 * 86400e3;
+  const R = tennisEngine.ratings();
+  const rows = R.table({ min: 20, surf, limit: 2000 }).filter(p => p.last && Date.parse(p.last) > since).filter(p => !tour || tennisEngine.tourOf(p.id) === tour).slice(0, 100);
+  res.json({ label: 'model', surface: surf || 'overall', tour, players: rows, opts: R.opts });
 });
 // ── matchups (head-to-head engine): LoL, CS2, VALORANT ──
 const GAME_WORD = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
@@ -7953,7 +7997,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.176.0',
+  version: '3.177.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8030,6 +8074,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
+  tennisMatchups: tennisEngine ? tennisEngine.status() : { off: true },
   matchupGames: Object.fromEntries(Object.entries(matchupEngines).map(([g, E]) => { const st = E.status(); return [g, { ready: st.ready, series: st.series, teams: st.teams, upcoming: st.upcoming, updated: st.updated, error: st.error, pmus: st.pmus }]; })),
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
@@ -8054,6 +8099,8 @@ const schedule = (expr, fn) => cron.schedule(expr, ops.job(jobLabel(expr, fn), f
 
 // LoL matchups: schedule, results and the forward record, every 10 minutes.
 for (const E of Object.values(matchupEngines)) schedule('3,13,23,33,43,53 * * * *', () => E.refresh().catch(() => {}));
+// tennis: venues every 3 minutes, ESPN results every 20
+if (tennisEngine) schedule('*/3 * * * *', () => tennisEngine.refresh({ results: new Date().getMinutes() % 20 < 3 }).catch(() => {}));
 // Team ratings for match context, every 6 hours.
 schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
@@ -8234,6 +8281,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
     setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
     setTimeout(() => refreshH2H().then(() => esPicksRebuild()).catch(() => {}), 35000);
     for (const E of Object.values(matchupEngines)) setTimeout(() => E.refresh().catch(() => {}), 40000);
+    if (tennisEngine) setTimeout(() => tennisEngine.refresh().catch(() => {}), 45000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
@@ -8254,7 +8302,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, liveCheck, nbaModel, cfbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, nbaModel, cfbModel, matchupEngine, matchupEngines, tennisEngine, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

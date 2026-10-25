@@ -1,0 +1,450 @@
+{
+ "generated": "2026-10-25T11:53:26.193Z",
+ "rule": {
+  "edge": 0.03,
+  "entryMin": 60,
+  "fees": "Kalshi 0.07p(1-p); Polymarket proxy +1c half spread and 0.0695p(1-p)"
+ },
+ "params": {
+  "r0": 1500,
+  "kc": 200,
+  "off": 5,
+  "shape": 0.4,
+  "w": 0.75,
+  "scale": 0.9,
+  "bo5": 1.4,
+  "formDays": 60,
+  "formShrink": 3,
+  "formW": 0.5,
+  "layoffDays": 60,
+  "layoff": 1,
+  "minMatches": 10
+ },
+ "joins": {
+  "polymarket": {
+   "seen": 16450,
+   "noHistory": 47,
+   "noResult": 7589,
+   "noStart": 0
+  },
+  "kalshi": {
+   "seen": 0,
+   "events": 0,
+   "notTwoSided": 0,
+   "noResult": 0,
+   "noStart": 0
+  }
+ },
+ "venues": {
+  "kalshi": {
+   "2025": {
+    "matched": 0,
+    "insufficient": 0,
+    "priced": 0,
+    "logLoss": {
+     "model": 0,
+     "market": 0,
+     "modelMinusMarketT": 0
+    },
+    "brier": {
+     "model": 0,
+     "market": 0
+    },
+    "blend": null,
+    "bets": {
+     "n": 0,
+     "wins": 0,
+     "roi": 0,
+     "z": null,
+     "profitUnits": 0,
+     "winsVsCostZ": null,
+     "clvN": 0,
+     "clvMean": 0,
+     "clvT": null,
+     "favourites": 0,
+     "avgEdge": 0
+    },
+    "settleDisagree": 0
+   },
+   "2026": {
+    "matched": 0,
+    "insufficient": 0,
+    "priced": 0,
+    "logLoss": {
+     "model": 0,
+     "market": 0,
+     "modelMinusMarketT": 0
+    },
+    "brier": {
+     "model": 0,
+     "market": 0
+    },
+    "blend": null,
+    "bets": {
+     "n": 0,
+     "wins": 0,
+     "roi": 0,
+     "z": null,
+     "profitUnits": 0,
+     "winsVsCostZ": null,
+     "clvN": 0,
+     "clvMean": 0,
+     "clvT": null,
+     "favourites": 0,
+     "avgEdge": 0
+    },
+    "settleDisagree": 0
+   },
+   "all": {
+    "matched": 0,
+    "insufficient": 0,
+    "priced": 0,
+    "logLoss": {
+     "model": 0,
+     "market": 0,
+     "modelMinusMarketT": 0
+    },
+    "brier": {
+     "model": 0,
+     "market": 0
+    },
+    "blend": null,
+    "bets": {
+     "n": 0,
+     "wins": 0,
+     "roi": 0,
+     "z": null,
+     "profitUnits": 0,
+     "winsVsCostZ": null,
+     "clvN": 0,
+     "clvMean": 0,
+     "clvT": null,
+     "favourites": 0,
+     "avgEdge": 0
+    },
+    "settleDisagree": 0
+   },
+   "atp": {
+    "matched": 0,
+    "insufficient": 0,
+    "priced": 0,
+    "logLoss": {
+     "model": 0,
+     "market": 0,
+     "modelMinusMarketT": 0
+    },
+    "brier": {
+     "model": 0,
+     "market": 0
+    },
+    "blend": null,
+    "bets": {
+     "n": 0,
+     "wins": 0,
+     "roi": 0,
+     "z": null,
+     "profitUnits": 0,
+     "winsVsCostZ": null,
+     "clvN": 0,
+     "clvMean": 0,
+     "clvT": null,
+     "favourites": 0,
+     "avgEdge": 0
+    },
+    "settleDisagree": 0
+   },
+   "wta": {
+    "matched": 0,
+    "insufficient": 0,
+    "priced": 0,
+    "logLoss": {
+     "model": 0,
+     "market": 0,
+     "modelMinusMarketT": 0
+    },
+    "brier": {
+     "model": 0,
+     "market": 0
+    },
+    "blend": null,
+    "bets": {
+     "n": 0,
+     "wins": 0,
+     "roi": 0,
+     "z": null,
+     "profitUnits": 0,
+     "winsVsCostZ": null,
+     "clvN": 0,
+     "clvMean": 0,
+     "clvT": null,
+     "favourites": 0,
+     "avgEdge": 0
+    },
+    "settleDisagree": 0
+   },
+   "months": {}
+  },
+  "polymarket": {
+   "2025": {
+    "matched": 681,
+    "insufficient": 89,
+    "priced": 592,
+    "logLoss": {
+     "model": 0.6079,
+     "market": 0.5985,
+     "modelMinusMarketT": 1.1213
+    },
+    "brier": {
+     "model": 0.2094,
+     "market": 0.205
+    },
+    "blend": {
+     "market": 0.7395,
+     "model": 0.5804,
+     "modelZ": 2.4672
+    },
+    "bets": {
+     "n": 315,
+     "wins": 128,
+     "roi": 0.0409,
+     "z": 0.4762,
+     "profitUnits": 12.8835,
+     "winsVsCostZ": 0.5483,
+     "clvN": 315,
+     "clvMean": -0.0206,
+     "clvT": -1.3625,
+     "favourites": 65,
+     "avgEdge": 0.0934
+    },
+    "settleDisagree": 1
+   },
+   "2026": {
+    "matched": 8124,
+    "insufficient": 912,
+    "priced": 7212,
+    "logLoss": {
+     "model": 0.6302,
+     "market": 0.6002,
+     "modelMinusMarketT": 11.6374
+    },
+    "brier": {
+     "model": 0.2203,
+     "market": 0.2074
+    },
+    "blend": {
+     "market": 1.0681,
+     "model": -0.0869,
+     "modelZ": -1.299
+    },
+    "bets": {
+     "n": 4115,
+     "wins": 1416,
+     "roi": -0.1115,
+     "z": -4.8949,
+     "profitUnits": -458.8057,
+     "winsVsCostZ": -4.5223,
+     "clvN": 4115,
+     "clvMean": -0.0779,
+     "clvT": -25.7381,
+     "favourites": 740,
+     "avgEdge": 0.0987
+    },
+    "settleDisagree": 3
+   },
+   "all": {
+    "matched": 8814,
+    "insufficient": 1001,
+    "priced": 7813,
+    "logLoss": {
+     "model": 0.6285,
+     "market": 0.6001,
+     "modelMinusMarketT": 11.5325
+    },
+    "brier": {
+     "model": 0.2194,
+     "market": 0.2073
+    },
+    "blend": {
+     "market": 1.0412,
+     "model": -0.0341,
+     "modelZ": -0.5315
+    },
+    "bets": {
+     "n": 4432,
+     "wins": 1546,
+     "roi": -0.1001,
+     "z": -4.5434,
+     "profitUnits": -443.4338,
+     "winsVsCostZ": -4.1686,
+     "clvN": 4432,
+     "clvMean": -0.0738,
+     "clvT": -24.4779,
+     "favourites": 805,
+     "avgEdge": 0.0983
+    },
+    "settleDisagree": 4
+   },
+   "atp": {
+    "matched": 3629,
+    "insufficient": 442,
+    "priced": 3187,
+    "logLoss": {
+     "model": 0.6315,
+     "market": 0.6047,
+     "modelMinusMarketT": 6.9566
+    },
+    "brier": {
+     "model": 0.2207,
+     "market": 0.209
+    },
+    "blend": {
+     "market": 1.0654,
+     "model": -0.034,
+     "modelZ": -0.368
+    },
+    "bets": {
+     "n": 1726,
+     "wins": 652,
+     "roi": -0.1107,
+     "z": -3.4561,
+     "profitUnits": -191.0491,
+     "winsVsCostZ": -3.3198,
+     "clvN": 1726,
+     "clvMean": -0.0734,
+     "clvT": -23.1277,
+     "favourites": 435,
+     "avgEdge": 0.0973
+    },
+    "settleDisagree": 2
+   },
+   "wta": {
+    "matched": 5185,
+    "insufficient": 559,
+    "priced": 4626,
+    "logLoss": {
+     "model": 0.6265,
+     "market": 0.5969,
+     "modelMinusMarketT": 9.2118
+    },
+    "brier": {
+     "model": 0.2186,
+     "market": 0.2061
+    },
+    "blend": {
+     "market": 1.0372,
+     "model": -0.0495,
+     "modelZ": -0.5465
+    },
+    "bets": {
+     "n": 2706,
+     "wins": 894,
+     "roi": -0.0933,
+     "z": -3.1373,
+     "profitUnits": -252.3846,
+     "winsVsCostZ": -2.6696,
+     "clvN": 2706,
+     "clvMean": -0.074,
+     "clvT": -16.4346,
+     "favourites": 370,
+     "avgEdge": 0.0989
+    },
+    "settleDisagree": 2
+   },
+   "months": {
+    "2025-10": 550,
+    "2025-11": 113,
+    "2025-12": 18,
+    "2026-01": 794,
+    "2026-02": 859,
+    "2026-03": 772,
+    "2026-04": 787,
+    "2026-05": 943,
+    "2026-06": 673,
+    "2026-07": 801,
+    "2026-08": 950,
+    "2026-09": 799,
+    "2026-10": 755
+   }
+  }
+ },
+ "edge": false,
+ "headline": {
+  "kalshi": {
+   "n": 0,
+   "logLoss": {
+    "model": 0,
+    "market": 0,
+    "modelMinusMarketT": 0
+   },
+   "blend": null,
+   "bets": {
+    "n": 0,
+    "wins": 0,
+    "roi": 0,
+    "z": null,
+    "profitUnits": 0,
+    "winsVsCostZ": null,
+    "clvN": 0,
+    "clvMean": 0,
+    "clvT": null,
+    "favourites": 0,
+    "avgEdge": 0
+   },
+   "slices": {
+    "2025": {
+     "n": 0,
+     "bets": 0,
+     "roi": 0,
+     "z": null
+    },
+    "2026": {
+     "n": 0,
+     "bets": 0,
+     "roi": 0,
+     "z": null
+    }
+   }
+  },
+  "polymarket": {
+   "n": 7813,
+   "logLoss": {
+    "model": 0.6285,
+    "market": 0.6001,
+    "modelMinusMarketT": 11.5325
+   },
+   "blend": {
+    "market": 1.0412,
+    "model": -0.0341,
+    "modelZ": -0.5315
+   },
+   "bets": {
+    "n": 4432,
+    "wins": 1546,
+    "roi": -0.1001,
+    "z": -4.5434,
+    "profitUnits": -443.4338,
+    "winsVsCostZ": -4.1686,
+    "clvN": 4432,
+    "clvMean": -0.0738,
+    "clvT": -24.4779,
+    "favourites": 805,
+    "avgEdge": 0.0983
+   },
+   "slices": {
+    "2025": {
+     "n": 592,
+     "bets": 315,
+     "roi": 0.0409,
+     "z": 0.4762
+    },
+    "2026": {
+     "n": 7212,
+     "bets": 4115,
+     "roi": -0.1115,
+     "z": -4.8949
+    }
+   }
+  }
+ },
+ "verdict": "Not an edge. On 0 held-out Kalshi matches the model's log loss was 0 against Kalshi's 0; backing its side at 3+ points over the ask went +0.0% on 0 bets after fees, CLV +0.0% against Kalshi's last price. On 7,813 Polymarket matches (a proxy for Polymarket US): 0.6285 vs 0.6001, -10.0% on 4,432 bets."
+}

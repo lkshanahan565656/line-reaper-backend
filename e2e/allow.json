@@ -19,7 +19,12 @@
       "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
     }
   ],
-  "misses": [],
+  "misses": [
+    {
+      "key": "^/api/tennis/matchups",
+      "why": "MATCHUPS > TENNIS is new in v3.177.0 and the live snapshot predates it; offline the page shows its no-matches state from the offline server. Drop this once the snapshot is re-recorded."
+    }
+  ],
   "mustHaveData": [
     {
       "tab": "best",

@@ -116,12 +116,12 @@ function polymarketProb(mk, flipped) {
 // teams[0] is the long side: buying it costs the ask, the other team 1 − bid.
 const pnum = v => num(v && typeof v === 'object' ? v.value : v);
 const unit = p => (p != null && p > 0 && p < 1 ? p : null);
-function parsePmusEvents(events, o = DEFAULTS, league = 'lol') {
+function parsePmusEvents(events, o = DEFAULTS, league = 'lol', type = 'esports_match_winner') {
   const out = [];
   for (const e of events || []) {
     if (!e?.slug || e.closed === true || e.active === false || e.ended === true) continue;
     for (const m of e.markets || []) {
-      if (String(m?.sportsMarketType || '').toLowerCase() !== 'esports_match_winner' || !m.slug) continue;
+      if (String(m?.sportsMarketType || '').toLowerCase() !== type || !m.slug) continue;
       const status = String(m.status || '').toLowerCase();
       if (m.closed === true || m.active === false || (status && status !== 'market_status_open')) continue;
       const sides = Array.isArray(m.marketSides) ? m.marketSides : [];
