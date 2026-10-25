@@ -1,0 +1,11 @@
+name: diag-cbbmodel
+on: { push: { branches: [diag-cbbmodel] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy: { fail-fast: false, matrix: { part: [box, props] } }
+    steps:
+      - uses: actions/checkout@v4
+      - run: PART=${{ matrix.part }} python3 fetch.py > log.txt 2>&1; mkdir -p out; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-cbbmodel-${{ matrix.part }}-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-cbbmodel-${{ matrix.part }}-out
