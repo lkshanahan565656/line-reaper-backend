@@ -2,7 +2,7 @@
 const BASE = 'https://line-reaper-backend-production.up.railway.app';
 const fs = require('fs');
 const MIN = +(process.env.MINUTES || 6), WAIT = process.env.WAIT_VERSION || '';
-const paths = ['/api/status', '/calc.js', '/app', '/api/health'];
+const paths = ['/api/status', '/calc.js', '/app', '/api/health', '/api/results'];
 const out = { start: new Date().toISOString(), samples: [], statuses: [] };
 async function timed(p) {
   const t0 = Date.now();
@@ -25,5 +25,6 @@ async function timed(p) {
     await new Promise(r => setTimeout(r, 5000));
   }
   try { const j = await timed('/api/status'); out.final = JSON.parse(j.body); } catch {}
+  try { const j = await timed('/api/ops'); out.ops = JSON.parse(j.body); } catch {}
   fs.writeFileSync('probe.json', JSON.stringify(out, null, 1));
 })();
