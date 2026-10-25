@@ -90,15 +90,19 @@ async function polymarket(code) {
   const seriesIds = String(row?.series || '').split(',').map(Number).filter(Boolean);
   log('pm series', code, seriesIds);
   const evs = [];
+  const seenSlug = new Set();
   for (const series of seriesIds) {
-    for (let off = 0; off < 60000; off += 100) {
-      const d = await get(`${GAMMA}/events`, { series_id: series, closed: true, limit: 100, offset: off, order: 'startDate', ascending: false });
-      if (!d || !d.length) break;
-      evs.push(...d);
-      const oldest = Math.min(...d.map(e => Date.parse(e.startDate || e.startTime || '') || Infinity));
-      if (off === 0) log('pm sample', JSON.stringify(d[0]).slice(0, 2500));
-      if (oldest < SINCE - 30 * 86400e3) break;
-      await sleep(120);
+    // the events list stops at an offset near 2,100, so walk 7-day windows
+    for (let t0 = SINCE; t0 < Date.now(); t0 += 7 * 86400e3) {
+      const lo = new Date(t0).toISOString(), hi = new Date(t0 + 7 * 86400e3).toISOString();
+      for (let off = 0; off < 2000; off += 100) {
+        const d = await get(`${GAMMA}/events`, { series_id: series, closed: true, limit: 100, offset: off, start_date_min: lo, start_date_max: hi });
+        if (!d || !d.length) break;
+        for (const e of d) if (!seenSlug.has(e.slug)) { seenSlug.add(e.slug); evs.push(e); }
+        if (d.length < 100) break;
+        await sleep(100);
+      }
+      log('pm window', lo.slice(0, 10), evs.length);
     }
   }
   log('pm events', code, evs.length);

@@ -1,7 +1,7 @@
-name: diag-tennis
+name: diag-tennis-pm
 on:
   push:
-    branches: [diag-tennis]
+    branches: [diag-tennis-pm]
 permissions:
   contents: write
 jobs:
@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: ['k:all', 'pm:atp', 'pm:wta', 'res:espn', 'res:td', 'res:sack']
+        part: ['pm:atp', 'pm:wta']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,5 +24,5 @@ jobs:
           PART="$P" SINCE=$SINCE BUDGET_MIN=150 timeout 160m node diag/pull.js 2>&1 | tee log-$N.txt
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
           rm -rf tennis_atp tennis_wta
-          git checkout -B diag-tennis-out-$N; git add -f log-$N.txt data; git commit -qm "pull $P"
-          for i in 1 2 3 4; do git push -qf origin diag-tennis-out-$N && break; sleep $((i*5)); done
+          git checkout -B diag-tennis-pm-out-$N; git add -f log-$N.txt data; git commit -qm "pull $P"
+          for i in 1 2 3 4; do git push -qf origin diag-tennis-pm-out-$N && break; sleep $((i*5)); done
