@@ -6965,17 +6965,45 @@ function trModelsHTML(d) {
     <div class="trm-list"><div class="trm-row trm-head"><div>Model</div><div>Graded</div><div>Record</div><div>Hit vs needed</div><div>Units</div><div>Verdict</div></div>${d.models.map(row).join('')}</div>
     ${st.length ? `<div class="tr-note">Same-match stacks: ${st.map(s => `${ES_STACK_APP[s.book] || s.book} ${s.size}-pick ${s.swept} swept of ${s.stacks}, pays if the app shows ${s.needsPays}x or more`).join('; ')}. A lead: the app's real payout for one match's picks decides it.</div>` : ''}</div>`;
 }
+// LIVE MAPS ON KALSHI: our in-play win probability vs Kalshi's ask (esinplay.js)
+const IP_GAME = { CS2: 'CS2', LOL: 'LoL', DOTA: 'Dota 2', VAL: 'Valorant' };
+function trInplayHTML(d) {
+  if (!d?.summary) return '';
+  const c = d.summary.counted, pct = v => (v == null ? '—' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(1)}%`);
+  const col = v => (v == null ? '#94a3b8' : v > 0 ? '#34d399' : v < 0 ? '#f87171' : '#94a3b8');
+  const word = { 'not enough graded': ['EARLY', '#94a3b8'], promising: ['AHEAD, NOT PROVEN', '#fbbf24'], 'no edge': ['NO EDGE', '#f87171'], 'not proven': ['NOT PROVEN', '#94a3b8'] }[d.summary.verdict] || [d.summary.verdict, '#94a3b8'];
+  const games = Object.entries(d.summary.byGame || {});
+  const live = (d.live || []).filter(l => l.pMap != null);
+  const rec = (d.recent || []).slice(0, 8);
+  return `<div class="trm"><div class="es-hdr"><h3>LIVE MAPS ON KALSHI</h3><span class="sub">${escEs(d.note || '')}</span></div>
+    <div class="pb-sum tr-sum">
+      <div class="pb-stat"><b>${c.graded} <small>of ${d.summary.bar}</small></b><span>Maps graded</span></div>
+      <div class="pb-stat"><b>${c.wins}-${c.losses}</b><span>Record</span></div>
+      <div class="pb-stat"><b style="color:${col(c.units)}">${c.units > 0 ? '+' : ''}${c.units}u</b><span>Units at the ask, fee in</span></div>
+      <div class="pb-stat"><b style="color:${col(c.roi)}">${pct(c.roi)}</b><span>ROI${c.t != null ? ` · t ${c.t}` : ''}</span></div>
+      <div class="pb-stat"><b>${c.gapClosed1m == null ? '—' : Math.round(c.gapClosed1m * 100) + '%'}</b><span>Of our gap Kalshi closes in 1 min</span></div>
+      <div class="pb-stat"><b><span class="trm-v" style="color:${word[1]};border-color:${word[1]}66">${word[0]}</span></b><span>Verdict</span></div>
+    </div>
+    ${games.length ? `<div class="tr-note">${games.map(([g, s]) => `${IP_GAME[g] || g} ${s.graded} graded, ${s.wins}-${s.losses}, ${s.units > 0 ? '+' : ''}${s.units}u`).join(' · ')}</div>` : ''}
+    ${live.length ? `<div class="tr-note"><b>Live now:</b> ${live.map(l => `${escEs(l.teams[0])} vs ${escEs(l.teams[1])} map ${l.map}: ours ${Math.round(l.pMap * 100)}% / Kalshi ${l.mid == null ? '—' : Math.round(l.mid * 100) + '%'}`).join(' · ')}</div>` : ''}
+    ${rec.length ? `<div class="trm-list"><div class="trm-row trm-head"><div>Flag</div><div>Ours</div><div>Ask</div><div>Size</div><div>1 min later</div><div>Result</div></div>${rec.map(r => `<div class="trm-row"><div class="trm-name"><b>${escEs(r.backs)} ${r.kind === 'map' ? `map ${r.map}` : 'match'}</b><span>${IP_GAME[r.game] || r.game} · ${new Date(r.flaggedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span></div>
+      <div class="trm-c" data-l="Ours">${Math.round(r.fair * 100)}%</div><div class="trm-c" data-l="Ask">${Math.round(r.ask * 100)}¢</div><div class="trm-c" data-l="Size">${Math.round(r.size || 0)}</div>
+      <div class="trm-c" data-l="1 min later">${r.marks?.m1 == null ? '—' : Math.round(r.marks.m1 * 100) + '¢'}</div>
+      <div class="trm-c" data-l="Result"><span style="color:${r.outcome === 'win' ? '#34d399' : '#f87171'}">${r.outcome === 'win' ? 'WON' : 'LOST'}</span></div></div>`).join('')}</div>` : `<div class="tr-note">No graded flags yet. Flags appear only while a CS2, LoL or Dota 2 map is live and our number beats Kalshi's ask by 3¢ after the fee.</div>`}
+  </div>`;
+}
 async function renderTrackRecord(el) {
   el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">LOADING TRACK RECORD...</div></div>`;
   const q = new URLSearchParams();
   if (trState.sport) q.set('sport', trState.sport);
   if (trState.minEV !== '') q.set('minEV', trState.minEV);
   try {
-    const [sum, review, locked, models] = await Promise.all([
+    const [sum, review, locked, models, inplay] = await Promise.all([
       fetch(`${BACKEND_URL}/api/tracker/summary?${q}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/tracker/picks?status=review&limit=100${trState.sport ? '&sport=' + trState.sport : ''}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/tracker/picks?status=locked&limit=100${trState.sport ? '&sport=' + trState.sport : ''}`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/esports/models`).then(r => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${BACKEND_URL}/api/esports/inplay`).then(r => (r.ok ? r.json() : null)).catch(() => null),
     ]);
     if (sum.error) throw new Error(sum.error);
     const o = sum.overall;
@@ -6985,6 +7013,7 @@ async function renderTrackRecord(el) {
     const evChip = (v, label) => `<button class="sport-chip ${String(trState.minEV) === String(v) ? 'active' : ''}" onclick="trState.minEV='${v}';renderEsports()">${label}</button>`;
     el.innerHTML = `
       ${trModelsHTML(models)}
+      ${trInplayHTML(inplay)}
       <div class="tr-chips">
         ${chip('', 'ALL')}${chip('CS', 'CS2')}${chip('VAL', 'VALORANT')}${chip('LOL', 'LOL')}${chip('DOTA', 'DOTA')}${chip('COD', 'COD')}
         <span class="lbl">MIN EV</span>
