@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-25T12:46:07.077Z",
+ "generated": "2026-10-25T14:12:15.073Z",
  "prereg": "checks/nfl-gameline-2026-10-25/PREREGISTERED.md",
  "testFrom": "2025-01-01",
  "testTo": "2026-10-25",
@@ -20,14 +20,14 @@
   "frozen": "2026-10-25T12:41:38.254Z"
  },
  "miss": {
-  "noGame": 192,
-  "noSide": 0,
-  "noQuote": 6,
-  "wide": 0,
-  "noVol": 0
+  "noGame": 5224,
+  "noSide": 2,
+  "noQuote": 1806,
+  "wide": 936,
+  "noVol": 555
  },
- "contracts": 740,
- "games": 370,
+ "contracts": 12359,
+ "games": 376,
  "types": {
   "ml": {
    "contracts": 740,
@@ -81,13 +81,107 @@
    "verdict": "FAIL"
   },
   "spread": {
-   "n": 0,
-   "pending": "Kalshi spread history still being pulled"
+   "contracts": 6640,
+   "games": 376,
+   "logLoss": {
+    "kalshiT60": 0.5301,
+    "model": 0.5463,
+    "modelMinusKalshiT": 3.2032,
+    "marketClose": 0.5295,
+    "marketCloseN": 6640
+   },
+   "brier": {
+    "kalshiT60": 0.1776,
+    "model": 0.184
+   },
+   "blend": {
+    "kalshiW": 1.0646,
+    "modelW": -0.0896,
+    "modelT": -0.3505,
+    "kalshiT": 4.5305,
+    "games": 376
+   },
+   "bets3": {
+    "n": 2916,
+    "graded": 2916,
+    "wins": 1065,
+    "roi": -0.0926,
+    "roiT": -0.8288,
+    "units": -270.1307,
+    "clvClose": 0.0031,
+    "clvCloseT": 2.6029,
+    "clvKalshi": -0.0587,
+    "clvKalshiT": -17.3774,
+    "games": 277,
+    "resultsVsCloseZ": -2.9202
+   },
+   "bets5": {
+    "n": 1876,
+    "graded": 1876,
+    "wins": 693,
+    "roi": -0.0563,
+    "roiT": -0.9273,
+    "units": -105.549,
+    "clvClose": 0.006,
+    "clvCloseT": 2.721,
+    "clvKalshi": -0.057,
+    "clvKalshiT": -17.8702,
+    "games": 198,
+    "resultsVsCloseZ": -1.5844
+   },
+   "verdict": "FAIL"
   },
   "total": {
-   "n": 0,
-   "pending": "Kalshi total history still being pulled"
+   "contracts": 4979,
+   "games": 376,
+   "logLoss": {
+    "kalshiT60": 0.5766,
+    "model": 0.5944,
+    "modelMinusKalshiT": 2.2553,
+    "marketClose": 0.5763,
+    "marketCloseN": 4979
+   },
+   "brier": {
+    "kalshiT60": 0.1977,
+    "model": 0.2048
+   },
+   "blend": {
+    "kalshiW": 1.1903,
+    "modelW": -0.199,
+    "modelT": -0.7388,
+    "kalshiT": 4.5055,
+    "games": 376
+   },
+   "bets3": {
+    "n": 2223,
+    "graded": 2223,
+    "wins": 912,
+    "roi": -0.115,
+    "roiT": -1.5184,
+    "units": -255.629,
+    "clvClose": -0.0393,
+    "clvCloseT": -11.9221,
+    "clvKalshi": -0.0576,
+    "clvKalshiT": -30.8221,
+    "games": 239,
+    "resultsVsCloseZ": -2.4612
+   },
+   "bets5": {
+    "n": 1519,
+    "graded": 1519,
+    "wins": 617,
+    "roi": -0.1036,
+    "roiT": -0.7858,
+    "units": -157.3126,
+    "clvClose": -0.0384,
+    "clvCloseT": -10.1862,
+    "clvKalshi": -0.0585,
+    "clvKalshiT": -24.0975,
+    "games": 175,
+    "resultsVsCloseZ": -1.8327
+   },
+   "verdict": "FAIL"
   }
  },
- "verdict": "moneyline failed the pre-registered bar; spreads and totals pending"
+ "verdict": "no market type passed: model, not an edge"
 }
