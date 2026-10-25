@@ -225,7 +225,8 @@ function venueUpcoming(game, board, pmEvents, { now = Date.now(), o = DEFAULTS }
   const inWindow = t => { const x = Date.parse(t); return Number.isFinite(x) && x >= t0 && x <= t1; };
   for (const m of board || []) {
     if (m.game !== game || !m.teams || !m.teams[0] || !m.teams[1] || !inWindow(m.start)) continue;
-    if (!(m.markets || []).some(k => k.kind === 'match')) continue;
+    // a Kalshi book on the match winner: Polymarket's global book alone is not a US venue
+    if (!(m.markets || []).some(k => k.kind === 'match' && (k.outcomes || []).some(x => x?.quotes?.kalshi))) continue;
     const t = new Date(Date.parse(m.start)).toISOString();
     out.push({ id: venueId(game, m.teams[0], m.teams[1], t), t, lg: m.tournament || m.league || null, bo: m.bestOf || null, a: m.teams[0], ac: null, b: m.teams[1], bc: null,
       state: Date.parse(t) <= now ? 'inProgress' : 'unstarted', block: null, source: 'kalshi' });

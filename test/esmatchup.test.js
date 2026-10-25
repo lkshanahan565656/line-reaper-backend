@@ -310,7 +310,8 @@ test('series from the ratings refresh: map games become series, CS2 keeps tier a
 test('venue schedule: Kalshi matches first, Polymarket US adds only matches Kalshi lacks; results found by names and time', () => {
   const now = Date.parse('2026-10-25T06:00:00Z');
   const cs = (start, a, b) => ({ ...boardMatch(start, a, b, { bid: 0.5, ask: 0.52 }, { bid: 0.47, ask: 0.5 }), game: 'CS2', tournament: 'BLAST' });
-  const board = [cs('2026-10-25T08:00:00Z', 'Team Spirit', 'TYLOO'), cs('2026-10-25T09:00:00Z', 'A', 'B'), { ...cs('2026-10-25T09:00:00Z', 'L1', 'L2'), game: 'LOL' }, cs('2026-11-20T09:00:00Z', 'Far', 'Away')];
+  const pmGlobalOnly = { ...cs('2026-10-25T10:00:00Z', 'Prestige', 'Revenge'), markets: [{ kind: 'match', outcomes: [{ name: 'Prestige', quotes: { polymarket: { bid: 0.5, ask: 0.52 } } }, { name: 'Revenge', quotes: {} }] }] };
+  const board = [cs('2026-10-25T08:00:00Z', 'Team Spirit', 'TYLOO'), cs('2026-10-25T09:00:00Z', 'A', 'B'), { ...cs('2026-10-25T09:00:00Z', 'L1', 'L2'), game: 'LOL' }, cs('2026-11-20T09:00:00Z', 'Far', 'Away'), pmGlobalOnly];
   const pm = D.parsePmusEvents([
     pmEvent('cs2-ts-tyloo-2026-10-25', '2026-10-25T08:00:00Z', ['Spirit', 'TS'], ['TYLOO', 'TYL'], 0.8, 0.82),
     pmEvent('cs2-vit-mglz-2026-10-25', '2026-10-25T11:00:00Z', ['Vitality', 'VIT'], ['TheMongolz', 'MGLZ'], 0.6, 0.62),
