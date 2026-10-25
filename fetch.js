@@ -23,7 +23,7 @@ const w = (f, o) => fs.writeFileSync('out/' + f, JSON.stringify(o));
   w('picks-mlb.json', picks.filter(p => p.sport === 'MLB'));
   w('picks-count.json', { all: picks.length, mlb: picks.filter(p => p.sport === 'MLB').length });
   // postseason schedule and box scores
-  const sch = await j('https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=2026-09-28&endDate=2026-10-25&gameType=F,D,L,W');
+  const sch = await j('https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=2026-09-28&endDate=2026-10-26&gameType=F,D,L,W');
   const games = (sch.dates || []).flatMap(d => d.games || []);
   const boxes = {};
   for (const g of games) {
