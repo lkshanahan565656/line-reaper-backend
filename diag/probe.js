@@ -1,51 +1,49 @@
-// Probe: the live size record, Polymarket US settlement and history endpoints for its
-// tennis markets, and which free tennis results sources answer from here.
+// Grading pull for checks/pmus-tennis-2026-10-25: the live size record, Polymarket US
+// events (by slug for every PM US tennis bet, plus the ATP/WTA league listings, all pages)
+// and ESPN tennis scoreboards. Raw JSON only; grading runs offline (grade.py).
 const fs = require('fs');
-fs.mkdirSync('out/raw', { recursive: true });
+fs.mkdirSync('out/ev', { recursive: true });
 const B = 'https://line-reaper-backend-production.up.railway.app';
 const G = 'https://gateway.polymarket.us';
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const log = [];
-async function get(name, url, { save = true } = {}) {
-  const t0 = Date.now();
+async function get(name, url) {
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', Accept: 'application/json' }, signal: AbortSignal.timeout(60000) });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)', Accept: 'application/json' }, signal: AbortSignal.timeout(90000) });
     const txt = await r.text();
-    log.push({ name, url, status: r.status, bytes: txt.length, ms: Date.now() - t0 });
-    if (save) fs.writeFileSync(`out/raw/${name.replace(/[^a-z0-9._-]/gi, '_').slice(0, 120)}.txt`, txt.slice(0, 3e6));
-    try { return { status: r.status, json: JSON.parse(txt) }; } catch { return { status: r.status, text: txt }; }
-  } catch (e) { log.push({ name, url, error: e.message }); return { error: e.message }; }
+    log.push({ name, status: r.status, bytes: txt.length });
+    try { return JSON.parse(txt); } catch { return null; }
+  } catch (e) { log.push({ name, error: e.message }); return null; }
 }
 (async () => {
-  const st = await get('status', `${B}/api/status`);
   const xs = await get('xsize', `${B}/api/exchange-size?limit=2000`);
-  const bets = xs.json?.bets || [];
-  const ten = bets.filter(b => b.venue === 'polymarketus' && b.sport === 'tennis');
-  const slugs = [...new Set(ten.map(b => b.marketId))];
-  console.log('bets', bets.length, 'pm tennis', ten.length, 'slugs', slugs.length);
-  let i = 0;
+  fs.writeFileSync('out/xsize.json', JSON.stringify(xs));
+  const slugs = [...new Set((xs?.bets || []).filter(b => b.venue === 'polymarketus' && b.sport === 'tennis').map(b => b.marketId))];
   for (const s of slugs) {
-    await get(`mkt-${s}`, `${G}/v1/markets/${encodeURIComponent(s)}`); await wait(1200);
-    await get(`ev-${s}`, `${G}/v1/events/slug/${encodeURIComponent(s)}`); await wait(1200);
-    if (i++ < 2) for (const p of ['prices-history', 'price-history', 'trades', 'candles', 'history', 'chart']) { await get(`h-${p}-${s}`, `${G}/v1/markets/${encodeURIComponent(s)}/${p}`); await wait(1200); }
+    const ev = s.replace(/^aec-/, '');
+    const j = await get(`ev-${ev}`, `${G}/v1/events/slug/${encodeURIComponent(ev)}`);
+    if (j) fs.writeFileSync(`out/ev/${ev}.json`, JSON.stringify(j));
+    await wait(1500);
   }
-  if (slugs[0]) for (const u of [`${G}/v1/trades?market=${slugs[0]}`, `${G}/v1/prices-history?market=${slugs[0]}`, `${G}/v1/markets/${slugs[0]}/prices?interval=1m`]) { await get(`hq-${u.split('/').pop()}`, u); await wait(1200); }
-  for (const lg of ['atp', 'wta', 'tennis', 'challenger', 'itf']) {
-    await get(`lg-${lg}`, `${G}/v2/leagues/${lg}/events?limit=50`); await wait(1200);
-    await get(`lgc-${lg}`, `${G}/v2/leagues/${lg}/events?limit=50&closed=true`); await wait(1200);
+  const listing = {};
+  for (const lg of ['atp', 'wta']) {
+    listing[lg] = [];
+    for (let page = 0; page < 12; page++) {
+      const j = await get(`lg-${lg}-${page}`, `${G}/v2/leagues/${lg}/events?limit=50&offset=${page * 50}`);
+      const evs = j?.events || [];
+      listing[lg].push(...evs);
+      await wait(1500);
+      if (evs.length < 50) break;
+    }
   }
-  await get('leagues', `${G}/v2/leagues`); await wait(1200);
-  for (const d of ['2026-10-24', '2026-10-25']) await get(`sofa-${d}`, `https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/${d}`);
-  for (const tour of ['atp', 'wta']) for (const d of ['20261024', '20261025']) await get(`espn-${tour}-${d}`, `https://site.api.espn.com/apis/site/v2/sports/tennis/${tour}/scoreboard?dates=${d}`);
-  await get('tsdb', 'https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=2026-10-24&s=Tennis');
-  await get('gamma-tennis', 'https://gamma-api.polymarket.com/events?tag_slug=tennis&closed=true&limit=20&order=endDate&ascending=false');
-  const gt = log.find(l => l.name === 'gamma-tennis');
-  try {
-    const ev = JSON.parse(fs.readFileSync('out/raw/gamma-tennis.txt', 'utf8'));
-    const tok = JSON.parse(ev[0]?.markets?.[0]?.clobTokenIds || '[]')[0];
-    if (tok) await get('clob-hist', `https://clob.polymarket.com/prices-history?market=${tok}&interval=max&fidelity=1`);
-  } catch (e) { log.push({ name: 'gamma-parse', error: e.message, gt }); }
-  await get('tdata', 'http://www.tennis-data.co.uk/alldata.php', { save: true });
-  fs.writeFileSync('out/log.json', JSON.stringify({ at: new Date().toISOString(), version: st.json?.version, log }, null, 1));
-  console.log(JSON.stringify(log.map(l => [l.name, l.status || l.error, l.bytes])));
+  fs.writeFileSync('out/listing.json', JSON.stringify(listing));
+  const espn = {};
+  const day = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+  for (const tour of ['atp', 'wta']) for (let i = -2; i <= 0; i++) {
+    const d = day(new Date(Date.now() + i * 864e5));
+    espn[`${tour}-${d}`] = await get(`espn-${tour}-${d}`, `https://site.api.espn.com/apis/site/v2/sports/tennis/${tour}/scoreboard?dates=${d}`);
+  }
+  fs.writeFileSync('out/espn.json', JSON.stringify(espn));
+  fs.writeFileSync('out/log.json', JSON.stringify({ at: new Date().toISOString(), log }, null, 1));
+  console.log(JSON.stringify(log.map(l => [l.name, l.status || l.error])));
 })();
