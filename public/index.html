@@ -1556,6 +1556,11 @@ body.no-help .clv-info { display:none; }
     <div class="sport-row" id="nflmModes"></div>
     <div id="nflmContent"></div>
   </div>
+  <div id="kmkView" style="display:none">
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">RESEARCH, NOT A BET</span> A resting Kalshi bid on each NFL, CFB, NBA and NHL game side, 2%+ under Pinnacle's no-vig fair after Kalshi's maker fee. Taking Kalshi's ask has lost to Pinnacle's close; this tests whether waiting for a seller does better. The record counts a bid only when a Kalshi trade printed through it. Nothing here places an order.</div>
+    <div class="sport-row" id="kmkModes"></div>
+    <div id="kmkContent"></div>
+  </div>
   <div id="shpView" style="display:none">
     <div class="shp-dim" style="margin:0 0 10px;line-height:1.5">Every number any venue hangs, alternate lines and player props included. Fair is Pinnacle's no-vig (Matchbook blended in beside it). Ranked rows are leads unless marked PROVEN; check the price in the app before you bet.</div>
     <div class="sport-row" id="shpModes"></div>
@@ -9532,6 +9537,68 @@ function nflmRecord(el) {
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div><div class="nflm-cards">${cards}</div>` +
     (rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Kind</th><th>Contract</th><th>Model</th><th>Cost</th><th>Pin close</th><th>CLV</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">Nothing frozen yet: contracts go in an hour before kickoff when the model is 3+ points over Kalshi.</div></div>');
 }
+// ─── KALSHI MAKER (ODDS SCREEN > MAKER) ────────────────────────────────────────
+// /api/kalshi-maker: the bid a maker would rest on each Kalshi game side under
+// Pinnacle's fair, and the record of what such bids did (kind kalshi-maker).
+var kmkUi = { view: 'board', sport: '', data: null, error: null, timer: null };
+const kmkC = p => (p == null ? '—' : `${Math.round(p * 100)}¢`);
+const kmkC1 = p => (p == null ? '—' : `${(p * 100).toFixed(1)}¢`);
+function kmkSet(k, v) { kmkUi[k] = v; if (k === 'sport') kmkLoad(); else kmkRender(); }
+async function kmkLoad() {
+  clearTimeout(kmkUi.timer);
+  const el = document.getElementById('kmkContent');
+  if (!el) return;
+  kmkModes();
+  if (!kmkUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try { kmkUi.data = await tailGet(`/api/kalshi-maker${kmkUi.sport ? `?sport=${kmkUi.sport}` : ''}`); kmkUi.error = null; }
+  catch (e) { kmkUi.error = e.old ? 'The maker view needs a newer backend.' : e.message; }
+  kmkRender();
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'maker') kmkUi.timer = setTimeout(() => { if (!document.hidden) kmkLoad(); else kmkUi.timer = setTimeout(kmkLoad, 60e3); }, 60e3);
+}
+function kmkModes() {
+  const bar = document.getElementById('kmkModes');
+  if (!bar) return;
+  const v = (k, l) => `<button class="sport-chip${kmkUi.view === k ? ' active' : ''}" onclick="kmkSet('view','${k}')">${l}</button>`;
+  const sp = (k, l) => `<button class="sport-chip${kmkUi.sport === k ? ' active' : ''}" onclick="kmkSet('sport','${k}')">${l}</button>`;
+  bar.innerHTML = v('board', 'BIDS NOW') + v('record', 'RECORD') + (kmkUi.view === 'board' ? '<span style="width:10px"></span>' + sp('', 'ALL') + sp('nfl', 'NFL') + sp('ncaaf', 'CFB') + sp('nba', 'NBA') + sp('nhl', 'NHL') : '');
+}
+const kmkMkt = { h2h: 'Moneyline', spreads: 'Spread', totals: 'Total' };
+const kmkLg = { nfl: 'NFL', ncaaf: 'CFB', nba: 'NBA', nhl: 'NHL' };
+function kmkRecordCard(title, r, how = 'through the bid') {
+  if (!r) return '';
+  const pct = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`);
+  return `<div class="nflm-card"><div><b>${escEs(title)}</b> <span class="nflm-tag">${escEs(String(r.verdict || 'lead').toUpperCase())}</span></div>
+    <div>${r.posted} bids posted · ${r.decided} decided · ${r.filled} filled ${how}${r.fillRate == null ? '' : ` (${Math.round(r.fillRate * 100)}%)`}</div>
+    <div>${r.graded} of ${r.of} graded vs Pinnacle's close · CLV ${pct(r.clv)} (t ${r.clvT ?? '—'})${r.beatClose == null ? '' : ` · ${Math.round(r.beatClose * 100)}% beat it`}</div>
+    <div>Results ${r.won}-${r.lost}${r.results ? ` · ${r.profit >= 0 ? '+' : ''}${r.profit.toFixed(2)}u vs ${r.expected >= 0 ? '+' : ''}${r.expected.toFixed(2)}u the close expects` : ''}</div>
+    <div class="shp-dim">On filled bids Pinnacle's fair moved ${r.fairDriftAtFill == null ? '—' : nflPts(r.fairDriftAtFill) + ' pts'} by the fill and ${r.fairDriftToClose == null ? '—' : nflPts(r.fairDriftToClose) + ' pts'} by the close</div></div>`;
+}
+function kmkRender() {
+  kmkModes();
+  const el = document.getElementById('kmkContent');
+  if (!el) return;
+  if (kmkUi.error) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO DATA</div><div class="empty-sub">${escEs(kmkUi.error)}</div></div>`; return; }
+  const d = kmkUi.data;
+  if (!d) return;
+  if (kmkUi.view === 'record') {
+    const bt = d.backtest, b2 = bt?.byEdge?.[String(d.edge)] || null;
+    const btCards = b2 ? kmkRecordCard('Backtest at 2% (judged)', b2.all) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
+      + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged)`, x.all)).join('') : '';
+    const rows = (d.recent || []).map(r => `<tr><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div></td><td>${kmkC(r.bid)}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
+      <div class="nflm-cards">${kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
+      ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
+      ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Bid on</th><th>Bid</th><th>Fair at post</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No bid has closed yet: a bid is posted 2 min to 24 h before the start and decided from Kalshi\'s prints after it.</div></div>'}`;
+    return;
+  }
+  if (!d.kalshi) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">KALSHI OFF</div><div class="empty-sub">Kalshi's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
+  const rows = (d.board || []);
+  if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">No Kalshi game side Pinnacle prices starts in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a minute after a restart)'}.</div></div>`; return; }
+  const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div></td>
+    <td>${kmkC1(r.fair)}</td><td>${kmkC(r.ask)}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${kmkC(r.bid)}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
+    <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
@@ -9549,15 +9616,18 @@ function oddsModeShow() {
   const lines = !mode || mode === 'lines';
   const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
   const bar = document.getElementById('oddsModes');
-  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('nflmodel', 'NFL MODEL');
-  const nfl = mode === 'nflmodel';
-  const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView');
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('nflmodel', 'NFL MODEL');
+  const nfl = mode === 'nflmodel', mk = mode === 'maker';
+  const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView'), kv = document.getElementById('kmkView');
   if (ov) ov.style.display = lines ? '' : 'none';
-  if (sv) sv.style.display = lines || nfl ? 'none' : '';
+  if (sv) sv.style.display = lines || nfl || mk ? 'none' : '';
   if (nv) nv.style.display = nfl ? '' : 'none';
-  if (lines) { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); loadOdds(); }
-  else if (nfl) { clearTimeout(osUi.timer); if (window.shpUi) clearTimeout(shpUi.timer); nflmLoad(); }
-  else { clearTimeout(osUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); shpLoad(); }
+  if (kv) kv.style.display = mk ? '' : 'none';
+  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); };
+  if (lines) { stop(); loadOdds(); }
+  else if (nfl) { clearTimeout(osUi.timer); stop(); nflmLoad(); }
+  else if (mk) { clearTimeout(osUi.timer); stop(); kmkLoad(); }
+  else { clearTimeout(osUi.timer); stop(); shpLoad(); }
 }
 let shpTyping = null;
 function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
@@ -9595,7 +9665,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
   shpRender();
-  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {

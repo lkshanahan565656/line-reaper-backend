@@ -161,6 +161,13 @@ const soccerModelBet = r => {
     line: graded && r.closeOk && r.pinClose > 0 && r.cost > 0 ? { win: r.outcome === 'win', p: r.pinClose, d: 1 / r.cost } : null,
     labels: { kind: SOCCER_KIND[r.kind] || r.kind } };
 };
+// Kalshi maker bids (kmaker.js): only a bid a print went through counts, at its bid + maker fee
+const kalshiMakerBet = r => {
+  const graded = r.status === 'graded' && r.filled === true;
+  return { profit: graded ? r.profit ?? null : null, staked: graded && r.outcome !== 'push' ? 1 : 0, clv: r.filled === true ? r.clv ?? null : null, game: `${r.event}|${day(r.start)}`,
+    line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: 'Kalshi maker bid', sport: r.sport, market: r.market } };
+};
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
@@ -224,6 +231,9 @@ const SOURCES = {
   nflModel: { label: 'NFL model', done: r => r.status === 'locked' || r.status === 'graded', open: r => r.status === 'open', bet: nflModelBet, cuts: [['kind']] },
   // our soccer match model vs Kalshi and Polymarket US (soccergl.js): one venue per kind
   soccerModel: { label: 'Soccer model', done: r => r.status === 'locked' || r.status === 'graded', open: r => r.status === 'open', bet: soccerModelBet, cuts: [['kind']] },
+  // resting Kalshi bids under Pinnacle's fair (kmaker.js): research, judged on fills through the bid
+  kalshiMaker: { label: 'Kalshi maker bids', done: r => r.status === 'graded' && r.filled === true, open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
+    bet: kalshiMakerBet, cuts: [['kind'], ['sport'], ['market']] },
 };
 // sportsbook records whose proven mark must come from one book's own sample
 const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
@@ -251,6 +261,13 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
   if (source === 'soccerModel' && s.verdict === 'proven') {
     const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
     if (by !== 'kind') return cap(s, 'not proven: pooled across Kalshi and Polymarket US', { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
+  if (source === 'kalshiMaker' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind') return cap(s, 'not proven: a cut of the maker record, judged only whole', { games });
     if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
     if (short.short) return cap(s, short.note, { games });
     return { ...s, games };
