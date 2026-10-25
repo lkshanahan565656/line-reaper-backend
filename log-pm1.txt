@@ -1,0 +1,28 @@
+14:09:12 pm sample {"id":"1246614","ticker":"epl-che-tot-2026-10-24-player-props","slug":"epl-che-tot-2026-10-24-player-props","title":"Chelsea FC vs. Tottenham Hotspur FC - Player Props","description":"Player props for the Premier League game between Chelsea FC and Tottenham Hotspur FC, scheduled for October 24, 2026 at 12:30 PM ET. Player field from the confirmed starting lineups (SportsDataIO).","resolutionSource":"https://www.premierleague.com/","startDate":"2026-10-24T15:38:10Z","creationDate":"2026-10-24T16:30:00Z","endDate":"2026-10-24T16:30:00Z","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg","icon":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg","active":true,"closed":true,"archived":false,"new":false,"featured":false,"restricted":true,"volume":1594.706007,"openInterest":7.561710000000001,"createdAt":"2026-10-24T15:37:01.912595Z","updatedAt":"2026-10-25T14:09:00.735563Z","volume24hr":1594.706007,"volume1wk":1594.706007,"volume1mo":1594.706007,"volume1yr":1594.706007,"parentEventId":1168565,"enableOrderBook":true,"negRisk":false,"commentCount":0,"markets":[{"id":"6135604","question":"Cole Palmer: Anytime Goalscorer","conditionId":"0xaef4a5760a12e3975269a69c6317a8d13cc416c11d01038924b38820ea4abf68","slug":"epl-che-tot-2026-10-24-ags-cole-palmer-90086737","resolutionSource":"https://www.premierleague.com/","endDate":"2026-10-24T16:30:00Z","startDate":"2026-10-24T15:39:01Z","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg","icon":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg","description":"In the upcoming Premier League game between Chelsea FC and Tottenham Hotspur FC, scheduled for October 24, 2026 at 12:30 PM ET: This market will resolve to \"Yes\" if Cole Palmer is credited with a goal in the official box score within the first 90 minutes of regular play plus stoppage time. Otherwise, this market will resolve to \"No\". Own goals do not count. If the game is postponed, this market will remain open until the game has been completed. If the game is canceled entirely, with no make-up game, this market will resolve \"50-50\". If the player is listed as inactive or otherwise does not play, the market will resolve \"No\". The primary resolution source for this market is the official statistics published by the governing body or event organizers. If the governing body or event organizers have not published final statistics within 2 hours of the event's conclusion, data from Flashscore may be used; if Flashscore data is unavailable, data from Sofascore may be used; if neither is available, a consensus of credible reporting may be used. Revisions to officially published final statistics made after market resolution will not be considered in determining the outcome. If no acceptable data is available within 24 hours of the event's conclusion, this market will resolve 50-50, 
+14:09:21 pm epl events 1815
+14:09:31 pm epl 200 / 1815 calls 490 errs 0
+14:09:31 saved pm-epl 200
+14:09:40 pm epl 400 / 1815 calls 898 errs 0
+14:09:41 saved pm-epl 400
+14:09:53 pm epl 600 / 1815 calls 1457 errs 0
+14:09:53 saved pm-epl 600
+14:10:02 saved pm-epl 719
+14:10:19 pm lal events 2000
+14:10:30 pm lal 200 / 2000 calls 2296 errs 0
+14:10:30 saved pm-lal 200
+14:10:39 pm lal 400 / 2000 calls 2725 errs 0
+14:10:40 saved pm-lal 400
+14:10:50 pm lal 600 / 2000 calls 3205 errs 0
+14:10:51 saved pm-lal 600
+14:11:00 saved pm-lal 733
+14:11:10 pm elc events 1886
+14:11:21 pm elc 200 / 1886 calls 4089 errs 0
+14:11:21 saved pm-elc 200
+14:11:31 pm elc 400 / 1886 calls 4550 errs 0
+14:11:31 saved pm-elc 400
+14:11:44 pm elc 600 / 1886 calls 5127 errs 0
+14:11:45 saved pm-elc 600
+14:11:58 pm elc 800 / 1886 calls 5726 errs 0
+14:11:58 saved pm-elc 800
+14:12:04 saved pm-elc 880
+14:12:04 done pm:epl,lal,elc calls 5959 errs 0 min 3
