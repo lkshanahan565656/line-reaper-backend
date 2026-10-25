@@ -1,0 +1,13 @@
+name: diag-appshop
+on: { push: { branches: [diag-appshop] } }
+permissions: { contents: write }
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./live.sh
+      - run: |
+          git config user.name diag; git config user.email diag@users.noreply.github.com
+          git checkout --orphan diag-appshop-out && git rm -rqf --cached . && git add -f out && git commit -qm "appshop live $(date -u +%FT%TZ)" && git push -f origin HEAD:diag-appshop-out
