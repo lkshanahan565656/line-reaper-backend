@@ -109,14 +109,24 @@ const num = x => (x == null || x === '' || !Number.isFinite(Number(x)) ? null : 
 // lines: raw lines from every book. esKey(sport, market) keys esports stats
 // (the server's normalizeMarket reads "MAPS 1-2 Kills" and "Kills on Maps 1+2"
 // alike); sports use sportMarketKey.
-function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
+// (buildRowsSteps: the same build as a generator that stops every few hundred
+// lines, so the server can run it a slice at a time; buildRows runs it in one go)
+function buildRows(lines, opts) {
+  const it = buildRowsSteps(lines, opts);
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+const ROW_STEP = 256;
+/** @param {any[]} lines @param {any} [opts] */
+function* buildRowsSteps(lines, { esKey = null, now = Date.now() } = {}) {
   const rows = new Map();
+  let n = 0;
   // A sports line from a different game than the others (Sleeper on opening
   // night while Underdog lists preseason) gets a row of its own: the anchor is
   // the player's earliest start on the other books, and a line more than
   // DATE_SLACK away from it is keyed by its own date.
   const anchor = new Map();
   for (const raw of lines) {
+    if (++n % ROW_STEP === 0) yield;
     if (!raw || raw.book === 'sleeper' || !raw.player) continue;
     const l = normLine(raw);
     const t = Date.parse(l.startTime || '');
@@ -125,6 +135,7 @@ function buildRows(lines, { esKey = null, now = Date.now() } = {}) {
     if (!anchor.has(k) || t < anchor.get(k)) anchor.set(k, t);
   }
   for (const raw of lines) {
+    if (++n % ROW_STEP === 0) yield;
     if (!raw || !raw.player || num(raw.line) == null || !BOOKS.includes(raw.book)) continue;
     const l = normLine(raw);
     const t = Date.parse(l.startTime || '');
@@ -412,4 +423,4 @@ function redactRow(r) {
   return { ...r, books, best: r.best ? { locked: true, ...(['gap', 'sharp'].includes(r.best.kind) ? { kind: r.best.kind } : {}) } : null, model: null, pinnacle: null, consensus: null, bookConsensus: null, threeSharp: r.threeSharp ? { locked: true } : null, combo: r.combo ? { locked: true } : null };
 }
 
-module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };
+module.exports = { coverage, legSource, noSharpMarket, NO_SHARP, SPORT_MARKET_ALIASES, boardSport, sportMarketKey, normLine, borrowStarts, buildRows, buildRowsSteps, kalshiFairIndex, priceRows, queryRows, lineFacets, counts, redactRow, BOOKS };

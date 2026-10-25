@@ -149,14 +149,31 @@ const MARKET_ALIASES = [
 // short forms are evened out before the aliases run.
 /** @type {Array<[RegExp, string]>} */
 const MARKET_WORDS = [[/\byds\b/g, 'yards'], [/\btds\b/g, 'tds'], [/^anytime tds$/, 'anytime td'], [/^anytime touchdowns$/, 'anytime td']];
-function canonMarket(m) {
+// canonMarket and canonName run on every line of every board, on a few
+// thousand distinct strings: their answers are kept (dropped whole when full)
+const CANON_MEMO_MAX = 50000;
+/** @param {Map<string, string>} memo @param {(s: string) => string} fn @returns {(x: any) => string} */
+function memoString(memo, fn) {
+  return x => {
+    const s = String(x || '');
+    let v = memo.get(s);
+    if (v === undefined) {
+      v = fn(s);
+      if (memo.size >= CANON_MEMO_MAX) memo.clear();
+      memo.set(s, v);
+    }
+    return v;
+  };
+}
+const canonMarket = memoString(new Map(), canonMarketOnce);
+function canonMarketOnce(m) {
   let s = String(m || '').trim().toLowerCase().replace(/\s*\+\s*/g, ' + ').replace(/\s+/g, ' ');
   for (const [re, to] of MARKET_WORDS) s = s.replace(re, to);
   for (const [re, key] of MARKET_ALIASES) if (re.test(s)) return key;
   return s.replace(/\s+/g, '_');
 }
-const canonName = n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/\b(jr|sr|ii|iii|iv)\b\.?/g, '').replace(/[^a-z0-9]/g, '');
+const canonName = memoString(new Map(), n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/\b(jr|sr|ii|iii|iv)\b\.?/g, '').replace(/[^a-z0-9]/g, ''));
 
 // ── normalize feeds into quotes ──
 // quote: { group, eventId, sport, event, start, market, player, point, side, book, price }
@@ -278,7 +295,16 @@ function agreement(f, side, maxPts = AGREE_MAX_PTS) {
 // market Pinnacle itself prices: its own no-vig chance of the side (%) and its
 // raw prices on every side, so a tracker can close a bet on Pinnacle's own
 // price there and nothing blended or interpolated.
-function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, pinFairs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
+// (screenSteps: the same screen as a generator that stops every few dozen
+// groups, so the server can run it a slice at a time; screen runs it in one go)
+/** @param {any} [opts] */
+function screen(opts) {
+  const it = screenSteps(opts);
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+/** @param {any} [args] */
+function* screenSteps({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), minEv = 0, method = 'power', kellyFraction = 0.25, fairs = null, costs = null, pinFairs = null, weights = SHARP_WEIGHTS, agreeMaxPts = AGREE_MAX_PTS } = {}) {
+  let steps = 0;
   const quotes = feeds.flatMap(f => quotesFromGames(f.games, { sport: f.sport }).map(q => ({ ...q, updated: f.updated || null })));
   const groups = new Map();
   for (const q of quotes) {
@@ -291,6 +317,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   const suspect = new Set();
   const propFair = new Map();   // player|market|line → [{ f, head }], one per game, for DFS legs
   for (const [group, qs] of groups) {
+    if (++steps % 32 === 0) yield;
     const f = fairForGroup(qs, { method, weights });
     if (!f) continue;
     if (fairs) for (const side of f.sides) fairs.set(`${group}|${side}`, round(f.fair[side] * 100, 2));
@@ -353,6 +380,7 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
   // moving a fair price across lines needs a distribution we don't have here.
   if (dfsEv) {
     for (const l of dfsLines) {
+      if (++steps % 256 === 0) yield;
       if (l.startTime && Date.parse(l.startTime) <= now) continue;
       const hit = dfsGame(propFair.get(`${canonName(l.player)}|${canonMarket(l.market)}|${Number(l.line)}`), l.startTime);
       if (!hit) continue;
@@ -429,5 +457,5 @@ function describeEv(r) {
 
 module.exports = {
   americanToDecimal, decimalToAmerican, probToAmerican, devig, canonMarket, canonName,
-  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS, dfsGame, DFS_START_SLACK_MS,
+  quotesFromGames, fairForGroup, agreement, AGREE_MAX_PTS, isOutlier, SELF_SOURCES, COMPANION_SOURCES, RELAYED_BOOKS, screen, screenSteps, diffEv, describeEv, rowKey, SHARP_WEIGHTS, DFS_BOOKS, dfsGame, DFS_START_SLACK_MS,
 };

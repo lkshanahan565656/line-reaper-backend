@@ -216,3 +216,45 @@ function stacks(p, top = 40) {
 
 module.exports.createProfiler = createProfiler;
 module.exports.summarize = summarize;
+
+// ─── Long builds in slices ────────────────────────────────────────────────────
+// A build written as a generator (yield wherever it may stop) runs either in
+// one go (runSteps) or a slice at a time (runStepsAsync: hands the event loop
+// back every sliceMs, about 20 ms), so requests and other jobs get in between.
+// Same code, same order of work either way: only the pauses differ.
+function runSteps(it) {
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+async function runStepsAsync(it, { sliceMs = 20, stats = null } = {}) {
+  const t0 = performance.now();
+  let start = t0, slices = 1, maxSliceMs = 0;
+  for (;;) {
+    const r = it.next();
+    const now = performance.now();
+    if (r.done) {
+      maxSliceMs = Math.max(maxSliceMs, now - start);
+      if (stats) Object.assign(stats, { ms: Math.round(now - t0), slices, maxSliceMs: Math.round(maxSliceMs) });
+      return r.value;
+    }
+    if (now - start >= sliceMs) {
+      maxSliceMs = Math.max(maxSliceMs, now - start);
+      await new Promise(resolve => setImmediate(resolve));
+      start = performance.now();
+      slices++;
+    }
+  }
+}
+module.exports.runSteps = runSteps;
+module.exports.runStepsAsync = runStepsAsync;
+// An async loop's pause point: `await slice()` hands the event loop back once
+// sliceMs has gone by since the last hand-back (an await on a ready promise
+// alone never does: microtasks run before anything else gets in)
+function createSlicer(sliceMs = 20) {
+  let start = performance.now();
+  return async () => {
+    if (performance.now() - start < sliceMs) return;
+    await new Promise(resolve => setImmediate(resolve));
+    start = performance.now();
+  };
+}
+module.exports.createSlicer = createSlicer;
