@@ -121,21 +121,21 @@ async function lolFrames() {
       const end = await get(`https://feed.lolesports.com/livestats/v1/window/${g.id}`, {}, LKH);
       const lastF = end?.frames?.slice(-1)[0];
       if (!lastF) { rec.g.push({ id: g.id, n: g.number, none: 1 }); continue; }
-      const tEnd = Date.parse(lastF.rfc460Timestamp);
-      // find the first frame: step forward 3 min from the previous game's end (or start - 10 min)
-      let t = Math.max(cursor, tEnd - 75 * 60e3), frames = [], guard = 0;
-      while (t < tEnd && guard++ < 40) {
+      // the window with no start returns the game's FIRST frames: walk forward from there
+      let t = Date.parse(end.frames[0].rfc460Timestamp), frames = [], guard = 0;
+      const tEnd = t + 80 * 60e3;
+      while (t < tEnd && guard++ < 60) {
         const st = new Date(Math.floor(t / 10e3) * 10e3).toISOString();
         const w = await get(`https://feed.lolesports.com/livestats/v1/window/${g.id}`, { startingTime: st }, LKH);
         const fr = w?.frames || [];
-        if (!fr.length) { t += (frames.length ? 60e3 : 180e3); continue; }
+        if (!fr.length) { if (frames.length) break; t += 60e3; continue; }
         for (const f of fr) { const ts = Date.parse(f.rfc460Timestamp); if (!frames.length || ts > frames[frames.length - 1][0]) frames.push([ts, f.gameState === 'finished' ? 1 : 0, ...side(f.blueTeam), ...side(f.redTeam)]); }
         const lt = frames[frames.length - 1][0];
         if (fr.slice(-1)[0].gameState === 'finished') break;
         t = lt + 10e3;
       }
       rec.g.push({ id: g.id, n: g.number, sides: (g.teams || []).map(x => [x.id, x.side]), bt: end.gameMetadata?.blueTeamMetadata?.esportsTeamId, rt: end.gameMetadata?.redTeamMetadata?.esportsTeamId, f: frames });
-      cursor = tEnd;
+      cursor = frames.length ? frames[frames.length - 1][0] : cursor;
     }
     out.push(rec);
     if (++done % 25 === 0) { log('lol', done, '/', matches.length, 'calls', calls, 'errs', errs); save(`lolf-${process.env.SHARD || 0}`, out); }
