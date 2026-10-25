@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-25T11:53:26.193Z",
+ "generated": "2026-10-25T12:35:10.429Z",
  "rule": {
   "edge": 0.03,
   "entryMin": 60,
@@ -28,161 +28,200 @@
    "noStart": 0
   },
   "kalshi": {
-   "seen": 0,
-   "events": 0,
+   "seen": 19628,
+   "events": 9814,
    "notTwoSided": 0,
-   "noResult": 0,
-   "noStart": 0
+   "noResult": 604,
+   "noStart": 0,
+   "noEntry": 138
   }
  },
  "venues": {
   "kalshi": {
    "2025": {
-    "matched": 0,
-    "insufficient": 0,
-    "priced": 0,
+    "matched": 2277,
+    "insufficient": 112,
+    "priced": 2165,
     "logLoss": {
-     "model": 0,
-     "market": 0,
-     "modelMinusMarketT": 0
+     "model": 0.6245,
+     "market": 0.6032,
+     "modelMinusMarketT": 5.0131
     },
     "brier": {
-     "model": 0,
-     "market": 0
+     "model": 0.2179,
+     "market": 0.2082
     },
-    "blend": null,
+    "blend": {
+     "market": 1.0473,
+     "model": -0.1554,
+     "modelZ": -1.2423
+    },
     "bets": {
-     "n": 0,
-     "wins": 0,
-     "roi": 0,
-     "z": null,
-     "profitUnits": 0,
-     "winsVsCostZ": null,
-     "clvN": 0,
-     "clvMean": 0,
-     "clvT": null,
-     "favourites": 0,
-     "avgEdge": 0
+     "n": 1056,
+     "wins": 374,
+     "roi": -0.0464,
+     "z": -0.955,
+     "profitUnits": -49.0449,
+     "winsVsCostZ": -2.0226,
+     "clvN": 1056,
+     "clvMean": -0.0665,
+     "clvT": -20.3827,
+     "favourites": 206,
+     "avgEdge": 0.0821
     },
     "settleDisagree": 0
    },
    "2026": {
-    "matched": 0,
-    "insufficient": 0,
-    "priced": 0,
+    "matched": 6784,
+    "insufficient": 703,
+    "priced": 6081,
     "logLoss": {
-     "model": 0,
-     "market": 0,
-     "modelMinusMarketT": 0
+     "model": 0.6196,
+     "market": 0.592,
+     "modelMinusMarketT": 10.1809
     },
     "brier": {
-     "model": 0,
-     "market": 0
+     "model": 0.2157,
+     "market": 0.2039
     },
-    "blend": null,
+    "blend": {
+     "market": 1.0691,
+     "model": -0.0577,
+     "modelZ": -0.7816
+    },
     "bets": {
-     "n": 0,
-     "wins": 0,
-     "roi": 0,
-     "z": null,
-     "profitUnits": 0,
-     "winsVsCostZ": null,
-     "clvN": 0,
-     "clvMean": 0,
-     "clvT": null,
-     "favourites": 0,
-     "avgEdge": 0
+     "n": 3508,
+     "wins": 1182,
+     "roi": -0.1191,
+     "z": -4.8336,
+     "profitUnits": -417.6636,
+     "winsVsCostZ": -4.109,
+     "clvN": 3508,
+     "clvMean": -0.0653,
+     "clvT": -28.7561,
+     "favourites": 602,
+     "avgEdge": 0.0957
     },
-    "settleDisagree": 0
+    "settleDisagree": 2
    },
    "all": {
-    "matched": 0,
-    "insufficient": 0,
-    "priced": 0,
+    "matched": 9072,
+    "insufficient": 815,
+    "priced": 8257,
     "logLoss": {
-     "model": 0,
-     "market": 0,
-     "modelMinusMarketT": 0
+     "model": 0.6208,
+     "market": 0.5949,
+     "modelMinusMarketT": 11.3404
     },
     "brier": {
-     "model": 0,
-     "market": 0
+     "model": 0.2162,
+     "market": 0.205
     },
-    "blend": null,
+    "blend": {
+     "market": 1.066,
+     "model": -0.0902,
+     "modelZ": -1.4229
+    },
     "bets": {
-     "n": 0,
-     "wins": 0,
-     "roi": 0,
-     "z": null,
-     "profitUnits": 0,
-     "winsVsCostZ": null,
-     "clvN": 0,
-     "clvMean": 0,
-     "clvT": null,
-     "favourites": 0,
-     "avgEdge": 0
+     "n": 4568,
+     "wins": 1558,
+     "roi": -0.102,
+     "z": -4.6325,
+     "profitUnits": -465.844,
+     "winsVsCostZ": -4.5453,
+     "clvN": 4568,
+     "clvMean": -0.0656,
+     "clvT": -34.5238,
+     "favourites": 808,
+     "avgEdge": 0.0926
     },
-    "settleDisagree": 0
+    "settleDisagree": 2
    },
    "atp": {
-    "matched": 0,
-    "insufficient": 0,
-    "priced": 0,
+    "matched": 4455,
+    "insufficient": 527,
+    "priced": 3928,
     "logLoss": {
-     "model": 0,
-     "market": 0,
-     "modelMinusMarketT": 0
+     "model": 0.6292,
+     "market": 0.6013,
+     "modelMinusMarketT": 8.0779
     },
     "brier": {
-     "model": 0,
-     "market": 0
+     "model": 0.22,
+     "market": 0.2079
     },
-    "blend": null,
+    "blend": {
+     "market": 1.0659,
+     "model": -0.1119,
+     "modelZ": -1.368
+    },
     "bets": {
-     "n": 0,
-     "wins": 0,
-     "roi": 0,
-     "z": null,
-     "profitUnits": 0,
-     "winsVsCostZ": null,
-     "clvN": 0,
-     "clvMean": 0,
-     "clvT": null,
-     "favourites": 0,
-     "avgEdge": 0
+     "n": 2134,
+     "wins": 802,
+     "roi": -0.1059,
+     "z": -3.6384,
+     "profitUnits": -226.0327,
+     "winsVsCostZ": -3.3338,
+     "clvN": 2134,
+     "clvMean": -0.0626,
+     "clvT": -37.316,
+     "favourites": 519,
+     "avgEdge": 0.0964
     },
-    "settleDisagree": 0
+    "settleDisagree": 1
    },
    "wta": {
-    "matched": 0,
-    "insufficient": 0,
-    "priced": 0,
+    "matched": 4617,
+    "insufficient": 288,
+    "priced": 4329,
     "logLoss": {
-     "model": 0,
-     "market": 0,
-     "modelMinusMarketT": 0
+     "model": 0.6132,
+     "market": 0.5891,
+     "modelMinusMarketT": 7.9601
     },
     "brier": {
-     "model": 0,
-     "market": 0
+     "model": 0.2128,
+     "market": 0.2025
     },
-    "blend": null,
+    "blend": {
+     "market": 1.0512,
+     "model": -0.0455,
+     "modelZ": -0.4474
+    },
     "bets": {
-     "n": 0,
-     "wins": 0,
-     "roi": 0,
-     "z": null,
-     "profitUnits": 0,
-     "winsVsCostZ": null,
-     "clvN": 0,
-     "clvMean": 0,
-     "clvT": null,
-     "favourites": 0,
-     "avgEdge": 0
+     "n": 2434,
+     "wins": 756,
+     "roi": -0.0985,
+     "z": -3.0322,
+     "profitUnits": -239.8113,
+     "winsVsCostZ": -3.0996,
+     "clvN": 2434,
+     "clvMean": -0.0682,
+     "clvT": -21.0078,
+     "favourites": 289,
+     "avgEdge": 0.0892
     },
-    "settleDisagree": 0
+    "settleDisagree": 1
    },
-   "months": {}
+   "months": {
+    "2025-06": 210,
+    "2025-07": 557,
+    "2025-08": 587,
+    "2025-09": 302,
+    "2025-10": 509,
+    "2025-11": 98,
+    "2025-12": 14,
+    "2026-01": 793,
+    "2026-02": 689,
+    "2026-03": 607,
+    "2026-04": 608,
+    "2026-05": 839,
+    "2026-06": 793,
+    "2026-07": 626,
+    "2026-08": 864,
+    "2026-09": 436,
+    "2026-10": 540
+   }
   },
   "polymarket": {
    "2025": {
@@ -370,38 +409,42 @@
  "edge": false,
  "headline": {
   "kalshi": {
-   "n": 0,
+   "n": 8257,
    "logLoss": {
-    "model": 0,
-    "market": 0,
-    "modelMinusMarketT": 0
+    "model": 0.6208,
+    "market": 0.5949,
+    "modelMinusMarketT": 11.3404
    },
-   "blend": null,
+   "blend": {
+    "market": 1.066,
+    "model": -0.0902,
+    "modelZ": -1.4229
+   },
    "bets": {
-    "n": 0,
-    "wins": 0,
-    "roi": 0,
-    "z": null,
-    "profitUnits": 0,
-    "winsVsCostZ": null,
-    "clvN": 0,
-    "clvMean": 0,
-    "clvT": null,
-    "favourites": 0,
-    "avgEdge": 0
+    "n": 4568,
+    "wins": 1558,
+    "roi": -0.102,
+    "z": -4.6325,
+    "profitUnits": -465.844,
+    "winsVsCostZ": -4.5453,
+    "clvN": 4568,
+    "clvMean": -0.0656,
+    "clvT": -34.5238,
+    "favourites": 808,
+    "avgEdge": 0.0926
    },
    "slices": {
     "2025": {
-     "n": 0,
-     "bets": 0,
-     "roi": 0,
-     "z": null
+     "n": 2165,
+     "bets": 1056,
+     "roi": -0.0464,
+     "z": -0.955
     },
     "2026": {
-     "n": 0,
-     "bets": 0,
-     "roi": 0,
-     "z": null
+     "n": 6081,
+     "bets": 3508,
+     "roi": -0.1191,
+     "z": -4.8336
     }
    }
   },
@@ -446,5 +489,5 @@
    }
   }
  },
- "verdict": "Not an edge. On 0 held-out Kalshi matches the model's log loss was 0 against Kalshi's 0; backing its side at 3+ points over the ask went +0.0% on 0 bets after fees, CLV +0.0% against Kalshi's last price. On 7,813 Polymarket matches (a proxy for Polymarket US): 0.6285 vs 0.6001, -10.0% on 4,432 bets."
+ "verdict": "Not an edge. On 8,257 held-out Kalshi matches the model's log loss was 0.6208 against Kalshi's 0.5949 (blend weight on the model -0.0902, z -1.4229); backing its side at 3+ points over the ask went -10.2% on 4,568 bets after fees, CLV -6.6% against Kalshi's last price. On 7,813 Polymarket matches (a proxy for Polymarket US): 0.6285 vs 0.6001, -10.0% on 4,432 bets."
 }
