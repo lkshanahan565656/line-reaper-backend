@@ -1,0 +1,50 @@
+14:09:12 pm sample {"id":"1247411","ticker":"sea-laz-par-2026-10-24-player-props","slug":"sea-laz-par-2026-10-24-player-props","title":"SS Lazio vs. Parma Calcio 1913 - Player Props","description":"Player props for the Serie A game between SS Lazio and Parma Calcio 1913, scheduled for October 24, 2026 at 2:45 PM ET. Player field from the confirmed starting lineups (SportsDataIO).","resolutionSource":"https://www.legaseriea.it/","startDate":"2026-10-24T18:09:42Z","creationDate":"2026-10-24T18:45:00Z","endDate":"2026-10-24T18:45:00Z","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Serie-A-Logo.png","icon":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Serie-A-Logo.png","active":true,"closed":true,"archived":false,"new":false,"featured":false,"restricted":true,"liquidity":0,"createdAt":"2026-10-24T18:08:27.071189Z","updatedAt":"2026-10-24T22:56:31.601954Z","competitive":0,"parentEventId":1167432,"enableOrderBook":true,"liquidityAmm":0,"liquidityClob":0,"negRisk":false,"commentCount":0,"markets":[{"id":"6145700","question":"Davide Frattesi: Anytime Goalscorer","conditionId":"0x27c965f5ccfde44d8b5b27c6371f35eda137341b9ab86a30b8a751813ff9a1a7","slug":"sea-laz-par-2026-10-24-ags-davide-frattesi-90046233","resolutionSource":"https://www.legaseriea.it/","endDate":"2026-10-24T18:45:00Z","liquidity":"0","startDate":"2026-10-24T18:09:42Z","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Serie-A-Logo.png","icon":"https://polymarket-upload.s3.us-east-2.amazonaws.com/Serie-A-Logo.png","description":"In the upcoming Serie A game between SS Lazio and Parma Calcio 1913, scheduled for October 24, 2026 at 2:45 PM ET: This market will resolve to \"Yes\" if Davide Frattesi is credited with a goal in the official box score within the first 90 minutes of regular play plus stoppage time. Otherwise, this market will resolve to \"No\". Own goals do not count. If the game is postponed, this market will remain open until the game has been completed. If the game is canceled entirely, with no make-up game, this market will resolve \"50-50\". If the player is listed as inactive or otherwise does not play, the market will resolve \"No\". The primary resolution source for this market is the official statistics published by the governing body or event organizers. If the governing body or event organizers have not published final statistics within 2 hours of the event's conclusion, data from Flashscore may be used; if Flashscore data is unavailable, data from Sofascore may be used; if neither is available, a consensus of credible reporting may be used. Revisions to officially published final statistics made after market resolution will not be considered in determining the outcome. If no acceptable data is available within 24 hours of the event's conclusion, this market will resolve 50-50, or to \"Draw\" where applicable.","outcomes":"[\"Yes\", \"No\"]","outcomePrices":"[\"0\", \"1\"]","active":true,"closed":true,"marketMakerAddress":"","createdAt":"2026-10-24T18:08:2
+14:09:23 pm sea events 1802
+14:09:33 pm sea 200 / 1802 calls 498 errs 0
+14:09:33 saved pm-sea 200
+14:09:43 pm sea 400 / 1802 calls 908 errs 0
+14:09:43 saved pm-sea 400
+14:09:56 pm sea 600 / 1802 calls 1490 errs 0
+14:09:56 saved pm-sea 600
+14:10:04 saved pm-sea 704
+14:10:11 pm bun events 1353
+14:10:22 pm bun 200 / 1353 calls 2270 errs 0
+14:10:22 saved pm-bun 200
+14:10:32 pm bun 400 / 1353 calls 2718 errs 0
+14:10:32 saved pm-bun 400
+14:10:45 saved pm-bun 579
+14:10:53 pm fl1 events 1542
+14:11:03 pm fl1 200 / 1542 calls 3730 errs 0
+14:11:04 saved pm-fl1 200
+14:11:13 pm fl1 400 / 1542 calls 4159 errs 0
+14:11:13 saved pm-fl1 400
+14:11:26 saved pm-fl1 594
+14:11:33 pm ere events 1117
+14:11:43 pm ere 200 / 1117 calls 5215 errs 0
+14:11:43 saved pm-ere 200
+14:11:55 pm ere 400 / 1117 calls 5741 errs 0
+14:11:56 saved pm-ere 400
+14:12:06 saved pm-ere 547
+14:12:10 pm por events 962
+14:12:21 pm por 200 / 962 calls 6656 errs 0
+14:12:21 saved pm-por 200
+14:12:33 pm por 400 / 962 calls 7203 errs 0
+14:12:33 saved pm-por 400
+14:12:40 saved pm-por 497
+14:12:54 pm mls events 2000
+14:13:04 pm mls 200 / 2000 calls 7969 errs 0
+14:13:04 saved pm-mls 200
+14:13:15 pm mls 400 / 2000 calls 8434 errs 0
+14:13:15 saved pm-mls 400
+14:13:25 pm mls 600 / 2000 calls 8897 errs 0
+14:13:26 saved pm-mls 600
+14:13:28 saved pm-mls 630
+14:13:37 pm mex events 1448
+14:13:47 pm mex 200 / 1448 calls 9435 errs 0
+14:13:47 saved pm-mex 200
+14:13:58 pm mex 400 / 1448 calls 9923 errs 0
+14:13:58 saved pm-mex 400
+14:14:11 pm mex 600 / 1448 calls 10520 errs 0
+14:14:12 saved pm-mex 600
+14:14:14 saved pm-mex 631
+14:14:14 done pm:sea,bun,fl1,ere,por,mls,mex calls 10603 errs 0 min 5
