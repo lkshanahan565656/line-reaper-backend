@@ -10,10 +10,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node probe.js
-        env: { MINUTES: "30", WAIT_VERSION: "3.160.1", AFTER: "100" }
+        env: { MINUTES: "1" }
       - run: |
           mkdir o && cp probe.json o/probe-$(git rev-parse --short HEAD).json && cd o
           git init -q && git checkout -q -b diag-stall-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out
           git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-          git fetch -q origin diag-stall-out && git rebase -q origin/diag-stall-out || true
+          git fetch -q origin diag-stall-out && git -c user.name=diag -c user.email=d@d rebase -q origin/diag-stall-out || true
           git push -q origin HEAD:diag-stall-out || git push -qf origin HEAD:diag-stall-out
