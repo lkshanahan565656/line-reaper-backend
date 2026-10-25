@@ -19,9 +19,20 @@ const START_SLACK = 90 * 60e3;
 
 // two names for one team: "EAC" and "Esport Academy Copenhagen", "Vitality"
 // and "Team Vitality". exact first, so a code can't take a team it merely fits
+// (the matchers ask about the same two names thousands of times a build: the
+// answers are kept, strings only; the memo is dropped whole when it fills)
+const SAME_MEMO_MAX = 50000;
+const sameMemo = new Map();
+const sameTeamOnce = (a, b) => teamsMatch(a, b) || teamCode(a, b) || teamCode(b, a);
 function sameTeam(a, b) {
   if (!a || !b) return false;
-  return teamsMatch(a, b) || teamCode(a, b) || teamCode(b, a);
+  if (typeof a !== 'string' || typeof b !== 'string') return sameTeamOnce(a, b);
+  const key = `${a}\u0000${b}`;
+  if (sameMemo.has(key)) return sameMemo.get(key);
+  const v = sameTeamOnce(a, b);
+  if (sameMemo.size >= SAME_MEMO_MAX) sameMemo.clear();
+  sameMemo.set(key, v);
+  return v;
 }
 
 // looser, for one player's own opponents only: "BB Team" is BetBoom
@@ -142,10 +153,12 @@ function matchTags(lines, { playerOf, sportOf = l => l.sport } = {}) {
 // A Sleeper line's start and title, from an Underdog (first) or PrizePicks line
 // on the same team against the same opponent. With no opponent, only when the
 // team has one upcoming match. null when nothing fits: the line can't be timed.
-function borrowMatch(l, refs, { slOpp = null, sportOf = x => x.sport, now = Date.now() } = {}) {
+// bySport (borrowRefs): the refs that can lend a match, by sport, read once for many lines
+function borrowMatch(l, refs, { slOpp = null, sportOf = x => x.sport, now = Date.now(), bySport = null } = {}) {
   if (!l?.team) return null;
   const opp = lineOpponent(l, slOpp);
-  const mine = (refs || []).filter(r => r.team && sportOf(r) === sportOf(l) && Date.parse(r.startTime || '') > now && sameTeam(r.team, l.team));
+  const mine = bySport ? (bySport.get(sportOf(l)) || []).filter(r => sameTeam(r.team, l.team))
+    : (refs || []).filter(r => r.team && sportOf(r) === sportOf(l) && Date.parse(r.startTime || '') > now && sameTeam(r.team, l.team));
   let fit;
   if (opp) fit = mine.filter(r => { const o = lineOpponent(r); return o && looseTeam(o, opp); });
   else {
@@ -156,6 +169,17 @@ function borrowMatch(l, refs, { slOpp = null, sportOf = x => x.sport, now = Date
   if (!fit.length) return null;
   const ref = fit.find(r => r.book === 'underdog') || fit.slice().sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime))[0];
   return { ...l, team: ref.team, startTime: ref.startTime, matchTitle: ref.matchTitle || '' };
+}
+
+// refs → Map sport → the refs with a team and a start still ahead, in their order
+function borrowRefs(refs, { sportOf = x => x.sport, now = Date.now() } = {}) {
+  const out = new Map();
+  for (const r of refs || []) {
+    if (!(r.team && Date.parse(r.startTime || '') > now)) continue;
+    const k = sportOf(r);
+    (out.get(k) || out.set(k, []).get(k)).push(r);
+  }
+  return out;
 }
 
 // The opponent on a pick (or a tracker row): the board's matchup, an "A vs B"
@@ -211,4 +235,4 @@ function multiMatchRows(rows, { sportOf = r => r.sport } = {}) {
   return out;
 }
 
-module.exports = { sameTeam, looseTeam, lineOpponent, sleeperTeams, matchTags, borrowMatch, pickOpponent, sideFor, multiMatchRows, START_SLACK };
+module.exports = { sameTeam, looseTeam, lineOpponent, sleeperTeams, matchTags, borrowMatch, borrowRefs, pickOpponent, sideFor, multiMatchRows, START_SLACK };

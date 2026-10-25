@@ -202,7 +202,16 @@ function rowFor(base, f, price, o, fairs, costs) {
 // pingames.kalshiMidBooks); kalshiRungs: bigmoney.rungIndex; leagueOf: board
 // sport → Kalshi / pinprops league ('nfl' → 'NFL'). fairs and costs (Maps)
 // are filled for every rung priced, as ev.screen does, for the tracker.
-function screen({ gamesBySport = {}, kalshiGame = new Map(), kalshiRungs = null, leagueOf = s => s.toUpperCase(), now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
+// (screenSteps: the same screen as a generator that stops every few games, so
+// the server can run it a slice at a time; screen runs it in one go)
+/** @param {any} [opts] */
+function screen(opts) {
+  const it = screenSteps(opts);
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+/** @param {any} [args] */
+function* screenSteps({ gamesBySport = {}, kalshiGame = new Map(), kalshiRungs = null, leagueOf = s => s.toUpperCase(), now = Date.now(), fairs = null, costs = null, o: opts = {} } = {}) {
+  let steps = 0;
   const o = { ...DEFAULTS, ...opts, weights: { ...DEFAULTS.weights, ...(opts.weights || {}) } };
   const kr = kalshiRungIndex(kalshiRungs, o);
   const rows = [];
@@ -210,6 +219,7 @@ function screen({ gamesBySport = {}, kalshiGame = new Map(), kalshiRungs = null,
     const sd = SD[sport] || [12, 12];
     const league = leagueOf(sport);
     for (const g of games || []) {
+      if (++steps % 4 === 0) yield;
       const t = Date.parse(g.commence_time || '');
       if (!(t > now)) continue;
       const pin = (g.bookmakers || []).find(b => b.key === 'pinnacle');
@@ -306,4 +316,4 @@ function summarize(gamesBySport = {}, rows = [], fairs = null) {
   return { ladders, altLines, priced, shown: rows.length, clear: rows.filter(r => r.clears).length, byBook: by('book'), bySport: by('sport'), byMarket: by('market') };
 }
 
-module.exports = { DEFAULTS, SD, probit, ladderAt, gamePoints, propLines, kalshiRungIndex, blend, screen, summarize };
+module.exports = { DEFAULTS, SD, probit, ladderAt, gamePoints, propLines, kalshiRungIndex, blend, screen, screenSteps, summarize };

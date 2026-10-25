@@ -123,9 +123,19 @@ function priceLeg(raw, { row = null, quotes = [], o = OPTS } = {}) {
 // then PrizePicks' unknown-payout legs by the lowest multiplier they'd need)
 // rowFor(leg) → the board row for the leg's player and stat, or null
 // quotesFor(row) → that row's sharp quotes
-function buildPromos(legs, { rowFor = () => null, quotesFor = () => [], now = Date.now(), o = OPTS } = {}) {
+// (buildPromosSteps: the same build as a generator that stops every 64 legs,
+// so the server can run it a slice at a time; buildPromos runs it in one go)
+/** @param {any[]} legs @param {any} [opts] */
+function buildPromos(legs, opts) {
+  const it = buildPromosSteps(legs, opts);
+  for (;;) { const r = it.next(); if (r.done) return r.value; }
+}
+/** @param {any[]} legs @param {any} [opts] */
+function* buildPromosSteps(legs, { rowFor = () => null, quotesFor = () => [], now = Date.now(), o = OPTS } = {}) {
   const out = [], seen = new Set();
+  let n = 0;
   for (const raw of legs || []) {
+    if (++n % 64 === 0) yield;
     if (!raw || !raw.player || !Number.isFinite(Number(raw.line)) || !raw.side) continue;
     const row = rowFor(normLeg(raw));
     const t = Date.parse(raw.startTime || row?.startTime || '');
@@ -210,4 +220,4 @@ function redactPromo(p) {
   return { ...p, fair: null, fairBooks: [], fairExact: null, fairFrom: null, edgePts: null, ev: null, beMult: null };
 }
 
-module.exports = { APPS, LABEL, CODE, TYPE_LABEL, OPTS, typeLabel, kindOf, requiredRate, sharpAt, normLeg, priceLeg, buildPromos, promoCounts, recordLegs, promoRow, baseKeyOf, recordSummary, redactPromo };
+module.exports = { APPS, LABEL, CODE, TYPE_LABEL, OPTS, typeLabel, kindOf, requiredRate, sharpAt, normLeg, priceLeg, buildPromos, buildPromosSteps, promoCounts, recordLegs, promoRow, baseKeyOf, recordSummary, redactPromo };

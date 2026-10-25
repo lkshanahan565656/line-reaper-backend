@@ -148,24 +148,62 @@ const GRID = (() => {
 
 // P(exactly h hit) for legs sharing a match, under the factor model. Legs
 // without loadings (no team, an unmeasured stat) ride along independent.
+// The slip builder asks for the same legs again and again (every greedy step
+// re-prices the legs already chosen, PrizePicks prices power and flex on the
+// same legs, and a rebuild a few minutes on sees mostly the same board), so
+// answers are kept by the exact inputs. The arithmetic is the plain loop's,
+// step for step, so a kept answer is the same numbers to the last bit.
+const FACTOR_MEMO_MAX = 20000;
+const factorMemo = new Map();
 function factorHitsDistribution(probs, loads, teams) {
+  const key = factorKey(probs, loads, teams);
+  let hit = key && factorMemo.get(key);
+  if (!hit) {
+    hit = factorHitsOnce(probs, loads, teams);
+    if (key) {
+      if (factorMemo.size >= FACTOR_MEMO_MAX) factorMemo.clear();
+      factorMemo.set(key, hit);
+    }
+  }
+  return hit.slice();
+}
+// exact inputs → key (numbers as JS prints them, which round-trip exactly); null when one isn't a plain value
+function factorKey(probs, loads, teams) {
+  let k = '';
+  for (let i = 0; i < probs.length; i++) {
+    const p = probs[i], l = loads[i], t = teams[i];
+    if (typeof p !== 'number' || (t != null && typeof t !== 'string')) return null;
+    k += `${p}|${l ? `${l.a}|${l.b}` : '-'}|${t == null ? '\u0001' : t}\u0000`;
+  }
+  return k;
+}
+function factorHitsOnce(probs, loads, teams) {
   const n = probs.length;
   const t0 = teams.find(Boolean);
   const s = teams.map(t => (t && t === t0 ? 1 : -1));
   const c = probs.map(p => phiInv(1 - Math.min(1 - 1e-9, Math.max(1e-9, p))));
   const sd = loads.map(l => (l ? Math.sqrt(Math.max(1e-9, 1 - l.a * l.a - l.b * l.b)) : 1));
+  // c[i] - a·m is the same for every d, and b·s[i] for every node
+  const bs = loads.map((l, i) => (l ? l.b * s[i] : 0));
+  const cm = new Float64Array(n);
+  const dist = new Float64Array(n + 1);
   const out = new Array(n + 1).fill(0);
-  for (const [m, wm] of GRID) for (const [d, wd] of GRID) {
-    let dist = [1];
-    for (let i = 0; i < n; i++) {
-      const l = loads[i];
-      const q = l ? 1 - phiCdf((c[i] - l.a * m - l.b * s[i] * d) / sd[i]) : probs[i];
-      const next = new Array(dist.length + 1).fill(0);
-      for (let h = 0; h < dist.length; h++) { next[h] += dist[h] * (1 - q); next[h + 1] += dist[h] * q; }
-      dist = next;
+  for (const [m, wm] of GRID) {
+    for (let i = 0; i < n; i++) { const l = loads[i]; if (l) cm[i] = c[i] - l.a * m; }
+    for (const [d, wd] of GRID) {
+      // the hit count's distribution leg by leg, in place: after leg i,
+      // dist[h] = before[h - 1]·q + before[h]·(1 - q)
+      dist[0] = 1;
+      for (let i = 0; i < n; i++) {
+        const l = loads[i];
+        const q = l ? 1 - phiCdf((cm[i] - bs[i] * d) / sd[i]) : probs[i];
+        dist[i + 1] = dist[i] * q;
+        for (let h = i; h > 0; h--) dist[h] = dist[h - 1] * q + dist[h] * (1 - q);
+        dist[0] = dist[0] * (1 - q);
+      }
+      const w = wm * wd;
+      for (let h = 0; h <= n; h++) out[h] += w * dist[h];
     }
-    const w = wm * wd;
-    for (let h = 0; h <= n; h++) out[h] += w * dist[h];
   }
   return out;
 }

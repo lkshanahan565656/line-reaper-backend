@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 // health, event-loop stalls, slow requests and the boot timeline (ops.js)
 const ops = require('./ops').createOps();
+const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
 // Answered before anything else is mounted, and from memory only: Railway's
@@ -1770,6 +1771,8 @@ function isEsports(s) {
 }
 
 async function generateEsportsPicks() {
+  // the build hands the event loop back every 20 ms (ops.createSlicer)
+  const slice = createSlicer();
   const ppLines = ppLinesNow();
   const udLines = cache.underdog.data || [];
 
@@ -1784,8 +1787,10 @@ async function generateEsportsPicks() {
   // against the same opponent (both teams' Sleeper lines share a game id).
   const slTeams = esmatch.sleeperTeams(cache.sleeper.data || []);
   const slEsports = [];
+  const slSportOf = x => trackerSportKey(x.sport);
+  const slRefs = esmatch.borrowRefs([...udEsports, ...ppEsports], { sportOf: slSportOf, now: t0 });
   for (const l of cache.sleeper.data || []) {
-    const b = esmatch.borrowMatch(l, [...udEsports, ...ppEsports], { slOpp: slTeams, sportOf: x => trackerSportKey(x.sport), now: t0 });
+    const b = esmatch.borrowMatch(l, null, { slOpp: slTeams, sportOf: slSportOf, now: t0, bySport: slRefs });
     if (b) slEsports.push(b);
   }
   const tags = esmatch.matchTags([...ppEsports, ...udEsports, ...slEsports], { playerOf: l => normalizeName(l.player), sportOf: l => trackerSportKey(l.sport) });
@@ -2238,6 +2243,7 @@ async function generateEsportsPicks() {
 
   // PP lines first (when PP is alive) — cross-matched to UD
   for (const line of ppEsports) {
+    await slice();
     if (!line.player || line.line == null || !placed(line)) continue;
     const key = lineKey(line);
     const udm = udMap[key] || null, slm = slMap[key] || null;
@@ -2249,6 +2255,7 @@ async function generateEsportsPicks() {
 
   // UD lines with no PP counterpart — the board stays full even when PP is blocked
   for (const udm of Object.values(udMap)) {
+    await slice();
     if (udm.matched) continue;
     const base = { sport: udm.sport, player: udm.player, team: udm.team, market: udm.market, line: udm.line, startTime: udm.startTime, matchTitle: udm.matchTitle, gameId: udm.gameId, matchTag: udm.matchTag };
     const slm = slMap[`${normalizeName(udm.player)}|${normalizeMarket(udm.market)}|${udm.matchTag}`] || null;
@@ -2259,6 +2266,7 @@ async function generateEsportsPicks() {
 
   // Sleeper lines neither PP nor UD carries
   for (const slm of Object.values(slMap)) {
+    await slice();
     if (slm.matched) continue;
     const base = { sport: slm.sport, player: slm.player, team: slm.team, market: slm.market, line: slm.line, startTime: slm.startTime, matchTitle: slm.matchTitle, gameId: slm.gameId, matchTag: slm.matchTag };
     const g = marketize(base, await getModelPred(base), [slQuote(slm)]);
@@ -2312,8 +2320,11 @@ async function generateEsportsPicks() {
       }
     }
   } catch (e) { console.warn('Esports: Pinnacle team kills skipped:', e.message); }
+  await slice();
   try { priceRoundKills(picks); } catch (e) { console.warn('Esports: round model skipped:', e.message); }
+  await slice();
   try { priceH2HKills(picks); } catch (e) { console.warn('Esports: head-to-head model skipped:', e.message); }
+  await slice();
   try { attachLinesFair(picks); } catch (e) { console.warn('Esports: Lines fair for slips skipped:', e.message); }
 
   // Line gaps: the book a pick is played at sits on the soft side of another
@@ -2374,12 +2385,14 @@ async function generateEsportsPicks() {
     }
   } catch (e) { console.warn('Esports: CLV by kind unavailable:', e.message); }
 
+  await slice();
   picks.sort((a, b) => (b.bestEv ?? -999) - (a.bestEv ?? -999));
   esportsCache.picks = picks;
   esportsCache.lastUpdated = new Date().toISOString();
   esSlipLog.follow(picks).catch(e => console.warn('Esports slip legs:', e.message));
   try { observeEsStale(picks); } catch (e) { esStaleState.errors = [e.message, ...esStaleState.errors].slice(0, 5); console.warn('Esports stale lines:', e.message); }
   tracker.recordBoard(picks).catch(e => console.warn('Tracker: recordBoard failed:', e.message));
+  await slice();
   try { const built = autoSlips(picks, pick6SlipOpts(picks)); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
   slipTracker.follow(stackLegLookup(picks)).catch(e => console.warn('Slip tracker: follow failed:', e.message));
@@ -3318,17 +3331,40 @@ async function refreshEvProof() {
   evBookProven = closeBoard.alertBooks(await closeBoardFor(), { minExecClv: EV_PROVEN_CLV });
 }
 const EV_WEIGHTS = { ...evScreen.SHARP_WEIGHTS, ...(Number.isFinite(parseFloat(process.env.EV_KALSHI_WEIGHT)) ? { kalshi_mid: parseFloat(process.env.EV_KALSHI_WEIGHT) } : {}) };
+// The crons rescreen a slice at a time (runEvScreenAsync, about 20 ms each,
+// ops.runStepsAsync), so requests and other jobs get in between; a view asked
+// for while one runs reads the last screen. Same steps either way.
+let evScreenRun = null, evScreenAgain = false;
+const evScreenStats = {};
 function runEvScreen(force = false) {
   if (!force && Date.now() - evCache.at < 30000) return evCache;
+  if (evScreenRun && evCache.at) return evCache;
+  return runSteps(evScreenSteps());
+}
+// FRESH: a screen of odds read after this call: one already running finishes, then one more runs
+function runEvScreenAsync({ fresh = true, sliceMs = 20, stats = evScreenStats } = {}) {
+  if (evScreenRun) { if (fresh) evScreenAgain = true; return evScreenRun; }
+  evScreenRun = (async () => {
+    try {
+      do { evScreenAgain = false; await runStepsAsync(evScreenSteps(), { sliceMs, stats }); } while (evScreenAgain);
+      return evCache;
+    } finally { evScreenRun = null; }
+  })();
+  return evScreenRun;
+}
+function* evScreenSteps() {
   // game lines take Kalshi's mids as a second sharp source next to Pinnacle's
   // (only here: the exchange scans read evFeeds too and must not see a no-vig book)
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
   const feeds = evFeeds().map(f => (/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f));
   const dfsLines = sportsPropLines();
   const fairs = new Map(), costs = new Map(), pinFairs = new Map();
-  const rows = evScreen.screen({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, pinFairs, weights: EV_WEIGHTS });
+  yield;
+  const rows = yield* evScreen.screenSteps({ feeds, dfsLines, dfsEv: dfsLegEv, minEv: 0, method: process.env.EV_DEVIG || 'power', fairs, costs, pinFairs, weights: EV_WEIGHTS });
+  yield;
   const prev = evCache.at ? evCache.rows : null;
-  const alt = runAltScreen(kmid);
+  const alt = yield* runAltScreen(kmid);
+  yield;
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   // Pinnacle's own price at each number rides along: the exchanges' rows close on it
   evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
@@ -3357,12 +3393,14 @@ function runEvScreen(force = false) {
 // (altlines.js). Kept out of evCache.rows, so they never alert, never reach
 // Best Plays and never count toward a book's proof: until their own record
 // beats the close over 50 bets they're a board to watch.
-function runAltScreen(kmid = []) {
+// (a generator: the +EV screen runs it a slice at a time)
+function* runAltScreen(kmid = []) {
   if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) >= FREE_BOOKS_MAX_AGE_MS) return { rows: [], summary: null };
   try {
     const fairs = new Map(), costs = new Map();
     const kalshiGame = kmid.length ? pingames.kalshiMidBooks(kmid, Object.values(freeBooksState.games).flat()) : new Map();
-    const rows = altLines.screen({ gamesBySport: freeBooksState.games, kalshiGame, kalshiRungs: kpropsState.rungs || null,
+    yield;
+    const rows = yield* altLines.screenSteps({ gamesBySport: freeBooksState.games, kalshiGame, kalshiRungs: kpropsState.rungs || null,
       leagueOf: s => freebooks.LEAGUES[s]?.props || s.toUpperCase(), fairs, costs });
     altTracker.recordBoard(rows, fairs, { costs }).catch(e => console.warn('Alt tracker:', e.message));
     return { rows, summary: altLines.summarize(freeBooksState.games, rows, fairs) };
@@ -4755,7 +4793,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.170.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.170.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5637,9 +5675,36 @@ app.get('/api/sleeper', (req, res) => res.json({ data: [...(cache.sleeper.data |
 // off Kalshi's player ladders at each book's own line; esports off our model.
 // Rebuilt at most once a minute. ?sport=NFL|ESPORTS|SPORTS &book=underdog
 // &q=name &sort=ev|gap|books|start|player &multi=1 (2+ books) &priced=1
+// One build serves every props view (board, Lines, SHOP, PROMOS, NBA MODEL,
+// coverage, the records): it runs a slice at a time (propsBoardSteps, about
+// 20 ms each, ops.runStepsAsync) so requests and other jobs get in between.
+// A view asked for while the board is over a minute old gets the last board
+// and starts the next build; only the very first build runs in one go.
 let propsBoardCache = { at: 0, rows: [] };
+let propsBoardBuild = null, propsBoardAgain = false;
+const propsBoardStats = {};
 function propsBoardRows() {
   if (Date.now() - propsBoardCache.at < 60000) return propsBoardCache;
+  if (propsBoardCache.at || propsBoardBuild) { propsBoardRebuild().catch(e => console.warn('Props board:', e.message)); return propsBoardCache; }
+  return runSteps(propsBoardSteps());
+}
+// FRESH: a board built from lines read after this call (the scrapes just
+// landed): a build already running finishes first, then one more runs
+// (sliceMs and stats: the tests' knobs)
+function propsBoardRebuild({ fresh = false, sliceMs = 20, stats = propsBoardStats } = {}) {
+  if (propsBoardBuild) {
+    if (fresh) propsBoardAgain = true;
+    return propsBoardBuild;
+  }
+  propsBoardBuild = (async () => {
+    try {
+      do { propsBoardAgain = false; await runStepsAsync(propsBoardSteps(), { sliceMs, stats }); } while (propsBoardAgain);
+      return propsBoardCache;
+    } finally { propsBoardBuild = null; }
+  })();
+  return propsBoardBuild;
+}
+function* propsBoardSteps() {
   const es = l => isEsports(l.sport);
   const now = Date.now(), open = l => !(Date.parse(l.startTime || '') <= now);
   const esRaw = [...(cache.underdog.data || []).filter(es), ...ppLinesNow().filter(es), ...(cache.sleeper.data || []), ...pick6.lines().filter(es)].filter(open);
@@ -5647,15 +5712,20 @@ function propsBoardRows() {
   const esTags = esmatch.matchTags(esRaw, { playerOf: l => normalizeName(l.player), sportOf: l => trackerSportKey(l.sport) });
   const esLines = esRaw.map(l => ({ ...l, matchTag: esTags.get(l) ?? null }));
   const esKey = (sport, market) => normalizeMarket(market);
-  const rows = propsBoard.buildRows([...sportsPropLines(), ...esLines], { esKey });
+  yield;
+  const rows = yield* propsBoard.buildRowsSteps([...sportsPropLines(), ...esLines], { esKey });
+  yield;
   const esPicks = new Map();
   for (const p of esportsCache.picks || []) {
     const sport = propsBoard.boardSport(p.sport).sport;
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}${p.matchTag ? `|${p.matchTag}` : ''}`, p);
   }
   propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
-  const sportPlays = priceSportRows(rows);
-  observeStaleApps(rows);
+  yield;
+  const sportPlays = yield* priceSportSteps(rows);
+  yield;
+  yield* observeStaleApps(rows);
+  yield;
   propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, combo: sportPlays.filter(x => x.kind === 'combo').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
@@ -5733,12 +5803,24 @@ function refreshBookPropsIndex() {
   const sportOf = s => freebooks.LEAGUES[s]?.props || null;
   bookPropsIndex = pinprops.indexProps(sportProps.bookPropQuotes(freeBooksState.games, sportOf, evScreen.canonName));
 }
+// asked for the same row over and over in a build (the consensus, three
+// sharps, combos, PROMOS, SHOP, the records' closes): kept per row while the
+// Pinnacle and book indexes and the books' freshness are the same ones
+const sharpMemo = new WeakMap();
 function sharpQuotes(row) {
+  const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
+  const m = row && typeof row === 'object' ? sharpMemo.get(row) : null;
+  if (m && m.pin === pinPropsIndex && m.books === bookPropsIndex && m.fresh === fresh && m.key === row.key && m.start === row.startTime) return m.out.slice();
+  const out = sharpQuotesOnce(row, fresh);
+  if (row && typeof row === 'object') sharpMemo.set(row, { pin: pinPropsIndex, books: bookPropsIndex, fresh, key: row.key, start: row.startTime, out });
+  return out.slice();
+}
+function sharpQuotesOnce(row, fresh) {
   const out = [];
   // every line Pinnacle hangs for this game; consensusFor takes the one nearest each app's line
   for (const pin of pinprops.quotesForGame(pinPropsIndex, row) || []) out.push({ book: 'pinnacle', line: pin.line, pOver: pin.pOver });
   // the books' props only while their read is fresh, like the +EV screen's
-  if (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS) out.push(...sportProps.quotesFor(bookPropsIndex, row));
+  if (fresh) out.push(...sportProps.quotesFor(bookPropsIndex, row));
   return out;
 }
 // ── BOOK FAIR: FanDuel and BetRivers alone, where nothing sharp prices a leg ──
@@ -5795,10 +5877,12 @@ function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   return (bookPropsIndex.get(row?.key) || []).filter(q => t && Math.abs(Date.parse(q.start) - t) <= slackMs);
 }
 const bookConsensusPlays = row => (BOOK_CONS_ON ? sportProps.bookConsensusPlays(row, bookLineQuotes(row), { dfsEv: dfsLegEv }) : []);
-function priceSportRows(rows) {
+function* priceSportSteps(rows) {
   const flagged = [];
+  let n = 0;
   for (const row of rows) {
     if (row.esports) continue;
+    if (++n % 8 === 0) yield;
     const kalshi = rowKalshi(row);
     const pinAll = pinprops.quotesForGame(pinPropsIndex, row);
     const pin = pinprops.quoteFor(pinPropsIndex, row);
@@ -6177,13 +6261,15 @@ function observeStaleBooks(gamesBySport, fdPropsRead, pinOk = true) {
   observeStale(quotes, t, 'books', true, done);
 }
 // the apps' lines at the time each app was last read, and Kalshi's ladder
-function observeStaleApps(rows) {
+// (a generator: the props board build stops between the apps)
+function* observeStaleApps(rows) {
   if (!staleState.enabled) return;
   const sports = rows.filter(r => !r.esports);
   staleBoardByKey = new Map(sports.map(r => [r.key, r]));
   // PrizePicks' sports lines come with its whole board, every 20 minutes
   const readAt = { prizepicks: ppState.fullOkAt, underdog: Date.parse(cache.underdog.updated || ''), sleeper: Date.parse(cache.sleeperSports.updated || '') };
   const all = staleLines.appQuotes(sports, { pOverOf: sportProps.bookPOver, kalshiOf: rowKalshi });
+  yield;
   // each app's read covers the board rows the engine can key (a start time
   // and one stat): a row there without the app's line means the app dropped it
   const keyed = sports.filter(r => r.mkey && !String(r.mkey).includes('|') && r.startTime);
@@ -6191,6 +6277,7 @@ function observeStaleApps(rows) {
     if (book === 'pick6') continue;
     const t = readAt[book];
     if (Number.isFinite(t) && t > 0) observeStale(all.filter(q => q.source === book), t, book, false, keyed.map(r => `${book}|prop|row:${r.key}`));
+    yield;
   }
   // DK Pick6 reads one sport at a time (through the relay): each sport at its own read time
   for (const [k, iso] of Object.entries(pick6.readTimes())) {
@@ -6200,6 +6287,7 @@ function observeStaleApps(rows) {
   }
   const kt = Date.parse(kpropsState.updated || '');
   if (Number.isFinite(kt)) observeStale(all.filter(q => q.source === 'kalshi'), kt, 'kalshi-props', false);
+  yield;
   try { runStaleScreen(); } catch (e) { staleState.errors = [`screen ${e.message}`, ...staleState.errors].slice(0, 5); }
 }
 // an app leg at the post-move fair: PrizePicks at the 3-pick power it's graded
@@ -6829,8 +6917,7 @@ async function trackSportProps() {
   if (sportTrackRunning) return;
   sportTrackRunning = true;
   try {
-    propsBoardCache.at = 0;
-    const { rows, sportPlays } = propsBoardRows();
+    const { rows, sportPlays } = await propsBoardRebuild({ fresh: true });
     // when each app's lines were last read (a PrizePicks pull that failed read nothing)
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
@@ -6858,7 +6945,7 @@ async function trackSportProps() {
     // the apps' promo legs (promos.js): kinds promo-<app>-<type>, own store, never plays or alerts
     if (PROMO_RECORD) {
       const byKey = new Map(rows.map(r => [r.key, r]));
-      const flags = promos.recordLegs(promoBoard(), { boardRow: k => byKey.get(k) });
+      const flags = promos.recordLegs(await runStepsAsync(promoBoardSteps()), { boardRow: k => byKey.get(k) });
       for (const f of flags) promoRowsSeen.set(f.row.key, f.row);
       // a promo the app took down keeps its row (no app cell: not executable)
       // so its close still reads the sharp price to the start
@@ -6886,10 +6973,19 @@ function nbaPinAt(row) {
   const q = ref == null ? qs[0] : qs.slice().sort((a, b) => Math.abs(a.line - ref) - Math.abs(b.line - ref))[0];
   return q && Number.isFinite(q.pOver) ? { line: q.line, pOver: q.pOver } : null;
 }
+// one section per board build (and per Pinnacle read and model refresh), every request reads it
+let nbaSectionCache = { rows: null, pin: null, version: null, list: [] };
+function nbaSection() {
+  const { rows } = propsBoardRows();
+  const st = nbaModel.state, version = `${st.refreshedAt}|${st.injuriesAt}|${st.added}`;
+  const c = nbaSectionCache;
+  if (c.rows === rows && c.pin === pinPropsIndex && c.version === version) return c.list;
+  nbaSectionCache = { rows, pin: pinPropsIndex, version, list: nbaModel.section(rows, { pinAt: nbaPinAt }) };
+  return nbaSectionCache.list;
+}
 app.get('/api/props/nbamodel', async (req, res) => {
   if (!nbaModel) return res.json({ on: false, note: 'The NBA model is switched off on this server (NBA_MODEL=off).', rows: [] });
-  const { rows } = propsBoardRows();
-  let list = nbaModel.section(rows, { pinAt: nbaPinAt });
+  let list = nbaSection();
   const q = String(req.query.q || '').toLowerCase().trim();
   if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
   if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
@@ -7094,7 +7190,9 @@ function promoRowIndex(rows) {
   }
   return idx;
 }
-function promoBoard() {
+// (the props record pass builds it a slice at a time, promoBoardSteps; a request in one go)
+const promoBoard = () => runSteps(promoBoardSteps());
+function* promoBoardSteps() {
   const { rows } = propsBoardRows();
   if (promoCache.src === rows && Date.now() - promoCache.at < 60000) return promoCache.rows;
   const idx = promoRowIndex(rows);
@@ -7106,14 +7204,22 @@ function promoBoard() {
     if (t) return list.find(r => Math.abs(Date.parse(r.startTime) - t) <= 3 * 3600e3) || null;
     return list.length === 1 ? list[0] : null;
   };
-  const out = promos.buildPromos(promoLegsNow(), { rowFor, quotesFor: sharpQuotes });
+  yield;
+  const out = yield* promos.buildPromosSteps(promoLegsNow(), { rowFor, quotesFor: sharpQuotes });
   promoCache = { at: Date.now(), src: rows, rows: out, counts: promos.promoCounts(out) };
   return out;
 }
 // the record's close: the sharp price at the promo's own number on its board row
+// (board rows by key, once per build: the record asks for every promo leg)
+let promoKeyIndex = { rows: null, byKey: new Map() };
 function promoFairAt(row, book, line) {
   const { rows } = propsBoardRows();
-  const base = rows.find(r => r.key === (row.baseKey || promos.baseKeyOf(row.key)));
+  if (promoKeyIndex.rows !== rows) {
+    const byKey = new Map();
+    for (const r of rows) if (!byKey.has(r.key)) byKey.set(r.key, r);   // the first, as find took
+    promoKeyIndex = { rows, byKey };
+  }
+  const base = promoKeyIndex.byKey.get(row.baseKey || promos.baseKeyOf(row.key));
   if (!base) return null;
   return promos.sharpAt(sharpQuotes(base), base.mkey, base.sport, line)?.p ?? null;
 }
@@ -7442,7 +7548,7 @@ async function pollSportsbooks() {
     if (!sport) return;
     await pullOddsFeed(sport, 'us');
     Object.assign(bookPoll, { lastSport: sport, lastAt: new Date().toISOString(), pulls: bookPoll.pulls + 1, error: null });
-    runEvScreen(true);
+    runEvScreenAsync().catch(e2 => console.warn('EV screen failed:', e2.message));
   } catch (e) {
     if (e.budget) bookPoll.skipped++;
     else bookPoll.error = e.response?.status ? `Odds API ${e.response.status}` : e.message;
@@ -7720,7 +7826,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.170.0',
+  version: '3.170.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7750,7 +7856,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
   evResults: evResultsState,
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
-  propsBoard: propsBoardCache.counts || null,
+  propsBoard: propsBoardCache.counts || null, propsBoardBuild: { ...propsBoardStats, builtAt: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null }, evScreenBuild: { ...evScreenStats },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
   esports: {
     picks: esportsCache.picks.length,
@@ -7895,7 +8001,7 @@ schedule('*/2 * * * *', async () => {
 schedule('15 * * * * *', () => refreshExchanges().catch(e => console.warn('Exchanges:', e.message)));
 schedule('*/30 * * * * *', async () => {
   if (!owlsDisabled()) await Promise.all(['nba','mlb','nhl','nfl','mma'].map(s => fetchOwlsOdds(s)));
-  try { runEvScreen(true); } catch (e) { console.warn('EV screen failed:', e.message); }
+  await runEvScreenAsync().catch(e => console.warn('EV screen failed:', e.message));
 });
 schedule('*/5 * * * *', async () => { if (!owlsDisabled()) for (const s of ['nba','mlb','nhl','nfl','mma']) fetchOwlsProps(s); });
 
@@ -8034,5 +8140,6 @@ module.exports = {
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, scanInplay, inplayTracker, inplayLive, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
+  propsBoardRows, propsBoardRebuild, runEvScreenAsync, trackSportProps,
   scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory, shopDepth, readShopDepth,
 };
