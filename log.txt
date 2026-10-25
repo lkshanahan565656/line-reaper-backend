@@ -1,0 +1,8 @@
+/home/runner/work/line-reaper-backend/line-reaper-backend/fetch.py:14: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  days=[];d=D(2024,10,1);end=datetime.datetime.utcnow().date()
+events 2914 done 2897
+ERR https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401869402 HTTP Error 404: Not Found
+ERR https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401871334 HTTP Error 404: Not Found
+ERR https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401871337 HTTP Error 404: Not Found
+ERR https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401873343 HTTP Error 404: Not Found
+boxes 2682
