@@ -113,7 +113,7 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
 
   async function publicKey() { return (await ensureVapid())?.publicKey || null; }
 
-  async function subscribe(sub, { ua, kinds } = {}) {
+  async function subscribe(sub, { ua, kinds, uid } = {}) {
     if (!(await ensureVapid())) { const e = new Error('Push is not available right now'); e.status = 503; throw e; }
     if (!validSubscription(sub || {})) { const e = new Error('That is not a valid push subscription'); e.status = 400; throw e; }
     const id = subId(sub.endpoint), prev = subs.get(id);
@@ -124,6 +124,8 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
       ua: String(ua || '').slice(0, 120), vk: keyId(),
       // a re-subscribe keeps the device's choices unless it sends new ones
       kinds: kinds !== undefined ? cleanKinds(kinds) : prev?.kinds ? cleanKinds(prev.kinds) : KIND_KEYS.slice(), fails: 0,
+      // the signed-in account the device belongs to, so the account's devices share alert choices
+      uid: uid || prev?.uid || null,
     };
     await save(doc);
     return { ok: true, devices: active().length, kinds: doc.kinds };
@@ -143,6 +145,45 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
     if (!d || d.status !== 'active') { const e = new Error('This device is not signed up for alerts'); e.status = 404; throw e; }
     await save({ ...d, kinds: cleanKinds(kinds) });
     return { ok: true, kinds: cleanKinds(kinds) };
+  }
+
+  // ── devices that follow an account (signed in when they turned alerts on,
+  // or opened the app signed in since). Alerts stay the same for everyone;
+  // the account only shares which KINDS its devices get.
+  const deviceLabel = ua => {
+    const u = String(ua || '');
+    const os = /iphone|ipad|ipod/i.test(u) ? 'iPhone' : /android/i.test(u) ? 'Android' : /mac os x|macintosh/i.test(u) ? 'Mac' : /windows/i.test(u) ? 'Windows' : /linux/i.test(u) ? 'Linux' : 'Device';
+    const br = /edg\//i.test(u) ? 'Edge' : /crios|chrome\//i.test(u) ? 'Chrome' : /fxios|firefox\//i.test(u) ? 'Firefox' : /safari\//i.test(u) ? 'Safari' : '';
+    return br ? `${os} · ${br}` : os;
+  };
+  async function link(endpoint, uid) {
+    await ready;
+    const d = subs.get(subId(endpoint));
+    if (!uid || !d || d.status !== 'active' || d.uid === uid) return { linked: !!(d && d.uid && d.uid === uid) };
+    await save({ ...d, uid });
+    return { linked: true };
+  }
+  // no endpoints or keys: a label, when it signed up, its choices, whether it is this one
+  async function accountDevices(uid, endpoint) {
+    await ready;
+    if (!uid) return [];
+    const mine = endpoint ? subId(endpoint) : null;
+    return [...subs.values()].filter(d => d.uid === uid && d.status === 'active' && onKey(d))
+      .map(d => ({ label: deviceLabel(d.ua), at: d.at, lastOkAt: d.lastOkAt || null, kinds: cleanKinds(d.kinds), thisDevice: d.id === mine }));
+  }
+  async function setKindsForUser(uid, kinds) {
+    await ready;
+    if (!uid) return 0;
+    let n = 0;
+    for (const d of [...subs.values()]) if (d.uid === uid && d.status === 'active') { await save({ ...d, kinds: cleanKinds(kinds) }); n++; }
+    return n;
+  }
+  async function unlinkUser(uid) {
+    await ready;
+    if (!uid) return 0;
+    let n = 0;
+    for (const d of [...subs.values()]) if (d.uid === uid) { const x = { ...d }; delete x.uid; await save(x); n++; }
+    return n;
   }
 
   async function unsubscribe(endpoint) {
@@ -274,7 +315,7 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
   }
 
   return {
-    ready, publicKey, subscribe, unsubscribe, setKinds, device, send, test, ack, testStatus, selfTest,
+    ready, publicKey, subscribe, unsubscribe, setKinds, device, link, accountDevices, setKindsForUser, unlinkUser, send, test, ack, testStatus, selfTest,
     log: (n = 50) => deliveries.slice(0, Math.max(1, Math.min(logSize, n))),
     devices: () => active().length, stats: () => ({ ...stats, devices: active().length, keySource: vapidSource }),
   };

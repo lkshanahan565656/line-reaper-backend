@@ -11,6 +11,8 @@
 
 const TERMS_VERSION = '2026-10-12';
 const EFFECTIVE = 'October 12, 2026';
+// the privacy policy changed for account sync (v3.172.0); the Terms did not
+const UPDATED = { privacy: 'October 25, 2026' };
 const REFUND_HOURS = 72;
 const MIN_AGE = 21;
 
@@ -152,12 +154,13 @@ PAGES.privacy = {
 <tr><th>What</th><th>When</th><th>Why</th></tr>
 <tr><td>Email address and a hashed password</td><td>When you create an account</td><td>To log you in, run your account, and send account and billing messages</td></tr>
 <tr><td>Agreement record (which Terms version you accepted, when, the IP address you accepted from, and that you confirmed your age)</td><td>When you sign up</td><td>To show you agreed to the Terms</td></tr>
+<tr><td>Your synced bets and settings (bets and slips you log, your slip import, favorites, saved views, layout, alert choices, unit size and bankroll), and which of your devices have push alerts on (a device type such as "iPhone · Safari", not its location)</td><td>Only when you sign in on a server where account sync is switched on</td><td>To show the same bets and settings on every device you sign in on. Only you can read them; we do not use them for anything else</td></tr>
 <tr><td>Subscription details (Stripe customer ID, plan, status, renewal date)</td><td>When you subscribe</td><td>To give you the features you pay for</td></tr>
 <tr><td>Technical data (IP address, browser type, pages and API addresses requested, times, errors)</td><td>Whenever you use the Service</td><td>To run, secure and fix the Service and to stop abuse</td></tr>
 <tr><td>Messages you send us</td><td>When you contact us</td><td>To answer you</td></tr>
 </table>
-<p>We do <strong>not</strong> collect your card details (Stripe handles payment), your sportsbook or exchange logins, your bets on other platforms, your location beyond what an IP address shows, or any government ID.</p>
-<p><strong>Stored on your device only.</strong> The app saves some settings in your browser's local storage: your login token, your layout, tool inputs, your unit size, and any bets you log in the bet tracker. These stay on your device and are not sent to us, except the login token, which proves who you are when the app talks to our server. Clearing your browser data removes them.</p>
+<p>We do <strong>not</strong> collect your card details (Stripe handles payment), your sportsbook or exchange logins, bets you place on other platforms (unless you log them in the bet tracker while signed in, above), your location beyond what an IP address shows, or any government ID.</p>
+<p><strong>Stored on your device.</strong> The app saves some settings in your browser's local storage: your login token, your layout, tool inputs, your unit size, and any bets you log in the bet tracker. While you are not signed in, these stay on your device and are not sent to us, except the login token, which proves who you are when the app talks to our server. When you sign in where account sync is on, the bets and settings listed above are also kept on your account so your other devices get them; your device keeps its own copy too. Signing out stops the syncing and leaves your device's copy. Clearing your browser data removes the device copy only.</p>
 
 <h2 id="cookies">3. Cookies and tracking</h2>
 <p>We do not use advertising cookies, cross-site trackers, analytics pixels or session-recording tools. The app uses browser storage only for the settings above. Our pages load fonts from Google Fonts, which means Google receives your IP address when your browser fetches them. Because we do no cross-site tracking, there is nothing to opt out of; we treat Global Privacy Control and Do Not Track signals as a request not to sell or share, which we never do anyway.</p>
@@ -178,7 +181,7 @@ PAGES.privacy = {
 
 <h2 id="keep">6. How long we keep it</h2>
 <ul>
-<li>Account information: until you delete your account.</li>
+<li>Account information, and the bets and settings synced to it: until you delete your account. Deleting your account deletes them.</li>
 <li>Billing records: Stripe keeps payment records as financial and tax law requires.</li>
 <li>Server logs: kept by our host for a limited period, usually days to a few weeks.</li>
 <li>Backups: deleted data can remain in backups for up to 35 days before it is overwritten.</li>
@@ -457,7 +460,7 @@ function render(slug, cfg = configFromEnv()) {
 <p class="kicker">Legal</p>
 <h1>${esc(page.title)}</h1>
 <p class="lead">${esc(page.lead)}</p>
-${key === 'legal' ? '' : `<p class="dates">Effective ${EFFECTIVE}. Last updated ${EFFECTIVE}.</p>`}
+${key === 'legal' ? '' : `<p class="dates">Effective ${EFFECTIVE}. Last updated ${UPDATED[key] || EFFECTIVE}.</p>`}
 ${toc}
 ${body}
 </main>

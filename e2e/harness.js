@@ -25,6 +25,8 @@ function keyOf(url) {
   return u.pathname + (q.length ? '?' + new URLSearchParams(q).toString() : '');
 }
 
+const PERSONAL = /^\/api\/(auth|sync)(\/|$)/;
+
 function offline() {
   const axios = require('axios');
   const no = async url => { throw Object.assign(new Error(`e2e offline: ${url}`), { code: 'ENOTFOUND', response: { status: 503 } }); };
@@ -41,7 +43,11 @@ function offline() {
 async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {}) {
   const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-e2e-'));
   for (const k of Object.keys(process.env)) if (/^(DATABASE_URL|ODDS_API_KEY|OWLS_API_KEY|STRIPE_|TAIL_WEBHOOK|ALERT_WEBHOOK_URL|SHARP_WEBHOOK|VAPID_)/.test(k)) delete process.env[k];
-  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test' });
+  for (const k of Object.keys(process.env)) if (/^(RAILWAY_|LR_SYNC$|PAYWALL$)/.test(k)) delete process.env[k];
+  // sign-in and account sync on, with the file store in the temp folder (no Postgres here)
+  Object.assign(process.env, { LR_DATA_DIR: DIR, UPSTREAM_GAP_MS: '0', ALERT_STARTUP: 'off', NODE_ENV: 'test', AUTH_SECRET: process.env.E2E_AUTH_SECRET || 'e2e-auth-secret' });
+  // E2E_SYNC=off: the page as the live site shows it before sync is switched on
+  if (process.env.E2E_SYNC === 'off') process.env.LR_SYNC = 'off';
   for (const f of ['TRACKER_FILE', 'USERS_FILE', 'EV_TRACK_FILE', 'TAIL_TRACK_FILE', 'TAIL_TRADERS_FILE', 'FRESH_TRACK_FILE', 'ESPORTS_EDGE_TRACK_FILE']) process.env[f] = path.join(DIR, f.toLowerCase() + '.json');
   offline();
   const express = require('express');
@@ -72,6 +78,8 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   const outer = express();
   outer.use((req, res, next) => {
     if (req.method !== 'GET' || !req.path.startsWith('/api/')) return next();
+    // a viewer's own account and synced data: always this server, never the recording
+    if (PERSONAL.test(req.path)) return next();
     if (/\/stream$/.test(req.path)) {
       // the live feeds: an open stream with nothing on it
       res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
@@ -103,7 +111,7 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   };
 }
 
-module.exports = { start, loadSnapshot, keyOf, FIXTURE };
+module.exports = { start, loadSnapshot, keyOf, FIXTURE, PERSONAL };
 
 if (require.main === module) {
   start({ port: Number(process.env.PORT) || 3456, log: m => console.log(m) }).then(h => console.log(`e2e server on ${h.base}/app (snapshot ${h.recordedAt || 'none'})`));

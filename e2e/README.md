@@ -25,14 +25,19 @@ What it checks, and fails on:
   import the CSV, log a bet from the ODDS SCREEN, log a slip from PROPS, paste
   slips, import a Pikkit CSV, save and load a shopper view, star a venue and
   keep it after a reload, turn push alerts on (no push service in tests), move
-  and hide a tab in CUSTOMIZE, and work out a price in TOOLS.
+  and hide a tab in CUSTOMIZE, work out a price in TOOLS, and sign in on two
+  browsers: the bets merge both ways, a layout that differs waits for USE
+  ACCOUNT, and signing out keeps the local copy. The harness sets AUTH_SECRET
+  so sign-in and sync run against the file store in its temp folder;
+  `/api/auth` and `/api/sync` always reach the offline server, never the
+  recording.
 
 `allow.json` lists the few exceptions, each with its reason. The report is
 written to `e2e/out/report.json`, with a screenshot for each failed flow.
 
 Options: `E2E_TABS=odds,props`, `E2E_VIEWPORTS=desktop`, `E2E_FLOWS=1` (with
 `E2E_TABS`), `E2E_HEADED=1`, `E2E_TRACE=1` (print every click),
-`E2E_MS_PER_TAB`, `E2E_SHARDS`. `npm run e2e:serve` runs the offline server on
+`E2E_MS_PER_TAB`, `E2E_SHARDS`, `E2E_SYNC=off` (the page with account sync off, as the live site is until AUTH_SECRET and Postgres are set). `npm run e2e:serve` runs the offline server on
 port 3456 to look at by hand.
 
 ## A new recording

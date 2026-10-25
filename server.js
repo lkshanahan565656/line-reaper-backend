@@ -59,6 +59,8 @@ app.post('/api/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }), asy
   catch (e) { console.error('Billing webhook failed:', e.message); res.status(500).json({ error: 'handler failed' }); }
 });
 
+// account sync uploads a user's whole bet list: a bigger limit for that route only
+app.use('/api/sync', express.json({ limit: '9mb' }));
 app.use(express.json());
 app.use((req, res, next) => auth.attach()(req, res, next));
 
@@ -784,7 +786,9 @@ const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
 // The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
 const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
-const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pushStore : resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
+// wrapped with Postgres too, so the day DATABASE_URL is attached the phones and
+// the key come over from the backup instead of every phone signing up again
+const push = require('./push').createPush({ store: resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
 const webhook = require('./push').withPush(webhookOnly, push);
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
@@ -905,6 +909,12 @@ function splitsMap() {
 const AUTH_SECRET = process.env.AUTH_SECRET || require('crypto').randomBytes(32).toString('hex');
 if (!process.env.AUTH_SECRET) console.warn('AUTH_SECRET is not set: logins will not survive a restart.');
 const auth = createAuth({ store: createUserStoreFromEnv(), secret: AUTH_SECRET, termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE });
+// Account sync (syncstore.js, acctsync.js): on with AUTH_SECRET, and on Railway
+// only once Postgres is attached (the disk there is wiped every deploy).
+const { syncConfig, createSync, createSyncStoreFromEnv } = require('./syncstore');
+const SYNC = syncConfig(process.env);
+const acctSync = createSync({ store: createSyncStoreFromEnv(process.env) });
+if (!SYNC.enabled) console.warn(`Account sync off: ${SYNC.reason}`);
 const billing = createBilling({
   http: axios, secretKey: process.env.STRIPE_SECRET_KEY, priceId: process.env.STRIPE_PRICE_ID,
   store: auth.store, trialDays: parseInt(process.env.STRIPE_TRIAL_DAYS) || 0,
@@ -4712,7 +4722,7 @@ app.get('/api/push/key', async (req, res) => {
 // the alert kinds a device can choose (Settings → Phone app)
 app.get('/api/push/kinds', (req, res) => res.json({ kinds: require('./push').KINDS.map(({ key, label }) => ({ key, label })) }));
 app.post('/api/push/subscribe', (req, res, next) => (hasPro(req) ? next() : requirePro(req, res, next)), async (req, res) => {
-  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent'), kinds: req.body?.kinds })); } catch (e) { sendErr(res, e); }
+  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent'), kinds: req.body?.kinds, uid: SYNC.enabled && req.user ? req.user.id : null })); } catch (e) { sendErr(res, e); }
 });
 app.post('/api/push/unsubscribe', async (req, res) => {
   try { res.json(await push.unsubscribe(req.body?.endpoint)); } catch (e) { sendErr(res, e); }
@@ -4722,7 +4732,15 @@ app.post('/api/push/device', async (req, res) => {
   try { res.json(await push.device(String(req.body?.endpoint || ''))); } catch (e) { sendErr(res, e); }
 });
 app.post('/api/push/kinds', async (req, res) => {
-  try { res.json(await push.setKinds(String(req.body?.endpoint || ''), req.body?.kinds)); } catch (e) { sendErr(res, e); }
+  try {
+    const out = await push.setKinds(String(req.body?.endpoint || ''), req.body?.kinds);
+    // signed in: every device on the account gets the same choice of kinds
+    if (SYNC.enabled && req.user) {
+      await push.link(String(req.body?.endpoint || ''), req.user.id);
+      out.accountDevices = await push.setKindsForUser(req.user.id, out.kinds);
+    }
+    res.json(out);
+  } catch (e) { sendErr(res, e); }
 });
 // "Send me a test": a real push to this one device; the service worker acks once it is on screen
 app.post('/api/push/test', async (req, res) => {
@@ -4757,6 +4775,10 @@ app.get('/slips.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'slips.js'));
 });
 // MY BETS math, the same way (bets.js, window.LRBets; it needs /calc.js first).
+// account sync's merge rules (acctsync.js, window.LRSync), the same file the server checks uploads with
+app.get('/acctsync.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'acctsync.js'));
+});
 app.get('/bets.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'bets.js'));
 });
@@ -4803,7 +4825,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.171.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.172.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -4816,16 +4838,74 @@ app.post('/api/auth/signup', async (req, res) => {
   }
   catch (e) { sendErr(res, e); }
 });
+// Wrong passwords: 10 per email and 30 per address in 15 minutes, then a wait.
+// Accounts now hold people's bets, so guessing has to be slow.
+const loginFails = new Map();   // 'e:<email>' | 'ip:<addr>' → [ms]
+function loginBlocked(keys, now = Date.now()) {
+  for (const [k, max] of keys) {
+    const list = (loginFails.get(k) || []).filter(t => now - t < 15 * 60e3);
+    loginFails.set(k, list);
+    if (list.length >= max) return true;
+  }
+  return false;
+}
+function loginFailed(keys, now = Date.now()) {
+  for (const [k] of keys) loginFails.set(k, [...(loginFails.get(k) || []), now].slice(-50));
+  if (loginFails.size > 20000) loginFails.clear();
+}
+const clientIp = req => (req.get('x-forwarded-for') || '').split(',')[0].trim() || req.ip;
 app.post('/api/auth/login', async (req, res) => {
+  const keys = [[`e:${String(req.body?.email || '').trim().toLowerCase()}`, 10], [`ip:${clientIp(req)}`, 30]];
+  if (loginBlocked(keys)) return res.status(429).json({ error: 'Too many wrong passwords. Wait 15 minutes and try again.' });
   try { res.json(await auth.login(req.body?.email, req.body?.password)); }
-  catch (e) { sendErr(res, e); }
+  catch (e) { if (e.status === 401) loginFailed(keys); sendErr(res, e); }
 });
 // Delete your own account (privacy rights). Needs the password, and a paid
 // subscription has to be cancelled first so nobody is billed for a deleted account.
 app.post('/api/auth/delete', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Log in first' });
-  try { res.json(await auth.deleteAccount(req.user, req.body?.password)); }
+  try {
+    const out = await auth.deleteAccount(req.user, req.body?.password);
+    // the synced bets and settings go with it, and its devices stop following it
+    await acctSync.remove(req.user.id).catch(e => console.warn(`Sync: delete failed: ${e.message}`));
+    await push.unlinkUser(req.user.id).catch(() => {});
+    res.json(out);
+  }
   catch (e) { sendErr(res, e); }
+});
+
+// ── ACCOUNT SYNC ──────────────────────────────────────────────────────────────
+// The signed-in user's own bets, slips, favorites, saved views, layout and
+// alert kinds (acctsync.js KEYS). Private to that user: every route reads
+// req.user and nothing else, and no route lists or shares documents.
+app.get('/api/sync/status', (req, res) => res.json({
+  enabled: SYNC.enabled, reason: SYNC.reason, store: SYNC.store, signedIn: !!req.user,
+  keys: require('./acctsync').KEY_LIST.map(k => ({ key: k, label: require('./acctsync').KEYS[k].label })),
+}));
+const syncGate = (req, res, next) => {
+  if (!SYNC.enabled) return res.status(503).json({ error: SYNC.reason });
+  if (!req.user) return res.status(401).json({ error: 'Sign in to sync' });
+  res.set('Cache-Control', 'no-store');
+  next();
+};
+app.get('/api/sync', syncGate, async (req, res) => {
+  try { res.json(await acctSync.get(req.user.id)); } catch (e) { console.warn(`Sync: read failed: ${e.message}`); sendErr(res, e); }
+});
+app.put('/api/sync', syncGate, async (req, res) => {
+  try { res.json(await acctSync.put(req.user.id, req.body || {})); }
+  catch (e) {
+    if (e.status === 409) return res.status(409).json({ error: e.message, current: e.current });
+    if (!e.status) console.warn(`Sync: write failed: ${e.message}`);
+    sendErr(res, e);
+  }
+});
+// this account's alert devices (labels only), and this device joining the account
+app.post('/api/sync/devices', syncGate, async (req, res) => {
+  try {
+    const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint : '';
+    if (endpoint) await push.link(endpoint, req.user.id);
+    res.json({ devices: await push.accountDevices(req.user.id, endpoint) });
+  } catch (e) { sendErr(res, e); }
 });
 // the terms version the app asks people to accept
 app.get('/api/legal', (req, res) => res.json({ termsVersion: legal.TERMS_VERSION, minAge: legal.MIN_AGE, pages: legal.ORDER.map(k => ({ slug: k, path: `/${k}`, title: legal.PAGES[k].title })) }));
@@ -7836,7 +7916,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.171.0',
+  version: '3.172.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7909,7 +7989,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   dataLicences: (!PAYWALL || isAdmin(req)) ? licences.state() : licences.publicState(),
   upstream: upstream.stats(),
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
-  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
+  accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET, sync: { ...acctSync.stats(), enabled: SYNC.enabled, store: SYNC.store } },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
