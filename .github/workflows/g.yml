@@ -1,0 +1,20 @@
+name: diag-outgrade
+on:
+  push: { branches: [diag-outgrade] }
+permissions: { contents: write }
+concurrency: { group: diag-outgrade, cancel-in-progress: true }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/project-thread-2qx97m, path: repo }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd repo && npm ci --no-audit --no-fund
+      - run: git fetch -q --depth 1 origin diag-outrec-out && git show FETCH_HEAD:snaps.jsonl.gz > snaps.jsonl.gz && R=repo node grade.js snaps.jsonl.gz 2>&1 | tee log.txt; mkdir -p out; cp log.txt out/
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "grade $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-outgrade-out
