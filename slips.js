@@ -57,13 +57,33 @@
   };
   // the slip's payout table { hits: multiple }: the user's own payout when the
   // slip says one (a power play), else the app's table
-  function payTable(slip) {
+  // tables: the server's live tables ({ pick6: { n: { hits: multiple } } },
+  // Pick6's as last read: 3 picks paid 5.5x from 10-24, not the 6x here)
+  function payTable(slip, tables = null) {
     const n = (slip.legs || []).length;
     if (slip.stake > 0 && slip.payout > 0 && !slip.flex) return { [n]: r4(slip.payout / slip.stake) };
     if (slip.mult > 0 && !slip.flex) return { [n]: slip.mult };
     if (slip.flex && FLEX[slip.app]?.[n]) return FLEX[slip.app][n];
+    const live = tables?.[slip.app]?.[n];
+    if (live && Object.keys(live).length) return live;
     const p = POWER[slip.app]?.[n];
     return p ? { [n]: p } : null;
+  }
+
+  // The chance each leg must hit for a slip to break even on its table:
+  // power, top^(-1/n); flex (partial payouts), solved on the hits
+  // distribution with every leg at the same chance. PrizePicks 3-pick power
+  // 6x → 55.0%; Pick6 3-pick 5.5x → 56.7%.
+  function breakEven(table, n) {
+    if (!table || !(n > 0)) return null;
+    const keys = Object.keys(table).map(Number).filter(k => table[k] > 0);
+    if (keys.length === 1 && keys[0] === n) return Math.round(Math.pow(table[n], -1 / n) * 1e5) / 1e5;
+    const choose = (a, b) => { let c = 1; for (let i = 1; i <= b; i++) c = c * (a - b + i) / i; return c; };
+    const ret = p => keys.reduce((a, k) => a + choose(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k) * table[k], 0);
+    let lo = 0.01, hi = 0.99;
+    if (ret(hi) < 1) return null;
+    for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (ret(mid) < 1) lo = mid; else hi = mid; }
+    return Math.round((lo + hi) / 2 * 1e5) / 1e5;
   }
 
   // ── same-game repricing ──
@@ -247,6 +267,8 @@
         skipped.push(l);
       }
       if (!slip.legs.length) continue;
+      // a typed time is the bet's own; none means "now", a guess the grader treats as one
+      slip.timed = slip.placedAt != null;
       slip.placedAt = new Date(slip.placedAt ?? now).toISOString();
       slip.app = slip.app || 'prizepicks';
       slips.push(slip);
@@ -350,9 +372,13 @@
     return { bets: bets.filter(b => b.placedAt || b.stake != null), columns: at, header, now };
   }
   // a recent Pikkit bet with legs read → a slip to grade
+  // (a leg with no league tag takes the bet's league when Pikkit names one)
   function slipFromPikkit(b) {
+    const lg = String(b.league || '').toUpperCase().trim();
+    const league = SPORTS.includes(lg) ? (SPORT_FIX[lg] || lg) : null;
     return { id: b.id, app: APPS[b.app] ? b.app : 'other', stake: b.stake, payout: b.status === 'win' && b.payout ? b.payout : b.stake && b.odds ? r2(b.stake * b.odds) : null,
-      mult: b.odds ? r4(b.odds) : null, flex: false, placedAt: b.placedAt, legs: b.legs, source: 'pikkit', result: ['win', 'loss', 'push', 'void'].includes(b.status) ? b.status : null };
+      mult: b.odds ? r4(b.odds) : null, flex: false, placedAt: b.placedAt, legs: b.legs.map(l => (l.sport || !league ? l : { ...l, sport: league })), source: 'pikkit',
+      result: ['win', 'loss', 'push', 'void'].includes(b.status) ? b.status : null, ...(b.profit != null ? { profit: b.profit } : {}), ...(b.closeOdds > 1 ? { closeOdds: b.closeOdds } : {}) };
   }
 
   // Pikkit's own numbers by app, league, market, bet type or month
@@ -387,17 +413,27 @@
       const id = legKey(s, l);
       if (seen.has(id) || finalOk(grades[id])) continue;
       seen.add(id);
-      out.push({ id, app: s.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: s.placedAt, ...(l.opp ? { opp: l.opp } : {}) });
+      // the bet's time is its own (Pikkit, a tray in the app, a typed date), else the paste time
+      const exact = s.source === 'pikkit' || s.source === 'board' || !!s.timed;
+      out.push({ id, app: s.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: s.placedAt, ...(exact ? { betAtExact: true } : {}), ...(l.opp ? { opp: l.opp } : {}) });
     }
     return out;
   }
   // a leg with a counted close: frozen at the start, read within the hour before it (closeEv > 0 beat it)
   const hasClose = g => !!g && g.closeEv != null && g.closeOk !== false && (g.status === 'locked' || g.status === 'graded');
+  // Pinnacle's own last number before the start (raw.source 'pinnacle'),
+  // read within the hour before it: the CLV the proven rule uses
+  const hasPin = g => !!g && g.raw?.source === 'pinnacle' && g.raw.ev != null && g.raw.ok !== false && (g.status === 'locked' || g.status === 'graded');
+  const legDone = g => !!g && (g.outcome === 'win' || g.outcome === 'loss');
+  // who settled a leg: our grader's source, else nobody yet
+  const legSource = g => (legDone(g) || g?.outcome === 'push' ? g.gradeSource || 'ESPN box score' : null);
+  // Pikkit's result against ours: the same side of the money
+  const sideOf = (result, multiple) => (result === 'win' || (result === 'paid' && multiple > 1) ? 'won' : result === 'loss' || (result === 'paid' && multiple < 1) ? 'lost' : result === 'push' || result === 'void' || (result === 'paid' && multiple === 1) ? 'push' : null);
   // one slip with its legs' grades → close EV of the slip (legs independent),
   // legs beating the close, and the result from the legs or the user
-  function slipView(slip, grades) {
+  function slipView(slip, grades, tables = null) {
     const legs = slip.legs.map(l => ({ ...l, g: grades[legKey(slip, l)] || null }));
-    let table = payTable(slip), reprice = null;
+    let table = payTable(slip, tables), reprice = null;
     // no payout typed on a power slip with linked picks from one game: the repriced estimate
     if (table && !slip.flex && !(slip.stake > 0 && slip.payout > 0) && !(slip.mult > 0)) {
       const n = slip.legs.length;
@@ -413,12 +449,22 @@
       closeEv = r4(dist.reduce((a, q, k) => a + q * (table[k] || 0), 0) - 1);
     }
     const st = settleSlip(slip, legs, table);
+    // what our own grades say, beside a result Pikkit (or the user) gave
+    let ours = null, agree = null;
+    if (st.by === 'pikkit' || st.by === 'user') {
+      ours = settleSlip({ ...slip, result: null }, legs, table);
+      const a = sideOf(st.result, st.multiple), b = ours.result === 'open' ? null : sideOf(ours.result, ours.multiple);
+      agree = a && b ? a === b : null;
+    }
+    const be = breakEven(table, slip.legs.length);
     // legs from one game move together: the close EV above treats them as
     // independent, and the apps pay less for same-game picks than their table
     const games = new Map();
     for (const l of legs) { const m = l.g?.matched; if (m?.start) { const k = `${m.matchTitle || m.sport}|${m.start}`; games.set(k, (games.get(k) || 0) + 1); } }
     const sameGame = [...games.values()].filter(n => n > 1).reduce((a, n) => a + n, 0);
-    return { ...slip, legs, table, reprice, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, sameGame, ...st };
+    const pin = legs.filter(l => hasPin(l.g));
+    return { ...slip, legs: legs.map(l => ({ ...l, be })), table, reprice, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, sameGame, be,
+      pinPriced: pin.length, pinBeat: pin.filter(l => l.g.raw.ev > 0).length, ...st, ours, agree };
   }
 
   // How a slip settled, from its legs: a voided or tied pick drops out and the
@@ -433,8 +479,11 @@
     const back = m => (stake != null && m != null ? r2(stake * m) : null);
     const user = slip.result;
     if (user === 'win' || user === 'loss' || user === 'push' || user === 'void') {
+      const by = slip.source === 'pikkit' ? 'pikkit' : 'user';
+      // Pikkit's own profit is what the app paid
+      if (by === 'pikkit' && stake != null && slip.profit != null) { const m = (stake + slip.profit) / stake; return { result: user, hits: null, live: n, multiple: r4(m), returned: r2(stake + slip.profit), by }; }
       const m = user === 'win' ? (slip.payout > 0 && stake ? slip.payout / stake : table?.[n] ?? null) : user === 'loss' ? 0 : 1;
-      return { result: user, hits: null, live: n, multiple: m == null ? null : r4(m), returned: back(m), by: 'user' };
+      return { result: user, hits: null, live: n, multiple: m == null ? null : r4(m), returned: back(m), by };
     }
     const gs = legs.map(l => l.g);
     if (!slip.flex && gs.some(g => g?.outcome === 'loss')) return { result: 'loss', hits: gs.filter(g => g?.outcome === 'win').length, live: n, multiple: 0, returned: back(0), by: 'legs' };
@@ -454,29 +503,51 @@
     const m = new Map();
     for (const s of views) for (const l of s.legs) {
       const k = keyOf(s, l);
-      const a = m.get(k) || { key: k, legs: 0, priced: 0, beat: 0, evSum: 0, moveSum: 0, graded: 0, wins: 0, noHistory: 0 };
+      const a = m.get(k) || { key: k, legs: 0, priced: 0, beat: 0, evSum: 0, moveSum: 0, graded: 0, wins: 0, noHistory: 0, beN: 0, beSum: 0, beVar: 0, beWins: 0, pinN: 0, pinBeat: 0, pinSum: 0, sources: {} };
       a.legs++;
       if (l.g?.status === 'nohistory') a.noHistory++;
       if (hasClose(l.g) && l.g.status !== 'open') { a.priced++; a.evSum += l.g.closeEv; if (l.g.closeEv > 0) a.beat++; if (l.g.fairMove != null) a.moveSum += l.g.fairMove; }
-      if (l.g?.outcome === 'win' || l.g?.outcome === 'loss') { a.graded++; if (l.g.outcome === 'win') a.wins++; }
+      if (hasPin(l.g)) { a.pinN++; a.pinSum += l.g.raw.ev; if (l.g.raw.ev > 0) a.pinBeat++; }
+      if (legDone(l.g)) {
+        a.graded++; if (l.g.outcome === 'win') a.wins++;
+        a.sources[legSource(l.g)] = (a.sources[legSource(l.g)] || 0) + 1;
+        // the hit rate against the break-even of the slip each leg was on
+        const be = l.be ?? s.be;
+        if (be > 0) { a.beN++; a.beSum += be; a.beVar += be * (1 - be); if (l.g.outcome === 'win') a.beWins++; }
+      }
       m.set(k, a);
     }
     return [...m.values()].map(a => ({ key: a.key, legs: a.legs, priced: a.priced, noHistory: a.noHistory, beatShare: a.priced ? r4(a.beat / a.priced) : null,
-      closeEv: a.priced ? r2(a.evSum / a.priced) : null, fairMove: a.priced ? r2(a.moveSum / a.priced) : null, graded: a.graded, hitRate: a.graded ? r4(a.wins / a.graded) : null }))
+      closeEv: a.priced ? r2(a.evSum / a.priced) : null, fairMove: a.priced ? r2(a.moveSum / a.priced) : null, graded: a.graded, hitRate: a.graded ? r4(a.wins / a.graded) : null,
+      ...beStats(a), pinN: a.pinN, pinBeatShare: a.pinN ? r4(a.pinBeat / a.pinN) : null, pinEv: a.pinN ? r2(a.pinSum / a.pinN) : null, sources: a.sources }))
       .sort((a, b) => b.legs - a.legs);
   }
+  // every leg of these slips as one group
+  /** @returns {any} */
+  const pooled = views => legTotals(views.map(v => ({ ...v, app: '*' })), 'app')[0] || {};
+  // legs graded against their break-even: the mean break-even, the hit rate
+  // over it in points, and how many standard errors that is (z, the bar is 2)
+  function beStats(a) {
+    if (!a.beN) return { beN: 0, be: null, overBe: null, beZ: null };
+    const be = a.beSum / a.beN, hit = a.beWins / a.beN;
+    return { beN: a.beN, be: r4(be), overBe: r2((hit - be) * 100), beZ: a.beVar > 0 ? r2((a.beWins - a.beSum) / Math.sqrt(a.beVar)) : null };
+  }
   function summary(views) {
+    const all = pooled(views);
     const t = legTotals(views, 'app').reduce((a, x) => {
       a.legs += x.legs; a.priced += x.priced; a.noHistory += x.noHistory; a.graded += x.graded;
       a.beat += (x.beatShare || 0) * x.priced; a.ev += (x.closeEv || 0) * x.priced; a.wins += (x.hitRate || 0) * x.graded; return a;
     }, { legs: 0, priced: 0, noHistory: 0, graded: 0, beat: 0, ev: 0, wins: 0 });
+    const checked = views.filter(v => v.agree != null);
     const closed = views.filter(s => s.closeEv != null);
     const settled = views.filter(s => ['win', 'loss', 'paid'].includes(s.result) && s.stake > 0 && s.returned != null);
     const staked = settled.reduce((a, s) => a + s.stake, 0);
     const profit = settled.reduce((a, s) => a + s.returned - s.stake, 0);
     return { slips: views.length, legs: t.legs, priced: t.priced, noHistory: t.noHistory, beatShare: t.priced ? r4(t.beat / t.priced) : null, closeEv: t.priced ? r2(t.ev / t.priced) : null,
       graded: t.graded, hitRate: t.graded ? r4(t.wins / t.graded) : null, slipsClosed: closed.length, slipsPlusEv: closed.filter(s => s.closeEv > 0).length,
-      slipCloseEv: closed.length ? r4(closed.reduce((a, s) => a + s.closeEv, 0) / closed.length) : null, settled: settled.length, staked: r2(staked), profit: r2(profit), roi: staked ? r4(profit / staked) : null };
+      slipCloseEv: closed.length ? r4(closed.reduce((a, s) => a + s.closeEv, 0) / closed.length) : null, settled: settled.length, staked: r2(staked), profit: r2(profit), roi: staked ? r4(profit / staked) : null,
+      be: all.be ?? null, beN: all.beN || 0, overBe: all.overBe ?? null, beZ: all.beZ ?? null, pinN: all.pinN || 0, pinBeatShare: all.pinBeatShare ?? null, pinEv: all.pinEv ?? null, sources: all.sources || {},
+      checked: checked.length, agreed: checked.filter(v => v.agree).length };
   }
 
   // Slip by slip, grouped by app, sport or month: record, money, units, and
@@ -487,7 +558,8 @@
     const m = new Map();
     for (const v of views) {
       const k = keyOf(v);
-      const a = m.get(k) || { key: k, slips: 0, open: 0, won: 0, lost: 0, push: 0, staked: 0, profit: 0, closed: 0, evSum: 0, plusEv: 0, legsPriced: 0, legsBeat: 0, legEv: 0 };
+      const a = m.get(k) || { key: k, slips: 0, open: 0, won: 0, lost: 0, push: 0, staked: 0, profit: 0, closed: 0, evSum: 0, plusEv: 0, legsPriced: 0, legsBeat: 0, legEv: 0, list: [] };
+      a.list.push(v);
       a.slips++;
       if (v.result === 'open') a.open++;
       else if (v.result === 'win' || (v.result === 'paid' && v.multiple > 1)) a.won++;
@@ -503,6 +575,7 @@
       staked: r2(a.staked), profit: r2(a.profit), units: unitUsd > 0 ? r2(a.profit / unitUsd) : null, roi: a.staked ? r4(a.profit / a.staked) : null,
       slipsClosed: a.closed, slipCloseEv: a.closed ? r4(a.evSum / a.closed) : null, slipsPlusEv: a.plusEv,
       legsPriced: a.legsPriced, legBeatShare: a.legsPriced ? r4(a.legsBeat / a.legsPriced) : null, legCloseEv: a.legsPriced ? r2(a.legEv / a.legsPriced) : null,
+      ...(t => ({ legsGraded: t.graded || 0, hitRate: t.hitRate ?? null, be: t.be ?? null, beN: t.beN || 0, overBe: t.overBe ?? null, beZ: t.beZ ?? null, pinN: t.pinN || 0, pinBeatShare: t.pinBeatShare ?? null, pinEv: t.pinEv ?? null }))(pooled(a.list)),
     })).sort((a, b) => (by === 'month' ? b.key.localeCompare(a.key) : b.slips - a.slips));
   }
 
@@ -519,6 +592,6 @@
     return { id: newId(now), app, stake: num(stake), payout: num(payout), mult: num(mult), flex: !!flex, placedAt: new Date(placedAt ?? now).toISOString(), legs: clean, source };
   }
 
-  return { APPS, appOf, appLabel, LEG_BE, legDecimal, POWER, FLEX, payTable, parseLeg, parseWhen, parseHeader, parseSlips, parseCsv, columns, parsePikkitCsv, slipFromPikkit,
+  return { APPS, appOf, appLabel, LEG_BE, legDecimal, POWER, FLEX, payTable, breakEven, hasPin, legSource, parseLeg, parseWhen, parseHeader, parseSlips, parseCsv, columns, parsePikkitCsv, slipFromPikkit,
     pikkitBreakdown, legKey, gradeRequest, slipView, settleSlip, repriced, pairLink, legTotals, slipTotals, makeSlip, summary, newId };
 }));

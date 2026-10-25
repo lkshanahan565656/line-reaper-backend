@@ -2781,9 +2781,10 @@ function renderArb(games) {
 // props record follows our own plays. The parsing and math are slips.js on
 // the backend (tested there).
 const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
-const ms = { slips: [], grades: {}, pikkit: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
+const ms = { slips: [], grades: {}, tables: null, pikkit: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
 const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
-  market: 'no line history: that stat isn\'t on our board for this player', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
+  market: 'no line history: that stat isn\'t on our board for this player', sport: 'can\'t grade: add the league to this leg (like NFL) so we know which box scores to read',
+  game: 'can\'t grade: no finished game with this player in the week after the bet', queued: 'in the queue for the box scores, back on the next pass', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
 function msReady() {
   if (ms.ready) return Promise.resolve(true);
   if (!ms.loading) ms.loading = (async () => {
@@ -2791,6 +2792,7 @@ function msReady() {
     try { ms.slips = JSON.parse(lsGet(MS_KEY) || '[]').filter(s => s && s.id && Array.isArray(s.legs)); } catch { ms.slips = []; }
     try { ms.grades = JSON.parse(lsGet(MS_GRADES) || '{}') || {}; } catch { ms.grades = {}; }
     try { ms.pikkit = JSON.parse(lsGet(MS_PK) || 'null'); } catch { ms.pikkit = null; }
+    try { ms.tables = JSON.parse(lsGet('lr_slip_tables') || 'null'); } catch { ms.tables = null; }
     ms.ready = true;
     return true;
   })().catch(() => { ms.loading = null; return false; });
@@ -2814,8 +2816,10 @@ async function msGrade(force) {
     for (let i = 0; i < legs.length; i += 300) {
       const r = await fetch(`${BACKEND_URL}/api/slips/grade`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ legs: legs.slice(i, i + 300) }) });
       if (!r.ok) break;
-      const { results } = await r.json();
+      const { results, tables } = await r.json();
       Object.assign(ms.grades, results || {});
+      // the apps' live tables (Pick6's as last read), for the break-even of a slip with no payout typed
+      if (tables) { ms.tables = tables; lsSet('lr_slip_tables', JSON.stringify(tables)); }
     }
     msSave();
     if (document.getElementById('page-myslips')?.classList.contains('active')) renderMySlips();
@@ -2881,7 +2885,7 @@ function msSet(k, v) { ms[k] = v; renderMySlips(); }
 function renderMySlips() {
   if (!ms.ready) return;
   const L = LRSlips;
-  const views = ms.slips.map(s => L.slipView(s, ms.grades)).sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt));
+  const views = ms.slips.map(s => L.slipView(s, ms.grades, ms.tables)).sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt));
   const s = L.summary(views);
   const tile = (k, v, cls, sub) => `<div class="tl-stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div>${sub ? `<div class="mb-sub">${sub}</div>` : ''}</div>`;
   document.getElementById('msStats').innerHTML = [
@@ -2889,7 +2893,8 @@ function renderMySlips() {
     tile('Beat the close', msShare(s.beatShare), s.beatShare == null ? '' : msCls(s.beatShare - 0.5), s.priced ? `of ${s.priced} legs with a close` : 'no closes yet'),
     tile('Leg CLV', msPct(s.closeEv), msCls(s.closeEv), 'vs the app\'s break-even'),
     tile('Slips +EV at close', s.slipsClosed ? `${s.slipsPlusEv}/${s.slipsClosed}` : '—', '', s.slipCloseEv != null ? `avg ${msPct(s.slipCloseEv * 100)}` : 'every leg needs a close'),
-    tile('Legs hit', msShare(s.hitRate), '', s.graded ? `${s.graded} graded` : 'no results yet'),
+    tile('Legs hit', msShare(s.hitRate), s.overBe == null ? '' : msCls(s.overBe), s.beN ? `vs ${(s.be * 100).toFixed(1)}% break-even on ${s.beN} graded${s.beZ != null ? ` · z ${s.beZ > 0 ? '+' : ''}${s.beZ}` : ''}` : s.graded ? `${s.graded} graded` : 'no results yet'),
+    tile('CLV vs Pinnacle', msPct(s.pinEv), msCls(s.pinEv), s.pinN ? `beat ${msShare(s.pinBeatShare)} of ${s.pinN} legs Pinnacle priced` : 'no Pinnacle close yet'),
     tile('Profit', s.settled ? mybUsd(s.profit, true) : '—', msCls(s.profit), s.settled ? `${mybUnit().set ? `${(s.profit / mybUnit().unit) > 0 ? '+' : ''}${(s.profit / mybUnit().unit).toFixed(2)}u · ` : ''}ROI ${mybPct(s.roi)} on ${s.settled}` : `${s.noHistory} legs with no line history`),
   ].join('');
   // slip by slip: record, money, units and the close, by app, sport or month
@@ -2897,15 +2902,15 @@ function renderMySlips() {
   document.getElementById('msSlipBar').innerHTML = views.length ? `<span class="section-head" style="margin:0 8px 0 0">Slips</span>` + seg2('sby', [['app', 'By app'], ['sport', 'By sport'], ['month', 'By month']]) : '';
   const st = views.length ? L.slipTotals(views, ms.sby, { unitUsd: mybUnit().set ? mybUnit().unit : null }) : [];
   const mLabel = k => (ms.sby === 'month' && /^\d{4}-\d{2}$/.test(k) ? new Date(`${k}-01T12:00:00`).toLocaleDateString([], { month: 'short', year: 'numeric' }) : k);
-  document.getElementById('msSlipTot').innerHTML = st.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', sport: 'Sport', month: 'Month' }[ms.sby]}</th><th class="r">Slips</th><th class="r">W-L</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">Units</th><th class="r">ROI</th><th class="r">Slip CLV</th><th class="r">Legs beat close</th><th class="r">Leg CLV</th></tr></thead><tbody>${
-    st.map(t => `<tr><td>${escAttr(mLabel(t.key))}</td><td class="r">${t.slips}${t.open ? `<small> (${t.open} open)</small>` : ''}</td><td class="r">${t.record}</td><td class="r">${t.staked ? mybUsd(t.staked) : '—'}</td><td class="r ${msCls(t.profit)}">${t.staked ? mybUsd(t.profit, true) : '—'}</td><td class="r ${msCls(t.units)}">${t.units != null && t.staked ? `${t.units > 0 ? '+' : ''}${t.units.toFixed(2)}u` : '—'}</td><td class="r ${msCls(t.roi)}">${mybPct(t.roi)}</td><td class="r ${msCls(t.slipCloseEv)}">${t.slipCloseEv != null ? `${msPct(t.slipCloseEv * 100)} <small>of ${t.slipsClosed}</small>` : '—'}</td><td class="r">${t.legsPriced ? `${msShare(t.legBeatShare)} <small>of ${t.legsPriced}</small>` : '—'}</td><td class="r ${msCls(t.legCloseEv)}">${msPct(t.legCloseEv)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="tl-note">Profit counts slips with a stake, settled at the app's own table: a voided or tied pick drops to the smaller entry, a flex slip pays at its hits. Units use your unit${mybUnit().set ? ` ($${mybUnit().unit})` : ' (set it in the bankroll box to see them)'}. Slip CLV prices the slip on its legs' closing fairs, legs independent.</div>` : '';
+  document.getElementById('msSlipTot').innerHTML = st.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', sport: 'Sport', month: 'Month' }[ms.sby]}</th><th class="r">Slips</th><th class="r">W-L</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">Units</th><th class="r">ROI</th><th class="r">Legs hit</th><th class="r">Break-even</th><th class="r">Slip CLV</th><th class="r">Legs beat close</th><th class="r">Leg CLV</th><th class="r">vs Pinnacle</th></tr></thead><tbody>${
+    st.map(t => `<tr><td>${escAttr(mLabel(t.key))}</td><td class="r">${t.slips}${t.open ? `<small> (${t.open} open)</small>` : ''}</td><td class="r">${t.record}</td><td class="r">${t.staked ? mybUsd(t.staked) : '—'}</td><td class="r ${msCls(t.profit)}">${t.staked ? mybUsd(t.profit, true) : '—'}</td><td class="r ${msCls(t.units)}">${t.units != null && t.staked ? `${t.units > 0 ? '+' : ''}${t.units.toFixed(2)}u` : '—'}</td><td class="r ${msCls(t.roi)}">${mybPct(t.roi)}</td><td class="r ${msCls(t.overBe)}">${t.legsGraded ? `${msShare(t.hitRate)} <small>of ${t.legsGraded}</small>` : '—'}</td><td class="r">${t.be != null ? `${(t.be * 100).toFixed(1)}%${t.beZ != null ? ` <small>z ${t.beZ > 0 ? '+' : ''}${t.beZ}</small>` : ''}` : '—'}</td><td class="r ${msCls(t.slipCloseEv)}">${t.slipCloseEv != null ? `${msPct(t.slipCloseEv * 100)} <small>of ${t.slipsClosed}</small>` : '—'}</td><td class="r">${t.legsPriced ? `${msShare(t.legBeatShare)} <small>of ${t.legsPriced}</small>` : '—'}</td><td class="r ${msCls(t.legCloseEv)}">${msPct(t.legCloseEv)}</td><td class="r ${msCls(t.pinEv)}">${t.pinN ? `${msPct(t.pinEv)} <small>of ${t.pinN}</small>` : '—'}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tl-note">Profit counts slips with a stake, settled at the app's own table: a voided or tied pick drops to the smaller entry, a flex slip pays at its hits. Units use your unit${mybUnit().set ? ` ($${mybUnit().unit})` : ' (set it in the bankroll box to see them)'}. Slip CLV prices the slip on its legs' closing fairs, legs independent. Break-even is the hit rate each leg needs on its own slip's table (PrizePicks 3-pick power 55.0%, Pick6 3-pick at 5.5x 56.7%); z is how many standard errors the hit rate sits above it, and 2 is the bar. vs Pinnacle is each leg's price against Pinnacle's own last number before the start.</div>` : '';
   const seg = (k, list) => `<div class="mb-seg">${list.map(([v, l]) => `<button class="${ms[k] === v ? 'on' : ''}" onclick="msSet('${k}','${v}')">${l}</button>`).join('')}</div>`;
   document.getElementById('msBar').innerHTML = views.length ? `<span class="section-head" style="margin:0 8px 0 0">Legs</span>` + seg('by', [['app', 'By app'], ['league', 'By league'], ['market', 'By stat']]) : '';
   const tot = views.length ? L.legTotals(views, ms.by) : [];
-  document.getElementById('msTotals').innerHTML = tot.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Stat' }[ms.by]}</th><th class="r">Legs</th><th class="r">With a close</th><th class="r">Beat it</th><th class="r">Leg CLV</th><th class="r">Fair moved</th><th class="r">Hit</th><th class="r">No history</th></tr></thead><tbody>${
-    tot.map(t => `<tr><td>${escAttr(t.key)}</td><td class="r">${t.legs}</td><td class="r">${t.priced}</td><td class="r">${msShare(t.beatShare)}</td><td class="r ${msCls(t.closeEv)}">${msPct(t.closeEv)}</td><td class="r ${msCls(t.fairMove)}">${t.fairMove == null ? '—' : `${t.fairMove > 0 ? '+' : ''}${t.fairMove.toFixed(1)} pts`}</td><td class="r">${t.graded ? `${msShare(t.hitRate)} <small>of ${t.graded}</small>` : '—'}</td><td class="r">${t.noHistory || ''}</td></tr>`).join('')}</tbody></table></div>
-    <div class="tl-note">A leg counts once the game starts and the sharp price was still being read in the hour before. Under about 50 legs a group is noise, not a finding.</div>` : '';
+  document.getElementById('msTotals').innerHTML = tot.length ? `<div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Stat' }[ms.by]}</th><th class="r">Legs</th><th class="r">With a close</th><th class="r">Beat it</th><th class="r">Leg CLV</th><th class="r">Fair moved</th><th class="r">Hit</th><th class="r">Break-even</th><th class="r">vs Pinnacle</th><th class="r">No history</th></tr></thead><tbody>${
+    tot.map(t => `<tr><td>${escAttr(t.key)}</td><td class="r">${t.legs}</td><td class="r">${t.priced}</td><td class="r">${msShare(t.beatShare)}</td><td class="r ${msCls(t.closeEv)}">${msPct(t.closeEv)}</td><td class="r ${msCls(t.fairMove)}">${t.fairMove == null ? '—' : `${t.fairMove > 0 ? '+' : ''}${t.fairMove.toFixed(1)} pts`}</td><td class="r ${msCls(t.overBe)}">${t.graded ? `${msShare(t.hitRate)} <small>of ${t.graded}</small>` : '—'}</td><td class="r">${t.be != null ? `${(t.be * 100).toFixed(1)}%` : '—'}</td><td class="r ${msCls(t.pinEv)}">${t.pinN ? `${msPct(t.pinEv)} <small>beat ${msShare(t.pinBeatShare)} of ${t.pinN}</small>` : '—'}</td><td class="r">${t.noHistory || ''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tl-note">A leg counts once the game starts and the sharp price was still being read in the hour before. Under about 50 legs a group is noise, not a finding.${s.graded ? ` Graded by: ${Object.entries(s.sources).map(([k, n]) => `${escAttr(k)} ${n}`).join(', ')}.` : ''}</div>` : '';
   const list = document.getElementById('msList');
   if (!views.length) {
     list.innerHTML = `<div class="mb-empty"><b>No slips yet.</b><span>Tap PASTE SLIPS and type or paste your slip: the app on the first line, then one leg a line, like <i>Josh Allen Over 245.5 Pass Yds</i>. Or import your Pikkit export for a breakdown of every bet you've tracked.</span><div><button class="mb-btn primary" onclick="msPasteToggle(true)">PASTE SLIPS</button></div></div>`;
@@ -2922,8 +2927,11 @@ function msSlipHtml(v) {
   const res = v.result && v.result !== 'open' ? `<span class="ms-tag ${v.result === 'win' || (v.result === 'paid' && v.multiple > 1) ? 'pos' : v.result === 'loss' || (v.result === 'paid' && v.multiple < 1) ? 'neg' : ''}">${v.result === 'paid' ? `PAID ${v.multiple}x` : v.result.toUpperCase()}${back}</span>` : '';
   // the user's own result, for legs we can't grade (no line history) or a payout the app changed
   const mark = `<span class="ms-res" title="Mark the result yourself (tap again to undo)">${[['win', 'W'], ['loss', 'L'], ['void', 'VOID']].map(([r, l]) => `<button class="${v.by === 'user' && v.result === r ? 'on' : ''}" onclick="msMark('${escAttr(v.id)}','${r}')">${l}</button>`).join('')}</span>`;
-  const sg = v.reprice ? `<div class="ms-sg">Linked picks from one game: payout taken as our repriced estimate ${v.reprice.mult}x (standard ${v.reprice.standard}x). Paste the slip with the app's real payout (to win $X) if it differs. Slip CLV prices legs independently, a rough guide here.</div>`
-    : v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table.</div>` : '';
+  // a result Pikkit (or you) gave, against what our own box scores say
+  const who = v.by === 'pikkit' ? 'Result from Pikkit' : v.by === 'user' ? 'Result marked by you' : v.by === 'legs' ? 'Result from our box scores' : '';
+  const chk = v.agree === true ? '<span class="pos"> · our box scores agree</span>' : v.agree === false ? `<span class="neg"> · our box scores say ${escAttr(v.ours.result === 'paid' ? `paid ${v.ours.multiple}x` : v.ours.result)}</span>` : '';
+  const sg = (who ? `<div class="ms-meta">${who}${chk}${v.be ? ` · break-even ${(v.be * 100).toFixed(1)}% a leg` : ''}</div>` : '') + (v.reprice ? `<div class="ms-sg">Linked picks from one game: payout taken as our repriced estimate ${v.reprice.mult}x (standard ${v.reprice.standard}x). Paste the slip with the app's real payout (to win $X) if it differs. Slip CLV prices legs independently, a rough guide here.</div>`
+    : v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table.</div>` : '');
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
   const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
@@ -2939,21 +2947,44 @@ function msLegHtml(l) {
   const move = g.lineMove ? ` <small class="${msCls(g.lineMove)}">${Math.abs(g.lineMove)} ${g.lineMove > 0 ? 'your way' : 'against you'}</small>` : '';
   const clv = open ? `<span title="sharp price now, before the close">${msPct(g.evNow)}<small>now</small></span>`
     : g.closeEv == null ? '<small>no sharp price</small>' : g.closeOk === false ? `<span>${msPct(g.closeEv)}<small>close read ${Math.round(g.closeAgeMin)} min early</small></span>` : `<span class="${msCls(g.closeEv)}">${msPct(g.closeEv)}</span>`;
-  const res = g.outcome ? `<span class="${g.outcome === 'win' ? 'pos' : g.outcome === 'loss' ? 'neg' : ''}">${g.outcome.toUpperCase()}</span>${g.result != null ? `<small>${g.result}</small>` : ''}` : g.status === 'void' ? `VOID<small>${escAttr(g.voidReason || '')}</small>` : open ? '<small>before start</small>' : '<small>waiting on the box score</small>';
-  return `<div class="ms-leg">${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}</div><div class="r" data-k="Result">${res}</div></div>`;
+  // Pinnacle's own last number (or Kalshi's when Pinnacle had none), beside the sharp consensus
+  const rw = g.raw && g.raw.ev != null && !open ? `<small class="${g.raw.ok === false ? '' : msCls(g.raw.ev)}" title="${g.raw.source === 'pinnacle' ? 'Pinnacle' : 'Kalshi'}'s last number before the start${g.raw.exact ? ' at your line' : `, read from its ${g.raw.line} line along the stat's curve`}${g.raw.ok === false ? ', read over an hour early' : ''}">${g.raw.source === 'pinnacle' ? 'PIN' : 'KAL'} ${msPct(g.raw.ev)}${g.raw.exact ? '' : '~'}</small>` : '';
+  const src = g.gradeSource ? `<small title="${escAttr(g.gradeSource)}${g.late ? (g.gameSource === 'board' ? '. Logged after the start: the game and close come from our board' : '. Logged after the start: the game was found in the box scores, no close') : ''}">${escAttr(g.gradeSource.replace(/ box score$/, ''))}${g.late ? ' · late' : ''}</small>` : '';
+  const res = g.outcome ? `<span class="${g.outcome === 'win' ? 'pos' : g.outcome === 'loss' ? 'neg' : ''}">${g.outcome.toUpperCase()}</span>${g.result != null ? `<small>${g.result}</small>` : ''}${src}` : g.status === 'void' ? `VOID<small>${escAttr(g.voidReason || '')}</small>` : open ? '<small>before start</small>' : '<small>waiting on the box score</small>';
+  return `<div class="ms-leg">${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}${rw}</div><div class="r" data-k="Result">${res}</div></div>`;
 }
 function msRenderPikkit() {
   const el = document.getElementById('msPikkit');
   const pk = ms.pikkit;
   if (!pk?.bets?.length) { el.innerHTML = ''; return; }
   const rows = LRSlips.pikkitBreakdown(pk.bets, ms.pkBy);
+  const have = new Set(ms.slips.map(x => x.id));
+  const left = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).length;
+  const pv = ms.slips.filter(x => x.source === 'pikkit').map(x => LRSlips.slipView(x, ms.grades, ms.tables));
+  const chk = pv.filter(v => v.agree != null), agreed = chk.filter(v => v.agree).length;
+  const regrade = `<div class="tl-note" style="margin-top:6px">${pv.length ? `${pv.length} Pikkit bets are graded here leg by leg from the box scores${chk.length ? `: on the ${chk.length} we could settle, our result agrees with Pikkit's on <b>${agreed}</b>${chk.length - agreed ? ` and differs on <b class="neg">${chk.length - agreed}</b>` : ''}` : ''}.` : 'None of these bets is graded leg by leg yet.'}${left ? ` <button class="mb-btn" onclick="msPikkitAll()">GRADE ${left} MORE FROM BOX SCORES</button>` : ''}</div>`;
   const seg = `<div class="mb-seg">${[['app', 'App'], ['league', 'League'], ['market', 'Market'], ['type', 'Bet type'], ['month', 'Month']].map(([v, l]) => `<button class="${ms.pkBy === v ? 'on' : ''}" onclick="msSet('pkBy','${v}')">${l}</button>`).join('')}</div>`;
   el.innerHTML = `<div class="section-head" style="margin-top:22px">Your Pikkit history</div>
     <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, Pikkit's own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
+    ${regrade}
     <div class="mb-bar" style="margin-top:8px">${seg}</div>
     <div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Market', type: 'Bet type', month: 'Month' }[ms.pkBy]}</th><th class="r">Bets</th><th class="r">W-L-P</th><th class="r">Won</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">ROI</th><th class="r">Beat close</th><th class="r">CLV</th></tr></thead><tbody>${
       rows.map(r => `<tr><td>${escAttr(r.key)}</td><td class="r">${r.bets}</td><td class="r">${r.won}-${r.lost}-${r.push}</td><td class="r">${msShare(r.winRate)}</td><td class="r">${mybUsd(r.staked)}</td><td class="r ${msCls(r.profit)}">${mybUsd(r.profit, true)}</td><td class="r ${msCls(r.roi)}">${mybPct(r.roi)}</td><td class="r">${r.clvN ? `${msShare(r.beatShare)} <small>of ${r.clvN}</small>` : '—'}</td><td class="r ${msCls(r.clv)}">${mybPct(r.clv)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="tl-note">Beat close and CLV use the closing line Pikkit kept for each bet (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close.</div>`;
+    <div class="tl-note">Beat close and CLV use the closing line Pikkit kept for each bet (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close; legs of games from the last two weeks also get Pinnacle's close where our board saw the prop.</div>`;
+}
+// every Pikkit bet with legs we can read becomes a slip, graded from the box
+// scores (the import adds only the last week's on its own)
+function msPikkitAll() {
+  const pk = ms.pikkit;
+  if (!pk?.bets?.length) return;
+  const have = new Set(ms.slips.map(x => x.id));
+  const add = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).map(LRSlips.slipFromPikkit);
+  if (!add.length) return;
+  ms.slips = [...add, ...ms.slips];
+  msSave();
+  showToast(`${add.length} Pikkit bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
+  renderMySlips();
+  msGrade(true);
 }
 
 // ─── MY BETS ─────────────────────────────────────────────────────────────────
@@ -3009,10 +3040,10 @@ async function mybOpen() {
 // every bet, plus the pick'em slips from MY SLIPS unless they're switched off
 function mybAll() {
   const out = [...myb.list];
-  if (myb.ui.slips !== false && ms.ready && window.LRSlips) for (const sl of ms.slips) { const b = LRBets.fromSlip(LRSlips.slipView(sl, ms.grades)); if (b) out.push(b); }
+  if (myb.ui.slips !== false && ms.ready && window.LRSlips) for (const sl of ms.slips) { const b = LRBets.fromSlip(LRSlips.slipView(sl, ms.grades, ms.tables)); if (b) out.push(b); }
   return LRBets.sortNewest(out);
 }
-const mybSlipCount = () => (ms.ready && window.LRSlips ? ms.slips.filter(sl => LRBets.fromSlip(LRSlips.slipView(sl, ms.grades))).length : 0);
+const mybSlipCount = () => (ms.ready && window.LRSlips ? ms.slips.filter(sl => LRBets.fromSlip(LRSlips.slipView(sl, ms.grades, ms.tables))).length : 0);
 
 // ── auto-settle from the trackers ──
 async function mybAutoSettle(force) {

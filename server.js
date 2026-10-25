@@ -847,9 +847,24 @@ const MLB_PIN_ON = !/^(off|0|false|no)$/i.test(String(process.env.MLB_PIN || '')
 // stakes and payouts stay in the user's browser.
 const slipLegTracker = createSportTracker({
   store: resultsBackup.wrap('slipLegs', createEvStoreFromEnv(process.env, { table: 'slip_legs', fileVar: 'SLIP_LEGS_FILE', file: 'slip-legs.json' })),
-  grader: createSportsGrader({ http: axios }),
+  // the records' grader: ESPN box scores, the MLB Stats API, and tennis, UFC, NASCAR, soccer (extragrade.js)
+  grader: sportGrader,
 });
 slipLegTracker.ready().catch(e => console.error('Slip log: store failed to initialise:', e.message));
+// The prop close book (propclose.js): Pinnacle's and Kalshi's last number on
+// every sports prop the board prices, frozen at the start, kept 14 days. A
+// MY SLIPS leg logged after the start (or imported from Pikkit) takes its
+// close from here, and every leg's CLV is also shown against Pinnacle's raw close.
+const propCloseBook = require('./propclose').createPropCloseBook({
+  store: resultsBackup.wrap('propCloses', createEvStoreFromEnv(process.env, { table: 'prop_closes', fileVar: 'PROP_CLOSES_FILE', file: 'prop-closes.json' }), { appendOnly: false }),
+});
+// MY SLIPS legs that reached us after the start, graded from the same box
+// scores (slipgrade.js); finished results kept for everyone who logs that leg
+const slipLate = require('./slipgrade');
+const lateSlipGrader = slipLate.createLateGrader({
+  store: resultsBackup.wrap('slipLate', createEvStoreFromEnv(process.env, { table: 'slip_late', fileVar: 'SLIP_LATE_FILE', file: 'slip-late.json' })),
+  book: propCloseBook, grader: sportGrader, scan: slipLate.createBoxScan({ http: axios }),
+});
 // SHOP (appshop.js): the softest number across the apps and the middles
 // between two apps, followed to the close and graded like the props record
 const shopTracker = createSportTracker({
@@ -865,6 +880,7 @@ const promoTracker = createSportTracker({
 });
 promoTracker.ready().catch(e => console.error('Promo tracker: store failed to initialise:', e.message));
 const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
+const sliplogSideOf = require('./sliplog').sideOf;
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
 // Sharp money: every odds poll is diffed per book. Steam (3+ books move the
@@ -4803,7 +4819,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.171.4', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.172.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6954,6 +6970,8 @@ async function trackSportProps() {
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: sportPinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
+    // every prop's last Pinnacle and Kalshi number, frozen at the start (propclose.js)
+    await propCloseBook.observe(rows, row => ({ pin: sharpQuotes(row).filter(q => q.book === 'pinnacle'), kal: rowKalshi(row) })).catch(e => console.warn('Prop close book:', e.message));
     // the softest number across the apps (appshop.js): kinds shop-any, shop-pp,
     // shop-p6 and shop-mid in a record of their own (own store, own grading
     // budget), never plays or alerts
@@ -7346,11 +7364,45 @@ app.post('/api/slips/grade', async (req, res) => {
         if (g && (esLegs.includes(l) || g.reason !== 'player')) out.results[id] = g;
       }
     }
-    res.json(out);
+    await gradeSlipCloses(rest, out.results);
+    res.json({ ...out, tables: { pick6: pick6.state.payouts || null } });
   } catch (e) { sendErr(res, e); }
 });
+// After the slip log: every sports leg it followed gets Pinnacle's raw close
+// beside the sharp consensus, and every leg it couldn't follow (the game had
+// started, no app lists the player now, an old Pikkit bet) goes to the late
+// grader: the prop close book and the box scores (slipgrade.js).
+const SLIP_LATE_REASONS = new Set(['before', 'player', 'market']);
+async function gradeSlipCloses(legs, results) {
+  const late = [];
+  for (const l of legs) {
+    const id = String(l?.id || '').slice(0, 200), g = results[id];
+    if (!g) continue;
+    const side = sliplogSideOf(l.side), line = Number(l.line);
+    if (!side || !Number.isFinite(line)) continue;
+    const sport = l.sport ? propsBoard.boardSport(l.sport).sport : null;
+    if (g.matched?.start && g.status !== 'nohistory' && !g.esports && !g.late) {
+      // a followed leg: Pinnacle's own last number, from the close book once the game started
+      const e = propCloseBook.get(g.matched.sport, g.matched.player, g.matched.mkey, g.matched.start);
+      const c = e ? slipLate.closeOf(e, line, side) : null;
+      if (c) g.raw = { ...c, ev: g.decimal ? Math.round((c.fair * g.decimal - 1) * 1e4) / 100 : null };
+      continue;
+    }
+    if (g.status !== 'nohistory' || !SLIP_LATE_REASONS.has(g.reason)) continue;
+    const app = String(l.app || '').toLowerCase();
+    late.push({ id, app, sport, player: String(l.player || ''), market: String(l.market || ''), mkey: propsBoard.sportMarketKey(l.market, sport || ''),
+      side, line, betAt: l.betAt, betAtExact: !!l.betAtExact });
+  }
+  if (!late.length) return;
+  const { legDecimal } = require('./slips');
+  const r = await lateSlipGrader.grade(late, { decimalOf: legDecimal });
+  // a leg the late grader has no answer for keeps the slip log's reason
+  for (const [id, v] of Object.entries(r.results)) results[id] = v;
+}
 app.get('/api/slips/record', async (req, res) => {
-  res.json({ ...(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), esports: await esSlipTracker.summary() });
+  res.json({ ...(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), esports: await esSlipTracker.summary(),
+    // the prop close book's days and the late legs graded from box scores
+    closeBook: propCloseBook.status(), late: lateSlipGrader.status() });
 });
 
 // The sports props record: free to see, like every other record. Open legs
@@ -7847,7 +7899,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.171.4',
+  version: '3.172.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
