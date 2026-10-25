@@ -17,7 +17,7 @@ const C = require('./cbbmodel');
 
 const MODEL_VERSION = 'v1';
 const VERSION_AT = '2026-10-25';
-const VERSION_NOTE = 'v1 from 2026-10-25: the NBA v2 model on college box scores (2023-24 to 2025-26), tuned and calibrated on November to January 2024-25 sportsbook lines, scored once on held-out February to April 2025 and 2025-26 lines.';
+const VERSION_NOTE = 'v1 from 2026-10-25: the NBA v2 model on college box scores (2023-24 to 2025-26), tuned on November to January 2024-25 games. No college prop line from any book or app exists to test it on, so its calibration is the NBA model\'s (fitted on real NBA book lines) and its live record, from 0, is the only test.';
 const KINDS = { prizepicks: 'cbb-model', pick6: 'p6-cbb-model', underdog: 'ud-cbb-model' };
 
 // a schedule team that matches the props row's team text exactly: the

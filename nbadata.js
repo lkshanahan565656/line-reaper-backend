@@ -254,7 +254,7 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
           decimal: pay?.decimal ?? null, breakEven: pay?.breakEven ?? null, ev: pay?.ev ?? null };
         // the line's distance from our projection (farlines.js): d in the model's own sds, far at |d| >= 1;
         // pinAgree 'toward' = Pinnacle's line sits toward our projection (the stale play, not in the far record)
-        const d = F.distance(pr.raw);
+        const d = C.sport === 'NBA' ? F.distance(pr.raw) : null;   // college: no far-line record
         if (d != null) {
           const fs = d > 0 ? 'Over' : 'Under';
           Object.assign(apps[book], { d, far: F.isFar(d), farSide: fs, pinAgree: F.agreeOf(fs, cell.line, pin && Number.isFinite(pin.line) ? pin.line : null) });
@@ -272,7 +272,7 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
         apps, pinnacle: pin && Number.isFinite(pin.line) ? { line: pin.line, pOver: pin.pOver, model: M.priceLine(p.proj, row.mkey, pin.line, params)?.pOver ?? null } : null,
         bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide,
         bestPay: bestPay ? { book: bestPay[0], side: bestPay[1].side, line: bestPay[1].line, ev: bestPay[1].ev, breakEven: bestPay[1].breakEven } : null,
-        ...farOfApps(apps),
+        ...(C.sport === 'NBA' ? farOfApps(apps) : {}),
         version: C.version });
     }
     return out.sort((a, b) => b.bestP - a.bestP);
