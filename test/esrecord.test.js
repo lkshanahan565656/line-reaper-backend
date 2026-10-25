@@ -195,3 +195,72 @@ test('legs with no grader are counted apart (R6, fantasy)', () => {
   const results = new Map(legs.map(l => [`${l.app}|${l.key}`, { skip: true }]));
   assert.strictEqual(ER.summarize(legs, results).counts.noGrader, 2);
 });
+
+// DK Pick6 (pre-registered 10-25): one LoL match on Pick6 and PrizePicks, Kalshi
+// pricing T1 at 80%; PrizePicks' Faker line a full kill above Pick6's
+function p6board() {
+  const recs = [];
+  const teams = { T1: ['faker', 'oner', 'doran', 'peyz', 'keria'], DK: ['showmaker', 'lucid', 'siwoo', 'smash', 'career'] };
+  for (const [team, ps] of Object.entries(teams)) {
+    for (const [i, p] of ps.entries()) {
+      const line = 2.5 + i;
+      recs.push({ t: START - 6 * H, s: 'pick6', k: `LOL|${p}|k|1|g:pick6:77`, v: [line, p === 'doran' ? 0.9 : 1, 1, 1, 1], m: { p, tm: team, st: ST, mt: 'DK @ T1', mk: 'MAP 1 Kills', mkey: 'k|1', sp: 'LOL', gid: 77, bk: 'pick6' } });
+      recs.push({ t: START - 6 * H, s: 'prizepicks', k: `LOL|${p}|k|1|g:prizepicks:y`, v: [p === 'faker' ? line + 1 : line, null, null, 1, 1], m: { p, tm: team, st: ST, mt: team === 'T1' ? 'DK MAP 1' : 'T1 MAP 1', mk: 'MAP 1 Kills', mkey: 'k|1', sp: 'LOL', gid: 'y', bk: 'prizepicks' } });
+    }
+  }
+  recs.push({ t: START - 5 * H, s: 'kalshi-es', k: 'K|LOL|KX2', v: [['T1', 0.79, 0.81], ['Dplus KIA', 0.19, 0.21]], m: { sp: 'LOL', teams: ['T1', 'Dplus KIA'], st: ST } });
+  return recs;
+}
+
+test('Pick6: a leg off the other apps, and kill legs by the match price', () => {
+  const { series, meta } = NS.replay(p6board());
+  const legs = ER.buildEsLegs(series, meta);
+  const faker = legs.find(l => l.app === 'pick6' && l.player === 'faker');
+  assert.deepStrictEqual(faker.cons, { line: 3.5, apps: 1, diff: -1 });
+  assert.strictEqual(ER.teamPrice(faker), 0.8);
+  const over = ER.esSides(faker).find(s => s.side === 'Over'), under = ER.esSides(faker).find(s => s.side === 'Under');
+  assert.ok(ER.P6_PREREG['p6-consensus'](faker, over));
+  assert.ok(!ER.P6_PREREG['p6-consensus'](faker, under));
+  assert.ok(ER.P6_PREREG['p6-fav-over'](faker, over));
+  const smash = legs.find(l => l.app === 'pick6' && l.player === 'smash');
+  assert.strictEqual(ER.teamPrice(smash), 0.2);
+  assert.ok(ER.P6_PREREG['p6-dog-under'](smash, ER.esSides(smash).find(s => s.side === 'Under')));
+  // PrizePicks' own off line is not a Pick6 test
+  const ppFaker = legs.find(l => l.app === 'prizepicks' && l.player === 'faker');
+  assert.ok(!ER.P6_PREREG['p6-consensus'](ppFaker, ER.esSides(ppFaker).find(s => s.side === 'Under')));
+  const cov = ER.p6Coverage(legs);
+  assert.strictEqual(cov.legs, 10);
+  assert.strictEqual(cov.paired, 10);
+  assert.strictEqual(cov.offOne, 1);
+  assert.deepStrictEqual(cov.withApp, { prizepicks: 10 });
+  assert.strictEqual(cov.fav70, 5);
+  assert.strictEqual(cov.dog30, 5);
+});
+
+test('Pick6 stacks pay its read 6-pick table, the 5-of-6 floor too, and repriced', () => {
+  const { series, meta } = NS.replay(p6board());
+  const legs = ER.buildEsLegs(series, meta);
+  const results = new Map();
+  // T1 all over; DK all over but one of its top three (smash, line 5.5) short: Over stack 5 of 6, Under stack 0 of 6
+  for (const l of legs) results.set(`${l.app}|${l.key}`, { result: l.player === 'smash' ? l.bet.v[0] - 1 : l.bet.v[0] + 1 });
+  const rep = ER.summarize(legs, results, { p6Payouts: { 6: { 5: 1.5, 6: 25 } } });
+  const ps = rep.pick6.stacks;
+  assert.strictEqual(ps.stacks, 2);
+  assert.strictEqual(ps.swept, 0);
+  assert.strictEqual(ps.fiveOfSix, 1);
+  const o = ps.rows.find(r => r.side === 'Over');
+  assert.strictEqual(o.hits, 5);
+  assert.strictEqual(o.paid, 1.35);   // the 5-of-6 floor 1.5x times doran's 0.9 (T1's third-highest line)
+  assert.ok(o.paidRepriced < o.paid);
+  assert.ok(ps.expUnitsRepriced < 0);
+  // Pick6's own tally and the report text
+  assert.strictEqual(rep.pick6.kinds['p6-consensus'].n, 1);
+  assert.strictEqual(rep.pick6.kinds['p6-consensus'].w, 1);
+  assert.strictEqual(rep.pick6.kinds['p6-fav-over'].n, 5);
+  assert.strictEqual(rep.pick6.kinds['p6-dog-under'].w, 1);
+  const txt = ER.reportText(rep);
+  assert.match(txt, /DK Pick6 \(pre-registered 10-25/);
+  assert.match(txt, /p6-stack: 0 swept and 1 five-of-six of 2 graded/);
+  // the existing stacks and kinds are untouched by Pick6's
+  assert.ok(!rep.preregAll['p6-consensus']);
+});
