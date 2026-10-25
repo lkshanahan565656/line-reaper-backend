@@ -8499,7 +8499,7 @@ function esAutoSlipsHTML() {
   if (!d) return '';
   if (!d.slips?.length) {
     const legs = Object.values(d.pool || {}).reduce((a, b) => a + (b.plus || 0), 0);
-    return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">BEST SLIPS</b> · no entry on PrizePicks, Underdog or Sleeper is within ${d.nearPct}% of break-even right now (${legs} +EV leg${legs === 1 ? '' : 's'} on the board).</div>`;
+    return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">BEST SLIPS</b> · no entry on PrizePicks, Underdog or Sleeper is within ${d.nearPct}% of break-even right now (${legs} +EV leg${legs === 1 ? '' : 's'} on the board).</div>` + esModelStacksHTML(d.esStacks);
   }
   const cards = d.slips.map((s, i) => esAsCard(s, i, d)).join('');
   const rec = d.record;
@@ -8507,7 +8507,7 @@ function esAutoSlipsHTML() {
   const recLine = !rec ? '' : rec.slips
     ? `<span class="es-rec">Record: ${rec.cashed} of ${rec.slips} cashed, <b style="color:${rec.units >= 0 ? '#34d399' : '#f87171'}">${rec.units > 0 ? '+' : ''}${rec.units}u</b> (ROI ${pct(rec.roi)}, priced at ${pct(rec.expectedRoi)})${rec.open ? ` · ${rec.open} pending` : ''}</span>`
     : `<span class="es-rec">Every +EV slip here is logged and graded${rec.open ? `: ${rec.open} pending` : ''}</span>`;
-  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book: one leg a match, each priced at the fair the Lines table shows</span>${recLine}</div><div class="es-autoslips">${cards}</div>${esStacksHTML(d)}`;
+  return `<div class="es-hdr"><h3>BEST SLIPS</h3><span class="sub">The best entry on each book: one leg a match, each priced at the fair the Lines table shows</span>${recLine}</div><div class="es-autoslips">${cards}</div>${esStacksHTML(d)}${esModelStacksHTML(d.esStacks)}`;
 }
 // ── MATCH STACKS: one match's overs (or unders) in one entry ──────────────
 // Legs from one CS or LoL match move together; the apps pay them as if they
@@ -8531,6 +8531,50 @@ function esStacksHTML(d) {
   const head = `<div class="es-hdr"><h3>MATCH STACKS</h3><span class="sub">One match, every leg the same way. When a match runs long, everyone's kills go over together. Every number assumes the app's standard payout, which it may cut for picks from one match: check the entry screen.</span>${recLine}</div>${needs}`;
   if (!list.length) return head + `<div class="es-as-note" style="margin-bottom:12px">No same-match stack on PrizePicks, Underdog or Sleeper is +EV right now.</div>`;
   return head + `<div class="es-autoslips">${list.map((s, i) => esAsCard(s, i, d)).join('')}</div>`;
+}
+// ── STACK MODEL: same-match stacks priced by our fitted link ──────────────
+// /api/esports/auto-slips esStacks (esstackmodel.js). A model, not an edge:
+// flagged only when the stack is still +EV at the payout the app would show
+// if it priced the link (PrizePicks, Underdog, Sleeper), or at Pick6's own
+// table. Its own record from 0, judged at 50 graded.
+function esModelStacksHTML(m) {
+  if (!m) return '';
+  if (!m.on) return `<div class="es-as-note" style="margin-bottom:12px"><b style="color:#e2e8f0">STACK MODEL</b> · ${escEs(m.note || 'off on this server')}</div>`;
+  const r = m.record;
+  const sgn = x => `${x > 0 ? '+' : ''}${x}`;
+  const recLine = r && r.graded
+    ? `Record: ${r.swept} of ${r.graded} swept (model expected ${r.expectedSwept}, ${r.independentSwept} if independent), <b style="color:${r.units >= 0 ? '#34d399' : '#f87171'}">${sgn(r.units)}u</b> at the rule's payout, ${sgn(r.unitsStandard)}u at standard${r.legs?.n ? ` · legs won ${r.legs.wonPct}% against ${r.legs.pricedPct}% priced` : ''}${r.close?.legs ? ` · legs moved ${sgn(r.close.move)} pts by the start (${r.close.legs})` : ''} · ${r.graded} of ${r.bar} graded, <b>not proven</b>`
+    : `Own record from 0: every flagged stack is logged and graded${r?.open ? `, ${r.open} pending` : ''}; judged at ${r?.bar || 50} graded`;
+  const h = m.heldOut;
+  const ho = h ? `<br>Held out (${escEs(h.window || 'later series')}): ${escEs(h.summary || '')}` : '';
+  const head = `<div class="es-hdr"><h3>STACK MODEL <span class="es-as-badge near" style="vertical-align:middle">MODEL, NOT AN EDGE</span></h3><span class="sub">One match, every leg the same way, priced by the link we fitted on finished CS2, LoL, Valorant and Dota 2 series. Flagged only if it still pays when the app prices that link (PrizePicks, Underdog, Sleeper) or at Pick6's own table.</span><span class="es-rec">${recLine}${ho}</span></div>`;
+  const card = s => {
+    const key = ES_AS_KEY[s.book], B = ES_BOOKS[key];
+    const legs = s.picks.map(l => `<div class="es-as-leg"><span class="es-side ${l.side === 'OVER' ? 'over' : 'under'}">${esAsSide(l, s.book)}<em>${l.line}</em></span><div class="who"><b>${escEs(l.player)}</b><div>${escEs(l.market)} · ${escEs(l.sport)}${l.team ? ' · ' + escEs(l.team) : ''}</div></div><div class="es-meter">${l.prob}%<i style="--p:${Math.max(0, Math.min(100, l.prob))}%"></i></div></div>`).join('');
+    const how = s.book === 'PP' ? `In PrizePicks add these ${s.legs} picks, open the lineup, choose ${/flex/.test(s.table) ? 'Flex Play' : 'Power Play'}, enter an amount and read the payout, then back out without submitting.`
+      : `Build the entry in ${escEs(s.bookName)} and read the payout before you submit.`;
+    const verdict = s.flag
+      ? `Flagged: ${sgn(s.ruleEv)}% at ${s.rule === 'repriced' ? `the repriced ${s.repricedPays}x` : `${escEs(s.bookName)}'s ${s.paysAll}x`}.`
+      : `Not flagged: ${sgn(s.ruleEv)}% at ${s.rule === 'repriced' ? `the repriced ${s.repricedPays}x` : `${s.paysAll}x`}.`;
+    return `<div class="es-as ${s.flag ? 'plus' : 'near'}" style="--bk:${B?.color || '#8b5cf6'}">
+      <div class="es-as-head"><span class="es-as-logo">${escEs(s.bookName[0])}</span>
+        <div class="es-as-title"><span class="es-as-book">${escEs(s.bookName)}</span><span class="es-as-sub">${escEs(s.matchTitle || '')} · ${s.legs}-pick ${escEs(s.tableName)} <span class="es-as-badge near">MODEL</span></span></div>
+        <span class="es-as-ev" style="color:${esEvColor(s.ruleEv)}">${sgn(s.ruleEv.toFixed(1))}%<small>${s.rule === 'repriced' ? 'IF THE APP PRICES THE LINK' : 'AT ITS OWN TABLE'}</small></span></div>
+      <div class="es-as-legs">${legs}</div>
+      <div class="es-as-foot">
+        <div class="es-as-stat">Hit all<b>${(s.probAll * 100).toFixed(1)}%</b></div>
+        <div class="es-as-stat">If independent<b>${(s.probAllIndependent * 100).toFixed(1)}%</b></div>
+        <div class="es-as-stat">Standard pays<b>${s.paysAll ? s.paysAll + 'x' : '—'}</b></div>
+        <div class="es-as-stat">Needs<b>${s.breakEvenPays ? s.breakEvenPays + 'x' : '—'}</b></div>
+      </div>
+      <div class="es-as-note">${verdict} At the standard ${s.paysAll}x it would be ${sgn(s.evStandard)}%. ${how} Play it only if it shows at least <b style="color:#e2e8f0">${s.breakEvenPays}x</b>. A model, not an edge: its record is under ${m.record?.bar || 50} graded.</div>
+    </div>`;
+  };
+  const flagged = m.flagged || [], near = m.near || [];
+  const counts = Object.entries(m.counts || {}).map(([b, c]) => `${ES_STACK_APP[b] || b} ${c.flagged} of ${c.stacks}`).join(', ');
+  const body = flagged.length ? `<div class="es-autoslips">${flagged.map(card).join('')}</div>`
+    : `<div class="es-as-note" style="margin-bottom:12px">No stack is flagged right now${counts ? ` (${counts} matches and sides priced)` : ''}.${near.length ? ' Closest:' : ''}</div>${near.length ? `<div class="es-autoslips">${near.map(card).join('')}</div>` : ''}`;
+  return head + body;
 }
 // What the stack record says each app must pay on a sweep, from finished
 // stacks (/api/esports/models stacks): stakes / sweeps on a fixed table

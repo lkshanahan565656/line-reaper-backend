@@ -1,0 +1,909 @@
+{
+ "version": 1,
+ "fitted": "2026-10-25T07:58:48.562Z",
+ "source": "checks/es-stacks-2026-10-25",
+ "games": {
+  "cs": {
+   "buckets": {
+    "kills|1": {
+     "OVER": {
+      "f": [
+       0.2913,
+       0.2076
+      ],
+      "tail": {
+       "m": [
+        0.0748,
+        2.4049
+       ],
+       "d": [
+        0.1834,
+        2.3118
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.162,
+       0.03
+      ],
+      "tail": {
+       "m": [
+        0.5,
+        1
+       ],
+       "d": [
+        0.0046,
+        1.0017
+       ]
+      },
+      "link": "fitted"
+     }
+    },
+    "kills|1-2": {
+     "OVER": {
+      "f": [
+       0.3021,
+       0.199
+      ],
+      "tail": {
+       "m": [
+        0.059,
+        2.6093
+       ],
+       "d": [
+        0.1027,
+        3.0254
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.2052,
+       0.0338
+      ],
+      "tail": {
+       "m": [
+        0,
+        2.6203
+       ],
+       "d": [
+        0.4708,
+        1.0008
+       ]
+      },
+      "link": "fitted"
+     }
+    },
+    "headshots|1": {
+     "OVER": {
+      "f": [
+       0.1928,
+       0.1218
+      ],
+      "tail": {
+       "m": [
+        0.1418,
+        2.3466
+       ],
+       "d": [
+        0.0563,
+        3.5961
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.09,
+       0.02
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "headshots|1-2": {
+     "OVER": {
+      "f": [
+       0.2065,
+       0.0755
+      ],
+      "tail": {
+       "m": [
+        0.097,
+        2.6104
+       ],
+       "d": [
+        0.2333,
+        2.033
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0,
+       0
+      ],
+      "tail": {},
+      "link": "independent"
+     }
+    }
+   },
+   "heldOut": {
+    "kills|1|OVER": {
+     "series": 175,
+     "from": "2026-10-15",
+     "ships": "fitted",
+     "independent": 0.40099,
+     "currentFactors": 0.35014,
+     "fittedGaussian": 0.34705,
+     "fittedTail": 0.34694,
+     "six": {
+      "obs": 0.0702,
+      "lo": 0.0393,
+      "hi": 0.107,
+      "model": 0.0503,
+      "current": 0.0386,
+      "independent": 0.007
+     }
+    },
+    "kills|1|UNDER": {
+     "series": 175,
+     "from": "2026-10-15",
+     "ships": "fitted",
+     "independent": 0.41432,
+     "currentFactors": 0.40409,
+     "fittedGaussian": 0.40387,
+     "fittedTail": 0.40387,
+     "six": {
+      "obs": 0.0617,
+      "lo": 0.0403,
+      "hi": 0.0843,
+      "model": 0.0734,
+      "current": 0.0777,
+      "independent": 0.0318
+     }
+    },
+    "kills|1-2|OVER": {
+     "series": 139,
+     "from": "2026-10-16",
+     "ships": "fitted",
+     "independent": 0.47352,
+     "currentFactors": 0.40963,
+     "fittedGaussian": 0.40368,
+     "fittedTail": 0.4037,
+     "six": {
+      "obs": 0.0847,
+      "lo": 0.0472,
+      "hi": 0.1268,
+      "model": 0.0603,
+      "current": 0.0452,
+      "independent": 0.0091
+     }
+    },
+    "kills|1-2|UNDER": {
+     "series": 139,
+     "from": "2026-10-16",
+     "ships": "fitted",
+     "independent": 0.42152,
+     "currentFactors": 0.40222,
+     "fittedGaussian": 0.402,
+     "fittedTail": 0.402,
+     "six": {
+      "obs": 0.0785,
+      "lo": 0.0451,
+      "hi": 0.1203,
+      "model": 0.0749,
+      "current": 0.0671,
+      "independent": 0.0256
+     }
+    },
+    "headshots|1|OVER": {
+     "series": 175,
+     "from": "2026-10-15",
+     "ships": "fitted",
+     "independent": 0.31921,
+     "currentFactors": 0.29962,
+     "fittedGaussian": 0.2947,
+     "fittedTail": 0.29465,
+     "six": {
+      "obs": 0.042,
+      "lo": 0.0183,
+      "hi": 0.0691,
+      "model": 0.0284,
+      "current": 0.0171,
+      "independent": 0.0063
+     }
+    },
+    "headshots|1|UNDER": {
+     "series": 175,
+     "from": "2026-10-15",
+     "ships": "current",
+     "independent": 0.36724,
+     "currentFactors": 0.36539,
+     "fittedGaussian": 0.3655,
+     "fittedTail": 0.3655,
+     "six": {
+      "obs": 0.0545,
+      "lo": 0.0323,
+      "hi": 0.0809,
+      "model": 0.059,
+      "current": 0.0572,
+      "independent": 0.0346
+     }
+    },
+    "headshots|1-2|OVER": {
+     "series": 139,
+     "from": "2026-10-16",
+     "ships": "fitted",
+     "independent": 0.30931,
+     "currentFactors": 0.29315,
+     "fittedGaussian": 0.28957,
+     "fittedTail": 0.28967,
+     "six": {
+      "obs": 0.035,
+      "lo": 0.018,
+      "hi": 0.0577,
+      "model": 0.0295,
+      "current": 0.0182,
+      "independent": 0.0068
+     }
+    },
+    "headshots|1-2|UNDER": {
+     "series": 139,
+     "from": "2026-10-16",
+     "ships": "independent",
+     "independent": 0.30644,
+     "currentFactors": 0.31158,
+     "fittedGaussian": 0.31021,
+     "fittedTail": 0.31021,
+     "six": {
+      "obs": 0.0294,
+      "lo": 0.0168,
+      "hi": 0.0463,
+      "model": 0.0501,
+      "current": 0.0542,
+      "independent": 0.0323
+     }
+    }
+   },
+   "source": "fitted"
+  },
+  "val": {
+   "buckets": {
+    "kills|1": {
+     "OVER": {
+      "f": [
+       0.18,
+       0.08
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     },
+     "UNDER": {
+      "f": [
+       0.14,
+       0.06
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "kills|1-2": {
+     "OVER": {
+      "f": [
+       0.18,
+       0.08
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     },
+     "UNDER": {
+      "f": [
+       0.1594,
+       0.0501
+      ],
+      "tail": {
+       "m": [
+        0,
+        4
+       ],
+       "d": [
+        0,
+        1.3005
+       ]
+      },
+      "link": "fitted"
+     }
+    }
+   },
+   "heldOut": {
+    "kills|1|OVER": {
+     "series": 311,
+     "from": "2026-07-29",
+     "ships": "current",
+     "independent": 0.31347,
+     "currentFactors": 0.29835,
+     "fittedGaussian": 0.29859,
+     "fittedTail": 0.29845,
+     "six": {
+      "obs": 0.0451,
+      "lo": 0.0282,
+      "hi": 0.0642,
+      "model": 0.0466,
+      "current": 0.0371,
+      "independent": 0.0108
+     }
+    },
+    "kills|1|UNDER": {
+     "series": 311,
+     "from": "2026-07-29",
+     "ships": "current",
+     "independent": 0.34958,
+     "currentFactors": 0.3439,
+     "fittedGaussian": 0.34421,
+     "fittedTail": 0.34421,
+     "six": {
+      "obs": 0.0375,
+      "lo": 0.0288,
+      "hi": 0.0469,
+      "model": 0.0542,
+      "current": 0.0504,
+      "independent": 0.0221
+     }
+    },
+    "kills|1-2|OVER": {
+     "series": 311,
+     "from": "2026-07-29",
+     "ships": "current",
+     "independent": 0.29283,
+     "currentFactors": 0.28412,
+     "fittedGaussian": 0.28562,
+     "fittedTail": 0.28559,
+     "six": {
+      "obs": 0.0358,
+      "lo": 0.0236,
+      "hi": 0.05,
+      "model": 0.0478,
+      "current": 0.0385,
+      "independent": 0.0114
+     }
+    },
+    "kills|1-2|UNDER": {
+     "series": 311,
+     "from": "2026-07-29",
+     "ships": "fitted",
+     "independent": 0.38409,
+     "currentFactors": 0.37071,
+     "fittedGaussian": 0.37016,
+     "fittedTail": 0.37016,
+     "six": {
+      "obs": 0.0508,
+      "lo": 0.0373,
+      "hi": 0.066,
+      "model": 0.0537,
+      "current": 0.0486,
+      "independent": 0.021
+     }
+    }
+   },
+   "source": "fitted"
+  },
+  "lol": {
+   "buckets": {
+    "kills|1": {
+     "OVER": {
+      "f": [
+       0,
+       0
+      ],
+      "tail": {},
+      "link": "independent"
+     },
+     "UNDER": {
+      "f": [
+       0.11,
+       0.18
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "kills|1-2": {
+     "OVER": {
+      "f": [
+       0,
+       0
+      ],
+      "tail": {},
+      "link": "independent"
+     },
+     "UNDER": {
+      "f": [
+       0.11,
+       0.18
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "assists|1": {
+     "OVER": {
+      "f": [
+       0.2204,
+       0.5928
+      ],
+      "tail": {
+       "m": [
+        0.0625,
+        2.3592
+       ],
+       "d": [
+        0.0596,
+        2.4218
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.21,
+       0.38
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "assists|1-2": {
+     "OVER": {
+      "f": [
+       0,
+       0
+      ],
+      "tail": {},
+      "link": "independent"
+     },
+     "UNDER": {
+      "f": [
+       0.21,
+       0.38
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    }
+   },
+   "heldOut": {
+    "kills|1|OVER": {
+     "series": 271,
+     "from": "2026-09-14",
+     "ships": "independent",
+     "independent": 0.12487,
+     "currentFactors": 0.12885,
+     "fittedGaussian": 0.12704,
+     "fittedTail": 0.12699,
+     "six": {
+      "obs": 0.0038,
+      "lo": 0.0012,
+      "hi": 0.0076,
+      "model": 0.0112,
+      "current": 0.0138,
+      "independent": 0.0049
+     }
+    },
+    "kills|1|UNDER": {
+     "series": 271,
+     "from": "2026-09-14",
+     "ships": "current",
+     "independent": 0.4197,
+     "currentFactors": 0.41499,
+     "fittedGaussian": 0.41669,
+     "fittedTail": 0.41669,
+     "six": {
+      "obs": 0.0597,
+      "lo": 0.0431,
+      "hi": 0.0781,
+      "model": 0.0515,
+      "current": 0.0662,
+      "independent": 0.0412
+     }
+    },
+    "kills|1-2|OVER": {
+     "series": 163,
+     "from": "2026-09-11",
+     "ships": "independent",
+     "independent": 0.12998,
+     "currentFactors": 0.13464,
+     "fittedGaussian": 0.13083,
+     "fittedTail": 0.13082,
+     "six": {
+      "obs": 0.0022,
+      "lo": 0.0005,
+      "hi": 0.0042,
+      "model": 0.0099,
+      "current": 0.0148,
+      "independent": 0.0054
+     }
+    },
+    "kills|1-2|UNDER": {
+     "series": 163,
+     "from": "2026-09-11",
+     "ships": "current",
+     "independent": 0.41189,
+     "currentFactors": 0.40693,
+     "fittedGaussian": 0.40938,
+     "fittedTail": 0.40938,
+     "six": {
+      "obs": 0.0583,
+      "lo": 0.0383,
+      "hi": 0.0849,
+      "model": 0.0467,
+      "current": 0.0627,
+      "independent": 0.0385
+     }
+    },
+    "assists|1|OVER": {
+     "series": 271,
+     "from": "2026-09-14",
+     "ships": "fitted",
+     "independent": 0.20634,
+     "currentFactors": 0.20729,
+     "fittedGaussian": 0.20408,
+     "fittedTail": 0.20409,
+     "six": {
+      "obs": 0.0246,
+      "lo": 0.0129,
+      "hi": 0.0414,
+      "model": 0.0461,
+      "current": 0.0471,
+      "independent": 0.0086
+     }
+    },
+    "assists|1|UNDER": {
+     "series": 271,
+     "from": "2026-09-14",
+     "ships": "current",
+     "independent": 0.47553,
+     "currentFactors": 0.44394,
+     "fittedGaussian": 0.45174,
+     "fittedTail": 0.45174,
+     "six": {
+      "obs": 0.0942,
+      "lo": 0.0696,
+      "hi": 0.1234,
+      "model": 0.0575,
+      "current": 0.0767,
+      "independent": 0.0268
+     }
+    },
+    "assists|1-2|OVER": {
+     "series": 163,
+     "from": "2026-09-11",
+     "ships": "independent",
+     "independent": 0.17062,
+     "currentFactors": 0.18393,
+     "fittedGaussian": 0.18622,
+     "fittedTail": 0.18617,
+     "six": {
+      "obs": 0.0113,
+      "lo": 0.0045,
+      "hi": 0.0202,
+      "model": 0.0556,
+      "current": 0.0487,
+      "independent": 0.0091
+     }
+    },
+    "assists|1-2|UNDER": {
+     "series": 163,
+     "from": "2026-09-11",
+     "ships": "current",
+     "independent": 0.46256,
+     "currentFactors": 0.43304,
+     "fittedGaussian": 0.4331,
+     "fittedTail": 0.4331,
+     "six": {
+      "obs": 0.0881,
+      "lo": 0.0573,
+      "hi": 0.1258,
+      "model": 0.075,
+      "current": 0.0743,
+      "independent": 0.0256
+     }
+    }
+   },
+   "source": "fitted"
+  },
+  "dota": {
+   "buckets": {
+    "kills|1": {
+     "OVER": {
+      "f": [
+       0.0925,
+       0.2575
+      ],
+      "tail": {
+       "m": [
+        0.0193,
+        2.9636
+       ],
+       "d": [
+        0.125,
+        2.5976
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.0732,
+       0.1361
+      ],
+      "tail": {
+       "m": [
+        0,
+        3.9999
+       ],
+       "d": [
+        0,
+        1
+       ]
+      },
+      "link": "fitted"
+     }
+    },
+    "kills|1-2": {
+     "OVER": {
+      "f": [
+       0.0775,
+       0.1368
+      ],
+      "tail": {
+       "m": [
+        0.0058,
+        2.6455
+       ],
+       "d": [
+        0.0471,
+        3.0514
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.064,
+       0.15
+      ],
+      "tail": {},
+      "link": "slip.js FACTORS"
+     }
+    },
+    "assists|1": {
+     "OVER": {
+      "f": [
+       0.3543,
+       0.4498
+      ],
+      "tail": {
+       "m": [
+        0.0513,
+        3.0016
+       ],
+       "d": [
+        0.2296,
+        1.6893
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.2426,
+       0.3475
+      ],
+      "tail": {
+       "m": [
+        0.0012,
+        3.8868
+       ],
+       "d": [
+        0,
+        4
+       ]
+      },
+      "link": "fitted"
+     }
+    },
+    "assists|1-2": {
+     "OVER": {
+      "f": [
+       0.2466,
+       0.4734
+      ],
+      "tail": {
+       "m": [
+        0.0465,
+        1.907
+       ],
+       "d": [
+        0.2692,
+        1.5979
+       ]
+      },
+      "link": "fitted"
+     },
+     "UNDER": {
+      "f": [
+       0.2444,
+       0.362
+      ],
+      "tail": {
+       "m": [
+        0.0089,
+        3.4203
+       ],
+       "d": [
+        0,
+        4
+       ]
+      },
+      "link": "fitted"
+     }
+    }
+   },
+   "heldOut": {
+    "kills|1|OVER": {
+     "series": 748,
+     "from": "2026-06-22",
+     "ships": "fitted",
+     "independent": 0.20163,
+     "currentFactors": 0.1995,
+     "fittedGaussian": 0.19951,
+     "fittedTail": 0.19949,
+     "six": {
+      "obs": 0.0149,
+      "lo": 0.0102,
+      "hi": 0.0208,
+      "model": 0.0161,
+      "current": 0.0112,
+      "independent": 0.0067
+     }
+    },
+    "kills|1|UNDER": {
+     "series": 748,
+     "from": "2026-06-22",
+     "ships": "fitted",
+     "independent": 0.36546,
+     "currentFactors": 0.36311,
+     "fittedGaussian": 0.36289,
+     "fittedTail": 0.36289,
+     "six": {
+      "obs": 0.0486,
+      "lo": 0.0387,
+      "hi": 0.0599,
+      "model": 0.046,
+      "current": 0.0432,
+      "independent": 0.0328
+     }
+    },
+    "kills|1-2|OVER": {
+     "series": 561,
+     "from": "2026-07-10",
+     "ships": "fitted",
+     "independent": 0.23474,
+     "currentFactors": 0.23162,
+     "fittedGaussian": 0.23106,
+     "fittedTail": 0.23105,
+     "six": {
+      "obs": 0.02,
+      "lo": 0.0125,
+      "hi": 0.0293,
+      "model": 0.0148,
+      "current": 0.013,
+      "independent": 0.0079
+     }
+    },
+    "kills|1-2|UNDER": {
+     "series": 561,
+     "from": "2026-07-10",
+     "ships": "current",
+     "independent": 0.31941,
+     "currentFactors": 0.31881,
+     "fittedGaussian": 0.31906,
+     "fittedTail": 0.31906,
+     "six": {
+      "obs": 0.0337,
+      "lo": 0.025,
+      "hi": 0.0442,
+      "model": 0.0403,
+      "current": 0.0384,
+      "independent": 0.0288
+     }
+    },
+    "assists|1|OVER": {
+     "series": 748,
+     "from": "2026-06-22",
+     "ships": "fitted",
+     "independent": 0.37864,
+     "currentFactors": 0.33576,
+     "fittedGaussian": 0.33479,
+     "fittedTail": 0.33479,
+     "six": {
+      "obs": 0.0709,
+      "lo": 0.0564,
+      "hi": 0.0872,
+      "model": 0.0708,
+      "current": 0.0539,
+      "independent": 0.0093
+     }
+    },
+    "assists|1|UNDER": {
+     "series": 748,
+     "from": "2026-06-22",
+     "ships": "fitted",
+     "independent": 0.47568,
+     "currentFactors": 0.43879,
+     "fittedGaussian": 0.43821,
+     "fittedTail": 0.43821,
+     "six": {
+      "obs": 0.1024,
+      "lo": 0.0857,
+      "hi": 0.1227,
+      "model": 0.0829,
+      "current": 0.0801,
+      "independent": 0.0253
+     }
+    },
+    "assists|1-2|OVER": {
+     "series": 561,
+     "from": "2026-07-10",
+     "ships": "fitted",
+     "independent": 0.42989,
+     "currentFactors": 0.37234,
+     "fittedGaussian": 0.37184,
+     "fittedTail": 0.37182,
+     "six": {
+      "obs": 0.0876,
+      "lo": 0.0669,
+      "hi": 0.1095,
+      "model": 0.0556,
+      "current": 0.0542,
+      "independent": 0.0094
+     }
+    },
+    "assists|1-2|UNDER": {
+     "series": 561,
+     "from": "2026-07-10",
+     "ships": "fitted",
+     "independent": 0.44619,
+     "currentFactors": 0.41669,
+     "fittedGaussian": 0.41663,
+     "fittedTail": 0.41663,
+     "six": {
+      "obs": 0.0924,
+      "lo": 0.0726,
+      "hi": 0.1142,
+      "model": 0.0804,
+      "current": 0.0797,
+      "independent": 0.0251
+     }
+    }
+   },
+   "source": "fitted"
+  }
+ },
+ "rule": "PrizePicks, Underdog, Sleeper: EV >= 0 at the repriced payout (standard x P(all, independent) / P(all, model)). DK Pick6: EV >= 0 at its own table.",
+ "heldOut": {
+  "window": "the latest 30% of series, CS, VAL, LOL, DOTA",
+  "series": 9472,
+  "ships": {
+   "fitted": 15,
+   "current": 9,
+   "independent": 4
+  },
+  "summary": "six-leg one-side stacks (3+3) swept 5.4%; the shipped link said 4.9%, the old link 4.7%, independent 1.8% (trailing-average lines, not app lines)"
+ }
+}

@@ -27,8 +27,11 @@ function legKey(l) {
 // A same-match stack is logged once per match, book and side: the board
 // rebuilds every few minutes and the best stack's legs shift as lines move,
 // and counting each version would weigh one match many times.
-const slipId = s => (s.kind === 'stack'
-  ? `${s.book}|stack|${s.picks[0]?.gameId ?? legKey(s.picks[0])}|${s.picks[0]?.side}`
+// The model's stacks (kind 'es-stacks', esstackmodel.js) keep their own ids
+// the same way, so the two records never share a row.
+const isMatchStack = kind => kind === 'stack' || kind === 'es-stacks';
+const slipId = s => (isMatchStack(s.kind)
+  ? `${s.book}|${s.kind === 'stack' ? 'stack' : 'es-stacks'}|${s.picks[0]?.gameId ?? legKey(s.picks[0])}|${s.picks[0]?.side}`
   : `${s.book}|${s.table}|${s.picks.map(legKey).sort().join('+')}`);
 
 // a slip's payout on h hits, 1u staked
@@ -87,6 +90,34 @@ function stackStats(graded, started) {
   };
 }
 
+// The model stack record (kind 'es-stacks'): graded at the payout its rule
+// used (repriced on PrizePicks, Underdog and Sleeper, Pick6's own table) and,
+// beside it, at the app's standard table. Pre-registered bar: 50 graded
+// (checks/es-stacks-2026-10-25/PREREGISTERED.md).
+const ES_STACKS_BAR = 50;
+function esStacksSummary(rows, t) {
+  const graded = rows.filter(r => r.status === 'graded');
+  const units = list => r2(list.reduce((a, r) => a + r.profit, 0));
+  const stdUnits = list => r2(list.reduce((a, r) => a + ((r.standardPayTable || r.payTable)?.[r.hits] ?? 0) - 1, 0));
+  const started = rows.filter(r => r.status !== 'void' && r.start && Date.parse(r.start) <= t);
+  const byBook = {};
+  for (const b of [...new Set(graded.map(r => r.book))]) {
+    const g = graded.filter(r => r.book === b);
+    byBook[b] = { graded: g.length, swept: g.filter(r => r.hits === r.size).length, expectedSwept: r2(g.reduce((a, r) => a + (r.probAll || 0), 0)), units: units(g), unitsStandard: stdUnits(g) };
+  }
+  const days = {};
+  for (const r of rows) { const d = String(r.flaggedAt || '').slice(0, 10); if (d) days[d] = (days[d] || 0) + 1; }
+  const s = stackStats(graded, started);
+  return {
+    label: 'model, not an edge', bar: ES_STACKS_BAR, proven: false,
+    flagged: rows.length, graded: graded.length, open: rows.filter(r => r.status === 'open').length, void: rows.filter(r => r.status === 'void').length,
+    units: units(graded), unitsStandard: stdUnits(graded),
+    roi: graded.length ? Math.round(units(graded) / graded.length * 1e4) / 1e4 : null,
+    expectedRoi: graded.length ? Math.round(graded.reduce((a, r) => a + r.ev / 100, 0) / graded.length * 1e4) / 1e4 : null,
+    ...s, byBook, flaggedByDay: days,
+  };
+}
+
 function createSlipTracker({
   store = createMemoryStore(), graders = {}, parseMapSpan = () => ({ label: '1' }),
   lookup = async () => new Map(), keyFor = () => null,
@@ -115,6 +146,10 @@ function createSlipTracker({
         kind: s.kind || 'best', breakEvenPays: s.breakEvenPays ?? null,
         book: s.book, bookName: s.bookName, table: s.table, tableName: s.tableName, size: s.picks.length,
         ev: s.ev, probAll: s.probAll, paysAll: s.paysAll, payTable: s.payTable, kelly: s.kelly,
+        ...(s.kind === 'es-stacks' ? {
+          rule: s.rule, standardPayTable: s.standardPayTable, probAllIndependent: s.probAllIndependent,
+          evStandard: s.evStandard, evRepriced: s.evRepriced, repricedPays: s.repricedPays, side: s.side,
+        } : {}),
         legs: s.picks.map(l => ({
           sport: sportKey(l.sport), player: l.player, team: l.team || '', matchTitle: l.matchTitle || '',
           market: l.rawMarket || l.market, displayMarket: l.market, stat: statKind(l.rawMarket || l.market),
@@ -138,7 +173,7 @@ function createSlipTracker({
     await loaded;
     const t = now();
     for (const row of open.values()) {
-      if (row.kind !== 'stack' || !row.start || Date.parse(row.start) <= t) continue;
+      if (!isMatchStack(row.kind) || !row.start || Date.parse(row.start) <= t) continue;
       let changed = false;
       for (const leg of row.legs) {
         let q = null;
@@ -217,7 +252,7 @@ function createSlipTracker({
     const all = await store.all();
     // same-match stacks keep their own record (stacks), apart from Best Slips
     const isStack = r => r.kind === 'stack';
-    const rows = all.filter(r => !isStack(r));
+    const rows = all.filter(r => !isMatchStack(r.kind));
     const graded = rows.filter(r => r.status === 'graded');
     const cut = list => {
       const units = list.reduce((a, r) => a + r.profit, 0);
@@ -243,10 +278,10 @@ function createSlipTracker({
       ...cut(sGraded), ...stackStats(sGraded, started),
       open: sRows.filter(r => r.status === 'open').length, void: sRows.filter(r => r.status === 'void').length, byBook: sByBook,
     };
-    return { ...cut(graded), open: rows.filter(r => r.status === 'open').length, void: rows.filter(r => r.status === 'void').length, byBook, stacks };
+    return { ...cut(graded), open: rows.filter(r => r.status === 'open').length, void: rows.filter(r => r.status === 'void').length, byBook, stacks, esStacks: esStacksSummary(all.filter(r => r.kind === 'es-stacks'), t) };
   }
   async function list() { await loaded; return store.all(); }
   return { record, follow, grade, summary, list, ready: () => loaded };
 }
 
-module.exports = { createSlipTracker, slipId, legKey };
+module.exports = { createSlipTracker, slipId, legKey, esStacksSummary, ES_STACKS_BAR };

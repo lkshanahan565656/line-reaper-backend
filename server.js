@@ -2417,6 +2417,16 @@ async function generateEsportsPicks() {
   await slice();
   try { const built = autoSlips(picks, pick6SlipOpts(picks)); slipTracker.record([...built.slips, ...(built.stacks || [])]).catch(e => console.warn('Slip tracker: record failed:', e.message)); }
   catch (e) { console.warn('Slip tracker: build failed:', e.message); }
+  await slice();
+  // the model's same-match stacks (esstackmodel.js): flagged ones go to their
+  // own record, kind 'es-stacks', alerts off
+  if (ES_STACKS_ON) {
+    try {
+      const built = esStackModel.boardStacks(picks, pick6SlipOpts(picks));
+      esStacksState = { at: Date.now(), built, error: null };
+      slipTracker.record(built.flagged).catch(e => console.warn('Model stacks: record failed:', e.message));
+    } catch (e) { esStacksState = { ...esStacksState, error: e.message }; console.warn('Model stacks: build failed:', e.message); }
+  }
   slipTracker.follow(stackLegLookup(picks)).catch(e => console.warn('Slip tracker: follow failed:', e.message));
   alerter.onBoard(picks.filter(p => !p.clvWarn)).catch(e => console.warn('Alerts: failed:', e.message));
   console.log(`Esports: generated ${picks.length} picks (${picks.filter(p => p.lineSource === 'ud').length} UD-sourced, ${picks.filter(p => p.lineSource === 'sl').length} Sleeper-sourced, ${picks.filter(p => p.sleeperEv != null).length} Sleeper-priced, ${picks.filter(p => p.predSource === 'manual').length} manual, ${picks.filter(p => p.modelPred == null).length} need model input)`);
@@ -2710,6 +2720,14 @@ async function warmCsProfiles(batch = 12) {
 // a JSON file at TRACKER_FILE (default ./data/esports-picks.json).
 const { createTracker, createStoreFromEnv } = require('./tracker');
 const { autoSlips, priceOnBooks, bookLeg: slipBookLeg, stackLegLookup } = require('./slipbuild');
+// ── MODEL STACKS (esstackmodel.js) ──
+// Same-match esports stacks priced by the link fitted on finished series
+// (seeds/es-stack-params.json, checks/es-stacks-2026-10-25). A model, not an
+// edge: its own record from 0, alerts off, never in Best Plays. ES_STACKS=off
+// turns it off.
+const esStackModel = require('./esstackmodel');
+const ES_STACKS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ES_STACKS || '').trim()) && !!esStackModel.loadParams();
+let esStacksState = { at: 0, built: null, error: null };
 // DK Pick6's esports cells for the Best Slips builder: the props board's Pick6 cell
 // for each esports pick it prices (a Pinnacle-based twin cell on the same number,
 // at Pick6's own payout). Empty unless PICK6=on and Pick6's esports lines are read,
@@ -4819,7 +4837,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.172.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.173.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7749,7 +7767,26 @@ app.get('/api/esports/auto-slips', requirePro, async (req, res) => {
   }
   res.json({ ...autoSlipMemo.data, updated: at, record: await slipTracker.summary().catch(() => null),
     // per app and size: the payout a sweep needs for the stack record so far to break even
-    stackNeeds: (await esModelCards().catch(() => null))?.stacks || null });
+    stackNeeds: (await esModelCards().catch(() => null))?.stacks || null,
+    esStacks: await esStacksView().catch(() => null) });
+});
+
+// The model stacks for the page: what is flagged now, the closest few that
+// aren't, the record, and how the link did on held-out series.
+async function esStacksView({ limit = 12 } = {}) {
+  if (!ES_STACKS_ON) return { on: false, label: 'model, not an edge', note: 'The stack model is switched off on this server (ES_STACKS=off).' };
+  const b = esStacksState.built;
+  const params = esStackModel.loadParams();
+  const rec = (await slipTracker.summary().catch(() => null))?.esStacks || null;
+  return {
+    on: true, label: 'model, not an edge', at: esStacksState.at ? new Date(esStacksState.at).toISOString() : null, error: esStacksState.error,
+    flagged: (b?.flagged || []).slice(0, limit), near: (b?.stacks || []).filter(s => !s.flag).slice(0, 4),
+    counts: b ? Object.fromEntries(Object.entries(b.byBook).map(([k, v]) => [k, { stacks: v.length, flagged: v.filter(s => s.flag).length }])) : {},
+    record: rec, heldOut: params?.heldOut || null, rule: params?.rule || null,
+  };
+}
+app.get('/api/esports/es-stacks', requirePro, async (req, res) => {
+  res.json(await esStacksView({ limit: Math.min(parseInt(req.query.limit) || 12, 50) }));
 });
 
 // ── MATCH CONTEXT ─────────────────────────────────────────────────────────────
@@ -7899,7 +7936,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.172.0',
+  version: '3.173.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
