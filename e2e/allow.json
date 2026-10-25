@@ -17,12 +17,20 @@
     {
       "text": "PROVEN needs \\d+ graded",
       "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
+    },
+    {
+      "text": "^Proven: 50 graded games of one kind",
+      "why": "RESULTS states the public record's rule (claims.publicRecord rule.text); a definition, not a claim"
     }
   ],
   "misses": [
     {
       "key": "^/api/claims$",
       "why": "new in v3.184.0 (claims.js): the recording predates it, so the offline server answers from its own empty record (\"nothing proven yet\"); the sales-page flow also checks the page against a labelled test body"
+    },
+    {
+      "key": "^/api/record(/flags\\.(csv|json))?(\\?|$)",
+      "why": "new in v3.185.0 (the public record on RESULTS): the recording predates it, so the offline server answers from its own empty record; closeboard and claims tests check the rows, and the download flow checks the file"
     }
   ],
   "mustHaveData": [

@@ -81,4 +81,51 @@ function publicClaims({ board, txBoard, alertBooks = new Set(), now = Date.now()
   };
 }
 
-module.exports = { publicClaims, profitOf, isClaim, LABELS, CLAIM_KINDS, PICKEM };
+// ─── THE RESULTS PAGE: EVERY KIND ON THE SAME STRICT RULE ────────────────────
+// The record a visitor can check line by line. One row per kind and venue on
+// the close scoreboard, with the label the sales page would give it: 'proven'
+// only when it is a claim (isClaim, the same test as publicClaims), so the two
+// pages can never disagree. Everything else says why it is not proven.
+// Units show as a profit only on a proven row whose units clear chance.
+function labelOf(r) {
+  if (isClaim(r)) return { label: 'proven', why: null };
+  if (r.mark === 'no sharp close') return { label: 'no sharp close', why: 'Closes on our own curve or soft books, so the CLV is the flag\'s own edge again. Shown, never judged.' };
+  if (r.relayed) return { label: r.mark === 'not graded yet' ? 'not graded yet' : 'copied book', why: 'Read through Action Network\'s copy, never at the book itself, so it cannot be proven.' };
+  if (!CLAIM_KINDS.has(r.kind)) {
+    const why = r.note || (r.kind === 'bigmoney' ? 'Big money is research: following big accounts has not held up in our raw re-checks.'
+      : r.kind.startsWith('props-') ? 'Pick\'em legs of this kind are research: only pick\'em sharp-price legs on Pinnacle\'s close can be proven.'
+      : 'Only main lines and pick\'em sharp-price legs closing on Pinnacle can be proven.');
+    return { label: r.mark === 'not graded yet' ? 'not graded yet' : 'research', why };
+  }
+  if (r.mark === 'not graded yet') return { label: 'not graded yet', why: 'Nothing has closed yet.' };
+  if (r.mark === 'avoid') return { label: 'losing to the close', why: r.note || null };
+  return { label: r.mark === 'promising' ? 'building' : r.mark === 'early' ? 'too early' : r.mark, why: r.note || (r.graded < 50 ? `${r.graded} of 50 graded.` : 'The CLV t is under 2.') };
+}
+function publicRecord({ board, now = Date.now() } = {}) {
+  const rows = (board?.rows || []).map(r => {
+    const l = labelOf(r);
+    const p = profitOf(r);
+    const units = r.resultsUnits ?? r.units ?? null;
+    return {
+      kind: r.kind, kindLabel: r.kindLabel, book: r.book, bookName: r.bookName, relayed: !!r.relayed,
+      recorded: r.recorded, open: r.open, graded: r.graded, target: board.target || 50, staleClose: r.staleClose, unverified: r.unverified,
+      beatPct: r.beatPct, clv: r.avgClv, clvT: r.clvT ?? null, clv2min: r.avgExecClv, clv2minN: r.execN,
+      wins: r.wins, losses: r.losses, units: units == null ? null : r2(units), expUnits: r.resultsExpUnits ?? null,
+      // a profit is said only of a proven row whose units clear chance
+      profitShown: l.label === 'proven' && p.shown,
+      texas: venues.legalIn('TX')(r.book), label: l.label, why: l.why,
+    };
+  });
+  const o = board?.overall || {};
+  return {
+    at: new Date(now).toISOString(),
+    rule: { graded: board?.target || 50, clvT: 2, close: 'Pinnacle\'s no-vig close', kinds: [...CLAIM_KINDS], shortfallSd: 1.5,
+      text: 'Proven: 50 graded games of one kind at one venue we read ourselves, a CLV t of 2 or more against Pinnacle\'s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick\'em kinds only sharp-price legs.' },
+    overall: { graded: o.graded ?? 0, beatPct: o.beatPct ?? null, clv: o.avgClv ?? null, clvT: o.clvT ?? null, label: 'pooled, never proven' },
+    proven: rows.filter(r => r.label === 'proven').length,
+    rows,
+    labels: LABELS.filter(l => !(l.pickem && rows.some(r => r.label === 'proven' && PICKEM.has(r.book)))).map(({ pickem, ...l }) => l),
+  };
+}
+
+module.exports = { publicRecord, labelOf, publicClaims, profitOf, isClaim, LABELS, CLAIM_KINDS, PICKEM };

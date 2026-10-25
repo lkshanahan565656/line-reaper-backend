@@ -1,6 +1,6 @@
 # Browser tests
 
-`npm run e2e` opens the app in headless Chromium at phone (390 px) and desktop
+`npm run e2e` opens the app in headless Chromium at phone (375 px) and desktop
 (1280 px) size and clicks everything. Nothing reaches a live site: the server
 runs offline (`harness.js`) and every `GET /api/...` is answered from a
 recording of the live API (`fixtures/snapshot.json.gz`). The browser clock is
@@ -16,6 +16,11 @@ What it checks, and fails on:
 - **Page health**: no console errors, no uncaught errors or rejections, no 5xx
   or 404 from our server, no visible `undefined`, `NaN`, `[object Object]`,
   `null` or `Infinity`, no same-site link that 404s, no link to polymarket.com.
+- **Phone layout**: at phone size, after each tab opens and after every click,
+  nothing may stick out past the screen: no sideways page scroll, no text or
+  control cut off at the screen edge or by its card, and no scroller wider than
+  the screen (`overflowIssues` in `page-helpers.js`). Ellipsis text and wide
+  tables inside a scroller that fits are fine.
 - **Wording**: "PROVEN" shows only while `/api/results` (results.js) marks a
   play proven; "guaranteed" and "risk-free" claims are flagged.
 - **Data**: the main views (`allow.json`, `mustHaveData`) must not show their
@@ -23,7 +28,7 @@ What it checks, and fails on:
   has no answer for fails as a fixture miss.
 - **Form flows** (`flows.js`): log a bet by hand, edit and settle it, export and
   import the CSV, log a bet from the ODDS SCREEN, log a slip from PROPS, paste
-  slips, import a Pikkit CSV, save and load a shopper view, star a venue and
+  slips, import a Pikkit CSV, download the public record (CSV and JSON) from RESULTS, save and load a shopper view, star a venue and
   keep it after a reload, turn push alerts on (no push service in tests), move
   and hide a tab in CUSTOMIZE, and work out a price in TOOLS.
 

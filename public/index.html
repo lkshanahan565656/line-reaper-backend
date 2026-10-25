@@ -845,7 +845,9 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .es-play { display:grid; grid-template-columns:40px minmax(0,1fr) 150px 110px 96px; gap:12px; align-items:center; padding:11px 14px; }
 .es-play + .es-play { border-top:1px solid rgba(255,255,255,.05); }
 .es-play:hover { background:rgba(255,255,255,.015); }
-.es-play .pl { font-size:14px; font-weight:700; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.es-play .pl { font-size:14px; font-weight:700; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; min-width:0; }
+.es-play .pl .nm { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.es-play .pl .tag { flex:none; }
 .es-play .tag { font-size:9.5px; color:#c4b5fd; font-weight:800; background:rgba(139,92,246,.15); padding:1px 6px; border-radius:5px; margin-left:6px; letter-spacing:.06em; vertical-align:1px; }
 .es-ldiff { display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.03em; color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35); padding:1px 6px; border-radius:5px; margin-left:6px; white-space:nowrap; vertical-align:1px; }
 .es-ldiff.gap { color:#34d399; background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.4); }
@@ -899,7 +901,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .bookbar-tile.sel .bookbar-name { color:#fff; }
 
 /* ── ESPORTS: SLIP BUILDER + BEST BOARD ── */
-#esSlipBar, #pkTray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+#esSlipBar, #pkTray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; max-height: 75vh; overflow-y: auto;
   background: rgba(8,11,16,.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border2); padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   box-shadow: 0 -12px 40px rgba(0,0,0,.5); }
@@ -972,9 +974,28 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 .acct-btn { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:1px; padding:4px 9px;
   border-radius:5px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:#cbd5e1; cursor:pointer; }
 .acct-btn.pro { border-color:#f59e0b; color:#f59e0b; background:rgba(245,158,11,.1); }
+.rec-bar { margin:12px 0; gap:8px; flex-wrap:wrap; align-items:center; }
+.rec-dl { display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+.rec-dl a { text-decoration:none; }
+.rec-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; }
+.rec-tile { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; min-width:0; }
+.rec-tile span { display:block; font-size:10px; color:var(--text2); letter-spacing:.08em; }
+.rec-tile b { display:block; font:700 18px 'JetBrains Mono', monospace; margin:4px 0 2px; }
+.rec-tile i { font-style:normal; font-size:11px; color:var(--text2); }
+.rec-tbl td { vertical-align:top; }
+.rec-tbl .why { font-size:10.5px; color:#64748b; margin-top:2px; max-width:300px; }
+.rec-lab { font-size:10px; font-weight:800; letter-spacing:.06em; white-space:nowrap; }
+.rec-bar50 { height:3px; background:rgba(148,163,184,.15); border-radius:2px; margin-top:3px; min-width:46px; }
+.rec-bar50 i { display:block; height:3px; border-radius:2px; background:var(--green); }
+.rec-tags { display:grid; gap:6px; margin-top:8px; }
+.rec-tags div { font-size:11.5px; color:var(--text2); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
+.rec-tags b { color:#e2e8f0; } .rec-tags em { font-style:normal; color:#fbbf24; font-weight:700; font-size:10px; letter-spacing:.06em; margin-left:6px; }
+.rec-h { margin:16px 0 8px; font-size:13px; letter-spacing:.05em; color:var(--text2); }
+.rec-cols { font-size:11px; color:var(--text2); margin-top:10px; line-height:1.55; }
+@media (max-width:640px) { .rec-dl { margin-left:0; } .rec-tbl .why { max-width:200px; } }
 .acct-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
 .acct-modal.open { display:flex; }
-.acct-card { width:100%; max-width:360px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.acct-card { width:100%; max-width:360px; max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px); overflow-y:auto; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
 .acct-card input { width:100%; box-sizing:border-box; margin-top:8px; padding:10px; border-radius:6px; border:1px solid var(--border);
   background:rgba(0,0,0,.3); color:#f1f5f9; font-size:14px; }
 .es-lock { display:inline-block; padding:3px 8px; border:1px solid #f59e0b; color:#f59e0b; border-radius:4px; font-size:10px;
@@ -1086,6 +1107,7 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 }
 .tail-box-head { padding:8px 14px; font-size:10px; letter-spacing:1.5px; color:#94a3b8; font-weight:700; border-bottom:1px solid var(--border); }
 .tail-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:7px 14px; border-top:1px solid rgba(255,255,255,.04); font-size:12px; }
+.tail-row > * { min-width:0; overflow-wrap:anywhere; }
 .tail-cats { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
 .tail-cat { font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 7px; border-radius:4px; background:rgba(255,255,255,.03); border:1px solid var(--border); color:#94a3b8; }
 .tail-why { font-size:11px; color:#94a3b8; margin-top:6px; }
@@ -1427,6 +1449,8 @@ body.no-help .clv-info { display:none; }
 .shp-tbl tr.shp-row { cursor:pointer; }
 .shp-tbl tr.shp-row:hover td { background:var(--card); }
 .shp-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+/* a market's venues under its row: its own scroller, held to the screen while the board scrolls */
+.shp-detail .shp-scroll { position:sticky; left:0; max-width:calc(100vw - 40px); }
 .shp-num { font-family:'JetBrains Mono',monospace; white-space:nowrap; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
@@ -1709,14 +1733,16 @@ body.no-help .clv-info { display:none; }
 
 <div class="page" id="page-results">
   <div class="clv-info" style="border-left:3px solid var(--green)">
-    <strong style="color:#e8e8e8">WHAT'S WINNING</strong> — every Sharp Tail signal, fresh-wallet alert, esports exchange edge, +EV price, sports prop and esports prop the app has flagged, graded and cut into plays.
-    <span style="color:#94a3b8;font-size:11px">CLV (did the price beat the close) proves an edge in dozens of bets where profit needs hundreds. <b style="color:#34d399">Proven</b>: 20+ bets and a t-stat of 2+; for sportsbook plays (+EV, props), 50+ graded bets at one book and a t-stat of 2+, and a pooled count never counts. <b style="color:#fbbf24">Promising</b>: 8+ bets beating the close. <b style="color:#f87171">Avoid</b>: 8+ bets losing to it.</span>
+    <strong style="color:#e8e8e8">THE PUBLIC RECORD</strong> — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it, the close, the CLV and the result) and check it yourself.
+    <span style="color:#94a3b8;font-size:11px" id="recRule">Proven needs 50 graded games of one kind at one venue we read ourselves and a CLV t of 2 or more against Pinnacle's close. The sales page reads the same rule, so the two always agree.</span>
   </div>
-  <div class="row" style="margin:12px 0;gap:8px;flex-wrap:wrap;align-items:center">
+  <div class="row rec-bar">
     <button class="sport-chip active" data-days="0" onclick="resultsDays(0)">ALL TIME</button>
     <button class="sport-chip" data-days="30" onclick="resultsDays(30)">30 DAYS</button>
     <button class="sport-chip" data-days="7" onclick="resultsDays(7)">7 DAYS</button>
+    <span class="rec-dl"><a class="sport-chip" id="recCsv" href="/api/record/flags.csv" download>DOWNLOAD CSV</a><a class="sport-chip" id="recJson" href="/api/record/flags.json" download>JSON</a></span>
   </div>
+  <div id="recordContent"></div>
   <div id="resultsContent"></div>
 </div>
 
@@ -8084,15 +8110,66 @@ function resultsDays(d) {
   loadResults();
 }
 async function loadResults() {
-  const el = document.getElementById('resultsContent');
-  el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
-  try { renderResults(await tailGet(`/api/results${resultsUi.days ? `?days=${resultsUi.days}` : ''}`)); }
-  catch (e) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(e.old ? 'Results need backend v3.47 or later.' : e.message)); }
+  const el = document.getElementById('resultsContent'), rec = document.getElementById('recordContent');
+  const q = resultsUi.days ? `?days=${resultsUi.days}` : '';
+  // the downloads follow the window picked above
+  document.getElementById('recCsv').href = `${BACKEND_URL}/api/record/flags.csv${q}`;
+  document.getElementById('recJson').href = `${BACKEND_URL}/api/record/flags.json${q}`;
+  rec.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  el.innerHTML = '';
+  const [r, d] = await Promise.allSettled([tailGet(`/api/record${q}`), tailGet(`/api/results${q}`)]);
+  if (r.status === 'fulfilled') renderRecord(r.value);
+  else rec.innerHTML = tailEmpty('COULD NOT LOAD THE RECORD', escAttr(r.reason?.old ? 'The public record needs backend v3.185 or later.' : r.reason?.message || ''));
+  if (d.status === 'fulfilled') renderResults(d.value);
+  else el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(d.reason?.old ? 'Results need backend v3.47 or later.' : d.reason?.message || ''));
+}
+// The public record (/api/record, claims.publicRecord): every kind and venue
+// on the close scoreboard with the label the sales page would give it. A
+// profit is said only of a proven row whose units clear chance.
+const REC_LABEL = { proven: ['PROVEN', '#34d399'], building: ['BUILDING', '#fbbf24'], 'too early': ['TOO EARLY', '#94a3b8'], 'losing to the close': ['LOSING TO THE CLOSE', '#f87171'],
+  research: ['RESEARCH', '#a78bfa'], 'copied book': ['COPIED BOOK', '#94a3b8'], 'no sharp close': ['NO SHARP CLOSE', '#64748b'], 'not graded yet': ['NOT GRADED YET', '#64748b'] };
+function renderRecord(d) {
+  const el = document.getElementById('recordContent');
+  const pc = x => x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(1)}%`;
+  const col = x => x == null ? 'var(--text2)' : x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'var(--text2)';
+  if (d.rule?.text) document.getElementById('recRule').textContent = `${d.rule.text} The sales page reads the same rule, so the two always agree.`;
+  const rows = (d.rows || []).filter(r => r.recorded);
+  const graded = rows.reduce((a, r) => a + (r.graded || 0), 0);
+  const q = resultsUi.days ? `&days=${resultsUi.days}` : '';
+  const units = r => {
+    if (r.units == null || !(r.wins + r.losses)) return '—';
+    const u = `${r.units > 0 ? '+' : ''}${Number(r.units).toFixed(1)}u`;
+    // positive units on a kind that is not proven are not a profit claim
+    return r.units > 0 && !r.profitShown ? `<span style="color:var(--text2)" title="Not a profit claim: this kind is not proven, or its units do not clear chance">${u}*</span>` : `<span style="color:${col(r.units)}">${u}</span>`;
+  };
+  const body = rows.map(r => { const [lab, c] = REC_LABEL[r.label] || [String(r.label || '').toUpperCase(), '#94a3b8']; return `<tr>
+      <td><span class="rec-lab" style="color:${c}">${escAttr(lab)}</span></td>
+      <td><b>${escAttr(r.kindLabel)}</b> · ${escAttr(r.bookName)}${r.texas ? ' <span class="rec-lab" style="color:#60a5fa" title="A Texas resident can bet here">TX</span>' : ''}${r.why ? `<div class="why">${escAttr(r.why)}</div>` : ''}</td>
+      <td style="text-align:right">${r.graded}/${r.target}<div class="rec-bar50"><i style="width:${Math.min(100, Math.round(100 * r.graded / (r.target || 50)))}%"></i></div></td>
+      <td style="text-align:right;color:${col(r.clv)}">${pc(r.clv)}${r.clvT != null ? `<div style="font-size:10px;color:var(--text2)">t ${r.clvT > 0 ? '+' : ''}${Number(r.clvT).toFixed(1)}</div>` : ''}</td>
+      <td style="text-align:right">${r.beatPct != null ? `${Math.round(r.beatPct)}%` : '—'}</td>
+      <td style="text-align:right">${r.wins + r.losses ? `${r.wins}-${r.losses}` : '—'}</td>
+      <td style="text-align:right">${units(r)}</td>
+      <td style="text-align:right"><a class="rec-lab" style="color:#60a5fa" href="${BACKEND_URL}/api/record/flags.csv?kind=${encodeURIComponent(r.kind)}&book=${encodeURIComponent(r.book)}${q}" download title="Every closed flag of this kind at this venue">CSV</a></td></tr>`; }).join('');
+  const o = d.overall || {};
+  const tiles = `<div class="rec-tiles">
+    <div class="rec-tile"><span>PROVEN</span><b style="color:${d.proven ? 'var(--green)' : 'var(--text2)'}">${d.proven || 0}</b><i>${d.proven ? 'kinds pass the rule' : 'nothing passes the rule yet'}</i></div>
+    <div class="rec-tile"><span>GRADED GAMES</span><b>${graded.toLocaleString()}</b><i>${rows.length} kinds and venues</i></div>
+    <div class="rec-tile"><span>ALL SHARP CLOSES</span><b style="color:${col(o.clv)}">${pc(o.clv)}</b><i>${(o.graded || 0).toLocaleString()} graded · pooled, so never proven</i></div>
+  </div>`;
+  const table = body ? `<div class="esm-table-wrap"><table class="esm-table rec-tbl"><thead><tr><th></th><th>Kind · venue</th><th style="text-align:right">Graded</th><th style="text-align:right">CLV</th><th style="text-align:right">Beat</th><th style="text-align:right">W-L</th><th style="text-align:right">Units</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`
+    : `<div class="rec-tags"><div>Nothing has closed in this window yet. Flags show here once their game starts and the close is read.</div></div>`;
+  const tags = (d.labels || []).map(l => `<div><b>${escAttr(l.tool)}</b><em>${escAttr(String(l.tag).toUpperCase())}</em><br>${escAttr(l.where)}: ${escAttr(l.why)}</div>`).join('');
+  el.innerHTML = tiles + `<h3 class="rec-h">BY KIND AND VENUE</h3>` + table
+    + `<div class="rec-cols">Graded counts one play per game (or player stat) and day at that venue. CLV is the flagged price against the close; t is its t-stat over the graded games. Units are 1u a graded line at the flagged price; * marks units on a kind that is not proven, which are not a profit claim. The download has one line per closed flag: ${escAttr((d.columns || []).join(', '))}. Open flags are today's live edges and are not in it.${d.at ? ` Read ${escAttr(new Date(d.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}.` : ''}</div>`
+    + (tags ? `<h3 class="rec-h">MODELS AND RESEARCH (NOT A CLAIM)</h3><div class="rec-tags">${tags}</div>` : '')
+    + `<h3 class="rec-h">OTHER RECORDS (RESEARCH RULE)</h3><div class="rec-cols" style="margin-top:0">Sharp Tail, exchange value, esports edges and the models, scored on a looser research rule (20+ bets). Nothing here is a claim; only the table above can mark a kind proven.</div>`;
 }
 function renderResults(d) {
   const pct = (x, plus = true) => x == null ? '—' : `${plus && x > 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
   const col = x => x == null ? 'var(--text2)' : x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'var(--text2)';
-  const VC = { proven: ['PROVEN', '#34d399'], promising: ['PROMISING', '#fbbf24'], early: ['TOO EARLY', '#94a3b8'], avoid: ['AVOID', '#f87171'] };
+  // the research rule's top mark is not the public record's PROVEN (only the table above says that)
+  const VC = { proven: ['CLEARS RESEARCH BAR', '#34d399'], promising: ['PROMISING', '#fbbf24'], early: ['TOO EARLY', '#94a3b8'], avoid: ['AVOID', '#f87171'] };
   const cards = Object.values(d.sources || {}).map(s => { const o = s.overall; return `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:150px;flex:1">
       <div style="font-size:11px;color:var(--text2);letter-spacing:.05em">${escAttr(s.label.toUpperCase())}</div>
@@ -8894,7 +8971,7 @@ function esLineRow(p, key) {
   return `<div class="es-line${ev != null && ev >= 5 ? ' hot' : ''}">
     <div>${esRowButtons(p)}</div>
     <div style="min-width:0">
-      <div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div>
+      <div class="pl"><span class="nm">${escEs(p.player)}</span><span class="tag">${escEs(p.sport)}</span></div>
       <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
       ${bookRow}${esStatEdge(p)}
     </div>
@@ -8935,7 +9012,7 @@ function esPlayRow(p, key, B) {
     : `<span class="es-side ${p.side === 'OVER' ? 'over' : 'under'}">${esSideWord(p.side, key)}<em>${escEs(line)}</em></span>`;
   return `<div class="es-play">
     <div>${btn}</div>
-    <div style="min-width:0"><div class="pl">${escEs(p.player)}<span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div>${esMatchupLine(p)}</div>
+    <div style="min-width:0"><div class="pl"><span class="nm">${escEs(p.player)}</span><span class="tag">${escEs(p.sport)}</span></div><div class="sub">${escEs(p.displayMarket || p.market)}${match ? ' · ' + escEs(match) : ''}</div>${esMatchupLine(p)}</div>
     <div class="mkcol sub" style="white-space:normal">${p.locked ? 'Pro' : `model <b style="color:#e2e8f0">${escEs(p.modelPred ?? '-')}</b>`}${mult && mult !== 1 ? ` · ${mult}x payout` : ''}</div>
     <div style="text-align:center">${side}${esLineDiffChip(p, key)}${esClvChip(p)}${esPinChip(p)}</div>
     <div class="evbig" style="color:${esEvColor(ev)}">${p.locked ? '<span class="es-lock" onclick="acctNeedPro(\'Seeing the picks\')">+EV</span>' : ev == null ? '-' : (ev > 0 ? '+' : '') + ev.toFixed(1) + '%'}${p.locked || p.prob == null ? '' : `<small>${p.prob.toFixed(0)}% to hit</small>`}</div>
@@ -9132,7 +9209,7 @@ function esPlaysHTML(picks) {
     total += rows.length;
     html += esSection(venue, X.name, X.color, logoSrc(venue), `${rows.length} match play${rows.length > 1 ? 's' : ''}`, rows.map(({ m, e, mk }) => `<div class="es-play">
       <div>${m.links?.[venue] ? `<a class="es-go" href="${escEs(m.links[venue])}" target="_blank" rel="noopener" title="Open on ${X.name}">Bet</a>` : ''}</div>
-      <div style="min-width:0"><div class="pl">${escEs(m.teams.join(' vs '))}<span class="tag">${escEs(m.label)}</span></div><div class="sub">${escEs([m.tournament, m.bestOf ? 'Bo' + m.bestOf : '', esWhenShort(m.start)].filter(Boolean).join(' · '))}</div></div>
+      <div style="min-width:0"><div class="pl"><span class="nm">${escEs(m.teams.join(' vs '))}</span><span class="tag">${escEs(m.label)}</span></div><div class="sub">${escEs([m.tournament, m.bestOf ? 'Bo' + m.bestOf : '', esWhenShort(m.start)].filter(Boolean).join(' · '))}</div></div>
       <div class="mkcol sub" style="white-space:normal">${escEs(mk ? esmMarketName(mk) : e.market)}</div>
       <div class="pick" style="text-align:center">${escEs(mk ? esmMarketText(mk, e.outcome) : e.outcome)}<div class="sub" style="text-align:center">at <b style="color:#f1f5f9">${Math.round(e.cost * 100)}c</b></div></div>
       <div class="evbig" style="color:${esEvColor(e.ev * 100)}">+${(e.ev * 100).toFixed(1)}%<small>fair ${Math.round(e.fair * 100)}c</small></div>

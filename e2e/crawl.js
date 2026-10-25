@@ -106,6 +106,18 @@ async function checkText(page, rep, where) {
   }
 }
 
+// at phone size: nothing may stick out past the screen's sides (overflowIssues
+// in page-helpers.js), checked as each tab opens and after every click
+async function checkOverflow(page, rep, tab, where, opts) {
+  if (opts.viewportName !== 'phone') return;
+  const list = await page.evaluate(() => window.__e2e.overflow()).catch(() => []);
+  for (const o of list) {
+    const key = `${tab}|${o.what}|${o.where || ''}`;
+    if (rep.issues.some(i => i.kind === 'phone-overflow' && i.key === key)) continue;
+    issue(rep, 'phone-overflow', { key, tab, ...o, after: where });
+  }
+}
+
 // one click, and whether anything happened
 async function clickOne(page, c, w, opts) {
   const loc = page.locator(`[data-e2e-id="${c.id}"]`);
@@ -255,6 +267,7 @@ async function sweepTab(page, name, rep, w, opts) {
       await openTab(page, name, w, opts);
     }
     await checkText(page, rep, w.last);
+    await checkOverflow(page, rep, name, w.last, opts);
     // a control that switched to another tab (a link into MY BETS, say): come back
     if (!(await page.evaluate(n => document.getElementById('page-' + n)?.classList.contains('active'), name).catch(() => true))) {
       T.switched = (T.switched || 0) + 1;
@@ -317,6 +330,7 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
     (rep.tabs[name] ||= { clicks: 0, families: {}, dead: 0, views: 0 }).opened = how;
     await learnNoise(page, opts);
     await checkText(page, rep, `open ${name}`);
+    await checkOverflow(page, rep, name, `open ${name}`, opts);
     // empty states as the tab first opens, before any filter is touched
     const em = await page.evaluate(sel => window.__e2e.empties(sel), `#page-${name}`).catch(() => []);
     for (const e of em) rep.empties.push({ tab: name, ...e, viewport: opts.viewportName });
@@ -328,4 +342,4 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
   return rep;
 }
 
-module.exports = { clickOne, sweepTab, crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };
+module.exports = { checkOverflow, clickOne, sweepTab, crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };
