@@ -91,7 +91,22 @@ function parseGames(sport, matchups, markets, now = Date.now()) {
 
 // an exchange team label is one of Pinnacle's names: the built-in leagues'
 // city and nickname rules either way round, else the same words
-const sameTeam = (label, name) => !!label && !!name && (teamMatches(label, name) || teamMatches(name, label) || nameMatch(label, name));
+const sameTeamOnce = (label, name) => !!label && !!name && (teamMatches(label, name) || teamMatches(name, label) || nameMatch(label, name));
+// matchRows asks about the same label and team thousands of times a pass: the
+// answers are kept (strings only; the memo is dropped whole when it fills)
+const SAME_MEMO_MAX = 100000;
+const sameMemo = new Map();
+function sameTeam(label, name) {
+  if (typeof label !== 'string' || typeof name !== 'string') return sameTeamOnce(label, name);
+  const key = `${label}\u0000${name}`;
+  let v = sameMemo.get(key);
+  if (v === undefined) {
+    v = sameTeamOnce(label, name);
+    if (sameMemo.size >= SAME_MEMO_MAX) sameMemo.clear();
+    sameMemo.set(key, v);
+  }
+  return v;
+}
 // labels [a, b] → 'same' (a is home) | 'flipped' | null, one way round only
 function sidesOf(labels, game) {
   const [a, b] = labels;
@@ -169,18 +184,29 @@ function fairForRow(game, row, teams, pol) {
   return null;
 }
 
+// index of the first { t } at or after `t` in a list sorted by t
+function firstAtOrAfter(list, t) {
+  let lo = 0, hi = list.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (list[mid].t < t) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+
 // Every exchange row Pinnacle prices → [{ row, game, ...fairForRow }]. A
 // group pairs with the one Pinnacle game whose two teams it names and whose
 // start sits in its window; two candidates (a doubleheader) pair with the
 // closer start, or neither when that's a tie.
+// (the games are sorted by start once, so each group only reads the games in
+// its window; which game wins doesn't depend on the order they're read in)
 function matchRows(rows, games) {
   const out = [];
+  const byStart = [];
+  for (const game of games || []) { const t = ms(game.start); if (t != null) byStart.push({ game, t }); }
+  byStart.sort((a, b) => a.t - b.t);
   for (const g of groupRows(rows)) {
     const [lo, hi] = g.window, mid = (lo + hi) / 2;
     const cands = [];
-    for (const game of games || []) {
-      const t = ms(game.start);
-      if (t == null || t < lo || t > hi) continue;
+    for (let i = firstAtOrAfter(byStart, lo); i < byStart.length && byStart[i].t <= hi; i++) {
+      const { game, t } = byStart[i];
       const pol = sidesOf(g.teams, game);
       if (pol) cands.push({ game, pol, d: Math.abs(t - mid) });
     }
@@ -218,12 +244,15 @@ const fairAmerican = p => +(p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p).t
 function kalshiMidBooks(rows, games, o = KALSHI_MID) {
   const out = new Map();
   const kgroups = groupRows((rows || []).filter(r => r.exchange === 'kalshi' && !r.hasDraw));
+  // by start, as in matchRows: each group reads only the games in its window
+  const byStart = [];
+  for (const game of games || []) { const t = ms(game.commence_time); if (t != null) byStart.push({ game, t }); }
+  byStart.sort((a, b) => a.t - b.t);
   for (const g of kgroups) {
     const [lo, hi] = g.window, mid = (lo + hi) / 2;
     const cands = [];
-    for (const game of games || []) {
-      const t = ms(game.commence_time);
-      if (t == null || t < lo || t > hi) continue;
+    for (let i = firstAtOrAfter(byStart, lo); i < byStart.length && byStart[i].t <= hi; i++) {
+      const { game, t } = byStart[i];
       const pol = sidesOf(g.teams, { home: game.home_team, away: game.away_team });
       if (pol) cands.push({ game, pol, d: Math.abs(t - mid) });
     }
