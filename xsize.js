@@ -26,7 +26,8 @@ const pmus = require('./pmus');
 const { outcomeOf } = require('./evtrack');
 
 const VENUES = ['kalshi', 'gemini', 'polymarketus'];
-const MAX_READS = { kalshi: 30, gemini: 30, polymarketus: 8 };
+// Polymarket US answered 429 at 7 book reads in a pass beside its own board reads (10-25): 3 a pass
+const MAX_READS = { kalshi: 30, gemini: 30, polymarketus: 3 };
 const MIN_N = 50;
 const CLOSE_MAX_AGE_MS = 20 * 60e3;
 const r4 = x => Math.round(x * 1e4) / 1e4;
