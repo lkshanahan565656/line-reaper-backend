@@ -73,6 +73,7 @@ const nflEvent = (o = {}) => ({
     marketSides: [side(true, 'Pittsburgh Steelers', 'away'), side(false, 'New Orleans Saints', 'home')] }], ...o });
 const spread = (line, bid, ask) => ({ slug: `asc-${line}`, sportsMarketType: 'football_team_full_game_spread', line, status: 'MARKET_STATUS_OPEN', active: true, closed: false,
   bestBidQuote: usd(bid), bestAskQuote: usd(ask), marketSides: [side(true, 'Pittsburgh Steelers', 'away'), side(false, 'New Orleans Saints', 'home')] });
+const noRef = os => os.map(({ ref, ...o }) => o);
 const total = (line, bid, ask, type = 'football_team_full_game_total') => ({ slug: `tsc-${line}-${type}`, sportsMarketType: type, line, status: 'MARKET_STATUS_OPEN', active: true, closed: false,
   bestBidQuote: usd(bid), bestAskQuote: usd(ask), marketSides: [{ long: true, description: 'Over' }, { long: false, description: 'Under' }] });
 
@@ -82,7 +83,10 @@ test('Polymarket US moneyline: long at the ask, short at 1 − the bid, fee in; 
   assert.equal(g.sport, 'nfl');
   assert.equal(g.home, 'New Orleans Saints');
   assert.equal(g.away, 'Pittsburgh Steelers');
-  assert.deepEqual(g.h2h, [{ name: 'Pittsburgh Steelers', price: pb.priceOf(0.6075, 0.0695) }, { name: 'New Orleans Saints', price: pb.priceOf(0.395, 0.0695) }]);
+  assert.deepEqual(noRef(g.h2h), [{ name: 'Pittsburgh Steelers', price: pb.priceOf(0.6075, 0.0695) }, { name: 'New Orleans Saints', price: pb.priceOf(0.395, 0.0695) }]);
+  // each side names its market, so the size check can read the book
+  assert.deepEqual(g.h2h.map(o => o.ref?.buy), ['long', 'short']);
+  assert.equal(g.h2h[0].ref.venue, 'polymarketus');
   // 0.6075 + 0.0695 × 0.6075 × 0.3925 = 0.6241 → −166
   assert.equal(pb.priceOf(0.6075, 0.0695), -166);
 });
@@ -91,8 +95,9 @@ test('Polymarket US slug page: spreads signed from the long team, game totals, n
   const e = nflEvent();
   e.markets.push(spread(-2.5, '0.5000', '0.5100'), total(41.5, '0.4800', '0.5000'), total(20.5, '0.5', '0.52', 'football_team_points_full_game_total'));
   const g = pb.gameOf({ event: e }, { league: 'nfl', now: NOW });
-  assert.deepEqual(g.spreads, [{ name: 'Pittsburgh Steelers', price: pb.priceOf(0.51), point: -2.5 }, { name: 'New Orleans Saints', price: pb.priceOf(0.5), point: 2.5 }]);
-  assert.deepEqual(g.totals, [{ name: 'Over', price: pb.priceOf(0.5), point: 41.5 }, { name: 'Under', price: pb.priceOf(0.52), point: 41.5 }]);
+  assert.deepEqual(noRef(g.spreads), [{ name: 'Pittsburgh Steelers', price: pb.priceOf(0.51), point: -2.5 }, { name: 'New Orleans Saints', price: pb.priceOf(0.5), point: 2.5 }]);
+  assert.deepEqual(noRef(g.totals), [{ name: 'Over', price: pb.priceOf(0.5), point: 41.5 }, { name: 'Under', price: pb.priceOf(0.52), point: 41.5 }]);
+  assert.deepEqual(g.totals.map(o => [o.ref.id, o.ref.buy]), [['tsc-41.5-football_team_full_game_total', 'long'], ['tsc-41.5-football_team_full_game_total', 'short']]);
 });
 
 test('Polymarket US soccer: the three result markets make one three-way moneyline', () => {

@@ -28,10 +28,12 @@
   const r4 = x => Math.round(x * 1e4) / 1e4;
   const num = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[$,\s]/g, '')); return ok(n) ? n : null; };
 
-  const RESULTS = ['open', 'win', 'loss', 'push', 'void', 'half_win', 'half_loss', 'cashout'];
-  const RESULT_LABEL = { open: 'Open', win: 'Won', loss: 'Lost', push: 'Push', void: 'Void', half_win: 'Half won', half_loss: 'Half lost', cashout: 'Cashed out' };
+  // 'paid': a pick'em flex slip that paid part of its table (cashout holds the
+  // dollars back), counted a win when it returned more than the stake
+  const RESULTS = ['open', 'win', 'loss', 'push', 'void', 'half_win', 'half_loss', 'cashout', 'paid'];
+  const RESULT_LABEL = { open: 'Open', win: 'Won', loss: 'Lost', push: 'Push', void: 'Void', half_win: 'Half won', half_loss: 'Half lost', cashout: 'Cashed out', paid: 'Paid' };
   // which of our tools a bet came from; Manual is anything typed in
-  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Exchange value', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV'];
+  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Exchange value', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV', "Pick'em slip", 'Odds screen'];
   const KIND_TOOL = { tail: 'Sharp Tail', exchangeValue: 'Exchange value', esportsEdge: 'Esports edge', esportsProp: 'Esports prop', sportsProp: 'Sports prop', arb: 'Arb' };
 
   const isSettled = b => b.result !== 'open';
@@ -67,9 +69,13 @@
       stake: r2(stake),
       unitUsd: unit > 0 ? unit : null,
       result,
-      cashout: result === 'cashout' ? r2(num(input.cashout) ?? 0) : null,
+      cashout: result === 'cashout' || result === 'paid' ? r2(num(input.cashout) ?? 0) : null,
       closeOdds: okDec(closeOdds) ? r4(closeOdds) : null,
       track: input.track && typeof input.track === 'object' ? input.track : null,
+      // a game line from the odds screen: Pinnacle's no-vig chance of the side
+      // when it was logged, and what the server's line follow found since
+      logFair: ok(input.logFair) && input.logFair > 0 && input.logFair < 1 ? r4(input.logFair) : null,
+      lineClose: input.lineClose && typeof input.lineClose === 'object' ? input.lineClose : null,
       settledAt: result === 'open' ? null : iso(input.settledAt) || new Date(now).toISOString(),
       settledBy: result === 'open' ? null : input.settledBy === 'auto' ? 'auto' : 'manual',
       notes: String(input.notes || '').trim(),
@@ -80,7 +86,7 @@
   // Set a result. cashout: the dollars that came back.
   function settle(b, result, { now = Date.now(), cashout = null, by = 'manual' } = {}) {
     if (!RESULTS.includes(result)) return b;
-    return { ...b, result, cashout: result === 'cashout' ? r2(num(cashout) ?? 0) : null,
+    return { ...b, result, cashout: result === 'cashout' || result === 'paid' ? r2(num(cashout) ?? 0) : null,
       settledAt: result === 'open' ? null : new Date(now).toISOString(), settledBy: result === 'open' ? null : by };
   }
 
@@ -93,7 +99,7 @@
       case 'loss': return -b.stake;
       case 'half_win': return r2(toWin(b) / 2);
       case 'half_loss': return r2(-b.stake / 2);
-      case 'cashout': return r2((b.cashout || 0) - b.stake);
+      case 'cashout': case 'paid': return r2((b.cashout || 0) - b.stake);
       case 'push': case 'void': return 0;
       default: return null;
     }
@@ -101,6 +107,34 @@
   // closing line value: your price against the close, 0.05 = beat it by 5%
   const clv = b => (okDec(b.closeOdds) && okDec(b.odds) ? r4(b.odds / b.closeOdds - 1) : null);
   const unitsOf = (b, unitUsd) => { const u = b.unitUsd || unitUsd; return u > 0 ? u : null; };
+
+
+  // A MY SLIPS slip (slips.slipView: legs graded, table, closeEv, result) as a
+  // read-only bet, so one record covers both tabs. Odds are what the slip pays
+  // when every pick hits: the user's own payout, else the app's table. The
+  // close is the slip priced on its legs' closing fairs: closeOdds = odds /
+  // (1 + closeEv), so its CLV is the slip's close EV. A flex slip that missed
+  // a pick pays its table at the hits ('paid', the dollars in cashout).
+  const APP_LABEL = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6', betr: 'Betr', chalkboard: 'Chalkboard' };
+  function fromSlip(v) {
+    if (!v || !v.id || !Array.isArray(v.legs) || !v.legs.length) return null;
+    const n = v.legs.length;
+    const odds = v.stake > 0 && v.payout > 0 && v.payout > v.stake ? v.payout / v.stake : v.table?.[n];
+    if (!okDec(odds) || !(v.stake > 0)) return null;
+    const sports = [...new Set(v.legs.map(l => l.g?.matched?.sport || l.sport).filter(Boolean))];
+    let result = ['win', 'loss', 'push', 'void', 'paid'].includes(v.result) ? v.result : 'open';
+    // a flex slip paid part of its table, or a dropped pick paid a smaller one: the dollars that came back
+    if (result === 'win' && v.returned != null && Math.abs(v.returned - v.stake * odds) > 0.01) result = 'paid';
+    const cashout = result === 'paid' && v.returned != null ? r2(v.returned) : null;
+    return {
+      id: `slip:${v.id}`, placedAt: iso(v.placedAt) || new Date().toISOString(), event: '',
+      pick: `${n}-pick${v.flex ? ' flex' : ''}: ${v.legs.map(l => `${l.player} ${l.side === 'Over' ? 'o' : 'u'}${l.line}`).join(', ')}`,
+      sport: sports.length === 1 ? sports[0] : sports.length ? 'Mixed' : '', book: APP_LABEL[v.app] || String(v.app || ''), tool: "Pick'em slip",
+      odds: r4(odds), cents: false, stake: r2(v.stake), unitUsd: null, result: result === 'paid' && cashout == null ? 'open' : result, cashout,
+      closeOdds: v.closeEv != null && v.closeEv > -1 ? r4(odds / (1 + v.closeEv)) : null, track: null,
+      settledAt: result === 'open' ? null : iso(v.settledAt) || iso(v.placedAt), settledBy: 'auto', notes: '', fromSlip: true,
+    };
+  }
 
   // ── stats ──
   // Record: half wins count as wins, half losses as losses, pushes and voids
@@ -112,8 +146,10 @@
     let w = 0, l = 0, p = 0, risked = 0, pnl = 0, pnlU = 0, uKnown = true, oddsSum = 0, oddsN = 0;
     for (const b of settled) {
       const r = b.result;
-      if (r === 'win' || r === 'half_win') w++;
-      else if (r === 'loss' || r === 'half_loss') l++;
+      const paid = r === 'paid' ? Math.sign((b.cashout || 0) - b.stake) : null;
+      if (r === 'win' || r === 'half_win' || paid > 0) w++;
+      else if (r === 'loss' || r === 'half_loss' || paid < 0) l++;
+      else if (paid === 0) p++;
       else if (r === 'push' || r === 'void') p++;
       if (r !== 'push' && r !== 'void') { risked += b.stake; oddsSum += b.odds; oddsN++; }
       const x = profit(b) || 0;
@@ -204,6 +240,22 @@
     return row.category ? row.category.charAt(0).toUpperCase() + row.category.slice(1) : '';
   }
 
+  // A side on the ODDS SCREEN (oddsscreen.build) → the fields to prefill. The
+  // price is the venue the user tapped (the best bettable one by default); the
+  // track lets the server follow the line to Pinnacle's close and the final.
+  function fromLine(game, market, side, venue = null) {
+    if (!game || !market || !side) return null;
+    const v = venue || side.venues?.find(x => x.best) || null;
+    const what = market.key === 'ml' ? `${side.label} ML` : side.label;
+    return {
+      event: `${game.away} @ ${game.home}`, pick: what, book: v?.name || '', sport: game.leagueLabel || '', tool: 'Odds screen',
+      odds: v?.decimal > 1 ? r4(v.decimal) : null, cents: false, logFair: side.fair ?? null,
+      track: { kind: 'line', game: String(game.id), league: game.league, market: market.key, side: side.name, point: market.point ?? null, start: game.start },
+    };
+  }
+  // a game-line bet's CLV against the Pinnacle price right now (before the start)
+  const clvNow = b => (b.lineClose?.status === 'open' && b.lineClose.fair > 0 && okDec(b.odds) ? r4(b.odds * b.lineClose.fair - 1) : null);
+
   // ── auto-settle (server side) ──
   // bets: [{ id, track }]; tail: tail tracker records; picks: esports pick
   // tracker rows. → { [bet id]: { result?, closeOdds?, note } } for the bets
@@ -251,6 +303,8 @@
       if (!r) return b;
       let x = b;
       if (r.closeOdds && !b.closeOdds) x = { ...x, closeOdds: r.closeOdds };
+      // the line follow's state (Pinnacle now, the close, the final score)
+      if (r.close && JSON.stringify(r.close) !== JSON.stringify(b.lineClose || null)) x = { ...x, lineClose: r.close };
       if (r.result && b.result === 'open') x = settle(x, r.result, { now, by: 'auto' });
       if (x !== b) changed++;
       return x;
@@ -386,6 +440,6 @@
     return { list: sortNewest([...list, ...add]), added: add.length };
   }
 
-  return { RESULTS, RESULT_LABEL, TOOLS, KIND_TOOL, make, settle, toWin, profit, clv, stats, curve, breakdown, filter,
-    sortNewest, fromPlay, matchTracked, applyTracked, migrate, toCSV, parseCSV, fromCSV, merge, isSettled };
+  return { fromSlip, RESULTS, RESULT_LABEL, TOOLS, KIND_TOOL, make, settle, toWin, profit, clv, stats, curve, breakdown, filter,
+    sortNewest, fromPlay, fromLine, clvNow, matchTracked, applyTracked, migrate, toCSV, parseCSV, fromCSV, merge, isSettled };
 }));

@@ -13,34 +13,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createJsonFileStore } = require('./jsonstore');
 
 function createMemoryStore() {
   const rows = new Map();
   return { kind: 'memory', async init() {}, async all() { return [...rows.values()]; }, async put(b) { rows.set(b.id, b); } };
 }
 
-function createFileStore(file) {
-  const rows = new Map();
-  let writing = Promise.resolve();
-  const store = {
-    kind: 'file',
-    async init() {
-      try { for (const b of JSON.parse(fs.readFileSync(file, 'utf8'))) rows.set(b.id, b); }
-      catch (e) { if (e.code !== 'ENOENT') console.warn(`EV tracker: could not read ${file}: ${e.message}`); }
-    },
-    async all() { return [...rows.values()]; },
-    async put(b) { return store.putMany([b]); },
-    async putMany(list) {
-      for (const b of list) rows.set(b.id, b);
-      writing = writing.then(() => {
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(`${file}.tmp`, JSON.stringify([...rows.values()]));
-        fs.renameSync(`${file}.tmp`, file);
-      }).catch(e => console.warn(`EV tracker: write failed: ${e.message}`));
-      return writing;
-    },
-  };
-  return store;
+// coalesced, chunked writes (jsonstore.js)
+function createFileStore(file, opts = {}) {
+  return createJsonFileStore(file, { label: 'EV tracker', ...opts });
 }
 
 function createPgStore(connectionString, table = 'ev_bets') {

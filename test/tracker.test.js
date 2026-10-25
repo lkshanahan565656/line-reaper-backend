@@ -148,6 +148,7 @@ test('file store persists across restarts', async () => {
   const clock = { t: T0 };
   const a = makeTracker(clock, {}, createFileStore(file));
   await a.recordBoard([boardPick()]);
+  await require('../jsonstore').flushAll();
   const b = makeTracker(clock, {}, createFileStore(file));
   const rows = await b.list();
   assert.equal(rows.length, 1);

@@ -12,7 +12,8 @@ const exprs = [...src.matchAll(/^\s*schedule\('([^']+)'/gm)].map(m => m[1]);
 test('every server job goes through the catch-up wrapper', () => {
   assert.ok(exprs.length >= 20, `found ${exprs.length} jobs`);
   assert.equal(src.match(/cron\.schedule\(/g).length, 1, 'only the wrapper calls node-cron directly');
-  assert.match(src, /const schedule = \(expr, fn\) => cron\.schedule\(expr, fn, \{ recoverMissedExecutions: true \}\)/);
+  // the job is wrapped for /api/ops timing (ops.job); the catch-up option stays
+  assert.match(src, /const schedule = \(expr, fn\) => cron\.schedule\(expr, ops\.job\(jobLabel\(expr, fn\), fn\), \{ recoverMissedExecutions: true \}\)/);
 });
 
 test('no job uses a stepped range, which node-cron 3 expands wrong', () => {

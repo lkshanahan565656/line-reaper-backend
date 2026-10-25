@@ -56,12 +56,60 @@ function open(key, env) {
   return JSON.parse(zlib.gunzipSync(Buffer.concat([d.update(Buffer.from(env.data, 'base64')), d.final()])).toString('utf8'));
 }
 
+// The same envelopes without holding the event loop: the snapshot is about
+// 100 MB of JSON, and a gzipSync of it froze every request for seconds each
+// time the backup Action pulled it (every 20 minutes). Here the JSON goes out
+// a few hundred records at a time into a gzip stream (zlib runs off the main
+// thread), and the read side gunzips off the main thread too.
+const tick = () => new Promise(r => setImmediate(r));
+function* payloadChunks(payload, rows = 300) {
+  const stores = payload?.stores || {};
+  const names = Object.keys(stores);
+  yield '{"stores":{';
+  for (let n = 0; n < names.length; n++) {
+    const docs = stores[names[n]];
+    yield `${n ? ',' : ''}${JSON.stringify(names[n])}:`;
+    if (!Array.isArray(docs)) { yield JSON.stringify(docs ?? null); continue; }
+    yield '[';
+    for (let i = 0; i < docs.length; i += rows) {
+      yield (i ? ',' : '') + docs.slice(i, i + rows).map(d => JSON.stringify(d === undefined ? null : d)).join(',');
+    }
+    yield ']';
+  }
+  yield '}';
+  for (const [k, v] of Object.entries(payload || {})) if (k !== 'stores' && v !== undefined) yield `,${JSON.stringify(k)}:${JSON.stringify(v)}`;
+  yield '}';
+}
+async function sealAsync(key, payload) {
+  const gz = zlib.createGzip();
+  const out = [];
+  gz.on('data', b => out.push(b));
+  const ended = new Promise((resolve, reject) => { gz.on('end', resolve); gz.on('error', reject); });
+  for (const part of payloadChunks(payload)) {
+    if (!gz.write(part)) await new Promise(r => gz.once('drain', r));
+    else await tick();
+  }
+  gz.end();
+  await ended;
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const data = Buffer.concat([c.update(Buffer.concat(out)), c.final()]);
+  return { iv: iv.toString('base64'), tag: c.getAuthTag().toString('base64'), data: data.toString('base64') };
+}
+async function openAsync(key, env) {
+  const d = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(env.iv, 'base64'));
+  d.setAuthTag(Buffer.from(env.tag, 'base64'));
+  const gz = Buffer.concat([d.update(Buffer.from(env.data, 'base64')), d.final()]);
+  const raw = await new Promise((resolve, reject) => zlib.gunzip(gz, (e, b) => (e ? reject(e) : resolve(b))));
+  return JSON.parse(raw.toString('utf8'));
+}
+
 // fetchJson(url) → parsed body, or null for "no such file"; throws otherwise.
 function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJson, log = console, retryMs = 5 * 60e3, now = () => Date.now() } = {}) {
   const stores = new Map();   // name → { store, appendOnly }
   const restored = {};        // name → records added from the snapshot
   let state = key ? 'pending' : 'off';   // pending → ready | retrying; off without a key
-  let snapshotAt = null, note = null, cached = null, loading = null;
+  let snapshotAt = null, note = null, cached = null, loading = null, building = null;
 
   async function fetchSnapshot() {
     let lastErr = null;
@@ -78,7 +126,7 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
     if (!body) { note = 'no backup yet'; return null; }
     if (body.keyId && body.keyId !== keyIdOf(key)) { note = 'backup made with another key; starting fresh'; return null; }
     try {
-      const payload = open(key, body);
+      const payload = await openAsync(key, body);
       snapshotAt = body.at || null;
       return payload;
     } catch (e) { note = `backup unreadable (${e.message}); starting fresh`; return null; }
@@ -141,13 +189,19 @@ function createBackup({ key = keyFromEnv(), sources = sourcesFromEnv(), fetchJso
     if (state === 'off') { const e = new Error('backup off: no RESULTS_BACKUP_KEY and not on Railway'); e.status = 404; throw e; }
     if (state !== 'ready') { const e = new Error(`backup not ready (${state})`); e.status = 503; throw e; }
     if (cached && now() - cached.t < 60e3) return cached.body;
+    // one build at a time: a second request waits on the one in flight
+    if (building) return building;
+    building = build().finally(() => { building = null; });
+    return building;
+  }
+  async function build() {
     const payload = { stores: {} }, counts = {}, other = {};
     for (const [name, { store, appendOnly }] of stores) {
       const docs = await store.all();
       payload.stores[name] = docs;
       (appendOnly ? counts : other)[name] = docs.length;
     }
-    const body = { v: 1, at: new Date(now()).toISOString(), keyId: keyIdOf(key), counts, other, ...seal(key, payload) };
+    const body = { v: 1, at: new Date(now()).toISOString(), keyId: keyIdOf(key), counts, other, ...(await sealAsync(key, payload)) };
     cached = { t: now(), body };
     return body;
   }
@@ -175,4 +229,4 @@ function axiosFetchJson(axios) {
   };
 }
 
-module.exports = { createBackup, keyFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open };
+module.exports = { createBackup, keyFromEnv, keyIdOf, sourcesFromEnv, axiosFetchJson, seal, open, sealAsync, openAsync, payloadChunks };

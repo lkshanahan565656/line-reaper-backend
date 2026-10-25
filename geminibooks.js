@@ -62,6 +62,9 @@ function american(cost) {
 }
 // a buyable side: a price between 2c and 98c
 const side = p => { const x = num(p); return x != null && x >= 0.02 && x <= 0.98 ? x : null; };
+// the contract behind an outcome, so a size check can read its book
+// (depthfill.js: GET /v1/book/{instrumentSymbol}); {} when the payload has none
+const refOf = (c, buy) => (c?.instrumentSymbol ? { ref: { venue: 'gemini', id: c.instrumentSymbol, buy } } : {});
 
 function eventUrl({ sports = QUERIES[0].sports, types = QUERIES[0].types, scope = 'full_contest', limit = 500, offset = 0 } = {}) {
   const q = ['status=active', ...sports.map(s => `sport=${s}`), ...types.map(t => `sports_market_type=${t}`), `sports_market_scope=${scope}`, `limit=${limit}`, `offset=${offset}`];
@@ -120,7 +123,7 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE, skipped = 
       // a draw or no contest settles both NO: only each fighter's YES is a bet on him
       const a = cost(open[0].prices?.buy?.yes), h = cost(open[1].prices?.buy?.yes);
       if (a == null || h == null) continue;
-      g.h2h.push({ name: home, price: h }, { name: away, price: a });
+      g.h2h.push({ name: home, price: h, ...refOf(open[1], 'yes') }, { name: away, price: a, ...refOf(open[0], 'yes') });
     } else if (kind === 'M') {
       if (g.h2h.length) continue;
       const h = open.find(c => c.sportsSide === 'home'), a = open.find(c => c.sportsSide === 'away'), tie = open.find(c => c.sportsSide === 'tie');
@@ -130,14 +133,19 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE, skipped = 
         if (!SOCCER.has(sport)) continue;
         const ph = cost(h.prices?.buy?.yes), pa = cost(a.prices?.buy?.yes), pd = cost(tie.prices?.buy?.yes);
         if (ph == null || pa == null || pd == null) continue;
-        g.h2h.push({ name: home, price: ph }, { name: away, price: pa }, { name: 'Draw', price: pd });
+        g.h2h.push({ name: home, price: ph, ...refOf(h, 'yes') }, { name: away, price: pa, ...refOf(a, 'yes') }, { name: 'Draw', price: pd, ...refOf(tie, 'yes') });
         continue;
       }
       // home wins: home's YES or away's NO, whichever is cheaper
-      const best = (...ps) => { const xs = ps.map(side).filter(x => x != null); return xs.length ? Math.min(...xs) : null; };
-      const ph = best(h.prices?.buy?.yes, a.prices?.buy?.no), pa = best(a.prices?.buy?.yes, h.prices?.buy?.no);
+      // → [price, ref] of the cheaper way in
+      const best = (yesC, noC) => {
+        const y = side(yesC.prices?.buy?.yes), n = side(noC.prices?.buy?.no);
+        if (y == null && n == null) return [null, {}];
+        return n == null || (y != null && y <= n) ? [y, refOf(yesC, 'yes')] : [n, refOf(noC, 'no')];
+      };
+      const [ph, rh] = best(h, a), [pa, ra] = best(a, h);
       if (ph == null || pa == null) continue;
-      g.h2h.push({ name: home, price: american(costOf(ph, rate)) }, { name: away, price: american(costOf(pa, rate)) });
+      g.h2h.push({ name: home, price: american(costOf(ph, rate)), ...rh }, { name: away, price: american(costOf(pa, rate)), ...ra });
     } else if (kind === 'S') {
       for (const c of open) {
         const m = /^(?:reg(?:ulation)? time:\s*)?(.+?)\s+wins by more than\s+([\d.]+)/i.exec(String(c.label || ''));
@@ -149,7 +157,7 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE, skipped = 
         const fav = who === 'home' ? home : away, dog = who === 'home' ? away : home;
         const homePt = who === 'home' ? -x : x;
         if (g.spreads.some(o => o.name === home && o.point === homePt)) continue;
-        g.spreads.push({ name: fav, price: yes, point: -x }, { name: dog, price: no, point: x });
+        g.spreads.push({ name: fav, price: yes, point: -x, ...refOf(c, 'yes') }, { name: dog, price: no, point: x, ...refOf(c, 'no') });
       }
     } else {
       for (const c of open) {
@@ -157,7 +165,7 @@ function parseGemini(payloads, { now = Date.now(), rate = TAKER_RATE, skipped = 
         const x = num(c.strike?.value);
         const over = cost(c.prices?.buy?.yes), under = cost(c.prices?.buy?.no);
         if (x == null || over == null || under == null || g.totals.some(o => o.point === x)) continue;
-        g.totals.push({ name: 'Over', price: over, point: x }, { name: 'Under', price: under, point: x });
+        g.totals.push({ name: 'Over', price: over, point: x, ...refOf(c, 'yes') }, { name: 'Under', price: under, point: x, ...refOf(c, 'no') });
       }
     }
   }
