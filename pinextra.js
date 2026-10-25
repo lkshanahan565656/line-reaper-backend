@@ -105,6 +105,58 @@ function parseMma(matchups, markets, now = Date.now()) {
   return dedupe(out);
 }
 
+// MMA fights for the UFC model (ufcboard.js): each fight's no-vig moneyline
+// and main total rounds (the line nearest 50/50), the league, and whether it
+// is the card's main event (the last start on its day in its league).
+// → [{ id, league, start, home, away, pHome, rounds, pOver, over, under, ml: { home, away }, mainEvent }]
+function parseMmaFights(matchups, markets, now = Date.now()) {
+  const byId = new Map((matchups || []).filter(m => m.type === 'matchup' && !m.parentId).map(m => [m.id, m]));
+  const fights = new Map();
+  for (const mu of byId.values()) {
+    const start = Date.parse(mu.startTime || '');
+    const parts = mu.participants || [];
+    const home = parts.find(p => p.alignment === 'home')?.name, away = parts.find(p => p.alignment === 'away')?.name;
+    if (!(start > now) || !home || !away) continue;
+    fights.set(mu.id, { id: mu.id, league: mu.league?.name || '', start: new Date(start).toISOString(), home, away, pHome: null, rounds: null, pOver: null, over: null, under: null, ml: null, mainEvent: false });
+  }
+  const totals = new Map();
+  for (const mk of markets || []) {
+    const f = fights.get(mk.matchupId);
+    if (!f || mk.period !== 0) continue;
+    if (mk.type === 'moneyline') {
+      const h = byDesig(mk.prices, 'home'), a = byDesig(mk.prices, 'away');
+      const p = h && a ? pair(h.price, a.price) : null;
+      if (p != null) { f.pHome = +p.toFixed(4); f.ml = { home: h.price, away: a.price }; }
+    } else if (mk.type === 'total') {
+      const o = byDesig(mk.prices, 'over'), u = byDesig(mk.prices, 'under');
+      if (!o || !u || o.points == null || o.points !== u.points || o.points % 1 !== 0.5) continue;
+      const p = pair(o.price, u.price);
+      if (p == null) continue;
+      if (!totals.has(f.id)) totals.set(f.id, []);
+      totals.get(f.id).push({ rounds: o.points, pOver: p, over: o.price, under: u.price, alt: !!mk.isAlternate });
+    }
+  }
+  for (const [id, list] of totals) {
+    const main = list.filter(t => !t.alt).length ? list.filter(t => !t.alt) : list;
+    const t = main.reduce((a, b) => (Math.abs(b.pOver - 0.5) < Math.abs(a.pOver - 0.5) ? b : a));
+    Object.assign(fights.get(id), { rounds: t.rounds, pOver: +t.pOver.toFixed(4), over: t.over, under: t.under });
+  }
+  const out = [...fights.values()];
+  // a card: one league's fights within 10 hours of the one before; its main
+  // event is the last start, named only when 5+ of the card's fights are up
+  const byLeague = new Map();
+  for (const f of out) { if (!byLeague.has(f.league)) byLeague.set(f.league, []); byLeague.get(f.league).push(f); }
+  for (const list of byLeague.values()) {
+    list.sort((a, b) => (a.start < b.start ? -1 : 1));
+    let card = [];
+    // (a start shared by two fights is a placeholder: no main event named)
+    const close = () => { const l = card[card.length - 1]; if (card.length >= 5 && card.filter(f => f.start === l.start).length === 1) l.mainEvent = true; card = []; };
+    for (const f of list) { if (card.length && Date.parse(f.start) - Date.parse(card[card.length - 1].start) > 10 * 3600e3) close(); card.push(f); }
+    close();
+  }
+  return out;
+}
+
 // one quote per key, line and game (Pinnacle can list a line twice)
 function dedupe(qs) {
   const seen = new Set();
@@ -113,7 +165,7 @@ function dedupe(qs) {
 
 async function fetchPinnacleExtra(http, key = '') {
   const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0', ...(key ? { 'X-API-Key': key } : {}) };
-  const props = [], errors = [];
+  const props = [], errors = [], mmaFights = [];
   for (const [sport, id] of Object.entries(SPORTS)) {
     try {
       const [mu, mk] = await Promise.all([
@@ -121,9 +173,10 @@ async function fetchPinnacleExtra(http, key = '') {
         http.get(`${PIN}/sports/${id}/markets/straight`, { headers, timeout: 30000 }),
       ]);
       props.push(...(sport === 'TENNIS' ? parseTennis : parseMma)(mu?.data, mk?.data));
+      if (sport === 'MMA') mmaFights.push(...parseMmaFights(mu?.data, mk?.data));
     } catch (e) { errors.push(`${sport}: ${e.response?.status || e.message}`); }
   }
-  return { props, errors };
+  return { props, errors, mmaFights };
 }
 
-module.exports = { SPORTS, parseTennis, parseMma, fetchPinnacleExtra };
+module.exports = { SPORTS, parseTennis, parseMma, parseMmaFights, fetchPinnacleExtra };

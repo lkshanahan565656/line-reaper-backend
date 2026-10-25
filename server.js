@@ -803,8 +803,17 @@ const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBacku
 // scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
 const extraGrade = require('./extragrade');
 const EXTRA_RESULTS_ON = !/^(off|0|false|no)$/i.test(String(process.env.EXTRA_RESULTS || '').trim());
-const sportGrader = extraGrade.combineGraders(createSportsGrader({ http: axios }),
+const sportGraderBase = extraGrade.combineGraders(createSportsGrader({ http: axios }),
   EXTRA_RESULTS_ON ? extraGrade.createExtraGrader({ http: axios }) : { canGrade: () => false, grade: async () => null });
+// UFC significant strikes and takedowns settle off UFCStats' per-fight stats
+// (ufcdata.js, the Greco1899 mirror, refreshed weekly on Sundays); everything else as before
+const UFC_STATS_KEYS = new Set(['significant_strikes', 'takedowns']);
+const ufcStatLeg = pick => pick.sport === 'MMA' && UFC_STATS_KEYS.has(pick.mkey);
+const sportGrader = {
+  canGrade: pick => (ufcStatLeg(pick) ? !!ufcData : sportGraderBase.canGrade(pick)),
+  grade: async pick => { if (!ufcStatLeg(pick)) return sportGraderBase.grade(pick); await ufcData.refresh(); return ufcData.grade(pick); },
+  sourceOf: pick => (ufcStatLeg(pick) ? 'ufcstats (greco1899 dataset)' : sportGraderBase.sourceOf(pick)),
+};
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
   grader: sportGrader,
@@ -835,6 +844,19 @@ const nbaModel = NBA_MODEL_ON ? nbadata.createNbaModel({ http: axios, log: m => 
 // judged at 50 graded live. MLB_PIN=off turns it off.
 const mlbBoard = require('./mlbboard');
 const MLB_PIN_ON = !/^(off|0|false|no)$/i.test(String(process.env.MLB_PIN || '').trim());
+// UFC vs PINNACLE (ufcboard.js, ufcmodel.js, ufcdata.js): every UFC leg on the
+// four apps priced off Pinnacle's fight (total rounds and moneyline): Fight
+// Time off the fight-length curve, Finishes and Round Finish off the moneyline
+// times that curve, Significant Strikes and Takedowns off the fighter's own
+// UFC rates (UFCStats via the Greco1899 dataset on GitHub) over that fight
+// length. Pre-registered 2026-10-25 (checks/ufc-pin-2026-10-25): every priced
+// leg once per app on the side the price favours, kinds ufc-time / ufc-fin /
+// ufc-stat (p6-, ud-, sl- per app), research only, no alerts, judged at 50
+// graded clearing legs. UFC_PIN=off turns it off.
+const ufcBoard = require('./ufcboard');
+const ufcdata = require('./ufcdata');
+const UFC_PIN_ON = !/^(off|0|false|no)$/i.test(String(process.env.UFC_PIN || '').trim());
+const ufcData = UFC_PIN_ON ? ufcdata.createUfcData({ http: axios, log: m => console.warn(m) }) : null;
 // MY SLIPS (slips.js, sliplog.js): the legs of users' own slips, followed to the
 // close and graded like the props record, in a record of their own. Legs only:
 // stakes and payouts stay in the user's browser.
@@ -4755,7 +4777,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.170.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.171.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5681,15 +5703,24 @@ function stalePinAt(row) {
   if (!staleState.enabled) return null;
   return staleState.engine.pinMain(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime));
 }
+// Pinnacle's UFC fights (pinextra.parseMmaFights) while its last read is fresh
+const ufcFights = () => (Date.now() - pinExtra.at < PIN_PROPS_MAX_AGE_MS ? (pinExtra.mmaFights || []).filter(f => /^UFC\b/.test(f.league)) : []);
+// five rounds when Kalshi's go-the-distance market sits at 24.99 minutes for the fighter
+const ufcFiveRounds = row => kalshiExtraAt({ ...row, mkey: 'fight_time' }, 24.99) != null;
+const ufcOpts = () => ({ fights: ufcFights(), careerOf: n => (ufcData ? ufcData.careerOf(n) : null), fiveRoundsOf: ufcFiveRounds });
 // Pinnacle's quotes for an MLB row's game (mlbboard picks its main line)
 const mlbPinFor = row => pinprops.quotesForGame(pinPropsIndex, row) || [];
 // the raw Pinnacle number a record leg keeps to the close: an MLB leg's is
 // Pinnacle's main line for the stat, a stale leg's the stale engine's
 function sportPinAt(row, kind) {
   if (mlbBoard.KINDS.has(kind)) { const m = mlbBoard.pinMain(mlbPinFor(row)); return m ? { x: m.line, p: m.pOver } : null; }
+  // a UFC leg's raw Pinnacle close: the fight's total rounds and its no-vig Over (and moneyline)
+  if (ufcBoard.KINDS.has(kind)) { const f = ufcBoard.fightIndex(ufcFights())(row); return f && f.fight.rounds != null ? { x: f.fight.rounds, p: f.fight.pOver, win: f.pWin } : null; }
   return stalePinAt(row);
 }
 function sportFairAt(row, book, line, kind) {
+  // a UFC leg closes on Pinnacle's fight at the start (its total and moneyline), re-priced the same way
+  if (ufcBoard.KINDS.has(kind)) return ufcBoard.closeAt(row, line, ufcOpts())?.pOver ?? null;
   // an MLB leg closes on Pinnacle at its own number (its own price there, else the curve through its line)
   if (mlbBoard.KINDS.has(kind)) return mlbBoard.closeAt(row, line, mlbPinFor(row))?.pOver ?? null;
   kind = baseSportKind(kind);
@@ -6032,14 +6063,14 @@ const PIN_PROPS_MAX_AGE_MS = 10 * 60e3;
 // kept up to PIN_PROPS_MAX_AGE_MS, never longer.
 const pinextra = require('./pinextra');
 const PIN_EXTRA_EVERY_MS = 350e3;
-let pinExtra = { props: [], at: 0, tried: 0, bySport: {}, errors: [] };
+let pinExtra = { props: [], mmaFights: [], at: 0, tried: 0, bySport: {}, errors: [] };
 async function refreshPinnacleExtra() {
   if (Date.now() - pinExtra.tried < PIN_EXTRA_EVERY_MS) return;
   pinExtra.tried = Date.now();
-  const { props, errors } = await pinextra.fetchPinnacleExtra(axios, process.env.PINNACLE_GUEST_KEY);
+  const { props, errors, mmaFights = [] } = await pinextra.fetchPinnacleExtra(axios, process.env.PINNACLE_GUEST_KEY);
   const bySport = {};
   for (const p of props) bySport[`${p.sport} ${p.mkey}`] = (bySport[`${p.sport} ${p.mkey}`] || 0) + 1;
-  if (props.length || !errors.length) Object.assign(pinExtra, { props, at: Date.now() });
+  if (props.length || !errors.length) Object.assign(pinExtra, { props, mmaFights, at: Date.now() });
   Object.assign(pinExtra, { bySport, errors: errors.slice(0, 5) });
 }
 async function refreshPinnacleProps() {
@@ -6842,6 +6873,8 @@ async function trackSportProps() {
     if (nbaModel) { try { flagged.push(...nbaModel.plays(rows)); } catch (e) { console.warn('NBA model plays:', e.message); } }
     // every MLB leg Pinnacle prices, gap and even, each app its own kind (mlbboard.js)
     if (MLB_PIN_ON) { try { flagged.push(...mlbBoard.plays(rows, { pinFor: mlbPinFor })); } catch (e) { console.warn('MLB board plays:', e.message); } }
+    // every UFC leg priced off Pinnacle's fight, per app and leg type (ufcboard.js)
+    if (UFC_PIN_ON) { ufcData.refresh().catch(() => {}); try { flagged.push(...ufcBoard.plays(rows, ufcOpts())); } catch (e) { console.warn('UFC board plays:', e.message); } }
 
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: sportPinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
@@ -7005,6 +7038,66 @@ app.get('/api/props/mlb', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 const r4n = x => (Number.isFinite(x) ? Math.round(x * 1e4) / 1e4 : null);
+
+// ── UFC vs PINNACLE (ufcboard.js): every UFC app leg priced off Pinnacle's fight ──
+// Each UFC fighter leg the apps hang (Fight Time, Finishes, Round Finish,
+// Significant Strikes, Takedowns): Pinnacle's total rounds and moneyline for
+// the fight, the leg's price off them (ufcmodel.js), the fighter's own UFC
+// rates, and every app's number with the side the price favours, its
+// break-even and whether it clears. Research: its own record kinds, no
+// alerts. The prices are Pro, like the board's fair.
+const ufcBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'ufc-backtest.json'), 'utf8')); } catch { return null; } })();
+app.get('/api/props/ufc', async (req, res) => {
+  try {
+    const pro = hasPro(req);
+    if (ufcData) ufcData.refresh().catch(() => {});
+    const { rows } = propsBoardRows();
+    const mma = rows.filter(r => r.sport === 'MMA' && !r.esports);
+    const fights = ufcFights();
+    let list = UFC_PIN_ON ? ufcBoard.board(mma, ufcOpts()) : [];
+    const q = String(req.query.q || '').toLowerCase().trim().slice(0, 60);
+    if (q) list = list.filter(b => `${b.row.player} ${b.row.market} ${b.row.matchTitle} ${b.fight.op}`.toLowerCase().includes(q));
+    if (req.query.stat) list = list.filter(b => b.row.mkey === String(req.query.stat));
+    if (req.query.clears === '1') list = list.filter(b => b.legs.some(l => l.clears));
+    list.sort((a, b) => Date.parse(a.row.startTime) - Date.parse(b.row.startTime) || a.fight.id - b.fight.id || a.row.player.localeCompare(b.row.player) || a.row.mkey.localeCompare(b.row.mkey));
+    const hideLeg = l => (pro ? l : { app: l.app, kind: l.kind, line: l.line, be: l.be, side: null, fair: null, ev: null, clears: null });
+    const out = list.map(({ row, fight, price, legs, rates }) => ({ key: row.key, sport: 'MMA', player: row.player, opponent: fight.op, market: row.market, mkey: row.mkey, type: ufcBoard.TYPE_OF[row.mkey],
+      startTime: row.startTime, matchTitle: row.matchTitle || '', books: row.books,
+      pinnacle: pro ? { rounds: fight.rounds, pOver: fight.pOver, over: fight.over, under: fight.under, ml: fight.ml, pWin: fight.pWin, sched: fight.sched, mainEvent: !!fight.mainEvent }
+        : { rounds: fight.rounds, sched: fight.sched, mainEvent: !!fight.mainEvent },
+      model: pro ? { pOver: r4n(price.pOver), exact: !!price.exact, basis: price.basis, rate: price.rate ?? null } : { basis: price.basis, exact: !!price.exact },
+      rates, legs: Object.fromEntries(legs.map(l => [l.app, hideLeg(l)])) }));
+    // the record: each kind's legs, all and the clearing ones (the bar counts the clearing ones)
+    const record = {};
+    for (const k of ufcBoard.KINDS) {
+      const picks = await sportTracker.list({ kind: k, limit: 100000 });
+      if (!picks.length) { record[k] = null; continue; }
+      const g = picks.filter(p => p.status === 'graded');
+      const clv = picks.filter(p => p.status !== 'open' && p.closeEv != null);
+      record[k] = { signals: picks.length, open: picks.filter(p => p.status === 'open').length, clears: picks.filter(p => p.signalClears).length,
+        all: ufcBoard.tally(g), clearing: ufcBoard.tally(g.filter(p => p.signalClears)),
+        closeEvAvg: clv.length ? +(clv.reduce((a, p) => a + p.closeEv, 0) / clv.length).toFixed(2) : null, closed: clv.length };
+    }
+    const legsAll = list.flatMap(b => b.legs);
+    const priced = new Set(list.map(b => b.row.key));
+    const found = ufcBoard.fightIndex(fights);
+    const why = { noFight: 0, noTotal: 0, debut: 0, other: 0 };
+    for (const r of mma) {
+      if (priced.has(r.key) || !ufcBoard.TYPE_OF[r.mkey]) continue;
+      const f = found(r);
+      if (!f) why.noFight++; else if (f.fight.rounds == null) why.noTotal++; else if (ufcBoard.TYPE_OF[r.mkey] === 'stat') why.debut++; else why.other++;
+    }
+    res.json({ on: UFC_PIN_ON, pro, label: 'model, not an edge',
+      bar: 'Not a bet until one kind\'s clearing legs (one app, one leg type) have 50+ graded live with the hit rate 2+ standard errors above that app\'s break-even (PrizePicks 55.03%, Pick6 56.7%, Underdog 56.23%, Sleeper its own payout), results not 1.5 sd under the close, and an independent re-check.',
+      counts: { rows: out.length, mmaRows: mma.length, legs: legsAll.length, clears: legsAll.filter(l => l.clears).length,
+        byApp: Object.fromEntries(ufcBoard.APPS.map(a => [a, legsAll.filter(l => l.app === a).length])),
+        byType: Object.fromEntries(['time', 'fin', 'stat'].map(t => [t, list.filter(b => ufcBoard.TYPE_OF[b.row.mkey] === t).length])), unpriced: why },
+      pinnacle: { fights: fights.length, withTotal: fights.filter(f => f.rounds != null).length, at: pinExtra.at ? new Date(pinExtra.at).toISOString() : null },
+      data: ufcData ? ufcData.status() : null, model: ufcModelInfo(), record, backtest: ufcBacktest,
+      rows: out.slice(0, Math.min(parseInt(req.query.limit) || 400, 1000)), total: out.length });
+  } catch (e) { sendErr(res, e); }
+});
+const ufcModelInfo = () => { const P = require('./ufcmodel').PARAMS; return P ? { fitted: P.fitted, train: P.train, source: P.source, holdout: { sig: { n: P.holdout.sig.n, brier: P.holdout.sig.brier, brierDivisionOnly: P.holdout.sig.brierDivisionOnly }, td: { n: P.holdout.td.n, brier: P.holdout.td.brier, brierDivisionOnly: P.holdout.td.brierDivisionOnly } } } : null; };
 
 // ── SHOP: the softest number across the apps (appshop.js) ──
 // Every player stat two or more apps hang at different numbers: the softest
@@ -7720,7 +7813,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.170.0',
+  version: '3.171.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

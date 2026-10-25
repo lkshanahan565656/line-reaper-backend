@@ -565,6 +565,8 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .mlb-gap { color:#22c55e; font-weight:700; } .mlb-even { color:#94a3b8; }
 .mlb-add { background:none; border:1px solid var(--border); color:#cbd5e1; border-radius:6px; font-size:10px; padding:2px 6px; cursor:pointer; font-family:'JetBrains Mono',monospace; margin-top:3px; }
 .mlb-add.on { border-color:#22c55e; color:#22c55e; }
+/* UFC vs PINNACLE (reuses the mlb- styles) */
+#page-props.ufcv .pb-conly, #page-props.ufcv .pb-lonly, #page-props.ufcv #pbSports, #page-props.ufcv #pbBooks, #page-props.ufcv #pbCover, #page-props.ufcv #pbRecord { display: none; }
 /* SHOP: the softest number across the apps (aps- prefix; shop- is the odds screen's) */
 #page-props.cfbm .pb-conly, #page-props.cfbm .pb-lonly, #page-props.cfbm #pbSports, #page-props.cfbm #pbBooks, #page-props.cfbm #pbCover, #page-props.cfbm #pbRecord { display: none; }
 .cfm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
@@ -4165,7 +4167,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb', 'ufc'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, mlbStat: '', mlbGaps: false, ufcStat: '', ufcClears: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4192,6 +4194,8 @@ async function loadPropsBoard() {
   if (pbState.view === 'cfbmodel') return loadCfbModel(seq);
   document.getElementById('page-props')?.classList.toggle('mlbv', pbState.view === 'mlb');
   if (pbState.view === 'mlb') return loadMlb(seq);
+  document.getElementById('page-props')?.classList.toggle('ufcv', pbState.view === 'ufc');
+  if (pbState.view === 'ufc') return loadUfc(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
   if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
   else if (pbState.book) qs.set('book', pbState.book);
@@ -4251,7 +4255,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')"), chip(pbState.view === 'ufc', 'UFC VS PINNACLE', null, "pbSet('view','ufc')")].join('');
   pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
@@ -4504,7 +4508,7 @@ function pkAdd(rk, book) {
   const i0 = pk.legs.findIndex(l => l.rk === rk);
   if (pk.app === book && i0 >= 0) {
     pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pkSave(); renderPkTray();
-    if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard();
+    if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'ufc') renderPropsBoard();
     renderPromos();
     return;
   }
@@ -4523,10 +4527,10 @@ function pkAdd(rk, book) {
   if (!pk.legs.length) pk.app = null;
   pk.payout = '';
   pkSave(); renderPkTray();
-  if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard();
+  if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'ufc') renderPropsBoard();
 }
 function pkFlip(i) { const l = pk.legs[i]; if (!l) return; l.side = l.side === 'Over' ? 'Under' : 'Over'; if (l.prob != null) l.prob = 1 - l.prob; pk.payout = ''; pkSave(); renderPkTray(); }
-function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard(); }
+function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb' || pbState.view === 'ufc') renderPropsBoard(); }
 // what the slip pays per $1 when every pick hits, from the app's own table
 function pkMult() {
   const n = pk.legs.length;
@@ -4874,12 +4878,85 @@ function renderMlb() {
   }).join('');
   el.innerHTML = note + rec + bt + stTxt + stats + sum + `<div class="pb-list">${body}</div>`;
 }
+// ─── UFC VS PINNACLE (/api/props/ufc): every UFC app leg priced off Pinnacle's fight ──
+// A model view, not an edge: Fight Time off Pinnacle's total rounds, Finishes
+// off its moneyline times that, strikes and takedowns off the fighter's own
+// UFC rates over that fight length. Its own record kinds per app; no alerts.
+const UFC_STATS = [['', 'ALL'], ['significant_strikes', 'SIG STRIKES'], ['takedowns', 'TAKEDOWNS'], ['fight_time', 'FIGHT TIME'], ['finishes', 'FINISHES'], ['1st_round_finish', 'R1 FINISH']];
+const UFC_TYPE = { time: 'Fight Time, off Pinnacle\'s total rounds', fin: 'Finishes, off Pinnacle\'s moneyline x its fight length', stat: 'off his UFC rates over Pinnacle\'s fight length' };
+async function loadUfc(seq) {
+  const qs = new URLSearchParams({ limit: 400 });
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.ufcStat) qs.set('stat', pbState.ufcStat);
+  if (pbState.ufcClears) qs.set('clears', '1');
+  pbChips();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/ufc?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.data = d;
+    renderUfc();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO UFC</div><div class="empty-sub">Couldn't load UFC vs Pinnacle (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+function ufcRecTxt(k) {
+  if (!k || !k.signals) return 'nothing logged yet';
+  const c = k.clearing || {};
+  if (!c.n) return `${k.signals} logged (${k.clears} clearing), none graded yet`;
+  return `clearing ${c.w}-${c.l} (${(c.hit * 100).toFixed(1)}% vs ${(c.be * 100).toFixed(1)}%, z ${c.z}) of ${c.n}/50`;
+}
+function renderUfc() {
+  const el = document.getElementById('pbContent'), d = pbState.data;
+  if (!el || !d || !Array.isArray(d.rows)) return;
+  const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${UFC_STATS.map(([k, lab]) => chip((pbState.ufcStat || '') === k, lab, `pbState.ufcStat='${k}';loadPropsBoard()`)).join('')}${chip(!!pbState.ufcClears, 'CLEARS ONLY', 'pbState.ufcClears=!pbState.ufcClears;loadPropsBoard()')}</div>`;
+  const note = `<div class="mlb-note"><b>MODEL, NOT AN EDGE.</b> Every UFC leg on PrizePicks, Underdog, Sleeper and DK Pick6, priced off Pinnacle's fight: Fight Time off its total rounds, Finishes off its moneyline times that fight length, Significant Strikes and Takedowns off the fighter's own UFC rates (UFCStats) over that fight length. The side shown is the one the price favours; <span class="mlb-gap">CLEARS</span> means it beats that app's break-even. ${escAttr(d.bar || '')} No alerts.</div>`;
+  if (d.on === false) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">UFC vs Pinnacle is switched off on this server.</div></div>`; return; }
+  const R = d.record || {};
+  const line = (t, lab) => `${lab} · PrizePicks: ${ufcRecTxt(R[`ufc-${t}`])} · Pick6: ${ufcRecTxt(R[`p6-ufc-${t}`])} · Underdog: ${ufcRecTxt(R[`ud-ufc-${t}`])} · Sleeper: ${ufcRecTxt(R[`sl-ufc-${t}`])}`;
+  const rec = `<div class="pb-dim" style="margin:0 0 10px">${line('stat', 'Strikes and takedowns')}<br>${line('time', 'Fight Time')}<br>${line('fin', 'Finishes')}</div>`;
+  const bt = d.backtest?.lines?.length ? `<div class="mlb-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')} · ${escAttr(d.backtest.verdict || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
+  const pc = p => (p == null ? '' : `${(p * 100).toFixed(1)}%`);
+  const am = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+  const c = d.counts || {}, pn = d.pinnacle || {}, dt = d.data || {};
+  const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
+  const sum = `<div class="pb-sum">${stat((c.rows || 0).toLocaleString(), 'UFC legs priced')}${stat((c.legs || 0).toLocaleString(), 'app numbers')}${stat(c.clears || 0, 'clear break-even')}${stat(`${pn.withTotal || 0}/${pn.fights || 0}`, 'fights with a Pinnacle total')}</div>`;
+  const src = `<div class="pb-dim" style="margin:0 0 10px">Fighter history: ${(dt.fights || 0).toLocaleString()} UFC fights through ${escAttr(dt.latest || '—')}${dt.error ? ` (last refresh failed: ${escAttr(dt.error)})` : ''}. Unpriced now: ${c.unpriced ? `${c.unpriced.noFight} no Pinnacle fight, ${c.unpriced.noTotal} Pinnacle has no total rounds yet, ${c.unpriced.debut} fighter with under 2 UFC fights` : '—'}.</div>`;
+  const rows = d.rows || [];
+  if (!rows.length) {
+    el.innerHTML = note + rec + bt + stats + sum + src + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO UFC LEGS PRICED</div><div class="empty-sub">${pbState.q || pbState.ufcStat || pbState.ufcClears ? 'Nothing matches these filters.' : `${(c.mmaRows || 0).toLocaleString()} MMA legs on the apps right now. Pinnacle posts each fight's total rounds in fight week; the legs price once it does.`}</div></div>`;
+    return;
+  }
+  const body = rows.map(r => {
+    const cells = PB_BOOKS.map(([k, , ab]) => {
+      const l = r.legs?.[k];
+      const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
+      if (!l) return `<div class="pb-bk none">${label}<div class="pb-line">${r.books?.[k]?.line ?? '—'}</div><div class="pb-dim">${r.books?.[k] ? 'not priced' : 'no line'}</div></div>`;
+      const on = pk.app === k && pk.legs.some(x => x.rk === r.key && x.side === l.side);
+      const tag = l.clears ? '<span class="mlb-gap">CLEARS</span>' : l.side ? '<span class="mlb-even">LEAN</span>' : '';
+      const btn = l.side ? `<button class="mlb-add${on ? ' on' : ''}" title="Add to a ${escAttr(PB_BOOKS.find(b => b[0] === k)?.[1])} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${k}','${l.side}')">+ LOG</button>` : '';
+      return `<div class="pb-bk">${label}<div class="pb-line">${l.line}</div><div class="pb-dim">${tag} ${l.side ? pbSideWord(k, l.side) : ''}</div>${l.fair != null ? `<div class="pb-dim">${pc(l.fair)} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
+    }).join('');
+    const p = r.pinnacle || {}, m = r.model || {};
+    const pin = `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${p.rounds ?? '—'} rds</div>${p.pOver != null ? `<div class="pb-dim">${pc(p.pOver)} over</div>${p.over != null ? `<div class="pb-dim">o${am(p.over)} u${am(p.under)}</div>` : ''}` : ''}${p.pWin != null ? `<div class="pb-dim">wins ${pc(p.pWin)}</div>` : ''}${m.pOver != null ? `<div class="pb-dim">leg over ${pc(m.pOver)}${m.exact ? ' (Pinnacle\'s own)' : ''}</div>` : ''}</div>`;
+    const rt = !r.rates ? '' : r.mkey === 'takedowns' ? `${(r.rates.me.tdPm * 15).toFixed(2)} takedowns a 15 minutes over ${r.rates.me.n} UFC fights; ${escAttr(r.opponent)} concedes ${(r.rates.op.tdAbsPm * 15).toFixed(2)}`
+      : `${r.rates.me.sigPm} sig strikes a minute over ${r.rates.me.n} UFC fights; ${escAttr(r.opponent)} absorbs ${r.rates.op.sigAbsPm}`;
+    return `<div class="pb-card">
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport">UFC</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">vs ${escAttr(r.opponent)} · ${p.sched || 3} rounds${p.mainEvent ? ' · main event' : ''} · ${pbFmtStart(r.startTime)}</div><div class="pb-meta">${escAttr(UFC_TYPE[r.type] || '')}${rt ? ` · ${rt}` : ''}</div></div>
+      <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div></div>`;
+  }).join('');
+  el.innerHTML = note + rec + bt + stats + sum + src + `<div class="pb-list">${body}</div>`;
+}
 function renderPropsBoard() {
   renderPkTray();
   pbChips();
   if (pbState.view === 'lines') return renderLines();
   if (pbState.view === 'shop') return renderShop();
   if (pbState.view === 'mlb') return renderMlb();
+  if (pbState.view === 'ufc') return renderUfc();
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {
