@@ -1,0 +1,24 @@
+name: diag-ufc
+on:
+  push:
+    branches: [diag-ufc]
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node fetch.js
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          git checkout --orphan diag-ufc-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "ufc output"
+          git push -f origin diag-ufc-out
