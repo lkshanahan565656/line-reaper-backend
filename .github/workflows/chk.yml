@@ -1,0 +1,19 @@
+name: diag-ipcheck
+on: { push: { branches: [diag-ipcheck] } }
+permissions: { contents: write }
+jobs:
+  chk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - run: |
+          U=https://line-reaper-backend-production.up.railway.app
+          mkdir out
+          for i in $(seq 1 30); do
+            v=$(curl -s -m 20 $U/api/health | tee out/health.json | grep -o '"version":"[^"]*"')
+            echo "$i $v"; case "$v" in *3.164*) break;; esac; sleep 60
+          done
+          sleep 120
+          curl -s -m 30 $U/api/esports/inplay > out/inplay.json; head -c 1500 out/inplay.json; echo
+          curl -s -m 30 $U/api/ops > out/ops.json; grep -o '"inplay[^}]*}' out/ops.json | head
+          cd out && git init -q && git checkout -q -b diag-ipcheck-out && git add . && git -c user.name=diag -c user.email=d@x commit -qm out && git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-ipcheck-out
