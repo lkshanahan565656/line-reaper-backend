@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
-        with: { ref: claude/project-thread-2qx97m, path: repo }
+        with: { ref: main, path: repo }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: cd repo && npm ci --no-audit --no-fund
