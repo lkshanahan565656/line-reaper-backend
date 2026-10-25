@@ -1,0 +1,8 @@
+01:45:51 kalshi filter 1572 -> 1451
+01:45:51 lol matches 363
+01:58:43 lol 25 / 363 calls 2530 errs 0
+01:58:43 saved lolf-1 25
+02:07:46 lol 50 / 363 calls 4177 errs 0
+02:07:46 saved lolf-1 50
+02:19:33 lol 75 / 363 calls 6145 errs 0
+02:19:33 saved lolf-1 75
