@@ -20,6 +20,8 @@ function parsePrizePicksPayload(data) {
     const attr = proj.attributes || {};
     if (!attr.line_score) continue;
     if (attr.odds_type && attr.odds_type !== 'standard') continue;
+    // a promo (free square, flash sale) hangs a cut line: parsePrizePicksPromos keeps it
+    if (attr.is_promo === true || attr.flash_sale_line_score != null) continue;
     if (/combo/i.test(attr.stat_type || '') || attr.event_type === 'combo') continue;
     if (attr.status && attr.status !== 'pre_game') continue;
     const player = players[proj.relationships?.new_player?.data?.id] || {};
@@ -30,6 +32,50 @@ function parsePrizePicksPayload(data) {
       line: parseFloat(attr.line_score), startTime: attr.start_time || '', matchTitle: attr.description || '', opponent: attr.description || '', gameId: attr.game_id || null });
   }
   return { lines, leagues };
+}
+
+// PrizePicks' discounted and alternate lines (promos.js prices them):
+//   goblin / demon: odds_type, a lower / higher line, More only, and an entry
+//     payout PrizePicks changes by an amount its open feed doesn't carry
+//     (mult null: the required hit rate can't be known, only the multiplier
+//     PrizePicks would have to pay for the leg to break even)
+//   promo: is_promo with a discount (free square, flash sale): the line cut to
+//     flash_sale_line_score, the standard payout (mult 1)
+// side: allowed_wager_types when the feed names one, else More for goblins
+// and demons and both for a promo.
+function parsePrizePicksPromos(data) {
+  const players = {}, leagues = {}, out = [];
+  for (const inc of (data && data.included) || []) {
+    const a = inc.attributes || {};
+    if (inc.type === 'new_player') players[inc.id] = { name: a.display_name || a.name || '', team: a.team || '', league: a.league || '' };
+    if (inc.type === 'league') leagues[inc.id] = a.name || '';
+  }
+  for (const proj of (data && data.data) || []) {
+    const attr = proj.attributes || {};
+    const odds = String(attr.odds_type || 'standard');
+    const promo = attr.is_promo === true || attr.flash_sale_line_score != null;
+    const type = odds === 'goblin' || odds === 'demon' ? odds : promo ? 'promo' : null;
+    if (!type || attr.line_score == null) continue;
+    if (/combo/i.test(attr.stat_type || '') || attr.event_type === 'combo') continue;
+    if (attr.status && attr.status !== 'pre_game') continue;
+    const player = players[proj.relationships?.new_player?.data?.id] || {};
+    if (!player.name) continue;
+    const leagueId = proj.relationships?.league?.data?.id;
+    const base = parseFloat(attr.line_score);
+    const cut = attr.flash_sale_line_score != null ? parseFloat(attr.flash_sale_line_score) : null;
+    const line = type === 'promo' && Number.isFinite(cut) ? cut : base;
+    if (!Number.isFinite(line)) continue;
+    const allowed = String(attr.allowed_wager_types || '').toLowerCase();
+    const sides = allowed === 'over' ? ['Over'] : allowed === 'under' ? ['Under'] : type === 'promo' ? ['Over', 'Under'] : ['Over'];
+    for (const side of sides) out.push({
+      book: 'prizepicks', type, side, mult: type === 'promo' ? 1 : null, line, baseLine: line !== base ? base : null,
+      sport: leagues[leagueId] || player.league || attr.league || '', leagueId: leagueId || null, player: player.name, team: player.team || '',
+      market: attr.stat_type || '', startTime: attr.start_time || '', matchTitle: attr.description || '', gameId: attr.game_id || null,
+      note: type === 'promo' ? [attr.discount_name ? String(attr.discount_name).replace(/_/g, ' ') : 'promo', attr.discount_percentage != null ? `${attr.discount_percentage}% off` : ''].filter(Boolean).join(', ') : null,
+      id: proj.id || null,
+    });
+  }
+  return out;
 }
 
 // Sleeper's esports sport keys, and the labels the rest of the server uses
@@ -91,6 +137,7 @@ function parseSleeperLines(rows, players = {}, { sports = false } = {}) {
     if (!sport || row.subject_type !== 'player' || row.outcome_type !== 'over_under') continue;
     if (row.status && row.status !== 'active') continue;
     if (row.game_status && row.game_status !== 'pre_game') continue;
+    if (!normalSleeperLine(row)) continue;   // a boosted or promo line: parseSleeperPromos
     let over = null, under = null, line = null, team = '';
     for (const o of row.options || []) {
       if (!o || (o.status && o.status !== 'active')) continue;
@@ -112,6 +159,36 @@ function parseSleeperLines(rows, players = {}, { sports = false } = {}) {
     });
   }
   return lines;
+}
+
+// Sleeper marks its lines line_type 'normal' (every row of the 10-15 board);
+// any other type is a boosted or promo line with its own multiplier per side
+const normalSleeperLine = row => !row.line_type || row.line_type === 'normal';
+// rows → one leg per open side of each non-normal line, sports and esports:
+// { book: 'sleeper', type, side, mult, line, sport, player, team, market, slSport, gameId }
+function parseSleeperPromos(rows, players = {}) {
+  const out = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (normalSleeperLine(row)) continue;
+    const key = String(row.sport || '').toLowerCase();
+    const sport = sleeperSport(key);
+    if (!sport || row.subject_type !== 'player' || row.outcome_type !== 'over_under') continue;
+    if ((row.status && row.status !== 'active') || (row.game_status && row.game_status !== 'pre_game')) continue;
+    const p = (players[key] || {})[row.subject_id] || {};
+    const name = p.metadata?.username || p.username || [p.first_name, p.last_name].filter(Boolean).join(' ');
+    if (!name) continue;
+    const esport = !!SLEEPER_ESPORTS[key];
+    const market = esport ? sleeperMarket(row.wager_type) : sleeperSportMarket(sport, row.wager_type);
+    for (const o of row.options || []) {
+      if (!o || (o.status && o.status !== 'active')) continue;
+      const m = parseFloat(o.payout_multiplier), line = parseFloat(o.outcome_value);
+      const side = o.outcome === 'over' ? 'Over' : o.outcome === 'under' ? 'Under' : null;
+      if (!(m > 1) || !side || !Number.isFinite(line)) continue;
+      out.push({ book: 'sleeper', type: String(row.line_type).toLowerCase(), side, mult: m, line, baseLine: null, sport, player: name, team: o.subject_team || p.team || '',
+        market, startTime: '', matchTitle: '', gameId: row.game_id || null, slSport: key, note: null });
+    }
+  }
+  return out;
 }
 
 // Every sport key with lines, esports and sports
@@ -266,4 +343,50 @@ function parsePick6Board(home, sportLabel) {
   return lines;
 }
 
-module.exports = { decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board, parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
+// Pick6's promo picks and alternate lines (promos.js prices them), from the
+// same cards parsePick6Board reads: promoPickTypeId 2 Gimme Pick, 3 Stat Slice
+// (a cut line), 4 Power Up (a boosted multiplier), each one per entry with a
+// minimum number of picks (promotionalPickConfigurationsByPromotionTypeId);
+// and the one-sided alt ladders (type 1 with one selection, 0.5x on a lower
+// line and the like). Every side carries its own multiplier.
+const PICK6_PROMO = { 2: 'gimme', 3: 'stat slice', 4: 'power up' };
+function parsePick6Promos(home, sportLabel) {
+  const p = home?.pickCardsResponse;
+  if (!p) return [];
+  const sport = PICK6_SPORT[sportLabel] || sportLabel;
+  const markets = p.pickSixMarketById || {}, ents = p.entityInfoByDkId || {}, comps = p.competitionById || {}, teams = p.displayTeamById || {};
+  const conf = p.promotionalPickConfigurationsByPromotionTypeId || {};
+  const out = [];
+  for (const card of Object.values(p.pickCardByPickableId || {})) {
+    if (!card || (card.entities || []).length !== 1) continue;
+    const ent = card.entities[0];
+    const info = ents[ent.dkId] || {};
+    const name = info.fullName || info.name;
+    const comp = comps[(ent.compIds || [])[0]];
+    if (!name || !comp) continue;
+    const team = teams[comp.entityCompByDkId?.[ent.dkId]?.teamId]?.name || '';
+    for (const m of card.activePickableMarkets || []) {
+      if (!m || m.isPaused || m.isLive || !Number.isFinite(Number(m.targetValue))) continue;
+      const sels = (m.activeSelections || []).filter(s => Number(s?.standingsMultiplier) > 0);
+      const promoId = m.promoPickTypeId ?? 1;
+      const type = promoId !== 1 ? (PICK6_PROMO[promoId] || String(conf[promoId]?.promotionalPickType || `promo ${promoId}`).toLowerCase()) : sels.length === 1 ? 'alt' : null;
+      if (!type) continue;
+      const mk = markets[m.pickSixMarketId] || {};
+      const names = mk.propositionNameById || {};
+      const span = comp.totalCompTime ? String(comp.totalCompTime).toUpperCase() : '';
+      const c = conf[promoId];
+      const note = c ? [c.maxNumberOfPromotionalPicks ? `${c.maxNumberOfPromotionalPicks} per entry` : '', c.minimumRequiredNumOfPicks ? `${c.minimumRequiredNumOfPicks}+ picks` : ''].filter(Boolean).join(', ') : null;
+      for (const s of sels) {
+        const word = String(names[s.statLinePropositionId] || '').toLowerCase();
+        const side = /more|over|higher/.test(word) ? 'Over' : /less|under|lower/.test(word) ? 'Under' : null;
+        if (!side) continue;
+        out.push({ book: 'pick6', type, side, mult: Number(s.standingsMultiplier), line: Number(m.targetValue), baseLine: null, sport, player: name, team,
+          market: span ? `${span} ${mk.name || ''}`.trim() : (mk.name || ''), startTime: comp.startTime ? new Date(comp.startTime).toISOString() : '',
+          matchTitle: comp.name || '', gameId: comp.compId || null, note: note || null, p6Market: m.pickableMarketKey || null });
+      }
+    }
+  }
+  return out;
+}
+
+module.exports = { parsePick6Promos, parsePrizePicksPromos, parseSleeperPromos, normalSleeperLine, decodeTurboStream, pick6Home, pick6Sports, pick6Payouts, parsePick6Board, parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, sleeperSportMarket, slimPlayers, sleeperMarket, attachMatches, sleeperPricing, SLEEPER_ESPORTS };
