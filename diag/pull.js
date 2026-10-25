@@ -47,7 +47,8 @@ async function kalshiAll() {
   const ten = all.filter(s => /ATP|WTA|TENNIS|CHALL|ITF|USOPEN|WIMBLEDON|FRENCH|AUSOPEN|GRANDSLAM/i.test(s.ticker) || /tennis|atp|wta/i.test(`${s.title} ${(s.tags || []).join(' ')}`));
   log('kalshi series', all.length, 'tennis', ten.length);
   save('k-series', ten);
-  const match = ten.filter(s => /MATCH$/i.test(s.ticker) || /match|winner|vs/i.test(s.title || ''));
+  const only = (process.env.SERIES || '').split(',').filter(Boolean);
+  const match = only.length ? only.map(t => ({ ticker: t, title: t })) : ten.filter(s => /MATCH$/i.test(s.ticker));
   log('match series', match.map(s => `${s.ticker}:${s.title}`).join(' | '));
   const out = [];
   for (const s of match) {
@@ -57,11 +58,11 @@ async function kalshiAll() {
     const ms = [...hist, ...live].filter(m => (m.result === 'yes' || m.result === 'no') && Date.parse(m.close_time || '') >= SINCE);
     log(s.ticker, 'live', live.length, 'hist', hist.length, 'settled since', ms.length, 'sample', JSON.stringify(live[0] || hist[0] || {}).slice(0, 1500));
     const seen = new Set(); let done = 0;
-    await pool(ms, 8, async m => {
+    await pool(ms, 16, async m => {
       if (seen.has(m.ticker)) return; seen.add(m.ticker);
       const p = !liveSet.has(m.ticker) ? `/historical/markets/${m.ticker}/candlesticks` : `/series/${s.ticker}/markets/${m.ticker}/candlesticks`;
       const end = Math.floor(Date.parse(m.close_time) / 1000), open = Math.floor(Date.parse(m.open_time) / 1000);
-      const st = Math.max(open, end - 10 * 86400);
+      const st = Math.max(open, end - 4 * 86400);
       const h = await get(K + p, { start_ts: st, end_ts: end, period_interval: 60 });
       out.push({ s: s.ticker, ev: m.event_ticker, t: m.ticker, title: m.title, sub: m.yes_sub_title, res: m.result, vol: num(m.volume_fp ?? m.volume),
         open: m.open_time, close: m.close_time, exp: m.expected_expiration_time ?? null, occ: m.occurrence_datetime ?? null, settle: m.settlement_ts ?? null,
