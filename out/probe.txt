@@ -1,0 +1,9 @@
+nostart 200 10 2026-10-07T10:18:20.178Z 2026-10-07T10:18:21.203Z in_game
+back 5 2026-10-07T10:13:20.000Z 204 0 0  
+back 15 2026-10-07T10:03:20.000Z 204 0 0  
+back 25 2026-10-07T09:53:20.000Z 204 0 0  
+back 35 2026-10-07T09:43:20.000Z 204 0 0  
+back 45 2026-10-07T09:33:20.000Z 204 0 0  
+back 60 2026-10-07T09:18:20.000Z 204 0 0  
+back 90 2026-10-07T08:48:20.000Z 204 0 0  
+details 200 {"frames":[{"rfc460Timestamp":"2026-10-07T10:18:20.178Z","participants":[{"participantId":1,"level":1,"kills":0,"deaths":0,"assists":0,"totalGoldEarned":0,"creepScore":0,"killParticipation":0.0,"championDamageShare":0.0,"wardsPlaced":0,"wardsDestroyed":0,"attackDamage":0,"abilityPower":0,"criticalCh
