@@ -1,0 +1,153 @@
+[2026-10-25T06:17:10.207Z] dota window 2026-04-08 13270 
+[2026-10-25T06:17:10.239Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:17:11.922Z] dota window 2026-04-23 10610 
+[2026-10-25T06:17:13.605Z] dota window 2026-05-08 10790 
+[2026-10-25T06:17:15.290Z] dota window 2026-05-23 11690 
+[2026-10-25T06:17:16.872Z] dota window 2026-06-07 3480 
+[2026-10-25T06:17:18.441Z] dota window 2026-06-22 3280 
+[2026-10-25T06:17:19.987Z] dota window 2026-07-07 1800 
+[2026-10-25T06:17:21.544Z] dota window 2026-07-22 3020 
+[2026-10-25T06:17:23.099Z] dota window 2026-08-06 1840 
+[2026-10-25T06:17:24.648Z] dota window 2026-08-21 2330 
+[2026-10-25T06:17:26.190Z] dota window 2026-09-05 1560 
+[2026-10-25T06:17:27.735Z] dota window 2026-09-20 2230 
+[2026-10-25T06:17:29.311Z] dota window 2026-10-05 4610 
+[2026-10-25T06:17:30.402Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:17:30.849Z] dota window 2026-10-20 810 
+[2026-10-25T06:17:32.436Z] dota saved 7132
+[2026-10-25T06:17:50.545Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:17:59.611Z] val ids 2000
+[2026-10-25T06:18:10.691Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:18:22.736Z] cs matches 6000
+[2026-10-25T06:18:30.832Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:18:51.014Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:19:11.175Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:19:31.378Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:19:34.830Z] val saved 100
+[2026-10-25T06:19:51.553Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:20:11.723Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:20:31.943Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:20:47.849Z] cs saved 200
+[2026-10-25T06:20:52.111Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:21:11.327Z] val saved 200
+[2026-10-25T06:21:12.246Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:21:32.381Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:21:52.563Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:22:12.755Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:22:32.912Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:22:47.921Z] val saved 300
+[2026-10-25T06:22:53.042Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:23:04.973Z] cs saved 400
+[2026-10-25T06:23:13.211Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:23:33.344Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:23:53.466Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:24:13.634Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:24:24.873Z] val saved 400
+[2026-10-25T06:24:33.788Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:24:53.929Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:25:14.092Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:25:22.411Z] cs saved 600
+[2026-10-25T06:25:34.217Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:25:54.392Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:26:01.698Z] val saved 500
+[2026-10-25T06:26:14.543Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:26:34.807Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:26:54.937Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:27:15.111Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:27:27.584Z] cs saved 800
+[2026-10-25T06:27:35.231Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:27:38.469Z] val saved 600
+[2026-10-25T06:27:55.366Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:28:15.512Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:28:35.643Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:28:55.869Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:29:14.952Z] val saved 700
+[2026-10-25T06:29:15.990Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:29:36.122Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:29:38.681Z] cs saved 1000
+[2026-10-25T06:29:56.269Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:30:16.461Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:30:36.596Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:30:51.518Z] val saved 800
+[2026-10-25T06:30:56.729Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:31:16.974Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:31:30.785Z] cs saved 1200
+[2026-10-25T06:31:37.268Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:31:57.425Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:32:17.610Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:32:28.275Z] val saved 900
+[2026-10-25T06:32:37.777Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:32:57.924Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:33:18.063Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:33:38.196Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:33:58.347Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:34:04.596Z] val saved 1000
+[2026-10-25T06:34:04.658Z] cs saved 1400
+[2026-10-25T06:34:18.470Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:34:38.610Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:34:58.756Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:35:18.894Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:35:39.044Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:35:41.108Z] val saved 1100
+[2026-10-25T06:35:59.206Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:36:19.389Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:36:39.545Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:36:42.302Z] cs saved 1600
+[2026-10-25T06:36:59.683Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:37:17.947Z] val saved 1200
+[2026-10-25T06:37:19.817Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:37:40.012Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:38:00.138Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:38:20.279Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:38:40.469Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:38:54.878Z] val saved 1300
+[2026-10-25T06:38:58.604Z] cs saved 1800
+[2026-10-25T06:39:00.626Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:39:20.773Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:39:40.923Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:40:04.988Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:40:25.176Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:40:32.465Z] val saved 1400
+[2026-10-25T06:40:45.324Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:41:05.510Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:41:25.713Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:41:28.210Z] cs saved 2000
+[2026-10-25T06:41:45.916Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:42:06.088Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:42:09.203Z] val saved 1500
+[2026-10-25T06:42:26.246Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:42:46.477Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:43:06.612Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:43:26.751Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:43:42.879Z] cs saved 2200
+[2026-10-25T06:43:46.038Z] val saved 1600
+[2026-10-25T06:43:46.864Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:44:07.135Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:44:27.271Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:44:47.452Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:45:07.617Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:45:22.669Z] val saved 1700
+[2026-10-25T06:45:27.766Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:45:47.900Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:46:08.066Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:46:14.900Z] cs saved 2400
+[2026-10-25T06:46:28.235Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:46:48.379Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:46:59.494Z] val saved 1800
+[2026-10-25T06:47:08.516Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:47:28.693Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:47:48.921Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:48:09.058Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:48:29.196Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:48:36.171Z] val saved 1900
+[2026-10-25T06:48:38.349Z] cs saved 2600
+[2026-10-25T06:48:49.325Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:49:09.514Z] lol err {"code":"ratelimited","info":"You've exceeded your rate limit. Please wait some time and try again.","*":"See https://lol.fandom.com/api.php for API usage. Subscribe to the mediawiki-api-announce mail
+[2026-10-25T06:49:10.531Z] cs deadline
+[2026-10-25T06:49:10.531Z] cs games read 5773
+[2026-10-25T06:49:10.589Z] cs saved 2632
+[2026-10-25T06:49:10.790Z] val deadline
+[2026-10-25T06:49:10.844Z] val saved 1935
+[2026-10-25T06:49:29.528Z] lol rows 500
+[2026-10-25T06:49:29.532Z] lol saved 500
+[2026-10-25T06:49:29.532Z] done
