@@ -1,0 +1,14 @@
+HTTP/2 200 
+access-control-allow-origin: *
+content-type: application/json; charset=utf-8
+date: Sun, 25 Oct 2026 00:37:56 GMT
+etag: W/"267-sT4HVjxYAGEsnf/3Wrcb7/YVklw"
+server: railway-hikari
+x-powered-by: Express
+x-railway-request-id: pwRihfI8RCCW2GRM2h0iww
+content-length: 615
+x-hikari-trace: iad1.trg5
+x-railway-edge: iad1
+vary: accept-encoding
+
+{"ok":true,"checks":[{"check":"store","ok":true,"note":"loaded"},{"check":"keys","ok":true,"note":"made when the first phone turns alerts on"},{"check":"kept across deploys","ok":true,"note":"yes"},{"check":"devices","ok":false,"note":"0 signed up"}],"keySource":"none","keyId":null,"subject":"https://line-reaper-backend-production.up.railway.app","devices":0,"staleKeyDevices":0,"dead":0,"byKind":{"ev":0,"sharp":0,"exchange":0,"tail":0,"esports":0,"gas":0,"other":0},"byHost":{},"stats":{"sent":0,"failed":0,"dropped":0,"retried":0,"alerts":0,"lastError":null,"lastAt":null},"lastDelivery":null,"backup":"ready"}
