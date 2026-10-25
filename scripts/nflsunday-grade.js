@@ -103,11 +103,13 @@ async function gradeEsports(series, meta) {
   }
   const guarded = ER.lineupGuard(legs, results);
   for (const [id, r] of results) if (r.void === 'whole lineup graded 0 (wrong match)') r.guard = true;
-  const rep = ER.summarize(legs, results);
+  const rep = ER.summarize(legs, results, { p6Payouts: pick6Payouts });
   Object.assign(rep, { week: WEEK, at: new Date().toISOString(), why, guarded, sources: Object.fromEntries(Object.entries(series).map(([s, m]) => [s, m.size])) });
   fs.mkdirSync(OUT, { recursive: true });
   const { rows, ...stackSum } = rep.stacks;
-  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ ...rep, stacks: stackSum }, null, 1));
+  const { rows: p6Rows, ...p6StackSum } = rep.pick6.stacks;
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ ...rep, stacks: stackSum, pick6: { ...rep.pick6, stacks: p6StackSum } }, null, 1));
+  fs.writeFileSync(path.join(OUT, 'p6stacks.json'), JSON.stringify(p6Rows));
   fs.writeFileSync(path.join(OUT, 'stacks.json'), JSON.stringify(rows));
   fs.writeFileSync(path.join(OUT, 'report.txt'), `${ER.reportText(rep, { title: `Esports board ${WEEK}` })}\n\nwhy: ${JSON.stringify(why)}\nlineup guard voided: ${guarded}\nsources (keys seen): ${JSON.stringify(rep.sources)}\n`);
   fs.writeFileSync(path.join(OUT, 'legs.json.gz'), zlib.gzipSync(JSON.stringify(legs.map(l => ({ ...l, graded: results.get(`${l.app}|${l.key}`) || null })))));

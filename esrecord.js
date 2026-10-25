@@ -300,6 +300,20 @@ function annotate(legs) {
     for (const l of group) l.map1 = info;
   }
 }
+// ── DK Pick6, pre-registered 10-25 ~01:15Z before any Pick6 esports leg was
+// graded (checks/p6es-2026-10-25/PREREGISTERED.md) ──
+// (1) a Pick6 leg a full line off the other apps' median: play the
+//     consensus side. (2) Pick6 stacks: p6Stacks below. (3) the match price
+//     (Kalshi mid, else Polymarket US) of the player's team at bet time:
+//     Over on a kill leg of a 70%+ team, Under on one of a 30%-or-less team.
+const isP6 = leg => leg.app === 'pick6';
+const teamPrice = leg => leg.sharp?.bet?.kalshi?.pTeam ?? leg.sharp?.bet?.pmus?.pTeam ?? null;
+const P6_PREREG = {
+  'p6-consensus': (leg, s) => isP6(leg) && !!leg.cons && Math.abs(leg.cons.diff) >= 1 && s.side === (leg.cons.diff < 0 ? 'Over' : 'Under'),
+  'p6-consensus-2': (leg, s) => isP6(leg) && !!leg.cons && leg.cons.apps >= 2 && Math.abs(leg.cons.diff) >= 1 && s.side === (leg.cons.diff < 0 ? 'Over' : 'Under'),
+  'p6-fav-over': (leg, s) => isP6(leg) && leg.stat === 'kills' && teamPrice(leg) >= 0.7 && s.side === 'Over',
+  'p6-dog-under': (leg, s) => isP6(leg) && leg.stat === 'kills' && teamPrice(leg) != null && teamPrice(leg) <= 0.3 && s.side === 'Under',
+};
 const PREREG = {
   'a-consensus': (leg, s) => leg.cons && Math.abs(leg.cons.diff) >= 1 && s.side === (leg.cons.diff < 0 ? 'Over' : 'Under'),
   'a-consensus-2': (leg, s) => leg.cons && leg.cons.apps >= 2 && Math.abs(leg.cons.diff) >= 1 && s.side === (leg.cons.diff < 0 ? 'Over' : 'Under'),
@@ -414,6 +428,78 @@ function stacks(legs, results) {
   return { all: sum(rows), byApp: Object.fromEntries(Object.entries(by).map(([k, v]) => [k, sum(v)]).sort((a, b) => b[1].stacks - a[1].stacks)), rows };
 }
 
+// ── Pick6 stacks (2) ──
+// The same six as (b), on Pick6 only, paid at Pick6's own 6-pick table as the
+// recorder read it (6 of 6 and the 5-of-6 floor, 25x and 1.5x on 10-25) times
+// the pick multipliers, and repriced: both payouts × P(all six) if
+// independent / P(all six) with the same-match link (slip.js FACTORS, legs at
+// 50%). 'expUnits' is what the link model expects the repriced stacks to
+// return, so a sweep count above it is luck or an edge, not the correlation.
+const P6_SIX_DEFAULT = { 6: 25, 5: 1.5 };
+function p6Stacks(legs, results, payouts) {
+  const table = payouts?.['6'] && Object.keys(payouts['6']).length ? payouts['6'] : P6_SIX_DEFAULT;
+  const pay = hits => +(table[hits] || table[String(hits)] || 0);
+  const rows = [];
+  const groups = new Map();
+  for (const l of legs) {
+    if (!isP6(l) || !l.stat || !l.team) continue;
+    for (const s of esSides(l)) {
+      const k = `${l.mid}|${l.mkey}|${s.side}`;
+      (groups.get(k) || groups.set(k, []).get(k)).push({ l, s });
+    }
+  }
+  for (const g of groups.values()) {
+    const teams = new Map();
+    for (const x of g) (teams.get(x.l.team) || teams.set(x.l.team, []).get(x.l.team)).push(x);
+    const tl = [...teams.values()];
+    if (tl.length !== 2 || tl.some(t => t.length < 3)) continue;
+    const six = tl.flatMap(t => t.sort((a, b) => b.l.bet.v[0] - a.l.bet.v[0]).slice(0, 3));
+    const side = g[0].s.side;
+    const base = { sport: six[0].l.sport, mkey: six[0].l.mkey, side, match: six[0].l.matchTitle, start: six[0].l.start, players: six.map(x => x.l.player) };
+    const res = six.map(x => results.get(`pick6|${x.l.key}`));
+    if (res.some(r => !r || r.pending)) { rows.push({ ...base, status: 'pending' }); continue; }
+    if (res.some(r => r.void != null || r.result == null)) { rows.push({ ...base, status: 'void' }); continue; }
+    const outs = six.map((x, i) => NS.outcome(x.s.side, x.s.line, res[i].result));
+    if (outs.includes('push')) { rows.push({ ...base, status: 'push' }); continue; }
+    const mult = six.reduce((p, x) => p * (x.s.mult > 0 ? x.s.mult : 1), 1);
+    const loads = six.map(x => legLoadings({ sport: x.l.sport, stat: x.l.stat, side: side.toUpperCase(), team: x.l.team }));
+    const dist = factorHitsDistribution(six.map(() => 0.5), loads, six.map(x => x.l.team));
+    const scale = (0.5 ** 6) / dist[6];
+    const hits = outs.filter(o => o === 'win').length;
+    const std = pay(hits) * mult, repriced = std * scale;
+    const expRepriced = (dist[6] * pay(6) + dist[5] * pay(5)) * mult * scale;
+    rows.push({ ...base, status: 'graded', hits, swept: hits === 6, mult: r4(mult), paid: +std.toFixed(2), paidRepriced: +repriced.toFixed(2), expRepriced: r4(expRepriced), pAll: r4(dist[6]), p5: r4(dist[5]) });
+  }
+  const gr = rows.filter(r => r.status === 'graded');
+  return {
+    table, stacks: gr.length, swept: gr.filter(r => r.swept).length, fiveOfSix: gr.filter(r => r.hits === 5).length,
+    pending: rows.filter(r => r.status === 'pending').length, void: rows.filter(r => r.status !== 'graded' && r.status !== 'pending').length,
+    expSwept: +gr.reduce((s, r) => s + r.pAll, 0).toFixed(2),
+    unitsStd: +(gr.reduce((s, r) => s + r.paid, 0) - gr.length).toFixed(1),
+    unitsRepriced: +(gr.reduce((s, r) => s + r.paidRepriced, 0) - gr.length).toFixed(1),
+    expUnitsRepriced: +(gr.reduce((s, r) => s + r.expRepriced, 0) - gr.length).toFixed(1),
+    rows,
+  };
+}
+// what Pick6 posts and how much of it the other apps and the match books price
+function p6Coverage(legs) {
+  const p6 = legs.filter(isP6);
+  const out = { legs: p6.length, matches: new Set(p6.map(l => l.mid)).size, bySport: {}, paired: 0, paired2: 0, offOne: 0, withApp: {}, matchPriced: 0, fav70: 0, dog30: 0 };
+  const byTag = new Map();
+  for (const l of legs) if (l.tag != null) {
+    const k = `${l.sport}|${canonName(l.player)}|${l.mkey}|${l.tag}`;
+    (byTag.get(k) || byTag.set(k, []).get(k)).push(l.app);
+  }
+  for (const l of p6) {
+    out.bySport[l.sport] = (out.bySport[l.sport] || 0) + 1;
+    if (l.cons) { out.paired++; if (l.cons.apps >= 2) out.paired2++; if (Math.abs(l.cons.diff) >= 1) out.offOne++; }
+    for (const a of new Set(byTag.get(`${l.sport}|${canonName(l.player)}|${l.mkey}|${l.tag}`) || [])) if (a !== 'pick6') out.withApp[a] = (out.withApp[a] || 0) + 1;
+    const p = teamPrice(l);
+    if (p != null) { out.matchPriced++; if (l.stat === 'kills' && p >= 0.7) out.fav70++; if (l.stat === 'kills' && p <= 0.3) out.dog30++; }
+  }
+  return out;
+}
+
 // ── the report ──
 function tallyEs(rows) {
   const t = NS.tally(rows);
@@ -421,7 +507,7 @@ function tallyEs(rows) {
   t.lineMove = mv.length ? +(mv.reduce((s, r) => s + r.lineMove, 0) / mv.length).toFixed(2) : null;
   return t;
 }
-function summarize(legs, results) {
+function summarize(legs, results, { p6Payouts = null } = {}) {
   const rows = [], counts = { legs: legs.length, pending: 0, void: 0, noGrader: 0, graded: 0, multiMatch: 0 };
   for (const leg of legs) {
     const r = results.get(`${leg.app}|${leg.key}`);
@@ -436,6 +522,7 @@ function summarize(legs, results) {
       const base = { app: leg.app, sport: leg.sport, stat: leg.stat, mkey: leg.mkey, side: s.side, be: s.be, out, clv, lineMove: s.lineMove };
       rows.push({ ...base, kind: 'all' });
       for (const [kind, rule] of Object.entries(PREREG)) if (rule(leg, s)) rows.push({ ...base, kind, prereg: true });
+      for (const [kind, rule] of Object.entries(P6_PREREG)) if (rule(leg, s)) rows.push({ ...base, kind, p6: true });
       if (s.fair != null) rows.push({ ...base, kind: 'br-player-priced' });
       if (s.fair != null && s.fair >= s.be) rows.push({ ...base, kind: 'br-player-backed' });
     }
@@ -456,6 +543,7 @@ function summarize(legs, results) {
     sharpKinds: group(r => (/^br-/.test(r.kind) ? `${r.kind}|${r.app}` : null)),
     stacks: stacks(legs, results),
     coverage: coverage(legs),
+    pick6: { coverage: p6Coverage(legs), kinds: group(r => (r.p6 ? r.kind : null)), bySide: group(r => (all(r) && r.app === 'pick6' ? `${r.sport}|${r.mkey}|${r.side}` : null)), stacks: p6Stacks(legs, results, p6Payouts) },
   };
 }
 // per game: legs, and which sharps price them (the player stat, or only the match)
@@ -487,6 +575,14 @@ function reportText(rep, { title = 'Esports pick\'em board' } = {}) {
   const s = rep.stacks.all;
   L.push(`(b) same-match 6-pick stacks: ${s.swept} swept of ${s.stacks} graded (${s.pending} waiting, ${s.void} void or push); break-even needs ${s.needStd} sweeps at standard payouts, ${s.needRepriced} if repriced; the link model expects ${s.expCorrelated}; units ${s.unitsStd} at standard, ${s.unitsRepriced} if repriced`);
   for (const [k, t] of Object.entries(rep.stacks.byApp)) L.push(`  ${k.padEnd(28)} ${t.swept} of ${t.stacks}, needs ${t.needStd} (std) / ${t.needRepriced} (repriced), units ${t.unitsStd} / ${t.unitsRepriced}`);
+  const p = rep.pick6;
+  if (p) {
+    const c6 = p.coverage, ps = p.stacks;
+    L.push('', `DK Pick6 (pre-registered 10-25, before any result): ${c6.legs} legs on ${c6.matches} matches ${JSON.stringify(c6.bySport)}; ${c6.paired} on another app's same player, stat and match (${c6.paired2} on two or more; ${JSON.stringify(c6.withApp)}), ${c6.offOne} a full line off them; ${c6.matchPriced} with a Kalshi or Polymarket US match price (${c6.fav70} kill legs of a 70%+ team, ${c6.dog30} of a 30%- team)`);
+    for (const k of Object.keys(P6_PREREG)) L.push(row(`  ${k}`, p.kinds[k] || NS.tally([])));
+    L.push(`  p6-stack: ${ps.swept} swept and ${ps.fiveOfSix} five-of-six of ${ps.stacks} graded (${ps.pending} waiting, ${ps.void} void or push); table ${JSON.stringify(ps.table)}; the link model expects ${ps.expSwept} sweeps; units ${ps.unitsStd} at the table, ${ps.unitsRepriced} repriced (the link model expects ${ps.expUnitsRepriced} repriced)`);
+    for (const [k, t] of Object.entries(p.bySide)) L.push(row(`  all ${k}`, t));
+  }
   L.push('', 'Per app and side:');
   for (const [k, t] of Object.entries(rep.byApp)) L.push(row(k, t));
   L.push('', 'Per game, stat, app and side (units at 1u a leg at the break-even price):');
@@ -500,4 +596,4 @@ function reportText(rep, { title = 'Esports pick\'em board' } = {}) {
 }
 
 module.exports = { ES_SPORTS, esKey, isEsBoard, GAME_SP, STAT, statOf, midOf, esAppEntries, pinEntries, kambiEntries, kalshiStart, kalshiEntries, pmusEntries,
-  matchFor, pinAt, kalshiAt, pmusAt, sharpsFor, buildEsLegs, annotate, PREREG, KILLS_PER_ROUND, esSides, resultFromMaps, lineupGuard, stacks, summarize, coverage, reportText };
+  matchFor, pinAt, kalshiAt, pmusAt, sharpsFor, buildEsLegs, annotate, PREREG, P6_PREREG, teamPrice, p6Stacks, p6Coverage, KILLS_PER_ROUND, esSides, resultFromMaps, lineupGuard, stacks, summarize, coverage, reportText };
