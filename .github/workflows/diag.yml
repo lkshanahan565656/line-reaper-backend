@@ -1,0 +1,10 @@
+name: diag-cfblive
+on: { push: { branches: [diag-cfblive] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 live.py > log.txt 2>&1 || true; mkdir -p out; cp log.txt out/; cd out && git init -q && git checkout -q -b diag-cfblive-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-cfblive-out
