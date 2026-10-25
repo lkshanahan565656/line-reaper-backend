@@ -1,0 +1,56 @@
+branch 3.160.1 at 2026-10-25T01:13:43.657Z, 2197 NHL/SOCCER rows
+soccerBooks {"enabled":true,"at":"2026-10-25T01:11:04.537Z","counts":{"leagues":8,"events":37,"props":7179},"errors":[],"holdUntil":null}
+coverage legs:
+  NHL|underdog           {"legs":611,"priced":152,"pinnacle":132,"kalshi":72,"fanduel":17,"betrivers":35,"betriversOverMax":0}
+  NHL|prizepicks         {"legs":126,"priced":26,"pinnacle":24,"kalshi":7,"fanduel":9,"betrivers":2,"betriversOverMax":0}
+  NHL|sleeper            {"legs":212,"priced":164,"pinnacle":151,"kalshi":83,"fanduel":23,"betrivers":33,"betriversOverMax":0}
+  SOCCER|underdog        {"legs":1456,"priced":916,"pinnacle":0,"kalshi":0,"fanduel":0,"betrivers":0,"betriversOverMax":916}
+  SOCCER|sleeper         {"legs":74,"priced":5,"pinnacle":0,"kalshi":0,"fanduel":0,"betrivers":0,"betriversOverMax":5}
+  SOCCER|prizepicks      {"legs":180,"priced":10,"pinnacle":0,"kalshi":0,"fanduel":0,"betrivers":0,"betriversOverMax":10}
+  NHL|pick6              {"legs":139,"priced":135,"pinnacle":125,"kalshi":74,"fanduel":19,"betrivers":37,"betriversOverMax":0}
+coverage by stat:
+  SOCCER|goals_+_assists             {"legs":337,"priced":284}
+  SOCCER|goals                       {"legs":236,"priced":200}
+  SOCCER|assists                     {"legs":213,"priced":175}
+  SOCCER|shots_on_target             {"legs":185,"priced":158}
+  NHL|points                         {"legs":184,"priced":160}
+  NHL|shots_on_goal                  {"legs":174,"priced":134}
+  NHL|assists                        {"legs":164,"priced":142}
+  SOCCER|shots_attempted             {"legs":150,"priced":114}
+  NHL|anytime_goalscorer             {"legs":145,"priced":0}
+  SOCCER|first_goal_scorer           {"legs":138,"priced":0}
+  SOCCER|last_goal_scorer            {"legs":122,"priced":0}
+  SOCCER|1h|goals                    {"legs":70,"priced":0}
+  NHL|pp_points                      {"legs":69,"priced":0}
+  NHL|first_goalscorer               {"legs":59,"priced":0}
+  SOCCER|saves                       {"legs":53,"priced":0}
+  SOCCER|passes_attempted            {"legs":51,"priced":0}
+  NHL|1p|shots_on_goal               {"legs":49,"priced":0}
+  NHL|plus_minus                     {"legs":48,"priced":0}
+  SOCCER|outfield_fantasy_score      {"legs":39,"priced":0}
+  NHL|blocks                         {"legs":32,"priced":0}
+  SOCCER|goals_against               {"legs":31,"priced":0}
+  NHL|fantasy_points                 {"legs":27,"priced":0}
+  NHL|hits                           {"legs":27,"priced":0}
+  NHL|saves                          {"legs":22,"priced":19}
+  NHL|goals                          {"legs":22,"priced":22}
+  NHL|time_on_ice                    {"legs":21,"priced":0}
+  SOCCER|goalie_fantasy_score        {"legs":21,"priced":0}
+  SOCCER|1h|goals_against            {"legs":19,"priced":0}
+  NHL|faceoffs_won                   {"legs":18,"priced":0}
+  SOCCER|goalie_fantasy_points       {"legs":18,"priced":0}
+  SOCCER|clearances                  {"legs":10,"priced":0}
+  SOCCER|shots_assisted              {"legs":9,"priced":0}
+  NHL|goals_against                  {"legs":8,"priced":0}
+  NHL|1p|saves                       {"legs":4,"priced":0}
+  NHL|1p|goals_against               {"legs":4,"priced":0}
+  NHL|goalie_fantasy_score           {"legs":4,"priced":0}
+  NHL|plus/minus                     {"legs":4,"priced":0}
+  SOCCER|crosses                     {"legs":4,"priced":0}
+  SOCCER|attempted_dribbles          {"legs":4,"priced":0}
+  NHL|goals_allowed                  {"legs":3,"priced":0}
+flags {}
+record {"nhs-pin":null,"nhs-kalshi":null,"nhs-bound":null}
+pinnacleProps {"enabled":true,"props":788,"bySport":{"NFL":625,"NBA":27,"NHL":117,"CFB":19},"updated":"2026-10-25T01:12:21.640Z","errors":[],"extra":{"props":2129,"bySport":{"TENNIS games_won":462,"TENNIS games_played":800,"TENNIS 1st_set_games_played":384,"TENNIS sets_won":323,"TENNIS sets_played":160},"errors":[]}}
+kalshiProps {"updated":"2026-10-25T01:11:49.517Z","counts":{"events":238,"ladders":1552,"matched":1917,"interpolated":374},"errors":[]}
+errors: OddsAPI props icehockey_nhl: 401 Request failed with status code 401 | Event loop stalled 2071 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports, 25 */2 * * * * soccerBooks.tick().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none) | OddsAPI props icehockey_nhl: 401 Request failed with status code 401 | Event loop stalled 2606 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports, 25 */2 * * * * soccerBooks.tick().catch(() => {}); requests: none)

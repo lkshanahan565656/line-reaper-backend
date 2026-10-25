@@ -1,0 +1,48 @@
+ODDS_API_KEY is not set: Odds API props and odds are disabled.
+OWLS_API_KEY is not set: Owls feeds will fail and switch themselves off.
+AUTH_SECRET is not set: logins will not survive a restart.
+Owls props mlb: 403 (auth) — 2 more failures until Owls disables itself
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Owls odds mma: 403 (auth) — 1 more failures until Owls disables itself
+Owls: auth failing (dead key) — Owls fetching DISABLED. Set a valid OWLS_API_KEY and restart to re-enable.
+bo3 Zero: no usable kill fields — inspect /api/esports/probe/cs/Zero
+Event loop stalled 2191 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, tail:candidates; requests: none)
+Event loop stalled 2071 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports, 25 */2 * * * * soccerBooks.tick().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+bo3 robo: no usable kill fields — inspect /api/esports/probe/cs/robo
+Event loop stalled 3531 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, * * * * * warmCsProfiles().catch(()=>{}), 10,40 * * * * * Promise.all([runTailJob('whales', pollWhales), runTailJob('s, tail:whales; requests: none)
+Event loop stalled 2076 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, * * * * * warmCsProfiles().catch(()=>{}), 10,40 * * * * * Promise.all([runTailJob('whales', pollWhales), runTailJob('s, tail:whales; requests: none)
+bo3 volt: no usable kill fields — inspect /api/esports/probe/cs/volt
+OddsAPI props basketball_nba: 401 Request failed with status code 401
+bo3 try: no usable kill fields — inspect /api/esports/probe/cs/try
+Event loop stalled 3853 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, */2 * * * * { await Promise.all([scrapePrizePicks(), scrapeUnderdog(), s, */5 * * * * esPicksOnce().catch(()=>{}), * * * * * warmCsProfiles().catch(()=>{}); requests: none)
+Event loop stalled 2151 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, */5 * * * * esPicksOnce().catch(()=>{}), * * * * * warmCsProfiles().catch(()=>{}), 10,40 * * * * * Promise.all([runTailJob('whales', pollWhales), runTailJob('s, tail:whales; requests: none)
+bo3 rdnzao-: no search hit
+Event loop stalled 4203 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}); requests: none)
+Event loop stalled 2300 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 4458 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2594 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports; requests: none)
+OddsAPI props baseball_mlb: 401 Request failed with status code 401
+Event loop stalled 4598 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2787 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 2588 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 40 * * * * * refreshFreeBooks().then(() => scanExchangeSize()).catch(() =; requests: none)
+Event loop stalled 4099 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2289 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+OddsAPI props icehockey_nhl: 401 Request failed with status code 401
+Event loop stalled 4146 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 2313 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Polymarket US: book atc-sea-laz-cag-2026-11-01-laz: Request failed with status code 429
+Event loop stalled 4886 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2743 ms (jobs: 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports, tail:stream, tail:stream; requests: none)
+OddsAPI props americanfootball_nfl: 401 Request failed with status code 401
+Event loop stalled 4789 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2652 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 4995 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 20 */2 * * * * refreshPinnacleProps().catch(e => { pinPropsState.errors = [; requests: none)
+Event loop stalled 2606 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 25 */2 * * * * runTailJob('esports', scanEsportsBoard), tail:esports, 25 */2 * * * * soccerBooks.tick().catch(() => {}); requests: none)
+Event loop stalled 4686 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}); requests: none)
+Event loop stalled 2558 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 1,6,11,16,21,26,31,36,41,46,51,56 * * * * refreshKalshiProps().catch(() => {}), 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 4763 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb; requests: none)
+Event loop stalled 2587 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score; requests: none)
+Event loop stalled 2037 ms (jobs: 50 * * * * * runTailJob('xarb', scanXarbs), tail:xarb, 25 * * * * * runTailJob('score', () => tailEngine.scoreBatch()), tail:score, 10,40 * * * * * Promise.all([runTailJob('whales', pollWhales), runTailJob('s, tail:whales, tail:signals, 40 13,43 * * * * refreshH2H().then(() => esPicksRebuild()).catch(e => console, 40 * * * * * refreshFreeBooks().then(() => scanExchangeSize()).catch(() =, 40 * * * * * refreshFreeBooks().then(() => scanExchangeSize()).catch(() =; requests: none)
