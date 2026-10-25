@@ -5,7 +5,7 @@ const R = process.env.R || '.';
 const o = require(path.resolve(R, 'outrights.js'));
 const ex = require(path.resolve(R, 'execcheck.js'));
 const pmus = require(path.resolve(R, 'pmus.js'));
-const lines = zlib.gunzipSync(fs.readFileSync(process.argv[2])).toString().split('\n').filter(Boolean);
+const lines = zlib.gunzipSync(fs.readFileSync(process.argv[2]), { finishFlush: zlib.constants.Z_SYNC_FLUSH }).toString().split('\n').filter(Boolean).filter(l => { try { JSON.parse(l); return true; } catch { return false; } });
 const store = new Map();
 const mem = { all: async () => [...store.values()].map(x => JSON.parse(JSON.stringify(x))), put: async b => { store.set(b.id, JSON.parse(JSON.stringify(b))); } };
 let t = 0;
