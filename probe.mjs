@@ -1,58 +1,44 @@
 import fs from 'fs';
 const out = (f, d) => fs.writeFileSync('out/' + f, typeof d === 'string' ? d : JSON.stringify(d, null, 1));
 const log = (...a) => { console.log(...a); fs.appendFileSync('out/summary.txt', a.join(' ') + '\n'); };
-async function get(url, headers = {}) {
-  try { const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json', ...headers }, signal: AbortSignal.timeout(20000) });
+async function get(url) {
+  try { const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
     const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { s: r.status, j, t: j ? null : t.slice(0, 300) };
   } catch (e) { return { s: 0, e: String(e) }; }
 }
-const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
-const K = 'https://api.elections.kalshi.com/trade-api/v2';
-const PM = 'https://gateway.polymarket.us';
+const K = 'https://api.elections.kalshi.com/trade-api/v2', PM = 'https://gateway.polymarket.us', PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
 fs.mkdirSync('out', { recursive: true });
-// ---- Pinnacle
-const sp = await get(`${PIN}/sports`); out('pin-sports.json', sp.j || sp);
-log('pin sports', sp.s, (sp.j || []).map(s => `${s.id}:${s.name}:${s.matchupCount}`).join(' | '));
-const wanted = (sp.j || []).filter(s => /golf|motor|formula|racing|auto/i.test(s.name));
-for (const s of wanted) {
-  const lg = await get(`${PIN}/sports/${s.id}/leagues?all=false`); out(`pin-leagues-${s.id}.json`, lg.j || lg);
-  log('pin leagues', s.name, lg.s, (lg.j || []).map(l => `${l.id}:${l.name}:${l.matchupCount}`).join(' | '));
-  for (const l of (lg.j || []).filter(l => l.matchupCount > 0).slice(0, 12)) {
-    const [mu, mk] = [await get(`${PIN}/leagues/${l.id}/matchups`), await get(`${PIN}/leagues/${l.id}/markets/straight`)];
-    out(`pin-mu-${l.id}.json`, mu.j || mu); out(`pin-mk-${l.id}.json`, mk.j || mk);
-    log('  league', l.id, l.name, 'mu', mu.s, (mu.j || []).length, 'mk', mk.s, (mk.j || []).length,
-      [...new Set((mu.j || []).map(m => `${m.type}/${m.special?.category || ''}/${m.participants?.length}`))].slice(0, 10).join(','));
-    for (const m of (mu.j || []).slice(0, 15)) log('    ', m.id, m.type, m.special?.category, '|', m.special?.description || (m.participants || []).map(p => p.name).join(' v '), m.startTime, 'np', m.participants?.length, m.parent?.id || '');
+const SER = 'KXF1RACE KXF1RACEPODIUM KXF1RACETOP5 KXF1RACETOP10 KXF1RACETOPX KXF1POLE KXF1POLEPOSITION KXF1QUALIFY KXF1H2H KXF1TOP5 KXF1TOP10 KXF1 KXF1CONSTRUCTORS KXF1FASTLAP KXPGATOUR KXGOLF KXGOLFTOURN KXPGAWIN KXPGATOP5 KXPGATOP10 KXPGATOP20 KXPGATOP40 KXPGAH2H KXGOLFH2H KXPGA3BALL KXPGAMAKECUT KXDPWORLDTOUR KXDPWTTOP5 KXDPWTTOP10 KXDPWTTOP20 KXDPWTH2H KXLIVTOUR KXSB KXNBA KXNHL KXMLB KXNBAMVP KXNFLMVP KXNBAEAST KXNBAWEST KXNFLAFCCHAMP KXNFLNFCCHAMP KXCHAMPTOUR'.split(' ');
+const all = {};
+for (const s of SER) {
+  for (const st of ['open', 'settled']) {
+    const r = await get(`${K}/events?series_ticker=${s}&status=${st}&with_nested_markets=true&limit=${st === 'open' ? 50 : 3}`);
+    const ev = r.j?.events || [];
+    all[`${s}|${st}`] = ev;
+    for (const e of ev) {
+      const ms = e.markets || [];
+      const vol = ms.reduce((a, m) => a + Number(m.volume_fp ?? m.volume ?? 0), 0);
+      const sumAsk = ms.reduce((a, m) => a + Number(m.yes_ask_dollars ?? (m.yes_ask / 100) ?? 0), 0);
+      log(st, s, e.event_ticker, '|', e.title, '|', e.sub_title || '', '| mk', ms.length, 'vol', Math.round(vol), 'sumAsk', sumAsk.toFixed(2), 'close', ms[0]?.close_time, 'mutex', e.mutually_exclusive);
+    }
+    await new Promise(r => setTimeout(r, 150));
   }
 }
-for (const [name, id] of [['NFL', 889], ['NBA', 487], ['NHL', 1456], ['MLB', 246]]) {
-  const mu = await get(`${PIN}/leagues/${id}/matchups`);
-  const sp2 = (mu.j || []).filter(m => m.type === 'special' && !/player props/i.test(m.special?.category || ''));
-  const cats = {}; for (const m of sp2) cats[m.special?.category] = (cats[m.special?.category] || 0) + 1;
-  log('pin', name, 'specials non-props', sp2.length, JSON.stringify(cats));
-  for (const m of sp2.filter(m => (m.participants || []).length > 2).slice(0, 25)) log('    ', m.id, m.special?.category, '|', m.special?.description, m.startTime, 'np', m.participants.length);
-  out(`pin-specials-${name}.json`, sp2);
-  if (sp2.length) { const mk = await get(`${PIN}/leagues/${id}/markets/straight`); out(`pin-mk-${name}.json`, (mk.j || []).filter(x => sp2.some(m => m.id === x.matchupId))); }
+out('kalshi-events2.json', all);
+const sample = Object.values(all).flat().find(e => /KXF1RACE-|KXF1H2H/.test(e.event_ticker));
+if (sample) out('kalshi-sample.json', sample);
+// PM US listing variants
+const pmv = ['/v2/leagues/f1/events?type=futures', '/v2/leagues/f1/events?type=all', '/v2/leagues/f1/events?section=futures', '/v2/leagues/f1/events?type=future',
+  '/v1/events?seriesId=184&limit=20', '/v1/events?series_id=184&limit=20', '/v1/events?tagId=263&limit=20', '/v1/events?tag_id=263&limit=20', '/v1/events?active=true&closed=false&limit=20&tag_id=263',
+  '/v2/series/184', '/v1/series/184', '/v2/leagues/f1', '/v2/leagues/f1/markets', '/v2/leagues/buttberm/events', '/v2/leagues/vidamexi/events', '/v2/leagues/vidamexi/events?type=futures',
+  '/v1/events?seriesSlug=f1&limit=20', '/v1/events?league=f1&limit=20', '/v1/events?sport=f1&limit=20', '/v1/events?active=true&limit=20&offset=0&order=startDate&ascending=false'];
+for (const p of pmv) {
+  const r = await get(PM + p); out('pm' + p.replace(/[\/?=&]/g, '_') + '.json', r.j || r);
+  const arr = r.j?.events || r.j?.markets || [];
+  log('pmus', p, r.s, Array.isArray(arr) ? arr.length : '', (Array.isArray(arr) ? arr.slice(0, 6).map(e => `${e.slug}:${e.title || e.question}`).join(' || ') : '') || JSON.stringify(r.j)?.slice(0, 300) || r.e);
+  await new Promise(r => setTimeout(r, 500));
 }
-// ---- Kalshi
-let series = [], cur = '';
-for (let i = 0; i < 20; i++) { const r = await get(`${K}/series?category=Sports${cur ? '&cursor=' + cur : ''}`); if (r.s !== 200) { log('kalshi series', r.s, r.t || r.e); break; } series.push(...(r.j.series || [])); cur = r.j.cursor; if (!cur) break; }
-out('kalshi-series.json', series);
-log('kalshi sports series', series.length);
-const kw = series.filter(s => /golf|pga|f1|formula|grand prix|racing|nascar|indy|champion|winner|mvp|super bowl|nba final|world series|stanley|futures|liv|masters|open|tour/i.test(`${s.ticker} ${s.title}`));
-log('kalshi candidate series', kw.length, kw.map(s => `${s.ticker}:${s.title}`).join(' | '));
-const kev = [];
-for (const s of kw.slice(0, 120)) {
-  const r = await get(`${K}/events?series_ticker=${s.ticker}&status=open&with_nested_markets=true&limit=50`);
-  for (const e of r.j?.events || []) { kev.push(e); log('  kev', s.ticker, e.event_ticker, '|', e.title, '| mk', (e.markets || []).length, 'vol', (e.markets || []).reduce((a, m) => a + (m.volume || 0), 0), 'close', e.markets?.[0]?.close_time); }
-  await new Promise(r => setTimeout(r, 120));
-}
-out('kalshi-events.json', kev);
-// ---- PM US
-for (const p of ['/v2/leagues', '/v1/leagues', '/v2/sports', '/v1/sports', '/v1/events?limit=50', '/v2/events?limit=50', '/v1/markets?limit=50',
-  '/v2/leagues/golf/events?limit=50', '/v2/leagues/pga/events?limit=50', '/v2/leagues/f1/events?limit=50', '/v2/leagues/nfl/events?limit=50', '/v2/leagues/nba/events?limit=50']) {
-  const r = await get(PM + p); out('pmus' + p.replace(/[\/?=&]/g, '_') + '.json', r.j || r);
-  const arr = Array.isArray(r.j) ? r.j : (r.j?.events || r.j?.leagues || r.j?.markets || r.j?.sports || r.j?.data || []);
-  log('pmus', p, r.s, Array.isArray(arr) ? arr.length : '', r.t || r.e || '', JSON.stringify(r.j)?.slice(0, 400));
-  await new Promise(r => setTimeout(r, 400));
+// Pinnacle F1 + golf leagues full (sport 44 F1, 17 golf)
+for (const sid of [44, 17]) {
+  const lg = await get(`${PIN}/sports/${sid}/leagues?all=true`); log('pin all leagues', sid, (lg.j || []).filter(l => l.matchupCount).map(l => `${l.id}:${l.name}:${l.matchupCount}`).join(' | '));
 }
