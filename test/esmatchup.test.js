@@ -278,3 +278,14 @@ test('seed and backtest ship with the repo', () => {
   assert.ok(bt && bt.kalshi && bt.kalshi['T-60'].n > 1000);
   assert.ok(/Kalshi's price beats the model/.test(bt.verdict));
 });
+
+test('league strength on the shipped seed follows the international record: LCK, then LPL, then LEC', () => {
+  const R = M.buildRatings(D.loadSeed());
+  const avg = Object.fromEntries(R.leagues(Date.parse('2026-10-25T00:00:00Z')).map(l => [l.league, l.avg]));
+  assert.ok(avg.LCK > avg.LPL, `LCK ${avg.LCK} vs LPL ${avg.LPL}`);
+  assert.ok(avg.LPL > avg.LEC, `LPL ${avg.LPL} vs LEC ${avg.LEC}`);
+  assert.ok(avg.LEC > avg.LCS, `LEC ${avg.LEC} vs LCS ${avg.LCS}`);
+  // an academy event never moves a major-league team (WSCI's "Dplus KIA" was its second roster)
+  const dk = R.find('Dplus KIA');
+  assert.ok(dk.history.length > 10 && !dk.history.some(h => /wsci/i.test(h.lg || '')));
+});

@@ -51,9 +51,12 @@ const DEFAULTS = {
   homeN: 12,           // recent series that decide a team's home league
   leaguePrior: null,   // league → starting rating; null uses LEAGUE_PRIOR
   unknownPrior: 1420,  // a league with no prior
-  leagueEta: 1.2,
-  leagueCap: 200,      // most a league can learn either way: ERLs only meet each other, and without a cap the best ERL drifted level with the LEC      // cross-league results move every team of a league by this share
+  leagueEta: 0.3,      // cross-league results move every team of a league by this share. 1.2 (fitted on all series) let a few upsets lift the LEC over the LPL; 0.3 cut log loss on the 165 major-league international series since 2025 from 0.585 to 0.555 for +0.0002 on all 2026 series
+  leagueCap: 150,      // most a league can learn either way: ERLs only meet each other, and without a cap the best ERL drifted level with the LPL
+  offsetIntlOnly: true, // league strength learns only from international events: a team whose home label still lags after promotion (Karmine Corp in its first LEC split) made domestic games look cross-league
+  tier2Re: /wsci/i,    // academy-level events where a main team's name can stand for its second roster: skipped when a major-league team plays
 };
+const MAJOR = new Set(['LCK', 'LPL', 'LEC', 'LCS', 'LCP', 'CBLOL', 'PCS', 'VCS']);
 
 // The numbers above were fitted by walk-forward log loss on 2024-07 to
 // 2025-12 series and tested on 2026 (scripts/lolmatchup-backtest.js).
@@ -278,6 +281,10 @@ function createRatings(opts = {}) {
     const s = LEAGUE_ALIAS[s0.lg] ? { ...s0, lg: LEAGUE_ALIAS[s0.lg] } : s0;
     const t = typeof s.t === 'number' ? s.t : Date.parse(s.t);
     if (!Number.isFinite(t) || s.s1 == null || s.s2 == null) return null;
+    if (o.tier2Re && o.tier2Re.test(String(s.lg || ''))) {
+      const ha = teams.get(teamKey(s.a))?.home, hb = teams.get(teamKey(s.b))?.home;
+      if (MAJOR.has(ha) || MAJOR.has(hb)) return null;
+    }
     const A = ensure(s.a, s.ac, s.lg, t), B = ensure(s.b, s.bc, s.lg, t);
     if (!A || !B || A === B) return null;
     wake(A, t); wake(B, t);
@@ -296,7 +303,7 @@ function createRatings(opts = {}) {
       const na = step(ra, rda, rb, rdb, Number(s.s1), Number(s.s2));
       const nb = step(rb, rdb, ra, rda, Number(s.s2), Number(s.s1));
       A.r = na.r - offA; A.rd = na.rd; B.r = nb.r - offB; B.rd = nb.rd;
-      if (o.leagueEta && A.home && B.home && A.home !== B.home) {
+      if (o.leagueEta && A.home && B.home && A.home !== B.home && (!o.offsetIntlOnly || isIntl(s.lg))) {
         const E = expected(ra, rb, Math.sqrt(rda * rda + rdb * rdb));
         const d = o.leagueEta * w * (Number(s.s1) - m * E) * 400 / Math.LN10 / 4;
         off.set(A.home, capOff((off.get(A.home) || 0) + d));
