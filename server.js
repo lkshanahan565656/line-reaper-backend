@@ -248,6 +248,14 @@ const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.stat
 const { parsePrizePicksPayload, parsePrizePicksPromos, parseSleeperLines, parseSleeperPromos, sleeperSportKeys, sleeperSport, slimPlayers, sleeperPricing } = require('./pickem');
 const esmatch = require('./esmatch');
 const propsBoard = require('./propsboard');
+const anchorMod = require('./anchor');
+// the 10-25 held-out test of legs with no sharp line (seeds/unanchored-backtest.json)
+const ANCHOR_INFO = (() => {
+  let backtest = null;
+  try { backtest = JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'unanchored-backtest.json'), 'utf8')); } catch { /* shown without it */ }
+  return { label: 'research, not an edge', books: anchorMod.ANCHOR_BOOKS,
+    note: 'A leg with no sharp line is one Pinnacle, FanDuel, BetRivers and Kalshi do not list at any number: the app\'s line has no sharp price to copy or check it against.', backtest };
+})();
 const venues = require('./venues');
 const LICENCE_PAUSED = { status: null, message: 'paused: waiting on data permission' };
 // partner-api answers from Railway where api.prizepicks.com 403s (probed
@@ -4820,7 +4828,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.175.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.176.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5758,13 +5766,16 @@ function* propsBoardSteps() {
     const sport = propsBoard.boardSport(p.sport).sport;
     esPicks.set(`${sport}|${evScreen.canonName(p.player)}|${esKey(sport, p.market)}${p.matchTag ? `|${p.matchTag}` : ''}`, p);
   }
-  propsBoard.priceRows(rows, { kalshi: propsBoard.kalshiFairIndex(kpropsState.games), kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
+  const kalshiIdx = propsBoard.kalshiFairIndex(kpropsState.games);
+  propsBoard.priceRows(rows, { kalshi: kalshiIdx, kalshiAt: kalshiExtraAt, esPicks, dfsEv: dfsLegEv, fixedEv: (book, fair, mult) => sportProps.fixedLeg(book, fair, mult)?.ev ?? null });
   yield;
   const sportPlays = yield* priceSportSteps(rows);
   yield;
+  yield* anchorSteps(rows, kalshiIdx);
+  yield;
   yield* observeStaleApps(rows);
   yield;
-  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, combo: sportPlays.filter(x => x.kind === 'combo').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
+  propsBoardCache = { at: Date.now(), rows, coverage: propsBoard.coverage(rows), anchor: anchorMod.summarize(rows), counts: { ...propsBoard.counts(rows), gaps: sportPlays.filter(x => x.kind === 'gap').length, sharp3: sportPlays.filter(x => x.kind === 'sharp3').length, combo: sportPlays.filter(x => x.kind === 'combo').length, sharp: sportPlays.filter(x => x.kind === 'sharp').length, consensus: rows.filter(r => r.consensus).length, researchGaps: sportPlays.filter(x => x.kind === 'gap-odd').length }, sportPlays };
   return propsBoardCache;
 }
 
@@ -5918,6 +5929,21 @@ function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   return (bookPropsIndex.get(row?.key) || []).filter(q => t && Math.abs(Date.parse(q.start) - t) <= slackMs);
 }
 const bookConsensusPlays = row => (BOOK_CONS_ON ? sportProps.bookConsensusPlays(row, bookLineQuotes(row), { dfsEv: dfsLegEv }) : []);
+// ── ANCHOR: which sharp books (Pinnacle, FanDuel, BetRivers, Kalshi) list each
+// row's player and stat at any number (anchor.js). A tag, never a play: the
+// 10-25 test found no edge on legs with no sharp line (checks/unanchored-2026-10-25).
+function* anchorSteps(rows, kalshiIdx) {
+  const kalshiKeys = new Set([...(kalshiIdx?.keys() || [])].map(k => k.replace(/\|[^|]*$/, '')));
+  const br = anchorMod.brPlayerIndex(esBooksState.books, normalizeName);
+  let n = 0;
+  for (const row of rows) {
+    if (++n % 200 === 0) yield;
+    if (row.esports) { row.anchor = anchorMod.esportsAnchor(row, br, normalizeName); continue; }
+    const base = String(row.mkey || '').includes('|') ? null : row.mkey;
+    const kalshi = Object.values(row.books || {}).some(c => c.fair != null) || (!!base && kalshiKeys.has(`${evScreen.canonName(row.player)}|${base}`));
+    row.anchor = anchorMod.sportAnchor(row, sharpQuotes(row), { kalshi });
+  }
+}
 function* priceSportSteps(rows) {
   const flagged = [];
   let n = 0;
@@ -7061,7 +7087,8 @@ app.get('/api/props/board', (req, res) => {
   const kalshiOk = licenceOf(req).kalshi;
   const book = propsBoard.BOOKS.includes(req.query.book) ? req.query.book : '';
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
-  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1', combo: req.query.combo === '1' };
+  const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1', combo: req.query.combo === '1',
+    anchor: ['none', 'sharp'].includes(req.query.anchor) ? req.query.anchor : '' };
   const market = String(req.query.market || '').slice(0, 80);
   const hits = propsBoard.queryRows(rows, { ...qo, market });
   // the Lines view: one app's lines, with the header count and the prop filter
@@ -7080,6 +7107,7 @@ app.get('/api/props/board', (req, res) => {
     // the esports models' verdicts (esmodels.js): a failed one's legs are not plays
     esModels: esModelsState.cards ? Object.fromEntries(esModelsState.cards.map(c => [c.key, { verdict: c.verdict, graded: c.graded, wins: c.wins, losses: c.losses, hitPct: c.hitPct, breakEvenPct: c.breakEvenPct, units: c.units }])) : null,
     coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
+    anchor: { ...ANCHOR_INFO, now: propsBoardCache.anchor || null },
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
 });
@@ -7925,7 +7953,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.175.0',
+  version: '3.176.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
