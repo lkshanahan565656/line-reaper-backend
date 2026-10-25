@@ -1,0 +1,28 @@
+# Lives on the diag-e2e-smoke branch (e2e/live-check.js puts it there): runs
+# the browser smoke against the live site once it shows the wanted version,
+# keeps the result on diag-e2e-smoke-out and asks the site to read it into
+# /api/ops (POST /api/ops/smoke).
+name: live-smoke
+on: { push: { branches: [diag-e2e-smoke] } }
+permissions: { contents: write }
+concurrency: { group: live-smoke, cancel-in-progress: false }
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/cache@v4
+        with: { path: ~/.cache/ms-playwright, key: pw-1.63.0-headless-shell }
+      - run: npm i --no-save --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps --only-shell chromium
+      - run: SMOKE_NONCE=$(sed -n 2p WANT) node e2e/smoke.js "$SITE" "$(sed -n 1p WANT)" smoke.json || true
+      - run: |
+          git config user.email smoke@line-reaper; git config user.name live-smoke
+          mkdir -p /tmp/o && cp smoke.json /tmp/o/
+          git checkout --orphan diag-e2e-smoke-out; git rm -rqf --cached .; git clean -fdq
+          cp /tmp/o/smoke.json .; git add -f smoke.json; git commit -qm "smoke $(sed -n 1p /tmp/o/smoke.json | head -c 0)$(date -u +%FT%TZ)"
+          git push -f origin diag-e2e-smoke-out
+          curl -s -X POST "$SITE/api/ops/smoke" -o /dev/null -w 'ops %{http_code}\n' || true
