@@ -1248,6 +1248,28 @@ body.no-help .clv-info { display:none; }
 .os-log:hover { color:#34d399; border-color:#34d399; }
 .ln-add { cursor:pointer; width:22px; height:22px; border-radius:6px; border:1px solid var(--border2); background:var(--card2); color:#94a3b8; font:800 13px/1 'Inter',sans-serif; margin-right:6px; vertical-align:middle; }
 .ln-add:hover, .ln-add.on { color:#06110d; background:#34d399; border-color:#34d399; }
+/* PROMOS strip: the apps' discounted and boosted legs at their own payout */
+.pm-wrap { border:1px solid var(--border); background:var(--card); border-radius:10px; padding:10px 12px; margin:0 0 12px; font-family:'JetBrains Mono',monospace; }
+.pm-head { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin-bottom:6px; }
+.pm-head b { font-size:11px; letter-spacing:.14em; color:#fbbf24; }
+.pm-head span { font-size:10.5px; color:#64748b; }
+.pm-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+.pm-chips .sport-chip { font-size:10px; padding:3px 8px; }
+.pm-list { display:grid; gap:2px; }
+.pm-row { display:grid; grid-template-columns: 112px minmax(0,1fr) 62px 62px 86px 84px 30px; gap:6px; align-items:center; padding:5px 4px; border-top:1px solid var(--border); font-size:11px; color:#cbd5e1; }
+.pm-row.hd { color:#64748b; font-size:9.5px; letter-spacing:.08em; border-top:0; }
+.pm-row .pm-type { font-size:9.5px; letter-spacing:.06em; color:#94a3b8; }
+.pm-row .pm-type b { color:#e2e8f0; }
+.pm-row .pm-who b { color:#e2e8f0; }
+.pm-row .pm-who span { color:#64748b; }
+.pm-row .pos { color:#34d399; } .pm-row .neg { color:#f87171; } .pm-row .dim { color:#64748b; }
+.pm-note { color:#64748b; font-size:10px; margin-top:6px; line-height:1.5; }
+@media (max-width: 640px) {
+  .pm-row { grid-template-columns: minmax(0,1fr) 58px 64px 30px; }
+  .pm-row .pm-c-mult, .pm-row .pm-c-req, .pm-row.hd .pm-c-mult, .pm-row.hd .pm-c-req { display:none; }
+  .pm-row .pm-type { grid-column: 1 / -1; }
+  .pm-row.hd { display:none; }
+}
 .ms-res { display:inline-flex; gap:4px; margin-left:8px; vertical-align:1px; }
 .ms-res button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:5px; font:700 9.5px 'JetBrains Mono',monospace; padding:2px 6px; }
 .ms-res button.on { color:#06110d; background:#94a3b8; }
@@ -1693,6 +1715,7 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">PROPS ON EVERY BOOK</strong> Every player line on Underdog, PrizePicks and Sleeper, sports and esports, side by side.
     <span style="color:#94a3b8;font-size:11px">Each book is priced at its own line on everything else on the row: the other books' lines and payouts, Pinnacle's player props with the vig out (worth three books), and Kalshi's player ladders (worth two). Esports run off the books' consensus too. <b style="color:#34d399">Green</b> is the best play on the row. A <b style="color:#fbbf24">gap</b> means the books hang different lines; a green <b style="color:#34d399">LINE GAP</b> is a book sitting off two or more others, the soft side to take.</span>
   </div>
+  <div id="pmStrip" style="margin-top:12px"></div>
   <div class="pb-chips" id="pbView" style="margin:12px 0 8px"></div>
   <div class="pb-chips" id="pbSports" style="margin:0 0 8px"></div>
   <div class="pb-cover" id="pbCover"></div>
@@ -4143,6 +4166,7 @@ function pbSet(k, v) {
 }
 function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
 async function loadPropsBoard() {
+  if (!pmState.at || Date.now() - pmState.at > 120000) loadPromos();
   const seq = ++pbState.seq;
   const lines = pbState.view === 'lines';
   document.getElementById('page-props')?.classList.toggle('lines', lines);
@@ -4367,6 +4391,84 @@ function lnRow(r, book) {
     <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
 }
+// ── PROMOS: the apps' discounted and boosted legs (/api/props/promos, promos.js) ──
+// PrizePicks goblins, demons and promos, Underdog discounted lines, alternates
+// and boosted sides, Sleeper's boosted lines, Pick6's Gimme Pick, Stat Slice,
+// Power Up and alt ladders. Each leg at its own payout's required hit rate
+// against Pinnacle's no-vig (FanDuel/BetRivers where Pinnacle has none). A lead
+// with its own record, no alerts: nothing here is proven.
+const pmState = { at: 0, data: null, record: null, app: '', open: false, limit: 8 };
+async function loadPromos() {
+  pmState.at = Date.now();
+  try {
+    const qs = new URLSearchParams({ limit: pmState.open ? 120 : 40 });
+    if (pmState.app) qs.set('app', pmState.app);
+    const [a, b] = await Promise.all([fetch(`${BACKEND_URL}/api/props/promos?${qs}`), fetch(`${BACKEND_URL}/api/props/promos/record`)]);
+    if (a.ok) pmState.data = await a.json();
+    if (b.ok) pmState.record = await b.json();
+  } catch {}
+  renderPromos();
+}
+function pmSet(k, v) { pmState[k] = v; pmState.at = 0; loadPromos(); }
+const PM_APPS = [['prizepicks', 'PP'], ['underdog', 'UD'], ['sleeper', 'SL'], ['pick6', 'P6']];
+function renderPromos() {
+  const el = document.getElementById('pmStrip');
+  if (!el) return;
+  const d = pmState.data;
+  if (!d) { el.innerHTML = ''; return; }
+  const c = d.counts || { total: 0, priced: 0, plusEv: 0, byApp: {}, byType: [] };
+  const chip = (on, label, n, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}${n != null ? ` <span style="opacity:.55">${n}</span>` : ''}</button>`;
+  const chips = [chip(!pmState.app, 'ALL APPS', c.total, "pmSet('app','')"), ...PM_APPS.filter(([k]) => c.byApp?.[k]).map(([k, ab]) => chip(pmState.app === k, ab, c.byApp[k], `pmSet('app','${k}')`))].join('');
+  const types = (c.byType || []).slice(0, 8).map(t => `${escAttr(t.label)} ${t.n.toLocaleString()} (${t.priced} priced)`).join(' · ');
+  const pct = v => (v == null ? '—' : `${(v * 100).toFixed(1)}%`);
+  const rows = (d.rows || []).slice(0, pmState.open ? 120 : pmState.limit);
+  const row = p => {
+    const rk = `promo:${p.id}`;
+    const fairSrc = p.fair == null ? '' : `${p.fairBooks.map(b => ({ pinnacle: 'Pinnacle', fanduel: 'FanDuel', betrivers: 'BetRivers' })[b] || b).join(' + ')} ${p.fairExact ? 'at this number' : `read along the curve from ${p.fairFrom}`}, vig out`;
+    const edge = !d.pro ? '<span class="dim">Pro</span>' : p.ev != null ? `<span class="${p.ev > 0 ? 'pos' : 'neg'}" title="EV at this leg's own payout">${p.ev > 0 ? '+' : ''}${p.ev.toFixed(1)}%</span>`
+      : p.beMult != null ? `<span class="dim" title="PrizePicks does not publish goblin and demon payouts. This leg breaks even only if PrizePicks pays at least ${p.beMult}x per leg on a 3-pick Power">needs ${p.beMult}x</span>` : '<span class="dim">—</span>';
+    const mult = p.mult != null ? `${(+p.mult).toFixed(2)}x` : '<span class="dim" title="PrizePicks does not publish this payout">?</span>';
+    const req = p.req == null ? '<span class="dim">—</span>' : p.canPay === false ? '<span class="neg" title="At this multiplier the leg would have to hit more than 100% of the time">can\'t pay</span>' : pct(p.req);
+    const word = pbSideWord(p.app, p.side).toUpperCase();
+    return `<div class="pm-row">
+      <div class="pm-type"><b>${escAttr(p.appLabel)}</b> ${escAttr(p.typeLabel)}${p.note ? ` · ${escAttr(p.note)}` : ''}</div>
+      <div class="pm-who"><b>${escAttr(p.player)}</b> <span>${escAttr(p.sport)} · ${escAttr(p.market)} · ${pbFmtStart(p.startTime)}</span><br>${word} ${escAttr(p.line)}${p.baseLine != null ? ` <span title="The app cut this line from ${escAttr(p.baseLine)}">(was ${escAttr(p.baseLine)})</span>` : ''}</div>
+      <div class="pm-c-mult">${mult}</div>
+      <div class="pm-c-req" title="Hit rate this leg needs at its own payout">${req}</div>
+      <div title="${escAttr(fairSrc)}">${!d.pro ? '<span class="dim">Pro</span>' : p.fair != null ? pct(p.fair) : '<span class="dim">no sharp</span>'}</div>
+      <div>${edge}</div>
+      <div><button class="ln-add${pkHas(rk, p.app) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAddPromo('${escAttr(p.id)}')">+</button></div>
+    </div>`;
+  };
+  const rec = pmState.record;
+  const recTxt = rec?.slices?.length ? rec.slices.slice(0, 6).map(x => `${escAttr(x.kind.replace(/^promo-/, ''))} ${x.n ? `${x.w}-${x.l}` : '0 graded'}${x.vs === 'sharp fair' ? ' vs fair' : ''}`).join(' · ') : 'started, nothing graded yet';
+  const head = `<div class="pm-row hd"><div>APP · TYPE</div><div>LEG</div><div class="pm-c-mult">MULT</div><div class="pm-c-req">NEEDS</div><div>SHARP</div><div>EV</div><div></div></div>`;
+  const more = (d.total || 0) > rows.length ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=true;pmState.limit=120;pmState.at=0;loadPromos()">SHOW ${Math.min(120, d.total)} OF ${d.total.toLocaleString()} PRICED</button>` : pmState.open ? `<button class="sport-chip" style="margin:8px 0 0" onclick="pmState.open=false;pmState.limit=8;renderPromos()">SHOW FEWER</button>` : '';
+  el.innerHTML = `<div class="pm-wrap">
+    <div class="pm-head"><b>PROMOS</b><span>${c.total.toLocaleString()} discounted or boosted legs on the apps now · ${c.priced.toLocaleString()} with a sharp price · ${c.plusEv} above the hit rate their payout needs</span></div>
+    <div class="pm-chips">${chips}</div>
+    ${rows.length ? `<div class="pm-list">${head}${rows.map(row).join('')}</div>` : `<div class="pm-note">No promo leg has a sharp price right now${pmState.app ? ' on this app' : ''}.</div>`}${more}
+    <div class="pm-note">${types ? `${types}.<br>` : ''}Each leg at its own payout: a goblin, Power Up or boosted side needs the hit rate its multiplier sets, not the standard slip's. PrizePicks does not publish goblin and demon payouts, so those show the multiplier they would need. <b style="color:#fbbf24">Not a bet:</b> on last weekend's boards Underdog boosted sides won 41.7% of 247 vs 49.5% needed. Record (alerts off until 50 graded live): ${recTxt}.</div>
+  </div>`;
+}
+function pkAddPromo(id) {
+  const p = (pmState.data?.rows || []).find(x => x.id === id);
+  if (!p) return;
+  const rk = `promo:${p.id}`;
+  if (pk.app === p.app && pk.legs.some(l => l.rk === rk)) return pkAdd(rk, p.app);
+  if (pk.app && pk.app !== p.app && pk.legs.length) { showToast(`Your slip is on ${PB_BOOKS.find(x => x[0] === pk.app)?.[1]}. Save or clear it first`, 'danger'); return; }
+  if (pk.legs.length >= (PK_MAX[p.app] || 6)) { showToast('That slip is full', 'danger'); return; }
+  if (pk.legs.some(l => l.player === p.player)) { showToast(`${p.player} is already in the slip`, 'danger'); return; }
+  pk.app = p.app;
+  const over = p.side === 'Over';
+  pk.legs.push({ rk, player: p.player, market: p.market, line: p.line, side: p.side, sport: p.sport, team: p.team || '', start: p.startTime || null,
+    game: p.matchTitle || (p.startTime ? `${p.sport}|${p.startTime}` : ''), prob: p.fair, over: over ? p.mult : p.otherMult, under: over ? p.otherMult : p.mult, promo: p.typeLabel });
+  pk.payout = '';
+  pkSave(); renderPkTray(); renderPromos();
+  if (p.mult != null && Math.abs(p.mult - 1) > 0.001 && p.app !== 'sleeper') showToast(`${p.typeLabel} pays ${p.mult}x: set the payout to what the app shows`);
+  else if (p.mult == null) showToast(`${p.typeLabel}: set the payout to what PrizePicks shows`);
+}
+
 // ── SLIP TRAY: legs tapped on the Lines table → one slip in MY SLIPS ──
 // A slip is placed on one app, so the tray holds one app's legs at that app's
 // line. Saving it hands the slip to MY SLIPS, which logs every leg with the
@@ -4380,6 +4482,14 @@ const pkSave = () => lsSet(PK_KEY, JSON.stringify({ app: pk.app, legs: pk.legs, 
 const pkHas = (rk, book) => pk.app === book && pk.legs.some(l => l.rk === rk);
 const PK_MAX = { pick6: 8 };
 function pkAdd(rk, book) {
+  // a leg already in the slip comes out, whichever list it was added from (PROMOS legs have no board row)
+  const i0 = pk.legs.findIndex(l => l.rk === rk);
+  if (pk.app === book && i0 >= 0) {
+    pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pkSave(); renderPkTray();
+    if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard();
+    renderPromos();
+    return;
+  }
   const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book] || r?.apps?.[book];
   if (!r || !c || c.line == null) return;
   const i = pk.legs.findIndex(l => l.rk === rk);

@@ -58,6 +58,8 @@ app.use((req, res, next) => auth.attach()(req, res, next));
 // ─── CACHE ────────────────────────────────────────────────────────────────────
 let cache = {
   prizepicks: { data: [], updated: null },
+  // the apps' promo, goblin/demon, discounted and boosted legs (promos.js)
+  ppPromos: { data: [], updated: null }, udPromos: { data: [], updated: null }, slPromos: { data: [], updated: null },
   underdog: { data: [], updated: null },
   sleeper: { data: [], updated: null },
   sleeperSports: { data: [], updated: null },
@@ -236,7 +238,7 @@ const PP_BACKOFF_MS = 4 * 60 * 1000, PP_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000;
 const dfsError = { prizepicks: null, underdog: null, sleeper: null };
 const noteDfsError = (book, e) => { dfsError[book] = { status: e?.response?.status ?? null, message: String(e?.message || e).slice(0, 200), at: new Date().toISOString() }; };
 
-const { parsePrizePicksPayload, parseSleeperLines, sleeperSportKeys, sleeperSport, slimPlayers, sleeperPricing } = require('./pickem');
+const { parsePrizePicksPayload, parsePrizePicksPromos, parseSleeperLines, parseSleeperPromos, sleeperSportKeys, sleeperSport, slimPlayers, sleeperPricing } = require('./pickem');
 const esmatch = require('./esmatch');
 const propsBoard = require('./propsboard');
 const venues = require('./venues');
@@ -264,6 +266,7 @@ async function scrapePrizePicks() {
       const res = await axios.get(PRIZEPICKS_URL, { params: { per_page: 10000, single_stat: true }, headers: PP_HEADERS, timeout: 30000, maxContentLength: 80e6 });
       const { lines, leagues } = parsePrizePicksPayload(res.data);
       allLines = lines;
+      cache.ppPromos = { data: parsePrizePicksPromos(res.data), updated: new Date().toISOString() };
       ppState.esportsLeagues = Object.entries(leagues).filter(([, name]) => isEsports(name)).map(([id]) => id);
       if (!ppState.esportsLeagues.length) ppState.esportsLeagues = [...new Set(lines.filter(l => isEsports(l.sport) && l.leagueId).map(l => l.leagueId))];
     } else {
@@ -273,6 +276,7 @@ async function scrapePrizePicks() {
       league = ppState.esportsLeagues[ppState.next++ % ppState.esportsLeagues.length];
       const res = await axios.get(PRIZEPICKS_URL, { params: { league_id: league, per_page: 1000, single_stat: true }, headers: PP_HEADERS, timeout: 15000 });
       const fresh = parsePrizePicksPayload(res.data).lines;
+      cache.ppPromos = { data: [...(cache.ppPromos.data || []).filter(l => String(l.leagueId) !== String(league)), ...parsePrizePicksPromos(res.data)], updated: new Date().toISOString() };
       allLines = [...(cache.prizepicks.data || []).filter(l => String(l.leagueId) !== String(league)), ...fresh];
     }
     const t = Date.now();
@@ -330,6 +334,31 @@ function ppLinesNow(now = Date.now()) {
 //   - esports/single events living in data.solo_games[] instead of data.games[]
 // Sport is resolved: game.sport_id → solo_game.sport_id → player.sport_id → ''.
 function parseUnderdogPayload(data) {
+  return parseUnderdogAll(data).filter(l => !l.udPromo);
+}
+// Underdog's promo lines: a discounted line (non_discounted_stat_value names
+// the line it was cut from) or a line_type other than 'balanced' (every line
+// of the 10-15 board was balanced). parseUnderdogPayload leaves them off the
+// board; parseUnderdogPromos keeps them, with the higher-payout alternates
+// (decimal regime, udPricing) and the boosted sides (boost regime over 1x),
+// as promo legs in promos.js's shape.
+function parseUnderdogPromos(data) {
+  const out = [];
+  for (const l of parseUnderdogAll(data)) {
+    for (const side of ['Over', 'Under']) {
+      const mult = side === 'Over' ? l.overMultiplier : l.underMultiplier;
+      const other = side === 'Over' ? l.underMultiplier : l.overMultiplier;
+      if (mult == null) continue;
+      const decimal = mult > UD_DECIMAL_THRESHOLD && !(other > 0 && other < 1);
+      const type = l.udPromo ? (l.baseLine != null ? 'discount' : String(l.udLineType).toLowerCase()) : decimal ? 'alt' : mult > 1 ? 'boost' : null;
+      if (!type) continue;
+      out.push({ book: 'underdog', type, side, mult, otherMult: other ?? null, line: l.line, baseLine: l.baseLine, sport: l.sport, player: l.player, team: l.team,
+        market: l.market, startTime: l.startTime, matchTitle: l.matchTitle, gameId: l.gameId, note: null });
+    }
+  }
+  return out;
+}
+function parseUnderdogAll(data) {
   const players = {}, games = {}, soloGames = {}, appearances = {};
   if (Array.isArray(data.players)) for (const p of data.players) {
     players[p.id] = {
@@ -396,6 +425,8 @@ function parseUnderdogPayload(data) {
       if (sides) team = teamId === game.home ? sides[1] : teamId === game.away ? sides[0] : '';
     }
 
+    const baseLine = line.non_discounted_stat_value != null ? parseFloat(line.non_discounted_stat_value) : null;
+    const promo = baseLine != null || (line.line_type && line.line_type !== 'balanced');
     lines.push({
       book: 'underdog',
       sport,
@@ -410,6 +441,7 @@ function parseUnderdogPayload(data) {
       underMultiplier: underOpen ? underMult : null,
       overOpen, underOpen,
       multiplier: Math.max(overOpen ? overMult : 0, underOpen ? underMult : 0),
+      ...(promo ? { udPromo: true, udLineType: line.line_type || null, baseLine: baseLine != null && isFinite(baseLine) ? baseLine : null } : {}),
     });
   }
   return lines;
@@ -426,6 +458,7 @@ async function scrapeUnderdog() {
     });
     const lines = parseUnderdogPayload(res.data || {});
     cache.underdog = { data: lines, updated: new Date().toISOString() };
+    cache.udPromos = { data: parseUnderdogPromos(res.data || {}), updated: cache.underdog.updated };
     dfsError.underdog = null;
     cache.udSportLabels = [...new Set(lines.map(l => l.sport).filter(Boolean))].slice(0, 25);
     const withMult = lines.filter(l => l.multiplier !== 1.00).length;
@@ -465,6 +498,7 @@ async function scrapeSleeper() {
       sports = attachSleeperGames(sports, games, starts);
     } catch (e) { console.warn('Sleeper schedule:', e.message); }
     cache.sleeperSports = { data: sports, updated: now };
+    cache.slPromos = { data: parseSleeperPromos(rows, sleeperPlayers.bySport), updated: now };
     dfsError.sleeper = null;
     console.log(`Sleeper: ${lines.length} esports and ${sports.length} sports lines from ${rows.length} rows`);
   } catch (e) { noteDfsError('sleeper', e); console.error('Sleeper error:', e.message, e.response?.status); }
@@ -799,6 +833,13 @@ const shopTracker = createSportTracker({
   grader: sportGrader,
 });
 shopTracker.ready().catch(e => console.error('Shop tracker: store failed to initialise:', e.message));
+// PROMOS (promos.js): the apps' discounted and boosted legs at their own
+// payout, followed to the close and graded in a record of their own
+const promoTracker = createSportTracker({
+  store: resultsBackup.wrap('promoLegs', createEvStoreFromEnv(process.env, { table: 'promo_legs', fileVar: 'PROMO_LEGS_FILE', file: 'promo-legs.json' })),
+  grader: sportGrader,
+});
+promoTracker.ready().catch(e => console.error('Promo tracker: store failed to initialise:', e.message));
 const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
@@ -4697,7 +4738,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.167.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.168.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6781,6 +6822,22 @@ async function trackSportProps() {
       for (const x of appShop.recordLegs(shopBoard())) { const row = byKey.get(x.rowKey); if (row) shopFlags.push({ row, play: x.play, kind: x.kind, research: true }); }
       await shopTracker.record({ rows: rows.filter(r => !r.esports), flagged: shopFlags, fairAt: sportFairAt, updated });
     }
+    // the apps' promo legs (promos.js): kinds promo-<app>-<type>, own store, never plays or alerts
+    if (PROMO_RECORD) {
+      const byKey = new Map(rows.map(r => [r.key, r]));
+      const flags = promos.recordLegs(promoBoard(), { boardRow: k => byKey.get(k) });
+      for (const f of flags) promoRowsSeen.set(f.row.key, f.row);
+      // a promo the app took down keeps its row (no app cell: not executable)
+      // so its close still reads the sharp price to the start
+      const live = new Set(flags.map(f => f.row.key));
+      const t = Date.now();
+      for (const [k, r] of promoRowsSeen) {
+        if (Date.parse(r.startTime) < t - 6 * 3600e3) { promoRowsSeen.delete(k); continue; }
+        if (!live.has(k) && Object.keys(r.books).length) promoRowsSeen.set(k, { ...r, books: {} });
+      }
+      const promoUpdated = { prizepicks: updated.prizepicks, underdog: cache.udPromos.updated, sleeper: cache.slPromos.updated, ...pick6.readTimes() };
+      await promoTracker.record({ rows: [...promoRowsSeen.values()], flagged: flags.map(f => ({ ...f, research: true })), fairAt: promoFairAt, updated: promoUpdated });
+    }
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
@@ -6897,6 +6954,85 @@ app.get('/api/props/shop/record', async (req, res) => {
   try {
     if (!shopRecordCache.body || Date.now() - shopRecordCache.at > 60e3) shopRecordCache = { at: Date.now(), body: appShop.recordSummary(await shopTracker.list({ limit: 1e6 })) };
     res.json({ ...shopRecordCache.body, recording: APP_SHOP_RECORD, preregistered: 'checks/app-shop-2026-10-25/PREREGISTERED.md' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PROMOS: the apps' discounted and boosted legs vs the sharp price (promos.js) ──
+// PrizePicks goblins, demons and promos, Underdog discounted lines, alternates
+// and boosted sides, Sleeper's non-normal lines, Pick6's Gimme Pick, Stat
+// Slice, Power Up and alt ladders: each at its own payout's required hit rate
+// against Pinnacle's no-vig (FanDuel/BetRivers where Pinnacle has none). A lead
+// with its own record (promo-<app>-<type>), alerts off: on the weekend boards
+// Underdog's boosted sides won 41.7% of 247 vs 49.5% needed
+// (checks/promos-2026-10-25). Not a bet until a kind clears 50 graded live.
+const promos = require('./promos');
+// PROMO_RECORD=off stops recording the promo legs (on by default: alerts are off either way)
+const PROMO_RECORD = String(process.env.PROMO_RECORD || 'on').toLowerCase() !== 'off';
+const promoRowsSeen = new Map();
+let promoCache = { at: 0, src: null, rows: [], counts: null };
+// every promo leg the readers hold now (PrizePicks only while its pulls are fresh, like its board lines)
+function promoLegsNow(now = Date.now()) {
+  const ppFresh = ppState.fullOkAt && now - ppState.fullOkAt <= PP_SPORT_STALE_MS;
+  const pp = ppFresh ? (cache.ppPromos.data || []).filter(l => !isEsports(l.sport) || now - (ppState.leagueOkAt[l.leagueId] || ppState.fullOkAt) <= PP_ES_STALE_MS) : [];
+  return [...pp, ...(cache.udPromos.data || []), ...(cache.slPromos.data || []), ...pick6.promos()];
+}
+function promoRowIndex(rows) {
+  const idx = new Map();
+  for (const r of rows) {
+    const k = `${r.sport}|${evScreen.canonName(r.player)}|${r.mkey}`;
+    (idx.get(k) || idx.set(k, []).get(k)).push(r);
+  }
+  return idx;
+}
+function promoBoard() {
+  const { rows } = propsBoardRows();
+  if (promoCache.src === rows && Date.now() - promoCache.at < 60000) return promoCache.rows;
+  const idx = promoRowIndex(rows);
+  const rowFor = leg => {
+    const list = idx.get(`${leg.sport}|${evScreen.canonName(leg.player)}|${leg.mkey}`);
+    if (!list) return null;
+    const t = Date.parse(leg.startTime || '');
+    // a leg with its own start takes the row within 3 hours of it; Sleeper's carry none
+    if (t) return list.find(r => Math.abs(Date.parse(r.startTime) - t) <= 3 * 3600e3) || null;
+    return list.length === 1 ? list[0] : null;
+  };
+  const out = promos.buildPromos(promoLegsNow(), { rowFor, quotesFor: sharpQuotes });
+  promoCache = { at: Date.now(), src: rows, rows: out, counts: promos.promoCounts(out) };
+  return out;
+}
+// the record's close: the sharp price at the promo's own number on its board row
+function promoFairAt(row, book, line) {
+  const { rows } = propsBoardRows();
+  const base = rows.find(r => r.key === (row.baseKey || promos.baseKeyOf(row.key)));
+  if (!base) return null;
+  return promos.sharpAt(sharpQuotes(base), base.mkey, base.sport, line)?.p ?? null;
+}
+app.get('/api/props/promos', (req, res) => {
+  let rows = promoBoard();
+  const pro = hasPro(req);
+  const sport = String(req.query.sport || 'ALL').toUpperCase();
+  if (sport !== 'ALL') rows = rows.filter(r => r.sport === sport);
+  if (promos.APPS.includes(req.query.app)) rows = rows.filter(r => r.app === req.query.app);
+  if (req.query.type) rows = rows.filter(r => r.type === String(req.query.type).toLowerCase());
+  if (req.query.priced !== '0') rows = rows.filter(r => r.fair != null);
+  const q = String(req.query.q || '').toLowerCase().slice(0, 60);
+  if (q) rows = rows.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(q));
+  if (req.query.sort === 'start') rows = [...rows].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 60));
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  let page = rows.slice(offset, offset + limit);
+  // the fair and EV are Pro, like the props board's
+  if (!pro) page = page.map(promos.redactPromo);
+  res.json({ rows: page, total: rows.length, offset, limit, pro, counts: promoCache.counts, updated: new Date(promoCache.at).toISOString(),
+    readers: { prizepicks: cache.ppPromos.updated, underdog: cache.udPromos.updated, sleeper: cache.slPromos.updated, pick6: pick6.status().promos ?? null },
+    note: 'A lead, not a bet: each leg at its own payout. PrizePicks does not publish goblin and demon payouts, so those show the multiplier they would need. On the weekend boards Underdog boosted sides won 41.7% of 247 vs 49.5% needed. Nothing is a bet until a kind clears 50 graded live.' });
+});
+// the promo record by kind (promos.recordSummary), free
+let promoRecordCache = { at: 0, body: null };
+app.get('/api/props/promos/record', async (req, res) => {
+  try {
+    if (!promoRecordCache.body || Date.now() - promoRecordCache.at > 60e3) promoRecordCache = { at: Date.now(), body: promos.recordSummary(await promoTracker.list({ limit: 1e6 })) };
+    res.json({ ...promoRecordCache.body, recording: PROMO_RECORD, preregistered: 'checks/promos-2026-10-25/PREREGISTERED.md' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -7474,7 +7610,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.167.0',
+  version: '3.168.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7611,6 +7747,7 @@ schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('7,17,27,37,47,57 * * * *', () => shopTracker.grade().catch(e => console.warn('Shop grader:', e.message)));
+schedule('9,19,29,39,49,59 * * * *', () => promoTracker.grade().catch(e => console.warn('Promo grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory()).then(() => readShopDepth())));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
@@ -7770,7 +7907,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 
 module.exports = {
   app, nbaModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
-  parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
+  parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
   parseCsvLine, createOEAggregator, predictLoLKills, predictLoLStat, refreshLoLStats,
