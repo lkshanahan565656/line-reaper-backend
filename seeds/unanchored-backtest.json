@@ -1,0 +1,11 @@
+{
+ "asOf": "held out, scored once 2026-10-25 (checks/unanchored-2026-10-25)",
+ "verdict": "No side cleared the apps' break-even on both held-out slices",
+ "lines": [
+  "10,246 graded app legs from two full-board recordings (10-15 and 10-24), 4,005 of them with no sharp line.",
+  "Unders, Overs, our NBA and CFB models' side and the season-hit-rate picker were each scored per app and sport: none reached z 2 above break-even on both slices.",
+  "Closest: CFB PrizePicks Unders with no sharp line, 35-40 (46.7%) on 10-15 then 215-168 (56.1%) on 10-24, vs 55.0%.",
+  "PrizePicks' unanchored lines land Over 50.5% of the time: the apps do not shade the number when nobody prices it.",
+  "Unanchored lines move less before the start than anchored ones, not more."
+ ]
+}

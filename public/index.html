@@ -548,6 +548,11 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .shop-mine { font-size: 9px; letter-spacing: .08em; color: var(--green); border: 1px solid rgba(52,211,153,.4); border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
 .shop-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
 .pb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.pb-anchor { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin: 0 0 8px; line-height: 1.5; overflow-wrap: anywhere; } .pb-anchor:empty { display: none; } .pb-anchor b { color: #cbd5e1; font-weight: 600; }
+.pb-anchor .anc-note { flex: 1 1 100%; border: 1px solid #3a3320; background: #1a170e; color: #fbbf24; border-radius: 10px; padding: 8px 10px; } .pb-anchor .anc-note b { color: #fde68a; } .pb-anchor .anc-note div { color: #94a3b8; margin-top: 4px; }
+.pb-anc { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: .04em; border: 1px solid rgba(96,165,250,.35); color: #93c5fd; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+.pb-anc.none { border-color: rgba(148,163,184,.35); color: #94a3b8; }
+#page-props.model #pbAnchor, #page-props.mlbv #pbAnchor, #page-props.cfbm #pbAnchor, #page-props.shop #pbAnchor { display: none; }
 .pb-cover { font-size: 11px; color: #94a3b8; margin: 0 0 8px; line-height: 1.5; overflow-wrap: anywhere; } .pb-cover:empty { display: none; } .pb-cover b { color: #cbd5e1; font-weight: 600; } .pb-cover .z { color: #f87171; }
 /* LINES: one app's lines as a table, best EV first */
 #page-props.lines .pb-conly, #page-props:not(.lines) .pb-lonly { display: none; }
@@ -1739,6 +1744,7 @@ body.no-help .clv-info { display:none; }
   <div class="pb-chips" id="pbView" style="margin:12px 0 8px"></div>
   <div class="pb-chips" id="pbSports" style="margin:0 0 8px"></div>
   <div class="pb-cover" id="pbCover"></div>
+  <div class="pb-anchor" id="pbAnchor"></div>
   <div class="pb-chips" id="pbBooks" style="margin:0 0 10px"></div>
   <div style="display:flex;margin:0 0 10px;gap:8px;flex-wrap:wrap;align-items:flex-end">
     <label class="es-field pb-lonly" style="flex:1 1 160px;max-width:240px"><span>Prop</span><select id="pbMarket" onchange="pbSet('market',this.value)"><option value="">Every prop</option></select></label>
@@ -4231,7 +4237,7 @@ function updateWSStatus(active, mode='POLLING') {
 }
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
-const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
+const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', anchor: '', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
   view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
@@ -4260,7 +4266,9 @@ async function loadPropsBoard() {
   document.getElementById('page-props')?.classList.toggle('mlbv', pbState.view === 'mlb');
   if (pbState.view === 'mlb') return loadMlb(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
-  if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
+  // NO SHARP LINE: every leg no sharp book lists; most carry no price, so the Lines view drops its priced-only filter
+  if (pbState.anchor) qs.set('anchor', pbState.anchor);
+  if (lines) { qs.set('book', pbState.lineBook); if (!pbState.anchor) qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
   else if (pbState.book) qs.set('book', pbState.book);
   if (pbState.q) qs.set('q', pbState.q);
   if (!lines && pbState.show === 'multi') qs.set('multi', '1');
@@ -4320,6 +4328,7 @@ function pbChips() {
   const lines = pbState.view === 'lines';
   document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')")].join('');
   pbCoverage();
+  pbAnchorBar();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
 }
@@ -4365,6 +4374,24 @@ function pbCoverage() {
   const ls = Object.entries(cov.leagues).filter(([, v]) => v.legs >= 20).sort((a, b) => b[1].legs - a[1].legs);
   el.innerHTML = `<b>Legs with a sharp price</b> ${ls.map(([k, v]) => `<span class="${v.sharp ? '' : 'z'}">${escAttr(k)} ${n(v.sharp)}/${n(v.legs)}</span>`).join(' · ')}`;
 }
+// NO SHARP LINE: legs Pinnacle, FanDuel, BetRivers and Kalshi do not list at
+// any number (anchor.js). A filter and a tag on every leg; the 10-25 test found
+// no edge there, so it is research, never a play.
+function pbAnchorBar() {
+  const el = document.getElementById('pbAnchor'), a = pbState.data?.anchor;
+  if (!el) return;
+  if (!a?.now) { el.innerHTML = ''; return; }
+  const s = pbState.sport, book = pbState.view === 'lines' ? pbState.lineBook : pbState.book;
+  const sum = (pick) => { const o = { legs: 0, unanchored: 0 }; for (const [sp, v] of Object.entries(pick || {})) if (s === 'ALL' || (s === 'SPORTS' ? sp !== 'ESPORTS' : s === 'ESPORTS' ? sp === 'ESPORTS' : sp === s)) { o.legs += v.legs; o.unanchored += v.unanchored; } return o; };
+  const one = sum(book ? a.now.byApp?.[book] : a.now.bySport);
+  const app = book ? ` on ${PB_BOOKS.find(x => x[0] === book)?.[1] || book}` : '';
+  const on = pbState.anchor === 'none';
+  const pct = one.legs ? Math.round(100 * one.unanchored / one.legs) : 0;
+  const bt = a.backtest;
+  const note = on ? `<div class="anc-note"><b>NO SHARP LINE · ${escAttr(a.label || 'research, not an edge')}.</b> ${escAttr(a.note || '')}${bt ? `<div>${escAttr(bt.verdict || '')}. ${(bt.lines || []).map(escAttr).join(' ')}</div>` : ''}</div>` : '';
+  el.innerHTML = `<button class="sport-chip${on ? ' active' : ''}" onclick="pbSet('anchor','${on ? '' : 'none'}')" title="Only the legs no sharp book lists (Pinnacle, FanDuel, BetRivers, Kalshi)">NO SHARP LINE <span style="opacity:.55">${one.unanchored.toLocaleString()}</span></button><span><b>${one.unanchored.toLocaleString()} of ${one.legs.toLocaleString()} legs${app} (${pct}%)</b> have no sharp line to check them against.</span>${note}`;
+}
+const pbAncChip = r => r.anchor ? `<span class="pb-anc${r.anchor.books?.length ? '' : ' none'}" title="${escAttr(r.anchor.books?.length ? `${r.anchor.books.map(b => PB_SRC[b] || b).join(', ')} list this player and stat${r.anchor.note ? ` (${r.anchor.note})` : ''}` : 'No sharp book (Pinnacle, FanDuel, BetRivers, Kalshi) lists this player and stat: no sharp number to copy. Tested 10-25: no edge on these legs.')}">${r.anchor.books?.length ? r.anchor.books.map(b => (({ pinnacle: 'PIN', fanduel: 'FD', betrivers: 'BR', kalshi: 'KAL' })[b] || b) + (r.anchor.lines?.[b] != null ? ' ' + r.anchor.lines[b] : '')).join(' · ') : 'NO SHARP'}</span>` : '';
 function pbFmtStart(t) {
   const d = new Date(t);
   if (!t || isNaN(d)) return '';
@@ -4464,7 +4491,7 @@ function lnRow(r, book) {
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
   const meta = [pbMatchup(r, true), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
   return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}">
-    <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span></div>
+    <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span>${pbAncChip(r)}</div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
     <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
@@ -4668,7 +4695,7 @@ function renderLines() {
     .map(m => `<option value="${escAttr(m.market)}"${m.market === pbState.market ? ' selected' : ''}>${escAttr(m.market)} (${m.n})</option>`).join('');
   const rows = d?.rows || [];
   if (!rows.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO LINES</div><div class="empty-sub">${pbState.q || pbState.market || pbState.sport !== 'ALL' ? 'Nothing priced matches these filters.' : 'Nothing is priced on this app yet. Try again in a minute.'}</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO LINES</div><div class="empty-sub">${pbState.anchor ? 'Every leg here has a sharp line right now.' : pbState.q || pbState.market || pbState.sport !== 'ALL' ? 'Nothing priced matches these filters.' : 'Nothing is priced on this app yet. Try again in a minute.'}</div></div>`;
     return;
   }
   const bet = d.lines?.bettable;
@@ -4997,7 +5024,7 @@ function renderPropsBoard() {
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">${pbState.q || pbState.book || pbState.sport !== 'ALL' || pbState.show !== 'all' ? 'Nothing matches these filters.' : 'The books are still loading. Try again in a minute.'}</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">${pbState.q || pbState.book || pbState.sport !== 'ALL' || pbState.show !== 'all' || pbState.anchor ? 'Nothing matches these filters.' : 'The books are still loading. Try again in a minute.'}</div></div>`;
     return;
   }
   const booksOn = pbBooksOn();
@@ -5019,7 +5046,7 @@ function renderPropsBoard() {
     const cbs = cbx ? `<span class="pb-gap dim" title="${escAttr(`At ${cbx.line}, ${cbx.sources.map(x => `${x.book === 'pinnacle-parts' ? "Pinnacle's parts added up" : x.book} ${x.p}% over`).join(', ')}: each one, on its own price, puts ${pbSideWord(cbx.book, cbx.side)} past the app's break-even. Its own record, judged at 50 graded; not a proven play.`)}">COMBO ${PBN[cbx.book] || cbx.book} ${pbSideWord(cbx.book, cbx.side)} ${cbx.line}</span>` : '';
     const meta = [pbMatchup(r), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
-      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${pbAncChip(r)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
       <div class="pb-play">${bestTxt}</div></div>`;
   }).join('');
