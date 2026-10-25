@@ -4689,7 +4689,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.165.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.166.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6227,6 +6227,11 @@ async function gradeEvResults() {
 // close and the ESPN final. A record only: no alerts, not in Best Plays.
 // EXCHANGE_SIZE=off stops it.
 const xsize = require('./xsize');
+// the books behind the shopper's exchange prices (depthbook.js): every book the
+// size record reads, plus a few of the shopper's own a minute. SHOP_DEPTH=off stops the shopper's reads.
+const depthBook = require('./depthbook');
+const shopDepthOn = () => !/^(off|0|false|no)$/i.test(String(process.env.SHOP_DEPTH || '').trim());
+const shopDepth = depthBook.createDepthBook({ readAsks: ref => xsize.readAsks({ get: (url, cfg) => axios.get(url, cfg) }, ref) });
 const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
 const xsizeTracker = xsize.createSizeTracker({
   store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
@@ -6234,6 +6239,7 @@ const xsizeTracker = xsize.createSizeTracker({
   // behind the exchange scans' thousands of Kalshi calls, so a minute's pass
   // took ten (2 passes in the first 10 minutes live, 10-24). At most ~70 reads a minute.
   http: { get: (url, cfg) => axios.get(url, cfg) },
+  onBook: (ref, book, t) => shopDepth.fromRecord(ref, book, t),
 });
 xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
 let xsizeRunning = false;
@@ -6406,7 +6412,7 @@ const shopList = v => (v ? String(v).toLowerCase().split(',').map(x => x.trim())
 const shopNum = v => (v == null || v === '' ? null : Number.isFinite(parseFloat(v)) ? parseFloat(v) : null);
 // GET /api/shopper?sport=&league=&q=&markets=moneyline,spread,total,player_prop
 // &providers=&exclude=&state=TX&hours=48&minEv=1 (percent)&minEdge= (points)
-// &minLiquidity=&maxAge= (seconds)&priced=1&arbs=1&sort=ev|start|hold|gap|venues
+// &minLiquidity=&minSize= (dollars every shown exchange price must fill, fee in)&maxAge= (seconds)&priced=1&arbs=1&sort=ev|start|hold|gap|venues
 // &stake=100&method=power|multiplicative|additive|shin&limit=200
 app.get('/api/shopper', (req, res) => {
   const q = req.query;
@@ -6426,6 +6432,7 @@ app.get('/api/shopper', (req, res) => {
     minEv: minEv == null ? undefined : minEv / 100, minEdgePts: shopNum(q.minEdge) ?? undefined, minLiquidity: shopNum(q.minLiquidity) ?? undefined,
     maxAgeSec: shopNum(q.maxAge) ?? undefined, pricedOnly: q.priced === '1', arbsOnly: q.arbs === '1', sort: q.sort || 'ev', stake: shopNum(q.stake) || 100,
     method: q.method, limit: parseInt(q.limit) || 200, proven: evBookProven,
+    depth: shopDepth.forQuote, minSize: Math.min(Math.max(shopNum(q.minSize) || 0, 0), 100000) || null,
   });
   const body = JSON.stringify({ ...(pro ? view : shopper.stripPro(view)), pro, builtAt: st.builtAt, buildMs: st.ms, providers: shopHealth(), formats: oddsSchema.FORMATS,
     devigMethods: oddsEngine.DEVIG_METHODS, stateInfo: venues.stateInfo(q.state),
@@ -6463,6 +6470,30 @@ async function observePropHistory() {
     propHistory.observe(views);
     Object.assign(propHistoryState, { observedAt: new Date().toISOString(), markets: grouped.length, ms: Date.now() - t0, error: null });
   } catch (e) { propHistoryState.error = e.message; console.warn('Prop history:', e.message); }
+}
+// The shopper's own book reads: exchange prices on markets with a fair, near
+// or above it, and arb legs, read a few a minute per venue (depthbook.READ_BUDGET)
+// on top of the size record's reads; each book kept 5 minutes.
+let shopDepthRunning = false;
+async function readShopDepth() {
+  if (!shopDepthOn() || shopDepthRunning || !shopState.builtAt) return;
+  shopDepthRunning = true;
+  try {
+    const t = Date.now();
+    const all = [...shopState.free.quotes, ...shopState.kalshi.quotes].filter(q => q.marketType !== 'player_prop' && q.marketStatus === 'open' && q.available !== false
+      && Date.parse(q.startUtc) > t && Date.parse(q.startUtc) < t + 48 * 3600e3);
+    const keys = new Set(all.filter(q => depthBook.EXCHANGES.has(q.providerId)).map(q => shopper.groupOf(q)?.key).filter(Boolean));
+    const grouped = [...shopper.groupMarkets(all.filter(q => keys.has(shopper.groupOf(q)?.key))).values()];
+    const filter = shopper.providerFilter({});
+    const views = [];
+    for (let i = 0; i < grouped.length; i++) {
+      const v = shopper.viewMarket(grouped[i], { filter, stake: 100, now: t, method: 'power' });
+      if (v && v.fair) views.push(v);
+      if (i % 300 === 299) await new Promise(r => setImmediate(r));
+    }
+    await shopDepth.readPass(depthBook.candidates(views));
+  } catch (e) { shopDepth.state.errors = [e.message, ...shopDepth.state.errors].slice(0, 5); }
+  finally { shopDepthRunning = false; }
 }
 // one prop market's history: GET /api/shopper/history?key=<market key>.
 // Free viewers get prices without the fair; Kalshi needs its data licence.
@@ -7406,13 +7437,14 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.165.0',
+  version: '3.166.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
   exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
+  shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   kalshiExtra: kxExtraState,
@@ -7537,7 +7569,7 @@ schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('7,17,27,37,47,57 * * * *', () => shopTracker.grade().catch(e => console.warn('Shop grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory())));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory()).then(() => readShopDepth())));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
@@ -7708,5 +7740,5 @@ module.exports = {
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, scanInplay, inplayTracker, inplayLive, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
-  scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory,
+  scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory, shopDepth, readShopDepth,
 };

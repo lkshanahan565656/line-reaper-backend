@@ -131,7 +131,8 @@ async function readAsks(http, ref) {
   return { asks: execcheck.pmusAsks(b, ref.buy), fee: { rate: ref.rate ?? D.VENUES.polymarketus.rate, roundCent: false } };
 }
 
-function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX_READS } = {}) {
+// onBook(ref, { asks, fee }, at): every book read, handed on (the shopper keeps them for its size column)
+function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX_READS, onBook = null } = {}) {
   const loaded = (async () => { if (store.init) await store.init(); })();
   const holdUntil = {};
   const state = { scans: 0, lastScan: null, sides: 0, candidates: {}, reads: {}, flags: 0, errors: [] };
@@ -180,6 +181,7 @@ function createSizeTracker({ store, http, now = () => Date.now(), maxReads = MAX
       }
       state.reads[c.venue] = (state.reads[c.venue] || 0) + 1;
       if (!book) return;
+      if (onBook) { try { onBook(c.ref, book, t); } catch { /* the record never waits on the shopper */ } }
       const f = D.fillsOf(book.asks, c.fair, book.fee);
       for (const tier of D.TIERS) {
         const w = f.tiers[tier];
