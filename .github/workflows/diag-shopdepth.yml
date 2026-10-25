@@ -1,0 +1,21 @@
+name: diag-shopdepth
+on:
+  push:
+    branches: [diag-shopdepth]
+concurrency:
+  group: diag-shopdepth
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: timeout 1500 node diag/live.js || true
+      - run: |
+          cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-shopdepth-out
