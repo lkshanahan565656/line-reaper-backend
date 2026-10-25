@@ -3,7 +3,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   let st = null;
   for (let i = 0; i < 60; i++) {
-    try { st = await (await fetch(B + '/api/status')).json(); if (st.version === '3.160.0' && st.matchups && st.matchups.ready) break; } catch (e) { console.error('status', e.message); }
+    try { st = await (await fetch(B + '/api/status')).json(); if (st.version === '3.160.1' && st.matchups && st.matchups.ready) break; } catch (e) { console.error('status', e.message); }
     await sleep(20000);
   }
   const out = { at: new Date().toISOString(), version: st && st.version, statusMatchups: st && st.matchups };
