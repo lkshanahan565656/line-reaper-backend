@@ -1411,6 +1411,20 @@ body.no-help .clv-info { display:none; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
 .shp-dim { color:var(--text2); font-size:11px; }
+.nflm-tag { display:inline-block; font-size:10px; letter-spacing:.06em; padding:1px 6px; border:1px solid #f59e0b; color:#f59e0b; border-radius:3px; margin-right:6px; }
+.nflm-bt { font-size:11px; color:var(--text2); border-left:3px solid #f59e0b; padding:6px 10px; margin:4px 0 10px; line-height:1.6; }
+.nflm-game { border:1px solid #1f1f1f; border-radius:6px; padding:8px 10px; margin-bottom:10px; }
+.nflm-gh { font-size:13px; margin-bottom:2px; }
+.nflm-sub { margin-bottom:6px; }
+.nflm-scroll { overflow-x:auto; }
+.nflm-t { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+.nflm-t th { text-align:left; font-weight:500; color:var(--text2); font-size:10px; letter-spacing:.04em; padding:3px 6px; border-bottom:1px solid #1f1f1f; white-space:nowrap; }
+.nflm-t td { padding:3px 6px; border-bottom:1px solid #141414; white-space:nowrap; }
+.nflm-gap td { background:rgba(34,197,94,.07); }
+.nflm-pos { color:var(--green); } .nflm-neg { color:var(--text2); }
+.nflm-link { color:var(--green); font-size:10px; }
+.nflm-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; margin-bottom:10px; }
+.nflm-card { border:1px solid #1f1f1f; border-radius:6px; padding:8px 10px; font-size:12px; line-height:1.6; }
 .shp-tag { display:inline-block; font-size:9px; letter-spacing:1px; padding:1px 5px; border-radius:4px; border:1px solid var(--border2); color:var(--text2); margin-left:4px; }
 .shp-tag.tx { border-color:rgba(16,185,129,.5); color:var(--green); }
 .shp-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin:0 0 8px; }
@@ -1516,6 +1530,11 @@ body.no-help .clv-info { display:none; }
   </div>
   <div class="os-sum" id="osSum"></div>
   <div id="osContent"><div class="empty-wrap"><div class="empty-big">LOADING</div><div class="empty-sub">Lining up every venue...</div></div></div>
+  </div>
+  <div id="nflmView" style="display:none">
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">MODEL, NOT AN EDGE</span> Our own NFL number on every contract Kalshi lists, next to Kalshi's cost (fee in) and Pinnacle's no-vig price. In the held-out test on 2025-26 games Kalshi's price an hour before kickoff beat this model, so a gap here is the model disagreeing, not a bet.</div>
+    <div class="sport-row" id="nflmModes"></div>
+    <div id="nflmContent"></div>
   </div>
   <div id="shpView" style="display:none">
     <div class="shp-dim" style="margin:0 0 10px;line-height:1.5">Every number any venue hangs, alternate lines and player props included. Fair is Pinnacle's no-vig (Matchbook blended in beside it). Ranked rows are leads unless marked PROVEN; check the price in the app before you bet.</div>
@@ -2031,7 +2050,7 @@ function showTab(name, el) {
   if (name === 'big') loadBig(); else clearTimeout(bigUi.timer);
   if (name === 'best') loadBest(); else clearTimeout(bestUi.timer);
   if (name === 'tools') loadTools();
-  if (name === 'odds') oddsModeShow(); else { clearTimeout(osUi.timer); if (window.shpUi) clearTimeout(shpUi.timer); }
+  if (name === 'odds') oddsModeShow(); else { clearTimeout(osUi.timer); if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); }
   if (name === 'betlog') mybOpen();
   if (name === 'myslips') msOpen();
   if (name === 'clv') mybReady().then(renderCLV);
@@ -9199,6 +9218,73 @@ startSharpPolling();    // REST polling — always works regardless of WS
 // Odds auto-refresh: every 10 min, only while the tab is visible — protects the free 500/mo quota
 setInterval(() => { if (apiKey && !document.hidden && netFails.size < 2) loadData(); }, 600000);
 setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 120000);
+// ─── NFL MODEL (ODDS SCREEN > NFL MODEL) ──────────────────────────────────────
+// /api/nfl/model: our NFL number on each Kalshi contract beside Kalshi's cost
+// and Pinnacle's fair; /api/nfl/model/record: its forward record by kind.
+var nflmUi = { view: 'board', data: null, record: null, error: null, timer: null, market: '' };
+const nflPct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+const nflPts = x => (x == null ? '—' : `${x > 0 ? '+' : ''}${(x * 100).toFixed(1)}`);
+const nflKind = { 'nfl-ml': 'Moneyline', 'nfl-spread': 'Spread', 'nfl-total': 'Total' };
+function nflmSet(k, v) { nflmUi[k] = v; if (k === 'view') nflmLoad(); else nflmRender(); }
+async function nflmLoad() {
+  clearTimeout(nflmUi.timer);
+  const el = document.getElementById('nflmContent');
+  if (!el) return;
+  nflmModes();
+  if (!(nflmUi.view === 'record' ? nflmUi.record : nflmUi.data)) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try {
+    if (nflmUi.view === 'record') nflmUi.record = await tailGet('/api/nfl/model/record');
+    else nflmUi.data = await tailGet('/api/nfl/model');
+    nflmUi.error = null;
+  } catch (e) { nflmUi.error = e.old ? 'The NFL model needs a newer backend.' : e.message; }
+  nflmRender();
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'nflmodel') nflmUi.timer = setTimeout(() => { if (!document.hidden) nflmLoad(); else nflmUi.timer = setTimeout(nflmLoad, 60e3); }, 90e3);
+}
+function nflmModes() {
+  const bar = document.getElementById('nflmModes');
+  if (!bar) return;
+  const v = (k, l) => `<button class="sport-chip${nflmUi.view === k ? ' active' : ''}" onclick="nflmSet('view','${k}')">${l}</button>`;
+  const m = (k, l) => `<button class="sport-chip${nflmUi.market === k ? ' active' : ''}" onclick="nflmSet('market','${k}')">${l}</button>`;
+  bar.innerHTML = v('board', 'THIS WEEK') + v('record', 'RECORD') + (nflmUi.view === 'board' ? '<span style="width:10px"></span>' + m('', 'ALL') + m('nfl-ml', 'MONEYLINE') + m('nfl-spread', 'SPREAD') + m('nfl-total', 'TOTAL') : '');
+}
+function nflmRender() {
+  nflmModes();
+  const el = document.getElementById('nflmContent');
+  if (!el) return;
+  if (nflmUi.error) { el.innerHTML = `<div class="error-box">Could not load the NFL model (${escEs(nflmUi.error)}). <button class="key-btn" onclick="nflmLoad()">RETRY</button></div>`; return; }
+  if (nflmUi.view === 'record') return nflmRecord(el);
+  const d = nflmUi.data;
+  if (!d) return;
+  const bt = d.backtest;
+  const btLine = bt ? Object.entries(bt.types || {}).filter(([, t]) => t.contracts).map(([k, t]) => `${nflKind['nfl-' + k] || k}: ${t.contracts || 0} contracts, model log loss ${t.logLoss?.model ?? '—'} vs Kalshi ${t.logLoss?.kalshiT60 ?? '—'}, bets 3+ pts ${t.bets3?.n ?? 0} at ${t.bets3?.roi == null ? '—' : (t.bets3.roi * 100).toFixed(1) + '%'} ROI, ${escEs(t.verdict || 'not scored')}`).join('<br>') : 'No backtest file.';
+  const st = d.status || {};
+  const head = `<div class="nflm-bt"><b>HELD-OUT TEST</b> (${escEs(bt?.testFrom || '')} to ${escEs(bt?.testTo || '')}, ${bt?.games ?? 0} games, Kalshi 60 minutes before kickoff, fee in)<br>${btLine}</div>`;
+  const games = (d.games || []).map(g => ({ ...g, rows: g.rows.filter(r => !nflmUi.market || r.kind === nflmUi.market) })).filter(g => g.rows.length);
+  if (!games.length) {
+    el.innerHTML = head + `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">NO NFL CONTRACTS PRICED</div><div class="empty-sub">${st.upcoming ? `${st.upcoming} games rated; Kalshi's contracts appear once they match Pinnacle's games.` : 'Ratings are still loading (first read a few minutes after a restart).'}${(st.errors || []).length ? ' ' + escEs(st.errors.join('; ')) : ''}</div></div>`;
+    return;
+  }
+  const body = games.map(g => {
+    const k = new Date(g.kickoff);
+    const fav = g.model.margin >= 0 ? g.home : g.away;
+    const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)}${r.kalshi.url ? ` <a href="${escEs(r.kalshi.url)}" target="_blank" rel="noopener" class="nflm-link">Kalshi</a>` : ''}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
+    return `<div class="nflm-game"><div class="nflm-gh"><b>${escEs(g.away)} at ${escEs(g.home)}</b> <span class="shp-dim">${k.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>
+      <div class="shp-dim nflm-sub">Model: ${escEs(fav)} by ${Math.abs(g.model.margin).toFixed(1)}, total ${g.model.total}, ${escEs(g.home)} ${nflPct(g.model.pHome)} to win${g.nflverse?.spread != null ? ` · consensus line ${escEs(g.home)} ${g.nflverse.spread > 0 ? '-' : '+'}${Math.abs(g.nflverse.spread)}, total ${g.nflverse.total}` : ''}</div>
+      <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Contract</th><th>Model</th><th>Kalshi cost</th><th>Pinnacle fair</th><th>Model − cost</th><th>Pinnacle − cost</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  el.innerHTML = head + `<div class="shp-dim" style="margin:6px 0 10px">Rows shaded green: the model is 3+ points over Kalshi's cost. Those go in the record an hour before kickoff; none is a bet until the record proves it.</div>` + body;
+}
+function nflmRecord(el) {
+  const d = nflmUi.record;
+  if (!d) return;
+  const cards = Object.entries(d.kinds || {}).map(([k, s]) => `<div class="nflm-card"><div><b>${escEs(nflKind[k] || k)}</b> <span class="nflm-tag">${escEs(String(s.verdict).toUpperCase())}</span></div>
+    <div>${s.games} of ${s.of} games graded vs Pinnacle's close · ${s.open} waiting</div>
+    <div>CLV vs Pinnacle: ${s.avgClv == null ? '—' : nflPts(s.avgClv) + '%'} (t ${s.clvT ?? '—'}) · vs Kalshi's close: ${s.kalshiClv ? nflPts(s.kalshiClv.mean) + '%' : '—'}</div>
+    <div>Results: ${s.wins}-${s.losses}${s.short ? ` · ${escEs(s.short)}` : ''}</div></div>`).join('');
+  const rows = (d.recent || []).map(r => `<tr><td>${escEs(nflKind[r.kind] || r.kind)}</td><td>${escEs(r.label)}<div class="shp-dim">${escEs(r.game)}</div></td><td>${nflPct(r.model)}</td><td>${nflPct(r.cost)}</td><td>${nflPct(r.pinClose)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td><td>${escEs(r.outcome || r.status)}${r.final ? ` <span class="shp-dim">${escEs(r.final)}</span>` : ''}</td></tr>`).join('');
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div><div class="nflm-cards">${cards}</div>` +
+    (rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Kind</th><th>Contract</th><th>Model</th><th>Cost</th><th>Pin close</th><th>CLV</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">Nothing frozen yet: contracts go in an hour before kickoff when the model is 3+ points over Kalshi.</div></div>');
+}
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
@@ -9216,12 +9302,15 @@ function oddsModeShow() {
   const lines = !mode || mode === 'lines';
   const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
   const bar = document.getElementById('oddsModes');
-  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS');
-  const ov = document.getElementById('osView'), sv = document.getElementById('shpView');
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('nflmodel', 'NFL MODEL');
+  const nfl = mode === 'nflmodel';
+  const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView');
   if (ov) ov.style.display = lines ? '' : 'none';
-  if (sv) sv.style.display = lines ? 'none' : '';
-  if (lines) { if (window.shpUi) clearTimeout(shpUi.timer); loadOdds(); }
-  else { clearTimeout(osUi.timer); shpLoad(); }
+  if (sv) sv.style.display = lines || nfl ? 'none' : '';
+  if (nv) nv.style.display = nfl ? '' : 'none';
+  if (lines) { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); loadOdds(); }
+  else if (nfl) { clearTimeout(osUi.timer); if (window.shpUi) clearTimeout(shpUi.timer); nflmLoad(); }
+  else { clearTimeout(osUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); shpLoad(); }
 }
 let shpTyping = null;
 function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
@@ -9259,7 +9348,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
   shpRender();
-  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {

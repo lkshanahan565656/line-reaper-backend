@@ -147,6 +147,13 @@ const sportPropBet = r => {
     line: graded && r.closeFair != null && r.signalDecimal != null ? { win: r.outcome === 'win', p: r.closeFair, d: r.signalDecimal } : null,
     labels: { kind: SPORT_KIND[r.kind] || 'sharp price', sport: r.sport, book: SPORT_BOOKS[r.signalBook] || r.signalBook, stat: r.mkey } };
 };
+const NFL_KIND = { 'nfl-ml': 'NFL model moneyline', 'nfl-spread': 'NFL model spread', 'nfl-total': 'NFL model total' };
+const nflModelBet = r => {
+  const graded = r.status === 'graded' && r.outcome !== 'push';
+  return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv: r.clv ?? null, game: `${r.gameId}|${day(r.start)}`,
+    line: graded && r.closeOk && r.pinClose > 0 && r.cost > 0 ? { win: r.outcome === 'win', p: r.pinClose, d: 1 / r.cost } : null,
+    labels: { kind: NFL_KIND[r.kind] || r.kind } };
+};
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
@@ -205,6 +212,9 @@ const SOURCES = {
   bigMoney: { label: 'Big money', done: r => r.status === 'graded' || r.status === 'locked', open: r => r.status === 'open', bet: bigMoneyBet,
     cuts: [['flow'], ['venue'], ['kind'], ['line'], ['flow', 'venue'], ['kind', 'flow']] },
   esportsPicks: { label: 'Esports props', done: r => r.status === 'graded', bet: pickBet, cuts: [['sport'], ['stat'], ['side'], ['sport', 'stat', 'side']] },
+  // our NFL game-line model vs Kalshi (nflgl.js): a contract frozen in the hour
+  // before kickoff, CLV on Pinnacle's no-vig close, graded on the final
+  nflModel: { label: 'NFL model', done: r => r.status === 'locked' || r.status === 'graded', open: r => r.status === 'open', bet: nflModelBet, cuts: [['kind']] },
 };
 // sportsbook records whose proven mark must come from one book's own sample
 const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
@@ -228,6 +238,14 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
   if (s.verdict === 'proven' && KILLED_SOURCES[source]) return cap(s, KILLED_SOURCES[source]);
   if (s.verdict === 'proven' && s.avgClv != null && s.avgClv <= 0) return cap(s, `not proven: closes ${(s.avgClv * 100).toFixed(1)}% CLV, the price did not beat the close`);
   if (source === 'bigMoney' && s.verdict === 'proven') return bigMoneyGuard(by, s, bets, vals);
+  // the NFL model: one kind alone, 50 games, results not 1.5 sd under the close
+  if (source === 'nflModel' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind') return cap(s, `not proven: pooled across moneyline, spread and total`, { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
   if (!BOOK_SOURCES.has(source)) return s;
   // pick'em legs: flagged legs do not beat Pinnacle's price (10-24 checks), nothing here is proven
   if (source === 'sportsProps' && s.verdict === 'proven') return cap(s, "not proven: flagged pick'em legs have not beaten Pinnacle's price on results (10-24 checks)");
