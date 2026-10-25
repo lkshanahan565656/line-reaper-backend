@@ -59,7 +59,7 @@ const DEFAULTS = {
 const MAJOR = new Set(['LCK', 'LPL', 'LEC', 'LCS', 'LCP', 'CBLOL', 'PCS', 'VCS']);
 
 // The numbers above were fitted by walk-forward log loss on 2024-07 to
-// 2025-12 series and tested on 2026 (scripts/lolmatchup-backtest.js).
+// 2025-12 series and tested on 2026 (scripts/esmatchup-backtest.js).
 
 // Where each league starts, on the rating scale. Leagues that never meet
 // (LEC and LFL, LCK and LPL outside internationals) can't be placed against

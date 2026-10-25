@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-// Walk-forward backtest of the LoL head-to-head engine (esmatchup.js).
+// Walk-forward backtest of the head-to-head engine (esmatchup.js) for one
+// game, with that game's settings from esgames.js:
 //
-//   node scripts/lolmatchup-backtest.js <kalshi-LOL.json.gz> [series.json.gz] [out.json]
+//   node scripts/esmatchup-backtest.js <LOL|CS2|VAL> <kalshi.json.gz> [out.json]
 //
-// series: lolesports finished series (default seeds/lol-series.json.gz).
-// kalshi: settled KXLOLGAME events with hourly (-48h..+1h) and minute
+// series: the game's seed (seeds/<game>-series.json.gz).
+// kalshi: settled match-winner events with hourly (-48h..+1h) and minute
 //         (-150..+15 min) candles [minute, yes ask, yes bid, volume, price],
-//         from the diag-esh2h workflow (branch diag-esh2h-out-k-LOL).
+//         from the diag-esh2h workflow (branches diag-esh2h-out-k-LOL, -k-CS2,
+//         -k-VAL). MU_OPTS (JSON) overrides model settings for a grid run.
 //
 // No leakage: ratings only ever see series that finished (start + 45 min a
 // map) before the moment priced. The model's settings were fitted on
@@ -19,24 +21,28 @@ const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
 const M = require('../esmatchup');
+const { GAMES } = require('../esgames');
 
-const [kFile, sFile = path.join(__dirname, '..', 'seeds', 'lol-series.json.gz'), outFile = path.join(__dirname, '..', 'seeds', 'lol-matchup-backtest.json')] = process.argv.slice(2);
-if (!kFile) { console.error('usage: lolmatchup-backtest.js <kalshi-LOL.json.gz> [series.json.gz] [out.json]'); process.exit(1); }
+const [gameId, kFile, outArg] = process.argv.slice(2);
+const G = GAMES[String(gameId || '').toUpperCase()];
+if (!G || !kFile) { console.error('usage: esmatchup-backtest.js <LOL|CS2|VAL> <kalshi.json.gz> [out.json]'); process.exit(1); }
+const sFile = G.seed, outFile = outArg || G.backtest;
+const BASE = { ...G.model, ...JSON.parse(process.env.MU_OPTS || '{}') };
 const gz = f => JSON.parse(zlib.gunzipSync(fs.readFileSync(f)));
 
 const series = gz(sFile).map(s => ({ ...s, t: Date.parse(s.t) })).filter(s => Number.isFinite(s.t) && s.s1 != null).sort((a, b) => a.t - b.t);
 const kal = gz(kFile).filter(e => e.kind === 'match' && e.ms?.length === 2 && e.start);
-const TRAIN = [Date.parse('2024-07-01'), Date.parse('2026-01-01')];
+const TRAIN = [Date.parse(G.trainFrom), Date.parse(G.testFrom)];
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
 const r1 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
 const ll = (p, y) => { p = Math.min(1 - 1e-6, Math.max(1e-6, p)); return -(y ? Math.log(p) : Math.log(1 - p)); };
 const fee = p => 0.07 * p * (1 - p);
 const mean = (a, f) => (a.length ? a.reduce((s, x) => s + f(x), 0) / a.length : null);
-const MAJOR = /^(LCK|LPL|LEC|LCS|LTA North|LTA South|CBLOL|LCP|Worlds|MSI|First Stand|Esports World Cup)$/;
+const MAJOR = G.major || /(?!)/;
 
 // 1. every series, predicted before it was played
 function walk(opts) {
-  const R = M.createRatings(opts);
+  const R = M.createRatings({ ...BASE, ...opts });
   const out = [];
   for (let i = 0; i < series.length;) {
     let j = i;
@@ -59,7 +65,7 @@ function calib(rows, key = 'p') {
   return Object.entries(b).map(([k, v]) => ({ bucket: `${k * 10}-${k * 10 + 10}%`, n: v.length, predicted: r4(mean(v, q => q[0])), actual: r4(mean(v, q => q[1])) }));
 }
 
-const all = walk(JSON.parse(process.env.MU_OPTS || "{}"));
+const all = walk({});
 const train = all.filter(x => x.t >= TRAIN[0] && x.t < TRAIN[1]), test = all.filter(x => x.t >= TRAIN[1]);
 const indep = walk({ kappa: Infinity }).filter(x => x.t >= TRAIN[1]);
 const noH2h = walk({ h2hWeight: 0 }).filter(x => x.t >= TRAIN[1]);
@@ -102,10 +108,10 @@ function fair(j, T) {
 }
 const ENTRIES = [['T-6h', 360], ['T-60', 60], ['T-30', 30]];
 const ev = [];
-for (const s of series) ev.push({ t: s.t + (s.bo || 1) * 45 * 60e3, kind: 'done', s });
+for (const s of series) ev.push({ t: s.t + (s.bo || 1) * G.mapMinutes * 60e3, kind: 'done', s });
 for (const j of joined) for (const [lab, min] of ENTRIES) ev.push({ t: j.s.t - min * 60e3, kind: 'entry', j, lab });
 ev.sort((a, b) => a.t - b.t || (a.kind === 'done' ? -1 : 1));
-const R = M.createRatings({});
+const R = M.createRatings(BASE);
 const rows = [];
 for (const e of ev) {
   if (e.kind === 'done') { R.update(e.s); continue; }
@@ -168,7 +174,8 @@ const t60 = rows.filter(x => x.lab === 'T-60');
 
 const out = {
   generated: new Date().toISOString(),
-  model: { opts: M.DEFAULTS, fittedOn: '2024-07-01 to 2025-12-31 series (walk-forward log loss); 2026 is out of sample' },
+  game: G.id,
+  model: { opts: { ...M.DEFAULTS, ...BASE, leaguePrior: BASE.leaguePrior ?? null, tier2Re: BASE.tier2Re ? String(BASE.tier2Re) : null }, fittedOn: `${G.trainFrom} to ${G.testFrom} series (walk-forward log loss); ${G.testFrom.slice(0, 4)} on is out of sample` },
   data: { series: series.length, from: new Date(series[0].t).toISOString().slice(0, 10), to: new Date(series[series.length - 1].t).toISOString().slice(0, 10), kalshiEvents: kal.length, kalshiJoined: joined.length },
   allSeries: {
     train: score(train), test: score(test), testPriced: score(test.filter(x => x.priced)), coinFlip: r4(Math.LN2),
@@ -181,7 +188,8 @@ const out = {
   verdict: null,
 };
 const k30 = kalshi['T-30'], k60 = kalshi['T-60'];
-out.verdict = `Kalshi's price beats the model: log loss ${k60.logLoss.kalshi} vs ${k60.logLoss.model} an hour out on ${k60.n} series (t ${k60.llGapT}), ${k30.logLoss.kalshi} vs ${k30.logLoss.model} at 30 minutes. Betting the model's side when it was 5+ points off Kalshi: ${k60.bets[1].bets} bets, ROI ${k60.bets[1].roi}% after the fee, ${k60.bets[1].clv}% against Kalshi's close. Blending the model into Kalshi's price (weight fitted on earlier months) gives ${k60.logLoss.blend}, no better than Kalshi alone. The model is a research and explanation tool, not a betting signal.`;
+const kBetter = k60.logLoss.kalshi < k60.logLoss.model;
+out.verdict = !kBetter ? `The model's log loss (${k60.logLoss.model}) is at or under Kalshi's (${k60.logLoss.kalshi}) an hour out on ${k60.n} series (t ${k60.llGapT}); needs a re-check before anything is called an edge.` : `Kalshi's price beats the model: log loss ${k60.logLoss.kalshi} vs ${k60.logLoss.model} an hour out on ${k60.n} series (t ${k60.llGapT}), ${k30.logLoss.kalshi} vs ${k30.logLoss.model} at 30 minutes. Betting the model's side when it was 5+ points off Kalshi: ${k60.bets[1].bets} bets, ROI ${k60.bets[1].roi}% after the fee, ${k60.bets[1].clv}% against Kalshi's close. Blending the model into Kalshi's price (weight fitted on earlier months) gives ${k60.logLoss.blend}, no better than Kalshi alone. The model is a research and explanation tool, not a betting signal.`;
 fs.writeFileSync(outFile, JSON.stringify(out, null, 1));
 console.log(JSON.stringify({ data: out.data, allSeries: { train: out.allSeries.train, test: out.allSeries.test, indep: out.allSeries.testIndependentMaps.logLoss, noH2h: out.allSeries.testNoH2h.logLoss, shape: out.allSeries.seriesShape }, kalshi: Object.fromEntries(Object.entries(kalshi).map(([k, v]) => [k, { n: v.n, ll: v.logLoss, t: v.llGapT, w: v.blendWeightLast, bets: v.bets, majorLL: v.major.logLoss, otherLL: v.other.logLoss }])) }, null, 1));
 console.log(out.verdict);

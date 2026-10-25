@@ -143,7 +143,7 @@ function bo3Games(matches, names) {
   for (const m of matches || []) {
     if (m.status !== 'finished') continue;
     const a = names.get(m.team1_id), b = names.get(m.team2_id);
-    out.push(...seriesToGames(a, b, Number(m.team1_score), Number(m.team2_score), Date.parse(m.start_date) || 0));
+    out.push(...seriesToGames(a, b, Number(m.team1_score), Number(m.team2_score), Date.parse(m.start_date) || 0).map(g => ({ ...g, id: m.id ?? null, tier: m.tier || null, bo: m.bo_type ?? null })));
   }
   return out;
 }
@@ -201,6 +201,8 @@ async function refreshRatings(http, state, log = console, { panda = null } = {})
       state.elo[sport] = buildElo(games);
       // the raw map results also feed team-vs-team history on the match board
       (state.games ||= {})[sport] = indexGames(games);
+      // and the matchup engines rebuild series from them (no second read)
+      (state.raw ||= {})[sport] = { games, at: Date.now() };
       state.meta[sport] = { games: games.length, teams: state.elo[sport].size, updated: new Date().toISOString(), error: null };
       log.log?.(`Ratings ${sport}: ${games.length} maps → ${state.elo[sport].size} teams`);
     } catch (e) {
