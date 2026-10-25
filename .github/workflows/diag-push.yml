@@ -10,6 +10,7 @@ jobs:
     timeout-minutes: 50
     steps:
       - run: |
+          set +e
           B=https://line-reaper-backend-production.up.railway.app
           mkdir out
           for i in $(seq 1 80); do
@@ -27,7 +28,8 @@ jobs:
           curl -s --max-time 60 "$B/api/status" | python3 -c "import json,sys;d=json.load(sys.stdin);print(json.dumps({'version':d.get('version'),'push':d.get('live',{}).get('push'),'backup':d.get('resultsBackup')},indent=1))" > out/status.json || true
           curl -s --max-time 30 "$B/app" | grep -c "pushTest()" > out/app-has-test.txt || true
           curl -s --max-time 30 "$B/sw.js" | grep -c "pushsubscriptionchange" > out/sw-has-change.txt || true
-      - run: |
+      - if: always()
+        run: |
           git init -q o && mv out o/ && cd o
           git config user.name diag-bot && git config user.email diag-bot@users.noreply.github.com
           git checkout -q --orphan diag-push-out && git add out && git commit -qm "diag output"
