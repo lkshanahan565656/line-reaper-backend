@@ -1,0 +1,45 @@
+11:53:15 kalshi series 4047 tennis 178
+11:53:15 saved k-series 178
+11:53:15 match series KXATPMATCH:KXATPMATCH
+11:53:16 KXATPMATCH live 1516 hist 8844 settled since 10028 sample {"can_close_early":true,"close_time":"2026-10-25T05:19:38Z","created_time":"2026-10-24T12:31:45.578093Z","custom_strike":{"tennis_competitor":"241ad35b-edbe-4ea0-a2bc-647102e62d3e"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXATPMATCH-26OCT25SHERUU","exchange_index":3,"expected_expiration_time":"2026-10-25T12:00:00Z","expiration_time":"2026-11-08T09:00:00Z","expiration_value":"","last_price_dollars":"0.6700","latest_expiration_time":"2026-11-08T09:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Ben Shelton","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-25T12:00:00Z","open_interest_fp":"233.21","open_time":"2026-10-24T12:36:00Z","previous_price_dollars":"0.0000","previous_yes_ask_dollars":"0.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"scalar","rules_primary":"If Ben Shelton wins the Shelton vs Ruud professional tennis match in the 2026 ATP Basel Round Of 32 after a ball has been played, then the market resolves to Yes.","rules_secondary":"The following market refers to the Shelton vs Ruud professional tennis match in the 2026 ATP Basel Round Of 32 after a ball has been played. If the match does not occur (signaled by a ball being played) due to a player injury, walkover, forfeiture, or any other cancellation (all before the match starts
+11:55:20 KXATPMATCH 500 / 10028 calls 1187 errs 0
+11:55:20 saved k-tennis 500
+11:57:25 KXATPMATCH 1000 / 10028 calls 2330 errs 0
+11:57:25 saved k-tennis 1000
+11:59:30 KXATPMATCH 1500 / 10028 calls 3473 errs 0
+11:59:30 saved k-tennis 1500
+12:01:35 KXATPMATCH 2000 / 10028 calls 4617 errs 0
+12:01:35 saved k-tennis 2000
+12:03:40 KXATPMATCH 2500 / 10028 calls 5732 errs 0
+12:03:40 saved k-tennis 2500
+12:05:45 KXATPMATCH 3000 / 10028 calls 6777 errs 0
+12:05:45 saved k-tennis 3000
+12:07:51 KXATPMATCH 3500 / 10028 calls 7910 errs 0
+12:07:51 saved k-tennis 3500
+12:09:56 KXATPMATCH 4000 / 10028 calls 9064 errs 0
+12:09:56 saved k-tennis 4000
+12:12:01 KXATPMATCH 4500 / 10028 calls 10211 errs 0
+12:12:02 saved k-tennis 4500
+12:14:06 KXATPMATCH 5000 / 10028 calls 11301 errs 0
+12:14:07 saved k-tennis 5000
+12:16:10 KXATPMATCH 5500 / 10028 calls 12448 errs 0
+12:16:10 saved k-tennis 5500
+12:18:16 KXATPMATCH 6000 / 10028 calls 13573 errs 0
+12:18:17 saved k-tennis 6000
+12:20:21 KXATPMATCH 6500 / 10028 calls 14703 errs 0
+12:20:22 saved k-tennis 6500
+12:22:25 KXATPMATCH 7000 / 10028 calls 15853 errs 0
+12:22:25 saved k-tennis 7000
+12:24:30 KXATPMATCH 7500 / 10028 calls 16979 errs 0
+12:24:31 saved k-tennis 7500
+12:26:36 KXATPMATCH 8000 / 10028 calls 18120 errs 0
+12:26:36 saved k-tennis 8000
+12:28:40 KXATPMATCH 8500 / 10028 calls 19227 errs 0
+12:28:41 saved k-tennis 8500
+12:30:46 KXATPMATCH 9000 / 10028 calls 20361 errs 0
+12:30:46 saved k-tennis 9000
+12:32:50 KXATPMATCH 9500 / 10028 calls 21485 errs 0
+12:32:50 saved k-tennis 9500
+12:34:09 saved k-tennis 9800
+12:34:10 saved k-tennis 9800
+12:34:10 done k:all calls 22151 errs 0 min 41
