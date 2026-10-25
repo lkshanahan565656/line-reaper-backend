@@ -14,12 +14,12 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund --omit=dev
-      - run: timeout 2280 node diag/fetch.js || true
+      - run: timeout 2280 node diag/fetch-lol.js || true
       - run: |
           git config user.name diag-bot
           git config user.email diag-bot@users.noreply.github.com
-          git checkout --orphan diag-esstacks-out
+          git checkout --orphan diag-esstacks-lol-out
           git rm -rq --cached . || true
           git add -f out
           git commit -qm "diag output"
-          git push -f origin diag-esstacks-out
+          git push -f origin diag-esstacks-lol-out
