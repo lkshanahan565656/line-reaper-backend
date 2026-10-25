@@ -8,7 +8,7 @@ async function get(p) { const t0 = Date.now(); try { const r = await fetch(B + p
   let st;
   for (let i = 0; i < 50; i++) { st = await get('/api/status'); if (st.j?.version === '3.166.1' && st.j?.shopDepth) break; await wait(30000); }
   const out = { version: st.j?.version, deployedSeenAt: new Date().toISOString() };
-  await wait(6 * 60e3);
+  await wait(14 * 60e3);
   st = await get('/api/status');
   out.shopDepth = st.j?.shopDepth; out.exchangeSize = { scans: st.j?.exchangeSize?.scans, errors: st.j?.exchangeSize?.errors, reads: st.j?.exchangeSize?.reads };
   const sum = v => {
