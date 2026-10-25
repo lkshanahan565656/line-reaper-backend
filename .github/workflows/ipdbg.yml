@@ -1,0 +1,14 @@
+name: diag-ipdbg
+on: { push: { branches: [diag-ipdbg] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          node diag/probe.js
+          git config user.name d; git config user.email d@d; git checkout -B diag-ipdbg-out; git add -f out; git commit -qm o; git push -qf origin diag-ipdbg-out
