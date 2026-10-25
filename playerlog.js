@@ -155,7 +155,8 @@ function sameTeam(a, b) {
 // a props row's two teams: "CLE @ ORL", "Bills vs Jets", PrizePicks' team + opponent
 function rowTeams(row) {
   const mt = String(row?.matchTitle || '');
-  const parts = mt.split(/\s+(?:@|vs\.?|at|v)\s+/i).map(s => s.trim()).filter(Boolean);
+  // "GEN vs LYON MAPS 1-2", "UTAH @ HOU 2nd Half": the period words are not a team
+  const parts = mt.split(/\s+(?:@|vs\.?|at|v)\s+/i).map(x => x.replace(/\s+(maps?\s.*|\d(st|nd|rd|th)\s+(half|quarter|period).*|1h|2h|1q)$/i, '').trim()).filter(Boolean);
   const away = parts.length === 2 && /\s@\s|\sat\s/i.test(mt) ? parts[0] : null, home = away ? parts[1] : null;
   return { team: row?.team || '', opponent: row?.opponent || '', parts, home, away };
 }
@@ -252,6 +253,8 @@ function createPlayerLog({ http = null, now = () => Date.now(), gapMs = 200, max
     const out = {};
     try {
       const want = wanted();
+      // the board not loaded yet: wait for it rather than read every league (the WNBA off-season, say)
+      if (!want) return { waiting: true };
       const leagues = Object.keys(SEASONS).filter(s => LEAGUES[s] && !attached.has(s) && (!want || want.has(s)));
       for (const s of leagues) {
         if (budget <= 0) break;

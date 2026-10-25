@@ -6886,10 +6886,14 @@ const HIT_SORTS = { hit10: ['l10', -1], hit10a: ['l10', 1], hitszn: ['szn', -1],
 function sortByHits(list, sort, book) {
   const [k, dir] = HIT_SORTS[sort];
   const scored = list.map(r => ({ r, h: playerLog.boardHits(r, rowHitLine(r, book)) }));
+  // fewer than 5 games behind the rate: after the rows with a real sample
+  const nk = k === 'l10' ? 'l10n' : 'sznN';
   scored.sort((a, b) => {
     const va = a.h?.[k], vb = b.h?.[k];
     if (va == null || vb == null) return (va == null) - (vb == null);
-    return (va - vb) * dir || (b.h[k === 'l10' ? 'l10n' : 'sznN'] - a.h[k === 'l10' ? 'l10n' : 'sznN']);
+    const sa = a.h[nk] >= 5, sb = b.h[nk] >= 5;
+    if (sa !== sb) return sa ? -1 : 1;
+    return (va - vb) * dir || (b.h[nk] - a.h[nk]);
   });
   return scored.map(x => x.r);
 }
@@ -7828,7 +7832,8 @@ schedule('*/5 * * * *', async () => {
 // esports record's graded legs every 10
 if (PLAYER_LOG_ON) {
   schedule('7,22,37,52 * * * *', () => playerLog.refresh().catch(e => console.warn('Player log:', e.message)));
-  setTimeout(() => playerLog.refresh().catch(e => console.warn('Player log:', e.message)), 180e3).unref?.();
+  // first pass once the props board has loaded (it waits on an empty board)
+  for (const ms of [180e3, 360e3, 600e3]) setTimeout(() => playerLog.refresh().catch(e => console.warn('Player log:', e.message)), ms).unref?.();
 }
 schedule('*/10 * * * *', () => refreshPlayerEsports());
 setTimeout(() => refreshPlayerEsports(), 150e3).unref?.();

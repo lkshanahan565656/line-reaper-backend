@@ -174,3 +174,12 @@ test('season starts roll over at the right month', () => {
   assert.strictEqual(new Date(L.seasonStart('NFL', Date.UTC(2027, 0, 10))).toISOString().slice(0, 10), '2026-08-25');
   assert.strictEqual(L.seasonStart('GOLF'), null);
 });
+
+test('period words in a match title are not a team, and an empty board waits', async () => {
+  assert.deepStrictEqual(L.rowTeams({ matchTitle: 'GEN vs LYON MAPS 1-2' }).parts, ['GEN', 'LYON']);
+  assert.deepStrictEqual(L.rowTeams({ matchTitle: 'UTAH @ HOU 2nd Half' }).parts, ['UTAH', 'HOU']);
+  let calls = 0;
+  const log = L.createPlayerLog({ http: { get: async () => { calls++; return { data: { events: [] } }; } }, gapMs: 0, wanted: () => null });
+  assert.deepStrictEqual(await log.refresh(), { waiting: true });
+  assert.strictEqual(calls, 0);
+});
