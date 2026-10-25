@@ -4689,7 +4689,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.166.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.167.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6772,6 +6772,80 @@ async function trackSportProps() {
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
+// ── PLAYER RESEARCH PAGES (playerlog.js) ──
+// Every prop on the board opens a player page: the season's game log from
+// ESPN's box scores (or the NBA and CFB models' own history when they're on
+// this server), each app's line across it, hit rates at each app's exact line,
+// a usage trend, the sharp books' numbers, the model where one prices the stat,
+// and the prop's saved line moves. Hit rates describe past games: no price, no
+// edge, no alerts. PLAYER_LOG=off stops the ESPN reads (pages then say so).
+const playerLogLib = require('./playerlog');
+const PLAYER_LOG_ON = !/^(off|0|false|no)$/i.test(String(process.env.PLAYER_LOG || '').trim());
+const playerLog = playerLogLib.createPlayerLog({ http: PLAYER_LOG_ON ? axios : null,
+  // only the leagues the board lists now (every league while it's still loading)
+  wanted: () => { const sp = new Set((propsBoardCache.rows || []).filter(r => !r.esports).map(r => r.sport)); return sp.size ? sp : null; },
+  log: m => console.warn(m) });
+// models that price a row on the page: fn(row) → { name, ... } | null (the NBA and CFB models add themselves here)
+const playerPageModels = [];
+// esports: the stat values our esports record graded, one entry per match
+async function refreshPlayerEsports() {
+  try {
+    const rows = await tracker.list({ status: 'graded', limit: 200000 });
+    playerLog.setEsports(playerLogLib.esportsIndex(rows, { key: m => normalizeMarket(m), boardSport: s => propsBoard.boardSport(s).sport }));
+  } catch (e) { console.warn('Player log esports:', e.message); }
+}
+const HIT_LABEL = 'Hit rates count how often the stat went over this exact line in past games. They describe what happened, not what will: the apps set their lines off the same games, so a high hit rate is not an edge and nothing here is a play.';
+// the board's two hit-rate columns: at the app's line on the Lines view, else at the most common line
+function rowHitLine(r, book) {
+  if (book && Number.isFinite(r.books?.[book]?.line)) return r.books[book].line;
+  const ls = Object.values(r.books || {}).map(c => c.line).filter(Number.isFinite).sort((a, b) => a - b);
+  return ls.length ? ls[Math.floor(ls.length / 2)] : null;
+}
+const withHits = (r, book) => { const h = playerLog.boardHits(r, rowHitLine(r, book)); return h ? { ...r, hit: h } : r; };
+// hit-rate sorts: rows without a log go last either way
+const HIT_SORTS = { hit10: ['l10', -1], hit10a: ['l10', 1], hitszn: ['szn', -1], hitszna: ['szn', 1] };
+function sortByHits(list, sort, book) {
+  const [k, dir] = HIT_SORTS[sort];
+  const scored = list.map(r => ({ r, h: playerLog.boardHits(r, rowHitLine(r, book)) }));
+  scored.sort((a, b) => {
+    const va = a.h?.[k], vb = b.h?.[k];
+    if (va == null || vb == null) return (va == null) - (vb == null);
+    return (va - vb) * dir || (b.h[k === 'l10' ? 'l10n' : 'sznN'] - a.h[k === 'l10' ? 'l10n' : 'sznN']);
+  });
+  return scored.map(x => x.r);
+}
+app.get('/api/props/player', (req, res) => {
+  const t0 = Date.now();
+  const { rows } = propsBoardRows();
+  const key = String(req.query.key || '').slice(0, 300);
+  let row = rows.find(r => r.key === key);
+  // another stat for the same player: ?stat=<mkey>
+  const mates = row ? rows.filter(r => r.sport === row.sport && evScreen.canonName(r.player) === evScreen.canonName(row.player) && (!row.matchTag || r.matchTag === row.matchTag)) : [];
+  if (row && req.query.stat) row = mates.find(r => r.mkey === String(req.query.stat)) || row;
+  if (!row) return res.status(404).json({ error: 'not on the board', note: 'This prop is no longer on the board (the game started or the apps pulled it).' });
+  const pro = hasPro(req), lic = licenceOf(req);
+  const kalshiOk = lic.kalshi;
+  const shown = !pro || (!kalshiOk && !row.esports) ? propsBoard.redactRow(row) : row;
+  // the sharp books' numbers at their own lines (Pro): Pinnacle, FanDuel, BetRivers
+  let books = null;
+  if (pro && !row.esports) {
+    try { books = sharpQuotes(row).filter(q => Number.isFinite(q.line) && Number.isFinite(q.pOver)).map(q => ({ book: q.book, line: q.line, pOver: Math.round(q.pOver * 1000) / 10 })).slice(0, 12); } catch { books = []; }
+  }
+  const models = [];
+  if (pro) for (const f of playerPageModels) { try { const m = f(row); if (m) models.push(m); } catch (e) { console.warn('Player page model:', e.message); } }
+  // the esports models' own number on the row (Pro), labelled by what it is
+  if (pro && row.esports && row.model && row.model.proj != null) models.push({ name: row.model.h2h ? 'Our matchup model' : row.model.share ? 'Pinnacle kill share' : 'Esports model', proj: row.model.proj, side: row.model.side, prob: row.model.prob, label: 'model, not an edge' });
+  const start = Date.parse(row.startTime || '');
+  const moves = propHistory.forPlayer(row.player, { near: Number.isFinite(start) ? start : null }).slice(0, 24);
+  const page = playerLog.page(row, {
+    label: HIT_LABEL, pro,
+    others: mates.filter(r => r.key !== row.key).map(r => ({ key: r.key, mkey: r.mkey, market: r.market, lines: [...new Set(Object.values(r.books).map(c => c.line))].sort((a, b) => a - b) })).slice(0, 40),
+    row: { key: shown.key, books: shown.books, best: shown.best, consensus: shown.consensus ? { mean: shown.consensus.mean, sources: shown.consensus.sources } : null, team: row.team || '', opponent: row.opponent || '', matchTag: row.matchTag || null },
+    books, models, moves, status: { games: playerLog.status().games, running: playerLog.status().running, on: PLAYER_LOG_ON },
+  });
+  page.ms = Date.now() - t0;
+  res.json(page);
+});
 app.get('/api/props/board', (req, res) => {
   const { rows, counts } = propsBoardRows();
   const pro = hasPro(req);
@@ -6781,7 +6855,8 @@ app.get('/api/props/board', (req, res) => {
   const sort = pro ? String(req.query.sort || 'ev') : (req.query.sort === 'ev' || !req.query.sort ? 'books' : String(req.query.sort));
   const qo = { sport: req.query.sport, book, q: req.query.q, sort, multi: req.query.multi === '1', priced: pro && req.query.priced === '1', gaps: req.query.gaps === '1', sharp: req.query.sharp === '1', sharp3: req.query.sharp3 === '1', combo: req.query.combo === '1' };
   const market = String(req.query.market || '').slice(0, 80);
-  const hits = propsBoard.queryRows(rows, { ...qo, market });
+  let hits = propsBoard.queryRows(rows, { ...qo, market });
+  if (HIT_SORTS[req.query.sort]) hits = sortByHits(hits, String(req.query.sort), book);
   // the Lines view: one app's lines, with the header count and the prop filter
   let lines = null;
   if (book && req.query.facets === '1') {
@@ -6793,8 +6868,10 @@ app.get('/api/props/board', (req, res) => {
   let page = hits.slice(offset, offset + limit);
   if (!pro) page = page.map(propsBoard.redactRow);
   else if (!kalshiOk) page = page.map(r => (r.esports ? r : propsBoard.redactRow(r)));
+  // hit rates at the line shown (descriptive, free): last 10 and season
+  page = page.map(r => withHits(r, book));
   res.json({
-    rows: page, total: hits.length, offset, limit, pro, counts, ...(lines ? { lines } : {}),
+    rows: page, total: hits.length, offset, limit, pro, counts, ...(lines ? { lines } : {}), hitLabel: HIT_LABEL, playerLog: { games: playerLog.status().games, running: playerLog.status().running },
     // the esports models' verdicts (esmodels.js): a failed one's legs are not plays
     esModels: esModelsState.cards ? Object.fromEntries(esModelsState.cards.map(c => [c.key, { verdict: c.verdict, graded: c.graded, wins: c.wins, losses: c.losses, hitPct: c.hitPct, breakEvenPct: c.breakEvenPct, units: c.units }])) : null,
     coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
@@ -7437,7 +7514,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.166.1',
+  version: '3.167.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7451,6 +7528,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   lineBets: lineBets.counts(),
+  playerLog: playerLog.status(),
   propHistory: { series: propHistory.size(), points: propHistory.points(), observedAt: propHistoryState.observedAt, markets: propHistoryState.markets, ms: propHistoryState.ms, error: propHistoryState.error },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
@@ -7562,6 +7640,15 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// Player research pages: the season's box scores in the background (first pass
+// 3 minutes after boot, then every 15 minutes: new finals and unread days), the
+// esports record's graded legs every 10
+if (PLAYER_LOG_ON) {
+  schedule('7,22,37,52 * * * *', () => playerLog.refresh().catch(e => console.warn('Player log:', e.message)));
+  setTimeout(() => playerLog.refresh().catch(e => console.warn('Player log:', e.message)), 180e3).unref?.();
+}
+schedule('*/10 * * * *', () => refreshPlayerEsports());
+setTimeout(() => refreshPlayerEsports(), 150e3).unref?.();
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
@@ -7727,7 +7814,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, playerLog, playerPageModels, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

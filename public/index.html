@@ -574,7 +574,7 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .aps-add { background: transparent; border: 1px solid var(--border); color: #cbd5e1; border-radius: 6px; font-size: 10px; font-weight: 800; padding: 2px 6px; cursor: pointer; }
 .aps-add.on { border-color: var(--green); color: var(--green); }
 @media (max-width: 720px) { .aps-head { display: none; } .aps-row { grid-template-columns: 1fr; gap: 6px; } }
-.ln-head, .ln-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.3fr) 62px 62px 64px 60px 58px 64px 44px; gap: 8px; align-items: center; padding: 9px 12px; }
+.ln-head, .ln-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.3fr) 62px 62px 64px 60px 58px 64px 54px 54px 44px; gap: 8px; align-items: center; padding: 9px 12px; }
 .ln-head { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); }
 .ln-head > *, .ln-row > .c { text-align: center; }
 .ln-head > :first-child, .ln-head > :nth-child(2) { text-align: left; }
@@ -622,6 +622,57 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 }
 .ln-num.good { color: #34d399; } .ln-num.thin { color: #fbbf24; } .ln-num.bf { color: #94a3b8; } .ln-num.bad { color: #f87171; } .ln-num.odd { color: #c084fc; }
 .ln-used { width: 18px; height: 18px; accent-color: #34d399; cursor: pointer; }
+/* hit-rate columns on LINES, and the player name that opens the player page */
+.ln-hit .ln-num { font-size: 12px; } .ln-hit small { display: block; font-size: 9px; color: #475569; font-weight: 600; }
+.ln-hit .hi { color: #a7f3d0; } .ln-hit .lo { color: #fda4af; }
+.ln-sort { background: none; border: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; padding: 0; }
+.ln-sort.on { color: #e2e8f0; }
+.pl-open { cursor: pointer; text-decoration: underline dotted rgba(148,163,184,.5); text-underline-offset: 3px; }
+.pl-open:hover { color: #93c5fd !important; }
+/* PLAYER PAGE (pl- prefix): game log, hit rates, usage, sharp numbers, line moves */
+.pl-modal { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: none; z-index: 9990; }
+.pl-modal.open { display: block; }
+.pl-box { position: absolute; inset: 0 0 0 auto; width: min(760px, 100%); overflow-y: auto; background: var(--bg, #0a0e17); border-left: 1px solid var(--border); padding: 0 16px 90px; -webkit-overflow-scrolling: touch; }
+.pl-top { position: sticky; top: 0; background: var(--bg, #0a0e17); padding: 14px 0 10px; border-bottom: 1px solid var(--border); z-index: 2; }
+.pl-title { display: flex; align-items: center; gap: 8px; }
+.pl-title h3 { font-size: 18px; margin: 0; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; min-width: 0; }
+.pl-x { flex: 0 0 auto; background: transparent; border: 1px solid var(--border); color: #cbd5e1; border-radius: 8px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; }
+.pl-sub { color: #64748b; font-size: 11.5px; margin-top: 4px; }
+.pl-stats { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; scrollbar-width: none; }
+.pl-stats::-webkit-scrollbar { display: none; }
+.pl-stats .sport-chip { flex: 0 0 auto; }
+.pl-sec { margin-top: 16px; }
+.pl-h { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #64748b; text-transform: uppercase; margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; }
+.pl-h span { font-weight: 600; letter-spacing: .04em; text-transform: none; color: #475569; }
+.pl-note { font-size: 11px; color: #94a3b8; line-height: 1.5; background: rgba(148,163,184,.06); border: 1px solid rgba(148,163,184,.14); border-radius: 10px; padding: 8px 10px; }
+.pl-note b { color: #fbbf24; }
+.pl-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pl-app { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.pl-app.sel { border-color: #60a5fa; }
+.pl-app .nm { font-size: 10px; font-weight: 800; letter-spacing: .08em; color: var(--bk); }
+.pl-app .ln { font: 800 18px 'JetBrains Mono', monospace; color: #f8fafc; cursor: pointer; }
+.pl-app .bt { display: flex; gap: 4px; margin-top: 6px; }
+.pl-app .bt button { flex: 1; background: transparent; border: 1px solid var(--border); color: #cbd5e1; border-radius: 6px; font-size: 10px; font-weight: 800; padding: 4px 2px; cursor: pointer; }
+.pl-app .bt button.on { border-color: var(--green); color: var(--green); }
+.pl-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pl-tbl th { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; color: #64748b; text-transform: uppercase; text-align: center; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+.pl-tbl td { text-align: center; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.04); font-family: 'JetBrains Mono', monospace; color: #cbd5e1; }
+.pl-tbl td small { display: block; color: #475569; font-size: 9.5px; font-family: inherit; }
+.pl-tbl th:first-child, .pl-tbl td:first-child { text-align: left; }
+.pl-tbl .hi { color: #a7f3d0; } .pl-tbl .lo { color: #fda4af; } .pl-tbl .na { color: #475569; }
+.pl-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+.pl-chart { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+.pl-chart svg { width: 100%; height: auto; display: block; }
+.pl-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10.5px; color: #94a3b8; margin-top: 6px; }
+.pl-legend i { display: inline-block; width: 12px; height: 2px; vertical-align: 3px; margin-right: 4px; background: var(--bk); }
+.pl-log td.ov { color: #a7f3d0; } .pl-log td.un { color: #fda4af; } .pl-log tr.prev td { opacity: .55; }
+.pl-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.pl-kv div { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 11px; color: #64748b; }
+.pl-kv b { display: block; font: 700 15px 'JetBrains Mono', monospace; color: #e2e8f0; margin-bottom: 2px; }
+.pl-moves { display: flex; flex-direction: column; gap: 6px; }
+.pl-mv { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #cbd5e1; }
+.pl-mv .os-chart { margin-top: 8px; }
+@media (max-width: 640px) { .pl-box { padding: 0 12px 110px; } .pl-tbl { font-size: 11px; } .pl-tbl td, .pl-tbl th { padding: 6px 2px; } }
 .ln-count { font-size: 12px; color: #94a3b8; margin: 0 0 8px; }
 .ln-count b { color: #f1f5f9; } .ln-count .go { color: #34d399; font-weight: 700; }
 @media (max-width: 760px) {
@@ -631,6 +682,9 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
   .ln-row > .ln-usedc { grid-column: 6; grid-row: 1; }
   .ln-prop { display: none; } .ln-mprop { display: inline; }
   .ln-row > .c:not(.ln-usedc) { grid-row: 2; }
+  .ln-row > .c.ln-hit { grid-row: 3; grid-column: span 3; text-align: left; }
+  .ln-row > .c.ln-hit::before { display: inline; margin-right: 6px; }
+  .ln-hit small { display: inline; margin-left: 4px; }
   .ln-row > .c::before { content: attr(data-l); display: block; font-size: 8.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #475569; margin-bottom: 3px; }
   .ln-row > .ln-usedc::before { content: none; }
   .ln-badge { min-width: 0; width: 100%; font-size: 12px; padding: 4px 2px; }
@@ -4122,7 +4176,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', shopSort: 'gap', shopShow: 'all', lineSort: 'ev', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4143,7 +4197,7 @@ async function loadPropsBoard() {
   document.getElementById('page-props')?.classList.toggle('shop', pbState.view === 'shop');
   if (pbState.view === 'shop') return loadShop(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
-  if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
+  if (lines) { qs.set('book', pbState.lineBook); qs.set('sort', pbState.lineSort || 'ev'); if (!/^hit/.test(pbState.lineSort || '')) qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
   else if (pbState.book) qs.set('book', pbState.book);
   if (pbState.q) qs.set('q', pbState.q);
   if (!lines && pbState.show === 'multi') qs.set('multi', '1');
@@ -4347,7 +4401,7 @@ function lnRow(r, book) {
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
   const meta = [pbMatchup(r, true), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
   return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}">
-    <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span></div>
+    <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b class="pl-open" role="button" tabindex="0" title="Game log and hit rates" onclick="plOpen('${escAttr(r.key)}')">${escAttr(r.player)}</b><span class="ln-apps">${apps}</span></div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
     <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
@@ -4356,6 +4410,7 @@ function lnRow(r, book) {
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
     <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
     <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : h2hDead ? ` (our matchup model alone: ${escAttr(pbH2hTitle())}; grey, not a play)` : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
+    ${lnHitCells(r)}
     <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
 }
@@ -4372,7 +4427,7 @@ const pkSave = () => lsSet(PK_KEY, JSON.stringify({ app: pk.app, legs: pk.legs, 
 const pkHas = (rk, book) => pk.app === book && pk.legs.some(l => l.rk === rk);
 const PK_MAX = { pick6: 8 };
 function pkAdd(rk, book) {
-  const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book] || r?.apps?.[book];
+  const r = (pbState.data?.rows || []).find(x => x.key === rk) || plSlipRow(rk), c = r?.books?.[book] || r?.apps?.[book];
   if (!r || !c || c.line == null) return;
   const i = pk.legs.findIndex(l => l.rk === rk);
   if (pk.app === book && i >= 0) { pk.legs.splice(i, 1); }
@@ -4440,6 +4495,167 @@ async function pkLog() {
   pkClear();
   msGrade(true);
 }
+// ── HIT-RATE COLUMNS (LINES) ──
+// How often the stat went over the app's line: last 10 games and this season,
+// from the box scores (descriptive, not a price). Tap a header to sort.
+function lnSortBtn(k, label) {
+  const cur = pbState.lineSort || 'ev', on = cur === k || cur === k + 'a';
+  const arrow = !on ? '' : cur.endsWith('a') && k !== 'ev' ? ' ↑' : ' ↓';
+  const next = k === 'ev' ? 'ev' : cur === k ? k + 'a' : k;
+  const tip = k === 'ev' ? 'Sort by EV' : `Sort by ${label} hit rate (tap again to flip). Hit rates describe past games, not an edge`;
+  return `<button class="ln-sort${on ? ' on' : ''}" title="${tip}" onclick="pbState.lineSort='${next}';pbState.limit=150;loadPropsBoard()">${label}${arrow}</button>`;
+}
+function lnHitCells(r) {
+  const h = r.hit;
+  const cell = (pct, n, l) => {
+    if (pct == null || !n) return `<div class="c ln-hit" data-l="${l}"><span class="ln-num" style="color:#475569">—</span></div>`;
+    const cls = pct >= 60 ? 'hi' : pct <= 40 ? 'lo' : '';
+    return `<div class="c ln-hit" data-l="${l}" title="Over this line in ${Math.round(pct * n / 100)} of ${n} games (past games, not a price)"><span class="ln-num ${cls}">${Math.round(pct)}%</span><small>${n} g</small></div>`;
+  };
+  return cell(h?.l10, h?.l10n, 'L10') + cell(h?.szn, h?.sznN, 'Season');
+}
+
+// ── PLAYER PAGE ──
+// Tap a player on PROPS: his game log with each app's line drawn across it,
+// hit rates at each app's exact line (last 5/10/20, season, home, away, vs
+// tonight's opponent), his minutes or workload, the sharp books' numbers and a
+// model where one prices the stat, the prop's line moves, and + LOG to add the
+// leg to a slip. Hit rates describe past games; the page never calls a play.
+const pl = { key: null, stat: null, data: null, line: null, seq: 0, moves: new Set() };
+const PL_DATE = t => new Date(t).toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+function plSlipRow(rk) {
+  const d = pl.data;
+  if (!d || d.key !== rk) return null;
+  return { key: d.key, player: d.player, market: d.market, sport: d.sport, team: d.row?.team || d.team || '', startTime: d.start, matchTitle: d.matchTitle, books: d.row?.books || {} };
+}
+function plOpen(key, stat) {
+  pl.key = key; pl.stat = stat || null; pl.line = null; pl.moves.clear();
+  const m = document.getElementById('plModal');
+  if (!m) return;
+  m.classList.add('open'); document.body.style.overflow = 'hidden';
+  if (!stat) document.getElementById('plBox').innerHTML = '<div class="pl-top"><div class="pl-title"><h3>Loading…</h3><button class="pl-x" onclick="plClose()" aria-label="Close">✕</button></div></div><div class="pl-note" style="margin-top:14px">Reading the game log…</div>';
+  plLoad();
+}
+function plClose() { document.getElementById('plModal')?.classList.remove('open'); document.body.style.overflow = ''; pl.data = null; }
+async function plLoad() {
+  const seq = ++pl.seq;
+  const qs = new URLSearchParams({ key: pl.key });
+  if (pl.stat) qs.set('stat', pl.stat);
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/player?${qs}`);
+    const d = await r.json();
+    if (seq !== pl.seq) return;
+    if (!r.ok) { document.getElementById('plBox').innerHTML = `<div class="pl-top"><div class="pl-title"><h3>Player page</h3><button class="pl-x" onclick="plClose()" aria-label="Close">✕</button></div></div><div class="pl-note" style="margin-top:14px">${escAttr(d.note || 'Could not load this player.')}</div>`; return; }
+    pl.data = d; pl.key = d.key;
+    if (pl.line == null || !d.lines.includes(pl.line)) pl.line = d.lines[Math.floor((d.lines.length - 1) / 2)] ?? null;
+    plRender();
+  } catch (e) {
+    if (seq === pl.seq) document.getElementById('plBox').innerHTML = `<div class="pl-top"><div class="pl-title"><h3>Player page</h3><button class="pl-x" onclick="plClose()" aria-label="Close">✕</button></div></div><div class="pl-note" style="margin-top:14px">Could not reach the server (${escAttr(e.message)}). Try again in a minute.</div>`;
+  }
+}
+function plPct(t) {
+  if (!t || !(t.over + t.under)) return '<td class="na">—</td>';
+  const cls = t.pct >= 60 ? 'hi' : t.pct <= 40 ? 'lo' : '';
+  return `<td class="${cls}">${Math.round(t.pct)}%<small>${t.over}/${t.over + t.under}${t.push ? ` · ${t.push}P` : ''}</small></td>`;
+}
+function plFmt(v) { return v == null ? '—' : Number.isInteger(v) ? String(v) : (+v).toFixed(1); }
+// last 20 games as bars, each app's line across them
+function plChart(d) {
+  const log = d.log.slice(0, 20).reverse();
+  if (!log.length) return '';
+  const el = document.getElementById('plBox');
+  const W = Math.max(320, Math.min(720, (el?.clientWidth || 380) - 36)), H = W < 500 ? 170 : 200, L = 30, R = 8, T = 14, B = 26;
+  const appLines = Object.entries(d.apps || {});
+  const top = Math.max(1, ...log.map(e => e.v), ...appLines.map(([, l]) => l)) * 1.12;
+  const Y = v => T + (1 - v / top) * (H - T - B);
+  const bw = (W - L - R) / log.length;
+  const sel = pl.line;
+  const bars = log.map((e, i) => {
+    const x = L + i * bw + bw * 0.15, w = bw * 0.7, y = Y(e.v);
+    const col = sel == null ? '#64748b' : e.v > sel ? '#34d399' : e.v < sel ? '#f87171' : '#94a3b8';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, H - B - y).toFixed(1)}" rx="2" fill="${col}" opacity="${e.season === 'prev' ? 0.45 : 0.85}"><title>${PL_DATE(e.t)} ${e.home === false ? '@' : 'vs'} ${escAttr(e.opp)}: ${plFmt(e.v)}</title></rect>` +
+      (log.length <= 12 ? `<text x="${(x + w / 2).toFixed(1)}" y="${(y - 3).toFixed(1)}" fill="#cbd5e1" font-size="9.5" text-anchor="middle">${plFmt(e.v)}</text>` : '') +
+      `<text x="${(x + w / 2).toFixed(1)}" y="${H - 9}" fill="#475569" font-size="8.5" text-anchor="middle">${log.length > 12 && i % 2 ? '' : escAttr(String(e.opp).slice(0, 4))}</text>`;
+  }).join('');
+  const seen = new Map();
+  for (const [b, l] of appLines) seen.set(l, [...(seen.get(l) || []), b]);
+  // labels alternate right and left so two close lines stay readable
+  const lines = [...seen].sort((a, b) => a[0] - b[0]).map(([l, bs], i) => `<line x1="${L}" x2="${W - R}" y1="${Y(l).toFixed(1)}" y2="${Y(l).toFixed(1)}" stroke="${PB_COLOR[bs[0]] || '#e2e8f0'}" stroke-width="${l === sel ? 2 : 1.2}" stroke-dasharray="5 4"/>` +
+    `<text x="${i % 2 ? L + 2 : W - R}" y="${(Y(l) - 3).toFixed(1)}" fill="${PB_COLOR[bs[0]] || '#e2e8f0'}" font-size="9.5" text-anchor="${i % 2 ? 'start' : 'end'}" paint-order="stroke" stroke="#0b1220" stroke-width="3">${bs.map(b => PB_BOOKS.find(x => x[0] === b)?.[2] || b).join('/')} ${l}</text>`).join('');
+  const grid = [0, 0.5, 1].map(f => { const v = top / 1.12 * f; return `<text x="${L - 4}" y="${(Y(v) + 3).toFixed(1)}" fill="#475569" font-size="9" text-anchor="end">${Math.round(v)}</text>`; }).join('');
+  return `<div class="pl-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Last ${log.length} games of ${escAttr(d.market)} with each app's line">${grid}${bars}${lines}</svg>
+    <div class="pl-legend">${[...seen].map(([l, bs]) => `<span style="--bk:${PB_COLOR[bs[0]]}"><i></i>${bs.map(b => PB_BOOKS.find(x => x[0] === b)?.[1] || b).join(', ')} ${l}</span>`).join('')}<span>Bars: over (green) or under (red) the ${sel ?? ''} line${log.some(e => e.season === 'prev') ? '; faded = last season' : ''}</span></div></div>`;
+}
+function plRender() {
+  const d = pl.data, el = document.getElementById('plBox');
+  if (!d || !el) return;
+  const name = k => PB_BOOKS.find(x => x[0] === k)?.[1] || k;
+  const when = d.start ? pbFmtStart(d.start) : '';
+  const vs = d.opponent ? `${d.homeTonight === false ? '@' : 'vs'} ${escAttr(d.opponent)}` : (d.matchTitle ? escAttr(d.matchTitle) : '');
+  const stats = [{ key: d.key, market: d.market, mkey: d.mkey, on: true }, ...d.others.map(o => ({ ...o, on: false }))];
+  const chips = stats.map(o => `<button class="sport-chip${o.on ? ' active' : ''}" onclick="plOpen('${escAttr(o.key)}')">${escAttr(o.market)}</button>`).join('');
+  // each app's line, tap to pick it for the bars; + LOG adds the leg to a slip on that app
+  const apps = Object.entries(d.apps).map(([b, l]) => {
+    const c = d.row?.books?.[b] || {};
+    const inSlip = pk.app === b && pk.legs.find(x => x.rk === d.key);
+    const mult = (side) => { const m = side === 'Over' ? c.over : c.under; return b === 'prizepicks' || m == null || +m === 1 ? '' : ` ${(+m).toFixed(2)}x`; };
+    return `<div class="pl-app${l === pl.line ? ' sel' : ''}" style="--bk:${PB_COLOR[b]}"><div class="nm">${escAttr(name(b).toUpperCase())}</div><div class="ln" onclick="pl.line=${l};plRender()" title="Show the bars against this line">${l}</div>
+      <div class="bt"><button class="${inSlip?.side === 'Over' ? 'on' : ''}" onclick="plLog('${b}','Over')" ${c.overOpen === false ? 'disabled' : ''}>+ ${pbSideWord(b, 'Over').toUpperCase()}${mult('Over')}</button><button class="${inSlip?.side === 'Under' ? 'on' : ''}" onclick="plLog('${b}','Under')" ${c.underOpen === false ? 'disabled' : ''}>+ ${pbSideWord(b, 'Under').toUpperCase()}${mult('Under')}</button></div></div>`;
+  }).join('');
+  const oppH = d.opponent ? `vs ${escAttr(String(d.opponent).slice(0, 12))}` : 'vs opp';
+  const hits = d.hits.length ? `<div class="pl-wrap"><table class="pl-tbl"><thead><tr><th>Line</th><th>L5</th><th>L10</th><th>L20</th><th>Season</th><th>Home</th><th>Away</th><th>${oppH}</th></tr></thead><tbody>
+    ${d.hits.map(h => `<tr${h.line === pl.line ? ' style="background:rgba(96,165,250,.06)"' : ''}><td><b style="color:#f8fafc">${h.line}</b><small>${Object.entries(d.apps).filter(([, l]) => l === h.line).map(([b]) => PB_BOOKS.find(x => x[0] === b)?.[2] || b).join(' ')}</small></td>${plPct(h.l5)}${plPct(h.l10)}${plPct(h.l20)}${plPct(h.season)}${plPct(h.home)}${plPct(h.away)}${h.vs ? plPct(h.vs) : '<td class="na">—</td>'}</tr>`).join('')}
+    </tbody></table></div><div class="pb-dim" style="margin-top:6px;font-size:10.5px;color:#64748b">% of games over the line (over/decided${d.hits.some(h => h.season.push) ? ', P = pushes' : ''}).${d.esports ? ' Esports: matches our record graded only.' : ''}</div>` : '';
+  const avg = d.games ? `<div class="pl-kv"><div><b>${plFmt(d.avg.l5)}</b>avg last 5</div><div><b>${plFmt(d.avg.l10)}</b>avg last 10</div><div><b>${plFmt(d.avg.season)}</b>avg ${d.esports ? 'all graded' : 'this season'} (${d.seasonGames} g)</div>${d.usage ? `<div><b>${plFmt(d.usage.l5)} <span style="font-size:11px;color:#64748b">/ ${plFmt(d.usage.season)}</span></b>${escAttr(d.usage.label)}: last 5 / season</div>` : ''}</div>` : '';
+  const sel = pl.line;
+  const usageHead = d.usage ? ({ min: 'Min', opp: 'Opp', toi: 'TOI', pitches: 'Pitches', pa: 'PA' })[d.usage.kind] || 'Use' : '';
+  const log = d.log.length ? `<div class="pl-wrap"><table class="pl-tbl pl-log"><thead><tr><th>Date</th><th>Opp</th><th>${escAttr(String(d.market).slice(0, 14))}</th>${d.usage ? `<th>${usageHead}</th>` : ''}<th>Result</th></tr></thead><tbody>
+    ${d.log.slice(0, 40).map(e => `<tr class="${e.season === 'prev' ? 'prev' : ''}"><td>${PL_DATE(e.t)}</td><td>${e.home === false ? '@' : e.home === true ? 'vs' : ''} ${escAttr(e.opp || '')}</td><td class="${sel == null ? '' : e.v > sel ? 'ov' : e.v < sel ? 'un' : ''}"><b>${plFmt(e.v)}</b></td>${d.usage ? `<td>${plFmt(e.u)}</td>` : ''}<td>${e.won ? `${e.won} ${escAttr(e.score || '')}` : escAttr(e.match ? String(e.match).slice(0, 22) : '')}</td></tr>`).join('')}
+    </tbody></table></div>` : '';
+  const srcTxt = d.esports ? 'Esports logs are the matches our esports record graded (the stat value it settled on), not every match the player played.'
+    : d.source === 'model' ? `From the ${escAttr(d.sport)} model's box-score history (ESPN).` : `From ESPN's box scores${d.seasonFrom ? ` since ${d.seasonFrom}` : ''}.`;
+  const empty = !d.games ? `<div class="pl-note" style="margin-top:12px">${d.unsupported ? `ESPN's box scores don't carry <b>${escAttr(d.market)}</b>, so there is no game log for this stat.` : d.esports ? 'No graded matches for this player and stat in our esports record yet.' : d.status?.on === false ? 'Game logs are switched off on this server.' : d.status?.running || !d.status?.games ? 'The season\'s box scores are still loading (they read in the background after a restart). Try again in a few minutes.' : 'No games on record for this player and stat this season.'}</div>` : '';
+  const models = (d.models || []).length ? `<div class="pl-sec"><div class="pl-h">Model <span>model, not an edge</span></div><div class="pl-kv">${d.models.map(m => {
+    const appsP = m.apps ? Object.entries(m.apps).map(([b, a]) => `<div><b>${(a.pOver * 100).toFixed(0)}%</b>P(over ${a.line}) on ${escAttr(name(b))}</div>`).join('') : '';
+    return `<div><b>${plFmt(m.mean ?? m.proj)}</b>${escAttr(m.name)} projection${m.minutes != null ? ` · ${plFmt(m.minutes)} min` : ''}</div>${m.prob != null ? `<div><b>${(+m.prob).toFixed(0)}% ${escAttr(String(m.side || '').toLowerCase())}</b>${escAttr(m.name)}</div>` : ''}${appsP}`;
+  }).join('')}</div>${d.models.some(m => m.note) ? `<div class="pb-dim" style="margin-top:6px;font-size:10.5px">${d.models.map(m => escAttr(m.note || '')).join(' ')}</div>` : ''}</div>` : '';
+  const books = d.books == null ? (d.esports ? '' : '<div class="pl-sec"><div class="pl-h">Sportsbooks</div><div class="pl-note">Pinnacle, FanDuel and BetRivers numbers are Pro.</div></div>')
+    : d.books.length ? `<div class="pl-sec"><div class="pl-h">Sportsbooks <span>no-vig chance of the over at each book's own line</span></div><div class="pl-kv">${d.books.map(q => `<div><b>${q.line} · ${q.pOver.toFixed(0)}%</b>${escAttr(PB_SRC[q.book] || q.book)}</div>`).join('')}</div></div>`
+    : d.esports ? '' : '<div class="pl-sec"><div class="pl-h">Sportsbooks</div><div class="pl-note">Pinnacle, FanDuel and BetRivers don\'t post this prop right now.</div></div>';
+  const moves = d.moves?.length ? `<div class="pl-sec"><div class="pl-h">Line moves <span>prices saved every few minutes</span></div><div class="pl-moves">${d.moves.map((m, i) => {
+    const hid = 'pl' + i, open = pl.moves.has(hid);
+    return `<div class="pl-mv">${escAttr(m.stat)} ${m.line} <span style="color:#64748b">· ${m.reads} reads</span> <button class="os-btn${open ? ' on' : ''}" style="float:right" onclick="plMoves(${i})">${open ? 'HIDE' : 'LINE MOVES'}</button>${open ? `<div class="os-chart" id="osc-${hid}"><div class="os-note">Loading the line history...</div></div>` : ''}</div>`;
+  }).join('')}</div></div>` : '';
+  el.innerHTML = `<div class="pl-top"><div class="pl-title"><span class="pb-sport${PB_ES.has(d.sport) ? ' es' : ''}">${escAttr(d.sport)}</span><h3>${escAttr(d.player)}</h3><button class="pl-x" onclick="plClose()" aria-label="Close">✕</button></div>
+      <div class="pl-sub">${[escAttr(d.team), vs, when].filter(Boolean).join(' · ')}</div><div class="pl-stats">${chips}</div></div>
+    <div class="pl-sec"><div class="pl-note"><b>Research, not a play.</b> ${escAttr(d.label || '')}</div></div>
+    ${d.ambiguous ? '<div class="pl-sec"><div class="pl-note"><b>Two players share this name.</b> This log is the one on the row\'s team or the most recent; check the games below.</div></div>' : ''}
+    <div class="pl-sec"><div class="pl-h">App lines <span>tap a line to draw the bars against it</span></div><div class="pl-apps">${apps}</div></div>
+    ${d.games ? `<div class="pl-sec"><div class="pl-h">Last ${Math.min(20, d.log.length)} games <span>${escAttr(d.market)}</span></div>${plChart(d)}</div>
+    <div class="pl-sec"><div class="pl-h">Hit rates <span>at each app's exact line</span></div>${hits}</div>
+    <div class="pl-sec">${avg}</div>` : empty}
+    ${models}${books}${moves}
+    ${d.games ? `<div class="pl-sec"><div class="pl-h">Game log <span>${d.games} games</span></div>${log}</div>` : ''}
+    <div class="pl-sec pb-dim" style="font-size:10.5px;color:#64748b;line-height:1.5">${srcTxt} ${d.usage?.kind === 'opp' ? 'ESPN box scores carry no snap counts; opportunities are pass attempts + carries + targets (catches in college).' : ''} Lines are each app's current number; check it in the app before you play.</div>`;
+  for (const hid of pl.moves) if (osUi.hist[hid]) osDrawChart(hid);
+}
+// + MORE / + LESS on the page: the leg goes in the slip tray (MY SLIPS logs it)
+function plLog(book, side) {
+  const before = pk.legs.length;
+  pkAddShop(pl.key, book, side);
+  if (pk.legs.length !== before || pk.legs.some(l => l.rk === pl.key)) showToast(`${pk.legs.some(l => l.rk === pl.key) ? 'In' : 'Removed from'} your ${PB_BOOKS.find(x => x[0] === book)?.[1] || book} slip (${pk.legs.length} pick${pk.legs.length === 1 ? '' : 's'}). Close this page to log it.`);
+  plRender();
+}
+async function plMoves(i) {
+  const m = pl.data?.moves?.[i], hid = 'pl' + i;
+  if (!m) return;
+  if (pl.moves.has(hid)) { pl.moves.delete(hid); return plRender(); }
+  pl.moves.add(hid); plRender();
+  try { const d = await tailGet(`/api/shopper/history?key=${encodeURIComponent(m.id)}`); osUi.hist[hid] = { ...d, player: d.player || 'prop' }; }
+  catch { osUi.hist[hid] = { series: [], player: 'prop' }; }
+  osDrawChart(hid);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('plModal')?.classList.contains('open')) plClose(); });
 // The matchup (H2H) model's record from /api/esports/models: once it fails at
 // 50+ graded, its model-only legs show grey, never as plays
 function pbH2hFailed() { return pbState.data?.esModels?.h2h?.verdict === 'failed'; }
@@ -4462,9 +4678,10 @@ function renderLines() {
   const bet = d.lines?.bettable;
   const name = PB_BOOKS.find(x => x[0] === book)?.[1] || book;
   const count = `<div class="ln-count">${name} · <b>Lines ${d.total.toLocaleString()}</b> shown · ${bet == null ? 'bettable count is Pro' : `<span class="${bet ? 'go' : ''}">${bet} bettable</span> <span style="color:#64748b">(+${d.lines.minEv}% or better at ${name}'s break-even on a sharp price; yellow EV is priced off one sharp source (Pinnacle or Kalshi) or the other apps alone; <span style="color:#94a3b8">grey EV</span> off FanDuel and BetRivers alone where nothing sharp posts the prop (college football, NHL), a lead not graded yet)</span>`}${PB_LEAD[book] ? `<div style="color:#fbbf24;margin-top:4px">${PB_LEAD[book]}.</div>` : ''}</div>`;
-  const head = `<div class="ln-head"><div>Player</div><div>Prop</div><div>${PB_BOOKS.find(x => x[0] === book)?.[2]}</div><div style="color:#60a5fa">Model</div><div>Lean</div><div>Prob</div><div>Mult</div><div>EV ↓</div><div>Used?</div></div>`;
+  const head = `<div class="ln-head"><div>Player</div><div>Prop</div><div>${PB_BOOKS.find(x => x[0] === book)?.[2]}</div><div style="color:#60a5fa">Model</div><div>Lean</div><div>Prob</div><div>Mult</div><div>${lnSortBtn('ev', 'EV')}</div><div>${lnSortBtn('hit10', 'L10')}</div><div>${lnSortBtn('hitszn', 'SZN')}</div><div>Used?</div></div>`;
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
-  el.innerHTML = `${count}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
+  const hitNote = `<div class="ln-count" style="color:#64748b;font-size:11px">L10 and SZN: how often the stat went over ${escAttr(name)}'s line in the last 10 games and this season (box scores; past games, not a price). Tap a player for the game log.${/^hit/.test(pbState.lineSort || '') ? ' Sorted by hit rate, priced or not.' : ''}</div>`;
+  el.innerHTML = `${count}${hitNote}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
 }
 // ── SHOP: the softest number across the apps (/api/props/shop, appshop.js) ──
 // Every player stat two or more apps hang at least a full line apart: the
@@ -4524,7 +4741,7 @@ function renderShop() {
     }).join('');
     const mids = (r.middles || []).map(m => m.locked ? `<div class="aps-mid dim">${m.count} middle${m.count > 1 ? 's' : ''} worth more than zero: Pro</div>`
       : `<div class="aps-mid"><span class="aps-gap" style="color:#94a3b8">MIDDLE</span> <button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.over.app}','Over')">+</button> ${pbSideWord(m.over.app, 'Over')} ${m.over.line} ${code(m.over.app)} &nbsp;<button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.under.app}','Under')">+</button> ${pbSideWord(m.under.app, 'Under')} ${m.under.line} ${code(m.under.app)} <span class="dim">· window ${m.width} · both win ${(m.pMiddle * 100).toFixed(0)}% · ${m.expUnits > 0 ? '+' : ''}${m.expUnits}u a pair expected, on ${m.source === 'apps' ? "the apps' own numbers (no sharp price)" : 'the sharp price'} · two slips, one per app</span></div>`).join('');
-    return `<div class="aps-row"><div class="aps-pl"><b>${escAttr(r.player)}</b><div>${escAttr(r.sport)} · ${pbMatchup(r, true)} · ${pbFmtStart(r.startTime)}</div></div><div><div style="color:#cbd5e1">${escAttr(r.market)}</div><div class="aps-apps" style="margin-top:4px">${apps}</div></div><div>${sides}${mids}</div><div class="aps-gap" style="text-align:right;font-size:14px">${r.gap}</div></div>`;
+    return `<div class="aps-row"><div class="aps-pl"><b class="pl-open" role="button" tabindex="0" title="Game log and hit rates" onclick="plOpen('${escAttr(r.key)}')">${escAttr(r.player)}</b><div>${escAttr(r.sport)} · ${pbMatchup(r, true)} · ${pbFmtStart(r.startTime)}</div></div><div><div style="color:#cbd5e1">${escAttr(r.market)}</div><div class="aps-apps" style="margin-top:4px">${apps}</div></div><div>${sides}${mids}</div><div class="aps-gap" style="text-align:right;font-size:14px">${r.gap}</div></div>`;
   }).join('');
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   el.innerHTML = `<div class="aps-note"><b>Research, not a play.</b> The softest number per side across PrizePicks, Underdog, Sleeper and DK Pick6, where two apps sit a full line or more apart. ${d.total.toLocaleString()} props${d.middles ? `, ${d.middles} with a middle worth more than zero` : ''}. On the recorded boards the softest number did not reach any app's break-even, so nothing here is alerted; the SHOP RECORD above follows every leg live. <b>+ LOG</b> adds the leg to a slip on that app (tray below), saved to MY SLIPS.</div>
@@ -4560,7 +4777,7 @@ function renderPropsBoard() {
     const cbs = cbx ? `<span class="pb-gap dim" title="${escAttr(`At ${cbx.line}, ${cbx.sources.map(x => `${x.book === 'pinnacle-parts' ? "Pinnacle's parts added up" : x.book} ${x.p}% over`).join(', ')}: each one, on its own price, puts ${pbSideWord(cbx.book, cbx.side)} past the app's break-even. Its own record, judged at 50 graded; not a proven play.`)}">COMBO ${PBN[cbx.book] || cbx.book} ${pbSideWord(cbx.book, cbx.side)} ${cbx.line}</span>` : '';
     const meta = [pbMatchup(r), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
     return `<div class="pb-card${plus ? ' plus' : ''}">
-      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b class="pl-open" role="button" tabindex="0" title="Game log and hit rates" onclick="plOpen('${escAttr(r.key)}')">${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
       <div class="pb-play">${bestTxt}</div></div>`;
   }).join('');
@@ -8993,7 +9210,8 @@ function shpArbSize(a) {
 }
 </script>
 
-<div class="lay-modal" id="layModal\" onclick="if(event.target===this)layClose()">
+<div class="pl-modal" id="plModal" onclick="if(event.target===this)plClose()"><div class="pl-box" id="plBox" role="dialog" aria-label="Player page"></div></div>
+<div class="lay-modal" id="layModal" onclick="if(event.target===this)layClose()">
   <div class="lay-box" role="dialog" aria-label="Customize layout">
     <h3>Customize your layout</h3>
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>

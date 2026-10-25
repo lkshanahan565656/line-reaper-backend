@@ -352,6 +352,19 @@ function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepM
       pts: x.pts.map(([t, f, px]) => [t, x.line, f == null ? null : r4(i ? 1 - f : f), Object.fromEntries(Object.entries(px).filter(([, a]) => a[i] != null).map(([v, a]) => [v, a[i]]))]) });
     return { id: x.id, event: x.event, start: x.start, player: x.player, stat: x.stat, line: x.line, series: [side(0, `Over ${x.line}`), side(1, `Under ${x.line}`)] };
   }
+  // every saved market for one player (the player research page lists them):
+  // [{ id, stat, line, start, reads }], soonest start first
+  function forPlayer(name, { near = null, windowMs = 36 * 3600e3 } = {}) {
+    const k = canonPlayer(name);
+    if (!k) return [];
+    const out = [];
+    for (const x of series.values()) {
+      if (canonPlayer(x.player) !== k) continue;
+      if (near != null && ms(x.start) != null && Math.abs(ms(x.start) - near) > windowMs) continue;
+      out.push({ id: x.id, stat: x.stat, line: x.line, start: x.start, reads: x.pts.length });
+    }
+    return out.sort((a, b) => (ms(a.start) ?? 0) - (ms(b.start) ?? 0) || String(a.stat).localeCompare(String(b.stat)) || a.line - b.line);
+  }
   const dump = () => [...series.values()];
   function load(docs) {
     for (const d of docs || []) {
@@ -362,7 +375,7 @@ function createLineHistory({ minGapMs = 4 * 60e3, heartbeatMs = 30 * 60e3, keepM
       had.pts = [...d.pts.filter(p => p[0] < first), ...had.pts].slice(-maxPts);
     }
   }
-  return { observe, prune, forMarket, dump, load, has: k => series.has(String(k)), size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };
+  return { observe, prune, forMarket, forPlayer, dump, load, has: k => series.has(String(k)), size: () => series.size, points: () => [...series.values()].reduce((a, x) => a + x.pts.length, 0) };
 }
 
 module.exports = { SHARP_WEIGHTS, groupOf, groupMarkets, fairOf, providerFilter, viewMarket, build, stripPro, createLineHistory };
