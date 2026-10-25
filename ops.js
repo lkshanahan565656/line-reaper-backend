@@ -169,7 +169,49 @@ function summarize(p, top = 40) {
     by.set(key, (by.get(key) || 0) + ms);
   }
   const rows = [...by.entries()].sort((a, b) => b[1] - a[1]).slice(0, top).map(([fn, ms]) => ({ fn, ms: Math.round(ms), pct: total ? Math.round(1000 * ms / total) / 10 : 0 }));
-  return { totalMs: Math.round(total), idleMs: Math.round(idle), busyPct: total ? Math.round(1000 * (total - idle) / total) / 10 : 0, top: rows };
+  return { totalMs: Math.round(total), idleMs: Math.round(idle), busyPct: total ? Math.round(1000 * (total - idle) / total) / 10 : 0, top: rows, ...stacks(p, top) };
+}
+
+// Self time names the leaf (a regex, JSON.parse); the stalls need the caller.
+// inclusive: ms each of our own functions (a .js file outside node's
+// internals and node_modules) spent on the stack. bursts: the longest runs
+// of back-to-back busy samples (each one holds the event loop for its whole
+// length), with the functions of ours on the stack for most of each.
+const IDLE = new Set(['(idle)', '(program)', '(garbage collector)', '(root)']);
+const ownFile = url => /\.js$/.test(url || '') && !/node_modules|^node:/.test(url);
+function stacks(p, top = 40) {
+  const nodes = new Map((p.nodes || []).map(n => [n.id, n]));
+  const parent = new Map();
+  for (const n of nodes.values()) for (const c of n.children || []) parent.set(c, n.id);
+  const keyOf = n => { const f = n.callFrame || {}; return `${f.functionName || '(anonymous)'} ${String(f.url || '').split('/').pop()}:${(f.lineNumber ?? -1) + 1}`; };
+  const chainMemo = new Map();   // node id → our functions on its stack, once each
+  const chain = id => {
+    if (chainMemo.has(id)) return chainMemo.get(id);
+    const out = new Set();
+    for (let x = id; x != null; x = parent.get(x)) { const n = nodes.get(x); if (n && ownFile(n.callFrame?.url)) out.add(keyOf(n)); }
+    chainMemo.set(id, out);
+    return out;
+  };
+  const ids = p.samples || [], deltas = p.timeDeltas || [];
+  const incl = new Map(), bursts = [];
+  let cur = null;
+  const close = () => { if (cur) bursts.push(cur); cur = null; };
+  for (let i = 0; i < ids.length; i++) {
+    const n = nodes.get(ids[i]);
+    const ms = (deltas[i] || 0) / 1000;
+    const name = n?.callFrame?.functionName;
+    if (!n || name === '(idle)') { close(); continue; }
+    if (!cur) cur = { ms: 0, fns: new Map() };
+    cur.ms += ms;
+    if (IDLE.has(name)) continue;
+    for (const k of chain(ids[i])) { incl.set(k, (incl.get(k) || 0) + ms); cur.fns.set(k, (cur.fns.get(k) || 0) + ms); }
+  }
+  close();
+  const list = (m, n) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([fn, ms]) => ({ fn, ms: Math.round(ms) }));
+  return {
+    inclusive: list(incl, top),
+    bursts: bursts.sort((a, b) => b.ms - a.ms).slice(0, 8).map(b => ({ ms: Math.round(b.ms), fns: list(b.fns, 10) })),
+  };
 }
 
 module.exports.createProfiler = createProfiler;

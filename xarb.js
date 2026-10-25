@@ -122,8 +122,9 @@ const normOnce = s => String(s || '').toLowerCase().normalize('NFD').replace(/[Ì
 // answers are kept (strings only; dropped whole when the memo fills)
 const NORM_MEMO_MAX = 100000;
 const normMemo = new Map();
+const NORM_MEMO_LEN = 48;   // names, not market titles (those come round once a scan and would flush the memo)
 const norm = s => {
-  if (typeof s !== 'string') return normOnce(s);
+  if (typeof s !== 'string' || s.length > NORM_MEMO_LEN) return normOnce(s);
   let v = normMemo.get(s);
   if (v === undefined) {
     v = normOnce(s);
@@ -601,7 +602,32 @@ const TEAM_NAMES = {
     + 'Washington Capitals|Winnipeg Jets',
 };
 
+// The context only depends on the team names it is built from, which are the
+// same scan after scan, and its answers (which full names a label can be) are
+// the costly part of a match pass: so the last few contexts are kept, keyed
+// by their names, and reused while the names stay the same.
+const TEAM_CONTEXTS_MAX = 4;
+const CONTEXT_MEMO_MAX = 200000;   // answers kept per context
+const teamContexts = new Map();
 function teamContext(games = []) {
+  const byLeague = new Map(), loose = new Set();
+  for (const g of games || []) {
+    const lg = String(g?.sport_key || '').match(/_(nba|nfl|mlb|nhl|wnba|ncaaf|ncaab|mls)$/)?.[1];
+    for (const n of [g?.home_team, g?.away_team]) {
+      if (!n) continue;
+      if (lg) { if (!byLeague.has(lg)) byLeague.set(lg, new Set()); byLeague.get(lg).add(n); } else loose.add(n);
+    }
+  }
+  const key = JSON.stringify([[...byLeague.keys()].sort().map(k => [k, [...byLeague.get(k)].sort()]), [...loose].sort()]);
+  let ctx = teamContexts.get(key);
+  if (!ctx) {
+    ctx = buildTeamContext(games);
+    if (teamContexts.size >= TEAM_CONTEXTS_MAX) teamContexts.delete(teamContexts.keys().next().value);
+    teamContexts.set(key, ctx);
+  }
+  return ctx;
+}
+function buildTeamContext(games = []) {
   const byLeague = new Map(Object.entries(TEAM_NAMES).map(([k, v]) => [k, new Set(v.split('|'))]));
   const loose = new Set();
   for (const g of games || []) {
@@ -619,7 +645,10 @@ function teamContext(games = []) {
   const cache = new Map();
   const resolve = (label, league) => {
     const key = `${league || '*'}|${label}`;
-    if (!cache.has(key)) cache.set(key, new Set(namesFor(league).filter(full => teamMatches(label, full)).map(norm)));
+    if (!cache.has(key)) {
+      if (cache.size >= CONTEXT_MEMO_MAX) cache.clear();
+      cache.set(key, new Set(namesFor(league).filter(full => teamMatches(label, full)).map(norm)));
+    }
     return cache.get(key);
   };
   // one match pass asks about the same two labels many times
@@ -628,7 +657,11 @@ function teamContext(games = []) {
     if (typeof a !== 'string' || typeof b !== 'string') return sameOnce(a, b, league);
     const key = `${league || '*'}\u0000${a}\u0000${b}`;
     let v = sameMemo.get(key);
-    if (v === undefined) { v = sameOnce(a, b, league); sameMemo.set(key, v); }
+    if (v === undefined) {
+      v = sameOnce(a, b, league);
+      if (sameMemo.size >= CONTEXT_MEMO_MAX) sameMemo.clear();
+      sameMemo.set(key, v);
+    }
     return v;
   }
   function sameOnce(a, b, league) {
