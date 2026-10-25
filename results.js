@@ -166,7 +166,7 @@ const kalshiMakerBet = r => {
   const graded = r.status === 'graded' && r.filled === true;
   return { profit: graded ? r.profit ?? null : null, staked: graded && r.outcome !== 'push' ? 1 : 0, clv: r.filled === true ? r.clv ?? null : null, game: `${r.event}|${day(r.start)}`,
     line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
-    labels: { kind: 'Kalshi maker bid', sport: r.sport, market: r.market } };
+    labels: { kind: r.kind === 'kalshi-maker-nhl' || (r.sport === 'nhl' && r.market !== 'h2h') ? 'Kalshi maker bid, NHL spread/total (no maker fee)' : 'Kalshi maker bid', sport: r.sport, market: r.market } };
 };
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,

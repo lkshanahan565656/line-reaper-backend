@@ -26,6 +26,11 @@ const { kalshiFee } = require('./exchanges');
 const xsize = require('./xsize');
 
 const KIND = 'kalshi-maker';
+// NHL spreads and totals carry no maker fee on Kalshi (series fee_type 'quadratic',
+// 10-25), so that fee-free slice is its own kind, judged on its own at 50
+const KIND_NHL = 'kalshi-maker-nhl';
+const KINDS = [KIND, KIND_NHL];
+const kindOf = b => (b.sport === 'nhl' && b.market !== 'h2h' ? KIND_NHL : KIND);
 const SPORTS = new Set(['nfl', 'ncaaf', 'nba', 'nhl']);
 const EDGE = 0.02;
 const EDGES = [0.01, 0.02, 0.04];      // reported in the backtest; 2% is the one judged
@@ -102,7 +107,7 @@ const stat = xs => {
 };
 // bids → the record row: fills, fill rate, CLV, results vs what the close expects, verdict.
 // Only fills through the bid are judged; at-bid fills are shown apart.
-function summarize(bids = [], { minN = MIN_N, fill = 'through' } = {}) {
+function summarize(bids = [], { minN = MIN_N, fill = 'through', kind = KIND } = {}) {
   const decided = bids.filter(b => b.filled != null);
   const fills = decided.filter(b => (fill === 'atBid' ? b.filled || b.filledAtBid : b.filled));
   const graded = fills.filter(b => b.clv != null);
@@ -119,12 +124,16 @@ function summarize(bids = [], { minN = MIN_N, fill = 'through' } = {}) {
   if (clv.n >= minN) verdict = (clv.mean <= 0 || (z != null && z <= -1.5)) ? 'fail' : clv.t >= 2 ? 'passes the record' : 'lead';
   else if (z != null && res.length >= 20 && z <= -1.5) verdict = 'lead (results short)';
   return {
-    kind: KIND, posted: bids.length, open: bids.filter(b => b.status === 'open' || b.status === 'closed').length,
+    kind, posted: bids.length, open: bids.filter(b => b.status === 'open' || b.status === 'closed').length,
     decided: decided.length, filled: fills.length, fillRate: decided.length ? r4(fills.length / decided.length) : null,
     graded: clv.n, of: minN, clv: clv.mean, clvT: clv.t, beatClose: graded.length ? r4(graded.filter(b => b.clv > 0).length / graded.length) : null,
     results: res.length, won: res.filter(b => b.outcome === 'win').length, lost: res.filter(b => b.outcome === 'loss').length,
     profit, expected: exp, z, fairDriftAtFill: drift.mean, fairDriftToClose: toClose.mean, verdict,
   };
+}
+// one record per kind, never pooled → { [kind]: summarize }
+function byKind(bids = [], o = {}) {
+  return Object.fromEntries(KINDS.map(k => [k, summarize(bids.filter(b => (b.kind || kindOf(b)) === k), { ...o, kind: k })]));
 }
 function summarizeBy(bids, keyOf, o) {
   const m = new Map();
@@ -200,7 +209,7 @@ function createMakerTracker({ store, http, now = () => Date.now(), log = console
       if (x.bid == null || x.alt || have.has(x.sideKey)) continue;
       const mins = (Date.parse(x.start) - t) / 60e3;
       if (!(mins >= WINDOW_MIN[0] && mins <= WINDOW_MIN[1])) continue;
-      const b = { id: x.sideKey, kind: KIND, sideKey: x.sideKey, sport: x.sport, event: x.event, start: x.start, market: x.market, side: x.side, point: x.point,
+      const b = { id: x.sideKey, kind: kindOf(x), sideKey: x.sideKey, sport: x.sport, event: x.event, start: x.start, market: x.market, side: x.side, point: x.point,
         marketId: x.marketId, buy: x.buy, bid: x.bid, fee: x.fee, cost: x.cost, edgeAtPost: x.edge, makerRate: x.makerRate,
         fairAtPost: x.fair, askAtPost: x.ask, bestBidAtPost: x.bestBid, postedAt: new Date(t).toISOString(), minsBefore: Math.round(mins),
         fairLast: x.fair, fairLastAt: new Date(t).toISOString(), fairs: [[t, x.fair]], status: 'open' };
@@ -279,4 +288,4 @@ function tradeRow(x) {
   return [Date.parse(x.created_time), yp, x.taker_side, Number(x.count_fp ?? x.count) || 0];
 }
 
-module.exports = { KIND, SPORTS, EDGE, EDGES, MAKER_RATE, LOT, MIN_N, makerRateOf, makerFee, suggestBid, fillOf, grade, summarize, summarizeBy, boardOf, createMakerTracker, tradeRow, fairAt, seriesOf };
+module.exports = { KIND, KIND_NHL, KINDS, kindOf, byKind, SPORTS, EDGE, EDGES, MAKER_RATE, LOT, MIN_N, makerRateOf, makerFee, suggestBid, fillOf, grade, summarize, summarizeBy, boardOf, createMakerTracker, tradeRow, fairAt, seriesOf };

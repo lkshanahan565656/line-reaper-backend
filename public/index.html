@@ -9582,11 +9582,12 @@ function kmkRender() {
   if (!d) return;
   if (kmkUi.view === 'record') {
     const bt = d.backtest, b2 = bt?.byEdge?.[String(d.edge)] || null;
-    const btCards = b2 ? kmkRecordCard('Backtest at 2% (judged)', b2.all) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
-      + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged)`, x.all)).join('') : '';
+    const kname = { 'kalshi-maker': 'kalshi-maker', 'kalshi-maker-nhl': 'kalshi-maker-nhl, NHL spreads and totals (no maker fee)' };
+    const btCards = b2 ? (b2.kinds ? Object.entries(b2.kinds).map(([k, x]) => kmkRecordCard(`Backtest at 2%, ${kname[k] || k} (judged)`, x)).join('') : kmkRecordCard('Backtest at 2% (judged)', b2.all)) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
+      + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged, both kinds)`, x.all)).join('') : '';
     const rows = (d.recent || []).map(r => `<tr><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div></td><td>${kmkC(r.bid)}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
-      <div class="nflm-cards">${kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
+      <div class="nflm-cards">${d.kinds ? Object.entries(d.kinds).map(([k, x]) => kmkRecordCard(`Live record, ${kname[k] || k}`, x)).join('') : kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, kalshi-maker, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
       ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
       ${rows ? `<div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Bid on</th><th>Bid</th><th>Fair at post</th><th>Pin close</th><th>Status</th><th>CLV</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty-wrap"><div class="empty-sub">No bid has closed yet: a bid is posted 2 min to 24 h before the start and decided from Kalshi\'s prints after it.</div></div>'}`;
     return;

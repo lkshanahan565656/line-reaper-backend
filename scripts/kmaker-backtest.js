@@ -167,7 +167,7 @@ for (const edge of K.EDGES) {
   // only games that started before the prints were pulled: their fill windows are complete
   const started = bids.filter(b => Date.parse(b.start) < Date.parse(km.at) && Date.parse(b.start) <= Date.parse(report.data.to) + 20 * 60e3);
   report.byEdge[edge] = {
-    skips, all: K.summarize(started), atBid: K.summarize(started, { fill: 'atBid' }),
+    skips, all: K.summarize(started), atBid: K.summarize(started, { fill: 'atBid' }), kinds: K.byKind(started), kindsAtBid: K.byKind(started, { fill: 'atBid' }),
     bySport: K.summarizeBy(started, b => b.sport), byMarket: K.summarizeBy(started, b => b.market),
     unfilledCloseDrift: (() => { const u = started.filter(b => !b.filled && !b.filledAtBid && b.closeFair); return u.length ? Math.round(u.reduce((s, b) => s + b.closeFair - b.fairAtPost, 0) / u.length * 1e4) / 1e4 : null; })(),
     kalshiAfter30: (() => { const f = started.filter(b => b.filled && b.kalshiAfter30 != null); return f.length ? Math.round(f.reduce((s, b) => s + b.kalshiAfter30 - b.bid, 0) / f.length * 1e4) / 1e4 : null; })(),
@@ -175,8 +175,9 @@ for (const edge of K.EDGES) {
     ...(edge === K.EDGE ? { bids: started.filter(b => b.filled || b.filledAtBid).map(({ rate, ...b }) => b) } : {}),
   };
 }
-const main = report.byEdge[K.EDGE].all;
-report.verdict = main.verdict;
-report.summary = `Backtest ${report.data.from.slice(0, 16)}Z to ${report.data.to.slice(0, 16)}Z: ${main.posted} bids posted at 2% under Pinnacle's fair after the maker fee, ${main.filled} filled through the bid (${main.fillRate == null ? '—' : Math.round(main.fillRate * 100)}%), ${main.graded} graded vs Pinnacle's close, mean CLV ${main.clv == null ? '—' : (main.clv * 100).toFixed(1) + '%'} (t ${main.clvT ?? '—'}), results ${main.won}-${main.lost}.`;
-console.log(JSON.stringify({ summary: report.summary, data: { ...report.data, fees: undefined }, edges: Object.fromEntries(Object.entries(report.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, skips: x.skips, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) }, null, 1));
+const ks = report.byEdge[K.EDGE].kinds;
+report.verdict = Object.fromEntries(Object.entries(ks).map(([k, x]) => [k, x.verdict]));
+const line = (k, x) => `${k}: ${x.posted} bids, ${x.filled} filled through the bid (${x.fillRate == null ? '—' : Math.round(x.fillRate * 100)}%), ${x.graded} of ${x.of} graded, CLV ${x.clv == null ? '—' : (x.clv * 100).toFixed(1) + '%'} (t ${x.clvT ?? '—'}), ${x.won}-${x.lost}`;
+report.summary = `Backtest ${report.data.from.slice(0, 16)}Z to ${report.data.to.slice(0, 16)}Z, bids 2% under Pinnacle's fair after the maker fee. ` + Object.entries(ks).map(([k, x]) => line(k, x)).join('; ') + '.';
+console.log(JSON.stringify({ summary: report.summary, data: { ...report.data, fees: undefined }, edges: Object.fromEntries(Object.entries(report.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, kinds: x.kinds, skips: x.skips, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) }, null, 1));
 if (outFile) fs.writeFileSync(outFile, JSON.stringify(report));
