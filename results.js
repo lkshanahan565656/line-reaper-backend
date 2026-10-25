@@ -168,6 +168,13 @@ const kalshiMakerBet = r => {
     line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
     labels: { kind: r.kind === 'kalshi-maker-nhl' || (r.sport === 'nhl' && r.market !== 'h2h') ? 'Kalshi maker bid, NHL spread/total (no maker fee)' : 'Kalshi maker bid', sport: r.sport, market: r.market } };
 };
+// exchange outrights (outrights.js): the first $50 fill at +3% over Pinnacle's fair, CLV on Pinnacle's close, per sport
+const outrightBet = r => {
+  const settled = r.status === 'settled' && r.outcome != null;
+  return { profit: settled ? r.profit ?? null : null, staked: settled && r.outcome !== 'push' ? 1 : 0, clv: r.clv ?? null, game: `${r.pinMarket}|${day(r.cutoff)}`,
+    line: settled && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: `exchange-outrights:${r.sport}`, venue: r.venue, type: `${r.sport} ${r.type}` } };
+};
 const pickBet = r => ({
   profit: r.status === 'graded' ? r.profit ?? null : null, staked: r.status === 'graded' && r.outcome !== 'push' ? 1 : 0, clv: null,
   labels: { sport: r.sport, stat: r.stat, side: r.signalSide },
@@ -234,6 +241,9 @@ const SOURCES = {
   // resting Kalshi bids under Pinnacle's fair (kmaker.js): research, judged on fills through the bid
   kalshiMaker: { label: 'Kalshi maker bids', done: r => r.status === 'graded' && r.filled === true, open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
     bet: kalshiMakerBet, cuts: [['kind'], ['sport'], ['market']] },
+  // F1 and golf outrights on Kalshi and Polymarket US vs Pinnacle's fair (outrights.js): research, one kind a sport
+  exchangeOutrights: { label: 'Exchange outrights', done: r => (r.status === 'closed' || r.status === 'settled') && r.clv != null, open: r => r.status === 'open',
+    bet: outrightBet, cuts: [['kind'], ['kind', 'venue'], ['type']] },
 };
 // sportsbook records whose proven mark must come from one book's own sample
 const BOOK_SOURCES = new Set(['ev', 'sportsProps']);
@@ -262,6 +272,13 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
     const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
     if (by !== 'kind') return cap(s, 'not proven: pooled across Kalshi and Polymarket US', { games });
     if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} games`, { games });
+    if (short.short) return cap(s, short.note, { games });
+    return { ...s, games };
+  }
+  if (source === 'exchangeOutrights' && s.verdict === 'proven') {
+    const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
+    if (by !== 'kind+venue') return cap(s, 'not proven: judged one sport on one exchange at a time', { games });
+    if (games < PROVEN_N) return cap(s, `not proven yet: ${games} of ${PROVEN_N} markets`, { games });
     if (short.short) return cap(s, short.note, { games });
     return { ...s, games };
   }
