@@ -1,0 +1,19 @@
+name: diag-stall3
+on: { push: { branches: [diag-stall3] } }
+permissions: { contents: write }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node prof.js
+        env: { WAIT_VERSION: "3.171.0", SETTLE_S: "60" }
+      - run: |
+          mkdir o && cp probe.json o/probe-$(git rev-parse --short HEAD).json && cd o
+          git init -q && git checkout -q -b diag-stall3-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out
+          git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          git fetch -q origin diag-stall3-out && git -c user.name=diag -c user.email=d@d rebase -q origin/diag-stall3-out || true
+          git push -q origin HEAD:diag-stall3-out || git push -qf origin HEAD:diag-stall3-out
