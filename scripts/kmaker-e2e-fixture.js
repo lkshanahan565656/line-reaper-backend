@@ -50,9 +50,9 @@ board.sort((a, b) => (b.bid != null) - (a.bid != null) || Date.parse(a.start) - 
 const bt = JSON.parse(fs.readFileSync('seeds/kalshi-maker-backtest.json', 'utf8'));
 const empty = K.summarize([]);
 const body = { label: 'research', kind: K.KIND, note: "e2e fixture: the board is the lead-lag recorder's real reads at the recording's minute; no live bid had closed", edge: K.EDGE, makerRate: K.MAKER_RATE, kalshi: true,
-  record: empty, atBid: K.summarize([], { fill: 'atBid' }), bySport: [], board: board.slice(0, 300), boardAt: snap.recordedAt, state: { scans: 0, errors: [] }, recent: [],
+  kinds: K.byKind([]), kindsAtBid: K.byKind([], { fill: 'atBid' }), record: empty, atBid: K.summarize([], { fill: 'atBid' }), bySport: [], board: board.slice(0, 300), boardAt: snap.recordedAt, state: { scans: 0, errors: [] }, recent: [],
   backtest: { at: bt.at, summary: bt.summary, verdict: bt.verdict, data: { from: bt.data.from, to: bt.data.to, games: bt.data.games, sides: bt.data.sides },
-    byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } };
+    byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, kinds: x.kinds, kindsAtBid: x.kindsAtBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } };
 for (const k of ['/api/kalshi-maker', ...['nfl', 'ncaaf', 'nba', 'nhl'].map(s => `/api/kalshi-maker?sport=${s}`)]) {
   const sp = k.split('=')[1];
   snap.responses[k] = { status: 200, type: 'application/json', body: JSON.stringify({ ...body, board: sp ? body.board.filter(x => x.sport === sp) : body.board }) };

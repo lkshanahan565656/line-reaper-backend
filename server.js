@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.182.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.182.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6582,10 +6582,11 @@ app.get('/api/kalshi-maker', async (req, res) => {
     const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(kmakerSlim);
     const bt = kmakerBacktest;
     res.json({ label: 'research', kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
-      record: kmaker.summarize(all), atBid: kmaker.summarize(all, { fill: 'atBid' }), bySport: kmaker.summarizeBy(all, b => b.sport),
+      kinds: kmaker.byKind(all), kindsAtBid: kmaker.byKind(all, { fill: 'atBid' }),
+      record: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND)), atBid: kmaker.summarize(all.filter(b => (b.kind || kmaker.kindOf(b)) === kmaker.KIND), { fill: 'atBid' }), bySport: kmaker.summarizeBy(all, b => b.sport),
       board, boardAt: kmakerTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(kmakerTracker.state), recent,
       backtest: bt ? { at: bt.at, summary: bt.summary, verdict: bt.verdict, data: { from: bt.data.from, to: bt.data.to, games: bt.data.games, sides: bt.data.sides },
-        byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } : null });
+        byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, kinds: x.kinds, kindsAtBid: x.kindsAtBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } : null });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 const bigTracker = bigMoney.createBigMoneyTracker({
@@ -8302,7 +8303,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.182.0',
+  version: '3.182.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

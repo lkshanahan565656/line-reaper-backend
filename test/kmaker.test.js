@@ -96,3 +96,15 @@ test('tracker: posts once, closes on Pinnacle\'s last read, decides from prints,
     assert.ok(calls.some(u => /markets\/trades/.test(u)));
   } finally { xsize.sidesOf = orig; }
 });
+
+test('kinds: NHL spreads and totals (no maker fee) are their own record, never pooled', () => {
+  assert.strictEqual(K.kindOf({ sport: 'nhl', market: 'totals' }), 'kalshi-maker-nhl');
+  assert.strictEqual(K.kindOf({ sport: 'nhl', market: 'spreads' }), 'kalshi-maker-nhl');
+  assert.strictEqual(K.kindOf({ sport: 'nhl', market: 'h2h' }), 'kalshi-maker');
+  assert.strictEqual(K.kindOf({ sport: 'nfl', market: 'totals' }), 'kalshi-maker');
+  const b = (sport, market) => ({ sport, market, status: 'graded', filled: true, clv: 0.01, cost: 0.5, closeFair: 0.505, outcome: 'win', profit: 1 });
+  const k = K.byKind([b('nhl', 'totals'), b('nhl', 'h2h'), b('nba', 'spreads')]);
+  assert.strictEqual(k['kalshi-maker-nhl'].filled, 1);
+  assert.strictEqual(k['kalshi-maker'].filled, 2);
+  assert.strictEqual(k['kalshi-maker-nhl'].kind, 'kalshi-maker-nhl');
+});
