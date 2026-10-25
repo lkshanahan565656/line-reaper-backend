@@ -1,0 +1,18 @@
+{
+ "type": "sport",
+ "typeTitle": "Games",
+ "section": "general",
+ "sectionTitle": "Sport",
+ "events": [],
+ "league": {
+  "name": "VidantaWorld Mexico Open",
+  "slug": "vidamexi",
+  "isOperational": true,
+  "id": 335,
+  "sportId": 7,
+  "tagId": 1560,
+  "ordering": "home",
+  "activeSeriesId": 454,
+  "createdAt": "2026-09-29T06:00:07Z"
+ }
+}

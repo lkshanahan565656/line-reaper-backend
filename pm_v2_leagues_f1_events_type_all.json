@@ -1,0 +1,19 @@
+{
+ "type": "sport",
+ "typeTitle": "Games",
+ "section": "general",
+ "sectionTitle": "Sport",
+ "events": [],
+ "league": {
+  "name": "Formula 1",
+  "slug": "f1",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/f1 app-dc77b6f2ff.png",
+  "isOperational": true,
+  "id": 42,
+  "sportId": 11,
+  "tagId": 263,
+  "ordering": "home",
+  "activeSeriesId": 184,
+  "createdAt": "2026-05-30T23:12:07Z"
+ }
+}

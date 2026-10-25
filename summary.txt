@@ -1,0 +1,126 @@
+open KXF1RACE KXF1RACE-UNIS26 | United States Grand Prix Main Race Winner | United States Grand Prix 2026 | mk 22 vol 995822 sumAsk 1.20 close 2026-11-02T02:00:00Z mutex true
+settled KXF1RACE KXF1RACE-SIN26 | Singapore Grand Prix Main Race Winner | Singapore Grand Prix 2026 | mk 22 vol 1436155 sumAsk 22.00 close 2026-10-11T16:14:39Z mutex true
+settled KXF1RACE KXF1RACE-BAH26 | Bahrain Grand Prix Main Race Winner | Bahrain Grand Prix 2026 | mk 22 vol 1838362 sumAsk 22.00 close 2026-10-04T14:51:46Z mutex true
+settled KXF1RACE KXF1RACE-AZEGP26 | Azerbaijan Grand Prix Winner | Azerbaijan Grand Prix 2026 | mk 22 vol 1877375 sumAsk 22.00 close 2026-09-26T16:48:21Z mutex true
+open KXF1RACEPODIUM KXF1RACEPODIUM-UNIS26 | United States Grand Prix Main Race: Podium Finishers | United States Grand Prix 2026 | mk 22 vol 67566 sumAsk 4.06 close 2026-11-02T02:00:00Z mutex false
+settled KXF1RACEPODIUM KXF1RACEPODIUM-SIN26 | Singapore Grand Prix Main Race: Podium Finishers | Singapore Grand Prix 2026 | mk 22 vol 188578 sumAsk 22.00 close 2026-10-11T16:14:40Z mutex false
+settled KXF1RACEPODIUM KXF1RACEPODIUM-BAH26 | Bahrain Grand Prix Main Race: Podium Finishers | Bahrain Grand Prix 2026 | mk 22 vol 217618 sumAsk 22.00 close 2026-10-04T15:20:14Z mutex false
+settled KXF1RACEPODIUM KXF1RACEPODIUM-AZEGP26 | Azerbaijan Grand Prix Main Race: Podium Finishers | Azerbaijan Grand Prix 2026 | mk 22 vol 245444 sumAsk 22.00 close 2026-09-26T16:48:22Z mutex false
+open KXF1POLE KXF1POLE-UNIS26 | United States Grand Prix Qualifying Session: Pole Position | United States Grand Prix | mk 22 vol 737909 sumAsk 1.21 close 2026-10-26T23:00:00Z mutex true
+settled KXF1POLE KXF1POLE-SIN26 | Singapore Grand Prix Qualifying Session: Pole Position | Singapore Grand Prix | mk 22 vol 377768 sumAsk 22.00 close 2026-10-10T18:58:52Z mutex true
+settled KXF1POLE KXF1POLE-BAH26 | Bahrain Grand Prix Qualifying Session: Pole Position | Bahrain Grand Prix | mk 22 vol 211405 sumAsk 22.00 close 2026-10-03T13:58:00Z mutex true
+settled KXF1POLE KXF1POLE-SPAGP26 | Spanish Grand Prix Qualifying Session (Q3): Pole Position | Spanish Grand Prix | mk 22 vol 311449 sumAsk 22.00 close 2026-09-12T23:16:18Z mutex true
+settled KXF1POLEPOSITION KXF1POLEPOSITION-ABUDGP25 | Abu Dhabi Grand Prix: Qualify in Pole Position | Abu Dhabi Grand Prix | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXF1POLEPOSITION KXF1POLEPOSITION-QATGP25 | Qatar Grand Prix: Qualify in Pole Position | Qatar Grand Prix | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXF1POLEPOSITION KXF1POLEPOSITION-LASVGP25 | Las Vegas GP: Qualify in Pole Position | Las Vegas GP | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXF1H2H KXF1H2H-SIN26VERHAD | F1 Matchup: Verstappen vs Hadjar | Verstappen vs Hadjar - Singapore Grand Prix | mk 2 vol 122 sumAsk 2.00 close 2026-10-11T16:15:28Z mutex true
+settled KXF1H2H KXF1H2H-SIN26RUSVER | F1 Matchup: Russell vs Verstappen | Russell vs Verstappen - Singapore Grand Prix | mk 2 vol 205 sumAsk 2.00 close 2026-10-11T16:15:28Z mutex true
+settled KXF1H2H KXF1H2H-SIN26RUSHAM | F1 Matchup: Russell vs Hamilton | Russell vs Hamilton - Singapore Grand Prix | mk 2 vol 514 sumAsk 2.00 close 2026-10-11T16:15:28Z mutex true
+open KXF1TOP5 KXF1TOP5-UNIS26 | United States Grand Prix Main Race: Top 5 Finishers | United States Grand Prix 2026 | mk 22 vol 9201 sumAsk 6.00 close 2026-11-02T02:00:00Z mutex false
+settled KXF1TOP5 KXF1TOP5-SIN26 | Singapore Grand Prix Main Race: Top 5 Finishers | Singapore Grand Prix 2026 | mk 22 vol 18831 sumAsk 22.00 close 2026-10-11T16:14:43Z mutex false
+settled KXF1TOP5 KXF1TOP5-BAH26 | Bahrain Grand Prix Main Race: Top 5 Finishers | Bahrain Grand Prix 2026 | mk 22 vol 22053 sumAsk 22.00 close 2026-10-04T15:20:17Z mutex false
+settled KXF1TOP5 KXF1TOP5-AZEGP26 | Azerbaijan Grand Prix Main Race: Top 5 Finishers | Azerbaijan Grand Prix 2026 | mk 22 vol 32527 sumAsk 22.00 close 2026-09-26T16:48:25Z mutex false
+open KXF1TOP10 KXF1TOP10-UNIS26 | United States Grand Prix Main Race: Top 10 Finishers | United States Grand Prix 2026 | mk 22 vol 10902 sumAsk 11.07 close 2026-11-02T02:00:00Z mutex false
+settled KXF1TOP10 KXF1TOP10-SIN26 | Singapore Grand Prix Main Race: Top 10 Finishers | Singapore Grand Prix 2026 | mk 22 vol 21393 sumAsk 22.00 close 2026-10-11T16:14:45Z mutex false
+settled KXF1TOP10 KXF1TOP10-BAH26 | Bahrain Grand Prix Main Race: Top 10 Finishers | Bahrain Grand Prix 2026 | mk 22 vol 34442 sumAsk 22.00 close 2026-10-04T15:20:20Z mutex false
+settled KXF1TOP10 KXF1TOP10-AZEGP26 | Azerbaijan Grand Prix Main Race: Top 10 Finishers | Azerbaijan Grand Prix 2026 | mk 22 vol 100281 sumAsk 22.00 close 2026-09-26T16:48:28Z mutex false
+open KXF1 KXF1-26 | F1 Drivers Champion | 2026 | mk 22 vol 9745813 sumAsk 1.21 close 2026-12-22T15:00:00Z mutex true
+settled KXF1 KXF1-25 | F1 Drivers Champion? | On Dec 7, 2025 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXF1CONSTRUCTORS KXF1CONSTRUCTORS-26 | F1 Constructors Champion | 2026 | mk 11 vol 2193914 sumAsk 1.09 close 2026-12-21T15:00:00Z mutex true
+settled KXF1CONSTRUCTORS KXF1CONSTRUCTORS-25 | F1 Constructors Champion? | On Dec 7, 2025 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXF1FASTLAP KXF1FASTLAP-UNIS26 | United States Grand Prix Main Race: Fastest Lap | United States Grand Prix | mk 22 vol 8485 sumAsk 1.42 close 2026-11-02T02:00:00Z mutex true
+settled KXF1FASTLAP KXF1FASTLAP-SIN26 | Singapore Grand Prix Main Race: Fastest Lap | Singapore Grand Prix | mk 22 vol 45135 sumAsk 22.00 close 2026-10-11T16:14:47Z mutex true
+settled KXF1FASTLAP KXF1FASTLAP-BAH26 | Bahrain Grand Prix Main Race: Fastest Lap | Bahrain Grand Prix | mk 22 vol 37736 sumAsk 22.00 close 2026-10-04T15:20:22Z mutex true
+settled KXF1FASTLAP KXF1FASTLAP-AZEGP26 | Azerbaijan Grand Prix Main Race: Fastest Lap | Azerbaijan Grand Prix | mk 22 vol 50054 sumAsk 22.00 close 2026-09-26T16:48:30Z mutex true
+open KXPGATOUR KXPGATOUR-BUBC26 | Butterfield Bermuda Championship Winner | 2026 Butterfield Bermuda Championship | mk 120 vol 20299112 sumAsk 4.37 close 2026-11-08T00:00:00Z mutex true
+open KXPGATOUR KXPGATOUR-MAST27 | 2027 The Masters Champion | Masters Tournament | mk 52 vol 1174114 sumAsk 1.05 close 2027-04-25T23:00:00Z mutex true
+settled KXPGATOUR KXPGATOUR-BUBC26 | Butterfield Bermuda Championship Winner | 2026 Butterfield Bermuda Championship | mk 120 vol 20299112 sumAsk 4.37 close 2026-11-08T00:00:00Z mutex true
+settled KXPGATOUR KXPGATOUR-BAC26 | Baycurrent Classic Winner | 2026 Baycurrent Classic | mk 72 vol 21746387 sumAsk 72.00 close 2026-10-11T11:59:34Z mutex true
+settled KXPGATOUR KXPGATOUR-BAOUC26 | Bank of Utah Championship Winner | 2026 Bank of Utah Championship | mk 125 vol 29397017 sumAsk 125.00 close 2026-10-05T00:07:50Z mutex true
+settled KXGOLFTOURN KXGOLFTOURN-ASIANM26 | Asian Games Men's Individual Stroke Play Winner | 2026 Asian Games Men's | mk 65 vol 1986 sumAsk 65.00 close 2026-10-03T21:58:06Z mutex true
+settled KXGOLFTOURN KXGOLFTOURN-ACCH26 | American Century Championship Winner | 2026 American Century Championship | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXPGAWIN KXPGAWIN-PGC26LIV | PGA Championship: Any LIV Golfer to Win | LIV Golfers - PGA Championship | mk 0 vol 0 sumAsk 0.00 close  mutex false
+open KXPGATOP5 KXPGATOP5-BUBC26 | Butterfield Bermuda Championship: Top 5 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 56551 sumAsk 10.24 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP5 KXPGATOP5-BUBC26 | Butterfield Bermuda Championship: Top 5 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 56551 sumAsk 10.24 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP5 KXPGATOP5-BAC26 | Baycurrent Classic: Top 5 Finishers | 2026 Baycurrent Classic | mk 72 vol 95889 sumAsk 72.00 close 2026-10-11T12:09:52Z mutex false
+settled KXPGATOP5 KXPGATOP5-BAOUC26 | Bank Of Utah Championship: Top 5 Finishers | 2026 Bank of Utah Championship | mk 123 vol 136728 sumAsk 123.00 close 2026-10-05T00:39:51Z mutex false
+open KXPGATOP10 KXPGATOP10-BUBC26 | Butterfield Bermuda Championship: Top 10 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 104235 sumAsk 16.61 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP10 KXPGATOP10-BUBC26 | Butterfield Bermuda Championship: Top 10 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 104235 sumAsk 16.61 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP10 KXPGATOP10-BAC26 | Baycurrent Classic: Top 10 Finishers | 2026 Baycurrent Classic | mk 72 vol 130732 sumAsk 72.00 close 2026-10-11T12:09:59Z mutex false
+settled KXPGATOP10 KXPGATOP10-BAOUC26 | Bank Of Utah Championship: Top 10 Finishers | 2026 Bank of Utah Championship | mk 123 vol 202985 sumAsk 123.00 close 2026-10-05T00:59:52Z mutex false
+open KXPGATOP20 KXPGATOP20-BUBC26 | Butterfield Bermuda Championship: Top 20 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 189895 sumAsk 29.84 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP20 KXPGATOP20-BUBC26 | Butterfield Bermuda Championship: Top 20 Finishers | 2026 Butterfield Bermuda Championship | mk 120 vol 189895 sumAsk 29.84 close 2026-11-22T00:00:00Z mutex false
+settled KXPGATOP20 KXPGATOP20-BAC26 | Baycurrent Classic: Top 20 Finishers | 2026 Baycurrent Classic | mk 72 vol 164996 sumAsk 72.00 close 2026-10-11T12:10:06Z mutex false
+settled KXPGATOP20 KXPGATOP20-BAOUC26 | Bank Of Utah Championship: Top 20 Finishers | 2026 Bank of Utah Championship | mk 123 vol 365133 sumAsk 123.00 close 2026-10-05T01:29:49Z mutex false
+settled KXPGATOP40 KXPGATOP40-THOC26 | The Open Championship: Top 40 Finishers | 2026 The Open Championship | mk 0 vol 0 sumAsk 0.00 close  mutex false
+settled KXPGATOP40 KXPGATOP40-USO26 | U.s. Open: Top 40 Finishers | 2026 U.S. Open | mk 0 vol 0 sumAsk 0.00 close  mutex false
+settled KXPGATOP40 KXPGATOP40-PGC26 | Pga Championship: Top 40 Finishers | 2026 PGA Championship | mk 0 vol 0 sumAsk 0.00 close  mutex false
+settled KXPGAH2H KXPGAH2H-BICA26R4NDUNLGLO | 4th Round Head-to-Head: Dunlap vs Glover | 4th Round - Dunlap vs Glover | mk 2 vol 4800 sumAsk 2.00 close 2026-09-20T19:59:51Z mutex true
+settled KXPGAH2H KXPGAH2H-BICA26R4MTHOHLEB | 4th Round Head-to-Head: Thompson vs Lebioda | 4th Round - Thompson vs Lebioda | mk 2 vol 3273 sumAsk 2.00 close 2026-09-20T19:59:50Z mutex true
+settled KXPGAH2H KXPGAH2H-BICA26R3CBLAISAL | 3rd Round Head-to-Head: Blanchet vs Salinda | 3rd Round - Blanchet vs Salinda | mk 2 vol 43 sumAsk 2.00 close 2026-09-19T19:19:47Z mutex true
+settled KXPGA3BALL KXPGA3BALL-BUBC26R2TMONMROZNLAU | 2nd Round 3-Ball: Montgomery/Rozo/Lauritzen | R2 - Montgomery/Rozo/Lauritzen | mk 3 vol 614 sumAsk 3.00 close 2026-10-23T21:59:45Z mutex true
+settled KXPGA3BALL KXPGA3BALL-BUBC26R2KAKIHSPRWMAC | 2nd Round 3-Ball: Akina/Springer/Mack III | R2 - Akina/Springer/Mack III | mk 3 vol 1457 sumAsk 3.00 close 2026-10-23T21:29:50Z mutex true
+settled KXPGA3BALL KXPGA3BALL-BUBC26R2HLICLAMCSMI | 2nd Round 3-Ball: Li/Lamprecht/Smith | R2 - Li/Lamprecht/Smith | mk 3 vol 6134 sumAsk 3.00 close 2026-10-23T21:20:11Z mutex true
+settled KXPGAMAKECUT KXPGAMAKECUT-BUBC26 | Butterfield Bermuda Championship: To Make the Cut | 2026 Butterfield Bermuda Championship | mk 120 vol 108713 sumAsk 120.00 close 2026-10-23T21:59:59Z mutex false
+settled KXPGAMAKECUT KXPGAMAKECUT-BAOUC26 | Bank of Utah Championship: To Make the Cut | 2026 Bank of Utah Championship | mk 121 vol 145474 sumAsk 121.00 close 2026-10-03T18:29:55Z mutex false
+settled KXPGAMAKECUT KXPGAMAKECUT-BICA26 | Biltmore Championship Asheville: To Make the Cut | 2026 Biltmore Championship Asheville | mk 134 vol 370724 sumAsk 134.00 close 2026-09-19T00:10:38Z mutex false
+settled KXDPWORLDTOUR KXDPWORLDTOUR-GEC26 | Genesis Championship Winner | 2026 Genesis Championship | mk 125 vol 3945469 sumAsk 125.00 close 2026-10-25T12:39:51Z mutex true
+settled KXDPWORLDTOUR KXDPWORLDTOUR-DPWIC26 | DP World India Championship Winner | 2026 DP World India Championship | mk 144 vol 13400067 sumAsk 144.00 close 2026-10-18T14:11:35Z mutex true
+settled KXDPWORLDTOUR KXDPWORLDTOUR-OPDEPBM26 | Open de España presented by Madrid Winner | 2026 Open de España presented by Madrid | mk 128 vol 8411533 sumAsk 128.00 close 2026-10-11T16:35:42Z mutex true
+settled KXDPWTTOP5 KXDPWTTOP5-GEC26 | Genesis Championship: Top 5 Finishers | 2026 Genesis Championship | mk 125 vol 16449 sumAsk 125.00 close 2026-10-25T12:39:59Z mutex false
+settled KXDPWTTOP5 KXDPWTTOP5-DPWIC26 | Dp World India Championship: Top 5 Finishers | 2026 DP World India Championship | mk 144 vol 21362 sumAsk 144.00 close 2026-10-18T14:00:01Z mutex false
+settled KXDPWTTOP5 KXDPWTTOP5-OPDEPBM26 | Open De España Presented By Madrid: Top 5 Finishers | 2026 Open de España presented by Madrid | mk 132 vol 9638 sumAsk 132.00 close 2026-10-11T17:59:56Z mutex false
+settled KXDPWTTOP10 KXDPWTTOP10-GEC26 | Genesis Championship: Top 10 Finishers | 2026 Genesis Championship | mk 125 vol 18355 sumAsk 125.00 close 2026-10-25T12:40:04Z mutex false
+settled KXDPWTTOP10 KXDPWTTOP10-DPWIC26 | Dp World India Championship: Top 10 Finishers | 2026 DP World India Championship | mk 144 vol 26144 sumAsk 144.00 close 2026-10-18T14:00:13Z mutex false
+settled KXDPWTTOP10 KXDPWTTOP10-OPDEPBM26 | Open De España Presented By Madrid: Top 10 Finishers | 2026 Open de España presented by Madrid | mk 132 vol 7080 sumAsk 132.00 close 2026-10-11T18:00:07Z mutex false
+settled KXDPWTTOP20 KXDPWTTOP20-GEC26 | Genesis Championship: Top 20 Finishers | 2026 Genesis Championship | mk 125 vol 28702 sumAsk 125.00 close 2026-10-25T12:40:10Z mutex false
+settled KXDPWTTOP20 KXDPWTTOP20-DPWIC26 | Dp World India Championship: Top 20 Finishers | 2026 DP World India Championship | mk 144 vol 64749 sumAsk 144.00 close 2026-10-18T14:00:22Z mutex false
+settled KXDPWTTOP20 KXDPWTTOP20-OPDEPBM26 | Open De España Presented By Madrid: Top 20 Finishers | 2026 Open de España presented by Madrid | mk 132 vol 27671 sumAsk 132.00 close 2026-10-11T18:00:15Z mutex false
+settled KXDPWTH2H KXDPWTH2H-BMPC26R3ASCORGER | 3rd Round Head-to-Head: Scott vs Gerard | 3rd Round - Scott vs Gerard | mk 2 vol 895 sumAsk 2.00 close 2026-09-19T16:19:34Z mutex true
+settled KXDPWTH2H KXDPWTH2H-BMPC26R3FCELMELV | 3rd Round Head-to-Head: Celli vs Elvira | 3rd Round - Celli vs Elvira | mk 2 vol 70 sumAsk 2.00 close 2026-09-19T16:19:33Z mutex true
+settled KXDPWTH2H KXDPWTH2H-BMPC26R3ARAIJSPA | 3rd Round Head-to-Head: Rai vs Spaun | 3rd Round - Rai vs Spaun | mk 2 vol 2283 sumAsk 2.00 close 2026-09-19T16:19:32Z mutex true
+settled KXLIVTOUR KXLIVTOUR-IND26 | LIV Golf Indianapolis Champion? | 2026 LIV Golf Indianapolis | mk 60 vol 1994872 sumAsk 60.00 close 2026-08-24T00:08:04Z mutex true
+settled KXLIVTOUR KXLIVTOUR-YOR26 | LIV Golf New York Champion? | 2026 LIV Golf New York | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXLIVTOUR KXLIVTOUR-KIN26 | LIV Golf United Kingdom Champion? | 2026 LIV Golf United Kingdom | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXSB KXSB-27 | 2027 Pro Football Champion | 2026-27 | mk 32 vol 198130689 sumAsk 1.22 close 2029-02-13T23:30:00Z mutex true
+open KXNBA KXNBA-27 | 2027 Pro Basketball Champion | 2026-27 | mk 30 vol 47276855 sumAsk 1.26 close 2029-07-30T14:00:00Z mutex true
+settled KXNBA KXNBA-26 | 2026 Pro Basketball Champion | 2026 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXNBA KXNBA-25 | Pro Men's Basketball: Champion? | In June 2025 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXNHL KXNHL-27 | 2026-27 Stanley Cup® Finals Winner | 2026-27 | mk 32 vol 4880961 sumAsk 1.31 close 2029-06-30T14:00:00Z mutex true
+settled KXNHL KXNHL-26 | Stanley Cup® Winner: Vegas Golden Knights vs Carolina Hurricanes | On Jul 1, 2026 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXNHL KXNHL-25 | Pro Hockey Champion? | In June 2025 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXMLB KXMLB-26 | Pro Baseball Champion | 2026 | mk 30 vol 136287250 sumAsk 29.00 close 2026-09-24T22:59:47Z mutex true
+settled KXMLB KXMLB-25 | Pro Baseball Champion? | On Oct 27, 2025 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXNBAMVP KXNBAMVP-27 | Pro Basketball MVP Winner | 2026-27 season | mk 54 vol 4356226 sumAsk 1.46 close 2028-06-30T14:00:00Z mutex true
+settled KXNBAMVP KXNBAMVP-26 | MVP Winner | 2025-26 season | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXNFLMVP KXNFLMVP-27 | MVP Winner? | 2026-27 season | mk 49 vol 37202267 sumAsk 1.45 close 2028-02-12T15:00:00Z mutex true
+open KXNBAEAST KXNBAEAST-27 | Pro Basketball Eastern Conference Champion | 2026-27 | mk 15 vol 3536669 sumAsk 1.11 close 2029-06-29T14:00:00Z mutex true
+settled KXNBAEAST KXNBAEAST-26 | Series Winner: Cleveland (4) vs New York (3) | 2025-26 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXNBAEAST KXNBAEAST-25 | Eastern Conference Finals Winner? | 2024-25 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXNBAWEST KXNBAWEST-27 | Pro Basketball Western Conference Champion | 2026-27 | mk 15 vol 1501933 sumAsk 1.12 close 2029-06-29T14:00:00Z mutex true
+settled KXNBAWEST KXNBAWEST-26 | Game 7: San Antonio vs Oklahoma City | 2025-26 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXNBAWEST KXNBAWEST-25 | Western Conference Finals Winner? | 2024-25 | mk 0 vol 0 sumAsk 0.00 close  mutex true
+settled KXNFLAFCCHAMP KXNFLAFCCHAMP-25 | AFC Championship Winner: New England vs Denver | 2025/26 AFC Championship | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXNFLNFCCHAMP KXNFLNFCCHAMP-27 | NFC Championship Winner | 2026-27 | mk 16 vol 13559436 sumAsk 1.05 close 2027-02-22T15:00:00Z mutex true
+settled KXNFLNFCCHAMP KXNFLNFCCHAMP-25 | NFC Championship Winner: Los Angeles vs Seattle | 2025/26 NFC Championship | mk 0 vol 0 sumAsk 0.00 close  mutex true
+open KXCHAMPTOUR KXCHAMPTOUR-STCC26 | Stifel Charity Classic Winner | 2026 Stifel Charity Classic | mk 68 vol 94936 sumAsk 2.78 close 2026-11-08T00:00:00Z mutex true
+pmus /v2/leagues/f1/events?type=futures 200 9 f1-dc-2026-12-06-w:F1 Drivers Champion || f1-cc-2026-12-06-w:F1 Constructors Champion || f1-mcusgp-2026-10-25-w:MSC Cruises United States Grand Prix Winner || f1-mcgp-2026-11-01-w:Mexico City Grand Prix Winner || f1-mcusgp-2026-10-25-cons:MSC Cruises United States Grand Prix Winning Constructor || f1-mcusgp-2026-10-25-top3:MSC Cruises United States Grand Prix Top-3 Finishers
+pmus /v2/leagues/f1/events?type=all 200 0 {"type":"sport","typeTitle":"Games","section":"general","sectionTitle":"Sport","events":[],"league":{"name":"Formula 1","slug":"f1","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/f1 app-dc77b6f2ff.png","isOperational":true,"id":42,"sportId":11,"tagId":263,"ordering":"home","activeSeri
+pmus /v2/leagues/f1/events?section=futures 200 0 {"type":"sport","typeTitle":"Games","section":"general","sectionTitle":"Sport","events":[],"league":{"name":"Formula 1","slug":"f1","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/f1 app-dc77b6f2ff.png","isOperational":true,"id":42,"sportId":11,"tagId":263,"ordering":"home","activeSeri
+pmus /v2/leagues/f1/events?type=future 200 0 {"type":"sport","typeTitle":"Games","section":"general","sectionTitle":"Sport","events":[],"league":{"name":"Formula 1","slug":"f1","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/f1 app-dc77b6f2ff.png","isOperational":true,"id":42,"sportId":11,"tagId":263,"ordering":"home","activeSeri
+pmus /v1/events?seriesId=184&limit=20 200 20 f1-cc-2026-12-06-w:F1 Constructors Champion || f1-dc-2026-12-06-w:F1 Drivers Champion || f1-ahgp-2026-07-26-w:AWS Hungarian Grand Prix Winner || f1-ahgp-2026-07-26-cons:AWS Hungarian Grand Prix Winning Constructor || f1-hdgp-2026-08-23-w:Heineken Dutch Grand Prix Winner || f1-hdgp-2026-08-23-cons:Heineken Dutch Grand Prix Winning Constructor
+pmus /v1/events?series_id=184&limit=20 200 20 f1-cc-2026-12-06-w:F1 Constructors Champion || f1-dc-2026-12-06-w:F1 Drivers Champion || f1-ahgp-2026-07-26-w:AWS Hungarian Grand Prix Winner || f1-ahgp-2026-07-26-cons:AWS Hungarian Grand Prix Winning Constructor || f1-hdgp-2026-08-23-w:Heineken Dutch Grand Prix Winner || f1-hdgp-2026-08-23-cons:Heineken Dutch Grand Prix Winning Constructor
+pmus /v1/events?tagId=263&limit=20 200 20 aec-nfl-car-gb-2025-11-02:Carolina vs. Green Bay || aec-nfl-lac-ten-2025-11-02:Los Angeles vs. Tennessee || aec-nfl-min-det-2025-11-02:Minnesota vs. Detroit || aec-nfl-atl-ne-2025-11-02:Atlanta vs. New England || aec-nfl-bal-mia-2025-10-30:Baltimore vs. Miami || aec-nfl-chi-cin-2025-11-02:Chicago vs. Cincinnati
+pmus /v1/events?tag_id=263&limit=20 200 20 aec-nfl-car-gb-2025-11-02:Carolina vs. Green Bay || aec-nfl-lac-ten-2025-11-02:Los Angeles vs. Tennessee || aec-nfl-min-det-2025-11-02:Minnesota vs. Detroit || aec-nfl-atl-ne-2025-11-02:Atlanta vs. New England || aec-nfl-bal-mia-2025-10-30:Baltimore vs. Miami || aec-nfl-chi-cin-2025-11-02:Chicago vs. Cincinnati
+pmus /v1/events?active=true&closed=false&limit=20&tag_id=263 200 20 mlb-champ-2026-09-27:World Series Champion || mls-winner-2026-11-07:Major League Soccer Champion || usho-midterms-2026-11-03:U.S House Midterm Winner || usse-midterms-2026-11-03:U.S Senate Midterm Winner || mlb-nl-2026-11-27-mvp:National League MVP || mlb-nl-2026-11-27-cy:National League Cy Young Award
+pmus /v2/series/184 404 0 {"code":5,"message":"The server was unable to process your request.","details":[]}
+pmus /v1/series/184 404 0 {"code":5,"message":"The server was unable to process your request.","details":[]}
+pmus /v2/leagues/f1 200 0 {"league":{"name":"Formula 1","slug":"f1","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/f1 app-dc77b6f2ff.png","isOperational":true,"id":42,"sportId":11,"tagId":263,"ordering":"home","activeSeriesId":184,"createdAt":"2026-05-30T23:12:07Z"}}
+pmus /v2/leagues/f1/markets 404 0 {"code":5,"message":"The server was unable to process your request.","details":[]}
+pmus /v2/leagues/buttberm/events 200 0 {"type":"sport","typeTitle":"Games","section":"general","sectionTitle":"Sport","events":[],"league":{"name":"Butterfield Bermuda Championship","slug":"buttberm","isOperational":true,"id":282,"sportId":7,"tagId":1429,"ordering":"home","activeSeriesId":371,"createdAt":"2026-09-22T06:00:09Z"}}
+pmus /v2/leagues/vidamexi/events 200 0 {"type":"sport","typeTitle":"Games","section":"general","sectionTitle":"Sport","events":[],"league":{"name":"VidantaWorld Mexico Open","slug":"vidamexi","isOperational":true,"id":335,"sportId":7,"tagId":1560,"ordering":"home","activeSeriesId":454,"createdAt":"2026-09-29T06:00:07Z"}}
+pmus /v2/leagues/vidamexi/events?type=futures 200 4 pga-vidamexi-2026-10-29-w:VidantaWorld Mexico Open Winner || pga-vidamexi-2026-10-29-r1l:VidantaWorld Mexico Open End of Round 1 Leader || pga-vidamexi-2026-10-29-r2l:VidantaWorld Mexico Open End of Round 2 Leader || pga-vidamexi-2026-10-29-r3l:VidantaWorld Mexico Open End of Round 3 Leader
+pmus /v1/events?seriesSlug=f1&limit=20 200 20 aec-nfl-car-gb-2025-11-02:Carolina vs. Green Bay || aec-nfl-lac-ten-2025-11-02:Los Angeles vs. Tennessee || aec-nfl-min-det-2025-11-02:Minnesota vs. Detroit || aec-nfl-atl-ne-2025-11-02:Atlanta vs. New England || aec-nfl-bal-mia-2025-10-30:Baltimore vs. Miami || aec-nfl-chi-cin-2025-11-02:Chicago vs. Cincinnati
+pmus /v1/events?league=f1&limit=20 200 20 aec-nfl-car-gb-2025-11-02:Carolina vs. Green Bay || aec-nfl-lac-ten-2025-11-02:Los Angeles vs. Tennessee || aec-nfl-min-det-2025-11-02:Minnesota vs. Detroit || aec-nfl-atl-ne-2025-11-02:Atlanta vs. New England || aec-nfl-bal-mia-2025-10-30:Baltimore vs. Miami || aec-nfl-chi-cin-2025-11-02:Chicago vs. Cincinnati
+pmus /v1/events?sport=f1&limit=20 200 20 aec-nfl-car-gb-2025-11-02:Carolina vs. Green Bay || aec-nfl-lac-ten-2025-11-02:Los Angeles vs. Tennessee || aec-nfl-min-det-2025-11-02:Minnesota vs. Detroit || aec-nfl-atl-ne-2025-11-02:Atlanta vs. New England || aec-nfl-bal-mia-2025-10-30:Baltimore vs. Miami || aec-nfl-chi-cin-2025-11-02:Chicago vs. Cincinnati
+pmus /v1/events?active=true&limit=20&offset=0&order=startDate&ascending=false 200 20 aec-nfl-phi-gb-2025-11-10:Philadelphia vs. Green Bay || aec-nfl-car-atl-2025-11-16:Carolina vs. Atlanta || aec-nfl-gb-nyg-2025-11-16:Green Bay vs. New York || aec-nfl-hou-ten-2025-11-16:Houston vs. Tennessee || aec-nfl-chi-min-2025-11-16:Chicago vs. Minnesota || aec-nfl-sf-ari-2025-11-16:San Francisco vs. Arizona

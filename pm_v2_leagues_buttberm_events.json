@@ -1,0 +1,18 @@
+{
+ "type": "sport",
+ "typeTitle": "Games",
+ "section": "general",
+ "sectionTitle": "Sport",
+ "events": [],
+ "league": {
+  "name": "Butterfield Bermuda Championship",
+  "slug": "buttberm",
+  "isOperational": true,
+  "id": 282,
+  "sportId": 7,
+  "tagId": 1429,
+  "ordering": "home",
+  "activeSeriesId": 371,
+  "createdAt": "2026-09-22T06:00:09Z"
+ }
+}
