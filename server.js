@@ -784,6 +784,13 @@ const slipLegTracker = createSportTracker({
   grader: createSportsGrader({ http: axios }),
 });
 slipLegTracker.ready().catch(e => console.error('Slip log: store failed to initialise:', e.message));
+// SHOP (appshop.js): the softest number across the apps and the middles
+// between two apps, followed to the close and graded like the props record
+const shopTracker = createSportTracker({
+  store: resultsBackup.wrap('shopLegs', createEvStoreFromEnv(process.env, { table: 'shop_legs', fileVar: 'SHOP_LEGS_FILE', file: 'shop-legs.json' })),
+  grader: sportGrader,
+});
+shopTracker.ready().catch(e => console.error('Shop tracker: store failed to initialise:', e.message));
 const slipLog = require('./sliplog').createSlipLog({ tracker: slipLegTracker });
 const { createSharpTracker, reverseLineMoves, describeSharp } = require('./sharp');
 
@@ -4682,7 +4689,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.164.4', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.165.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6718,9 +6725,19 @@ async function trackSportProps() {
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
+
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
+    // the softest number across the apps (appshop.js): kinds shop-any, shop-pp,
+    // shop-p6 and shop-mid in a record of their own (own store, own grading
+    // budget), never plays or alerts
+    if (APP_SHOP_RECORD) {
+      const byKey = new Map(rows.map(r => [r.key, r]));
+      const shopFlags = [];
+      for (const x of appShop.recordLegs(shopBoard())) { const row = byKey.get(x.rowKey); if (row) shopFlags.push({ row, play: x.play, kind: x.kind, research: true }); }
+      await shopTracker.record({ rows: rows.filter(r => !r.esports), flagged: shopFlags, fairAt: sportFairAt, updated });
+    }
   } catch (e) { console.warn('Sports props record:', e.message); }
   finally { sportTrackRunning = false; }
 }
@@ -6752,6 +6769,67 @@ app.get('/api/props/board', (req, res) => {
     coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// ── SHOP: the softest number across the apps (appshop.js) ──
+// Every player stat two or more apps hang at different numbers: the softest
+// app per side (lowest line for an Over, highest for an Under), the gap to the
+// nearest other app, the sharp price at that number where Pinnacle, Kalshi or
+// the books post one, the leg's EV at its own app's payout, and the middles
+// between two apps worth more than zero on the stat's curve. A research view:
+// the backtest (checks/app-shop-2026-10-25) found the softest number short of
+// every break-even, so nothing here is a play or an alert.
+const appShop = require('./appshop');
+// APP_SHOP_RECORD=off stops recording the shop legs (on by default: alerts are off either way)
+const APP_SHOP_RECORD = String(process.env.APP_SHOP_RECORD || 'on').toLowerCase() !== 'off';
+let shopCache = { at: 0, src: null, rows: [] };
+function shopBoard() {
+  const { rows } = propsBoardRows();
+  if (shopCache.src === rows && Date.now() - shopCache.at < 60000) return shopCache.rows;
+  const sharpAt = (row, line) => {
+    const f = sportProps.consensusFor(row, line, { sharp: sharpQuotes(row), kalshi: rowKalshi(row), o: SHARP_OPTS });
+    if (!f) return null;
+    const names = [...new Set((f.sources || []).filter(s => !s.shadow).map(s => s.book))];
+    return { p: f.p, source: sportProps.sharpBacked(f) ? 'sharp' : 'books', books: names };
+  };
+  const evOf = (p, app, side, cell, mult) => dfsLegEv(p, app, mult ?? 1, { overMultiplier: cell.over, underMultiplier: cell.under }, side);
+  const out = appShop.shopRows(rows, { sharpAt, evOf });
+  shopCache = { at: Date.now(), src: rows, rows: out };
+  return out;
+}
+app.get('/api/props/shop', (req, res) => {
+  let rows = shopBoard();
+  const pro = hasPro(req), kalshiOk = licenceOf(req).kalshi;
+  const sport = String(req.query.sport || 'ALL').toUpperCase();
+  if (sport !== 'ALL' && sport !== 'SPORTS') rows = rows.filter(r => r.sport === sport);
+  const q = String(req.query.q || '').toLowerCase().slice(0, 60);
+  if (q) rows = rows.filter(r => `${r.player} ${r.team} ${r.market} ${r.matchTitle}`.toLowerCase().includes(q));
+  const minGap = Math.max(appShop.MIN_GAP, parseFloat(req.query.minGap) || 0);
+  rows = rows.filter(r => r.gap >= minGap);
+  if (req.query.middles === '1') rows = rows.filter(r => r.middles.length);
+  const sort = String(req.query.sort || 'gap');
+  if (pro && sort === 'ev') rows = [...rows].sort((a, b) => (b.bestEv ?? -1e9) - (a.bestEv ?? -1e9) || b.gap - a.gap);
+  else if (pro && sort === 'middle') rows = [...rows].sort((a, b) => (b.middles[0]?.expUnits ?? -1e9) - (a.middles[0]?.expUnits ?? -1e9));
+  else if (sort === 'start') rows = [...rows].sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+  const sports = {};
+  for (const r of shopBoard()) sports[r.sport] = (sports[r.sport] || 0) + 1;
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 150));
+  const offset = Math.max(0, parseInt(req.query.offset) || 0);
+  let page = rows.slice(offset, offset + limit);
+  // the fair, EV and middles are Pro, and a Kalshi-backed fair needs its licence
+  if (!pro || !kalshiOk) page = page.map(appShop.redactShop);
+  res.json({ rows: page, total: rows.length, offset, limit, pro, counts: { sports, rows: shopBoard().length, books: {} },
+    middles: rows.filter(r => r.middles.length).length, minGap, updated: new Date(shopCache.at).toISOString(),
+    note: 'Research: on the recorded boards the softest number won 52.6% at PrizePicks (589 legs) vs its 55.0% break-even. Not a play until its own record clears 50 graded live.' });
+});
+
+// the shop's own record: P1-P3 and the middles (appshop.recordSummary), free
+let shopRecordCache = { at: 0, body: null };
+app.get('/api/props/shop/record', async (req, res) => {
+  try {
+    if (!shopRecordCache.body || Date.now() - shopRecordCache.at > 60e3) shopRecordCache = { at: Date.now(), body: appShop.recordSummary(await shopTracker.list({ limit: 1e6 })) };
+    res.json({ ...shopRecordCache.body, recording: APP_SHOP_RECORD, preregistered: 'checks/app-shop-2026-10-25/PREREGISTERED.md' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── COVERAGE: how many pick'em legs carry a sharp price (propsboard.coverage) ──
@@ -7328,7 +7406,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.164.4',
+  version: '3.165.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7458,6 +7536,7 @@ schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
+schedule('7,17,27,37,47,57 * * * *', () => shopTracker.grade().catch(e => console.warn('Shop grader:', e.message)));
 schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory())));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
