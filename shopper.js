@@ -21,6 +21,7 @@ const schema = require('./oddsschema');
 const ranker = require('./oddsrank');
 const venues = require('./venues');
 const { canonName } = require('./ev');
+const depthbook = require('./depthbook');
 
 const SHARP_WEIGHTS = { pinnacle: 1, matchbook: 0.6 };
 const MIN_CONSENSUS = 4;
@@ -113,9 +114,28 @@ function priceCell(q, { fair, stake, now, bettable }) {
     liquidity: q.liquidity, maxStake: q.maxStake, url: q.sourceIds?.url || null, sourceIds: q.sourceIds || null, line: q.line,
   };
 }
+// an exchange price's book (depthbook.js): its size at $50/$200/$1,000 after
+// fees, and with minSize the price it fills that stake at. A sportsbook's
+// limit is never published to us: size null, never guessed.
+function sizeCell(c, q, { fair, stake, depth, minSize }) {
+  if (!depthbook.EXCHANGES.has(c.provider) || c.ref) { c.size = null; return c; }
+  const book = depth ? depth(q) : null;
+  c.size = book ? depthbook.sizeOf(book, { fair }) : { unread: true };
+  if (book && c.size.topUsd != null && c.liquidity == null) c.liquidity = c.size.topUsd;
+  if (minSize > 0) {
+    const f = book ? depthbook.fillAt(book, minSize) : null;
+    if (!f) { c.sizeOk = false; return c; }
+    c.sizeOk = true;
+    c.listed = c.effective;
+    c.effective = f.decimal; c.american = schema.fromDecimal(f.decimal, 'american'); c.implied = r4(1 / f.decimal);
+    c.ev = fair == null ? null : r4(engine.ev(fair, f.decimal)); c.evAmount = fair == null ? null : r2(engine.evAmount(fair, f.decimal, stake));
+    c.sizedAt = minSize;
+  }
+  return c;
+}
 
 // one grouped market → its view, or null when nothing in it is bettable
-function viewMarket(m, { filter, stake, now, method }) {
+function viewMarket(m, { filter, stake, now, method, depth = null, minSize = null }) {
   const order = SIDE_ORDER[m.marketType];
   const present = new Set([...m.by.values()].flatMap(px => Object.keys(px)));
   const sides = order.filter(s => present.has(s) && (s !== 'draw' || m.marketType === 'moneyline'));
@@ -123,19 +143,20 @@ function viewMarket(m, { filter, stake, now, method }) {
   const fair = fairOf(m, sides, { method, now });
   const out = sides.map(s => {
     const f = fair?.p[s] ?? null;
-    const cells = [...m.by].filter(([id, px]) => px[s] && filter.show(id)).map(([, px]) => priceCell(px[s], { fair: f, stake, now, bettable: filter.bettable }));
-    const live = cells.filter(c => c.bettable && c.freshness !== 'stale').sort((a, b) => b.effective - a.effective);
+    const cells = [...m.by].filter(([id, px]) => px[s] && filter.show(id)).map(([, px]) => sizeCell(priceCell(px[s], { fair: f, stake, now, bettable: filter.bettable }), px[s], { fair: f, stake, depth, minSize }));
+    const live = cells.filter(c => c.bettable && c.freshness !== 'stale' && c.sizeOk !== false).sort((a, b) => b.effective - a.effective);
     const best = live[0] || null, second = live[1] || null;
     for (const c of cells) c.best = c === best;
     cells.sort((a, b) => (b.ref - a.ref) || b.effective - a.effective);
     return {
       side: s, name: selectionName(m, s), fair: f, fairAmerican: f ? schema.fromDecimal(1 / f, 'american') : null,
-      best: best ? { provider: best.provider, name: best.name, american: best.american, effective: best.effective, ev: best.ev, evAmount: best.evAmount, freshness: best.freshness, secondHand: best.secondHand, oneWay: best.oneWay, liquidity: best.liquidity } : null,
+      best: best ? { provider: best.provider, name: best.name, american: best.american, effective: best.effective, ev: best.ev, evAmount: best.evAmount, freshness: best.freshness, secondHand: best.secondHand, oneWay: best.oneWay, liquidity: best.liquidity, size: best.size ?? null, listed: best.listed ?? null, sizedAt: best.sizedAt ?? null } : null,
       second: second ? { provider: second.provider, name: second.name, american: second.american, effective: second.effective } : null,
       edgePts: f != null && best ? r2((f - best.implied) * 100) : null,
       discrepancy: best && second ? engine.discrepancy(best.effective, second.effective) : null,
       kelly: f != null && best ? r4(engine.kelly(f, best.effective, 0.25)) : null,
       prices: cells,
+      _bestBook: best && depth && depthbook.EXCHANGES.has(best.provider) ? depth(m.by.get(best.provider)[s]) : null,
     };
   });
   if (!out.some(s => s.prices.some(c => c.bettable))) return null;
@@ -146,10 +167,12 @@ function viewMarket(m, { filter, stake, now, method }) {
     marketType: m.marketType, marketName: m.marketName, period: m.period, line: m.line, player: m.player,
     fair: fair ? { source: fair.source, sources: fair.sources, spreadPts: fair.spreadPts, method: fair.method, freshness: fair.freshness } : null,
     hold: a ? a.hold : null, arb: a && a.arb ? { profit: a.profit, stakes: Object.fromEntries(out.map((s, i) => [s.side, a.stakes[i]])), payout: a.payout, total: stake,
-      legs: out.map(s => ({ side: s.side, provider: s.best.provider, name: s.best.name, american: s.best.american, secondHand: s.best.secondHand, freshness: s.best.freshness })) } : null,
+      legs: out.map(s => ({ side: s.side, provider: s.best.provider, name: s.best.name, american: s.best.american, secondHand: s.best.secondHand, freshness: s.best.freshness })),
+      // sized by the thinner side: the largest total every leg's book fills while the set still locks a profit
+      size: depthbook.arbSize(out.map(s => ({ provider: s.best.provider, decimal: s.best.effective, book: s._bestBook })), { stake }) } : null,
     venues: new Set(out.flatMap(s => s.prices.map(c => c.provider))).size,
     maxEv: Math.max(...out.map(s => s.best?.ev ?? -Infinity)),
-    sides: out,
+    sides: out.map(({ _bestBook, ...x }) => x),
   };
 }
 function selectionName(m, s) {
@@ -191,7 +214,7 @@ function build(quotes, opts = {}) {
   const grouped = groupMarkets(kept);
   let markets = [];
   for (const m of grouped.values()) {
-    const v = viewMarket(m, { filter, stake, now, method });
+    const v = viewMarket(m, { filter, stake, now, method, depth: opts.depth || null, minSize: opts.minSize > 0 ? opts.minSize : null });
     if (v) markets.push(v);
   }
   const all = markets;
@@ -203,7 +226,7 @@ function build(quotes, opts = {}) {
       line: m.line, player: m.player, selection: s.name, provider: s.best.provider, providerName: s.best.name, american: s.best.american, effective: s.best.effective,
       fairAmerican: s.fairAmerican, fair: s.fair, ev: s.best.ev, evAmount: s.best.evAmount, edgePts: s.edgePts, kelly: s.kelly, second: s.second,
       fairSource: m.fair?.source, spreadPts: m.fair?.spreadPts ?? null, freshness: s.best.freshness, fairFreshness: m.fair?.freshness, access: s.best.secondHand ? 'second_hand' : 'direct',
-      oneWay: s.best.oneWay, liquidity: s.best.liquidity, view: m });
+      oneWay: s.best.oneWay, liquidity: s.best.liquidity, size: s.best.size, listed: s.best.listed, sizedAt: s.best.sizedAt, view: m });
   }
   const minEv = Number.isFinite(opts.minEv) ? opts.minEv : 0;
   const minEdge = Number.isFinite(opts.minEdgePts) ? opts.minEdgePts : null;
@@ -216,7 +239,9 @@ function build(quotes, opts = {}) {
     if (r.score != null && r.score > (m.score ?? -Infinity)) m.score = r.score;
   }
   for (const m of all) { if (m.score == null) m.score = 0; if (m.arb) m.arb.direct = m.arb.legs.every(l => !l.secondHand && l.freshness !== 'stale'); }
-  const arbs = all.filter(m => m.arb && m.arb.direct)
+  // with a minimum size, an arb must fill that total on its thinner side (a sportsbook-only arb has no published limit and stays)
+  const arbFills = m => !(opts.minSize > 0) || !m.arb.size || (m.arb.size.sized ? m.arb.size.maxTotal >= opts.minSize : !m.arb.size.unread.length);
+  const arbs = all.filter(m => m.arb && m.arb.direct && arbFills(m))
     .sort((a, b) => b.arb.profit - a.arb.profit);
   // the market list itself
   markets = all.filter(m =>
@@ -245,8 +270,9 @@ function build(quotes, opts = {}) {
     // the first 50 leads carry their whole market, so a row can open to every venue
     markets: markets.slice(0, limit), opportunities: opportunities.slice(0, limit).map((o, i) => { const { view, ...rest } = o; return i < 50 ? { ...rest, view } : rest; }), arbs: arbs.slice(0, 100),
     counts: { quotes: kept.length, markets: all.length, shown: Math.min(markets.length, limit), matching: markets.length, priced: count(all, m => m.fair), plusEv: count(all, m => m.maxEv > 0),
-      opportunities: opportunities.length, arbs: arbs.length, lowHold: count(all, m => m.hold != null && m.hold < 0.01), multiVenue: count(all, m => m.venues >= 3) },
-    facets, stake, method, state: venues.stateOf(opts.state), window: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
+      opportunities: opportunities.length, arbs: arbs.length,
+      sized: count(all, m => m.sides.some(s => s.prices.some(c => c.size && !c.size.unread))), unsized: count(all, m => m.sides.some(s => s.prices.some(c => c.size && c.size.unread))), lowHold: count(all, m => m.hold != null && m.hold < 0.01), multiVenue: count(all, m => m.venues >= 3) },
+    facets, stake, method, minSize: opts.minSize > 0 ? opts.minSize : null, state: venues.stateOf(opts.state), window: { from: new Date(from).toISOString(), to: new Date(to).toISOString() },
   };
 }
 
@@ -254,8 +280,13 @@ function build(quotes, opts = {}) {
 function stripPro(view) {
   return { ...view, opportunities: [], arbs: [], locked: { opportunities: view.opportunities.length, arbs: view.arbs.length },
     markets: view.markets.map(m => ({ ...m, maxEv: null, score: null, fair: m.fair ? { source: m.fair.source } : null, arb: null,
-      sides: m.sides.map(s => ({ ...s, fair: null, fairAmerican: null, edgePts: null, kelly: null, best: s.best ? { ...s.best, ev: null, evAmount: null } : null,
-        prices: s.prices.map(c => ({ ...c, ev: null, evAmount: null })) })) })) };
+      sides: m.sides.map(s => ({ ...s, fair: null, fairAmerican: null, edgePts: null, kelly: null, best: s.best ? { ...s.best, ev: null, evAmount: null, size: freeSize(s.best.size) } : null,
+        prices: s.prices.map(c => ({ ...c, ev: null, evAmount: null, size: freeSize(c.size) })) })) })) };
+}
+// sizes are prices (free); their EV and the dollars at the fair are Pro
+function freeSize(z) {
+  if (!z || z.unread) return z || null;
+  return { ...z, atFairUsd: null, tiers: Object.fromEntries(Object.entries(z.tiers || {}).map(([k, t]) => [k, t ? { ...t, ev: null } : null])) };
 }
 
 // ── line history for player props ──

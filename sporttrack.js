@@ -19,7 +19,8 @@ const { canonName } = require('./ev');
 const { gapOutcome } = require('./esgaps');
 
 const CODE = { prizepicks: 'PP', underdog: 'UD', sleeper: 'SL', pick6: 'P6' };
-const RESEARCH = new Set(['gap-odd', 'gap-stale']);
+// shop-*: the softest number across the apps (appshop.js), its own research record
+const RESEARCH = new Set(['gap-odd', 'gap-stale', 'shop-any', 'shop-pp', 'shop-p6', 'shop-mid']);
 // FanDuel and BetRivers alone (no Pinnacle, no Kalshi): a lead of its own,
 // never in the headline (the apps' margin against the soft books, not an edge)
 const BOOK_FAIR = new Set(['book-fair', 'book-fair-single', 'book-consensus']);
@@ -89,7 +90,7 @@ const THREE = new Set(['sharp3', 'p6-sharp3']);
 const COMBO = new Set(['combo', 'p6-combo']);
 // the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
 const MODEL = new Set(['nba-model', 'p6-nba-model']);
-const OWN_ID = new Set([...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL]);
+const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL]);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 

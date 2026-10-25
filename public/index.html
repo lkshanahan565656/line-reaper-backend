@@ -557,6 +557,29 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .nbm-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; }
 .nbm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
 .nbm-p.lean { color:#fbbf24; }
+/* SHOP: the softest number across the apps (aps- prefix; shop- is the odds screen's) */
+#page-props.shop .pb-conly, #page-props.shop .pb-lonly, #page-props.shop #pbBooks, #page-props:not(.shop) .pb-sonly { display: none; }
+.aps-note { font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.5; } .aps-note b { color: #fbbf24; }
+.aps-list { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.aps-head, .aps-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 2.6fr) 58px; gap: 10px; align-items: start; padding: 10px 12px; }
+.aps-head { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); }
+.aps-row { border-bottom: 1px solid rgba(255,255,255,.04); font-size: 12px; }
+.aps-row:last-child { border-bottom: 0; }
+.aps-pl b { color: #e8e8e8; } .aps-pl div { color: #64748b; font-size: 10.5px; margin-top: 2px; }
+.aps-apps { display: flex; flex-wrap: wrap; gap: 4px; }
+.aps-app { font-family: var(--mono, monospace); font-size: 11px; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; color: #cbd5e1; }
+.aps-app i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--bk); margin-right: 4px; vertical-align: 1px; }
+.aps-side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.aps-side .sd { font-weight: 800; font-size: 10px; letter-spacing: .06em; padding: 1px 6px; border-radius: 4px; }
+.aps-side .sd.over { color: #34d399; background: rgba(52,211,153,.1); } .aps-side .sd.under { color: #f87171; background: rgba(248,113,113,.1); }
+.aps-side .num { font-family: var(--mono, monospace); color: #e8e8e8; }
+.aps-side .dim, .aps-mid .dim { color: #64748b; font-size: 10.5px; }
+.aps-gap { font-family: var(--mono, monospace); font-weight: 700; color: #fbbf24; }
+.aps-ev.pos { color: #94a3b8; } .aps-ev.neg { color: #64748b; }
+.aps-mid { margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,.06); }
+.aps-add { background: transparent; border: 1px solid var(--border); color: #cbd5e1; border-radius: 6px; font-size: 10px; font-weight: 800; padding: 2px 6px; cursor: pointer; }
+.aps-add.on { border-color: var(--green); color: var(--green); }
+@media (max-width: 720px) { .aps-head { display: none; } .aps-row { grid-template-columns: 1fr; gap: 6px; } }
 .ln-head, .ln-row { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.3fr) 62px 62px 64px 60px 58px 64px 44px; gap: 8px; align-items: center; padding: 9px 12px; }
 .ln-head { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); }
 .ln-head > *, .ln-row > .c { text-align: center; }
@@ -1678,6 +1701,8 @@ body.no-help .clv-info { display:none; }
     <label class="es-field pb-lonly" style="flex:1 1 160px;max-width:240px"><span>Prop</span><select id="pbMarket" onchange="pbSet('market',this.value)"><option value="">Every prop</option></select></label>
     <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
     <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option><option value="sharp">Sharp consensus plays</option><option value="gaps">Line gaps</option></select></label>
+    <label class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="apsSort" onchange="pbState.shopSort=this.value;loadPropsBoard()"><option value="gap">Biggest line gap</option><option value="ev">Best EV (Pro)</option><option value="middle">Best middle (Pro)</option><option value="start">Starting soonest</option></select></label>
+    <label class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="apsShow" onchange="pbState.shopShow=this.value;loadPropsBoard()"><option value="all">Every gap of a full line or more</option><option value="middles">Middles worth more than zero (Pro)</option></select></label>
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
   <div id="pbRecord"></div>
@@ -4103,7 +4128,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'model'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4121,6 +4146,8 @@ async function loadPropsBoard() {
   const seq = ++pbState.seq;
   const lines = pbState.view === 'lines';
   document.getElementById('page-props')?.classList.toggle('lines', lines);
+  document.getElementById('page-props')?.classList.toggle('shop', pbState.view === 'shop');
+  if (pbState.view === 'shop') return loadShop(seq);
   document.getElementById('page-props')?.classList.toggle('model', pbState.view === 'model');
   if (pbState.view === 'model') return loadNbaModel(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
@@ -4156,6 +4183,7 @@ async function loadPropsRecord() {
   } catch (e) { /* the board still works */ }
 }
 function renderPropsRecord() {
+  if (pbState.view === 'shop') return renderShopRecord();
   const el = document.getElementById('pbRecord'), d = pbState.record;
   if (!el || !d?.overall) return;
   const o = d.overall, k = d.byKind || {};
@@ -4181,7 +4209,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')")].join('');
   pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
@@ -4352,7 +4380,7 @@ const pkSave = () => lsSet(PK_KEY, JSON.stringify({ app: pk.app, legs: pk.legs, 
 const pkHas = (rk, book) => pk.app === book && pk.legs.some(l => l.rk === rk);
 const PK_MAX = { pick6: 8 };
 function pkAdd(rk, book) {
-  const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book];
+  const r = (pbState.data?.rows || []).find(x => x.key === rk), c = r?.books?.[book] || r?.apps?.[book];
   if (!r || !c || c.line == null) return;
   const i = pk.legs.findIndex(l => l.rk === rk);
   if (pk.app === book && i >= 0) { pk.legs.splice(i, 1); }
@@ -4360,17 +4388,17 @@ function pkAdd(rk, book) {
     if (pk.app && pk.app !== book && pk.legs.length) { showToast(`Your slip is on ${PB_BOOKS.find(x => x[0] === pk.app)?.[1]}. Save or clear it first`, 'danger'); return; }
     if (pk.legs.length >= (PK_MAX[book] || 6)) { showToast('That slip is full', 'danger'); return; }
     if (pk.legs.some(l => l.player === r.player)) { showToast(`${r.player} is already in the slip`, 'danger'); return; }
-    const side = c.ev?.side || 'Over';
+    const side = pkWantSide || c.ev?.side || 'Over';
     pk.app = book;
     pk.legs.push({ rk, player: r.player, market: r.market, line: c.line, side, sport: r.sport, team: r.team || '', start: r.startTime || null, game: r.matchTitle || (r.startTime ? `${r.sport}|${r.startTime}` : ''), prob: c.ev?.fair != null ? (c.ev.side === side ? c.ev.fair : 100 - c.ev.fair) / 100 : null, over: c.over ?? null, under: c.under ?? null });
   }
   if (!pk.legs.length) pk.app = null;
   pk.payout = '';
   pkSave(); renderPkTray();
-  if (pbState.view === 'lines') renderPropsBoard();
+  if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard();
 }
 function pkFlip(i) { const l = pk.legs[i]; if (!l) return; l.side = l.side === 'Over' ? 'Under' : 'Over'; if (l.prob != null) l.prob = 1 - l.prob; pk.payout = ''; pkSave(); renderPkTray(); }
-function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines') renderPropsBoard(); }
+function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard(); }
 // what the slip pays per $1 when every pick hits, from the app's own table
 function pkMult() {
   const n = pk.legs.length;
@@ -4446,6 +4474,70 @@ function renderLines() {
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   el.innerHTML = `${count}<div class="ln-list">${head}${rows.map(r => lnRow(r, book)).join('')}</div>${more}`;
 }
+// ── SHOP: the softest number across the apps (/api/props/shop, appshop.js) ──
+// Every player stat two or more apps hang at least a full line apart: the
+// softest app per side, the gap, the sharp price at that number, the leg's EV
+// at its own app's payout, and the middles between two apps. Research only:
+// on the recorded boards the softest number lost at every break-even.
+let pkWantSide = null;
+function pkAddShop(rk, book, side) { pkWantSide = side; try { const i = pk.legs.findIndex(l => l.rk === rk); if (pk.app === book && i >= 0 && pk.legs[i].side !== side) { pk.legs[i].side = side; pk.payout = ''; pkSave(); renderPkTray(); renderPropsBoard(); return; } pkAdd(rk, book); } finally { pkWantSide = null; } }
+async function loadShop(seq) {
+  const qs = new URLSearchParams({ sport: pbState.sport, sort: pbState.shopSort, limit: pbState.limit });
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.shopShow === 'middles') qs.set('middles', '1');
+  if (!pbState.shopRecord || Date.now() - pbState.shopRecordAt > 120000) loadShopRecord();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/shop?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.data = d;
+    renderPropsBoard();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SHOP</div><div class="empty-sub">Couldn't load the shop (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+async function loadShopRecord() {
+  pbState.shopRecordAt = Date.now();
+  try { const r = await fetch(`${BACKEND_URL}/api/props/shop/record`); if (r.ok) { pbState.shopRecord = await r.json(); if (pbState.view === 'shop') renderShopRecord(); } } catch {}
+}
+function renderShopRecord() {
+  const el = document.getElementById('pbRecord'), s = pbState.shopRecord;
+  if (!el) return;
+  if (!s) { el.innerHTML = ''; return; }
+  const one = x => `${escAttr(x.label)}: ${x.n ? `${x.w}-${x.l} (${(x.hit * 100).toFixed(1)}% vs ${(x.be * 100).toFixed(1)}% break-even, ${x.units > 0 ? '+' : ''}${x.units}u)` : 'not graded yet'} · ${escAttr(x.bar)}`;
+  const m = s.middles || {};
+  el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SHOP RECORD</b><span>Every softest-number leg and every middle worth more than zero, logged an hour or more before the start, followed to the close, graded off the box score. Alerts are off. A slice counts only at 50 graded live, z 2 or more above break-even, then a raw re-check.</span></div>
+    <div class="pb-dim" style="margin:-4px 0 12px;line-height:1.6">${one(s.P1)}<br>${one(s.P2)}<br>${one(s.P3)}<br>${escAttr(m.label || 'Middles')}: ${m.n ? `${m.both} of ${m.n} hit both legs, ${m.units > 0 ? '+' : ''}${m.units}u` : 'not graded yet'}${m.open ? ` · ${m.open} open` : ''}<br><span style="color:#64748b">Backtest on the recorded boards (10-15 full board, 10-24 weekend): softest number at PrizePicks 310-279, 52.6% vs 55.0%; at any app 52.1% vs 58.1% on 1,410. Not a play.</span></div></div>`;
+}
+function renderShop() {
+  renderShopRecord();
+  const el = document.getElementById('pbContent'), d = pbState.data, rows = d?.rows || [];
+  for (const [id, v] of [['apsSort', pbState.shopSort], ['apsShow', pbState.shopShow]]) { const x = document.getElementById(id); if (x) x.value = v; }
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO GAPS</div><div class="empty-sub">${pbState.q || pbState.sport !== 'ALL' || pbState.shopShow !== 'all' ? 'Nothing matches these filters.' : 'No two apps sit a full line apart on any stat right now, or the apps are still loading.'}</div></div>`;
+    return;
+  }
+  const name = k => PB_BOOKS.find(x => x[0] === k)?.[1] || k, code = k => PB_BOOKS.find(x => x[0] === k)?.[2] || k;
+  const multTxt = (k, c, side) => { const m = side === 'Over' ? c.over : c.under; return k === 'prizepicks' || m == null || m === 1 ? '' : ` ${m}x`; };
+  const body = rows.map(r => {
+    const apps = Object.entries(r.apps).map(([k, c]) => `<span class="aps-app" style="--bk:${PB_COLOR[k]}"><i></i>${code(k)} ${c.line}</span>`).join('');
+    const sides = r.sides.map(s => {
+      const c = r.apps[s.app];
+      const tied = s.tied.length > 1 ? ` <span class="dim">(also ${s.tied.filter(a => a !== s.app).map(code).join(', ')})</span>` : '';
+      const fair = s.fair != null ? `<span class="dim" title="${s.fairSource === 'sharp' ? 'Pinnacle or Kalshi at this number' : 'FanDuel or BetRivers only, not sharp'}">fair ${s.fair}%${s.fairSource === 'books' ? ' (books)' : ''}</span>` : d.pro ? '<span class="dim">no sharp price</span>' : '<span class="dim">fair: Pro</span>';
+      const ev = s.ev != null ? `<span class="aps-ev ${s.ev > 0 ? 'pos' : 'neg'}" title="At ${escAttr(name(s.app))}'s own break-even ${(s.be * 100).toFixed(1)}%. Grey: research, not a play">EV ${pbEvTxt(s.ev)}</span>` : '';
+      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b>${multTxt(s.app, c, s.side)}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
+    }).join('');
+    const mids = (r.middles || []).map(m => m.locked ? `<div class="aps-mid dim">${m.count} middle${m.count > 1 ? 's' : ''} worth more than zero: Pro</div>`
+      : `<div class="aps-mid"><span class="aps-gap" style="color:#94a3b8">MIDDLE</span> <button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.over.app}','Over')">+</button> ${pbSideWord(m.over.app, 'Over')} ${m.over.line} ${code(m.over.app)} &nbsp;<button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.under.app}','Under')">+</button> ${pbSideWord(m.under.app, 'Under')} ${m.under.line} ${code(m.under.app)} <span class="dim">· window ${m.width} · both win ${(m.pMiddle * 100).toFixed(0)}% · ${m.expUnits > 0 ? '+' : ''}${m.expUnits}u a pair expected, on ${m.source === 'apps' ? "the apps' own numbers (no sharp price)" : 'the sharp price'} · two slips, one per app</span></div>`).join('');
+    return `<div class="aps-row"><div class="aps-pl"><b>${escAttr(r.player)}</b><div>${escAttr(r.sport)} · ${pbMatchup(r, true)} · ${pbFmtStart(r.startTime)}</div></div><div><div style="color:#cbd5e1">${escAttr(r.market)}</div><div class="aps-apps" style="margin-top:4px">${apps}</div></div><div>${sides}${mids}</div><div class="aps-gap" style="text-align:right;font-size:14px">${r.gap}</div></div>`;
+  }).join('');
+  const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
+  el.innerHTML = `<div class="aps-note"><b>Research, not a play.</b> The softest number per side across PrizePicks, Underdog, Sleeper and DK Pick6, where two apps sit a full line or more apart. ${d.total.toLocaleString()} props${d.middles ? `, ${d.middles} with a middle worth more than zero` : ''}. On the recorded boards the softest number did not reach any app's break-even, so nothing here is alerted; the SHOP RECORD above follows every leg live. <b>+ LOG</b> adds the leg to a slip on that app (tray below), saved to MY SLIPS.</div>
+    <div class="aps-list"><div class="aps-head"><div>Player</div><div>Prop · apps</div><div>Softest number per side</div><div style="text-align:right">Gap ↓</div></div>${body}</div>${more}`;
+}
 // ─── NBA MODEL (/api/props/nbamodel): our own projection at each app's number ──
 // A model view: labelled "model, not an edge" until its own record (kinds
 // nba-model, p6-nba-model) has 50+ graded live legs with the hit rate 2+
@@ -4516,6 +4608,7 @@ function renderPropsBoard() {
   renderPkTray();
   pbChips();
   if (pbState.view === 'lines') return renderLines();
+  if (pbState.view === 'shop') return renderShop();
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {
@@ -8687,7 +8780,7 @@ setInterval(() => { if (backendOnline && !document.hidden) loadDFSLines(); }, 12
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
-var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
+var shpUi = { data: null, error: null, timer: null, open: new Set(), opts: { mode: 'lines', state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', stake: '100', minSize: '', method: 'power', fmt: 'american', excluded: [], favLeagues: [], favVenues: [], favOnly: false } };
 try { Object.assign(shpUi.opts, JSON.parse(localStorage.getItem('lr_shopper') || '{}')); } catch {}
 // phones open with the filters folded away
 try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.removeAttribute('open'); } catch {}
@@ -8728,6 +8821,7 @@ function shpQuery() {
   if (o.maxAge) p.set('maxAge', o.maxAge);
   if (o.hours) p.set('hours', o.hours);
   if (o.stake) p.set('stake', o.stake);
+  if (o.minSize) p.set('minSize', o.minSize);
   if (o.method) p.set('method', o.method);
   if ((o.excluded || []).length) p.set('exclude', o.excluded.join(','));
   if (o.mode === 'arb') p.set('arbs', '1');
@@ -8789,6 +8883,7 @@ function shpControls() {
     inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
     sel('maxAge', [['', 'Any age'], ['180', '≤ 3 min'], ['600', '≤ 10 min']], 'FRESH'),
     inp('stake', 'EV ON $', '100', '1'),
+    sel('minSize', [['', 'Any size'], ['50', '$50'], ['200', '$200'], ['1000', '$1,000']], 'MIN BET SIZE'),
     sel('method', [['power', 'Power'], ['multiplicative', 'Multiplicative'], ['additive', 'Additive'], ['shin', 'Shin']], 'DEVIG'),
     shpPresetBar(),
     `<label>ODDS<select onchange="shpSet('fmt',this.value,false)">${[['american', 'American'], ['decimal', 'Decimal'], ['fractional', 'Fractional'], ['probability', 'Implied %'], ['hongkong', 'Hong Kong'], ['indonesian', 'Indonesian'], ['malay', 'Malay']].map(([v, l]) => `<option value="${v}"${o.fmt === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`,
@@ -8805,7 +8900,7 @@ function shpRender() {
   if (shpUi.error) { el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(shpUi.error)); return; }
   if (!d) return;
   const c = d.counts || {};
-  const head = `<div class="shp-dim" style="margin:0 0 8px">${c.markets || 0} markets from ${c.quotes || 0} prices · ${c.priced || 0} with a fair · ${c.multiVenue || 0} at 3+ venues · ${c.opportunities || 0} best prices above the fair · ${c.arbs || 0} arbs${d.builtAt ? ` · built ${Math.max(0, Math.round((Date.now() - Date.parse(d.builtAt)) / 60000))} min ago` : ''}${d.state ? ` · ${escAttr(d.stateInfo?.name || d.state)} venues can be best` : ''}</div>`;
+  const head = `<div class="shp-dim" style="margin:0 0 8px">${c.markets || 0} markets from ${c.quotes || 0} prices · ${c.priced || 0} with a fair · ${c.multiVenue || 0} at 3+ venues · ${c.opportunities || 0} best prices above the fair · ${c.arbs || 0} arbs${c.sized != null ? ` · ${c.sized} markets with an exchange book read` : ''}${d.minSize ? ` · exchange prices shown at what $${d.minSize} fills at` : ''}${d.builtAt ? ` · built ${Math.max(0, Math.round((Date.now() - Date.parse(d.builtAt)) / 60000))} min ago` : ''}${d.state ? ` · ${escAttr(d.stateInfo?.name || d.state)} venues can be best` : ''}</div>`;
   const lock = !d.pro ? `<div class="clv-info" style="margin:0 0 8px">Fair prices, EV and the ranked list are Pro. Every venue's price is free.${d.locked ? ` ${d.locked.opportunities} ranked prices and ${d.locked.arbs} arbs are hidden.` : ''}</div>` : '';
   if (!c.markets) { el.innerHTML = head + tailEmpty('NO MARKETS', 'Nothing in this window matches the filters, or the feeds have not been read yet. The venue pills above say which feeds are up.'); return; }
   if (o.mode === 'opps' && d.pro) el.innerHTML = head + shpOpps(d);
@@ -8822,7 +8917,7 @@ function shpOpps(d) {
     return `<tr class="shp-row" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}</td>
+      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -8844,7 +8939,7 @@ function shpMarketTable(m) {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${shpOdds(p.effective)}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
@@ -8872,7 +8967,7 @@ const SHP_PRESET_KEY = 'lr_shopper_views';
 const shpPresets = () => { try { const v = JSON.parse(localStorage.getItem(SHP_PRESET_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
 const shpPresetsSave = v => { try { localStorage.setItem(SHP_PRESET_KEY, JSON.stringify(v.slice(0, 20))); } catch {} };
 // what a saved view keeps: the filters, not the odds format or favorites
-const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'method', 'excluded', 'favOnly'];
+const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'minSize', 'method', 'excluded', 'favOnly'];
 function shpPresetBar() {
   const list = shpPresets();
   return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}">${escAttr(p.name)}</option>`).join('')}</select></label>` +
@@ -8932,11 +9027,47 @@ function shpArbs(d) {
   return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
     ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective)}</div>`).join('')}
+    ${shpArbSize(m.arb)}
     <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
+}
+
+// ── order-book size on exchange prices (depthbook.js) ──
+const shpK = t => (t >= 1000 ? `$${t / 1000}K` : `$${t}`);
+function shpSizeTip(z, sizedAt) {
+  return `Order book read ${Math.round(z.ageSec / 60)} min ago: $${z.topUsd} at the top price, $${z.depthUsd} on the whole book${z.atFairUsd != null ? `, $${z.atFairUsd} at or above the fair` : ''}. `
+    + [50, 200, 1000].map(t => { const w = z.tiers?.[t]; return !w ? `${shpK(t)}: nothing` : w.full ? `${shpK(t)} fills at ${shpOdds(w.decimal)}${w.ev != null ? ` (${shpPct(w.ev)})` : ''}` : `${shpK(t)}: only $${Math.round(w.usd)} on the book`; }).join(', ')
+    + `. Each size is the book walked cheapest first in whole contracts, fee in.${sizedAt ? ` The price shown is what $${sizedAt} fills at.` : ''}`;
+}
+function shpSizeLine(z, sizedAt) {
+  if (!z) return '';
+  if (z.unread) return '<div class="shp-dim" style="font-size:10px" title="This venue\'s order book has not been read in the last 5 minutes, so its size is unknown">size not read yet</div>';
+  if (z.empty) return '<div class="shp-bad" style="font-size:10px">book empty</div>';
+  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
+  return `<div class="shp-dim" style="font-size:10px;white-space:normal" title="${escAttr(shpSizeTip(z, sizedAt))}">${parts.join(' · ')}</div>`;
+}
+// a venue cell: the biggest size its book fills
+function shpSizeCell(p) {
+  const z = p.size;
+  if (!z) return '';
+  if (z.unread) return `<div class="shp-dim" style="font-size:9px" title="Order book not read in the last 5 minutes">size ?</div>${p.sizeOk === false ? '<div class="shp-bad" style="font-size:9px">NOT SIZED</div>' : ''}`;
+  const top = [1000, 200, 50].find(t => z.tiers?.[t]?.full);
+  const lab = top ? `fills ${shpK(top)}` : `only $${Math.round(z.depthUsd)}`;
+  return `<div class="${top ? 'shp-dim' : 'shp-bad'}" style="font-size:9px" title="${escAttr(shpSizeTip(z, p.sizedAt))}">${lab}${p.sizedAt ? ` · at $${p.sizedAt}` : ''}</div>${p.sizeOk === false ? `<div class="shp-bad" style="font-size:9px">CAN'T FILL $${escAttr(shpUi.opts.minSize)}</div>` : ''}`;
+}
+// an arb's size: the thinner side's book sets it
+function shpArbSize(a) {
+  const z = a && a.size;
+  if (!z) return '';
+  const nm = id => a.legs?.find(l => l.provider === id)?.name || id;
+  z.thin = z.thin && nm(z.thin); z.unread = (z.unread || []).map(nm);
+  if (!z.sized) return `<div class="shp-dim" style="margin-top:4px">Size: ${z.unread?.length ? `${escAttr(z.unread.join(', '))} book not read yet, so the size is unknown` : 'sportsbook limits are not published'}.</div>`;
+  if (!z.maxTotal) return `<div class="shp-bad" style="margin-top:4px">The books don't hold it: at $10 total the set no longer locks a profit${z.thin ? ` (${escAttr(z.thin)} is the thin side)` : ''}.</div>`;
+  const at = z.atStake;
+  return `<div class="${at?.ok ? 'shp-good' : 'shp-bad'}" style="margin-top:4px;font-size:12px">Fills up to $${z.maxTotal.toLocaleString()}${z.capped ? '+' : ''} in total${z.atMax?.pct != null ? ` (locks ${shpPct(z.atMax.pct)} there)` : ''}${z.thin ? `; ${escAttr(z.thin)} is the thin side` : ''}.${at ? (at.ok ? ` At $${a.total}: locks ${shpUsd(at.profit)} after fees.` : ` $${a.total} does not fill.`) : ''}${z.unread?.length ? ` ${escAttr(z.unread.join(', '))} not read.` : ''}</div>`;
 }
 </script>
 
-<div class="lay-modal" id="layModal" onclick="if(event.target===this)layClose()">
+<div class="lay-modal" id="layModal\" onclick="if(event.target===this)layClose()">
   <div class="lay-box" role="dialog" aria-label="Customize layout">
     <h3>Customize your layout</h3>
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>

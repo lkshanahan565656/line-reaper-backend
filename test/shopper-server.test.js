@@ -91,3 +91,33 @@ test('prop history notes each prop market after a quote build and serves it as t
   assert.equal(body.series[0].pts[0][2] == null, !body.pro, 'the fair is Pro only');
   if (body.pro) assert.ok(Math.abs(body.series[0].pts[0][2] + body.series[1].pts[0][2] - 1) < 1e-3);
 });
+
+test('exchange prices carry their book size, minSize filters on it, and the shopper reads books within budget', async () => {
+  const start = new Date(Date.now() + 6 * 3600e3).toISOString();
+  srv.freeBooksState.games = { nfl: [{ id: 'pin-31', sport_key: 'nfl', commence_time: start, home_team: 'Size Home', away_team: 'Size Away', bookmakers: [
+    { key: 'pinnacle', markets: [{ key: 'h2h', outcomes: [{ name: 'Size Home', price: -110 }, { name: 'Size Away', price: -110 }] }] },
+    { key: 'gemini', markets: [{ key: 'h2h', outcomes: [{ name: 'Size Home', price: 110, ref: { venue: 'gemini', id: 'GEMI-SZ', buy: 'yes' } },
+      { name: 'Size Away', price: -140, ref: { venue: 'gemini', id: 'GEMI-SZ', buy: 'no' } }] }] },
+  ] }] };
+  srv.freeBooksState.gamesAt = new Date().toISOString();
+  Object.assign(srv.shopState, { key: null, builtAt: null, views: new Map() });
+  srv.shopDepth.put('gemini|GEMI-SZ|yes', { asks: [[0.47, 100], [0.6, 2000]], fee: { rate: 0.07, roundCent: true } });
+  const { body } = await get('/api/shopper?q=size');
+  const home = body.markets[0].sides.find(s => s.side === 'home');
+  const g = home.prices.find(c => c.provider === 'gemini');
+  assert.equal(g.size.tiers[50].full, true);
+  assert.equal(g.size.tiers[1000].full, true);
+  assert.ok(home.prices.length && body.markets[0].sides.find(s => s.side === 'away').prices.find(c => c.provider === 'gemini').size.unread);
+  const big = await get('/api/shopper?q=size&minSize=1000');
+  assert.equal(big.body.minSize, 1000);
+  const gh = big.body.markets[0].sides.find(s => s.side === 'home').prices.find(c => c.provider === 'gemini');
+  assert.equal(gh.sizedAt, 1000);
+  assert.ok(gh.effective < gh.listed);
+  const st = await get('/api/status');
+  assert.equal(st.body.shopDepth.on, true);
+  assert.ok(st.body.shopDepth.books >= 1);
+  // the shopper's own read pass: axios is offline in tests, so the away side's read fails, is counted as an error, and stays unread
+  await srv.readShopDepth();
+  assert.ok(srv.shopDepth.state.errors.some(e => /gemini/.test(e)));
+  assert.equal(srv.shopDepth.get('gemini|GEMI-SZ|no'), null);
+});
