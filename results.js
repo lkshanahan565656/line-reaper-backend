@@ -153,10 +153,16 @@ const pickBet = r => ({
 });
 
 const BIG_VENUES = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', fanduel: 'FanDuel', betrivers: 'BetRivers' };
+// pin: the same ticket graded on Pinnacle's no-vig close (sharpEv), counted
+// only when the close was read within the hour before the start (closeOk);
+// game: one per Pinnacle game and day, the unit the strict rule counts in
 const bigMoneyBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;
+  const pinOk = r.sharpEv != null && r.closeOk !== false;
   return { profit: graded ? r.profit ?? null : null, staked: graded ? 1 : 0, clv, exec: r.execOk === true ? clv : null,
+    pin: pinOk ? r.sharpEv / 100 : null, execOk: r.execOk === true, game: `${String(r.betKey || r.title || '').split('|')[0]}|${day(r.start)}`,
+    line: graded && pinOk && r.sharpFair > 0 && r.decimal > 1 ? { win: r.outcome === 'win', p: r.sharpFair, d: r.decimal } : null,
     labels: { flow: r.flow || 'bettor', venue: BIG_VENUES[r.venue] || r.venue, kind: r.kind === 'prop' ? 'player prop' : 'game line', line: r.sameLine === false ? 'other line' : 'same line' } };
 };
 // A tail counts once it settles, or as CLV only (no profit yet) once its
@@ -221,6 +227,7 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
   if (s.verdict === 'avoid') return s;
   if (s.verdict === 'proven' && KILLED_SOURCES[source]) return cap(s, KILLED_SOURCES[source]);
   if (s.verdict === 'proven' && s.avgClv != null && s.avgClv <= 0) return cap(s, `not proven: closes ${(s.avgClv * 100).toFixed(1)}% CLV, the price did not beat the close`);
+  if (source === 'bigMoney' && s.verdict === 'proven') return bigMoneyGuard(by, s, bets, vals);
   if (!BOOK_SOURCES.has(source)) return s;
   // pick'em legs: flagged legs do not beat Pinnacle's price (10-24 checks), nothing here is proven
   if (source === 'sportsProps' && s.verdict === 'proven') return cap(s, "not proven: flagged pick'em legs have not beaten Pinnacle's price on results (10-24 checks)");
@@ -240,6 +247,32 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
     : !strictClv ? `not proven yet: ${games} graded${clv}, CLV t ${s.clvT ?? 'n/a'}`
     : `not proven yet: ${games} graded${clv}${relayed ? ', price copied via Action Network, never checked at the book' : ''}`;
   return cap(s, why, { games });
+}
+// Big money (10-25 re-check, checks/brmoney-recheck-2026-10-25): its own CLV
+// is the ticket against the exchange's mid, and its cuts pool game lines with
+// props and count every line on a game. It reads proven only on the strict
+// rule: a cut naming one venue, game lines only, 50+ games (one per Pinnacle
+// game and day), Pinnacle's close beaten at a t of 2+ on the bets still up two
+// minutes on (all bets until 8 have that grade), results not 1.5 sd under it.
+function bigMoneyGuard(by, s, bets, vals) {
+  const cuts = by ? by.split('+') : [];
+  const venue = vals && cuts.includes('venue') ? vals[cuts.indexOf('venue')] : null;
+  const list = bets || [];
+  const props = list.filter(b => b.labels?.kind !== 'game line').length;
+  const exec = list.filter(b => b.execOk && b.pin != null);
+  const use = exec.length >= EXEC_MIN_N ? exec : list.filter(b => b.pin != null);
+  const g = new Map();
+  for (const b of use) { if (!g.has(b.game)) g.set(b.game, []); g.get(b.game).push(b.pin); }
+  const per = [...g.values()].map(mean);
+  const pinClv = per.length ? r4(mean(per)) : null, pinT = tStat(per);
+  const short = resultsShortfall(list.map(b => b.line).filter(Boolean));
+  const extra = { games: per.length, pinClv, pinT };
+  const pc = pinClv != null ? `${pinClv > 0 ? '+' : ''}${(pinClv * 100).toFixed(1)}%` : 'n/a';
+  if (!venue) return cap(s, `not proven: pooled across venues, ${per.length} games`, extra);
+  if (props) return cap(s, `not proven: pools ${props} player props with game lines`, extra);
+  if (short.short) return cap(s, short.note, extra);
+  if (per.length < PROVEN_BOOK_N || !(pinT >= 2) || !(pinClv > 0)) return cap(s, `not proven yet: ${per.length} games, ${pc} vs Pinnacle's close${exec.length >= EXEC_MIN_N ? ' two minutes on' : ''}, t ${pinT ?? 'n/a'}`, extra);
+  return { ...s, ...extra };
 }
 const VERDICT_ORDER = { proven: 0, promising: 1, early: 2, avoid: 3 };
 
