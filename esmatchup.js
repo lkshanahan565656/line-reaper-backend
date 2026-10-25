@@ -73,6 +73,10 @@ const LEAGUE_PRIOR = {
   'Circuito Desafiante': 1420, LRN: 1380, LRS: 1380,
 };
 
+// Renamed leagues are one league: the LCS ran as LTA North in 2025, CBLOL
+// as LTA South.
+const LEAGUE_ALIAS = { 'LTA North': 'LCS', 'LTA South': 'CBLOL' };
+
 const Q = Math.LN10 / 400;
 const clampP = p => Math.min(1 - 1e-6, Math.max(1e-6, p));
 const logit = p => Math.log(clampP(p) / (1 - clampP(p)));
@@ -270,7 +274,8 @@ function createRatings(opts = {}) {
   }
 
   // s: { t (ms), lg, bo, a, ac, b, bc, s1, s2 } with s1/s2 map wins
-  function update(s) {
+  function update(s0) {
+    const s = LEAGUE_ALIAS[s0.lg] ? { ...s0, lg: LEAGUE_ALIAS[s0.lg] } : s0;
     const t = typeof s.t === 'number' ? s.t : Date.parse(s.t);
     if (!Number.isFinite(t) || s.s1 == null || s.s2 == null) return null;
     const A = ensure(s.a, s.ac, s.lg, t), B = ensure(s.b, s.bc, s.lg, t);
@@ -303,7 +308,11 @@ function createRatings(opts = {}) {
       tm.leagues.push(s.lg || ''); if (tm.leagues.length > 40) tm.leagues.shift();
       const prevHome = tm.home;
       tm.home = homeLeague(tm) || tm.home;
-      if (prevHome && prevHome !== tm.home) leagueOf.get(prevHome)?.delete(tm.key);
+      if (prevHome && prevHome !== tm.home) {
+        leagueOf.get(prevHome)?.delete(tm.key);
+        // a team that changes league keeps its strength: only the label moves
+        tm.r += (off.get(prevHome) || 0) - (off.get(tm.home) || 0);
+      }
       if (tm.home) { if (!leagueOf.has(tm.home)) leagueOf.set(tm.home, new Set()); leagueOf.get(tm.home).add(tm.key); }
       tm.history.push({ t, opp: opp.name, oppKey: opp.key, won: Number(won), lost: Number(lost), lg: s.lg || null, bo: Number(s.bo) || null, before: Math.round(before), after: Math.round(eff(tm)) });
       if (tm.history.length > 60) tm.history.shift();
@@ -373,9 +382,12 @@ function createRatings(opts = {}) {
     const markets = seriesMarkets(map, bo, o.kappa);
     // one-sd band on the gap from both RDs
     const band = [gap - rdBoth, gap + rdBoth].map(d => seriesProb(sigmoid(o.scale * logit(1 / (1 + Math.pow(10, -d / 400))) + h2hShift), bo, o.kappa));
-    const confidence = reasons.length ? 'insufficient' : rdBoth > o.lowRdBoth ? 'low' : 'ok';
+    // cross-league games are where the model is weakest (2026 log loss 0.61
+    // on international series vs 0.58 overall), so they never read as 'ok'
+    const crossLeague = !!(A.home && B.home && A.home !== B.home);
+    const confidence = reasons.length ? 'insufficient' : rdBoth > o.lowRdBoth || crossLeague ? 'low' : 'ok';
     return {
-      ok: confidence !== 'insufficient', confidence, reasons, priced: confidence !== 'insufficient',
+      ok: confidence !== 'insufficient', confidence, reasons, priced: confidence !== 'insufficient', crossLeague,
       teams: [teamView(A, t), teamView(B, t)],
       rating: { a: Math.round(ra), b: Math.round(rb), gap: Math.round(gap), rdA: Math.round(rda), rdB: Math.round(rdb), mapBase: r4(base) },
       h2h: { series: hh.series, maps: [hh.aMaps, hh.bMaps], edge: r4(hh.edge), weight: o.h2hWeight, shift: r4(h2hShift), mapPts: r1((map - sigmoid(o.scale * logit(base))) * 100), days: o.h2hDays, last: hh.rows.slice(-5).reverse().map(x => ({ t: new Date(x.t).toISOString(), score: `${x[A.key]}-${x[B.key]}`, lg: x.lg })) },
@@ -441,7 +453,7 @@ function explain(pred, { market = null } = {}) {
     const sp = aFav ? s.win : s.loss;
     out.push(`Over a best-of-${s.bestOf} that becomes ${Math.round(sp * 100)}% for the series (favourites sweep more than independent maps would say).`);
   }
-  if (pred.confidence === 'low') out.push(`Uncertain rating: ${pred.rating.rdA > pred.rating.rdB ? A.name : B.name} has an RD of ${Math.max(pred.rating.rdA, pred.rating.rdB)} (few recent games or a long break). The one-sd band is ${Math.round(pred.band[0] * 100)}% to ${Math.round(pred.band[1] * 100)}%.`);
+  if (pred.confidence === 'low' && Math.max(pred.rating.rdA, pred.rating.rdB) > 120) out.push(`Uncertain rating: ${pred.rating.rdA > pred.rating.rdB ? A.name : B.name} has an RD of ${Math.max(pred.rating.rdA, pred.rating.rdB)} (few recent games or a long break). The one-sd band is ${Math.round(pred.band[0] * 100)}% to ${Math.round(pred.band[1] * 100)}%.`);
   for (const tm of [A, B]) {
     if (Math.abs(tm.form.delta30) >= 30) out.push(`${tm.name} ${tm.form.delta30 > 0 ? 'gained' : 'lost'} ${Math.abs(tm.form.delta30)} rating points in the last 30 days (last 10 series ${tm.form.last10}).`);
   }
@@ -450,7 +462,7 @@ function explain(pred, { market = null } = {}) {
     const yrs = h.days >= 700 ? 'two years' : 'year';
     out.push(`Head-to-head in the last ${yrs}: ${h.series} series, maps ${h.maps[0]}-${h.maps[1]}${h.weight ? `, moving ${A.name}'s map chance ${h.mapPts >= 0 ? '+' : ''}${h.mapPts} points (a small weight: it helped only slightly in testing)` : ' (shown for context only)'}.`);
   } else out.push(`No head-to-head series in the last ${h.days >= 700 ? 'two years' : 'year'}.`);
-  if (A.home && B.home && A.home !== B.home) out.push(`Cross-league match: ${A.name} from ${A.home}, ${B.name} from ${B.home}. League strength comes only from past international results, so treat it with care.`);
+  if (A.home && B.home && A.home !== B.home) out.push(`Cross-league match: ${A.name} from ${A.home}, ${B.name} from ${B.home}. League strength comes only from past international results, and this is where the model is weakest (it misses more on international series than at home), so it is marked low confidence.`);
   if (market && market.prob != null) {
     const d = pred.series.win - market.prob;
     out.push(`${market.venue} prices ${A.name} at ${Math.round(market.prob * 100)}% (no vig); the model says ${Math.round(pred.series.win * 100)}%, ${d >= 0 ? '+' : ''}${Math.round(d * 1000) / 10} points. Model view only: it has not beaten Kalshi's price in the backtest.`);
@@ -458,4 +470,4 @@ function explain(pred, { market = null } = {}) {
   return out;
 }
 
-module.exports = { LEAGUE_PRIOR, nameScore, words, DEFAULTS, INTL_RE, isIntl, teamKey, lgamma, lbeta, seriesScores, seriesProb, mapFromSeries, seriesMarkets, createRatings, buildRatings, explain, logit, sigmoid, expected, g };
+module.exports = { LEAGUE_PRIOR, LEAGUE_ALIAS, nameScore, words, DEFAULTS, INTL_RE, isIntl, teamKey, lgamma, lbeta, seriesScores, seriesProb, mapFromSeries, seriesMarkets, createRatings, buildRatings, explain, logit, sigmoid, expected, g };
