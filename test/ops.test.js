@@ -56,3 +56,18 @@ test('memo: one build per window, shared by callers in flight; errors are not ke
   await assert.rejects(memo('e', async () => { throw new Error('no'); }));
   assert.equal(await memo('e', async () => 'ok'), 'ok');
 });
+
+test('a CPU profile names the function that burned the time', async () => {
+  const { summarize } = require('../ops');
+  const p = { nodes: [
+    { id: 1, callFrame: { functionName: '(idle)', url: '', lineNumber: -1 } },
+    { id: 2, callFrame: { functionName: 'buildBoard', url: 'file:///app/server.js', lineNumber: 99 } },
+    { id: 3, callFrame: { functionName: '', url: 'file:///app/x.js', lineNumber: 4 } },
+  ], samples: [1, 2, 2, 2, 3], timeDeltas: [1000, 1000, 1000, 1000, 1000] };
+  const s = summarize(p);
+  assert.equal(s.top[0].fn, 'buildBoard server.js:100');
+  assert.equal(s.top[0].ms, 3);
+  assert.equal(s.idleMs, 1);
+  assert.equal(s.busyPct, 80);
+  assert.ok(s.top.some(r => r.fn === '(anonymous) x.js:5'));
+});
