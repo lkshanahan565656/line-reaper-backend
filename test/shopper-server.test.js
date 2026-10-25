@@ -49,3 +49,45 @@ test('the shopper lines up every venue on one row and filters by query', async (
   assert.ok(pv.body.providers.some(p => p.id === 'kalshi'));
   assert.ok(pv.body.providers.every(p => ['ok', 'down', 'degraded', 'stale', 'off', 'empty'].includes(p.status)));
 });
+
+test('prop line history, learn pages and feature flags are served', async () => {
+  const h = await get('/api/shopper/history?key=nope');
+  assert.equal(h.status, 200);
+  assert.deepEqual(h.body.series, []);
+  assert.match(h.body.note, /No saved prices/);
+  const f = await get('/api/features');
+  assert.equal(f.body.oddsApi, false, 'no ODDS_API_KEY in tests');
+  for (const p of ['/learn', '/learn/expected-value', '/learn/pickem-math']) {
+    const r = await fetch(base + p);
+    assert.equal(r.status, 200, p);
+    assert.match(await r.text(), /<h1>/);
+  }
+  const red = await fetch(base + '/learn/clv', { redirect: 'manual' });
+  assert.equal(red.status, 301);
+  assert.equal(red.headers.get('location'), '/learn/closing-line-value');
+  assert.equal((await fetch(base + '/learn/not-a-guide')).status, 404);
+  const map = await (await fetch(base + '/sitemap.xml')).text();
+  assert.match(map, /\/learn\/how-the-record-works/);
+  const st = await get('/api/status');
+  assert.ok(st.body.propHistory && st.body.propHistory.series === 0);
+});
+
+test('prop history notes each prop market after a quote build and serves it as two sides', async () => {
+  const S = require('../oddsschema');
+  const start = new Date(Date.now() + 4 * 3600e3).toISOString(), at = new Date().toISOString();
+  const q = (prov, side, d) => S.makeQuote({ providerId: prov, eventId: 'pin-77', sport: 'basketball', league: 'nba', home: 'H', away: 'A', marketType: 'player_prop', marketName: 'points',
+    player: 'Jay Doe', side, selectionName: `Jay Doe ${side} 24.5`, line: 24.5, decimal: d, startUtc: start, updatedAt: at });
+  srv.shopState.free = { quotes: [q('pinnacle', 'over', 1.95), q('pinnacle', 'under', 1.87), q('fanduel', 'over', 2.0), q('fanduel', 'under', 1.8)], stats: {} };
+  srv.shopState.kalshi = { quotes: [], stats: {} };
+  srv.shopState.builtAt = at;
+  srv.propHistoryState.at = 0;
+  await srv.observePropHistory();
+  assert.equal(srv.propHistory.size(), 1);
+  const key = srv.propHistory.dump()[0].id;
+  const { body } = await get(`/api/shopper/history?key=${encodeURIComponent(key)}`);
+  assert.equal(body.series.length, 2);
+  assert.equal(body.series[0].label, 'Over 24.5');
+  assert.equal(body.series[0].pts[0][3].fanduel, 100);
+  assert.equal(body.series[0].pts[0][2] == null, !body.pro, 'the fair is Pro only');
+  if (body.pro) assert.ok(Math.abs(body.series[0].pts[0][2] + body.series[1].pts[0][2] - 1) < 1e-3);
+});

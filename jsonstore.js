@@ -19,7 +19,13 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 
-const DEFAULT_DELAY_MS = Number.isFinite(+process.env.LR_STORE_WRITE_MS) && process.env.LR_STORE_WRITE_MS !== '' ? +process.env.LR_STORE_WRITE_MS : 2000;
+// On Railway the disk is wiped at every deploy (the results backup is the
+// copy that lasts), so the file only matters across a crash: write at most
+// every 30 s there. Live, a 2 s timer wrote 1 GB in the first 5 minutes.
+// Elsewhere (desktop, local) 2 s. LR_STORE_WRITE_MS overrides both.
+const envDelay = process.env.LR_STORE_WRITE_MS;
+const DEFAULT_DELAY_MS = envDelay !== undefined && envDelay !== '' && Number.isFinite(+envDelay) ? +envDelay
+  : (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID ? 30000 : 2000);
 const CHUNK_ROWS = 400;
 
 const live = new Set();   // stores with unwritten changes, for the exit hook

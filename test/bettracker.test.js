@@ -114,3 +114,43 @@ test('an odds-screen side becomes a prefilled bet with a line track', () => {
   assert.ok(Math.abs(B.clv(list[0]) - (2.05 * 0.55 - 1)) < 1e-3);
   assert.equal(B.clvNow(list[0]), null);
 });
+
+test("Pikkit's own export header: bet_info legs, SETTLED_ statuses, its closing line as CLV", () => {
+  const csv = `bet_id,sportsbook,type,status,odds,closing_line,ev,amount,profit,time_placed,time_settled,bet_info,tags,sports,leagues
+a1,PrizePicks,parlay,SETTLED_WIN,6.0,5.0,,10,50,2026-10-20T18:00:00Z,2026-10-21T03:00:00Z,"Josh Allen Over 245.5 Pass Yds | Stefon Diggs Under 64.5 Rec Yds | Bo Nix Over 220.5 Pass Yds",,Football,NFL
+a2,DraftKings Pick6,parlay,SETTLED_LOSS,+500,+550,,5,-5,2026-10-19T18:00:00Z,,Aaron Judge Over 1.5 Total Bases,,Baseball,MLB
+a3,Chalkboard Fantasy,parlay,SETTLED_PUSH,3.0,,,10,0,2026-10-18T18:00:00Z,,LeBron James Over 25.5 Points,,Basketball,NBA
+a4,PrizePicks,parlay,PENDING,3.0,,,10,,2026-10-24T18:00:00Z,,Jalen Brunson Over 26.5 Points,,Basketball,NBA`;
+  const { bets, columns } = S.parsePikkitCsv(csv, { now: NOW });
+  assert.equal(bets.length, 4);
+  assert.ok(columns.desc != null && columns.close != null && columns.placed != null && columns.settled != null);
+  assert.deepEqual(bets.map(b => b.status), ['win', 'loss', 'push', 'open']);
+  assert.equal(bets[0].legs.length, 3);
+  assert.equal(bets[0].league, 'NFL');
+  assert.equal(bets[0].closeOdds, 5);
+  const pp = S.pikkitBreakdown(bets, 'app').find(r => r.key === 'PrizePicks');
+  assert.equal(pp.clvN, 1); assert.equal(pp.clv, 0.2); assert.equal(pp.beatShare, 1);
+  const p6 = S.pikkitBreakdown(bets, 'app').find(r => r.key === 'DK Pick6');
+  assert.ok(p6.clv < 0);
+});
+
+test('same-game repricing: measured links lower the payout, unknown teams leave it standard', () => {
+  const qb = { sport: 'NFL', market: 'Pass Yards', side: 'Over', team: 'BUF', game: 'g1' };
+  const wr = { sport: 'NFL', market: 'Receiving Yards', side: 'Over', team: 'BUF', game: 'g1' };
+  const r = S.repriced([qb, wr], 3);
+  assert.equal(r.linked, 1); assert.ok(r.mult < 3 && r.mult > 2);
+  // the other team's receiver: a weaker link
+  assert.ok(S.repriced([qb, { ...wr, team: 'NYJ' }], 3).mult > r.mult);
+  // an Under flips the link: pays more than standard, never used to raise the table
+  assert.ok(S.repriced([qb, { ...wr, side: 'Under' }], 3).mult > 3);
+  // no team named: no link
+  assert.equal(S.repriced([{ ...qb, team: '' }, wr], 3).linked, 0);
+  // different games: independent
+  assert.equal(S.repriced([qb, { ...wr, game: 'g2' }], 3).linked, 0);
+  // in a slip with no payout typed, the repriced estimate is the table
+  const slip = S.makeSlip({ app: 'prizepicks', stake: 10, now: NOW, legs: [{ ...qb, player: 'Josh Allen', line: 245.5 }, { ...wr, player: 'Khalil Shakir', line: 50.5 }] });
+  const v = S.slipView(slip, {});
+  assert.ok(v.reprice && v.table[2] === v.reprice.mult && v.table[2] < 3);
+  // a typed payout wins
+  assert.equal(S.slipView({ ...slip, payout: 30 }, {}).reprice, null);
+});

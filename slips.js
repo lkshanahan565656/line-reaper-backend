@@ -66,6 +66,83 @@
     return p ? { [n]: p } : null;
   }
 
+  // ── same-game repricing ──
+  // The apps pay less for picks from one game (Underdog reprices them,
+  // PrizePicks says it lowers them). The estimate: the standard payout x
+  // P(all hit if independent) / P(all hit with the link), the "If repriced"
+  // figure of the stack cards. The link between two legs is the measured phi
+  // at 50/50 legs (both More; an Under flips its sign):
+  //   sports, checks/corr-pairs-2026-10-24 (19,600 ESPN box scores, J50 vs .25):
+  //     QB pass yds or completions + his own receiver's yds or catches .28,
+  //     the other team's receiver .09; QB + the other QB .06; NHL teammates'
+  //     points .23; MLB teammates' H+R+RBI .12, a starter's earned runs + the
+  //     other team's hitter .24. NBA pairs, two receivers, NHL shots: about 0.
+  //   esports, slip.js FACTORS (fitted series): kills teammates CS .21 / LoL
+  //     .23 / Dota .16 / Val .22, opponents .12 / -.06 / -.06 / .07; assists
+  //     teammates .50, opponents -.12 (LoL, Dota).
+  // A pair whose team relation is unknown (a pasted leg names no team) gets no
+  // link, so the estimate is the standard payout and says so.
+  const statClass = (sport, market) => {
+    const m = String(market || '').toLowerCase(), sp = String(sport || '').toUpperCase();
+    if (/kill/.test(m)) return 'kills';
+    if (/assist/.test(m) && ['CS', 'LOL', 'DOTA', 'VAL'].includes(sp)) return 'assists';
+    if (/pass(ing)?\s*(yd|yard)|pass yds/.test(m) || /complet/.test(m)) return 'qb';
+    if (/rec(eiving)?\s*(yd|yard)|reception|receiving/.test(m)) return 'wr';
+    if (sp === 'NHL' && /^points?$/.test(m.trim())) return 'nhlpts';
+    if (/h\s*\+\s*r\s*\+\s*rbi|hits\s*\+\s*runs/.test(m)) return 'hrr';
+    if (/earned runs/.test(m)) return 'er';
+    return null;
+  };
+  const ES_LINK = { CS: { kills: [0.21, 0.12] }, LOL: { kills: [0.23, -0.06], assists: [0.5, -0.12] }, DOTA: { kills: [0.16, -0.06], assists: [0.5, -0.12] }, VAL: { kills: [0.22, 0.07] } };
+  // phi between two legs of one game, or 0
+  function pairLink(a, b) {
+    if (!a.team || !b.team) return 0;
+    const same = a.team.toLowerCase() === b.team.toLowerCase();
+    const sp = String(a.sport || b.sport || '').toUpperCase(), ca = statClass(sp, a.market), cb = statClass(sp, b.market);
+    if (!ca || !cb) return 0;
+    let phi = 0;
+    if (ES_LINK[sp] && ca === cb && ES_LINK[sp][ca]) phi = ES_LINK[sp][ca][same ? 0 : 1];
+    else if (['NFL', 'CFB'].includes(sp)) {
+      const k = [ca, cb].sort().join('+');
+      if (k === 'qb+wr') phi = same ? 0.28 : 0.09;
+      else if (k === 'qb+qb' && !same) phi = 0.06;
+    } else if (sp === 'NHL' && ca === 'nhlpts' && cb === 'nhlpts' && same) phi = 0.23;
+    else if (sp === 'MLB') {
+      if (ca === 'hrr' && cb === 'hrr' && same) phi = 0.12;
+      else if ([ca, cb].sort().join('+') === 'er+hrr' && !same) phi = 0.24;
+    }
+    const sign = (a.side === 'Under' ? -1 : 1) * (b.side === 'Under' ? -1 : 1);
+    return phi * sign;
+  }
+  // P(every leg hits) with pairwise links (second-order Bahadur; exact for two legs)
+  function pAllLinked(legs, probs) {
+    let p = probs.reduce((a, x) => a * x, 1), f = 1;
+    for (let i = 0; i < legs.length; i++) for (let j = i + 1; j < legs.length; j++) {
+      const r = pairLink(legs[i], legs[j]);
+      if (r) f += r * Math.sqrt(((1 - probs[i]) * (1 - probs[j])) / (probs[i] * probs[j]));
+    }
+    return Math.min(Math.min(...probs), Math.max(1e-6, p * f));
+  }
+  // legs: [{ sport, market, side, team, game, prob? }] (prob: the fair, else
+  // the app's break-even); standard: the table's top multiple
+  // → { mult, standard, linked (pairs with a measured link), ratio } | null
+  function repriced(legs, standard, app = 'prizepicks') {
+    if (!(standard > 0) || !Array.isArray(legs) || legs.length < 2) return null;
+    const probs = legs.map(l => (l.prob > 0 && l.prob < 1 ? l.prob : LEG_BE[app] || 0.5622));
+    const pInd = probs.reduce((a, x) => a * x, 1);
+    let linked = 0;
+    const groups = new Map();
+    legs.forEach((l, i) => { const k = l.game || `solo${i}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+    let pJoint = 1;
+    for (const ix of groups.values()) {
+      const gl = ix.map(i => legs[i]), gp = ix.map(i => probs[i]);
+      for (let a = 0; a < gl.length; a++) for (let b = a + 1; b < gl.length; b++) if (pairLink(gl[a], gl[b])) linked++;
+      pJoint *= gl.length > 1 ? pAllLinked(gl, gp) : gp[0];
+    }
+    const ratio = pInd / pJoint;
+    return { mult: r2(standard * ratio), standard, linked, ratio: r4(ratio) };
+  }
+
   // ── pasting a slip ──
   // One slip per block (blank line between), one leg per line. A line naming
   // an app, a $ amount, a multiplier or a date is the slip's header. Legs read
@@ -171,7 +248,11 @@
   }
 
   // ── Pikkit's CSV export ──
-  // Pikkit doesn't publish its export's columns, so they're found by name.
+  // Pikkit's export (Pro, "Bet Transaction Exporting") is read by column name:
+  // its own header is bet_id, sportsbook, type, status, odds, closing_line, ev,
+  // amount, profit, time_placed, time_settled, bet_info, tags, sports, leagues
+  // (statuses SETTLED_WIN / SETTLED_LOSS / SETTLED_PUSH / SETTLED_VOID /
+  // SETTLED_CASHOUT / PENDING); other trackers' names are matched too.
   // One row per bet, or one row per leg sharing a bet id; both come out as bets.
   function parseCsv(text) {
     const rows = [];
@@ -194,15 +275,18 @@
     settled: /(settled|graded|closed)[ _]?(at|on|date|time)?$/i,
     book: /^(sportsbook|book|site|app|provider|operator|bookmaker)$/i,
     type: /^(bet[ _]?type|type|wager type)$/i,
-    league: /^(league|leagues|sport|sports)$/i,
+    league: /^(leagues?)$/i,
+    sport: /^(sports?)$/i,
     market: /^(market|markets|bet market|prop type|category)$/i,
-    desc: /^(description|bet( info| description| name)?|selection|selections|pick|picks|name|legs?|details|wager)$/i,
-    odds: /^(odds|american odds|price)$/i,
+    desc: /^(description|bet([ _]info|[ _]description|[ _]name)?|selection|selections|pick|picks|name|legs?|details|wager)$/i,
+    close: /^(closing[ _]?(line|odds|price)|close[ _]?(odds|line)?|clv[ _]?odds)$/i,
+    odds: /^(odds|american[ _]odds|price)$/i,
     stake: /^(amount|stake|risk|wager amount|bet amount|risked|wagered)$/i,
     payout: /^(payout|to win|potential payout|return|returns|winnings)$/i,
     profit: /^(profit|net|net profit|profit\/loss|p\/l|pnl)$/i,
     status: /^(status|result|outcome|bet status)$/i,
     clv: /clv/i,
+    ev: /^ev$/i,
     legs: /^(legs|leg count|# legs|num legs)$/i,
   };
   function columns(header) {
@@ -213,8 +297,8 @@
     });
     return at;
   }
-  const STATUS = [[/^(won|win|w|hit|cashed|settled_win)$/i, 'win'], [/^(lost|loss|l|miss|settled_loss)$/i, 'loss'],
-    [/^(push|pushed|p|tie|refund(ed)?)$/i, 'push'], [/^(void|voided|cancel(l)?ed|canceled)$/i, 'void'], [/^(open|pending|active|ungraded|live)$/i, 'open'], [/cash(ed)? ?out/i, 'cashout']];
+  const STATUS = [[/^(won|win|w|hit|cashed|settled[ _]win)$/i, 'win'], [/^(lost|loss|l|miss|settled[ _]loss)$/i, 'loss'],
+    [/^(push|pushed|p|tie|refund(ed)?|settled[ _]push)$/i, 'push'], [/^(void|voided|cancel(l)?ed|canceled|settled[ _]void)$/i, 'void'], [/^(open|pending|active|ungraded|live)$/i, 'open'], [/cash(ed)?[ _]?out/i, 'cashout']];
   const statusOf = s => { const t = String(s || '').trim(); for (const [re, v] of STATUS) if (re.test(t)) return v; return t ? t.toLowerCase() : 'open'; };
   const amOdds = s => { const n = num(String(s || '').replace(/^\+/, '')); if (n == null) return null; return Math.abs(n) >= 100 ? (n > 0 ? 1 + n / 100 : 1 + 100 / -n) : n > 1 ? n : null; };
   function parsePikkitCsv(text, { now = Date.now() } = {}) {
@@ -234,7 +318,7 @@
       if (!b) {
         b = { id: `pk-${id}`.slice(0, 64), source: 'pikkit', placedAt: ok(t) ? new Date(t).toISOString() : null,
           app: appOf(get(r, 'book')) || (get(r, 'book') || 'Other'), bookName: get(r, 'book') || 'Other',
-          type: get(r, 'type') || null, league: get(r, 'league') || null, market: get(r, 'market') || null,
+          type: get(r, 'type') || null, league: get(r, 'league') || get(r, 'sport') || null, market: get(r, 'market') || null, closeOdds: amOdds(get(r, 'close')),
           odds: amOdds(get(r, 'odds')), stake: num(get(r, 'stake')), payout: num(get(r, 'payout')), profit: num(get(r, 'profit')),
           status: statusOf(get(r, 'status')), clv: get(r, 'clv') || null, desc, legs: [], legCount: num(get(r, 'legs')) };
         byId.set(id, b); bets.push(b);
@@ -273,13 +357,16 @@
     const m = new Map();
     for (const b of bets) {
       const k = keyOf(b);
-      const a = m.get(k) || { key: k, bets: 0, won: 0, lost: 0, push: 0, open: 0, staked: 0, profit: 0 };
+      const a = m.get(k) || { key: k, bets: 0, won: 0, lost: 0, push: 0, open: 0, staked: 0, profit: 0, clvN: 0, clvSum: 0, beat: 0 };
+      // Pikkit's own closing line for the bet: CLV = your price over it
+      if (b.odds > 1 && b.closeOdds > 1) { const c = b.odds / b.closeOdds - 1; a.clvN++; a.clvSum += c; if (c > 0) a.beat++; }
       a.bets++;
       if (b.status === 'win') a.won++; else if (b.status === 'loss') a.lost++; else if (b.status === 'push' || b.status === 'void') a.push++; else a.open++;
       if (b.status !== 'open' && b.stake > 0) { a.staked += b.stake; a.profit += b.profit || 0; }
       m.set(k, a);
     }
-    return [...m.values()].map(a => ({ ...a, staked: r2(a.staked), profit: r2(a.profit), roi: a.staked ? r4(a.profit / a.staked) : null, winRate: a.won + a.lost ? r4(a.won / (a.won + a.lost)) : null }))
+    return [...m.values()].map(({ clvSum, beat, ...a }) => ({ ...a, staked: r2(a.staked), profit: r2(a.profit), roi: a.staked ? r4(a.profit / a.staked) : null, winRate: a.won + a.lost ? r4(a.won / (a.won + a.lost)) : null,
+      clv: a.clvN ? r4(clvSum / a.clvN) : null, beatShare: a.clvN ? r4(beat / a.clvN) : null }))
       .sort((a, b) => (by === 'month' ? b.key.localeCompare(a.key) : b.profit - a.profit));
   }
 
@@ -302,7 +389,13 @@
   // legs beating the close, and the result from the legs or the user
   function slipView(slip, grades) {
     const legs = slip.legs.map(l => ({ ...l, g: grades[legKey(slip, l)] || null }));
-    const table = payTable(slip);
+    let table = payTable(slip), reprice = null;
+    // no payout typed on a power slip with linked picks from one game: the repriced estimate
+    if (table && !slip.flex && !(slip.stake > 0 && slip.payout > 0) && !(slip.mult > 0)) {
+      const n = slip.legs.length;
+      reprice = repriced(legs.map(l => ({ ...l, game: l.game || (l.g?.matched?.start ? `${l.g.matched.matchTitle || ''}|${l.g.matched.start}` : null), prob: l.g?.signalFair ?? null })), table[n], slip.app);
+      if (reprice && reprice.linked && reprice.mult < table[n]) table = { [n]: reprice.mult }; else reprice = null;
+    }
     const priced = legs.filter(l => hasClose(l.g));
     let closeEv = null;
     if (table && priced.length === legs.length && legs.length) {
@@ -317,7 +410,7 @@
     const games = new Map();
     for (const l of legs) { const m = l.g?.matched; if (m?.start) { const k = `${m.matchTitle || m.sport}|${m.start}`; games.set(k, (games.get(k) || 0) + 1); } }
     const sameGame = [...games.values()].filter(n => n > 1).reduce((a, n) => a + n, 0);
-    return { ...slip, legs, table, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, sameGame, ...st };
+    return { ...slip, legs, table, reprice, closeEv, legsBeat: priced.filter(l => l.g.closeEv > 0).length, legsPriced: priced.length, sameGame, ...st };
   }
 
   // How a slip settled, from its legs: a voided or tied pick drops out and the
@@ -410,6 +503,7 @@
   function makeSlip({ app, legs, stake = null, payout = null, mult = null, flex = false, placedAt = null, source = 'board', now = Date.now() } = {}) {
     if (!APPS[app] || !Array.isArray(legs) || !legs.length) return null;
     const clean = legs.map(l => ({ player: String(l.player || '').trim(), side: l.side === 'Under' ? 'Under' : 'Over', line: Number(l.line), market: String(l.market || '').trim(),
+      ...(l.team ? { team: String(l.team) } : {}), ...(l.game ? { game: String(l.game) } : {}),
       sport: l.sport ? (SPORT_FIX[String(l.sport).toUpperCase()] || String(l.sport).toUpperCase()) : null, ...(l.opp ? { opp: String(l.opp) } : {}) }))
       .filter(l => l.player && l.market && ok(l.line));
     if (clean.length !== legs.length) return null;
@@ -417,5 +511,5 @@
   }
 
   return { APPS, appOf, appLabel, LEG_BE, legDecimal, POWER, FLEX, payTable, parseLeg, parseWhen, parseHeader, parseSlips, parseCsv, columns, parsePikkitCsv, slipFromPikkit,
-    pikkitBreakdown, legKey, gradeRequest, slipView, settleSlip, legTotals, slipTotals, makeSlip, summary, newId };
+    pikkitBreakdown, legKey, gradeRequest, slipView, settleSlip, repriced, pairLink, legTotals, slipTotals, makeSlip, summary, newId };
 }));

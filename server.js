@@ -26,6 +26,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats() }));
+const profiler = require('./ops').createProfiler();
+app.get('/api/ops/profile', async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(await profiler.profile(parseFloat(req.query.s) || 20)); }
+  catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
 
 // Keys come from the environment only (Railway variables / local .env).
 // Never commit a fallback key: anything in source ships to every buyer.
@@ -4532,6 +4537,20 @@ function loadApp() {
   return appHtml;
 }
 legal.mount(app);
+// The Learn pages (learn.js): no-vig, EV, CLV, hold and arbs, middles, Kelly,
+// exchange fees, pick'em break-evens and how the record decides "proven". Each
+// worked example runs through the app's own math when the page renders.
+const learn = require('./learn');
+const learnCache = new Map();
+app.get(['/learn', '/learn/:slug'], (req, res) => {
+  const slug = String(req.params.slug || '').toLowerCase().slice(0, 60);
+  const canon = slug ? learn.canonicalOf(slug) : '';
+  if (canon == null) return res.status(404).type('html').send(learn.render('', { origin: siteOrigin(req) }).replace('<h1>', '<p class="note">That guide does not exist. Here are all of them.</p><h1>'));
+  if (slug && canon !== slug) return res.redirect(301, `/learn/${canon}`);
+  const o = siteOrigin(req), k = `${o}|${canon}`;
+  if (!learnCache.has(k)) { if (learnCache.size > 50) learnCache.clear(); learnCache.set(k, learn.render(canon, { origin: o })); }
+  res.set('Cache-Control', 'public, max-age=600').type('html').send(learnCache.get(k));
+});
 // Installable app: manifest, service worker (root scope) and icons, then the push routes.
 const PUB = path.join(__dirname, 'public');
 app.get('/manifest.webmanifest', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/manifest+json').sendFile(path.join(PUB, 'manifest.webmanifest')));
@@ -4625,10 +4644,10 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4639,7 +4658,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.162.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.163.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6368,6 +6387,51 @@ app.get('/api/shopper', (req, res) => {
   if (st.views) { if (st.views.size > 40) st.views.clear(); st.views.set(vkey, { at: Date.now(), body }); }
   res.type('json').send(body);
 });
+// Line history for player props (shopper.createLineHistory): after a quote
+// rebuild, at most every 3 minutes, each prop market's fair and venue prices
+// are noted, a few hundred markets at a time with a yield between. Rides the
+// results backup like the odds screen's game-line history.
+const propHistory = shopper.createLineHistory();
+let propHistoryBooted = false;
+const propHistoryStore = resultsBackup.wrap('propHistory', {
+  init: async () => {}, all: async () => (propHistoryBooted ? propHistory.dump() : []),
+  put: async d => { propHistory.load([d]); }, putMany: async ds => { propHistory.load(ds); },
+}, { appendOnly: false });
+propHistoryStore.init().catch(e => console.warn('Prop history: restore failed:', e.message)).finally(() => { propHistoryBooted = true; });
+const propHistoryState = { at: 0, observedAt: null, markets: 0, ms: null, error: null };
+async function observePropHistory() {
+  const st = shopState;
+  if (!st.builtAt || Date.now() - propHistoryState.at < 3 * 60e3) return;
+  propHistoryState.at = Date.now();
+  const t0 = Date.now();
+  try {
+    const props = [...st.free.quotes, ...st.kalshi.quotes].filter(q => q.marketType === 'player_prop' && q.marketStatus === 'open' && q.available !== false && Date.parse(q.startUtc) > Date.now() - 5 * 60e3);
+    const grouped = [...shopper.groupMarkets(props).values()];
+    const filter = shopper.providerFilter({});
+    let views = [];
+    for (let i = 0; i < grouped.length; i++) {
+      const v = shopper.viewMarket(grouped[i], { filter, stake: 100, now: Date.now(), method: 'power' });
+      if (v) views.push(v);
+      if (i % 300 === 299) { propHistory.observe(views); views = []; await new Promise(r => setImmediate(r)); }
+    }
+    propHistory.observe(views);
+    Object.assign(propHistoryState, { observedAt: new Date().toISOString(), markets: grouped.length, ms: Date.now() - t0, error: null });
+  } catch (e) { propHistoryState.error = e.message; console.warn('Prop history:', e.message); }
+}
+// one prop market's history: GET /api/shopper/history?key=<market key>.
+// Free viewers get prices without the fair; Kalshi needs its data licence.
+app.get('/api/shopper/history', (req, res) => {
+  const key = String(req.query.key || '').slice(0, 300);
+  const lic = licenceOf(req), pro = hasPro(req);
+  const h = key ? propHistory.forMarket(key) : null;
+  if (!h) return res.json({ key, series: [], pro, note: 'No saved prices for this market yet: prop prices are saved every few minutes from when a market first shows up.' });
+  res.json({ ...h, pro, series: h.series.map(x => ({ ...x, pts: x.pts.map(([t, line, fair, px]) => [t, line, pro ? fair : null,
+    lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) })) });
+});
+// which optional feeds this server has, for the app's tab bar: without an
+// Odds API key the LINES, LINE SHOP and CLV tabs have nothing to show, so the
+// app hides them (the ODDS SCREEN covers them from the free feeds)
+app.get('/api/features', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ oddsApi: !!ODDS_API_KEY }));
 // provider health on its own (status, last read, errors, fee handling)
 app.get('/api/providers', (req, res) => res.json({ providers: shopHealth(), builtAt: shopQuotes().builtAt }));
 // ─── BOOK ARBS AND MIDDLES ────────────────────────────────────────────────────
@@ -7225,7 +7289,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.162.0',
+  version: '3.163.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7238,6 +7302,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
   oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   lineBets: lineBets.counts(),
+  propHistory: { series: propHistory.size(), points: propHistory.points(), observedAt: propHistoryState.observedAt, markets: propHistoryState.markets, ms: propHistoryState.ms, error: propHistoryState.error },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
@@ -7354,7 +7419,7 @@ schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message))));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory())));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
@@ -7523,5 +7588,5 @@ module.exports = {
   pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
-  scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState,
+  scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory,
 };

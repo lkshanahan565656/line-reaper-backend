@@ -126,3 +126,51 @@ function createMemo({ ttlMs = 30e3, now = () => Date.now(), max = 20 } = {}) {
 }
 
 module.exports = { createOps, createMemo, STALL_MS };
+
+// ─── CPU profile on demand ────────────────────────────────────────────────────
+// GET /api/ops/profile?s=20 samples the CPU for s seconds (5 to 60, one at a
+// time) and returns the functions with the most self time: name, file, line.
+// That names whatever holds the event loop, which the stall log can only
+// narrow to the jobs that were running.
+function createProfiler({ inspector = require('inspector') } = {}) {
+  let busy = false;
+  async function profile(seconds = 20, top = 40) {
+    if (busy) { const e = new Error('a profile is already running'); e.status = 409; throw e; }
+    busy = true;
+    const session = new inspector.Session();
+    session.connect();
+    const post = (m, p) => new Promise((res, rej) => session.post(m, p || {}, (e, r) => (e ? rej(e) : res(r))));
+    try {
+      await post('Profiler.enable');
+      await post('Profiler.setSamplingInterval', { interval: 1000 });
+      await post('Profiler.start');
+      await new Promise(r => setTimeout(r, Math.min(60, Math.max(5, seconds)) * 1000));
+      const { profile: p } = await post('Profiler.stop');
+      return summarize(p, top);
+    } finally { session.disconnect(); busy = false; }
+  }
+  return { profile, busy: () => busy };
+}
+// self time per function from a V8 cpu profile
+function summarize(p, top = 40) {
+  const dt = new Map();   // node id → ms of samples
+  const ids = p.samples || [], deltas = p.timeDeltas || [];
+  for (let i = 0; i < ids.length; i++) dt.set(ids[i], (dt.get(ids[i]) || 0) + (deltas[i] || 0) / 1000);
+  const by = new Map();
+  let total = 0, idle = 0;
+  for (const n of p.nodes || []) {
+    const ms = dt.get(n.id) || 0;
+    if (!ms) continue;
+    total += ms;
+    const f = n.callFrame || {};
+    if (f.functionName === '(idle)' || f.functionName === '(program)') { idle += f.functionName === '(idle)' ? ms : 0; }
+    const file = String(f.url || '').split('/').pop() || '';
+    const key = `${f.functionName || '(anonymous)'} ${file}:${(f.lineNumber ?? -1) + 1}`;
+    by.set(key, (by.get(key) || 0) + ms);
+  }
+  const rows = [...by.entries()].sort((a, b) => b[1] - a[1]).slice(0, top).map(([fn, ms]) => ({ fn, ms: Math.round(ms), pct: total ? Math.round(1000 * ms / total) / 10 : 0 }));
+  return { totalMs: Math.round(total), idleMs: Math.round(idle), busyPct: total ? Math.round(1000 * (total - idle) / total) / 10 : 0, top: rows };
+}
+
+module.exports.createProfiler = createProfiler;
+module.exports.summarize = summarize;

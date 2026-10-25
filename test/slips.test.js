@@ -50,7 +50,7 @@ test('a Pikkit CSV comes in by column name, one row per bet or per leg, with its
   assert.ok(columns.placed != null && columns.stake != null && columns.desc != null);
   assert.deepStrictEqual(bets.map(b => [b.app, b.status, b.legs.length]), [['prizepicks', 'win', 2], ['pick6', 'loss', 1], ['chalkboard', 'loss', 2]]);
   const byApp = S.pikkitBreakdown(bets, 'app');
-  assert.deepStrictEqual(byApp[0], { key: 'PrizePicks', bets: 1, won: 1, lost: 0, push: 0, open: 0, staked: 10, profit: 26, roi: 2.6, winRate: 1 });
+  assert.deepStrictEqual(byApp[0], { key: 'PrizePicks', bets: 1, won: 1, lost: 0, push: 0, open: 0, staked: 10, profit: 26, roi: 2.6, winRate: 1, clvN: 0, clv: null, beatShare: null });
   assert.strictEqual(S.pikkitBreakdown(bets, 'month')[0].key, '2026-10');
   assert.strictEqual(S.parsePikkitCsv('a,b\n1,2').error.startsWith("Couldn't find"), true);
 });
