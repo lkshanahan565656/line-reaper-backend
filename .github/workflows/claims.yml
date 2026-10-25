@@ -1,0 +1,38 @@
+# Read-only: once the site shows v3.184.0, save /api/claims, /api/claims?state=TX-free view and a
+# phone/desktop render of / and /learn/how-the-record-works to diag-claims-out.
+name: diag-claims
+on: { push: { branches: [diag-claims] } }
+permissions: { contents: write }
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env: { SITE: 'https://line-reaper-backend-production.up.railway.app' }
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          for i in $(seq 1 120); do v=$(curl -s "$SITE/api/status" | grep -o '"version":"[^"]*"' | head -1); echo "$v"; case "$v" in *3.184.0*) break;; esac; sleep 15; done
+          mkdir -p out; sleep 60
+          curl -s "$SITE/api/claims" > out/claims.json; curl -s "$SITE/api/ev/scoreboard" > out/scoreboard.json
+          curl -s -o /dev/null -w '%{http_code}\n' "$SITE/" > out/codes.txt; curl -s -o /dev/null -w '%{http_code}\n' "$SITE/learn" >> out/codes.txt
+      - run: |
+          npm i --no-save --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps --only-shell chromium
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          (async () => { const b = await chromium.launch();
+            for (const [n, o] of [['desktop', { viewport: { width: 1280, height: 900 } }], ['phone', { viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 2 }]]) {
+              const c = await b.newContext(o); const p = await c.newPage();
+              await p.goto(process.env.SITE + '/'); await p.waitForTimeout(6000);
+              await p.screenshot({ path: `out/home-${n}.png`, fullPage: true });
+              require('fs').writeFileSync(`out/home-${n}.txt`, await p.evaluate(() => document.body.innerText));
+              await p.goto(process.env.SITE + '/learn/how-the-record-works'); await p.waitForTimeout(4000);
+              require('fs').writeFileSync(`out/learn-${n}.txt`, await p.evaluate(() => document.getElementById('lrClaims')?.innerText || 'none'));
+              await c.close(); }
+            await b.close(); })();
+          JS
+          node shot.js
+      - run: |
+          git init -q o && cp -r out/* o/ && cd o
+          git config user.email d@lr; git config user.name diag; git checkout -q --orphan diag-claims-out; git add -A; git commit -qm out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-claims-out
