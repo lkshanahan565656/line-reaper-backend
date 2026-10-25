@@ -1,7 +1,7 @@
 # NBA official injury reports (every 15-minute slot) 2026-10-21..10-25 ET, raw text per report,
 # plus ESPN's injury list and NBA news feed now (their fields), for the injury-stale lane.
 import json,urllib.request,os,time,io,subprocess,sys,concurrent.futures as cf
-subprocess.run([sys.executable,'-m','pip','install','-q','pdfplumber'],check=False)
+subprocess.run([sys.executable,'-m','pip','install','-q','--break-system-packages','pdfplumber'],check=False)
 import pdfplumber
 def get(u,t=40):
     for i in range(3):
