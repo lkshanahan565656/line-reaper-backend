@@ -6,9 +6,9 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 async function get(p) { const t0 = Date.now(); try { const r = await fetch(B + p, { signal: AbortSignal.timeout(90000) }); const j = await r.json(); return { status: r.status, ms: Date.now() - t0, j }; } catch (e) { return { error: e.message, ms: Date.now() - t0 }; } }
 (async () => {
   let st;
-  for (let i = 0; i < 50; i++) { st = await get('/api/status'); if (st.j?.version === '3.166.1' && st.j?.shopDepth) break; await wait(30000); }
+  for (let i = 0; i < 50; i++) { st = await get('/api/status'); if (st.j?.shopDepth?.budget?.polymarketus === 0) break; await wait(30000); }
   const out = { version: st.j?.version, deployedSeenAt: new Date().toISOString() };
-  await wait(14 * 60e3);
+  await wait(10 * 60e3);
   st = await get('/api/status');
   out.shopDepth = st.j?.shopDepth; out.exchangeSize = { scans: st.j?.exchangeSize?.scans, errors: st.j?.exchangeSize?.errors, reads: st.j?.exchangeSize?.reads };
   const sum = v => {
