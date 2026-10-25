@@ -569,6 +569,12 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 #page-props.cfbm .pb-conly, #page-props.cfbm .pb-lonly, #page-props.cfbm #pbSports, #page-props.cfbm #pbBooks, #page-props.cfbm #pbCover, #page-props.cfbm #pbRecord { display: none; }
 .cfm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
 .cfm-note b { color:#fde68a; letter-spacing:1px; }
+.far-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
+.far-note b { color:#fde68a; letter-spacing:1px; }
+.far-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; }
+.far-chip { border-color:#3a3320; }
+.far-d { font-family:'JetBrains Mono',monospace; font-size:10px; color:#fbbf24; margin-top:2px; }
+.far-d.stale { color:#64748b; }
 .cfm-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
 .cfm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
 .cfm-p.lean { color:#fbbf24; }
@@ -4226,7 +4232,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4745,6 +4751,7 @@ async function loadNbaModel(seq) {
   const qs = new URLSearchParams({ limit: 300 });
   if (pbState.q) qs.set('q', pbState.q);
   if (pbState.nbmStat) qs.set('stat', pbState.nbmStat);
+  if (pbState.nbmFar) qs.set('far', '1');
   pbChips();
   try {
     const r = await fetch(`${BACKEND_URL}/api/props/nbamodel?${qs}`);
@@ -4765,11 +4772,38 @@ function nbmRecTxt(k, be) {
   const z = n ? (hit - be) / Math.sqrt(be * (1 - be) / n) : 0;
   return `${k.wins}-${k.losses} (${(hit * 100).toFixed(1)}% vs ${(be * 100).toFixed(2)}% break-even, z ${z.toFixed(2)}) of ${n} graded`;
 }
+// FAR FROM PROJECTION (farlines.js): app lines 1+ of the model's own sds from its
+// projection, a filter inside each model tab with its own record per app.
+// Model, not an edge: the held-out test cleared no app (checks/far-lines-2026-10-25).
+function farRecTxt(k, be) {
+  if (!k || !k.signals) return 'nothing logged yet';
+  if (!k.graded) return `${k.signals} logged, none graded yet`;
+  const n = k.wins + k.losses;
+  if (be == null) return `${k.wins}-${k.losses}, ${k.units >= 0 ? '+' : ''}${k.units}u at real multipliers of ${n} graded`;
+  const hit = n ? k.wins / n : 0, z = n ? (hit - be) / Math.sqrt(be * (1 - be) / n) : 0;
+  return `${k.wins}-${k.losses} (${(hit * 100).toFixed(1)}% vs ${(be * 100).toFixed(2)}%, z ${z.toFixed(2)}) of ${n} graded`;
+}
+function farBlock(f, on) {
+  if (!f || !on) return '';
+  const bt = f.backtest;
+  const btTxt = bt?.lines?.length ? `<div class="far-bt"><b style="color:#e8e8e8">HELD-OUT TEST</b> ${escAttr(bt.asOf || '')} · ${escAttr(bt.verdict || '')}\n${bt.lines.map(escAttr).join('\n')}</div>` : '';
+  return `<div class="far-note"><b>FAR FROM PROJECTION · MODEL, NOT AN EDGE.</b> ${escAttr(f.note || '')} ${escAttr(f.bar || '')} No alerts.</div>
+    <div class="pb-dim" style="margin:0 0 10px">Far-line record (own, from 0), PrizePicks: ${farRecTxt(f.record?.prizepicks, 0.5503)} · Pick6: ${farRecTxt(f.record?.pick6, 0.567)} · Underdog: ${farRecTxt(f.record?.underdog, null)}</div>${btTxt}`;
+}
+function farChip(on, count, key) {
+  return `<button class="sport-chip far-chip${on ? ' active' : ''}" onclick="pbState.${key}=!pbState.${key};loadPropsBoard()" title="Only app lines 1+ of our projection's standard deviations away from it">FAR FROM PROJECTION${count != null ? ` (${count})` : ''}</button>`;
+}
+// one app cell's far line: the distance in our sds and, when Pinnacle's line sits toward our projection, that it's the stale play
+function farCellTxt(a) {
+  if (!a || a.d == null || !a.far) return '';
+  return `<div class="far-d${a.pinAgree === 'toward' ? ' stale' : ''}" title="the app's line is ${Math.abs(a.d).toFixed(2)} of our projection's standard deviations ${a.d > 0 ? 'below' : 'above'} it${a.pinAgree === 'toward' ? '; Pinnacle\'s line sits toward our projection (the stale-line play, not in the far record)' : ''}">far ${a.d > 0 ? '+' : ''}${a.d.toFixed(1)} sd ${a.farSide === 'Over' ? 'O' : 'U'}${a.pinAgree === 'toward' ? ' · stale vs PIN' : ''}</div>`;
+}
 function renderNbaModel() {
   const el = document.getElementById('pbContent'), d = pbState.nbm;
   if (!el || !d) return;
   const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
-  const stats = `<div class="pb-chips" style="margin:0 0 10px">${NBM_STATS.map(([k, lab]) => chip(pbState.nbmStat === k, lab, `pbState.nbmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${d.far ? farChip(pbState.nbmFar, d.far.count, 'nbmFar') : ''}${NBM_STATS.map(([k, lab]) => chip(pbState.nbmStat === k, lab, `pbState.nbmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const farTop = farBlock(d.far, pbState.nbmFar);
   const note = `<div class="nbm-note"><b>MODEL, NOT AN EDGE.</b>${d.version ? ` <b>${escAttr(String(d.version).toUpperCase())}</b>` : ''} Our own NBA projection from ESPN box scores (recent minutes, per-minute rates, pace, the opponent and his position, teammates listed Out), priced at each app's own number and its real payout. ${escAttr(d.versionNote || '')} Its backtest is below. ${escAttr(d.bar || '')} Its legs at ${Math.round((d.pickMin || 0.58) * 100)}%+ on PrizePicks and Pick6, and Underdog legs worth ${Math.round((d.udEvMin || 0.05) * 100)}%+ at the real multiplier, keep their own record; no alerts.</div>`;
   if (!d.on) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">${escAttr(d.note || 'The NBA model is off.')}</div></div>`; return; }
   const udTxt = k => !k || !k.signals ? 'nothing logged yet' : !k.graded ? `${k.signals} logged, none graded yet` : `${k.wins}-${k.losses}, ${k.units >= 0 ? '+' : ''}${k.units}u at real multipliers of ${k.wins + k.losses} graded`;
@@ -4780,7 +4814,7 @@ function renderNbaModel() {
   const st = d.status || {};
   const rows = d.rows || [];
   if (!rows.length) {
-    el.innerHTML = note + rec + bt + stats + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO NBA LINES PRICED</div><div class="empty-sub">${pbState.q || pbState.nbmStat ? 'Nothing matches these filters.' : `No NBA game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
+    el.innerHTML = note + rec + bt + stats + farTop + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">${pbState.nbmFar ? 'NO FAR LINES' : 'NO NBA LINES PRICED'}</div><div class="empty-sub">${pbState.nbmFar ? 'No app line sits 1+ of our standard deviations from the projection right now (outside the stale-line play).' : pbState.q || pbState.nbmStat ? 'Nothing matches these filters.' : `No NBA game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
     return;
   }
   const pc = p => `${Math.round(p * 100)}%`;
@@ -4791,7 +4825,7 @@ function renderNbaModel() {
       if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
       const lean = a.pSide >= (d.pickMin || 0.58);
       const pay = a.ev != null ? `<div class="pb-dim" title="value per unit at this app's payout for the model's side (break-even ${a.breakEven != null ? (a.breakEven * 100).toFixed(1) + '%' : '—'})">${a.ev >= 0 ? '+' : ''}${(a.ev * 100).toFixed(1)}% at ${a.decimal}x</div>` : '';
-      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="nbm-p${lean ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="nbm-p${lean ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
     }).join('');
     const pin = r.pinnacle ? `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${r.pinnacle.line}</div><div class="pb-dim">Pinnacle ${pc(r.pinnacle.pOver)} over</div>${r.pinnacle.model != null ? `<div class="pb-dim">model ${pc(r.pinnacle.model)}</div>` : ''}</div>`
       : `<div class="pb-bk none"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">—</div><div class="pb-dim">no prop</div></div>`;
@@ -4804,7 +4838,7 @@ function renderNbaModel() {
   }).join('');
   const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
   const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
-  el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'NBA lines priced')}${stat(leans, `model ${Math.round((d.pickMin || 0.58) * 100)}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.teamsWithOuts ?? '—', 'teams with players out')}</div><div class="pb-list">${body}</div>`;
+  el.innerHTML = note + rec + bt + stats + farTop + `<div class="pb-sum">${stat(d.count.toLocaleString(), pbState.nbmFar ? 'NBA far lines' : 'NBA lines priced')}${stat(leans, `model ${Math.round((d.pickMin || 0.58) * 100)}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.teamsWithOuts ?? '—', 'teams with players out')}</div><div class="pb-list">${body}</div>`;
 }
 // ─── CFB MODEL (/api/props/cfbmodel): our own projection at each app's number ──
 // Same layout as the NBA model's view. Labelled "model, not an edge" until its
@@ -4816,6 +4850,7 @@ async function loadCfbModel(seq) {
   const qs = new URLSearchParams({ limit: 300 });
   if (pbState.q) qs.set('q', pbState.q);
   if (pbState.cfmStat) qs.set('stat', pbState.cfmStat);
+  if (pbState.cfmFar) qs.set('far', '1');
   pbChips();
   try {
     const r = await fetch(`${BACKEND_URL}/api/props/cfbmodel?${qs}`);
@@ -4841,7 +4876,8 @@ function renderCfbModel() {
   if (!el || !d) return;
   const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
   const pm = Math.round((d.pickMin || 0.58) * 100);
-  const stats = `<div class="pb-chips" style="margin:0 0 10px">${CFM_STATS.map(([k, lab]) => chip(pbState.cfmStat === k, lab, `pbState.cfmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${d.far ? farChip(pbState.cfmFar, d.far.count, 'cfmFar') : ''}${CFM_STATS.map(([k, lab]) => chip(pbState.cfmStat === k, lab, `pbState.cfmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const farTop = farBlock(d.far, pbState.cfmFar);
   const note = `<div class="cfm-note"><b>MODEL, NOT AN EDGE.</b>${d.version ? ` <b>${escAttr(String(d.version).toUpperCase())}</b>` : ''} Our own college football projection from ESPN box scores (each player's share of his team's passes, carries and catches, the team's volume, what the opponent allows, and the pre-game total and spread), priced at each app's own number and its real payout. ${escAttr(d.versionNote || '')} Its backtest found no edge (below). ${escAttr(d.bar || '')} Its legs at ${pm}%+ on PrizePicks and Pick6, and Underdog legs worth ${Math.round((d.udEvMin || 0.05) * 100)}%+ at the real multiplier, keep their own record; no alerts.</div>`;
   if (!d.on) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">${escAttr(d.note || 'The CFB model is off.')}</div></div>`; return; }
   const udTxt = k => !k || !k.signals ? 'nothing logged yet' : !k.graded ? `${k.signals} logged, none graded yet` : `${k.wins}-${k.losses}, ${k.units >= 0 ? '+' : ''}${k.units}u at real multipliers of ${k.wins + k.losses} graded`;
@@ -4852,7 +4888,7 @@ function renderCfbModel() {
   const st = d.status || {};
   const rows = d.rows || [];
   if (!rows.length) {
-    el.innerHTML = note + rec + bt + stats + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO CFB LINES PRICED</div><div class="empty-sub">${pbState.q || pbState.cfmStat ? 'Nothing matches these filters.' : `No college game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
+    el.innerHTML = note + rec + bt + stats + farTop + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">${pbState.cfmFar ? 'NO FAR LINES' : 'NO CFB LINES PRICED'}</div><div class="empty-sub">${pbState.cfmFar ? 'No app line sits 1+ of our standard deviations from the projection right now (outside the stale-line play).' : pbState.q || pbState.cfmStat ? 'Nothing matches these filters.' : `No college game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
     return;
   }
   const pc = p => `${Math.round(p * 100)}%`;
@@ -4865,7 +4901,7 @@ function renderCfbModel() {
       const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
       if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
       const pay = a.ev != null ? `<div class="pb-dim" title="value per unit at this app's payout for the model's side (break-even ${a.breakEven != null ? (a.breakEven * 100).toFixed(1) + '%' : '—'})">${a.ev >= 0 ? '+' : ''}${(a.ev * 100).toFixed(1)}% at ${a.decimal}x</div>` : '';
-      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
     }).join('');
     const bk = r.book ? { ...r.book } : null;
     const sp = r.spread == null ? '' : `spread ${r.spread > 0 ? '+' : ''}${r.spread}`;
@@ -4878,7 +4914,7 @@ function renderCfbModel() {
   }).join('');
   const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
   const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
-  el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'CFB lines priced')}${stat(leans, `model ${pm}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.schedule ?? '—', 'games on the schedule')}</div><div class="pb-list">${body}</div>`;
+  el.innerHTML = note + rec + bt + stats + farTop + `<div class="pb-sum">${stat(d.count.toLocaleString(), pbState.cfmFar ? 'CFB far lines' : 'CFB lines priced')}${stat(leans, `model ${pm}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.schedule ?? '—', 'games on the schedule')}</div><div class="pb-list">${body}</div>`;
 }
 // ─── MLB VS PINNACLE (/api/props/mlb): every MLB app leg next to Pinnacle's own number ──
 // Research: an app number on the good side of Pinnacle's line is a gap leg,

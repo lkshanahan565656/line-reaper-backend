@@ -16,6 +16,7 @@ const zlib = require('zlib');
 const M = require('./cfbmodel');
 const { canonName } = require('./ev');
 const { payoutFor } = require('./nbadata');
+const F = require('./farlines');
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const SEED = path.join(__dirname, 'seeds', 'cfb-games.json.gz');
@@ -41,6 +42,16 @@ const loadParams = (file = PARAMS_FILE) => { const p = readJson(file); return p 
 const loadBacktest = (file = BACKTEST) => readJson(file);
 
 // ESPN scoreboard event → { id, t, home, away (team ids), names, abbrs, done, total, spread (home's) }
+
+// a section row's far summary: far = some app's line is 1+ of our sds from the
+// projection (and Pinnacle's line does not sit toward it); farD = the largest |d|, signed
+function farOfApps(apps) {
+  const cells = Object.values(apps).filter(a => a.far && a.pinAgree !== 'toward');
+  if (!cells.length) return { far: false, farD: null };
+  const top = cells.sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
+  return { far: true, farD: top.d };
+}
+
 function scheduleOf(ev) {
   const c = ev?.competitions?.[0];
   const cs = c?.competitors || [];
@@ -161,6 +172,7 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
       const p = projectionFor(row);
       if (!p.proj) continue;
       const apps = {};
+      const pin = pinAt(row), fd = bookAt(row);
       for (const [book, cell] of Object.entries(row.books || {})) {
         if (!Number.isFinite(cell?.line)) continue;
         const pr = priced(p.proj, row.mkey, cell.line);
@@ -169,9 +181,15 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
         const pay = payoutFor(book, pr.side, pr.pSide, cell);
         apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null,
           decimal: pay?.decimal ?? null, breakEven: pay?.breakEven ?? null, ev: pay?.ev ?? null };
+        // the line's distance from our projection (farlines.js): d in the model's own sds, far at |d| >= 1;
+        // pinAgree 'toward' = Pinnacle's line sits toward our projection (the stale play, not in the far record)
+        const d = F.distance(pr.raw);
+        if (d != null) {
+          const fs = d > 0 ? 'Over' : 'Under';
+          Object.assign(apps[book], { d, far: F.isFar(d), farSide: fs, pinAgree: F.agreeOf(fs, cell.line, pin && Number.isFinite(pin.line) ? pin.line : null) });
+        }
       }
       if (!Object.keys(apps).length) continue;
-      const pin = pinAt(row), fd = bookAt(row);
       const best = Object.entries(apps).sort((a, b) => b[1].pSide - a[1].pSide)[0];
       const bestPay = Object.entries(apps).filter(([, a]) => a.ev != null).sort((a, b) => b[1].ev - a[1].ev)[0] || null;
       out.push({ key: row.key, player: row.player, team: p.game.teamName, opp: p.game.oppName, home: p.game.isHome, start: new Date(p.game.t).toISOString(),
@@ -181,13 +199,14 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
         book: fd && Number.isFinite(fd.line) ? { book: fd.book, line: fd.line, pOver: fd.pOver, model: priced(p.proj, row.mkey, fd.line)?.pOver ?? null } : null,
         bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide,
         bestPay: bestPay ? { book: bestPay[0], side: bestPay[1].side, line: bestPay[1].line, ev: bestPay[1].ev, breakEven: bestPay[1].breakEven } : null,
+        ...farOfApps(apps),
         version: MODEL_VERSION });
     }
     return out.sort((a, b) => b.bestP - a.bestP);
   }
 
   // the record's legs: PrizePicks and Pick6 standard lines with the model's side at PICK_MIN+
-  function plays(rows) {
+  function plays(rows, { pinAt = () => null } = {}) {
     const flagged = [];
     for (const row of rows || []) {
       if (row.sport !== 'CFB' || !MODEL_STATS.has(row.mkey)) continue;
@@ -218,6 +237,12 @@ function createCfbModel({ http, now = () => Date.now(), seed = null, params = nu
           flagged.push({ row, kind: 'ud-cfb-model', research: true,
             play: { book: 'underdog', side: pr.side, line: ud.line, mult, ev: +(pay.ev * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
         }
+      }
+      // an app line far from our projection (farlines.js): kinds FAR_KINDS, research, own record
+      const pf = projectionFor(row);
+      if (pf.proj) {
+        const pin = pinAt(row);
+        flagged.push(...F.farPlays('CFB', row, line => priced(pf.proj, row.mkey, line), { pinLine: pin && Number.isFinite(pin.line) ? pin.line : null, payoutFor, version: MODEL_VERSION }));
       }
     }
     return flagged;

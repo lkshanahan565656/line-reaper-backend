@@ -1,0 +1,26 @@
+{
+ "NBA": {
+  "asOf": "held out, scored once 2026-10-25",
+  "verdict": "no app cleared the bar",
+  "lines": [
+   "5,577 graded app lines held out, 86 far (|d| >= 1). Model side, Pinnacle-toward (stale) lines left out.",
+   "PrizePicks: 10-20..10-22 7-3 70% vs 55% z 0.95 (6 player-games, +2.7u) · 10-23..10-24 8-7 53.3% vs 55% z -0.13 (4 player-games, -0.5u) · not cleared",
+   "Underdog: 10-20..10-22 none · 10-23..10-24 8-9 47.1% vs 63% z -1.41 (8 player-games, -4u) · not cleared",
+   "Pick6: 10-20..10-22 2-0 100% vs 56.7% z 1.24 (2 player-games, +1.5u) · 10-23..10-24 none · not cleared",
+   "Sleeper: 10-20..10-22 none · 10-23..10-24 6-6 50% vs 59.3% z -0.66 (3 player-games, -1.9u) · not part of the bar",
+   "Bar: z 2+ over the app's break-even on both slices (20+ legs each), then 50 graded live legs, then a raw re-check."
+  ]
+ },
+ "CFB": {
+  "asOf": "held out, scored once 2026-10-25",
+  "verdict": "no app cleared the bar",
+  "lines": [
+   "2,448 graded app lines held out, 131 far (|d| >= 1). Model side, Pinnacle-toward (stale) lines left out.",
+   "PrizePicks: to 10-18 2-1 66.7% vs 55% z 0.41 (3 player-games, +0.6u) · 10-20..10-24 15-2 88.2% vs 55% z 2.75 (9 player-games, +10.3u) · not cleared",
+   "Underdog: to 10-18 3-1 75% vs 56.2% z 0.76 (4 player-games, +1.3u) · 10-20..10-24 5-2 71.4% vs 60.9% z 0.57 (5 player-games, +1u) · not cleared",
+   "Sleeper: to 10-18 1-0 100% vs 56.2% z 0.88 (1 player-games, +0.8u) · 10-20..10-24 18-5 78.3% vs 75.8% z 0.29 (22 player-games, +0.7u) · not part of the bar",
+   "PrizePicks 10-24 was 15-2, mostly Unders with no book line, but 9 player-games (two players made 9 of the legs) and 3 legs the week before: a lead for the live record, not a result.",
+   "Bar: z 2+ over the app's break-even on both slices (20+ legs each), then 50 graded live legs, then a raw re-check."
+  ]
+ }
+}

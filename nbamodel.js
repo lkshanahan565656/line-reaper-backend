@@ -445,8 +445,10 @@ function priceLine(proj, stat, line, P = PARAMS) {
   if (!proj || !STATS.includes(stat) || !Number.isFinite(line)) return null;
   const p = probOver(proj, stat, line, P);
   const n = 1 - p.push;
-  const pOver = calibrate(n > 0 ? p.over / n : 0.5, stat, P);   // a push is a void on the apps
-  return { stat, line, mean: Math.round(expected(proj, stat) * 10) / 10, pOver: Math.round(pOver * 1e4) / 1e4,
+  const raw = n > 0 ? p.over / n : 0.5;   // a push is a void on the apps
+  const pOver = calibrate(raw, stat, P);
+  // raw: the model's own P(over) before calibration (farlines.js reads the line's distance from it)
+  return { stat, line, mean: Math.round(expected(proj, stat) * 10) / 10, pOver: Math.round(pOver * 1e4) / 1e4, raw: Math.round(raw * 1e4) / 1e4,
     side: pOver >= 0.5 ? 'Over' : 'Under', pSide: Math.round(Math.max(pOver, 1 - pOver) * 1e4) / 1e4,
     minutes: Math.round(proj.minutes.mean * 10) / 10 };
 }

@@ -15,6 +15,7 @@ const path = require('path');
 const zlib = require('zlib');
 const M = require('./nbamodel');
 const { canonName } = require('./ev');
+const F = require('./farlines');
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
 const SEED = path.join(__dirname, 'seeds', 'nba-games.json.gz');
@@ -43,6 +44,16 @@ const PP_BE = 0.5503;
 // the model's value at an app's real payout for the side it leans: the leg's
 // decimal (PrizePicks 3-pick Power, Pick6 3-pick table times its multiplier,
 // Underdog's multiplier, Sleeper's) and P(side) x decimal - 1
+
+// a section row's far summary: far = some app's line is 1+ of our sds from the
+// projection (and Pinnacle's line does not sit toward it); farD = the largest |d|, signed
+function farOfApps(apps) {
+  const cells = Object.values(apps).filter(a => a.far && a.pinAgree !== 'toward');
+  if (!cells.length) return { far: false, farD: null };
+  const top = cells.sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
+  return { far: true, farD: top.d };
+}
+
 function payoutFor(book, side, pSide, cell) {
   const mult = side === 'Over' ? cell?.over : cell?.under;
   const other = side === 'Over' ? cell?.under : cell?.over;
@@ -196,6 +207,7 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
       const p = projectionFor(row);
       if (!p.proj) continue;
       const apps = {};
+      const pin = pinAt(row);
       for (const [book, cell] of Object.entries(row.books || {})) {
         if (!Number.isFinite(cell?.line)) continue;
         const pr = M.priceLine(p.proj, row.mkey, cell.line, params);
@@ -203,9 +215,15 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
         const pay = payoutFor(book, pr.side, pr.pSide, cell);
         apps[book] = { line: cell.line, pOver: pr.pOver, side: pr.side, pSide: pr.pSide, over: cell.over ?? null, under: cell.under ?? null,
           decimal: pay?.decimal ?? null, breakEven: pay?.breakEven ?? null, ev: pay?.ev ?? null };
+        // the line's distance from our projection (farlines.js): d in the model's own sds, far at |d| >= 1;
+        // pinAgree 'toward' = Pinnacle's line sits toward our projection (the stale play, not in the far record)
+        const d = F.distance(pr.raw);
+        if (d != null) {
+          const fs = d > 0 ? 'Over' : 'Under';
+          Object.assign(apps[book], { d, far: F.isFar(d), farSide: fs, pinAgree: F.agreeOf(fs, cell.line, pin && Number.isFinite(pin.line) ? pin.line : null) });
+        }
       }
       if (!Object.keys(apps).length) continue;
-      const pin = pinAt(row);
       const best = Object.entries(apps).sort((a, b) => b[1].pSide - a[1].pSide)[0];
       // the best payout for the model's view: highest value per unit across the apps
       const bestPay = Object.entries(apps).filter(([, a]) => a.ev != null).sort((a, b) => b[1].ev - a[1].ev)[0] || null;
@@ -216,6 +234,7 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
         apps, pinnacle: pin && Number.isFinite(pin.line) ? { line: pin.line, pOver: pin.pOver, model: M.priceLine(p.proj, row.mkey, pin.line, params)?.pOver ?? null } : null,
         bestBook: best[0], bestSide: best[1].side, bestP: best[1].pSide,
         bestPay: bestPay ? { book: bestPay[0], side: bestPay[1].side, line: bestPay[1].line, ev: bestPay[1].ev, breakEven: bestPay[1].breakEven } : null,
+        ...farOfApps(apps),
         version: MODEL_VERSION });
     }
     return out.sort((a, b) => b.bestP - a.bestP);
@@ -223,7 +242,7 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
 
   // the record's legs: PrizePicks and Pick6 lines where the model's side is
   // PICK_MIN or more (one leg per player, stat, app and side; the tracker's id dedupes)
-  function plays(rows) {
+  function plays(rows, { pinAt = () => null } = {}) {
     const flagged = [];
     for (const row of rows || []) {
       if (row.sport !== 'NBA' || !MODEL_STATS.has(row.mkey)) continue;
@@ -254,6 +273,12 @@ function createNbaModel({ http, now = () => Date.now(), seed = null, params = M.
           flagged.push({ row, kind: 'ud-nba-model', research: true,
             play: { book: 'underdog', side: pr.side, line: ud.line, mult: mult == null ? 1 : mult, ev: +(pay.ev * 100).toFixed(2), fair: pr.pSide, modelMean: pr.mean, modelVersion: MODEL_VERSION } });
         }
+      }
+      // an app line far from our projection (farlines.js): kinds FAR_KINDS, research, own record
+      const pf = projectionFor(row);
+      if (pf.proj) {
+        const pin = pinAt(row);
+        flagged.push(...F.farPlays('NBA', row, line => M.priceLine(pf.proj, row.mkey, line, params), { pinLine: pin && Number.isFinite(pin.line) ? pin.line : null, payoutFor, version: MODEL_VERSION }));
       }
     }
     return flagged;
