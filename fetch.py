@@ -23,6 +23,11 @@ def one(e):
     provs=[it['$ref'].split('/odds/')[1].split('?')[0] for it in json.loads(d).get('items',[])]
     out={'id':e['id'],'date':e['date'],'providers':{}}
     for pid in provs:
+        if pid not in ('58','100'): continue
+        gl=get(f"{base}/{pid}")
+        if gl:
+            g=json.loads(gl); out.setdefault('game',{})[pid]={'details':g.get('details'),'spread':g.get('spread'),'overUnder':g.get('overUnder'),
+              'homeFav':(g.get('homeTeamOdds') or {}).get('favorite'),'awayFav':(g.get('awayTeamOdds') or {}).get('favorite')}
         items=[];page=1
         while True:
             pb=get(f"{base}/{pid}/propBets?limit=1000&page={page}")
@@ -30,15 +35,18 @@ def one(e):
             j=json.loads(pb); items+=j.get('items',[])
             if page>=j.get('pageCount',1): break
             page+=1
-        if items and raw_saved[0]<3 and any('athlete' in it for it in items):
+        if False and items and raw_saved[0]<3 and any('athlete' in it for it in items):
             raw_saved[0]+=1; open(f"out/raw-{e['id']}-{pid}.json",'w').write(json.dumps(items))
         rows=[]
         for i,it in enumerate(items):
             a=it.get('athlete',{}).get('$ref')
             if not a: continue
             o=it.get('odds',{})
-            rows.append([i,a.split('/athletes/')[1].split('?')[0],it.get('type',{}).get('id'),it.get('type',{}).get('name'),
-              o.get('american',{}).get('value'),o.get('american',{}).get('open'),o.get('total',{}).get('value'),o.get('total',{}).get('open'),it.get('lastUpdated')])
+            cu=it.get('current') or {}; op=it.get('open') or {}
+            side='over' if 'over' in cu else 'under' if 'under' in cu else ('over' if 'over' in op else 'under' if 'under' in op else None)
+            rows.append([i,a.split('/athletes/')[1].split('?')[0],it.get('type',{}).get('name'),side,
+              (cu.get(side) or {}).get('decimal') if side else None,(cu.get('target') or {}).get('value'),
+              (op.get(side) or {}).get('decimal') if side else None,(op.get('target') or {}).get('value'),it.get('lastUpdated')])
         out['providers'][pid]={'n':len(items),'rows':rows}
         census[f"{pid}:{'props' if rows else 'none'}"]+=1
     open(f,'wb').write(gzip.compress(json.dumps(out).encode()))
