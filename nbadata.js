@@ -91,8 +91,10 @@ function scheduleOf(ev, { teamKey = t => fixAbbr(t?.abbreviation), minTotal = 15
 function outsOf(data) {
   const out = new Map();
   for (const tm of data?.injuries || []) {
-    const abbr = fixAbbr(tm.team?.abbreviation || tm.abbreviation || '');
     for (const i of tm.injuries || []) {
+      // ESPN's live list carries the team's abbreviation on each athlete (its
+      // team block has only an id and a name); older shapes had it on the block
+      const abbr = fixAbbr(i.athlete?.team?.abbreviation || tm.team?.abbreviation || tm.abbreviation || '');
       const st = String(i.status || i.fantasyStatus?.description || '').toLowerCase();
       if (!/^(out|doubtful)/.test(st)) continue;
       const name = i.athlete?.displayName;

@@ -588,6 +588,25 @@ function createStaleLines(opts = {}) {
     return m && m.x != null && m.p > 0 && m.p < 1 ? { x: m.x, p: m.p } : null;
   }
 
+  // one source's quote on a subject as it stood at t (its last change at or
+  // before t; null when it had none yet): Pinnacle → { line, pOver } (its main
+  // number), an app → its cell { line, over, under, overOpen, underOpen }.
+  // For the injury-news view (injurynews.js): the numbers before the news.
+  function quoteAt(key, source, t) {
+    const s = subjects.get(key);
+    const l = s?.src[source];
+    if (!l?.length || l[0].t > t) return null;
+    let e = l[0];
+    for (const x of l) { if (x.t <= t) e = x; else break; }
+    if (source === 'pinnacle') {
+      if (isAmbiguous(key, t)) return null;
+      const m = mainOf(e.q);
+      return m && m.x != null && m.p > 0 && m.p < 1 ? { line: m.x, pOver: m.p } : null;
+    }
+    const a = e.q?.pts?.[0];
+    return a && Number.isFinite(a.x) ? { line: a.x, over: a.cell?.over ?? null, under: a.cell?.under ?? null, overOpen: a.cell?.overOpen !== false, underOpen: a.cell?.underOpen !== false } : null;
+  }
+
   // close-of-market fairs and the venues' prices now, for every bet a tracker
   // holds: bets → Map(id → { group, key, x, venue, at }). A price counts as the
   // bet's delayed price only from a venue read execAfterMs after the flag (at):
@@ -658,7 +677,7 @@ function createStaleLines(opts = {}) {
       sources: Object.fromEntries(Object.entries(s.src).map(([k, l]) => [k, l.map(e => ({ t: new Date(e.t).toISOString(), number: numberLabel(e.q, s.meta) }))])) };
   }
 
-  return { observe, step, rows, fairAt, pinMain, marks, lagSummary, history, size: () => subjects.size, opts: o };
+  return { observe, step, rows, fairAt, pinMain, quoteAt, marks, lagSummary, history, size: () => subjects.size, opts: o };
 }
 
 module.exports = { DEFAULTS, VENUES, BOOK_VENUES, APP_VENUES, CONFIRM, devig2, pAt, shiftedAt, mainOf, fingerprint, dayOf, propKey, gameQuotes, bookPropQuotes, pinPropQuotes, appQuotes, numberLabel, createStaleLines };
