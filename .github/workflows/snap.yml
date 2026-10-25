@@ -1,0 +1,20 @@
+name: diag-matchsnap
+on: { push: { branches: [diag-matchsnap] } }
+permissions: { contents: write }
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: main, path: repo }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd repo && npm install --no-audit --no-fund --omit=dev
+      - run: node snap.js
+      - run: |
+          mkdir o && mv snap-*.jsonl.gz o/ && cd o
+          git init -q && git checkout -q -b diag-matchsnap-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out
+          git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          git push -qf origin HEAD:diag-matchsnap-out
