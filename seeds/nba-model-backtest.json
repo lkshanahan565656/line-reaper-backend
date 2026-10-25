@@ -1,16 +1,18 @@
 {
-  "asOf": "run 2026-10-25, scripts and outputs in checks/nba-model-2026-10-25",
-  "verdict": "no edge: the model is less accurate than the sportsbook's own price and its confident sides miss the apps' break-even",
+  "asOf": "v2 run 2026-10-25, scripts and outputs in checks/nba-model-v2-2026-10-25 (v1: checks/nba-model-2026-10-25)",
+  "verdict": "no edge: v2 is far better calibrated than v1 and now beats a coin flip, but at lines where the book sits near 50/50 (where the apps hang theirs) its 58%+ sides miss the 55.03% break-even on both held-out slices",
   "lines": [
-    "Held out vs ESPN BET (2025-10-21 to 2025-12-02, 25,390 graded main lines, model fitted on 2024-25 only):",
-    "  Brier model 0.2555, ESPN BET no-vig 0.2474, flat 50% 0.2500",
-    "  model side 58%+: 6,591-5,541 (54.3% of 12,132) vs PrizePicks 55.03% (z -1.56), ROI at ESPN BET's price -5.2%",
-    "  model side 65%+: 2,676-2,033 (56.8% of 4,709), ROI at ESPN BET's price -2.4% (a lead, one of seven cuts)",
+    "Held out F, ESPN BET 2025-03-01 to 2025-06-30 (59,979 graded main lines, fitted only on data before 2025-03-01):",
+    "  Brier v2 0.2485 (v1 0.2587), ESPN BET no-vig 0.2463, flat 50% 0.2500",
+    "  58%+ sides, all lines: v2 60.1% of 6,292 (v1 54.3% of 30,581), but ROI at the book's own price -3.4%: the book already priced those sides",
+    "  58%+ sides where the book is 45-55% (app-like lines): v2 52.9% of 1,914, z -1.90 vs 55.03% (v1 50.9% of 19,652)",
+    "Held out S, ESPN BET 2025-10-21 to 2025-12-02 (25,390 lines, the v1 test):",
+    "  Brier v2 0.2484 (v1 0.2555), book 0.2474; 58%+ all lines 60.7% of 2,546 (v1 54.3% of 12,132), ROI at book -3.4%",
+    "  58%+ where the book is 45-55%: v2 55.5% of 704, z 0.27 (v1 51.7% of 8,278)",
     "The apps, 2026-27 (10-20 to 10-24, lines recorded before the start):",
-    "  PrizePicks 1,059 graded: Brier model 0.2599 vs 50% 0.2500; 58%+ 298-262 (53.2% of 560) vs 55.03%, z -0.86",
-    "  Pick6 469 graded: 58%+ 108-100 (51.9% of 208) vs 56.7%, z -1.39",
-    "  Underdog 58%+ at real multipliers 68-77, -32.2u; Sleeper 87-76, -16.7u",
-    "  where Pinnacle hangs the app's number (76 PrizePicks lines): Brier model 0.2618, Pinnacle 0.2549",
-    "Live record: judged at 50+ graded legs per app, z 2+ over break-even, plus a raw re-check."
+    "  PrizePicks 1,502 graded: Brier v2 0.2492 vs 50% 0.2500 (v1 0.2592); 58%+ 44-31 (58.7% of 75), z 0.63",
+    "  Pick6 683 graded: 58%+ 5-2 of 7; Underdog 58%+ at real multipliers 61-47, -17.4u; Sleeper 62-43, -7.7u",
+    "  where Pinnacle hangs the app's number (157 PrizePicks lines): Brier v2 0.2500, Pinnacle 0.2484",
+    "Live record: judged at 50+ graded legs per app, z 2+ over break-even (Underdog on profit at real multipliers), plus a raw re-check."
   ]
 }

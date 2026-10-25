@@ -40,6 +40,9 @@ test('the NBA MODEL view prices an app line from the seed and never calls it an 
   assert.ok(row, `priced ${key}`);
   assert.equal(row.team, last.team);
   assert.ok(row.apps.prizepicks.pOver > 0.9, 'half a point is a near-certain Over for a regular');
+  assert.equal(d.version, 'v2');
+  assert.match(d.versionNote, /never reset/);
+  assert.ok('underdog' in d.record && 'prizepicks' in d.recordByVersion);
   assert.ok(row.mean > 1);
   // its backtest ships with it, real numbers only
   assert.ok(d.backtest && Array.isArray(d.backtest.lines) && d.backtest.lines.length > 0);

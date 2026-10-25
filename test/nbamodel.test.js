@@ -72,7 +72,7 @@ test('the count distribution: cdf sums to one, Poisson at phi 0, pushes on whole
   // the combo adds its parts' means
   assert.ok(Math.abs(M.expected(proj, 'pra') - 30 * 0.8) < 1e-6);
   // priceLine: a push is a void, so P(over) at a whole number leaves it out
-  const pl = M.priceLine(proj, 'points', 15);
+  const pl = M.priceLine(proj, 'points', 15, { ...M.PARAMS, cal: null });
   assert.ok(Math.abs(pl.pOver - whole.over / (1 - whole.push)) < 1e-4);
   assert.equal(M.priceLine(proj, 'fantasy_score', 30), null);
 });
@@ -100,7 +100,7 @@ test('projections come only from games before the tip, and follow minutes and fo
   const rested = M.project(H, key, { t: games[29].t + 2 * DAY, team: 'BOS', opp: 'NY', home: true, out: [] }, P);
   assert.ok(b2b.b2b && !rested.b2b && b2b.minutes.mean < rested.minutes.mean);
   // a teammate listed Out frees minutes
-  const withOut = M.project(H, key, { t, team: 'BOS', opp: 'NY', home: true, out: ['bosplayer1'] });
+  const withOut = M.project(H, key, { t, team: 'BOS', opp: 'NY', home: true, out: ['bosplayer1'] }, { ...M.PARAMS, freedShare: 0.5 });
   assert.ok(withOut.minutes.mean > p.minutes.mean);
   assert.equal(withOut.outs, 1);
 });
@@ -130,7 +130,9 @@ test('nbadata: the NBA MODEL section and the record legs, from a stubbed ESPN', 
     if (url.endsWith('/injuries')) return { data: { injuries: [{ team: { abbreviation: 'BOS' }, injuries: [{ athlete: { displayName: 'Bos Player4' }, status: 'Out' }] }] } };
     throw new Error(`unexpected ${url}`);
   } };
-  const nm = D.createNbaModel({ http, seed: games, now: () => tip - 3 * 3600e3 });
+  // raw probabilities (no calibration) so the toy season's numbers read plainly
+  const RAW = { ...M.PARAMS, cal: null };
+  const nm = D.createNbaModel({ http, seed: games, now: () => tip - 3 * 3600e3, params: RAW });
   await nm.refresh();
   assert.equal(nm.status().schedule, 1);
   assert.equal(nm.status().teamsWithOuts, 1);
@@ -156,16 +158,24 @@ test('nbadata: the NBA MODEL section and the record legs, from a stubbed ESPN', 
   assert.equal(r.pinnacle.line, 22.5);
   assert.ok(r.pinnacle.model > 0 && r.pinnacle.model < 1);
   // the record logs PrizePicks and Pick6 sides at 58%+, research kinds of their own
-  const legs = nm.plays(rows);
+  const legs = nm.plays(rows).filter(l => l.kind !== 'ud-nba-model');
   assert.deepEqual(legs.map(l => l.kind).sort(), ['nba-model', 'p6-nba-model']);
-  assert.ok(legs.every(l => l.research && l.play.side === 'Over' && l.play.fair >= D.PICK_MIN && l.play.mult === 1));
+  assert.ok(legs.every(l => l.research && l.play.side === 'Over' && l.play.fair >= D.PICK_MIN && l.play.mult === 1 && l.play.modelVersion === D.MODEL_VERSION));
+  // each app's payout for the model's side, and the best one
+  assert.ok(r.apps.prizepicks.breakEven > 0.55 && r.apps.prizepicks.ev > 0);
+  assert.ok(r.bestPay && Number.isFinite(r.bestPay.ev));
+  assert.equal(r.version, D.MODEL_VERSION);
+  // Underdog: logged on value at its real multiplier (a line far under the projection is worth it)
+  const udLegs = nm.plays([{ ...rows[0], books: { underdog: { line: 8.5, over: 1, under: 1 } } }]);
+  assert.deepEqual(udLegs.map(l => l.kind), ['ud-nba-model']);
+  assert.ok(udLegs[0].play.ev >= D.UD_EV_MIN * 100);
   // a Pick6 side at a multiplier other than 1x is another table: not logged
   const boosted = nm.plays([{ ...rows[0], books: { pick6: { line: 8.5, over: 1.5, under: 1 } } }]);
   assert.equal(boosted.length, 0);
   // the close is the model's own P(over)
   assert.ok(nm.fairAt(rows[0], 8.5) > 0.85);
   // a game that already started logs nothing
-  const late = D.createNbaModel({ http, seed: games, now: () => tip + 3600e3 });
+  const late = D.createNbaModel({ http, seed: games, now: () => tip + 3600e3, params: RAW });
   await late.refresh();
   assert.equal(late.plays(rows).length, 0);
 });
@@ -175,4 +185,52 @@ test('the shipped seed and parameters load', () => {
   assert.ok(seed.length > 1000, `seed games ${seed.length}`);
   assert.ok(seed.every(g => g.id && Number.isFinite(g.t) && g.players.length));
   for (const s of M.BASE) assert.ok(M.PARAMS.phi[s] > 0 && M.PARAMS.rateK[s] > 0);
+});
+
+test('v2: positions, injury absences, calibration and the by-position opponent', () => {
+  assert.equal(M.posOf({ position: { abbreviation: 'PG' } }), 'G');
+  assert.equal(M.posOf({ position: { abbreviation: 'SF' } }), 'F');
+  assert.equal(M.posOf({ position: { abbreviation: 'C' } }), 'C');
+  assert.equal(M.posOf({ position: { abbreviation: 'G-F' } }), 'G');
+  assert.equal(M.posOf({}), null);
+  assert.ok(M.isOutReason('LEFT ANKLE SPRAIN'));
+  assert.ok(M.isOutReason('REST'));
+  assert.ok(!M.isOutReason("COACH'S DECISION"));
+  assert.ok(!M.isOutReason('DID NOT DRESS'));
+  assert.ok(!M.isOutReason(''));
+  // a box DNP with an injury reason goes on that game's Out list; a coach's decision doesn't
+  const hurt = { ...ath('Hurt Guy', 'h1', {}, { dnp: true }), reason: 'RIGHT KNEE SORENESS' };
+  const benched = { ...ath('Bench Guy', 'b1', {}, { dnp: true }), reason: "COACH'S DECISION" };
+  const g = M.compactGame(summary('402', T0, 'BOS', 'NY', [...team('Bos'), hurt, benched], team('Nyk')));
+  assert.deepEqual(g.inj.BOS, ['hurtguy']);
+  assert.deepEqual(g.dnp.BOS.sort(), ['benchguy', 'hurtguy']);
+  // calibration: v1 params pass through; a slope under 1 pulls toward 50%
+  assert.equal(M.calibrate(0.7, 'points', { ...M.PARAMS, cal: null }), 0.7);
+  const P = { ...M.PARAMS, cal: { a: 0, b: 0.5, stat: { points: [-0.1, 0.5] } } };
+  const c = M.calibrate(0.7, 'rebounds', P);
+  assert.ok(c > 0.5 && c < 0.7);
+  assert.ok(M.calibrate(0.7, 'points', P) < c);   // the per-stat shift leans Under
+  // past the fitted range the raw slope carries on: a line far off the projection stays far off
+  const G = { ...M.PARAMS, cal: { a: 0, b: 0.1, range: 1.5, stat: {} } };
+  assert.ok(M.calibrate(0.99, 'points', G) > 0.9);
+  assert.ok(M.calibrate(0.6, 'points', G) < 0.52);
+  assert.ok(M.calibrate(0.995, 'points', G) > M.calibrate(0.9, 'points', G));
+  // the by-position opponent factor runs when positions are on file
+  const games = season(30);
+  const H = M.buildHistory(games);
+  const pr = M.project(H, 'bosplayer0', { t: T0 + 61 * DAY, team: 'BOS', opp: 'NY', home: true, out: [] }, { ...M.PARAMS, posWeight: 1 });
+  assert.ok(pr && Number.isFinite(pr.mult.points));
+});
+
+test('v2: each app priced at its real payout, Underdog legs logged on value', () => {
+  // PrizePicks 3-pick Power break-even 55.03%
+  const pp = D.payoutFor('prizepicks', 'Over', 0.6, { line: 20.5 });
+  assert.ok(Math.abs(pp.breakEven - 0.5503) < 0.001);
+  assert.ok(Math.abs(pp.ev - (0.6 / 0.5503 - 1)) < 0.002);
+  // Underdog at a 1.08x Over multiplier pays more than its standard leg
+  const std = D.payoutFor('underdog', 'Over', 0.6, { line: 20.5 });
+  const up = D.payoutFor('underdog', 'Over', 0.6, { line: 20.5, over: 1.08, under: 0.92 });
+  assert.ok(up.decimal > std.decimal && up.ev > std.ev);
+  assert.equal(D.MODEL_VERSION, 'v2');
+  assert.ok(D.VERSION_NOTE.includes('never reset'));
 });
