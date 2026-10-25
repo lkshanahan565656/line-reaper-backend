@@ -859,6 +859,17 @@ const cbbModel = CBB_MODEL_ON ? cbbdata.createCbbModel({ http: axios, log: m => 
 // judged at 50 graded live. MLB_PIN=off turns it off.
 const mlbBoard = require('./mlbboard');
 const MLB_PIN_ON = !/^(off|0|false|no)$/i.test(String(process.env.MLB_PIN || '').trim());
+// INJURY NEWS (injurynews.js): an NBA rotation player goes Out on ESPN's
+// injury list (read every 3 minutes), Pinnacle reprices his teammates' props,
+// and an app still hangs the pre-news number. Pre-registered 2026-10-25
+// (checks/injury-stale-2026-10-25): each such leg goes in the record under its
+// app's kind (injury-stale, p6-injury-stale, ud-injury-stale, sl-injury-stale),
+// research, out of the headline, no alerts. Needs the stale engine (Pinnacle's
+// and the apps' recent numbers) and the NBA model's box scores (teams and
+// minutes). INJURY_NEWS=off turns it off.
+const injuryNews = require('./injurynews');
+const INJURY_NEWS_ON = !/^(off|0|false|no)$/i.test(String(process.env.INJURY_NEWS || '').trim());
+const injuryState = { watch: injuryNews.createInjuryWatch(), at: null, errors: [], legs: [], legsAt: null, flagged: new Map() };
 // MY SLIPS (slips.js, sliplog.js): the legs of users' own slips, followed to the
 // close and graded like the props record, in a record of their own. Legs only:
 // stakes and payouts stay in the user's browser.
@@ -4847,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.180.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.181.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5825,9 +5836,12 @@ const mlbPinFor = row => pinprops.quotesForGame(pinPropsIndex, row) || [];
 // Pinnacle's main line for the stat, a stale leg's the stale engine's
 function sportPinAt(row, kind) {
   if (mlbBoard.KINDS.has(kind)) { const m = mlbBoard.pinMain(mlbPinFor(row)); return m ? { x: m.line, p: m.pOver } : null; }
+  // an injury-news leg keeps Pinnacle's own number from the stale engine, like a stale leg
   return stalePinAt(row);
 }
 function sportFairAt(row, book, line, kind) {
+  // an injury-news leg closes on Pinnacle at the leg's number (its own price there, else the curve through its line)
+  if (injuryNews.KINDS.has(kind)) return staleState.enabled ? staleState.engine.fairAt(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime), line) : null;
   // an MLB leg closes on Pinnacle at its own number (its own price there, else the curve through its line)
   if (mlbBoard.KINDS.has(kind)) return mlbBoard.closeAt(row, line, mlbPinFor(row))?.pOver ?? null;
   kind = baseSportKind(kind);
@@ -7117,6 +7131,8 @@ async function trackSportProps() {
     if (cbbModel) { try { flagged.push(...cbbModel.plays(rows)); } catch (e) { console.warn('CBB model plays:', e.message); } }
     // every MLB leg Pinnacle prices, gap and even, each app its own kind (mlbboard.js)
     if (MLB_PIN_ON) { try { flagged.push(...mlbBoard.plays(rows, { pinFor: mlbPinFor })); } catch (e) { console.warn('MLB board plays:', e.message); } }
+    // NBA teammates' legs left on the pre-news number after a player is ruled out (injurynews.js)
+    try { flagged.push(...injuryPlays(rows)); } catch (e) { injuryState.errors = [`legs ${e.message}`, ...injuryState.errors].slice(0, 5); }
 
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: sportPinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
@@ -7346,6 +7362,107 @@ app.get('/api/props/mlb', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 const r4n = x => (Number.isFinite(x) ? Math.round(x * 1e4) / 1e4 : null);
+
+// ── INJURY NEWS (injurynews.js): teammates' app lines left on the pre-news number ──
+// ESPN's NBA injury list every 3 minutes: a rotation player newly Out (or
+// Doubtful) is news. For each of his teammates' props, Pinnacle's number before
+// the news (the stale engine's history, 15 minutes before it) against its
+// number now, and each app's number before against now: an app still on its
+// old number while Pinnacle's chance there moved 2+ points is a leg. Research:
+// its own record kinds per app, no alerts. The prices are Pro, like the board's fair.
+const injuryBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'injury-stale-backtest.json'), 'utf8')); } catch { return null; } })();
+const injKey = row => staleLines.propKey(row.sport, row.player, row.mkey, row.startTime);
+const injCell = c => (c && Number.isFinite(c.line) ? { line: c.line, over: c.over ?? null, under: c.under ?? null, overOpen: c.overOpen !== false, underOpen: c.underOpen !== false } : null);
+// what legsFor reads: teams and minutes from the NBA model's box scores,
+// Pinnacle's and the apps' numbers before the news from the stale engine and
+// now from the engine (Pinnacle, fresh reads only) and the board (the apps)
+function injuryContext(t = Date.now()) {
+  if (!INJURY_NEWS_ON || !staleState.enabled || !nbaModel) return null;
+  const H = nbaModel.history();
+  return {
+    t,
+    teamOf: (key, at) => injuryNews.rotationOf(H.players, key, at),
+    pinAt: (row, at) => {
+      if (at < t) return staleState.engine.quoteAt(injKey(row), 'pinnacle', at);
+      const m = staleState.engine.pinMain(injKey(row), t);
+      return m ? { line: m.x, pOver: m.p } : null;
+    },
+    appAt: (row, app, at) => (at < t ? staleState.engine.quoteAt(injKey(row), app, at) : injCell(row.books?.[app])),
+  };
+}
+function injuryFind(rows, ctx) {
+  const nba = (rows || []).filter(r => r.sport === 'NBA' && !r.esports);
+  const evs = injuryState.watch.events().filter(e => ctx.t - e.newsAt <= injuryNews.WINDOW_MS);
+  return evs.flatMap(ev => injuryNews.legsFor(ev, nba, ctx));
+}
+// the legs found since the last call, first sighting only (one per app and prop)
+function injuryPlays(rows) {
+  const ctx = injuryContext();
+  if (!ctx) return [];
+  const found = injuryFind(rows, ctx);
+  injuryState.legs = found.length; injuryState.legsAt = new Date(ctx.t).toISOString();
+  const out = [];
+  for (const f of found) {
+    const id = `${f.leg.app}|${f.row.key}`;
+    if (injuryState.flagged.has(id)) continue;
+    injuryState.flagged.set(id, ctx.t);
+    out.push(injuryNews.playOf(f));
+  }
+  for (const [id, at] of injuryState.flagged) if (ctx.t - at > 24 * 3600e3) injuryState.flagged.delete(id);
+  return out;
+}
+async function readInjuries() {
+  if (!INJURY_NEWS_ON || !nbaModel) return;
+  try {
+    const r = await axios.get('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries', { timeout: 20000 });
+    const fresh = injuryState.watch.observe(injuryNews.espnEntries(r?.data), Date.now());
+    injuryState.at = new Date().toISOString();
+    if (fresh.length) console.log(`Injury news: ${fresh.map(e => `${e.team} ${e.name} ${e.from} -> ${e.status}`).join('; ')}`);
+  } catch (e) { injuryState.errors = [`ESPN injuries: ${e.message}`, ...injuryState.errors].slice(0, 5); }
+}
+app.get('/api/props/injury', async (req, res) => {
+  try {
+    const pro = hasPro(req);
+    const t = Date.now();
+    const ctx = injuryContext(t);
+    const events = injuryState.watch.events().slice().reverse().slice(0, 80).map(e => {
+      const r = ctx ? ctx.teamOf(e.key, e.newsAt) : null;
+      return { name: e.name, team: e.team, status: e.status, from: e.from, newsAt: new Date(e.newsAt).toISOString(), mins: Math.round((t - e.newsAt) / 60e3),
+        mpg: r?.mpg ?? null, rotation: !!r?.rotation, open: t - e.newsAt <= injuryNews.WINDOW_MS, comment: e.comment || '' };
+    });
+    const { rows } = propsBoardRows();
+    const found = ctx ? injuryFind(rows, ctx) : [];
+    const hide = l => (pro ? l : { ...l, fair: null, ev: null, pinPre: { line: l.pinPre.line, pOver: null }, pinNow: { line: l.pinNow.line, pOver: null } });
+    const byRow = new Map();
+    for (const f of found) {
+      const k = `${f.row.key}|${f.event.key}`;
+      if (!byRow.has(k)) byRow.set(k, { key: f.row.key, sport: 'NBA', player: f.row.player, team: f.row.team || '', market: f.row.market, mkey: f.row.mkey, startTime: f.row.startTime,
+        matchTitle: f.row.matchTitle || '', books: f.row.books, out: f.event.name, outTeam: f.event.team, newsAt: new Date(f.event.newsAt).toISOString(), mins: f.mins, mateMpg: f.mateMpg, legs: {} });
+      byRow.get(k).legs[f.leg.app] = hide(f.leg);
+    }
+    const out = [...byRow.values()].sort((a, b) => a.mins - b.mins || a.player.localeCompare(b.player));
+    const kinds = (await sportTracker.summary()).byKind || {};
+    const record = Object.fromEntries([...injuryNews.KINDS].map(k => [k, kinds[k] || null]));
+    const logged = [];
+    // the secondary slice (pre-registered before any live leg): legs where Pinnacle's chance at the app's number cleared the break-even when flagged
+    const clears = {};
+    for (const k of injuryNews.KINDS) {
+      const all = await sportTracker.list({ kind: k, limit: 1e6 });
+      const g = all.filter(b => b.signalFair != null && b.signalFair * b.signalDecimal >= 1 && b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss'));
+      const w = g.filter(b => b.outcome === 'win').length;
+      clears[k] = { logged: all.filter(b => b.signalFair != null && b.signalFair * b.signalDecimal >= 1).length, graded: g.length, wins: w, losses: g.length - w, units: +g.reduce((a, b) => a + (b.profit || 0), 0).toFixed(2) };
+      logged.push(...all.slice(0, 40));
+    }
+    logged.sort((a, b) => Date.parse(b.signalAt) - Date.parse(a.signalAt));
+    res.json({ on: INJURY_NEWS_ON && staleState.enabled && !!nbaModel, pro, label: 'research, not a bet', bar: injuryNews.BAR,
+      rule: { minMpg: injuryNews.MIN_MPG, minPts: injuryNews.MIN_PTS, preMin: injuryNews.PRE_MS / 60e3, windowMin: injuryNews.WINDOW_MS / 60e3 },
+      watch: { ...injuryState.watch.status(), readAt: injuryState.at, errors: injuryState.errors.slice(0, 3) },
+      events, rows: out, total: out.length, record, clears, backtest: injuryBacktest,
+      logged: logged.slice(0, 40).map(b => ({ app: b.book, kind: b.kind, player: b.player, market: b.market, side: b.signalSide, line: b.signalLine, signalAt: b.signalAt, start: b.start,
+        out: b.injury?.out || null, mins: b.injury?.mins ?? null, status: b.status, outcome: b.outcome || null, result: b.result ?? null, execOk: b.execOk ?? null,
+        ev: pro ? b.signalEv ?? null : null, closeEv: pro ? b.closeEv ?? null : null })) });
+  } catch (e) { sendErr(res, e); }
+});
 
 // ── SHOP: the softest number across the apps (appshop.js) ──
 // Every player stat two or more apps hang at different numbers: the softest
@@ -8137,7 +8254,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.180.1',
+  version: '3.181.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8195,6 +8312,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   exchanges: { markets: exchangeState.rows.length, updated: exchangeState.updated, errors: exchangeState.errors.slice(0, 5) },
   ev: { rows: evCache.rows.length, computedAt: evCache.at ? new Date(evCache.at).toISOString() : null, feeds: evCache.feeds, alt: evCache.altSummary || null,
     esports: { enabled: esBooksState.enabled, updated: esBooksState.updated, screenedAt: esBooksState.screenedAt, ms: esBooksState.ms, summary: esBooksState.summary, errors: esBooksState.errors.slice(0, 5) },
+    injuryNews: { on: INJURY_NEWS_ON, ...injuryState.watch.status(), readAt: injuryState.at, legs: injuryState.legs, legsAt: injuryState.legsAt, errors: injuryState.errors.slice(0, 3) },
     stale: { enabled: staleState.enabled, screenedAt: staleState.screenedAt, rows: staleState.rows.length, clear: staleState.rows.filter(r => r.clears).length, errors: staleState.errors.slice(0, 5),
       lag: staleState.enabled ? staleState.engine.lagSummary() : null },
     esStale: { enabled: esStaleState.enabled, screenedAt: esStaleState.screenedAt, rows: esStaleState.rows.length, clear: esStaleState.rows.filter(r => r.clears).length, errors: esStaleState.errors.slice(0, 5),
@@ -8268,6 +8386,11 @@ schedule('*/5 * * * *', async () => {
 if (nbaModel) {
   schedule('11,41 * * * *', () => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)));
   setTimeout(() => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)), 120e3).unref?.();
+}
+// injury news: ESPN's NBA injury list every 3 minutes (first read 1 minute after boot is the baseline)
+if (nbaModel && INJURY_NEWS_ON) {
+  schedule('*/3 * * * *', () => readInjuries());
+  setTimeout(() => readInjuries(), 60e3).unref?.();
 }
 // NFL model: nflverse's schedule every 6 hours and ESPN's finals each refresh, every 20 minutes;
 // the record freezes, follows the close and grades every 3 minutes (first read 3 minutes after boot)
