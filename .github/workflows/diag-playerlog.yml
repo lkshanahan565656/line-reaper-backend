@@ -1,0 +1,18 @@
+name: diag-playerlog
+on: { push: { branches: [diag-playerlog] } }
+permissions: { contents: write }
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.event.head_commit.message == 'prod' && 'main' || 'claude/project-thread-yp2z56' }}", path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: ./live.sh
+      - if: always()
+        run: |
+          git config user.name diag; git config user.email diag@users.noreply.github.com
+          git checkout --orphan diag-playerlog-out && git rm -rqf --cached . && git add -f out && git commit -qm "playerlog live $(date -u +%FT%TZ)" && git push -f origin HEAD:diag-playerlog-out
