@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node diag/diag/prod.js > out.json 2> log.txt || true
+      - run: node diag/diag/pm.js > out.json 2> log.txt || true
       - name: publish
         run: |
           mkdir pub && cp out.json log.txt pub/ && cd pub && git init -q && git checkout -q -b diag-lolmu-out
