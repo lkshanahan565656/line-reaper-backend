@@ -127,7 +127,12 @@ function pushReport(stamp) {
 }
 
 (async () => {
-  const { series, meta } = NS.replay(readLogs());
+  // logs recorded before freebooks named FanDuel's NHL "Total Goals" and
+  // "Total Saves" as the apps do (10-25) carry total_goals / total_saves
+  const RENAME = { total_goals: 'goals', total_saves: 'saves', total_assists: 'assists', total_shots_on_goal: 'shots_on_goal' };
+  const fixKey = r => { const parts = String(r.k || '').split('|'), last = parts[parts.length - 1];
+    if (!RENAME[last]) return r; parts[parts.length - 1] = RENAME[last]; return { ...r, k: parts.join('|'), ...(r.m ? { m: { ...r.m, mkey: RENAME[last] } } : {}) }; };
+  const { series, meta } = NS.replay(readLogs().map(fixKey));
   if (ER.isEsBoard(LEAGUES)) { await gradeEsports(series, meta); pushReport(new Date().toISOString()); return; }
   if (pick6Payouts) require('../sportprops').setPick6Payouts(pick6Payouts);
   const legs = NS.buildLegs(series, meta);
