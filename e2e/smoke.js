@@ -69,6 +69,7 @@ async function main() {
       for (const p of r.proven) {
         if (/^proven$/i.test(p.word) && p.badge && provenN) continue;
         if (/^guaranteed$/i.test(p.word) && /#toolOut/.test(p.where)) continue;
+        if (/PROVEN needs \d+ graded/i.test(p.text)) continue;
         const summary = `proven-claim ${r.viewport}: "${p.text}" at ${p.where}`.slice(0, 240);
         if (!seen.has(summary)) { seen.add(summary); result.failures.push({ what: 'proven-claim', summary }); }
       }
