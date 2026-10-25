@@ -12,10 +12,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: diag
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/project-thread-c9tpzl
+          path: app
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node diag/diag/pm.js > out.json 2> log.txt || true
+      - run: cd app && npm ci --no-audit --no-fund
+      - run: cd app && node ../diag/diag/live.js > ../out.json 2> ../log.txt || true
       - name: publish
         run: |
           mkdir pub && cp out.json log.txt pub/ && cd pub && git init -q && git checkout -q -b diag-lolmu-out
