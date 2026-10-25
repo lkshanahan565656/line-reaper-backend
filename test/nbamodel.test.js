@@ -158,8 +158,24 @@ test('nbadata: the NBA MODEL section and the record legs, from a stubbed ESPN', 
   assert.equal(r.pinnacle.line, 22.5);
   assert.ok(r.pinnacle.model > 0 && r.pinnacle.model < 1);
   // the record logs PrizePicks and Pick6 sides at 58%+, research kinds of their own
-  const legs = nm.plays(rows).filter(l => l.kind !== 'ud-nba-model');
+  const all = nm.plays(rows);
+  const legs = all.filter(l => l.kind === 'nba-model' || l.kind === 'p6-nba-model');
   assert.deepEqual(legs.map(l => l.kind).sort(), ['nba-model', 'p6-nba-model']);
+  // the same lines sit far under the projection: far-from-projection legs too (farlines.js), research, side toward the projection
+  const far = all.filter(l => /far-nba$/.test(l.kind));
+  assert.deepEqual(far.map(l => l.kind).sort(), ['far-nba', 'p6-far-nba']);
+  assert.ok(far.every(l => l.research && l.play.side === 'Over' && l.play.farD >= 1 && l.play.modelVersion === D.MODEL_VERSION));
+  // the section saw Pinnacle at 22.5 (toward our projection): the cell is far but marked stale, so the row isn't a far row
+  assert.ok(r.apps.prizepicks.far === true && r.apps.prizepicks.d >= 1 && r.apps.prizepicks.pinAgree === 'toward');
+  assert.equal(r.far, false);
+  assert.ok(nm.section([rows[0]]).every(x => x.far && x.farD >= 1));
+  // with Pinnacle's line sitting toward our projection (22.5 above the app's 8.5, model Over), it's the stale play: no far leg
+  const stale = nm.plays(rows, { pinAt: () => ({ line: 22.5, pOver: 0.5 }) }).filter(l => /far-nba$/.test(l.kind));
+  assert.equal(stale.length, 0);
+  // Pinnacle on the same number: logged, with the agreement kept
+  const same = nm.plays([rows[0]], { pinAt: () => ({ line: 8.5, pOver: 0.5 }) }).filter(l => l.kind === 'far-nba');
+  assert.equal(same.length, 1);
+  assert.equal(same[0].play.pinAgree, 'same');
   assert.ok(legs.every(l => l.research && l.play.side === 'Over' && l.play.fair >= D.PICK_MIN && l.play.mult === 1 && l.play.modelVersion === D.MODEL_VERSION));
   // each app's payout for the model's side, and the best one
   assert.ok(r.apps.prizepicks.breakEven > 0.55 && r.apps.prizepicks.ev > 0);
@@ -167,10 +183,11 @@ test('nbadata: the NBA MODEL section and the record legs, from a stubbed ESPN', 
   assert.equal(r.version, D.MODEL_VERSION);
   // Underdog: logged on value at its real multiplier (a line far under the projection is worth it)
   const udLegs = nm.plays([{ ...rows[0], books: { underdog: { line: 8.5, over: 1, under: 1 } } }]);
-  assert.deepEqual(udLegs.map(l => l.kind), ['ud-nba-model']);
+  assert.deepEqual(udLegs.map(l => l.kind).sort(), ['ud-far-nba', 'ud-nba-model']);
   assert.ok(udLegs[0].play.ev >= D.UD_EV_MIN * 100);
   // a Pick6 side at a multiplier other than 1x is another table: not logged
   const boosted = nm.plays([{ ...rows[0], books: { pick6: { line: 8.5, over: 1.5, under: 1 } } }]);
+  // (neither the model's leg nor the far leg)
   assert.equal(boosted.length, 0);
   // the close is the model's own P(over)
   assert.ok(nm.fairAt(rows[0], 8.5) > 0.85);

@@ -831,6 +831,7 @@ const cfbModel = CFB_MODEL_ON ? cfbdata.createCfbModel({ http: axios, log: m => 
 // record as kinds of their own (nba-model, p6-nba-model), out of the headline,
 // no alerts. NBA_MODEL=off turns it off.
 const nbadata = require('./nbadata');
+const farlines = require('./farlines');
 const NBA_MODEL_ON = !/^(off|0|false|no)$/i.test(String(process.env.NBA_MODEL || '').trim());
 const nbaModel = NBA_MODEL_ON ? nbadata.createNbaModel({ http: axios, log: m => console.warn(m) }) : null;
 // MLB vs PINNACLE (mlbboard.js): every MLB leg on the four apps next to
@@ -4819,7 +4820,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.174.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.175.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5804,6 +5805,9 @@ function sportFairAt(row, book, line, kind) {
   if (kind === 'cfb-model' || kind === 'ud-cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
   // an NBA model leg closes on the model's own number at the start (its CLV is the model against itself: the record is the hit rate)
   if (kind === 'nba-model' || kind === 'ud-nba-model') return nbaModel ? nbaModel.fairAt(row, line) : null;
+  // a far-from-projection leg (farlines.js) closes on its model's own number at the start, like the model's legs
+  if (kind === 'far-nba' || kind === 'ud-far-nba') return nbaModel ? nbaModel.fairAt(row, line) : null;
+  if (kind === 'far-cfb' || kind === 'ud-far-cfb') return cfbModel ? cfbModel.fairAt(row, line) : null;
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
   if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
   // a combo leg closes on the same books and Pinnacle's parts at its own number
@@ -6961,9 +6965,9 @@ async function trackSportProps() {
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
     // the CFB model's confident PrizePicks and Pick6 legs, and Underdog's +5% at its real multiplier: records of their own (kinds cfb-model, p6-cfb-model, ud-cfb-model)
-    if (cfbModel) { try { flagged.push(...cfbModel.plays(rows)); } catch (e) { console.warn('CFB model plays:', e.message); } }
+    if (cfbModel) { try { flagged.push(...cfbModel.plays(rows, { pinAt: cfbPinAt })); } catch (e) { console.warn('CFB model plays:', e.message); } }
     // the NBA model's confident PrizePicks and Pick6 legs: a record of their own (kinds nba-model, p6-nba-model)
-    if (nbaModel) { try { flagged.push(...nbaModel.plays(rows)); } catch (e) { console.warn('NBA model plays:', e.message); } }
+    if (nbaModel) { try { flagged.push(...nbaModel.plays(rows, { pinAt: nbaPinAt })); } catch (e) { console.warn('NBA model plays:', e.message); } }
     // every MLB leg Pinnacle prices, gap and even, each app its own kind (mlbboard.js)
     if (MLB_PIN_ON) { try { flagged.push(...mlbBoard.plays(rows, { pinFor: mlbPinFor })); } catch (e) { console.warn('MLB board plays:', e.message); } }
 
@@ -7003,6 +7007,17 @@ async function trackSportProps() {
 // The NBA MODEL section: every NBA row the model prices, each app's line with
 // the model's P(over), Pinnacle's no-vig P(over) at its own line where it
 // hangs the prop, the model's own record and its backtest (seeds/nba-model-backtest.json)
+// FAR FROM PROJECTION (farlines.js): an app line 1+ of the model's own sds from
+// its projection, its own record per app and the held-out backtest
+// (seeds/far-lines-backtest.json, checks/far-lines-2026-10-25)
+let farBacktest;
+function farSummary(sport, kinds, count) {
+  if (farBacktest === undefined) { try { farBacktest = JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'far-lines-backtest.json'), 'utf8')); } catch { farBacktest = null; } }
+  const k = farlines.KINDS[sport];
+  return { label: 'model, not an edge', minD: farlines.FAR_D, note: farlines.NOTE, bar: farlines.BAR, count,
+    record: { prizepicks: kinds[k.prizepicks] || null, pick6: kinds[k.pick6] || null, underdog: kinds[k.underdog] || null },
+    backtest: farBacktest?.[sport] || null };
+}
 // Pinnacle's prop for a row: the line nearest the apps' own
 function nbaPinAt(row) {
   const qs = pinprops.quotesForGame(pinPropsIndex, row) || [];
@@ -7028,9 +7043,11 @@ app.get('/api/props/nbamodel', async (req, res) => {
   const q = String(req.query.q || '').toLowerCase().trim();
   if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
   if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
+  const farCount = list.filter(r => r.far).length;
+  if (req.query.far === '1') list = list.filter(r => r.far).sort((a, b) => Math.abs(b.farD) - Math.abs(a.farD));
   const sum = await sportTracker.summary();
   const kinds = sum.byKind || {}, byVer = sum.byModelVersion || {};
-  res.json({ on: true, label: 'model, not an edge', status: nbaModel.status(), pickMin: nbadata.PICK_MIN, udEvMin: nbadata.UD_EV_MIN,
+  res.json({ on: true, label: 'model, not an edge', status: nbaModel.status(), far: farSummary('NBA', kinds, farCount), pickMin: nbadata.PICK_MIN, udEvMin: nbadata.UD_EV_MIN,
     version: nbadata.MODEL_VERSION, versionAt: nbadata.VERSION_AT, versionNote: nbadata.VERSION_NOTE,
     bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%; Underdog judged on profit at its real multipliers), and an independent re-check of the results.',
     record: { prizepicks: kinds['nba-model'] || null, pick6: kinds['p6-nba-model'] || null, underdog: kinds['ud-nba-model'] || null },
@@ -7093,10 +7110,12 @@ app.get('/api/props/cfbmodel', async (req, res) => {
     const q = String(req.query.q || '').toLowerCase().trim();
     if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
     if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
+    const farCount = list.filter(r => r.far).length;
+    if (req.query.far === '1') list = list.filter(r => r.far).sort((a, b) => Math.abs(b.farD) - Math.abs(a.farD));
     const sum = await sportTracker.summary();
     const kinds = sum.byKind || {}, byVer = sum.byModelVersion || {};
     const V = cfbdata.MODEL_VERSION;
-    res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), pickMin: cfbdata.PICK_MIN, udEvMin: cfbdata.UD_EV_MIN,
+    res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), far: farSummary('CFB', kinds, farCount), pickMin: cfbdata.PICK_MIN, udEvMin: cfbdata.UD_EV_MIN,
       version: V, versionAt: cfbdata.VERSION_AT, versionNote: cfbdata.VERSION_NOTE,
       bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%; Underdog judged on profit at its real multipliers), and an independent re-check of the results.',
       record: { prizepicks: kinds['cfb-model'] || null, pick6: kinds['p6-cfb-model'] || null, underdog: kinds['ud-cfb-model'] || null },
@@ -7906,7 +7925,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.174.0',
+  version: '3.175.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

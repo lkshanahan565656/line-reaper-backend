@@ -277,7 +277,8 @@ function priceLine(proj, stat, line, o = PARAMS) {
   if (raw == null) return null;
   const pOver = propcal.calibrate(raw, stat, o.cal);
   const side = pOver >= 0.5 ? 'Over' : 'Under';
-  return { pOver: Math.round(pOver * 1e4) / 1e4, side, pSide: Math.round((side === 'Over' ? pOver : 1 - pOver) * 1e4) / 1e4, mean: Math.round(proj.mean[stat] * 10) / 10 };
+  // raw: the model's own P(over) before calibration (farlines.js reads the line's distance from it)
+  return { pOver: Math.round(pOver * 1e4) / 1e4, side, pSide: Math.round((side === 'Over' ? pOver : 1 - pOver) * 1e4) / 1e4, mean: Math.round(proj.mean[stat] * 10) / 10, raw: Math.round(raw * 1e4) / 1e4 };
 }
 const expected = (proj, stat) => proj?.mean?.[stat] ?? null;
 // the line where P(over) crosses 50%
