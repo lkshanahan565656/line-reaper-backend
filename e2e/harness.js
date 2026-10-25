@@ -53,6 +53,20 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
   // the same path with other query strings, for a request the snapshot has no exact match for
   const byPath = {};
   for (const k of Object.keys(responses)) (byPath[k.split('?')[0]] ||= []).push(k);
+  // no exact match: the recorded call to the same path sharing the most query parameters
+  const closest = (k, list) => {
+    if (!list) return null;
+    const want = new URLSearchParams(k.split('?')[1] || '');
+    let best = null, score = -1;
+    for (const c of list) {
+      const have = new URLSearchParams(c.split('?')[1] || '');
+      let s = 0;
+      for (const [a, b] of want) if (have.get(a) === b) s += 2; else if (have.has(a)) s += 1;
+      for (const [a] of have) if (!want.has(a)) s -= 1;
+      if (s > score) { score = s; best = c; }
+    }
+    return responses[best];
+  };
   const misses = new Map();
   const served = new Set();
   const outer = express();
@@ -65,7 +79,7 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
       return;
     }
     const k = keyOf(req.originalUrl);
-    const hit = responses[k] || (byPath[req.path] && responses[byPath[req.path][0]]);
+    const hit = responses[k] || closest(k, byPath[req.path]);
     if (!hit) { misses.set(k, (misses.get(k) || 0) + 1); log(`fixture miss ${k}`); return next(); }
     served.add(k);
     res.status(hit.status || 200).type(hit.type || 'application/json').send(hit.body);

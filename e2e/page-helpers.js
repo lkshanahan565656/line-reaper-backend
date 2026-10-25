@@ -13,7 +13,8 @@ module.exports = function installE2E() {
   function onMut(list) {
     for (var i = 0; i < list.length; i++) {
       var m = list[i];
-      if (m.type === 'attributes' && m.attributeName === 'data-e2e-id') continue;
+      if (m.type === 'attributes' && (m.attributeName === 'data-e2e-id' || m.oldValue === m.target.getAttribute(m.attributeName))) continue;
+      if (m.type === 'characterData' && m.oldValue === m.target.nodeValue) continue;
       var t = m.target.nodeType === 3 ? m.target.parentNode : m.target;
       if (!t) continue;
       if (mode === 'learn') { noisy.add(t); continue; }
@@ -24,7 +25,7 @@ module.exports = function installE2E() {
     }
   }
   function observe() {
-    new MutationObserver(onMut).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+    new MutationObserver(onMut).observe(document, { subtree: true, childList: true, attributes: true, characterData: true, attributeOldValue: true, characterDataOldValue: true });
   }
   observe();
 
@@ -55,25 +56,51 @@ module.exports = function installE2E() {
     return el.tagName.toLowerCase() + (el.type ? '[' + el.type + ']' : '') + '.' + cls + '|' + on.slice(0, 80);
   }
   function label(el) {
+    // a text box is named by what it asks for, never by what has been typed in it
+    if (el.matches('input, textarea, select')) {
+      var lab = el.closest('label');
+      return norm(el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || el.id || (lab ? lab.innerText : '') || el.type).slice(0, 60);
+    }
     var t = norm(el.getAttribute('aria-label') || el.innerText || el.value || el.getAttribute('title') || el.getAttribute('placeholder') || el.name || el.id);
     return t.slice(0, 60);
   }
   // the topmost thing covering the middle of the screen when it is not the
   // page itself: an open modal, menu or drawer
   function overlay() {
-    var all = document.querySelectorAll('body *');
-    var best = null, bestZ = -1;
-    for (var i = 0; i < all.length; i++) {
-      var el = all[i];
-      var cs = getComputedStyle(el);
-      if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
-      var r = el.getBoundingClientRect();
-      if (r.width < innerWidth * 0.5 || r.height < innerHeight * 0.4) continue;
-      if (el.closest('.nav')) continue;
-      var z = Number(cs.zIndex) || 0;
-      if (z >= bestZ) { best = el; bestZ = z; }
+    // what sits on top in the middle of the screen; an open modal, menu or
+    // drawer is a big fixed box there that is not the tab bar
+    var pts = [[0.5, 0.5], [0.5, 0.3], [0.5, 0.7]];
+    for (var i = 0; i < pts.length; i++) {
+      var el = document.elementFromPoint(innerWidth * pts[i][0], innerHeight * pts[i][1]);
+      for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+        var cs = getComputedStyle(e);
+        if (cs.position !== 'fixed') continue;
+        if (e.closest('.nav')) break;
+        var r = e.getBoundingClientRect();
+        if (r.width >= innerWidth * 0.5 && r.height >= innerHeight * 0.4) return e;
+      }
     }
-    return best;
+    return null;
+  }
+  // every selector the page's CSS gives a pointer cursor, read once
+  var pointerSel = null;
+  function pointerSelector() {
+    if (pointerSel) return pointerSel;
+    var sels = ['[style*="cursor:pointer"]', '[style*="cursor: pointer"]'];
+    for (var i = 0; i < document.styleSheets.length; i++) {
+      var rules;
+      try { rules = document.styleSheets[i].cssRules; } catch (e) { continue; }
+      collect(rules, sels);
+    }
+    pointerSel = sels.filter(function (x) { try { document.querySelector(x); return true; } catch (e) { return false; } }).join(',');
+    return pointerSel;
+  }
+  function collect(rules, sels) {
+    for (var j = 0; j < rules.length; j++) {
+      var r = rules[j];
+      if (r.cssRules && !r.selectorText) { collect(r.cssRules, sels); continue; }
+      if (r.style && r.style.cursor === 'pointer' && r.selectorText) r.selectorText.split(',').forEach(function (x) { sels.push(x.replace(/:(hover|focus|active|focus-visible)\b/g, '').trim()); });
+    }
   }
   function roots(pageSel) {
     var o = overlay();
@@ -93,11 +120,10 @@ module.exports = function installE2E() {
     var out = [];
     var seen = new Set();
     R.list.forEach(function (root) {
-      var els = root.querySelectorAll('*');
+      var els = root.querySelectorAll(CLICKABLE + ',' + pointerSelector());
       for (var i = 0; i < els.length; i++) {
         var el = els[i];
         if (seen.has(el)) continue;
-        if (!el.matches(CLICKABLE) && !(getComputedStyle(el).cursor === 'pointer')) continue;
         if (!looksClickable(el) && !el.matches('input, textarea, select')) continue;
         if (!visible(el)) continue;
         if (el.disabled || el.getAttribute('aria-disabled') === 'true') continue;

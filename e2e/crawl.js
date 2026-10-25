@@ -39,18 +39,16 @@ function watch(page, rep, opts) {
   });
   page.on('dialog', d => { w.dialogs++; d.dismiss().catch(() => {}); });
   page.on('popup', p => { w.popups++; p.close().catch(() => {}); });
-  page.on('download', d => { w.downloads++; d.cancel().catch(() => {}); });
+  page.on('filechooser', () => { w.downloads++; });
+  page.on('download', d => { w.downloads++; if (!opts.keepDownloads) d.cancel().catch(() => {}); });
   page.on('pageerror', e => issue(rep, 'page-error', { message: String(e.message || e).slice(0, 300), stack: String(e.stack || '').split('\n').slice(0, 3).join(' | '), tab: w.tab, after: w.last }));
   page.on('console', m => {
     if (m.type() !== 'error') return;
     const t = m.text();
     if ((opts.ignoreConsole || []).some(re => re.test(t))) return;
-    // a failed request already shows up above, with its URL
-    if (/^Failed to load resource/.test(t)) {
-      const u = m.location()?.url || '';
-      if (!u.startsWith(opts.base)) return;
-      if (/the server responded with a status of (4\d\d)/.test(t) && !/\/api\//.test(u)) return;
-    }
+    // the browser's own line for a failed request: 5xx and 404 are reported above with
+    // their URL, and a 4xx the app answers with its own message is not an error in the page
+    if (/^Failed to load resource/.test(t)) return;
     issue(rep, 'console-error', { text: t.slice(0, 300), url: (m.location()?.url || '').slice(opts.base.length), tab: w.tab, after: w.last });
   });
   return w;
@@ -61,7 +59,7 @@ async function settle(page, w, opts, min = 120) {
   let quietSince = null;
   while (Date.now() - t0 < (opts.settleMax || 4000)) {
     if (opts.clock) await page.clock.runFor(100).catch(() => {});
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(opts.clock ? 15 : 40);
     const busy = [...w.pending].filter(r => r.url().startsWith(opts.base) && !/\/stream\b/.test(r.url())).length;
     if (busy) { quietSince = null; continue; }
     if (quietSince == null) quietSince = Date.now();
@@ -109,6 +107,8 @@ async function checkText(page, rep, where) {
 // one click, and whether anything happened
 async function clickOne(page, c, w, opts) {
   const loc = page.locator(`[data-e2e-id="${c.id}"]`);
+  // scroll it into view first, so the scroll the click itself needs is not taken for its effect
+  await loc.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
   const before = await page.evaluate(id => window.__e2e.state(id), c.id);
   const req0 = w.requests, dlg0 = w.dialogs, pop0 = w.popups, dl0 = w.downloads;
   await page.evaluate(() => window.__e2e.arm());
@@ -134,7 +134,7 @@ async function clickOne(page, c, w, opts) {
     if (/not attached|detached|not visible|Element is not|waiting for locator|Timeout/i.test(msg)) return { skipped: 'gone before the click' };
     return { error: msg.split('\n')[0].slice(0, 200) };
   }
-  await settle(page, w, opts, 100);
+  await settle(page, w, opts, opts.clock ? 45 : 150);
   let after = await page.evaluate(id => window.__e2e.state(id), c.id).catch(() => null);
   let ch = await page.evaluate(() => window.__e2e.changed()).catch(() => ({ n: 1 }));
   const did = () => ch.n > 0 || w.requests > req0 || w.dialogs > dlg0 || w.popups > pop0 || w.downloads > dl0
@@ -156,6 +156,8 @@ async function sweepTab(page, name, rep, w, opts) {
   const T = (rep.tabs[name] ||= { clicks: 0, families: {}, dead: 0, opened: null, views: 0 });
   const tried = new Set();
   const famCount = {};
+  const revisited = new Set();
+  const navTried = (opts.navTried ||= new Set());
   const appUrl = page.url();
   const t0 = Date.now();
   let stuck = 0;
@@ -163,12 +165,27 @@ async function sweepTab(page, name, rep, w, opts) {
     const C = await page.evaluate(sel => window.__e2e.cands(sel), `#page-${name}`).catch(() => null);
     if (!C) break;
     const pick = C.list.find(c => {
-      if (c.inNav && !C.overlay) return false; // the tab bar is driven by openTab
+      if (/^showTab\(/.test(c.onclick)) return false; // the tabs themselves are driven by openTab
       const sig = c.family + '|' + c.label.replace(/\d+/g, '#');
       if (tried.has(sig)) return false;
-      if ((famCount[c.family] || 0) >= (opts.perFamily || 4)) return false;
+      if (c.inNav && navTried.has(sig)) return false; // the bar is the same on every tab: once per crawl
+      if ((famCount[c.family] || 0) >= (opts.perFamily || 10)) return false;
       return true;
     });
+    if (!pick && !C.overlay) {
+      // nothing new on this view: go back through a chip or switch already
+      // tried, which may bring back a view whose own controls are not done
+      const back = C.list.find(c => {
+        const sig = c.family + '|' + c.label.replace(/\d+/g, '#');
+        return !c.inNav && c.kind === 'click' && tried.has(sig) && !revisited.has(sig) && /chip|seg|mode|tab|view|btn/i.test(c.family);
+      });
+      if (back && revisited.size < 40) {
+        revisited.add(back.family + '|' + back.label.replace(/\d+/g, '#'));
+        w.last = `${name}: back to ${back.label}`;
+        await clickOne(page, back, w, opts);
+        continue;
+      }
+    }
     if (!pick) {
       if (C.overlay) {
         // done with this modal: close it the way a viewer would, then carry on
@@ -185,6 +202,7 @@ async function sweepTab(page, name, rep, w, opts) {
     }
     const sig = pick.family + '|' + pick.label.replace(/\d+/g, '#');
     tried.add(sig);
+    if (pick.inNav) navTried.add(sig);
     famCount[pick.family] = (famCount[pick.family] || 0) + 1;
     // links: same-site pages are fetched, other sites are only checked for a real href
     if (pick.kind === 'link') {
@@ -226,6 +244,11 @@ async function sweepTab(page, name, rep, w, opts) {
       await openTab(page, name, w, opts);
     }
     await checkText(page, rep, w.last);
+    // a control that switched to another tab (a link into MY BETS, say): come back
+    if (!(await page.evaluate(n => document.getElementById('page-' + n)?.classList.contains('active'), name).catch(() => true))) {
+      T.switched = (T.switched || 0) + 1;
+      await openTab(page, name, w, opts);
+    }
     stuck = 0;
   }
   T.ms = Date.now() - t0;
@@ -278,4 +301,4 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
   return rep;
 }
 
-module.exports = { crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };
+module.exports = { clickOne, sweepTab, crawl, makeReport, watch, settle, openTab, enterApp, newAppPage, checkText, issue, TABS, installE2E };
