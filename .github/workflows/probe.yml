@@ -4,13 +4,13 @@ permissions: { contents: write }
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node prof.js
-        env: { WAIT_VERSION: "3.164.1" }
+        env: { WAIT_VERSION: "3.164.2" }
       - run: |
           mkdir o && cp probe.json o/probe-$(git rev-parse --short HEAD).json && cd o
           git init -q && git checkout -q -b diag-stall2-out && git add . && git -c user.name=diag -c user.email=d@d commit -qm out

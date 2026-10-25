@@ -6,8 +6,8 @@ const get = async (p, ms = 90000) => { const t0 = Date.now(); try { const r = aw
   const out = { profiles: [] };
   const end = Date.now() + 25 * 60e3;
   while (Date.now() < end) { const h = await get('/api/health', 20000); if (h.j?.version === WAIT) { out.health = h.j; break; } await new Promise(r => setTimeout(r, 10000)); }
-  await new Promise(r => setTimeout(r, 120000));
-  for (let i = 0; i < 4; i++) {
+  await new Promise(r => setTimeout(r, 480000));
+  for (let i = 0; i < 5; i++) {
     const p = await get('/api/ops/profile?s=50');
     const o = await get('/api/ops');
     out.profiles.push({ at: new Date().toISOString(), profile: p.j || p, ops: o.j || o });
