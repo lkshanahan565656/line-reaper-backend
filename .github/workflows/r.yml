@@ -1,0 +1,17 @@
+name: diag-outrec
+on:
+  push: { branches: [diag-outrec] }
+permissions: { contents: write }
+concurrency: { group: diag-outrec, cancel-in-progress: true }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node rec.js 2>&1 | tee log.txt | tail -100; mkdir -p out; cp log.txt out/
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "rec $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-outrec-out
