@@ -15,10 +15,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
+          set +e
           N=lolk-${{ matrix.shard }}
           ( PART=lol SINCE=2026-06-01 KFILTER=1 SHARD=${{ matrix.shard }} NSHARD=4 BUDGET_MIN=280 timeout 290m node diag/iphist.js > log-$N.txt 2>&1 ) &
           R=$!
-          push() { rm -rf /tmp/o && mkdir -p /tmp/o/data && cp log-$N.txt /tmp/o/ && cp data/*.json.gz /tmp/o/data/ 2>/dev/null; cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $N" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-iphist2-out-$N; cd -; }
+          push() { rm -rf /tmp/o && mkdir -p /tmp/o/data && cp log-$N.txt /tmp/o/ && cp data/*.json.gz /tmp/o/data/ 2>/dev/null || true; cd /tmp/o && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $N" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-iphist2-out-$N; cd -; }
           sleep 300; push
           while kill -0 $R 2>/dev/null; do sleep 300; push; done
           push
