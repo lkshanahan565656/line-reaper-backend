@@ -141,3 +141,10 @@ test('midAt: the latest mid at or before a time, inside the window', () => {
   assert.equal(I.midAt(h, 50, 1000), null);
   assert.equal(I.midAt(h, 5000, 1000), null);
 });
+
+test('models stay off where the backtest found no edge', () => {
+  assert.equal(I.MODELS.LOL, null);
+  assert.equal(I.MODELS.DOTA, null);
+  assert.equal(I.INPLAY_FITS.LOL.verdict, 'no edge');
+  assert.equal(I.INPLAY_FITS.DOTA.verdict, 'no edge');
+});
