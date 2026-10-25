@@ -1,0 +1,13 @@
+{
+ "asOf": "2026-10-25",
+ "verdict": "No edge. The model's 58%+ side broke even at the sportsbook's held-out 2025 lines and lost at the apps' 2026 lines; it scores worse than FanDuel and Pinnacle where they hang the same number.",
+ "prereg": "checks/cfb-model-2026-10-25/PREREGISTERED.md",
+ "lines": [
+  "Sportsbook main lines, 2025 season (held out; fitted on 2024 box scores): Brier 0.2603 vs 0.25 for a flat 50% (3,111 lines); model side 58%+ 1012-831 (54.9% of 1,843, z -0.10 vs PrizePicks 55.03%)",
+  "PrizePicks 2026 (10-14 to 10-24, recorded before kickoff): Brier 0.2624 vs 0.25 for a flat 50% (970 lines); model side 58%+ 261-259 (50.2% of 520, z -2.22 vs PrizePicks 55.03%)",
+  "Underdog 2026 at real payouts, 58%+ side: 48.3% of 352 vs 58.3% needed, -61.0u",
+  "Sleeper 2026 at real payouts, 58%+ side: 55.6% of 315 vs 64.5% needed, -43.7u",
+  "Same legs where FanDuel hangs the app's number: Brier model 0.2855 vs book 0.2557 (238 legs; lower is better)",
+  "Same legs where Pinnacle hangs the app's number: Brier model 0.2826 vs book 0.2559 (289 legs; lower is better)"
+ ]
+}
