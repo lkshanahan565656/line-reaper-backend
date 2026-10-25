@@ -1,0 +1,10 @@
+events 2756 done 2413
+boxes 2413
+props games 813
+Exception ignored while finalizing file <http.client.HTTPResponse object at 0x7b09543d7ca0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/http/client.py", line 437, in close
+    super().close() # set "closed" flag
+  File "/usr/lib/python3.14/http/client.py", line 450, in flush
+    self.fp.flush()
+ValueError: I/O operation on closed file.
