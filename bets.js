@@ -31,7 +31,7 @@
   const RESULTS = ['open', 'win', 'loss', 'push', 'void', 'half_win', 'half_loss', 'cashout'];
   const RESULT_LABEL = { open: 'Open', win: 'Won', loss: 'Lost', push: 'Push', void: 'Void', half_win: 'Half won', half_loss: 'Half lost', cashout: 'Cashed out' };
   // which of our tools a bet came from; Manual is anything typed in
-  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Exchange value', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV'];
+  const TOOLS = ['Manual', 'Sharp Tail', 'Best Plays', 'Exchange value', 'Esports edge', 'Esports prop', 'Esports slip', 'Sports prop', 'Arb', '+EV', "Pick'em slip"];
   const KIND_TOOL = { tail: 'Sharp Tail', exchangeValue: 'Exchange value', esportsEdge: 'Esports edge', esportsProp: 'Esports prop', sportsProp: 'Sports prop', arb: 'Arb' };
 
   const isSettled = b => b.result !== 'open';
@@ -101,6 +101,31 @@
   // closing line value: your price against the close, 0.05 = beat it by 5%
   const clv = b => (okDec(b.closeOdds) && okDec(b.odds) ? r4(b.odds / b.closeOdds - 1) : null);
   const unitsOf = (b, unitUsd) => { const u = b.unitUsd || unitUsd; return u > 0 ? u : null; };
+
+
+  // A MY SLIPS slip (slips.slipView: legs graded, table, closeEv, result) as a
+  // read-only bet, so one record covers both tabs. Odds are what the slip pays
+  // when every pick hits: the user's own payout, else the app's table. The
+  // close is the slip priced on its legs' closing fairs: closeOdds = odds /
+  // (1 + closeEv), so its CLV is the slip's close EV. A flex slip that missed
+  // a pick stays open until the user marks it in MY SLIPS.
+  const APP_LABEL = { prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', pick6: 'DK Pick6', betr: 'Betr', chalkboard: 'Chalkboard' };
+  function fromSlip(v) {
+    if (!v || !v.id || !Array.isArray(v.legs) || !v.legs.length) return null;
+    const n = v.legs.length;
+    const odds = v.stake > 0 && v.payout > 0 && v.payout > v.stake ? v.payout / v.stake : v.table?.[n];
+    if (!okDec(odds) || !(v.stake > 0)) return null;
+    const sports = [...new Set(v.legs.map(l => l.g?.matched?.sport || l.sport).filter(Boolean))];
+    const result = v.result === 'win' || v.result === 'loss' || v.result === 'push' || v.result === 'void' ? v.result : 'open';
+    return {
+      id: `slip:${v.id}`, placedAt: iso(v.placedAt) || new Date().toISOString(), event: '',
+      pick: `${n}-pick${v.flex ? ' flex' : ''}: ${v.legs.map(l => `${l.player} ${l.side === 'Over' ? 'o' : 'u'}${l.line}`).join(', ')}`,
+      sport: sports.length === 1 ? sports[0] : sports.length ? 'Mixed' : '', book: APP_LABEL[v.app] || String(v.app || ''), tool: "Pick'em slip",
+      odds: r4(odds), cents: false, stake: r2(v.stake), unitUsd: null, result, cashout: null,
+      closeOdds: v.closeEv != null && v.closeEv > -1 ? r4(odds / (1 + v.closeEv)) : null, track: null,
+      settledAt: result === 'open' ? null : iso(v.settledAt) || iso(v.placedAt), settledBy: 'auto', notes: '', fromSlip: true,
+    };
+  }
 
   // ── stats ──
   // Record: half wins count as wins, half losses as losses, pushes and voids
@@ -386,6 +411,6 @@
     return { list: sortNewest([...list, ...add]), added: add.length };
   }
 
-  return { RESULTS, RESULT_LABEL, TOOLS, KIND_TOOL, make, settle, toWin, profit, clv, stats, curve, breakdown, filter,
+  return { fromSlip, RESULTS, RESULT_LABEL, TOOLS, KIND_TOOL, make, settle, toWin, profit, clv, stats, curve, breakdown, filter,
     sortNewest, fromPlay, matchTracked, applyTracked, migrate, toCSV, parseCSV, fromCSV, merge, isSettled };
 }));

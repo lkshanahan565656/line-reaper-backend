@@ -713,8 +713,14 @@ const { priceAll, bestSlips, PAYOUTS } = require('./slip');
 const { createAlerter } = require('./alerts');
 // ALERT_WEBHOOK_URL: ntfy (phone push), Telegram, Slack or Discord, comma-separated for several
 const webhookOnly = require('./webhook').createWebhook({ urls: process.env.ALERT_WEBHOOK_URL });
-// Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on
-const push = require('./push').createPush({ store: require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' }) });
+// Every track record is backed up to the repo's results-data branch and
+// restored on boot, so deploys don't wipe them (backup.js).
+const { createBackup, axiosFetchJson } = require('./backup');
+const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
+// Installed-app push (push.js): every webhook alert also goes to the phones that turned alerts on.
+// The push store rides the encrypted results backup, so a deploy keeps the phones and the key.
+const pushStore = require('./evtrack').createStoreFromEnv(process.env, { table: 'push_subs', fileVar: 'PUSH_FILE', file: 'push-subs.json' });
+const push = require('./push').createPush({ store: process.env.DATABASE_URL ? pushStore : resultsBackup.wrap('push', pushStore, { appendOnly: false }) });
 const webhook = require('./push').withPush(webhookOnly, push);
 const { createAuth, createUserStoreFromEnv, publicUser, isPro } = require('./auth');
 const { createLicences, hideWallets, hiddenWallets, mentions } = require('./licences');
@@ -725,10 +731,6 @@ const bigMoney = require('./bigmoney');
 const altLines = require('./altlines');
 const exchanges = require('./exchanges');
 const { createEvTracker, createStoreFromEnv: createEvStoreFromEnv } = require('./evtrack');
-// Every track record is backed up to the repo's results-data branch and
-// restored on boot, so deploys don't wipe them (backup.js).
-const { createBackup, axiosFetchJson } = require('./backup');
-const resultsBackup = createBackup({ fetchJson: axiosFetchJson(axios) });
 // Every flagged +EV price is logged and graded on closing-line value.
 const evTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('ev', createEvStoreFromEnv()), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel's and BetRivers' ladders and alternate lines (altlines.js), graded
@@ -4518,12 +4520,39 @@ app.get('/api/push/key', async (req, res) => {
   if (!key) return res.status(503).json({ error: 'Push is not available right now' });
   res.json({ key, devices: push.devices() });
 });
+// the alert kinds a device can choose (Settings → Phone app)
+app.get('/api/push/kinds', (req, res) => res.json({ kinds: require('./push').KINDS.map(({ key, label }) => ({ key, label })) }));
 app.post('/api/push/subscribe', (req, res, next) => (hasPro(req) ? next() : requirePro(req, res, next)), async (req, res) => {
-  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent') })); } catch (e) { sendErr(res, e); }
+  try { res.json(await push.subscribe(req.body?.subscription, { ua: req.get('user-agent'), kinds: req.body?.kinds })); } catch (e) { sendErr(res, e); }
 });
 app.post('/api/push/unsubscribe', async (req, res) => {
   try { res.json(await push.unsubscribe(req.body?.endpoint)); } catch (e) { sendErr(res, e); }
 });
+// this device's own state and choices: only the device knows its endpoint
+app.post('/api/push/device', async (req, res) => {
+  try { res.json(await push.device(String(req.body?.endpoint || ''))); } catch (e) { sendErr(res, e); }
+});
+app.post('/api/push/kinds', async (req, res) => {
+  try { res.json(await push.setKinds(String(req.body?.endpoint || ''), req.body?.kinds)); } catch (e) { sendErr(res, e); }
+});
+// "Send me a test": a real push to this one device; the service worker acks once it is on screen
+app.post('/api/push/test', async (req, res) => {
+  try { res.json(await push.test(String(req.body?.endpoint || ''))); } catch (e) { sendErr(res, e); }
+});
+app.post('/api/push/ack', (req, res) => res.json(push.ack(req.body?.nonce)));
+app.get('/api/push/test/:nonce', (req, res) => {
+  const t = push.testStatus(req.params.nonce);
+  if (!t) return res.status(404).json({ error: 'No such test' });
+  res.json(t);
+});
+// What is set up, what isn't, and the last deliveries. No endpoints, no keys.
+app.get('/api/push/selftest', async (req, res) => {
+  try {
+    const persistent = process.env.DATABASE_URL ? true : resultsBackup.status().state !== 'off';
+    res.json({ ...(await push.selfTest({ persistent })), backup: process.env.DATABASE_URL ? 'postgres' : resultsBackup.status().state });
+  } catch (e) { sendErr(res, e); }
+});
+app.get('/api/push/log', (req, res) => res.json({ deliveries: push.log(Math.min(200, parseInt(req.query.n) || 50)) }));
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -4585,7 +4614,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.155.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.159.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6090,6 +6119,50 @@ async function gradeEvResults() {
   } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
   finally { evResultsRunning = false; }
 }
+// ─── EXCHANGE LINES AT REAL SIZE (xsize.js) ───────────────────────────────────
+// Kalshi, Gemini and Polymarket US game lines at the price $50, $200 and
+// $1,000 actually fill at (the book walked, fee in) against Pinnacle's no-vig
+// at the same line, each venue and size its own record, graded on Pinnacle's
+// close and the ESPN final. A record only: no alerts, not in Best Plays.
+// EXCHANGE_SIZE=off stops it.
+const xsize = require('./xsize');
+const xsizeOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_SIZE || '').trim());
+const xsizeTracker = xsize.createSizeTracker({
+  store: resultsBackup.wrap('xsize', createEvStoreFromEnv(process.env, { table: 'xsize_bets', fileVar: 'XSIZE_FILE', file: 'xsize-bets.json' })),
+  // straight to the venues, not the polite queue: there a book read waited
+  // behind the exchange scans' thousands of Kalshi calls, so a minute's pass
+  // took ten (2 passes in the first 10 minutes live, 10-24). At most ~70 reads a minute.
+  http: { get: (url, cfg) => axios.get(url, cfg) },
+});
+xsizeTracker.ready().catch(e => console.error('Exchange size: store failed to initialise:', e.message));
+let xsizeRunning = false;
+async function scanExchangeSize() {
+  if (!xsizeOn() || xsizeRunning || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  xsizeRunning = true;
+  try {
+    const kalshiRows = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS && licences.isOn('kalshi') ? kalshiGameRows.rows : [];
+    await xsizeTracker.scan({ games: freeBooksState.games, pinGames: freeBooksState.pinGames || [], kalshiRows });
+  } catch (e) { xsizeTracker.state.errors = [e.message, ...xsizeTracker.state.errors].slice(0, 5); }
+  finally { xsizeRunning = false; }
+}
+async function gradeExchangeSize() {
+  if (!xsizeOn()) return;
+  try { xsizeTracker.state.results = await xsizeTracker.gradeResults(bigGrader, s => EV_RESULT_LEAGUE[s] || null); }
+  catch (e) { xsizeTracker.state.errors = [e.message, ...xsizeTracker.state.errors].slice(0, 5); }
+}
+// the record, per venue and size; closed bets free, open ones Pro
+app.get('/api/exchange-size', async (req, res) => {
+  try {
+    const lic = licenceOf(req);
+    const ok = b => b.venue !== 'kalshi' || lic.kalshi;
+    const all = (await xsizeTracker.list()).filter(ok);
+    const bets = all.filter(b => hasPro(req) || b.status === 'closed').sort((a, b) => Date.parse(b.flaggedAt) - Date.parse(a.flaggedAt))
+      .slice(0, Math.min(parseInt(req.query.limit) || 200, 2000));
+    res.json({ venues: xsize.VENUES, tiers: require('./depthfill').TIERS, summary: xsize.summarize(all),
+      open: all.filter(b => b.status === 'open').length, state: xsizeTracker.state, bets,
+      note: 'A record, not a tip sheet: no alerts until a venue and size passes at 50 graded (checks/xsize-2026-10-24/PREREGISTERED.md).' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -6111,6 +6184,144 @@ function bigGames() {
   bigState.gamesKey = key;
   return bigState.games;
 }
+// ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
+// Every venue we price on one row per side (oddsscreen.js): Pinnacle's no-vig
+// fair, the US exchanges, FanDuel and BetRivers, Matchbook, Action Network's
+// copies. ?league=nfl&state=TX&q=cowboys. Free: prices; Pro: fair and EV.
+// The line history behind each row's chart rides the results backup.
+const oddsScreen = require('./oddsscreen');
+const oddsHistory = oddsScreen.createHistory();
+let oddsHistoryBooted = false;
+const oddsHistoryStore = resultsBackup.wrap('oddsHistory', {
+  init: async () => {}, all: async () => (oddsHistoryBooted ? oddsHistory.dump() : []),
+  put: async d => { oddsHistory.load([d]); }, putMany: async ds => { oddsHistory.load(ds); },
+}, { appendOnly: false });
+oddsHistoryStore.init().catch(e => console.warn('Odds history: restore failed:', e.message)).finally(() => { oddsHistoryBooted = true; });
+const oddsScreenState = { at: 0, observedAt: null, errors: [] };
+function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } = {}) {
+  const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
+  let kalshi = null;
+  try { kalshi = kalshiOk ? bigGames().bets : null; } catch (e) { oddsScreenState.errors = [e.message]; }
+  const screen = oddsScreen.build(freeBooksState.games || {}, { kalshi, league, state, q });
+  return { ...screen, updated: freeBooksState.gamesAt || null, stale: !fresh };
+}
+function observeOddsHistory() {
+  if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
+  try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
+  catch (e) { oddsScreenState.errors = [e.message]; }
+}
+app.get('/api/odds-screen', (req, res) => {
+  const pro = hasPro(req), lic = licenceOf(req);
+  const league = /^[a-z0-9]+$/.test(String(req.query.league || '')) ? String(req.query.league) : null;
+  const state = venues.stateOf(req.query.state);
+  const screen = oddsScreenFor({ league, state, q: String(req.query.q || '').slice(0, 60), kalshiOk: !!lic.kalshi });
+  const body = { ...(pro ? screen : oddsScreen.stripPro(screen)), pro, state, stateInfo: state ? venues.stateInfo(state) : null };
+  res.json(regionSafe(body));
+});
+// one game's line history: every side's fair and venue prices over time
+app.get('/api/odds-screen/history/:id', (req, res) => {
+  const id = String(req.params.id || '').slice(0, 80);
+  const lic = licenceOf(req), pro = hasPro(req);
+  const series = oddsHistory.forGame(id).map(x => ({ ...x, pts: x.pts.map(([t, point, fair, px]) => [t, point, pro ? fair : null,
+    lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+  res.json({ id, series, pro });
+});
+// ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
+// Every venue's price for the same bet on one row (shopper.js), built from
+// what the reads above left in memory: no extra requests. Quotes are rebuilt
+// only when a feed has a newer read. Kalshi needs its data licence.
+const oddsSchema = require('./oddsschema');
+const oddsProviders = require('./oddsproviders');
+const shopper = require('./shopper');
+const oddsEngine = require('./oddsengine');
+const shopState = { key: null, free: { quotes: [], stats: {} }, kalshi: { quotes: [], stats: {} }, builtAt: null, ms: null };
+const iso = t => (t ? new Date(t).toISOString() : null);
+function shopReadAt() {
+  const at = freeBooksState.gamesAt || null;
+  const xb = xbooksState.at ? iso(xbooksState.at) : at;
+  return { default: at, pinnacle: at, fanduel: at, betrivers: at, matchbook: xb, draftkings: xb, betmgm: xb, caesars: xb, bet365: xb, fanatics: xb, hardrock: xb, thescore: xb,
+    gemini: geminiState.at ? iso(geminiState.at) : at, polymarketus: pmusBooksState.at ? iso(pmusBooksState.at) : at, kalshi: xarbState.rows?.at ? iso(xarbState.rows.at) : null };
+}
+const shopKey = () => `${Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? freeBooksState.gamesAt : ''}|${xarbState.rows?.at || 0}`;
+// After each free-books read (the 40-second chain): the quotes are rebuilt one
+// league at a time with a yield between, so no request waits on a long block.
+async function prebuildShopQuotes() {
+  const key = shopKey();
+  if (shopState.key === key || !freeBooksState.gamesAt) return;
+  const t0 = Date.now();
+  const readAt = shopReadAt();
+  const fresh = !key.startsWith('|');
+  const out = { quotes: [], stats: {} };
+  try {
+    for (const [lg, games] of fresh ? Object.entries(freeBooksState.games || {}) : []) {
+      const r = oddsProviders.fromFreeGames({ [lg]: games }, { readAt });
+      for (const q of r.quotes) out.quotes.push(q);
+      for (const [k, v] of Object.entries(r.stats)) { const a = out.stats[k] || (out.stats[k] = { events: 0, quotes: 0 }); a.events += v.events; a.quotes += v.quotes; }
+      await new Promise(r2 => setImmediate(r2));
+    }
+  } catch (e) { console.warn('Shopper free books:', e.message); out.error = e.message; }
+  let kal = { quotes: [], stats: {} };
+  try { if (fresh && xarbState.rows?.at) kal = oddsProviders.fromKalshiBets(bigGames().bets, { readAt: readAt.kalshi }); }
+  catch (e) { console.warn('Shopper Kalshi:', e.message); kal = { quotes: [], stats: {}, error: e.message }; }
+  Object.assign(shopState, { key, free: out, kalshi: kal, builtAt: new Date().toISOString(), ms: Date.now() - t0, views: new Map() });
+}
+function shopQuotes() {
+  const key = shopKey();
+  const fresh = !key.startsWith('|');
+  if (shopState.key !== key && !(shopState.key && Date.now() - Date.parse(shopState.builtAt || 0) < 90e3)) {
+    const t0 = Date.now();
+    const readAt = shopReadAt();
+    try { shopState.free = fresh ? oddsProviders.fromFreeGames(freeBooksState.games, { readAt }) : { quotes: [], stats: {} }; }
+    catch (e) { console.warn('Shopper free books:', e.message); shopState.free = { quotes: [], stats: {}, error: e.message }; }
+    try { shopState.kalshi = fresh && xarbState.rows?.at ? oddsProviders.fromKalshiBets(bigGames().bets, { readAt: readAt.kalshi }) : { quotes: [], stats: {} }; }
+    catch (e) { console.warn('Shopper Kalshi:', e.message); shopState.kalshi = { quotes: [], stats: {}, error: e.message }; }
+    Object.assign(shopState, { key, builtAt: new Date().toISOString(), ms: Date.now() - t0, views: new Map() });
+  }
+  return shopState;
+}
+function shopHealth() {
+  const st = shopQuotes();
+  const errors = [...(freeBooksState.errors || []), ...(xbooksState.errors || []).map(e => (/^(action|matchbook)/i.test(e) ? e : `action ${e}`)),
+    ...(geminiState.errors || []).map(e => `gemini ${e}`), ...(pmusBooksState.errors || []).map(e => `polymarketus ${e}`), ...(st.free.error ? [`pinnacle ${st.free.error}`] : []),
+    ...((xarbState.errors || []).filter(e => /kalshi/i.test(String(e))).map(e => `kalshi ${e}`)), ...(st.kalshi.error ? [`kalshi ${st.kalshi.error}`] : [])];
+  const enabled = { pinnacle: freeBooksState.enabled, fanduel: freeBooksState.enabled, betrivers: freeBooksState.enabled, gemini: geminiState.enabled, polymarketus: pmusBooksState.enabled,
+    matchbook: xbooksState.enabled && xbooksState.matchbook, kalshi: true,
+    ...Object.fromEntries(['draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'].map(k => [k, xbooksState.enabled && xbooksState.action])) };
+  return oddsProviders.health({ stats: { ...st.free.stats, ...st.kalshi.stats }, errors, readAt: shopReadAt(), enabled });
+}
+const shopList = v => (v ? String(v).toLowerCase().split(',').map(x => x.trim()).filter(Boolean) : null);
+const shopNum = v => (v == null || v === '' ? null : Number.isFinite(parseFloat(v)) ? parseFloat(v) : null);
+// GET /api/shopper?sport=&league=&q=&markets=moneyline,spread,total,player_prop
+// &providers=&exclude=&state=TX&hours=48&minEv=1 (percent)&minEdge= (points)
+// &minLiquidity=&maxAge= (seconds)&priced=1&arbs=1&sort=ev|start|hold|gap|venues
+// &stake=100&method=power|multiplicative|additive|shin&limit=200
+app.get('/api/shopper', (req, res) => {
+  const q = req.query;
+  const st = shopQuotes();
+  const lic = licenceOf(req);
+  const pro = hasPro(req);
+  // the same question within 30 s of the same read is answered from memory
+  const vkey = `${lic.kalshi ? 1 : 0}|${pro ? 1 : 0}|${Object.keys(q).sort().map(k => `${k}=${q[k]}`).join('&')}`;
+  const hit = st.views?.get(vkey);
+  if (hit && Date.now() - hit.at < 30e3) return res.type('json').send(hit.body);
+  const quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+  const hours = shopNum(q.hours);
+  const minEv = shopNum(q.minEv);
+  const view = shopper.build(quotes, {
+    sport: q.sport || null, league: q.league || null, q: q.q || '', marketTypes: shopList(q.markets), providers: shopList(q.providers), exclude: shopList(q.exclude),
+    state: q.state || null, toMs: hours != null && hours > 0 ? Date.now() + Math.min(hours, 24 * 14) * 3600e3 : undefined,
+    minEv: minEv == null ? undefined : minEv / 100, minEdgePts: shopNum(q.minEdge) ?? undefined, minLiquidity: shopNum(q.minLiquidity) ?? undefined,
+    maxAgeSec: shopNum(q.maxAge) ?? undefined, pricedOnly: q.priced === '1', arbsOnly: q.arbs === '1', sort: q.sort || 'ev', stake: shopNum(q.stake) || 100,
+    method: q.method, limit: parseInt(q.limit) || 200, proven: evBookProven,
+  });
+  const body = JSON.stringify({ ...(pro ? view : shopper.stripPro(view)), pro, builtAt: st.builtAt, buildMs: st.ms, providers: shopHealth(), formats: oddsSchema.FORMATS,
+    devigMethods: oddsEngine.DEVIG_METHODS, stateInfo: venues.stateInfo(q.state),
+    note: 'Prices are what each feed showed at its last read. Nothing here is a proven edge unless its label says proven; check the price in the app before you bet.' });
+  if (st.views) { if (st.views.size > 40) st.views.clear(); st.views.set(vkey, { at: Date.now(), body }); }
+  res.type('json').send(body);
+});
+// provider health on its own (status, last read, errors, fee handling)
+app.get('/api/providers', (req, res) => res.json({ providers: shopHealth(), builtAt: shopQuotes().builtAt }));
 // ─── BOOK ARBS AND MIDDLES ────────────────────────────────────────────────────
 // FanDuel's and BetRivers' main and alternate lines and player props against
 // each other and against Kalshi and Polymarket US (bookarbs.js). Each exchange
@@ -6956,16 +7167,18 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.155.0',
+  version: '3.159.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
+  exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
   kalshiExtra: kxExtraState,
   bigMoney: { updated: bigState.updated, counts: bigState.counts, errors: bigState.errors },
+  oddsScreen: { series: oddsHistory.size(), points: oddsHistory.points(), observedAt: oddsScreenState.observedAt, errors: oddsScreenState.errors },
   bookArbs: { updated: bookArbState.updated, dataAt: bookArbState.dataAt, reads: bookArbState.reads, counts: bookArbState.counts },
   pinnacleProps: pinPropsState,
   freeBooks: { enabled: freeBooksState.enabled, counts: freeBooksState.counts, errors: freeBooksState.errors, updated: freeBooksState.updated, gamesAt: freeBooksState.gamesAt || null, ms: freeBooksState.ms },
@@ -7076,8 +7289,9 @@ schedule('*/5 * * * *', async () => {
 // Sports props record: grade locked legs off ESPN box scores
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
+schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().catch(() => {}));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message))));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
