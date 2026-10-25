@@ -95,9 +95,13 @@ function createPropCloseBook({ store, now = () => Date.now(), keepDays = KEEP_DA
       if (!pin.length && !kal.length) continue;
       const k = keyOf(r.sport, r.player, r.mkey, r.startTime);
       if (!live.has(k)) added++;
-      const apps = {};
-      for (const [b, c] of Object.entries(r.books || {})) if (c?.line != null) apps[b] = c.line;
-      live.set(k, { sport: r.sport, player: r.player, team: r.team || '', matchTitle: r.matchTitle || '', market: r.market, mkey: r.mkey, start: r.startTime, pin, kal, apps, seenAt: new Date(t).toISOString() });
+      const apps = {}, cells = {};
+      for (const [b, c] of Object.entries(r.books || {})) if (c?.line != null) {
+        apps[b] = c.line;
+        // the app's whole cell, for its break-even (the app scorecard, appscore.js): [line, over mult, under mult, over open, under open]
+        cells[b] = [c.line, c.over ?? null, c.under ?? null, c.overOpen === false ? 0 : 1, c.underOpen === false ? 0 : 1];
+      }
+      live.set(k, { sport: r.sport, player: r.player, team: r.team || '', matchTitle: r.matchTitle || '', market: r.market, mkey: r.mkey, start: r.startTime, pin, kal, apps, cells, seenAt: new Date(t).toISOString() });
     }
     // started: freeze the last numbers on the game's day
     for (const [k, e] of live) {
@@ -170,12 +174,23 @@ function createPropCloseBook({ store, now = () => Date.now(), keepDays = KEEP_DA
     return Number.isFinite(t) ? days.get(dayOf(t))?.props[keyOf(sport, player, mkey, start)] || null : null;
   };
 
+  // every closed prop from `sinceMs` on (optionally one set of sports) → [[key, entry]]
+  function entries({ sports = null, sinceMs = 0 } = {}) {
+    const out = [];
+    const from = sinceMs ? dayOf(sinceMs) : '';
+    for (const [day, d] of days) {
+      if (day < from) continue;
+      for (const [k, e] of Object.entries(d.props)) if (!sports || sports.includes(e.sport)) out.push([k, e]);
+    }
+    return out;
+  }
+
   function status() {
     const counts = {};
     for (const [day, d] of days) { const n = Object.keys(d.props).length; if (n) counts[day] = n; }
     return { live: live.size, days: counts, keepDays };
   }
-  return { observe, find, findLive, get, save, status, ready: () => loaded };
+  return { observe, find, findLive, get, entries, save, status, ready: () => loaded };
 }
 
 module.exports = { createPropCloseBook, fairAt, sourceAt, dayOf, keyOf, CLOSE_FRESH_MS, KEEP_DAYS };

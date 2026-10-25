@@ -875,6 +875,17 @@ slipLegTracker.ready().catch(e => console.error('Slip log: store failed to initi
 const propCloseBook = require('./propclose').createPropCloseBook({
   store: resultsBackup.wrap('propCloses', createEvStoreFromEnv(process.env, { table: 'prop_closes', fileVar: 'PROP_CLOSES_FILE', file: 'prop-closes.json' }), { appendOnly: false }),
 });
+// APP SCORECARD (appscore.js): every app's closing number against Pinnacle's
+// close on the props in the close book, each prop settled once from the box
+// score for every app's leg on it (own store). Research: alerts off.
+const appScore = require('./appscore');
+// APP_CARD=off stops grading the scorecard's props; APP_CARD_SPORTS the leagues graded
+const APP_CARD_ON = String(process.env.APP_CARD || 'on').toLowerCase() !== 'off';
+const APP_CARD_SPORTS = String(process.env.APP_CARD_SPORTS || 'NFL,NBA,CFB').toUpperCase().split(/[\s,]+/).filter(Boolean);
+const appScoreResults = appScore.createResults({
+  store: resultsBackup.wrap('appCard', createEvStoreFromEnv(process.env, { table: 'app_card', fileVar: 'APP_CARD_FILE', file: 'app-card.json' })),
+  grader: sportGrader,
+});
 // MY SLIPS legs that reached us after the start, graded from the same box
 // scores (slipgrade.js); finished results kept for everyone who logs that leg
 const slipLate = require('./slipgrade');
@@ -4836,7 +4847,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.179.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.180.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7112,6 +7123,8 @@ async function trackSportProps() {
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
     // every prop's last Pinnacle and Kalshi number, frozen at the start (propclose.js)
     await propCloseBook.observe(rows, row => ({ pin: sharpQuotes(row).filter(q => q.book === 'pinnacle'), kal: rowKalshi(row) })).catch(e => console.warn('Prop close book:', e.message));
+    // the app scorecard: settle the closed props from the box scores (one result per prop, budgeted)
+    if (APP_CARD_ON) await appScoreResults.run(propCloseBook.entries({ sports: APP_CARD_SPORTS, sinceMs: Date.now() - 4 * 86400e3 }), { budget: 150 }).catch(e => console.warn('App scorecard:', e.message));
     // the softest number across the apps (appshop.js): kinds shop-any, shop-pp,
     // shop-p6 and shop-mid in a record of their own (own store, own grading
     // budget), never plays or alerts
@@ -7395,6 +7408,37 @@ app.get('/api/props/shop/record', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── APP SCORECARD: each pick'em app's closing number vs Pinnacle's close (appscore.js) ──
+// Per app, and per app and stat: how often the app sits at Pinnacle's
+// closing number, how far off it is (stat units and points of win chance),
+// the side to take at the app's payout and how often it clears break-even,
+// graded on the box score. Research until a cell's clears reach 50 graded
+// with z 2+ (checks/app-scorecard-2026-10-25/PREREGISTERED.md). Free: it
+// shows closed props only.
+const appCardCache = new Map();
+app.get('/api/props/shop/scorecard', async (req, res) => {
+  try {
+    const sport = String(req.query.sport || 'NFL').toUpperCase();
+    const days = Math.min(14, Math.max(1, parseInt(req.query.days) || 14));
+    const ck = `${sport}|${days}`;
+    const hit = appCardCache.get(ck);
+    if (hit && Date.now() - hit.at < 60e3) return res.json(hit.body);
+    await propCloseBook.ready();
+    await appScoreResults.ready();
+    const sports = sport === 'ALL' ? null : [sport];
+    const entries = propCloseBook.entries({ sports, sinceMs: Date.now() - days * 86400e3 });
+    const legs = appScore.legsFromBook(entries, appScoreResults.map());
+    const card = appScore.scorecard(legs, { minCell: 5 });
+    const games = new Set(entries.map(([, e]) => `${e.matchTitle}|${e.start}`)).size;
+    const body = { ...card, sport, days, props: entries.length, games, grading: { on: APP_CARD_ON, sports: APP_CARD_SPORTS, ...appScoreResults.status() },
+      since: entries.reduce((m, [, e]) => (!m || e.start < m ? e.start : m), null), updated: new Date().toISOString(),
+      preregistered: 'checks/app-scorecard-2026-10-25/PREREGISTERED.md',
+      note: 'Research, not a play. Every app number here is its last read before the start, against Pinnacle\'s own last number. A cell counts only when its clears reach 50 graded with the hit rate z 2+ past break-even and units above zero, then a raw re-check.' };
+    appCardCache.set(ck, { at: Date.now(), body });
+    res.json(body);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── PROMOS: the apps' discounted and boosted legs vs the sharp price (promos.js) ──
 // PrizePicks goblins, demons and promos, Underdog discounted lines, alternates
 // and boosted sides, Sleeper's non-normal lines, Pick6's Gimme Pick, Stat
@@ -7595,7 +7639,7 @@ async function gradeSlipCloses(legs, results) {
 app.get('/api/slips/record', async (req, res) => {
   res.json({ ...(await slipLegTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), esports: await esSlipTracker.summary(),
     // the prop close book's days and the late legs graded from box scores
-    closeBook: propCloseBook.status(), late: lateSlipGrader.status() });
+    closeBook: propCloseBook.status(), late: lateSlipGrader.status(), appCard: appScoreResults.status() });
 });
 
 // The sports props record: free to see, like every other record. Open legs
@@ -8093,7 +8137,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.179.0',
+  version: '3.180.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

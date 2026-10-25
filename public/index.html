@@ -588,6 +588,22 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .cfm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
 .cfm-p.lean { color:#fbbf24; }
 #page-props.shop .pb-conly, #page-props.shop .pb-lonly, #page-props.shop #pbBooks, #page-props:not(.shop) .pb-sonly { display: none; }
+/* APP SCORECARD (asc- prefix): each app's closing number vs Pinnacle's close */
+#page-props.card #pbSports, #page-props.card #apsSortWrap { display: none; }
+.asc-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 10px; }
+.asc-bar .sport-chip.on { border-color:#fbbf24; color:#fbbf24; }
+.asc-wrap { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow-x:auto; margin:0 0 12px; }
+.asc-t { width:100%; border-collapse:collapse; font-size:11.5px; min-width:760px; }
+.asc-t th { font-size:9.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#64748b; text-align:right; padding:8px 8px; border-bottom:1px solid var(--border); white-space:nowrap; cursor:default; }
+.asc-t th:first-child, .asc-t td:first-child { text-align:left; }
+.asc-t th.srt { cursor:pointer; } .asc-t th.on { color:#fbbf24; }
+.asc-t td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,.04); text-align:right; font-family:'JetBrains Mono',monospace; color:#cbd5e1; white-space:nowrap; }
+.asc-t td:first-child { font-family:inherit; color:#e8e8e8; }
+.asc-t td .dim { color:#64748b; font-size:10px; }
+.asc-t tr:last-child td { border-bottom:0; }
+.asc-t .pos { color:#34d399; } .asc-t .neg { color:#f87171; }
+.asc-h { font-size:10px; font-weight:800; letter-spacing:.1em; color:#94a3b8; margin:4px 0 6px; }
+.asc-key { font-size:10.5px; color:#64748b; line-height:1.6; margin:0 0 14px; }
 .aps-note { font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.5; } .aps-note b { color: #fbbf24; }
 .aps-list { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .aps-head, .aps-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 2.6fr) 58px; gap: 10px; align-items: start; padding: 10px 12px; }
@@ -1773,8 +1789,8 @@ body.no-help .clv-info { display:none; }
     <label class="es-field pb-lonly" style="flex:1 1 160px;max-width:240px"><span>Prop</span><select id="pbMarket" onchange="pbSet('market',this.value)"><option value="">Every prop</option></select></label>
     <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="pbSort" onchange="pbSet('sort',this.value)"><option value="ev">Best EV</option><option value="gap">Biggest line gap</option><option value="books">Most books</option><option value="start">Starting soonest</option><option value="player">Player A to Z</option></select></label>
     <label class="es-field pb-conly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="pbShow" onchange="pbSet('show',this.value)"><option value="all">Every line</option><option value="multi">On 2+ books</option><option value="priced">Priced only</option><option value="sharp">Sharp consensus plays</option><option value="gaps">Line gaps</option></select></label>
-    <label class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="apsSort" onchange="pbState.shopSort=this.value;loadPropsBoard()"><option value="gap">Biggest line gap</option><option value="ev">Best EV (Pro)</option><option value="middle">Best middle (Pro)</option><option value="start">Starting soonest</option></select></label>
-    <label class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="apsShow" onchange="pbState.shopShow=this.value;loadPropsBoard()"><option value="all">Every gap of a full line or more</option><option value="middles">Middles worth more than zero (Pro)</option></select></label>
+    <label id="apsSortWrap" class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Sort by</span><select id="apsSort" onchange="pbState.shopSort=this.value;loadPropsBoard()"><option value="gap">Biggest line gap</option><option value="ev">Best EV (Pro)</option><option value="middle">Best middle (Pro)</option><option value="start">Starting soonest</option></select></label>
+    <label class="es-field pb-sonly" style="flex:1 1 160px;max-width:240px"><span>Show</span><select id="apsShow" onchange="pbState.shopShow=this.value;loadPropsBoard()"><option value="all">Every gap of a full line or more</option><option value="middles">Middles worth more than zero (Pro)</option><option value="scorecard">App scorecard vs Pinnacle's close</option></select></label>
     <input class="key-input" id="pbSearch" placeholder="Search player, team or stat" oninput="pbSearchInput(this.value)" style="flex:2 1 200px;min-width:0"/>
   </div>
   <div id="pbRecord"></div>
@@ -4262,7 +4278,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', anchor: '', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cbmStat: '', cbm: null, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, nbmFar: false, cbmStat: '', cbm: null, cfmStat: '', cfm: null, cfmFar: false, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', cardSport: 'NFL', cardSort: 'edge', card: null, shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4282,6 +4298,7 @@ async function loadPropsBoard() {
   const lines = pbState.view === 'lines';
   document.getElementById('page-props')?.classList.toggle('lines', lines);
   document.getElementById('page-props')?.classList.toggle('shop', pbState.view === 'shop');
+  document.getElementById('page-props')?.classList.toggle('card', pbState.view === 'shop' && pbState.shopShow === 'scorecard');
   if (pbState.view === 'shop') return loadShop(seq);
   document.getElementById('page-props')?.classList.toggle('model', pbState.view === 'model' || pbState.view === 'cbbmodel');
   if (pbState.view === 'model' || pbState.view === 'cbbmodel') return loadNbaModel(seq);
@@ -4737,6 +4754,7 @@ function renderLines() {
 let pkWantSide = null;
 function pkAddShop(rk, book, side) { pkWantSide = side; try { const i = pk.legs.findIndex(l => l.rk === rk); if (pk.app === book && i >= 0 && pk.legs[i].side !== side) { pk.legs[i].side = side; pk.payout = ''; pkSave(); renderPkTray(); renderPropsBoard(); return; } pkAdd(rk, book); } finally { pkWantSide = null; } }
 async function loadShop(seq) {
+  if (pbState.shopShow === 'scorecard') return loadScorecard(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: pbState.shopSort, limit: pbState.limit });
   if (pbState.q) qs.set('q', pbState.q);
   if (pbState.shopShow === 'middles') qs.set('middles', '1');
@@ -4766,7 +4784,50 @@ function renderShopRecord() {
   el.innerHTML = `<div class="pb-recwrap"><div class="pb-rechead"><b>SHOP RECORD</b><span>Every softest-number leg and every middle worth more than zero, logged an hour or more before the start, followed to the close, graded off the box score. Alerts are off. A slice counts only at 50 graded live, z 2 or more above break-even, then a raw re-check.</span></div>
     <div class="pb-dim" style="margin:-4px 0 12px;line-height:1.6">${one(s.P1)}<br>${one(s.P2)}<br>${one(s.P3)}<br>${escAttr(m.label || 'Middles')}: ${m.n ? `${m.both} of ${m.n} hit both legs, ${m.units > 0 ? '+' : ''}${m.units}u` : 'not graded yet'}${m.open ? ` · ${m.open} open` : ''}<br><span style="color:#64748b">Backtest on the recorded boards (10-15 full board, 10-24 weekend): softest number at PrizePicks 310-279, 52.6% vs 55.0%; at any app 52.1% vs 58.1% on 1,410. Not a play.</span></div></div>`;
 }
+// ── APP SCORECARD (/api/props/shop/scorecard, appscore.js) ──
+// Each app's last number before the start against Pinnacle's own close, per
+// app and per app and stat, graded on the box score. Research, alerts off.
+const ASC_STAT = { pass_yds: 'Pass yds', pass_tds: 'Pass TDs', pass_att: 'Pass att', pass_comp: 'Completions', pass_ints: 'INTs thrown', rush_yds: 'Rush yds', rush_att: 'Rush att', rec_yds: 'Rec yds', receptions: 'Receptions', anytime_td: 'Anytime TD', rush_rec_yds: 'Rush+rec yds', pass_rush_yds: 'Pass+rush yds', longest_rec: 'Longest rec', longest_rush: 'Longest rush', points: 'Points', rebounds: 'Rebounds', assists: 'Assists', threes: '3PM', pra: 'PRA', pts_rebs: 'Pts+reb', pts_asts: 'Pts+ast', rebs_asts: 'Reb+ast' };
+async function loadScorecard(seq) {
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/shop/scorecard?sport=${encodeURIComponent(pbState.cardSport)}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.card = d;
+    renderPropsBoard();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SCORECARD</div><div class="empty-sub">Couldn't load the app scorecard (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+function ascSet(k, v) { pbState[k] = v; if (k === 'cardSport') { pbState.card = null; loadPropsBoard(); } else renderPropsBoard(); }
+function renderScorecard() {
+  renderShopRecord();
+  const el = document.getElementById('pbContent'), d = pbState.card;
+  for (const [id, v] of [['apsShow', pbState.shopShow]]) { const x = document.getElementById(id); if (x) x.value = v; }
+  if (!el) return;
+  const chips = ['NFL', 'NBA', 'CFB', 'ALL'].map(sp => `<button class="sport-chip${pbState.cardSport === sp ? ' on' : ''}" onclick="ascSet('cardSport','${sp}')">${sp}</button>`).join('');
+  const bar = `<div class="asc-bar">${chips}</div>`;
+  if (!d) { el.innerHTML = `${bar}<div class="empty-wrap"><div class="empty-sub">Loading the scorecard…</div></div>`; return; }
+  const note = `<div class="aps-note"><b>Research, not a play.</b> Each app's last number before kickoff against Pinnacle's own last number on the same prop: how often the app sits right on Pinnacle's close, how far off it is, and the side to take at that app's real payout. ${d.props.toLocaleString()} closed props on ${d.games} games${d.since ? ` since ${new Date(d.since).toLocaleDateString()}` : ''}, ${d.graded.toLocaleString()} app legs graded off the box score. A cell counts only when its clears reach ${d.bar.n} graded with the hit rate z ${d.bar.z}+ past break-even. Alerts are off.</div>`;
+  if (!d.legs) { el.innerHTML = `${bar}${note}<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO CLOSES YET</div><div class="empty-sub">No ${d.sport === 'ALL' ? '' : `${escAttr(d.sport)} `}prop has closed with both an app and Pinnacle on it yet. Props land here at their start.</div></div>`; return; }
+  const f = x => (x == null ? '—' : `${x.toFixed(1)}%`);
+  const sg = x => (x == null ? '—' : `<span class="${x >= 0 ? 'pos' : 'neg'}">${x > 0 ? '+' : ''}${x.toFixed(1)}</span>`);
+  const rec = t => (t && t.n ? `${t.w}-${t.l}${t.p ? `-${t.p}` : ''} <span class="dim">${(t.hit * 100).toFixed(1)}% vs ${(t.be * 100).toFixed(1)}%</span>` : '<span class="dim">none yet</span>');
+  const key = { edge: r => r.edge ?? -1e9, dist: r => r.dist ?? -1, off: r => r.off ?? -1, clears: r => r.clears ?? -1, n: r => r.n };
+  const sortBy = list => [...list].sort((a, b) => key[pbState.cardSort](b) - key[pbState.cardSort](a) || b.n - a.n);
+  const th = (k, label, title) => `<th class="srt${pbState.cardSort === k ? ' on' : ''}" title="${escAttr(title)}" onclick="ascSet('cardSort','${k}')">${label}${pbState.cardSort === k ? ' ↓' : ''}</th>`;
+  const head = first => `<tr><th>${first}</th>${th('n', 'Legs', 'App numbers with Pinnacle on the same prop at the close')}<th title="Share at Pinnacle's main closing number">At close</th>${th('off', 'Off', 'Share not at Pinnacle\'s main closing number')}<th title="Below Pinnacle's number (Over gets the better number) / above it (Under)">Low / high</th><th title="Average distance from Pinnacle's main line, in stat units">Avg gap</th>${th('dist', 'Distance', 'Points of win chance Pinnacle\'s close puts the app\'s number off 50/50')}<th title="The side to take: its chance on Pinnacle's close vs the app's break-even for it">Side vs break-even</th>${th('edge', 'Edge', 'Chance minus break-even, in points')}${th('clears', 'Clears', 'Share of legs where the side to take reaches the app\'s break-even')}<th title="The side to take on every graded leg">Graded side</th><th title="The judged rule: only the legs that clear">Judged (clears)</th></tr>`;
+  const row = (r, first) => `<tr><td>${first}</td><td>${r.n}</td><td>${f(r.exact)}</td><td>${f(r.off)}</td><td>${f(r.low)} / ${f(r.high)}</td><td>${r.gapAbs ?? '—'}</td><td>${f(r.dist)}</td><td>${r.p == null ? '<span class="dim">payout unknown</span>' : `${f(r.p)} <span class="dim">vs ${f(r.be)}</span>`}</td><td>${sg(r.edge)}</td><td>${f(r.clears)}${r.clearsN ? ` <span class="dim">(${r.clearsN})</span>` : ''}</td><td>${rec(r.graded)}</td><td>${rec(r.judged)}<div class="dim">${escAttr(r.judged.bar)}</div></td></tr>`;
+  const apps = sortBy(d.apps).map(r => row(r, `<b>${escAttr(r.label)}</b>`)).join('');
+  const cells = sortBy(d.cells).map(r => row(r, `${escAttr(r.label)} · ${escAttr(ASC_STAT[r.mkey] || r.mkey.replace(/_/g, ' '))}`)).join('');
+  el.innerHTML = `${bar}${note}<div class="asc-h">BY APP</div><div class="asc-wrap"><table class="asc-t">${head('App')}${apps}</table></div>
+    <div class="asc-h">BY APP AND STAT <span style="color:#64748b;font-weight:400;letter-spacing:0">(5+ legs; tap a column to sort)</span></div><div class="asc-wrap"><table class="asc-t">${head('App · stat')}${cells || '<tr><td colspan="12" class="dim">No stat has 5 legs yet.</td></tr>'}</table></div>
+    <div class="asc-key">Pinnacle's chance at an app's number is exact when Pinnacle hangs that number, otherwise read along the stat's curve from Pinnacle's nearest line. The side to take is the one with the larger margin over its own break-even: PrizePicks pays both sides the same, so it's the side Pinnacle favours; Underdog, Sleeper and Pick6 move the payout instead of the line. An Underdog side posted alone above 1.35x (anytime TD) has no known break-even and counts in the distances only. Graded off ESPN box scores 3 hours after the start.</div>`;
+}
 function renderShop() {
+  if (pbState.shopShow === 'scorecard') return renderScorecard();
   renderShopRecord();
   const el = document.getElementById('pbContent'), d = pbState.data, rows = d?.rows || [];
   for (const [id, v] of [['apsSort', pbState.shopSort], ['apsShow', pbState.shopShow]]) { const x = document.getElementById(id); if (x) x.value = v; }
