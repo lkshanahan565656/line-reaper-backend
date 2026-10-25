@@ -1,0 +1,19 @@
+name: diag-brmoney2
+on: { push: { branches: [diag-brmoney2] }, workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          set +e
+          U=https://line-reaper-backend-production.up.railway.app
+          for i in $(seq 1 60); do v=$(curl -s -m 30 $U/ | jq -r .version); echo "$(date -u +%T) $v" >> wait.txt; [ "$v" = "3.171.1" ] && curl -s -m 60 -o /dev/null -w '%{http_code}' $U/api/big-money/record | grep -q 200 && break; sleep 30; done
+          node diag/pull.mjs
+          cp wait.txt out/
+          cd out && git init -q && git checkout -q -b diag-brmoney2-out && git add -A && git -c user.name=d -c user.email=d@d commit -qm out
+          git push -q -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-brmoney2-out
