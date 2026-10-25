@@ -1,0 +1,195 @@
+// Runs inside the page (added with addInitScript before the app loads).
+// window.__e2e lists what a viewer can click, tells whether a click did
+// anything, and reads the visible text for broken values.
+/* eslint-disable no-var */
+/* global window, document, MutationObserver, getComputedStyle, location, innerWidth, innerHeight, Node, NodeFilter */
+module.exports = function installE2E() {
+  if (window.__e2e) return;
+  var noisy = new WeakSet();
+  var mode = 'off'; // off | learn (mark what changes on its own) | armed (count changes after a click)
+  var changed = 0;
+  var lastChange = [];
+  var seq = 0;
+  function onMut(list) {
+    for (var i = 0; i < list.length; i++) {
+      var m = list[i];
+      if (m.type === 'attributes' && m.attributeName === 'data-e2e-id') continue;
+      var t = m.target.nodeType === 3 ? m.target.parentNode : m.target;
+      if (!t) continue;
+      if (mode === 'learn') { noisy.add(t); continue; }
+      if (mode !== 'armed') continue;
+      if (noisy.has(t)) continue;
+      changed++;
+      if (lastChange.length < 3) lastChange.push((t.id ? '#' + t.id : t.className ? '.' + String(t.className).split(' ')[0] : t.nodeName) + ':' + m.type);
+    }
+  }
+  function observe() {
+    new MutationObserver(onMut).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+  }
+  observe();
+
+  function visible(el) {
+    if (!el || !el.getBoundingClientRect) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return false;
+    if (el.checkVisibility && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    return true;
+  }
+  var CLICKABLE = 'button, a[href], [onclick], [role="button"], [role="tab"], summary, input:not([type="hidden"]), select, textarea, label, th';
+  function looksClickable(el) {
+    if (el.matches('button, a[href], [onclick], [role="button"], [role="tab"], summary, select, input[type="checkbox"], input[type="radio"], input[type="file"], input[type="button"], input[type="submit"]')) return true;
+    if (el.matches('input, textarea')) return false;
+    var cs = getComputedStyle(el);
+    if (cs.cursor !== 'pointer') return false;
+    // a child of something clickable inherits its pointer: only the outer one counts
+    var p = el.parentElement;
+    return !(p && getComputedStyle(p).cursor === 'pointer');
+  }
+  function norm(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim();
+  }
+  function family(el) {
+    var on = el.getAttribute('onclick') || '';
+    on = on.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, '_').replace(/\b\d+(\.\d+)?\b/g, '#').replace(/\s+/g, '');
+    var cls = String(el.className && el.className.baseVal == null ? el.className : '').split(/\s+/).filter(function (c) { return c && !/^(on|active|open|sel|selected|has-active|need|e2e)$/.test(c); }).sort().join('.');
+    return el.tagName.toLowerCase() + (el.type ? '[' + el.type + ']' : '') + '.' + cls + '|' + on.slice(0, 80);
+  }
+  function label(el) {
+    var t = norm(el.getAttribute('aria-label') || el.innerText || el.value || el.getAttribute('title') || el.getAttribute('placeholder') || el.name || el.id);
+    return t.slice(0, 60);
+  }
+  // the topmost thing covering the middle of the screen when it is not the
+  // page itself: an open modal, menu or drawer
+  function overlay() {
+    var all = document.querySelectorAll('body *');
+    var best = null, bestZ = -1;
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      var cs = getComputedStyle(el);
+      if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width < innerWidth * 0.5 || r.height < innerHeight * 0.4) continue;
+      if (el.closest('.nav')) continue;
+      var z = Number(cs.zIndex) || 0;
+      if (z >= bestZ) { best = el; bestZ = z; }
+    }
+    return best;
+  }
+  function roots(pageSel) {
+    var o = overlay();
+    if (o) return { overlay: true, list: [o], name: o.id || o.className };
+    var list = [];
+    var nav = document.querySelector('.nav');
+    if (nav) list.push(nav);
+    var pg = document.querySelector(pageSel);
+    if (pg) list.push(pg);
+    var menu = document.getElementById('moreMenu');
+    if (menu && menu.classList.contains('open')) list.push(menu);
+    document.querySelectorAll('.os-pop, .tray, .slip-bar, .sb-bar, [id$="Tray"], [id$="Bar"]').forEach(function (e) { if (visible(e) && list.indexOf(e) < 0 && !e.closest('.nav')) list.push(e); });
+    return { overlay: false, list: list, name: pageSel };
+  }
+  function cands(pageSel) {
+    var R = roots(pageSel);
+    var out = [];
+    var seen = new Set();
+    R.list.forEach(function (root) {
+      var els = root.querySelectorAll('*');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (seen.has(el)) continue;
+        if (!el.matches(CLICKABLE) && !(getComputedStyle(el).cursor === 'pointer')) continue;
+        if (!looksClickable(el) && !el.matches('input, textarea, select')) continue;
+        if (!visible(el)) continue;
+        if (el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
+        seen.add(el);
+        if (!el.hasAttribute('data-e2e-id')) el.setAttribute('data-e2e-id', String(++seq));
+        var tag = el.tagName.toLowerCase();
+        var kind = tag === 'a' ? 'link' : tag === 'select' ? 'select' : tag === 'textarea' || (tag === 'input' && !/^(checkbox|radio|button|submit|file|range|color)$/.test(el.type)) ? 'text' : tag === 'input' ? el.type : 'click';
+        out.push({
+          id: el.getAttribute('data-e2e-id'), family: family(el), label: label(el), kind: kind,
+          href: tag === 'a' ? el.getAttribute('href') : null, target: tag === 'a' ? el.getAttribute('target') : null,
+          onclick: (el.getAttribute('onclick') || '').slice(0, 120), inNav: !!el.closest('.nav'),
+        });
+      }
+    });
+    return { overlay: R.overlay, root: R.name, list: out };
+  }
+  function state(id) {
+    var el = document.querySelector('[data-e2e-id="' + id + '"]');
+    return { url: location.href, scroll: Math.round(window.scrollY) + ':' + Math.round((document.scrollingElement || document.body).scrollLeft), checked: el ? !!el.checked : null, value: el && 'value' in el ? String(el.value) : null, open: el && 'open' in el ? !!el.open : null, focus: document.activeElement ? (document.activeElement.getAttribute('data-e2e-id') || document.activeElement.tagName) : '' };
+  }
+  // visible text with values a viewer should never see
+  var BAD = [
+    [/\bundefined\b/, 'undefined'], [/\bNaN\b/, 'NaN'], [/\[object Object\]/, '[object Object]'], [/(^|[\s:(=$])null($|[\s,).%])/, 'null'], [/(^|[^\w])-?Infinity\b/, 'Infinity'],
+  ];
+  function textIssues() {
+    var out = [];
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    var n;
+    while ((n = w.nextNode())) {
+      var s = n.nodeValue;
+      if (!s || s.length < 3) continue;
+      var p = n.parentElement;
+      if (!p || p.closest('script, style, noscript, textarea, code, pre')) continue;
+      for (var i = 0; i < BAD.length; i++) {
+        if (BAD[i][0].test(s) && visible(p)) {
+          var ctx = norm(p.closest('div, td, li, p, section') ? p.closest('div, td, li, p, section').innerText : s).slice(0, 160);
+          out.push({ what: BAD[i][1], text: norm(s).slice(0, 120), ctx: ctx, where: where(p) });
+        }
+      }
+    }
+    return out;
+  }
+  function where(el) {
+    var pg = el.closest('.page');
+    var parts = [];
+    for (var e = el; e && e !== document.body && parts.length < 4; e = e.parentElement) parts.unshift(e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.classList[0] ? '.' + e.classList[0] : ''));
+    return (pg ? pg.id + ' ' : '') + parts.join('>');
+  }
+  // "proven" said as a claim, not as "not proven"/"unproven"/"until proven"
+  var NEG = /(not|n't|no|never|un|until|before|nothing|none|isn't|aren't|wasn't|yet to be|whether|if|once|only|needs?|to be|ever|anything|until it is|count as|what counts as|read|reads|marks?|call|called|rule|kinds? of play|proven so far|stays?|still)\s*[\w\s,'-]{0,24}$/i;
+  function provenClaims() {
+    var out = [];
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    var n;
+    while ((n = w.nextNode())) {
+      var s = n.nodeValue;
+      if (!s || !/proven|guaranteed|sure thing|lock of|risk[- ]free/i.test(s)) continue;
+      var p = n.parentElement;
+      if (!p || p.closest('script, style, noscript') || !visible(p)) continue;
+      var full = norm(p.innerText || s);
+      var re = /proven|guaranteed|sure thing|lock of|risk[- ]free/ig, m;
+      while ((m = re.exec(full))) {
+        var before = full.slice(Math.max(0, m.index - 40), m.index);
+        if (/^proven$/i.test(m[0]) && NEG.test(before)) continue;
+        if (/^guaranteed$/i.test(m[0]) && /(not|no|never|don't|do not)\b[\w\s,'-]{0,30}$/i.test(before)) continue;
+        if (/^risk[- ]free$/i.test(m[0]) && /(not|no|never|isn't|aren't)\b[\w\s,'-]{0,30}$/i.test(before)) continue;
+        out.push({ word: m[0], text: full.slice(Math.max(0, m.index - 60), m.index + 40), badge: full.length < 30, where: where(p) });
+      }
+    }
+    return out;
+  }
+  function empties(pageSel) {
+    var pg = document.querySelector(pageSel);
+    if (!pg) return [];
+    var out = [];
+    pg.querySelectorAll('.empty-wrap, .empty, .empty-big, .pb-empty, .os-empty, [class*="empty"]').forEach(function (e) {
+      if (visible(e) && !e.closest('[class*="empty"]:not(:scope)')) out.push({ text: norm(e.innerText).slice(0, 140), where: where(e) });
+    });
+    return out;
+  }
+  window.__e2e = {
+    cands: cands, state: state, textIssues: textIssues, provenClaims: provenClaims, empties: empties, overlay: function () { var o = overlay(); return o ? (o.id || String(o.className)) : null; },
+    learn: function () { mode = 'learn'; },
+    off: function () { mode = 'off'; },
+    arm: function () { mode = 'armed'; changed = 0; lastChange = []; },
+    changed: function () { return { n: changed, sample: lastChange.slice() }; },
+    closeOverlay: function () {
+      var o = overlay();
+      if (!o) return false;
+      o.classList.remove('open', 'show', 'on');
+      if (overlay() === o) o.style.display = 'none';
+      return true;
+    },
+  };
+};

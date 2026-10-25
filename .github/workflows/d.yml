@@ -1,0 +1,16 @@
+name: diag-e2e-rec
+on: { push: { branches: [diag-e2e-rec] } }
+permissions: { contents: write }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save --no-audit --no-fund playwright@1.63.0 && npx playwright install --with-deps chromium
+      - run: mkdir -p out && (node e2e/record.js https://line-reaper-backend-production.up.railway.app out/snapshot.json.gz > out/log.txt 2>&1 || true)
+      - run: |
+          git config user.email d@x; git config user.name diag
+          git checkout --orphan diag-e2e-rec-out; git rm -rqf --cached . ; git add -f out; git commit -qm out; git push -f origin diag-e2e-rec-out
