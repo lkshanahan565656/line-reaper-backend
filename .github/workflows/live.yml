@@ -1,0 +1,20 @@
+name: diag-soccer-live
+on:
+  push:
+    branches: [diag-soccer-live]
+permissions:
+  contents: write
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          timeout 65m node diag/live.js 2>&1 | tee log-live.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-soccer-live-out; git add -f log-live.txt; git commit -qm "soccer live"
+          for i in 1 2 3 4; do git push -qf origin diag-soccer-live-out && break; sleep $((i*5)); done
