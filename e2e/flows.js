@@ -162,6 +162,15 @@ const FLOWS = {
     expect(/PrizePicks/i.test(shown) && /Pick6/i.test(shown), `the Pikkit breakdown does not list the apps: "${shown.slice(0, 160)}"`);
     const slips = await ls(page, 'lr_slips');
     expect(slips.some(s => s.id === 'pk-e2e1') && !slips.some(s => s.id === 'pk-e2e3'), 'the recent Pikkit slips should be added, the 20-day-old one not');
+    // the older bets go to the box-score grader on one tap, with Pikkit's result kept
+    const more = page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' });
+    expect(await more.count() === 1, 'no GRADE MORE FROM BOX SCORES button under the Pikkit history');
+    await more.first().click();
+    await settle(page, w, opts, 300);
+    const after = await ls(page, 'lr_slips');
+    const old = after.find(s => s.id === 'pk-e2e3');
+    expect(old && old.result === 'loss' && old.legs[0].sport === 'MLB', 'the 20-day-old Pikkit bet should be added with its result and league');
+    expect(await page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' }).count() === 0, 'the button should go once every bet is in');
   },
 
   async 'save a shopper view, load it, clear it'(page, w, opts) {
