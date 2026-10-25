@@ -174,7 +174,7 @@ module.exports = function installE2E() {
     return (pg ? pg.id + ' ' : '') + parts.join('>');
   }
   // "proven" said as a claim, not as "not proven"/"unproven"/"until proven"
-  var NEG = /(not|n't|no|never|un|until|before|nothing|none|isn't|aren't|wasn't|yet to be|whether|if|once|only|needs?|to be|ever|anything|until it is|count as|what counts as|read|reads|marks?|call|called|rule|kinds? of play|proven so far|stays?|still)\s*[\w\s,'-]{0,24}$/i;
+  var NEG = /(not|n't|no|never|un|until|before|nothing|none|isn't|aren't|wasn't|yet to be|whether|if|once|only|needs?|to be|ever|anything|until it is|count as|what counts as|read|reads|marks?|call|called|rule|kinds? of play|proven so far|stays?|still|can be|may be|could be)\s*[\w\s,'-]{0,24}$/i;
   function provenClaims() {
     var out = [];
     var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);

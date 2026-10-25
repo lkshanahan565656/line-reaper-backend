@@ -120,7 +120,7 @@ function publicRecord({ board, now = Date.now() } = {}) {
   return {
     at: new Date(now).toISOString(),
     rule: { graded: board?.target || 50, clvT: 2, close: 'Pinnacle\'s no-vig close', kinds: [...CLAIM_KINDS], shortfallSd: 1.5,
-      text: 'Proven: 50 graded games of one kind at one venue we read ourselves, a CLV t of 2 or more against Pinnacle\'s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick\'em kinds only sharp-price legs.' },
+      text: 'A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pinnacle\'s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick\'em kinds only sharp-price legs.' },
     overall: { graded: o.graded ?? 0, beatPct: o.beatPct ?? null, clv: o.avgClv ?? null, clvT: o.clvT ?? null, label: 'pooled, never proven' },
     proven: rows.filter(r => r.label === 'proven').length,
     rows,
