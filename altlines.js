@@ -55,7 +55,6 @@ const SHARP = new Set(['pinnacle', 'kalshi']);
 
 const r2 = x => Math.round(x * 100) / 100;
 const half = x => Number.isFinite(x) && Math.abs(Math.abs(x % 1) - 0.5) < 1e-9;
-const toP = a => { const d = americanToDecimal(a); return d ? 1 / d : null; };
 // inverse normal (Acklam), for interpolating a ladder in z
 function probit(p) {
   if (!(p > 0 && p < 1)) return null;

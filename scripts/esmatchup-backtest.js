@@ -19,7 +19,6 @@
 
 const fs = require('fs');
 const zlib = require('zlib');
-const path = require('path');
 const M = require('../esmatchup');
 const { GAMES } = require('../esgames');
 

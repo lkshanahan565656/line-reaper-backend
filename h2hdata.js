@@ -206,7 +206,6 @@ async function fetchCsMaps(http, { since, maxPages = 10, pause = 250, tiers = CS
 }
 
 // ── Dota: OpenDota explorer ──
-const DOTA_COLS = ['match_id', 'start_time', 'radiant_score', 'dire_score', 'radiant_team_id', 'dire_team_id', 'player_slot', 'account_id', 'kills'];
 // premium and professional leagues and the 'excluded' ones (the qualifiers
 // and small leagues the apps post lines on), with both teams' names from the
 // explorer's own team table (the /teams list names only the top thousand)
@@ -306,7 +305,7 @@ async function fetchValMaps(http, { since, seen = [], tried = VAL_TRIED, maxPage
 
 // ── LoL: gol.gg's team list ──
 const text = s => String(s || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#039;/g, "'").replace(/\s+/g, ' ').trim();
-const num = s => { const v = parseFloat(String(s).replace(/[^0-9.\-]/g, '')); return Number.isFinite(v) ? v : null; };
+const num = s => { const v = parseFloat(String(s).replace(/[^0-9.-]/g, '')); return Number.isFinite(v) ? v : null; };
 // → { [sq(name)]: { name, games, kpg, dpg, minutes } }
 function parseGolTeams(html) {
   const s = String(html || '');

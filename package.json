@@ -1,12 +1,15 @@
 {
   "name": "line-reaper-backend",
-  "version": "3.164.0",
+  "version": "3.164.1",
   "description": "Line Reaper backend - scrapes DFS books and proxies sharp API calls",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test test/*.test.js",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "npm run lint && npm run typecheck && npm test",
     "build_desktop": "pkg . --targets node22-win-x64,node22-macos-x64,node22-macos-arm64 --out-path dist-desktop"
   },
   "dependencies": {
@@ -32,6 +35,11 @@
     ]
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.23.0"
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.5",
+    "@yao-pkg/pkg": "^6.23.0",
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
+    "typescript": "^5.9.3"
   }
 }

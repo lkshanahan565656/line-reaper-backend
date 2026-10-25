@@ -102,7 +102,7 @@ async function gradeEsports(series, meta) {
     results.set(id, r.result != null ? { ...r, matchId: res?.matchId || null } : r);
   }
   const guarded = ER.lineupGuard(legs, results);
-  for (const [id, r] of results) if (r.void === 'whole lineup graded 0 (wrong match)') r.guard = true;
+  for (const r of results.values()) if (r.void === 'whole lineup graded 0 (wrong match)') r.guard = true;
   const rep = ER.summarize(legs, results, { p6Payouts: pick6Payouts });
   Object.assign(rep, { week: WEEK, at: new Date().toISOString(), why, guarded, sources: Object.fromEntries(Object.entries(series).map(([s, m]) => [s, m.size])) });
   fs.mkdirSync(OUT, { recursive: true });

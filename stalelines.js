@@ -206,7 +206,7 @@ function bookPropQuotes(games, feedSport, sportOf, { books = BOOK_VENUES } = {})
           L.get(o.point)[o.name === 'Over' ? 'd0' : 'd1'] = americanToDecimal(o.price);
         }
       }
-      for (const [k, v] of by) {
+      for (const v of by.values()) {
         const pts = [];
         for (const [x, d] of v.lines) { const p = devig2(d.d0, d.d1); if (p != null) pts.push({ x: Number(x), p: r4(p), d0: d.d0, d1: d.d1 }); }
         if (!pts.length) continue;

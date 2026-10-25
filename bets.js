@@ -19,7 +19,7 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./calc'));
   else root.LRBets = factory(root.LRCalc);
-}(typeof self !== 'undefined' ? self : this, function (C) {
+}(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function (C) {
   'use strict';
 
   const ok = x => typeof x === 'number' && Number.isFinite(x);
@@ -262,6 +262,7 @@
   // the trackers know something about. The result is what happened to the
   // outcome; the user's own price and stake decide their profit.
   const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  /** @param {any} bets @param {any} [opts] */
   function matchTracked(bets, { tail = [], picks = [], sportKey = s => String(s || '').toUpperCase(), outcomeFor } = {}) {
     const out = {};
     // a top-up signal joined its first bet's record
@@ -355,7 +356,7 @@
   function parseCSV(text) {
     const rows = [];
     let row = [], f = '', q = false;
-    const s = String(text || '').replace(/^﻿/, '');
+    const s = String(text || '').replace(/^\uFEFF/, '');
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];
       if (q) {

@@ -14,7 +14,7 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.LRSlips = factory();
-}(typeof self !== 'undefined' ? self : this, function () {
+}(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
   const ok = x => typeof x === 'number' && Number.isFinite(x);
@@ -167,7 +167,7 @@
     if (!s) return null;
     // an esports leg may name its opponent last: "(vs G2)", "vs. G2", "@ G2"
     let opp = null;
-    const om = /\s*[(\[]?\s*\b(?:vs\.?|versus|against)\s+([^()\[\]]{2,40}?)\s*[)\]]?\s*$|\s*[(\[]?\s*@\s*([^()\[\]]{2,40}?)\s*[)\]]?\s*$/i.exec(s);
+    const om = /\s*[([]?\s*\b(?:vs\.?|versus|against)\s+([^()[\]]{2,40}?)\s*[)\]]?\s*$|\s*[([]?\s*@\s*([^()[\]]{2,40}?)\s*[)\]]?\s*$/i.exec(s);
     if (om) { opp = (om[1] || om[2]).replace(/[.,:]+$/, '').trim(); s = s.slice(0, om.index).trim(); }
     let sport = null;
     const sm = sportRe.exec(s);
@@ -257,7 +257,7 @@
   function parseCsv(text) {
     const rows = [];
     let row = [], cell = '', q = false;
-    const s = String(text || '').replace(/^﻿/, '');
+    const s = String(text || '').replace(/^\uFEFF/, '');
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
       if (q) { if (c === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
@@ -297,6 +297,7 @@
     });
     return at;
   }
+  /** @type {Array<[RegExp, string]>} */
   const STATUS = [[/^(won|win|w|hit|cashed|settled[ _]win)$/i, 'win'], [/^(lost|loss|l|miss|settled[ _]loss)$/i, 'loss'],
     [/^(push|pushed|p|tie|refund(ed)?|settled[ _]push)$/i, 'push'], [/^(void|voided|cancel(l)?ed|canceled|settled[ _]void)$/i, 'void'], [/^(open|pending|active|ungraded|live)$/i, 'open'], [/cash(ed)?[ _]?out/i, 'cashout']];
   const statusOf = s => { const t = String(s || '').trim(); for (const [re, v] of STATUS) if (re.test(t)) return v; return t ? t.toLowerCase() : 'open'; };
@@ -500,6 +501,7 @@
 
   // A slip built in the app (a PROPS or esports board leg tray): the same
   // shape a pasted slip has, so it grades the same way
+  /** @param {any} [opts] */
   function makeSlip({ app, legs, stake = null, payout = null, mult = null, flex = false, placedAt = null, source = 'board', now = Date.now() } = {}) {
     if (!APPS[app] || !Array.isArray(legs) || !legs.length) return null;
     const clean = legs.map(l => ({ player: String(l.player || '').trim(), side: l.side === 'Under' ? 'Under' : 'Over', line: Number(l.line), market: String(l.market || '').trim(),

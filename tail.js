@@ -373,7 +373,20 @@ const VS_WEIGHT = 0.5;   // "A vs. B" is usually a game, but a name outweighs it
 
 const normText = s => ` ${String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()} `;
 
+// The same market titles come round every scan (thousands a minute), and each
+// one is tried against every phrase, so the answers are kept: text → category,
+// at most SCORE_MEMO_MAX of them (the whole memo is dropped when full).
+const SCORE_MEMO_MAX = 20000;
+const scoreMemo = new Map();
 function scoreText(text) {
+  if (typeof text !== 'string') return scoreTextOnce(text);
+  if (scoreMemo.has(text)) return scoreMemo.get(text);
+  const best = scoreTextOnce(text);
+  if (scoreMemo.size >= SCORE_MEMO_MAX) scoreMemo.clear();
+  scoreMemo.set(text, best);
+  return best;
+}
+function scoreTextOnce(text) {
   const t = normText(text);
   if (t.trim() === '') return null;
   const score = {};

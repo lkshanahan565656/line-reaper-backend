@@ -11,7 +11,6 @@
 // Positive CLV over hundreds of bets is the standard evidence an edge is real,
 // and unlike win/loss it needs no results feed.
 
-const fs = require('fs');
 const path = require('path');
 const { createJsonFileStore } = require('./jsonstore');
 

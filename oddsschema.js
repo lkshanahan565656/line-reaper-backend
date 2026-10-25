@@ -105,7 +105,7 @@ function fromDecimal(d, format = 'decimal') {
 }
 const FORMATS = ['american', 'decimal', 'fractional', 'probability', 'hongkong', 'indonesian', 'malay'];
 function formatOdds(d, format = 'american') {
-  const v = fromDecimal(d, format);
+  const v = /** @type {any} */ (fromDecimal(d, format));
   if (v == null) return '—';
   if (format === 'american') return v > 0 ? `+${v}` : String(v);
   if (format === 'probability') return `${(v * 100).toFixed(1)}%`;

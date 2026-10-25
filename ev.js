@@ -91,6 +91,7 @@ function devig(decimals, method = 'power') {
 // ── market names ──
 // Odds API keys, Owls categories and DFS stat labels all name the same props
 // differently. Everything is reduced to one canonical key.
+/** @type {Array<[RegExp, string]>} */
 const MARKET_ALIASES = [
   [/^(player_)?points?_rebounds?_assists?$|^pts_?rebs_?asts$|^pra$|^pts\+rebs\+asts$|^points \+ rebounds \+ assists$/, 'pra'],
   [/^(player_)?points?_rebounds?$|^pts_?rebs$|^pts\+rebs$|^points \+ rebounds$/, 'pts_rebs'],
@@ -146,6 +147,7 @@ const MARKET_ALIASES = [
 // Each pick'em book spells the same stat its own way ("Rush+Rec Yds" on
 // PrizePicks, "Rush + Rec Yards" on Underdog): spacing round '+' and the
 // short forms are evened out before the aliases run.
+/** @type {Array<[RegExp, string]>} */
 const MARKET_WORDS = [[/\byds\b/g, 'yards'], [/\btds\b/g, 'tds'], [/^anytime tds$/, 'anytime td'], [/^anytime touchdowns$/, 'anytime td']];
 function canonMarket(m) {
   let s = String(m || '').trim().toLowerCase().replace(/\s*\+\s*/g, ' + ').replace(/\s+/g, ' ');
@@ -158,6 +160,7 @@ const canonName = n => String(n || '').toLowerCase().normalize('NFD').replace(/[
 
 // ── normalize feeds into quotes ──
 // quote: { group, eventId, sport, event, start, market, player, point, side, book, price }
+/** @param {any} games @param {any} [opts] */
 function quotesFromGames(games, { sport } = {}) {
   const out = [];
   for (const g of games || []) {
@@ -304,7 +307,6 @@ function screen({ feeds = [], dfsLines = [], dfsEv = null, now = Date.now(), min
     }
 
     for (const side of f.sides) {
-      const fp = f.fair[side];
       // best price per book on this side (books can appear twice across feeds)
       const best = new Map();
       for (const q of qs) {
