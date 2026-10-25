@@ -9,8 +9,8 @@ const get = async (p, ms = 90000) => { const t0 = Date.now(); try { const r = aw
   await new Promise(r => setTimeout(r, 480000));
   for (let i = 0; i < 5; i++) {
     const p = await get('/api/ops/profile?s=50');
-    const o = await get('/api/ops');
-    out.profiles.push({ at: new Date().toISOString(), profile: p.j || p, ops: o.j || o });
+    const o = await get('/api/ops'); const st = await get('/api/status');
+    out.profiles.push({ at: new Date().toISOString(), profile: p.j || p, ops: o.j || o, build: { props: st.j?.propsBoardBuild, ev: st.j?.evScreenBuild } });
     console.log(i, JSON.stringify(p.j?.top?.slice(0, 8)));
     fs.writeFileSync('probe.json', JSON.stringify(out));
   }
