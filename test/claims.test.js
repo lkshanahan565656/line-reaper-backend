@@ -54,3 +54,35 @@ test('profit is shown only when the units clear chance', () => {
   assert.equal(C.profitOf({ resultsUnits: -0.7, resultsExpUnits: 3.1, resultsZ: -0.38 }).shown, false);
   assert.equal(C.profitOf({}).shown, false);
 });
+
+// The Results page (claims.publicRecord) labels each kind with the same test
+// as the sales page, so the two cannot disagree.
+test('publicRecord: proven only where the sales page claims it; everything else says why', () => {
+  const board = { target: 50, overall: { graded: 1028, avgClv: 1.37 }, rows: [
+    row(),
+    row({ kind: 'bigmoney', kindLabel: 'Big money', graded: 169 }),
+    row({ kind: 'alt', book: 'fanduel', bookName: 'FanDuel', mark: 'promising', note: 'Never proven: alt' }),
+    row({ book: 'hardrock', bookName: 'Hard Rock', relayed: true, mark: 'promising' }),
+    row({ book: 'fanduel', bookName: 'FanDuel', mark: 'promising', graded: 12 }),
+    row({ kind: 'alt-model', mark: 'no sharp close' }),
+    row({ kind: 'ev', book: 'gemini', bookName: 'Gemini', mark: 'proven', resultsUnits: 9, resultsExpUnits: 1, resultsZ: 2.5 }),
+  ] };
+  const rec = C.publicRecord({ board });
+  const claims = C.publicClaims({ board, txBoard: { rows: [] } });
+  const proven = rec.rows.filter(r => r.label === 'proven').map(r => `${r.kind}|${r.book}`);
+  assert.deepEqual(proven.sort(), claims.proven.map(p => `${p.kind}|${p.book}`).sort(), 'the same proven kinds as the sales page');
+  assert.equal(rec.proven, 2);
+  const by = k => rec.rows.find(r => `${r.kind}|${r.book}` === k);
+  assert.equal(by('bigmoney|betrivers').label, 'research', 'proven on the board, but not a kind the record may claim');
+  assert.equal(by('alt|fanduel').why, 'Never proven: alt');
+  assert.equal(by('ev|hardrock').label, 'copied book');
+  assert.equal(by('ev|fanduel').label, 'building');
+  assert.match(by('ev|fanduel').why, /12 of 50/);
+  assert.equal(by('alt-model|betrivers').label, 'no sharp close');
+  assert.equal(by('ev|betrivers').profitShown, false, 'proven, but -0.7u is no profit');
+  assert.equal(by('ev|gemini').profitShown, true, 'proven and units clear chance');
+  assert.equal(by('ev|gemini').texas, true);
+  assert.equal(by('bigmoney|betrivers').profitShown, false);
+  assert.match(rec.rule.text, /50 graded/);
+  assert.ok(rec.labels.some(l => l.tag === 'model, not an edge'));
+});

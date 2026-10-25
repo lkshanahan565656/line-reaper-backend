@@ -205,7 +205,46 @@ module.exports = function installE2E() {
     });
     return out;
   }
+  // what sticks out past the screen's sides where nothing scrolls it into
+  // view: the page itself scrolling sideways, or an element cut off by the
+  // body (which hides overflow) or by a card that hides it. Wide tables inside
+  // a sideways scroller that itself fits are fine; ellipsis text is meant to clip.
+  function overflowIssues() {
+    var vw = window.innerWidth, out = [];
+    var sw = document.documentElement.scrollWidth;
+    if (sw > vw + 1) out.push({ what: 'page scrolls sideways', width: sw, screen: vw });
+    var roots = [document.querySelector('header'), document.querySelector('.page.active')];
+    document.querySelectorAll('.lay-modal.open > *, .acct-modal.open > *, #moreMenu, #pkTray, #esSlipBar').forEach(function (e) { roots.push(e); });
+    var hit = [];
+    roots.forEach(function (root) {
+      if (!root || !visible(root)) return;
+      root.querySelectorAll('*').forEach(function (e) {
+        if (out.length > 12) return;
+        var r = e.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        var cs = getComputedStyle(e);
+        if (cs.visibility === 'hidden' || cs.textOverflow === 'ellipsis' || cs.position === 'fixed') return;
+        for (var i = 0; i < hit.length; i++) if (hit[i].contains(e)) return;
+        var clip = null, lim = { left: 0, right: vw };
+        for (var p = e.parentElement; p; p = p.parentElement) {
+          var ps = getComputedStyle(p);
+          if (/auto|scroll/.test(ps.overflowX)) { clip = 'scroll'; lim = p.getBoundingClientRect(); break; }
+          if (/hidden|clip/.test(ps.overflowX)) { clip = p === document.body || p === document.documentElement ? 'screen' : 'card'; if (clip === 'card') lim = p.getBoundingClientRect(); break; }
+          if (ps.position === 'fixed') { clip = 'screen'; break; }
+        }
+        var bad = clip === 'scroll' ? (lim.right > vw + 2 || lim.left < -2) && !(r.right <= vw + 1 && r.left >= -1)
+          : r.right > Math.min(lim.right, vw) + 2 || r.left < Math.max(lim.left, 0) - 2;
+        if (!bad) return;
+        // decorative bits (glows, rings) carry no text or control
+        if (!norm(e.innerText) && !/^(BUTTON|INPUT|SELECT|A|TEXTAREA|CANVAS|SVG|IMG|TABLE)$/i.test(e.tagName)) return;
+        hit.push(e);
+        out.push({ what: clip === 'scroll' ? 'scroller wider than the screen' : clip === 'card' ? 'cut off by its card' : 'cut off at the screen edge', where: where(e), text: norm(e.innerText).slice(0, 60), left: Math.round(r.left), right: Math.round(r.right), limit: Math.round(Math.min(lim.right, vw)) });
+      });
+    });
+    return out;
+  }
   window.__e2e = {
+    overflow: overflowIssues,
     cands: cands, state: state, textIssues: textIssues, provenClaims: provenClaims, empties: empties, overlay: function () { var o = overlay(); return o ? (o.id || String(o.className)) : null; },
     learn: function () { mode = 'learn'; },
     off: function () { mode = 'off'; },

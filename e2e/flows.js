@@ -63,6 +63,28 @@ const FLOWS = {
     expect(/22\.73/.test(stats), `the stats should show the $22.73 profit: "${stats.slice(0, 200)}"`);
   },
 
+  async 'download the public record from RESULTS'(page, w, opts) {
+    await openTab(page, 'results', w, opts);
+    await page.locator('#recordContent .rec-tiles').waitFor({ timeout: 6000 });
+    const tiles = await text(page, '#recordContent');
+    expect(/PROVEN/.test(tiles) && /GRADED GAMES/.test(tiles), `the record's summary did not render: "${tiles.slice(0, 160)}"`);
+    // the 30-day window carries over to the download
+    await page.locator('#page-results [data-days="30"]').click();
+    await settle(page, w, opts, 150);
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.locator('#recCsv').click()]);
+    expect(/^line-reaper-record-30d-\d{4}-\d{2}-\d{2}\.csv$/.test(dl.suggestedFilename()), `the CSV is named "${dl.suggestedFilename()}"`);
+    const file = path.join(os.tmpdir(), `lr-e2e-record-${process.pid}-${opts.viewportName}.csv`);
+    await dl.saveAs(file);
+    const csv = fs.readFileSync(file, 'utf8');
+    fs.rmSync(file, { force: true });
+    const head = csv.split(/\r?\n/)[0].split(',');
+    for (const c of ['flaggedAt', 'book', 'priceDecimal', 'fillUsd', 'closeProb', 'clvPct', 'result', 'units']) expect(head.includes(c), `the CSV has no ${c} column: "${head.join(',')}"`);
+    const [dj] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.locator('#recJson').click()]);
+    expect(/\.json$/.test(dj.suggestedFilename()), `the JSON download is named "${dj.suggestedFilename()}"`);
+    await page.locator('#page-results [data-days="0"]').click();
+    await settle(page, w, opts, 150);
+  },
+
   async 'export the bets CSV and import it back'(page, w, opts) {
     await openTab(page, 'betlog', w, opts);
     const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.getByRole('button', { name: 'EXPORT CSV' }).click()]);

@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.184.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.185.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5020,18 +5020,21 @@ const closeBoardCache = new Map();   // key → { at, body }
 // the scoreboard for a viewer's licences (the webhook's when none), cached a minute
 // state (venues.js): only the venues a resident there can use, every total
 // re-pooled from those; none for the alert gate, which is the same for everyone
-async function closeBoardFor(lic = webhookLicence(), days = 0, state = null) {
+// every record the scoreboard reads, cut to a viewer's licences and state
+async function closeBoardLists(lic = webhookLicence(), state = null) {
   const inState = venues.rowLegalIn(state);
   const ok = r => evRowOk(lic)(r) && inState(r);
+  const all = { status: undefined, limit: 1e9 };
+  const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
+    esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
+  return { ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok),
+    props: props.filter(r => venues.legalIn(state)(closeBoard.propsVenue(r))), bigMoney: bigMoney.filter(inState) };
+}
+async function closeBoardFor(lic = webhookLicence(), days = 0, state = null) {
   const key = `${JSON.stringify(lic)}|${days}|${venues.stateOf(state) || ''}`;
   const hit = closeBoardCache.get(key);
   if (!hit || Date.now() - hit.at > 60e3) {
-    const all = { status: undefined, limit: 1e9 };
-    const [ev, alt, stale, esports, props, bigMoney] = await Promise.all([evTracker.list(all), altTracker.list(all), staleTracker.list(all),
-      esBookTracker.list(all), sportTracker.list({ limit: 1e9 }), bigTracker.list()]);
-    const body = closeBoard.scoreboard({ ev: ev.filter(ok), alt: alt.filter(ok), stale: stale.filter(ok), esports: esports.filter(ok),
-      props: props.filter(r => venues.legalIn(state)(closeBoard.propsVenue(r))), bigMoney: bigMoney.filter(inState) },
-      { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
+    const body = closeBoard.scoreboard(await closeBoardLists(lic, state), { since: days > 0 ? Date.now() - days * 86400e3 : 0 });
     closeBoardCache.set(key, { at: Date.now(), body: { ...body, state: venues.stateInfo(state), at: new Date().toISOString() } });
   }
   return closeBoardCache.get(key).body;
@@ -5050,6 +5053,43 @@ app.get('/api/claims', async (req, res) => {
     const lic = webhookLicence();
     const [board, txBoard] = await Promise.all([closeBoardFor(lic, 0, null), closeBoardFor(lic, 0, 'TX')]);
     res.set('Cache-Control', 'public, max-age=60').json(claims.publicClaims({ board, txBoard, alertBooks: evBookProven }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// The public record (RESULTS): every kind and venue on the scoreboard with
+// the label the sales page would give it (claims.publicRecord, the same test as
+// /api/claims), and every closed flag behind it as CSV or JSON. Public, the
+// same for everyone (the webhook's licences), so anyone can check the numbers.
+// Open flags are today's live edges and never in it.
+app.get('/api/record', async (req, res) => {
+  try {
+    const days = parseFloat(req.query.days) || 0;
+    const board = await closeBoardFor(webhookLicence(), days, null);
+    res.set('Cache-Control', 'public, max-age=60').json({ ...claims.publicRecord({ board }), days: days > 0 ? days : null,
+      columns: closeBoard.FLAG_COLUMNS, downloads: { csv: '/api/record/flags.csv', json: '/api/record/flags.json' } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+const recordFlagsMemo = require('./ops').createMemo({ ttlMs: 60e3 });
+async function recordFlags(req) {
+  const days = parseFloat(req.query.days) || 0;
+  const q = k => (typeof req.query[k] === 'string' && /^[\w-]{1,40}$/.test(req.query[k]) ? req.query[k] : null);
+  const kind = q('kind'), book = q('book');
+  const rows = await recordFlagsMemo(`flags|${days > 0 ? days : 0}|${kind || ''}|${book || ''}`, async () =>
+    closeBoard.flags(await closeBoardLists(webhookLicence(), null), { since: days > 0 ? Date.now() - days * 86400e3 : 0, kind, book }));
+  const name = `line-reaper-record${kind ? `-${kind}` : ''}${book ? `-${book}` : ''}${days > 0 ? `-${days}d` : ''}-${new Date().toISOString().slice(0, 10)}`;
+  return { rows, name, days, kind, book };
+}
+app.get('/api/record/flags.csv', async (req, res) => {
+  try {
+    const { rows, name } = await recordFlags(req);
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}.csv"`, 'Cache-Control': 'public, max-age=60' })
+      .send(closeBoard.flagsCsv(rows));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/record/flags.json', async (req, res) => {
+  try {
+    const { rows, name, days, kind, book } = await recordFlags(req);
+    res.set({ 'Content-Disposition': `attachment; filename="${name}.json"`, 'Cache-Control': 'public, max-age=60' })
+      .json({ at: new Date().toISOString(), days: days > 0 ? days : null, kind, book, columns: closeBoard.FLAG_COLUMNS, n: rows.length, flags: rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
@@ -8374,7 +8414,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.184.0',
+  version: '3.185.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
