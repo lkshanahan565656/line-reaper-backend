@@ -18,6 +18,7 @@
 
 const { teamMatches } = require('./exchanges');
 const { nameMatch, kalshiTickerTime } = require('./xarb');
+const { keptAnswers } = require('./ops');
 
 const PIN = 'https://guest.api.arcadia.pinnacle.com/0.1';
 // Pinnacle sport ids (esports, 12, is feeds.js's)
@@ -93,20 +94,9 @@ function parseGames(sport, matchups, markets, now = Date.now()) {
 // city and nickname rules either way round, else the same words
 const sameTeamOnce = (label, name) => !!label && !!name && (teamMatches(label, name) || teamMatches(name, label) || nameMatch(label, name));
 // matchRows asks about the same label and team thousands of times a pass: the
-// answers are kept (strings only; the memo is dropped whole when it fills)
-const SAME_MEMO_MAX = 100000;
-const sameMemo = new Map();
-function sameTeam(label, name) {
-  if (typeof label !== 'string' || typeof name !== 'string') return sameTeamOnce(label, name);
-  const key = `${label}\u0000${name}`;
-  let v = sameMemo.get(key);
-  if (v === undefined) {
-    v = sameTeamOnce(label, name);
-    if (sameMemo.size >= SAME_MEMO_MAX) sameMemo.clear();
-    sameMemo.set(key, v);
-  }
-  return v;
-}
+// answers are kept (strings only; ops.keptAnswers)
+const SAME_MEMO_MAX = 150000;
+const sameTeam = keptAnswers(sameTeamOnce, SAME_MEMO_MAX);
 // labels [a, b] → 'same' (a is home) | 'flipped' | null, one way round only
 function sidesOf(labels, game) {
   const [a, b] = labels;

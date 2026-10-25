@@ -16,6 +16,7 @@
 // `http` so they can be tested without the network.
 
 const { decimalToAmerican } = require('./ev');
+const { keptAnswers } = require('./ops');
 
 const KALSHI_URL = 'https://api.elections.kalshi.com/trade-api/v2/markets';
 const POLYMARKET_URL = 'https://gamma-api.polymarket.com/events';
@@ -191,21 +192,10 @@ const initials = s => s.split(' ').filter(Boolean).map(w => w[0]).join('');
 const cityMatches = (label, city) => !!city && (label === city || label === initials(city) || CITY_ALIASES[label] === city);
 
 // Matching a market list asks the same (label, team) questions thousands of
-// times a scan, so the answers are kept (strings only; the memo is dropped
-// whole when it fills). The answer depends on nothing but the two names.
-const TEAM_MEMO_MAX = 100000;
-const teamMemo = new Map();
-function teamMatches(exchangeTeam, fullName) {
-  if (typeof exchangeTeam !== 'string' || typeof fullName !== 'string') return teamMatchesOnce(exchangeTeam, fullName);
-  const key = `${exchangeTeam}\u0000${fullName}`;
-  let v = teamMemo.get(key);
-  if (v === undefined) {
-    v = teamMatchesOnce(exchangeTeam, fullName);
-    if (teamMemo.size >= TEAM_MEMO_MAX) teamMemo.clear();
-    teamMemo.set(key, v);
-  }
-  return v;
-}
+// times a scan, so the answers are kept (strings only; ops.keptAnswers). The
+// answer depends on nothing but the two names.
+const TEAM_MEMO_MAX = 150000;
+const teamMatches = keptAnswers((exchangeTeam, fullName) => teamMatchesOnce(exchangeTeam, fullName), TEAM_MEMO_MAX);
 function teamMatchesOnce(exchangeTeam, fullName) {
   let label = norm(exchangeTeam);
   const { full, nick, city } = splitName(fullName);
