@@ -4844,7 +4844,7 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
   const urls = ['/', '/app', '/learn', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.185.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.186.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5091,6 +5091,87 @@ app.get('/api/record/flags.json', async (req, res) => {
     res.set({ 'Content-Disposition': `attachment; filename="${name}.json"`, 'Cache-Control': 'public, max-age=60' })
       .json({ at: new Date().toISOString(), days: days > 0 ? days : null, kind, book, columns: closeBoard.FLAG_COLUMNS, n: rows.length, flags: rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// The weekly record digest (digest.js): per kind and venue, what graded in the
+// week, the move toward the 50 bar, CLV and record for the week and all time,
+// and what became proven or started losing to the close. Read from the same
+// public record as RESULTS and the sales page, the same for everyone. Published
+// (frozen, and one push to every phone with alerts on) Monday 13:00 UTC; the
+// week so far and older weeks are built from the record on request.
+const digest = require('./digest');
+const digestStore = resultsBackup.wrap('recordDigest', createEvStoreFromEnv(process.env, { table: 'record_digests', fileVar: 'DIGEST_FILE', file: 'record-digests.json' }), { appendOnly: false });
+const digestReady = digestStore.init().catch(e => console.warn('Digest store:', e.message));
+const digestMemo = require('./ops').createMemo({ ttlMs: 10 * 60e3 });
+const digestOrigin = () => String(process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'https://line-reaper-backend-production.up.railway.app')).replace(/\/+$/, '');
+async function frozenDigests() { await digestReady; return (await digestStore.all()).filter(d => d.status === 'frozen' && d.digest); }
+// → { digest, frozen, sentAt } for a week id; null for a week in the future
+async function digestFor(week) {
+  const now = Date.now();
+  if (digest.weekOf(week).from > now) return null;
+  const f = (await frozenDigests()).find(d => d.week === week);
+  if (f) return { digest: f.digest, frozen: true, sentAt: f.pushedAt || f.builtAt, pushed: f.pushSent ?? null };
+  const d = await digestMemo(`digest|${week}`, async () => digest.build({ lists: await closeBoardLists(webhookLicence(), null), week, now }));
+  return { digest: d, frozen: false, sentAt: null, pushed: null };
+}
+// The Monday send: freeze the week that just ended and push it once. Hourly
+// from :00, so a deploy over 13:00 sends at the next hour; a week already
+// frozen is never sent again, and a send more than 12 hours late is frozen
+// without the push (a stale weekly buzz helps nobody).
+const digestState = { lastRunAt: null, last: null, error: null };
+async function publishDigest(now = Date.now()) {
+  const week = digest.dueWeek(now);
+  if (now < digest.sendAt(week)) return null;
+  const bk = process.env.DATABASE_URL ? 'ready' : resultsBackup.status().state;
+  if (bk !== 'ready' && bk !== 'off') { digestState.error = `results backup ${bk}: the record may be incomplete, waiting`; return null; }
+  if ((await frozenDigests()).some(d => d.week === week)) return null;
+  const d = digest.build({ lists: await closeBoardLists(webhookLicence(), null), week, now });
+  const doc = { id: `week-${week}`, status: 'frozen', week, builtAt: d.builtAt, digest: d, pushedAt: null, pushSent: null };
+  await digestStore.put(doc);
+  let sent = null;
+  if (now - digest.sendAt(week) < 12 * 3600e3) {
+    sent = await push.send(digest.pushText(d, { origin: digestOrigin() }), 'Weekly record').catch(e => { digestState.error = `push: ${e.message}`; return 0; });
+    await digestStore.put({ ...doc, pushedAt: new Date().toISOString(), pushSent: sent });
+  }
+  digestState.lastRunAt = new Date().toISOString();
+  digestState.last = { week, graded: d.summary.graded, pushSent: sent };
+  digestState.error = null;
+  return digestState.last;
+}
+app.get('/api/digest', async (req, res) => {
+  try {
+    const now = Date.now();
+    const frozen = await frozenDigests();
+    const lists = await closeBoardLists(webhookLicence(), null);
+    const first = Math.min(...Object.values(lists).flat().map(digest.startOf).filter(t => t > 0), now);
+    const cur = digest.weekOf(now);
+    const weeks = [];
+    for (let t = cur.from, i = 0; t >= digest.weekStart(first) && i < 13; t -= digest.WEEK, i++) {
+      const id = digest.weekOf(t).id, f = frozen.find(d => d.week === id);
+      weeks.push({ week: id, name: digest.weekName(id), partial: t === cur.from, frozen: !!f, sentAt: f ? f.pushedAt || f.builtAt : null,
+        graded: f ? f.digest.summary.graded : null, share: `/digest/${id}` });
+    }
+    res.set('Cache-Control', 'public, max-age=60').json({ at: new Date(now).toISOString(), current: cur.id, sendsAt: 'Monday 13:00 UTC',
+      nextSend: new Date(digest.sendAt(cur.id)).toISOString(), weeks });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/digest/:week', async (req, res) => {
+  try {
+    const week = String(req.params.week || '');
+    if (!digest.validWeek(week)) return res.status(400).json({ error: 'A week is the date of its Monday, like 2026-10-19' });
+    const out = await digestFor(week);
+    if (!out) return res.status(404).json({ error: 'That week has not started' });
+    res.set('Cache-Control', 'public, max-age=60').json({ ...out, share: `/digest/${week}` });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// The share link: a read-only public page for one week, under the sales page's rule
+app.get('/digest', (req, res) => res.redirect(302, `/digest/${digest.dueWeek(Date.now())}`));
+app.get('/digest/:week', async (req, res) => {
+  try {
+    const week = String(req.params.week || '');
+    const out = digest.validWeek(week) ? await digestFor(week) : null;
+    if (!out) return res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">That week has no digest. <a style="color:#34d399" href="/digest">See the latest week</a>.</body>`);
+    res.set('Cache-Control', 'public, max-age=300').type('html').send(digest.renderPage(out.digest, { origin: siteOrigin(req), frozen: out.frozen, sentAt: out.sentAt }));
+  } catch (e) { res.status(500).type('text/plain').send(e.message); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
   // open bets are today's live edges, so only closed ones are free
@@ -8414,7 +8495,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.185.1',
+  version: '3.186.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8489,6 +8570,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   licence: licenceState(req),
   dataLicences: (!PAYWALL || isAdmin(req)) ? licences.state() : licences.publicState(),
   upstream: upstream.stats(),
+  digest: typeof digestState !== 'undefined' ? digestState : null,
   live: { listeners: liveListeners.size, webhook: webhook.enabled && process.env.TAIL_WEBHOOK !== 'off', webhookKinds: webhook.kinds, webhookStats: webhook.stats(), push: push.stats() },
   accounts: { paywall: PAYWALL, billing: billing.configured(), authSecretSet: !!process.env.AUTH_SECRET, webhookSecretSet: !!process.env.STRIPE_WEBHOOK_SECRET },
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
@@ -8584,6 +8666,8 @@ schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('7,17,27,37,47,57 * * * *', () => settleKalshiMaker());
 schedule('20 */2 * * * *', () => scanOutrights());
+// the weekly record digest: Monday 13:00 UTC, checked hourly so a deploy over 13:00 still sends
+schedule('0 * * * *', () => publishDigest().catch(e => { digestState.error = e.message; console.warn('Digest:', e.message); }));
 schedule('4,14,24,34,44,54 * * * *', () => settleOutrights());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
@@ -8747,7 +8831,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, liveCheck, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, publishDigest, digestStore, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

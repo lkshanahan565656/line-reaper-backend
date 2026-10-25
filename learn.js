@@ -330,4 +330,4 @@ function render(slug = '', { origin = '' } = {}) {
 
 const canonicalOf = slug => (ALIASES[slug] ? ALIASES[slug] : PAGES[slug] ? slug : null);
 
-module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf };
+module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf, CSS, LOGO, FAVICON, esc };
