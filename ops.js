@@ -135,7 +135,7 @@ module.exports = { createOps, createMemo, STALL_MS };
 function createProfiler({ inspector = require('inspector') } = {}) {
   let busy = false;
   async function profile(seconds = 20, top = 40) {
-    if (busy) { const e = new Error('a profile is already running'); e.status = 409; throw e; }
+    if (busy) { throw Object.assign(new Error('a profile is already running'), { status: 409 }); }
     busy = true;
     const session = new inspector.Session();
     session.connect();
@@ -258,3 +258,26 @@ function createSlicer(sliceMs = 20) {
   };
 }
 module.exports.createSlicer = createSlicer;
+
+// ─── Kept answers ─────────────────────────────────────────────────────────────
+// A pure two-string question asked thousands of times a pass (does this
+// exchange label name that team?) keeps its answers in two generations: when
+// the newer one fills, it becomes the older one and the oldest are dropped.
+// Answers asked for again come forward, so a working set up to `max` is never
+// recomputed (dropping one map whole when it filled threw away every answer
+// at once, and the next pass asked them all again).
+function keptAnswers(fn, max = 100000) {
+  let cur = new Map(), old = new Map();
+  return (a, b) => {
+    if (typeof a !== 'string' || typeof b !== 'string') return fn(a, b);
+    const key = `${a}\u0000${b}`;
+    let v = cur.get(key);
+    if (v !== undefined) return v;
+    v = old.get(key);
+    if (v === undefined) v = fn(a, b);
+    if (cur.size >= max) { old = cur; cur = new Map(); }
+    cur.set(key, v);
+    return v;
+  };
+}
+module.exports.keptAnswers = keptAnswers;

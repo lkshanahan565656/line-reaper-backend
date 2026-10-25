@@ -3356,7 +3356,11 @@ function* evScreenSteps() {
   // game lines take Kalshi's mids as a second sharp source next to Pinnacle's
   // (only here: the exchange scans read evFeeds too and must not see a no-vig book)
   const kmid = Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS ? kalshiGameRows.rows : [];
-  const feeds = evFeeds().map(f => (/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f));
+  const feeds = [];
+  for (const f of evFeeds()) {
+    feeds.push(/odds$/.test(f.label) && kmid.length ? { ...f, games: pingames.withKalshiMid(f.games, kmid) } : f);
+    yield;   // each sport's Kalshi matching is its own slice
+  }
   const dfsLines = sportsPropLines();
   const fairs = new Map(), costs = new Map(), pinFairs = new Map();
   yield;
@@ -4793,7 +4797,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.170.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.170.2', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7826,7 +7830,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.170.1',
+  version: '3.170.2',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
