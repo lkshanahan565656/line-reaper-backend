@@ -1,0 +1,2143 @@
+== https://www.football-data.co.uk/mmz4281/2526/E0.csv 200 203435 Div,Date,Time,HomeTeam,AwayTeam,FTHG,FTAG,FTR,HTHG,HTAG,HTR,Referee,HS,AS,HST,AST,HF,AF,HC,AC,HY,AY,HR,AR,B365H,B365D,B365A,BFDH,BFDD,BFDA,BMGMH,BMGMD,BMGMA,BVH,BVD,BVA,BWH,BWD,BWA,CLH,CLD,CLA,LBH,LBD,LBA,PSH,PSD,PSA,MaxH,MaxD,MaxA,AvgH,AvgD,AvgA,BFEH,BFED,BFEA,B365>2.5,B365<2.5,P>2.5,P<2.5,Max>2.5,Max<2.5,Avg>2.5,Avg<2.5,BFE>2.5,BFE<2.5,AHh,B365AHH,B365AHA,PAHH,PAHA,MaxAHH,MaxAHA,AvgAHH,AvgAHA,BFEAHH,BFEAHA,B365CH,B365CD,B365CA,BFDCH,BFDCD,BFDCA,BMGMCH,BMGMCD,BMGMCA,BVCH,BVCD,BVCA,BWCH,BWCD,BWCA,CLCH,CLCD,CLCA,LBCH,LBCD,LBCA,PSCH,PSCD,PSCA,MaxCH,MaxCD,MaxCA,AvgCH,AvgCD,AvgCA,BFECH,BFECD,BFECA,B365C>2.5,B365C<2.5,PC>2.5,PC<2.5,MaxC>2.5,MaxC<2.5,AvgC>2.5,AvgC<2.5,BFEC>2.5,BFEC<2.5,AHCh,B365CA
+== https://www.football-data.co.uk/new/USA.csv 200 744343 Country,League,Season,Date,Time,Home,Away,HG,AG,Res,PSCH,PSCD,PSCA,MaxCH,MaxCD,MaxCA,AvgCH,AvgCD,AvgCA,BFECH,BFECD,BFECA,B365CH,B365CD,B365CA
+USA,MLS,2012,10/03/2012,23:00,Colorado Rapids,Columbus Crew,2,0,H,2.06,3.4,4.11,2.13,3.4,4.11,2.01,3.19,3.65,,,,,,
+USA,MLS,2012,10/03/2012,23:00,Vancouver Whitecaps,CF Montreal,2,0,H,2.04,3.44,4.11,2.04,3.44,4.11,1.97,3.27,3.7,,,,,,
+USA,MLS,2012,11/03/2012,00:30,DC United,Sporting Kansas City,0,1,A,2.57,3.31,3.04,2.6,3.6,3.04,2.46,3.11,2.81,,,,,,
+USA,MLS,2012,11/03/2012,03:30,Los Angeles Galaxy,Real Salt Lake,1,3,A,1.88,3.57,4.88,1.89,3.57,5,1.81,3.33,4.31,,,,,,
+USA,MLS,2012,11/03/2012,03:30,San Jose Earthquakes,New England Revolution,1,0,H,1.83,3
+== https://www.football-data.co.uk/fixtures.csv 200 54844 Div,Date,Time,HomeTeam,AwayTeam,Referee,B365H,B365D,B365A,BFDH,BFDD,BFDA,BVH,BVD,BVA,BWH,BWD,BWA,PPH,PPD,PPA,SKBH,SKBD,SKBA,MaxH,MaxD,MaxA,AvgH,AvgD,AvgA,BFEH,BFED,BFEA,B365>2.5,B365<2.5,Max>2.5,Max<2.5,Avg>2.5,Avg<2.5,BFE>2.5,BFE<2.5,AHh,B365AHH,B365AHA,MaxAHH,MaxAHA,AvgAHH,AvgAHA,BFEAHH,BFEAHA,B365CH,B365CD,B365CA,BFDCH,BFDCD,BFDCA,BVCH,BVCD,BVCA,BWCH,BWCD,BWCA,PPCH,PPCD,PPCA,SKBCH,SKBCD,SKBCA,MaxCH,MaxCD,MaxCA,AvgCH,AvgCD,AvgCA,BFECH,BFECD,BFECA,B365C>2.5,B365C<2.5,MaxC>2.5,MaxC<2.5,AvgC>2.5,AvgC<2.5,BFEC>2.5,BFEC<2.5,AHCh,B365CAHH,B365CAHA,MaxCAHH,MaxCAHA,AvgCAHH,AvgCAHA,BFECAHH,BFECAHA
+B1,23/10/2026,19:45,Kortrijk,Mechelen,,2.55,3.4,2.45,2.5,3.4,2.5,2.63,3.4,2.55,2.7,3.4,2.55,2.5,3.4,2
+== kalshi sports series 4047
+KS KXUCLLEADER | Champions League Leader | Soccer | custom
+KS KXCOPADELREY1H | 1st Half Winner | Soccer | custom
+KS KXWCFINISHINGORDER | World Cup Finishing Order | Soccer | custom
+KS KXURYPDGAME | Uruguay Primera Division Game | Soccer | custom
+KS KXLALIGAFTTS | First Team to Score | Soccer | custom
+KS KXMLSGOAL | Goalscorer | Soccer | custom
+KS KXEPLBTTS | EPL Both Teams to Score | Soccer | custom
+KS KXSLGREECEBTTS | BTTS | Soccer | custom
+KS KXAPFDDHSPREAD | Spread | Soccer | custom
+KS KXROML1TOTAL | Total | Soccer | custom
+KS KXWCFASTESTGOAL | World Cup Fastest Goal | Soccer | custom
+KS KXSERIEA2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXBALLONDORAWARD | Ballon d'Or awards | Soccer | annual
+KS KXNCAAMBACHAMP | College Baseball Championship | Baseball | annual
+KS KXUSLADVANCE | To Advance | Soccer | custom
+KS KXYUGIOH | Yu-Gi-Oh! TCG World Championship Winner | Other | custom
+KS KXLIGUE1POINTMARGIN | Ligue 1 Champion Winning Margin | Soccer | annual
+KS KXFACUP2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXFRAPLWSPREAD | Spread | Soccer | custom
+KS KXLVAVIRBTTS | BTTS | Soccer | one_off
+KS KXQSTARSSPREAD | Spread | Soccer | custom
+KS KXPERLIGA1ADVANCE | To Advance | Soccer | custom
+KS KXVCCHAMPIONSPARIS | VALORANT Champions 2025 PARIS | Esports | one_off
+KS KXFROCUPTOTAL | Point Total | Soccer | one_off
+KS KXCHNL1TOTAL | Point Total | Soccer | custom
+KS KXSERIECCUPTOTAL | Point Total | Soccer | one_off
+KS KXCLUBWCHOST | Club World Cup Host | Soccer | custom
+KS KXBUNDESLIGA2ADVANCE | To Advance | Soccer | custom
+KS KXUEFASCCORNERS | Total Corners | Soccer | custom
+KS KXEKSTRAKLASABTTS | BTTS | Soccer | custom
+KS KXEFLCHAMPIONSHIP | EFL Championship League Winner | Soccer | annual
+KS KXTFF1LIGTOTAL | Point Total | Soccer | one_off
+KS KXWCGS3WINS | World Cup Group Stage Undefeated | Soccer | one_off
+KS KXWCMESSIMBAPPE | Goals Messi and Mbappe | Soccer | custom
+KS KXENGCSTOTAL | Point Total | Soccer | custom
+KS KXINTLPLAYAGAIN | Play Again | Soccer | custom
+KS KXWCEVERYTEAMGOAL | World Cup Every Team to Score a Goal | Soccer | custom
+KS KXLALIGACORNERS | Total Corners | Soccer | custom
+KS KXBRASILEIROCBTTS | BTTS | Soccer | custom
+KS KXSERIEBADVANCE | To Advance | Soccer | custom
+KS KXUSLCUPGAME | USL Cup Game | Soccer | custom
+KS KXUELBTTS | Europa League BTTS | Soccer | custom
+KS KXLIGUE1 | LIGUE 1 | Soccer | annual
+KS KXFINALISSIMA1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXLALIGATEAMTOTAL | Team Total | Soccer | custom
+KS KXTACAPORT | Taca de Portugal Winner | Soccer | annual
+KS KXUEFACLTOPGOAL | UEFA CL Top Goal Scorer | Soccer | annual
+KS KXUCLTEAMSHOT | UCL Team Shots | Soccer | custom
+KS KXEREDIVISIETEAMTOTAL | Team Total | Soccer | custom
+KS KXTACAPORT1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCNOEURSA | World Cup Any Country not in Europe or South America to Win | Soccer | custom
+KS KXGERSCTEAMTOTAL | Team Total | Soccer | custom
+KS KXAFCONSCORE | Correct Score | Soccer | custom
+KS KXSCOTTISHPREMBTTS | BTTS | Soccer | custom
+KS KXFACUPFTTS | First Team to Score | Soccer | custom
+KS KXJOINEKITIKE | Hugo Ekitike | Soccer | custom
+KS KXLIGAMXSCORE | Correct Score | Soccer | custom
+KS KXINTLFRIENDLYGOAL | Friendly Goal | Soccer | custom
+KS KXMLS1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXAFCONSPREAD | Spread | Soccer | custom
+KS KXENGCS1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXDIMAYORSPREAD | Spread | Soccer | custom
+KS KXSCOCUPADVANCE | To Advance | Soccer | custom
+KS KXUEL1H | Europa League 1st Half | Soccer | custom
+KS KXUEFASCTCORNERS | Team Corners | Soccer | custom
+KS KXWCWOMEN | World Cup Women | Soccer | custom
+KS KXAFCACGAME | AFC Asia Cup Game | Soccer | custom
+KS KXASEANBTTS | BTTS | Soccer | custom
+KS KXUCLRO8 | UCL Advance to Round of 8 | Soccer | annual
+KS KXESPSUPERCUP1H | 1st Half Winner | Soccer | custom
+KS KXSCOTTISHPREM1H | 1st Half Winner | Soccer | custom
+KS KXTHAIL1GAME | Thai League 1 Game | Soccer | custom
+KS KXITASUPERCUPSPREAD | Spread | Soccer | custom
+KS KXWCFREEKICKGOAL | World Cup Free Kick Goal | Soccer | custom
+KS KXCONMEBOLSUD1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXSRBSLBTTS | BTTS | Soccer | one_off
+KS KXWC | World Cup | Soccer | custom
+KS KXCOPADOBRASIL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXITASUPERCUPGAME | Italy Super Cup Game | Soccer | custom
+KS KXWC1HBTTS | World Cup 1st Half BTTS | Soccer | custom
+KS KXWCAWARDCOMBO | World Cup Awards | Soccer | custom
+KS KXROML1SPREAD | Spread | Soccer | custom
+KS KXBUNDESLIGA1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXITASUPERCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXISRPLCUPADVANCE | To Advance | Soccer | one_off
+KS KXBRASILEIROC1H | 1st Half Winner | Soccer | custom
+KS KXCOPADELREY1HTOTAL | 1st Half Total | Soccer | custom
+KS KXWCKOPENALTIES | World Cup Matches to go to Penalties | Soccer | custom
+KS KXLEAGUESCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXFACUP2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXUCLSOT | UCL Shots or Target | Soccer | custom
+KS KXLIGAMXCORNERS | Total Corners | Soccer | custom
+KS KXSVK2LGAME | Slovakian 2. Liga Game | Soccer | one_off
+KS KXWCTEAMS | World Cup Team Count | Soccer | custom
+KS KXUCLSAVE | UCL Goalkeeper Saves | Soccer | custom
+KS KXCONMEBOLLIBTOTAL | Point Total | Soccer | custom
+KS KXESPSUPERCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXLALIGAPOINTMARGIN | La Liga Champion Winning Margin | Soccer | annual
+KS KXUCLTEAMTOTAL | UCL Team Total | Soccer | custom
+KS KXSUPERLIGBTTS | BTTS | Soccer | custom
+KS KXLIGUE1TEAMPOINTS | Team Points | Soccer | custom
+KS KXMLSTCORNERS | Team Corners | Soccer | custom
+KS KXCOPADELREYBTTS | BTTS | Soccer | custom
+KS KXISRPLGAME | Israeli Premier League Game | Soccer | one_off
+KS KXLALIGAGAME | La Liga Game | Soccer | custom
+KS KXCONCACAFNL | CONCACAF Nations League | Soccer | custom
+KS KXCPLMATCH | Caribbean Premier League Match | Cricket | custom
+KS KXASEANSPREAD | Spread | Soccer | custom
+KS KXBRASILEIROADVANCE | To Advance | Soccer | custom
+KS KXSVNCUPTOTAL | Point Total | Soccer | one_off
+KS KXUSLTEAMTOTAL | Team Total | Soccer | custom
+KS KXACBTOTAL | Spain Liga ACB Total | Basketball | custom
+KS KXINTLFRIENDLYAST | International Friendly Assists | Soccer | custom
+KS KXETTANTOTAL | Point Total | Soccer | one_off
+KS KXTEAMSINUCL | Champions League Final Matchup | Soccer | custom
+KS KXUECL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXNEXTMANAGERJUV | Next Manager of Juventus | Soccer | custom
+KS KXBUNDESLIGA2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXSVKCUPADVANCE | To Advance | Soccer | one_off
+KS KXLIGUILLAQUAL | Liga MX | Soccer | custom
+KS KXWCHATTRICK | World Cup Hat Trick | Soccer | custom
+KS KXLALIGARELEGATION | La Liga Relegation | Soccer | annual
+KS KXWCSTAGEOFELIM | World Cup Stage of Elimination | Soccer | custom
+KS KXSGPPLSPREAD | Spread | Soccer | custom
+KS KXFACUPTOTAL | FA Cup Total | Soccer | custom
+KS KXWCWINMARGIN | World Cup Winning Margin | Soccer | custom
+KS KXAFCONTOTAL | Point Total | Soccer | custom
+KS KXUSLGAME | USL Championship Game | Soccer | custom
+KS KXUEFASCSPREAD | Spread | Soccer | custom
+KS KXEFLCHAMPIONSHIPGAME | EFL Championship Game | Soccer | custom
+KS KXEFLCUPADVANCE | EFL Cup Advance | Soccer | custom
+KS KXEGYPLBTTS | BTTS | Soccer | custom
+KS KXDFBPOKALGAME | DFB Pokal Game | Soccer | custom
+KS KXCOPADELREYFTTS | First Team to Score | Soccer | custom
+KS KXCOUPEDEFRANCE1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUSOPENCUPGAME | US Open Cup Game | Soccer | custom
+KS KXIIHFCHAMP | IIHF World Championship winner | Hockey | custom
+KS KXCHNSLBTTS | BTTS | Soccer | custom
+KS KXMLSTEAMTOTAL | Team Total | Soccer | custom
+KS KXUEFANLSCORE | Correct Score | Soccer | custom
+KS KXCOPPAITALIATEAMTOTAL | Team Total | Soccer | custom
+KS KXUCLMOF | UCL Method of Finish | Soccer | custom
+KS KXUCLSPREAD | Champions League Spread | Soccer | custom
+KS KXGERSC1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCW | Women's World Cup | Soccer | custom
+KS KXSCOCUPSPREAD | Spread | Soccer | custom
+KS KXLIGUE1ADVANCE | To Advance | Soccer | custom
+KS KXAFCONADVANCE | AFCON To Advance | Soccer | custom
+KS KXISRNLCUPGAME | National League Cup Game | Soccer | one_off
+KS KXFIBACHAMPLEAGUEGAME | FIBA Champions League Game | Basketball | custom
+KS KXTRUMPGOLF | Trump US gold championship |  | custom
+KS KXUNITEDCUP | United Cup Champions | Tennis | custom
+KS KXFACUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUEFASCTOTAL | Point Total | Soccer | custom
+KS KXWCGBOOTGOALS | World Soccer Cup Golden Boot Total Goals | Soccer | custom
+KS KXNHLFINALSEXACT | NHL Championship Series Score | Hockey | annual
+KS KXWCHOST | World Soccer Cup Host Country | Soccer | custom
+KS KXWCTEAMSINGAME | World Cup Teams in Game | Soccer | custom
+KS KXFIFAW1H | 1st Half Winner | Soccer | custom
+KS KXVLEAGUE1SPREAD | Spread | Soccer | custom
+KS KXFINALISSIMAGAME | Finalissima | Soccer | custom
+KS KXLALIGA1HTOTAL | 1st Half Total | Soccer | custom
+KS KXBRASILEIROB1H | 1st Half Winner | Soccer | custom
+KS KXCONMEBOLLIB | CONMEBOL Libertadores | Soccer | custom
+KS KXUEFASC2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXFIFASPREAD | Fifa Spread | Soccer | custom
+KS KXLIGAEXP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUSL | USL Championship | Soccer | custom
+KS KXLIGUE1RELEGATION | Ligue 1 Relegation | Soccer | annual
+KS KXMLSFIRSTGOAL | First Goal | Soccer | custom
+KS KXLIGUE12HTOTAL | 2nd Half Total | Soccer | custom
+KS KXBUNDESLIGAFTTS | First Team to Score | Soccer | custom
+KS KXEFLCUPGAME | EFL Cup Game | Soccer | custom
+KS KXKNVBCUPSPREAD | Spread | Soccer | custom
+KS KXSAPSLTOTAL | Total | Soccer | custom
+KS KXLIGUE11HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUCLRO4 | UCL Advance to Round of 4 | Soccer | annual
+KS KXJLEAGUE1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXPRYLIGA1GAME | delete | Soccer | custom
+KS KXEUCHLGAME | Champions League Hockey | Hockey | custom
+KS KXAFCCLMOV | Method of Victory | Soccer | custom
+KS KXLIGAPROMATCH | Russia Liga Pro Match | Table Tennis | custom
+KS KXCOPADELREYMOV | Method of Victory | Soccer | custom
+KS KXTACAPORT1HTOTAL | 1st Half Total | Soccer | custom
+KS KXMLSLEADER | MLS Leader | Soccer | custom
+KS KXEGYPLSPREAD | Spread | Soccer | custom
+KS KXCOPADOBRASILTEAMTOTAL | Team Total | Soccer | custom
+KS KXWCTEAMLEADGOAL | World Cup Team Top Scorer | Soccer | custom
+KS KXBRASILEIROCGAME | Brasileiro Serie C Game | Soccer | custom
+KS KXEPLGAME | English Premier League Game | Soccer | custom
+KS KXWCGOALSTREAK | World Soccer Cup Goal Streak | Soccer | custom
+KS KXENGCSTCORNERS | Team Corners | Soccer | custom
+KS KXLALIGALAST | La Liga Last Place Finisher | Soccer | annual
+KS KXCOUPEDEFRANCEBTTS | BTTS | Soccer | custom
+KS KXWCIRAN | Iran World Cup | Soccer | custom
+KS KXCOPADELREY1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXDENSUPERLIGASPREAD | Spread | Soccer | custom
+KS KXCLUBWCADVANCE | To Advance | Soccer | custom
+KS KXFRASUPERCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGUE11HTOTAL | 1st Half Total | Soccer | custom
+KS KXCOPADELREYSCORE | Correct Score | Soccer | custom
+KS KXBUNDESLIGA2GAME | Bundesliga 2 Game | Soccer | custom
+KS KXWIMMEN | Wimbledon Championship Men's | Tennis | custom
+KS KXENGNLGAME | English National League Game | Soccer | one_off
+KS KXTRINITYRODMANNWSL | Trinity Rodman NWSL | Soccer | custom
+KS KXMANAGEROUT | Manager Out | Soccer | custom
+KS KXCANPLGAME | Canadian Premier League | Soccer | custom
+KS KXMLSTOTAL | MLS Total | Soccer | custom
+KS KXWC2HTOTAL | World Cup 2nd Half Total | Soccer | custom
+KS KXUCLFTTS | First Team to Score | Soccer | custom
+KS KXARGPREMDIVBTTS | Argentina Premier Division BTTS | Soccer | custom
+KS KXUCL | UEFA Champions League | Soccer | custom
+KS KXWC3RDPLACE | World Cup 3rd Place Finisher | Soccer | custom
+KS KXEFLCHAMPIONSHIPTEAMTOTAL | Team Total | Soccer | custom
+KS KXEWCRSS | Rainbow Six at 2025 Esports World Cup | Esports | one_off
+KS KXSERIECGAME | Serie C Game | Soccer | one_off
+KS KXWCLOCATION | World Cup Game Location | Soccer | custom
+KS KXEPL1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXJ2LEAGUETOTAL | Point Total | Soccer | custom
+KS KXSERIEBSPREAD | Spread | Soccer | custom
+KS KXFRASUPERCUPSCORE | Correct Score | Soccer | custom
+KS KXEPLTOP4 | EPL top 4 teams | Soccer | annual
+KS KXESPSUPERCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXEWSLGAME | England Women's Super League Game | Soccer | custom
+KS KXENGCS2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXSCOTTISHPREM1HTOTAL | 1st Half Total | Soccer | custom
+KS KXTORONTOULTRACHAMPIONSHIP | Dota 2 at 2025 Esports World Cup | Esports | one_off
+KS KXUELADVANCE | Europa League Advance | Soccer | custom
+KS KXWC1H | World Cup 1st Half | Soccer | custom
+KS KXEFLCUPMOF | Method of Finish | Soccer | custom
+KS KXCONMEBOLSUD | CONMEBOL Sudamericana | Soccer | one_off
+KS KXSRBSLSPREAD | Spread | Soccer | one_off
+KS KXUECLMOV | Method of Victory | Soccer | custom
+KS KXSERIECSCUPGAME | Supercoppa di Lega Pro Game | Soccer | one_off
+KS KXECULPGAME | Ecuador Liga Pro Game | Soccer | custom
+KS KXDFBPOKAL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXEWCMOBILELEGENDSBBWOMENS | Mobile Legends: Bang Bang Women's Invitational at 2025 Esports World Cup | Esports | one_off
+KS KXFIBACHAMPGAME | FIBA Champions League Game | Basketball | custom
+KS KXAFCCL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXISRPLSPREAD | Spread | Soccer | one_off
+KS KXUEFASCGAME | UEFA Super Cup | Soccer | custom
+KS KXUEFASC2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXLIGUE12H | 2nd Half Winner | Soccer | custom
+KS KXUSLCUPADVANCE | To Advance | Soccer | custom
+KS KXDFBPOKALMOV | Method of Victory | Soccer | custom
+KS KXLIGUE1SPREAD | Ligue 1 Spread | Soccer | custom
+KS KXNCAALAXFINAL | College Lacrosse National Championship | Lacrosse | annual
+KS KXCOUPEDEFRANCE | Coupe de France Winner | Soccer | custom
+KS KXEWCCHESS | Chess – Esports World Cup winner | Esports | one_off
+KS KXLIGAEXPTOTAL | Point Total | Soccer | custom
+KS KXFIFAWSPREAD | Spread | Soccer | custom
+KS KXWCCREG | West Coast Conference Regular Season Champions | Basketball | annual
+KS KXUECLTOTAL | Conference League Total | Soccer | custom
+KS KXAFCACBTTS | BTTS | Soccer | custom
+KS KXWCCONGO | DR Congo World Cup | Soccer | custom
+KS KXLALIGALEADER | La Liga Leader | Soccer | custom
+KS KXSAUDIPLTOTAL | Saudi Pro League Total | Soccer | custom
+KS KXCLUBWCGAME | Club World Club Game | Soccer | custom
+KS KXKLEAGUEBTTS | BTTS | Soccer | custom
+KS KXBRASILEIROCTEAMTOTAL | Team Total | Soccer | custom
+KS KXUCLADVANCE | Champions League Advance | Soccer | custom
+KS KXSAUDIPLTEAMTOTAL | Team Total | Soccer | custom
+KS KXEFLCUPSPREAD | EFL Cup Spread | Soccer | custom
+KS KXBBSERIEA2GAME | Italy Serie A2 Game | Basketball | custom
+KS KXSECREG | SEC Regular Season Champions | Basketball | annual
+KS KXUEFANLGOAL | UEFA Nations League Goal | Soccer | custom
+KS KXCLUBFSPREAD | Spread | Soccer | custom
+KS KXCLUBWCMOF | Method of Finish | Soccer | custom
+KS KXUEFASC2H | 2nd Half Winner | Soccer | custom
+KS KXSERIEALEADER | Serie A Leader | Soccer | custom
+KS KXUECLTEAMTOTAL | Team Total | Soccer | custom
+KS KXMLS2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXWCGOAL | World Cup Goal | Soccer | custom
+KS KXCONCACAFNLGAME | CONCACAF Nations League Game | Soccer | custom
+KS KXECULPTOTAL | Point Total | Soccer | custom
+KS KXUEFASCSCORE | Correct Score | Soccer | custom
+KS KXUEL16BOGTWE | Europa League round of 16 -  BOG TWE | Soccer | annual
+KS KXITASUPERCUPSCORE | Correct Score | Soccer | custom
+KS KXBOLPDIVADVANCE | To Advance | Soccer | custom
+KS KXCLUBWC2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXENGNLSPREAD | Spread | Soccer | one_off
+KS KXIDNSLBTTS | BTTS | Soccer | custom
+KS KXVLEAGUE1TOTAL | Point Total | Soccer | custom
+KS KXBELGIANPLTOTAL | Point Total | Soccer | custom
+KS KXTACAPORTTEAMTOTAL | Team Total | Soccer | custom
+KS KXFRAPLWTOTAL | Total | Soccer | custom
+KS KXFROPLTOTAL | Point Total | Soccer | one_off
+KS KXINTLFRIENDLY1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXJ2LEAGUEADVANCE | To Advance | Soccer | custom
+KS KXGRECUPADVANCE | To Advance | Soccer | one_off
+KS KXSERIEATOTAL | Serie A Total | Soccer | custom
+KS KXUELTEAMTOTAL | Team Total | Soccer | custom
+KS KXMLBWSMVP | Pro Baseball Championship MVP | Baseball | annual
+KS KXKNVBCUPBTTS | BTTS | Soccer | custom
+KS KXBRASILEIROTOPX | Brasileiro Top X | Soccer | annual
+KS KXFINYLBTTS | BTTS | Soccer | one_off
+KS KXUAEPLGAME | UAE Pro League | Soccer | custom
+KS KXBRASILEIROBSPREAD | Spread | Soccer | custom
+KS KXCONMEBOLSUDSPREAD | Spread | Soccer | custom
+KS KXPLAYWC | Player World Cup | Soccer | custom
+KS KXFRASUPERCUP1H | 1st Half Winner | Soccer | custom
+KS KXFINCUPSPREAD | Spread | Soccer | one_off
+KS KXESPSUPERCUPGAME | Spain Super Cup Game | Soccer | custom
+KS KXPREMDARTS | Premier League Darts Champion | Darts | annual
+KS KXALEAGUE1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUEFANLTOTAL | Point Total | Soccer | custom
+KS KXINDSLBTTS | Both teams to score | Soccer | custom
+KS KXBUNDESLIGALAST | Bundesliga Last Place Finisher | Soccer | annual
+KS KXCONMEBOLLIBGAME | CONMEBOL Libertadores Game | Soccer | custom
+KS KXFACUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXSVNCUPSPREAD | Spread | Soccer | one_off
+KS KXALEAGUE1H | 1st Half Winner | Soccer | custom
+KS KXELITESERIENTOTAL | Point Total | Soccer | custom
+KS KXUECLFTTS | First Team to Score | Soccer | custom
+KS KXLALIGA2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXEREDIVISIESPREAD | Eredivisie Spread | Soccer | custom
+KS KXINTLFRIENDLYTEAMTOTAL | Team Total | Soccer | custom
+KS KXENGCS2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXCLUBWCSCORE | Correct Score | Soccer | custom
+KS KXSCOCUPTOTAL | Point Total | Soccer | custom
+KS KXEFLL11H | 1st Half Winner | Soccer | custom
+KS KXWCSQUAD | World Cup Squad | Soccer | custom
+KS KXBBSERIEAGAME | Italy Serie A Game | Basketball | custom
+KS KXLEAGUESCUPTOTAL | Point Total | Soccer | custom
+KS KXLIGAMXSPREAD | Liga MX Game | Soccer | custom
+KS KXSERIEAGOAL | Goalscorer | Soccer | custom
+KS KXNEXTMANAGER | Next Manager | Soccer | custom
+KS KXEFLCUPFTTS | First Team to Score | Soccer | custom
+KS KXFINALISSIMA1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXAUTBUNDESSPREAD | Spread | Soccer | custom
+KS KXINDSLADVANCE | To Advance | Soccer | custom
+KS KXWCPLAYERGOALS | World Cup Player Goals | Soccer | custom
+KS KXCONMEBOLSUDTEAMTOTAL | Team Total | Soccer | custom
+KS KXJOINMESSI | Messi | Soccer | one_off
+KS KXCPL | Caribbean Premier League Champion | Cricket | custom
+KS KXCOUPEDEFRANCEMOV | Method of Victory | Soccer | custom
+KS KXUEFASC1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCLUBWCFTTS | First Team to Score | Soccer | custom
+KS KXEKSTRAKLASASPREAD | Spread | Soccer | custom
+KS KXSERIEA2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXAFCCL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCSAVE | World Cup Saves | Soccer | custom
+KS KXCLUBWCTEAMTOTAL | Team Total | Soccer | custom
+KS KXITASUPERCUP1H | 1st Half Winner | Soccer | custom
+KS KXITASUPERCUPTOTAL | Point Total | Soccer | custom
+KS KXUEFAGAME | UEFA Soccer Games | Soccer | custom
+KS KXCOPADOBRASIL1H | 1st Half Winner | Soccer | custom
+KS KXGRECUPTOTAL | Point Total | Soccer | one_off
+KS KXENGCS1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXCOPADOBRASILSPREAD | Copa do Brasil Spread | Soccer | custom
+KS KXWINSTREAKMANU | Man United Win Streak | Soccer | custom
+KS KXSOCCERTRANSFER | Soccer Transfer | Soccer | custom
+KS KXDFBPOKALFTTS | First Team to Score | Soccer | custom
+KS KXBUNDESLIGASPREAD | Bundesliga Spread | Soccer | custom
+KS KXWCCAREERGOALS | World Cup Career Goals | Soccer | custom
+KS KXCHNL1BTTS | BTTS | Soccer | custom
+KS KXAFCCLMOF | Method of Finish | Soccer | custom
+KS KXEWCCALLOFDUTYBLOPS6 | Call of Duty: Black Ops 6 at 2025 Esports World Cup | Esports | one_off
+KS KXFROPLGAME | Faroe Islands Premier League Game | Soccer | one_off
+KS KXUCL1H | Champions League First Hal Winner | Soccer | custom
+KS KXENGCSCORNERS | Total Corners | Soccer | custom
+KS KXEKSTRAKLASATOTAL | Point Total | Soccer | custom
+KS KXCOPADELREYSPREAD | Copa Del Rey Spread | Soccer | one_off
+KS KXLPL | Lanka Premier League Champion | Cricket | custom
+KS KXENGNLBTTS | BTTS | Soccer | one_off
+KS KXWCGOALCOUNT | World Cup Goal Count | Soccer | custom
+KS KXLVAVIRTOTAL | Point Total | Soccer | one_off
+KS KXLIGUE1TEAMTOTAL | Team Total | Soccer | custom
+KS KXWC2HSPREAD | World Cup Second Half Spread | Soccer | custom
+KS KXLEAGUESCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXJOINRONALDO | Cristiano Ronaldo | Soccer | custom
+KS KXEPL1HTOTAL | EPL 1st Half Total | Soccer | custom
+KS KXBELGIANPLSPREAD | Spread | Soccer | custom
+KS KXDDFMENSINGLES | Dubai Duty Free Tennis Championships | Tennis | annual
+KS KXFACUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXASEANADVANCE | To Advance | Soccer | custom
+KS KXGER3LGAME | German 3. Liga Game | Soccer | one_off
+KS KXPERLIGA1SPREAD | Spread | Soccer | custom
+KS KXLALIGA2TOTAL | Point Total | Soccer | custom
+KS KXSUPERLIG | Turkish Super Lig Champion | Soccer | annual
+KS KXWCGSGOALS | World Cup Group Stage Goals | Soccer | custom
+KS KXPREMCHAMP | Gallagher Premiership Champion | Rugby | custom
+KS KXLIGUE11HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXCHNSLTOTAL | Point Total | Soccer | custom
+KS KXEREDIVISIEBTTS | BTTS | Soccer | custom
+KS KXWNBA | WNBA Championship | Basketball | annual
+KS KXISRNLCUPTOTAL | Point Total | Soccer | one_off
+KS KXMYSLSPREAD | Spread | Soccer | custom
+KS KXCONCACAFCCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXCOPADOBRASILADVANCE | To Advance | Soccer | custom
+KS KXUEL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXISRPLCUPGAME | Premier League Cup Game | Soccer | one_off
+KS KXFACUP1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXASEANGAME | ASEAN Game | Soccer | custom
+KS KXEERSTEDIVGAME | Eerste Divisie Game | Soccer | one_off
+KS KXETTANBTTS | BTTS | Soccer | one_off
+KS KXFRASUPERCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXSWISSLEAGUESPREAD | Spread | Soccer | custom
+KS KXWCTEAMTOTALGOALS | World Cup Tournament Goals | Soccer | custom
+KS KXLIGAMX2H | 2nd Half Winner | Soccer | custom
+KS KXLIGAFADVANCE | To Advance | Soccer | custom
+KS KXCZEFNLBTTS | BTTS | Soccer | one_off
+KS KXUEFANL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXUCL1HTOTAL | UCL 1st Half Total | Soccer | custom
+KS KXFROCUPBTTS | BTTS | Soccer | one_off
+KS KXAPFDDHADVANCE | To Advance | Soccer | custom
+KS KXGER3LSPREAD | Spread | Soccer | one_off
+KS KXSAPSLSPREAD | Spread | Soccer | custom
+KS KXISRNLSPREAD | Spread | Soccer | one_off
+KS KXUAEPLSPREAD | Spread | Soccer | custom
+KS KXBUNDESLIGAMOV | Method of Victory | Soccer | custom
+KS KXLIGAMXGOAL | Goalscorer | Soccer | custom
+KS KXSOCCERPLAYMESSI | Messi World Cup | Soccer | custom
+KS KXLIGAFSPREAD | Spread | Soccer | custom
+KS KXCONCACAFNLSPREAD | Spread | Soccer | custom
+KS KXEPL2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXRUGBYWC | Men's Rugby World Cup Winner | Rugby | annual
+KS KXWCSCOREET | Correct Score after Extra Time | Soccer | custom
+KS KXUEL | Europa Leauge champion | Soccer | annual
+KS KXUSOPENCUPMOV | Method of Victory | Soccer | custom
+KS KXUCLFINALIST | UCL Advance to the Finals | Soccer | annual
+KS KXCOPPAITALIATOTAL | Coppa Italia Total | Soccer | custom
+KS KXUSLCUPSPREAD | Spread | Soccer | custom
+KS KXCOUPEDEFRANCESCORE | Correct Score | Soccer | custom
+KS KXUAEPLTOTAL | Point Total | Soccer | custom
+KS KXLALIGA2GAME | LaLiga 2 Game | Soccer | custom
+KS KXCOUPEDEFRANCEFTTS | First Team to Score | Soccer | custom
+KS KXBIG12REG | Big 12 Regular Season Champions | Basketball | annual
+KS KXCLUBWCMOV | Method of Victory | Soccer | custom
+KS KXUEFASC1HSCORE | World Cup 1st Half Score | Soccer | custom
+KS KXUEFANLGAME | UEFA Nations League Game | Soccer | custom
+KS KXISRPLBTTS | BTTS | Soccer | one_off
+KS KXSGPPLTOTAL | Point Total | Soccer | custom
+KS KXURYPD | Uruguayan Premier Division | Soccer | custom
+KS KXUSLCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXTWEEDEDIVGAME | Tweede Divisie Game | Soccer | one_off
+KS KXSERIEA1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXACBSPREAD | Spain Liga ACB Spread | Basketball | custom
+KS KXWCCORNERS | World Cup Corners | Soccer | custom
+KS KXSERIEAWGAME | Serie A Femminile Game | Soccer | one_off
+KS KXEWCSTARCRAFTII | StarCraft II at 2025 Esports World Cup | Esports | one_off
+KS KXUCLGOAL | UCL Goalscorer | Soccer | custom
+KS KXDIMAYORTOTAL | Point Total | Soccer | custom
+KS KXEFLCHAMPIONSHIPTOTAL | EFL Championship Total | Soccer | custom
+KS KXLIGUE1FIRSTGOAL | First Goal | Soccer | custom
+KS KXFIFAWADVANCE | To Advance | Soccer | custom
+KS KXEFLPROMO | EFL Promotion | Soccer | custom
+KS KXWCSTAGE | World Cup Furthest Stage Advanced | Soccer | custom
+KS KXBRASILEIROBADVANCE | To Advance | Soccer | custom
+KS KXLAMINEYAMAL | Lamine Yamal | Soccer | one_off
+KS KXUEFASUPERCUP | UEFA Super Cup Winner |  | custom
+KS KXSERIECSCUPBTTS | BTTS | Soccer | one_off
+KS KXLALIGAFIRSTGOAL | First Goal | Soccer | custom
+KS KXFACUP | FA cup | Soccer | annual
+KS KXWFIBAWC | Women's FIBA World Cup Winner | Basketball | custom
+KS KXITASUPERCUPMOV | Method of Victory | Soccer | custom
+KS KXUCLWGAME | Champions League Women's Game | Soccer | custom
+KS KXEPLTOP2 | Top 2 Finishers | Soccer | annual
+KS KXUSLCUP1H | 1st Half Winner | Soccer | custom
+KS KXEPLLEADER | EPL Leader | Soccer | custom
+KS KXLIGAMXBTTS | Liga MX BTTS | Soccer | custom
+KS KXELITESERIENADVANCE | To Advance | Soccer | custom
+KS KXITASUPERCUPBTTS | BTTS | Soccer | custom
+KS KXDENSUPERLIGAADVANCE | To Advance | Soccer | custom
+KS KXLIGUE1CORNERS | Total Corners | Soccer | custom
+KS KXSERIECCUPBTTS | BTTS | Soccer | one_off
+KS KXROML1ADVANCE | To Advance | Soccer | custom
+KS KXEFLL1BTTS | BTTS | Soccer | custom
+KS KXLIGUE12HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXUCLTOP | UCL League Phase Top of Table | Soccer | annual
+KS KXFACUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXENGCSFTTS | First Team to Score | Soccer | custom
+KS KXURCMATCH | United Rugby Championship Match | Rugby | custom
+KS KXBBWSERIEAGAME | Italy Serie A (W) Game | Basketball | custom
+KS KXBUNDESLIGA | BUNDESLIGA | Soccer | annual
+KS KXUSOPENCUPBTTS | BTTS | Soccer | custom
+KS KXLALIGA2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXUCLRO16 | UCL Advance to Round of 16 | Soccer | annual
+KS KXPOCHETTINOOUT | Pochettino Out | Soccer | custom
+KS KXCANPLSPREAD | Spread | Soccer | custom
+KS KXWIBPLGAME | Women's Iceland Premier League Game | Basketball | one_off
+KS KXKXECULPGAME | delete | Soccer | one_off
+KS KXWCTEAMH2H | World Cup Team Head to Head | Soccer | custom
+KS KXAPFDDHBTTS | BTTS | Soccer | custom
+KS KXNCAAMSOCCERGAME | College Soccer Game | Soccer | custom
+KS KXLIGAEXPADVANCE | To Advance | Soccer | custom
+KS KXDFBPOKALTOTAL | DFB Pokal Total | Soccer | custom
+KS KXALEAGUESPREAD | Australian A League Spread | Soccer | custom
+KS KXUSOPENCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXAFCON1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXCANPLADVANCE | To Advance | Soccer | custom
+KS KXEGYPLADVANCE | To Advance | Soccer | custom
+KS KXUSOPENCUPSPREAD | Spread | Soccer | custom
+KS KXUELGAME | UEFA Europa League Game | Soccer | custom
+KS KXBIGEASTREG | Big East Regular Season Champions | Basketball | annual
+KS KXWCGOALSALLOWED | World Cup Goals Allowed | Soccer | custom
+KS KXWCSPREAD | World Cup Spread | Soccer | custom
+KS KXBUNDESLIGA2H | 2nd Half Winner | Soccer | custom
+KS KXSCOTTISHPREMGAME | Scottish Premiership Game | Soccer | custom
+KS KXPHKLGAME | Croatia Premijer Liga Game | Basketball | custom
+KS KXSUPERLIGGAME | Turkish Super Lig Game | Soccer | custom
+KS KXKLEAGUETEAMTOTAL | Team Total | Soccer | custom
+KS KXUSLTOTAL | Point Total | Soccer | custom
+KS KXUCL1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXLIGAMXTOP | Liga MX Top Finishers | Soccer | custom
+KS KXCONCACAFNL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXFINCUPTOTAL | Point Total | Soccer | one_off
+KS KXJLEAGUEADVANCE | To Advance | Soccer | custom
+KS KXEPL1H | Premier League First Half Winner | Soccer | custom
+KS KXITASUPERCUPMOF | Method of Finish | Soccer | custom
+KS KXUSL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLALIGA | LA LIGA | Soccer | annual
+KS KXWCSHOT | World Cup Shots | Soccer | custom
+KS KXWCGSUNDEFEATED | World Cup Group Stage Undefeated | Soccer | custom
+KS KXEPL2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXBRASILEIROTEAMTOTAL | Team Total | Soccer | custom
+KS KXISRSCUPADVANCE | To Advance | Soccer | one_off
+KS KXWCMATCHUP | World Cup Matchup | Soccer | custom
+KS KXCZEFNLTOTAL | Point Total | Soccer | one_off
+KS KXEFLCUP | EFL Cup Winner | Soccer | annual
+KS KXENGCSADVANCE | To Advance | Soccer | custom
+KS KXBUNDESLIGAWGAME | German Women's Bundesliga Game | Soccer | custom
+KS KXGER3LTOTAL | Point Total | Soccer | one_off
+KS KXBRASILEIROBTTS | BTTS | Soccer | custom
+KS KXUCLBOTTOM | UCL League Phase Bottom of Table | Soccer | annual
+KS KXCOUPEDEFRANCE1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCCONTINENT | World Cup Continent | Soccer | custom
+KS KXBRASILEIROCTOTAL | Point Total | Soccer | custom
+KS KXCLUBWCTOTAL | Point Total | Soccer | custom
+KS KXEFLCHAMPIONSHIP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXSAUDIPLBTTS | BTTS | Soccer | custom
+KS KXEREDIVISIETOTAL | Eredivisie Total | Soccer | custom
+KS KXWCGOALIEGOAL | Goalie Goal in World Cup | Soccer | custom
+KS KXISRNLCUPSPREAD | Spread | Soccer | one_off
+KS KXLIGAEXP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXWCWINGROUP | World Cup Win Group | Soccer | custom
+KS KXCOUPEDEFRANCETEAMTOTAL | Team Total | Soccer | custom
+KS KXCHNSLGAME | Chinese Super League Game | Soccer | custom
+KS KXCLUBWC2H | 2nd Half Winner | Soccer | custom
+KS KXFRASUPERCUPGAME | France Super Cup Game | Soccer | custom
+KS KXBUNDESLIGATCORNERS | Team Corners | Soccer | custom
+KS KXSGPPLGAME | Singapore Premier League Game | Soccer | custom
+KS KXEREDIVISIEWGAME | Eredivisie Vrouwen Game | Soccer | one_off
+KS KXEPLSOA | EPL Score or Assist | Soccer | custom
+KS KXJLEAGUE1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCLUBWCGC | Club World Club Group C | Soccer | custom
+KS KXCOUNTYCHAMPMATCH | County Championship Cricket Match | Cricket | custom
+KS KXLALIGA1H | La Liga First Half Winner | Soccer | one_off
+KS KXFROCUPSPREAD | Spread | Soccer | one_off
+KS KXTACAPORTGAME | Taca de Portugal Game | Soccer | custom
+KS KXMWORLDCUP | Men's World Cup winner | Soccer | custom
+KS KXTFF1LIGSPREAD | Spread | Soccer | one_off
+KS KXFRAPLWBTTS | Both teams to score | Soccer | custom
+KS KXAFCCLSCORE | Correct Score | Soccer | custom
+KS KXARGNACBBTTS | BTTS | Soccer | custom
+KS KXUELFTTS | First Team to Score | Soccer | custom
+KS KXUSOPENCUPTOTAL | Point Total | Soccer | custom
+KS KXLEAGUESCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXMLSASTADVANCE | To Advance | Soccer | custom
+KS KXDENSUPERLIGATOTAL | Point Total | Soccer | custom
+KS KXTACAPORTSPREAD | Taca de Portugal Game | Soccer | custom
+KS KXESPSUPERCUPFTTS | First Team to Score | Soccer | custom
+KS KXSERIEAADVANCE | To Advance | Soccer | custom
+KS KXUCL16RMAMCI | Champions League round of 16 - RMA MCI | Soccer | one_off
+KS KXAFCACTEAMTOTAL | Team Total | Soccer | custom
+KS KXBRASILEIROGAME | Brasileiro Serie A Game | Soccer | custom
+KS KXCONMEBOLSUDBTTS | BTTS | Soccer | custom
+KS KXCHLLDPGAME | Chile Liga de Primera Game | Soccer | custom
+KS KXALEAGUE1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCGAMEGOALS | World Cup Highest Scoring Game | Soccer | custom
+KS KXEREDIVISIE1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCGROUPGOALS | Group Stage Goals | Soccer | custom
+KS KXNEXTMANAGEREPL | Next Manager | Soccer | custom
+KS KXUEFASCTEAMTOTAL | Team Total | Soccer | custom
+KS KXSBHOST | Pro Football Championship Host | Football | custom
+KS KXJOINSANE | Leroy Sane transfer | Soccer | one_off
+KS KXUECL1H | Conference League 1H | Soccer | custom
+KS KXDAVISCUP | Davis Cup Champions | Tennis | annual
+KS KXNEXTMANAGERMIL | Next Manager of AC Milan | Soccer | custom
+KS KXDFBPOKAL1H | 1st Half Winner | Soccer | custom
+KS KXBUNDESLIGABTTS | Bundesliga BTTS | Soccer | custom
+KS KXCHNL1ADVANCE | To Advance | Soccer | custom
+KS KXNWSLTOTAL | NWSL Total | Soccer | custom
+KS KXUELSPREAD | Europa League Spread | Soccer | custom
+KS KXEPL1HBTTS | EPL 1st Half BTTS | Soccer | custom
+KS KXWCFIFATOP10 | World Cup FIFA Top 10 | Soccer | custom
+KS KXUSOPENCUPSCORE | Correct Score | Soccer | custom
+KS KXUCLAST | UCL Assists | Soccer | custom
+KS KXARGNACBTOTAL | Point Total | Soccer | custom
+KS KXUEFASCFIRSTGOAL | First Goalscorer | Soccer | custom
+KS KXUEFASC1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXFROCUPGAME | Faroe Islands Cup Game | Soccer | one_off
+KS KXUSLCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUEL16FTCRSO | Europa League round of 16 - FTC RSO | Soccer | annual
+KS KXKNVBCUP | KNVB Cup Winner | Soccer | custom
+KS KXSWISSLEAGUEADVANCE | To Advance | Soccer | custom
+KS KXIIHF | Who will win IIHF championship? | Hockey | one_off
+KS KXBRASILEIROTOP | Brasileiro Serie A | Soccer | annual
+KS KXSOCCERJOIN | Soccer Next Team | Soccer | custom
+KS KXLALIGA1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCQUAL | World Cup Qualifiers | Soccer | custom
+KS KXWCSCORE | World Cup Correct Score | Soccer | custom
+KS KXWCREGIONKO | World Cup Region Teams to Reach Knockout Stage | Soccer | custom
+KS KXDFBPOKAL | DFB Pokal Winner | Soccer | annual
+KS KXKLEAGUE1H | 1st Half Winner | Soccer | custom
+KS KXEPLSCORE | Correct Score | Soccer | custom
+KS KXJLEAGUETEAMTOTAL | Team Total | Soccer | custom
+KS KXUEFASCGOAL | Goalscorer | Soccer | custom
+KS KXBRASILEIRO1H | 1st Half Winner | Soccer | custom
+KS KXEFLL1TEAMTOTAL | Team Total | Soccer | custom
+KS KXUCLTOP8 | UCL League Phase Top 8 Finishers | Soccer | annual
+KS KXSERIEATEAMTOTAL | Team Total | Soccer | custom
+KS KXDUNKMAN | Dunkman World Championships Winner | Basketball | custom
+KS KXFIFAADVANCE | Fifa To Advance | Soccer | custom
+KS KXSLGREECETOTAL | Point Total | Soccer | custom
+KS KXUECL | UEFA Conference League Winner | Soccer | annual
+KS KXK2LEAGUESPREAD | Spread | Soccer | custom
+KS KXFRASUPERCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXSOCCERLEAVE | Soccer Leave Role |  | custom
+KS KXSAUDIPLSPREAD | Saudi Pro League Game | Soccer | custom
+KS KXNCAALAX | College Lacrosse National Championship | Lacrosse | custom
+KS KXLIGAFBTTS | Both teams to score | Soccer | custom
+KS KXENGNLTOTAL | Point Total | Soccer | one_off
+KS KXUECLSCORE | Correct Score | Soccer | custom
+KS KXWCFTTS | World Cup Team To Score First | Soccer | custom
+KS KXUEFANL1H | 1st Half Winner | Soccer | custom
+KS KXWCGAME | World Cup Game | Soccer | custom
+KS KXPGATOURCHAMP | Golfers to Participate in the Tour Championship | Golf | custom
+KS KXSTEELBRIDGE | Steel Bridge National Championship | Other | custom
+KS KXSRBCUPBTTS | BTTS | Soccer | one_off
+KS KXUEFANLGROUPWIN | UEFA Nations League Group Winner | Soccer | custom
+KS KXFIFATOTAL | Fifa Total | Soccer | custom
+KS KXLIGAEXPBTTS | BTTS | Soccer | custom
+KS KXFACUPGAME | FA Cup Game | Soccer | custom
+KS KXNWSLBTTS | NWSL BTTS | Soccer | custom
+KS KXMANCITYPREMTITLE | Premier League Titles Stripped | Soccer | custom
+KS KXMANCITYTITLES | Manchester City trophies stripped | Soccer | custom
+KS KXKNVBCUPADVANCE | KNVB Cup Advance | Soccer | custom
+KS KXSAPSLGAME | South African Premiership Game | Soccer | custom
+KS KXECULP | Ecuador Liga Pro | Soccer | custom
+KS KXCONMEBOLLIBTEAMTOTAL | Team Total | Soccer | custom
+KS KXWCGROUPWIN | World Cup Group Winner | Soccer | custom
+KS KXAFCACSCORE | Correct Score | Soccer | custom
+KS KXINTERCUPADVANCE | Intercontinental Cup To Advance | Soccer | custom
+KS KXVLEAGUE1GAME | Vietnam V-League 1 Game | Soccer | custom
+KS KXTHISISMORETHAN17LETTERS | test | Soccer | one_off
+KS KXCOUPEDEFRANCETOTAL | Coupe de France Total | Soccer | custom
+KS KXSOCCERPLAYCRON | Cristiano Ronaldo world cup | Soccer | custom
+KS KXPERLIGA1BTTS | BTTS | Soccer | custom
+KS KXWCTOTAL | World Cup Total | Soccer | custom
+KS KXUEFAEURO | UEFA European Championship | Soccer | custom
+KS KXWCFIRSTGOAL | World Cup First Goal | Soccer | custom
+KS KXSERIEARELEGATION | Serie A Relegation | Soccer | annual
+KS KXWDBBLGAME | Women's Bundesliga Basketball Game | Basketball | custom
+KS KXMANCITYSANCTION | Man City Sanctions | Soccer | custom
+KS KXLIGAMX1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXEFLCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXBELGIANPLADVANCE | To Advance | Soccer | custom
+KS KXLOLUNIQUECHAMP | Unique Champions Selected | Esports | custom
+KS KXESPSUPERCUPMOV | Method of Victory | Soccer | custom
+KS KXSERIEA1H | Serie A First Half Winner | Soccer | custom
+KS KXBALLONDORRANK | Ballon d'Or top finishers | Soccer | annual
+KS KXSOCCERINTLRETIRE | Soccer International Play Retirement | Soccer | custom
+KS KXNWSLADVANCE | To Advance | Soccer | custom
+KS KXSERIECBTTS | BTTS | Soccer | one_off
+KS KXUCL1HBTTS | UCL Half BTTS | Soccer | custom
+KS KXEWCFREEFIRE | Free Fire at 2025 Esports World Cup | Esports | one_off
+KS KXTHEOPEN | The Open Championship | Golf | annual
+KS KXSCOTTISHPREMTEAMTOTAL | Team Total | Soccer | custom
+KS KXINDSLTOTAL | Total | Soccer | custom
+KS KXEWCVALORANT | VALORANT featured at 2025 Esports World Cup | Esports | one_off
+KS KXEPLCORNERS | EPL Corners | Soccer | custom
+KS KXCOPADELREYADVANCE | Copa Del Rey To Advance | Soccer | custom
+KS KXEFLL11HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGAPORTUGALBTTS | BTTS | Soccer | custom
+KS KXEKSTRAKLASAGAME | Polish Ekstraklasa Game | Soccer | custom
+KS KXEPLSPREAD | English Premier League Spread | Soccer | custom
+KS KXMYSLBTTS | BTTS | Soccer | custom
+KS KXSAUDIPL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXJOINMBAPPE | Kylian Mbappe next team | Soccer | custom
+KS KXUCLWSPREAD | Spread | Soccer | custom
+KS KXWCMBAPPEGOALLEADER | Mbappe to Break the World Soccer Cup All-Time Goals Record | Soccer | custom
+KS KXTHAIL1SPREAD | Spread | Soccer | custom
+KS KXAFCON1HTOTAL | 1st Half Total | Soccer | custom
+KS KXEGYPLTOTAL | Point Total | Soccer | custom
+KS KXBUNDESLIGA2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXCLUBWCGA | Club World Club Group A | Soccer | custom
+KS KXISRSCUPSPREAD | Spread | Soccer | one_off
+KS KXLIGAMXTEAMTOTAL | Team Total | Soccer | custom
+KS KXNBAFINALSEXACT | Pro Basketball Championship Series Score | Basketball | annual
+KS KXFACUPMOV | Method of Victory | Soccer | custom
+KS KXSOCCERTREBLE | Soccer Treble Winners | Soccer | annual
+KS KXISRSUPCUPGAME | Super Cup Game | Soccer | one_off
+KS KXHNLTOTAL | Point Total | Soccer | custom
+KS KXEWCTEAMFIGHTTACTICS | Teamfight Tactics featured at 2025 Esports World Cup | Esports | one_off
+KS KXCHLLDPTOTAL | Point Total | Soccer | custom
+KS KXUCL2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXCZEFLADVANCE | To Advance | Soccer | custom
+KS KXEPLGOAL | EPL Goalscorer | Soccer | custom
+KS KXSVK2LBTTS | BTTS | Soccer | one_off
+KS KXSVNCUPADVANCE | To Advance | Soccer | one_off
+KS KXJLEAGUESPREAD | Spread | Soccer | custom
+KS KXVENFUTVEGAME | Venezuela Liga FUTVE game | Soccer | custom
+KS KXUSOPENCUPFTTS | First Team to Score | Soccer | custom
+KS KXWCROUND | World Cup Reach Round | Soccer | custom
+KS KXENGCSBTTS | BTTS | Soccer | custom
+KS KXEPLH2H | EPL H2H Results | Soccer | custom
+KS KXEFLCHAMPIONSHIPSPREAD | EFL Championship Spread | Soccer | custom
+KS KXFRASUPERCUPTOTAL | Point Total | Soccer | custom
+KS KXBRASILEIRO1HTOTAL | 1st Half Total | Soccer | custom
+KS KXENGCSGOAL | Community Shield Goalscorer | Soccer | custom
+KS KXEGYPL | Egyptian Premier League  | Soccer | custom
+KS KXALLSVENSKANGAME | Allsvenskan Game | Soccer | custom
+KS KXMLS1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXEPLTESTIMAGE | test | Football | one_off
+KS KXALEAGUETOTAL | Australia A League Total | Soccer | custom
+KS KXFROCUPADVANCE | To Advance | Soccer | one_off
+KS KXFACUPBTTS | BTTS | Soccer | custom
+KS KXSLGREECEGAME | Super League Greece Game | Soccer | custom
+KS KXSVKCUPGAME | Slovakian Cup Game | Soccer | one_off
+KS KXCHLLDPADVANCE | To Advance | Soccer | custom
+KS KXCOPADOBRASILTOTAL | Copa do Brasil Total | Soccer | custom
+KS KXLALIGASCORE | Correct Score | Soccer | custom
+KS KXCZEFLTOTAL | Point Total | Soccer | custom
+KS KXEWSLADVANCE | To Advance | Soccer | custom
+KS KXKLEAGUESPREAD | Spread | Soccer | custom
+KS KXSAILGP | SailGP Championship | Other | custom
+KS KXJOINNEYMARMIAMI | Inter Miami Neymar | Soccer | custom
+KS KXWCSOG | World Cup Shot on Goal | Soccer | custom
+KS KXSVNCUPGAME | Slovenian Cup Game | Soccer | one_off
+KS KXCHNSLADVANCE | To Advance | Soccer | custom
+KS KXBUNDESLIGATEAMPOINTS | Team Points | Soccer | custom
+KS KXSERIEABTTS | Serie A BTTS | Soccer | custom
+KS KXMENWORLDCUP | Men's World Cup winner | Soccer | custom
+KS KXWCTEAMFIRSTGOAL | World Cup Team First Goal | Soccer | custom
+KS KXUEFANLTEAMTOTAL | Team Total | Soccer | custom
+KS KXFRASUPERCUPADVANCE | France Super Cup to Advance | Soccer | custom
+KS KXVENFUTVE | Venezuela Primera Division | Soccer | custom
+KS KXCONMEBOLSUD1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXSERIECSPREAD | Spread | Soccer | one_off
+KS KXEWCLEAGUEOFLEGENDS | League of Legends featured at 2025 Esports World Cup | Esports | one_off
+KS KXNFC | NFC Championship | Football | annual
+KS KXLIGUE2SPREAD | Spread | Soccer | one_off
+KS KXMLS1H | 1st Half Winner | Soccer | custom
+KS KXEWCHONOROFKINGS | Honor of Kings World Cup at 2025 Esports World Cup | Esports | one_off
+KS KXBRASILEIROB1HTOTAL | 1st Half Total | Soccer | custom
+KS KXALEAGUEGAME | Australian A League Game | Soccer | custom
+KS KXLIGAMXADVANCE | Liga MX Advance | Soccer | custom
+KS KXELITESERIENBTTS | BTTS | Soccer | custom
+KS KXLIGAPORTUGAL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXAFCAC1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUCLTEAMSOT | UCL Team Shots on Target | Soccer | custom
+KS KXMLSJOIN | MLS Transfers | Soccer | custom
+KS KXBUNDESLIGAWBTTS | Both teams to score | Soccer | custom
+KS KXFINCUPADVANCE | To Advance | Soccer | one_off
+KS KXMLS1HTOTAL | 1st Half Total | Soccer | custom
+KS KXTACAPORTADVANCE | Taca de Portugal To Advance | Soccer | custom
+KS KXCONMEBOLLIB1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXNASCARCUPCHAMP | Nascar Cup Series Championship |  | one_off
+KS KXBOLPDIVGAME | Bolivia Premier Division Game | Soccer | custom
+KS KXCANPLTOTAL | Point Total | Soccer | custom
+KS KXAUTBUNDESTOTAL | Total | Soccer | custom
+KS KXDFBPOKAL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCGROUPBOTTOM | Group Bottom Finisher | Soccer | custom
+KS KXJLEAGUETOTAL | Point Total | Soccer | custom
+KS KXSRBCUPADVANCE | To Advance | Soccer | one_off
+KS KXCZEFNLSPREAD | Spread | Soccer | one_off
+KS KXWCGROUPWINNER | World Cup Group to Win | Soccer | custom
+KS KXEFLCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXFACUP2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXUEFACL | UEFA Champions League | Soccer | annual
+KS KXCLUBFTOTAL | Point Total | Soccer | custom
+KS KXJ2LEAGUEBTTS | BTTS | Soccer | custom
+KS KXEWCRAINBOW6SEIGE | Rainbow Six at 2025 Esports World Cup WINNER | Esports | one_off
+KS KXSAUDIPL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUEL16GALAZA | Europa League round of 16 - GAL AZA | Soccer | annual
+KS KXMLSASTBTTS | BTTS | Soccer | custom
+KS KXLEAGUESCUPADVANCE | To Advance | Soccer | custom
+KS KXEWCMLBB | Mobile Legends: Bang Bang Mid Season Cup at 2025 Esports World Cup | Esports | one_off
+KS KXCHNL1GAME | China League 1 Game | Soccer | custom
+KS KXFROPLBTTS | BTTS | Soccer | one_off
+KS KXACCREG | ACC Regular Season Champions | Basketball | annual
+KS KXEWCRB6 | Rainbow Six at 2025 Esports World Cup | Esports | one_off
+KS KXLIGAFTOTAL | Total | Soccer | custom
+KS KXESPSUPERCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXFINALISSIMAFTTS | First Team to Score | Soccer | custom
+KS KXSERIEA2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXSCOCUPGAME | Scottish Cup Game | Soccer | custom
+KS KXDFBPOKALSPREAD | DFB Pokal Spread | Soccer | custom
+KS KXBELGIANPLGAME | Belgian Pro League Game | Soccer | custom
+KS KXUCLWBTTS | BTTS | Soccer | custom
+KS KXCOUPEDEFRANCEMOF | Method of Finish | Soccer | custom
+KS KXMLSSPREAD | MLS Spread | Soccer | custom
+KS KXFINALISSIMAADVANCE | To Advance | Soccer | custom
+KS KXLIGAEXP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXISRSUPCUPSPREAD | Spread | Soccer | one_off
+KS KXMLSSCORE | Correct Score | Soccer | custom
+KS KXUEL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXLALIGA2SPREAD | Spread | Soccer | custom
+KS KXMANAGERSOUT | Managers Out | Soccer | custom
+KS KXBUNDESLIGA2BTTS | BTTS | Soccer | custom
+KS KXLIGAPORTUGALSPREAD | Spread | Soccer | custom
+KS KXWCADVANCE | World Cup Advance | Soccer | custom
+KS KXFINYLTOTAL | Point Total | Soccer | one_off
+KS KXAPFDDHTOTAL | Point Total | Soccer | custom
+KS KXCHLLDPBTTS | BTTS | Soccer | custom
+KS KXLIGUE1FTTS | First Team to Score | Soccer | custom
+KS KXKLEAGUE1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCONMEBOLSUD1HTOTAL | 1st Half Total | Soccer | custom
+KS KXFACUPADVANCE | FA Cup Advance | Soccer | custom
+KS KXAFCCLTEAMTOTAL | Team Total | Soccer | custom
+KS KXWCRECORD | World Cup Record Breaking | Soccer | custom
+KS KXIDNSLSPREAD | Spread | Soccer | custom
+KS KXSUPERBALLONDOR | Super Ballon d'Or | Soccer | custom
+KS KXWCSTART | World Cup Starters | Soccer | custom
+KS KXBUNDESLIGAGOAL | Goalscorer | Soccer | custom
+KS KXLIGUE12HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXLIGUE2TOTAL | Point Total | Soccer | one_off
+KS KXUEFANL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXEFLCUPMOV | Method of Victory | Soccer | custom
+KS KXEFLCUPBTTS | BTTS | Soccer | custom
+KS KXROML1GAME | Romanian Liga I Game | Soccer | custom
+KS KXCONCACAFNL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUCLSHOT | UCL Shots | Soccer | custom
+KS KXLALIGA2ADVANCE | To Advance | Soccer | custom
+KS KXEFLL1GAME | EFL League One Game | Soccer | custom
+KS KXFINCUPGAME | Suomen Cup Game | Soccer | one_off
+KS KXUCLQUAL | Champions League Qualifiers | Soccer | custom
+KS KXUCL2H | 2nd Half Winner | Soccer | custom
+KS KXCONCACAFCCUPBTTS | BTTS | Soccer | custom
+KS KXWCGOLDENBOOTCLEAT | Golden Boot Cleats | Soccer | custom
+KS KXEPL2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXEPLFTTS | First Team to Score | Soccer | custom
+KS KXLIGUE1TCORNERS | Team Corners | Soccer | custom
+KS KXEREDIVISIE | Eredivisie League Winner | Soccer | annual
+KS KXMLBALCSMVP | Pro Baseball American League Championship Series MVP | Baseball | annual
+KS KXBRASILEIROC1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXAUTBUNDESADVANCE | To Advance | Soccer | custom
+KS KXSERIEAMOV | Method of Victory | Soccer | custom
+KS KXITASUPERCUPADVANCE | Italy Super Cup Winner | Soccer | custom
+KS KXLIGAMX2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXUCLROUND | Round Qualifiers | Soccer | custom
+KS KXCITYCHAMPS | City Major Sports Championships | Cities | custom
+KS KXWCBESTHOST | World Cup Best Performing Host Nation | Soccer | custom
+KS KXUCL8 | Champion's League to Round of 8 | Soccer | custom
+KS KXSOCCERRETIRE | Soccer Retire | Soccer | custom
+KS KXUEFANL | UEFA Nations League | Soccer | custom
+KS KXCZEFLBTTS | BTTS | Soccer | custom
+KS KXQSTARSADVANCE | To Advance | Soccer | custom
+KS KXEPLSEASONSTAT | EPL Season Stats | Soccer | custom
+KS KXLIGUE1GOAL | Goalscorer | Soccer | custom
+KS KXBUNDESLIGARELEGATION | Bundesliga Relegation | Soccer | annual
+KS KXLIGAMXLEADER | Liga MX Leader | Soccer | custom
+KS KXIPLGAME | Indian Premier League Cricket Game | Cricket | custom
+KS KXUCL16BVBSPO | Champions League round of 16 - BVB SPO | Soccer | one_off
+KS KXWCBTTS | World Cup BTTS | Soccer | custom
+KS KXQSTARSTOTAL | Total | Soccer | custom
+KS KXCONCACAFNL1H | 1st Half Winner | Soccer | custom
+KS KXCOPADOBRASIL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXENGCS2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXLIGUE1TOP | Ligue 1 Top Finishers | Soccer | custom
+KS KXBRASILEIROBTOTAL | Point Total | Soccer | custom
+KS KXESOCCERGAME | eSoccer Game | Esports | custom
+KS KXLIGAPORTUGAL | Liga Portugal Winner | Soccer | annual
+KS KXUCLLEAGUE | League to Win UEFA Champions League | Soccer | annual
+KS KXINTLFRIENDLY1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXVLEAGUE1ADVANCE | To Advance | Soccer | custom
+KS KXBUNDESLIGATOTAL | Bundesliga Total | Soccer | one_off
+KS KXLIGUE1LEADER | Ligue 1 Leader | Soccer | custom
+KS KXEFLCHAMPIONSHIP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXBRASILEIROCADVANCE | To Advance | Soccer | custom
+KS KXMLSASTSPREAD | Spread | Soccer | custom
+KS KXBUNDESLIGAWADVANCE | To Advance | Soccer | custom
+KS KXINTLFRIENDLYGAME | International Friendly Game | Soccer | custom
+KS KXNCAAWBCONFSTREAK | Women's College Basketball Conference Championship Streak | Basketball | custom
+KS KXCOPPAITALIAFTTS | First Team to Score | Soccer | custom
+KS KXBUNDESLIGAPOINTMARGIN | Bundesliga Champion Winning Margin | Soccer | annual
+KS KXCOPPAITALIASPREAD | Copa Italia Spread | Soccer | custom
+KS KXFINALISSIMAMOV | Method of Victory | Soccer | custom
+KS KXUCL16 | Champions League round of 16 | Soccer | custom
+KS KXIDNSLGAME | Indonesia Super League Game | Soccer | custom
+KS KXUCL2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXBRASILEIROSPREAD | Brasileiro Serie A Game | Soccer | custom
+KS KXFINYLGAME | Finnish Ykkosliiga Game | Soccer | one_off
+KS KXUECL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXK2LEAGUEBTTS | BTTS | Soccer | custom
+KS KXTWEEDEDIVSPREAD | Spread | Soccer | one_off
+KS KXFACUPMOF | Method of Finish | Soccer | custom
+KS KXUFASEMI | Ultimate Frisbee Association Championship Qualifiers | Other | annual
+KS KXUEFANLBTTS | BTTS | Soccer | custom
+KS KXLIGAPORTUGAL1H | 1st Half Winner | Soccer | custom
+KS KXCHAMPTOUR | PGA Champions Tour | Golf | custom
+KS KXEFLL1SPREAD | Spread | Soccer | custom
+KS KXMLBAL | MLB American League Championship | Baseball | annual
+KS KXUSOPENCUP | US Open Cup Soccer | Soccer | annual
+KS KXEPLH2HFINISH | EPL H2H Finishing Position | Soccer | custom
+KS KXSVNPLBTTS | BTTS | Soccer | one_off
+KS KXURYPDADVANCE | To Advance | Soccer | custom
+KS KXUEFAISRAELBAN | UEFA Israel Ban |  | one_off
+KS KXBRASILEIROFTTS | First Team to Score | Soccer | custom
+KS KXLIGAPORTUGALTEAMTOTAL | Team Total | Soccer | custom
+KS KXEKSTRAKLASAADVANCE | To Advance | Soccer | custom
+KS KXFINALISSIMATEAMTOTAL | Team Total | Soccer | custom
+KS KXBUNDESLIGAFIRSTGOAL | First Goal | Soccer | custom
+KS KXLEAGUESCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXCONCACAFCCUPADVANCE | To Advance | Soccer | custom
+KS KXISRNLCUPBTTS | BTTS | Soccer | one_off
+KS KXNEXTMANAGERCHELSEA | Next Manager Chelsea | Soccer | custom
+KS KXSAUDIPL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXSUPERLIGSPREAD | Spread | Soccer | custom
+KS KXDENSUPERLIGABTTS | BTTS | Soccer | custom
+KS KXSERIEBGAME | Serie B Game | Soccer | custom
+KS KXPREMIERLEAGUE | PREMIER LEAGUE | Soccer | annual
+KS KXPFAPOY | PFA Player of The Year | Soccer | custom
+KS KXUEL16VIKFTC | Europa League round of 16 - VIK FTC | Soccer | annual
+KS KXLALIGATCORNERS | Team Corners | Soccer | custom
+KS KXLIGUE11H | Ligue 1 First Half Winner | Soccer | custom
+KS KXUEL16RSOFCM | Europa League round of 16 - RSO FCM | Soccer | annual
+KS KXEREDIVISIEGAME | Eredivisie Game | Soccer | custom
+KS KXSCOTTISHPREMSPREAD | Spread | Soccer | custom
+KS KXSLGREECEADVANCE | To Advance | Soccer | custom
+KS KXARGPREMDIVADVANCE | Argentina Primera Division To Advance | Soccer | custom
+KS KXLALIGASPREAD | La Liga Spread | Soccer | custom
+KS KXCONCACAFNL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXWCPLAY | World Cup Play in Game | Soccer | custom
+KS KXSERIECTOTAL | Point Total | Soccer | one_off
+KS KXUECLMOF | Method of Finish | Soccer | custom
+KS KXWCSOA | World Cup Score or Assist | Soccer | custom
+KS KXCONCACAFCCUP1H | 1st Half Winner | Soccer | custom
+KS KXUECLBTTS | Conference League BTTS | Soccer | custom
+KS KXDIMAYORADVANCE | To Advance | Soccer | custom
+KS KXDENSUPERLIGA | Danish Superliga Champion | Soccer | custom
+KS KXJ2LEAGUESPREAD | Spread | Soccer | custom
+KS KXNWSL | NWSL Champion | Soccer | annual
+KS KXASEANTOTAL | Point Total | Soccer | custom
+KS KXSOCCERSPREAD | Soccer Spread | Soccer | custom
+KS KXSWISSLEAGUEGAME | Swiss Super League Game | Soccer | custom
+KS KXK2LEAGUETOTAL | Point Total | Soccer | custom
+KS KXALEAGUE1HTOTAL | 1st Half Total | Soccer | custom
+KS KXWCTTSF | World Cup Team To Score First | Soccer | custom
+KS KXCONMEBOLLIBBTTS | BTTS | Soccer | custom
+KS KXEREDIVISIE1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXBRASILEIROSCORE | Correct Score | Soccer | custom
+KS KXCONMEBOLSUDGAME | CONMEBOL Sudamericana Game | Soccer | custom
+KS KXBUNDESLIGA1H | Bundesliga First Half Winner | Soccer | custom
+KS KXBUNDESLIGAWTOTAL | Total | Soccer | custom
+KS KXMLSASTGAME | MLS All Star Game | Soccer | custom
+KS KXUEFAEUROQUAL | Euros Qualifiers | Soccer | custom
+KS KXAFCON1H | 1st Half Winner | Soccer | custom
+KS KXTACAPORT1H | 1st Half Winner | Soccer | custom
+KS KXDFBPOKALADVANCE | DFB Pokal Advance | Soccer | custom
+KS KXFACUP1H | 1st Half Winner | Soccer | custom
+KS KXSRBSLTOTAL | Point Total | Soccer | one_off
+KS KXTFF1LIGBTTS | BTTS | Soccer | one_off
+KS KXEPLTOP | EPL Top Finishers | Soccer | custom
+KS KXSUPERLIGADVANCE | To Advance | Soccer | custom
+KS KXSAPSLADVANCE | To Advance | Soccer | custom
+KS KXLIGAMXTCORNERS | Team Corners | Soccer | custom
+KS KXJOINCLUB | Soccer Join Club | Soccer | custom
+KS KXMYSLGAME | Malaysia Super League Game | Soccer | custom
+KS KXCONMEBOLSUD1H | 1st Half Winner | Soccer | custom
+KS KXCOPADELREYTOTAL | Copa del Rey Total | Soccer | custom
+KS KXWC1HSPREAD | World Cup First Half Spread | Soccer | custom
+KS KXGERSCSPREAD | Spread | Soccer | custom
+KS KXAUSTINMAJOR | Rennsport at 2025 Esports World Cup | Esports | annual
+KS KXUSLCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXSVNPLGAME | Slovenian Prva Liga Game | Soccer | one_off
+KS KXSERIEASCORE | Correct Score | Soccer | custom
+KS KXFIFAWBTTS | BTTS | Soccer | custom
+KS KXLIGUE1SCORE | Correct Score | Soccer | custom
+KS KXHUNNB1ADVANCE | To Advance | Soccer | custom
+KS KXTHAIL1BTTS | BTTS | Soccer | custom
+KS KXFACUPSCORE | Correct Score | Soccer | custom
+KS KXEWCFATALFURY | FATAL FURY: City of the Wolves at 2025 Esports World Cup | Esports | one_off
+KS KXWCDELAY | World Cup Delay |  | custom
+KS KXDFBPOKAL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXNHLEAST | Eastern Conference Championship | Hockey | annual
+KS KXSLGREECE | Super League Greece Winner | Soccer | annual
+KS KXCOPPAITALIABTTS | BTTS | Soccer | custom
+KS KXBALLERLEAGUEGAME | Baller League Game | Soccer | custom
+KS KXUCL16PSVJUV | Champions League round of 16 - PSV JUV | Soccer | one_off
+KS KXDDFWOMENSINGLES | Dubai Duty Free Tennis Championships | Tennis | annual
+KS KXWC1HTOTAL | World Cup 1st Half Total | Soccer | custom
+KS KXLIGAPORTUGAL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXUCLSCORE | Correct Score | Soccer | custom
+KS KXUCLTOTAL | Champions League Total Goals | Soccer | custom
+KS KXURYPDSPREAD | Spread | Soccer | custom
+KS KXWPLGAME | Women's Indian Premier League Cricket Game | Cricket | custom
+KS KXCOPADELREYTEAMTOTAL | Team Total | Soccer | custom
+KS KXLIGAMXFIRSTGOAL | First Goal | Soccer | custom
+KS KXAFCACSPREAD | Spread | Soccer | custom
+KS KXMLSCUP | MLS Cup champion | Soccer | custom
+KS KXNEXTMANAGERMANU | Next Man U Manager | Soccer | custom
+KS KXAFCACMOV | Method of Victory | Soccer | custom
+KS KXWCHOSTSTAGE | World Cup Furthest Stage Advanced to by a Host Nation | Soccer | custom
+KS KXLALIGATOP | La Liga Top Finishers | Soccer | custom
+KS KXCZEFNLGAME | Czech National Football League Game | Soccer | one_off
+KS KXQSTARSGAME | Qatar Stars League | Soccer | custom
+KS KXCLUBWC1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLEAGUESCUPFTTS | First Team to Score | Soccer | custom
+KS KXWCGOALRECORD | World Cup Goal Record | Soccer | custom
+KS KXENGCS2H | 2nd Half Winner | Soccer | custom
+KS KXEFLL11HSPREAD | 1st Half Spread | Soccer | custom
+KS KXENGCS1H | 1st Half Winner | Soccer | custom
+KS KXSERIECSCUPTOTAL | Point Total | Soccer | one_off
+KS KXMLS1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXHUNNB1TOTAL | Total | Soccer | custom
+KS KXARGLNBGAME | Liga Nacional de Basquetbol Game | Basketball | custom
+KS KXUSOPENCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGAMX2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXLPLMATCH | Lanka Premier League Match | Cricket | custom
+KS KXFRASUPERCUPSPREAD | Spread | Soccer | custom
+KS KXCONCACAFGC | CONCACAF Gold Cup | Soccer | custom
+KS KXWCLONGESTPEN | World Cup Longest Penalty Shootout | Soccer | custom
+KS KXGERSCFTTS | First Team to Score | Soccer | custom
+KS KXUSL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXAPFDDHGAME | APF Division de Honor Game | Soccer | custom
+KS KXLVAVIRSPREAD | Spread | Soccer | one_off
+KS KXGERSCADVANCE | To Advance | Soccer | custom
+KS KXTHISISMORETHAN16LETTERS | test | Soccer | one_off
+KS KXESPSUPERCUPMOF | Method of Finish | Soccer | custom
+KS KXCOPPAITALIA1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXKLEAGUE | Korea K League Winner | Soccer | annual
+KS KXFIBACHAMPSPREAD | FIBA Champions League Spread | Basketball | custom
+KS KXMANAGEROUTDATE | Manager Out Date | Soccer | custom
+KS KXLIGAMX1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCLUBWC1H | 1st Half Winner | Soccer | custom
+KS KXLEAGUE | League of Legends World Championship | Video games | annual
+KS KXISRSCUPGAME | State Cup Game | Soccer | one_off
+KS KXBRASILEIROTOTAL | Brasileiro Total | Soccer | custom
+KS KXINTLFRIENDLY1H | 1st Half Winner | Soccer | custom
+KS KXINTLFRIENDLYFGW | First Goal Win | Soccer | custom
+KS KXLIGAMXFTTS | First Team to Score | Soccer | custom
+KS KXMLSSKILLS | MLS Skills Challenge Winner | Soccer | custom
+KS KXUSOPENCUPTEAMTOTAL | Team Total | Soccer | custom
+KS KXMYSLADVANCE | To Advance | Soccer | custom
+KS KXWCHOSTKO | World Cup All Host Nations to Reach Knockout Round | Soccer | custom
+KS KXCLUBWCGE | Club World Club Group E | Soccer | custom
+KS KXEFLCHAMPIONSHIP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCZEFLSPREAD | Spread | Soccer | custom
+KS KXEGYPLGAME | Egyptian Premier League Game | Soccer | custom
+KS KXGERSCSCORE | Correct Score | Soccer | custom
+KS KXCHLLDPSPREAD | Spread | Soccer | custom
+KS KXALLSVENSKANADVANCE | To Advance | Soccer | custom
+KS KXSAUDIPLGAME | Saudi Pro League Game | Soccer | custom
+KS KXLALIGAGOAL | Goalscorer | Soccer | custom
+KS KXFINALISSIMATOTAL | Point Total | Soccer | custom
+KS KXNBACONF | Pro Basketball Conference to Win the Championship | Basketball | custom
+KS KXUEL16FCSBPAOK | Europa League round of 16 - FCSB PAOK | Soccer | annual
+KS KXMYSLTOTAL | Point Total | Soccer | custom
+KS KXWCGROUPPTS | World Cup Group Points | Soccer | custom
+KS KXSRBCUPTOTAL | Point Total | Soccer | one_off
+KS KXESPSUPERCUPSPREAD | Spread | Soccer | custom
+KS KXBUNDESLIGA2TOTAL | Point Total | Soccer | custom
+KS KXPSASQUASH | Professional Squash Association (PSA) World Championships | Squash | annual
+KS KXDFBPOKALTEAMTOTAL | Team Total | Soccer | custom
+KS KXWCMOV | World Cup Method of Victory | Soccer | custom
+KS KXEPL1HSPREAD | EPL 1st Half Spread | Soccer | custom
+KS KXWC2H | World Cup 2nd Half Winner | Soccer | custom
+KS KXCONMEBOLLIB1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXCOPPAITALIAGAME | Coppa Italia Game | Soccer | custom
+KS KXFIFAWTOTAL | Point Total | Soccer | custom
+KS KXWCFINALMATCHUP | World Cup Final Matchup | Soccer | custom
+KS KXLALIGABTTS | La Liga BTTS | Soccer | custom
+KS KXLIGAPORTUGALADVANCE | To Advance | Soccer | custom
+KS KXWCTOTALGOAL | World Cup Total Goals | Soccer | custom
+KS KXCLUBWC2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXMANCITYBAN | Manchester City transfer ban | Soccer | custom
+KS KXAFC | AFC Championship | Football | annual
+KS KXWCTEAMTOTAL | World Cup Team Total | Soccer | custom
+KS KXCOPADELREYGAME | Copa Del Rey Game | Soccer | custom
+KS KXSOCCERTROPHIES | Soccer Trophies | Soccer | custom
+KS KXSAPSLBTTS | Both teams to score | Soccer | custom
+KS KXVENFUTVESPREAD | Spread | Soccer | custom
+KS KXEFLTROPHYBTTS | EFL Trophy BTTS | Soccer | custom
+KS KXLIGAEXP1H | 1st Half Winner | Soccer | custom
+KS KXSVKCUPBTTS | BTTS | Soccer | one_off
+KS KXAFCAC1HTOTAL | 1st Half Total | Soccer | custom
+KS KXLIGUE1MOV | Method of Victory | Soccer | custom
+KS KXLIGMAGGAME | Ligue Magnus Game | Hockey | custom
+KS KXUSL1H | 1st Half Winner | Soccer | custom
+KS KXFIFAGAME | Fifa Game | Soccer | custom
+KS KXLIGAEXPGAME | Liga Expansion Game | Soccer | custom
+KS KXKLEAGUE1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXROML1BTTS | Both teams to score | Soccer | custom
+KS KXGERSC1HTOTAL | 1st Half Total | Soccer | custom
+KS KXALLSVENSKANBTTS | BTTS | Soccer | custom
+KS KXETTANGAME | Ettan Game | Soccer | one_off
+KS KXBALOGUNPLAY | Will Balogun Play Today | Soccer | custom
+KS KXARSENALCUPS | Arsenal Cups | Soccer | custom
+KS KXUSLCUPBTTS | BTTS | Soccer | custom
+KS KXSVKCUPSPREAD | Spread | Soccer | one_off
+KS KXEFLCHAMPIONSHIP1H | 1st Half Winner | Soccer | custom
+KS KXLALIGAMOV | Method of Victory | Soccer | custom
+KS KXEFLCUPSCORE | Correct Score | Soccer | custom
+KS KXCHNSLSPREAD | Spread | Soccer | custom
+KS KXWCHOSTWIN | World Cup Host Nation to Win | Soccer | custom
+KS KXKNVBCUPTOTAL | Point Total | Soccer | custom
+KS KXBUNDESLIGATOP4 | Bundesliga Top 4 Finishers | Soccer | annual
+KS KXUCLBTTS | Champions League BTTS | Soccer | custom
+KS KXAFCONTEAMTOTAL | Team Total | Soccer | custom
+KS KXFRASUPERCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXJLEAGUEGAME | Japan J League Game | Soccer | custom
+KS KXCLUBWCGB | Club World Club Group B | Soccer | custom
+KS KXJOINLEAGUE | Soccer Join League | Soccer | custom
+KS KXUAEPLADVANCE | To Advance | Soccer | custom
+KS KXCONCACAFCCUPSPREAD | Spread | Soccer | custom
+KS KXCLUBWC | Club World Cup Championship | Soccer | custom
+KS KXGERSC1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXVLEAGUE1BTTS | BTTS | Soccer | custom
+KS KXWCMESSIRONALDO | Goal Contributions Messi and Ronaldo | Soccer | custom
+KS KXINTLFRIENDLYSPREAD | International Friendly Spread | Soccer | custom
+KS KXTHAIL1ADVANCE | To Advance | Soccer | custom
+KS KXEPLLAST | EPL Last Place Finisher | Soccer | annual
+KS KXUEFASCBTTS | BTTS | Soccer | custom
+KS KXSCOTTISHPREM1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXISRPLCUPSPREAD | Spread | Soccer | one_off
+KS KXESPSUPERCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXSERIECSCUPSPREAD | Spread | Soccer | one_off
+KS KXCONCACAFCCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXSCOTTISHPREM1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXENGCS1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXLIGAPORTUGALGAME | Liga Portugal Game | Soccer | custom
+KS KXLIGAMX | Liga MX Winner | Soccer | annual
+KS KXALEAGUETEAMTOTAL | Team Total | Soccer | custom
+KS KXURYPDBTTS | BTTS | Soccer | custom
+KS KXALLSVENSKANTOTAL | Point Total | Soccer | custom
+KS KXLIGAEXPTEAMTOTAL | Team Total | Soccer | custom
+KS KXFIDECHESSCHAMPION | FIDE Chess Championship |  | custom
+KS KXMLSADVANCE | MLS To Advance | Soccer | custom
+KS KXTACAPORTBTTS | BTTS | Soccer | custom
+KS KXAFCA | AFC Asian Cup | Soccer | custom
+KS KXFINALISSIMABTTS | BTTS | Soccer | custom
+KS KXSERIEASPREAD | Serie A Spread | Soccer | custom
+KS KXITASUPERCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXSERIEAPOINTMARGIN | Serie A Champion Winning Margin | Soccer | annual
+KS KXGRECUPSPREAD | Spread | Soccer | one_off
+KS KXCOPPAITALIA1HTOTAL | 1st Half Total | Soccer | custom
+KS KXBUNDESLIGA2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXEPLTEAMTOTAL | Team Total | Soccer | custom
+KS KXMWREG | Mountain West Regular Season Champions | Basketball | annual
+KS KXCONCACAFCCUPGAME | CONCACAF Champions Cup Game | Soccer | custom
+KS KXBRASILEIRORELEGATION | Brasileiro Relegation | Soccer | annual
+KS KXMLSGAME | Major League Soccer Game | Soccer | custom
+KS KXKLEAGUEADVANCE | To Advance | Soccer | custom
+KS KXCONMEBOLLIB1HTOTAL | 1st Half Total | Soccer | custom
+KS KXSAUDIPL1H | 1st Half Winner | Soccer | custom
+KS KXINTLFRIENDLYBTTS | BTTS | Soccer | custom
+KS KXAUTBUNDESGAME | Austrian Bundesliga Game | Soccer | custom
+KS KXUSOPENCUPMOF | Method of Finish | Soccer | custom
+KS KXEPL2H | 2nd Half Winner | Soccer | custom
+KS KXFINALISSIMA1H | 1st Half Winner | Soccer | custom
+KS KXAFCCLGAME | AFC Champions League Game | Soccer | custom
+KS KXTHAIL1 | Thai 1 League | Soccer | custom
+KS KXBRASILEIRO | Brasileiro Winner | Soccer | annual
+KS KXUEFANLMOV | Method of Victory | Soccer | custom
+KS KXEFLCUPTOTAL | EFL Cup Total | Soccer | custom
+KS KXSUPERLIGTOTAL | Point Total | Soccer | custom
+KS KXUSLBTTS | BTTS | Soccer | custom
+KS KXENGCS1HTOTAL | 1st Half Total | Soccer | custom
+KS KXNWSLGAME | NWSL Game | Soccer | custom
+KS KXSERIEAFIRSTGOAL | First Goal | Soccer | custom
+KS KXECULPADVANCE | To Advance | Soccer | custom
+KS KXINTLFRIENDLY1HTOTAL | 1st Half Total | Soccer | custom
+KS KXKLEAGUE1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXBUNDESLIGA1HTOTAL | 1st Half Total | Soccer | custom
+KS KXAFCONFTTS | First Team to Score | Soccer | custom
+KS KXBUNDESLIGA1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUCL16PSGSTB | Champions League round of 16 - PSG STB | Soccer | one_off
+KS KXAFCON1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXCLUBWCGD | Club World Club Group D | Soccer | custom
+KS KXDIMAYORBTTS | BTTS | Soccer | custom
+KS KXSERIEBTOTAL | Point Total | Soccer | custom
+KS KXCHNSL | Chinese Super League | Soccer | custom
+KS KXUCLWADVANCE | To Advance | Soccer | custom
+KS KXLALIGATOTAL | La Liga Total | Soccer | custom
+KS KXEFLTROPHYGAME | EFL Trophy Game | Soccer | custom
+KS KXITASUPERCUPFTTS | First Team to Score | Soccer | custom
+KS KXEWCEASPORTSFC | EA SPORTS FC 25 at 2025 Esports World Cup WINNER | Esports | one_off
+KS KXARGPREMDIV | Argentina Primera Division Game | Soccer | custom
+KS KXUEFANLADVANCE | To Advance | Soccer | custom
+KS KXSLGREECESPREAD | Spread | Soccer | custom
+KS KXSVKCUPTOTAL | Point Total | Soccer | one_off
+KS KXCOPADELREYMOF | Method of Finish | Soccer | custom
+KS KXCOPAAMERICA | Copa America | Soccer | custom
+KS KXJOINDAVID | Jonathan David transfer | Soccer | one_off
+KS KXCLUBWCGG | Club World Club Group G | Soccer | custom
+KS KXDBBFGAME | Denmark Basketligaen Game | Basketball | custom
+KS KXARGPREMDIVGAME | Argentina Primera Division Game | Soccer | custom
+KS KXTFF1LIGGAME | TFF 1. Lig Game | Soccer | one_off
+KS KXUCLCORNERS | UCL Corners | Soccer | custom
+KS KXTHAIL1TOTAL | Point Total | Soccer | custom
+KS KXPGA | PGA Championship | Golf | annual
+KS KXBRASILEIROB1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXALLSVENSKANSPREAD | Spread | Soccer | custom
+KS KXUCLSOA | UCL Score or Assist | Soccer | custom
+KS KXINDSLGAME | Indian Super League Game | Soccer | custom
+KS KXUELTOTAL | Europa League Total | Soccer | custom
+KS KXUSOPENCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXUSLSPREAD | Spread | Soccer | custom
+KS KXFINALISSIMASCORE | Correct Score | Soccer | custom
+KS KXAFCCLADVANCE | To Advance | Soccer | custom
+KS KXCOPPAITALIAMOV | Method of Victory | Soccer | custom
+KS KXAFCCLTOTAL | Point Total | Soccer | custom
+KS KXKLEAGUEGAME | Korea K League Game | Soccer | custom
+KS KXAFCON | AFCON Champion | Soccer | custom
+KS KXDFBPOKALBTTS | BTTS | Soccer | custom
+KS KXLIGAEXPSPREAD | Spread | Soccer | custom
+KS KXFROPLSPREAD | Spread | Soccer | one_off
+KS KXARGNACBADVANCE | To Advance | Soccer | custom
+KS KXUEL16TWEVIK | Europa League round of 16 - TWE VIK | Soccer | annual
+KS KXWCAST | World Cup Assists | Soccer | custom
+KS KXLIGUE1GAME | Ligue 1 Game | Soccer | custom
+KS KXLALIGATOP4 | La Liga Top 4 Finishers | Soccer | annual
+KS KXCZEFLGAME | Czech First League Game | Soccer | custom
+KS KXEWCCHESS2025 | Chess – Esports World Cup Winner? | Esports | one_off
+KS KXMLSWEST | MLS Western Conference winner? | Soccer | annual
+KS KXHNLADVANCE | To Advance | Soccer | custom
+KS KXSERIEBBTTS | BTTS | Soccer | custom
+KS KXUEFASCMOV | Method of Victory | Soccer | custom
+KS KXMLSBTTS | MLS BTTS | Soccer | custom
+KS KXCOPPAITALIAADVANCE | Coppa Italia To Advance | Soccer | custom
+KS KXENGCSSCORE | Correct Score | Soccer | custom
+KS KXWC1HSCORE | World Cup 1st Half Score | Soccer | custom
+KS KXLEADERUCLGOALS | UCL Top Goalscorer | Soccer | annual
+KS KXLIGAFGAME | Spanish Liga F Game | Soccer | custom
+KS KXUCLTCORNERS | Champions League Team Corners | Soccer | custom
+KS KXEFLCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXBRASILEIROCSPREAD | Spread | Soccer | custom
+KS KXAFCACADVANCE | To Advance | Soccer | custom
+KS KXWCWINNERTRAIL | World Cup Winner to Trail in a Match | Soccer | custom
+KS KXUEFANL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXNEWCASTLEUBADGE | Newcastle United badge | Soccer | custom
+KS KXBUNDESLIGA1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXPGAC | Golfers to Participate in the PGA championship | Golf | one_off
+KS KXAACREG | AAC Regular Season Champions | Basketball | annual
+KS KXIDNSLTOTAL | Point Total | Soccer | custom
+KS KXCOPPAITALIA | Coppa Italia Winner | Soccer | annual
+KS KXCOUPEDEFRANCE1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCLUBWCGF | Club World Club Group F | Soccer | custom
+KS KXCOUPEDEFRANCEGAME | Coupe de France Game | Soccer | custom
+KS KXSERIEATCORNERS | Team Corners | Soccer | custom
+KS KXBRASILEIROC1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXPERLIGA1TOTAL | Point Total | Soccer | custom
+KS KXFINYLSPREAD | Spread | Soccer | one_off
+KS KXSVK2LTOTAL | Point Total | Soccer | one_off
+KS KXUSLCUPTOTAL | Point Total | Soccer | custom
+KS KXEWCAPEXLEGENDS | Apex Legends at 2025 Esports World Cup | Esports | one_off
+KS KXHUNNB1GAME | Hungarian NB I Game | Soccer | custom
+KS KXARGPREMDIVTOTAL | Argentina Premier Division Total | Soccer | custom
+KS KXITASUPERCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXTWEEDEDIVBTTS | BTTS | Soccer | one_off
+KS KXCOPAAMERICAHOST | Copa America Host | Soccer | custom
+KS KXWCOLIMPICO | World Cup Olimpico Goal | Soccer | custom
+KS KXURYPDTOTAL | Point Total | Soccer | custom
+KS KXPERLIGA1GAME | Peru Liga 1 Game | Soccer | custom
+KS KXMLSFTTS | First Team to Score | Soccer | custom
+KS KXDIMAYORGAME | Liga DIMAYOR Game | Soccer | custom
+KS KXCHLLDP | Chilean Primer Division | Soccer | annual
+KS KXLALIGATEAMPOINTS | Team Points | Soccer | custom
+KS KXCONCACAFNLBTTS | BTTS | Soccer | custom
+KS KXJOINSALAH | Mo Salah next team | Soccer | custom
+KS KXMLSEAST | MLS Western Conference winner? | Soccer | annual
+KS KXAFCONBTTS | BTTS | Soccer | custom
+KS KXCONMEBOLLIBADVANCE | To Advance | Soccer | custom
+KS KXUCL1HSPREAD | UCL First Half Spread | Soccer | custom
+KS KXUCLMOV | UCL Method of Advancing | Soccer | custom
+KS KXMLSCORNERS | Total Corners | Soccer | custom
+KS KXUECLADVANCE | Conference League Advance | Soccer | one_off
+KS KXEPLTCORNERS | EPL Team Corners | Soccer | custom
+KS KXWCGROUPWINELIM | World Cup Group Winners to be Eliminated in Round of 32 | Soccer | custom
+KS KXBUNDESLIGAWSPREAD | Spread | Soccer | custom
+KS KXJLEAGUE1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXCONMEBOLSUDADVANCE | To Advance | Soccer | custom
+KS KXWCCODWARZONE | Call of Duty: Warzone at 2025 Esports World Cup | Esports | one_off
+KS KXUCLGAME | UEFA Champions League Game | Soccer | custom
+KS KXLALIGAADVANCE | To Advance | Soccer | custom
+KS KXLEAGUESCUPGAME | Leagues Cup Game | Soccer | custom
+KS KXVENFUTVEBTTS | BTTS | Soccer | custom
+KS KXUEFASC1H | 1st Half Winner | Soccer | custom
+KS KXFRASUPERCUPMOF | Method of Finish | Soccer | custom
+KS KXUEFANLFIRSTGOAL | UEFA Nations League First Goal | Soccer | custom
+KS KXFRAPLWADVANCE | To Advance | Soccer | custom
+KS KXBUNDESLIGA2SPREAD | Spread | Soccer | custom
+KS KXECULPBTTS | BTTS | Soccer | custom
+KS KXWCTEAMGOALS | World Cup Team Goals | Soccer | custom
+KS KXLIGAMX1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXEPLTEAMPOINTS | Team Points | Soccer | custom
+KS KXFIBACHAMPTOTAL | FIBA Champions League Total | Basketball | custom
+KS KXSERIEACORNERS | Total Corners | Soccer | custom
+KS KXCOPADOBRASIL1HTOTAL | 1st Half Total | Soccer | custom
+KS KXCOPPAITALIAMOF | Method of Finish | Soccer | custom
+KS KXWCTEAM1STGOAL | World Cup Country First Goal | Soccer | custom
+KS KXK2LEAGUEGAME | Korea K-League 2 Game | Soccer | custom
+KS KXCOPPAITALIASCORE | Correct Score | Soccer | custom
+KS KXFIFAUSPULLGAME | FIFA US pull game | Soccer | custom
+KS KXFINALISSIMASPREAD | Spread | Soccer | custom
+KS KXLIGAMX1H | 1st Half Winner | Soccer | custom
+KS KXWC1STTIMEWIN | World Cup First Time Winner | Soccer | custom
+KS KXEREDIVISIE1HTOTAL | 1st Half Total | Soccer | custom
+KS KXISRNLTOTAL | Point Total | Soccer | one_off
+KS KXISRPLTOTAL | Point Total | Soccer | one_off
+KS KXBRASILEIROMOV | Method of Victory | Soccer | custom
+KS KXBUNDESLIGALEADER | Bundesliga Leader | Soccer | custom
+KS KXINTLFRIENDLYTOTAL | International Friendly Total | Soccer | custom
+KS KXMLBNL | MLB National League Championship | Baseball | annual
+KS KXEPLRELEGATION | English Premier League Relegation | Soccer | annual
+KS KXSWISSLEAGUEBTTS | BTTS | Soccer | custom
+KS KXAUTBUNDESBTTS | Both teams to score | Soccer | custom
+KS KXCLUBWC1HTOTAL | 1st Half Total | Soccer | custom
+KS KXUECL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXWCGOALIEPEN | Goalie Penalty Goal in World Cup | Soccer | custom
+KS KXENGCSTEAMTOTAL | Team Total | Soccer | custom
+KS KXARGNACBGAME | Argentine Nacional B Game | Soccer | custom
+KS KXARGNACBSPREAD | Spread | Soccer | custom
+KS KXELITESERIENGAME | Eliteserien Game | Soccer | custom
+KS KXHUNNB1BTTS | Both teams to score | Soccer | custom
+KS KXDANISHSUPERLIGAGAME | Danish Superliga Game | Soccer | custom
+KS KXBRASILEIROBTEAMTOTAL | Team Total | Soccer | custom
+KS KXEFLL1ADVANCE | To Advance | Soccer | custom
+KS KXSRBSLGAME | Serbian SuperLiga Game | Soccer | one_off
+KS KXCONMEBOLLIB1H | 1st Half Winner | Soccer | custom
+KS KXESPSUPERCUPTOTAL | Point Total | Soccer | custom
+KS KXLALIGA2BTTS | BTTS | Soccer | custom
+KS KXEWCCS2 | ESPORTS WORLD CUP COUNTER STRIKE 2 | Esports | one_off
+KS KXTACAPORTTOTAL | Taca de Portgual Total | Soccer | custom
+KS KXVENFUTVEADVANCE | To Advance | Soccer | custom
+KS KXIBPLGAME | Men's Iceland Basketball Premier League Game | Basketball | custom
+KS KXLEAGUESCUPBTTS | BTTS | Soccer | custom
+KS KXSVNPLSPREAD | Spread | Soccer | one_off
+KS KXBBSERIEASPREAD | Italy Serie A Spread | Basketball | custom
+KS KXMLS2H | 2nd Half Winner | Soccer | custom
+KS KXWCFURTHESTADVANCING | Furthest Advancing Country from World Cup Region | Soccer | custom
+KS KXLIGAMX1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXCONCACAFNLTOTAL | Point Total | Soccer | custom
+KS KXEPLTOTAL | English Premier League Total Goals | Soccer | custom
+KS KXISRNLBTTS | BTTS | Soccer | one_off
+KS KXGRECUPBTTS | BTTS | Soccer | one_off
+KS KXWCCLUBGOALS | World Cup Club Goals | Soccer | custom
+KS KXAFCCL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGAPORTUGAL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUELSCORE | Correct Score | Soccer | custom
+KS KXEFLCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXHNLGAME | Croatia HNL Game | Soccer | custom
+KS KXLALIGA1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXSVNCUPBTTS | BTTS | Soccer | one_off
+KS KXISRNLCUPADVANCE | To Advance | Soccer | one_off
+KS KXLEAGUESCUPSCORE | Correct Score | Soccer | custom
+KS KXSERIEATOP | Serie A Top Finishers | Soccer | custom
+KS KXSERIEA1HTOTAL | 1st Half Total | Soccer | custom
+KS KXSCOTTISHPREMTOTAL | Point Total | Soccer | custom
+KS KXSERIECCUPSPREAD | Spread | Soccer | one_off
+KS KXUCLW | Champions League Women's | Soccer | custom
+KS KXCONMEBOLLIBSPREAD | Spread | Soccer | custom
+KS KXDFBPOKALMOF | Method of Finish | Soccer | custom
+KS KXTWEEDEDIVTOTAL | Point Total | Soccer | one_off
+KS KXSRBCUPSPREAD | Spread | Soccer | one_off
+KS KXENGCSSPREAD | Spread | Soccer | custom
+KS KXEPLAST | EPL Assists | Soccer | custom
+KS KXUELMOV | Europa League Method of Victory | Soccer | custom
+KS KXUSOPENCUPADVANCE | To Advance | Soccer | custom
+KS KXUCLFIRSTGOAL | UCL First Goalscorer | Soccer | custom
+KS KXCLUBWC2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXAFCCLSPREAD | Spread | Soccer | custom
+KS KXBRASILEIRO1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXARCHIVETEST | Testing Series | Soccer | one_off
+KS KXKLEAGUETOTAL | Point Total | Soccer | custom
+KS KXEPLPOINTMARGIN | English Premier League Champion Winning Margin | Soccer | annual
+KS KXSWISSLEAGUETOTAL | Point Total | Soccer | custom
+KS KXLALIGA2H | 2nd Half Winner | Soccer | custom
+KS KXISRSCUPTOTAL | Point Total | Soccer | one_off
+KS KXCOUPEDEFRANCESPREAD | Coupe de France Spread | Soccer | custom
+KS KXETTANSPREAD | Spread | Soccer | one_off
+KS KXEFLCUP1H | 1st Half Winner | Soccer | custom
+KS KXWCMOF | World Cup Method of Finish | Soccer | custom
+KS KXSVNPLTOTAL | Point Total | Soccer | one_off
+KS KXQSTARSBTTS | Both teams to score | Soccer | custom
+KS KXISRSUPCUPTOTAL | Point Total | Soccer | one_off
+KS KXCOPADOBRASILGAME | Copa do Brasil Game | Soccer | custom
+KS KXITASUPERCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXEWCPUBGBATTLEG | PUBG: BATTLEGROUNDS at 2025 Esports World Cup | Esports | one_off
+KS KXCOPADOBRASIL | Copa Do Brasil | Soccer | custom
+KS KXSRBCUPGAME | Serbian Cup Game | Soccer | one_off
+KS KXBRASILEIROB1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGAMX2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXHNLBTTS | BTTS | Soccer | custom
+KS KXCOPADELREY | Copa del Rey Winner | Soccer | annual
+KS KXAFCCLFTTS | First Team to Score | Soccer | custom
+KS KXBRASILEIROC1HTOTAL | 1st Half Total | Soccer | custom
+KS KXBELGIANPL | Belgian Pro League Champion | Soccer | annual
+KS KXURYPDBBTTS | BTTS | Soccer | custom
+KS KXCOUPEDEFRANCEADVANCE | Coupe de France To Advance | Soccer | custom
+KS KXDFBPOKALSCORE | Correct Score | Soccer | custom
+KS KXMLBNLCSMVP | Pro Baseball National League Championship Series MVP | Baseball | annual
+KS KXPERLIGA1BBTTS | BTTS | Soccer | custom
+KS KXCOPPAITALIA1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXPUBGGC | PUBG Global Championship 2025 | Esports | one_off
+KS KXVENFUTVETOTAL | Point Total | Soccer | custom
+KS KXACBGAME | Spain Liga ACB Game | Basketball | custom
+KS KXCLUBWCBTTS | BTTS | Soccer | custom
+KS KXEKSTRAKLASA | Ekstraklasa Champion | Soccer | custom
+KS KXISRPLCUPBTTS | BTTS | Soccer | one_off
+KS KXKNVBCUPGAME | KNVB Cup Game | Soccer | custom
+KS KXCLUBCHANGEMBAPPE | Club Change Mbappe | Soccer | custom
+KS KXEPLTOP6 | Top 6 Finishers | Soccer | annual
+KS KXAFCACFTTS | First Team to Score | Soccer | custom
+KS KXAPFDDH | APF Division de Honor | Soccer | custom
+KS KXBBLGAME | Bundesliga Basketball Game | Basketball | custom
+KS KXSERIECCUPADVANCE | To Advance | Soccer | one_off
+KS KXK2LEAGUEADVANCE | To Advance | Soccer | custom
+KS KXAFCONMOV | Method of Victory | Soccer | custom
+KS KXISRSUPCUPBTTS | BTTS | Soccer | one_off
+KS KXSGPPLADVANCE | To Advance | Soccer | custom
+KS KXLIGAMXTOTAL | Liga MX Total | Soccer | custom
+KS KXBRASILEIRO1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXLIGUE1BTTS | Ligue 1 BTTS | Soccer | custom
+KS KXSERIEA1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXBALLONDOR | Ballon d'Or | Soccer | annual
+KS KXCONCACAFCCUP1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUEL1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXUSL1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXEFLCHAMPIONSHIPADVANCE | EFL Championship Advance | Soccer | custom
+KS KXMLSASTTOTAL | Point Total | Soccer | custom
+KS KXBALLERLEAGUE | Baller League | Soccer | custom
+KS KXWCCONCEDE1ST | World Cup Concede First | Soccer | custom
+KS KXGERSC1H | 1st Half Winner | Soccer | custom
+KS KXLEAGUESCUP1H | 1st Half Winner | Soccer | custom
+KS KXSPBGAME | Venezuela Superliga Game | Basketball | custom
+KS KXALEAGUEADVANCE | To Advance | Soccer | custom
+KS KXMLSMOV | Method of Victory | Soccer | custom
+KS KXEFLTROPHYSPREAD | EFL Trophy Spread | Soccer | custom
+KS KXCHNL1SPREAD | Spread | Soccer | custom
+KS KXHNLSPREAD | Spread | Soccer | custom
+KS KXBRASILEIROBGAME | Brasileiro Serie B Game | Soccer | custom
+KS KXUECLSPREAD | Conference League Spread | Soccer | custom
+KS KXSCOCUPBTTS | BTTS | Soccer | custom
+KS KXFINALISSIMA1HTOTAL | 1st Half Total | Soccer | custom
+KS KXUEFASC2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXBUNDESLIGACORNERS | Total Corners | Soccer | custom
+KS KXUEFANLFTTS | First Team to Score | Soccer | custom
+KS KXSERIEA | Serie A  | Soccer | annual
+KS KXLALIGA1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXTACAPORT1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCBRACE | World Cup Any Player to Score a Brace |  | custom
+KS KXNWSLSPREAD | NWSL Spread | Soccer | custom
+KS KXSGPPLBTTS | BTTS | Soccer | custom
+KS KXA10REG | A10 Regular Season Champions | Basketball | custom
+KS KXINTERCONCUPGAME | Intercontinental Cup Match | Soccer | custom
+KS KXFACUPSPREAD | FA Cup Game | Soccer | custom
+KS KXUEFASCFTTS | First Team to Score | Soccer | custom
+KS KXJLEAGUEBTTS | BTTS | Soccer | custom
+KS KXEFLL1TOTAL | Point Total | Soccer | custom
+KS KXLIGUE2GAME | Ligue 2 Game | Soccer | one_off
+KS KXUEFANLGROUPQUAL | UEFA Nations League Group Qualifiers | Soccer | custom
+KS KXMLS2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXGRECUPGAME | Greek Cup Game | Soccer | one_off
+KS KXBIG10REG | Big Ten Regular Season Champions | Basketball | annual
+KS KXLEAGUESCUP | Leagues Cup | Soccer | custom
+KS KXUECLGAME | UEFA Conference League Game | Soccer | custom
+KS KXINDSLSPREAD | Spread | Soccer | custom
+KS KXLALIGA2PROMO | La Liga 2 Promotion | Soccer | custom
+KS KXSERIEA2H | 2nd Half Winner | Soccer | custom
+KS KXCLUBFGAME | Club Friendlies | Soccer | custom
+KS KXISRSCUPBTTS | BTTS | Soccer | one_off
+KS KXMLBCHAMPLEAGUE | Pro Baseball Championship League | Baseball | custom
+KS KXHUNNB1SPREAD | Spread | Soccer | custom
+KS KXISRPLCUPTOTAL | Point Total | Soccer | one_off
+KS KXINTLFRIENDLYADVANCE | To Advance | Soccer | custom
+KS KXFIFAUSPULL | FIFA us pull | Soccer | custom
+KS KXCLUBWC1HSCORE | 1st Half Correct Score | Soccer | custom
+KS KXBRASILEIROBBTTS | BTTS | Soccer | custom
+KS KXFINCUPBTTS | BTTS | Soccer | one_off
+KS KXESPSUPERCUPBTTS | BTTS | Soccer | custom
+KS KXWIMWOMEN | Wimbledon Championship Women's | Tennis | custom
+KS KXENGCSFIRSTGOAL | Community Shield First Goalscorer | Soccer | custom
+KS KXSOCCERBTTS | Soccer Both Team to Score | Soccer | custom
+KS KXEERSTEDIVBTTS | BTTS | Soccer | one_off
+KS KXAFCCL1H | 1st Half Winner | Soccer | custom
+KS KXWC2HBTTS | World Cup 2nd Half BTTS | Soccer | custom
+KS KXFACUP2H | 2nd Half Winner | Soccer | custom
+KS KXSERIECCUPGAME | Coppa Italia Lega Pro Game | Soccer | one_off
+KS KXWCGROUPQUAL | World Cup Group Qualifiers | Soccer | annual
+KS KXALEAGUEBTTS | BTTS | Soccer | custom
+KS KXEPLPOY | EPL Player Of The Year  | Soccer | one_off
+KS KXAFCACTOTAL | Point Total | Soccer | custom
+KS KXSCOTTISHPREMADVANCE | To Advance | Soccer | custom
+KS KXGERSCGAME | Germany Super Cup | Soccer | custom
+KS KXUCL2HTOTAL | 2nd Half Total | Soccer | custom
+KS KXBUNDESLIGAGAME | Bundesliga Game | Soccer | custom
+KS KXLIGUE2BTTS | BTTS | Soccer | one_off
+KS KXFRASUPERCUPMOV | Method of Victory | Soccer | custom
+KS KXBBSERIEATOTAL | Italy Serie A Total | Basketball | custom
+KS KXUEL16RSCFEN | Europa League round of 16 - RSC FEN | Soccer | annual
+KS KXUEFASCADVANCE | To Advance | Soccer | custom
+KS KXMLS2HBTTS | 2nd Half BTTS | Soccer | custom
+KS KXFIFAWGAME | FIFA Women's Game | Soccer | custom
+KS KXLIGUE11HSPREAD | 1st Half Spread | Soccer | custom
+KS KXCLUBWC1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCPREPACK | World Cup Prepack | Soccer | custom
+KS KXGERSCTOTAL | Point Total | Soccer | custom
+KS KXBUNDESLIGASCORE | Correct Score | Soccer | custom
+KS KXPERLIGA1 | Peru Liga 1 | Soccer | custom
+KS KXUCLWTOTAL | Point Total | Soccer | custom
+KS KXDENSUPERLIGAGAME | Danish Superliga Game | Soccer | custom
+KS KXLIGUE1TOP4 | Ligue 1 Top 4 Finishers | Soccer | annual
+KS KXESPSUPERCUPADVANCE | Spain Super Cup Advance | Soccer | custom
+KS KXJ2LEAGUEGAME | Japan J2 League Game | Soccer | custom
+KS KXWCGROUPORDER | World Cup Group Exact Order | Soccer | custom
+KS KXUEFASC1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXWCUSAOPPONENT | World Cup USA Opponent | Soccer | custom
+KS KXWCGOALLEADER | World Cup Goal Leader | Soccer | custom
+KS KXWCTEAMSHOT | World Cup Team Shots | Soccer | custom
+KS KXSOCCERTOTAL | Soccer Goal Total | Soccer | custom
+KS KXWCGOALEVERYGAME | World Cup Goal in Every Game | Soccer | custom
+KS KXUEL16ROMFCP | Europa League round of 16 - ROM FCP | Soccer | annual
+KS KXESPSUPERCUPSCORE | Correct Score | Soccer | custom
+KS KXUEFANLROUND | UEFA Nations League Round Qualifiers | Soccer | custom
+KS KXBUNDESLIGATOP | Bundesliga Top Finishers | Soccer | custom
+KS KXLIGAMXGAME | Liga MX Game | Soccer | custom
+KS KXLIGAMXMOV | Method of Victory | Soccer | custom
+KS KXBELGIANPLBTTS | BTTS | Soccer | custom
+KS KXWCGOALCOMBO | Player Group Goals | Soccer | custom
+KS KXRMAPLAYTOGETHER | Real Madrid Play Together | Soccer | custom
+KS KXCLUBWCGH | Club World Club Group H | Soccer | custom
+KS KXLIGUE1TOTAL | Ligue 1 Total | Soccer | custom
+KS KXSERIEALAST | Serie A Last Place Finisher | Soccer | annual
+KS KXSERIEATOP4 | Serie A Top 4 Finishers | Soccer | annual
+KS KXCLUBWCSPREAD | Spread | Soccer | custom
+KS KXIDNSLADVANCE | To Advance | Soccer | custom
+KS KXLALIGA2HSPREAD | 2nd Half Spread | Soccer | custom
+KS KXT20WORLDCUP | T20 World Cup Winner | Cricket | custom
+KS KXEPLADVANCE | To Advance | Soccer | custom
+KS KXNEXTMANAGERLALIGA | La Liga Next Manager | Soccer | custom
+KS KXFRAPLWGAME | French Women's Première Ligue Game | Soccer | custom
+KS KXCOPPAITALIA1H | 1st Half Winner | Soccer | custom
+KS KXUEFANLSPREAD | Spread | Soccer | custom
+KS KXLVAVIRGAME | Latvian Virsliga Game | Soccer | one_off
+KS KXEFLCHAMPIONSHIPBTTS | BTTS | Soccer | custom
+KS KXSERIEAFTTS | First Team to Score | Soccer | custom
+KS KXCANPLBTTS | BTTS | Soccer | custom
+KS KXEREDIVISIE1H | 1st Half Winner | Soccer | custom
+KS KXAFCCLBTTS | BTTS | Soccer | custom
+KS KXSERIEATEAMPOINTS | Team Points | Soccer | custom
+KS KXWT20WORLDCUP | Women's T20 World Cup Winner | Cricket | custom
+KS KXCONCACAFCCUP1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXEERSTEDIVSPREAD | Spread | Soccer | one_off
+KS KXUEL16AJAUSG | Europa League round of 16 - AJA USG | Soccer | annual
+KS KXAFCONGAME | AFCON Game Winner | Soccer | custom
+KS KXCONMEBOLSUDTOTAL | Point Total | Soccer | custom
+KS KXELITESERIENSPREAD | Spread | Soccer | custom
+KS KXSERIEAGAME | Serie A Game | Soccer | custom
+KS KXVALGCSEOUL | Game Changers : Championship Seoul | Esports | one_off
+KS KXGER3LBTTS | BTTS | Soccer | one_off
+KS KXCOUPEDEFRANCE1H | 1st Half Winner | Soccer | custom
+KS KXWCTEAMSOG | World Cup Team Shots on Goal | Soccer | custom
+KS KXAFCAC1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXCOPADELREY1HBTTS | 1st Half BTTS | Soccer | custom
+KS KXCLUBFBTTS | BTTS | Soccer | custom
+KS KXUAEPLBTTS | BTTS | Soccer | custom
+KS KXISRNLGAME | Liga Leumit Game | Soccer | one_off
+KS KXGERSCBTTS | BTTS | Soccer | custom
+KS KXARGPREMDIVSPREAD | Argentina Premier Division Spread | Soccer | custom
+KS KXUELMOF | Method of Finish | Soccer | custom
+KS KXEWCDOTA2 | Dota 2 at 2025 Esports World Cup | Esports | one_off
+KS KXLEAGUESCUPSPREAD | Spread | Soccer | custom
+KS KXEPLANYGOAL | EPL Anytime Goalscorer | Football | custom
+KS KXJLEAGUE1H | 1st Half Winner | Soccer | custom
+KS KXWCAWARD | World Cup Award | Soccer | custom
+KS KXEPLFIRSTGOAL | EPL 1st Goalscorer | Soccer | custom
+KS KXLIGAPORTUGALTOTAL | Point Total | Soccer | custom
+KS KXENGCSGAME | England Community Shield | Soccer | custom
+KS KXBUNDESLIGAADVANCE | To Advance | Soccer | custom
+KS KXCPLTEAMTOTAL | Caribbean Premier League Team Total Runs | Cricket | custom
+KS KXNEXTMANAGERSERIEA | Next Manager | Soccer | custom
+KS KXPPPKSO | PrizePicks PK Shootout | Soccer | custom
+KS KXGEOGUESSR | GeoGuessr World Championship Winner | Esports | custom
+KS KXCONCACAFCCUPTOTAL | Point Total | Soccer | custom
+KS KXSERIEA1HSPREAD | 1st Half Spread | Soccer | custom
+KS KXEFLL11HTOTAL | 1st Half Total | Soccer | custom
+KS KXCOPADOBRASILBTTS | BTTS | Soccer | custom
+KS KXECULPSPREAD | Spread | Soccer | custom
+KS KXUSLCUP1HTOTAL | 1st Half Total | Soccer | custom
+KS KXLIGUE1LAST | Ligue 1 Last Place Finisher | Soccer | annual
+KS KXWC3RDPLACEQUAL | World Cup 3rd Place Qualification | Soccer | custom
+KS KXEERSTEDIVTOTAL | Point Total | Soccer | one_off
+KS KXACQUIREMANU | ManU acquire | Soccer | custom
+KS KXUSOPENCUP1H | 1st Half Winner | Soccer | custom
+KS KXAFCAC1H | 1st Half Winner | Soccer | custom
+KS KXSAUDIPLADVANCE | To Advance | Soccer | custom
+KS KXBUNDESLIGATEAMTOTAL | Team Total | Soccer | custom
+KS KXPGAFUTURE | Future Major Championship Wins | Golf | custom
+KS KXFRASUPERCUPFTTS | First Team to Score | Soccer | custom
+KS KXWCTCORNERS | World Cup Team Corners | Soccer | custom
+KS KXSVK2LSPREAD | Spread | Soccer | one_off
+KS KXEREDIVISIEADVANCE | To Advance | Soccer | custom
+KS KXFRASUPERCUPBTTS | BTTS | Soccer | custom
+KS KXSUPERBOWLWHITEHOUSE | WILL THE WINNERS OF THE PRO FOOTBALL CHAMPIONSHIP GO TO THE WHITE HOUSE?  | International | one_off
+KM KXURYPDGAME settled 234  hist 507  oldest 2026-03-07T01:02:06Z
+KSAMPLE {"can_close_early":true,"close_time":"2026-10-24T15:04:13Z","created_time":"2026-10-20T00:30:21.696091Z","custom_strike":{"soccer_team":"111193d4-9b1f-4bd8-ab7c-9de252737f05"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXURYPDGAME-26OCT24ESPALB","exchange_index":0,"expected_expiration_time":"2026-10-24T16:00:00Z","expiration_time":"2026-10-26T13:00:00Z","expiration_value":"Albion","last_price_dollars":"0.0100","latest_expiration_time":"2026-10-26T13:00:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Tie","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-24T16:00:00Z","open_interest_fp":"4152.26","open_time":"2026-10-20T00:36:00Z","previous_price_dollars":"0.1500","previous_yes_ask_dollars":"0.1500","previous_yes_bid_dollars":"0.1400","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"no","rules_primary":"If Tie is the result of the Central Espanol vs Albion professional Uruguay Primera Division soccer game originally scheduled for Oct 24, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties), then the market resolves to Yes.","rules_secondary":"The following market refers to the Central Espanol vs Albion professional Uruguay Primera Division soccer game originally scheduled for Oct 24, 2026 after 90 minutes plus stoppage time (does not include extra time or penalties). If the game ends in a tie, the market called \"Tie\" resolves to Yes. If the game is cancelled or rescheduled to over 48 hours away, the market will resolve to a fair price in accordance with the rules.\n\nKalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.","settlement_bounds_type":"default","settlement_timer_seconds":0,"settlement_ts":"2026-10-24T15:05:12.342454Z","settlement_value_dollars":"0.0000","status":"finalized","strike_type":"structured","ticker":"KXURYPDGAME-26OCT24ESPALB-TIE","title":"Tie is the result","updated_time":"2026-10-24T15:05:12.825692Z","volume_24h_fp":"3784.75","volume_fp":"5347.57","yes_ask_dollars":"1.0000","yes_ask_size_fp":"0.00","yes_bid_dollars":"0.0000","yes_bid_size_fp":"0.00","yes_sub_title":"Tie"}
+KM KXUSLCUPGAME settled 9  hist 204  oldest 2026-05-16T01:02:18Z
+KM KXAFCACGAME settled 0  hist 33  oldest 2026-03-31T11:05:55Z
+KM KXTHAIL1GAME settled 141  hist 201  oldest 2026-03-06T14:03:20Z
+KM KXITASUPERCUPGAME settled 0  hist 3  oldest 2025-12-22T20:59:06.514494Z
+KM KXSVK2LGAME settled 240  hist 48  oldest 2026-08-14T17:04:14Z
+KM KXISRPLGAME settled 165  hist 15  oldest 2026-08-22T19:05:23Z
+KM KXLALIGAGAME settled 273  hist 1000 + oldest 2025-09-28T16:22:39.123675Z
+KM KXUSLGAME settled 405  hist 777  oldest 2026-03-07T02:32:03Z
+KM KXEFLCHAMPIONSHIPGAME settled 396  hist 1000 + oldest 2025-12-20T14:31:11.500423Z
+KM KXDFBPOKALGAME settled 96  hist 135  oldest 2025-12-02T19:00:56.617572Z
+KM KXUSOPENCUPGAME settled 9  hist 12  oldest 2026-05-20T01:32:20Z
+KM KXISRNLCUPGAME settled 3  hist 0  oldest 2026-10-13T19:58:02Z
+KM KXFIBACHAMPLEAGUEGAME settled 0  hist 0  oldest undefined
+KM KXWCTEAMSINGAME settled 0  hist 0  oldest undefined
+KM KXFINALISSIMAGAME settled 0  hist 0  oldest undefined
+KM KXEFLCUPGAME settled 120  hist 0  oldest 2026-08-25T20:33:09Z
+KM KXPRYLIGA1GAME settled 0  hist 0  oldest undefined
+KM KXEUCHLGAME settled 12  hist 0  oldest 2026-10-14T17:59:57Z
+KM KXBRASILEIROCGAME settled 135  hist 0  oldest 2026-08-22T22:14:09Z
+KM KXEPLGAME settled 225  hist 1000 + oldest 2025-09-27T20:59:09.69217Z
+KM KXBUNDESLIGA2GAME settled 180  hist 0  oldest 2026-08-28T18:46:35Z
+KM KXENGNLGAME settled 423  hist 0  oldest 2026-08-22T13:35:57Z
+KM KXCANPLGAME settled 126  hist 0  oldest 2026-08-20T01:33:35Z
+KM KXSERIECGAME settled 948  hist 0  oldest 2026-08-21T21:03:51Z
+KM KXEWSLGAME settled 135  hist 0  oldest 2026-09-04T20:07:58Z
+KM KXSERIECSCUPGAME settled 0  hist 0  oldest undefined
+KM KXECULPGAME settled 0  hist 582  oldest 2026-03-07T02:41:41Z
+KM KXFIBACHAMPGAME settled 30  hist 0  oldest 2026-10-13T19:50:42Z
+KM KXUEFASCGAME settled 0  hist 0  oldest undefined
+KM KXCLUBWCGAME settled 0  hist 0  oldest undefined
+KM KXBBSERIEA2GAME settled 100  hist 0  oldest 2026-09-26T19:44:58Z
+KM KXCONCACAFNLGAME settled 228  hist 0  oldest 2026-09-23T20:54:59Z
+KM KXUAEPLGAME settled 105  hist 0  oldest 2026-08-21T16:14:02Z
+KM KXESPSUPERCUPGAME settled 0  hist 0  oldest undefined
+KM KXCONMEBOLLIBGAME settled 60  hist 0  oldest 2026-08-19T00:07:09Z
+KM KXBBSERIEAGAME settled 70  hist 0  oldest 2026-09-26T19:40:11Z
+KM KXUEFAGAME settled 0  hist 0  oldest undefined
+KM KXFROPLGAME settled 0  hist 30  oldest 2026-08-16T16:15:47Z
+KM KXGER3LGAME settled 0  hist 30  oldest 2026-08-14T19:14:33Z
+PMS ufl 12553 1,100639,1186,105925
+PMS lmp 12565 1,100639,678,105936
+PMS cricpakt20cup 11278 1,100639,517,104074
+PMS cricps 11279 1,100639,517,104073
+PMS cricpsl 11214 1,100639,517,103805
+PMS cricsa20 10450 1,100639,517,103811
+PMS cricsm 11218 1,100639,517,103810
+PMS cricss 10453 1,100639,517,102817
+PMS liiga 12566 1,100639,100088,105937
+PMS hbehfcl 12554 1,100639,102897,105926
+PMS hockeychl 12567 1,100639,100088,105938
+PMS ncaalax 12568 1,100639,102393,105939
+PMS ncaawlax 12569 1,100639,102393,105940
+PMS rueuchall 12570 1,100639,102193,105941
+PMS ruprod2 12571 1,100639,102193,105942
+PMS cricdhakadpl 12572 1,100639,517,105943
+PMS hbhandbold 12555 1,100639,102897,105927
+PMS hblnh 12556 1,100639,102897,105928
+PMS hbbundesliga 12557 1,100639,102897,105929
+PMS hbnbi 12558 1,100639,102897,105930
+PMS hbeliteserien 12559 1,100639,102897,105931
+PMS hbsuperliga 12560 1,100639,102897,105932
+PMS hbasobal 12561 1,100639,102897,105933
+PMS hbhandboll 12562 1,100639,102897,105934
+PMS crict20blast 11215 1,100639,517,103807
+PMS kor 10444 1,100639,100350,102771
+PMS lal 10193 1,780,100639,100350
+PMS liv 12421 1,100219,102254
+PMS lol 10311 1,64,65,100639
+PMS cricadt10 12574 1,100639,517,105945
+PMS rurgr 12691 1,100639,102193,106121
+PMS gsc 12683 1,100639,100350,106112
+PMS wjc 11975 1,100639,100088,105458
+PMS crictopend 12743 1,100639,517,106134
+PMS weuq 11845 1,100639,100350,105214
+PMS cof 10244 1,100639,100350,101280
+PMS col 10437 1,100639,100350,102763
+PMS conl 10673 1,100639,100350,102867
+PMS cricilt20 11219 1,100639,517,103812
+PMS cricipl 11213 1,100639,517,101988
+PMS cricmlc 11221 1,100639,517,103813
+PMS crict20lpl 10448 1,100639,517,102812
+PMS el1 11435 1,100639,100350,104319
+PMS pol 12320 1,100639,100350,105705
+PMS qat1 12355 1,100639,100350,105729
+PMS setkamemd 12330 1,100639,103767,105715,105717
+PMS setkawoua 12332 1,100639,103767,105715,105719
+PMS vbefeler 11922 1,100639,102883,105336
+PMS vbeuro 11931 1,100639,102883,105345
+PMS vbliguea 11924 1,100639,102883,105338
+PMS vbplusliga 11921 1,100639,102883,105335
+PMS vbsvleague 11926 1,100639,102883,105340
+PMS cricthunderbolt 11339 1,100639,517,104206
+PMS vbvleague 11927 1,100639,102883,105341
+PMS vbworlds 11930 1,100639,102883,105344
+PMS nascar-xfinity 12576 1,102166,434,105837
+PMS uru1 11862 1,100639,100350,105241
+PMS powerslap 11286 1,100639,104084
+PMS indycar 11970 1,100639,102181
+PMS nascar 12575 1,102166,434
+PMS crickcct20 12749 1,100639,517,106140
+PMS cricdpl 12739 1,100639,517,106126
+PMS cricassam 12740 1,100639,517,106127
+PMS crickcl 12746 1,100639,517,106137
+PMS cricetpl 12745 1,100639,517,106136
+PMS crictnpl 12738 1,100639,517,106125
+PMS cricupt20 12747 1,100639,517,106138
+PMS crict20max 12748 1,100639,517,106139
+PMS daviscup 12826 864,1,100639,106226
+PMS nascar-truck 12577 1,102166,434,105838
+PMS cricodcw 12751 1,100639,517,106146
+PMS bkfibaw 12783 1,100639,28,104188
+PMS cricshield 10453 1,100639,517,102817
+PMS cricsherepunjab 12784 1,100639,517,106168
+PMS cricdplw 12785 1,100639,517,106169
+PMS cricnrwt10 12786 1,100639,517,106170
+PMS ttolympics 11916 1,100639,103767,105330
+PMS ecu1 11863 1,100639,100350,105242
+PMS euc 11430 1,100639,100350,104316
+PMS el2 11436 1,100639,100350,104320
+PMS elc 10355 1,100639,100350,102643
+PMS enl 11445 1,100639,100350,100737
+PMS ere 10286 1,100639,100350,101735
+PMS es2 10672 1,100639,100350,102866
+PMS euroleague 10371 1,100639,102669
+PMS f1 11635 1,435,100639
+PMS sui 12319 1,100639,100350,105704
+PMS ttcup 12326 1,100639,103767,105710
+PMS ewq 10243 1,100639,100350,102544
+PMS tur 10292 1,100639,100350,102564
+PMS cricecspt 12787 1,100639,517,106171
+PMS cricmajort20 12788 1,100639,517,106172
+PMS abb 10449 1,517,100639,102813
+PMS cricomand50 12789 1,100639,517,106173
+PMS lmb 12790 1,100639,678,103217
+PMS fin1 11864 1,100639,100350,105243
+PMS isl1 11865 1,100639,100350,105244
+PMS ncaabaseball 12791 1,100639,678,105219
+PMS irl1 11866 1,100639,100350,105245
+PMS bjkcup 12827 864,1,100639,106227
+PMS afcq 12854 1,100639,100350,106276
+PMS ppa-doubles 11697 1,102471,105057,100639
+PMS pt2 12895 1,100639,100350,106318
+PMS boxing 12578 1,683
+PMS kaz1 11867 1,100639,100350,105246
+PMS modus 12755 1,100639,101437,106153
+PMS bra3 11869 1,100639,100350,105248
+PMS dehl 10701 1,100639,100088,102909
+PMS den 10363 1,100639,100350,102652
+PMS afl 12563 1,100639,103615
+PMS nor2 11871 1,100639,100350,105250
+PMS pdcdarts 12754 1,100639,101437,101544
+PMS cricwncl 10909 1,100639,517,103180
+PMS crint 10528 1,100639,517,102803
+PMS efl 10329 1,100639,100350,102525
+PMS cwc 11461 1,100639,100350,102192
+PMS uwec 12865 1,100639,100350,106286
+PMS czechligapro 12325 1,100639,103767,105709
+PMS acl2 12949 1,100639,100350,106368
+PMS mex2 12889 1,100639,100350,106312
+PMS uzb1 11868 1,100639,100350,105247
+PMS swe2 11872 1,100639,100350,105251
+PMS est1 11873 1,100639,100350,105252
+PMS poker 12579 1,100277
+PMS rodeo 12580 1,104814
+PMS aut 11636 1,100639,100350,104929
+PMS fro1 11878 1,100639,100350,105257
+PMS cfb 12756 1,100351,100639
+PMS canch 12802 1,100639,100350,106187
+PMS dfb 10317 1,100639,100350,102154
+PMS dota2 10309 1,64,102366,100639
+PMS bkcl 10879 1,100639,28,103093
+PMS fifwc 11433 1,100639,100350,102232
+PMS bkfr1 10872 1,100639,28,103098
+PMS bkligend 10878 1,100639,28,103094
+PMS blr1 11876 1,100639,100350,105255
+PMS chi2 11880 1,100639,100350,105259
+PMS cricwcl 12874 1,100639,517,106292
+PMS fif 10238 1,100639,100350,102539
+PMS kor2 11879 1,100639,100350,105258
+PMS bkvtb 11465 1,100639,28,104344
+PMS lva1 11874 1,100639,100350,105253
+PMS es3 12890 1,100639,100350,106313
+PMS bl3 12891 1,100639,100350,106314
+PMS nln 12892 1,100639,100350,106315
+PMS nls 12893 1,100639,100350,106316
+PMS ltu1 11875 1,100639,100350,105254
+PMS geo1 11877 1,100639,100350,105256
+PMS ja3 12894 1,100639,100350,106317
+PMS efa 10314 1,100639,100350,101807
+PMS col2 11881 1,100639,100350,105260
+PMS wtt 12951 1,100639,103767,103769
+PMS chl2 11882 1,100639,100350,105261
+PMS uslc 12318 1,100639,100350,105703
+PMS usoc 12581 1,100639,100350,105946
+PMS isc 12582 1,100639,100350,105947
+PMS hun 11640 1,100639,100350,104933
+PMS saf1 12360 1,100639,100350,105734
+PMS u20wwc 12804 1,100639,100350,106189
+PMS wsl2 12875 1,100639,100350,106293
+PMS serc 12953 1,100639,100350,106379
+PMS grc 11457 1,100639,100350,104337
+PMS chfa 12322 1,100639,100350,105707
+PMS fl1 10195 1,100639,102070,100350
+PMS hok 10434 1,64,102757,100639
+PMS hr1 11451 1,100639,100350,104331
+PMS fpd 11434 1,100639,100350,104318
+PMS ire 11642 1,100639,100350,104935
+PMS fr2 10675 1,100639,100350,102871
+PMS frtc 12359 1,100639,100350,105733
+PMS gtm 11438 1,100639,100350,104322
+PMS icwq 11463 1,100639,100350,104342
+PMS itc 10287 1,100639,100350,102008
+PMS ned2 12353 1,100639,100350,105727
+PMS bul 11643 1,100639,100350,104936
+PMS slo 11641 1,100639,100350,104934
+PMS sclc 12321 1,100639,100350,105706
+PMS uae1 12354 1,100639,100350,105728
+PMS gre1 12356 1,100639,100350,105730
+PMS isr 11638 1,100639,100350,104931
+PMS ptsc 12357 1,100639,100350,105731
+PMS ecs 12358 1,100639,100350,105732
+PMS par1 12361 1,100639,100350,105735
+PMS rlchallenge 12583 1,100639,102193,105948
+PMS darts 12754,12755 1,100639,101437
+PMS bkjpn 11470 1,100639,28,104349
+PMS cricranji 12573 1,100639,517,105944
+PMS bkarg 10873 1,100639,28,103099
+PMS bknbl 10876 1,100639,28,103096
+PMS brco 11460 1,100639,100350,104340
+PMS jap 10360 1,100639,100350,102649
+PMS bkseriea 10877 1,100639,28,103095
+PMS bun 10194 1,1494,100639,100350
+PMS caf 10240 1,100639,100350,102540
+PMS mlbb 10426 1,64,102750,100639
+PMS vbligueb 12585 1,100639,102883,105949
+PMS vbligueaw 12586 1,100639,102883,105950
+PMS vbbundesligaw 12587 1,100639,102883,105951
+PMS vb2bundesliga 12588 1,100639,102883,105952
+PMS vb2bundesligaw 12589 1,100639,102883,105953
+PMS ahl 10699 1,100639,100088,102907
+PMS bkcba 10875 1,100639,28,103097
+PMS brcm 11439 1,100639,100350,104323
+PMS ccc 11464 1,100639,100350,104343
+PMS cdr 10316 1,100639,100350,101783
+PMS vbbelligaa 12590 1,100639,102883,105954
+PMS vbdivisao1 12591 1,100639,102883,105955
+PMS ncaahockey 12959 1,100639,100088,106390
+PMS cde 10315 1,100639,100350,102604
+PMS bkaba 11467 1,100639,28,104346
+PMS bkbbl 11466 1,100639,28,104345
+PMS bkbsl 11468 1,100639,28,104347
+PMS bkfibaqaf 11471 1,100639,28,104350
+PMS bkfibaqam 11472 1,100639,28,104351
+PMS bkgr1 11469 1,100639,28,104348
+PMS cehl 10702 1,100639,100088,102910
+PMS crichundred 12348 1,100639,517,105722
+PMS bkkbl 10874 1,100639,28,103100
+PMS crichundredw 12349 1,100639,517,105723
+PMS wsl 12596 1,100639,100350,105959
+PMS tha1 12597 1,100639,100350,105960
+PMS argcopa 12365 1,100639,100350,105739
+PMS idn1 12598 1,100639,100350,105961
+PMS idn2 12599 1,100639,100350,105962
+PMS srb 11639 1,100639,100350,104932
+PMS motogp 12961 1,434,100639,102234
+PMS cricecsch 12370 1,100639,517,105745
+PMS cricecseng 12371 1,100639,517,105746
+PMS cricmaharani 12372 1,100639,517,105747
+PMS cricmukono 12373 1,100639,517,105748
+PMS crickerala 12374 1,100639,517,105749
+PMS cricjclt10 12375 1,100639,517,105750
+PMS cricppl 12376 1,100639,517,105751
+PMS cricfalcons 12377 1,100639,517,105752
+PMS cricinterprov 12378 1,100639,517,105753
+PMS dpwt 12420 1,100219,102519
+PMS mex 10290 1,100639,100350,102448
+PMS kft 12468 1,100219,105851
+PMS moto2 12962 1,100639,106391
+PMS cricbpl 10588 1,100639,517,103809
+PMS moto3 12963 1,100639,106392
+PMS wsbk 12964 1,100639,106393
+PMS lec 11449 1,100639,100350,102449
+PMS lib 10289 1,100639,100350,102562
+PMS formulae 12965 1,100639,106394
+PMS crichkt20w 11280 1,100639,517,104072
+PMS criclcl 11337 1,100639,517,104203
+PMS cricnt20c 11338 1,100639,517,104204
+PMS usc 12224 1,100639,105616,100350
+PMS bl2 10670 1,100639,100350,102864
+PMS chess 11480 1,256,100639
+PMS atc 11455 1,100639,100350,104335
+PMS bkbsn 11890 1,100639,28,105272
+PMS bkcebl 11893 1,100639,28,105275
+PMS usl1 12363 1,100639,100350,105737
+PMS bklnbp 12969 1,100639,28,106403
+PMS bkeurocup 11884 1,100639,28,105266
+PMS ven1 11870 1,100639,100350,105249
+PMS tur2 12362 1,100639,100350,105736
+PMS cafcl 12364 1,100639,100350,105738
+PMS aze1 12547 1,100639,100350,105913
+PMS aze2 12548 1,100639,100350,105914
+PMS azec 12549 1,100639,100350,105915
+PMS aseanw 12550 1,100639,100350,105916
+PMS bra 10359 1,100639,100350,102648
+PMS bkibl 11892 1,100639,28,105274
+PMS vbsuperlega 11920 1,100639,102883,105334
+PMS vbsuperliga 11923 1,100639,102883,105337
+PMS vbvnl 11928 1,100639,102883,105342
+PMS chi 10439 1,100639,100350,102764
+PMS codmw 10427 1,64,100230,100639
+PMS copaam 11429 1,100639,100350,100278
+PMS afwq 10240 1,100639,100350,102540
+PMS aswq 10241 1,100639,100350,101680
+PMS cricbbl 10449 1,100639,517,102813
+PMS clf 12410 1,100639,100350,105795
+PMS ccup 12417 1,100639,100350,105802
+PMS nirl1 12543 1,100639,100350,105909
+PMS canpl 12544 1,100639,100350,105910
+PMS tpe1 12545 1,100639,100350,105911
+PMS tpew 12546 1,100639,100350,105912
+PMS cricodc 12367 1,100639,517,105742
+PMS aflw 12564 1,100639,105935
+PMS asean 12516 1,100639,100350,105873
+PMS rlsuper 12452 1,100639,102193,105840
+PMS rueuchamp 10882 1,100639,102193,103113
+PMS ruprem 10840 1,100639,102193,103054
+PMS setkameua 12329 1,100639,103767,105715,105716
+PMS argpn 11861 1,100639,100350,105240
+PMS bel1 12351 1,100639,100350,105725
+PMS bel2 12352 1,100639,100350,105726
+PMS acle 11644 1,100639,100350,104937
+PMS aseanc 12551 1,100639,100350,105917
+PMS bkisrsl 11886 1,100639,28,105268
+PMS con 10246 1,100639,100350,100787
+PMS ptc 11454 1,100639,100350,104334
+PMS r6siege 10432 1,64,102755,100639
+PMS rl 10433 1,64,102756,100639
+PMS rlnrl 12451 1,100639,102193,105839
+PMS ruchamp 10884 1,100639,102193,103115
+PMS bklkl 11885 1,100639,28,105267
+PMS rus 10313 1,100639,100350,102593
+PMS criccsat20w 10446 1,100639,517,102808
+PMS itsb 10676 1,100639,100350,102870
+PMS rusrp 10883 1,100639,102193,103114
+PMS rutopft 10841 1,100639,102193,103055
+PMS ruurc 10881 1,100639,102193,103112
+PMS sawq 10246 1,100639,100350,100787
+PMS skc 11450 1,100639,100350,104330
+PMS sud 10291 1,100639,100350,102563
+PMS swe 11637 1,100639,100350,104930
+PMS ttchallenger 12327 1,100639,103767,105711
+PMS criccpl 11216 1,100639,517,103808
+PMS nbasl 12174 1,100639,105577
+PMS ncag 11432 1,100639,100350,102263
+PMS nlc 11459 1,100639,100350,104339
+PMS ja2 10443 1,100639,100350,102770
+PMS nawq 10244 1,100639,100350,101280
+PMS nor 10362 1,100639,100350,102651
+PMS rusixnat 10880 1,100639,102193,103111
+PMS sc1 10436 64,103065,100639,1
+PMS spl 10361 1,100639,100350,102650
+PMS ssc 10863 1,103075,100639,100350
+PMS svk1 11452 1,100639,100350,104332
+PMS trsk 11453 1,100639,100350,104333
+PMS bkplk 11887 1,100639,28,105269
+PMS bkkls 11888 1,100639,28,105270
+PMS bkvensl 11891 1,100639,28,105273
+PMS bknznbl 12552 1,100639,28,105918
+PMS bkligarg 11894 1,100639,28,105276
+PMS bknbb 11889 1,100639,28,105271
+PMS vbbundesliga 11925 1,100639,102883,105339
+PMS vbcl 11929 1,100639,102883,105343
+PMS sc2 10435 1,64,103064,100639
+PMS ofc 10294 1,100639,100350,104327
+PMS owq 10294 1,100639,100350,104327
+PMS cricjcl 11998 1,100639,517,105514
+PMS cricshpageeza 11996 1,100639,517,105512
+PMS cricmaharaja 11990 1,100639,517,105506
+PMS criccoppat10 11992 1,100639,517,105508
+PMS cricecsbg 11993 1,100639,517,105509
+PMS cricnsk 11994 1,100639,517,105510
+PMS cricapl 11995 1,100639,517,105511
+PMS crickpl 11997 1,100639,517,105513
+PMS cricgsl 12366 1,100639,517,105740
+PMS cricodcl2w 12368 1,100639,517,105743
+PMS cricgermant10 12369 1,100639,517,105744
+PMS ttelite 12324 1,100639,103767,105708
+PMS crictelangana 11991 1,100639,517,105507
+PMS uef 10243 1,100639,100350,102544
+PMS j2100 10443 1,102770,100639,100350
+PMS ow 10430 1,64,102753,100639
+PMS por 10330 1,100639,100350,101772
+PMS scoc 11458 1,100639,100350,104338
+PMS scop 10674 1,100639,100350,102872
+PMS setkamecz 12331 1,100639,103767,105715,105718
+PMS lpga 12419 1,100219,105806
+PMS bkbul 12433 1,100639,28,105819
+PMS bkfi2 12447 1,100639,28,105833
+PMS bkfr2 12443 1,100639,28,105829
+PMS wimbledon 12012 864,1,100639,100290
+PMS wta 10366 1,864,100639,102123
+PMS ueq 11431 1,100639,100350,104317
+PMS ukr1 11241 1,100639,100350,103886
+PMS unl 11446 1,100639,100350,100816
+PMS afcl 11644 1,100639,100350,104937
+PMS ttworldcup 11914 1,100639,103767,105328
+PMS wch 11648 1,100639,100088,102151
+PMS bkaut 12432 1,100639,28,105818
+PMS bkblr 12450 1,100639,28,105836
+PMS bkcyp 12434 1,100639,28,105820
+PMS bkden 12435 1,100639,28,105821
+PMS bkes2 12446 1,100639,28,105832
+PMS bkest 12436 1,100639,28,105822
+PMS bkcze 12428 1,100639,28,105814
+PMS arg 10312 1,100639,100350,102561
+PMS bksvk 12440 1,100639,28,105826
+PMS atp 10365 1,864,100639,101232
+PMS auc 11456 1,100639,100350,104336
+PMS aus 10438 1,100639,100350,102765
+PMS val 10369 1,64,101672,100639
+PMS bkmkd 12438 1,100639,28,105824
+PMS bknor 12439 1,100639,28,105825
+PMS bksvn 12441 1,100639,28,105827
+PMS bkukr 12442 1,100639,28,105828
+PMS acn 10786 1,102974
+PMS afc 10241 1,100639,100350,101680
+PMS bkbel 12426 1,100639,28,105812
+PMS bkfibaqas 11473 1,100639,28,104352
+PMS bkfibaqeu 11474 1,100639,28,104353
+PMS bkcro 12424 1,100639,28,105810
+PMS bkfin 12427 1,100639,28,105813
+PMS bkrus 12449 1,100639,28,105835
+PMS creng 10750 1,100639,517,103017
+PMS cpbl 11972 1,100639,678,105454
+PMS crict20blastl2w 11841 1,100639,517,105205
+PMS crict20blastw 11840 1,100639,517,105204
+PMS crict20plw 11220 1,100639,517,103179
+PMS bkgr2 12444 1,100639,28,105830
+PMS bkit2 12445 1,100639,28,105831
+PMS bkkaz 12437 1,100639,28,105823
+PMS bkkz2 12448 1,100639,28,105834
+PMS bklat 12423 1,100639,28,105809
+PMS bkgbr 12431 1,100639,28,105817
+PMS bkhun 12429 1,100639,28,105815
+PMS bkmex 12430 1,100639,28,105816
+PMS bkned 12425 1,100639,28,105811
+PMS crafgwi20 10910 1,100639,517,103181
+PMS craus 10752 1,100639,517,102946
+PMS crban 10799 1,100639,517,103014
+PMS crbtnmlyhkg20 10911 1,100639,517,103182
+PMS crictbcl 11513 1,100639,517,104447
+PMS crind 10748 1,100639,517,103018
+PMS cwbb 10471 1,28,100639,102003
+PMS crpak 10751 1,100639,517,103016
+PMS crsou 10753 1,100639,517,103015
+PMS crnew 10755 1,100639,517,102949
+PMS cru19wc 10907 1,100639,517,103178
+PMS cruae 10754 1,100639,517,102948
+PMS crwncl 10909 1,100639,517,103180
+PMS crwpl20 10908 1,100639,517,103179
+PMS crwt20wcgq 10912 1,100639,517,103183
+PMS cs2 10310 1,64,100780,100639
+PMS csa 10446 1,517,100639,102808
+PMS cuba 11971 1,100639,678,105453
+PMS fifa 10428 1,64,102751,100639
+PMS nba 10345 1,745,100639
+PMS mwoh 11136 1,100639,100088,103666
+PMS nfl 12185 1,450,100639
+PMS sc 10436 1,64,103065,100639
+PMS ncaab 39 1,100149,100639
+PMS ttbl 11919 1,100639,103767,105333
+PMS ttcl 11917 1,100639,103767,105331
+PMS tteuropecup 11918 1,100639,103767,105332
+PMS mlb 3 1,100639,100381
+PMS fifaw 11448 1,100639,100350,104329
+PMS kbo 10370 1,100639,678,102668
+PMS khl 10700 1,100639,100088,102908
+PMS lidom 11973 1,100639,678,105455
+PMS lol-wild-rift 10429 64,102752,100639,1
+PMS lpl 10448 1,517,100639,102812
+PMS lvbp 11974 1,100639,678,105456
+PMS mls 10189 1,100639,100350,100100
+PMS nwsl 11462 1,100639,100350,104341
+PMS odi 10451 1,517,100639,102815
+PMS she 10453 1,517,100639,102817
+PMS t20 10445 1,517,100639,102810
+PMS test 10661 1,517,100639,102842
+PMS npb 11968 1,100639,678,105452
+PMS ttworlds 11915 1,100639,103767,105329
+PMS shl 10695 1,899,100088,102906
+PMS sasa 10450 1,517,100639,103811
+PMS pubg 10431 1,64,105560,100639
+PMS nhl 10346 1,899,100639
+PMS sea 10203 1,100639,101962,100350,100618
+PMS snhl 10703 1,100639,100088,100642,102911
+PMS ufc 38 1,100639,279
+PMS bra2 10973 1,100639,100350,104387
+PMS chi1 10965 1,100639,100350,104390
+PMS mar1 10968 1,100639,100350,104391
+PMS egy1 10969 1,100639,100350,104397
+PMS cze1 10970 1,100639,100350,104389
+PMS bol1 10966 1,100639,100350,104399
+PMS atp-doubles 11632 864,1,100639,101232
+PMS isp 10364 1,100639,100350,103986
+PMS itf 11634 1,864,100639,104923
+PMS per1 10967 1,100639,100350,104396
+PMS rou1 10971 1,100639,100350,104398
+PMS uel 10209 1,100639,101787,100350
+PMS uwcl 11240 1,100639,100350,103885
+PMS wta-doubles 11633 864,1,100639,102123
+PMS wnba 10105 1,100639,100254
+PMS wttmen 11198 1,100639,103767,103768,103773
+PMS wttwom 11199 1,100639,103767,103768,103774
+PMS wwcquefa 11846 1,100639,100350,105215
+PMS cfl 11839 1,105200,1186
+PMS ipl 44 1,101977,100639,517,518
+PMS pga 10976 1,100219,101777,102112
+PMS wbc 11249 1,103894
+PMS zuffa 10954 1,100639,683,103213
+PMS cycling 12336 1,102142,104450
+PMS cbb 10470 1,101178,100639,101954
+PMS col1 10964 1,100639,100350,104388
+PMS weuc 11447 1,100639,100350,102356
+PMS wwoh 11137 1,100639,100088,103667
+PMS epl 10188 1,82,306,100639,100350
+PMS j1100 10360 1,102649,100639,100350
+PMS mlp 11697 1,102471,105057,100639
+PMS pll 11262 102392,1,100639,102393,102391
+PMS ucl 10204 1,100977,100639,1234,100350
+PMS wll 11263 1,103911,102393,100639
+== espn eng.1 200 48162 [{"id":"740685","uid":"s:600~l:700~e:740685","date":"2025-10-25T14:00Z","name":"Sunderland at Chelsea","shortName":"SUN @ CHE","season":{"year":2025,"type":13481,"slug":"2025-26-english-premier-league"},"competitions":[{"id":"740685","uid":"s:600~l:700~e:740685~c:740685","date":"2025-10-25T14:00Z","startDate":"2025-10-25T14:00Z","attendance":39489,"timeValid":true,"recent":false,"status":{"clock":5400,"displayClock":"90'+8'","period":2,"type":{"id":"28","name":"STATUS_FULL_TIME","state":"post","completed":true,"description":"Full Time","detail":"FT","shortDetail":"FT"}},"venue":{"id":"249","fullName":"Stamford Bridge","address":{"city":"London","country":"England"}},"format":{"regulation":{"periods":2}},"altGameNote":"English Premier League","notes":[],"geoBroadcasts":[{"type":{"id":"4","shortName":"STREAMING"},"market":{"id":"1","type":"National"},"media":{"shortName":"Peacock"},"lang":"en","region":"us"}],"broadcasts":[{"market":"national","names":["Peacock"]}],"broadcast":"","competitors":[{"id":"363","uid":"s:600~t:363","type":"team","order":0,"homeAway":"home","winner":false,"form":"DWWLD","score":"1","records":[{"name":"All Splits","type":"total","summary":"4-2-3","abbreviation":"Total"}],"team":{"id":"363","uid":"s:600~t:363","abbreviation":"CHE","displayName":"Chelsea","shortDisplayName":"Chelsea","name":"Chelsea","location":"Chelsea","color":"144992","alternateColor":"FFFFFF","isActive":true,"logo":"https://a.espncdn.com/i/teamlogos/soccer/500/363.png","links":[{"rel":["clubhouse","desktop","team"],"href":"https://www.espn.com/soccer/club/_/id/363/chelsea","text":"Clubhouse","isExternal":false,"isPremium":false,"isHidden":false},{"rel":["stats","desktop","team"],"href":"https://www.espn.com/soccer/team/stats/_/id/363/chelsea","text":"Stats","isExternal":false,"isPremium":false,"isHidden":false},{"rel":["stats","sportscenter","app","team"],"href":"sportscenter://x-callback-url/showClubhouse?uid=s:600~t:363&section=stats","text":"Stats","isExternal":false,"isPremium":false,"isHidden":false},{"rel":["schedule","desktop","team"],"href":"https://www.espn.com/soccer/team/fixtures/_/id/363/chelsea","text":"Fixtures","isExternal":false,"isPremium":false,"isHidden":false},{"rel":["schedule","sportscenter","app","team"],"href":"sportscenter://x-callback-url/showClubhouse?uid=s:600~t:363&section=scores","text":"Fixtures","isExternal":false,"isPremium":false,"isHidden":false},{"rel":["squad","desktop","team"],"href":"https://www.espn.com/soccer/team/squad/_/i
+== espn eng.1 2016 200 73554 7 events
+== clubelo 502 0 
+== pin 200 6394 
