@@ -132,3 +132,30 @@ test('the 7 plays that read proven on 10-24 are capped; BetRivers main lines sti
   const gl = Array.from({ length: 95 }, (_, i) => ({ status: 'graded', profit: i % 3 ? 0.04 : -0.9, clv: -0.006 + (i % 2) * 0.001, state: 'MD', price: 0.94 }));
   assert.notEqual(scoreboard({ gasLocks: gl }).plays.find(p => p.play === '93-95c').verdict, 'proven');
 });
+
+test('big money reads proven only on the strict rule against Pinnacle', () => {
+  const bm = (i, o = {}) => ({ id: `b${i}`, status: 'graded', kind: 'game', flow: 'bettor', venue: 'betrivers', sameLine: true, betKey: `${1000 + i}|ml|home`,
+    title: `Team ${i} to win`, start: '2026-10-20T00:00:00Z', decimal: 2, outcome: i % 2 ? 'win' : 'loss', profit: i % 2 ? 1 : -1,
+    closeEv: 4 + (i % 3), sharpEv: 3 + (i % 3), sharpFair: 0.5, closeOk: true, execOk: true, ...o });
+  const at = (rows, play) => scoreboard({ bigMoney: rows }).plays.find(p => p.source === 'bigMoney' && p.play === play);
+  // 60 games beating Pinnacle's close: proven, with its game count
+  const ok = at(Array.from({ length: 60 }, (_, i) => bm(i)), 'bettor · BetRivers');
+  assert.equal(ok.verdict, 'proven');
+  assert.equal(ok.games, 60);
+  // good exchange CLV, Pinnacle's close not beaten: capped
+  const pin = at(Array.from({ length: 60 }, (_, i) => bm(i, { sharpEv: (i % 2 ? 1 : -1.2) })), 'bettor · BetRivers');
+  assert.equal(pin.verdict, 'promising');
+  assert.match(pin.provenNote, /vs Pinnacle's close/);
+  // 60 lines on 20 games count as 20
+  const few = at(Array.from({ length: 60 }, (_, i) => bm(i, { betKey: `${1000 + (i % 20)}|spread|${i}|home` })), 'bettor · BetRivers');
+  assert.equal(few.verdict, 'promising');
+  assert.equal(few.games, 20);
+  // props pooled in: capped
+  const mixed = at([...Array.from({ length: 60 }, (_, i) => bm(i)), ...Array.from({ length: 10 }, (_, i) => bm(100 + i, { kind: 'prop' }))], 'bettor · BetRivers');
+  assert.match(mixed.provenNote, /player props/);
+  // stale closes don't count
+  const stale = at(Array.from({ length: 60 }, (_, i) => bm(i, { closeOk: i < 30 })), 'bettor · BetRivers');
+  assert.equal(stale.verdict, 'promising');
+  // pooled across venues never proven
+  assert.notEqual(at(Array.from({ length: 60 }, (_, i) => bm(i)), 'game line · bettor').verdict, 'proven');
+});

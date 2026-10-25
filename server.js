@@ -4803,7 +4803,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.171.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.171.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5269,6 +5269,17 @@ app.get('/api/big-money', async (req, res) => {
       backtest: bigMoney.BACKTEST, off: process.env.BIG_MONEY === 'off', ...withheldBody(withheldOf(lic, ['kalshi', 'polymarket'])) };
     if (!pro) return res.json({ ...base, recent });
     res.json({ ...base, plays, recent, counts: bigState.counts, errors: bigState.errors });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// The big-money record's settled rows (locked, graded, void), every field but
+// the internal ones, oldest first: what an independent re-check reads
+// (checks/brmoney-recheck-2026-10-25). Open rows are today's board: Pro only.
+app.get('/api/big-money/record', async (req, res) => {
+  try {
+    const pro = hasPro(req);
+    const rows = (await bigTracker.list()).filter(r => pro || r.status !== 'open')
+      .sort((a, b) => (a.flaggedAt || '').localeCompare(b.flaggedAt || '')).map(({ why, ...r }) => r);
+    res.set('Cache-Control', 'no-store').json({ n: rows.length, rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // Exchange value (xvalue.js): Kalshi and Polymarket US asks under Polymarket's
@@ -7836,7 +7847,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.171.0',
+  version: '3.171.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
