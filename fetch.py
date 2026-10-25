@@ -19,7 +19,8 @@ def sb(j):
     y,st,w=j
     d=get(f"{S}/scoreboard?groups=80&dates={y}&seasontype={st}&week={w}&limit=300"); out=[]
     if not d: return out
-    for e in json.loads(d).get('events',[]):
+    evs=json.loads(d).get('events',[]); print('sb',y,st,w,len(evs),flush=True)
+    for e in evs:
         c=e['competitions'][0]
         out.append(dict(id=e['id'],date=e['date'],season=y,stype=st,week=w,done=c['status']['type'].get('completed'),neutral=c.get('neutralSite'),
           teams=[dict(id=t['team'].get('id'),abbr=t['team'].get('abbreviation'),name=t['team'].get('displayName'),ha=t.get('homeAway'),score=t.get('score')) for t in c['competitors']]))
