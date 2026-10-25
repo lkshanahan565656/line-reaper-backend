@@ -1,0 +1,25 @@
+name: diag-nflgl
+on:
+  push:
+    branches: [diag-nflgl]
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['res:nflverse', 'k:KXNFLGAME', 'k:KXNFLSPREAD', 'k:KXNFLTOTAL', 'pm:nfl']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          set +e
+          P="${{ matrix.part }}"; TAG=$(echo "$P" | tr ':' '-')
+          PART=$P SINCE=2025-01-01 BUDGET_MIN=150 timeout 160m node diag/pull.js 2>&1 | tee log-$TAG.txt
+          git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
+          git checkout -B diag-nflgl-out-$TAG; git add -f log-$TAG.txt data; git commit -qm "nflgl $P"
+          for i in 1 2 3 4; do git push -qf origin diag-nflgl-out-$TAG && break; sleep $((i*5)); done
