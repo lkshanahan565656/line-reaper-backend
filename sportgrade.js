@@ -15,6 +15,13 @@ const LEAGUES = { NFL: 'football/nfl', CFB: 'football/college-football', NBA: 'b
   EPL: 'soccer/eng.1', LALIGA: 'soccer/esp.1', BUNDESLIGA: 'soccer/ger.1', SERIEA: 'soccer/ita.1', LIGUE1: 'soccer/fra.1', MLS: 'soccer/usa.1',
   LIGAMX: 'soccer/mex.1', EREDIVISIE: 'soccer/ned.1', BRASILEIRAO: 'soccer/bra.1', UCL: 'soccer/uefa.champions', UEL: 'soccer/uefa.europa' };
 
+// soccer player legs: the apps say only SOCCER, so every league ESPN covers
+// that they post players from is tried, nearest first (one scoreboard each a
+// date, cached), and the match is the one naming the leg's team
+const SOCCER_SLUGS = ['soccer/eng.1', 'soccer/esp.1', 'soccer/ita.1', 'soccer/ger.1', 'soccer/fra.1', 'soccer/usa.1', 'soccer/mex.1',
+  'soccer/uefa.champions', 'soccer/uefa.europa', 'soccer/uefa.europa.conf', 'soccer/ned.1', 'soccer/por.1', 'soccer/eng.2', 'soccer/bra.1',
+  'soccer/arg.1', 'soccer/sco.1', 'soccer/tur.1', 'soccer/ksa.1'];
+
 const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
 // "12/19" → [12, 19]; "3-6" → [3, 6]
 const pair = v => String(v ?? '').split(/[/-]/).map(n);
@@ -41,6 +48,24 @@ function parseBox(box) {
         // NHL lists a player under forwards and skaters alike; the first wins
         out.get(k).groups[name] ||= row;
       }
+    }
+  }
+  return out;
+}
+
+// ESPN's soccer summary lists each side's squad under rosters, every player's
+// match stats by name (totalShots, shotsOnTarget, totalGoals, goalAssists,
+// saves, goalsConceded, foulsCommitted, appearances) → Map(canonName → { groups: { soccer } })
+function parseSoccerRosters(summary) {
+  const out = new Map();
+  for (const team of summary?.rosters || []) {
+    for (const r of team.roster || []) {
+      const who = r.athlete?.displayName;
+      if (!who || !Array.isArray(r.stats)) continue;
+      const row = Object.fromEntries(r.stats.map(x => [x.name, x.value ?? x.displayValue]));
+      row.goalie = r.position?.abbreviation === 'G' || r.position?.name === 'Goalkeeper';
+      const k = canonName(who);
+      if (!out.has(k)) out.set(k, { name: who, team: team.team?.displayName || '', groups: { soccer: row } });
     }
   }
   return out;
@@ -108,6 +133,14 @@ function statValue(sport, market, groups) {
       }
       return map[market] ?? null;
     }
+    case 'SOCCER': {
+      const sc = g.soccer;
+      if (!has(sc)) return null;
+      const goals = n(sc.totalGoals), ast = n(sc.goalAssists);
+      const map = { goals, assists: ast, 'goals_+_assists': goals + ast, shots_on_target: n(sc.shotsOnTarget), shots_attempted: n(sc.totalShots),
+        fouls: n(sc.foulsCommitted), ...(sc.goalie ? { saves: n(sc.saves), goals_against: n(sc.goalsConceded) } : {}) };
+      return map[market] ?? null;
+    }
     case 'NHL': {
       if (has(gk)) return market === 'saves' ? n(gk.saves) : market === 'goals_against' ? n(gk.goalsAgainst) : null;
       if (!has(sk)) return null;
@@ -127,7 +160,9 @@ const FB = ['pass_yds', 'pass_tds', 'pass_comp', 'pass_att', 'pass_ints', 'rush_
   'rush_rec_yds', 'pass_rush_yds', 'anytime_td', 'longest_rec', 'longest_rush', 'fg_made', 'kicking_points'];
 const MARKETS = { NBA: BB, WNBA: BB, CBB: BB, NFL: FB, CFB: FB,
   MLB: ['hits', 'runs', 'rbis', 'home_runs', 'hits_runs_rbis', 'batter_walks', 'batter_strikeouts', 'strikeouts', 'pitcher_outs', 'hits_allowed', 'earned_runs', 'walks_allowed'],
-  NHL: ['saves', 'goals_against', 'goals', 'assists', 'points', 'shots_on_goal', 'blocks', 'hits'] };
+  NHL: ['saves', 'goals_against', 'goals', 'assists', 'points', 'shots_on_goal', 'blocks', 'hits'],
+  // ESPN carries no passes, tackles, clearances or crosses: those legs never grade here
+  SOCCER: ['goals', 'assists', 'goals_+_assists', 'shots_on_target', 'shots_attempted', 'fouls', 'saves', 'goals_against'] };
 const canGrade = pick => !!MARKETS[pick.sport]?.includes(pick.mkey);
 
 // "Cleveland Cavaliers" vs a pick's "CLE @ ORL" title or team: last words and
@@ -151,6 +186,8 @@ function findEvent(events, pick) {
 function gradeLeg(pick, players) {
   const p = players.get(canonName(pick.player));
   if (!p) return null;
+  // a squad player who never came on: the apps void the leg
+  if (pick.sport === 'SOCCER' && p.groups?.soccer && n(p.groups.soccer.appearances) === 0) return { void: 'did not play' };
   const v = statValue(pick.sport, pick.mkey, p.groups);
   if (v == null) return null;
   const line = Number(pick.signalLine);
@@ -160,7 +197,7 @@ function gradeLeg(pick, players) {
 
 // Fetch side. ymd(t) in US Eastern so a 9pm ET game sits on its own date.
 const ymd = t => new Date(t - 4 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
-function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } = {}) {
+function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now(), soccer = true } = {}) {
   const boards = new Map(), boxes = new Map();
   const cached = async (map, key, fn) => {
     const hit = map.get(key);
@@ -171,8 +208,32 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
   };
   const board = (league, d) => cached(boards, `${league}|${d}`, async () => (await http.get(`${ESPN}/${LEAGUES[league]}/scoreboard`, { params: { dates: d }, timeout: 20000 }))?.data?.events || []);
   const box = (league, id) => cached(boxes, `${league}|${id}`, async () => parseBox((await http.get(`${ESPN}/${LEAGUES[league]}/summary`, { params: { event: id }, timeout: 20000 }))?.data?.boxscore));
-  // → { result, outcome, eventId } | { pending: true } (game not final) | null
+  const soccerBoard = (slug, d) => cached(boards, `${slug}|${d}`, async () => (await http.get(`${ESPN}/${slug}/scoreboard`, { params: { dates: d }, timeout: 20000 }))?.data?.events || []);
+  const soccerBox = (slug, id) => cached(boxes, `${slug}|${id}`, async () => parseSoccerRosters((await http.get(`${ESPN}/${slug}/summary`, { params: { event: id }, timeout: 20000 }))?.data));
+  // a soccer leg: the first league whose board that day has the leg's match
+  async function gradeSoccer(pick) {
+    const t = Date.parse(pick.startTime || '');
+    if (!t) return null;
+    // soccer kicks off on UTC days that ESPN files under the UTC date
+    const days = [...new Set([new Date(t).toISOString().slice(0, 10).replace(/-/g, ''), ymd(t)])];
+    for (const slug of SOCCER_SLUGS) {
+      let ev = null;
+      for (const d of days) {
+        let evs;
+        try { evs = await soccerBoard(slug, d); } catch (e) { if (e.response?.status === 404 || e.response?.status === 400) continue; throw e; }
+        ev = findEvent(evs, pick);
+        if (ev) break;
+      }
+      if (!ev) continue;
+      if (!ev.status?.type?.completed) return { pending: true };
+      const g = gradeLeg(pick, await soccerBox(slug, ev.id));
+      return g ? { ...g, eventId: ev.id } : null;
+    }
+    return null;
+  }
+  // → { result, outcome, eventId } | { void } | { pending: true } (game not final) | null
   async function grade(pick) {
+    if (pick.sport === 'SOCCER') return soccer && canGrade(pick) ? gradeSoccer(pick) : null;
     if (!LEAGUES[pick.sport]) return null;
     const t = Date.parse(pick.startTime || '');
     if (!t) return null;
@@ -196,7 +257,7 @@ function createSportsGrader({ http, ttlMs = 10 * 60e3, now = () => Date.now() } 
     if (!ev.status?.type?.completed) return { pending: true };
     return scoreOf(ev, game);
   }
-  return { grade, gradeGame, canGrade };
+  return { grade, gradeGame, canGrade: soccer ? canGrade : pick => pick.sport !== 'SOCCER' && canGrade(pick) };
 }
 
 // ESPN's competitors → our home and away points, each side found by name
@@ -210,4 +271,4 @@ function scoreOf(ev, game) {
   return Number.isFinite(hp) && Number.isFinite(ap) ? { home: hp, away: ap } : null;
 }
 
-module.exports = { LEAGUES, MARKETS, canGrade, parseBox, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };
+module.exports = { LEAGUES, SOCCER_SLUGS, MARKETS, canGrade, parseBox, parseSoccerRosters, statValue, findEvent, gradeLeg, createSportsGrader, ymd, scoreOf };

@@ -250,7 +250,14 @@ module.exports = { sourceFor, canGrade, tennisMatches, tennisStat, findTennis, g
 function combineGraders(box, extra) {
   return {
     canGrade: pick => box.canGrade(pick) || extra.canGrade(pick),
-    grade: pick => (extra.canGrade(pick) ? extra.grade(pick) : box.grade(pick)),
+    // a leg both can settle (soccer goals: ESPN's box and Kalshi's goalscorer
+    // market) takes the box first, Kalshi when the box has nothing
+    grade: async pick => {
+      if (!extra.canGrade(pick)) return box.grade(pick);
+      if (!box.canGrade(pick)) return extra.grade(pick);
+      const g = await box.grade(pick);
+      return g || extra.grade(pick);
+    },
     sourceOf: pick => (box.canGrade(pick) ? 'espn box score' : sourceFor(pick.sport, pick.mkey, pick.signalLine)),
   };
 }

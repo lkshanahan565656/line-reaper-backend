@@ -137,7 +137,9 @@ const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK P
 // research rows and the stale-line legs (stalelines.js, their own record on
 // the +EV tab) never count toward the sports props headline or its plays
 // leads with records of their own (stale lines, the books' fair) stay out of the verdict
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo']);
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo',
+  // NHL and soccer at a sharp's own number (nhlsoc.js): records of their own, judged at 50 graded each
+  'nhs-pin', 'nhs-kalshi', 'nhs-bound']);
 const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';

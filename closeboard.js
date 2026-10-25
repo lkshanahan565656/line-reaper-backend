@@ -86,6 +86,10 @@ const KINDS = {
   // combos (pts+rebs, pts+asts, rebs+asts, steals+blocks) off FanDuel, BetRivers and Pinnacle's parts
   'props-combo': "Pick'em combos vs the books + Pinnacle's parts",
   'props-p6-combo': "Pick6 combos vs the books + Pinnacle's parts",
+  // NHL and soccer legs at a sharp's own number (nhlsoc.js), each its own record
+  'props-nhs-pin': "NHL props vs Pinnacle's own number",
+  'props-nhs-kalshi': "NHL and soccer props vs Kalshi's own number",
+  'props-nhs-bound': "Soccer Unders vs BetRivers' one-sided price",
   'bigmoney': 'Big money',
 };
 
@@ -102,7 +106,8 @@ const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
 // there. 10-19: BetRivers' stale lines read proven at 65 games, +4.2% CLV,
 // while 104 graded lines won 47 against 57.9 the close expected (-16.9 units);
 // of the props with Pinnacle's line on record, 19 of 27 sat at another number.
-const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single', 'props-p6-stale', 'props-p6-stale-single']);
+// A soccer Under backed by BetRivers' one-sided Over closes on that bound, not a fair: never proven either.
+const CAPPED_KINDS = new Set(['alt', 'stale', 'stale-single', 'props-stale', 'props-stale-single', 'props-p6-stale', 'props-p6-stale-single', 'props-nhs-bound']);
 // why each capped kind stops at promising, shown on the record screen
 const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's number at the rung, not Pinnacle's own price.";
 // 10-24 re-check of PrizePicks' stale legs from ESPN box scores (all 249
@@ -111,7 +116,8 @@ const ALT_NOTE = "Never proven: the close is Kalshi's mid or another book's numb
 // against 66.0 (+5.8 units). Those now score in their own kind, closed on
 // Pinnacle's own price.
 const STALE_NOTE = "Never proven: where Pinnacle moved its number, the close is our curve at the venue's number, not Pinnacle's own price. Legs at Pinnacle's own number score on their own row.";
-const CAP_NOTE = { alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE, 'props-p6-stale': STALE_NOTE, 'props-p6-stale-single': STALE_NOTE };
+const BOUND_NOTE = "Never proven: BetRivers posts only the Over, so the close is a bound on the Under with the book's margin in it, not a fair price.";
+const CAP_NOTE = { 'props-nhs-bound': BOUND_NOTE, alt: ALT_NOTE, stale: STALE_NOTE, 'stale-single': STALE_NOTE, 'props-stale': STALE_NOTE, 'props-stale-single': STALE_NOTE, 'props-p6-stale': STALE_NOTE, 'props-p6-stale-single': STALE_NOTE };
 // closes on the soft books' own fair: scored and marked, but kept out of a
 // book's total and the headline, which count sharp closes only
 const BOOK_CLOSE = new Set(['props-book-fair', 'props-book-fair-single', 'props-p6-book-fair', 'props-p6-book-fair-single', 'props-book-consensus', 'props-p6-book-consensus']);

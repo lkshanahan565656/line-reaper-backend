@@ -725,6 +725,7 @@ const escal = require('./escal');
 const esmarket = require('./esmarket');
 const esgaps = require('./esgaps');
 const sportProps = require('./sportprops');
+const nhlsoc = require('./nhlsoc');
 const { createSportTracker, legDecimal: sportTrackLegDecimal } = require('./sporttrack');
 const { createSportsGrader } = require('./sportgrade');
 const { priceAll, bestSlips, PAYOUTS } = require('./slip');
@@ -764,7 +765,9 @@ const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBacku
 // scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
 const extraGrade = require('./extragrade');
 const EXTRA_RESULTS_ON = !/^(off|0|false|no)$/i.test(String(process.env.EXTRA_RESULTS || '').trim());
-const sportGrader = extraGrade.combineGraders(createSportsGrader({ http: axios }),
+// SOCCER_RESULTS=off stops soccer player legs grading off ESPN's match rosters
+const SOCCER_RESULTS_ON = !/^(off|0|false|no)$/i.test(String(process.env.SOCCER_RESULTS || '').trim());
+const sportGrader = extraGrade.combineGraders(createSportsGrader({ http: axios, soccer: SOCCER_RESULTS_ON }),
   EXTRA_RESULTS_ON ? extraGrade.createExtraGrader({ http: axios }) : { canGrade: () => false, grade: async () => null });
 const sportTracker = createSportTracker({
   store: resultsBackup.wrap('sportProps', createEvStoreFromEnv(process.env, { table: 'sport_props', fileVar: 'SPORT_PROPS_FILE', file: 'sport-props.json' })),
@@ -5533,6 +5536,8 @@ function stalePinAt(row) {
   return staleState.engine.pinMain(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime));
 }
 function sportFairAt(row, book, line, kind) {
+  // an NHL or soccer leg closes on the same source at the same number
+  if (nhlsoc.KINDS.includes(kind)) return nhlsoc.closeAt(kind, line, nhsSources(row));
   kind = baseSportKind(kind);
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
   if (kind === 'sharp3') return sportProps.threeSharpClose(row, line, sharpQuotes(row), THREE_SHARP_OPTS);
@@ -5624,7 +5629,34 @@ function pinParts(row) {
 }
 // Pinnacle's own combo quotes and the books' at every line they hang
 const comboQuotes = row => [...(pinprops.quotesForGame(pinPropsIndex, row) || []).map(q => ({ book: 'pinnacle', line: q.line, pOver: q.pOver })), ...bookLineQuotes(row)];
-const comboSourcesAt = (row, line, kind) => (baseSportKind(kind) === 'combo' ? sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.sources ?? null : null);
+const comboSourcesAt = (row, line, kind) => (nhlsoc.KINDS.includes(kind) ? nhlsoc.sourcesAt(line, nhsSources(row))
+  : baseSportKind(kind) === 'combo' ? sportProps.comboClose(row, line, { sharp: comboQuotes(row), parts: pinParts(row), o: COMBO_OPTS })?.sources ?? null : null);
+// ── NHL AND SOCCER: every app leg at a sharp's own number (nhlsoc.js) ──
+// Pinnacle's NHL props, Kalshi's ladders, FanDuel's and BetRivers' two-way
+// NHL props, and BetRivers' one-sided soccer player prices (read here, every
+// 10 minutes, SOCCER_PROPS=off stops it). Kinds nhs-pin, nhs-kalshi,
+// nhs-bound: records of their own, out of the headline, Best Plays and alerts,
+// judged at 50 graded each (checks/nhlsoc-2026-10-25/PREREGISTERED.md).
+// NHL_SOCCER=off stops the record.
+const NHS_ON = !/^(off|0|false|no)$/i.test(String(process.env.NHL_SOCCER || '').trim());
+const soccerBooks = nhlsoc.createSoccerBooks({ http: axios, enabled: !/^(off|0|false|no)$/i.test(String(process.env.SOCCER_PROPS || '').trim()) });
+const nhsCoverage = nhlsoc.createCoverage();
+function nhsSources(row) {
+  return { pin: pinprops.quotesForGame(pinPropsIndex, row) || [], books: sharpQuotes(row).filter(q => q.book === 'fanduel' || q.book === 'betrivers'),
+    kalshi: rowKalshi(row), bound: row.sport === 'SOCCER' ? soccerBooks.quotesFor(row) : [] };
+}
+// the board's NHL and soccer rows → [{ row, play, kind }], counted on the coverage
+function nhsPlays(rows) {
+  if (!NHS_ON) return [];
+  const out = [];
+  for (const row of rows) {
+    if (!nhlsoc.SPORTS.has(row.sport) || row.esports) continue;
+    const { legs, plays } = nhlsoc.rowPlays(row, nhsSources(row));
+    nhsCoverage.observe(row, legs, plays);
+    for (const p of plays) out.push({ row, ...p });
+  }
+  return out;
+}
 // every book quote on the row's player and stat in the same game, at every line it hangs
 function bookLineQuotes(row, slackMs = 3 * 3600e3) {
   if (!(Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS)) return [];
@@ -6584,7 +6616,9 @@ async function trackSportProps() {
     const updated = { prizepicks: ppState.fullOkAt ? new Date(ppState.fullOkAt).toISOString() : null, underdog: cache.underdog.updated, sleeper: cache.sleeperSports.updated, ...pick6.readTimes() };
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
-      .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
+      .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x))   // research rows stay research
+      // NHL and soccer at a sharp's own number: their own kinds, Pick6 included (the book field tells it apart)
+      .concat(nhsPlays(rows));
     await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
@@ -6703,6 +6737,15 @@ app.get('/api/slips/record', async (req, res) => {
 
 // The sports props record: free to see, like every other record. Open legs
 // are today's plays, so only finished ones are free.
+// NHL and soccer legs: what each source prices at the apps' own numbers, the flags, and their records
+app.get('/api/props/nhlsoc', async (req, res) => {
+  const sum = await sportTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined });
+  const st = soccerBooks.state;
+  res.json({ on: NHS_ON, kinds: nhlsoc.KINDS, minPts: nhlsoc.OPTS.minPts, coverage: nhsCoverage.summary(),
+    soccerBooks: { enabled: st.enabled, at: st.at, counts: st.counts, errors: st.errors, holdUntil: st.holdUntil ? new Date(st.holdUntil).toISOString() : null },
+    soccerResults: SOCCER_RESULTS_ON, record: Object.fromEntries(nhlsoc.KINDS.map(k => [k, sum.byKind?.[k] || null])),
+    byKindSportApp: sum.byNhs || {}, prereg: 'checks/nhlsoc-2026-10-25/PREREGISTERED.md' });
+});
 app.get('/api/props/record', async (req, res) => {
   res.json({ ...(await sportTracker.summary({ sinceDays: parseFloat(req.query.days) || undefined })), minEv: SPORT_OPTS.minEv, gapMinPts: SPORT_OPTS.minProbPts });
 });
@@ -7328,6 +7371,9 @@ schedule('20 */2 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsSta
 // mids, so the record gets its +2 min price
 schedule('50 * * * * *', () => (new Date().getMinutes() % 2 ? refreshEsBooks().catch(e => { esBooksState.errors = [e.message]; }) : runEsBooksScreen()));
 schedule('40 */10 * * * *', () => consensusMoves.prune());
+// BetRivers' soccer player prices (the reader waits 10 minutes between passes) and a week of NHL and soccer coverage
+schedule('25 */2 * * * *', () => soccerBooks.tick().catch(() => {}));
+schedule('45 7 * * * *', () => nhsCoverage.prune());
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
 // PP/UD scrapes (PP self-backs-off when blocked)
