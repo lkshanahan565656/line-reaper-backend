@@ -1,0 +1,236 @@
+LINEREAPER
+Product
+Record
+Pricing
+FAQ
+Learn
+ODDS SCREEN, PICK'EM APPS, KALSHI, POLYMARKET US, ESPORTS
+Made for sharps,
+by sharps.
+
+An odds screen that puts every venue we read beside Pinnacle's fair price, and a public record that grades every flag against the close, losers included. A kind of bet is called proven only when its own record clears a fixed test. Everything else is labelled a model or research, and says so.
+
+Today the record proves one kind of bet: Main lines vs the sharp fair at BetRivers (373 graded games, +2.8% closing line value, profit not shown yet, not a Texas venue). Nothing is proven yet at a venue a Texas resident can use.
+
+Start free
+See the record
+
+No card needed for the free plan. 21+ where legal. We never place bets or hold your money.
+
+WHAT THE RECORD PROVES
+READ LIVE
+1
+Kinds of bet proven
+0
+Proven at a Texas venue
+5,886
+Games graded against the close
+Kinds still building a sample
+41
+Games on the odds screen now
+97
+Read from the app's close scoreboard each time this page opens. Proven takes 50 graded games of one kind at one venue we read ourselves, with closing line value against Pinnacle's close at a t of 2 or more. Beating the close is not a promise of profit.
+01 / PRODUCT
+Everything a sharp checks before betting, on one screen.
+
+Every tool says what it is: a price, a model, or research. Only the record decides what is proven.
+
+ODDS SCREEN AND EXCHANGE SHOPPER
+Every venue on one row, beside Pinnacle's fair.
+
+Kalshi, Polymarket US, Gemini, FanDuel, BetRivers and more on each game's moneyline, spread and total, the best price marked, fees taken out of exchange prices, and a chart of how each line moved. The shopper ranks the best prices above the fair, with what the exchange's order book fills at your size.
+
+Best prices above fair, with fill size and a MIN BET SIZE filter
+Line-move charts, arbs, saved views and favorite venues
+One tap shows only the venues a Texas resident can use
+A price above the fair is a price, not a proven edge: the tag on each view says so
+PROPS
+Pick'em boards, priced.
+
+PrizePicks, Underdog, Sleeper and DK Pick6 lines next to the sharp number where a book prices the prop, with every slip's payout and break-even. Our NBA, CFB and CBB projections sit beside them, tagged model, not an edge.
+
+ESPORTS
+Head-to-head matchups.
+
+Our own ratings for League of Legends, CS2, Valorant and Dota 2 next to the exchanges' prices, with the series history behind each number. Tagged model, not an edge: in walk-forward tests the exchanges' prices beat it.
+
+BET TRACKER
+Your own CLV, graded for you.
+
+Log a bet from any row or by hand, and MY SLIPS grades your pick'em slips leg by leg from the box scores. Import a Pikkit CSV. Your bets stay on your device unless you sign in to sync.
+
+TOOLS
+The math, done for you.
+
+EV and Kelly, no-vig, arbs, hedges, middles, parlays, free bets, boosts, CLV, exchange fees and every pick'em app's payouts and break-even. Learn explains each one.
+
+ALERTS
+On your phone, the same for everyone.
+
+Add Line Reaper to your home screen and turn on push alerts. +EV alerts go out only for a book the record proves; the other kinds you can pick (steam, exchange arbs, Sharp Tail) are research and are labelled so. Everyone gets the same text: no personal sizing, no auto-copy.
+
+RESULTS
+A public record of every flag, losers included.
+
+Each kind of bet keeps its own record: closing line value at the flag and two minutes later, wins, losses and units, cut by venue. Every row is marked proven, promising, early or avoid from its own sample, so you can see what holds up before you trust it.
+
+02 / HOW IT WORKS
+From price to bet in three steps.
+01
+We read the markets
+
+The app reads the exchanges, the pick'em apps, the books we can reach and Pinnacle around the clock, and prices each line against Pinnacle's no-vig fair.
+
+02
+The record grades it
+
+Every flag is saved before the game and graded against the close after it. Only a kind that clears the test is called proven, and +EV alerts come only from a proven book.
+
+03
+You decide and place it
+
+You place the bet yourself on your own account. The app never places a bet, never holds money and never tailors a bet to you.
+
+03 / LIVE RECORD
+What the record proves today.
+
+Every flag is graded against Pinnacle's no-vig close: keep getting a better price than the market settles on, and you tend to win over time. A kind of bet is proven only after 50 graded games at one venue read straight from that venue, with closing line value well clear of chance and results not running short of it. Kinds are never pooled to get there.
+
+1
+Kinds of bet proven
+0
+Proven at a Texas venue
+5,886
+Games graded against the close
+68%
+Beat the close, every kind pooled (not proof)
+PROVEN BY THE RECORD
+KIND OF BET	GRADED	BEAT CLOSE	CLV	AFTER 2 MIN	PROFIT
+Main lines vs the sharp fair
+BetRivers · NOT A TEXAS VENUE ALERTS ON
+	373	80%	+2.8%	+2.0%	not shown yet
+538-527, −7.1u
+
+Read live from the app's close scoreboard. CLV is the average closing line value at the flagged price; after 2 min is the same at the price two minutes later. Profit is the units won at one unit a game: it shows "not shown yet" until the results clear chance, because beating the close comes first and profit takes far more bets to show. See every record in the app, losers included.
+
+BETTING FROM TEXAS
+
+No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are. Nothing is proven yet at a Texas venue: everything there is a lead, a model or research.
+
+PICK'EM APPS
+PrizePicks
+Underdog
+Sleeper
+DK Pick6
+Betr (not read: needs a login to read its board)
+Chalkboard (not read: app only, no web board)
+ParlayPlay (not read: not read yet)
+Dabble (not read: not read yet)
+EXCHANGES
+Kalshi
+Polymarket US
+Gemini
+Novig (not read: its web API refuses outside queries)
+FanDuel Predicts (not read: no public price feed)
+DraftKings Predictions (not read: blocks plain reads (403))
+OG (Crypto.com) (not read: no public price feed found)
+Robinhood (not read: routes Kalshi's markets (priced as Kalshi))
+
+Venues we price are listed plainly; the ones we cannot read yet say why. Polymarket's international site is not for US users: the app only ever points US users to Polymarket US.
+
+NOT PROVEN: MODELS AND RESEARCH
+TOOL	TAG IN THE APP
+Exchange Shopper: best prices above fair
+ODDS SCREEN. A price above Pinnacle's fair, with what the exchange book fills. Exchange flags have not beaten the close yet.
+	RESEARCH
+NBA, CFB and CBB props models
+PROPS. Our own projections. None has cleared our bar against the apps' lines in held-out tests.
+	MODEL, NOT AN EDGE
+NFL model
+ODDS SCREEN > NFL MODEL. Kalshi's price an hour before kickoff beat it in the held-out test.
+	MODEL, NOT AN EDGE
+Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer
+ESPORTS > MATCHUPS. The exchanges' own prices beat our ratings in walk-forward tests.
+	MODEL, NOT AN EDGE
+Kalshi maker bids
+ODDS SCREEN > MAKER. A resting bid under the fair. Nothing places an order.
+	RESEARCH
+F1 and golf outrights
+ODDS SCREEN > OUTRIGHTS. Pinnacle takes small limits there, so its fair is weaker.
+	RESEARCH
+Injury news
+PROPS > INJURY NEWS. Legs left up after news. Not ahead of the close so far.
+	RESEARCH
+Sharp Tail and big money
+SHARP TAIL, BIG MONEY. Following big accounts has not beaten the close in our tests.
+	RESEARCH
+Pick'em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6)
+PROPS. Flagged legs have broken about even against Pinnacle's close.
+	NOT PROVEN
+04 / PRICING
+Start free. Upgrade when the record convinces you.
+Early access: every Pro feature is free while we finish launch. Create an account now and you'll be first in line for the founding price.
+FREE
+$0/ month
+
+See how it works and follow the record before you pay anything.
+
+Top 3 Best Plays
+The odds screen with every venue's price
+How many prices sit above the fair right now
+Sharp Tail alerts on a 30 minute delay
+The profit on every open arb
+Esports match boards
+All calculators, My Bets and the full public record
+Start free
+PRO
+$79/ month
+$49 a month for the first 100 members
+
+The full screen: every fair price, EV and ranked row.
+
+Every Best Play, ranked by its record
+The fair price, EV and line history on the odds screen
+The Exchange Shopper ranked list, with fill size at your stake
+Real-time Sharp Tail (research) with the trader and price
+Every arb and middle with its legs, prices and stakes
+Props and esports model boards, tagged model, not an edge
+Phone push alerts, the same text for every member
+Get Pro
+
+Billed monthly through Stripe. Cancel any time from your account. See the refund policy.
+
+05 / FAQ
+Questions, answered plainly.
+What is a betting exchange?
+What is closing line value, and why does it matter?
+What does "graded two minutes later" mean?
+Do I need to be a professional to use this?
+Does Line Reaper place bets for me?
+Is the advice personalised?
+Will I win?
+Where can I use it?
+What do I need to get started?
+Can I get alerts on my phone?
+Can I cancel?
+Who builds it?
+See what the record backs before you bet.
+Start free
+Open the app
+LINEREAPER
+App
+Pricing
+Learn
+Terms
+Privacy
+Refunds
+Responsible gambling
+Contact
+
+Line Reaper is an information and analytics tool. It is not a sportsbook or an exchange, does not accept wagers, and does not hold customer funds. Alerts are general information, identical for every user, and are not personalised financial or betting advice.
+
+Betting involves risk of loss. Past results do not guarantee future returns. You must be 21 or older and follow the laws where you live. If you or someone you know has a gambling problem, call 1-800-GAMBLER.
+
+Kalshi, Polymarket and other named venues are trademarks of their owners. Line Reaper is not affiliated with or endorsed by them.
+
+© 2026 Line Reaper
