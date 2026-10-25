@@ -4094,6 +4094,27 @@ async function scanGasLocks() {
   if (fresh.length && process.env.GAS_LOCK_ALERTS !== 'off') postAlert(fresh.map(gaslocks.describe), 'Gas locks');
   return fresh;
 }
+// Live esports maps on Kalshi (esinplay.js): our live win probability (CS2
+// round score, LoL gold/towers/dragons/barons, Dota net worth) against
+// Kalshi's in-play ask, fee in, every 20 s. Records only, no alerts; judged at
+// 50 graded (the first flag per map). ESPORTS_INPLAY=off stops it.
+const esinplay = require('./esinplay');
+const inplayTracker = esinplay.createInplayTracker({
+  store: resultsBackup.wrap('esportsInplay', createEvStoreFromEnv(process.env, { table: 'esports_inplay', fileVar: 'ESPORTS_INPLAY_FILE', file: 'esports-inplay.json' })),
+  http: upstream,
+});
+inplayTracker.ready().catch(e => console.error('In-play: store failed to initialise:', e.message));
+const inplayLive = esinplay.createInplay({ http: upstream, tracker: inplayTracker });
+let inplayBusy = false, inplayGradedAt = 0;
+async function scanInplay() {
+  if (process.env.ESPORTS_INPLAY === 'off' || inplayBusy) return [];
+  inplayBusy = true;
+  try {
+    const fresh = await inplayLive.tick();
+    if (Date.now() - inplayGradedAt > 5 * 60e3) { inplayGradedAt = Date.now(); await inplayTracker.grade(); }
+    return fresh;
+  } finally { inplayBusy = false; }
+}
 let middleGradedAt = 0;
 let kalshiGameRows = { rows: [], at: 0 };
 const KALSHI_MID_MAX_AGE_MS = 10 * 60e3;
@@ -5087,6 +5108,22 @@ app.get('/api/gas-locks', async (req, res) => {
       off: process.env.GAS_LOCKS === 'off', ...withheldBody(withheldOf(lic, ['kalshi'])) };
     if (!pro) return res.json({ ...base, recent });
     res.json({ ...base, plays, recent, counts: gasState.counts, errors: gasState.errors });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Live esports maps (esinplay.js): the record (free), the live board and the flags (Pro, Kalshi licence).
+app.get('/api/esports/inplay', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const rows = await inplayTracker.list();
+    const summary = esinplay.summarize(rows);
+    const recent = rows.filter(r => r.status === 'graded').sort((a, b) => (b.flaggedAt || '').localeCompare(a.flaggedAt || '')).slice(0, 40);
+    const base = { updated: inplayLive.state.updated, pro, summary, rule: esinplay.DEFAULTS, models: Object.fromEntries(Object.entries(esinplay.MODELS).map(([g, m]) => [g, m ? m.kind : null])),
+      fit: esinplay.INPLAY_FITS, counts: inplayLive.state.counts, off: process.env.ESPORTS_INPLAY === 'off',
+      note: 'Our live win probability against Kalshi\'s in-play ask, fee included, with the size resting there. Records only: nothing alerts, nothing trades. Counted toward 50 graded: the first flag per map and team.',
+      ...withheldBody(withheldOf(lic, ['kalshi'])) };
+    if (!pro || !lic.kalshi) return res.json({ ...base, recent });
+    const open = rows.filter(r => r.status === 'open').sort((a, b) => (b.flaggedAt || '').localeCompare(a.flaggedAt || '')).slice(0, 40);
+    res.json({ ...base, recent, open, live: inplayLive.state.live, errors: inplayLive.state.errors });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // BIG MONEY (bigmoney.js): big exchange prints and the same bet at every
@@ -7506,6 +7543,8 @@ schedule('55 * * * * *', () => runTailJob('bookArbs', scanBookArbs));
 schedule('15 */10 * * * *', () => refreshSharpPromotions().catch(() => {}));
 // Esports matches on Kalshi, Polymarket and bo3.gg, every 2 minutes
 schedule('25 */2 * * * *', () => runTailJob('esports', scanEsportsBoard));
+// Live esports maps on Kalshi every 20 s (skipped while one is still running)
+schedule('5,25,45 * * * * *', () => runTailJob('inplay', scanInplay));
 // Head-to-head kill model's data (bo3.gg maps, OpenDota games, gol.gg teams), every 30 minutes
 schedule('40 13,43 * * * *', () => refreshH2H().then(() => esPicksRebuild()).catch(e => console.warn('H2H refresh:', e.message)));
 schedule('5 */2 * * * *', () => runTailJob('board', watchBoard));
@@ -7585,7 +7624,7 @@ module.exports = {
   inferMapSpan, describePlayer, udPricing, relabelMarket,
   predictKillsFromStats, autoPredAcceptable, bo3Pick, bo3FirstObject, bo3ExtractProfile, bo3HeadshotPct,
   tailEngine, tailTracker, polymarketUs, routeTail, freshTracker, freshSignal, publishFresh, describeFresh, whaleWatcher, xarbState, upstream, createPoliteHttp, liveListeners, tailJobs,
-  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
+  pollTail, streamTail, tailStream, watchBoard, describeBoardAlert, pollWhales, scanXarbs, scanGasLocks, gasTracker, scanInplay, inplayTracker, inplayLive, runTailJob, maskTrader, maskSignal, maskWhale, describeTail, describeArb, describeMiddle,
   routeSignal, tailPings, venueFor, venueLine, licenceFor, licenceState, stripPolymarketLinks, TAIL_REGION, evListeners,
   esportsBoard, scanEsportsBoard, esportsBoardFor, describeEsportsEdge, esportsEdgeTracker, esportsEdgeRows, resultsBackup, landingHtml, push,
   scanBookArbs, bookArbState, bookArbTracker, freeBooksState, kpropsState, shopState, propHistory, propHistoryState, observePropHistory,

@@ -566,7 +566,7 @@ test('status reports tail, whales, exchange arbs, the region, the licence gates 
   assert.equal(typeof pro.whales.lastHour.graded, 'number');
   assert.ok(body.upstream.byHost['data-api.polymarket.com'] > 0);
   assert.equal(body.live.webhook, true);
-  assert.equal(require('../package.json').version, '3.163.0');
+  assert.equal(require('../package.json').version, '3.164.0');
   assert.equal((await get('/')).body.version, '3.163.0');
 });
 
