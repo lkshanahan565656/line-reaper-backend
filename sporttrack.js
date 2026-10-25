@@ -92,7 +92,20 @@ const COMBO = new Set(['combo', 'p6-combo']);
 const CFB_MODEL = new Set(['cfb-model', 'p6-cfb-model']);
 // the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
 const MODEL = new Set(['nba-model', 'p6-nba-model']);
-const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL, ...CFB_MODEL]);
+// every MLB leg against Pinnacle's own number (mlbboard.js): research kinds per app, never the headline
+const MLB = new Set(['mlb-pin', 'p6-mlb-pin', 'ud-mlb-pin', 'sl-mlb-pin', 'mlb-even', 'p6-mlb-even', 'ud-mlb-even', 'sl-mlb-even']);
+const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL, ...CFB_MODEL, ...MLB]);
+// At the lock: an MLB leg's raw Pinnacle close. pinExact = Pinnacle's last read
+// inside the hour before the start sat on the leg's own number, so closePinEv is
+// Pinnacle's own price there, no curve. pinMove: Pinnacle's line from the flag
+// to the close went toward the app's number (the gap closed), away, or held.
+function mlbPinClose(b, start) {
+  const fresh = b.closePinAt != null && start - Date.parse(b.closePinAt) <= CLOSE_FRESH_MS;
+  const pinExact = !!(fresh && b.closePinLine === b.signalLine && b.closePinFair != null);
+  const from = b.signalPinLine, to = b.closePinLine;
+  const pinMove = !fresh || from == null || to == null ? null : from === to ? 'held' : Math.abs(to - b.signalLine) < Math.abs(from - b.signalLine) ? 'toward' : 'away';
+  return { closePinOk: fresh, pinExact, closePinEv: pinExact ? r2((b.closePinFair * b.signalDecimal - 1) * 100) : null, pinMove };
+}
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
@@ -161,6 +174,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
         ...(COMBO.has(kind) ? { evMin: play.evMin ?? null, comboBooks: play.books ?? null, comboParts: play.parts ?? null, comboShadow: play.shadow ?? null, entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null } : {}),
         ...(baseKind(kind) === 'sharp' || baseKind(kind) === 'sharp3' || BOOK_FAIR.has(baseKind(kind)) ? { entry: play.entry || null, entries: play.entries || null, spreadPts: play.spreadPts ?? null, stale: play.stale || null } : {}),
         ...(STALE.has(kind) ? { entry: play.entry || null, entries: play.entries || null, stale: play.stale || null, signalPinLine: pinLineOf(play.stale) } : {}),
+        ...(MLB.has(kind) ? { signalPinLine: play.pinLine ?? null, signalPinOver: play.pinOver ?? null, gapPts: play.gapPts ?? null, signalExact: !!play.exact } : {}),
         closeFair: play.fair == null ? null : r4(play.fair), closeLines: linesOf(row), closeAt: new Date(t).toISOString(), closeSeenAt: new Date(t).toISOString(),
       };
       open.set(id, b);
@@ -204,7 +218,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
           const mine = Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, r4(b.signalSide === 'Over' ? v : 1 - v)]));
           if (JSON.stringify(mine) !== JSON.stringify(b.closeSources)) { b.closeSources = mine; dirty = true; }
         }
-        const pin = pinAt && STALE.has(b.kind) ? pinAt(row) : null;
+        const pin = pinAt && (STALE.has(b.kind) || MLB.has(b.kind)) ? pinAt(row, b.kind) : null;
         if (pin) {
           const pf = r4(b.signalSide === 'Over' ? pin.p : 1 - pin.p);
           if (pin.x !== b.closePinLine || pf !== b.closePinFair) { b.closePinLine = pin.x; b.closePinFair = pf; dirty = true; }
@@ -232,6 +246,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
       b.fairMove = b.closeFair == null || b.signalFair == null ? null : r2((b.closeFair - b.signalFair) * 100);
       // a sharp close counts only when it was read in the last hour before the start
       if (STALE.has(b.kind)) Object.assign(b, pinClose(b, start));
+      else if (MLB.has(b.kind)) Object.assign(b, mlbPinClose(b, start));
       // a combo leg: each source's own close EV, and the worst of them
       if (b.closeSources && Object.keys(b.closeSources).length) { b.closeSourceEv = Object.fromEntries(Object.entries(b.closeSources).map(([k, v]) => [k, r2((v * b.signalDecimal - 1) * 100)])); b.closeEvMin = Math.min(...Object.values(b.closeSourceEv)); }
       if (b.closeSharpFair != null) { b.closeSharpOk = start - Date.parse(b.closeSharpAt) <= CLOSE_FRESH_MS; b.closeSharpEv = r2((b.closeSharpFair * b.signalDecimal - 1) * 100); }
@@ -321,7 +336,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
     // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
     // the three-sharps legs and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !MODEL.has(b.kind) && !CFB_MODEL.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !MODEL.has(b.kind) && !CFB_MODEL.has(b.kind) && !MLB.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -340,4 +355,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { COMBO, THREE, MODEL, CFB_MODEL, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { MLB, mlbPinClose, COMBO, THREE, MODEL, CFB_MODEL, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

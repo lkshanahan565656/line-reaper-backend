@@ -557,6 +557,14 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .nbm-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; }
 .nbm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
 .nbm-p.lean { color:#fbbf24; }
+/* MLB vs PINNACLE (mlb- prefix) */
+#page-props.mlbv .pb-conly, #page-props.mlbv .pb-lonly, #page-props.mlbv #pbSports, #page-props.mlbv #pbBooks, #page-props.mlbv #pbCover, #page-props.mlbv #pbRecord { display: none; }
+.mlb-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
+.mlb-note b { color:#fde68a; letter-spacing:1px; }
+.mlb-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+.mlb-gap { color:#22c55e; font-weight:700; } .mlb-even { color:#94a3b8; }
+.mlb-add { background:none; border:1px solid var(--border); color:#cbd5e1; border-radius:6px; font-size:10px; padding:2px 6px; cursor:pointer; font-family:'JetBrains Mono',monospace; margin-top:3px; }
+.mlb-add.on { border-color:#22c55e; color:#22c55e; }
 /* SHOP: the softest number across the apps (aps- prefix; shop- is the odds screen's) */
 #page-props.cfbm .pb-conly, #page-props.cfbm .pb-lonly, #page-props.cfbm #pbSports, #page-props.cfbm #pbBooks, #page-props.cfbm #pbCover, #page-props.cfbm #pbRecord { display: none; }
 .cfm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
@@ -4157,7 +4165,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model', 'cfbmodel'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cfbmodel', 'mlb'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, mlbStat: '', mlbGaps: false, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4182,6 +4190,8 @@ async function loadPropsBoard() {
   if (pbState.view === 'model') return loadNbaModel(seq);
   document.getElementById('page-props')?.classList.toggle('cfbm', pbState.view === 'cfbmodel');
   if (pbState.view === 'cfbmodel') return loadCfbModel(seq);
+  document.getElementById('page-props')?.classList.toggle('mlbv', pbState.view === 'mlb');
+  if (pbState.view === 'mlb') return loadMlb(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
   if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
   else if (pbState.book) qs.set('book', pbState.book);
@@ -4241,7 +4251,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')"), chip(pbState.view === 'mlb', 'MLB VS PINNACLE', null, "pbSet('view','mlb')")].join('');
   pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
@@ -4494,7 +4504,7 @@ function pkAdd(rk, book) {
   const i0 = pk.legs.findIndex(l => l.rk === rk);
   if (pk.app === book && i0 >= 0) {
     pk.legs.splice(i0, 1); if (!pk.legs.length) pk.app = null; pk.payout = ''; pkSave(); renderPkTray();
-    if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard();
+    if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard();
     renderPromos();
     return;
   }
@@ -4513,10 +4523,10 @@ function pkAdd(rk, book) {
   if (!pk.legs.length) pk.app = null;
   pk.payout = '';
   pkSave(); renderPkTray();
-  if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard();
+  if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard();
 }
 function pkFlip(i) { const l = pk.legs[i]; if (!l) return; l.side = l.side === 'Over' ? 'Under' : 'Over'; if (l.prob != null) l.prob = 1 - l.prob; pk.payout = ''; pkSave(); renderPkTray(); }
-function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop') renderPropsBoard(); }
+function pkClear() { pk.app = null; pk.legs = []; pk.payout = ''; pkSave(); renderPkTray(); if (pbState.view === 'lines' || pbState.view === 'shop' || pbState.view === 'mlb') renderPropsBoard(); }
 // what the slip pays per $1 when every pick hits, from the app's own table
 function pkMult() {
   const n = pk.legs.length;
@@ -4792,11 +4802,84 @@ function renderCfbModel() {
   const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
   el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'CFB lines priced')}${stat(leans, `model ${pm}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.schedule ?? '—', 'games on the schedule')}</div><div class="pb-list">${body}</div>`;
 }
+// ─── MLB VS PINNACLE (/api/props/mlb): every MLB app leg next to Pinnacle's own number ──
+// Research: an app number on the good side of Pinnacle's line is a gap leg,
+// the same number an even leg. Its own record kinds per app; no alerts. + LOG
+// adds a leg to the slip tray like the SHOP view.
+const MLB_STATS = [['', 'ALL'], ['total_bases', 'TB'], ['strikeouts', 'KS'], ['pitcher_outs', 'OUTS'], ['hits_allowed', 'H ALLOWED'], ['earned_runs', 'ER'], ['home_runs', 'HR'], ['hits', 'HITS'], ['runs', 'RUNS'], ['rbis', 'RBI'], ['hits_runs_rbis', 'H+R+RBI']];
+async function loadMlb(seq) {
+  const qs = new URLSearchParams({ limit: 300 });
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.mlbStat) qs.set('stat', pbState.mlbStat);
+  if (pbState.mlbGaps) qs.set('gaps', '1');
+  pbChips();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/mlb?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.data = d;
+    renderMlb();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MLB</div><div class="empty-sub">Couldn't load MLB vs Pinnacle (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+function mlbRecTxt(k, be) {
+  if (!k || !k.signals) return 'nothing logged yet';
+  if (!k.graded) return `${k.signals} logged, none graded yet`;
+  const n = k.wins + k.losses, hit = n ? k.wins / n : 0, bar = be ?? k.breakeven;
+  const z = n && bar ? (hit - bar) / Math.sqrt(bar * (1 - bar) / n) : 0;
+  return `${k.wins}-${k.losses} (${(hit * 100).toFixed(1)}%${bar ? ` vs ${(bar * 100).toFixed(1)}% break-even, z ${z.toFixed(2)}` : ''}) of ${n} graded`;
+}
+function renderMlb() {
+  const el = document.getElementById('pbContent'), d = pbState.data;
+  if (!el || !d || !Array.isArray(d.rows)) return;
+  const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${MLB_STATS.map(([k, lab]) => chip((pbState.mlbStat || '') === k, lab, `pbState.mlbStat='${k}';loadPropsBoard()`)).join('')}${chip(!!pbState.mlbGaps, 'GAPS ONLY', 'pbState.mlbGaps=!pbState.mlbGaps;loadPropsBoard()')}</div>`;
+  const note = `<div class="mlb-note"><b>RESEARCH, NOT A BET.</b> Every MLB leg on PrizePicks, Underdog, Sleeper and DK Pick6 that Pinnacle also prices, next to Pinnacle's own line and no-vig price (FanDuel and BetRivers beside it). <span class="mlb-gap">GAP</span>: the app's number is on the good side of Pinnacle's (More when Pinnacle's line is higher, Less when lower). <span class="mlb-even">SAME</span>: the app sits on Pinnacle's number; the side shown is the one Pinnacle favours. ${escAttr(d.bar || '')} No alerts.</div>`;
+  if (d.on === false) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">MLB vs Pinnacle is switched off on this server.</div></div>`; return; }
+  const R = d.record || {};
+  const rec = `<div class="pb-dim" style="margin:0 0 10px">Gap legs record · PrizePicks: ${mlbRecTxt(R['mlb-pin'], 0.5503)} · Pick6: ${mlbRecTxt(R['p6-mlb-pin'], 0.567)} · Underdog: ${mlbRecTxt(R['ud-mlb-pin'], null)} · Sleeper: ${mlbRecTxt(R['sl-mlb-pin'], null)}<br>Same-number legs (control) · PrizePicks: ${mlbRecTxt(R['mlb-even'], 0.5503)} · Underdog: ${mlbRecTxt(R['ud-mlb-even'], null)} · Sleeper: ${mlbRecTxt(R['sl-mlb-even'], null)}</div>`;
+  const bt = d.backtest?.lines?.length ? `<div class="mlb-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')} · ${escAttr(d.backtest.verdict || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
+  const pc = p => (p == null ? '' : `${(p * 100).toFixed(1)}%`);
+  const am = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+  const stk = (d.stacks || []).slice(0, 6);
+  const stTxt = !stk.length ? `<div class="pb-dim" style="margin:0 0 10px">Same-game stacks (a starter's strikeouts More with the other team's hitters' H+R+RBI Less or strikeouts More): none priced right now. Every leg needs a price at its own number, and Pinnacle doesn't hang hitters' H+R+RBI or strikeouts; FanDuel or BetRivers price them when they post them.</div>` : `<div class="mlb-bt"><b style="color:#e8e8e8">SAME-GAME STACKS</b> ${d.stacksClearing ? `${d.stacksClearing} clear at the repriced payout` : 'none clears at the repriced payout'} (a starter's strikeouts More with the other team's hitters, each leg priced at its own number)\n${stk.map(x => `${escAttr(PB_BOOKS.find(b => b[0] === x.app)?.[1] || x.app)} ${x.players.length}-pick: ${x.players.map(escAttr).join(' + ')}${x.evRep != null ? ` · all hit ${pc(x.pLinked)} · ${x.standard}x standard ${x.evStd > 0 ? '+' : ''}${x.evStd}% · repriced ${x.repriced}x ${x.evRep > 0 ? '+' : ''}${x.evRep}%` : ''}`).join('\n')}</div>`;
+  const rows = d.rows || [];
+  const c = d.counts || {};
+  const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
+  const sum = `<div class="pb-sum">${stat((c.rows || 0).toLocaleString(), 'MLB props Pinnacle prices')}${stat((c.legs || 0).toLocaleString(), 'app legs')}${stat(c.gap || 0, 'gap legs')}${stat(c.even || 0, 'same number')}</div>`;
+  if (!rows.length) {
+    el.innerHTML = note + rec + bt + stats + sum + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MLB LEGS PRICED</div><div class="empty-sub">${pbState.q || pbState.mlbStat || pbState.mlbGaps ? 'Nothing matches these filters.' : `No MLB game with Pinnacle props on the board right now (${(c.mlbRows || 0).toLocaleString()} MLB props on the apps). The apps and Pinnacle post World Series props on game day.`}</div></div>`;
+    return;
+  }
+  const body = rows.map(r => {
+    const cells = PB_BOOKS.map(([k, , ab]) => {
+      const l = r.legs?.[k];
+      const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
+      if (!l) return `<div class="pb-bk none">${label}<div class="pb-line">${r.books?.[k]?.line ?? '—'}</div><div class="pb-dim">${r.books?.[k] ? 'side closed' : 'no line'}</div></div>`;
+      const on = pk.app === k && pk.legs.some(x => x.rk === r.key && x.side === l.side);
+      const tag = l.rel === 'gap' ? `<span class="mlb-gap">GAP ${l.gap}</span>` : '<span class="mlb-even">SAME</span>';
+      const side = l.side ? `${pbSideWord(k, l.side)}` : '';
+      const btn = l.side ? `<button class="mlb-add${on ? ' on' : ''}" title="Add to a ${escAttr(PB_BOOKS.find(b => b[0] === k)?.[1])} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${k}','${l.side}')">+ LOG</button>` : '';
+      return `<div class="pb-bk">${label}<div class="pb-line">${l.line}</div><div class="pb-dim">${tag} ${side}</div>${l.fair != null ? `<div class="pb-dim">Pinnacle ${pc(l.fair)}${l.exact ? '' : ' (curve)'} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
+    }).join('');
+    const p = r.pinnacle || {};
+    const pin = `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${p.line}</div>${p.pOver != null ? `<div class="pb-dim">${pc(p.pOver)} over</div>${p.over != null && p.under != null ? `<div class="pb-dim">o${am(p.over)} u${am(p.under)}</div>` : ''}` : '<div class="pb-dim">Pinnacle</div>'}</div>`;
+    const oth = (r.others || []).map(o => `${o.book === 'betrivers' ? 'BetRivers' : o.book === 'fanduel' ? 'FanDuel' : escAttr(o.book)} ${o.line}${o.pOver != null ? ` (${pc(o.pOver)} over)` : ''}`).join(' · ');
+    return `<div class="pb-card">
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport">MLB</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${pbMatchup(r)} · ${pbFmtStart(r.startTime)}</div>${oth ? `<div class="pb-meta">${oth}</div>` : ''}</div>
+      <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div></div>`;
+  }).join('');
+  el.innerHTML = note + rec + bt + stTxt + stats + sum + `<div class="pb-list">${body}</div>`;
+}
 function renderPropsBoard() {
   renderPkTray();
   pbChips();
   if (pbState.view === 'lines') return renderLines();
   if (pbState.view === 'shop') return renderShop();
+  if (pbState.view === 'mlb') return renderMlb();
   const el = document.getElementById('pbContent'), d = pbState.data;
   const rows = d?.rows || [];
   if (!rows.length) {

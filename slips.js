@@ -91,6 +91,9 @@
     if (sp === 'NHL' && /^points?$/.test(m.trim())) return 'nhlpts';
     if (/h\s*\+\s*r\s*\+\s*rbi|hits\s*\+\s*runs/.test(m)) return 'hrr';
     if (/earned runs/.test(m)) return 'er';
+    // MLB strikeouts: a hitter's (PrizePicks "Hitter Strikeouts", Underdog
+    // "Batter Strikeouts") apart from a starter's
+    if (sp === 'MLB' && /strikeout/.test(m)) return /hitter|batter/.test(m) ? 'bk' : 'pk';
     return null;
   };
   const ES_LINK = { CS: { kills: [0.21, 0.12] }, LOL: { kills: [0.23, -0.06], assists: [0.5, -0.12] }, DOTA: { kills: [0.16, -0.06], assists: [0.5, -0.12] }, VAL: { kills: [0.22, 0.07] } };
@@ -110,6 +113,10 @@
     else if (sp === 'MLB') {
       if (ca === 'hrr' && cb === 'hrr' && same) phi = 0.12;
       else if ([ca, cb].sort().join('+') === 'er+hrr' && !same) phi = 0.24;
+      // a starter's strikeouts with the other team's hitters (corr-pairs res-MLB):
+      // Ks Over + hitter H+R+RBI Under .117, Ks Over + hitter strikeouts Over .231
+      else if ([ca, cb].sort().join('+') === 'hrr+pk' && !same) phi = -0.117;
+      else if ([ca, cb].sort().join('+') === 'bk+pk' && !same) phi = 0.231;
     }
     const sign = (a.side === 'Under' ? -1 : 1) * (b.side === 'Under' ? -1 : 1);
     return phi * sign;

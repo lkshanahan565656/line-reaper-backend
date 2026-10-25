@@ -826,6 +826,15 @@ const cfbModel = CFB_MODEL_ON ? cfbdata.createCfbModel({ http: axios, log: m => 
 const nbadata = require('./nbadata');
 const NBA_MODEL_ON = !/^(off|0|false|no)$/i.test(String(process.env.NBA_MODEL || '').trim());
 const nbaModel = NBA_MODEL_ON ? nbadata.createNbaModel({ http: axios, log: m => console.warn(m) }) : null;
+// MLB vs PINNACLE (mlbboard.js): every MLB leg on the four apps next to
+// Pinnacle's own number and no-vig price at the same stat (FanDuel and
+// BetRivers beside it). Pre-registered 2026-10-25
+// (checks/mlb-ws-2026-10-25): an app number on the good side of Pinnacle's is a
+// gap leg (kinds mlb-pin, p6-mlb-pin, ud-mlb-pin, sl-mlb-pin), the same number
+// an even leg (mlb-even, ...): research kinds, out of the headline, no alerts,
+// judged at 50 graded live. MLB_PIN=off turns it off.
+const mlbBoard = require('./mlbboard');
+const MLB_PIN_ON = !/^(off|0|false|no)$/i.test(String(process.env.MLB_PIN || '').trim());
 // MY SLIPS (slips.js, sliplog.js): the legs of users' own slips, followed to the
 // close and graded like the props record, in a record of their own. Legs only:
 // stakes and payouts stay in the user's browser.
@@ -4746,7 +4755,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.169.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.170.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5672,7 +5681,17 @@ function stalePinAt(row) {
   if (!staleState.enabled) return null;
   return staleState.engine.pinMain(staleLines.propKey(row.sport, row.player, row.mkey, row.startTime));
 }
+// Pinnacle's quotes for an MLB row's game (mlbboard picks its main line)
+const mlbPinFor = row => pinprops.quotesForGame(pinPropsIndex, row) || [];
+// the raw Pinnacle number a record leg keeps to the close: an MLB leg's is
+// Pinnacle's main line for the stat, a stale leg's the stale engine's
+function sportPinAt(row, kind) {
+  if (mlbBoard.KINDS.has(kind)) { const m = mlbBoard.pinMain(mlbPinFor(row)); return m ? { x: m.line, p: m.pOver } : null; }
+  return stalePinAt(row);
+}
 function sportFairAt(row, book, line, kind) {
+  // an MLB leg closes on Pinnacle at its own number (its own price there, else the curve through its line)
+  if (mlbBoard.KINDS.has(kind)) return mlbBoard.closeAt(row, line, mlbPinFor(row))?.pOver ?? null;
   kind = baseSportKind(kind);
   // a CFB model leg closes on the model's own number at the start (the record is its hit rate)
   if (kind === 'cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
@@ -6821,8 +6840,10 @@ async function trackSportProps() {
     if (cfbModel) { try { flagged.push(...cfbModel.plays(rows)); } catch (e) { console.warn('CFB model plays:', e.message); } }
     // the NBA model's confident PrizePicks and Pick6 legs: a record of their own (kinds nba-model, p6-nba-model)
     if (nbaModel) { try { flagged.push(...nbaModel.plays(rows)); } catch (e) { console.warn('NBA model plays:', e.message); } }
+    // every MLB leg Pinnacle prices, gap and even, each app its own kind (mlbboard.js)
+    if (MLB_PIN_ON) { try { flagged.push(...mlbBoard.plays(rows, { pinFor: mlbPinFor })); } catch (e) { console.warn('MLB board plays:', e.message); } }
 
-    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: stalePinAt, sourcesAt: comboSourcesAt, updated });
+    await sportTracker.record({ rows: rows.filter(r => !r.esports), flagged, fairAt: sportFairAt, sharpAt: sportSharpAt, pinAt: sportPinAt, sourcesAt: comboSourcesAt, updated });
     // the slip log's legs keep their close on the same reads, on the sharp consensus
     await slipLegTracker.record({ rows: rows.filter(r => !r.esports), flagged: [], fairAt: slipFairAt, updated });
     // the softest number across the apps (appshop.js): kinds shop-any, shop-pp,
@@ -6941,6 +6962,49 @@ app.get('/api/props/cfbmodel', async (req, res) => {
       backtest: cfbModel.state.backtest, count: list.length, rows: list.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)) });
   } catch (e) { sendErr(res, e); }
 });
+
+// ── MLB vs PINNACLE (mlbboard.js): every MLB app leg next to Pinnacle's own number ──
+// Each MLB player stat Pinnacle prices: Pinnacle's line, its prices and no-vig
+// P(over), FanDuel's and BetRivers' where they post it, and every app's
+// number as a gap leg (on the good side of Pinnacle's) or an even leg (the
+// same number). Same-game stacks priced leg by leg. Research: its own record
+// kinds, no alerts. The prices are Pro, like the board's fair.
+const mlbBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'mlb-backtest.json'), 'utf8')); } catch { return null; } })();
+const SLIPS = require('./slips');
+const mlbBooksFor = row => (Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS ? sportProps.quotesFor(bookPropsIndex, row) : []);
+const mlbPriceOf = (row, line) => mlbBoard.priceFrom(mlbPinFor(row), row.mkey, line) || mlbBoard.priceFrom(mlbBooksFor(row), row.mkey, line);
+app.get('/api/props/mlb', async (req, res) => {
+  try {
+    const pro = hasPro(req);
+    const { rows } = propsBoardRows();
+    const mlbRows = rows.filter(r => r.sport === 'MLB' && !r.esports);
+    let list = mlbBoard.board(mlbRows, { pinFor: mlbPinFor, booksFor: mlbBooksFor });
+    const q = String(req.query.q || '').toLowerCase().trim().slice(0, 60);
+    if (q) list = list.filter(b => `${b.row.player} ${b.row.team} ${b.row.market} ${b.row.matchTitle}`.toLowerCase().includes(q));
+    if (req.query.stat) list = list.filter(b => b.row.mkey === String(req.query.stat));
+    if (req.query.gaps === '1') list = list.filter(b => b.legs.some(l => l.rel === 'gap'));
+    list.sort((a, b) => Date.parse(a.row.startTime) - Date.parse(b.row.startTime) || (b.legs.some(l => l.rel === 'gap') - a.legs.some(l => l.rel === 'gap')) || a.row.player.localeCompare(b.row.player));
+    const hide = o => (pro ? o : { ...o, pOver: null, fair: null, ev: null, pinOver: null, over: undefined, under: undefined, ...(o.rel === 'even' ? { side: null } : {}) });
+    const out = list.map(({ row, pin, books, legs }) => ({ key: row.key, sport: 'MLB', player: row.player, team: row.team || '', opponent: row.opponent || '', market: row.market, mkey: row.mkey,
+      startTime: row.startTime, matchTitle: row.matchTitle || '', books: row.books,
+      pinnacle: hide({ line: pin.line, pOver: r4n(pin.pOver), over: pin.over ?? null, under: pin.under ?? null }),
+      others: books.map(b => hide({ book: b.book, line: b.line, pOver: r4n(b.pOver) })),
+      legs: Object.fromEntries(legs.map(l => [l.app, hide(l)])) }));
+    const st = mlbBoard.stacks(mlbRows, { priceOf: mlbPriceOf, slips: SLIPS });
+    const kinds = (await sportTracker.summary()).byKind || {};
+    const rec = Object.fromEntries([...mlbBoard.KINDS].map(k => [k, kinds[k] || null]));
+    const legsAll = list.flatMap(b => b.legs);
+    res.json({ on: MLB_PIN_ON, pro, label: 'research, not a bet',
+      bar: 'Not a bet until one app\'s gap legs have 50+ graded live with the hit rate 2+ standard errors above its break-even (PrizePicks 55.03%, Pick6 56.7%, Underdog 56.23%, Sleeper its own payout) and an independent re-check of the results.',
+      counts: { rows: out.length, legs: legsAll.length, gap: legsAll.filter(l => l.rel === 'gap').length, even: legsAll.filter(l => l.rel === 'even').length,
+        byApp: Object.fromEntries(mlbBoard.APPS.map(a => [a, legsAll.filter(l => l.app === a).length])), mlbRows: mlbRows.length, sports: {}, books: {} },
+      record: rec, backtest: mlbBacktest,
+      stacks: pro ? st.slice(0, 20) : st.slice(0, 20).map(x => ({ app: x.app, game: x.game, players: x.players, linked: x.linked, standard: x.standard, repriced: x.repriced })),
+      stacksClearing: st.filter(x => x.clears).length,
+      rows: out.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)), total: out.length });
+  } catch (e) { sendErr(res, e); }
+});
+const r4n = x => (Number.isFinite(x) ? Math.round(x * 1e4) / 1e4 : null);
 
 // ── SHOP: the softest number across the apps (appshop.js) ──
 // Every player stat two or more apps hang at different numbers: the softest
@@ -7656,7 +7720,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.169.0',
+  version: '3.170.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

@@ -164,12 +164,21 @@ function pushReport(stamp) {
     boxes.set(ev.id, b);
     return b;
   };
+  const mlbGrader = SG.createSportsGrader({ http: axios });
   const results = new Map(), why = {};
   const note = k => { why[k] = (why[k] || 0) + 1; };
   for (const leg of legs) {
     const id = `${leg.app}|${leg.key}`;
     const sport = leg.sport || 'NFL';
     if (!SG.canGrade({ sport, mkey: leg.mkey })) { note(`no grader: ${sport} ${leg.mkey}`); results.set(id, { skip: true }); continue; }
+    // MLB: the MLB Stats API box (total bases, singles, ... ESPN lacks), ESPN second (sportgrade.js)
+    if (sport === 'MLB') {
+      let g = null;
+      try { g = await mlbGrader.grade({ sport, mkey: leg.mkey, player: leg.player, team: leg.team, matchTitle: leg.matchTitle, startTime: leg.start, signalLine: leg.bet.v[0], signalSide: 'Over' }); } catch (e) { note(`mlb grade error ${e.message}`.slice(0, 60)); g = { pending: true }; }
+      if (!g || g.pending) { note(g ? 'not final' : 'MLB: no game or stat'); results.set(id, g ? { pending: true } : { void: true }); continue; }
+      results.set(id, { result: g.result, eventId: g.eventId });
+      continue;
+    }
     const ev = SG.findEvent(bySport[sport] || [], { startTime: leg.start, team: leg.team, matchTitle: leg.matchTitle });
     if (!ev) { note('no ESPN game'); results.set(id, { pending: true }); continue; }
     if (!ev.status?.type?.completed) { note('not final'); results.set(id, { pending: true }); continue; }

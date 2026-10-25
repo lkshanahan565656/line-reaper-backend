@@ -1,0 +1,22 @@
+{
+ "asOf": "2026-10-25, 3 playoff games recorded (LCS 10-15 TB @ CLE, 10-16 MIL @ LAD, World Series Game 2 10-25)",
+ "verdict": "too few gap legs to judge; nothing to bet",
+ "lines": [
+  "Last read before first pitch:",
+  "  PrizePicks gap legs: 2-1 (66.7%) vs 55.0% break-even, n 3",
+  "  PrizePicks same number, Pinnacle's side: 9-8 (52.9%) vs 55.0% break-even, n 17",
+  "  Underdog gap legs: 2-0 (100.0%) vs 56.2% break-even, n 2",
+  "  Underdog same number, Pinnacle's side: 25-29 (46.3%) vs 56.2% break-even, n 54",
+  "  Sleeper gap legs: 4-3 (57.1%) vs 67.2% break-even, n 7",
+  "  Sleeper same number, Pinnacle's side: 21-28 (42.9%) vs 62.4% break-even, n 49",
+  "First read with both numbers:",
+  "  PrizePicks gap legs: 3-2 (60.0%) vs 55.0% break-even, n 5",
+  "  PrizePicks same number, Pinnacle's side: 6-9 (40.0%) vs 55.0% break-even, n 15",
+  "  Underdog gap legs: none",
+  "  Underdog same number, Pinnacle's side: 23-33 (41.1%) vs 56.2% break-even, n 56",
+  "  Sleeper gap legs: 4-1 (80.0%) vs 67.7% break-even, n 5",
+  "  Sleeper same number, Pinnacle's side: 20-31 (39.2%) vs 62.2% break-even, n 51",
+  "Gap legs are rare in MLB: the apps sit on Pinnacle's number on almost every prop Pinnacle prices (total bases, home runs, pitcher strikeouts, outs, hits allowed, earned runs).",
+  "Graded from MLB Stats API box scores; ESPN agreed on every leg it carries."
+ ]
+}
