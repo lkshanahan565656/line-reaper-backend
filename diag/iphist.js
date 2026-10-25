@@ -18,7 +18,11 @@ async function get(url, params = {}, headers = {}, tries = 6, text = false) {
       if (r.status === 429) { await sleep(2000 * (i + 1)); continue; }
       if (r.status >= 400 && r.status < 500) { errs++; if (errs < 25) log('4xx', r.status, (u.pathname + u.search).slice(0, 220), (await r.text()).slice(0, 200)); return null; }
       if (!r.ok) { await sleep(1500 * (i + 1)); continue; }
-      return text ? await r.text() : await r.json();
+      if (r.status === 204) return null;
+      const body = await r.text();
+      if (text) return body;
+      if (!body) return null;
+      try { return JSON.parse(body); } catch { return null; }
     } catch (e) { await sleep(1500 * (i + 1)); }
   }
   errs++; return null;
