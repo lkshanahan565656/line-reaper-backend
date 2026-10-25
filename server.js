@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.181.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.182.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6540,6 +6540,54 @@ app.get('/api/exchange-size', async (req, res) => {
       note: 'A record, not a tip sheet: no alerts until a venue and size passes at 50 graded (checks/xsize-2026-10-24/PREREGISTERED.md).' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ─── KALSHI MAKER (kmaker.js) ─────────────────────────────────────────────────
+// A resting bid on each Kalshi NFL, CFB, NBA and NHL game side 2%+ under
+// Pinnacle's no-vig fair after Kalshi's maker fee (ODDS SCREEN > MAKER), and
+// the record of what those bids would have done: posted once per side 2 min
+// to 24 h out, filled only when a Kalshi trade printed through the bid, graded
+// on Pinnacle's close and Kalshi's settlement (kind kalshi-maker, judged at 50).
+// Research: no alerts, no orders. KALSHI_MAKER=off stops it.
+const kmaker = require('./kmaker');
+const kmakerOn = () => !/^(off|0|false|no)$/i.test(String(process.env.KALSHI_MAKER || '').trim());
+const kmakerStore = resultsBackup.wrap('kalshiMaker', createEvStoreFromEnv(process.env, { table: 'kalshi_maker_bids', fileVar: 'KALSHI_MAKER_FILE', file: 'kalshi-maker-bids.json' }));
+const kmakerTracker = kmaker.createMakerTracker({ store: kmakerStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
+kmakerTracker.ready().catch(e => console.error('Kalshi maker: store failed to initialise:', e.message));
+const kmakerBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'kalshi-maker-backtest.json'), 'utf8')); } catch { return null; } })();
+let kmakerRunning = false;
+async function scanKalshiMaker() {
+  if (!kmakerOn() || kmakerRunning || !licences.isOn('kalshi') || Date.now() - Date.parse(freeBooksState.gamesAt || 0) > FREE_BOOKS_MAX_AGE_MS) return;
+  if (!(Date.now() - kalshiGameRows.at < KALSHI_MID_MAX_AGE_MS)) return;
+  kmakerRunning = true;
+  try { await kmakerTracker.scan({ games: freeBooksState.games, pinGames: freeBooksState.pinGames || [], kalshiRows: kalshiGameRows.rows }); }
+  catch (e) { kmakerTracker.state.errors = [e.message, ...kmakerTracker.state.errors].slice(0, 5); }
+  finally { kmakerRunning = false; }
+}
+async function settleKalshiMaker() {
+  if (!kmakerOn()) return;
+  try { await kmakerTracker.settle(); } catch (e) { kmakerTracker.state.errors = [e.message, ...kmakerTracker.state.errors].slice(0, 5); }
+}
+const KMAKER_NOTE = 'Research, not a tip: a resting Kalshi bid 2%+ under Pinnacle\'s no-vig fair after Kalshi\'s maker fee. Nothing here places an order. The record counts a bid only when a Kalshi trade printed through it, and grades it on Pinnacle\'s close and Kalshi\'s settlement; it is proven only at 50 graded with CLV t 2+.';
+const kmakerSlim = b => { const { fairs, ...x } = b; return x; };
+app.get('/api/kalshi-maker', async (req, res) => {
+  if (!kmakerOn()) return res.status(503).json({ error: 'The Kalshi maker record is off on this server (KALSHI_MAKER=off).' });
+  try {
+    const lic = licenceOf(req);
+    const all = await kmakerTracker.list();
+    const hours = Math.min(Math.max(parseFloat(req.query.hours) || 24, 1), 48);
+    const sport = typeof req.query.sport === 'string' && kmaker.SPORTS.has(req.query.sport) ? req.query.sport : null;
+    const t = Date.now();
+    const board = !lic.kalshi ? [] : (kmakerTracker.state.board || []).filter(x => !x.alt && (!sport || x.sport === sport) && Date.parse(x.start) > t && Date.parse(x.start) - t <= hours * 3600e3)
+      .sort((a, b) => (b.bid != null) - (a.bid != null) || Date.parse(a.start) - Date.parse(b.start)).slice(0, 300);
+    const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
+    const recent = (hasPro(req) ? all : done).slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(kmakerSlim);
+    const bt = kmakerBacktest;
+    res.json({ label: 'research', kind: kmaker.KIND, note: KMAKER_NOTE, edge: kmaker.EDGE, makerRate: kmaker.MAKER_RATE, kalshi: !!lic.kalshi,
+      record: kmaker.summarize(all), atBid: kmaker.summarize(all, { fill: 'atBid' }), bySport: kmaker.summarizeBy(all, b => b.sport),
+      board, boardAt: kmakerTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(kmakerTracker.state), recent,
+      backtest: bt ? { at: bt.at, summary: bt.summary, verdict: bt.verdict, data: { from: bt.data.from, to: bt.data.to, games: bt.data.games, sides: bt.data.sides },
+        byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } : null });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 const bigTracker = bigMoney.createBigMoneyTracker({
   store: resultsBackup.wrap('bigMoney', createEvStoreFromEnv(process.env, { table: 'big_money', fileVar: 'BIG_MONEY_FILE', file: 'big-money.json' })),
   propGrader: bigGrader,
@@ -8149,10 +8197,10 @@ app.get('/api/results', async (req, res) => {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
     const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
-      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows] = await Promise.all([
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows] = await Promise.all([
         tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list(),
-        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : []]);
-      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => [])]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8254,13 +8302,14 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.181.0',
+  version: '3.182.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
   sleeper: { count: cache.sleeper.data?.length||0, sports: cache.sleeperSports.data?.length||0, rows: cache.sleeper.rows || 0, updated: cache.sleeper.updated || null, lastError: dfsError.sleeper },
   pick6: pick6.status(),
   exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
+  kalshiMaker: { on: kmakerOn(), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
   shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
   kalshiProps: { updated: kpropsState.updated, counts: kpropsState.counts, errors: kpropsState.errors },
@@ -8420,11 +8469,12 @@ if (cfbModel) {
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
+schedule('7,17,27,37,47,57 * * * *', () => settleKalshiMaker());
 schedule('6,26,46 * * * *', () => gradeLineBets());
 schedule('5,15,25,35,45,55 * * * *', () => slipLegTracker.grade().catch(e => console.warn('Slip log grader:', e.message)));
 schedule('7,17,27,37,47,57 * * * *', () => shopTracker.grade().catch(e => console.warn('Shop grader:', e.message)));
 schedule('9,19,29,39,49,59 * * * *', () => promoTracker.grade().catch(e => console.warn('Promo grader:', e.message)));
-schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory()).then(() => readShopDepth())));
+schedule('40 * * * * *', () => refreshFreeBooks().then(() => scanExchangeSize()).then(() => scanKalshiMaker()).catch(() => {}).then(() => observeOddsHistory()).finally(() => prebuildShopQuotes().catch(e => console.warn('Shopper prebuild:', e.message)).then(() => observePropHistory()).then(() => readShopDepth())));
 schedule('4,9,14,19,24,29,34,39,44,49,54,59 * * * *', () => refreshEvProof().catch(() => {}));
 // every other minute: the book props it prices move that often (a 5-minute
 // read let Pinnacle's fair lag the books' by 3.5 points, 2026-10-14)
