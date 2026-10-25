@@ -185,10 +185,6 @@ function teamPace(H, tm, t, P, lg) {
   const e = ewMean(list, x => x.poss, 10, t, P), n = Math.min(list.length, 30);
   return e.mean == null ? lg.poss : lg.poss + (e.mean - lg.poss) * n / (n + 6);
 }
-function teamPts(H, tm, t, P) {
-  const list = before(H.teams.get(tm), t).slice(-30);
-  return ewMean(list, x => x.pts, 10, t, P).mean;
-}
 
 // ── projection ────────────────────────────────────────────────────────────
 // ctx: { team, opp, home, total, spread (home's), out: [player keys Out for
@@ -287,15 +283,6 @@ function project(H, key, ctx, P = PARAMS) {
 }
 
 // ── distributions ──────────────────────────────────────────────────────────
-// log-gamma (Lanczos)
-const LG = [676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
-function lgamma(z) {
-  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
-  z -= 1; let x = 0.99999999999980993;
-  for (let i = 0; i < 8; i++) x += LG[i] / (z + i + 1);
-  const tt = z + 7.5;
-  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(tt) - tt + Math.log(x);
-}
 // P(X <= k) and P(X = k) for a count with mean mu and var mu + phi mu^2
 // (negative binomial; Poisson when phi is 0)
 function countCdf(k, mu, phi) {
@@ -315,8 +302,8 @@ function countCdf(k, mu, phi) {
 }
 
 // probabilists' Hermite nodes and weights (sum 1), 9 points
-const NODES = [-4.5127458633997834, -3.2054290028564703, -2.0768479786778302, -1.0232556637891326, 0, 1.0232556637891326, 2.0768479786778302, 3.2054290028564703, 4.5127458633997834];
-const WEIGHTS = [2.2345844007746e-5, 0.0027891413212318, 0.049916406765218, 0.24409750289494, 0.40634920634921, 0.24409750289494, 0.049916406765218, 0.0027891413212318, 2.2345844007746e-5];
+const NODES = [-4.5127458633997835, -3.2054290028564703, -2.07684797867783, -1.0232556637891326, 0, 1.0232556637891326, 2.07684797867783, 3.2054290028564703, 4.5127458633997835];
+const WEIGHTS = [2.2345844007746e-05, 0.0027891413212318, 0.049916406765218, 0.24409750289494, 0.40634920634921, 0.24409750289494, 0.049916406765218, 0.0027891413212318, 2.2345844007746e-05];
 
 // the stat's mean given minutes m
 function statMean(proj, stat, m) {
@@ -373,4 +360,4 @@ function priceLine(proj, stat, line, P = PARAMS) {
 }
 
 module.exports = { PARAMS, BASE, COMBOS, STATS, compactGame, spreadOf, buildHistory, before, seasonOf, leagueAt, project, probOver,
-  expected, median, priceLine, countCdf, lgamma };
+  expected, median, priceLine, countCdf };
