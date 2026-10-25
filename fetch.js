@@ -8,7 +8,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   fs.mkdirSync('out', { recursive: true });
   const out = {};
-  for (const s of ['KXUFCDISTANCE', 'KXUFCFIGHT', 'KXUFCVICROUND', 'KXUFCMOV']) {
+  for (const s of ['KXUFCDISTANCE', 'KXUFCFIGHT']) {
     const mk = [];
     let cursor = '';
     for (let i = 0; i < 10; i++) {
@@ -21,7 +21,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     for (const m of mine) {
       const end = Math.floor(Date.parse(m.close_time) / 1000), start = end - 7 * 86400;
       const c = await j(`${K}/series/${s}/markets/${m.ticker}/candlesticks?start_ts=${start}&end_ts=${end}&period_interval=60`);
-      m.candles = (c.candlesticks || []).map(x => ({ t: x.end_period_ts, bid: x.yes_bid?.close, ask: x.yes_ask?.close, price: x.price?.close, vol: x.volume }));
+      const cv = o => (o == null ? null : o.close_dollars != null ? +o.close_dollars : o.close != null ? o.close / 100 : null);
+      m.candles = (c.candlesticks || []).map(x => ({ t: x.end_period_ts, bid: cv(x.yes_bid), ask: cv(x.yes_ask), price: cv(x.price), vol: x.volume_fp ?? x.volume }));
+      if (!m.candles.length || m.candles.every(x => x.bid == null)) m.rawCandle = (c.candlesticks || []).slice(-1);
       await sleep(250);
     }
     out[s] = { total: mk.length, markets: mine };
