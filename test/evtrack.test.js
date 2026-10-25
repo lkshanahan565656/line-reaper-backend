@@ -49,7 +49,7 @@ test('skips DFS legs and started games; survives a restart from the file store',
   const a = createEvTracker({ store: createFileStore(file), now: () => t });
   await a.recordBoard([row(), row({ book: 'prizepicks', dfs: true, decimal: null }), row({ book: 'caesars', start: '2026-10-08T11:00:00Z' })]);
   assert.equal((await a.list()).length, 1);
-  await new Promise(r => setTimeout(r, 20));
+  await require('../jsonstore').flushAll();
   const b = createEvTracker({ store: createFileStore(file), now: () => t });
   await b.recordBoard([row({ fairProb: 45 })]);
   const bets = await b.list();

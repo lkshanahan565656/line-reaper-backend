@@ -189,7 +189,8 @@ test('candidates from the v2 leaderboard, then a scoring batch grades the wallet
   assert.ok(pos.every(c => (c.params.status === 'CLOSED' || c.params.status === 'OPEN') !== (c.params.include_archived === true)), 'archived only on the unclaimed lists (CLOSED with it is a 400)');
   assert.ok(calls.some(c => c.url.endsWith('/v2/prices-history')), 'closing lines measured');
   assert.ok(!calls.some(c => /data-api\.polymarket\.com\/(?!v2\/)/.test(c.url)), 'v1 is retired: every data-API call is v2');
-  // scores survive a restart
+  // scores survive a restart (once the coalesced write lands)
+  await require('../jsonstore').flushAll();
   const saved = JSON.parse(fs.readFileSync(process.env.TAIL_TRADERS_FILE, 'utf8'));
   assert.equal(saved[0].wallet, W1);
 });
