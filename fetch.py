@@ -11,9 +11,9 @@ def get(u,t=40):
             time.sleep(2+3*i)
     print('ERR',u,err,flush=True); return None
 D=datetime.date
-days=[];d=D(2024,10,1);end=datetime.datetime.utcnow().date()
+days=[];d=D(2023,10,20);end=D(2024,6,30)
 while d<=end:
-    if d.month not in (7,8,9) or d>=D(2026,9,25): days.append(d.strftime('%Y%m%d'))
+    days.append(d.strftime('%Y%m%d'))
     d+=datetime.timedelta(days=1)
 def sb(ds):
     d=get(f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={ds}&limit=100"); out=[]
