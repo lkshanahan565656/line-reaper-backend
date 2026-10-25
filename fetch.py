@@ -12,7 +12,7 @@ def get(u,t=40,quiet=False):
     if not quiet: print('ERR',u,err,flush=True)
     return None
 D=datetime.date
-R=[(D(2024,10,4),D(2025,6,25)),(D(2025,10,2),D(2026,6,25)),(D(2026,10,2),datetime.datetime.utcnow().date())]
+R=[(D(2026,10,2),datetime.datetime.utcnow().date())]
 os.makedirs('out/box',exist_ok=True)
 days=[]
 for a,b in R:
