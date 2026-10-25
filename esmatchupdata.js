@@ -30,6 +30,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
 const M = require('./esmatchup');
+const { GAMES } = require('./esgames');
 
 const LOLE = 'https://esports-api.lolesports.com/persisted/gw/getSchedule';
 const LOLE_HEADERS = { 'x-api-key': '0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z', 'User-Agent': 'Mozilla/5.0 (LineReaper matchups)' };
@@ -115,7 +116,7 @@ function polymarketProb(mk, flipped) {
 // teams[0] is the long side: buying it costs the ask, the other team 1 − bid.
 const pnum = v => num(v && typeof v === 'object' ? v.value : v);
 const unit = p => (p != null && p > 0 && p < 1 ? p : null);
-function parsePmusEvents(events, o = DEFAULTS) {
+function parsePmusEvents(events, o = DEFAULTS, league = 'lol') {
   const out = [];
   for (const e of events || []) {
     if (!e?.slug || e.closed === true || e.active === false || e.ended === true) continue;
@@ -134,7 +135,7 @@ function parsePmusEvents(events, o = DEFAULTS) {
         teams: [name(L), name(S)], alt: [L.team?.name || null, S.team?.name || null], codes: [code(L), code(S)],
         bid: unit(pnum(m.bestBidQuote)), ask: unit(pnum(m.bestAskQuote)),
         feeRate: fr != null && fr >= 0 && fr < 1 ? fr : o.pmusFeeRate,
-        url: `${PMUS_SITE}/sports/lol/${encodeURIComponent(e.slug)}`,
+        url: `${PMUS_SITE}/sports/${encodeURIComponent(league)}/${encodeURIComponent(e.slug)}`,
       });
     }
   }
@@ -176,14 +177,90 @@ function pairList(series, items, o = DEFAULTS) {
   return best;
 }
 // the esports board's LoL match for a lolesports series (both teams fit, start close)
-function pairBoard(series, board, o = DEFAULTS) {
-  return pairList(series, (board || []).filter(m => m.game === 'LOL'), o);
+function pairBoard(series, board, o = DEFAULTS, game = 'LOL') {
+  return pairList(series, (board || []).filter(m => m.game === game), o);
+}
+
+// ── CS2 and VALORANT: results the ratings refresh already reads ──
+// ratings.js reads bo3.gg (CS2) and vlr.gg (VALORANT) every six hours for the
+// board's Elo and keeps the map-level games (state.raw). Those become series
+// here, so the matchup engines add no second read of either site.
+// games: [{ a, b, aWon, t, id?, tier?, bo? }] → [{ id, t, lg, bo, a, b, s1, s2 }]
+const CS_TIER = { s: 'CS2 S-tier', a: 'CS2 A-tier', b: 'CS2 B-tier', c: 'CS2 C-tier' };
+function seriesFromGames(games, game) {
+  const by = new Map();
+  for (const g of games || []) {
+    if (!g?.a || !g?.b || !Number.isFinite(g.t) || g.t <= 0) continue;
+    const key = g.id != null ? String(g.id) : `${M.teamKey(g.a)}|${M.teamKey(g.b)}|${g.t}`;
+    let r = by.get(key);
+    if (!r) {
+      r = { key, idRaw: g.id ?? null, t: g.t, a: g.a, b: g.b, s1: 0, s2: 0, tier: g.tier || null, bo: num(g.bo) };
+      by.set(key, r);
+    }
+    const aSide = M.teamKey(g.a) === M.teamKey(r.a);
+    if (g.aWon === aSide) r.s1++; else r.s2++;
+  }
+  const out = [];
+  for (const r of by.values()) {
+    if (r.s1 + r.s2 === 0) continue;
+    if (game === 'CS2') {
+      out.push({ id: r.idRaw != null ? `bo3:${r.idRaw}` : `bo3:${r.key}`, t: new Date(r.t).toISOString(), lg: CS_TIER[r.tier] || 'CS2 other', bo: r.bo || null, a: r.a, b: r.b, s1: r.s1, s2: r.s2 });
+    } else {
+      // vlr.gg's list gives the day only: midday UTC keeps the day's order
+      const day = new Date(r.t); day.setUTCHours(17, 0, 0, 0);
+      out.push({ id: r.idRaw != null ? `vlr:${r.idRaw}` : `vlr:${r.key}`, t: day.toISOString(), lg: null, bo: Math.max(r.s1, r.s2) * 2 - 1, a: r.a, b: r.b, s1: r.s1, s2: r.s2 });
+    }
+  }
+  return out;
+}
+
+// The matches a venue lists for one game (Kalshi via the esports board, then
+// Polymarket US's own list), as series rows the model can price. CS2 and
+// VALORANT have no schedule feed we read, so the venues are the schedule:
+// every row here is a match you could trade.
+const venueId = (game, a, b, t) => `${game.toLowerCase()}-${new Date(Date.parse(t) || 0).toISOString().slice(0, 13).replace(/[^0-9]/g, '')}-${[M.teamKey(a), M.teamKey(b)].sort().join('-')}`;
+function venueUpcoming(game, board, pmEvents, { now = Date.now(), o = DEFAULTS } = {}) {
+  const out = [];
+  const t0 = now - 6 * 3600e3, t1 = now + o.aheadDays * 86400e3;
+  const inWindow = t => { const x = Date.parse(t); return Number.isFinite(x) && x >= t0 && x <= t1; };
+  for (const m of board || []) {
+    if (m.game !== game || !m.teams || !m.teams[0] || !m.teams[1] || !inWindow(m.start)) continue;
+    if (!(m.markets || []).some(k => k.kind === 'match')) continue;
+    const t = new Date(Date.parse(m.start)).toISOString();
+    out.push({ id: venueId(game, m.teams[0], m.teams[1], t), t, lg: m.tournament || m.league || null, bo: m.bestOf || null, a: m.teams[0], ac: null, b: m.teams[1], bc: null,
+      state: Date.parse(t) <= now ? 'inProgress' : 'unstarted', block: null, source: 'kalshi' });
+  }
+  for (const e of pmEvents || []) {
+    if (!inWindow(e.start)) continue;
+    const t = new Date(Date.parse(e.start)).toISOString();
+    const row = { t, a: e.teams[0], ac: e.codes?.[0] || null, b: e.teams[1], bc: e.codes?.[1] || null };
+    if (out.some(u => pairList(u, [{ teams: [row.a, row.b], codes: [row.ac, row.bc], alt: e.alt, start: t }], o))) continue;
+    out.push({ id: venueId(game, row.a, row.b, t), ...row, lg: null, bo: null, state: Date.parse(t) <= now ? 'inProgress' : 'unstarted', block: null, source: 'polymarketus' });
+  }
+  return out.sort((x, y) => Date.parse(x.t) - Date.parse(y.t));
+}
+
+// a finished series for a venue match: both teams fit, within 12 hours
+function findResult(seriesList, row, o = DEFAULTS) {
+  const t = Date.parse(row.start);
+  let best = null;
+  for (const s of seriesList) {
+    const st = Date.parse(s.t);
+    if (!Number.isFinite(st) || Math.abs(st - t) > 12 * 3600e3) continue;
+    const [a, b] = row.teams;
+    const d = Math.min(M.nameScore(a, s.a), M.nameScore(b, s.b)), f = Math.min(M.nameScore(a, s.b), M.nameScore(b, s.a));
+    const sc = Math.max(d, f);
+    if (sc < 0.75) continue;
+    if (!best || sc > best.sc) best = { s, flipped: f > d, sc };
+  }
+  if (!best) return null;
+  return best.flipped ? { s1: best.s.s2, s2: best.s.s1, id: best.s.id } : { s1: best.s.s1, s2: best.s.s2, id: best.s.id };
 }
 // one upcoming series → its matchup page data. pmus: Polymarket US's parsed
 // LoL markets ({ events, at }) or null.
-function buildMatchup(series, R, board, { now = Date.now(), o = DEFAULTS, pmus = null } = {}) {
-  const pred = R.predict(series.a, series.b, { bestOf: series.bo || 1, t: now });
-  const pair = pairBoard(series, board, o);
+function buildMatchup(series, R, board, { now = Date.now(), o = DEFAULTS, pmus = null, game = 'LOL' } = {}) {
+  const pred = R.predict(series.a, series.b, { bestOf: series.bo || (game === 'LOL' ? 1 : 3), t: now });
+  const pair = pairBoard(series, board, o, game);
   const main = pair?.m?.markets?.find(mk => mk.kind === 'match') || null;
   const kalshi = main ? kalshiPrice(main, pair.flipped, o) : null;
   const pm = main ? polymarketProb(main, pair.flipped) : null;
@@ -207,7 +284,7 @@ function buildMatchup(series, R, board, { now = Date.now(), o = DEFAULTS, pmus =
   }
   const market = ref;
   return {
-    id: series.id, start: series.t, league: series.lg, bestOf: series.bo, state: series.state, block: series.block,
+    id: series.id, game, start: series.t, league: series.lg, bestOf: series.bo, bestOfAssumed: !series.bo && game !== 'LOL' ? 3 : null, state: series.state, block: series.block,
     teams: [{ name: series.a, code: series.ac }, { name: series.b, code: series.bc }],
     model: pred.series ? {
       priced: !!pred.priced, confidence: pred.confidence, reasons: pred.reasons, map: pred.map, win: pred.series.win, band: pred.band,
@@ -261,17 +338,28 @@ function summarize(rows, o = DEFAULTS) {
   return out;
 }
 
-function createMatchupEngine({ http, board = () => [], pmusOn = true, store = null, log = console, now = () => Date.now(), opts = {}, modelOpts = {}, seed = null } = {}) {
+// game: 'LOL' reads lolesports' schedule; 'CS2' and 'VAL' take their
+// schedule from the venues and their results from results() (the ratings
+// refresh's raw games: { games, at }).
+function createMatchupEngine({ game = 'LOL', http, board = () => [], results = null, pmusOn = true, store = null, log = console, now = () => Date.now(), opts = {}, modelOpts = {}, seed = null } = {}) {
+  const G = GAMES[game] || GAMES.LOL;
+  const venueGame = G.id !== 'LOL';
   const o = { ...DEFAULTS, ...opts };
+  const mOpts = { ...G.model, ...modelOpts };
+  const prefix = `${G.id.toLowerCase()}:`;
   const series = new Map();
-  for (const s of seed || loadSeed()) if (s && s.id) series.set(String(s.id), s);
+  for (const s of seed || loadSeed(G.seed)) if (s && s.id) series.set(String(s.id), s);
+  // a series the ratings refresh also lists under another id (bo3.gg without
+  // an id, or the seed's exact start) is the same series
+  const sameKey = s => `${[M.teamKey(s.a), M.teamKey(s.b)].sort().join('|')}|${String(s.t).slice(0, 10)}|${[s.s1, s.s2].sort().join('-')}`;
+  const seen = new Set([...series.values()].map(sameKey));
   const state = {
     ratings: null, upcoming: [], updated: null, error: null, pages: 0, seedSeries: series.size, fetched: 0,
-    lastResult: null, record: new Map(), ready: false, backtest: loadBacktest(),
-    pmus: { on: !!pmusOn, events: [], at: null, error: null, reads: 0 },
+    lastResult: null, record: new Map(), ready: false, backtest: loadBacktest(G.backtest),
+    pmus: { on: !!pmusOn, events: [], at: null, error: null, reads: 0 }, resultsAt: null,
   };
   function rebuild() {
-    state.ratings = M.buildRatings([...series.values()], modelOpts);
+    state.ratings = M.buildRatings([...series.values()], mOpts);
     const last = state.ratings.last();
     state.lastResult = last ? new Date(last).toISOString() : null;
   }
@@ -295,15 +383,15 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
       try {
         const evs = [];
         for (let page = 0; page < 2; page++) {
-          const res = await http.get(`${PMUS}/v2/leagues/lol/events`, { params: { limit: 50, offset: page * 50 }, timeout: 8000 });
+          const res = await http.get(`${PMUS}/v2/leagues/${encodeURIComponent(G.pmLeague)}/events`, { params: { limit: 50, offset: page * 50 }, timeout: 8000 });
           const list = Array.isArray(res?.data?.events) ? res.data.events : [];
           evs.push(...list);
           if (list.length < 50) break;
         }
-        Object.assign(state.pmus, { events: parsePmusEvents(evs, o), at: new Date(t0).toISOString(), error: null, reads: state.pmus.reads + 1 });
+        Object.assign(state.pmus, { events: parsePmusEvents(evs, o, G.pmLeague), at: new Date(t0).toISOString(), error: null, reads: state.pmus.reads + 1 });
       } catch (e) {
         state.pmus.error = `${e.response?.status || ''} ${e.message}`.trim();
-        log.warn?.(`Matchups (LoL): Polymarket US: ${state.pmus.error}`);
+        log.warn?.(`Matchups (${G.label}): Polymarket US: ${state.pmus.error}`);
       } finally { pmusBusy = null; }
       return state.pmus;
     })();
@@ -320,7 +408,33 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
   // first call reaches back to the seed's last day; later calls read the
   // current page, two newer and two older
   let backfilled = false;
+  // CS2 / VALORANT: fold in the ratings refresh's newest results
+  async function refreshVenueGame() {
+    const t0 = now();
+    try {
+      const raw = typeof results === 'function' ? results() : null;
+      let added = 0;
+      if (raw?.games?.length && raw.at !== state.resultsAt) {
+        for (const s of seriesFromGames(raw.games, G.id)) {
+          const k = sameKey(s);
+          if (series.has(s.id) || seen.has(k)) continue;
+          series.set(s.id, s); seen.add(k); added++;
+        }
+        state.resultsAt = raw.at;
+        if (added) rebuild();
+      }
+      Object.assign(state, { updated: new Date(t0).toISOString(), error: raw?.games?.length ? null : 'results not read yet (the ratings refresh runs at boot and every six hours)', fetched: state.fetched + added, ready: true });
+      log.log?.(`Matchups (${G.label}): ${added} new results, ${series.size} series`);
+    } catch (e) {
+      state.error = e.message; state.ready = series.size > 0;
+      log.warn?.(`Matchups (${G.label}): ${e.message}`);
+    }
+    await refreshPmus().catch(() => {});
+    await track().catch(e => log.warn?.(`Matchups record (${G.label}): ${e.message}`));
+    return state;
+  }
   async function refresh() {
+    if (venueGame) return refreshVenueGame();
     const t0 = now();
     const evs = [];
     let pages = 0;
@@ -360,36 +474,40 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
   }
 
   // board: the esports board's matches as this viewer may see them
+  const upcomingNow = (bd, pm) => (venueGame ? venueUpcoming(G.id, bd, pm?.events || [], { now: now(), o }) : state.upcoming);
   function list({ days = o.aheadDays, league = null, board: b = null } = {}) {
     const bd = b || board() || [];
+    const pm = pmusNow();
     const t = now(), out = [];
-    for (const s of state.upcoming) {
+    for (const s of upcomingNow(bd, pm)) {
       const st = Date.parse(s.t);
       if (Number.isFinite(st) && (st > t + days * 86400e3 || st < t - 6 * 3600e3)) continue;
       if (league && s.lg !== league) continue;
-      out.push(buildMatchup(s, state.ratings, bd, { now: t, o, pmus: pmusNow() }));
+      out.push(buildMatchup(s, state.ratings, bd, { now: t, o, pmus: pm, game: G.id }));
     }
     return out;
   }
   function get(id, { board: b = null } = {}) {
-    const s = state.upcoming.find(u => u.id === String(id));
-    return s ? buildMatchup(s, state.ratings, b || board() || [], { now: now(), o, pmus: pmusNow() }) : null;
+    const bd = b || board() || [];
+    const pm = pmusNow();
+    const s = upcomingNow(bd, pm).find(u => u.id === String(id));
+    return s ? buildMatchup(s, state.ratings, bd, { now: now(), o, pmus: pm, game: G.id }) : null;
   }
 
   // freeze, follow and grade
   async function track() {
     if (!store) return;
-    if (!state.recordLoaded) { for (const r of await store.all()) state.record.set(r.id, r); state.recordLoaded = true; }
+    if (!state.recordLoaded) { for (const r of await store.all()) if (String(r.id).startsWith(prefix)) state.record.set(r.id, r); state.recordLoaded = true; }
     const t = now(), changed = [];
     const ms = list({ days: 1 });
     for (const mu of ms) {
       const st = Date.parse(mu.start);
-      const id = `lol:${mu.id}`;
+      const id = `${prefix}${mu.id}`;
       const mins = (st - t) / 60e3;
       let row = state.record.get(id);
       if (!row && mins <= o.freezeFrom && mins >= o.freezeTo && mu.compare?.kalshi != null && mu.model.priced) {
         row = {
-          id, matchId: mu.id, start: mu.start, league: mu.league, bestOf: mu.bestOf, teams: mu.teams.map(x => x.name),
+          id, game: G.id, matchId: mu.id, start: mu.start, league: mu.league, bestOf: mu.bestOf, teams: mu.teams.map(x => x.name),
           model: mu.compare.model, band: mu.model.band, confidence: mu.model.confidence, kalshi: mu.compare.kalshi,
           costA: mu.markets.kalshi?.sides?.[0]?.cost ?? null, costB: mu.markets.kalshi?.sides?.[1]?.cost ?? null,
           pmus: mu.compare.pmus ?? null, pmusCostA: mu.markets.pmus?.sides?.[0]?.cost ?? null, pmusCostB: mu.markets.pmus?.sides?.[1]?.cost ?? null,
@@ -402,9 +520,10 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
         changed.push(row);
       }
     }
+    const recent = venueGame ? [...series.values()].filter(s => Date.parse(s.t) > t - 6 * 86400e3) : null;
     for (const row of state.record.values()) {
       if (row.status !== 'open') continue;
-      const d = series.get(row.matchId);
+      const d = venueGame ? findResult(recent, row, o) : series.get(row.matchId);
       if (d) {
         row.result = `${d.s1}-${d.s2}`;
         if (d.s1 === d.s2) { row.status = 'void'; row.y = null; } else { row.status = 'graded'; row.y = d.s1 > d.s2 ? 1 : 0; }
@@ -421,9 +540,9 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
 
   function status() {
     return {
-      game: 'LOL', ready: state.ready, updated: state.updated, error: state.error, series: series.size, seedSeries: state.seedSeries,
-      fetched: state.fetched, lastResult: state.lastResult, upcoming: state.upcoming.length, teams: state.ratings?.size() || 0,
-      providers: providers(undefined, state.pmus),
+      game: G.id, label: G.label, ready: state.ready, updated: state.updated, error: state.error, series: series.size, seedSeries: state.seedSeries,
+      fetched: state.fetched, lastResult: state.lastResult, upcoming: venueGame ? list().length : state.upcoming.length, teams: state.ratings?.size() || 0,
+      providers: providers(undefined, state.pmus, G.id),
       pmus: { on: state.pmus.on, markets: state.pmus.events.length, at: state.pmus.at, error: state.pmus.error },
     };
   }
@@ -432,14 +551,23 @@ function createMatchupEngine({ http, board = () => [], pmusOn = true, store = nu
 }
 
 // what the engine reads, and what it can't
-function providers(env = process.env, pm = null) {
+function providers(env = process.env, pm = null, game = 'LOL') {
+  const pmus = { id: 'polymarketus', name: 'Polymarket US', type: 'exchange', state: pm && !pm.on ? 'off' : pm?.error ? 'error' : 'on', note: `${GAMES[game]?.label || game} match winner markets (esports_match_winner) from the US exchange, with its taker fee; a second Texas venue next to Kalshi. POLYMARKET_US=off turns it off.` };
+  if (game === 'CS2' || game === 'VAL') {
+    const src = game === 'CS2'
+      ? { id: 'bo3gg', name: 'bo3.gg results', type: 'results', state: 'on', note: "Finished CS2 series from bo3.gg's public API, read by the team ratings refresh every six hours (no second read); seeded with 42.8k series from 2024." }
+      : { id: 'vlrgg', name: 'vlr.gg results', type: 'results', state: 'on', note: "Finished VALORANT series from vlr.gg's results list, read by the team ratings refresh every six hours (no second read); seeded with 8.1k series from 2024-05." };
+    return [src,
+      { id: 'kalshi', name: 'Kalshi', type: 'exchange', state: 'on', note: `Match winner books (${game === 'CS2' ? 'KXCS2GAME' : 'KXVALORANTGAME'}) via the esports board: the schedule and the market price the model is judged against.` },
+      pmus];
+  }
   return [
     { id: 'lolesports', name: 'LoL Esports schedule', type: 'results and schedule', state: 'on', note: "Unofficial use of the public key lolesports.com's own site uses; finished series and upcoming matches." },
     { id: 'kalshi', name: 'Kalshi', type: 'exchange', state: 'on', note: 'Match winner books (KXLOLGAME) via the esports board; the market price the model is judged against.' },
-    { id: 'polymarketus', name: 'Polymarket US', type: 'exchange', state: pm && !pm.on ? 'off' : pm?.error ? 'error' : 'on', note: 'LoL match winner markets (esports_match_winner) from the US exchange, with its taker fee; a second Texas venue next to Kalshi. POLYMARKET_US=off turns it off.' },
+    pmus,
     { id: 'polymarket', name: 'Polymarket (global)', type: 'exchange', state: 'reference', note: 'Reference price only; not a venue for US users and never linked.' },
     { id: 'riot', name: 'Riot developer API', type: 'stats', state: env.RIOT_API_KEY ? 'key set, not used' : 'missing key', note: 'Serves public ranked games, not pro match results; nothing here reads it. Set RIOT_API_KEY only if a ranked-play feature is built.' },
   ];
 }
 
-module.exports = { DEFAULTS, parseSchedule, loadSeed, loadBacktest, kalshiPrice, polymarketProb, parsePmusEvents, pmusPrice, pairList, pairBoard, buildMatchup, summarize, createMatchupEngine, providers, SEED, BACKTEST };
+module.exports = { DEFAULTS, parseSchedule, loadSeed, loadBacktest, kalshiPrice, polymarketProb, parsePmusEvents, pmusPrice, pairList, pairBoard, seriesFromGames, venueUpcoming, findResult, buildMatchup, summarize, createMatchupEngine, providers, SEED, BACKTEST };

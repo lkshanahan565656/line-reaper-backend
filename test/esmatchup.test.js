@@ -289,3 +289,96 @@ test('league strength on the shipped seed follows the international record: LCK,
   const dk = R.find('Dplus KIA');
   assert.ok(dk.history.length > 10 && !dk.history.some(h => /wsci/i.test(h.lg || '')));
 });
+
+// ── CS2 and VALORANT ──
+test('series from the ratings refresh: map games become series, CS2 keeps tier and id, VALORANT gets midday UTC', () => {
+  const t = Date.parse('2026-10-24T14:10:00Z');
+  const cs = D.seriesFromGames([
+    { a: 'Spirit', b: 'MOUZ', aWon: true, t, id: 9, tier: 's', bo: 3 },
+    { a: 'Spirit', b: 'MOUZ', aWon: false, t, id: 9, tier: 's', bo: 3 },
+    { a: 'Spirit', b: 'MOUZ', aWon: true, t, id: 9, tier: 's', bo: 3 },
+    { a: 'FaZe', b: 'NAVI', aWon: false, t: t + 1, tier: null },
+  ], 'CS2');
+  assert.equal(cs.length, 2);
+  const sp = cs.find(s => s.a === 'Spirit');
+  assert.deepEqual([sp.id, sp.lg, sp.bo, sp.s1, sp.s2], ['bo3:9', 'CS2 S-tier', 3, 2, 1]);
+  assert.equal(cs.find(s => s.a === 'FaZe').lg, 'CS2 other');
+  const val = D.seriesFromGames([{ a: 'Sentinels', b: 'G2', aWon: true, t: Date.parse('2026-10-09T00:00:00Z'), id: '555' }, { a: 'Sentinels', b: 'G2', aWon: true, t: Date.parse('2026-10-09T00:00:00Z'), id: '555' }], 'VAL');
+  assert.deepEqual([val[0].id, val[0].t, val[0].s1, val[0].s2, val[0].bo], ['vlr:555', '2026-10-09T17:00:00.000Z', 2, 0, 3]);
+});
+
+test('venue schedule: Kalshi matches first, Polymarket US adds only matches Kalshi lacks; results found by names and time', () => {
+  const now = Date.parse('2026-10-25T06:00:00Z');
+  const cs = (start, a, b) => ({ ...boardMatch(start, a, b, { bid: 0.5, ask: 0.52 }, { bid: 0.47, ask: 0.5 }), game: 'CS2', tournament: 'BLAST' });
+  const board = [cs('2026-10-25T08:00:00Z', 'Team Spirit', 'TYLOO'), cs('2026-10-25T09:00:00Z', 'A', 'B'), { ...cs('2026-10-25T09:00:00Z', 'L1', 'L2'), game: 'LOL' }, cs('2026-11-20T09:00:00Z', 'Far', 'Away')];
+  const pm = D.parsePmusEvents([
+    pmEvent('cs2-ts-tyloo-2026-10-25', '2026-10-25T08:00:00Z', ['Spirit', 'TS'], ['TYLOO', 'TYL'], 0.8, 0.82),
+    pmEvent('cs2-vit-mglz-2026-10-25', '2026-10-25T11:00:00Z', ['Vitality', 'VIT'], ['TheMongolz', 'MGLZ'], 0.6, 0.62),
+  ], D.DEFAULTS, 'cs2');
+  assert.equal(pm[0].url, 'https://polymarket.us/sports/cs2/cs2-ts-tyloo-2026-10-25');
+  const up = D.venueUpcoming('CS2', board, pm, { now });
+  assert.deepEqual(up.map(u => [u.a, u.source]), [['Team Spirit', 'kalshi'], ['A', 'kalshi'], ['Vitality', 'polymarketus']]);
+  assert.equal(up[0].lg, 'BLAST');
+  const seriesList = [{ id: 'bo3:1', t: '2026-10-25T08:05:00Z', a: 'TYLOO', b: 'Spirit', s1: 0, s2: 2 }];
+  assert.deepEqual(D.findResult(seriesList, { start: '2026-10-25T08:00:00Z', teams: ['Team Spirit', 'TYLOO'] }), { s1: 2, s2: 0, id: 'bo3:1' });
+  assert.equal(D.findResult(seriesList, { start: '2026-10-27T08:00:00Z', teams: ['Team Spirit', 'TYLOO'] }), null);
+});
+
+test('CS2 engine: venues give the schedule, the ratings refresh the results; record freezes, then grades from a later result', async () => {
+  const seed = league('CS2 S-tier', ['Spirit', 'Vitality', 'MOUZ', 'FaZe'], 4, Date.parse('2026-09-01T00:00:00Z'));
+  let now = Date.parse('2026-10-25T07:30:00Z');
+  const board = [{ ...boardMatch('2026-10-25T08:00:00Z', 'Team Spirit', 'Vitality', { bid: 0.6, ask: 0.62 }, { bid: 0.37, ask: 0.4 }), game: 'CS2', bestOf: 3 }];
+  let raw = { games: [{ a: 'MOUZ', b: 'FaZe', aWon: true, t: Date.parse('2026-10-24T10:00:00Z'), id: 77, tier: 's', bo: 1 }], at: 1 };
+  const http = { async get(url) { assert.ok(url.includes('/v2/leagues/cs2/events')); return { data: { events: [pmEvent('cs2-ts-vit', '2026-10-25T08:00:00Z', ['Spirit', 'TS'], ['Vitality', 'VIT'], 0.58, 0.6)] } }; } };
+  const store = memStore();
+  const E = D.createMatchupEngine({ game: 'CS2', http, seed, board: () => board, results: () => raw, store, now: () => now, log: {} });
+  await E.refresh();
+  const st = E.status();
+  assert.equal(st.game, 'CS2');
+  assert.equal(st.fetched, 1);
+  assert.equal(st.upcoming, 1);
+  assert.deepEqual(st.providers.map(p => p.id), ['bo3gg', 'kalshi', 'polymarketus']);
+  const [mu] = E.list();
+  assert.equal(mu.game, 'CS2');
+  assert.equal(mu.model.priced, true);
+  assert.ok(mu.model.win > 0.5, 'Spirit beat everyone in the seed');
+  assert.ok(mu.markets.kalshi && mu.markets.pmus);
+  assert.equal(mu.markets.pmus.url, 'https://polymarket.us/sports/cs2/cs2-ts-vit');
+  assert.equal(store.rows.size, 1);
+  const id = [...store.rows.keys()][0];
+  assert.ok(id.startsWith('cs2:'));
+  // the same refresh's games again add nothing; a new read with the result grades it
+  await E.refresh();
+  assert.equal(E.status().fetched, 1);
+  now = Date.parse('2026-10-25T12:00:00Z');
+  raw = { games: [...raw.games, { a: 'Vitality', b: 'Spirit', aWon: false, t: Date.parse('2026-10-25T08:00:00Z'), id: 78, tier: 's', bo: 3 }, { a: 'Vitality', b: 'Spirit', aWon: false, t: Date.parse('2026-10-25T08:00:00Z'), id: 78, tier: 's', bo: 3 }], at: 2 };
+  await E.refresh();
+  const g = store.rows.get(id);
+  assert.equal(g.status, 'graded');
+  assert.equal(g.y, 1);
+  assert.equal(g.result, '2-0');
+  assert.equal(E.record().summary.graded, 1);
+});
+
+test('LoL and CS2 engines share a store without reading each other\'s rows', async () => {
+  const store = memStore();
+  store.rows.set('lol:1', { id: 'lol:1', status: 'open', start: '2026-10-01T00:00:00Z', matchId: '1' });
+  const E = D.createMatchupEngine({ game: 'CS2', http: { async get() { throw new Error('down'); } }, seed: [], board: () => [], results: () => null, store, log: {} });
+  await E.refresh();
+  assert.equal(E.record().rows.length, 0);
+  assert.match(E.status().error, /not read yet/);
+});
+
+test('CS2 and VALORANT seeds and backtests ship with the repo, each saying Kalshi is better', () => {
+  const { GAMES } = require('../esgames');
+  for (const g of ['CS2', 'VAL']) {
+    const seed = D.loadSeed(GAMES[g].seed);
+    assert.ok(seed.length > (g === 'CS2' ? 40000 : 8000), `${g} seed ${seed.length}`);
+    assert.ok(seed.every(s => s.id && s.a && s.b && s.s1 != null && s.s2 != null));
+    const bt = D.loadBacktest(GAMES[g].backtest);
+    assert.equal(bt.game, g);
+    assert.ok(bt.kalshi['T-60'].n > 500);
+    assert.ok(bt.kalshi['T-60'].logLoss.kalshi < bt.kalshi['T-60'].logLoss.model);
+    assert.match(bt.verdict, /Kalshi's price beats the model/);
+  }
+});

@@ -4216,10 +4216,17 @@ const esportsEdgeSeen = new Map();
 // ESPORTS_MATCHUPS=off turns it off.
 const esmatchupdata = require('./esmatchupdata');
 const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
-const matchupEngine = MATCHUPS_ON ? esmatchupdata.createMatchupEngine({
-  http: upstream, board: () => esportsBoard.state.matches, pmusOn: pmus.enabledFromEnv(),
-  store: resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))),
-}) : null;
+// CS2 and VALORANT run on the same engine (esgames.js): the venues list the
+// matches, the ratings refresh's bo3.gg / vlr.gg reads give the results.
+// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL).
+const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))) : null;
+const MATCHUP_GAMES = String(process.env.ESPORTS_MATCHUPS_GAMES || 'LOL,CS2,VAL').toUpperCase().split(/[\s,]+/).filter(g => ['LOL', 'CS2', 'VAL'].includes(g));
+const RAW_OF = { CS2: 'CS', VAL: 'VAL' };
+const matchupEngines = Object.fromEntries((MATCHUPS_ON ? MATCHUP_GAMES : []).map(game => [game, esmatchupdata.createMatchupEngine({
+  game, http: upstream, board: () => esportsBoard.state.matches, pmusOn: pmus.enabledFromEnv(), store: matchupStore,
+  results: RAW_OF[game] ? () => ratingsState.raw?.[RAW_OF[game]] || null : null,
+})]));
+const matchupEngine = matchupEngines.LOL || null;
 // Every board edge is logged and graded on closing-line value like the +EV
 // screener: the close is the all-source fair price at the match's start.
 const esportsEdgeTracker = createEvTracker({
@@ -4632,7 +4639,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.160.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.161.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5144,10 +5151,14 @@ app.get('/api/esports/matches', (req, res) => {
     rules: { edgeMin: esboard.DEFAULTS.edgeMin, ...ESPORTS_OPTS, alertMin: ESPORTS_ALERT_MIN },
   });
 });
-// ── LoL matchups (head-to-head engine) ──
-const MATCHUP_NOTE = "Our own model: team ratings from every finished LoL series, a series-shape adjustment and a small head-to-head term. It is a model, not a proven edge: in the walk-forward backtest Kalshi's price beat it, and betting its side lost after fees.";
-function matchupBacktestSummary() {
-  const b = matchupEngine?.state.backtest;
+// ── matchups (head-to-head engine): LoL, CS2, VALORANT ──
+const GAME_WORD = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
+const matchupNote = game => `Our own model: team ratings from every finished ${GAME_WORD[game] || game} series, a series-shape adjustment and a small head-to-head term. It is a model, not a proven edge: in the walk-forward backtest Kalshi's price beat it, and betting its side lost after fees.`;
+const MATCHUP_NOTE = matchupNote('LOL');
+// ?game= picks the engine (default LoL); null when that game is off
+const engineFor = req => matchupEngines[String(req.query.game || 'LOL').toUpperCase()] || null;
+function matchupBacktestSummary(engine = matchupEngine) {
+  const b = engine?.state.backtest;
   if (!b) return null;
   const k = b.kalshi?.['T-60'], k30 = b.kalshi?.['T-30'];
   return {
@@ -5157,45 +5168,52 @@ function matchupBacktestSummary() {
     kalshi30: k30 ? { n: k30.n, logLoss: k30.logLoss } : null,
   };
 }
-const matchupOff = res => res.status(503).json({ error: 'Matchups are off (ESPORTS_MATCHUPS=off).' });
+const matchupOff = (res, req) => res.status(503).json({ error: MATCHUPS_ON ? `No matchup engine for ${String(req?.query?.game || 'LOL').toUpperCase()} (ESPORTS_MATCHUPS_GAMES=${MATCHUP_GAMES.join(',')}).` : 'Matchups are off (ESPORTS_MATCHUPS=off).', games: Object.keys(matchupEngines) });
 app.get('/api/esports/matchups', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  const game = E.status().game;
   const days = Math.min(14, Math.max(1, parseInt(req.query.days, 10) || 8));
   const league = req.query.league ? String(req.query.league) : null;
-  const matchups = matchupEngine.list({ days, league, board: esportsBoardFor(req) });
+  const matchups = E.list({ days, league, board: esportsBoardFor(req) });
   res.json({
-    game: 'LOL', label: 'model', note: MATCHUP_NOTE, status: matchupEngine.status(), count: matchups.length,
-    priced: matchups.filter(m => m.model.priced).length, withKalshi: matchups.filter(m => m.compare).length,
-    leagues: [...new Set(matchupEngine.state.upcoming.map(u => u.lg).filter(Boolean))].sort(),
-    matchups, backtest: matchupBacktestSummary(), record: matchupEngine.record().summary, licence: licenceState(req),
+    game, label: 'model', note: matchupNote(game), games: Object.keys(matchupEngines), status: E.status(), count: matchups.length,
+    priced: matchups.filter(m => m.model.priced).length, withKalshi: matchups.filter(m => m.markets?.kalshi).length,
+    leagues: [...new Set(matchups.map(u => u.league).filter(Boolean))].sort(),
+    matchups, backtest: matchupBacktestSummary(E), record: E.record().summary, licence: licenceState(req),
   });
 });
 app.get('/api/esports/matchups/backtest', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
-  res.json(matchupEngine.state.backtest || { error: 'No backtest file (seeds/lol-matchup-backtest.json).' });
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  res.json(E.state.backtest || { error: `No backtest file for ${E.status().game}.` });
 });
 app.get('/api/esports/matchups/record', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
-  res.json({ note: 'Model number frozen 10-45 minutes before each LoL series with a Kalshi price, Kalshi followed to the start, graded on the result. Model view, not a bet.', ...matchupEngine.record() });
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  res.json({ note: `Model number frozen 10-45 minutes before each ${GAME_WORD[E.status().game]} series with a Kalshi price, Kalshi followed to the start, graded on the result. Model view, not a bet.`, ...E.record() });
 });
 app.get('/api/esports/matchups/ratings', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
-  const R = matchupEngine.ratings();
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  const R = E.ratings();
   const league = req.query.league ? String(req.query.league) : null;
-  res.json({ game: 'LOL', label: 'model', leagues: R.leagues(), teams: R.table({ league }).slice(0, 300), opts: R.opts });
+  res.json({ game: E.status().game, label: 'model', leagues: R.leagues(), teams: R.table({ league }).slice(0, 300), opts: R.opts });
 });
 app.get('/api/esports/matchups/team/:name', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
-  const R = matchupEngine.ratings();
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  const R = E.ratings();
   const tm = R.find(req.params.name);
-  if (!tm) return res.status(404).json({ error: 'No such team in our LoL data.' });
-  res.json({ game: 'LOL', label: 'model', team: R.teamView(tm) });
+  if (!tm) return res.status(404).json({ error: `No such team in our ${GAME_WORD[E.status().game]} data.` });
+  res.json({ game: E.status().game, label: 'model', team: R.teamView(tm) });
 });
 app.get('/api/esports/matchups/:id', (req, res) => {
-  if (!matchupEngine) return matchupOff(res);
-  const m = matchupEngine.get(req.params.id, { board: esportsBoardFor(req) });
-  if (!m) return res.status(404).json({ error: 'No upcoming LoL series with that id.' });
-  res.json({ game: 'LOL', label: 'model', note: MATCHUP_NOTE, matchup: m });
+  const E = engineFor(req);
+  if (!E) return matchupOff(res, req);
+  const m = E.get(req.params.id, { board: esportsBoardFor(req) });
+  if (!m) return res.status(404).json({ error: `No upcoming ${GAME_WORD[E.status().game]} series with that id.` });
+  res.json({ game: E.status().game, label: 'model', note: matchupNote(E.status().game), matchup: m });
 });
 // one build at a time: a page load and a refresh share a run in flight.
 // Two builds at once (new stats landing during a lines rebuild) could finish
@@ -7193,7 +7211,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.160.1',
+  version: '3.161.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7267,6 +7285,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   alerts: { recent: alerter.recent(200).length, liveListeners: alerter.listenerCount(), webhook: webhook.enabled },
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
+  matchupGames: Object.fromEntries(Object.entries(matchupEngines).map(([g, E]) => { const st = E.status(); return [g, { ready: st.ready, series: st.series, teams: st.teams, upcoming: st.upcoming, updated: st.updated, error: st.error, pmus: st.pmus }]; })),
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
   owls: !licences.isOn('owls') ? 'paused: waiting on data permission' : owlsDisabled() ? 'DISABLED — dead key (repeated 403s)' : 'active',
@@ -7289,7 +7308,7 @@ const jobLabel = (expr, fn) => `${expr} ${String(fn).replace(/^\s*(async\s*)?\(\
 const schedule = (expr, fn) => cron.schedule(expr, ops.job(jobLabel(expr, fn), fn), { recoverMissedExecutions: true });
 
 // LoL matchups: schedule, results and the forward record, every 10 minutes.
-if (matchupEngine) schedule('3,13,23,33,43,53 * * * *', () => matchupEngine.refresh().catch(() => {}));
+for (const E of Object.values(matchupEngines)) schedule('3,13,23,33,43,53 * * * *', () => E.refresh().catch(() => {}));
 // Team ratings for match context, every 6 hours.
 schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
@@ -7454,7 +7473,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
       .then(() => refreshRatings(axios, ratingsState, console, ratingsOpts)).then(() => esPicksRebuild()).catch(()=>{}), 25000);
     setTimeout(() => runTailJob('esports', scanEsportsBoard), 10000);
     setTimeout(() => refreshH2H().then(() => esPicksRebuild()).catch(() => {}), 35000);
-    if (matchupEngine) setTimeout(() => matchupEngine.refresh().catch(() => {}), 40000);
+    for (const E of Object.values(matchupEngines)) setTimeout(() => E.refresh().catch(() => {}), 40000);
     // sharp tail: leaderboard wallets to score (the crons take it from there)
     setTimeout(() => runTailJob('candidates', () => tailEngine.refreshCandidates()), 30000);
     console.log('Startup complete');
@@ -7475,7 +7494,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, matchupEngine, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,

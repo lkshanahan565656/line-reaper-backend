@@ -1711,11 +1711,12 @@ body.no-help .clv-info { display:none; }
   <div class="esm-bar" style="margin:4px 0 12px">
     <button class="sport-chip" id="esModeMatches" onclick="setEsMode('matches')">MATCHES</button>
     <button class="sport-chip" id="esModeProps" onclick="setEsMode('props')">PLAYER PROPS</button>
-    <button class="sport-chip" id="esModeMatchups" onclick="setEsMode('matchups')">LOL MATCHUPS</button>
+    <button class="sport-chip" id="esModeMatchups" onclick="setEsMode('matchups')">MATCHUPS</button>
   </div>
 
   <div id="esMatchupsPane" style="display:none">
-    <div class="esm-intro">Every upcoming League of Legends series, rated by <b>our own model</b>: team ratings from every finished series since 2024 (lolesports results), league strength learned from international games, how often favourites sweep, and a small head-to-head term. Each matchup shows why the model says what it says, and Kalshi's price next to it.</div>
+    <div class="esm-bar" id="emuGames"></div>
+    <div class="esm-intro" id="emuIntro"></div>
     <div id="emuVerdict"></div>
     <div class="esm-bar" id="emuLeagues"></div>
     <div id="emuSummary" class="esm-summary"></div>
@@ -4878,7 +4879,13 @@ function renderArbTool() {
 // ─── ESPORTS: MATCH BOARD ────────────────────────────────────────────────────
 const esmState = { mode: lsGet('lr_es_mode') || 'matches', data: null, game: lsGet('lr_esm_game') || 'ALL', edgesOnly: false, hideLive: lsGet('lr_esm_live') === '1', open: new Set(), loading: false, at: 0 };
 // LoL head-to-head matchups (model): see loadEsMatchups below
-const emuState = { data: null, at: 0, loading: false, league: lsGet('lr_emu_league') || 'ALL', open: new Set(), ratings: null };
+const EMU_GAMES = { LOL: 'LoL', CS2: 'CS2', VAL: 'VALORANT' };
+const EMU_INTRO = {
+  LOL: "Every upcoming League of Legends series, rated by <b>our own model</b>: team ratings from every finished series since 2024 (lolesports results), league strength learned from international games, how often favourites sweep, and a small head-to-head term. Each matchup shows why the model says what it says, with Kalshi's and Polymarket US's prices next to it.",
+  CS2: "Every CS2 match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 42,000+ finished series since 2024 (bo3.gg results), new teams starting at the level of the events they play, how often favourites sweep, and a small head-to-head term, next to both venues' prices.",
+  VAL: "Every VALORANT match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 8,000+ finished series since mid-2024 (vlr.gg results), how often favourites sweep, and a small head-to-head term, next to both venues' prices. Fewer results than CS2, so wider ranges.",
+};
+const emuState = { game: EMU_GAMES[lsGet('lr_emu_game')] ? lsGet('lr_emu_game') : 'LOL', data: null, at: 0, loading: false, league: lsGet('lr_emu_league') || 'ALL', open: new Set(), ratings: null };
 function setEsMode(mode, fromTab) {
   esmState.mode = mode === 'props' ? 'props' : mode === 'matchups' ? 'matchups' : 'matches';
   lsSet('lr_es_mode', esmState.mode);
@@ -5042,12 +5049,16 @@ function renderEsMatches() {
 
 // ─── ESPORTS: LOL HEAD-TO-HEAD MATCHUPS (model) ──────────────────────────────
 async function loadEsMatchups() {
+  renderEmuGames();
   if (emuState.loading) return;
   emuState.loading = true;
   try {
-    const r = await fetch(`${BACKEND_URL}/api/esports/matchups`);
+    const game = emuState.game;
+    const r = await fetch(`${BACKEND_URL}/api/esports/matchups?game=${encodeURIComponent(game)}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    emuState.data = await r.json();
+    const d = await r.json();
+    if (game !== emuState.game) return;   // switched while it loaded
+    emuState.data = d;
     emuState.at = Date.now();
     renderEsMatchups();
   } catch (e) {
@@ -5056,6 +5067,21 @@ async function loadEsMatchups() {
   } finally { emuState.loading = false; }
 }
 setInterval(() => { if (document.getElementById('page-esports')?.classList.contains('active') && esmState.mode === 'matchups') loadEsMatchups(); }, 180e3);
+function setEmuGame(g) {
+  if (!EMU_GAMES[g] || g === emuState.game) return;
+  emuState.game = g; lsSet('lr_emu_game', g);
+  emuState.data = null; emuState.ratings = null; emuState.league = 'ALL'; emuState.ratingScope = null;
+  const box = document.getElementById('emuRatingsBox'); if (box) box.open = false;
+  renderEmuGames();
+  document.getElementById('emuContent').innerHTML = '<div class="empty-wrap"><div class="empty-big" style="font-size:18px">Loading matchups…</div></div>';
+  ['emuVerdict', 'emuLeagues', 'emuSummary'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+  emuState.loading = false; loadEsMatchups();
+}
+function renderEmuGames() {
+  const el = document.getElementById('emuGames'), intro = document.getElementById('emuIntro');
+  if (el) el.innerHTML = Object.entries(EMU_GAMES).map(([g, l]) => `<button class="sport-chip ${emuState.game === g ? 'active' : ''}" onclick="setEmuGame('${g}')">${l}</button>`).join('');
+  if (intro) intro.innerHTML = EMU_INTRO[emuState.game] || '';
+}
 function setEmuLeague(l) { emuState.league = l; lsSet('lr_emu_league', l); renderEsMatchups(); }
 function toggleEmuOpen(id) { emuState.open.has(id) ? emuState.open.delete(id) : emuState.open.add(id); renderEsMatchups(); }
 const emuPts = d => (d == null ? '—' : `${d >= 0 ? '+' : ''}${(Math.round(d * 1000) / 10).toFixed(1)}`);
@@ -5073,6 +5099,7 @@ function emuHist(t) {
 }
 function emuCard(mu) {
   const md = mu.model || {}, k = mu.markets?.kalshi, u = mu.markets?.pmus, c = mu.compare, tv = mu.teamViews || [];
+  const gl = EMU_GAMES[mu.game] || 'LoL';
   const open = emuState.open.has(mu.id);
   const conf = md.confidence || 'insufficient';
   const confLabel = conf === 'ok' ? 'MODEL' : conf === 'low' ? 'LOW CONFIDENCE' : 'NO MODEL PRICE';
@@ -5103,7 +5130,7 @@ function emuCard(mu) {
     ${mu.markets?.polymarketRef != null ? `<div class="esm-sub">Polymarket's global book (reference only, not a US venue): ${escEs(mu.teams[0].name)} ${esmPct(mu.markets.polymarketRef)}</div>` : ''}
     ${k?.url || u?.url ? `<div class="esm-sub">${k?.url ? `<a class="esm-more" style="margin-left:0;text-decoration:none" href="${escEs(k.url)}" target="_blank" rel="noopener">Open on Kalshi</a>` : ''}${u?.url ? `<a class="esm-more" style="margin-left:${k?.url ? '8px' : '0'};text-decoration:none" href="${escEs(u.url)}" target="_blank" rel="noopener">Open on Polymarket US</a>` : ''}</div>` : ''}` : '';
   return `<div class="esm-card">
-    <div class="esm-top"><span class="esm-game">LoL</span><span class="emu-conf ${conf}">${confLabel}</span><span>${escEs(mu.league || '')}${mu.block ? ` · ${escEs(mu.block)}` : ''}${mu.bestOf ? ` · Bo${mu.bestOf}` : ''}</span><span class="esm-time">${esmWhen(mu.start)}</span></div>
+    <div class="esm-top"><span class="esm-game">${escEs(gl)}</span><span class="emu-conf ${conf}">${confLabel}</span><span>${escEs(mu.league || '')}${mu.block ? ` · ${escEs(mu.block)}` : ''}${mu.bestOf ? ` · Bo${mu.bestOf}` : mu.bestOfAssumed ? ` · Bo${mu.bestOfAssumed}?` : ''}</span><span class="esm-time">${esmWhen(mu.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
     <div class="esm-sub">${sub.join('')}<button class="esm-more" onclick="toggleEmuOpen('${escEs(mu.id)}')">${open ? 'Hide' : 'Why'}</button></div>
     ${detail}
@@ -5112,6 +5139,7 @@ function emuCard(mu) {
 function renderEsMatchups() {
   const d = emuState.data;
   const vEl = document.getElementById('emuVerdict'), lEl = document.getElementById('emuLeagues'), sEl = document.getElementById('emuSummary'), el = document.getElementById('emuContent');
+  renderEmuGames();
   if (!d || !el) return;
   vEl.innerHTML = emuVerdictHtml(d);
   const all = d.matchups || [];
@@ -5123,8 +5151,8 @@ function renderEsMatchups() {
     `<button class="sport-chip" onclick="loadEsMatchups()" style="margin-left:auto">Refresh</button>`].join('');
   const list = all.filter(m => emuState.league === 'ALL' || (m.league || 'Other') === emuState.league);
   const st = d.status || {};
-  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.kalshi).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.pmus).length}</b><span>With PM US</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${st.error ? `<div class="esm-note">Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.</div>` : ''}`;
-  if (!list.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No upcoming LoL series</div><div class="empty-sub">${st.ready ? 'lolesports lists nothing in the next week.' : 'The schedule loads a minute after a restart.'}</div></div>`; return; }
+  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.kalshi).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.pmus).length}</b><span>With PM US</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${st.error ? `<div class="esm-note">${d.game === 'LOL' ? `Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.` : `New results: ${escEs(st.error)}. Ratings use everything up to ${st.lastResult ? new Date(st.lastResult).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'the seed'}.`}</div>` : ''}`;
+  if (!list.length) { const gl = EMU_GAMES[d.game] || 'LoL'; el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No upcoming ${escEs(gl)} series</div><div class="empty-sub">${!st.ready ? 'The schedule loads a minute after a restart.' : d.game === 'LOL' ? 'lolesports lists nothing in the next week.' : 'Neither Kalshi nor Polymarket US lists one in the next week.'}</div></div>`; return; }
   let html = '', day = null;
   for (const m of list) {
     const dd = m.state === 'inProgress' ? 'Live now' : m.start ? new Date(m.start).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }) : 'Time TBD';
@@ -5137,14 +5165,18 @@ async function loadEmuRatings() {
   const el = document.getElementById('emuRatings');
   if (!el) return;
   try {
-    if (!emuState.ratings) { const r = await fetch(`${BACKEND_URL}/api/esports/matchups/ratings`); if (!r.ok) throw new Error(`HTTP ${r.status}`); emuState.ratings = await r.json(); }
+    const game = emuState.game;
+    if (!emuState.ratings) { const r = await fetch(`${BACKEND_URL}/api/esports/matchups/ratings?game=${encodeURIComponent(game)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d0 = await r.json(); if (game !== emuState.game) return; emuState.ratings = d0; }
     const d = emuState.ratings;
-    const MAJOR = ['LCK', 'LPL', 'LEC', 'LCS', 'LTA North', 'LTA South', 'LCP', 'CBLOL', 'PCS', 'VCS', 'LJL'];
-    const scope = emuState.ratingScope || 'major';
+    const MAJOR = game === 'CS2' ? ['CS2 S-tier', 'CS2 A-tier'] : ['LCK', 'LPL', 'LEC', 'LCS', 'LTA North', 'LTA South', 'LCP', 'CBLOL', 'PCS', 'VCS', 'LJL'];
+    const scope = emuState.ratingScope || (game === 'VAL' ? 'all' : 'major');
+    const intro = game === 'CS2' ? "CS2 has no leagues: bo3.gg's event tier stands in, so a team new to our data starts at the level of the events it plays (S-tier 1800, A 1640, B 1470, C 1350) and results move it from there. Ratings are on a chess-style scale: 100 points is about a 64% map."
+      : game === 'VAL' ? "VALORANT results come without a league or tier here, so every team starts at the same rating and results alone sort them. Ratings are on a chess-style scale: 100 points is about a 64% map."
+      : 'Each league starts at a prior set from its international record; cross-league results at international events move it from there ("learned", capped at 150). Ratings are on a chess-style scale: 100 points is about a 64% map. Regional leagues (LFL, Prime League, ...) only meet each other at EMEA Masters, so their teams can\'t be ranked against the LEC or LCK with any confidence.';
     const teams = (d.teams || []).filter(t => scope === 'all' || (scope === 'major' ? MAJOR.includes(t.home) : t.home === scope));
-    const scopes = ['major', 'all', ...(d.leagues || []).map(l => l.league)];
-    el.innerHTML = `<div class="esm-sub" style="margin-top:6px">Each league starts at a prior set from its international record; cross-league results move it from there ("learned", capped at 200). Ratings are on a chess-style scale: 100 points is about a 64% map. Regional leagues (LFL, Prime League, ...) only meet each other at EMEA Masters, so their teams can't be ranked against the LEC or LCK with any confidence.</div>
-      <div class="esm-bar" style="margin-top:8px"><label class="es-field" style="flex:0 1 220px"><span>Teams from</span><select onchange="emuState.ratingScope=this.value;loadEmuRatings()">${scopes.map(x => `<option value="${escEs(x)}" ${x === scope ? 'selected' : ''}>${x === 'major' ? 'Major leagues' : x === 'all' ? 'Every league' : escEs(x)}</option>`).join('')}</select></label></div>
+    const scopes = game === 'VAL' ? ['all'] : ['major', 'all', ...(d.leagues || []).map(l => l.league)];
+    el.innerHTML = `<div class="esm-sub" style="margin-top:6px">${intro}</div>
+      <div class="esm-bar" style="margin-top:8px"><label class="es-field" style="flex:0 1 220px"><span>Teams from</span><select onchange="emuState.ratingScope=this.value;loadEmuRatings()">${scopes.map(x => `<option value="${escEs(x)}" ${x === scope ? 'selected' : ''}>${x === 'major' ? (game === 'CS2' ? 'S and A tier' : 'Major leagues') : x === 'all' ? (game === 'LOL' ? 'Every league' : 'Every team') : escEs(x)}</option>`).join('')}</select></label></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>League</th><th>Avg</th><th>Prior</th><th>Learned</th><th>Teams</th></tr>${(d.leagues || []).slice(0, 30).map(l => `<tr><td>${escEs(l.league)}</td><td>${l.avg}</td><td>${l.prior ?? '—'}</td><td>${l.learned >= 0 ? '+' : ''}${l.learned}</td><td>${l.teams}</td></tr>`).join('')}</table></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>#</th><th>Team</th><th>League</th><th>Rating</th><th>RD</th><th>Maps</th></tr>${teams.slice(0, 60).map((t, i) => `<tr><td>${i + 1}</td><td>${escEs(t.name)}</td><td>${escEs(t.home || '—')}</td><td>${t.rating}</td><td>${t.rd}</td><td>${t.maps}</td></tr>`).join('')}</table></div>`;
   } catch (e) { el.innerHTML = `<div class="esm-sub">Couldn't load ratings: ${escEs(e.message)}</div>`; }
