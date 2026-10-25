@@ -4,7 +4,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   let st = null;
   // the new version, then CS2 results folded in (ratings refresh at boot, matchups every 10 min)
   for (let i = 0; i < 50; i++) {
-    try { st = await (await fetch(B + '/api/status')).json(); const g = st.matchupGames || {}; if (st.version === '3.161.0' && g.CS2 && g.VAL && !g.CS2.error && !g.VAL.error) break; } catch (e) { console.error('status', e.message); }
+    try { st = await (await fetch(B + '/api/status')).json(); const g = st.matchupGames || {}; if (st.version === '3.161.0' && g.CS2 && g.VAL && g.CS2.updated && g.VAL.updated && !g.CS2.error && !g.VAL.error && (st.esports?.counts || true)) break; } catch (e) { console.error('status', e.message); }
     await sleep(20000);
   }
   const out = { at: new Date().toISOString(), version: st && st.version, matchupGames: st && st.matchupGames, games: {} };
