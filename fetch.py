@@ -17,7 +17,7 @@ C='https://sports.core.api.espn.com/v2/sports/football/leagues/college-football'
 jobs=[(y,2,w) for y in (2024,2025,2026) for w in range(1,17)]+[(y,3,1) for y in (2024,2025)]
 def sb(j):
     y,st,w=j
-    d=get(f"{S}/scoreboard?groups=80&year={y}&seasontype={st}&week={w}&limit=300"); out=[]
+    d=get(f"{S}/scoreboard?groups=80&dates={y}&seasontype={st}&week={w}&limit=300"); out=[]
     if not d: return out
     for e in json.loads(d).get('events',[]):
         c=e['competitions'][0]
