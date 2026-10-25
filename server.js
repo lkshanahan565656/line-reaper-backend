@@ -7372,7 +7372,7 @@ schedule('20 */2 * * * *', () => refreshPinnacleProps().catch(e => { pinPropsSta
 schedule('50 * * * * *', () => (new Date().getMinutes() % 2 ? refreshEsBooks().catch(e => { esBooksState.errors = [e.message]; }) : runEsBooksScreen()));
 schedule('40 */10 * * * *', () => consensusMoves.prune());
 // BetRivers' soccer player prices (the reader waits 10 minutes between passes) and a week of NHL and soccer coverage
-schedule('37 1-59/2 * * * *', () => soccerBooks.tick().catch(() => {}));
+schedule('37 */2 * * * *', () => soccerBooks.tick().catch(() => {}));
 schedule('45 7 * * * *', () => nhsCoverage.prune());
 // Kalshi player ladders for the pick'em props, a minute after the UD scrape
 schedule('1,6,11,16,21,26,31,36,41,46,51,56 * * * *', () => refreshKalshiProps().catch(() => {}));
