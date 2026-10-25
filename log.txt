@@ -1,0 +1,48 @@
+{
+ "scans": 69,
+ "settle": {
+  "due": 2,
+  "settled": 0
+ },
+ "record": {
+  "flagged": 2,
+  "open": 0,
+  "closeMissing": 0,
+  "graded": 2,
+  "of": 50,
+  "clv": 0.0113,
+  "clvT": 0.41,
+  "beatClose": 0.5,
+  "evAtFlag": 0.0488,
+  "results": 0,
+  "won": 0,
+  "lost": 0,
+  "profit": 0,
+  "expected": 0,
+  "z": null,
+  "verdict": "lead"
+ },
+ "byVenue": [
+  {
+   "key": "f1 kalshi winner",
+   "flagged": 2,
+   "open": 0,
+   "closeMissing": 0,
+   "graded": 2,
+   "of": 50,
+   "clv": 0.0113,
+   "clvT": 0.41,
+   "beatClose": 0.5,
+   "evAtFlag": 0.0488,
+   "results": 0,
+   "won": 0,
+   "lost": 0,
+   "profit": 0,
+   "expected": 0,
+   "z": null,
+   "verdict": "lead"
+  }
+ ]
+}
+kalshi winner Max Verstappen no cost 0.5175 fairFlag 0.5476 close 0.5091 clv -0.0162 closed 147m
+kalshi winner Charles Leclerc no cost 0.9347 fairFlag 0.9715 close 0.9711 clv 0.0389 closed 80m

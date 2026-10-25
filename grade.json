@@ -1,0 +1,870 @@
+{
+ "scans": 69,
+ "from": "2026-10-25T17:33:28.337Z",
+ "to": "2026-10-25T19:49:33.145Z",
+ "settle": {
+  "due": 2,
+  "settled": 0
+ },
+ "record": {
+  "flagged": 2,
+  "open": 0,
+  "closeMissing": 0,
+  "graded": 2,
+  "of": 50,
+  "clv": 0.0113,
+  "clvT": 0.41,
+  "beatClose": 0.5,
+  "evAtFlag": 0.0488,
+  "results": 0,
+  "won": 0,
+  "lost": 0,
+  "profit": 0,
+  "expected": 0,
+  "z": null,
+  "verdict": "lead"
+ },
+ "bySport": [
+  {
+   "key": "f1",
+   "flagged": 2,
+   "open": 0,
+   "closeMissing": 0,
+   "graded": 2,
+   "of": 50,
+   "clv": 0.0113,
+   "clvT": 0.41,
+   "beatClose": 0.5,
+   "evAtFlag": 0.0488,
+   "results": 0,
+   "won": 0,
+   "lost": 0,
+   "profit": 0,
+   "expected": 0,
+   "z": null,
+   "verdict": "lead"
+  }
+ ],
+ "byVenue": [
+  {
+   "key": "f1 kalshi winner",
+   "flagged": 2,
+   "open": 0,
+   "closeMissing": 0,
+   "graded": 2,
+   "of": 50,
+   "clv": 0.0113,
+   "clvT": 0.41,
+   "beatClose": 0.5,
+   "evAtFlag": 0.0488,
+   "results": 0,
+   "won": 0,
+   "lost": 0,
+   "profit": 0,
+   "expected": 0,
+   "z": null,
+   "verdict": "lead"
+  }
+ ],
+ "boards": [
+  {
+   "at": "2026-10-25T17:33:28.337Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:35:28.437Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:37:28.466Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:39:28.547Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:41:28.639Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:43:28.715Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:45:28.786Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:47:28.839Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:49:28.884Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:51:28.951Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:53:29.021Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:55:29.040Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T17:57:29.128Z",
+   "sides": 0,
+   "pos": 0,
+   "ev3": 0,
+   "byType": []
+  },
+  {
+   "at": "2026-10-25T17:59:29.220Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:01:29.309Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:03:29.384Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:05:29.391Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:07:29.479Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:09:29.527Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:11:29.610Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:13:29.700Z",
+   "sides": 0,
+   "pos": 0,
+   "ev3": 0,
+   "byType": []
+  },
+  {
+   "at": "2026-10-25T18:15:29.739Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:17:29.810Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:19:29.899Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:21:29.905Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:23:29.982Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:25:30.072Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:27:30.159Z",
+   "sides": 29,
+   "pos": 8,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:29:30.222Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:31:30.304Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:33:30.381Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:35:30.445Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:37:30.521Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:39:30.610Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:41:30.695Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:43:30.784Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:45:30.873Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:47:30.952Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:49:31.018Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:51:31.104Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:53:31.194Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:55:31.271Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:57:31.347Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T18:59:31.423Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:01:31.523Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:03:31.607Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:05:31.683Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:07:31.768Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 0,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:09:31.851Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:11:31.927Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:13:31.934Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:15:32.005Z",
+   "sides": 29,
+   "pos": 5,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:17:32.079Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:19:32.132Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:21:32.222Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:23:32.314Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:25:32.319Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:27:32.407Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:29:32.491Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:31:32.575Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:33:32.620Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:35:32.701Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:37:32.791Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:39:32.882Z",
+   "sides": 29,
+   "pos": 6,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:41:32.970Z",
+   "sides": 29,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:43:33.015Z",
+   "sides": 0,
+   "pos": 0,
+   "ev3": 0,
+   "byType": []
+  },
+  {
+   "at": "2026-10-25T19:45:33.072Z",
+   "sides": 31,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:47:33.105Z",
+   "sides": 31,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  },
+  {
+   "at": "2026-10-25T19:49:33.145Z",
+   "sides": 31,
+   "pos": 7,
+   "ev3": 1,
+   "byType": [
+    "kalshi:winner",
+    "polymarketus:winner"
+   ]
+  }
+ ],
+ "flags": [
+  {
+   "id": "kalshi|KXF1RACE-UNIS26-VER|no",
+   "kind": "exchange-outrights",
+   "sideKey": "kalshi|KXF1RACE-UNIS26-VER|no",
+   "venue": "kalshi",
+   "sport": "f1",
+   "type": "winner",
+   "scope": null,
+   "family": "outright",
+   "event": "United States Grand Prix Main Race Winner · United States Grand Prix 2026",
+   "exchangeEvent": "KXF1RACE-UNIS26",
+   "runner": "Max Verstappen",
+   "buy": "no",
+   "marketId": "KXF1RACE-UNIS26-VER",
+   "kalshiTwin": null,
+   "pinMarket": "1638621776",
+   "pinId": "1638621776",
+   "pinRunner": "Max Verstappen",
+   "pinAmerican": null,
+   "pinLimit": 500,
+   "margin": 0.2319,
+   "missing": 0.07,
+   "cutoff": "2026-10-25T20:00:00.000Z",
+   "flaggedAt": "2026-10-25T17:33:28.337Z",
+   "minsBefore": 147,
+   "price": 0.5,
+   "cost": 0.5175,
+   "contracts": 96,
+   "sized": "book",
+   "evAtFlag": 0.0582,
+   "fairAtFlag": 0.5476,
+   "fairPower": 0.5544,
+   "fairShin": 0.5476,
+   "tiers": {
+    "50": {
+     "cost": 0.5175,
+     "ev": 0.0582,
+     "full": true
+    },
+    "200": {
+     "cost": 0.5187,
+     "ev": 0.0557,
+     "full": true
+    },
+    "1000": {
+     "cost": 0.5368,
+     "ev": 0.0201,
+     "full": true
+    }
+   },
+   "fairLast": 0.5091,
+   "fairLastAt": "2026-10-25T19:45:33.072Z",
+   "status": "closed",
+   "savedAt": 1792957533072,
+   "closeFair": 0.5091,
+   "clv": -0.0162,
+   "resultTries": 1
+  },
+  {
+   "id": "kalshi|KXF1RACE-UNIS26-LEC|no",
+   "kind": "exchange-outrights",
+   "sideKey": "kalshi|KXF1RACE-UNIS26-LEC|no",
+   "venue": "kalshi",
+   "sport": "f1",
+   "type": "winner",
+   "scope": null,
+   "family": "outright",
+   "event": "United States Grand Prix Main Race Winner · United States Grand Prix 2026",
+   "exchangeEvent": "KXF1RACE-UNIS26",
+   "runner": "Charles Leclerc",
+   "buy": "no",
+   "marketId": "KXF1RACE-UNIS26-LEC",
+   "kalshiTwin": null,
+   "pinMarket": "1638621776",
+   "pinId": "1638621776",
+   "pinRunner": "Charles Leclerc",
+   "pinAmerican": null,
+   "pinLimit": 500,
+   "margin": 0.2333,
+   "missing": 0.07,
+   "cutoff": "2026-10-25T20:00:00.000Z",
+   "flaggedAt": "2026-10-25T18:39:30.610Z",
+   "minsBefore": 80,
+   "price": 0.93,
+   "cost": 0.9347,
+   "contracts": 53,
+   "sized": "book",
+   "evAtFlag": 0.0394,
+   "fairAtFlag": 0.9715,
+   "fairPower": 0.9715,
+   "fairShin": 0.9742,
+   "tiers": {
+    "50": {
+     "cost": 0.9347,
+     "ev": 0.0394,
+     "full": true
+    },
+    "200": {
+     "cost": 0.9346,
+     "ev": 0.0395,
+     "full": true
+    },
+    "1000": {
+     "cost": 0.9429,
+     "ev": 0.0303,
+     "full": true
+    }
+   },
+   "fairLast": 0.9711,
+   "fairLastAt": "2026-10-25T19:45:33.072Z",
+   "status": "closed",
+   "savedAt": 1792957533072,
+   "closeFair": 0.9711,
+   "clv": 0.0389,
+   "resultTries": 1
+  }
+ ]
+}
