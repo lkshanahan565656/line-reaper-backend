@@ -23,6 +23,7 @@
 // (compactGame, buildHistory, project, priceLine, expected, median).
 
 const { canonName } = require('./ev');
+const propcal = require('./propcal');
 
 const num = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
 const pair = v => String(v ?? '').split(/[/-]/).map(num);
@@ -268,9 +269,13 @@ function probOver(proj, stat, line, o = PARAMS) {
   return p == null ? null : Math.min(0.995, Math.max(0.005, p));
 }
 // { pOver, side, pSide, mean } at a line (half lines; a whole line's push is not split out)
+// v2: the raw P(over) goes through the per-stat calibration fitted on ESPN
+// BET's 2024-25 main lines (o.cal, propcal.js, shared with the NBA model); v1
+// params carry none and pass through (checks/cfb-model-v2-2026-10-25)
 function priceLine(proj, stat, line, o = PARAMS) {
-  const pOver = probOver(proj, stat, line, o);
-  if (pOver == null) return null;
+  const raw = probOver(proj, stat, line, o);
+  if (raw == null) return null;
+  const pOver = propcal.calibrate(raw, stat, o.cal);
   const side = pOver >= 0.5 ? 'Over' : 'Under';
   return { pOver: Math.round(pOver * 1e4) / 1e4, side, pSide: Math.round((side === 'Over' ? pOver : 1 - pOver) * 1e4) / 1e4, mean: Math.round(proj.mean[stat] * 10) / 10 };
 }

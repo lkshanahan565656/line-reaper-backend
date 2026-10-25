@@ -46,13 +46,30 @@ test('the CFB MODEL view prices an app line from the seed and never calls it an 
   assert.ok(row.apps.prizepicks.pOver > 0.9, 'half a yard is a near-certain Over for a starter');
   assert.ok(row.mean > 50);
   assert.ok(d.backtest && Array.isArray(d.backtest.lines) && d.backtest.lines.length > 0);
-  assert.match(d.backtest.verdict, /No edge/);
+  assert.match(d.backtest.verdict, /Bar not cleared/);
+  // v2: calibrated, each app's real payout, the record by version
+  assert.equal(d.version, 'v2');
+  assert.match(d.versionNote, /calibration/);
+  assert.ok('underdog' in d.record && 'prizepicks' in d.recordByVersion && 'underdog' in d.recordByVersion);
+  assert.equal(row.version, 'v2');
+  assert.ok(row.apps.prizepicks.breakEven > 0.55 && row.apps.prizepicks.breakEven < 0.551);
+  assert.ok(row.apps.prizepicks.ev > 0, 'a near-certain side is worth more than the 55% break-even');
+  assert.equal(row.bestPay.book, 'prizepicks');
   // the record's legs: a research kind of its own on PrizePicks, never the headline
   const flagged = srv.cfbModel.plays([{ key: row.key, sport: 'CFB', player: last.name, team: 'Home U', mkey: 'pass_yds', startTime: new Date(kick).toISOString(), books: { prizepicks: { line: 0.5 } } }]);
   assert.equal(flagged.length, 1);
   assert.equal(flagged[0].kind, 'cfb-model');
   assert.equal(flagged[0].research, true);
   assert.equal(flagged[0].play.side, 'Over');
+  assert.equal(flagged[0].play.modelVersion, 'v2');
+  // Underdog: logged on value at its real multiplier; a side with no multiplier read is never priced at 1x
+  const udRow = m => ({ key: row.key, sport: 'CFB', player: last.name, team: 'Home U', mkey: 'pass_yds', startTime: new Date(kick).toISOString(), books: { underdog: { line: 0.5, over: m, under: null } } });
+  const ud = srv.cfbModel.plays([udRow(1)]);
+  assert.equal(ud.length, 1);
+  assert.equal(ud[0].kind, 'ud-cfb-model');
+  assert.equal(ud[0].play.mult, 1);
+  assert.ok(ud[0].play.ev >= 5);
+  assert.equal(srv.cfbModel.plays([udRow(null)]).length, 0);
   const rec = await (await fetch(`${base}/api/props/record`)).json();
   assert.ok(rec.overall);
 });
