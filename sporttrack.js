@@ -88,7 +88,9 @@ function pinClose(b, start) {
 const THREE = new Set(['sharp3', 'p6-sharp3']);
 // and a combo one (points + rebounds and the rest, off the books and Pinnacle's parts)
 const COMBO = new Set(['combo', 'p6-combo']);
-const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO]);
+// the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
+const MODEL = new Set(['nba-model', 'p6-nba-model']);
+const OWN_ID = new Set(['shop-any', 'shop-pp', 'shop-p6', 'shop-mid', ...STALE, 'book-consensus', 'p6-book-consensus', ...THREE, ...COMBO, ...MODEL]);
 const idOf = (row, p, kind) => `${row.sport}|${canonName(row.player)}|${row.mkey}|${p.book}|${p.side}|${p.line}|${String(row.startTime || '').slice(0, 10)}${OWN_ID.has(kind) ? `|${kind}` : ''}`;
 const linesOf = row => Object.fromEntries(Object.entries(row.books || {}).map(([b, c]) => [CODE[b] || b, c.line]));
 
@@ -317,7 +319,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     const every = (await store.all()).filter(b => b.status !== 'void' && Date.parse(b.signalAt) >= cut);
     // research rows (gap-odd, gap-stale), the stale-line legs (stalelines.js),
     // the three-sharps legs and the book-fair legs are their own kinds, never the headline
-    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
+    const all = every.filter(b => !RESEARCH.has(b.kind) && !STALE.has(b.kind) && !THREE.has(b.kind) && !COMBO.has(b.kind) && !MODEL.has(b.kind) && !BOOK_FAIR.has(baseKind(b.kind)));
     const by = f => {
       const m = {};
       for (const b of all) (m[f(b)] ||= []).push(b);
@@ -336,4 +338,4 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
   return { record, grade, summary, list, ready: () => loaded, store };
 }
 
-module.exports = { COMBO, THREE, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };
+module.exports = { COMBO, THREE, MODEL, pinClose, pinLineOf, BOOK_FAIR, createSportTracker, legDecimal, fixUnderdogDecimal, idOf, CODE, closeState, CLOSE_FRESH_MS };

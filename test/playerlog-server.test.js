@@ -10,7 +10,7 @@ const path = require('path');
 
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'lr-playerlog-'));
 for (const k of ['DATABASE_URL', 'ODDS_API_KEY', 'OWLS_API_KEY', 'ALERT_WEBHOOK_URL', 'PAYWALL']) delete process.env[k];
-Object.assign(process.env, { TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'), ESPORTS_CALIBRATION: 'off' });
+Object.assign(process.env, { TRACKER_FILE: path.join(DIR, 'picks.json'), USERS_FILE: path.join(DIR, 'users.json'), EV_TRACK_FILE: path.join(DIR, 'ev.json'), ESPORTS_CALIBRATION: 'off', NBA_MODEL: 'off' });
 const axios = require('axios');
 axios.get = async () => { throw Object.assign(new Error('offline'), { response: { status: 503 } }); };
 axios.post = axios.get;
