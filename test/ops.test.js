@@ -86,3 +86,22 @@ test('loop counts gaps of 100, 250 and 500 ms with the jobs running', async () =
   assert.ok(loop.maxMs >= 250 && loop.maxMs < 500);
   assert.ok(loop.recent.some(g => g.ms >= 250 && g.jobs.includes('slow step')));
 });
+
+test('gc pauses are counted from start', async () => {
+  const ops = createOps({ sampleMs: 10, log: {} });
+  ops.start();
+  let junk = [];
+  for (let i = 0; i < 1e6; i++) junk.push({ i, s: 'x'.repeat(20) });
+  junk = null;
+  global.gc?.();
+  await new Promise(r => setTimeout(r, 50));
+  ops.stop();
+  const { gc } = ops.state();
+  assert.ok(gc.count >= 1 && gc.totalMs >= 0 && Array.isArray(gc.recent), JSON.stringify(gc));
+});
+
+test('the gc gauge is always in the state', () => {
+  const ops = createOps({ log: {} });
+  const { gc } = ops.state();
+  assert.deepEqual(Object.keys(gc).sort(), ['count', 'maxMs', 'over100', 'over250', 'over500', 'recent', 'totalMs']);
+});

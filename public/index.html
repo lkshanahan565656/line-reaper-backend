@@ -1952,7 +1952,7 @@ function bookLabel(key, short=false) {
 // ─── STATE ───────────────────────────────────────────────────────────────────
 // Odds API and Owls keys live on the backend now; the page never holds them.
 // apiKey stays as a truthy flag so the existing "is odds data available" checks work.
-let apiKey = 'backend';
+let apiKey = '';   // set to 'backend' once /api/features says the Odds API is on
 try { localStorage.removeItem('ww_apiKey'); } catch {}
 let currentSport = 'all';
 let allGames = [];
@@ -3743,9 +3743,24 @@ const LAY_ODDS_API = ['lines', 'shop', 'clv'];
 let layNoOddsApi = false;
 const layIsHidden = n => (n in layout.hidden ? !!layout.hidden[n] : layNoOddsApi && LAY_ODDS_API.includes(n));
 // resolves once we know whether the server has the paid Odds API: while it is
-// off nothing calls /api/odds-feed (each call would only come back 503)
-const featuresReady = fetch(`${BACKEND_URL}/api/features`).then(r => (r.ok ? r.json() : null)).then(f => {
-  if (!f || f.oddsApi !== false) return;
+// off, or not yet known, nothing calls /api/odds-feed (each call would only
+// come back 503). Right after a deploy the features read can fail, so it is
+// retried; until it answers the odds feed stays off, and a later answer of
+// "on" turns it back on.
+const readFeatures = async (tries = 4) => {
+  for (let i = 0; i < tries; i++) {
+    try { const r = await fetch(`${BACKEND_URL}/api/features`); if (r.ok) return await r.json(); } catch {}
+    if (i < tries - 1) await new Promise(res => setTimeout(res, 1000 * 2 ** i));
+  }
+  return null;
+};
+const featuresRecheck = () => setTimeout(() => readFeatures(1).then(f => {
+  if (!f) return featuresRecheck();
+  if (f.oddsApi !== false) { apiKey = 'backend'; loadData(); }
+}), 60000);
+const featuresReady = readFeatures().then(f => {
+  if (!f) { featuresRecheck(); return; }
+  if (f.oddsApi !== false) { apiKey = 'backend'; return; }
   layNoOddsApi = true;
   apiKey = '';
   if (!Object.keys(layTabs).length) return;
