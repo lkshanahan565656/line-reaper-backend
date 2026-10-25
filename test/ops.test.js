@@ -71,3 +71,18 @@ test('a CPU profile names the function that burned the time', async () => {
   assert.equal(s.busyPct, 80);
   assert.ok(s.top.some(r => r.fn === '(anonymous) x.js:5'));
 });
+
+test('loop counts gaps of 100, 250 and 500 ms with the jobs running', async () => {
+  const ops = createOps({ sampleMs: 10, log: {} });
+  ops.start();
+  // still running (awaiting) when the sampler wakes after the block
+  const busy = ops.job('slow step', async () => { const t = Date.now(); while (Date.now() - t < 300); await new Promise(r => setTimeout(r, 30)); });
+  await busy();
+  ops.stop();
+  const { loop } = ops.state();
+  assert.ok(loop.samples > 0 && loop.since);
+  assert.ok(loop.over100 >= 1 && loop.over250 >= 1, JSON.stringify(loop));
+  assert.equal(loop.over500, 0);
+  assert.ok(loop.maxMs >= 250 && loop.maxMs < 500);
+  assert.ok(loop.recent.some(g => g.ms >= 250 && g.jobs.includes('slow step')));
+});
