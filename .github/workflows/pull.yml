@@ -1,28 +1,25 @@
-name: diag-tennis
+name: diag-tennis-hist
 on:
   push:
-    branches: [diag-tennis]
+    branches: [diag-tennis-hist]
 permissions:
   contents: write
 jobs:
   pull:
     runs-on: ubuntu-latest
-    timeout-minutes: 170
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        part: ['k:all', 'pm:atp', 'pm:wta', 'res:espn', 'res:td', 'res:sack']
+        span: ['2016-01-01:2020-01-01', '2020-01-01:2024-01-01']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
           set +e
-          P="${{ matrix.part }}"; N=$(echo "$P" | tr ':' '-')
-          if [ "$P" = "res:sack" ]; then git clone -q --depth 1 https://github.com/JeffSackmann/tennis_atp; git clone -q --depth 1 https://github.com/JeffSackmann/tennis_wta; fi
-          SINCE=2025-01-01; [ "$P" = "res:espn" ] && SINCE=2024-01-01
-          PART="$P" SINCE=$SINCE BUDGET_MIN=150 timeout 160m node diag/pull.js 2>&1 | tee log-$N.txt
+          S="${{ matrix.span }}"; A=${S%%:*}; B=${S##*:}; N=${A:0:4}
+          PART=res:espn SINCE=$A UNTIL=$B BUDGET_MIN=50 timeout 55m node diag/pull.js 2>&1 | tee log-$N.txt
           git config user.name diag-bot; git config user.email diag-bot@users.noreply.github.com
-          rm -rf tennis_atp tennis_wta
-          git checkout -B diag-tennis-out-$N; git add -f log-$N.txt data; git commit -qm "pull $P"
-          for i in 1 2 3 4; do git push -qf origin diag-tennis-out-$N && break; sleep $((i*5)); done
+          git checkout -B diag-tennis-hist-out-$N; git add -f log-$N.txt data; git commit -qm "espn $S"
+          for i in 1 2 3 4; do git push -qf origin diag-tennis-hist-out-$N && break; sleep $((i*5)); done

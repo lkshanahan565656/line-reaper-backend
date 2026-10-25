@@ -120,7 +120,7 @@ async function polymarket(code) {
 // ── results ──
 async function espnAll() {
   const out = [];
-  const days = []; for (let t = SINCE; t < Date.now(); t += 86400e3) days.push(new Date(t).toISOString().slice(0, 10).replace(/-/g, ''));
+  const days = []; const UNTIL = Date.parse(process.env.UNTIL || '2100-01-01'); for (let t = SINCE; t < Math.min(Date.now(), UNTIL); t += 86400e3) days.push(new Date(t).toISOString().slice(0, 10).replace(/-/g, ''));
   const jobs = []; for (const tour of ['atp', 'wta']) for (const d of days) jobs.push([tour, d]);
   let done = 0;
   await pool(jobs, 6, async ([tour, d]) => {
