@@ -168,6 +168,45 @@ test('record summary: early under 50, model-side bets at the ask with the fee', 
   assert.ok(s.logLoss.model > 0 && s.logLoss.kalshi > 0);
 });
 
+// a Polymarket US event shaped like /v2/leagues/lol/events (2026-10-25 read)
+function pmEvent(slug, start, long, short, bid, ask, extra = {}) {
+  const side = (t, isLong) => ({ long: isLong, description: t[0], team: { name: t[0], abbreviation: t[1].toLowerCase(), displayAbbreviation: t[1] }, tradable: true });
+  return { slug, title: `${long[0]} vs. ${short[0]}`, startTime: start, active: true, closed: false, ...extra,
+    markets: [{ slug: `aec-${slug}`, sportsMarketType: 'esports_match_winner', status: 'MARKET_STATUS_OPEN', active: true, closed: false, feeCoefficient: 0.0695,
+      bestBidQuote: { value: String(bid), currency: 'USD' }, bestAskQuote: { value: String(ask), currency: 'USD' }, marketSides: [side(long, true), side(short, false)] }] };
+}
+
+test('Polymarket US: esports match winners parse, price both sides with the fee, and pair by name or code', () => {
+  const evs = [
+    pmEvent('lol-blg-tlaw-2026-10-24', '2026-10-25T00:00:00Z', ['BILIBILI GAMING', 'BLG'], ['Team Liquid Alienware', 'TLAW'], 0.75, 0.76),
+    pmEvent('lol-old', '2026-10-20T00:00:00Z', ['A', 'A'], ['B', 'B'], 0.5, 0.52, { closed: true }),
+    { slug: 'lol-x', startTime: '2026-10-25T00:00:00Z', markets: [{ slug: 'm', sportsMarketType: 'esports_total_maps' }] },
+  ];
+  const list = D.parsePmusEvents(evs);
+  assert.equal(list.length, 1);
+  assert.deepEqual(list[0].teams, ['BILIBILI GAMING', 'Team Liquid Alienware']);
+  assert.equal(list[0].url, 'https://polymarket.us/sports/lol/lol-blg-tlaw-2026-10-24');
+  assert.ok(!list[0].url.includes('polymarket.com'));
+  const p = D.pmusPrice(list[0], false);
+  assert.equal(p.prob, 0.755);
+  assert.equal(p.sides[0].ask, 0.76);
+  assert.equal(p.sides[1].ask, 0.25);
+  close(p.sides[1].cost, 0.25 + 0.0695 * 0.25 * 0.75, 1e-4);
+  const f = D.pmusPrice(list[0], true);
+  assert.equal(f.prob, 0.245);
+  assert.equal(f.sides[0].ask, 0.25);
+  // lolesports lists them the other way round, with Liquid's sponsor name
+  const series = { t: '2026-10-25T00:00:00Z', a: 'Team Liquid Alienware', ac: 'TLAW', b: 'Bilibili Gaming', bc: 'BLG' };
+  const pr = D.pairList(series, list);
+  assert.ok(pr && pr.flipped);
+  // a different day does not pair
+  assert.equal(D.pairList({ ...series, t: '2026-10-27T00:00:00Z' }, list), null);
+  // a wide book gives costs but no price
+  const wide = D.pmusPrice({ ...list[0], bid: 0.5, ask: 0.7 }, false);
+  assert.equal(wide.prob, null);
+  assert.equal(wide.sides[0].ask, 0.7);
+});
+
 function memStore() {
   const rows = new Map();
   return { rows, async all() { return [...rows.values()]; }, async putMany(l) { for (const r of l) rows.set(r.id, { ...r }); } };
@@ -177,7 +216,10 @@ test('engine: refresh reads the schedule, prices upcoming series next to Kalshi,
   const seed = league('Worlds', ['Alpha', 'Bravo', 'Charlie', 'Delta'], 3, Date.parse('2026-09-01T00:00:00Z'));
   let now = Date.parse('2026-10-26T09:30:00Z');
   let events = sched.slice(0, 2);
-  const http = { async get(url, { params }) { assert.ok(url.includes('lolesports')); return { data: { data: { schedule: { events: params.pageToken ? [] : events, pages: {} } } } }; } };
+  const http = { async get(url, { params }) {
+    if (url.includes('polymarket.us')) return { data: { events: [pmEvent('lol-alp-cha-2026-10-26', '2026-10-26T10:00:00Z', ['Alpha', 'ALP'], ['Charlie', 'CHA'], 0.3, 0.33)] } };
+    assert.ok(url.includes('lolesports')); return { data: { data: { schedule: { events: params.pageToken ? [] : events, pages: {} } } } };
+  } };
   const board = [boardMatch('2026-10-26T10:00:00Z', 'Charlie', 'Alpha', { bid: 0.3, ask: 0.32 }, { bid: 0.68, ask: 0.7 })];
   const store = memStore();
   const E = D.createMatchupEngine({ http, seed, board: () => board, store, now: () => now, log: {} });
@@ -191,12 +233,22 @@ test('engine: refresh reads the schedule, prices upcoming series next to Kalshi,
   close(mu.compare.kalshi, 0.69 / (0.69 + 0.31), 1e-3);
   assert.equal(mu.markets.kalshi.sides[0].ask, 0.7);
   assert.equal(mu.markets.polymarketRef, 0.39);
+  // Polymarket US: Alpha is its long side, the series' team a is Alpha too
+  assert.equal(mu.markets.pmus.prob, 0.315);
+  assert.equal(mu.markets.pmus.sides[0].ask, 0.33);
+  assert.equal(mu.markets.pmus.sides[1].ask, 0.7);
+  assert.equal(mu.markets.pmus.url, 'https://polymarket.us/sports/lol/lol-alp-cha-2026-10-26');
+  assert.equal(mu.compare.pmus, 0.315);
+  assert.equal(mu.compare.vs, 'Kalshi');
+  assert.equal(mu.compare.best.length, 2);
+  assert.equal(E.status().pmus.markets, 1);
   assert.ok(mu.explain.length >= 3);
   // 30 minutes out: frozen
   assert.equal(store.rows.size, 1);
   const row = [...store.rows.values()][0];
   assert.equal(row.status, 'open');
   assert.equal(row.kalshi, mu.compare.kalshi);
+  assert.equal(row.pmus, 0.315);
   // the result lands: graded
   now = Date.parse('2026-10-26T14:00:00Z');
   events = [{ ...sched[1], state: 'completed', match: { ...sched[1].match, teams: [{ name: 'Alpha', code: 'ALP', result: { gameWins: 3 } }, { name: 'Charlie', code: 'CHA', result: { gameWins: 1 } }] } }];
