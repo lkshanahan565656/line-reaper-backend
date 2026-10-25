@@ -992,6 +992,15 @@ body.lr-tray-open #page-props { padding-bottom: 230px; }
 .rec-tags b { color:#e2e8f0; } .rec-tags em { font-style:normal; color:#fbbf24; font-weight:700; font-size:10px; letter-spacing:.06em; margin-left:6px; }
 .rec-h { margin:16px 0 8px; font-size:13px; letter-spacing:.05em; color:var(--text2); }
 .rec-cols { font-size:11px; color:var(--text2); margin-top:10px; line-height:1.55; }
+.rec-views { margin-bottom:0; }
+.dg-state { font-size:11px; color:var(--text2); margin:4px 0 10px; }
+.dg-share { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0 4px; }
+.dg-share a { text-decoration:none; }
+.dg-push { font-size:11px; color:var(--text2); margin-top:12px; line-height:1.55; }
+.dg-sum { font-size:12px; color:#cbd5e1; margin:10px 0 0; line-height:1.6; }
+.dg-sum b { color:#e2e8f0; }
+.dg-tbl td:first-child { min-width:92px; max-width:120px; } .dg-tbl td:first-child .rec-lab { white-space:normal; display:block; }
+.dg-tbl td:nth-child(2) { min-width:150px; }
 @media (max-width:640px) { .rec-dl { margin-left:0; } .rec-tbl .why { max-width:200px; } }
 .acct-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
 .acct-modal.open { display:flex; }
@@ -1736,6 +1745,15 @@ body.no-help .clv-info { display:none; }
     <strong style="color:#e8e8e8">THE PUBLIC RECORD</strong> — every flag the app has made at a book or app, graded against the close, one row per kind and venue. Download every line (when we flagged it, the price we showed, the size behind it, the close, the CLV and the result) and check it yourself.
     <span style="color:#94a3b8;font-size:11px" id="recRule">Proven needs 50 graded games of one kind at one venue we read ourselves and a CLV t of 2 or more against Pinnacle's close. The sales page reads the same rule, so the two always agree.</span>
   </div>
+  <div class="row rec-bar rec-views">
+    <button class="sport-chip active" data-recview="record" onclick="resultsView('record')">RECORD</button>
+    <button class="sport-chip" data-recview="digest" onclick="resultsView('digest')" title="One summary a week of the same record, published Monday 13:00 UTC">WEEKLY DIGEST</button>
+  </div>
+  <div id="digestView" style="display:none">
+    <div class="row rec-bar" id="digestWeeks"></div>
+    <div id="digestContent"></div>
+  </div>
+  <div id="recView">
   <div class="row rec-bar">
     <button class="sport-chip active" data-days="0" onclick="resultsDays(0)">ALL TIME</button>
     <button class="sport-chip" data-days="30" onclick="resultsDays(30)">30 DAYS</button>
@@ -1744,6 +1762,7 @@ body.no-help .clv-info { display:none; }
   </div>
   <div id="recordContent"></div>
   <div id="resultsContent"></div>
+  </div>
 </div>
 
 <div class="page" id="page-tools">
@@ -4202,7 +4221,10 @@ function welcomeInit() {
       }).catch(() => {});
     }
     // a tab by name, e.g. ?start=results from the sales page's record
-    const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${start.replace(/[^a-z]/g, '')}',this)`);
+    // ?start=digest: RESULTS opened on the weekly digest
+    if (start === 'digest') window.lrDigestStart = true;
+    const tabName = start === 'digest' ? 'results' : start.replace(/[^a-z]/g, '');
+    const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${tabName}',this)`);
     if (tabBtn) tabBtn.click();
     // the sales page's "Open the app" (or a tab link): a new device still gets the tour once
     if (start !== 'signup' && start !== 'login' && start !== 'pro') tourMaybe();
@@ -8103,13 +8125,96 @@ function renderGas() {
     + (d.updated ? `<div class="xa-sub" style="margin-top:8px">Scanned ${escAttr(new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}, every 10 minutes.</div>` : '');
 }
 // ─── RESULTS ──────────────────────────────────────────────────────────────────
-const resultsUi = { days: 0 };
+const resultsUi = { days: 0, view: 'record', week: null, weeks: null };
+// RECORD (the public record) or WEEKLY DIGEST (digest.js, one summary a week of it)
+function resultsView(v) {
+  resultsUi.view = v === 'digest' ? 'digest' : 'record';
+  document.querySelectorAll('#page-results [data-recview]').forEach(b => b.classList.toggle('active', b.dataset.recview === resultsUi.view));
+  document.getElementById('recView').style.display = resultsUi.view === 'record' ? '' : 'none';
+  document.getElementById('digestView').style.display = resultsUi.view === 'digest' ? '' : 'none';
+  if (resultsUi.view === 'digest') loadDigest(); else loadResults();
+}
+async function loadDigest() {
+  const el = document.getElementById('digestContent'), wk = document.getElementById('digestWeeks');
+  el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  try {
+    const d = await tailGet('/api/digest');
+    resultsUi.weeks = d.weeks || [];
+    // the last published week first; a new record has only the week so far
+    if (!resultsUi.weeks.some(w => w.week === resultsUi.week)) resultsUi.week = (resultsUi.weeks.find(w => !w.partial) || resultsUi.weeks[0] || {}).week || null;
+    wk.innerHTML = resultsUi.weeks.map(w => `<button class="sport-chip${w.week === resultsUi.week ? ' active' : ''}" data-week="${escAttr(w.week)}" onclick="digestWeek('${escAttr(w.week)}')" title="${w.partial ? 'This week so far, from the record now' : w.frozen ? 'Published and frozen' : 'Rebuilt from the record now'}">${w.partial ? 'THIS WEEK SO FAR' : escAttr(String(w.name).toUpperCase())}</button>`).join('');
+    if (!resultsUi.week) { el.innerHTML = tailEmpty('NOTHING RECORDED YET', 'The digest starts with the first graded flag.'); return; }
+    await digestShow(resultsUi.week);
+  } catch (e) {
+    el.innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(e.old ? 'The weekly digest needs backend v3.186 or later.' : e.message || ''));
+  }
+}
+function digestWeek(week) {
+  resultsUi.week = week;
+  document.querySelectorAll('#digestWeeks [data-week]').forEach(b => b.classList.toggle('active', b.dataset.week === week));
+  digestShow(week).catch(e => { document.getElementById('digestContent').innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(e.message || '')); });
+}
+async function digestShow(week) {
+  const r = await tailGet(`/api/digest/${encodeURIComponent(week)}`);
+  if (resultsUi.week !== week) return;
+  renderDigest(r);
+}
+const DG_CHANGE = { 'newly proven': '#34d399', 'no longer proven': '#f87171', 'newly losing to the close': '#f87171', 'reached 50 graded': '#60a5fa' };
+function digestCopy(url) {
+  const done = () => showToast('Share link copied');
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, () => showToast(url));
+  else showToast(url);
+}
+function renderDigest(r) {
+  const d = r.digest, s = d.summary, el = document.getElementById('digestContent');
+  const pc = x => x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(1)}%`;
+  const col = x => x == null ? 'var(--text2)' : x > 0 ? 'var(--green)' : x < 0 ? 'var(--red)' : 'var(--text2)';
+  const t1 = x => x == null ? '—' : `${x > 0 ? '+' : ''}${Number(x).toFixed(1)}`;
+  const units = (u, shown) => {
+    if (u == null) return '—';
+    const t = `${u > 0 ? '+' : ''}${Number(u).toFixed(1)}u`;
+    return u > 0 && !shown ? `<span style="color:var(--text2)" title="Not a profit claim: this kind is not proven, or its units do not clear chance">${t}*</span>` : `<span style="color:${col(u)}">${t}</span>`;
+  };
+  const when = x => x ? new Date(x).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const state = d.partial ? `This week so far, read ${escAttr(when(d.builtAt))}. The digest for it is published Monday 13:00 UTC.`
+    : r.frozen ? `Published ${escAttr(when(r.sentAt))} and frozen: this is what was sent${r.pushed != null ? ` (push reached ${Number(r.pushed)} device${r.pushed === 1 ? '' : 's'})` : ''}.`
+    : `Rebuilt from the record as it reads now: this week came before the digest was published.`;
+  const tiles = `<div class="rec-tiles">
+    <div class="rec-tile"><span>GRADED THIS WEEK</span><b>${s.graded.toLocaleString()}</b><i>${s.kinds} kinds and venues</i></div>
+    <div class="rec-tile"><span>PROVEN</span><b style="color:${s.proven.length ? 'var(--green)' : 'var(--text2)'}">${s.proven.length}</b><i>${s.newlyProven.length ? `${s.newlyProven.length} new this week` : 'none new this week'}</i></div>
+    <div class="rec-tile"><span>NEWLY LOSING TO THE CLOSE</span><b style="color:${s.newlyFailed.length ? 'var(--red)' : 'var(--text2)'}">${s.newlyFailed.length}</b><i>${s.noLongerProven.length ? `${s.noLongerProven.length} no longer proven` : 'none lost proven'}</i></div>
+    <div class="rec-tile"><span>ALL SHARP CLOSES</span><b style="color:${col(s.overall.week.clv)}">${pc(s.overall.week.clv)}</b><i>this week, ${s.overall.week.graded} graded · pooled, never proven</i></div>
+  </div>`;
+  const list = a => a.length ? a.map(escAttr).join(', ') : 'none';
+  const sum = `<div class="dg-sum"><b>Proven at the week's end:</b> ${s.proven.length ? s.proven.map(p => `${escAttr(p.kindLabel)} · ${escAttr(p.bookName)} (${p.graded} graded, CLV ${pc(p.clv)}, ${p.texas ? 'a Texas venue' : 'not a Texas venue'}, ${p.profitShown ? `profit ${units(p.units, true)}` : 'profit not shown yet'})`).join('; ') : 'nothing yet'}.<br>
+    <b>Newly proven:</b> ${list(s.newlyProven)}. <b>Newly losing to the close:</b> ${list(s.newlyFailed)}.${s.noLongerProven.length ? ` <b>No longer proven:</b> ${list(s.noLongerProven)}.` : ''}${s.reached50.length ? ` <b>Reached 50 graded:</b> ${list(s.reached50)}.` : ''}</div>`;
+  const share = `${location.origin}/digest/${encodeURIComponent(d.week)}`;
+  const body = (d.rows || []).map(x => { const [lab, c] = REC_LABEL[x.all.label] || [String(x.all.label || '').toUpperCase(), '#94a3b8']; return `<tr>
+      <td><span class="rec-lab" style="color:${c}">${escAttr(lab)}</span>${x.change ? `<div class="rec-lab" style="color:${DG_CHANGE[x.change] || '#94a3b8'}">${escAttr(x.change.toUpperCase())}</div>` : ''}</td>
+      <td><b>${escAttr(x.kindLabel)}</b> · ${escAttr(x.bookName)}${x.texas ? ' <span class="rec-lab" style="color:#60a5fa" title="A Texas resident can bet here">TX</span>' : ''}${x.all.why ? `<div class="why">${escAttr(x.all.why)}</div>` : ''}</td>
+      <td style="text-align:right">${x.week.graded}<div style="font-size:10px;color:var(--text2)">${x.week.wins + x.week.losses ? `${x.week.wins}-${x.week.losses}` : '—'}</div></td>
+      <td style="text-align:right;color:${col(x.week.clv)}">${pc(x.week.clv)}</td>
+      <td style="text-align:right">${x.bar.before} → ${x.bar.after}/${x.bar.target}<div class="rec-bar50"><i style="width:${Math.min(100, Math.round(100 * x.bar.after / (x.bar.target || 50)))}%"></i></div><div style="font-size:10px;color:var(--text2)">t ${t1(x.bar.tBefore)} → ${t1(x.bar.tAfter)}${x.bar.move === 'toward' ? ' · toward' : x.bar.move === 'away' ? ' · away' : ''}</div></td>
+      <td style="text-align:right;color:${col(x.all.clv)}">${pc(x.all.clv)}<div style="font-size:10px;color:var(--text2)">${x.all.wins + x.all.losses ? `${x.all.wins}-${x.all.losses}` : '—'}</div></td>
+      <td style="text-align:right">${units(x.all.units, x.all.profitShown)}</td></tr>`; }).join('');
+  const table = body ? `<div class="esm-table-wrap"><table class="esm-table rec-tbl dg-tbl"><thead><tr><th></th><th>Kind · venue</th><th style="text-align:right">Week</th><th style="text-align:right">Week CLV</th><th style="text-align:right">Toward 50</th><th style="text-align:right">All-time CLV</th><th style="text-align:right">Units</th></tr></thead><tbody>${body}</tbody></table></div>`
+    : `<div class="rec-tags"><div>Nothing graded in this week: no flagged game started and closed in it.</div></div>`;
+  const tags = (d.labels || []).map(l => `<div><b>${escAttr(l.tool)}</b><em>${escAttr(String(l.tag).toUpperCase())}</em><br>${escAttr(l.where)}: ${escAttr(l.why)}</div>`).join('');
+  el.innerHTML = `<h3 class="rec-h" style="margin-top:4px">WEEK OF ${escAttr(String(d.name).toUpperCase())}</h3><div class="dg-state">${state}</div>` + tiles + sum
+    + `<div class="dg-share"><a class="sport-chip" id="digestShare" href="/digest/${encodeURIComponent(d.week)}" target="_blank" rel="noopener">OPEN SHARE PAGE</a><button class="sport-chip" id="digestCopy" onclick="digestCopy('${escAttr(share)}')">COPY LINK</button></div>`
+    + `<h3 class="rec-h">BY KIND AND VENUE</h3>` + table
+    + `<div class="rec-cols">Week: games that started this week (Monday to Sunday, UTC) and were graded, with W-L and CLV against the close. Toward 50: graded all time at the week's start → end, and the CLV t then and now. ${escAttr(d.rule?.text || '')} Units are all time at 1u a graded line; * marks units on a kind that is not proven, which are not a profit claim.${s.quiet ? ` ${s.quiet} other kinds and venues had nothing graded this week.` : ''}</div>`
+    + (tags ? `<h3 class="rec-h">MODELS AND RESEARCH (NOT A CLAIM)</h3><div class="rec-tags">${tags}</div>` : '')
+    + `<div class="dg-push">Phones with push alerts on (CUSTOMIZE &gt; Phone app &gt; Push alerts) get one push a week with this summary, the same for everyone. The share page is read-only and public.</div>`;
+}
 function resultsDays(d) {
   resultsUi.days = d;
   document.querySelectorAll('#page-results [data-days]').forEach(b => b.classList.toggle('active', +b.dataset.days === d));
   loadResults();
 }
 async function loadResults() {
+  if (window.lrDigestStart) { window.lrDigestStart = false; return resultsView('digest'); }
+  if (resultsUi.view === 'digest') return loadDigest();
   const el = document.getElementById('resultsContent'), rec = document.getElementById('recordContent');
   const q = resultsUi.days ? `?days=${resultsUi.days}` : '';
   // the downloads follow the window picked above

@@ -17,6 +17,18 @@
     {
       "text": "PROVEN needs \\d+ graded",
       "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
+    },
+    {
+      "text": "^NEWLY PROVEN$",
+      "why": "the weekly digest's change tag, set only when the public record's own label turns proven (digest.js changeOf over claims.publicRecord)"
+    },
+    {
+      "text": "^Newly proven:$",
+      "why": "the weekly digest's summary heading, followed by the record's own list (often 'none')"
+    },
+    {
+      "text": "^Proven at the week's end:$",
+      "why": "the weekly digest's summary heading, followed by the record's own proven list or 'nothing yet'"
     }
   ],
   "misses": [
@@ -27,6 +39,10 @@
     {
       "key": "^/api/record(/flags\\.(csv|json))?(\\?|$)",
       "why": "new in v3.185.0 (the public record on RESULTS): the recording predates it, so the offline server answers from its own empty record; closeboard and claims tests check the rows, and the download flow checks the file"
+    },
+    {
+      "key": "^/api/digest(/[\\d-]+)?$",
+      "why": "new in v3.186.0 (the weekly digest on RESULTS): the recording predates it, so the offline server answers from its own empty record; the digest flow checks the view against a labelled test body built by digest.js, and digest tests check the numbers"
     }
   ],
   "mustHaveData": [

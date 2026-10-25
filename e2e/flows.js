@@ -85,6 +85,78 @@ const FLOWS = {
     await settle(page, w, opts, 150);
   },
 
+  async 'read the weekly digest from RESULTS'(page, w, opts) {
+    // TEST DATA, not a recording: digest.js run on a labelled made-up record
+    // (one venue proven this week, one losing to the close), so the view is
+    // checked against known numbers. The live check reads the real API.
+    const D = require('../digest');
+    const W0 = Date.parse('2026-10-19T00:00:00Z');
+    const row = (i, book, start, clv) => ({ id: `e2e-${book}-${i}`, book, sport: 'nfl', event: `E2E Away${i} @ E2E Home${i}`, market: 'h2h', side: 'E2E', status: 'closed', closeOk: true,
+      flaggedAt: new Date(start - 3 * 3600e3).toISOString(), start: new Date(start).toISOString(), decimal: 2.1, clv: clv + (i % 3) * 0.2, closeFair: 50, outcome: i % 2 ? 'loss' : 'win' });
+    const ev = [];
+    for (let i = 0; i < 55; i++) ev.push(row(i, 'fanduel', i < 40 ? W0 - 20 * 86400e3 + i * 18e6 : W0 + 86400e3 + (i - 40) * 18e6, 3));
+    for (let i = 0; i < 20; i++) ev.push(row(i, 'betrivers', W0 + 2 * 86400e3 + i * 18e6, -4));
+    const TEST_WEEK = { digest: D.build({ lists: { ev }, week: '2026-10-19', now: Date.parse('2026-10-26T13:00:00Z') }), frozen: true, sentAt: '2026-10-26T13:00:04Z', pushed: 2, share: '/digest/2026-10-19' };
+    const TEST_NOW = { digest: D.build({ lists: { ev }, week: '2026-10-26', now: Date.parse('2026-10-27T09:00:00Z') }), frozen: false, sentAt: null, pushed: null, share: '/digest/2026-10-26' };
+    const TEST_LIST = { at: '2026-10-27T09:00:00Z', current: '2026-10-26', sendsAt: 'Monday 13:00 UTC', nextSend: '2026-11-02T13:00:00Z', weeks: [
+      { week: '2026-10-26', name: 'Oct 26 to Nov 1', partial: true, frozen: false, sentAt: null, graded: null, share: '/digest/2026-10-26' },
+      { week: '2026-10-19', name: 'Oct 19 to 25', partial: false, frozen: true, sentAt: '2026-10-26T13:00:04Z', graded: 35, share: '/digest/2026-10-19' }] };
+    if (!opts.live) {
+      await page.route('**/api/digest', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_LIST) }));
+      await page.route('**/api/digest/*', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(/2026-10-26/.test(r.request().url()) ? TEST_NOW : TEST_WEEK) }));
+    }
+    const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    try {
+      await openTab(page, 'results', w, opts);
+      await page.locator('#page-results [data-recview="digest"]').click();
+      await page.locator('#digestContent .rec-tiles').waitFor({ timeout: 6000 });
+      await settle(page, w, opts, 150);
+      const body = await text(page, '#digestContent');
+      expect(/WEEK OF/.test(body) && /GRADED THIS WEEK/.test(body) && /BY KIND AND VENUE/.test(body), `the digest did not render: "${body.slice(0, 200)}"`);
+      expect(await page.locator('#recView').isHidden(), 'the record table still shows under the digest');
+      const share = await page.locator('#digestShare').getAttribute('href');
+      expect(/^\/digest\/\d{4}-\d{2}-\d{2}$/.test(share || ''), `the share link is "${share}"`);
+      expect(await fits(), 'the digest scrolls sideways at this size');
+      if (!opts.live) {
+        expect(/WEEK OF OCT 19 TO 25/.test(body), 'the last published week opens first');
+        expect(/Published .* and frozen/.test(body) && /push reached 2 devices/.test(body), 'a published week says it is frozen and how many phones got it');
+        const rows = await page.locator('#digestContent .rec-tbl tbody tr').allInnerTexts();
+        expect(rows.length === 2, `${rows.length} rows for 2 venues`);
+        const fd = rows.find(r => /FanDuel/.test(r)) || '', br = rows.find(r => /BetRivers/.test(r)) || '';
+        expect(/NEWLY PROVEN/.test(fd) && /40 → 55\/50/.test(fd) && /\b15\b/.test(fd), `FanDuel row: "${fd.replace(/\s+/g, ' ')}"`);
+        expect(/LOSING TO THE CLOSE/.test(br) && /0 → 20\/50/.test(br), `BetRivers row: "${br.replace(/\s+/g, ' ')}"`);
+        expect(/\+[\d.]+u\*/.test(fd), 'units on a record that does not clear chance carry the * (not a profit claim)');
+        expect(/profit not shown yet/.test(body), 'the proven line must say profit is not shown');
+        // this week so far
+        await page.locator('#digestWeeks [data-week="2026-10-26"]').click();
+        await page.waitForFunction(() => /This week so far/.test(document.getElementById('digestContent').textContent), null, { timeout: 4000 });
+        expect(await fits(), 'the week so far scrolls sideways at this size');
+        await page.locator('#digestWeeks [data-week="2026-10-19"]').click();
+        await settle(page, w, opts, 120);
+      }
+      await page.locator('#page-results [data-recview="record"]').click();
+      await settle(page, w, opts, 150);
+      expect(await page.locator('#recView').isVisible(), 'RECORD did not come back');
+    } finally {
+      if (!opts.live) { await page.unroute('**/api/digest').catch(() => {}); await page.unroute('**/api/digest/*').catch(() => {}); }
+    }
+    // the share page itself, from the server (the offline server's own record in tests)
+    const list = opts.live ? await (await page.request.get(`${opts.base}/api/digest`)).json() : null;
+    const wk = list ? (list.weeks.find(x => !x.partial) || list.weeks[0]).week : D.weekId(Date.now());
+    try {
+      const res = await page.goto(`${opts.base}/digest/${wk}`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `the share page answered ${res && res.status()}`);
+      const h1 = await text(page, 'h1');
+      expect(/^Week of /.test(h1), `the share page heading is "${h1}"`);
+      expect(await fits(), 'the share page scrolls sideways at this size');
+      const all = await page.evaluate(() => document.body.innerText);
+      expect(!/guaranteed|risk[- ]free|undefined|NaN/i.test(all), 'the share page shows a claim or broken text');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'export the bets CSV and import it back'(page, w, opts) {
     await openTab(page, 'betlog', w, opts);
     const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.getByRole('button', { name: 'EXPORT CSV' }).click()]);
