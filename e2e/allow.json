@@ -19,7 +19,12 @@
       "why": "EV TRACK RECORD explains the rule (50 graded, CLV t 2); a definition, not a claim"
     }
   ],
-  "misses": [],
+  "misses": [
+    {
+      "key": "^/api/claims$",
+      "why": "new in v3.184.0 (claims.js): the recording predates it, so the offline server answers from its own empty record (\"nothing proven yet\"); the sales-page flow also checks the page against a labelled test body"
+    }
+  ],
   "mustHaveData": [
     {
       "tab": "best",

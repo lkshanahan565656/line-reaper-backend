@@ -1461,6 +1461,24 @@ body.no-help .clv-info { display:none; }
 .shp-tbl th.shp-sort { cursor:pointer; user-select:none; }
 .shp-tbl th.shp-sort:hover, .shp-tbl th.shp-sort.on { color:var(--text); }
 @media (max-width:640px) { .shp-hide-sm { display:none; } .shp-tbl td, .shp-tbl th { padding:5px 4px; } }
+/* first-run tour (tourStart): a ring over one control and a card that explains it */
+.tour { position:fixed; inset:0; z-index:450; display:none; }
+.tour.open { display:block; }
+.tour-ring { position:fixed; border:2px solid var(--green); border-radius:8px; box-shadow:0 0 0 9999px rgba(3,6,10,.62); pointer-events:none; transition:top .18s, left .18s, width .18s, height .18s; }
+.tour-ring.none { top:50% !important; left:50% !important; width:0 !important; height:0 !important; border:none; }
+.tour-card { position:fixed; width:min(360px, calc(100vw - 32px)); background:#0d1117; border:1px solid var(--border2); border-radius:10px; padding:14px 16px 12px; box-shadow:0 12px 40px rgba(0,0,0,.5); color:var(--text); }
+.tour-step { font:600 10px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:var(--green); margin-bottom:6px; }
+.tour-card h4 { font-size:15px; font-weight:700; margin:0 0 6px; letter-spacing:.2px; }
+.tour-card p { font-size:13px; line-height:1.55; color:var(--text2); margin:0 0 6px; }
+.tour-card p b { color:var(--text); }
+.tour-btns { display:flex; gap:6px; align-items:center; margin-top:10px; }
+.tour-btns .sp { flex:1; }
+.tour-btns button { background:#161c28; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 11px 'Inter',sans-serif; letter-spacing:.8px; padding:7px 11px; cursor:pointer; }
+.tour-btns button.primary { background:var(--green); border-color:var(--green); color:#06110d; }
+.tour-btns button:disabled { opacity:.35; cursor:default; }
+.help-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
+.help-btn:hover { color:var(--text); border-color:var(--text2); }
+@media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
 </style>
 </head>
 <body>
@@ -1473,8 +1491,8 @@ body.no-help .clv-info { display:none; }
     <p class="wl-sub">An odds screen, a pick'em pricer and a public record in one app: every venue's price beside Pinnacle's fair, what each slip pays and needs to break even, and every alert graded against the close, losers included.</p>
     <div class="wl-rec">
       <div class="wl-rec-top"><span>THE LIVE RECORD</span><span>READ FROM THE APP</span></div>
-      <div class="wl-row"><span>Alerts graded so far</span><span class="v" id="wlGraded">...</span></div>
-      <div class="wl-row"><span>Beat the close at the alert</span><span class="v" id="wlBeat">...</span></div>
+      <div class="wl-row"><span>Games graded against the close</span><span class="v" id="wlGraded">...</span></div>
+      <div class="wl-row"><span>Beat the close, every kind pooled</span><span class="v" id="wlBeat">...</span></div>
       <div class="wl-row"><span>Kinds of play proven so far</span><span class="v" id="wlProven">...</span></div>
     </div>
     <p class="wl-note">A play is proven only once its own graded sample beats the close by more than chance. Everything else is still building its record, and the app says so on every row.</p>
@@ -1493,11 +1511,26 @@ body.no-help .clv-info { display:none; }
   </div>
 </div>
 
+<div class="tour" id="tour" role="dialog" aria-modal="true" aria-label="App tour">
+  <div class="tour-ring" id="tourRing"></div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-step" id="tourStep"></div>
+    <h4 id="tourTitle"></h4>
+    <div id="tourText"></div>
+    <div class="tour-btns">
+      <button id="tourSkip" onclick="tourEnd()">SKIP</button>
+      <span class="sp"></span>
+      <button id="tourBack" onclick="tourGo(-1)">BACK</button>
+      <button id="tourNext" class="primary" onclick="tourGo(1)">NEXT</button>
+    </div>
+  </div>
+</div>
+
 <div class="nav">
   <div class="nav-header">
     <div class="logo"><svg class="lr-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span class="logo-word">LINE<b>REAPER</b></span></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div>
+      <div style="display:flex;gap:6px;align-items:center"><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#64748b;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
       <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
@@ -4145,22 +4178,21 @@ function welcomeInit() {
     // a tab by name, e.g. ?start=results from the sales page's record
     const tabBtn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${start.replace(/[^a-z]/g, '')}',this)`);
     if (tabBtn) tabBtn.click();
+    // the sales page's "Open the app" (or a tab link): a new device still gets the tour once
+    if (start !== 'signup' && start !== 'login' && start !== 'pro') tourMaybe();
     return;
   }
-  if (acct.token || ssGet('lr_welcomed')) return;
+  if (acct.token || ssGet('lr_welcomed')) return tourMaybe();
   const w = document.getElementById('welcome');
   if (!w) return;
   w.classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('wlAgree').checked = termsAccepted();
-  // the record box reads the live tracker, the same strict "proven" as the sales page
-  fetch(`${BACKEND_URL}/api/results`).then(r => r.json()).then(d => {
-    let graded = 0, clvN = 0, beat = 0;
-    for (const x of Object.values(d.sources || {})) { const o = x.overall || {}; graded += Math.max(o.clvN || 0, o.graded || 0); if (o.clvN && o.beatClosePct != null) { clvN += o.clvN; beat += o.beatClosePct * o.clvN; } }
-    const proven = (d.plays || []).filter(p => p.verdict === 'proven' && p.n >= 50 && p.avgClv > 0 && (p.clvT == null || p.clvT >= 2) && !(p.graded >= 8 && p.roi < 0) && !(p.execN >= 8 && !(p.execClv > 0))).length;
-    document.getElementById('wlGraded').textContent = graded.toLocaleString();
-    document.getElementById('wlBeat').textContent = clvN ? `${Math.round(beat / clvN * 100)}%` : '-';
-    document.getElementById('wlProven').textContent = String(proven);
+  // the record box reads /api/claims (claims.js), the same proven list as the sales page
+  fetch(`${BACKEND_URL}/api/claims`).then(r => r.json()).then(d => {
+    document.getElementById('wlGraded').textContent = (d.overall?.graded || 0).toLocaleString();
+    document.getElementById('wlBeat').textContent = d.overall?.beatPct != null ? `${Math.round(d.overall.beatPct)}%` : '-';
+    document.getElementById('wlProven').textContent = `${(d.proven || []).length} (Texas: ${(d.texas?.proven || []).length})`;
   }).catch(() => { ['wlGraded', 'wlBeat', 'wlProven'].forEach(id => { document.getElementById(id).textContent = '-'; }); });
   fetch(`${BACKEND_URL}/api/status`).then(r => r.json()).then(s => {
     if (s.accounts?.authSecretSet) {
@@ -4193,9 +4225,109 @@ function welcomeGo(mode) {
   try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
   document.getElementById('welcome').classList.remove('open');
   document.body.style.overflow = '';
-  if (mode) acctOpen(mode);
+  if (mode) acctOpen(mode); else tourMaybe();
 }
 document.addEventListener('DOMContentLoaded', welcomeInit);
+
+// ── FIRST-RUN TOUR ──────────────────────────────────────────────────────────
+// A short walkthrough for a new device: ODDS SCREEN, the Exchange Shopper,
+// PROPS, the bet tracker, Results and push alerts. It shows once per device
+// (lr_tour in localStorage, set on DONE, SKIP or Escape) and HELP in the
+// header or CUSTOMIZE > App tour opens it again. It only points: it never
+// changes a saved filter or view, and the one action it offers (OPEN
+// CUSTOMIZE) is the same panel the CUSTOMIZE tab opens.
+const TOUR_KEY = 'lr_tour';
+const TOUR_STEPS = [
+  { tab: 'odds', target: () => layTabs.odds, title: 'ODDS SCREEN',
+    text: '<p>Every venue we read on one row per game, beside <b>Pinnacle\'s price with the margin taken out</b> (the fair). The best price on each side is outlined in green; exchange prices already include their fees.</p><p>Betting from Texas? Pick <b>Texas</b> in "Betting from" to see only the venues you can use there.</p>' },
+  { tab: 'odds', target: () => [...document.querySelectorAll('#oddsModes .sport-chip')].find(b => /ABOVE FAIR/.test(b.textContent)) || document.getElementById('oddsModes'), title: 'EXCHANGE SHOPPER',
+    text: '<p><b>BEST PRICES ABOVE FAIR</b> ranks every price that beats the fair, with what the exchange\'s order book fills. Set <b>MIN BET SIZE</b> to hide prices that would not fill your stake.</p><p>A price above the fair is a price, not a proven edge: each view wears its tag.</p>' },
+  { tab: 'props', target: () => tourTabBtn('props'), title: 'PROPS',
+    text: () => `<p>PrizePicks, Underdog, Sleeper and DK Pick6 lines next to the sharp number where a book prices the prop, with every slip\'s payout and break-even. The NBA, CFB and CBB model tabs are tagged <b>model, not an edge</b>.</p>${tourInMore('props') ? '<p>It sits under <b>MORE</b>; CUSTOMIZE can pin it to the bar.</p>' : ''}` },
+  { tab: 'betlog', target: () => tourTabBtn('betlog'), title: 'BET TRACKER AND MY SLIPS',
+    text: '<p>Tap <b>LOG</b> on an odds screen row, or ADD BET here, and MY BETS grades your closing line value for you.</p><p><b>MY SLIPS</b> grades pick\'em slips leg by leg from the box scores, and takes a Pikkit CSV. Your bets stay on this device unless you sign in.</p>' },
+  { tab: 'results', target: () => tourTabBtn('results'), title: 'RESULTS',
+    text: '<p>Every flag the app makes, graded against Pinnacle\'s close, losers included. A kind of bet is called proven only after 50 graded games at one venue with its CLV well clear of chance; the rest say promising, early or avoid.</p><p>Check here before you trust any tool.</p>' },
+  { tab: null, target: () => document.querySelector('.tab-row .tab-end'), title: 'PUSH ALERTS',
+    text: '<p><b>CUSTOMIZE &gt; Phone app &gt; Push alerts</b>: add Line Reaper to your home screen, turn alerts on and pick the kinds you want. Everyone gets the same text for each alert.</p><p>HELP at the top opens this tour again.</p>',
+    action: { label: 'OPEN CUSTOMIZE', run: () => { tourEnd(); layOpen(); } } },
+];
+const tour = { i: 0 };
+const tourOpen = () => document.getElementById('tour')?.classList.contains('open');
+// a tab's button where a viewer can see it: on the bar, else the MORE button, else CUSTOMIZE
+function tourTabBtn(n) {
+  const b = layTabs[n];
+  if (b && b.offsetParent && b.closest('.tab-row')) return b;
+  return document.getElementById('moreBtn') || document.querySelector('.tab-row .tab-end');
+}
+const tourInMore = n => !!layTabs[n] && !layTabs[n].closest('.tab-row') && !layIsHidden(n);
+function tourStart() {
+  const el = document.getElementById('tour');
+  if (!el) return;
+  document.getElementById('moreMenu')?.classList.remove('open');
+  tour.i = 0;
+  el.classList.add('open');
+  tourShow();
+}
+// the first time on this device, once nothing else is on screen
+function tourMaybe() {
+  if (lsGet(TOUR_KEY)) return;
+  if (document.querySelector('.welcome.open, .lay-modal.open, .acct-modal.open')) return;
+  tourStart();
+}
+function tourEnd() {
+  lsSet(TOUR_KEY, '1');
+  document.getElementById('tour')?.classList.remove('open');
+}
+function tourGo(d) {
+  const n = tour.i + d;
+  if (n >= TOUR_STEPS.length) return tourEnd();
+  tour.i = Math.max(0, n);
+  tourShow();
+}
+function tourShow() {
+  const s = TOUR_STEPS[tour.i];
+  if (s.tab && layTabs[s.tab] && !layIsHidden(s.tab)) showTab(s.tab, layTabs[s.tab]);
+  document.getElementById('tourStep').textContent = `${tour.i + 1} / ${TOUR_STEPS.length}`;
+  document.getElementById('tourTitle').textContent = s.title;
+  document.getElementById('tourText').innerHTML = typeof s.text === 'function' ? s.text() : s.text;
+  const last = tour.i === TOUR_STEPS.length - 1;
+  document.getElementById('tourBack').disabled = tour.i === 0;
+  const next = document.getElementById('tourNext');
+  next.textContent = last ? 'DONE' : 'NEXT';
+  document.getElementById('tourSkip').textContent = last ? 'CLOSE' : 'SKIP';
+  let act = document.getElementById('tourAct');
+  if (s.action) {
+    if (!act) { act = document.createElement('button'); act.id = 'tourAct'; next.before(act); }
+    act.textContent = s.action.label;
+    act.onclick = s.action.run;
+  } else act?.remove();
+  const t = s.target();
+  if (t && t.scrollIntoView) t.scrollIntoView({ block: 'nearest', inline: 'center' });
+  tourPlace();
+}
+// ring over the step's control, card below it (above when there is no room; pinned to the bottom on phones)
+function tourPlace() {
+  if (!tourOpen()) return;
+  const ring = document.getElementById('tourRing'), card = document.getElementById('tourCard');
+  const t = TOUR_STEPS[tour.i].target();
+  const r = t && t.getBoundingClientRect ? t.getBoundingClientRect() : null;
+  if (!r || r.width < 2) { ring.classList.add('none'); card.style.top = '30%'; card.style.left = `${Math.max(16, (innerWidth - card.offsetWidth) / 2)}px`; return; }
+  ring.classList.remove('none');
+  const pad = 4;
+  Object.assign(ring.style, { top: `${r.top - pad}px`, left: `${r.left - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
+  const ch = card.offsetHeight, below = r.bottom + 12;
+  card.style.top = `${below + ch < innerHeight - 8 ? below : Math.max(8, r.top - ch - 12)}px`;
+  card.style.left = `${Math.min(Math.max(16, r.left), innerWidth - card.offsetWidth - 16)}px`;
+}
+addEventListener('resize', tourPlace);
+addEventListener('scroll', tourPlace, true);
+document.addEventListener('keydown', e => {
+  if (!tourOpen()) return;
+  if (e.key === 'Escape') tourEnd();
+  else if (e.key === 'ArrowRight') tourGo(1);
+  else if (e.key === 'ArrowLeft') tourGo(-1);
+});
 
 
 // DFS cache
@@ -9986,6 +10118,7 @@ function shpArbSize(a) {
     <p>Reorder tabs, hide the ones you do not use, and choose which stay on the bar. Saved on this device.</p>
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
+    <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>

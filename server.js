@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.183.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.184.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5039,6 +5039,17 @@ async function closeBoardFor(lic = webhookLicence(), days = 0, state = null) {
 app.get('/api/ev/scoreboard', async (req, res) => {
   try {
     res.json(await closeBoardFor(licenceOf(req), parseFloat(req.query.days) || 0, req.query.state));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// What a public page may claim (claims.js): the scoreboard's proven rows of
+// the kinds that close on Pinnacle's own price, the Texas cut, and the labels
+// every other tool wears. The sales page, /learn and the welcome screen read it.
+const claims = require('./claims');
+app.get('/api/claims', async (req, res) => {
+  try {
+    const lic = webhookLicence();
+    const [board, txBoard] = await Promise.all([closeBoardFor(lic, 0, null), closeBoardFor(lic, 0, 'TX')]);
+    res.set('Cache-Control', 'public, max-age=60').json(claims.publicClaims({ board, txBoard, alertBooks: evBookProven }));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/ev/record/bets', async (req, res) => {
@@ -8363,7 +8374,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.183.0',
+  version: '3.184.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

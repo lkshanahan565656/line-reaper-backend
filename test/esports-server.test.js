@@ -317,6 +317,16 @@ test('the bare URL: browsers get the sales page, API clients the JSON status', a
   assert.equal((await get('/')).body.status, 'Line Reaper backend running');
 });
 
+test('GET /api/claims: proven rows from the close scoreboard, the Texas cut and the labels; the sales page reads it', async () => {
+  const r = await get('/api/claims');
+  assert.equal(r.status, 200);
+  assert.ok(Array.isArray(r.body.proven) && Array.isArray(r.body.texas.proven) && Array.isArray(r.body.labels));
+  assert.ok(r.body.texas.exchanges.some(v => v.key === 'polymarketus') && !r.body.texas.exchanges.some(v => v.key === 'polymarket'));
+  const page = S.landingHtml({ env: {} });
+  assert.ok(page.includes("fetch('/api/claims')") && !page.includes("fetch('/api/results')"), 'the sales page reads /api/claims, not the looser /api/results');
+  assert.doesNotMatch(page, /Locked profit|two-minute test/);
+});
+
 test('sales page prices and early-access note come from env', () => {
   const { landingHtml } = S;
   const free = landingHtml({ paywall: false, env: {} });

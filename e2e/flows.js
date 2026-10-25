@@ -278,6 +278,118 @@ const FLOWS = {
     expect(after && after !== before, 'the calculator output did not change');
     expect(/40(\.0)?%/.test(after), `+150 should read 40% implied: "${after.slice(0, 200)}"`);
   },
+
+  async 'first-run tour: every step, shows once, HELP and CUSTOMIZE reopen it'(page, w, opts) {
+    const tourState = () => page.evaluate(() => ({ open: document.getElementById('tour').classList.contains('open'), step: document.getElementById('tourStep').textContent, title: document.getElementById('tourTitle').textContent }));
+    // inside the window, no wider than the screen, and the ring on something the viewer can see
+    const placed = () => page.evaluate(() => {
+      const c = document.getElementById('tourCard').getBoundingClientRect(), r = document.getElementById('tourRing');
+      const rr = r.getBoundingClientRect();
+      return { card: c.left >= 0 && c.right <= innerWidth + 1 && c.top >= 0 && c.bottom <= innerHeight + 1, ring: !r.classList.contains('none') && rr.width > 4 && rr.height > 4, wide: document.documentElement.scrollWidth <= innerWidth + 1 };
+    });
+    await page.locator('#helpBtn').click();
+    await settle(page, w, opts, 120);
+    let st = await tourState();
+    expect(st.open && st.step === '1 / 6' && st.title === 'ODDS SCREEN', `HELP did not open the tour at step 1: ${JSON.stringify(st)}`);
+    expect(await page.evaluate(() => document.getElementById('page-odds').classList.contains('active')), 'step 1 did not land on ODDS SCREEN');
+    const want = ['ODDS SCREEN', 'EXCHANGE SHOPPER', 'PROPS', 'BET TRACKER AND MY SLIPS', 'RESULTS', 'PUSH ALERTS'];
+    for (let i = 0; i < want.length; i++) {
+      st = await tourState();
+      expect(st.title === want[i] && st.step === `${i + 1} / 6`, `step ${i + 1} reads ${JSON.stringify(st)}`);
+      const pl = await placed();
+      expect(pl.card && pl.ring && pl.wide, `step ${i + 1} (${want[i]}) is placed badly: ${JSON.stringify(pl)}`);
+      const txt = await text(page, '#tourText');
+      if (want[i] === 'EXCHANGE SHOPPER') expect(/MIN BET SIZE/.test(txt) && /not a proven edge/.test(txt), 'the shopper step must name MIN BET SIZE and say a price is not an edge');
+      if (want[i] === 'PUSH ALERTS') expect(/CUSTOMIZE > Phone app > Push alerts/.test(txt), 'the push step must give the taps');
+      if (i === 1) { await page.locator('#tourBack').click(); await settle(page, w, opts, 60); expect((await tourState()).title === want[0], 'BACK did not go back'); await page.locator('#tourNext').click(); await settle(page, w, opts, 60); }
+      if (i < want.length - 1) { await page.locator('#tourNext').click(); await settle(page, w, opts, 120); }
+    }
+    expect((await page.locator('#tourNext').innerText()).trim() === 'DONE', 'the last step should say DONE');
+    await page.locator('#tourNext').click();
+    await settle(page, w, opts, 60);
+    expect(!(await tourState()).open && (await page.evaluate(() => localStorage.getItem('lr_tour'))) === '1', 'DONE did not close the tour and remember it');
+    // shows once: a reload on this device does not bring it back
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect(!(await tourState()).open, 'the tour came back after a reload');
+    // a new device (no lr_tour): it opens by itself, and Escape closes it for good
+    await page.evaluate(() => localStorage.removeItem('lr_tour'));
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await settle(page, w, opts, 300);
+    expect((await tourState()).open, 'a device that has not seen the tour did not get it');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+    expect(!(await tourState()).open && (await page.evaluate(() => localStorage.getItem('lr_tour'))) === '1', 'Escape did not close the tour and remember it');
+    // CUSTOMIZE > App tour > SHOW, and the last step's OPEN CUSTOMIZE lands on Push alerts
+    await page.locator('.tab-row .tab-end').click();
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layTour').click();
+    await settle(page, w, opts, 120);
+    expect((await tourState()).open && !(await page.locator('#layModal.open').count()), 'CUSTOMIZE > App tour did not open the tour');
+    for (let i = 0; i < 5; i++) { await page.locator('#tourNext').click(); await settle(page, w, opts, 80); }
+    await page.locator('#tourAct').click();
+    await settle(page, w, opts, 120);
+    expect(!(await tourState()).open && (await page.locator('#layModal.open').count()) === 1, 'OPEN CUSTOMIZE did not open the panel');
+    expect(await page.locator('#pushBtn').isVisible(), 'the Push alerts row is not in view in CUSTOMIZE');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
+  async 'sales page and Learn claim only what the record proves'(page, w, opts) {
+    // TEST DATA, not a recording: one proven row shaped like /api/claims, so the
+    // page is checked against known numbers. The live check reads the real API.
+    const TEST_CLAIMS = {
+      at: '2026-10-25T20:00:00Z', rule: { graded: 50, clvT: 2 }, building: 41, overall: { graded: 1234, beatPct: 66.6, clv: 1.4 },
+      proven: [{ kind: 'ev', kindLabel: 'Main lines vs the sharp fair', book: 'betrivers', bookName: 'BetRivers', graded: 113, beatPct: 83, clv: 3.01, clv2min: 2.4, clv2minN: 90, wins: 48, losses: 48, units: -0.7, profitShown: false, texas: false, pickem: false, alerts: true }],
+      texas: { name: 'Texas', note: 'No sportsbook is legal in Texas. Pick\'em apps and CFTC exchanges are.', proven: [],
+        pickem: [{ key: 'prizepicks', name: 'PrizePicks', read: true }, { key: 'betr', name: 'Betr', read: false, why: 'needs a login to read its board' }],
+        exchanges: [{ key: 'kalshi', name: 'Kalshi', read: true }, { key: 'polymarketus', name: 'Polymarket US', read: true }, { key: 'gemini', name: 'Gemini', read: true }] },
+      labels: [{ tool: 'NFL model', where: 'ODDS SCREEN > NFL MODEL', tag: 'model, not an edge', why: 'test' }],
+    };
+    let real = null;
+    if (opts.live) real = await (await page.request.get(`${opts.base}/api/claims`)).json();
+    else await page.route('**/api/claims', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TEST_CLAIMS) }));
+    const d = real || TEST_CLAIMS;
+    try {
+      await page.goto(`${opts.base}/`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#trackTable tbody tr').first().waitFor({ timeout: 6000 });
+      await page.waitForFunction(() => !/Loading/.test(document.querySelector('#trackTable tbody').textContent), null, { timeout: 6000 });
+      const got = await page.evaluate(() => ({
+        rows: [...document.querySelectorAll('#trackTable tbody tr')].map(r => r.innerText.replace(/\s+/g, ' ')),
+        hero: document.getElementById('heroProven').textContent, tx: document.getElementById('heroTexas').textContent, claim: document.getElementById('heroClaim').innerText,
+        pickem: document.getElementById('txPickem').innerText, exch: document.getElementById('txExch').innerText, labels: document.getElementById('labelTable').innerText,
+        pm: [...document.querySelectorAll('a[href]')].map(a => a.href).filter(h => /\/\/(www\.)?polymarket\.com/i.test(h)),
+        wide: document.documentElement.scrollWidth <= innerWidth + 1,
+        body: document.body.innerText,
+      }));
+      expect(got.hero === String(d.proven.length) && got.tx === String(d.texas.proven.length), `hero counts ${got.hero}/${got.tx}, API ${d.proven.length}/${d.texas.proven.length}`);
+      if (d.proven.length) {
+        expect(got.rows.length === d.proven.length, `${got.rows.length} record rows for ${d.proven.length} proven`);
+        d.proven.forEach((p, i) => {
+          expect(got.rows[i].includes(p.bookName) && got.rows[i].includes(String(p.graded)), `row ${i + 1} "${got.rows[i]}" is not ${p.bookName} at ${p.graded} graded`);
+          expect(got.rows[i].toLowerCase().includes(p.texas ? 'texas: yes' : 'not a texas venue'), `row ${i + 1} must say whether Texans can bet it`);
+          if (!p.profitShown) expect(/not shown yet/i.test(got.rows[i]), `row ${i + 1} must say profit is not shown yet`);
+        });
+        if (!d.texas.proven.length) expect(/Nothing is proven yet at a venue a Texas resident can use/.test(got.claim), `the hero claim must say nothing is proven for Texas: "${got.claim}"`);
+      } else expect(/Nothing is proven yet/.test(got.rows[0] || ''), 'with nothing proven the table must say so');
+      for (const v of d.texas.pickem) expect(got.pickem.includes(v.name), `Texas pick'em list misses ${v.name}`);
+      for (const v of d.texas.exchanges) expect(got.exch.includes(v.name), `Texas exchange list misses ${v.name}`);
+      for (const l of d.labels) expect(got.labels.includes(l.tool) && got.labels.toLowerCase().includes(l.tag.toLowerCase()), `the label table misses ${l.tool}`);
+      expect(!got.pm.length, `links to polymarket.com: ${got.pm.join(', ')}`);
+      expect(got.wide, 'the sales page scrolls sideways at this size');
+      expect(!/locked profit|guaranteed|risk[- ]free|sure thing|two-minute test/i.test(got.body), 'the sales page makes a claim the record does not back');
+      // Learn's record page reads the same list
+      await page.goto(`${opts.base}/learn/how-the-record-works`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => /Proven:|Nothing is proven yet/.test(document.getElementById('lrClaimsBody').textContent), null, { timeout: 6000 });
+      const learn = await page.evaluate(() => ({ body: document.getElementById('lrClaimsBody').innerText, tx: document.getElementById('lrClaimsTx').innerText, wide: document.documentElement.scrollWidth <= innerWidth + 1 }));
+      for (const p of d.proven) expect(learn.body.includes(p.bookName) && learn.body.includes(`${p.graded} graded`), `Learn misses ${p.bookName}: "${learn.body}"`);
+      expect(/Texas/.test(learn.tx) && learn.wide, 'Learn must say what Texas can place and fit the screen');
+    } finally {
+      if (!opts.live) await page.unroute('**/api/claims').catch(() => {});
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
 };
 
 async function run(context, opts, rep) {
