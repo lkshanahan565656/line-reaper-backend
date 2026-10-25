@@ -1,0 +1,59 @@
+12:37:39 kalshi NFL series KXNFLLARGELEAD:Pro Football Largest Lead | KXNFLPASSTDSPROT:Passing Touchdowns Protected | KXNFLFIRSTSTART:Pro Football First Start | KXNFLPASSINT:Pro Football Passing Interceptions | KXNFLCAREERPASSYDS:NFL Career Passing Yards | KXNFLEXACTWINSBUF:Pro football exact wins Buffalo | KXNFLT100TOP:Will player be ranked Top X on NFL 100 | KXNFLPREPACK1Q1H:MVE NFL Pre Pack | KXNFLNEXTTD:Pro Football Next TD scorer | KXNFLLONGESTTD:Pro Football Longest Touchdown | KXNFLSBMVP:Pro Football Championship MVP | KXNFLPREPACK1HFT:MVE NFL Pre Pack | KXNFLPOTM:NFL Player of the Month | KXNFLFF50PTS:Fantasy Football 50 Point Performances | KXNFLNFCEAST:National Football Conference East Winner | KXNFLCOMPETE:Will an NFL Player Compete in game | KXNFLREDZONEBRANDADS:Redzone week 1 brand ads | KXNFLWINS-GB:Pro football wins Green Bay | KXNFLEXACTWINSPHI:Pro football exact wins Philadephia | KXNFL4QTOTAL:Pro Football 4th Quarter Total | KXNFLPREPACK:MVE NFL Pre Pack | KXNFLSEASONRECYDS:Receiving Yards | KXNFLLASTTOLOSE:Pro Football Last Undefeated Team | KXNFLPASSATT:Pro Football Passing Attempts | KXNFLALLPRO:Pro Football All-Pro Teams | KXNFLLONGREC:Longest Reception | KXNFLRSHYDS:Pro Football Rushing Yards | KXNFL3QTOTAL:Pro Football 3rd Quarter Total | KXNFLWINS-DEN:Pro football wins Denver | KXNFLDIVMOSTWINS:Pro Football Division with the Least Wins | KXNFL4QSPREAD:Pro Football 4th Quarter Spread | KXNFLFFPTSLADDER:Fantasy Ladder | KXNFLTEAMFG:Pro Football Field Goals | KXNFLWINS-NYG:Pro football wins New York G | KXNFLEXACTWINSSEA:Pro football exact wins Seattle | KXLEADERNFLPYDS:NFL leader passing yards | KXNFLOT:Pro Football Overtime | KXNFLEXACTWINSJAC:Pro football exact wins Jacksonville | KXNFLSPREAD:Pro Football Spread | KXNFLOROY:NFL Offensive Rookie of the Y ear | KXNFLWINS-SF:Pro football wins San Francisco | KXNFLGAMELOCATION:NFL Game Location | KXNFL2TD:Pro Football Multiple Touchdowns | KXNFLPLAYOFFC:Will both teams make the NFL Playoffs | KXNFLEXACTWINSLAC:Pro football exact wins Los Angeles C | KXNFLWINS-TEN:Pro football wins Tennessee | KXNFLWINS-WAS:Pro football wins Washington | KXNFLAFCEAST:American Football Conference East Winner | KXNFL4QBTTS:Pro Football Both Teams to Score in 4th Quarter | KXNFLFFLEADERTOP:Top Fantasy | KXNFL2H:Pro Football 2nd Half | KXNFLMOSTRSHYDS:Pro Football Most Rushing Yards | KXNFLRETURN:Pro Football Player to Compete | KXNFLRRYDS:Pro Football Rush and Receiving Yards | KXLEADERNFLAPYDS:Pro Football All-Purpose Yards Leader | KXNFLWINS-CHI:Pro football wins Chicago | KXNFLEXACTWINSIND:Pro football exact wins Indianapolis | KXCOACHOUTNFL:NFL Coach Out | KXNEXTTEAMNFL:Player Next Team | KXNFLRECYDSH2H:Pro Football Head-to-Head Receiving Yards | KXNFLEXACTWINSNYJ:Pro football exact wins New York J | KXNFL1QTOTAL:Pro Football 1st Quarter Total | KXNFLWINS-DAL:Pro football wins Dallas | KXNFLWEEKHIGHSCORE:NFL Highest Scoring Team of the Week | KXNFLSTADIUM:Will NFL Stadium Project be complete by date | KXNFLEXACTWINSCAR
+12:37:39 saved k-series 388
+12:37:40 KXNFLSPREAD live 3348 hist 8227 settled since 11575 sample {"can_close_early":true,"close_time":"2026-10-23T03:27:21Z","created_time":"2026-10-23T00:48:37.810616Z","custom_strike":{"football_team":"9a77500a-1945-495e-b6f5-5c35bedaa8b9"},"early_close_condition":"This market will close and expire after a winner is declared.","event_ticker":"KXNFLSPREAD-26OCT22NECHI","exchange_index":0,"expected_expiration_time":"2026-10-23T06:15:00Z","expiration_time":"2026-10-25T00:15:00Z","expiration_value":"spread","floor_strike":20.5,"last_price_dollars":"0.0100","latest_expiration_time":"2026-10-25T00:15:00Z","market_type":"binary","no_ask_dollars":"1.0000","no_bid_dollars":"0.0000","no_sub_title":"Chicago wins by over 20.5 points","notional_value_dollars":"1.0000","occurrence_datetime":"2026-10-23T03:15:00Z","open_interest_fp":"20202.35","open_time":"2026-10-23T00:51:00Z","previous_price_dollars":"0.0100","previous_yes_ask_dollars":"1.0000","previous_yes_bid_dollars":"0.0000","price_level_structure":"linear_cent","price_ranges":[{"end":"1.0000","start":"0.0000","step":"0.0100"}],"result":"no","rules_primary":"If Chicago wins by more than 20.5 points in the New England vs Chicago Pro Football game originally scheduled for Oct 22, 2026, then the market resolves to Yes.","rules_secondary":"Kalshi is not affiliated, associated, authorized, endorsed by, or in any way officially connected with the Governing League. All trademarks, logos, and brand names are the property of their respective owners.","settlement_bounds_type":"default","settlement_timer_seconds":60,"settlement_ts":"2026-10-23T03:29:23.619086Z","settlement_value_dollars":"0.0000","status":"finalized","strike_type":"greater","ticker":"KXNFLSPREAD-26OCT22NECHI-CHI21","title":"Chicago wins by over 20.5 points?","updated_time":"2026-10-23T03:29:23.839909Z","volume_24h_fp":"0.00","volume_fp":"23478.40","yes_ask_dollars":"1.0000","yes_ask_size_fp":"0.00","yes_bid_dollars":"0.0000","yes_bid_size_fp":"0.00","yes_sub_title":"Chicago wins by over 20.5 points"}
+12:41:00 KXNFLSPREAD 400 / 11575 calls 1681 errs 0
+12:41:00 saved k-KXNFLSPREAD 400
+12:44:19 KXNFLSPREAD 800 / 11575 calls 3307 errs 0
+12:44:19 saved k-KXNFLSPREAD 800
+12:47:40 KXNFLSPREAD 1200 / 11575 calls 4905 errs 0
+12:47:40 saved k-KXNFLSPREAD 1200
+12:50:59 KXNFLSPREAD 1600 / 11575 calls 6514 errs 0
+12:51:00 saved k-KXNFLSPREAD 1600
+12:54:18 KXNFLSPREAD 2000 / 11575 calls 8123 errs 0
+12:54:19 saved k-KXNFLSPREAD 2000
+12:57:38 KXNFLSPREAD 2400 / 11575 calls 9712 errs 0
+12:57:40 saved k-KXNFLSPREAD 2400
+13:00:59 KXNFLSPREAD 2800 / 11575 calls 11322 errs 0
+13:01:00 saved k-KXNFLSPREAD 2800
+13:04:19 KXNFLSPREAD 3200 / 11575 calls 12959 errs 0
+13:04:21 saved k-KXNFLSPREAD 3200
+13:07:38 KXNFLSPREAD 3600 / 11575 calls 14560 errs 0
+13:07:40 saved k-KXNFLSPREAD 3600
+13:10:59 KXNFLSPREAD 4000 / 11575 calls 16160 errs 0
+13:11:02 saved k-KXNFLSPREAD 4000
+13:14:20 KXNFLSPREAD 4400 / 11575 calls 17792 errs 0
+13:14:23 saved k-KXNFLSPREAD 4400
+13:17:39 KXNFLSPREAD 4800 / 11575 calls 19401 errs 0
+13:17:42 saved k-KXNFLSPREAD 4800
+13:21:01 KXNFLSPREAD 5200 / 11575 calls 21035 errs 0
+13:21:04 saved k-KXNFLSPREAD 5200
+13:24:22 KXNFLSPREAD 5600 / 11575 calls 22656 errs 0
+13:24:25 saved k-KXNFLSPREAD 5600
+13:27:42 KXNFLSPREAD 6000 / 11575 calls 24268 errs 0
+13:27:45 saved k-KXNFLSPREAD 6000
+13:31:03 KXNFLSPREAD 6400 / 11575 calls 25855 errs 0
+13:31:06 saved k-KXNFLSPREAD 6400
+13:34:24 KXNFLSPREAD 6800 / 11575 calls 27501 errs 0
+13:34:27 saved k-KXNFLSPREAD 6800
+13:37:43 KXNFLSPREAD 7200 / 11575 calls 29086 errs 0
+13:37:46 saved k-KXNFLSPREAD 7200
+13:41:05 KXNFLSPREAD 7600 / 11575 calls 30713 errs 0
+13:41:08 saved k-KXNFLSPREAD 7600
+13:44:26 KXNFLSPREAD 8000 / 11575 calls 32296 errs 0
+13:44:29 saved k-KXNFLSPREAD 8000
+13:47:46 KXNFLSPREAD 8400 / 11575 calls 33921 errs 0
+13:47:49 saved k-KXNFLSPREAD 8400
+13:51:06 KXNFLSPREAD 8800 / 11575 calls 35548 errs 0
+13:51:10 saved k-KXNFLSPREAD 8800
+13:54:27 KXNFLSPREAD 9200 / 11575 calls 37188 errs 0
+13:54:31 saved k-KXNFLSPREAD 9200
+13:57:48 KXNFLSPREAD 9600 / 11575 calls 38817 errs 0
+13:57:52 saved k-KXNFLSPREAD 9600
+14:01:09 KXNFLSPREAD 10000 / 11575 calls 40456 errs 0
+14:01:14 saved k-KXNFLSPREAD 10000
+14:04:31 KXNFLSPREAD 10400 / 11575 calls 42074 errs 0
+14:04:35 saved k-KXNFLSPREAD 10400
+14:07:52 KXNFLSPREAD 10800 / 11575 calls 43691 errs 0
+14:07:57 saved k-KXNFLSPREAD 10800
+14:11:13 saved k-KXNFLSPREAD 11186
+14:11:13 done k:KXNFLSPREAD calls 45246 errs 0 min 94
