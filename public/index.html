@@ -558,6 +558,12 @@ a.esm-px:hover { border-color: rgba(167,139,250,.5); background: rgba(139,92,246
 .nbm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
 .nbm-p.lean { color:#fbbf24; }
 /* SHOP: the softest number across the apps (aps- prefix; shop- is the odds screen's) */
+#page-props.cfbm .pb-conly, #page-props.cfbm .pb-lonly, #page-props.cfbm #pbSports, #page-props.cfbm #pbBooks, #page-props.cfbm #pbCover, #page-props.cfbm #pbRecord { display: none; }
+.cfm-note { border:1px solid #3a3320; background:#1a170e; color:#fbbf24; border-radius:10px; padding:10px 12px; font-size:12px; margin:0 0 10px; line-height:1.5; }
+.cfm-note b { color:#fde68a; letter-spacing:1px; }
+.cfm-bt { font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin:0 0 10px; overflow-x:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+.cfm-p { font-family:'JetBrains Mono',monospace; font-size:11px; color:#cbd5e1; }
+.cfm-p.lean { color:#fbbf24; }
 #page-props.shop .pb-conly, #page-props.shop .pb-lonly, #page-props.shop #pbBooks, #page-props:not(.shop) .pb-sonly { display: none; }
 .aps-note { font-size: 11px; color: #94a3b8; margin: 0 0 10px; line-height: 1.5; } .aps-note b { color: #fbbf24; }
 .aps-list { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
@@ -4151,7 +4157,7 @@ function updateWSStatus(active, mode='POLLING') {
 
 // ─── PROPS BOARD: every book's lines side by side (/api/props/board) ─────────
 const pbState = { sport: 'ALL', book: '', sort: 'ev', show: 'all', q: '', market: '', limit: 150, data: null, seq: 0, record: null, recordAt: 0,
-  view: ['cards', 'shop', 'model'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
+  view: ['cards', 'shop', 'model', 'cfbmodel'].includes(lsGetPb('lr_pb_view')) ? lsGetPb('lr_pb_view') : 'lines', nbmStat: '', nbm: null, cfmStat: '', cfm: null, shopSort: 'gap', shopShow: 'all', shopRecord: null, shopRecordAt: 0, lineBook: ['underdog', 'prizepicks', 'sleeper', 'pick6'].includes(lsGetPb('lr_pb_lbook')) ? lsGetPb('lr_pb_lbook') : 'underdog' };
 function lsGetPb(k) { try { return localStorage.getItem(k); } catch { return null; } }
 const PB_BOOKS = [['underdog', 'Underdog', 'UD'], ['prizepicks', 'PrizePicks', 'PP'], ['sleeper', 'Sleeper', 'SL'], ['pick6', 'DK Pick6', 'P6']];
 // DK Pick6 shows only once the server reads it (PICK6=on): a lead, not graded yet
@@ -4174,6 +4180,8 @@ async function loadPropsBoard() {
   if (pbState.view === 'shop') return loadShop(seq);
   document.getElementById('page-props')?.classList.toggle('model', pbState.view === 'model');
   if (pbState.view === 'model') return loadNbaModel(seq);
+  document.getElementById('page-props')?.classList.toggle('cfbm', pbState.view === 'cfbmodel');
+  if (pbState.view === 'cfbmodel') return loadCfbModel(seq);
   const qs = new URLSearchParams({ sport: pbState.sport, sort: lines ? 'ev' : pbState.sort, limit: pbState.limit });
   if (lines) { qs.set('book', pbState.lineBook); qs.set('priced', '1'); qs.set('facets', '1'); if (pbState.market) qs.set('market', pbState.market); lnLoadUsed(); }
   else if (pbState.book) qs.set('book', pbState.book);
@@ -4233,7 +4241,7 @@ function pbChips() {
     chip(pbState.sport === 'SPORTS', 'SPORTS', null, "pbSet('sport','SPORTS')"), chip(pbState.sport === 'ESPORTS', 'ESPORTS', null, "pbSet('sport','ESPORTS')"),
     ...sports.map(s => chip(pbState.sport === s, s, c.sports[s], `pbSet('sport','${s}')`))].join('');
   const lines = pbState.view === 'lines';
-  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')")].join('');
+  document.getElementById('pbView').innerHTML = [chip(lines, 'LINES', null, "pbSet('view','lines')"), chip(pbState.view === 'cards', 'CARDS', null, "pbSet('view','cards')"), chip(pbState.view === 'shop', 'SHOP', null, "pbSet('view','shop')"), chip(pbState.view === 'model', 'NBA MODEL', null, "pbSet('view','model')"), chip(pbState.view === 'cfbmodel', 'CFB MODEL', null, "pbSet('view','cfbmodel')")].join('');
   pbCoverage();
   document.getElementById('pbBooks').innerHTML = [...(lines ? [] : [chip(!pbState.book, 'ALL BOOKS', null, "pbSet('book','')")]),
     ...pbBooksOn().map(([k, name]) => chip(lines ? pbState.lineBook === k : pbState.book === k, name.toUpperCase(), c.books?.[k] || 0, `pbSet('book','${k}')`))].join('');
@@ -4713,6 +4721,76 @@ function renderNbaModel() {
   const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
   const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
   el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'NBA lines priced')}${stat(leans, `model ${Math.round((d.pickMin || 0.58) * 100)}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.teamsWithOuts ?? '—', 'teams with players out')}</div><div class="pb-list">${body}</div>`;
+}
+// ─── CFB MODEL (/api/props/cfbmodel): our own projection at each app's number ──
+// Same layout as the NBA model's view. Labelled "model, not an edge" until its
+// own record (kinds cfb-model, p6-cfb-model) has 50+ graded live legs with the
+// hit rate 2+ standard errors past the app's break-even. No alerts, no bet buttons.
+const CFM_STATS = [['', 'ALL'], ['pass_yds', 'PASS YDS'], ['pass_tds', 'PASS TD'], ['pass_comp', 'COMP'], ['pass_att', 'ATT'], ['rush_yds', 'RUSH YDS'], ['rush_att', 'CARRIES'],
+  ['rec_yds', 'REC YDS'], ['receptions', 'REC'], ['rush_rec_yds', 'RUSH+REC'], ['pass_rush_yds', 'PASS+RUSH'], ['longest_rec', 'LONG REC'], ['longest_rush', 'LONG RUSH'], ['kicking_points', 'KICK PTS'], ['fg_made', 'FG']];
+async function loadCfbModel(seq) {
+  const qs = new URLSearchParams({ limit: 300 });
+  if (pbState.q) qs.set('q', pbState.q);
+  if (pbState.cfmStat) qs.set('stat', pbState.cfmStat);
+  pbChips();
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/props/cfbmodel?${qs}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== pbState.seq) return;
+    pbState.cfm = d;
+    renderCfbModel();
+  } catch (e) {
+    const el = document.getElementById('pbContent');
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the CFB model (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+  }
+}
+function cfmRecTxt(k, be) {
+  if (!k || !k.signals) return 'nothing logged yet';
+  if (!k.graded) return `${k.signals} logged, none graded yet`;
+  const n = k.wins + k.losses, hit = n ? k.wins / n : 0;
+  const z = n ? (hit - be) / Math.sqrt(be * (1 - be) / n) : 0;
+  return `${k.wins}-${k.losses} (${(hit * 100).toFixed(1)}% vs ${(be * 100).toFixed(2)}% break-even, z ${z.toFixed(2)}) of ${n} graded`;
+}
+function renderCfbModel() {
+  const el = document.getElementById('pbContent'), d = pbState.cfm;
+  if (!el || !d) return;
+  const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
+  const pm = Math.round((d.pickMin || 0.58) * 100);
+  const stats = `<div class="pb-chips" style="margin:0 0 10px">${CFM_STATS.map(([k, lab]) => chip(pbState.cfmStat === k, lab, `pbState.cfmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
+  const note = `<div class="cfm-note"><b>MODEL, NOT AN EDGE.</b> Our own college football projection from ESPN box scores (each player's share of his team's passes, carries and catches, the team's volume, what the opponent allows, and the pre-game total and spread), priced at each app's own number. Its backtest found no edge (below). ${escAttr(d.bar || '')} Its legs at ${pm}%+ on PrizePicks and Pick6 keep their own record; no alerts.</div>`;
+  if (!d.on) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">${escAttr(d.note || 'The CFB model is off.')}</div></div>`; return; }
+  const rec = `<div class="pb-dim" style="margin:0 0 10px">Model record, PrizePicks: ${cfmRecTxt(d.record?.prizepicks, 0.5503)} · Pick6: ${cfmRecTxt(d.record?.pick6, 0.567)}</div>`;
+  const bt = d.backtest?.lines?.length ? `<div class="cfm-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')} · ${escAttr(d.backtest.verdict || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
+  const st = d.status || {};
+  const rows = d.rows || [];
+  if (!rows.length) {
+    el.innerHTML = note + rec + bt + stats + `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO CFB LINES PRICED</div><div class="empty-sub">${pbState.q || pbState.cfmStat ? 'Nothing matches these filters.' : `No college game on the board right now, or the apps haven't posted props yet. ${st.games ? `${st.games.toLocaleString()} games on file` : 'Box scores still loading'}${st.refreshedAt ? `, last read ${pbFmtStart(st.refreshedAt)}` : ''}.`}</div></div>`;
+    return;
+  }
+  const pc = p => `${Math.round(p * 100)}%`;
+  const sideCell = (ab, color, q, what) => q
+    ? `<div class="pb-bk"><div class="pb-bkname" style="--bk:${color}"><i></i>${ab}</div><div class="pb-line">${q.line}</div><div class="pb-dim">${what} ${pc(q.pOver)} over</div>${q.model != null ? `<div class="pb-dim">model ${pc(q.model)}</div>` : ''}</div>`
+    : `<div class="pb-bk none"><div class="pb-bkname" style="--bk:${color}"><i></i>${ab}</div><div class="pb-line">—</div><div class="pb-dim">no prop</div></div>`;
+  const body = rows.map(r => {
+    const cells = PB_BOOKS.map(([k, , ab]) => {
+      const a = r.apps[k];
+      const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
+      if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div></div>`;
+    }).join('');
+    const bk = r.book ? { ...r.book } : null;
+    const sp = r.spread == null ? '' : `spread ${r.spread > 0 ? '+' : ''}${r.spread}`;
+    const ctx = [`${r.games} games on file`, r.total != null ? `total ${r.total}` : '', sp].filter(Boolean).join(' · ');
+    const meta = `${escAttr(r.team)} ${r.home ? 'vs' : '@'} ${escAttr(r.opp)} · ${pbFmtStart(r.start)}`;
+    return `<div class="pb-card">
+      <div class="pb-who"><div class="pb-name"><span class="pb-sport">CFB</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${meta}</div><div class="pb-meta">proj ${r.mean} (median ${r.median ?? '—'}) · ${ctx}</div></div>
+      <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 2},minmax(0,1fr))">${cells}${sideCell('PIN', '#94a3b8', r.pinnacle, 'Pinnacle')}${sideCell(bk ? (bk.book === 'betrivers' ? 'BR' : 'FD') : 'FD', '#1e90ff', bk, bk ? (bk.book === 'betrivers' ? 'BetRivers' : 'FanDuel') : '')}</div>
+      <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="cfm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div><div class="pb-dim">model, not an edge</div></div></div>`;
+  }).join('');
+  const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
+  const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;
+  el.innerHTML = note + rec + bt + stats + `<div class="pb-sum">${stat(d.count.toLocaleString(), 'CFB lines priced')}${stat(leans, `model ${pm}%+`)}${stat((st.games || 0).toLocaleString(), 'games on file')}${stat(st.schedule ?? '—', 'games on the schedule')}</div><div class="pb-list">${body}</div>`;
 }
 function renderPropsBoard() {
   renderPkTray();

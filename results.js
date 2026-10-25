@@ -137,8 +137,8 @@ const SPORT_BOOKS = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper', P6: 'DK P
 // research rows and the stale-line legs (stalelines.js, their own record on
 // the +EV tab) never count toward the sports props headline or its plays
 // leads with records of their own (stale lines, the books' fair) stay out of the verdict
-const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'shop-any', 'shop-pp', 'shop-p6', 'shop-mid', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo', 'nba-model', 'p6-nba-model']);
-const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus', 'nba-model': 'NBA model', 'p6-nba-model': 'Pick6 NBA model' };
+const SPORT_RESEARCH = new Set(['gap-odd', 'gap-stale', 'shop-any', 'shop-pp', 'shop-p6', 'shop-mid', 'stale', 'stale-single', 'book-fair', 'book-fair-single', 'p6-book-fair', 'p6-book-fair-single', 'book-consensus', 'p6-book-consensus', 'sharp3', 'p6-sharp3', 'combo', 'p6-combo', 'nba-model', 'p6-nba-model', 'cfb-model', 'p6-cfb-model']);
+const SPORT_KIND = { gap: 'line gap', ev: 'sharp price', sharp: 'sharp consensus', 'p6-gap': 'Pick6 line gap', 'p6-ev': 'Pick6 sharp price', 'p6-sharp': 'Pick6 sharp consensus', 'nba-model': 'NBA model', 'p6-nba-model': 'Pick6 NBA model', 'cfb-model': 'CFB model', 'p6-cfb-model': 'Pick6 CFB model' };
 const sportPropBet = r => {
   const graded = r.status === 'graded' && r.outcome !== 'push';
   const clv = r.closeEv != null ? r.closeEv / 100 : null;

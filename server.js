@@ -810,6 +810,14 @@ const sportTracker = createSportTracker({
   grader: sportGrader,
 });
 sportTracker.ready().catch(e => console.error('Sports props tracker: store failed to initialise:', e.message));
+// CFB MODEL (cfbmodel.js, cfbdata.js): our own college football player-prop
+// projection from ESPN box scores, priced at each app's number on the PROPS
+// board. A model view, "model, not an edge": its PrizePicks and Pick6 legs at
+// 58%+ go in the record as kinds of their own (cfb-model, p6-cfb-model), out of
+// the headline, no alerts. CFB_MODEL=off turns it off.
+const cfbdata = require('./cfbdata');
+const CFB_MODEL_ON = !/^(off|0|false|no)$/i.test(String(process.env.CFB_MODEL || '').trim());
+const cfbModel = CFB_MODEL_ON ? cfbdata.createCfbModel({ http: axios, log: m => console.warn(m) }) : null;
 // NBA MODEL (nbamodel.js, nbadata.js): our own NBA player-prop projection
 // from ESPN box scores, priced at each app's number on the PROPS board. A model
 // view, "model, not an edge": its PrizePicks and Pick6 legs at 58%+ go in the
@@ -4738,7 +4746,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.168.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.169.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5666,6 +5674,8 @@ function stalePinAt(row) {
 }
 function sportFairAt(row, book, line, kind) {
   kind = baseSportKind(kind);
+  // a CFB model leg closes on the model's own number at the start (the record is its hit rate)
+  if (kind === 'cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
   // an NBA model leg closes on the model's own number at the start (its CLV is the model against itself: the record is the hit rate)
   if (kind === 'nba-model') return nbaModel ? nbaModel.fairAt(row, line) : null;
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
@@ -6807,6 +6817,8 @@ async function trackSportProps() {
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
+    // the CFB model's confident PrizePicks and Pick6 legs: a record of their own (kinds cfb-model, p6-cfb-model)
+    if (cfbModel) { try { flagged.push(...cfbModel.plays(rows)); } catch (e) { console.warn('CFB model plays:', e.message); } }
     // the NBA model's confident PrizePicks and Pick6 legs: a record of their own (kinds nba-model, p6-nba-model)
     if (nbaModel) { try { flagged.push(...nbaModel.plays(rows)); } catch (e) { console.warn('NBA model plays:', e.message); } }
 
@@ -6894,6 +6906,40 @@ app.get('/api/props/board', (req, res) => {
     coverage: propsBoardCache.coverage ? { leagues: propsBoardCache.coverage.leagues, byApp: propsBoardCache.coverage.byApp } : null,
     updated: { underdog: cache.underdog.updated, prizepicks: cache.prizepicks.updated, sleeper: cache.sleeper.updated, kalshi: kpropsState.updated, esports: esportsCache.lastUpdated },
   });
+});
+
+// ── CFB MODEL: every CFB row the model prices, each app's line with the
+// model's P(over), Pinnacle's and FanDuel/BetRivers' no-vig P(over) at their
+// own lines where they hang the prop, the model's record and its backtest
+// (seeds/cfb-model-backtest.json). Same shape as the NBA model's view.
+function nearestQuote(row, qs) {
+  if (!qs.length) return null;
+  const lines = Object.values(row.books || {}).map(c => c.line).filter(Number.isFinite).sort((a, b) => a - b);
+  const ref = lines.length ? lines[Math.floor(lines.length / 2)] : null;
+  return ref == null ? qs[0] : qs.slice().sort((a, b) => Math.abs(a.line - ref) - Math.abs(b.line - ref))[0];
+}
+function cfbPinAt(row) {
+  const q = nearestQuote(row, (pinprops.quotesForGame(pinPropsIndex, row) || []).filter(x => Number.isFinite(x.pOver)));
+  return q ? { line: q.line, pOver: q.pOver } : null;
+}
+function cfbBookAt(row) {
+  const q = nearestQuote(row, bookLineQuotes(row).filter(x => Number.isFinite(x.line) && Number.isFinite(x.pOver)));
+  return q ? { book: q.book, line: q.line, pOver: q.pOver } : null;
+}
+app.get('/api/props/cfbmodel', async (req, res) => {
+  if (!cfbModel) return res.json({ on: false, note: 'The CFB model is switched off on this server (CFB_MODEL=off).', rows: [] });
+  try {
+    const { rows } = propsBoardRows();
+    let list = cfbModel.section(rows, { pinAt: cfbPinAt, bookAt: cfbBookAt });
+    const q = String(req.query.q || '').toLowerCase().trim();
+    if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
+    if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
+    const kinds = (await sportTracker.summary()).byKind || {};
+    res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), pickMin: cfbdata.PICK_MIN,
+      bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%), and an independent re-check of the results.',
+      record: { prizepicks: kinds['cfb-model'] || null, pick6: kinds['p6-cfb-model'] || null },
+      backtest: cfbModel.state.backtest, count: list.length, rows: list.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)) });
+  } catch (e) { sendErr(res, e); }
 });
 
 // ── SHOP: the softest number across the apps (appshop.js) ──
@@ -7610,7 +7656,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.168.0',
+  version: '3.169.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -7741,6 +7787,11 @@ if (nbaModel) {
   setTimeout(() => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)), 120e3).unref?.();
 }
 // Sports props record: grade locked legs off ESPN box scores
+// CFB model: finished FBS box scores and the coming days' schedule every 30 minutes (first read 3 minutes after boot)
+if (cfbModel) {
+  schedule('16,46 * * * *', () => cfbModel.refresh().catch(e => console.warn('CFB model refresh:', e.message)));
+  setTimeout(() => cfbModel.refresh().catch(e => console.warn('CFB model refresh:', e.message)), 180e3).unref?.();
+}
 schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => console.warn('Sports grader:', e.message)));
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
@@ -7906,7 +7957,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, nbaModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, nbaModel, cfbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
