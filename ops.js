@@ -23,6 +23,25 @@ function createOps({ now = () => Date.now(), sampleMs = 100, stallMs = STALL_MS,
   // shorter gaps too, counted from start (stalls only keeps 500 ms and up):
   // a probe reads the counts twice and takes the difference
   const loop = { since: null, samples: 0, over100: 0, over250: 0, over500: 0, maxMs: 0, recent: [] };
+  // garbage collection pauses (a big heap's full collection holds the loop
+  // with none of our code on the stack): counts since start, recent long ones
+  const gc = { count: 0, totalMs: 0, over100: 0, over250: 0, over500: 0, maxMs: 0, recent: [] };
+  let gcObs = null;
+  const GC_KINDS = { 1: 'minor', 2: 'major', 4: 'incremental', 8: 'weakcb' };
+  function onGc(list) {
+    for (const e of list.getEntries()) {
+      const d = Math.round(e.duration);
+      gc.count++; gc.totalMs += d;
+      if (d > gc.maxMs) gc.maxMs = d;
+      if (d >= 100) {
+        gc.over100++;
+        if (d >= 250) gc.over250++;
+        if (d >= 500) gc.over500++;
+        gc.recent.push({ at: new Date(performance.timeOrigin + e.startTime).toISOString(), ms: d, kind: GC_KINDS[e.detail?.kind] || String(e.detail?.kind ?? '') });
+        if (gc.recent.length > keep) gc.recent.shift();
+      }
+    }
+  }
 
   function mark(name) {
     if (boot.some(b => b.mark === name)) return;
@@ -33,6 +52,10 @@ function createOps({ now = () => Date.now(), sampleMs = 100, stallMs = STALL_MS,
     if (timer) return;
     last = now();
     loop.since ||= new Date(last).toISOString();
+    try {
+      gcObs = new (require('perf_hooks').PerformanceObserver)(onGc);
+      gcObs.observe({ entryTypes: ['gc'] });
+    } catch { gcObs = null; }
     timer = setInterval(() => {
       const t = now(), gap = t - last - sampleMs;
       last = t;
@@ -111,13 +134,14 @@ function createOps({ now = () => Date.now(), sampleMs = 100, stallMs = STALL_MS,
       uptimeS: Math.round((now() - t0) / 1000), boot: [...boot],
       stalls: { count: stalls.length, worstMs, recent: stalls.slice(-20).reverse() },
       loop: { ...loop, recent: loop.recent.slice(-20).reverse() },
+      gc: { ...gc, recent: gc.recent.slice(-20).reverse() },
       requests: { inFlight: activeReqs.size, routes: top, slowest: slow.slice(0, 20) },
       jobs: { running: [...activeJobs.values()].map(j => ({ name: j.name, forMs: now() - j.at })), byMaxMs: jobList },
       memory: (() => { const m = process.memoryUsage(); return { rssMb: Math.round(m.rss / 1048576), heapMb: Math.round(m.heapUsed / 1048576) }; })(),
     };
   }
 
-  function stop() { clearInterval(timer); timer = null; }
+  function stop() { clearInterval(timer); timer = null; gcObs?.disconnect(); gcObs = null; }
 
   return { mark, start, stop, job, middleware, state, t0 };
 }
