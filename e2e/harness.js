@@ -79,7 +79,10 @@ async function start({ port = 0, snapshot = loadSnapshot(), log = () => {} } = {
       return;
     }
     const k = keyOf(req.originalUrl);
-    const hit = responses[k] || closest(k, byPath[req.path]);
+    // a per-item path (a game's line history, a player page) the recording has no copy of:
+    // a recorded sibling under the same parent path, so the view still renders real data
+    const sibling = () => { const parent = req.path.replace(/\/[^/]+$/, '/'); const p = Object.keys(byPath).find(x => x.startsWith(parent) && !x.slice(parent.length).includes('/')); return p ? closest(k, byPath[p]) : null; };
+    const hit = responses[k] || closest(k, byPath[req.path]) || (/\/(history|player|team|trader|matchups)\//.test(req.path) ? sibling() : null);
     if (!hit) { misses.set(k, (misses.get(k) || 0) + 1); log(`fixture miss ${k}`); return next(); }
     served.add(k);
     res.status(hit.status || 200).type(hit.type || 'application/json').send(hit.body);

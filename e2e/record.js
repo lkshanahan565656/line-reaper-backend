@@ -25,7 +25,9 @@ async function main() {
   if (!/^https?:\/\//.test(base)) throw new Error('usage: node e2e/record.js <base url> [out.json.gz]');
   const recordedAt = new Date().toISOString();
   const responses = {};
-  const extra = (process.env.RECORD_EXTRA || '').split(',').filter(Boolean);
+  const extra = ['/api/props/mlb?limit=300', '/api/props/cfbmodel?limit=300', '/api/props/nbamodel?limit=300', '/api/tracker/summary', '/api/tracker/picks?limit=100&status=review',
+    '/api/tracker/picks?limit=100&status=locked', '/api/esports/models', '/api/esports/inplay', '/api/tail/record?limit=60', '/api/props/coverage?sport=NFL', '/api/features', '/api/push/kinds',
+    ...(process.env.RECORD_EXTRA || '').split(',').filter(Boolean)];
   const browser = await chromium.launch();
   const jobs = [];
   const reports = [];
@@ -61,6 +63,11 @@ async function main() {
   await Promise.all(jobs);
   // endpoints the crawl may not reach on the day (empty boards) but the suite asks for
   const ctx = await browser.newContext();
+  // every game's LINE MOVES chart on the odds screen (the crawl opens only some)
+  try {
+    const games = JSON.parse(responses['/api/odds-screen']?.body || '{}').games || [];
+    for (const g of games.slice(0, 80)) extra.push(`/api/odds-screen/history/${encodeURIComponent(g.id)}`);
+  } catch { /* no board */ }
   for (const p of extra) {
     const k = keyOf(base + p);
     if (responses[k]) continue;

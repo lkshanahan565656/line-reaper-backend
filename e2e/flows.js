@@ -86,7 +86,6 @@ const FLOWS = {
 
   async 'log a bet from the ODDS SCREEN'(page, w, opts) {
     await openTab(page, 'odds', w, opts);
-    await page.evaluate(() => { if (window.shpUi && shpUi.opts.mode !== 'games') { /* GAME LINES view */ } });
     const games = page.locator('#oddsModes button', { hasText: 'GAME LINES' });
     if (await games.count()) await games.first().click();
     await settle(page, w, opts, 200);

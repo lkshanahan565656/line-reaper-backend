@@ -29,7 +29,7 @@ function watch(page, rep, opts) {
   page.on('requestfailed', r => {
     w.pending.delete(r);
     const u = r.url();
-    if (u.startsWith(opts.base) && !/blockedbyclient|ERR_ABORTED/i.test(r.failure()?.errorText || '')) issue(rep, 'request-failed', { url: u.slice(opts.base.length), error: r.failure()?.errorText, tab: w.tab });
+    if (u.startsWith(opts.base) && !/blocked_?by_?client|ERR_ABORTED/i.test(r.failure()?.errorText || '')) issue(rep, 'request-failed', { url: u.slice(opts.base.length), error: r.failure()?.errorText, tab: w.tab });
   });
   page.on('response', r => {
     const u = r.url();
@@ -157,6 +157,7 @@ async function sweepTab(page, name, rep, w, opts) {
   const tried = new Set();
   const famCount = {};
   const revisited = new Set();
+  let lastMax = null; // nothing is "new" on the first look
   const navTried = (opts.navTried ||= new Set());
   const appUrl = page.url();
   const t0 = Date.now();
@@ -164,20 +165,26 @@ async function sweepTab(page, name, rep, w, opts) {
   while (T.clicks < (opts.maxClicksPerTab || 150) && Date.now() - t0 < (opts.msPerTab || 25000)) {
     const C = await page.evaluate(sel => window.__e2e.cands(sel), `#page-${name}`).catch(() => null);
     if (!C) break;
-    const pick = C.list.find(c => {
+    // depth first: what the last click brought up (newly numbered) goes before its siblings
+    const fresh = c => lastMax != null && Number(c.id) > lastMax;
+    const ok = c => {
       if (/^showTab\(/.test(c.onclick)) return false; // the tabs themselves are driven by openTab
       const sig = c.family + '|' + c.label.replace(/\d+/g, '#');
       if (tried.has(sig)) return false;
       if (c.inNav && navTried.has(sig)) return false; // the bar is the same on every tab: once per crawl
-      if ((famCount[c.family] || 0) >= (opts.perFamily || 10)) return false;
+      if ((famCount[c.family] || 0) >= (opts.perFamily || 16)) return false;
       return true;
-    });
+    };
+    // new kinds of control first (a panel's own inputs before the next panel's button)
+    const newFam = c => !famCount[c.family];
+    const pick = C.list.find(c => fresh(c) && newFam(c) && ok(c)) || C.list.find(c => fresh(c) && ok(c)) || C.list.find(c => newFam(c) && ok(c)) || C.list.find(ok);
+    lastMax = Math.max(lastMax ?? 0, ...C.list.map(c => Number(c.id)));
     if (!pick && !C.overlay) {
       // nothing new on this view: go back through a chip or switch already
       // tried, which may bring back a view whose own controls are not done
       const back = C.list.find(c => {
         const sig = c.family + '|' + c.label.replace(/\d+/g, '#');
-        return !c.inNav && c.kind === 'click' && tried.has(sig) && !revisited.has(sig) && /chip|seg|mode|tab|view|btn/i.test(c.family);
+        return !c.inNav && c.kind === 'click' && tried.has(sig) && !revisited.has(sig) && /chip|seg|mode|tab|view|btn|set|open|show|toggle/i.test(c.family);
       });
       if (back && revisited.size < 40) {
         revisited.add(back.family + '|' + back.label.replace(/\d+/g, '#'));
@@ -227,12 +234,14 @@ async function sweepTab(page, name, rep, w, opts) {
     }
     w.last = `${name}: ${pick.label || pick.family}`;
     const r = await clickOne(page, pick, w, opts);
+    if (process.env.E2E_TRACE) console.log(`[${opts.viewportName} ${name}] ${pick.kind} ${pick.family} | ${pick.label} -> ${JSON.stringify(r)}`);
     if (r.skipped) continue;
     T.clicks++; rep.clicks++;
     T.families[pick.family] = (T.families[pick.family] || 0) + 1;
     if (r.covered) { issue(rep, 'covered', { tab: name, label: pick.label, family: pick.family, by: r.covered, overlay: C.overlay ? C.root : null }); continue; }
     if (r.error) { issue(rep, 'click-error', { tab: name, label: pick.label, error: r.error }); continue; }
-    if (!r.did) {
+    if (!r.did && pick.active) { T.activeNoop = (T.activeNoop || 0) + 1; }
+    else if (!r.did) {
       T.dead++;
       rep.dead.push({ tab: name, label: pick.label, family: pick.family, onclick: pick.onclick, overlay: C.overlay ? C.root : null, viewport: opts.viewportName });
     }
@@ -252,8 +261,6 @@ async function sweepTab(page, name, rep, w, opts) {
     stuck = 0;
   }
   T.ms = Date.now() - t0;
-  const em = await page.evaluate(sel => window.__e2e.empties(sel), `#page-${name}`).catch(() => []);
-  for (const e of em) rep.empties.push({ tab: name, ...e, viewport: opts.viewportName });
 }
 
 async function newAppPage(context, opts) {
@@ -269,10 +276,13 @@ async function enterApp(page, w, opts, rep) {
   await settle(page, w, opts, 300);
   // the welcome screen: Enter without ticking the box must ask for it, then tick and enter
   const open = await page.evaluate(() => document.getElementById('welcome')?.classList.contains('open'));
-  if (open) {
-    await page.locator('#wlEnter').click();
-    const need = await page.evaluate(() => document.getElementById('wlAgreeRow').classList.contains('need'));
-    if (!need) issue(rep, 'welcome', { message: 'Enter without the box ticked did not ask for it' });
+  if (open && await page.locator('#wlEnter').isVisible()) {
+    // a first visit: Enter without the box ticked must ask for it (a later visit has it ticked already)
+    if (!(await page.locator('#wlAgree').isChecked())) {
+      await page.locator('#wlEnter').click();
+      const need = await page.evaluate(() => document.getElementById('wlAgreeRow').classList.contains('need'));
+      if (!need) issue(rep, 'welcome', { message: 'Enter without the box ticked did not ask for it' });
+    }
     await page.locator('#wlAgree').check();
     await page.locator('#wlEnter').click();
     await settle(page, w, opts, 150);
@@ -293,6 +303,9 @@ async function crawl(context, opts, rep = makeReport(), tabs = TABS) {
     (rep.tabs[name] ||= { clicks: 0, families: {}, dead: 0, views: 0 }).opened = how;
     await learnNoise(page, opts);
     await checkText(page, rep, `open ${name}`);
+    // empty states as the tab first opens, before any filter is touched
+    const em = await page.evaluate(sel => window.__e2e.empties(sel), `#page-${name}`).catch(() => []);
+    for (const e of em) rep.empties.push({ tab: name, ...e, viewport: opts.viewportName });
     try { await sweepTab(page, name, rep, w, opts); } catch (e) { issue(rep, 'sweep-crash', { tab: name, error: String(e.message).split('\n')[0] }); }
     // leave the tab clean for the next one
     await page.evaluate(() => { while (window.__e2e.closeOverlay()); }).catch(() => {});

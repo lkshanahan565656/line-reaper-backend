@@ -1,8 +1,6 @@
 // Runs inside the page (added with addInitScript before the app loads).
 // window.__e2e lists what a viewer can click, tells whether a click did
 // anything, and reads the visible text for broken values.
-/* eslint-disable no-var */
-/* global window, document, MutationObserver, getComputedStyle, location, innerWidth, innerHeight, Node, NodeFilter */
 module.exports = function installE2E() {
   if (window.__e2e) return;
   var noisy = new WeakSet();
@@ -58,7 +56,8 @@ module.exports = function installE2E() {
   function label(el) {
     // a text box is named by what it asks for, never by what has been typed in it
     if (el.matches('input, textarea, select')) {
-      var lab = el.closest('label');
+      var lab = el.closest('label') || (el.id ? document.querySelector('label[for="' + el.id + '"]') : null);
+      if (!lab) { var fld = el.parentElement; lab = fld && fld.querySelector('label, span, b'); if (lab && lab.contains(el)) lab = null; }
       return norm(el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.name || el.id || (lab ? lab.innerText : '') || el.type).slice(0, 60);
     }
     var t = norm(el.getAttribute('aria-label') || el.innerText || el.value || el.getAttribute('title') || el.getAttribute('placeholder') || el.name || el.id);
@@ -135,6 +134,8 @@ module.exports = function installE2E() {
           id: el.getAttribute('data-e2e-id'), family: family(el), label: label(el), kind: kind,
           href: tag === 'a' ? el.getAttribute('href') : null, target: tag === 'a' ? el.getAttribute('target') : null,
           onclick: (el.getAttribute('onclick') || '').slice(0, 120), inNav: !!el.closest('.nav'),
+          // the current choice: tapping it again may rightly do nothing
+          active: /(^|\s)(active|on|sel|selected)(\s|$)/.test(String(el.className && el.className.baseVal == null ? el.className : '')) || el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-selected') === 'true',
         });
       }
     });
