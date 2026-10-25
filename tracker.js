@@ -241,13 +241,19 @@ function createTracker({
   async function recordBoard(picks) {
     await ready;
     const existing = await store.all();
+    // the rows by player/market/match, in the store's order: each pick reads
+    // only its own few instead of the whole record (findExisting picks the
+    // same row from either)
+    const byBase = new Map();
+    const addRow = r => { const k = pickBase(r); if (!byBase.has(k)) byBase.set(k, []); byBase.get(k).push(r); };
+    for (const r of existing) addRow(r);
     const t = now();
     let created = 0, updated = 0;
     for (const p of picks || []) {
       if (!p || !p.player || !p.startTime) continue;
       const startMs = new Date(p.startTime).getTime();
       if (!isFinite(startMs) || startMs <= t) continue;          // started: frozen
-      const row = findExisting(existing, p);
+      const row = findExisting(byBase.get(pickBase(p)) || [], p);
       const line = p.ppLine ?? p.udLine;
       const qualifies = p.side && p.bestEv != null && p.bestEv >= minEv && line != null;
 
@@ -294,6 +300,7 @@ function createTracker({
         };
         await store.put(fresh);
         existing.push(fresh);
+        addRow(fresh);
         created++;
       } else if (row.status === 'open') {
         const closeLine = row.signalBook === 'UD' && p.udLine != null ? p.udLine : row.signalBook === 'SL' && p.sleeperLine != null ? p.sleeperLine : line;

@@ -72,8 +72,23 @@ function pOver(mkey, sport, mean, line) {
 
 // The mean whose curve gives P(over line) = p (bisection; the curve falls as
 // the line rises)
+// Each read is 60 trips round the curve, and the board reads the same
+// (stat, line, price) every refresh: the answers are kept (bounded; the memo is
+// dropped whole when it fills). The curve depends on nothing else.
+const MEAN_MEMO_MAX = 50000;
+const meanMemo = new Map();
 function meanFor(mkey, sport, line, p) {
   if (!(p > 0.001 && p < 0.999) || !(line >= 0)) return null;
+  const key = `${mkey}\u0000${sport}\u0000${line}\u0000${p}`;
+  let v = meanMemo.get(key);
+  if (v === undefined) {
+    v = meanForOnce(mkey, sport, line, p);
+    if (meanMemo.size >= MEAN_MEMO_MAX) meanMemo.clear();
+    meanMemo.set(key, v);
+  }
+  return v;
+}
+function meanForOnce(mkey, sport, line, p) {
   let lo = 0.01, hi = Math.max(5, line * 4 + 10);
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
