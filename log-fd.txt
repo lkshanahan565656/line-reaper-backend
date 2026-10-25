@@ -1,0 +1,2 @@
+14:10:37 football-data files 272 of 272
+14:10:37 done res:fd calls 272 errs 0 min 1
