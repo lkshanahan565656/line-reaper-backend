@@ -19,8 +19,8 @@ const get = async (p, o = {}) => { const t0 = Date.now(); try { const r = await 
   out.checks.features = (await get('/api/features')).text;
   out.checks.sitemapHasLearn = /\/learn\/pickem-math/.test((await get('/sitemap.xml')).text || '');
   out.checks.landingLinksLearn = /href="\/learn"/.test((await get('/', { headers: { accept: 'text/html' } })).text || '');
-  out.checks.appHasNewCode = ['shpPresetBar', 'shpMovesBlock', 'LAY_ODDS_API'].map(k => [k, ((out._app = out._app || (await get('/app')).text) || '').includes(k)]);
-  delete out._app;
+  const app = (await get('/app')).text || '';
+  out.checks.appHasNewCode = ['shpPresetBar', 'shpMovesBlock', 'LAY_ODDS_API'].map(k => [k, app.includes(k)]);
   // prop history fills after the first quote builds: poll status up to 8 min
   for (let i = 0; i < 24; i++) {
     const r = await get('/api/status'); let s = null; try { s = JSON.parse(r.text); } catch {}
