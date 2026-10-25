@@ -1,0 +1,3 @@
+12:37:39 games.csv 2186485
+12:37:39 games-release.csv 2186479
+12:37:39 done res:nflverse calls 2 errs 0 min 0
