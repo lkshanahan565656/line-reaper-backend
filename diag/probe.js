@@ -25,6 +25,17 @@ async function get(name, url) {
     if (j) fs.writeFileSync(`out/ev/${ev}.json`, JSON.stringify(j));
     await wait(1500);
   }
+  // replay matches (grade.py Part 2): candidate event slugs built from the players' names, first hit wins
+  let groups = [];
+  try { groups = JSON.parse(fs.readFileSync('diag/slugs.json', 'utf8')); } catch { groups = []; }
+  for (const g of groups) {
+    for (const ev of g) {
+      if (fs.existsSync(`out/ev/${ev}.json`)) break;
+      const j = await get(`ev-${ev}`, `${G}/v1/events/slug/${encodeURIComponent(ev)}`);
+      await wait(2000);
+      if (j && j.event) { fs.writeFileSync(`out/ev/${ev}.json`, JSON.stringify(j)); break; }
+    }
+  }
   const listing = {};
   for (const lg of ['atp', 'wta']) {
     listing[lg] = [];

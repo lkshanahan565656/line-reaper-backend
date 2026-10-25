@@ -10,12 +10,12 @@ permissions:
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: timeout 1500 node diag/probe.js || true
+      - run: timeout 2200 node diag/probe.js || true
       - run: |
           cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "out $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-pmten-out
