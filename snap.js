@@ -13,6 +13,10 @@ const http = { get: async (url, cfg = {}) => {
 (async () => {
   const [k, p] = await Promise.all([xarb.fetchKalshiEvents(http, { onPage: () => {} }), xarb.fetchPolymarketEvents(http, { onPage: () => {} })]);
   console.log('kalshi', k.pages, k.count, k.errors, 'poly', p.pages, p.count, p.errors);
+  const series = [];
+  for (const g of ['NFL', 'NBA', 'NHL', 'MLB', 'NCAAF', 'EPL', 'LALIGA', 'BUNDESLIGA', 'SERIEA', 'UCL', 'MLS', 'LOL', 'CS2']) series.push(`KX${g}GAME`, `KX${g}TOTAL`, `KX${g}SPREAD`);
+  series.push('KXATPMATCH', 'KXWTAMATCH', 'KXVALORANTGAME', 'KXDOTA2GAME');
+  for (const t of series) { const r = await xarb.fetchKalshiEvents(http, { seriesTicker: t, maxPages: 3, onPage: () => {} }); console.log(t, r.count, r.errors.length); }
   try {
     const us = pmus.createPolymarketUs({ http });
     const rows = await us.arbRows({});
