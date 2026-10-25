@@ -1,0 +1,467 @@
+recorded 283 responses at 2026-10-25T05:08:01.678Z, 4.17 MB gzipped
+200    2397491 /api/underdog
+200    2144464 /api/tail/traders?category=other&limit=200
+200    1552015 /api/tail/traders?grade=graded&limit=200
+200    1543594 /api/shopper?hours=48&limit=200&method=power&q=a&sort=ev&stake=100
+200    1542222 /api/shopper?hours=48&limit=200&method=power&sort=ev&stake=100
+200    1452644 /api/esports/picks?minEV=-100
+200    1376738 /api/shopper?hours=48&league=nfl&limit=200&markets=player_prop&method=power&q=a&sort=ev&stake=100
+200    1360835 /api/shopper?hours=48&limit=200&markets=player_prop&method=power&sort=ev&stake=100
+200    1360835 /api/shopper?hours=48&limit=200&markets=player_prop&method=power&q=a&sort=ev&stake=100
+200    1313049 /api/shopper?hours=48&limit=200&markets=spread&method=power&q=a&sort=ev&stake=100
+200    1312210 /api/shopper?hours=48&limit=200&markets=spread&method=power&sort=ev&stake=100
+200    1292175 /api/shopper?hours=48&limit=200&method=power&q=a&sort=ev&stake=100&state=TX
+200    1284751 /api/shopper?hours=48&limit=200&method=power&sort=ev&stake=100&state=TX
+200    1180422 /api/shopper?hours=48&limit=200&markets=total&method=power&q=a&sort=ev&stake=100
+200    1172490 /api/shopper?hours=48&limit=200&markets=total&method=power&sort=ev&stake=100
+200    1075965 /api/shopper?hours=48&limit=150&markets=player_prop&method=power&sort=ev&stake=100
+200     923239 /api/esports/matches
+200     881552 /api/prizepicks
+200     836105 /api/shopper?hours=48&league=nfl&limit=200&markets=player_prop&method=power&q=a&sort=start&stake=100
+200     766849 /api/shopper?hours=48&limit=200&markets=moneyline&method=power&sort=ev&stake=100
+200     731374 /api/shopper?hours=48&limit=200&markets=moneyline&method=power&q=a&sort=ev&stake=100
+200     661336 /api/tail/traders?category=other&grade=graded&limit=200
+200     661331 /api/tail/traders?category=other&grade=B&limit=200
+200     616672 /api/tail/traders?category=sports&grade=graded&limit=200
+200     597631 /api/tail/traders?category=politics&grade=graded&limit=200
+200     531229 /api/odds-screen
+200     457335 /api/shopper?arbs=1&hours=48&limit=200&markets=player_prop&method=power&sort=ev&stake=100
+200     320122 /api/ev?limit=1000
+200     295531 /api/tail/traders?category=culture&grade=graded&limit=200
+200     222883 /api/results?days=30
+200     222872 /api/results
+200     219258 /api/tail/traders?category=econ&grade=graded&limit=200
+200     207062 /api/odds-screen?league=nfl
+200     181375 /api/xarbs
+200     157339 /api/props/shop?limit=150&q=a&sort=gap&sport=ALL
+200     130904 /api/whales?limit=150
+200     125903 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=NFL
+200     125872 /api/props/board?limit=150&q=a&sort=ev&sport=ALL
+200     124396 /api/props/board?book=underdog&facets=1&limit=150&priced=1&sort=ev&sport=ALL
+200     124396 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=ALL
+200     124396 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=SPORTS
+200     116402 /api/props/board?book=underdog&facets=1&limit=150&market=Receptions&priced=1&sort=ev&sport=ALL
+200     116141 /api/props/board?book=underdog&facets=1&limit=150&market=Receptions&priced=1&q=a&sort=ev&sport=ALL
+200     108226 /api/tail/board?limit=100
+200      95874 /api/odds-screen?league=nba
+200      78920 /api/esports/auto-slips
+200      77577 /api/props/board?limit=150&q=a&sort=ev&sport=TENNIS
+200      75935 /api/props/board?limit=150&q=a&sort=gap&sport=TENNIS
+200      74980 /api/props/promos?app=prizepicks&limit=120
+200      74630 /api/props/promos?limit=120
+200      74629 /api/props/promos?app=underdog&limit=120
+200      74042 /api/tail/record?limit=60
+200      67984 /api/exchange-value
+200      67534 /api/big-money?minUsd=1000&mm=1
+200      67534 /api/big-money?kind=game&minUsd=1000&mm=1
+200      62077 /api/odds-screen?league=tennis
+200      62015 /api/big-money?minUsd=1000
+200      60337 /api/props/board?limit=150&multi=1&q=a&sort=gap&sport=TENNIS
+200      57612 /api/odds-screen?league=nhl
+200      54628 /api/big-money?minUsd=2500&mm=1
+200      54628 /api/big-money?kind=game&minUsd=2500&mm=1
+200      54484 /api/odds-screen/history/pin-1638073288
+200      53015 /api/big-money?kind=game&minUsd=2500
+200      52761 /api/tail/traders?category=crypto&grade=graded&limit=200
+200      52019 /api/odds-screen/history/pin-1638073193
+200      47019 /api/ev/record/bets?limit=50&status=closed
+200      41248 /api/odds-screen/history/pin-1638066330
+200      40153 /api/odds-screen/history/pin-1638032133
+200      39834 /api/tail/signals?limit=300
+200      39113 /api/big-money?kind=prop&minUsd=2500&mm=1
+200      38757 /api/odds-screen/history/pin-1638746462
+200      36952 /api/odds-screen/history/pin-1638073287
+200      36194 /api/best?limit=500
+200      33870 /api/props/record
+200      33163 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=TENNIS
+200      32806 /api/odds-screen/history/pin-1638073190
+200      31910 /api/odds-screen/history/pin-1638073191
+200      31209 /api/status
+200      30686 /api/gas-locks
+200      29647 /api/ev/record?state=TX
+200      28211 /api/tracker/picks?limit=100&status=review
+200      26628 /api/tracker/summary
+200      25602 /api/props/promos?limit=40
+200      24963 /api/ev/scoreboard?state=TX
+200      24501 /api/esports/matchups/ratings?game=VAL
+200      23504 /api/odds-screen/history/pin-1638073192
+200      19809 /api/tracker/summary?sport=CS
+200      19664 /api/odds-screen?league=seriea
+200      17325 /api/tracker/summary?sport=LOL
+200      16958 /api/xscreen
+200      16718 /api/odds-screen?league=laliga
+200      16668 /api/odds-screen?league=epl
+200      15649 /api/props/coverage?sport=NFL
+200      14963 /api/tracker/picks?limit=100&sport=CS&status=review
+200      14893 /api/tracker/summary?sport=DOTA
+200      12509 /api/props/shop?limit=150&q=a&sort=gap&sport=TENNIS
+200      12509 /api/props/shop?limit=150&q=a&sort=ev&sport=TENNIS
+200      12147 /api/odds-screen?league=khl
+200      12008 /api/odds-screen?league=wnba
+200      10674 /api/tracker/picks?limit=100&status=locked
+200      10487 /api/odds-screen?league=eredivisie
+200      10298 /api/tracker/summary?sport=VAL
+200       9654 /api/odds-screen/history/pin-1638204457
+200       9497 /api/odds-screen/history/pin-1638204681
+200       8891 /api/odds-screen/history/pin-1638200347
+200       8552 /api/props/coverage?sport=SOCCER
+200       8306 /api/tracker/picks?limit=100&sport=DOTA&status=locked
+200       8253 /api/odds-screen?league=ligamx
+200       8235 /api/props/coverage?sport=NBA
+200       8159 /api/odds-screen/history/pin-1638204458
+200       8074 /api/odds-screen/history/pin-1638176990
+200       8051 /api/odds-screen/history/pin-1638171984
+200       8032 /api/odds-screen/history/pin-1638210553
+200       8023 /api/odds-screen/history/pin-1638171985
+200       7956 /api/odds-screen/history/pin-1638204459
+200       7775 /api/odds-screen/history/pin-1638210555
+200       7717 /api/props/coverage?sport=MLB
+200       7536 /api/odds-screen?league=bundesliga
+200       7512 /api/odds-screen/history/pin-1638210554
+200       7389 /api/odds-screen/history/pin-1638204461
+200       7351 /api/odds-screen/history/pin-1638171982
+200       7343 /api/props/coverage?sport=NHL
+200       7179 /api/odds-screen/history/pin-1638171986
+200       6914 /api/props/coverage?sport=TENNIS
+200       6527 /api/tracker/picks?limit=100&sport=LOL&status=review
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=ESPORTS
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=NBA
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=WNBA
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=MLB
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=NHL
+200       5976 /api/props/board?book=underdog&facets=1&limit=150&priced=1&q=a&sort=ev&sport=SOCCER
+200       5733 /api/shopper?arbs=1&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm%2Ccaesars&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm%2Ccaesars%2Cbet365&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm%2Ccaesars%2Cbet365%2Cfanatics&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm%2Ccaesars%2Cbet365%2Cfanatics%2Chardrock&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5733 /api/shopper?arbs=1&exclude=pinnacle%2Cmatchbook%2Cfanduel%2Cbetrivers%2Ckalshi%2Cgemini%2Cpolymarketus%2Cdraftkings%2Cbetmgm%2Ccaesars%2Cbet365%2Cfanatics%2Chardrock%2Cthescore&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=multiplicative&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5726 /api/shopper?hours=6&league=nfl&limit=200&markets=player_prop&method=power&q=a&sort=start&stake=100
+200       5726 /api/shopper?hours=6&league=nfl&limit=150&markets=player_prop&method=power&minEdge=1&q=a&sort=start&stake=100
+200       5726 /api/shopper?arbs=1&hours=6&league=nfl&limit=200&markets=player_prop&method=power&minEdge=1&q=a&sort=start&stake=100
+200       5726 /api/shopper?arbs=1&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=power&minEdge=1&q=a&sort=start&stake=100
+200       5724 /api/shopper?arbs=1&hours=6&league=nfl&limit=200&markets=player_prop&maxAge=180&method=power&minEdge=1&minSize=50&q=a&sort=start&stake=100
+200       5229 /api/odds-screen?league=ahl
+200       5157 /api/esports/models
+200       4752 /api/odds-screen?league=wnba&state=TX
+200       4339 /api/tracker/picks?limit=100&sport=DOTA&status=review
+200       4191 /api/odds-screen/history/pin-1638210645
+200       4070 /api/props/shop?limit=150&middles=1&q=a&sort=ev&sport=TENNIS
+200       4019 /api/odds-screen/history/pin-1638210552
+200       3968 /api/ev/record?sport=ufc&state=TX
+200       3881 /api/odds-screen/history/pin-1638595808
+200       3412 /api/odds-screen?league=mls
+200       3250 /api/odds-screen/history/pin-1638210649
+200       3039 /api/odds-screen/history/pin-1638215098
+200       2969 /api/esports/matchups?game=LOL
+200       2912 /api/odds-screen?league=brasileirao
+200       2741 /api/odds-screen/history/pin-1638215096
+200       2691 /api/odds-screen/history/pin-1638215189
+200       2684 /api/odds-screen/history/pin-1639229252
+200       2683 /api/best?limit=500&state=TX
+200       2647 /api/esports/matchups?game=VAL
+200       2636 /api/esports/matchups?game=CS2
+200       2551 /api/odds-screen/history/pin-1638713717
+200       2479 /api/odds-screen/history/pin-1639163557
+200       2415 /api/tracker/picks?limit=100&sport=VAL&status=review
+200       2379 /api/tracker/picks?limit=100&sport=CS&status=locked
+200       2339 /api/odds-screen/history/pin-1639183465
+200       2337 /api/odds-screen/history/pin-1639227197
+200       2304 /api/odds-screen/history/pin-1638758810
+200       2293 /api/odds-screen/history/pin-1639183621
+200       2285 /api/odds-screen/history/pin-1639192349
+200       2279 /api/odds-screen/history/pin-1639222454
+200       2236 /api/odds-screen/history/pin-1639229276
+200       2227 /api/esports/inplay
+200       2211 /api/odds-screen/history/pin-1639227201
+200       2211 /api/odds-screen/history/pin-1639202162
+200       2182 /api/odds-screen/history/pin-1638734010
+200       2137 /api/ev?limit=1000&state=TX
+200       2136 /api/odds-screen/history/pin-1638730479
+200       2122 /api/odds-screen/history/pin-1638730478
+200       2118 /api/odds-screen/history/pin-1638730414
+200       2083 /api/odds-screen/history/pin-1639227198
+200       2019 /api/odds-screen/history/pin-1639229253
+200       2019 /api/odds-screen/history/pin-1639229248
+200       2003 /api/odds-screen/history/pin-1639222456
+200       1995 /api/odds-screen/history/pin-1639227213
+200       1973 /api/props/mlb?limit=300&q=a
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=total_bases
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=strikeouts
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=pitcher_outs
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=hits_allowed
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=earned_runs
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=home_runs
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=hits
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=runs
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=rbis
+200       1973 /api/props/mlb?gaps=1&limit=300&q=a&stat=hits_runs_rbis
+200       1973 /api/props/mlb?limit=300
+200       1972 /api/props/nbamodel?limit=300
+200       1971 /api/props/nbamodel?limit=300&q=a
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=points
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=rebounds
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=assists
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=threes
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=pra
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=pts_rebs
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=pts_asts
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=rebs_asts
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=steals
+200       1971 /api/props/nbamodel?limit=300&q=a&stat=blocks
+200       1959 /api/odds-screen/history/pin-1639222455
+200       1912 /api/odds-screen/history/pin-1639222471
+200       1901 /api/tail/settings
+200       1889 /api/odds-screen/history/pin-1639227196
+200       1833 /api/odds-screen/history/pin-1639210922
+200       1829 /api/odds-screen/history/pin-1639227200
+200       1827 /api/odds-screen/history/pin-1639229257
+200       1825 /api/odds-screen/history/pin-1639229255
+200       1809 /api/odds-screen/history/pin-1639229256
+200       1775 /api/odds-screen/history/pin-1639172015
+200       1693 /api/odds-screen/history/pin-1639229250
+200       1631 /api/odds-screen/history/pin-1639179836
+200       1598 /api/props/cfbmodel?limit=300&q=a
+200       1598 /api/props/cfbmodel?limit=300
+200       1539 /api/odds-screen/history/pin-1639227185
+200       1535 /api/odds-screen/history/pin-1639222479
+200       1525 /api/odds-screen/history/pin-1639192348
+200       1439 /api/odds-screen/history/pin-1639229283
+200       1429 /api/odds-screen/history/pin-1639227204
+200       1428 /api/odds-screen/history/pin-1639222480
+200       1419 /api/odds-screen/history/pin-1639227216
+200       1252 /api/shopper/history?key=pin-1638073288%7Cprop%7Creceptions%7Cwillmallory%7C1.5
+200       1231 /api/props/promos/record
+200        925 /api/odds-screen/history/pin-1639169938
+200        925 /api/odds-screen/history/pin-1639210969
+200        896 /api/odds-screen/history/pin-1639202119
+200        880 /api/odds-screen/history/pin-1639216484
+200        872 /api/odds-screen/history/pin-1639211011
+200        865 /api/odds-screen/history/pin-1639229254
+200        861 /api/odds-screen/history/pin-1639229300
+200        833 /api/odds-screen/history/pin-1639202148
+200        797 /api/props/shop/record
+200        757 /api/odds-screen/history/pin-1638748157
+200        745 /api/odds-screen/history/pin-1639216485
+200        729 /api/odds-screen/history/pin-1639179813
+200        541 /api/tracker/summary?sport=COD
+200        541 /api/tracker/summary?minEV=3&sport=COD
+200        422 /api/push/kinds
+200        195 /api/tail/traders?category=other&grade=A&limit=200
+200        144 /api/sharp?limit=60
+200         59 /api/sharp-moves?limit=200
+503         49 /api/odds-feed/baseball_mlb?markets=h2h%2Cspreads&regions=us
+503         49 /api/odds-feed/americanfootball_nfl?markets=h2h%2Cspreads&regions=us
+503         49 /api/odds-feed/icehockey_nhl?markets=h2h%2Cspreads&regions=us
+503         49 /api/odds-feed/mma_mixed_martial_arts?markets=h2h%2Cspreads&regions=us
+503         49 /api/odds-feed/basketball_nba?markets=h2h%2Cspreads&regions=us
+503         49 /api/odds-feed/baseball_mlb?includeLinks=true&markets=h2h&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/americanfootball_nfl?includeLinks=true&markets=h2h&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/basketball_nba?includeLinks=true&markets=h2h&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/icehockey_nhl?includeLinks=true&markets=h2h&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/mma_mixed_martial_arts?includeLinks=true&markets=h2h&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/baseball_mlb?includeLinks=true&markets=h2h%2Cspreads%2Ctotals&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/americanfootball_nfl?includeLinks=true&markets=h2h%2Cspreads%2Ctotals&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/basketball_nba?includeLinks=true&markets=h2h%2Cspreads%2Ctotals&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/icehockey_nhl?includeLinks=true&markets=h2h%2Cspreads%2Ctotals&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/mma_mixed_martial_arts?includeLinks=true&markets=h2h%2Cspreads%2Ctotals&regions=us%2Cus2%2Cus_ex
+503         49 /api/odds-feed/basketball_ncaab?markets=h2h%2Cspreads&regions=us
+200         17 /api/features
+200         13 /api/esports/alerts?limit=30
+200         12 /api/tracker/picks?limit=100&sport=VAL&status=locked
+200         12 /api/tracker/picks?limit=100&sport=LOL&status=locked
+200         12 /api/tracker/picks?limit=100&sport=COD&status=locked
+200         12 /api/tracker/picks?limit=100&sport=COD&status=review
+live crawl: 938 clicks, 182 issues
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"tail","after":"tail: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"tail","after":"tail: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"modal-no-escape","tab":"betlog","modal":"mybModal"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_ncaab?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at setSport (https://line-reaper-backend-production.up.railway.app/app:2447:26)\n    at HTMLButtonElement.onclick (https://line-reaper-bac","url":"/app","tab":"lines","after":"lines: MMA"}
+{"kind":"bad-text","what":"undefined","text":"Cannot read properties of undefined (reading 'map')","ctx":"Cannot read properties of undefined (reading 'map') RETRY","where":"page-lines #page-lines>#linesContent>div.error-box","after":"lines: MMA"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at HTMLButtonElement.onclick (https://line-reaper-backend-production.up.railway.app/app:1:1)","url":"/app","tab":"lines","after":"lines: RETRY"}
+{"kind":"bad-text","what":"undefined","text":"Cannot read properties of undefined (reading 'map')","ctx":"Cannot read properties of undefined (reading 'map') RETRY","where":"page-lines #page-lines>#linesContent>div.error-box","after":"lines: RETRY"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at HTMLButtonElement.onclick (https://line-reaper-backend-production.up.railway.app/app:1541:71)","url":"/app","tab":"lines","after":"lines: back to REFRESH"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"request-failed","url":"/api/ev/stream","error":"net::ERR_HTTP2_PROTOCOL_ERROR","tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"tail","after":"tail: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"tail","after":"tail: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"betlog"}
+{"kind":"modal-no-escape","tab":"betlog","modal":"mybModal"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_ncaab?regions=us&markets=h2h,spreads","status":503,"tab":"lines"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at setSport (https://line-reaper-backend-production.up.railway.app/app:2447:26)\n    at HTMLButtonElement.onclick (https://line-reaper-bac","url":"/app","tab":"lines","after":"lines: MMA"}
+{"kind":"bad-text","what":"undefined","text":"Cannot read properties of undefined (reading 'map')","ctx":"Cannot read properties of undefined (reading 'map') RETRY","where":"page-lines #page-lines>#linesContent>div.error-box","after":"lines: MMA"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at HTMLButtonElement.onclick (https://line-reaper-backend-production.up.railway.app/app:1:1)","url":"/app","tab":"lines","after":"lines: RETRY"}
+{"kind":"bad-text","what":"undefined","text":"Cannot read properties of undefined (reading 'map')","ctx":"Cannot read properties of undefined (reading 'map') RETRY","where":"page-lines #page-lines>#linesContent>div.error-box","after":"lines: RETRY"}
+{"kind":"console-error","text":"Load error: TypeError: Cannot read properties of undefined (reading 'map')\n    at loadData (https://line-reaper-backend-production.up.railway.app/app:2499:46)\n    at HTMLButtonElement.onclick (https://line-reaper-backend-production.up.railway.app/app:1541:71)","url":"/app","tab":"lines","after":"lines: back to REFRESH"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"ev"}
+{"kind":"request-failed","url":"/api/ev/stream","error":"net::ERR_HTTP2_PROTOCOL_ERROR","tab":"ev"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"best","after":"best: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"best","after":"best: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"request-failed","url":"/api/esports/stream","error":"net::ERR_HTTP2_PROTOCOL_ERROR","tab":"esports"}
+{"kind":"covered","tab":"esports","label":"▲","family":"button[submit].sb-icon|esToggleSlipMin()","by":"div class=\"toast \"","overlay":null}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"best","after":"best: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"best","after":"best: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us,us2,us_ex&markets=h2h&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us,us2,us_ex&markets=h2h,spreads,totals&includeLinks=true","status":503,"tab":"arb"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"esports"}
+{"kind":"request-failed","url":"/api/esports/stream","error":"net::ERR_HTTP2_PROTOCOL_ERROR","tab":"esports"}
+{"kind":"covered","tab":"esports","label":"▲","family":"button[submit].sb-icon|esToggleSlipMin()","by":"div class=\"toast \"","overlay":null}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"shop"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"odds","after":"odds: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"odds","after":"odds: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"odds","after":"odds: CUSTOMIZE LAYOUT"}
+{"kind":"page-error","message":"Cannot read properties of null (reading 'classList')","stack":"TypeError: Cannot read properties of null (reading 'classList') |     at HTMLButtonElement.layOpen (https://line-reaper-backend-production.up.railway.app/app:3786:38)","tab":"odds","after":"odds: CUSTOMIZE"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"odds"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"tools"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"props"}
+{"kind":"http-5xx","url":"/api/odds-feed/basketball_nba?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/baseball_mlb?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/icehockey_nhl?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/americanfootball_nfl?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
+{"kind":"http-5xx","url":"/api/odds-feed/mma_mixed_martial_arts?regions=us&markets=h2h,spreads","status":503,"tab":"clv"}
