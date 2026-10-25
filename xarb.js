@@ -852,11 +852,11 @@ function raceKey(r) {
   return { key: `${office}|${place}|${party}|${/\bspecial\b/.test(t) ? 'special' : ''}`, year };
 }
 
-// The matching runs as a generator that yields every few hundred rows, so the
+// The matching runs as a generator that yields every few rows, so the
 // server can run it in slices (matchMarketsAsync) instead of holding the event
 // loop for the whole of a 70k-row Kalshi list. matchMarkets runs the same
 // steps straight through: both return the same pairs.
-const MATCH_STEP = 32;
+const MATCH_STEP = 8;
 function* matchSteps(kalshiRows, polyRows, opts = {}) {
   const o = withDefaults(opts);
   const teams = teamContext(o.games);
