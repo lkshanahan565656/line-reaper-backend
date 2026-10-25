@@ -4847,7 +4847,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.179.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.180.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6593,6 +6593,58 @@ app.get('/api/nfl/model/ratings', (req, res) => {
   if (!nflModel) return nflOff(res);
   res.json({ label: 'model', status: nflModel.status(), teams: nflModel.ratings() });
 });
+// ─── SOCCER MODEL (soccergl.js, soccermodel.js) ──────────────────────────────
+// Our soccer match model beside Kalshi, Polymarket US and Pinnacle on every
+// league match the exchanges list (ESPORTS > MATCHUPS > SOCCER). "Model, not an
+// edge": the held-out backtest (checks/soccer-model-2026-10-25) did not clear
+// the bar. Its forward record (kinds soccer-1x2-kalshi, soccer-1x2-pmus)
+// freezes a contract 3+ points under our chance in the hour before kickoff,
+// follows Pinnacle's close and grades on the 90-minute result. No alerts.
+// SOCCER_MODEL=off stops it.
+const soccergl = require('./soccergl');
+const SOCCER_MODEL_ON = !/^(off|0|false|no)$/i.test(String(process.env.SOCCER_MODEL || '').trim());
+const soccerModelStore = SOCCER_MODEL_ON ? resultsBackup.wrap('soccerModel', createPickFileStore(process.env.SOCCER_MODEL_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'soccer-model.json'))) : null;
+const soccerModel = SOCCER_MODEL_ON ? soccergl.createSoccerModel({
+  http: axios, store: soccerModelStore,
+  bets: () => { try { return bigGames().bets; } catch { return []; } },
+  fill: async (ref, usd) => {
+    const key = `${ref.venue}|${ref.id}|${ref.buy}`;
+    if (!shopDepth.get(key)) await shopDepth.readPass([{ key, ref }]).catch(() => null);
+    const w = depthBook.fillAt(shopDepth.get(key), usd);
+    return w ? { usd: w.usd, cost: w.cost, contracts: w.contracts } : null;
+  },
+}) : null;
+const soccerOff = res => res.status(503).json({ error: 'The soccer model is off on this server (SOCCER_MODEL=off).' });
+const SOCCER_NOTE = 'Our own soccer model: attack and defence ratings for every club from final scores and shots on target, home edge per league, a pull back each new season, and a draw correction. It is a model, not a proven edge: in the held-out test on 2025-26 matches, the exchanges\' own prices an hour before kickoff beat it.';
+app.get('/api/soccer/model', (req, res) => {
+  if (!soccerModel) return soccerOff(res);
+  const lic = licenceOf(req);
+  let games = [];
+  try { games = soccerModel.view(); } catch (e) { return res.status(500).json({ error: e.message }); }
+  games = games.map(g => ({ ...g, rows: g.rows.map(r => ({ ...r,
+    kalshi: lic.kalshi ? r.kalshi : null, pmus: lic.polymarket ? r.pmus : null,
+    edge: { kalshi: lic.kalshi ? r.edge.kalshi : null, pmus: lic.polymarket ? r.edge.pmus : null },
+    flag: { kalshi: lic.kalshi ? r.flag.kalshi : false, pmus: lic.polymarket ? r.flag.pmus : false } })) }));
+  const bt = soccerModel.state.backtest;
+  res.json({ label: 'model, not an edge', note: SOCCER_NOTE, status: soccerModel.status(), count: games.length, games,
+    backtest: bt ? { verdict: bt.verdict, testFrom: bt.testFrom, testTo: bt.testTo, split: bt.split, fitted: bt.fitted,
+      venues: Object.fromEntries(Object.entries(bt.venues || {}).filter(([, v]) => v).map(([k, v]) => [k, { verdict: v.verdict, contracts: v.all.contracts, games: v.all.games, logLoss: v.all.logLoss, blend: v.all.blend, bets3: v.all.bets3, bets5: v.all.bets5,
+        slices: [v.slice1, v.slice2].map(x => ({ contracts: x.contracts, bets3: { n: x.bets3.n, roi: x.bets3.roi, z: x.bets3.z, clvPin: x.bets3.clvPin } })) }])) } : null });
+});
+app.get('/api/soccer/model/record', async (req, res) => {
+  if (!soccerModel) return soccerOff(res);
+  try { res.json({ note: 'Each contract frozen once, in the hour before kickoff, when our chance is 3+ points over the venue\'s cost with its fee. CLV is Pinnacle\'s no-vig close of the same outcome over that cost. Model view, not a bet: proven only at 50 graded on one venue with CLV t 2+.', ...(await soccerModel.record()) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/soccer/model/backtest', (req, res) => {
+  if (!soccerModel) return soccerOff(res);
+  res.json(soccerModel.state.backtest || { error: 'No backtest file on this server.' });
+});
+app.get('/api/soccer/model/ratings', (req, res) => {
+  if (!soccerModel) return soccerOff(res);
+  const code = typeof req.query.league === 'string' && /^[A-Z0-9]{1,4}$/.test(req.query.league) ? req.query.league : null;
+  res.json({ label: 'model', status: soccerModel.status(), teams: soccerModel.ratings(code).slice(0, 400) });
+});
 // ─── ODDS SCREEN ──────────────────────────────────────────────────────────────
 // Every venue we price on one row per side (oddsscreen.js): Pinnacle's no-vig
 // fair, the US exchanges, FanDuel and BetRivers, Matchbook, Action Network's
@@ -7980,10 +8032,10 @@ app.get('/api/results', async (req, res) => {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
     const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
-      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows] = await Promise.all([
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows] = await Promise.all([
         tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list(),
-        nflModelStore ? nflModelStore.all().catch(() => []) : []]);
-      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : []]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8085,7 +8137,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.179.0',
+  version: '3.180.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8163,6 +8215,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   feeds: { pandascore: feedState.pandascore.enabled, pinnacle: feedState.pinnacle.enabled, pinnacleMatches: feedState.pinnacle.loaded },
   matchups: matchupEngine ? matchupEngine.status() : { off: true },
   nflModel: nflModel ? (({ params, ...s }) => s)(nflModel.status()) : { off: true },
+  soccerModel: soccerModel ? (({ params, ratings, ...s }) => s)(soccerModel.status()) : { off: true },
   matchupGames: Object.fromEntries(Object.entries(matchupEngines).map(([g, E]) => { const st = E.status(); return [g, { ready: st.ready, series: st.series, teams: st.teams, upcoming: st.upcoming, updated: st.updated, error: st.error, pmus: st.pmus }]; })),
   matchContext: { ratings: ratingsState.meta, picks: esportsCache.contextCounts || {}, manualMatches: oddsBook.list().length },
   sharpMoves: cache.sharpMoves.length,
@@ -8222,6 +8275,13 @@ if (nflModel) {
   schedule('7,27,47 * * * *', () => nflModel.refresh().catch(e => console.warn('NFL model refresh:', e.message)));
   schedule('*/3 * * * *', () => nflModel.tick().catch(e => console.warn('NFL model record:', e.message)));
   setTimeout(() => nflModel.refresh().catch(e => console.warn('NFL model refresh:', e.message)), 180e3).unref?.();
+}
+// soccer model: football-data every 12 hours and ESPN's last three days each refresh, every 30 minutes;
+// the record freezes, follows the close and grades every 3 minutes (first read 5 minutes after boot)
+if (soccerModel) {
+  schedule('13,43 * * * *', () => soccerModel.refresh().catch(e => console.warn('Soccer model refresh:', e.message)));
+  schedule('1,4,7,10,13,16,19,22,25,28,31,34,37,40,43,46,49,52,55,58 * * * *', () => soccerModel.tick().catch(e => console.warn('Soccer model record:', e.message)));
+  setTimeout(() => soccerModel.refresh().catch(e => console.warn('Soccer model refresh:', e.message)), 300e3).unref?.();
 }
 // CBB model: finished D1 box scores and the coming days' schedule every 30 minutes (first read 4 minutes after boot)
 if (cbbModel) {
