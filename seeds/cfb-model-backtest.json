@@ -1,13 +1,15 @@
 {
  "asOf": "2026-10-25",
- "verdict": "No edge. The model's 58%+ side broke even at the sportsbook's held-out 2025 lines and lost at the apps' 2026 lines; it scores worse than FanDuel and Pinnacle where they hang the same number.",
- "prereg": "checks/cfb-model-2026-10-25/PREREGISTERED.md",
+ "version": "v2",
+ "verdict": "Bar not cleared. v2 (calibrated) is far better than v1 and about as good as Pinnacle where both price the same number, but its 58%+ side is z 1.81 and 1.37 on the two held-out slices; the bar is z 2+ on both, then 50 graded live.",
+ "prereg": "checks/cfb-model-v2-2026-10-25/PREREGISTERED.md",
  "lines": [
-  "Sportsbook main lines, 2025 season (held out; fitted on 2024 box scores): Brier 0.2603 vs 0.25 for a flat 50% (3,111 lines); model side 58%+ 1012-831 (54.9% of 1,843, z -0.10 vs PrizePicks 55.03%)",
-  "PrizePicks 2026 (10-14 to 10-24, recorded before kickoff): Brier 0.2624 vs 0.25 for a flat 50% (970 lines); model side 58%+ 261-259 (50.2% of 520, z -2.22 vs PrizePicks 55.03%)",
-  "Underdog 2026 at real payouts, 58%+ side: 48.3% of 352 vs 58.3% needed, -61.0u",
-  "Sleeper 2026 at real payouts, 58%+ side: 55.6% of 315 vs 64.5% needed, -43.7u",
-  "Same legs where FanDuel hangs the app's number: Brier model 0.2855 vs book 0.2557 (238 legs; lower is better)",
-  "Same legs where Pinnacle hangs the app's number: Brier model 0.2826 vs book 0.2559 (289 legs; lower is better)"
+  "Sportsbook main lines, 2025 (held out; 2024 box scores, calibration on 2024 lines): Brier v2 0.2513 (v1 0.2603, flat 0.25) on 3,111 lines; 58%+ side 409-291 (58.4% of 700, z 1.81 vs PrizePicks 55.03%); v1 was 1012-831 (54.9% of 1,843, z -0.10 vs PrizePicks 55.03%)",
+  "PrizePicks 2026 (10-14 to 10-24, recorded before kickoff): Brier v2 0.2502 (v1 0.2624) on 970 lines; 58%+ side 56-34 (62.2% of 90, z 1.37 vs PrizePicks 55.03%); v1 was 261-259 (50.2% of 520, z -2.22 vs PrizePicks 55.03%)",
+  "Underdog 2026 at real multipliers, sides worth +5%: 25-14, +7.4u of 39 (v1 -43.6u of 270)",
+  "Sleeper 2026 at real multipliers, sides worth +5%: 28-11, +4.7u of 39",
+  "Same legs where Pinnacle hangs the app's number: Brier v2 0.256 vs Pinnacle 0.2559 (289 legs; v1 0.2826)",
+  "Same legs where FanDuel hangs the app's number: Brier v2 0.2601 vs FanDuel 0.2557 (238 legs; v1 0.2855)",
+  "Book slice without the far-off lines (raw model under 18% or over 82%): 58%+ side 56.2% of 555, z 0.56. Much of the 58.4% comes from 145 lines far from our projection, mostly Unders."
  ]
 }

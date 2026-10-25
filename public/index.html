@@ -4808,7 +4808,7 @@ function renderNbaModel() {
 }
 // ─── CFB MODEL (/api/props/cfbmodel): our own projection at each app's number ──
 // Same layout as the NBA model's view. Labelled "model, not an edge" until its
-// own record (kinds cfb-model, p6-cfb-model) has 50+ graded live legs with the
+// own record (kinds cfb-model, p6-cfb-model, ud-cfb-model) has 50+ graded live legs with the
 // hit rate 2+ standard errors past the app's break-even. No alerts, no bet buttons.
 const CFM_STATS = [['', 'ALL'], ['pass_yds', 'PASS YDS'], ['pass_tds', 'PASS TD'], ['pass_comp', 'COMP'], ['pass_att', 'ATT'], ['rush_yds', 'RUSH YDS'], ['rush_att', 'CARRIES'],
   ['rec_yds', 'REC YDS'], ['receptions', 'REC'], ['rush_rec_yds', 'RUSH+REC'], ['pass_rush_yds', 'PASS+RUSH'], ['longest_rec', 'LONG REC'], ['longest_rush', 'LONG RUSH'], ['kicking_points', 'KICK PTS'], ['fg_made', 'FG']];
@@ -4842,9 +4842,12 @@ function renderCfbModel() {
   const chip = (on, label, fn) => `<button class="sport-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
   const pm = Math.round((d.pickMin || 0.58) * 100);
   const stats = `<div class="pb-chips" style="margin:0 0 10px">${CFM_STATS.map(([k, lab]) => chip(pbState.cfmStat === k, lab, `pbState.cfmStat='${k}';loadPropsBoard()`)).join('')}</div>`;
-  const note = `<div class="cfm-note"><b>MODEL, NOT AN EDGE.</b> Our own college football projection from ESPN box scores (each player's share of his team's passes, carries and catches, the team's volume, what the opponent allows, and the pre-game total and spread), priced at each app's own number. Its backtest found no edge (below). ${escAttr(d.bar || '')} Its legs at ${pm}%+ on PrizePicks and Pick6 keep their own record; no alerts.</div>`;
+  const note = `<div class="cfm-note"><b>MODEL, NOT AN EDGE.</b>${d.version ? ` <b>${escAttr(String(d.version).toUpperCase())}</b>` : ''} Our own college football projection from ESPN box scores (each player's share of his team's passes, carries and catches, the team's volume, what the opponent allows, and the pre-game total and spread), priced at each app's own number and its real payout. ${escAttr(d.versionNote || '')} Its backtest found no edge (below). ${escAttr(d.bar || '')} Its legs at ${pm}%+ on PrizePicks and Pick6, and Underdog legs worth ${Math.round((d.udEvMin || 0.05) * 100)}%+ at the real multiplier, keep their own record; no alerts.</div>`;
   if (!d.on) { el.innerHTML = note + `<div class="empty-wrap"><div class="empty-sub">${escAttr(d.note || 'The CFB model is off.')}</div></div>`; return; }
-  const rec = `<div class="pb-dim" style="margin:0 0 10px">Model record, PrizePicks: ${cfmRecTxt(d.record?.prizepicks, 0.5503)} · Pick6: ${cfmRecTxt(d.record?.pick6, 0.567)}</div>`;
+  const udTxt = k => !k || !k.signals ? 'nothing logged yet' : !k.graded ? `${k.signals} logged, none graded yet` : `${k.wins}-${k.losses}, ${k.units >= 0 ? '+' : ''}${k.units}u at real multipliers of ${k.wins + k.losses} graded`;
+  const rv = d.recordByVersion || {};
+  const since = d.version && d.versionAt ? `<div class="pb-dim" style="margin:-6px 0 10px">Since ${escAttr(d.version)} (${escAttr(d.versionAt)}), PrizePicks: ${cfmRecTxt(rv.prizepicks, 0.5503)} · Pick6: ${cfmRecTxt(rv.pick6, 0.567)} · Underdog: ${udTxt(rv.underdog)}</div>` : '';
+  const rec = `<div class="pb-dim" style="margin:0 0 10px">Model record (all versions), PrizePicks: ${cfmRecTxt(d.record?.prizepicks, 0.5503)} · Pick6: ${cfmRecTxt(d.record?.pick6, 0.567)} · Underdog: ${udTxt(d.record?.underdog)}</div>${since}`;
   const bt = d.backtest?.lines?.length ? `<div class="cfm-bt"><b style="color:#e8e8e8">BACKTEST</b> ${escAttr(d.backtest.asOf || '')} · ${escAttr(d.backtest.verdict || '')}\n${d.backtest.lines.map(escAttr).join('\n')}</div>` : '';
   const st = d.status || {};
   const rows = d.rows || [];
@@ -4861,7 +4864,8 @@ function renderCfbModel() {
       const a = r.apps[k];
       const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
       if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
-      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div></div>`;
+      const pay = a.ev != null ? `<div class="pb-dim" title="value per unit at this app's payout for the model's side (break-even ${a.breakEven != null ? (a.breakEven * 100).toFixed(1) + '%' : '—'})">${a.ev >= 0 ? '+' : ''}${(a.ev * 100).toFixed(1)}% at ${a.decimal}x</div>` : '';
+      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}</div>`;
     }).join('');
     const bk = r.book ? { ...r.book } : null;
     const sp = r.spread == null ? '' : `spread ${r.spread > 0 ? '+' : ''}${r.spread}`;
@@ -4870,7 +4874,7 @@ function renderCfbModel() {
     return `<div class="pb-card">
       <div class="pb-who"><div class="pb-name"><span class="pb-sport">CFB</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${meta}</div><div class="pb-meta">proj ${r.mean} (median ${r.median ?? '—'}) · ${ctx}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 2},minmax(0,1fr))">${cells}${sideCell('PIN', '#94a3b8', r.pinnacle, 'Pinnacle')}${sideCell(bk ? (bk.book === 'betrivers' ? 'BR' : 'FD') : 'FD', '#1e90ff', bk, bk ? (bk.book === 'betrivers' ? 'BetRivers' : 'FanDuel') : '')}</div>
-      <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="cfm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div><div class="pb-dim">model, not an edge</div></div></div>`;
+      <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="cfm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div>${r.bestPay ? `<div class="pb-dim">best payout ${PB_BOOKS.find(x => x[0] === r.bestPay.book)?.[2] || escAttr(r.bestPay.book)} ${pbSideWord(r.bestPay.book, r.bestPay.side)} ${r.bestPay.line}: ${r.bestPay.ev >= 0 ? '+' : ''}${(r.bestPay.ev * 100).toFixed(1)}%</div>` : ''}<div class="pb-dim">model, not an edge</div></div></div>`;
   }).join('');
   const stat = (v, label) => `<div class="pb-stat"><b>${v}</b><span>${label}</span></div>`;
   const leans = rows.filter(r => r.bestP >= (d.pickMin || 0.58)).length;

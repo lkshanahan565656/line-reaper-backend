@@ -21,6 +21,7 @@
 // (nbadata.js) feed it the same compact games.
 
 const { canonName } = require('./ev');
+const propcal = require('./propcal');
 
 // The stats it projects, and how each combo is built from the parts.
 const BASE = ['points', 'rebounds', 'assists', 'threes', 'steals', 'blocks', 'turnovers'];
@@ -436,18 +437,7 @@ function median(proj, stat, P = PARAMS) {
 // [a, b] } }); v1 params carry none and pass through. Fitted on results at
 // the line only, never on a price.
 function calibrate(p, stat, P = PARAMS) {
-  const c = P.cal;
-  if (!c) return p;
-  const q = Math.min(0.995, Math.max(0.005, p));
-  const [a, b] = c.stat?.[stat] || [c.a || 0, c.b ?? 1];
-  // the fit only saw raw P(over) within about 18% to 82% (|logit| under
-  // c.range): past that the line is far from the projection (a stale or
-  // alternate line), so the fitted curve stops and the raw distribution's own
-  // slope carries on from there, keeping it monotone and continuous
-  const x = Math.log(q / (1 - q)), R = c.range ?? Infinity;
-  const xin = Math.max(-R, Math.min(R, x));
-  const z = a + b * xin + (x - xin);
-  return 1 / (1 + Math.exp(-z));
+  return propcal.calibrate(p, stat, P.cal);
 }
 
 // one row of the NBA MODEL section: the projection at the app's number

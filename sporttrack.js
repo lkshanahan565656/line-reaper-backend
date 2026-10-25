@@ -89,7 +89,7 @@ const THREE = new Set(['sharp3', 'p6-sharp3']);
 // and a combo one (points + rebounds and the rest, off the books and Pinnacle's parts)
 const COMBO = new Set(['combo', 'p6-combo']);
 // the CFB model's legs (cfbdata.js): a record of their own, never in the headline until proven
-const CFB_MODEL = new Set(['cfb-model', 'p6-cfb-model']);
+const CFB_MODEL = new Set(['cfb-model', 'p6-cfb-model', 'ud-cfb-model']);
 // the NBA model's legs (nbadata.js): a record of their own, never in the headline until proven
 const MODEL = new Set(['nba-model', 'p6-nba-model', 'ud-nba-model']);
 // every MLB leg against Pinnacle's own number (mlbboard.js): research kinds per app, never the headline
@@ -347,7 +347,7 @@ function createSportTracker({ store, grader = null, now = () => Date.now(), lagM
     for (const b of every) (byKind[b.kind] ||= []).push(b);
     return { overall: stats(all), bySource: sourceScores(all), byStale: by(b => (b.kind !== 'sharp' ? 'other' : b.stale ? 'stale' : 'fresh')), byKind: Object.fromEntries(Object.entries(byKind).map(([k, l]) => [k, stats(l)])),
       // the model kinds split by the model version that priced each leg (a leg logged before versions were saved is v1)
-      byModelVersion: Object.fromEntries(Object.entries(byKind).filter(([k]) => MODEL.has(k)).flatMap(([k, l]) => {
+      byModelVersion: Object.fromEntries(Object.entries(byKind).filter(([k]) => MODEL.has(k) || CFB_MODEL.has(k)).flatMap(([k, l]) => {
         const v = {}; for (const b of l) (v[b.modelVersion || 'v1'] ||= []).push(b);
         return Object.entries(v).map(([ver, g]) => [`${k}@${ver}`, stats(g)]);
       })), bySport: by(b => b.sport), byBook: by(b => b.signalBook), byStat: by(b => `${b.sport} ${b.mkey}`),

@@ -4819,7 +4819,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.173.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.174.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5801,7 +5801,7 @@ function sportFairAt(row, book, line, kind) {
   if (mlbBoard.KINDS.has(kind)) return mlbBoard.closeAt(row, line, mlbPinFor(row))?.pOver ?? null;
   kind = baseSportKind(kind);
   // a CFB model leg closes on the model's own number at the start (the record is its hit rate)
-  if (kind === 'cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
+  if (kind === 'cfb-model' || kind === 'ud-cfb-model') return cfbModel ? cfbModel.fairAt(row, line) : null;
   // an NBA model leg closes on the model's own number at the start (its CLV is the model against itself: the record is the hit rate)
   if (kind === 'nba-model' || kind === 'ud-nba-model') return nbaModel ? nbaModel.fairAt(row, line) : null;
   // a three-sharps leg closes on Pinnacle's own price at its number, never a curve
@@ -6960,7 +6960,7 @@ async function trackSportProps() {
     // a Pick6 leg goes in under a kind of its own, so its record stands apart
     const flagged = [...sportPlays.filter(x => x.research || x.kind === 'sharp' || x.kind === 'sharp3' || x.kind === 'combo' || x.play.ev >= SPORT_OPTS.minEv), ...staleAppPlays(rows)]
       .map(x => (x.play.book === 'pick6' && !x.research ? { ...x, kind: P6_KIND(x.kind) } : x));   // research rows stay research
-    // the CFB model's confident PrizePicks and Pick6 legs: a record of their own (kinds cfb-model, p6-cfb-model)
+    // the CFB model's confident PrizePicks and Pick6 legs, and Underdog's +5% at its real multiplier: records of their own (kinds cfb-model, p6-cfb-model, ud-cfb-model)
     if (cfbModel) { try { flagged.push(...cfbModel.plays(rows)); } catch (e) { console.warn('CFB model plays:', e.message); } }
     // the NBA model's confident PrizePicks and Pick6 legs: a record of their own (kinds nba-model, p6-nba-model)
     if (nbaModel) { try { flagged.push(...nbaModel.plays(rows)); } catch (e) { console.warn('NBA model plays:', e.message); } }
@@ -7093,10 +7093,14 @@ app.get('/api/props/cfbmodel', async (req, res) => {
     const q = String(req.query.q || '').toLowerCase().trim();
     if (q) list = list.filter(r => `${r.player} ${r.team} ${r.opp} ${r.market}`.toLowerCase().includes(q));
     if (req.query.stat) list = list.filter(r => r.mkey === String(req.query.stat));
-    const kinds = (await sportTracker.summary()).byKind || {};
-    res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), pickMin: cfbdata.PICK_MIN,
+    const sum = await sportTracker.summary();
+    const kinds = sum.byKind || {}, byVer = sum.byModelVersion || {};
+    const V = cfbdata.MODEL_VERSION;
+    res.json({ on: true, sport: 'CFB', label: 'model, not an edge', status: cfbModel.status(), pickMin: cfbdata.PICK_MIN, udEvMin: cfbdata.UD_EV_MIN,
+      version: V, versionAt: cfbdata.VERSION_AT, versionNote: cfbdata.VERSION_NOTE,
       bar: 'Not a bet until its own record has 50+ graded live legs on one app with the hit rate 2+ standard errors above the break-even (PrizePicks 55.03%, Pick6 56.7%; Underdog judged on profit at its real multipliers), and an independent re-check of the results.',
-      record: { prizepicks: kinds['cfb-model'] || null, pick6: kinds['p6-cfb-model'] || null },
+      record: { prizepicks: kinds['cfb-model'] || null, pick6: kinds['p6-cfb-model'] || null, underdog: kinds['ud-cfb-model'] || null },
+      recordByVersion: { prizepicks: byVer[`cfb-model@${V}`] || null, pick6: byVer[`p6-cfb-model@${V}`] || null, underdog: byVer[`ud-cfb-model@${V}`] || null },
       backtest: cfbModel.state.backtest, count: list.length, rows: list.slice(0, Math.min(parseInt(req.query.limit) || 300, 1000)) });
   } catch (e) { sendErr(res, e); }
 });
@@ -7902,7 +7906,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.173.0',
+  version: '3.174.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
