@@ -1,0 +1,123 @@
+09:27:51 pm sports [{"id":46,"sport":"wta","name":"WTA Tour","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/league-icons/wta-a0555a41.png","resolution":"https://www.wtatennis.com/scores","ordering":"home","tags":"1,864,100639,102123","primaryTagId":102123,"series":"10366","createdAt":"2025-11-07T21:09:26.309189Z"},{"id":45,"sport":"atp","name":"ATP Tour","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/league-icons/atp-b3819f2f.png","resolution":"https://www.atptour.com/en/scores/current","ordering":"home","tags":"1,864,100639,101232","primaryTagId":101232,"series":"10365","createdAt":"2025-11-07T21:08:59.561861Z"},{"id":259,"sport":"atp-doubles","name":"ATP Doubles","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/league-icons/atp-doubles-b3819f2f.png","resolution":"https://www.atptour.com/en/scores/current","ordering":"home","tags":"864,1,100639,101232","primaryTagId":101232,"series":"11632","createdAt":"2026-06-04T16:20:49.640496Z"},{"id":299,"sport":"wta-doubles","name":"WTA Doubles","image":"https://polymarket-upload.s3.us-east-2.amazonaws.com/league-icons/wta-doubles-a0555a41.png","resolution":"https://www.wtatennis.com/scores","ordering":"home","tags":"864,1,100639,102123","primaryTagId":102123,"series":"11633","createdAt":"2026-06-04T16:20:49.640496Z"}]
+09:27:51 pm series wta [ 10366 ]
+09:27:51 pm window 2025-01-01 0
+09:27:51 pm window 2025-01-08 0
+09:27:51 pm window 2025-01-15 0
+09:27:51 pm window 2025-01-22 0
+09:27:51 pm window 2025-01-29 0
+09:27:52 pm window 2025-02-05 0
+09:27:52 pm window 2025-02-12 0
+09:27:52 pm window 2025-02-19 0
+09:27:52 pm window 2025-02-26 0
+09:27:52 pm window 2025-03-05 0
+09:27:52 pm window 2025-03-12 0
+09:27:52 pm window 2025-03-19 0
+09:27:52 pm window 2025-03-26 0
+09:27:52 pm window 2025-04-02 0
+09:27:52 pm window 2025-04-09 0
+09:27:53 pm window 2025-04-16 0
+09:27:53 pm window 2025-04-23 0
+09:27:53 pm window 2025-04-30 0
+09:27:53 pm window 2025-05-07 0
+09:27:53 pm window 2025-05-14 0
+09:27:53 pm window 2025-05-21 0
+09:27:53 pm window 2025-05-28 0
+09:27:53 pm window 2025-06-04 0
+09:27:53 pm window 2025-06-11 0
+09:27:53 pm window 2025-06-18 0
+09:27:54 pm window 2025-06-25 0
+09:27:54 pm window 2025-07-02 0
+09:27:54 pm window 2025-07-09 0
+09:27:54 pm window 2025-07-16 0
+09:27:54 pm window 2025-07-23 0
+09:27:54 pm window 2025-07-30 0
+09:27:54 pm window 2025-08-06 0
+09:27:54 pm window 2025-08-13 0
+09:27:54 pm window 2025-08-20 0
+09:27:54 pm window 2025-08-27 0
+09:27:55 pm window 2025-09-03 0
+09:27:55 pm window 2025-09-10 0
+09:27:55 pm window 2025-09-17 0
+09:27:55 pm window 2025-09-24 0
+09:27:55 pm window 2025-10-01 0
+09:27:55 pm window 2025-10-08 64
+09:27:55 pm window 2025-10-15 167
+09:27:56 pm window 2025-10-22 289
+09:27:56 pm window 2025-10-29 330
+09:27:56 pm window 2025-11-05 333
+09:27:56 pm window 2025-11-12 333
+09:27:57 pm window 2025-11-19 333
+09:27:57 pm window 2025-11-26 333
+09:27:57 pm window 2025-12-03 333
+09:27:57 pm window 2025-12-10 333
+09:27:57 pm window 2025-12-17 333
+09:27:57 pm window 2025-12-24 333
+09:27:57 pm window 2025-12-31 429
+09:27:58 pm window 2026-01-07 626
+09:27:59 pm window 2026-01-14 741
+09:27:59 pm window 2026-01-21 788
+09:28:00 pm window 2026-01-28 901
+09:28:00 pm window 2026-02-04 999
+09:28:01 pm window 2026-02-11 1153
+09:28:01 pm window 2026-02-18 1279
+09:28:02 pm window 2026-02-25 1389
+09:28:03 pm window 2026-03-04 1510
+09:28:03 pm window 2026-03-11 1602
+09:28:03 pm window 2026-03-18 1697
+09:28:05 pm window 2026-03-25 1799
+09:28:05 pm window 2026-04-01 1877
+09:28:05 pm window 2026-04-08 1992
+09:28:06 pm window 2026-04-15 2123
+09:28:06 pm window 2026-04-22 2255
+09:28:07 pm window 2026-04-29 2405
+09:28:08 pm window 2026-05-06 2519
+09:28:08 pm window 2026-05-13 2667
+09:28:09 pm window 2026-05-20 2793
+09:28:10 pm window 2026-05-27 2939
+09:28:11 pm window 2026-06-03 3085
+09:28:11 pm window 2026-06-10 3237
+09:28:12 pm window 2026-06-17 3351
+09:28:12 pm window 2026-06-24 3364
+09:28:12 pm window 2026-07-01 3428
+09:28:13 pm window 2026-07-08 3612
+09:28:14 pm window 2026-07-15 3754
+09:28:14 pm window 2026-07-22 3881
+09:28:15 pm window 2026-07-29 4030
+09:28:15 pm window 2026-08-05 4089
+09:28:16 pm window 2026-08-12 4187
+09:28:17 pm window 2026-08-19 4342
+09:28:17 pm window 2026-08-26 4471
+09:28:18 pm window 2026-09-02 4630
+09:28:19 pm window 2026-09-09 4805
+09:28:20 pm window 2026-09-16 4989
+09:28:21 pm window 2026-09-23 5142
+09:28:22 pm window 2026-09-30 5260
+09:28:22 pm window 2026-10-07 5425
+09:28:23 pm window 2026-10-14 5543
+09:28:23 pm window 2026-10-21 5590
+09:28:23 pm events wta 5590
+09:28:24 pm hist sample Ningbo Open, Qualification: Aliaksandra Sasnovich vs Camila Osorio 95 165 [[10,0.5],[11,0.5],[12,0.5],[13,0.5],[14,0.5]]
+09:28:45 pm wta 500 / 5590 calls 1139 errs 0
+09:28:45 saved pm-wta 500
+09:29:07 pm wta 1000 / 5590 calls 2137 errs 0
+09:29:07 saved pm-wta 1000
+09:29:29 pm wta 1500 / 5590 calls 3136 errs 0
+09:29:29 saved pm-wta 1500
+09:29:51 pm wta 2000 / 5590 calls 4136 errs 0
+09:29:51 saved pm-wta 2000
+09:30:13 pm wta 2500 / 5590 calls 5138 errs 0
+09:30:13 saved pm-wta 2500
+09:30:35 pm wta 3000 / 5590 calls 6138 errs 0
+09:30:36 saved pm-wta 3000
+09:30:57 pm wta 3500 / 5590 calls 7138 errs 0
+09:30:58 saved pm-wta 3500
+09:31:20 pm wta 4000 / 5590 calls 8137 errs 0
+09:31:21 saved pm-wta 4000
+09:31:42 pm wta 4500 / 5590 calls 9137 errs 0
+09:31:44 saved pm-wta 4500
+09:32:05 pm wta 5000 / 5590 calls 10138 errs 0
+09:32:07 saved pm-wta 5000
+09:32:28 pm wta 5500 / 5590 calls 11137 errs 0
+09:32:30 saved pm-wta 5500
+09:32:35 saved pm-wta 5590
+09:32:35 done pm:wta calls 11310 errs 0 min 5
