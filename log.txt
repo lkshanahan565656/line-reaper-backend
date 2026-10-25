@@ -1,0 +1,5 @@
+/home/runner/work/line-reaper-backend/line-reaper-backend/fetch.py:15: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  R=[(D(2026,10,2),datetime.datetime.utcnow().date())]
+events 110 done 98
+boxes 98
+probe done
