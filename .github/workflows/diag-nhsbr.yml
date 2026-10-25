@@ -1,0 +1,25 @@
+name: diag-nhsbr
+on:
+  push:
+    branches: [diag-nhsbr]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: RUNMIN=16 timeout 1500 node diag/nhsbr.js || true
+      - run: |
+          git config user.name diag-bot
+          git config user.email diag-bot@users.noreply.github.com
+          gzip -9 out/*.json 2>/dev/null || true
+          git checkout --orphan diag-nhsbr-out
+          git rm -rq --cached . || true
+          git add -f out
+          git commit -qm "diag output"
+          git push -f origin diag-nhsbr-out
