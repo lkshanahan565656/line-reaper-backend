@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="60">
+<title>Best price | Line Reaper</title>
+<style>
+:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+.w { border:1px solid var(--border); border-radius:8px; background:var(--card); padding:10px 12px; min-width:0; overflow:hidden; }
+.hd { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:0 0 6px; }
+.hd b { font:700 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--green2); }
+.hd i { font:500 10px var(--mono); font-style:normal; color:var(--muted); white-space:nowrap; }
+.row { border-top:1px solid var(--border); padding:7px 0; min-width:0; }
+.row:first-of-type { border-top:0; }
+.ev { font-weight:600; overflow-wrap:anywhere; }
+.sub { color:var(--text2); font-size:12px; overflow-wrap:anywhere; }
+.nums { display:flex; flex-wrap:wrap; gap:4px 12px; font:500 12px var(--mono); font-variant-numeric:tabular-nums; margin-top:3px; }
+.nums span { white-space:nowrap; }
+.nums em { font-style:normal; color:var(--muted); font-size:10px; letter-spacing:.06em; margin-right:3px; }
+.tag { display:inline-block; font:700 9px var(--mono); letter-spacing:.08em; padding:1px 5px; border-radius:3px; border:1px solid var(--border); color:var(--text2); vertical-align:1px; }
+.tag.pv { color:var(--green2); border-color:rgba(52,211,153,.5); }
+.tag.ld { color:var(--amber); border-color:rgba(245,158,11,.45); }
+.pos { color:var(--green2); }
+.note { color:var(--muted); font-size:11px; margin:6px 0 0; overflow-wrap:anywhere; }
+.ft { display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); margin-top:8px; padding-top:6px; }
+.ft a { font:700 10px var(--mono); letter-spacing:.12em; color:var(--green2); text-decoration:none; white-space:nowrap; }
+.ft span { font-size:10px; color:var(--muted); overflow-wrap:anywhere; }
+.empty { color:var(--text2); padding:8px 0; }
+svg { display:block; width:100%; height:auto; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 10px; font:500 10px var(--mono); color:var(--text2); margin-top:4px; }
+.legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:4px; vertical-align:2px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px 12px; margin-top:4px; }
+.grid div { min-width:0; }
+.grid em { display:block; font:600 9px var(--mono); font-style:normal; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.grid b { font:600 15px var(--mono); font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="w"><div class="hd"><b>Best price above fair</b><i>read 23:16 UTC</i></div><div class="row">
+<div class="ev">Dak Prescott Under 36.5 <span class="tag ld" title="LEAD: research, not a proven edge. A price above the fair has not beaten the close at this venue yet.">LEAD</span></div>
+<div class="sub">Dallas Cowboys @ Philadelphia Eagles · pass_att · 10/27 00:15 UTC</div>
+<div class="nums"><span><em>BetRivers</em>-115</span><span><em>FAIR</em>-123</span><span class="pos"><em>EV</em>+3.1%</span><span><em>SIZE</em>limit not published</span></div>
+</div><p class="note">EV is after the venue's fee, against Pinnacle's no-vig fair. LEAD means research: prices above the fair have not beaten the close at that venue yet. Check the price at the venue before you bet.</p><div class="ft"><span>Not a bet slip; nothing here places a bet.</span><a href="https://line-reaper-backend-production.up.railway.app/app?start=odds" target="_blank" rel="noopener">LINE REAPER ↗</a></div></div>
+<script>(function(){var id="";function send(){try{parent.postMessage({lrEmbed:id,height:Math.ceil(document.documentElement.getBoundingClientRect().height)},'*')}catch(e){}}if(id){send();window.addEventListener('load',send);window.addEventListener('resize',send)}})();</script>
+</body>
+</html>

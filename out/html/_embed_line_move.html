@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="60">
+<title>Line move | Line Reaper</title>
+<style>
+:root { --bg:#080b10; --card:#0d121b; --border:#1e2738; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --amber:#f59e0b; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color-scheme:dark; }
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--bg); color:var(--text); font:13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+.w { border:1px solid var(--border); border-radius:8px; background:var(--card); padding:10px 12px; min-width:0; overflow:hidden; }
+.hd { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:0 0 6px; }
+.hd b { font:700 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--green2); }
+.hd i { font:500 10px var(--mono); font-style:normal; color:var(--muted); white-space:nowrap; }
+.row { border-top:1px solid var(--border); padding:7px 0; min-width:0; }
+.row:first-of-type { border-top:0; }
+.ev { font-weight:600; overflow-wrap:anywhere; }
+.sub { color:var(--text2); font-size:12px; overflow-wrap:anywhere; }
+.nums { display:flex; flex-wrap:wrap; gap:4px 12px; font:500 12px var(--mono); font-variant-numeric:tabular-nums; margin-top:3px; }
+.nums span { white-space:nowrap; }
+.nums em { font-style:normal; color:var(--muted); font-size:10px; letter-spacing:.06em; margin-right:3px; }
+.tag { display:inline-block; font:700 9px var(--mono); letter-spacing:.08em; padding:1px 5px; border-radius:3px; border:1px solid var(--border); color:var(--text2); vertical-align:1px; }
+.tag.pv { color:var(--green2); border-color:rgba(52,211,153,.5); }
+.tag.ld { color:var(--amber); border-color:rgba(245,158,11,.45); }
+.pos { color:var(--green2); }
+.note { color:var(--muted); font-size:11px; margin:6px 0 0; overflow-wrap:anywhere; }
+.ft { display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); margin-top:8px; padding-top:6px; }
+.ft a { font:700 10px var(--mono); letter-spacing:.12em; color:var(--green2); text-decoration:none; white-space:nowrap; }
+.ft span { font-size:10px; color:var(--muted); overflow-wrap:anywhere; }
+.empty { color:var(--text2); padding:8px 0; }
+svg { display:block; width:100%; height:auto; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 10px; font:500 10px var(--mono); color:var(--text2); margin-top:4px; }
+.legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:4px; vertical-align:2px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px 12px; margin-top:4px; }
+.grid div { min-width:0; }
+.grid em { display:block; font:600 9px var(--mono); font-style:normal; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+.grid b { font:600 15px var(--mono); font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="w"><div class="hd"><b>Line move</b><i>read 22:51 UTC</i></div>
+<div class="ev">Caroline Werner @ Elsa Jacquemot</div>
+<div class="sub">Tennis · Moneyline · Elsa Jacquemot · starts 10/28 11:00 UTC</div>
+<svg viewBox="0 0 420 210" role="img" aria-label="Implied win chance at each venue over time">
+<line x1="40" x2="412" y1="188.0" y2="188.0" stroke="#1e2738"/><text x="36" y="191.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">67.3%</text><line x1="40" x2="412" y1="98.0" y2="98.0" stroke="#1e2738"/><text x="36" y="101.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">72.9%</text><line x1="40" x2="412" y1="8.0" y2="8.0" stroke="#1e2738"/><text x="36" y="11.0" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">78.6%</text>
+<text x="40.0" y="204" fill="#64748b" font-size="10" text-anchor="start" font-family="monospace">17:06</text><text x="226.0" y="204" fill="#64748b" font-size="10" text-anchor="middle" font-family="monospace">19:58</text><text x="412.0" y="204" fill="#64748b" font-size="10" text-anchor="end" font-family="monospace">22:51</text>
+<path d="M40.0,167.2H44.5V167.2H77.4V167.2H131.4V66.1H147.5V66.1H179.9V66.1H212.9V66.1H245.2V66.1H277.8V66.1H313.4V66.1H346.3V66.1H379.7V66.1H412.0V66.1H412.0" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>
+<path d="M40.0,135.6H44.5V135.6H77.4V135.6H131.4V37.2H147.5V37.2H179.9V37.2H212.9V37.2H245.2V37.2H277.8V37.2H313.4V37.2H346.3V37.2H379.7V37.2H412.0V37.2H412.0" fill="none" stroke="#94a3b8" stroke-width="2"/><path d="M40.0,122.2H44.5V137.0H77.4V137.0H131.4V60.2H147.5V28.8H179.9V28.8H212.9V28.8H245.2V28.8H277.8V28.8H313.4V28.8H346.3V28.8H379.7V28.8H412.0V28.8H412.0" fill="none" stroke="#a78bfa" stroke-width="2"/>
+</svg><div class="legend"><span><i style="background:#94a3b8"></i>Pinnacle -330</span><span><i style="background:#a78bfa"></i>Polymarket US -340</span><span><i style="background:#e2e8f0"></i>FAIR 74.9%</span></div><p class="note">Each venue's implied chance for this side as read, a step at each change; dashed is Pinnacle's no-vig fair. A move is information, not a proven edge.</p><div class="ft"><span>History is kept until 6 hours after the start.</span><a href="https://line-reaper-backend-production.up.railway.app/app?start=odds" target="_blank" rel="noopener">LINE REAPER ↗</a></div></div>
+<script>(function(){var id="";function send(){try{parent.postMessage({lrEmbed:id,height:Math.ceil(document.documentElement.getBoundingClientRect().height)},'*')}catch(e){}}if(id){send();window.addEventListener('load',send);window.addEventListener('resize',send)}})();</script>
+</body>
+</html>
