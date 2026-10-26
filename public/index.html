@@ -370,7 +370,7 @@ body::before {
 .shop-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease both; }
 
 /* TOAST */
-.toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--card2); border: 1px solid var(--green); border-radius: 12px; padding: 12px 16px; font-size: 12px; color: var(--green); box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease; max-width: 300px; font-weight: 500; }
+.toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--card2); border: 1px solid var(--green); border-radius: 12px; padding: 12px 16px; font-size: 12px; color: var(--green); box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease; max-width: min(300px, calc(100vw - 40px)); box-sizing: border-box; overflow-wrap: anywhere; font-weight: 500; }
 .toast.danger { border-color: var(--red); color: var(--red); }
 @keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 
@@ -1350,6 +1350,20 @@ body.no-help .clv-info { display:none; }
 .ms-res button { cursor:pointer; border:1px solid var(--border2); background:var(--card2); color:var(--text2); border-radius:5px; font:700 9.5px 'JetBrains Mono',monospace; padding:2px 6px; }
 .ms-res button.on { color:#06110d; background:#94a3b8; }
 .ms-sg { color:#fbbf24; font-size:10.5px; margin-top:3px; }
+.ms-imp { border:1px solid var(--border); border-radius:8px; background:var(--card); margin:0 0 10px; overflow:hidden; }
+.ms-imp .ms-imp-head { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:rgba(0,0,0,.15); font-size:12px; }
+.ms-imp .ms-imp-head .ms-meta { color:var(--muted2); font:11px 'JetBrains Mono',monospace; }
+.ms-imp-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:1px; background:var(--border); }
+.ms-imp-grid > div { background:var(--card); padding:7px 10px; min-width:0; }
+.ms-imp-grid .k { color:var(--muted2); font:10px 'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.04em; }
+.ms-imp-grid .v { font:700 13px 'JetBrains Mono',monospace; margin-top:2px; overflow-wrap:anywhere; }
+.ms-imp-grid small { display:block; color:var(--muted2); font-size:10px; overflow-wrap:anywhere; }
+.ms-imp details { padding:6px 12px 9px; font-size:11.5px; }
+.ms-imp summary { cursor:pointer; color:var(--text2); font:700 10.5px 'JetBrains Mono',monospace; padding:3px 0; }
+.ms-imp ol { margin:6px 0 0; padding-left:18px; color:var(--text2); }
+.ms-imp li { margin:3px 0; overflow-wrap:anywhere; }
+.ms-imp li small { display:block; color:var(--muted2); }
+.ms-imp .ms-imp-foot { padding:0 12px 9px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .mb-auto { display:inline-block; margin-left:6px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:#7dd3fc; border:1px solid rgba(125,211,252,.35); border-radius:4px; padding:1px 4px; vertical-align:1px; }
 .mb-act { display:flex; gap:6px; justify-content:flex-end; align-items:center; }
 .mb-quick { display:inline-flex; border:1px solid var(--border2); border-radius:6px; overflow:hidden; }
@@ -1470,6 +1484,18 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
 .shp-dim { color:var(--text2); font-size:11px; }
+.mv-t td { vertical-align:top; }
+.mv-t .mv-what { white-space:normal; min-width:170px; max-width:280px; }
+.mv-v { font-size:11px; line-height:1.5; }
+.mv-v.mv-moved { color:#34d399; }
+.mv-v.mv-old { color:#f59e0b; }
+.mv-v.mv-part, .mv-v.mv-against, .mv-v.mv-other, .mv-v.mv-new { color:var(--text2); }
+.mv-t a { color:inherit; text-decoration:underline; }
+.mv-lg { font-size:10px; letter-spacing:.06em; color:var(--text2); margin-right:4px; }
+.mv-sort { cursor:pointer; }
+/* the chart stays on screen while the table scrolls sideways on a phone */
+.mv-chart { position:sticky; left:0; max-width:calc(100vw - 40px); white-space:normal; }
+.mv-sort.on { color:var(--text); }
 .nflm-tag { display:inline-block; font-size:10px; letter-spacing:.06em; padding:1px 6px; border:1px solid #f59e0b; color:#f59e0b; border-radius:3px; margin-right:6px; }
 .nflm-bt { font-size:11px; color:var(--text2); border-left:3px solid #f59e0b; padding:6px 10px; margin:4px 0 10px; line-height:1.6; }
 .nflm-game { border:1px solid #1f1f1f; border-radius:6px; padding:8px 10px; margin-bottom:10px; }
@@ -1515,9 +1541,83 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .tour-btns button { background:#161c28; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 11px 'Inter',sans-serif; letter-spacing:.8px; padding:7px 11px; cursor:pointer; }
 .tour-btns button.primary { background:var(--green); border-color:var(--green); color:#06110d; }
 .tour-btns button:disabled { opacity:.35; cursor:default; }
-.help-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
+.help-btn { white-space:nowrap; background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
 .help-btn:hover { color:var(--text); border-color:var(--text2); }
 @media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
+/* After fees (CUSTOMIZE > After fees): the after-fee chance, the fee or break-even under it */
+.af-v { font-variant-numeric:tabular-nums; }
+.af-sub { display:block; font-size:9px; font-weight:500; color:var(--muted2); letter-spacing:.3px; white-space:nowrap; }
+.af-be { display:inline-block; margin-left:4px; padding:0 4px; border:1px solid #334155; border-radius:3px; font-size:9px; font-weight:600; color:#fbbf24; white-space:nowrap; }
+#afFoot { max-width:1400px; margin:12px auto 0; padding:0 16px; }
+.af-foot { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:11px; color:#94a3b8; background:rgba(15,23,42,.5); }
+.af-foot b { color:var(--text); }
+.af-foot a { color:#93c5fd; }
+.af-foot summary { cursor:pointer; font-weight:700; letter-spacing:.6px; color:var(--text); }
+.af-foot p { margin:6px 0; }
+.af-row { padding:6px 0; border-top:1px solid var(--border); overflow-wrap:anywhere; }
+.af-st { font-size:9px; font-weight:700; padding:0 4px; border-radius:3px; border:1px solid currentColor; }
+.af-st.verified { color:#34d399; } .af-st.recorded { color:#93c5fd; } .af-st.unverified { color:#fbbf24; }
+/* Compact rows (CUSTOMIZE > Compact rows): desktop only, so phones keep their tap sizes */
+@media (min-width:1100px) {
+  body.compact .page { padding:10px 14px; }
+  body.compact .tab { padding:6px 11px; }
+  body.compact table { font-size:11.5px; }
+  body.compact table td { padding-top:2px !important; padding-bottom:2px !important; line-height:1.3; }
+  body.compact table th { padding-top:3px !important; padding-bottom:3px !important; }
+  body.compact .os-tbl td, body.compact .shp-tbl td, body.compact .shop-table td, body.compact .bl-table td { font-size:11px; }
+  body.compact .sport-chip { padding-top:3px; padding-bottom:3px; }
+  body.compact .mb-row, body.compact .ms-leg { padding-top:4px; padding-bottom:4px; }
+}
+/* keyboard shortcuts overlay (? on a keyboard, or CUSTOMIZE > Keyboard shortcuts) */
+.kbd-list { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12px; color:var(--text2); margin:0 0 14px; }
+.kbd-list kbd { font:600 11px 'JetBrains Mono',monospace; color:var(--text); background:#161c28; border:1px solid var(--border2); border-radius:4px; padding:1px 6px; white-space:nowrap; justify-self:start; }
+/* EXPORT and PRINT bar on each data screen */
+.xp-bar { display:flex; justify-content:flex-end; gap:6px; margin:0 0 8px; }
+.xp-btn { font:700 10px 'JetBrains Mono',monospace; letter-spacing:1px; color:var(--text2); background:var(--card); border:1px solid var(--border2); border-radius:6px; padding:5px 10px; cursor:pointer; }
+.xp-btn:hover { color:var(--text); border-color:var(--green); }
+.xp-btn.primary { color:#06110d; background:var(--green); border-color:var(--green); }
+.xp-ph { display:none; }
+/* GLOSSARY: the ? beside a label and its definition */
+.gl-q { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; margin-left:3px; border-radius:50%; border:1px solid currentColor; font:700 9px/1 'Inter',sans-serif; opacity:.55; cursor:help; vertical-align:middle; flex:none; letter-spacing:0; text-transform:none; }
+.gl-q:hover, .gl-q:focus-visible { opacity:1; color:var(--green); outline:none; }
+[data-gl]:not([data-gl=""]) { -webkit-touch-callout:none; }
+.gl-pop { display:none; position:fixed; z-index:600; width:min(300px, calc(100vw - 16px)); background:#0d1117; border:1px solid var(--border2); border-left:3px solid var(--green); border-radius:8px; padding:10px 12px; box-shadow:0 8px 30px rgba(0,0,0,.5); font-size:12px; line-height:1.5; color:var(--text2); text-align:left; letter-spacing:0; text-transform:none; font-weight:400; white-space:normal; }
+.gl-pop .gl-h { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; color:var(--text); margin:0 0 4px; }
+.gl-pop .gl-x { background:none; border:0; color:var(--text2); cursor:pointer; font-size:12px; padding:0 2px; }
+.gl-pop .gl-more { display:inline-block; margin-top:6px; color:#34d399; font-size:11px; text-decoration:none; }
+</style>
+<style id="xpPrintCss" media="print">
+/* the print view (PRINT on a data screen, or the browser's own print): light,
+   no nav, no controls, every row of the open screen */
+body { background:#fff !important; color:#111 !important; min-height:0 !important; }
+body::before { display:none !important; }
+.page *, .xp-ph, .xp-ph * { color:#111 !important; background:transparent !important; box-shadow:none !important; text-shadow:none !important; animation:none !important; border-color:#bbb !important; }
+.nav, #netBanner, .xp-bar, .welcome, .tour, .toast, .acct-modal, .lay-modal, .more-menu, #esSlipBar, #pkTray, .gl-pop, .gl-q, footer.lr-foot, .lr-foot { display:none !important; }
+.page:not(.active) { display:none !important; }
+.page { padding:0 4px !important; }
+.page button, .page select, .page input, .page textarea, .page label:has(select), .page label:has(input), .page .sport-row, .page .pb-chips, .page .os-ctrl, .page .shp-bar, .page .shp-health, .page .os-chart, .page .mv-chart, .page canvas, .page svg { display:none !important; }
+.page details:not([open]), .page .clv-info.folded { display:none !important; }
+.page table { border-collapse:collapse !important; width:100%; font-size:10px !important; }
+.page th, .page td { border:1px solid #bbb !important; padding:3px 5px !important; }
+.page td.best, .page td.top, .page .shp-cell.best { font-weight:800 !important; outline:2px solid #111 !important; outline-offset:-2px; }
+.page a { text-decoration:none !important; }
+.page .os-game, .page .shp-card, .page .pb-card, .page .ms-slip, .page .nflm-card, .page tr { break-inside:avoid; page-break-inside:avoid; }
+.page .pb-card, .page .os-game, .page .shp-card, .page .ms-slip, .page .clv-info, .page .shp-dim { border-color:#ccc !important; }
+.xp-ph { display:block !important; border-bottom:2px solid #111 !important; padding:4px 0 8px !important; margin:0 0 12px !important; font-size:11px; }
+.xp-ph-t { font:800 14px 'JetBrains Mono',monospace; letter-spacing:1px; }
+.xp-ph-m { margin-top:3px; }
+.xp-ph-b { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+.xp-ph-b .xp-btn { display:inline-block !important; color:#111 !important; background:#fff !important; border:1px solid #111 !important; }
+.xp-ph-b .xp-btn.primary { color:#fff !important; background:#111 !important; }
+.xp-ph-s { font-size:11px; }
+@media print {
+  .xp-ph-b { display:none !important; }
+  @page { margin:10mm; }
+  /* on paper nothing scrolls: every column squeezes onto the page */
+  .page [class*="scroll"], .page [class*="wrap"], .page .os-game, .page .shp-card, .page .pb-card { overflow:visible !important; max-height:none !important; }
+  .page table { table-layout:fixed !important; font-size:8px !important; }
+  .page th, .page td { word-break:break-word; white-space:normal !important; }
+}
 </style>
 </head>
 <body>
@@ -1569,7 +1669,7 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
   <div class="nav-header">
     <div class="logo"><svg class="lr-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span class="logo-word">LINE<b>REAPER</b></span></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div style="display:flex;gap:6px;align-items:center"><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#64748b;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
       <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
@@ -1633,6 +1733,12 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
     <div class="sport-row" id="ortModes"></div>
     <div class="shp-bar" id="ortBar" style="margin-top:8px"></div>
     <div id="ortContent"></div>
+  </div>
+  <div id="mvView" style="display:none">
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">INFORMATION, NOT AN EDGE</span> The markets that moved most today, at each venue, and every other venue's answer: <b>moved too</b>, or <b>still at the old number</b>. Prices are the chance each one implies (cents = points of chance; fees in on exchanges); number moves are points of line. "Since first seen" starts at the first price we saved, not the venue's opening line. A venue still at the old number is not a bet on its own: the "app stale" and "lead-lag" leads both graded as no edge against the close, and Results shows what the record backs. Nothing here places an order.</div>
+    <div class="sport-row" id="mvModes"></div>
+    <div class="shp-bar" id="mvBar" style="margin-top:8px"></div>
+    <div id="mvContent"></div>
   </div>
   <div id="kmkView" style="display:none">
     <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">RESEARCH, NOT A BET</span> A resting Kalshi bid on each NFL, CFB, NBA and NHL game side, 2%+ under Pinnacle's no-vig fair after Kalshi's maker fee. Taking Kalshi's ask has lost to Pinnacle's close; this tests whether waiting for a seller does better. The record counts a bid only when a Kalshi trade printed through it. Nothing here places an order.</div>
@@ -1845,15 +1951,15 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 <div class="page" id="page-myslips">
   <div class="mb-head">
     <div><div class="tl-title">MY SLIPS</div>
-      <div class="tl-blurb">Paste a pick'em slip, or import your Pikkit export, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
+      <div class="tl-blurb">Paste a pick'em slip or your app history, or import a file from Pikkit, Juice Reel, Bettor IQ, PrizePicks, Underdog or Sleeper, and every leg is graded the way we grade our own plays: the sharp price at your line when we first saw it, at the close, the app's own closing line, and the result. A leg beats the close when the sharp price at the start makes it better than the app's break-even. Your slips stay in this browser; only the legs go to the server.</div></div>
     <div class="mb-actions">
       <button class="mb-btn primary" onclick="msPasteToggle()">PASTE SLIPS</button>
-      <label class="mb-btn">IMPORT PIKKIT CSV<input type="file" accept=".csv,text/csv,text/plain" hidden onchange="msImport(this)"></label>
+      <label class="mb-btn" title="A CSV from Pikkit, Juice Reel or Bettor IQ, or the history file PrizePicks, Underdog or Sleeper gives you">IMPORT CSV<input type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden onchange="msImport(this)"></label>
     </div>
   </div>
   <div class="ms-paste" id="msPaste" style="display:none">
     <textarea id="msText" placeholder="PrizePicks $10 to win $60&#10;Josh Allen Over 245.5 Pass Yds&#10;Stefon Diggs Under 64.5 Rec Yds&#10;Bo Nix More 220.5 Pass Yards&#10;&#10;Underdog $5 flex&#10;Aaron Judge Under 1.5 Total Bases"></textarea>
-    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start. For CS2, LoL, Valorant and Dota kills, headshots and assists add the league (<code>CS</code>) and, if the player has two matches that day, the opponent: <code>Chr1zn Over 24.5 Maps 1-2 Kills CS (vs G2)</code>. Esports legs are priced on the books' consensus, since no sharp book posts player kills there.</div>
+    <div class="ms-help">One slip per block, a blank line between slips. The first line names the app (PrizePicks, Underdog, Sleeper, Pick6, Betr, Chalkboard) and, if you like, the stake (<code>$10</code>), the payout (<code>to win $60</code> or <code>6x</code>), <code>flex</code> and when you placed it (<code>10/14 7:05pm</code>, else now). Then one leg a line: <code>Player Over 24.5 Stat</code>, <code>Player o24.5 Stat</code> or <code>Player 24.5 Stat More</code>; add the league (<code>NFL</code>) if a name is in two sports. Legs are followed from the moment you paste them, so paste before the games start. For CS2, LoL, Valorant and Dota kills, headshots and assists add the league (<code>CS</code>) and, if the player has two matches that day, the opponent: <code>Chr1zn Over 24.5 Maps 1-2 Kills CS (vs G2)</code>. Esports legs are priced on the books' consensus, since no sharp book posts player kills there. You can also paste your history as copied from PrizePicks, Underdog or Sleeper (the player's name on one line, <code>More 245.5 Pass Yards</code> or <code>Higher 245.5 Passing Yards</code> under it), or rows copied from a tracker's spreadsheet with its header line: every import gets a summary below, with any line we couldn't read.</div>
     <div class="mb-actions"><button class="mb-btn primary" onclick="msPasteSave()">ADD SLIPS</button><button class="mb-btn" onclick="msPasteToggle(false)">CANCEL</button></div>
     <div class="mb-hint" id="msHint"></div>
   </div>
@@ -1862,6 +1968,7 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
   <div id="msSlipTot"></div>
   <div class="mb-bar" id="msBar"></div>
   <div id="msTotals"></div>
+  <div id="msImports"></div>
   <div class="section-head" style="margin-top:18px">Slips</div>
   <div id="msList"></div>
   <div id="msPikkit"></div>
@@ -2049,8 +2156,9 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
   <div id="clvList"><div class="empty-wrap"><div class="empty-big">NO BETS</div><div class="empty-sub">Log bets with closing odds to see CLV</div></div></div>
 </div>
 
+<div id="afFoot" style="display:none"></div>
 <footer class="lr-foot">
-  <nav aria-label="Legal"><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
+  <nav aria-label="Legal"><a href="/status" target="_blank" rel="noopener">Status</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
   <div>Line Reaper is an information and analytics tool, not a sportsbook, exchange or adviser. It does not take bets or hold funds, and nothing here is financial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div>
 </footer>
 
@@ -2102,6 +2210,210 @@ document.addEventListener('click', e => {
     if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'application/json' })))) fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
   } catch {}
 }, true);
+// ─── SHARE LINKS ─────────────────────────────────────────────────────────────
+// A link to a screen: the tab and, on ODDS SCREEN, the view and its filters,
+// packed after the # of the app's URL (/app#lr&t=odds&m=opps&...). Nothing is
+// stored on the server and the part after # never reaches it. A link never
+// carries anything about the person who made it: no bets, slips, alerts,
+// stake, odds format, compact setting or favorites (a ★ Favorites filter goes
+// as the leagues and venues it stands for, so the receiver's own stars stay).
+// Pure: the tests run this block on its own (LR_SHARE_BEGIN to LR_SHARE_END).
+// LR_SHARE_BEGIN
+const LRShare = (() => {
+  // venues left out go as one bit each in this order (a new venue is added at
+  // the END, or old links change meaning); a venue not listed goes by its id
+  const VENUES = ['pinnacle', 'matchbook', 'fanduel', 'betrivers', 'kalshi', 'gemini', 'polymarketus', 'draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'];
+  const MODES = ['lines', 'opps', 'markets', 'arb', 'maker', 'outrights', 'nflmodel', 'moves'];
+  const SHOP_MODES = ['opps', 'markets', 'arb'];
+  // the shopper and game-lines filters a link restores, with the value a new device starts on
+  const SHOP_DEF = { state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', minSize: '', method: 'power', excluded: [] };
+  const OS_DEF = { state: '', league: '', market: '', sort: 'start', q: '' };
+  // value <-> short code; anything not listed is refused on the way in
+  const CODES = {
+    state: { TX: 'tx', '': 'all' },
+    markets: { '': '', moneyline: 'ml', spread: 'sp', total: 'to', player_prop: 'pp' },
+    sort: { ev: 'ev', start: 'st', hold: 'ho', gap: 'gp', venues: 've' },
+    hours: { 6: '6', 24: '24', 48: '48', 168: '168' },
+    maxAge: { '': '', 180: '180', 600: '600' },
+    minSize: { '': '', 50: '50', 200: '200', 1000: '1000' },
+    method: { power: 'pw', multiplicative: 'mu', additive: 'ad', shin: 'sh' },
+    osState: { '': '', TX: 'tx' },
+    osMarket: { '': '', ml: 'ml', spread: 'sp', total: 'to' },
+    osSort: { start: 'st', ev: 'ev', venues: 've', hold: 'ho' },
+  };
+  // PROPS and ESPORTS: the sub-view, venue, sport or game, and their filters
+  const PROPS_DEF = { view: 'lines', book: '', sport: 'ALL', q: '', market: '', sort: 'ev', show: 'all', shopShow: 'all', anchor: '' };
+  const PROPS_VIEWS = ['lines', 'cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury'];
+  const PROPS_BOOKS = ['underdog', 'prizepicks', 'sleeper', 'pick6'];
+  const PROPS_SPORTS = ['ALL', 'SPORTS', 'ESPORTS', 'NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
+  const PROPS_PICK = { sort: ['ev', 'gap', 'books', 'start', 'player'], show: ['all', 'multi', 'priced', 'sharp', 'gaps'], shopShow: ['all', 'middles', 'scorecard'] };
+  const ES_DEF = { mode: 'matches', game: 'ALL', hideLive: false, emuGame: 'LOL', league: 'ALL' };
+  const ES_MODES = ['matches', 'props', 'matchups'];
+  const ES_EMU = ['LOL', 'CS2', 'VAL', 'SOCCER'];
+  const cleanTag = v => (/^[A-Za-z0-9_]{1,12}$/.test(String(v ?? '')) ? String(v) : '');
+  const cleanLabel = v => String(v ?? '').replace(/[^\w .+&/()-]/g, '').trim().slice(0, 40);
+  const KEY = { state: 'st', markets: 'mk', sort: 'so', league: 'lg', q: 'q', minEv: 'ev', minEdge: 'ed', maxAge: 'ag', hours: 'h', minSize: 'sz', method: 'dv', excluded: 'ex' };
+  const MAX_Q = 40;
+  const code = (k, v) => CODES[k][String(v ?? '')];
+  const uncode = (k, c) => { const hit = Object.entries(CODES[k]).find(([, x]) => x === c); return hit ? hit[0] : undefined; };
+  const cleanLeague = v => (/^[a-z0-9_-]{1,20}(,[a-z0-9_-]{1,20}){0,19}$/.test(String(v ?? '')) ? String(v) : '');
+  const cleanQ = v => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, MAX_Q);
+  const cleanName = v => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 30);
+  const cleanNum = v => { const s = String(v ?? '').trim(); if (!s) return ''; const n = Number(s); return Number.isFinite(n) && Math.abs(n) <= 1000 ? String(n) : null; };
+  const venuesOut = ids => {
+    const set = new Set(ids);
+    const bits = VENUES.reduce((n, v, i) => (set.has(v) ? n + 2 ** i : n), 0);
+    return [bits.toString(36), ...[...set].filter(v => !VENUES.includes(v)).sort()].join('.');
+  };
+  const venuesIn = s => {
+    const [head, ...rest] = String(s || '').split('.');
+    const bits = /^[0-9a-z]{1,4}$/.test(head) ? parseInt(head, 36) : 0;
+    const known = VENUES.filter((v, i) => Math.floor(bits / 2 ** i) % 2 === 1);
+    return [...new Set([...known, ...rest.filter(v => /^[a-z0-9_]{3,24}$/.test(v))])].slice(0, 40);
+  };
+
+  // the ★ Favorites filter as the plain filters it stands for; providers is
+  // every venue the board lists (the known venues when it has not loaded)
+  function resolveFavorites(o, providers) {
+    const out = Object.fromEntries(Object.keys(SHOP_DEF).map(k => [k, o[k] ?? SHOP_DEF[k]]));
+    out.excluded = [...(o.excluded || [])];
+    if (o.favOnly) {
+      const fl = o.favLeagues || [], fv = o.favVenues || [];
+      if (!o.league && fl.length) out.league = fl.join(',');
+      if (fv.length) {
+        const all = providers && providers.length ? providers : VENUES;
+        out.excluded = [...new Set([...out.excluded, ...all.filter(v => !fv.includes(v))])];
+      }
+    }
+    return out;
+  }
+
+  // { tab, mode, os, shop } -> the text after #. Values a new device starts on are left out.
+  function encode(s) {
+    const p = [['t', s.tab]];
+    if (s.tab === 'odds') {
+      const m = MODES.includes(s.mode) ? s.mode : 'lines';
+      if (m !== 'lines') p.push(['m', m]);
+      if (m === 'lines') {
+        const o = { ...OS_DEF, ...(s.os || {}) };
+        if (o.state && code('osState', o.state)) p.push(['st', code('osState', o.state)]);
+        if (cleanLeague(o.league)) p.push(['lg', o.league]);
+        if (o.market && code('osMarket', o.market)) p.push(['mk', code('osMarket', o.market)]);
+        if (o.sort !== 'start' && code('osSort', o.sort)) p.push(['so', code('osSort', o.sort)]);
+        if (cleanQ(o.q)) p.push(['q', cleanQ(o.q)]);
+      } else if (SHOP_MODES.includes(m)) {
+        const o = { ...SHOP_DEF, ...(s.shop || {}) };
+        for (const k of Object.keys(SHOP_DEF)) {
+          const v = o[k];
+          if (k === 'excluded') { if ((v || []).length) p.push([KEY[k], venuesOut(v)]); continue; }
+          if (String(v ?? '') === String(SHOP_DEF[k])) continue;
+          if (k === 'league') { if (cleanLeague(v)) p.push([KEY[k], v]); continue; }
+          if (k === 'q') { if (cleanQ(v)) p.push([KEY[k], cleanQ(v)]); continue; }
+          if (k === 'minEv' || k === 'minEdge') { const n = cleanNum(v); if (n) p.push([KEY[k], n]); continue; }
+          const c = code(k, v);
+          if (c !== undefined) p.push([KEY[k], c]);
+        }
+      }
+    }
+    if (s.tab === 'props' && s.props) {
+      const o = { ...PROPS_DEF, ...s.props };
+      if (o.view !== 'lines' && PROPS_VIEWS.includes(o.view)) p.push(['pv', o.view]);
+      // GAME LINES' app: the Lines view always shows one (Underdog on a new device)
+      const bk = o.view === 'lines' ? (o.book && o.book !== 'underdog' ? o.book : '') : o.book;
+      if (bk && PROPS_BOOKS.includes(bk)) p.push(['bk', bk]);
+      if (o.sport !== 'ALL' && PROPS_SPORTS.includes(o.sport)) p.push(['sp', o.sport]);
+      if (cleanQ(o.q)) p.push(['q', cleanQ(o.q)]);
+      if (o.view === 'lines' && cleanLabel(o.market)) p.push(['mk', cleanLabel(o.market)]);
+      for (const [k, c] of [['sort', 'so'], ['show', 'sh'], ['shopShow', 'ss']]) if (o[k] !== PROPS_DEF[k] && PROPS_PICK[k].includes(o[k])) p.push([c, o[k]]);
+      if (o.anchor === 'none') p.push(['an', '1']);
+    }
+    if (s.tab === 'esports' && s.es) {
+      const o = { ...ES_DEF, ...s.es };
+      if (o.mode !== 'matches' && ES_MODES.includes(o.mode)) p.push(['em', o.mode]);
+      if (o.mode === 'matches') {
+        if (o.game !== 'ALL' && cleanTag(o.game)) p.push(['g', o.game]);
+        if (o.hideLive) p.push(['hl', '1']);
+      }
+      if (o.mode === 'matchups') {
+        if (o.emuGame !== 'LOL' && ES_EMU.includes(o.emuGame)) p.push(['eg', o.emuGame]);
+        if (o.emuGame !== 'SOCCER' && o.league !== 'ALL' && cleanLabel(o.league)) p.push(['lg', cleanLabel(o.league)]);
+      }
+    }
+    if (cleanName(s.name)) p.push(['n', cleanName(s.name)]);
+    return 'lr&' + p.map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2C/g, ',').replace(/%20/g, '+')}`).join('&');
+  }
+
+  // the text after # -> { tab, mode, os, shop } with every filter filled in,
+  // or null when it is not a share link. tabs: the tab names this app has.
+  function decode(hash, tabs) {
+    const h = String(hash || '').replace(/^#/, '');
+    if (h !== 'lr' && !h.startsWith('lr&')) return null;
+    let p;
+    try { p = new URLSearchParams(h.slice(2)); } catch { return null; }
+    const tab = p.get('t') || '';
+    if (!/^[a-z]{2,20}$/.test(tab) || (tabs && !tabs.includes(tab))) return null;
+    const name = cleanName(p.get('n'));
+    if (tab === 'props') {
+      const o = { ...PROPS_DEF };
+      if (PROPS_VIEWS.includes(p.get('pv'))) o.view = p.get('pv');
+      if (PROPS_BOOKS.includes(p.get('bk'))) o.book = p.get('bk');
+      if (o.view === 'lines' && !o.book) o.book = 'underdog';
+      if (PROPS_SPORTS.includes(p.get('sp'))) o.sport = p.get('sp');
+      if (p.has('q')) o.q = cleanQ(p.get('q'));
+      if (o.view === 'lines' && p.has('mk')) o.market = cleanLabel(p.get('mk'));
+      for (const [k, c] of [['sort', 'so'], ['show', 'sh'], ['shopShow', 'ss']]) if (PROPS_PICK[k].includes(p.get(c))) o[k] = p.get(c);
+      if (p.get('an') === '1') o.anchor = 'none';
+      return name ? { tab, props: o, name } : { tab, props: o };
+    }
+    if (tab === 'esports') {
+      const o = { ...ES_DEF };
+      if (ES_MODES.includes(p.get('em'))) o.mode = p.get('em');
+      if (o.mode === 'matches') { if (cleanTag(p.get('g'))) o.game = p.get('g'); o.hideLive = p.get('hl') === '1'; }
+      if (o.mode === 'matchups') {
+        if (ES_EMU.includes(p.get('eg'))) o.emuGame = p.get('eg');
+        if (o.emuGame !== 'SOCCER' && cleanLabel(p.get('lg'))) o.league = cleanLabel(p.get('lg'));
+      }
+      return name ? { tab, es: o, name } : { tab, es: o };
+    }
+    if (tab !== 'odds') return name ? { tab, name } : { tab };
+    const mode = MODES.includes(p.get('m')) ? p.get('m') : 'lines';
+    const s = { tab, mode };
+    if (name) s.name = name;
+    if (mode === 'lines') {
+      s.os = { ...OS_DEF };
+      if (p.has('st')) s.os.state = uncode('osState', p.get('st')) ?? '';
+      if (p.has('lg')) s.os.league = cleanLeague(p.get('lg'));
+      if (p.has('mk')) s.os.market = uncode('osMarket', p.get('mk')) ?? '';
+      if (p.has('so')) s.os.sort = uncode('osSort', p.get('so')) ?? 'start';
+      if (p.has('q')) s.os.q = cleanQ(p.get('q')).toLowerCase();
+    } else if (SHOP_MODES.includes(mode)) {
+      s.shop = { ...SHOP_DEF, excluded: [] };
+      for (const k of Object.keys(SHOP_DEF)) {
+        if (!p.has(KEY[k])) continue;
+        const v = p.get(KEY[k]);
+        if (k === 'excluded') s.shop.excluded = venuesIn(v);
+        else if (k === 'league') s.shop.league = cleanLeague(v);
+        else if (k === 'q') s.shop.q = cleanQ(v);
+        else if (k === 'minEv' || k === 'minEdge') s.shop[k] = cleanNum(v) ?? '';
+        else { const x = uncode(k, v); if (x !== undefined) s.shop[k] = x; }
+      }
+    }
+    return s;
+  }
+  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, PROPS_DEF, ES_DEF, VENUES, MAX_Q };
+})();
+// LR_SHARE_END
+// a share link opened: read it once, then take it off the address bar so a
+// reload or a bookmark keeps the viewer's own choices from here on
+const LR_SHARED = (() => {
+  const tabs = [...document.querySelectorAll('.tab')].map(b => ((b.getAttribute('onclick') || '').match(/^showTab\('([a-z]+)'/) || [])[1]).filter(Boolean);
+  const s = LRShare.decode(location.hash, tabs);
+  if (!s) return null;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+  try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
+  try { localStorage.setItem('lr_tab', s.tab); } catch {}
+  return s;
+})();
 // ─── BOOK MAP ────────────────────────────────────────────────────────────────
 const BOOK_MAP = {
   draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM',
@@ -2228,6 +2540,11 @@ try { Object.assign(osUi, JSON.parse(localStorage.getItem('lr_os') || '{}'), { d
 // chart colours follow the venue (fixed, never by rank); venues past these stay in the table
 const OS_COLORS = { kalshi: '#3987e5', polymarketus: '#d95926', gemini: '#199e70', fanduel: '#c98500', betrivers: '#d55181', draftkings: '#008300', matchbook: '#9085e9', betmgm: '#e66767' };
 const osSave = () => { try { localStorage.setItem('lr_os', JSON.stringify({ league: osUi.league, state: osUi.state, market: osUi.market, sort: osUi.sort, hidden: osUi.hidden })); } catch {} };
+if (LR_SHARED?.os) {
+  Object.assign(osUi, LR_SHARED.os);
+  osSave();
+  const box = document.getElementById('osSearch'); if (box) box.value = osUi.q;
+}
 const osAm = a => (a == null ? '—' : a > 0 ? '+' + a : String(a));
 const osPct = x => (x == null ? '' : (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%');
 const osWhen = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
@@ -2275,6 +2592,7 @@ function renderOdds() {
     return;
   }
   const cols = (d.venues || []).filter(v => games.some(g => g.markets.some(m => m.sides.some(s => s.venues.some(x => x.venue === v.key)))));
+  osUi.readAt = d.updated || null;
   box.innerHTML = games.slice(0, 80).map(g => osGame(g, cols, d.pro)).join('') + (games.length > 80 ? `<div class="os-note">Showing the first 80 games: pick a league or search a team for the rest.</div>` : '');
   for (const id of Object.keys(osUi.open)) if (osUi.open[id]) osDrawChart(id);
 }
@@ -2287,10 +2605,12 @@ function osGame(g, cols, pro) {
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
+        const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
+          fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
         const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
-        if (x.lineDiffers) return `<td class="diff" title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${osAm(x.american)}`)}</td>`;
-        const inner = `${osAm(x.american)}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}" ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
+        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
+        const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -2389,6 +2709,404 @@ function osHover(ev, id) {
   const left = (c.X(t) / c.W) * box.width;
   tip.style.left = Math.min(left + 10, box.width - tip.offsetWidth - 4) + 'px'; tip.style.top = '6px';
 }
+
+// ─── AFTER FEES (CUSTOMIZE > After fees) ─────────────────────────────────────
+// One switch, off by default, kept on this device like Compact rows. On, each
+// price becomes the chance you have to win to break even after the venue's
+// cut: an exchange's all-in cost a contract (ask + taker fee), a sportsbook's
+// implied chance (its margin is in the price), a pick'em leg's break-even on
+// the app's own slip. The schedules are fees.js, the same file the Exchange
+// Shopper ranks on and the exchange records grade CLV with, loaded once from
+// /fees.js (with /calc.js for the pick'em tables). It changes what is shown,
+// never a stake or an alert.
+const afUi = { on: false, loading: null };
+try { afUi.on = localStorage.getItem('lr_after_fees') === '1'; } catch {}
+const afReady = () => !!(window.LRFees && window.LRCalc);
+function afLoad() {
+  if (afReady()) return Promise.resolve(true);
+  if (!afUi.loading) afUi.loading = (async () => {
+    if (!window.LRCalc) await mybLoadScript('/calc.js');
+    if (!window.LRFees) await mybLoadScript('/fees.js');
+    return afReady();
+  })().catch(() => { afUi.loading = null; return false; });
+  return afUi.loading;
+}
+// the switch is on and the schedules are here; on but not loaded yet → load,
+// then draw the screen again
+function afActive() {
+  if (!afUi.on) return false;
+  if (afReady()) return true;
+  afLoad().then(ok => { if (ok) afRerender(); });
+  return false;
+}
+const afP = x => `${(x * 100).toFixed(1)}%`;
+const AF_KIND_TIP = { exchange: 'all-in cost of a contract, taker fee in', book: 'implied chance; the margin is in the price', commission: 'commission' };
+// a venue's price as decimal odds → the after-fee cell (raw kept when the
+// switch is off). inPrice false: the price shown is a raw ask, fee not in yet
+function afPx(venue, decimal, raw, { inPrice = true } = {}) {
+  if (!afActive() || !(decimal > 1)) return raw;
+  const a = LRFees.afterFee({ venue, decimal, inPrice });
+  const s = LRFees.schedule(venue), name = s?.name || venue;
+  if (!a || a.implied == null) return `${raw}<span class="af-sub" title="${escAttr(`${name}: ${s?.summary || 'no fee schedule we could read'}`)}">fee unknown</span>`;
+  const fee = a.fee > 0.00005 ? `fee ${(a.fee * 100).toFixed(1)}¢` : 'no fee';
+  const tip = `${name}: win ${afP(a.implied)} of the time to break even after the fee (${AF_KIND_TIP[s?.kind] || 'after the fee'}).${s?.status === 'unverified' ? ' Schedule unverified: see FEES.' : ''}`;
+  return `<span class="af-v" title="${escAttr(tip)}">${afP(a.implied)}</span><span class="af-sub">${fee}</span>`;
+}
+const afAm = (venue, american, raw, opts) => (american == null || Math.abs(american) < 100 ? raw : afPx(venue, american > 0 ? 1 + american / 100 : 1 + 100 / -american, raw, opts));
+// an exchange contract by its price in dollars: listed (raw ask, fee added
+// here) or cost (fee already in). maker: a resting bid's maker fee instead
+function afContract(venue, { price = null, cost = null, maker = false, fee = null } = {}, raw = '') {
+  if (!afActive()) return raw;
+  let c = cost;
+  if (c == null && price > 0 && price < 1) c = fee != null ? price + fee : LRFees.allInCost(venue, price, { maker });
+  if (!(c > 0 && c < 1)) return raw;
+  const f = price > 0 && price < 1 ? c - price : null;
+  const name = LRFees.schedule(venue)?.name || venue;
+  return `<span class="af-v" title="${escAttr(`${name}: win ${afP(c)} of the time to break even after the ${maker ? 'maker' : 'taker'} fee`)}">${afP(c)}</span><span class="af-sub">${f == null ? 'fee in' : f > 0.00005 ? `fee ${(f * 100).toFixed(1)}¢` : 'no fee'}</span>`;
+}
+// a pick'em leg: the app's break-even on its own slip, at the pick's
+// multiplier when it has one. absolute: the multiplier is the whole payout
+function afLeg(app, mult = null, { absolute = false } = {}) {
+  if (!afActive()) return '';
+  let be = null;
+  if (absolute && mult > 1) be = { breakeven: 1 / mult, label: `${mult}x straight payout` };
+  else be = LRFees.legBreakeven(app, { multiplier: mult });
+  if (!be) return '';
+  const s = LRFees.schedule(app);
+  const tip = `${s?.name || app}: a leg has to hit ${afP(be.breakeven)} of the time for ${be.label} to break even.${s?.unpublished ? ' ' + s.unpublished : ''}`;
+  return `<span class="af-be" title="${escAttr(tip)}">BE ${afP(be.breakeven)}</span>`;
+}
+function afToggle() {
+  afUi.on = !afUi.on;
+  try { localStorage.setItem('lr_after_fees', afUi.on ? '1' : '0'); } catch {}
+  document.body.classList.toggle('after-fees', afUi.on);
+  if (typeof layRenderList === 'function' && document.getElementById('layAfterFees')) layRenderList();
+  if (afUi.on && !afReady()) afLoad().then(ok => { if (ok) afRerender(); else showToast('The fee schedules could not load from the server', 'danger'); });
+  else afRerender();
+}
+// draw the open screen again with or without fees (only screens with data)
+function afRerender() {
+  const page = document.querySelector('.page.active')?.id?.replace(/^page-/, '') || '';
+  const run = f => { try { f(); } catch (e) { console.warn('after fees:', e.message); } };
+  if (page === 'odds') {
+    if (osUi.data) run(renderOdds);
+    if (window.shpUi?.data) run(shpRender);
+    if (window.mvUi?.data) run(mvRender);
+    if (window.kmkUi?.data) run(kmkRender);
+    if (window.ortUi?.data) run(ortRender);
+  }
+  if (page === 'props' && pbState.data) run(renderPropsBoard);
+  if (page === 'esports') {
+    if (esmState.data && esmState.mode === 'matches') run(renderEsMatches);
+    if (typeof renderEsMatchups === 'function' && esmState.mode === 'matchups') run(renderEsMatchups);
+    if (esmState.mode === 'props') run(renderEsports);
+  }
+  afFootRender();
+}
+// FEES: where each schedule comes from, under every screen while the switch is on
+function afFootRender() {
+  const el = document.getElementById('afFoot');
+  if (!el) return;
+  if (!afUi.on || !afReady()) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const st = { verified: 'VERIFIED', recorded: 'RECORDED', unverified: 'UNVERIFIED' };
+  const link = src => (/^https?:\/\//.test(src || '') ? `<a href="${escAttr(src)}" target="_blank" rel="noopener">${escAttr(src.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60))}</a>` : escAttr(src || 'no page to cite'));
+  el.style.display = '';
+  el.innerHTML = `<details class="af-foot"><summary>FEES · prices shown after each venue's fee (checked ${escAttr(LRFees.CHECKED)})</summary>
+    <p>Exchange prices are the all-in cost of one contract, priced on a ${LRFees.LOT}-contract order; one contract alone can pay up to a cent more. A pick'em leg shows the chance it must hit for the app's default slip to break even; the full table is under TOOLS. Nothing here changes a stake or an alert.</p>
+    ${LRFees.footnote().map(f => `<div class="af-row"><b>${escAttr(f.name)}</b> <span class="af-st ${escAttr(f.status)}">${st[f.status] || escAttr(f.status)}</span>${f.effective ? ` <span class="shp-dim">since ${escAttr(f.effective)}</span>` : ''}<div>${escAttr(f.summary)}${f.breakeven ? ` Default leg break-even ${afP(f.breakeven.breakeven)} (${escAttr(f.breakeven.label)}).` : ''}${f.unpublished ? ` ${escAttr(f.unpublished)}` : ''}</div><div class="shp-dim">Source: ${link(f.source)}${f.status === 'recorded' ? `, recorded ${escAttr(f.checked)}` : ''}</div></div>`).join('')}
+  </details>`;
+}
+if (afUi.on) {
+  const go = () => { document.body.classList.add('after-fees'); afLoad().then(ok => { if (ok) afRerender(); }); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+}
+
+// ─── EXPORT AND PRINT (every data screen) ────────────────────────────────────
+// EXPORT downloads the rows the screen shows right now, with its filters as
+// they are: a row a filter hides, a folded section or a page not yet loaded
+// is not in the file. Rows a screen tags (data-xp: the odds screen and its
+// views, PROPS, MY SLIPS) come out one price a row with the venue, the price,
+// its break-even after the venue's fee (fees.js, the AFTER FEES view's
+// numbers), Pinnacle's fair and close where the screen has them, the fill
+// size where a book was read, and when the price was read. Any other table
+// comes out as its columns. Nothing from the account (stars, saved views,
+// MY BETS) is added; MY SLIPS exports only its own slips.
+// PRINT opens a light print view of the same screen (no nav, no controls):
+// the browser's print dialog saves it as a PDF.
+const XP_PAGES = ['odds', 'best', 'tail', 'arb', 'big', 'gas', 'esports', 'results', 'myslips', 'props', 'ev', 'sharp', 'lines', 'shop'];
+// row-like cards a screen draws without a table (exported as their text)
+const XP_CARDS = '.pb-card, .ln-row, .pm-row, .emu-row, .esm-card, .soc-row, .xa-card, .tail-card, .cb-row, .shop-card, .aps-row, .ms-leg:not(.ms-th)';
+const xpUi = { loaded: {} };
+// a row's fields for the file, on the element that draws it. Empty fields are left out
+const xpA = o => ` data-xp="${escAttr(JSON.stringify(o, (k, v) => (v == null || v === '' || (typeof v === 'number' && !isFinite(v)) ? undefined : v)))}"`;
+// when each screen last loaded from our server (the file's loaded_at)
+(() => {
+  const f = window.fetch;
+  if (typeof f !== 'function') return;
+  window.fetch = function (...args) {
+    const p = f.apply(this, args);
+    try {
+      const u = String(args[0]?.url || args[0] || '');
+      if (/\/api\//.test(u)) {
+        const pg = document.querySelector('.page.active')?.id?.replace(/^page-/, '');
+        if (pg) p.then(r => { if (r && r.ok) xpUi.loaded[pg] = new Date().toISOString(); }).catch(() => {});
+      }
+    } catch {}
+    return p;
+  };
+})();
+const xpVis = el => !!el && el.getClientRects().length > 0;
+const xpNorm = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+// a cell's words as the screen shows them, without its buttons and ? marks
+function xpText(el) {
+  const out = [];
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => (n.parentElement?.closest('button, select, option, script, style, .gl-q, .xp-skip') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+  let n;
+  while ((n = w.nextNode())) { const t = n.nodeValue.trim(); if (t && xpVis(n.parentElement)) out.push(t); }
+  return xpNorm(out.join(' '));
+}
+// the screen, the view and the filters as the page shows them
+function xpWhere(page) {
+  const tab = xpNorm(document.querySelector('.tab.active')?.innerText || page.id.replace(/^page-/, '')).replace(/\s*▾$/, '');
+  const chips = [...page.querySelectorAll('.sport-chip.active, .sport-chip.on, .mb-seg button.on')].filter(xpVis).map(b => xpText(b) || xpNorm(b.innerText)).filter(Boolean);
+  const view = chips[0] || '';
+  const filters = chips.slice(1);
+  for (const s of page.querySelectorAll('select')) {
+    if (!xpVis(s) || s.selectedIndex <= 0 || s.closest('.gl-pop')) continue;
+    const lab = xpNorm(s.closest('label')?.firstChild?.nodeValue || s.getAttribute('aria-label') || '');
+    filters.push(`${lab ? lab + ': ' : ''}${xpNorm(s.options[s.selectedIndex].text)}`);
+  }
+  for (const i of page.querySelectorAll('input[type="search"], input[type="text"], input[type="number"], input:not([type])')) {
+    if (xpVis(i) && i.value && !i.closest('.gl-pop')) filters.push(`${xpNorm(i.closest('label')?.firstChild?.nodeValue || i.placeholder || 'search')}: ${i.value}`);
+  }
+  return { tab, view, filters: filters.join(' · ') };
+}
+const xpPct = x => (x == null || !isFinite(x) ? '' : `${(x * 100).toFixed(2)}%`);
+const xpAmTxt = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+const xpDecOfAm = a => (a == null || Math.abs(a) < 100 ? null : a > 0 ? 1 + a / 100 : 1 + 100 / -a);
+// the break-even after the venue's fee: an exchange's all-in cost, a book's
+// implied chance, a pick'em leg's share of its slip (fees.js)
+function xpBreakeven(r) {
+  if (r.be != null) return r.be;
+  if (!window.LRFees) return null;
+  try {
+    if (r.cost != null) return r.cost;
+    if (r.price != null && r.price > 0 && r.price < 1) return LRFees.allInCost(r.venue, r.price, { maker: !!r.maker });
+    const kind = LRFees.kindOf ? LRFees.kindOf(r.venue) : LRFees.schedule(r.venue)?.kind;
+    if (kind === 'pickem') return LRFees.legBreakeven(r.venue, { multiplier: r.multiplier ?? null })?.breakeven ?? null;
+    const d = r.decimal ?? xpDecOfAm(r.american);
+    if (!(d > 1)) return null;
+    return LRFees.afterFee({ venue: r.venue, decimal: d, inPrice: r.feeIn !== false })?.breakeven ?? null;
+  } catch { return null; }
+}
+const XP_COLS = ['screen', 'view', 'filters', 'event', 'league', 'starts', 'market', 'selection', 'line', 'venue', 'price', 'decimal_odds', 'after_fee_breakeven', 'prices_shown', 'fair', 'fair_source', 'close', 'ev', 'fill_size_usd', 'label', 'read_at', 'loaded_at', 'exported_at'];
+function xpRowOut(r, base) {
+  const be = xpBreakeven(r);
+  const dec = r.decimal ?? xpDecOfAm(r.american);
+  const raw = r.american != null ? xpAmTxt(r.american) : r.price != null ? `${(r.price * 100).toFixed(1)}c` : r.multiplier != null ? `${r.multiplier}x` : r.shown || (dec ? dec.toFixed(3) : '');
+  return { ...base, event: r.event, league: r.league, starts: r.start, market: r.market, selection: r.selection, line: r.line, venue: r.venueName || r.venue,
+    price: afUi.on && be != null ? xpPct(be) : raw, decimal_odds: dec ? dec.toFixed(4) : '', after_fee_breakeven: xpPct(be),
+    fair: xpPct(r.fair), fair_source: r.fair != null || r.close != null ? r.fairSrc || 'Pinnacle no-vig' : '', close: xpPct(r.close), ev: r.ev == null ? '' : `${(r.ev * 100).toFixed(2)}%`,
+    fill_size_usd: r.fill ?? '', label: r.tag, read_at: r.readAt };
+}
+// the rows on the open screen, as { cols, rows }
+function xpCollect() {
+  const page = document.querySelector('.page.active');
+  if (!page) return null;
+  const w = xpWhere(page);
+  const base = { screen: w.tab, view: w.view, filters: w.filters, prices_shown: afUi.on ? 'after fees' : 'as listed', loaded_at: xpUi.loaded[page.id.replace(/^page-/, '')] || '', exported_at: new Date().toISOString() };
+  const tagged = [...page.querySelectorAll('[data-xp]')].filter(xpVis);
+  if (tagged.length) {
+    const rows = [];
+    for (const el of tagged) { try { rows.push(xpRowOut(JSON.parse(el.dataset.xp), base)); } catch {} }
+    return { w, cols: XP_COLS, rows };
+  }
+  const meta = ['screen', 'view', 'filters'], tail = ['prices_shown', 'loaded_at', 'exported_at'];
+  const tables = [...page.querySelectorAll('table')].filter(t => xpVis(t) && !t.parentElement.closest('table'));
+  if (tables.length) {
+    const cols = [...meta], rows = [];
+    for (const t of tables) {
+      const trs = [...t.rows].filter(xpVis);
+      const headRow = trs.find(tr => tr.querySelector('th') && !tr.querySelector('td'));
+      const head = headRow ? [...headRow.cells].map((c, i) => xpText(c) || `column ${i + 1}`) : [];
+      for (const tr of trs) {
+        if (tr === headRow || !tr.querySelector('td')) continue;
+        const cells = [...tr.cells];
+        if (cells.length === 1 && cells[0].colSpan > 1) continue; // a note or a drawn chart across the table
+        const o = { ...base };
+        cells.forEach((c, i) => { let k = head[i] || `column ${i + 1}`; if (meta.includes(k) || tail.includes(k)) k += ' (table)'; if (!cols.includes(k)) cols.push(k); o[k] = xpText(c); });
+        rows.push(o);
+      }
+    }
+    return { w, cols: [...cols, ...tail], rows };
+  }
+  const cards = [...page.querySelectorAll(XP_CARDS)].filter(xpVis).filter(el => !el.parentElement.closest(XP_CARDS));
+  return { w, cols: [...meta, 'row', ...tail], rows: cards.map(el => ({ ...base, row: xpText(el) })).filter(r => r.row) };
+}
+// one CSV field: quoted when needed; a leading = or @ (or a sign before a
+// non-number) is kept as text so a spreadsheet never runs it
+const xpCell = v => { let s = String(v ?? ''); if (/^[=@]|^[+-][^\d.]/.test(s) || /^[\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const xpSlug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+async function xpCsv() {
+  // the break-even needs the fee schedules: load them once if this is the first use
+  if (!afReady()) await afLoad();
+  const x = xpCollect();
+  if (!x || !x.rows.length) { showToast('Nothing on this screen to export yet', 'danger'); return; }
+  const csv = [x.cols.map(xpCell).join(','), ...x.rows.map(r => x.cols.map(c => xpCell(r[c])).join(','))].join('\r\n') + '\r\n';
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const name = `line-reaper-${[xpSlug(x.w.tab), xpSlug(x.w.view)].filter(Boolean).join('-')}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast(`Exported ${x.rows.length} row${x.rows.length === 1 ? '' : 's'} as ${name}`);
+}
+function xpPrint() {
+  const page = document.querySelector('.page.active');
+  if (!page) return;
+  xpPrintClose(true);
+  const w = xpWhere(page), now = new Date();
+  const loaded = xpUi.loaded[page.id.replace(/^page-/, '')];
+  const head = document.createElement('div');
+  head.className = 'xp-ph'; head.id = 'xpHead';
+  head.innerHTML = `<div class="xp-ph-t">LINE REAPER · ${escAttr(w.tab)}${w.view ? ' · ' + escAttr(w.view) : ''}</div>
+    <div class="xp-ph-m">${w.filters ? escAttr(w.filters) + ' · ' : ''}${afUi.on ? 'Prices after fees · ' : ''}${loaded ? `Loaded ${escAttr(new Date(loaded).toLocaleString())} · ` : ''}Printed ${escAttr(now.toLocaleString())} · ${escAttr(location.host)}</div>
+    <div class="xp-ph-m">Prices move: check each one in the venue's app before you bet. Not betting advice. 21+.</div>
+    <div class="xp-ph-b"><button class="xp-btn primary" onclick="xpPrintGo()">PRINT / SAVE AS PDF</button><button class="xp-btn" onclick="xpPrintClose()">CLOSE PRINT VIEW</button><span class="xp-ph-s" id="xpHeadSay"></span></div>`;
+  page.insertBefore(head, page.firstChild);
+  document.getElementById('xpPrintCss').media = 'all';
+  document.body.classList.add('xp-pv');
+  window.scrollTo(0, 0);
+}
+function xpPrintGo() {
+  const s = document.getElementById('xpHeadSay');
+  if (s) s.textContent = "Opening the print dialog: pick \"Save as PDF\" as the printer for a file.";
+  setTimeout(() => window.print(), 30);
+}
+function xpPrintClose(quiet) {
+  document.getElementById('xpHead')?.remove();
+  const css = document.getElementById('xpPrintCss');
+  if (css) css.media = 'print';
+  document.body.classList.remove('xp-pv');
+  if (!quiet) window.scrollTo(0, 0);
+}
+// the EXPORT and PRINT bar at the top of each data screen
+(() => {
+  const go = () => {
+    for (const id of XP_PAGES) {
+      const pg = document.getElementById('page-' + id);
+      if (!pg || pg.querySelector(':scope > .xp-bar')) continue;
+      const bar = document.createElement('div');
+      bar.className = 'xp-bar';
+      bar.innerHTML = '<button class="xp-btn" onclick="xpCsv()" title="Download the rows on this screen, as filtered now, as a CSV file">EXPORT</button><button class="xp-btn" onclick="xpPrint()" title="A clean light view of this screen to print or save as a PDF">PRINT</button>';
+      pg.insertBefore(bar, pg.firstChild);
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  // leaving the screen closes its print view
+  const st = window.showTab;
+  if (typeof st === 'function') window.showTab = function (...a) { if (document.body.classList.contains('xp-pv')) xpPrintClose(true); return st.apply(this, a); };
+})();
+
+// ─── GLOSSARY: ? BESIDE A LABEL, OR A LONG PRESS ON IT ───────────────────────
+// glossary.js (window.LRGlossary, the same list as the GLOSSARY on /learn)
+// names every label and badge. Each label it knows gets a small ? after it;
+// a tap on the ?, or pressing and holding the label (phones), opens the
+// definition beside it with a link to the full glossary. Chips and buttons get
+// the long press only, so a tap still does what it always did.
+const glUi = { ready: false, queue: new Set(), raf: 0, press: null, eat: false };
+const GL_LABELS = 'th, label, .tag, .nflm-tag, .shp-tag, .tail-tag, .sp-badge, .ln-badge, .tx-tag, .pb-besttag, .pb-gap, .ln-head > div, .ms-th > div, .tl-stat .k, .pb-stat span, .roi-lbl, .section-head, .asc-h, .emu-verdict b';
+const GL_PRESS = '.sport-chip, .mb-seg button';
+// the label's own words: its first text, before any control or count inside it
+function glOwnText(el) {
+  for (const n of el.childNodes) {
+    if (n.nodeType === 3 && n.nodeValue.trim()) return n;
+    if (n.nodeType === 1 && !n.matches('select, input, button, .gl-q, i, svg') && n.childNodes.length === 1 && n.firstChild.nodeType === 3 && n.firstChild.nodeValue.trim()) return n.firstChild;
+    if (n.nodeType === 1) break;
+  }
+  return null;
+}
+function glDecorate(root) {
+  if (!window.LRGlossary || !root?.querySelectorAll) return;
+  const els = root.matches?.(GL_LABELS) ? [root, ...root.querySelectorAll(GL_LABELS)] : [...root.querySelectorAll(GL_LABELS)];
+  for (const el of els) {
+    if (el.dataset.gl != null || el.closest('.gl-pop, .xp-ph, .nav, #welcome, #tour')) continue;
+    const t = glOwnText(el);
+    const term = t && LRGlossary.lookup(t.nodeValue);
+    el.dataset.gl = term ? term.id : '';
+    if (!term) continue;
+    const q = document.createElement('span');
+    q.className = 'gl-q'; q.setAttribute('role', 'button'); q.tabIndex = 0;
+    q.dataset.glq = term.id; q.title = `What is ${term.term}?`; q.setAttribute('aria-label', `What is ${term.term}?`);
+    q.textContent = '?';
+    t.parentNode.insertBefore(q, t.nextSibling);
+  }
+  const chips = root.matches?.(GL_PRESS) ? [root, ...root.querySelectorAll(GL_PRESS)] : [...root.querySelectorAll(GL_PRESS)];
+  for (const el of chips) {
+    if (el.dataset.gl != null) continue;
+    const term = LRGlossary.lookup(el.textContent);
+    el.dataset.gl = term ? term.id : '';
+  }
+}
+function glFlush() {
+  glUi.raf = 0;
+  const list = [...glUi.queue]; glUi.queue.clear();
+  for (const el of list) if (el.isConnected) glDecorate(el);
+}
+function glOpen(id, anchor) {
+  const t = window.LRGlossary?.get(id);
+  if (!t) return;
+  let pop = document.getElementById('glPop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'glPop'; pop.className = 'gl-pop'; pop.setAttribute('role', 'dialog');
+    document.body.appendChild(pop);
+  }
+  pop.setAttribute('aria-label', t.term);
+  pop.innerHTML = `<div class="gl-h"><b>${escAttr(t.term)}</b><button class="gl-x" onclick="glClose()" aria-label="Close">✕</button></div><div class="gl-d">${escAttr(t.def)}</div><a class="gl-more" href="/learn#g-${escAttr(t.id)}" target="_blank" rel="noopener">More in the glossary →</a>`;
+  pop.style.display = 'block';
+  const r = anchor.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - pw - 8));
+  const top = r.bottom + 6 + ph < innerHeight ? r.bottom + 6 : Math.max(8, r.top - ph - 6);
+  pop.style.left = `${left}px`; pop.style.top = `${top}px`;
+}
+function glClose() { const p = document.getElementById('glPop'); if (p) p.style.display = 'none'; }
+(() => {
+  const start = () => {
+    new MutationObserver(list => {
+      for (const m of list) for (const n of m.addedNodes) if (n.nodeType === 1 && !n.classList.contains('gl-q')) glUi.queue.add(n);
+      if (glUi.queue.size && !glUi.raf) glUi.raf = requestAnimationFrame(glFlush);
+    }).observe(document.body, { childList: true, subtree: true });
+    mybLoadScript('/glossary.js').then(() => { glUi.ready = true; document.querySelectorAll('.page').forEach(glDecorate); }).catch(() => {});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  // the ?: opens the definition and stops the click there (a sort header stays as it is)
+  document.addEventListener('click', e => {
+    if (glUi.eat) { glUi.eat = false; e.preventDefault(); e.stopPropagation(); return; }
+    const q = e.target.closest?.('.gl-q');
+    if (q) { e.preventDefault(); e.stopPropagation(); glOpen(q.dataset.glq, q); return; }
+    if (!e.target.closest?.('.gl-pop')) glClose();
+  }, true);
+  document.addEventListener('keydown', e => {
+    const q = e.target.closest?.('.gl-q');
+    if (q && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); glOpen(q.dataset.glq, q); }
+    if (e.key === 'Escape') glClose();
+  }, true);
+  // a long press on a label or chip opens it too, and the press is not a tap
+  const cancel = () => { if (glUi.press) { clearTimeout(glUi.press.timer); glUi.press = null; } };
+  document.addEventListener('pointerdown', e => {
+    cancel();
+    const el = e.target.closest?.('[data-gl]');
+    if (!el || !el.dataset.gl || e.button > 0) return;
+    glUi.press = { x: e.clientX, y: e.clientY, timer: setTimeout(() => { glUi.press = null; glUi.eat = true; setTimeout(() => { glUi.eat = false; }, 800); glOpen(el.dataset.gl, el); }, 550) };
+  }, true);
+  document.addEventListener('pointermove', e => { if (glUi.press && Math.hypot(e.clientX - glUi.press.x, e.clientY - glUi.press.y) > 10) cancel(); }, true);
+  document.addEventListener('pointerup', cancel, true);
+  document.addEventListener('pointercancel', cancel, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest?.('[data-gl]')?.dataset.gl) e.preventDefault(); }, true);
+  addEventListener('scroll', () => glClose(), { passive: true });
+})();
 
 // ─── TOOLS: BETTING CALCULATORS ───────────────────────────────────────────────
 // The math lives in calc.js on the backend (tested there) and loads once, the
@@ -2533,13 +3251,15 @@ const TOOL_DEFS = [
       return { stats: [['CLV', tlPct(c.clv), tlSgn(c.clv)], ['Fair close', tlAm(c.fairDec)], ['Fair chance at close', tlProb(c.fairProb)], ['Probability gained', tlPct(c.probGain)]],
         note: c.devigged ? '' : 'Close not de-vigged: add the other side for the honest number.' };
     } },
-  { id: 'exchange', name: 'Exchange fees', sub: 'Kalshi and Polymarket',
-    blurb: 'What an exchange contract really costs once the taker fee is in, and the sportsbook odds that equals. Kalshi rounds its fee up to the cent per order, so tiny orders pay the most.',
-    fields: [['venue', 'Exchange', 'kalshi', [['kalshi', 'Kalshi'], ['polymarket', 'Polymarket'], ['none', 'No fee (maker)']]], ['price', 'Price (cents)', '55'],
-      ['contracts', 'Contracts', '100'], ['rate', 'Polymarket fee rate', '0.05'], ['mine', 'Your win % (optional)', '']],
+  { id: 'exchange', name: 'Exchange fees', sub: 'Kalshi, Gemini, Polymarket US',
+    blurb: 'What an exchange contract really costs once the fee is in, and the sportsbook odds that equals. Kalshi and Gemini round the fee up to the cent per order, so tiny orders pay the most. Schedules and their sources: CUSTOMIZE > After fees, then FEES at the bottom of any screen.',
+    fields: [['venue', 'Exchange', 'kalshi', [['kalshi', 'Kalshi (taker)'], ['kalshi_maker', 'Kalshi resting bid (maker)'], ['gemini', 'Gemini (taker)'], ['polymarketus', 'Polymarket US (taker)'], ['none', 'No fee (NHL spread/total maker on Kalshi)']]], ['price', 'Price (cents)', '55'],
+      ['contracts', 'Contracts', '100'], ['rate', 'Polymarket US fee rate (its market shows it)', '0.0695'], ['mine', 'Your win % (optional)', '']],
     run(v) {
       let pr = tlNum(v.price); if (pr == null) return null; if (pr >= 1) pr /= 100;
-      const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, v.venue, { rate: v.venue === 'polymarket' ? (tlNum(v.rate) ?? 0.05) : 0.07, myProb: tlOptPct(v.mine) }); if (!x) return null;
+      const venue = v.venue === 'polymarket' ? 'polymarketus' : v.venue;
+      const rate = venue === 'polymarketus' ? (tlNum(v.rate) ?? 0.0695) : venue === 'kalshi_maker' ? 0.0175 : 0.07;
+      const x = LRCalc.exchangeBuy(pr, tlNum(v.contracts) || 100, venue, { rate, myProb: tlOptPct(v.mine) }); if (!x) return null;
       const st = [['Total cost', tlUsd(x.cost)], ['Fee', tlUsd(x.fee)], ['All-in per contract', (x.perContract * 100).toFixed(2) + 'c'], ['As odds', x.american],
         ['Break-even', tlProb(x.breakeven, 2)], ['Profit if it wins', tlUsd(x.profitIfWin), tlSgn(x.profitIfWin)]];
       if (x.ev != null) st.push(['EV', tlPct(x.ev), tlSgn(x.ev)], ['Quarter Kelly', tlProb(x.kelly, 2)]);
@@ -2977,8 +3697,8 @@ function renderArb(games) {
 // POST /api/slips/grade, which follows each one to the close the way the
 // props record follows our own plays. The parsing and math are slips.js on
 // the backend (tested there).
-const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades';
-const ms = { slips: [], grades: {}, tables: null, pikkit: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
+const MS_KEY = 'lr_slips', MS_PK = 'lr_pikkit', MS_GRADES = 'lr_slip_grades', MS_IMP = 'lr_slip_imports';
+const ms = { slips: [], grades: {}, tables: null, pikkit: null, imports: [], impOpen: null, impDrop: null, ready: false, loading: null, by: 'app', sby: 'app', pkBy: 'app', grading: false, lastGrade: 0, shown: 30 };
 const MS_REASON = { before: 'no line history: the game started before this leg reached us', player: 'no line history: no app on our board lists this player near that time',
   market: 'no line history: that stat isn\'t on our board for this player', sport: 'can\'t grade: add the league to this leg (like NFL) so we know which box scores to read',
   game: 'can\'t grade: no finished game with this player in the week after the bet', queued: 'in the queue for the box scores, back on the next pass', match: 'no line history: this player has two matches on the board and nothing tells them apart. Add the opponent, like (vs G2)', esports: 'no line history: esports legs aren\'t in the slip log yet', unread: 'couldn\'t read this leg' };
@@ -2989,13 +3709,16 @@ function msReady() {
     try { ms.slips = JSON.parse(lsGet(MS_KEY) || '[]').filter(s => s && s.id && Array.isArray(s.legs)); } catch { ms.slips = []; }
     try { ms.grades = JSON.parse(lsGet(MS_GRADES) || '{}') || {}; } catch { ms.grades = {}; }
     try { ms.pikkit = JSON.parse(lsGet(MS_PK) || 'null'); } catch { ms.pikkit = null; }
+    try { ms.imports = (JSON.parse(lsGet(MS_IMP) || '[]') || []).filter(x => x && x.id); } catch { ms.imports = []; }
+    // a Pikkit file imported before imports were kept: its own summary card
+    if (ms.pikkit?.bets?.length && !ms.imports.some(x => x.format === 'pikkit')) ms.imports.push({ id: 'pikkit-legacy', legacy: true, at: ms.pikkit.at, file: ms.pikkit.file, format: 'pikkit', label: 'Pikkit CSV', kind: 'csv', rows: null, unread: [] });
     try { ms.tables = JSON.parse(lsGet('lr_slip_tables') || 'null'); } catch { ms.tables = null; }
     ms.ready = true;
     return true;
   })().catch(() => { ms.loading = null; return false; });
   return ms.loading;
 }
-function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); }
+function msSave() { lsSet(MS_KEY, JSON.stringify(ms.slips)); lsSet(MS_GRADES, JSON.stringify(ms.grades)); lsSet(MS_IMP, JSON.stringify(ms.imports)); }
 async function msOpen() {
   const el = document.getElementById('msList');
   if (!ms.ready && el) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading your slips...</div></div>`;
@@ -3032,22 +3755,25 @@ function msPasteToggle(on) {
 }
 async function msPasteSave() {
   if (!(await msReady())) return;
-  const { slips, skipped } = LRSlips.parseSlips(document.getElementById('msText').value);
+  const text = document.getElementById('msText').value;
   const hint = document.getElementById('msHint');
-  if (!slips.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
-  ms.slips = [...slips, ...ms.slips];
-  msSave();
+  const r = LRSlips.importText(text, { name: 'pasted text' });
+  if (r.error) { hint.textContent = r.error; return; }
+  if (!r.slips.length && !r.bets.length) { hint.textContent = 'No legs found. Write each leg as: Player Over 24.5 Stat'; return; }
+  const added = msAddImport(r, 'pasted text');
   document.getElementById('msText').value = '';
-  hint.textContent = skipped.length ? `Added ${slips.length} slip${slips.length === 1 ? '' : 's'}. Skipped: ${skipped.slice(0, 3).join(' / ')}` : '';
-  if (!skipped.length) msPasteToggle(false);
-  showToast(`${slips.length} slip${slips.length === 1 ? '' : 's'} added, ${slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
+  hint.textContent = r.unread.length ? `Added ${added} slip${added === 1 ? '' : 's'}. Not read: ${r.unread.slice(0, 3).map(u => u.text).join(' / ')}${r.unread.length > 3 ? ` and ${r.unread.length - 3} more, listed under Imports` : ''}` : '';
+  if (!r.unread.length) msPasteToggle(false);
+  showToast(`${added} slip${added === 1 ? '' : 's'} added, ${r.slips.reduce((a, s) => a + s.legs.length, 0)} legs`);
   renderMySlips();
   msGrade(true);
 }
 function msMark(id, r) {
   const sl = ms.slips.find(x => x.id === id);
   if (!sl) return;
-  sl.result = sl.result === r ? null : r;
+  // your own mark; tap it again and the result the file gave (if any) comes back
+  if (sl.resultBy === 'user' && sl.result === r) { sl.result = sl.fileResult ?? null; delete sl.resultBy; delete sl.fileResult; }
+  else { if (sl.resultBy !== 'user') sl.fileResult = sl.result ?? null; sl.result = r; sl.resultBy = 'user'; }
   msSave(); renderMySlips();
 }
 function msDelete(id) {
@@ -3055,24 +3781,104 @@ function msDelete(id) {
   ms.slips = ms.slips.filter(s => s.id !== id);
   msSave(); renderMySlips();
 }
-// Pikkit's export: every bet into the breakdown; the last week's bets with
-// legs we can read also become slips to grade (older ones predate our history)
+// An import, from a file or the paste box: the format from its header (or
+// its name), bets into the history breakdown, slips to grade. A CSV adds the
+// last week's bets as slips (older ones predate our line history; GRADE N
+// MORE FROM BOX SCORES adds them); copied text adds every slip in it.
 async function msImport(input) {
   const f = input.files?.[0];
   input.value = '';
   if (!f || !(await msReady())) return;
-  const r = LRSlips.parsePikkitCsv(await f.text());
+  const r = LRSlips.importText(await f.text(), { name: f.name });
   if (r.error) { showToast(r.error, 'error'); return; }
-  const bets = r.bets.map(b => ({ id: b.id, app: b.app, bookName: b.bookName, type: b.type, league: b.league, market: b.market, placedAt: b.placedAt, stake: b.stake, profit: b.profit, payout: b.payout, odds: b.odds, closeOdds: b.closeOdds, status: b.status, legs: b.legs }));
-  ms.pikkit = { at: new Date().toISOString(), file: f.name, bets, legsRead: bets.filter(b => b.legs.length).length };
-  lsSet(MS_PK, JSON.stringify(ms.pikkit));
-  const have = new Set(ms.slips.map(s => s.id));
-  const recent = bets.filter(b => b.legs.length && Date.parse(b.placedAt) > Date.now() - 7 * 86400e3 && !have.has(b.id)).map(LRSlips.slipFromPikkit);
-  ms.slips = [...recent, ...ms.slips];
-  msSave();
-  showToast(`${bets.length} Pikkit bets read${recent.length ? `, ${recent.length} recent slips added` : ''}`);
+  if (!r.slips.length && !r.bets.length) { showToast(`Nothing read from ${f.name}: ${r.unread.length} lines, none a bet`, 'error'); return; }
+  const added = msAddImport(r, f.name);
+  showToast(`${r.label}: ${r.bets.length || r.slips.length} bets read${added ? `, ${added} slips added` : ''}${r.unread.length ? `, ${r.unread.length} rows not read (listed under Imports)` : ''}`);
   renderMySlips();
   msGrade(true);
+}
+// keep the import's record (re-importing the same file replaces it) and add its slips
+const msCompactBet = b => ({ id: b.id, app: b.app, bookName: b.bookName, type: b.type, league: b.league, market: b.market, placedAt: b.placedAt, stake: b.stake, profit: b.profit, payout: b.payout, odds: b.odds, closeOdds: b.closeOdds, status: b.status, legs: b.legs, ...(b.flex ? { flex: true } : {}), source: b.source, format: b.format });
+function msAddImport(r, file) {
+  const prev = ms.imports.find(x => x.format === r.format && x.file === file && file !== 'pasted text');
+  const id = prev?.id && !prev.legacy ? prev.id : r.id;
+  const bets = r.bets.map(msCompactBet);
+  const rec = { id, at: new Date().toISOString(), file, format: r.format, label: r.label, kind: r.kind, rows: r.rows, unread: r.unread.slice(0, 500), ...(bets.length ? { bets } : {}) };
+  ms.imports = [rec, ...ms.imports.filter(x => x !== prev && !(r.format === 'pikkit' && x.legacy))].slice(0, 20);
+  // the latest tracker file is the history breakdown (lr_pikkit, as before)
+  if (bets.length) { ms.pikkit = { at: rec.at, file, label: r.label, format: r.format, bets, legsRead: bets.filter(b => b.legs.length).length }; lsSet(MS_PK, JSON.stringify(ms.pikkit)); }
+  const have = new Set(ms.slips.map(s => s.id));
+  const fresh = r.kind === 'csv'
+    ? r.bets.filter(b => b.legs.length && Date.parse(b.placedAt) > Date.now() - 7 * 86400e3 && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, id))
+    : r.slips.filter(sl => !have.has(sl.id)).map(sl => ({ ...sl, importId: id }));
+  ms.slips = [...fresh, ...ms.slips];
+  msSave();
+  return fresh.length;
+}
+// this import's slips: by its id (and a Pikkit file from before imports were kept)
+const msImpSlips = imp => ms.slips.filter(s => s.importId === imp.id || (imp.legacy && s.source === 'pikkit' && !s.importId));
+// every bet of an import with legs we can read becomes a slip, graded from the box scores
+function msImpAll(id) {
+  const imp = ms.imports.find(x => x.id === id);
+  const bets = imp?.legacy ? ms.pikkit?.bets : imp?.bets;
+  if (!bets?.length) return;
+  const have = new Set(ms.slips.map(x => x.id));
+  const add = bets.filter(b => b.legs?.length && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, imp.legacy ? null : imp.id));
+  if (!add.length) return;
+  ms.slips = [...add, ...ms.slips];
+  msSave();
+  showToast(`${add.length} bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
+  renderMySlips();
+  msGrade(true);
+}
+// remove an import and its slips: the first tap asks, the second removes
+function msImpDrop(id) {
+  if (ms.impDrop !== id) { ms.impDrop = id; renderMySlips(); return; }
+  const imp = ms.imports.find(x => x.id === id);
+  if (!imp) return;
+  const gone = new Set(msImpSlips(imp).map(s => s.id));
+  ms.slips = ms.slips.filter(s => !gone.has(s.id));
+  ms.imports = ms.imports.filter(x => x.id !== id);
+  if (ms.pikkit && imp.bets?.length && ms.pikkit.file === imp.file && ms.pikkit.format === imp.format) { ms.pikkit = null; lsSet(MS_PK, 'null'); }
+  if (imp.legacy) { ms.pikkit = null; lsSet(MS_PK, 'null'); }
+  ms.impDrop = null;
+  msSave();
+  showToast(`Import removed with its ${gone.size} slips`);
+  renderMySlips();
+}
+function msRenderImports() {
+  const el = document.getElementById('msImports');
+  if (!el) return;
+  if (!ms.imports.length) { el.innerHTML = ''; return; }
+  const L = LRSlips;
+  const unit = mybUnit();
+  const cell = (k, v, sub, cls = '') => `<div><div class="k">${k}</div><div class="v ${cls}">${v}</div>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const cards = ms.imports.map(imp => {
+    const views = msImpSlips(imp).map(x => L.slipView(x, ms.grades, ms.tables));
+    const bets = imp.legacy ? ms.pikkit?.bets || [] : imp.bets || [];
+    const t = L.importSummary({ ...imp, bets }, views, { unitUsd: unit.set ? unit.unit : null, reasons: MS_REASON });
+    const left = bets.filter(b => b.legs?.length && !views.some(v => v.id === b.id)).length;
+    const when = new Date(imp.at);
+    const um = t.unmatched;
+    const head = `<div class="ms-imp-head"><div><b>${escAttr(imp.label || imp.format)}</b><div class="ms-meta">${escAttr(imp.file || '')}${isFinite(when) ? ` · imported ${when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}${t.rows != null ? ` · ${t.rows} ${imp.kind === 'csv' ? 'rows' : 'lines'}` : ''}</div></div>
+      <button class="mb-btn" onclick="msImpDrop('${escAttr(imp.id)}')">${ms.impDrop === imp.id ? 'TAP AGAIN TO REMOVE' : 'REMOVE'}</button></div>`;
+    const grid = `<div class="ms-imp-grid">
+      ${cell('Bets read', `${t.bets}`, `${t.slips} slips, ${t.legs} legs to grade`)}
+      ${cell('Legs matched', t.checked ? `${t.matched}/${t.checked}` : '—', t.waiting ? `${t.waiting} still checking` : t.noHistory ? `${t.noHistory} no line history` : t.legs ? 'every leg checked' : 'no legs')}
+      ${cell('With a close', `${t.withClose}`, t.pinN ? `${t.pinN} with Pinnacle's own` : 'legs read before the start')}
+      ${cell('Leg CLV', msPct(t.closeEv), t.withClose ? `beat ${msShare(t.beatShare)} of ${t.withClose}` : 'no closes yet', msCls(t.closeEv))}
+      ${cell('vs Pinnacle', msPct(t.pinEv), t.pinN ? `beat ${msShare(t.pinBeatShare)} of ${t.pinN}` : 'no Pinnacle close', msCls(t.pinEv))}
+      ${cell('Legs hit', msShare(t.hitRate), t.beN ? `vs ${(t.be * 100).toFixed(1)}% break-even, ${t.beN} graded` : t.graded ? `${t.graded} graded` : 'no results yet', t.overBe == null ? '' : msCls(t.overBe))}
+      ${cell('Record', t.won + t.lost + t.push ? t.record : '—', t.recordBy === 'file' ? `the file's own results` : 'slips settled from box scores')}
+      ${cell('Units', t.units != null ? `${t.units > 0 ? '+' : ''}${t.units.toFixed(2)}u` : '—', t.settled ? `${mybUsd(t.profit, true)} on ${mybUsd(t.staked)}, ROI ${mybPct(t.roi)}` : unit.set ? 'no stakes settled' : 'set your unit in MY BETS', msCls(t.units ?? t.profit))}
+    </div>`;
+    const list = um.length ? `<details${ms.impOpen === imp.id ? ' open' : ''} ontoggle="if(this.open)ms.impOpen='${escAttr(imp.id)}';else if(ms.impOpen==='${escAttr(imp.id)}')ms.impOpen=null"><summary>${um.length} NOT MATCHED${um.some(u => u.stage === 'read') ? ` (${um.filter(u => u.stage === 'read').length} not read)` : ''}</summary><ol>${
+      um.slice(0, 200).map(u => `<li>${u.row != null ? `<b>${imp.kind === 'csv' ? 'Row' : 'Line'} ${u.row}:</b> ` : ''}${escAttr(u.text)}<small>${escAttr(u.why)}</small></li>`).join('')}</ol>${um.length > 200 ? `<div class="tl-note">and ${um.length - 200} more</div>` : ''}</details>` : '<div class="tl-note" style="margin:6px 12px 8px">Every row read and every leg matched.</div>';
+    // the latest tracker file's own button sits under its history below
+    const foot = left && !(ms.pikkit?.file === imp.file && (ms.pikkit?.format || 'pikkit') === imp.format) ? `<div class="ms-imp-foot"><button class="mb-btn" onclick="msImpAll('${escAttr(imp.id)}')">GRADE ${left} MORE FROM BOX SCORES</button><span class="tl-note" style="margin:0">older bets, from before the last week</span></div>` : '';
+    return `<div class="ms-imp">${head}${grid}${list}${foot}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="section-head" style="margin-top:18px">Imports</div>${cards}<div class="tl-note">Legs matched: found on our board or in the box scores. A close needs the leg read before the start, so bets older than our line history have results but no close. CLV is against the app's break-even; vs Pinnacle against Pinnacle's own last number. Record and units are the file's own results when it has them.</div>`;
 }
 
 const msPct = (x, d = 1) => (x == null || !isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(d)}%`);
@@ -3114,6 +3920,7 @@ function renderMySlips() {
   } else {
     list.innerHTML = views.slice(0, ms.shown).map(msSlipHtml).join('') + (views.length > ms.shown ? `<button class="mb-btn mb-moreall" onclick="ms.shown+=30;renderMySlips()">SHOW MORE (${views.length - ms.shown})</button>` : '');
   }
+  msRenderImports();
   msRenderPikkit();
 }
 function msSlipHtml(v) {
@@ -3125,20 +3932,25 @@ function msSlipHtml(v) {
   // the user's own result, for legs we can't grade (no line history) or a payout the app changed
   const mark = `<span class="ms-res" title="Mark the result yourself (tap again to undo)">${[['win', 'W'], ['loss', 'L'], ['void', 'VOID']].map(([r, l]) => `<button class="${v.by === 'user' && v.result === r ? 'on' : ''}" onclick="msMark('${escAttr(v.id)}','${r}')">${l}</button>`).join('')}</span>`;
   // a result Pikkit (or you) gave, against what our own box scores say
-  const who = v.by === 'pikkit' ? 'Result from Pikkit' : v.by === 'user' ? 'Result marked by you' : v.by === 'legs' ? 'Result from our box scores' : '';
+  const who = v.by === 'pikkit' ? 'Result from Pikkit' : v.by === 'import' ? `Result from ${escAttr(LRSlips.FORMATS[v.format] || 'your file')}` : v.by === 'user' ? 'Result marked by you' : v.by === 'legs' ? 'Result from our box scores' : '';
   const chk = v.agree === true ? '<span class="pos"> · our box scores agree</span>' : v.agree === false ? `<span class="neg"> · our box scores say ${escAttr(v.ours.result === 'paid' ? `paid ${v.ours.multiple}x` : v.ours.result)}</span>` : '';
   const sg = (who ? `<div class="ms-meta">${who}${chk}${v.be ? ` · break-even ${(v.be * 100).toFixed(1)}% a leg` : ''}</div>` : '') + (v.reprice ? `<div class="ms-sg">Linked picks from one game: payout taken as our repriced estimate ${v.reprice.mult}x (standard ${v.reprice.standard}x). Paste the slip with the app's real payout (to win $X) if it differs. Slip CLV prices legs independently, a rough guide here.</div>`
     : v.sameGame > 1 ? `<div class="ms-sg">${v.sameGame} legs from one game: the slip CLV (legs priced independently) is a rough guide and the app may pay less than its table.</div>` : '');
   const close = v.closeEv != null ? `<span class="ms-tag ${msCls(v.closeEv)}">${msPct(v.closeEv * 100)} AT CLOSE</span>` : '';
-  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
+  const head = `<div class="ms-slip-head"><div><b>${escAttr(L.appLabel(v.app))}</b> ${v.legs.length}-pick${v.flex ? ' flex' : ''}${res}${close}<div class="ms-meta">${isFinite(when) ? when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${pay ? ` · ${pay}` : ''}${v.source === 'pikkit' ? ' · from Pikkit' : v.source === 'import' ? ` · from ${escAttr(LRSlips.FORMATS[v.format] || 'an import')}` : v.source === 'board' ? ' · built in the app' : ''}${mark}</div>${sg}</div><button class="ms-x" title="Remove" onclick="msDelete('${escAttr(v.id)}')">✕</button></div>`;
   const th = `<div class="ms-leg ms-th"><div>Leg</div><div class="r">App close</div><div class="r">Fair first</div><div class="r">Fair close</div><div class="r">CLV</div><div class="r">Result</div></div>`;
-  return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l)).join('')}</div>`;
+  return `<div class="ms-slip">${head}${th}${v.legs.map(l => msLegHtml(l, v)).join('')}</div>`;
 }
-function msLegHtml(l) {
+function msLegHtml(l, v = null) {
   const g = l.g;
+  // the export: this leg, its slip's app and break-even, the sharp fair first and at the close
+  const xp = v ? xpA({ event: g?.matched?.matchTitle || g?.matched?.sport, start: g?.matched?.start, market: l.market, selection: `${l.player} ${l.side}`, line: l.line, venue: v.app, venueName: LRSlips.appLabel(v.app),
+    shown: `${v.legs.length}-pick${v.flex ? ' flex' : ''}${v.stake ? ` ${mybUsd(v.stake)}` : ''}`, be: v.be, fair: g?.signalFair, close: g?.status === 'open' ? null : g?.closeFair, fairSrc: g?.esports ? "books' consensus" : 'sharp consensus',
+    ev: g?.closeEv != null && g.status !== 'open' ? g.closeEv / 100 : null, readAt: v.placedAt,
+    tag: [g?.outcome ? `result ${g.outcome}${g.result != null ? ' (' + g.result + ')' : ''}` : g?.status || '', g?.raw?.ev != null ? `${g.raw.source === 'pinnacle' ? 'Pinnacle' : 'Kalshi'} own close ${msPct(g.raw.ev)}` : '', g?.appClose != null ? `app close ${g.appClose}` : '', v.result && v.result !== 'open' ? `slip ${v.result}` : ''].filter(Boolean).join('; ') }) : '';
   const name = `<div><b>${escAttr(l.player)}</b> ${l.side} ${l.line} ${escAttr(l.market)}${g?.matched?.start ? `<small>${escAttr(g.matched.matchTitle || g.matched.sport || '')} · ${new Date(g.matched.start).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}${g.matchUncertain ? ' · <b class="ms-unsure" title="Two matches fit and your slip names no opponent: we took the one whose posted line equals yours">match uncertain</b>' : ''}${g.esports ? ' · books\' consensus price' : ''}</small>` : ''}</div>`;
-  if (!g) return `<div class="ms-leg">${name}<div class="ms-none">checking...</div></div>`;
-  if (g.status === 'nohistory') return `<div class="ms-leg">${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? (g.reason === 'match' ? `: ${escAttr(g.opp ? 'none of them is ' + g.opp + '; ' : '')}they play ${escAttr(g.near.join(' and '))}` : `: it lists ${escAttr(g.near.join(', '))}`) : ''}</div></div>`;
+  if (!g) return `<div class="ms-leg"${xp}>${name}<div class="ms-none">checking...</div></div>`;
+  if (g.status === 'nohistory') return `<div class="ms-leg"${xp}>${name}<div class="ms-none">${escAttr(MS_REASON[g.reason] || 'no line history')}${g.near?.length ? (g.reason === 'match' ? `: ${escAttr(g.opp ? 'none of them is ' + g.opp + '; ' : '')}they play ${escAttr(g.near.join(' and '))}` : `: it lists ${escAttr(g.near.join(', '))}`) : ''}</div></div>`;
   const pct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
   const open = g.status === 'open';
   const move = g.lineMove ? ` <small class="${msCls(g.lineMove)}">${Math.abs(g.lineMove)} ${g.lineMove > 0 ? 'your way' : 'against you'}</small>` : '';
@@ -3148,26 +3960,28 @@ function msLegHtml(l) {
   const rw = g.raw && g.raw.ev != null && !open ? `<small class="${g.raw.ok === false ? '' : msCls(g.raw.ev)}" title="${g.raw.source === 'pinnacle' ? 'Pinnacle' : 'Kalshi'}'s last number before the start${g.raw.exact ? ' at your line' : `, read from its ${g.raw.line} line along the stat's curve`}${g.raw.ok === false ? ', read over an hour early' : ''}">${g.raw.source === 'pinnacle' ? 'PIN' : 'KAL'} ${msPct(g.raw.ev)}${g.raw.exact ? '' : '~'}</small>` : '';
   const src = g.gradeSource ? `<small title="${escAttr(g.gradeSource)}${g.late ? (g.gameSource === 'board' ? '. Logged after the start: the game and close come from our board' : '. Logged after the start: the game was found in the box scores, no close') : ''}">${escAttr(g.gradeSource.replace(/ box score$/, ''))}${g.late ? ' · late' : ''}</small>` : '';
   const res = g.outcome ? `<span class="${g.outcome === 'win' ? 'pos' : g.outcome === 'loss' ? 'neg' : ''}">${g.outcome.toUpperCase()}</span>${g.result != null ? `<small>${g.result}</small>` : ''}${src}` : g.status === 'void' ? `VOID<small>${escAttr(g.voidReason || '')}</small>` : open ? '<small>before start</small>' : '<small>waiting on the box score</small>';
-  return `<div class="ms-leg">${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}${rw}</div><div class="r" data-k="Result">${res}</div></div>`;
+  return `<div class="ms-leg"${xp}>${name}<div class="r" data-k="App close">${g.appClose ?? '—'}${move}</div><div class="r" data-k="Fair first">${pct(g.signalFair)}</div><div class="r" data-k="${open ? 'Fair now' : 'Fair close'}">${pct(g.closeFair)}</div><div class="r" data-k="CLV">${clv}${rw}</div><div class="r" data-k="Result">${res}</div></div>`;
 }
 function msRenderPikkit() {
   const el = document.getElementById('msPikkit');
   const pk = ms.pikkit;
   if (!pk?.bets?.length) { el.innerHTML = ''; return; }
+  const who = pk.format && pk.format !== 'pikkit' ? (LRSlips.FORMATS[pk.format] || 'your tracker') : 'Pikkit';
   const rows = LRSlips.pikkitBreakdown(pk.bets, ms.pkBy);
   const have = new Set(ms.slips.map(x => x.id));
   const left = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).length;
-  const pv = ms.slips.filter(x => x.source === 'pikkit').map(x => LRSlips.slipView(x, ms.grades, ms.tables));
+  const ids = new Set(pk.bets.map(b => b.id));
+  const pv = ms.slips.filter(x => ids.has(x.id)).map(x => LRSlips.slipView(x, ms.grades, ms.tables));
   const chk = pv.filter(v => v.agree != null), agreed = chk.filter(v => v.agree).length;
-  const regrade = `<div class="tl-note" style="margin-top:6px">${pv.length ? `${pv.length} Pikkit bets are graded here leg by leg from the box scores${chk.length ? `: on the ${chk.length} we could settle, our result agrees with Pikkit's on <b>${agreed}</b>${chk.length - agreed ? ` and differs on <b class="neg">${chk.length - agreed}</b>` : ''}` : ''}.` : 'None of these bets is graded leg by leg yet.'}${left ? ` <button class="mb-btn" onclick="msPikkitAll()">GRADE ${left} MORE FROM BOX SCORES</button>` : ''}</div>`;
+  const regrade = `<div class="tl-note" style="margin-top:6px">${pv.length ? `${pv.length} ${escAttr(who)} bets are graded here leg by leg from the box scores${chk.length ? `: on the ${chk.length} we could settle, our result agrees with ${escAttr(who)}'s on <b>${agreed}</b>${chk.length - agreed ? ` and differs on <b class="neg">${chk.length - agreed}</b>` : ''}` : ''}.` : 'None of these bets is graded leg by leg yet.'}${left ? ` <button class="mb-btn" onclick="msPikkitAll()">GRADE ${left} MORE FROM BOX SCORES</button>` : ''}</div>`;
   const seg = `<div class="mb-seg">${[['app', 'App'], ['league', 'League'], ['market', 'Market'], ['type', 'Bet type'], ['month', 'Month']].map(([v, l]) => `<button class="${ms.pkBy === v ? 'on' : ''}" onclick="msSet('pkBy','${v}')">${l}</button>`).join('')}</div>`;
-  el.innerHTML = `<div class="section-head" style="margin-top:22px">Your Pikkit history</div>
-    <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, Pikkit's own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
+  el.innerHTML = `<div class="section-head" style="margin-top:22px">Your ${escAttr(who)} history</div>
+    <div class="tl-note" style="margin-top:0">${pk.bets.length} bets from ${escAttr(pk.file)}, ${escAttr(who)}'s own profit and results. Legs read on ${pk.legsRead} of them. Bets from before our line history can't be graded against the close; this is what they tell us about where you win.</div>
     ${regrade}
     <div class="mb-bar" style="margin-top:8px">${seg}</div>
     <div style="overflow-x:auto"><table class="tl-table mb-break"><thead><tr><th>${{ app: 'App', league: 'League', market: 'Market', type: 'Bet type', month: 'Month' }[ms.pkBy]}</th><th class="r">Bets</th><th class="r">W-L-P</th><th class="r">Won</th><th class="r">Staked</th><th class="r">Profit</th><th class="r">ROI</th><th class="r">Beat close</th><th class="r">CLV</th></tr></thead><tbody>${
       rows.map(r => `<tr><td>${escAttr(r.key)}</td><td class="r">${r.bets}</td><td class="r">${r.won}-${r.lost}-${r.push}</td><td class="r">${msShare(r.winRate)}</td><td class="r">${mybUsd(r.staked)}</td><td class="r ${msCls(r.profit)}">${mybUsd(r.profit, true)}</td><td class="r ${msCls(r.roi)}">${mybPct(r.roi)}</td><td class="r">${r.clvN ? `${msShare(r.beatShare)} <small>of ${r.clvN}</small>` : '—'}</td><td class="r ${msCls(r.clv)}">${mybPct(r.clv)}</td></tr>`).join('')}</tbody></table></div>
-    <div class="tl-note">Beat close and CLV use the closing line Pikkit kept for each bet (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close; legs of games from the last two weeks also get Pinnacle's close where our board saw the prop.</div>`;
+    <div class="tl-note">Beat close and CLV use the closing line ${escAttr(who)} kept for each bet, where the file has one (the book's own close, not Pinnacle's). Bets you log here from now on are graded on the sharp close; legs of games from the last two weeks also get Pinnacle's close where our board saw the prop.</div>`;
 }
 // every Pikkit bet with legs we can read becomes a slip, graded from the box
 // scores (the import adds only the last week's on its own)
@@ -3175,11 +3989,12 @@ function msPikkitAll() {
   const pk = ms.pikkit;
   if (!pk?.bets?.length) return;
   const have = new Set(ms.slips.map(x => x.id));
-  const add = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).map(LRSlips.slipFromPikkit);
+  const imp = ms.imports.find(x => x.file === pk.file && x.format === (pk.format || 'pikkit') && !x.legacy);
+  const add = pk.bets.filter(b => b.legs?.length && !have.has(b.id)).map(b => LRSlips.slipFromBet(b, imp?.id || null));
   if (!add.length) return;
   ms.slips = [...add, ...ms.slips];
   msSave();
-  showToast(`${add.length} Pikkit bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
+  showToast(`${add.length} bets added to grade, ${add.reduce((a, x) => a + x.legs.length, 0)} legs`);
   renderMySlips();
   msGrade(true);
 }
@@ -3550,11 +4365,54 @@ function updateStats(g,s,a,sh) {
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
-function showToast(msg, type='') {
+function showToast(msg, type='', ms = 3500) {
   const t = document.createElement('div');
   t.className = `toast ${type}`; t.textContent = msg;
+  t.setAttribute('role', 'status');
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  setTimeout(() => t.remove(), ms);
+}
+
+// ─── COPY A LINK (share links, LRShare at the top of this script) ───────────
+// the screen as it is now: the tab, and on ODDS SCREEN its view and filters
+function lrShareState() {
+  const tab = (document.querySelector('.page.active')?.id || 'page-odds').replace(/^page-/, '');
+  if (tab === 'props') {
+    const b = pbState;
+    return { tab, props: { view: b.view, book: b.view === 'lines' ? b.lineBook : b.book, sport: b.sport, q: b.q, market: b.market, sort: b.sort, show: b.show, shopShow: b.shopShow, anchor: b.anchor } };
+  }
+  if (tab === 'esports') return { tab, es: { mode: esmState.mode, game: esmState.game, hideLive: esmState.hideLive, emuGame: emuState.game, league: emuState.league } };
+  if (tab !== 'odds' || !window.shpUi) return { tab };
+  return {
+    tab, mode: shpUi.opts.mode || 'lines',
+    os: { state: osUi.state, league: osUi.league, market: osUi.market, sort: osUi.sort, q: osUi.q },
+    shop: LRShare.resolveFavorites(shpUi.opts, (shpUi.data?.providers || []).map(x => x.id)),
+  };
+}
+function lrShareUrl(state) {
+  const base = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : `${BACKEND_URL}/app`;
+  return `${base}#${LRShare.encode(state)}`;
+}
+let lrShareLast = '';
+async function lrCopyLink(url, what) {
+  lrShareLast = url;
+  let ok = false;
+  try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); ok = true; } } catch {}
+  if (!ok) {
+    // older browsers and pages without clipboard access
+    try {
+      const t = document.createElement('textarea');
+      t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove();
+    } catch {}
+  }
+  if (ok) showToast(`Link copied: ${what}`);
+  else showToast(`Copy this link: ${url}`, 'danger', 12000);
+}
+function lrShareScreen() {
+  const st = lrShareState();
+  const tabName = (layTabs?.[st.tab]?.textContent || st.tab).trim();
+  lrCopyLink(lrShareUrl(st), st.tab === 'odds' || st.props || st.es ? `this ${tabName} view and its filters` : `the ${tabName} tab`);
 }
 
 // ─── BEEP ─────────────────────────────────────────────────────────────────────
@@ -4182,10 +5040,77 @@ function layClose() { document.getElementById('layModal').classList.remove('open
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const open = id => document.getElementById(id)?.classList.contains('open');
-  if (open('mybModal')) mybFormClose();
+  if (open('kbdModal')) kbdClose();
+  else if (open('mybModal')) mybFormClose();
   else if (open('acctModal')) acctClose();
   else if (open('layModal')) layClose();
   else if (open('moreMenu')) document.getElementById('moreMenu').classList.remove('open');
+});
+// ── KEYBOARD SHORTCUTS (desktop) ────────────────────────────────────────────
+// 1-9 the tabs on the bar, [ and ] the previous and next tab, / the search box
+// on this tab, F the Favorites filter, C CUSTOMIZE, L copy a link to this
+// screen, ? this list. None of them
+// fire while typing in a box, with Ctrl, Alt or Cmd held, or under a pop-up.
+const KBD = [
+  ['1 – 9', 'Open the tab in that spot on the bar'],
+  ['[  ]', 'Previous or next tab (MORE tabs included)'],
+  ['/', 'Jump to the search box on this tab'],
+  ['F', 'Turn the ★ Favorites filter on or off (ODDS SCREEN, where you starred leagues or venues)'],
+  ['C', 'Open CUSTOMIZE'],
+  ['L', 'Copy a link to this screen (ODDS SCREEN keeps its view and filters)'],
+  ['?', 'Show this list'],
+  ['Esc', 'Close the open pop-up, menu or this list'],
+];
+function kbdOpen() {
+  document.getElementById('kbdList').innerHTML = KBD.map(([k, what]) => `<kbd>${escAttr(k)}</kbd><span>${escAttr(what)}</span>`).join('');
+  document.getElementById('kbdModal').classList.add('open');
+}
+function kbdClose() { document.getElementById('kbdModal').classList.remove('open'); }
+const kbdTyping = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+const kbdPopupOpen = () => !!document.querySelector('.lay-modal.open, .acct-modal.open, .tour.open, .welcome.open');
+// the tabs a viewer can reach, in order: the bar first, then MORE
+function kbdTabs() {
+  const shown = layNames().filter(n => !layIsHidden(n) && layTabs[n]);
+  return { bar: shown.filter(n => !layIsMore(n)), all: [...shown.filter(n => !layIsMore(n)), ...shown.filter(n => layIsMore(n))] };
+}
+const kbdGo = n => showTab(n, layTabs[n]);
+const kbdVisible = el => !!el && el.offsetParent !== null && !el.disabled;
+function kbdSearch() {
+  const pg = document.querySelector('.page.active');
+  const box = pg && [...pg.querySelectorAll('input[type="search"], input[placeholder]')].find(i => kbdVisible(i) && (i.type === 'search' || /search|team|player/i.test(i.placeholder)));
+  if (box) { box.focus(); box.select?.(); return; }
+  showToast('This tab has no search box.');
+}
+function kbdFav() {
+  const pg = document.querySelector('.page.active');
+  const btn = pg && [...pg.querySelectorAll('button')].find(b => kbdVisible(b) && /^★\s*Favorites/.test(b.textContent.trim()));
+  if (btn) { btn.click(); return; }
+  showToast('No Favorites filter here. Star a league or venue on ODDS SCREEN > BEST PRICES ABOVE FAIR first.');
+}
+document.addEventListener('keydown', e => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  if (kbdTyping(e.target) || kbdTyping(document.activeElement)) return;
+  if (e.key === 'Escape') return;
+  if (kbdPopupOpen()) return;
+  const k = e.key;
+  if (k === '?') { e.preventDefault(); kbdOpen(); return; }
+  if (/^[1-9]$/.test(k)) {
+    const n = kbdTabs().bar[+k - 1];
+    if (n) { e.preventDefault(); kbdGo(n); }
+    return;
+  }
+  if (k === '[' || k === ']') {
+    const { all } = kbdTabs();
+    if (!all.length) return;
+    const cur = all.findIndex(n => layTabs[n].classList.contains('active'));
+    const next = all[((cur < 0 ? 0 : cur) + (k === ']' ? 1 : -1) + all.length) % all.length];
+    e.preventDefault(); kbdGo(next);
+    return;
+  }
+  if (k === '/') { e.preventDefault(); kbdSearch(); return; }
+  if (k === 'f' || k === 'F') { e.preventDefault(); kbdFav(); return; }
+  if (k === 'c' || k === 'C') { e.preventDefault(); layOpen(); return; }
+  if (k === 'l' || k === 'L') { e.preventDefault(); lrShareScreen(); }
 });
 function layRenderList() {
   const names = layNames();
@@ -4199,6 +5124,8 @@ function layRenderList() {
       <button class="lay-b${off ? '' : ' on'}" onclick="layHide('${n}')">${off ? 'HIDDEN' : 'SHOWN'}</button></div>`;
   }).join('');
   const h = document.getElementById('layHelp'); h.textContent = layout.help ? 'SHOWN' : 'HIDDEN'; h.classList.toggle('on', layout.help);
+  const c = document.getElementById('layCompact'); c.textContent = layout.compact ? 'ON' : 'OFF'; c.classList.toggle('on', !!layout.compact);
+  const af = document.getElementById('layAfterFees'); if (af) { af.textContent = afUi.on ? 'ON' : 'OFF'; af.classList.toggle('on', afUi.on); }
 }
 function layMove(n, d) {
   const names = layNames(), i = names.indexOf(n), j = i + d;
@@ -4214,8 +5141,9 @@ function layHide(n) {
     if (next) showTab(next, layTabs[next]);
   }
 }
+function layToggleCompact() { layout.compact = !layout.compact; laySave(); document.body.classList.toggle('compact', layout.compact); layRenderList(); }
 function layToggleHelp() { layout.help = !layout.help; laySave(); document.body.classList.toggle('no-help', !layout.help); layRenderList(); }
-function layReset() { layout = { order: [], more: {}, hidden: {}, help: true, folds: {} }; lsSet(LAY_KEY, null); document.body.classList.remove('no-help'); layApply(); layFoldInit(true); layRenderList(); }
+function layReset() { layout = { order: [], more: {}, hidden: {}, help: true, folds: {} }; lsSet(LAY_KEY, null); document.body.classList.remove('no-help', 'compact'); layApply(); layFoldInit(true); layRenderList(); }
 
 // help panels: folded to one line, tap to open, remembered per tab
 function layFoldInit(reset) {
@@ -4254,6 +5182,7 @@ function layFoldLabel(info) {
     });
     layLoad();
     document.body.classList.toggle('no-help', !layout.help);
+    document.body.classList.toggle('compact', !!layout.compact);
     layApply();
     layFoldInit();
     const base = showTab;
@@ -4267,6 +5196,8 @@ function layFoldLabel(info) {
 // out, so it is the sign-in screen. Account buttons appear only when the server
 // can make accounts; "Enter the app" always works so nobody is blocked.
 function welcomeInit() {
+  // a share link lands on its screen: no welcome screen or tour on top of it
+  if (LR_SHARED) { showToast(LR_SHARED.name ? `Opened a shared view: ${LR_SHARED.name}` : 'Opened a shared screen'); return; }
   // links from the sales page: /app?start=signup|login|app skip this screen,
   // and signup/login open the account form when accounts are on
   const start = new URLSearchParams(location.search).get('start');
@@ -4362,7 +5293,7 @@ const TOUR_STEPS = [
   { tab: 'props', target: () => tourTabBtn('props'), title: 'PROPS',
     text: () => `<p>PrizePicks, Underdog, Sleeper and DK Pick6 lines next to the sharp number where a book prices the prop, with every slip\'s payout and break-even. The NBA, CFB and CBB model tabs are tagged <b>model, not an edge</b>.</p>${tourInMore('props') ? '<p>It sits under <b>MORE</b>; CUSTOMIZE can pin it to the bar.</p>' : ''}` },
   { tab: 'betlog', target: () => tourTabBtn('betlog'), title: 'BET TRACKER AND MY SLIPS',
-    text: '<p>Tap <b>LOG</b> on an odds screen row, or ADD BET here, and MY BETS grades your closing line value for you.</p><p><b>MY SLIPS</b> grades pick\'em slips leg by leg from the box scores, and takes a Pikkit CSV. Your bets stay on this device unless you sign in.</p>' },
+    text: '<p>Tap <b>LOG</b> on an odds screen row, or ADD BET here, and MY BETS grades your closing line value for you.</p><p><b>MY SLIPS</b> grades pick\'em slips leg by leg from the box scores, and takes a CSV from Pikkit, Juice Reel or Bettor IQ, or your PrizePicks, Underdog or Sleeper history. Your bets stay on this device unless you sign in.</p>' },
   { tab: 'results', target: () => tourTabBtn('results'), title: 'RESULTS',
     text: '<p>Every flag the app makes, graded against Pinnacle\'s close, losers included. A kind of bet is called proven only after 50 graded games at one venue with its CLV well clear of chance; the rest say promising, early or avoid.</p><p>Check here before you trust any tool.</p>' },
   { tab: null, target: () => document.querySelector('.tab-row .tab-end'), title: 'PUSH ALERTS',
@@ -4551,6 +5482,14 @@ function pbSet(k, v) {
   else if (k === 'view') { try { localStorage.setItem('lr_pb_view', v); } catch {} pbState.market = ''; }
   pbState[k] = v; pbState.limit = 150; loadPropsBoard();
 }
+// a share link's PROPS view, app, sport and filters
+if (LR_SHARED?.props) {
+  const o = LR_SHARED.props;
+  Object.assign(pbState, { view: o.view, sport: o.sport, q: o.q, market: o.market, sort: o.sort, show: o.show, shopShow: o.shopShow, anchor: o.anchor });
+  if (o.view === 'lines') pbState.lineBook = o.book || 'underdog'; else pbState.book = o.book;
+  try { localStorage.setItem('lr_pb_view', pbState.view); localStorage.setItem('lr_pb_lbook', pbState.lineBook); } catch {}
+  for (const [id, v] of [['pbSearch', o.q], ['pbSort', o.sort], ['pbShow', o.show], ['apsShow', o.shopShow]]) { const el = document.getElementById(id); if (el) el.value = v; }
+}
 function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
 async function loadPropsBoard() {
   if (!pmState.at || Date.now() - pmState.at > 120000) loadPromos();
@@ -4722,7 +5661,12 @@ function pbCell(row, key, name) {
   }
   const ev = c.ev ? `<span class="pb-evp${c.ev.ev > 0 ? ' pos' : ''}">${pbSideWord(key, c.ev.side)} ${pbEvTxt(c.ev.ev)}</span>` : '';
   const fair = c.fair != null ? `<div class="pb-dim">fair ${c.fair.toFixed(0)}% over</div>` : '';
-  return `<div class="pb-bk${best ? ' best' : ''}">${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${vLink(key, { league: row.sport, player: row.player, what: `${row.player} ${row.market} ${c.line}` }, c.line)}</div><div class="pb-dim">${price}</div>${fair}${ev}</div>`;
+  const be = key === 'prizepicks' ? afLeg(key) : afLeg(key, c.overOpen && c.over != null ? +c.over : c.underOpen && c.under != null ? +c.under : null);
+  const mOn = key === 'prizepicks' ? null : c.ev ? (c.ev.side === 'Over' ? c.over : c.under) : c.overOpen && c.over != null ? c.over : c.underOpen && c.under != null ? c.under : null;
+  const xp = xpA({ event: row.matchTitle || [row.team, row.opponent].filter(Boolean).join(' vs '), league: row.sport, start: row.startTime, market: row.market, selection: `${row.player} ${c.ev ? pbSideWord(key, c.ev.side) : c.fair != null ? pbSideWord(key, 'Over') : ''}`.trim(), line: c.line,
+    venue: key, venueName: name, multiplier: mOn != null ? +mOn : null, shown: key === 'prizepicks' ? 'standard' : price, fair: c.fair != null ? (c.ev?.side === 'Under' ? 1 - c.fair / 100 : c.fair / 100) : null, fairSrc: c.fair != null ? "books' consensus" : null,
+    ev: c.ev ? c.ev.ev / 100 : null, readAt: pbState.data?.updated, tag: best ? 'best' : '' });
+  return `<div class="pb-bk${best ? ' best' : ''}"${xp}>${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${vLink(key, { league: row.sport, player: row.player, what: `${row.player} ${row.market} ${c.line}` }, c.line)}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
 }
 // ── LINES: one app's lines in a table, best EV first ──
 // Each row: the app's line, our fair line (the sharp books' consensus median,
@@ -4792,7 +5736,11 @@ function lnRow(r, book) {
   const used = lnUsed.keys.has(key);
   const apps = PB_BOOKS.filter(([k]) => r.books[k]).map(([k, , ab]) => `<span class="ln-app" style="--bk:${PB_COLOR[k]}" title="${k}">${ab}</span>`).join('');
   const meta = [pbMatchup(r, true), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
-  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}"${c.line != null ? ' data-vrow="1"' : ''}>
+  const xp = xpA({ event: r.matchTitle || [r.team, r.opponent].filter(Boolean).join(' vs '), league: r.sport, start: r.startTime, market: r.market, selection: `${r.player}${ev ? ' ' + pbSideWord(book, ev.side) : ''}`, line: c.line,
+    venue: book, venueName: PB_BOOKS.find(x => x[0] === book)?.[1] || book, multiplier: mult != null ? +mult : null, shown: multTxt, fair: prob != null ? prob / 100 : null,
+    fairSrc: prob == null ? null : r.esports ? 'our esports model' : ev?.bookFair ? 'sportsbooks only, not sharp' : 'sharp consensus', ev: ev ? ev.ev / 100 : null, readAt: pbState.data?.updated,
+    tag: [go ? 'clears the bettable bar' : '', ev?.h2h ? 'H2H model' : '', moved ? 'stale' : '', fairLine != null ? `fair line ${lnFix(fairLine)}` : ''].filter(Boolean).join(', ') });
+  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}"${xp}${c.line != null ? ' data-vrow="1"' : ''}>
     <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span>${pbAncChip(r)}</div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
@@ -4800,7 +5748,7 @@ function lnRow(r, book) {
     <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="${escAttr(pbH2hTitle())}">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
-    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span></div>
+    <div class="c" data-l="Mult"><span class="ln-num${mult != null && Math.abs(mult - 1) > 0.001 ? ' odd' : ''}" title="${book === 'prizepicks' ? 'PrizePicks standard line, priced as a 3-pick power leg' : book === 'pick6' ? 'This pick\'s Pick6 multiplier, priced as a 3-pick (6x) leg' : 'The app\'s payout on this side'}">${multTxt}</span>${afLeg(book, book === 'prizepicks' ? null : mult)}</div>
     <div class="c" data-l="EV"><span class="ln-num ${evCls}" title="${!ev && c.lineDiffers ? `${PB_BOOKS.find(x => x[0] === book)?.[1]} has ${c.lineDiffers.appLine}; ${PB_SRC[c.lineDiffers.book] || c.lineDiffers.book} posts ${c.lineDiffers.line}. A different number, so no price` : ev ? `At ${PB_BOOKS.find(x => x[0] === book)?.[1]}'s own break-even, priced on ${escAttr(src)}${sharp ? '' : h2hDead ? ` (our matchup model alone: ${escAttr(pbH2hTitle())}; grey, not a play)` : ev.bookFair ? ' (the books\' price, not a sharp one: grey, a lead not graded yet)' : ' (not a sharp price, so yellow)'}` : ''}">${locked ? 'Pro' : ev ? pbEvTxt(ev.ev) : c.lineDiffers ? 'line differs' : '—'}</span></div>
     <div class="c ln-usedc" data-l="Used"><button class="ln-add${pkHas(r.key, book) ? ' on' : ''}" title="Add to a slip you log in MY SLIPS" aria-label="Add to slip" onclick="pkAdd('${escAttr(r.key)}','${book}')">+</button><input type="checkbox" class="ln-used" data-k="${escAttr(key)}" ${used ? 'checked' : ''} onchange="lnToggleUsed(this)" aria-label="Used"/></div>
   </div>`;
@@ -6079,6 +7027,14 @@ const EMU_INTRO = {
   VAL: "Every VALORANT match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 8,000+ finished series since mid-2024 (vlr.gg results), how often favourites sweep, and a small head-to-head term, next to both venues' prices. Fewer results than CS2, so wider ranges.",
 };
 const emuState = { game: EMU_GAMES[lsGet('lr_emu_game')] ? lsGet('lr_emu_game') : 'LOL', data: null, at: 0, loading: false, league: lsGet('lr_emu_league') || 'ALL', open: new Set(), ratings: null };
+// a share link's ESPORTS view, game and league (SOCCER opens once the page is up)
+if (LR_SHARED?.es) {
+  const o = LR_SHARED.es;
+  Object.assign(esmState, { mode: o.mode, game: o.game, hideLive: o.hideLive });
+  lsSet('lr_es_mode', o.mode); lsSet('lr_esm_game', o.game); lsSet('lr_esm_live', o.hideLive ? '1' : '0');
+  if (o.emuGame !== 'SOCCER') { emuState.game = o.emuGame; emuState.league = o.league; lsSet('lr_emu_game', o.emuGame); lsSet('lr_emu_league', o.league); }
+  else setTimeout(() => setEmuGame('SOCCER'), 0);
+}
 function setEsMode(mode, fromTab) {
   esmState.mode = mode === 'props' ? 'props' : mode === 'matchups' ? 'matchups' : 'matches';
   lsSet('lr_es_mode', esmState.mode);
@@ -6208,7 +7164,7 @@ function esmEdgeCard(m, e) {
   const link = m.links[e.venue];
   return `<div class="esm-card edge"><div class="esm-top"><span class="esm-game">${escEs(m.label)}</span><span>${escEs(m.teams.join(' vs '))}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-tkt"><div><div class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</div>
-      <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
+      <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${afActive() ? afP(e.cost) + '<small>after fee</small>' : esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
     <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${e.venue === 'kalshi' ? vLink('kalshi', { url: link }, `Open ${esmVenue(e.venue)}`, 'esm-btn') : ''}</div></div></div>`;
 }
 function renderEsMatches() {
@@ -6321,8 +7277,8 @@ function emuCard(mu) {
   const meter = md.priced ? `<div class="esm-split" title="Model: ${escEs(mu.teams[0].name)} ${Math.round(md.win * 100)}%"><i style="width:${Math.round(md.win * 100)}%"></i><i style="flex:1"></i></div>` : '';
   const sub = [];
   if (c) sub.push(`<span>Model vs ${escEs(c.vs || 'Kalshi')}: <b class="emu-diff" style="color:${Math.abs(c.diff) >= 0.05 ? '#fbbf24' : '#cbd5e1'}">${emuPts(c.diff)} pts</b> on ${escEs(mu.teams[0].name)} <span style="color:#64748b">(model view)</span></span>`);
-  if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
-  if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">with fee</span></span>`);
+  if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
+  if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
   if (k || u) sub.push(`<span class="emu-links">${k ? vLink('kalshi', { url: k.url, id: k.marketId || k.ticker, what: mu.teams.map(t => t.name).join(' vs ') }) : ''} ${u ? vLink('polymarketus', { url: u.url, id: u.slug, what: mu.teams.map(t => t.name).join(' vs ') }) : ''}</span>`);
   if (c?.best && k?.sides && u?.sides) sub.push(`<span>Cheapest: ${c.best.map((b, i) => b ? `${escEs(mu.teams[i].code || mu.teams[i].name)} on ${escEs(b.venue)}` : null).filter(Boolean).join(' · ')}</span>`);
   if (!k && !u && md.priced) sub.push('<span style="color:#64748b">Neither Kalshi nor Polymarket US has a book on this series yet</span>');
@@ -6440,7 +7396,7 @@ function socCard(g) {
   const md = g.model, open = socState.open.has(g.id);
   const rows = g.rows.map(r => {
     const name = r.pick === 'home' ? g.home : r.pick === 'away' ? g.away : 'Draw';
-    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt">${vLink(lab === 'KALSHI' ? 'kalshi' : 'polymarketus', { url: v.url, id: v.marketId, what: `${g.home} vs ${g.away}` }, `<b>${esmCents(v.cost)}</b>`)}<small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
+    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt">${vLink(lab === 'KALSHI' ? 'kalshi' : 'polymarketus', { url: v.url, id: v.marketId, what: `${g.home} vs ${g.away}` }, `<b>${afActive() ? afP(v.cost) : esmCents(v.cost)}</b>`)}<small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
     return `<div class="soc-row"${r.kalshi || r.pmus ? ' data-vrow="1"' : ''}><div class="esm-name"><b>${escEs(name)}</b></div>
       <div class="emu-num model"><b>${socPct(r.model)}</b><small>MODEL</small></div>
       <div class="emu-num mkt"><b>${socPct(r.pin)}</b><small>PINNACLE</small></div>
@@ -9154,7 +10110,7 @@ function esLineRow(p, key) {
     <div>${esRowButtons(p)}</div>
     <div style="min-width:0">
       <div class="pl"><span class="nm">${escEs(p.player)}</span><span class="tag">${escEs(p.sport)}</span></div>
-      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
+      <div class="mk" ${p.spanInferred ? `title="The book lists this as '${escEs(p.market)}', but the line covers ${p.spanInferred} maps, shown corrected."` : ''}>${escEs((p.displayMarket || p.market || '').slice(0, 46))}${multTag}${key ? afLeg(key, key === 'prizepicks' ? null : mult, { absolute: key === 'underdog' && p.udRegime === 'decimal' }) : ''}${esLineDiffChip(p, key)}${esPinChip(p)}</div>
       ${bookRow}${esStatEdge(p)}
     </div>
     <div class="nums"><div class="es-lf"><b>${escEs(line)}</b><div>fair <span>${escEs(p.modelPred ?? '—')}</span></div></div>${side}</div>
@@ -9859,8 +10815,8 @@ checkBackend();
 startSharpPolling();    // REST polling — always works regardless of WS
 // open on the last tab used; the first time, the odds screen
 (() => {
-  let name = 'odds';
-  try { name = localStorage.getItem('lr_tab') || 'odds'; } catch {}
+  let name = LR_SHARED?.tab || 'odds';
+  try { name = LR_SHARED?.tab || localStorage.getItem('lr_tab') || 'odds'; } catch {}
   const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${name}',this)`);
   if (btn) showTab(name, btn); else showTab('best', document.querySelector('.tab'));
 })();
@@ -9916,7 +10872,8 @@ function nflmRender() {
   const body = games.map(g => {
     const k = new Date(g.kickoff);
     const fav = g.model.margin >= 0 ? g.home : g.away;
-    const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"${r.kalshi ? ' data-vrow="1"' : ''}><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)} ${vLink('kalshi', { url: r.kalshi.url, id: r.kalshi.marketId, what: r.label })}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
+    const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"${xpA({ event: `${g.away} at ${g.home}`, league: 'NFL', start: g.kickoff, market: r.kind, selection: r.label, venue: 'kalshi', venueName: 'Kalshi', cost: r.kalshi?.cost, fair: r.pin,
+      tag: `MODEL, NOT AN EDGE: model ${nflPct(r.model)}, model − cost ${nflPts(r.edge)} pts, Pinnacle − cost ${nflPts(r.pinEdge)} pts` })}${r.kalshi ? ' data-vrow="1"' : ''}><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)} ${vLink('kalshi', { url: r.kalshi.url, id: r.kalshi.marketId, what: r.label })}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
     return `<div class="nflm-game"><div class="nflm-gh"><b>${escEs(g.away)} at ${escEs(g.home)}</b> <span class="shp-dim">${k.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>
       <div class="shp-dim nflm-sub">Model: ${escEs(fav)} by ${Math.abs(g.model.margin).toFixed(1)}, total ${g.model.total}, ${escEs(g.home)} ${nflPct(g.model.pHome)} to win${g.nflverse?.spread != null ? ` · consensus line ${escEs(g.home)} ${g.nflverse.spread > 0 ? '-' : '+'}${Math.abs(g.nflverse.spread)}, total ${g.nflverse.total}` : ''}</div>
       <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Contract</th><th>Model</th><th>Kalshi cost</th><th>Pinnacle fair</th><th>Model − cost</th><th>Pinnacle − cost</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -9982,7 +10939,7 @@ function kmkRender() {
     const kname = { 'kalshi-maker': 'kalshi-maker', 'kalshi-maker-nhl': 'kalshi-maker-nhl, NHL spreads and totals (no maker fee)' };
     const btCards = b2 ? (b2.kinds ? Object.entries(b2.kinds).map(([k, x]) => kmkRecordCard(`Backtest at 2%, ${kname[k] || k} (judged)`, x)).join('') : kmkRecordCard('Backtest at 2% (judged)', b2.all)) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
       + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged, both kinds)`, x.all)).join('') : '';
-    const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td><td>${kmkC(r.bid)}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td><td>${afContract('kalshi', { price: r.bid, fee: r.fee ?? null, maker: true }, kmkC(r.bid))}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${d.kinds ? Object.entries(d.kinds).map(([k, x]) => kmkRecordCard(`Live record, ${kname[k] || k}`, x)).join('') : kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, kalshi-maker, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
       ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
@@ -9992,8 +10949,10 @@ function kmkRender() {
   if (!d.kalshi) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">KALSHI OFF</div><div class="empty-sub">Kalshi's prices are not shown on this account. The record is under RECORD.</div></div>`; return; }
   const rows = (d.board || []);
   if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">No Kalshi game side Pinnacle prices starts in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a minute after a restart)'}.</div></div>`; return; }
-  const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}" data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td>
-    <td>${kmkC1(r.fair)}</td><td>${kmkC(r.ask)}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${kmkC(r.bid)}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
+  const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"${xpA({ event: r.event, league: kmkLg[r.sport] || r.sport, start: r.start, market: kmkMkt[r.market] || r.market, selection: r.side, venue: 'kalshi', venueName: 'Kalshi',
+    price: r.bid ?? r.ask, maker: r.bid != null, fair: r.fair, ev: r.bid != null ? r.edge : r.takerEv, readAt: d.boardAt,
+    tag: r.bid != null ? `RESEARCH, NOT A BET: rest a bid at ${kmkC(r.bid)} (ask ${kmkC(r.ask)}, best bid ${kmkC(r.bestBid)}, maker fee in)` : `RESEARCH, NOT A BET: no room under the ask; take now at ${kmkC(r.ask)} (taker fee in)` })} data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td>
+    <td>${kmkC1(r.fair)}</td><td>${afContract('kalshi', { price: r.ask }, kmkC(r.ask))}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${afContract('kalshi', { price: r.bid, fee: r.fee, maker: true }, kmkC(r.bid))}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
@@ -10064,14 +11023,147 @@ function ortRender() {
     const fill = n => (t[n] ? `${t[n].full ? '' : '<span class="shp-dim">part </span>'}${nflPts(t[n].ev)}%` : '<span class="shp-dim">—</span>');
     const ev = r.at ? r.at.ev : r.ev;
     const hot = !r.season && r.fair >= d.minFair && t[d.flagTier]?.full && t[d.flagTier].ev >= flagEdge(r);
-    return `<tr class="${hot ? 'nflm-gap' : ''}" data-vrow="1"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
-      <td>${escEs(ortVenue(r.venue))}<div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: `${r.runner}, ${ortType(r.type)}` })}</div></td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div></td>
+    const fillTop = [1000, 200, 50].find(n => t[n]?.full);
+    const xp = xpA({ event: r.event, league: r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase(), start: r.cutoff, market: ortType(r.type), selection: `${r.runner} ${r.buy === 'yes' ? 'YES' : 'NO'}`, venue: r.venue, venueName: ortVenue(r.venue),
+      price: r.price, cost: r.cost, fair: r.fair, fairSrc: 'Pinnacle no-vig (lower of power and Shin)', ev, fill: fillTop || null, readAt: d.boardAt || d.pinAt, tag: `RESEARCH, NOT A BET${hot ? ", clears the record's bar" : ''}${r.sized ? '' : ', size unread'}` });
+    return `<tr class="${hot ? 'nflm-gap' : ''}"${xp} data-vrow="1"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
+      <td>${escEs(ortVenue(r.venue))}<div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: `${r.runner}, ${ortType(r.type)}` })}</div></td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
       <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
       <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
   }).join('');
   const flagged = rows.filter(r => !r.season && r.fair >= d.minFair && r.tiers?.[d.flagTier]?.full && r.tiers[d.flagTier].ev >= flagEdge(r)).length;
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} runner sides priced${flagged ? ` · ${flagged} clear the record's bar ($50 at +${Math.round(d.edge.outright * 100)}% over fair, +${Math.round(d.edge.h2h * 100)}% head-to-heads)` : ''}. Fair is the lower of the power and Shin no-vig prices for a YES. Pinnacle read ${escEs(d.pinAt ? new Date(d.pinAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Venue</th><th>Pinnacle fair</th><th>Ask</th><th>EV top${ortUi.minSize ? ` / $${ortUi.minSize}` : ''}</th><th>$50</th><th>$200</th><th>$1K</th><th>Pinnacle</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+// ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ───────────────────────────────
+// /api/moves: today's largest moves at each venue (since first seen, last 3h,
+// last 1h), and every other venue's answer. The same for everyone: no alerts,
+// no sizing. Choices live in localStorage.
+var mvUi = { window: 'open', type: 'price', kind: '', league: '', venue: '', sort: 'move', data: null, error: null, timer: null, open: {} };
+try { Object.assign(mvUi, JSON.parse(localStorage.getItem('lr_moves') || '{}'), { data: null, error: null, timer: null, open: {} }); } catch {}
+function mvSet(k, v) {
+  mvUi[k] = v;
+  // a venue or league from another window or type may not be in the new list
+  if (k === 'type' || k === 'kind') { mvUi.venue = ''; mvUi.league = ''; }
+  try { localStorage.setItem('lr_moves', JSON.stringify({ window: mvUi.window, type: mvUi.type, kind: mvUi.kind, league: mvUi.league, venue: mvUi.venue, sort: mvUi.sort })); } catch {}
+  mvLoad();
+}
+async function mvLoad() {
+  clearTimeout(mvUi.timer);
+  const el = document.getElementById('mvContent');
+  if (!el) return;
+  mvControls();
+  if (!mvUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  const q = new URLSearchParams({ window: mvUi.window, type: mvUi.type, sort: mvUi.sort });
+  for (const k of ['kind', 'league', 'venue']) if (mvUi[k]) q.set(k, mvUi[k]);
+  try { mvUi.data = await tailGet(`/api/moves?${q}`); mvUi.error = null; }
+  catch (e) { mvUi.error = e.old ? 'Biggest moves needs a newer backend.' : e.message; }
+  mvRender();
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'moves') mvUi.timer = setTimeout(() => { if (!document.hidden) mvLoad(); else mvUi.timer = setTimeout(mvLoad, 60e3); }, 60e3);
+}
+function mvControls() {
+  const bar = document.getElementById('mvModes');
+  if (bar) {
+    const c = (k, v, l) => `<button class="sport-chip${mvUi[k] === v ? ' active' : ''}" onclick="mvSet('${k}','${v}')">${l}</button>`;
+    bar.innerHTML = c('window', 'open', 'SINCE FIRST SEEN') + c('window', '3h', 'LAST 3H') + c('window', '1h', 'LAST 1H') + '<span style="width:10px"></span>' +
+      c('type', 'price', 'PRICE MOVES') + c('type', 'line', 'NUMBER MOVES') + '<span style="width:10px"></span>' + c('kind', '', 'ALL') + c('kind', 'game', 'GAME LINES') + c('kind', 'prop', 'PROPS');
+  }
+  const fb = document.getElementById('mvBar');
+  if (!fb) return;
+  const f = mvUi.data?.facets || { venues: [], leagues: [] };
+  // keep the current pick in the list even when this window has no rows for it
+  const opts = (list, cur, all) => [['', all], ...list.map(x => [x.key, `${x.label} (${x.n})`]), ...(cur && !list.some(x => x.key === cur) ? [[cur, cur.toUpperCase()]] : [])];
+  const sel = (k, list, label) => `<label>${label}<select onchange="mvSet('${k}', this.value)">${list.map(([v, l]) => `<option value="${escEs(v)}"${String(mvUi[k]) === v ? ' selected' : ''}>${escEs(l)}</option>`).join('')}</select></label>`;
+  fb.innerHTML = sel('league', opts(f.leagues, mvUi.league, 'Every league'), 'LEAGUE') + sel('venue', opts(f.venues, mvUi.venue, 'Every venue (biggest per market)'), 'MOVED AT') +
+    sel('sort', [['move', 'Biggest move'], ['old', 'Most venues still at old number'], ['start', 'Starting soonest']], 'SORT');
+}
+const mvAm = a => (a == null ? '—' : a > 0 ? `+${a}` : `${a}`);
+const mvPt = (x, mkt) => (x == null ? '—' : mkt === 'spread' && x > 0 ? `+${x}` : `${x}`);
+const mvChance = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+// a price as the row shows it: American on game lines, the chance on props
+const mvPrice = (r, v, venue = r.venue) => (r.kind === 'game' ? afAm(venue, v, mvAm(v)).replace('<span class="af-sub">', '<span class="af-sub" style="display:inline;margin-left:3px">') : mvChance(v));
+const MV_STATUS = { moved: 'moved too', old: 'still at old number', part: 'moved part way', against: 'moved the other way', other: 'on another number', new: 'no price at the start' };
+function mvSize(z) {
+  if (!z) return '';
+  if (z.unread) return '<span class="shp-dim">size not read</span>';
+  if (z.empty) return '<span class="shp-dim">book empty</span>';
+  return `<span class="shp-dim">${z.fills ? `fills $${z.fills.toLocaleString()}` : 'under $50'} · $${(z.topUsd || 0).toLocaleString()} at top</span>`;
+}
+function mvVenue(f, r) {
+  const what = r.type === 'line' ? (f.point == null ? '' : ` ${mvPt(f.point, r.market)}`)
+    : f.status === 'other' ? (f.point != null ? ` at ${mvPt(f.point, r.market)}` : '') : ` ${mvPrice(r, f.now, f.venue)}${f.cents != null ? ` (${f.cents > 0 ? '+' : ''}${f.cents}¢)` : ''}`;
+  const name = `${escEs(f.name)}${f.secondHand ? '<sup>c</sup>' : ''}`;
+  const label = `${f.url && !f.ref ? `<a href="${escAttr(f.url)}" target="_blank" rel="noopener">${name}</a>` : name}${afUi.on && r.kind === 'game' && r.type !== 'line' ? what : escEs(what)}${r.kind === 'prop' ? afLeg(f.venue) : ''}`;
+  const sz = mvSize(f.size);
+  return `<div class="mv-v mv-${f.status}" title="${escAttr(f.name + ': ' + (MV_STATUS[f.status] || f.status))}">${label}${sz ? ` ${sz}` : ''}</div>`;
+}
+function mvRender() {
+  mvControls();
+  const el = document.getElementById('mvContent');
+  if (!el) return;
+  if (mvUi.error) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">COULD NOT LOAD</div><div class="empty-sub">${escEs(mvUi.error)}</div></div>`; return; }
+  const d = mvUi.data;
+  if (!d) return;
+  const h = d.history || {};
+  const since = t => (t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : null);
+  const depth = `Game-line history from ${since(h.gameSince) || 'nothing saved yet'} (${h.gameMarkets || 0} sides today)` +
+    (h.propsOn ? ` · prop history from ${since(h.propSince) || 'nothing saved yet'} (${h.propMarkets || 0} props; kept ${h.propKeepHours || 3}h, starts empty after an update)` : ' · prop history is off on this server');
+  const rows = d.rows || [];
+  if (!rows.length) {
+    const thin = !h.gameMarkets && !h.propMarkets;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">${thin ? 'NO DATA YET' : 'NOTHING MOVED'}</div><div class="empty-sub">${thin
+      ? 'No saved prices for today\'s markets yet. Game lines are saved every few minutes from when a game first shows up, props from when the apps and books are read, so check back soon.'
+      : `No ${d.type === 'line' ? 'number move of half a point or more' : 'price move of a cent or more'} ${d.window === 'open' ? 'since we first saw each market' : `in the last ${d.window === '3h' ? '3 hours' : 'hour'}`}${mvUi.venue || mvUi.league || mvUi.kind ? ' with these filters' : ''}.`}</div><div class="shp-dim" style="margin-top:8px">${escEs(depth)}</div></div>`;
+    return;
+  }
+  const th = (k, l) => `<th class="mv-sort${mvUi.sort === k ? ' on' : ''}" onclick="mvSet('sort','${k}')">${l}${mvUi.sort === k ? ' ▾' : ''}</th>`;
+  const body = rows.map((r, i) => {
+    const followers = r.followers || [];
+    const by = st => followers.filter(f => (Array.isArray(st) ? st.includes(f.status) : f.status === st));
+    const moved = by('moved'), old = by('old'), rest = by(['part', 'against', 'other', 'new']);
+    const fromTo = r.type === 'line' ? `${mvPt(r.from, r.market)} → ${mvPt(r.to, r.market)}` : `${mvPrice(r, r.from)} → ${mvPrice(r, r.to)}`;
+    const size = r.type === 'line' ? `${r.move} pt${r.move === 1 ? '' : 's'}` : `${r.move}¢`;
+    const name = `${escEs(r.venueName)}`;
+    const venue = r.url ? `<a href="${escAttr(r.url)}" target="_blank" rel="noopener">${name}</a>` : name;
+    const what = r.kind === 'game' ? `${escEs(r.side)}<div class="shp-dim">${escEs(r.marketLabel)} · ${escEs(r.event)} · ${escEs(shpWhen(r.start))}</div>`
+      : `${escEs(r.side)}<div class="shp-dim">${escEs(r.event || r.marketLabel)} · ${escEs(shpWhen(r.start))}</div>`;
+    const chart = r.kind === 'game' ? `<button class="os-btn${mvUi.open[r.id] ? ' on' : ''}" onclick="mvChart(${i})">${mvUi.open[r.id] ? 'HIDE' : 'CHART'}</button>` : '';
+    const list = l => (l.length ? l.map(f => mvVenue(f, r)).join('') : '<span class="shp-dim">—</span>');
+    const names = l => l.map(f => f.name).join(', ') || 'none';
+    const xp = xpA({ event: r.event, league: r.leagueLabel, start: r.start, market: r.marketLabel, selection: r.side, venue: r.venue, venueName: r.venueName,
+      line: r.type === 'line' ? r.to : null, american: r.kind === 'game' && r.type !== 'line' ? r.to : r.kind === 'game' ? r.now : null, shown: r.kind === 'prop' && r.type !== 'line' ? mvChance(r.to) : null,
+      fill: r.size && !r.size.unread ? (r.size.fills || 0) : null, tag: `INFORMATION, NOT AN EDGE: moved ${size} (${r.type === 'line' ? `${mvPt(r.from, r.market)} to ${mvPt(r.to, r.market)}` : r.kind === 'game' ? `${mvAm(r.from)} to ${mvAm(r.to)}` : `${mvChance(r.from)} to ${mvChance(r.to)}`}) since ${r.since || '?'}; moved too: ${names(moved)}; still at old number: ${names(old)}` });
+    return `<tr${xp}><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${afUi.on && r.type !== 'line' && r.kind === 'game' ? fromTo : escEs(fromTo)}</div></td><td>${venue}${r.kind === 'prop' ? afLeg(r.venue) : ''}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
+      <td>${list(moved)}</td><td>${list(old)}</td><td>${list(rest)}</td><td class="shp-dim">${escEs(since(r.since) || '—')}</td><td>${chart}</td></tr>` +
+      (mvUi.open[r.id] && r.kind === 'game' ? `<tr><td colspan="8"><div class="os-chart mv-chart" id="osc-mv${i}"><div class="os-note">Loading the line history...</div></div></td></tr>` : '');
+  }).join('');
+  const unit = d.type === 'line' ? 'points of line' : 'cents of implied chance';
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} ${d.type === 'line' ? 'number' : 'price'} move${rows.length === 1 ? '' : 's'}, ranked in ${unit}${mvUi.venue ? '' : ', each market once at the venue that moved most'}. ${d.counts ? `${d.counts.price} price and ${d.counts.line} number moves in this window.` : ''} ${escEs(depth)}.</div>
+    <div class="nflm-scroll"><table class="nflm-t mv-t"><thead><tr>${th('start', 'Market · starts')}${th('move', 'Move')}<th>Moved at</th><th>Moved too</th>${th('old', 'Still at old number')}<th>Other venues</th><th>Since</th><th>Chart</th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="shp-dim" style="margin-top:8px">${escEs(d.note || '')}</div>`;
+  rows.forEach((r, i) => { if (mvUi.open[r.id] && r.kind === 'game') mvDraw(i); });
+}
+// a game row's chart: the odds screen's own line history for that side
+// (open rows go by row id, so a reload or another filter keeps the right ones)
+function mvChart(i) {
+  const r = (mvUi.data?.rows || [])[i];
+  if (!r) return;
+  mvUi.open[r.id] = !mvUi.open[r.id];
+  mvRender();
+}
+async function mvDraw(i) {
+  const r = (mvUi.data?.rows || [])[i];
+  if (!r || r.kind !== 'game') return;
+  const id = `mv${i}`;
+  mvUi.hist = mvUi.hist || {};
+  if (!mvUi.hist[r.gameId]) {
+    try { const res = await fetch(`${BACKEND_URL}/api/odds-screen/history/${encodeURIComponent(r.gameId)}`); mvUi.hist[r.gameId] = await res.json(); } catch { mvUi.hist[r.gameId] = { series: [] }; }
+    setTimeout(() => { if (mvUi.hist) delete mvUi.hist[r.gameId]; }, 60e3);
+  }
+  osUi.hist[id] = mvUi.hist[r.gameId];
+  const sid = String(r.id).split('|').slice(0, -2).join('|');
+  if ((osUi.hist[id].series || []).some(x => x.id === sid)) osUi.side[id] = sid;
+  osDrawChart(id);
 }
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
@@ -10083,30 +11175,39 @@ try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.remove
 // a saved shopper view comes back when the odds screen is already open
 setTimeout(() => { if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') oddsModeShow(); }, 0);
 const shpSave = () => { try { localStorage.setItem('lr_shopper', JSON.stringify(shpUi.opts)); } catch {} };
-function shpSet(k, v, reload = true) { shpUi.opts[k] = v; shpSave(); if (k === 'mode') return oddsModeShow(); if (reload) shpLoad(); else shpRender(); }
+// a share link's view and filters; the viewer's own stars, stake and odds format stay
+if (LR_SHARED?.tab === 'odds') {
+  shpUi.opts.mode = LR_SHARED.mode;
+  if (LR_SHARED.shop) Object.assign(shpUi.opts, LR_SHARED.shop, { favOnly: false });
+  shpSave();
+}
+function shpSet(k, v, reload = true) { shpUi.opts[k] = v; if (k !== 'fmt') shpUi.viewPick = null; shpSave(); if (k === 'mode') return oddsModeShow(); if (reload) shpLoad(); else shpRender(); }
 // the odds screen's views: GAME LINES is oddsscreen.js; the rest are the shopper
 function oddsModeShow() {
   const mode = window.shpUi ? shpUi.opts.mode : 'lines';
   const lines = !mode || mode === 'lines';
   const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
   const bar = document.getElementById('oddsModes');
-  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('outrights', 'OUTRIGHTS') + chip('nflmodel', 'NFL MODEL');
-  const nfl = mode === 'nflmodel', mk = mode === 'maker', ort = mode === 'outrights';
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('outrights', 'OUTRIGHTS') + chip('moves', 'BIGGEST MOVES') + chip('nflmodel', 'NFL MODEL');
+  const nfl = mode === 'nflmodel', mk = mode === 'maker', ort = mode === 'outrights', mv = mode === 'moves';
   const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView'), kv = document.getElementById('kmkView'), rv = document.getElementById('ortView');
   if (ov) ov.style.display = lines ? '' : 'none';
-  if (sv) sv.style.display = lines || nfl || mk || ort ? 'none' : '';
+  if (sv) sv.style.display = lines || nfl || mk || ort || mv ? 'none' : '';
+  const mvv = document.getElementById('mvView');
+  if (mvv) mvv.style.display = mv ? '' : 'none';
   if (nv) nv.style.display = nfl ? '' : 'none';
   if (kv) kv.style.display = mk ? '' : 'none';
   if (rv) rv.style.display = ort ? '' : 'none';
-  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); if (window.ortUi) clearTimeout(ortUi.timer); };
+  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); if (window.ortUi) clearTimeout(ortUi.timer); if (window.mvUi) clearTimeout(mvUi.timer); };
   if (lines) { stop(); loadOdds(); }
   else if (nfl) { clearTimeout(osUi.timer); stop(); nflmLoad(); }
   else if (mk) { clearTimeout(osUi.timer); stop(); kmkLoad(); }
   else if (ort) { clearTimeout(osUi.timer); stop(); ortLoad(); }
+  else if (mv) { clearTimeout(osUi.timer); stop(); mvLoad(); }
   else { clearTimeout(osUi.timer); stop(); shpLoad(); }
 }
 let shpTyping = null;
-function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
+function shpType(k, v) { shpUi.opts[k] = v; shpUi.viewPick = null; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
 function shpToggleVenue(id, on) {
   const ex = new Set(shpUi.opts.excluded || []);
   if (on) ex.delete(id); else ex.add(id);
@@ -10141,7 +11242,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : lrErr(e); }
   shpRender();
-  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights' && shpUi.opts.mode !== 'moves') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {
@@ -10180,8 +11281,8 @@ function shpControls() {
   if (o.league && !leagues.some(([k]) => k === o.league)) leagues.push([o.league, 0]);
   document.getElementById('shpBar').innerHTML = [
     `<input type="search" placeholder="Team or player" value="${escAttr(o.q)}" oninput="shpType('q',this.value)" style="flex:1 1 140px">`,
-    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, `${(o.favLeagues || []).includes(k) ? '★ ' : ''}${k.toUpperCase()} (${n})`])], ''),
-    o.league ? `<button class="shp-star${(o.favLeagues || []).includes(o.league) ? ' on' : ''}" onclick="shpFav('favLeagues','${escAttr(o.league)}')" title="${(o.favLeagues || []).includes(o.league) ? 'Remove from' : 'Add to'} favorite leagues">★ ${escAttr(o.league.toUpperCase())}</button>` : '',
+    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, k.includes(',') ? k.toUpperCase().split(',').join(' + ') : `${(o.favLeagues || []).includes(k) ? '★ ' : ''}${k.toUpperCase()} (${n})`])], ''),
+    o.league && !o.league.includes(',') ? `<button class="shp-star${(o.favLeagues || []).includes(o.league) ? ' on' : ''}" onclick="shpFav('favLeagues','${escAttr(o.league)}')" title="${(o.favLeagues || []).includes(o.league) ? 'Remove from' : 'Add to'} favorite leagues">★ ${escAttr(o.league.toUpperCase())}</button>` : '',
     sel('sort', [['ev', 'Best EV'], ['start', 'Starting soon'], ['hold', 'Lowest hold'], ['gap', 'Biggest price gap'], ['venues', 'Most venues']], 'SORT'),
     sel('hours', [['6', '6h'], ['24', '24h'], ['48', '48h'], ['168', '7 days']], 'STARTS IN'),
     inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
@@ -10219,10 +11320,12 @@ function shpOpps(d) {
     const m = open ? (x.view || d.markets.find(mm => mm.key === x.market)) : null;
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
     const vp = shpPriceOf(d, x);
-    return `<tr class="shp-row" data-vrow="1" onclick="shpOpen('${escAttr(x.key)}')">
+    const xp = xpA({ event: x.event, league: String(x.league || '').toUpperCase(), start: x.start, market: x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType, selection: x.selection,
+      venue: x.provider, venueName: x.providerName, decimal: x.effective, fair: x.fair, fairSrc: SHP_FAIR[x.fairSource] || x.fairSource, ev: x.ev, fill: shpFillUsd(x.size, x.sizedAt), readAt: shpReadAt(x.ageSec ?? x.view?.ageSec), tag: `${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}${x.oneWay ? ', alt line' : ''}` });
+    return `<tr class="shp-row"${xp} data-vrow="1" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${shpOdds(x.effective)}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
+      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -10244,7 +11347,9 @@ function shpMarketTable(m) {
       const p = s.prices.find(x => x.provider === cc.provider);
       if (!p) return '<td class="shp-cell shp-dim">—</td>';
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}" title="${escAttr(tip)}">${p.ref ? shpOdds(p.effective) : vLink(p.provider, shpVctx(m, s, p), shpOdds(p.effective))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      const xp = xpA({ event: m.event, league: String(m.league || '').toUpperCase(), start: m.start, market: shpMkt(m), selection: s.name, line: m.line, venue: p.provider, venueName: p.name, decimal: p.effective,
+        fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
     return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
@@ -10282,23 +11387,35 @@ const shpPresetsSave = v => { try { localStorage.setItem(SHP_PRESET_KEY, JSON.st
 // what a saved view keeps: the filters, not the odds format or favorites
 const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'minSize', 'method', 'excluded', 'favOnly'];
 function shpPresetBar() {
-  const list = shpPresets();
-  return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}">${escAttr(p.name)}</option>`).join('')}</select></label>` +
+  const list = shpPresets(), pick = list[shpUi.viewPick] ? shpUi.viewPick : null;
+  return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}"${i === pick ? ' selected' : ''}>${escAttr(p.name)}</option>`).join('')}</select></label>` +
+    (pick != null ? `<button class="shp-btn" onclick="shpPresetShare(${pick})" title="Copy a link that opens this view on any phone or computer">SHARE VIEW</button>` : '') +
     `<label>NAME<input id="shpPresetName" type="text" maxlength="30" placeholder="e.g. Texas props"></label><button class="shp-btn" onclick="shpPresetAdd()">SAVE VIEW</button>` +
-    (list.length ? `<button class="shp-btn" onclick="shpPresetsSave([]);shpRender()" title="Delete every saved view on this device">CLEAR VIEWS</button>` : '');
+    (list.length ? `<button class="shp-btn" onclick="shpPresetsSave([]);shpUi.viewPick=null;shpRender()" title="Delete every saved view on this device">CLEAR VIEWS</button>` : '');
 }
 function shpPresetAdd() {
   const name = (document.getElementById('shpPresetName')?.value || '').trim() || `View ${shpPresets().length + 1}`;
   const view = Object.fromEntries(SHP_VIEW_KEYS.map(k => [k, shpUi.opts[k]]));
   shpPresetsSave([{ name, opts: view }, ...shpPresets().filter(p => p.name !== name)]);
+  shpUi.viewPick = 0;
   shpRender();
 }
 function shpPresetLoad(i) {
   const p = shpPresets()[+i];
   if (!p) return;
   Object.assign(shpUi.opts, Object.fromEntries(SHP_VIEW_KEYS.filter(k => k in p.opts).map(k => [k, p.opts[k]])));
+  shpUi.viewPick = +i;
   shpSave();
   oddsModeShow();
+}
+// a saved view as a link: its filters, with a ★ Favorites filter written out
+// as the leagues and venues this device has starred
+function shpPresetShare(i) {
+  const p = shpPresets()[+i];
+  if (!p) return;
+  const o = { ...p.opts, favLeagues: shpUi.opts.favLeagues, favVenues: shpUi.opts.favVenues };
+  const shop = LRShare.resolveFavorites(o, (shpUi.data?.providers || []).map(x => x.id));
+  lrCopyLink(lrShareUrl({ tab: 'odds', mode: o.mode, shop, name: p.name }), `view "${p.name}"`);
 }
 // opportunities sort in the browser: tap a header, tap again to flip
 const SHP_SORT = {
@@ -10339,7 +11456,7 @@ function shpArbs(d) {
   if (!d.arbs.length) return tailEmpty('NO ARBS RIGHT NOW', "No market's best prices add up to under 100% at venues read direct. Copies from Action Network never count as an arb leg.");
   return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
-    ${m.arb.legs.map(l => { const sd = m.sides.find(s => s.side === l.side), p = sd?.prices?.find(q => q.provider === l.provider) || { provider: l.provider }; return `<div class="shp-num" data-vrow="1" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(sd?.name || l.side)} at ${escAttr(l.name)} ${shpOdds(sd?.best?.effective)} ${vLink(l.provider, shpVctx(m, sd || { name: l.side }, p))}</div>`; }).join('')}
+    ${m.arb.legs.map(l => { const sd = m.sides.find(s => s.side === l.side), p = sd?.prices?.find(q => q.provider === l.provider) || { provider: l.provider }; return `<div class="shp-num" data-vrow="1" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(sd?.name || l.side)} at ${escAttr(l.name)} ${afPx(sd?.best?.provider, sd?.best?.effective, shpOdds(sd?.best?.effective))} ${vLink(l.provider, shpVctx(m, sd || { name: l.side }, p))}</div>`; }).join('')}
     ${shpArbSize(m.arb)}
     <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
 }
@@ -10355,9 +11472,16 @@ function shpSizeLine(z, sizedAt) {
   if (!z) return '';
   if (z.unread) return '<div class="shp-dim" style="font-size:10px" title="This venue\'s order book has not been read in the last 5 minutes, so its size is unknown">size not read yet</div>';
   if (z.empty) return '<div class="shp-bad" style="font-size:10px">book empty</div>';
-  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
+  const parts = [50, 200, 1000].map(t => { const w = z.tiers?.[t]; if (!w || !w.full) return `<span class="shp-bad">${shpK(t)} only $${w ? Math.round(w.usd) : 0}</span>`; return `${shpK(t)} ${afActive() ? afP(1 / w.decimal) : shpOdds(w.decimal)}${w.ev != null ? ` <span class="${w.ev > 0 ? 'shp-good' : 'shp-dim'}">${shpPct(w.ev)}</span>` : ''}`; });
   return `<div class="shp-dim" style="font-size:10px;white-space:normal" title="${escAttr(shpSizeTip(z, sizedAt))}">${parts.join(' · ')}</div>`;
 }
+// for the export: dollars the book fills at the price shown, and when the price was read
+function shpFillUsd(z, sizedAt) {
+  if (!z || z.unread || z.empty) return z?.empty ? 0 : null;
+  const top = [1000, 200, 50].find(t => z.tiers?.[t]?.full);
+  return sizedAt || top || (z.depthUsd != null ? Math.round(z.depthUsd) : null);
+}
+const shpReadAt = ageSec => { const b = Date.parse(shpUi.data?.builtAt || ''); return ageSec == null || !isFinite(b) ? shpUi.data?.builtAt || null : new Date(b - ageSec * 1000).toISOString(); };
 // a venue cell: the biggest size its book fills
 function shpSizeCell(p) {
   const z = p.size;
@@ -10387,6 +11511,9 @@ function shpArbSize(a) {
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>
+    <div class="lay-row"><span class="lay-name">Compact rows<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Tighter rows and smaller text on screens 1100 px and wider</span></span><button class="lay-b" id="layCompact" onclick="layToggleCompact()"></button></div>
+    <div class="lay-row"><span class="lay-name">After fees<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Every price as the chance you need to win after the venue's fee, with the fee or the pick'em break-even beside it. Sources under FEES at the bottom</span></span><button class="lay-b" id="layAfterFees" onclick="afToggle()"></button></div>
+    <div class="lay-row"><span class="lay-name">Keyboard shortcuts</span><button class="lay-b" id="layKbd" onclick="layClose();kbdOpen()">SHOW</button></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
@@ -10398,6 +11525,14 @@ function shpArbSize(a) {
       <p id="pushTestNote" style="margin:4px 0 0"></p>
     </div>
     <div class="lay-foot"><button onclick="layReset()">RESET</button><button class="primary" onclick="layClose()">DONE</button></div>
+  </div>
+</div>
+<div class="lay-modal" id="kbdModal" onclick="if(event.target===this)kbdClose()">
+  <div class="lay-box" role="dialog" aria-label="Keyboard shortcuts">
+    <h3>Keyboard shortcuts</h3>
+    <p>For a keyboard on desktop. They do nothing while you are typing in a box.</p>
+    <div class="kbd-list" id="kbdList"></div>
+    <div class="lay-foot"><button class="primary" onclick="kbdClose()">DONE</button></div>
   </div>
 </div>
 <div class="acct-modal" id="acctModal" onclick="if(event.target===this)acctClose()">

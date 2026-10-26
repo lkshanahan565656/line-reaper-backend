@@ -677,7 +677,27 @@ function createStaleLines(opts = {}) {
       sources: Object.fromEntries(Object.entries(s.src).map(([k, l]) => [k, l.map(e => ({ t: new Date(e.t).toISOString(), number: numberLabel(e.q, s.meta) }))])) };
   }
 
-  return { observe, step, rows, fairAt, pinMain, quoteAt, marks, lagSummary, history, size: () => subjects.size, opts: o };
+  // every subject's change history per source, for the biggest-moves screen
+  // (bigmoves.js): read-only references to the engine's own lists, with
+  // whether each source is quoting the subject now (read lately, not pulled;
+  // Pinnacle fresh and not listed twice at one number)
+  function sources(t = Date.now(), { kind = null } = {}) {
+    const out = [];
+    for (const [key, s] of subjects) {
+      if (kind && s.meta.kind !== kind) continue;
+      const src = {};
+      for (const [v, l] of Object.entries(s.src)) {
+        if (!l.length) continue;
+        const e = l[l.length - 1];
+        const live = v === 'pinnacle' ? !isAmbiguous(key, t) && pinFresh(s, e, t) : fresh(v, e, t, s);
+        src[v] = { live, list: l };
+      }
+      out.push({ key, meta: s.meta, src });
+    }
+    return out;
+  }
+
+  return { observe, step, rows, fairAt, pinMain, quoteAt, marks, lagSummary, history, sources, size: () => subjects.size, opts: o };
 }
 
 module.exports = { DEFAULTS, VENUES, BOOK_VENUES, APP_VENUES, CONFIRM, devig2, pAt, shiftedAt, mainOf, fingerprint, dayOf, propKey, gameQuotes, bookPropQuotes, pinPropQuotes, appQuotes, numberLabel, createStaleLines };

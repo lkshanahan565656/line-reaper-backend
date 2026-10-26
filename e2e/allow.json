@@ -29,6 +29,10 @@
     {
       "text": "^Proven at the week's end:$",
       "why": "the weekly digest's summary heading, followed by the record's own proven list or 'nothing yet'"
+    },
+    {
+      "text": "^PROVEN \\(label\\)",
+      "why": "the glossary's own heading for the PROVEN label (glossary.js), followed by the record's rule; a definition, not a claim"
     }
   ],
   "misses": [
@@ -47,6 +51,10 @@
     {
       "key": "^/api/ops$",
       "why": "the server's own ops counters (venue link taps since boot), read live from the offline server by the venue-link flow; never recorded"
+    },
+    {
+      "key": "^/api/moves(\\?|$)",
+      "why": "new in v3.189.0 (ODDS SCREEN > BIGGEST MOVES): the recording predates it, so the offline server answers from its own empty history (\"NO DATA YET\"); bigmoves tests check the ranking and the venues' answers on labelled test series"
     }
   ],
   "mustHaveData": [

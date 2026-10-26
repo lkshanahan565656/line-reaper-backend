@@ -14,6 +14,7 @@ const engine = require('./oddsengine');
 const calc = require('./calc');
 const results = require('./results');
 const pmus = require('./pmus');
+const glossary = require('./glossary');
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const am = d => { const a = calc.decimalToAmerican(d); return a == null ? '—' : (a > 0 ? `+${Math.round(a)}` : `${Math.round(a)}`); };
@@ -276,6 +277,12 @@ ul.index li { margin:0; border-bottom:1px solid var(--border); }
 ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
 ul.index a b { display:block; font-size:16px; }
 ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
 nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
 .note { color:var(--muted); font-size:13px; }
 footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
@@ -317,7 +324,7 @@ function render(slug = '', { origin = '' } = {}) {
   if (!slug) {
     return shell({ title: 'The math behind sharp betting', kicker: 'Learn', canonical: o ? `${o}/learn` : null,
       lead: 'Short guides to every number Line Reaper shows: fair prices, EV, CLV, hold, arbs, middles, staking, exchange fees and pick’em break-evens. Each example is worked with the same code the app runs.',
-      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}</ul>${LIVE_CLAIMS}` });
+      body: `<ul class="index">${ORDER.map(k => `<li><a href="/learn/${k}"><b>${esc(PAGES[k].title)}</b><span>${esc(PAGES[k].lead)}</span></a></li>`).join('')}<li><a href="#glossary"><b>Glossary</b><span>Every label and badge in the app, in one or two plain sentences.</span></a></li></ul>${LIVE_CLAIMS}${glossaryHtml()}` });
   }
   const key = ALIASES[slug] || slug;
   const page = PAGES[key];
@@ -328,6 +335,16 @@ function render(slug = '', { origin = '' } = {}) {
   return shell({ title: page.title, lead: page.lead, kicker: 'Learn', canonical: o ? `${o}/learn/${key}` : null, body: page.body() + pn });
 }
 
+// GLOSSARY: every label and badge in the app (glossary.js), one or two plain
+// sentences each, A to Z. The app's ? beside a label links to #g-<id> here.
+function glossaryHtml() {
+  const list = [...glossary.TERMS].sort((a, b) => a.term.replace(/^the /i, '').localeCompare(b.term.replace(/^the /i, ''), 'en', { sensitivity: 'base' }));
+  const seen = list.map(t => t.labels.filter(l => !glossary.norm(t.term).startsWith(glossary.norm(l))).slice(0, 4));
+  return `<h2 id="glossary">Glossary</h2>
+<p class="note">Every label and badge in the app, in plain words. In the app, tap the <b>?</b> beside a label, or press and hold it on a phone, for the same definition.</p>
+<dl class="gloss">${list.map((t, i) => `<div class="gl-i" id="g-${esc(t.id)}"><dt>${esc(t.term)}${seen[i].length ? ` <span class="gl-also">${seen[i].map(esc).join(' · ')}</span>` : ''}</dt><dd>${esc(t.def)}${t.learn && PAGES[t.learn] ? ` <a href="/learn/${t.learn}">${esc(PAGES[t.learn].title)} →</a>` : ''}</dd></div>`).join('')}</dl>`;
+}
+
 const canonicalOf = slug => (ALIASES[slug] ? ALIASES[slug] : PAGES[slug] ? slug : null);
 
-module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf, CSS, LOGO, FAVICON, esc };
+module.exports = { PAGES, ORDER, ALIASES, render, canonicalOf, glossaryHtml, CSS, LOGO, FAVICON, esc };

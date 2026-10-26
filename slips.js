@@ -215,6 +215,17 @@
     const t = String(s || '');
     const iso = /\b(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?/.exec(t);
     if (iso) { const x = Date.parse(`${iso[1]}T${iso[2] ? iso[2].padStart(5, '0') : '12:00'}:00`); if (ok(x)) return x; }
+    // "Oct 19, 2026, 12:58 PM", "October 19 at 7:05pm", "Sun, Oct 19 1:00 PM" (the apps' own history screens)
+    const mn = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?(?:,?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?)?/i.exec(t);
+    if (mn) {
+      const mo = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(mn[1].toLowerCase().slice(0, 3));
+      const y0 = new Date(now).getFullYear(), y = mn[3] ? +mn[3] : y0;
+      let h = mn[4] != null ? +mn[4] : 12;
+      if (mn[6]) h = (h % 12) + (/pm/i.test(mn[6]) ? 12 : 0);
+      const at = yy => new Date(yy, mo, +mn[2], h, mn[5] != null ? +mn[5] : 0).getTime();
+      const d = at(y);
+      return !mn[3] && d > now + 86400e3 ? at(y - 1) : d;
+    }
     const md = /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:,?\s+(\d{1,2}):(\d{2})\s*(am|pm)?)?/i.exec(t);
     if (md) {
       const y0 = new Date(now).getFullYear();
@@ -233,7 +244,7 @@
     const app = appOf(s);
     if (app) h.app = app;
     const money = [...s.matchAll(/\$\s?(\d[\d,]*(?:\.\d+)?)/g)].map(m => num(m[1]));
-    const payWord = /(to win|pays?|payout|returns?|won|win)\s*:?\s*\$\s?(\d[\d,]*(?:\.\d+)?)/i.exec(s);
+    const payWord = /(to win|pays?|paid(?: out)?|payout|returns?|won|win|winnings)\s*:?\s*\$\s?(\d[\d,]*(?:\.\d+)?)/i.exec(s);
     if (payWord) h.payout = num(payWord[2]);
     const stakeWord = /(stake|entry|risk|bet|wager)\s*:?\s*\$\s?(\d[\d,]*(?:\.\d+)?)/i.exec(s);
     if (stakeWord) h.stake = num(stakeWord[2]);
@@ -245,35 +256,104 @@
     const when = parseWhen(s, now);
     if (when != null) h.placedAt = when;
     if (/\b(won|win|hit|cashed)\b/i.test(s) && !payWord) h.result = 'win';
+    // a history screen's result: "Won $60.00", "Paid out $65", "Lost", "Refunded"
+    if (payWord && /^(won|paid|winnings)/i.test(payWord[1])) h.result = 'win';
     if (/\b(lost|loss|miss(ed)?)\b/i.test(s)) h.result = 'loss';
+    if (/\b(refund(ed)?|void(ed)?|cancell?ed)\b/i.test(s)) h.result = 'void';
     return Object.keys(h).length ? h : null;
   }
   let seq = 0;
   const newId = (t = Date.now()) => `s${t.toString(36)}${(seq++ % 1296).toString(36).padStart(2, '0')}${Math.floor(Math.random() * 1296).toString(36).padStart(2, '0')}`;
 
-  // text → { slips, skipped }: skipped are lines read as neither a leg nor a header
-  function parseSlips(text, { now = Date.now(), app = null } = {}) {
+  // A leg with no player on its line, as the apps' history screens show it:
+  // the player's name on the line above, then "More 245.5 Pass Yards"
+  // (PrizePicks), "Higher 245.5 Passing Yards" (Underdog), "Over 245.5
+  // Passing Yards" (Sleeper), or "245.5 Pass Yards More".
+  const LEG_NP = [
+    new RegExp(`^${SIDE_W}\\s+${NUM}\\s+(.+)$`, 'i'),
+    new RegExp(`^([ou])\\s?${NUM}\\s+(.+)$`, 'i'),
+    new RegExp(`^${NUM}\\s+(.+?)\\s+${SIDE_W}$`, 'i'),
+  ];
+  function parseLegNoPlayer(line) {
+    let s = String(line || '').replace(/^[\s\-*•·]+/, '').replace(/[✓✗✔✘❌✅↑↓▲▼⬆⬇]/g, '').trim();
+    let sport = null;
+    const sm = sportRe.exec(s);
+    if (sm) { sport = SPORT_FIX[sm[1].toUpperCase()] || sm[1].toUpperCase(); s = (s.slice(0, sm.index) + ' ' + s.slice(sm.index + sm[0].length)).replace(/\s+/g, ' ').replace(/^[\s:,-]+|[\s:,-]+$/g, '').trim(); }
+    for (const [i, re] of LEG_NP.entries()) {
+      const m = re.exec(s);
+      if (!m) continue;
+      const [side, lineS, market] = i === 2 ? [m[3], m[1], m[2]] : [m[1], m[2], m[3]];
+      const ln = parseFloat(lineS), mk = market.replace(/\s+[-–—]\s+.*$|\s*\|.*$/, '').trim();
+      if (!ok(ln) || !mk || /\$/.test(mk) || /^(x|picks?|legs?)\b/i.test(mk)) continue;
+      return { side: SIDE[side.toLowerCase()], line: ln, market: mk, sport };
+    }
+    return null;
+  }
+  // a line that can only be a player's name: two to four words, no digits
+  const nameLine = l => /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.-]*(?:\s+[A-Za-zÀ-ÿ'.-]+){1,3}$/.test(l) && !appOf(l) && !SIDE_RE.test(l) && !/\b(power|flex|play|entry|picks?|won|lost|paid|refund|void|final|live|pending|cashed|results?|lineup)\b/i.test(l);
+  const SIDE_RE = /^(over|under|more|less|higher|lower)\b/i;
+  // lines the history screens add around a leg that carry nothing to grade:
+  // the team and position ("BUF - QB", "QB · BUF"), the game ("vs MIA Sun
+  // 12:00pm", "BUF @ MIA"), the final stat ("Final: 263", "Actual 263"),
+  // tags ("Goblin", "Demon", "Rival", "Taco") and the app's own labels
+  const CONTEXT_RE = [/^[A-Z]{2,4}\s*[-·•|]\s*[A-Z0-9]{1,4}$/, /^(vs\.?|@|at)\s+\S+/i, /^[A-Z]{2,4}\s+(vs\.?|@|at)\s+[A-Z]{2,4}\b/,
+    /^(final|actual|result|score|current|stat)\s*:?\s*\d+(\.\d+)?$/i, /^\d+(\.\d+)?\s*(final)?$/i, /^(goblin|demon|rival|taco|boost(ed)?|discount(ed)?|promo|free pick|insured|swap(ped)?|in progress|live|pending|final|scheduled|upcoming|settled|open|closed|my lineups|my entries|completed|active|entries|history)$/i,
+    /^(power play|flex play|standard|insurance|champions)$/i];
+  const contextLine = l => CONTEXT_RE.some(re => re.test(l));
+  // A history screen starts a new entry on a header that names the app or the
+  // play type, even with no blank line before it
+  const STARTER = /\b(power play|flex play|\d+[- ]?picks?\b|\d+[- ]?pick (entry|power|flex)|entry fee|\$\s?\d[\d,.]*\s*entry|insured|standard entry|champions)|^(prize\s*picks|underdog|sleeper|pick\s*6|dk pick\s*6|betr|chalkboard)\b/i;
+
+  // text → { slips, skipped }: skipped are lines read as neither a leg nor a
+  // header nor one of the apps' own labels around a leg (listed so nothing is
+  // dropped without a word). An app history pasted as copied text (no blank
+  // lines between entries, the player's name a line above the pick) reads too.
+  function parseSlips(text, { now = Date.now(), app = null, source = 'paste' } = {}) {
     const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n/);
     const slips = [], skipped = [];
-    for (const block of blocks) {
-      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-      if (!lines.length) continue;
-      const slip = { id: newId(now), app: app || null, stake: null, payout: null, mult: null, flex: false, placedAt: null, legs: [], source: 'paste' };
-      for (const l of lines) {
-        const leg = parseLeg(l);
-        if (leg && !(appOf(l) && /\$/.test(l))) { slip.legs.push(leg); continue; }
-        const h = parseHeader(l, now);
-        if (h) { for (const [k, v] of Object.entries(h)) if (slip[k] == null || slip[k] === false) slip[k] = v; continue; }
-        skipped.push(l);
-      }
-      if (!slip.legs.length) continue;
+    let context = 0;
+    const blank = () => ({ id: newId(now), app: app || null, stake: null, payout: null, mult: null, flex: false, placedAt: null, legs: [], source, sides: '' });
+    const close = slip => {
+      if (!slip.legs.length) return;
       // a typed time is the bet's own; none means "now", a guess the grader treats as one
       slip.timed = slip.placedAt != null;
       slip.placedAt = new Date(slip.placedAt ?? now).toISOString();
-      slip.app = slip.app || 'prizepicks';
+      // the app from the words its picks use when no line names it:
+      // Higher/Lower is Underdog's, More/Less PrizePicks'
+      slip.app = slip.app || (/H/.test(slip.sides) && !/M/.test(slip.sides) ? 'underdog' : 'prizepicks');
+      delete slip.sides;
       slips.push(slip);
+    };
+    for (const block of blocks) {
+      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+      if (!lines.length) continue;
+      let slip = blank(), name = null;
+      for (const l of lines) {
+        // a new entry's header after this one's legs
+        if (slip.legs.length && STARTER.test(l) && !parseLeg(l)) { close(slip); slip = blank(); name = null; }
+        const leg = parseLeg(l);
+        if (leg && !(appOf(l) && /\$/.test(l)) && !(name && SIDE_RE.test(l))) {
+          slip.legs.push(leg); slip.sides += /\b(higher|lower)\b/i.test(l) ? 'H' : /\b(more|less)\b/i.test(l) ? 'M' : '';
+          if (name) { skipped.push(name); name = null; }
+          continue;
+        }
+        // "More 245.5 Pass Yards" under the player's name
+        const np = name ? parseLegNoPlayer(l) : null;
+        if (np) {
+          slip.legs.push({ player: name, side: np.side, line: np.line, market: np.market, sport: np.sport });
+          slip.sides += /^(higher|lower)/i.test(l) ? 'H' : /^(more|less)/i.test(l) || /(more|less)$/i.test(l) ? 'M' : '';
+          name = null; continue;
+        }
+        const h = parseHeader(l, now);
+        if (h) { for (const [k, v] of Object.entries(h)) if (slip[k] == null || slip[k] === false) slip[k] = v; continue; }
+        if (contextLine(l)) { context++; continue; }
+        if (nameLine(l)) { if (name) skipped.push(name); name = l; continue; }
+        skipped.push(l);
+      }
+      if (name) skipped.push(name);
+      close(slip);
     }
-    return { slips, skipped };
+    return { slips, skipped, context };
   }
 
   // ── Pikkit's CSV export ──
@@ -283,40 +363,50 @@
   // (statuses SETTLED_WIN / SETTLED_LOSS / SETTLED_PUSH / SETTLED_VOID /
   // SETTLED_CASHOUT / PENDING); other trackers' names are matched too.
   // One row per bet, or one row per leg sharing a bet id; both come out as bets.
+  // comma by default; a tab when the first line has tabs and no commas (rows
+  // copied out of a spreadsheet), a semicolon likewise (European exports)
   function parseCsv(text) {
     const rows = [];
     let row = [], cell = '', q = false;
     const s = String(text || '').replace(/^\uFEFF/, '');
+    const first = s.split(/\r?\n/, 1)[0] || '';
+    const sep = first.includes(',') ? ',' : first.includes('\t') ? '\t' : first.includes(';') ? ';' : ',';
     for (let i = 0; i < s.length; i++) {
       const c = s[i];
       if (q) { if (c === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; continue; }
       if (c === '"') q = true;
-      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === sep) { row.push(cell); cell = ''; }
       else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
       else cell += c;
     }
     if (cell || row.length) { row.push(cell); rows.push(row); }
     return rows.filter(r => r.some(x => String(x).trim()));
   }
+  // the order matters: a header takes the first name it fits
   const COLS = {
-    id: /^(bet[ _]?id|id|ticket( id)?|transaction( id)?)$/i,
-    placed: /(time[ _]?placed|placed[ _]?(at|on|date|time)?|date[ _]?placed|^date$|^time$|created|bet date)/i,
+    id: /^(bet[ _]?id|id|ticket( id)?|transaction( id)?|(entry|lineup|slip|parlay|wager)[ _]?id)$/i,
+    placed: /(time[ _]?placed|placed[ _]?(at|on|date|time)?|date[ _]?placed|^date$|^time$|created|bet date|entry date|^submitted)/i,
     settled: /(settled|graded|closed)[ _]?(at|on|date|time)?$/i,
-    book: /^(sportsbook|book|site|app|provider|operator|bookmaker)$/i,
-    type: /^(bet[ _]?type|type|wager type)$/i,
+    book: /^(sportsbook|book|site|app|provider|operator|bookmaker|platform)$/i,
+    type: /^(bet[ _]?type|type|wager type|(game|play|entry|lineup|slip)[ _]?type)$/i,
     league: /^(leagues?)$/i,
     sport: /^(sports?)$/i,
+    // one row per leg (the apps' own history files): the player, the pick, the line and the stat
+    player: /^(player|player[ _]?name|athlete|participant)$/i,
+    side: /^(side|over\/under|o\/u|direction|more\/less|higher\/lower|pick[ _]?(type|side|direction)|selection[ _]?type)$/i,
+    line: /^(line|projection|stat[ _]?line|target|line[ _]?value|pick[ _]?line|prop[ _]?line)$/i,
+    stat: /^(stat|stat[ _]?type|statistic|prop|stat[ _]?category)$/i,
     market: /^(market|markets|bet market|prop type|category)$/i,
     desc: /^(description|bet([ _]info|[ _]description|[ _]name)?|selection|selections|pick|picks|name|legs?|details|wager)$/i,
     close: /^(closing[ _]?(line|odds|price)|close[ _]?(odds|line)?|clv[ _]?odds)$/i,
-    odds: /^(odds|american[ _]odds|price)$/i,
-    stake: /^(amount|stake|risk|wager amount|bet amount|risked|wagered)$/i,
-    payout: /^(payout|to win|potential payout|return|returns|winnings)$/i,
+    odds: /^(odds|american[ _]odds|price|multiplier|payout multiplier)$/i,
+    stake: /^(amount|stake|risk|wager amount|bet amount|risked|wagered|entry[ _]?(fee|amount)?|fee)$/i,
+    payout: /^(payout|to win|potential payout|return|returns|winnings|amount won|paid|payout amount|won)$/i,
     profit: /^(profit|net|net profit|profit\/loss|p\/l|pnl)$/i,
-    status: /^(status|result|outcome|bet status)$/i,
+    status: /^(status|result|outcome|(bet|entry|lineup|slip)[ _]?status)$/i,
     clv: /clv/i,
     ev: /^ev$/i,
-    legs: /^(legs|leg count|# legs|num legs)$/i,
+    legs: /^(legs|leg count|# legs|num legs|picks count|# picks|number of picks)$/i,
   };
   function columns(header) {
     const at = {};
@@ -331,32 +421,68 @@
     [/^(push|pushed|p|tie|refund(ed)?|settled[ _]push)$/i, 'push'], [/^(void|voided|cancel(l)?ed|canceled|settled[ _]void)$/i, 'void'], [/^(open|pending|active|ungraded|live)$/i, 'open'], [/cash(ed)?[ _]?out/i, 'cashout']];
   const statusOf = s => { const t = String(s || '').trim(); for (const [re, v] of STATUS) if (re.test(t)) return v; return t ? t.toLowerCase() : 'open'; };
   const amOdds = s => { const n = num(String(s || '').replace(/^\+/, '')); if (n == null) return null; return Math.abs(n) >= 100 ? (n > 0 ? 1 + n / 100 : 1 + 100 / -n) : n > 1 ? n : null; };
-  function parsePikkitCsv(text, { now = Date.now() } = {}) {
+  const hashStr = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0; return h.toString(36); };
+  // a whole bet that is a game line, not a player pick (it can't be graded leg by leg)
+  const GAME_LINE = /\b(moneyline|money line|spread|run line|puck line|point spread|ml|total (points|runs|goals)|to win|1st half|first half|alt(ernate)? (spread|total))\b|[+-]\d+(\.\d)?\s*\(?[+-]\d{3}/i;
+  // Every tracker's CSV, by column name: one row per bet with the legs in a
+  // description (Pikkit, Juice Reel, Bettor IQ), or one row per leg sharing a
+  // bet id with the player, pick, line and stat in their own columns (the
+  // apps' own history files). Every row comes out as a bet or in `unread`
+  // with the reason, so nothing is dropped without a word.
+  // → { bets, unread: [{ row, text, why }], columns, header, rows, error? }
+  function parseBetsCsv(text, { now = Date.now(), format = 'pikkit', app = null } = {}) {
     const rows = parseCsv(text);
-    if (rows.length < 2) return { bets: [], columns: {}, header: rows[0] || [], error: 'The file has no rows' };
+    if (rows.length < 2) return { bets: [], unread: [], columns: {}, header: rows[0] || [], rows: 0, error: 'The file has no rows' };
     const header = rows[0].map(h => String(h).trim());
     const at = columns(header);
-    if (at.placed == null && at.stake == null && at.desc == null) return { bets: [], columns: at, header, error: `Couldn't find the date, stake or bet columns in: ${header.join(', ')}` };
-    const get = (r, k) => (at[k] == null ? '' : String(r[at[k]] ?? '').trim());
-    const byId = new Map(), bets = [];
-    rows.slice(1).forEach((r, i) => {
-      const id = get(r, 'id') || `row${i}`;
+    const body = rows.slice(1);
+    const raw = (r, k) => (at[k] == null ? '' : String(r[at[k]] ?? '').trim());
+    // a "Pick" column holding only More/Less is the side, not the description
+    if (at.desc != null && at.side == null && at.player != null) {
+      const vals = body.map(r => raw(r, 'desc')).filter(Boolean);
+      if (vals.length && vals.every(v => SIDE[v.toLowerCase()])) { at.side = at.desc; delete at.desc; }
+    }
+    if (at.placed == null && at.stake == null && at.desc == null && at.player == null) return { bets: [], unread: [], columns: at, header, rows: body.length, error: `Couldn't find the date, stake or bet columns in: ${header.join(', ')}` };
+    const get = raw;
+    const pre = { pikkit: 'pk', juicereel: 'jr', bettoriq: 'iq', prizepicks: 'pp', underdog: 'ud', sleeper: 'sl' }[format] || 'cv';
+    const source = format === 'pikkit' ? 'pikkit' : 'import';
+    const byId = new Map(), bets = [], unread = [];
+    body.forEach((r, i) => {
+      // no id column: the row's own content names it, so two files never share an id
+      const id = get(r, 'id') || `r${hashStr([get(r, 'placed'), get(r, 'book'), get(r, 'desc') || get(r, 'player'), get(r, 'stake')].join('|'))}`;
       const desc = get(r, 'desc');
-      const legs = desc.split(/\s*(?:\||;|\n| \/ |,\s(?=[A-Z][a-z]+\s[A-Z]))\s*/).map(parseLeg).filter(Boolean);
+      let legs;
+      if (at.player != null && get(r, 'player')) {
+        // a leg row: the player, side, line and stat in their own columns
+        const sideW = (get(r, 'side') || (/\b(over|under|more|less|higher|lower)\b/i.exec(desc) || [])[1] || '').toLowerCase();
+        const ln = num(get(r, 'line'));
+        const mk = get(r, 'stat') || get(r, 'market');
+        const lg = (get(r, 'league') || get(r, 'sport')).toUpperCase();
+        const leg = SIDE[sideW] && ok(ln) && mk ? { player: get(r, 'player'), side: SIDE[sideW], line: ln, market: mk, sport: SPORTS.includes(lg) ? (SPORT_FIX[lg] || lg) : null } : null;
+        legs = leg ? [leg] : [];
+        if (!leg) unread.push({ row: i + 2, text: r.filter(x => String(x).trim()).join(' · ').slice(0, 160), why: !SIDE[sideW] ? 'no More/Less (Over/Under) side on this row' : !ok(ln) ? 'no line on this row' : 'no stat on this row' });
+      } else {
+        legs = desc.split(/\s*(?:\||;|\n| \/ |,\s(?=[A-Z][a-z]+\s[A-Z]))\s*/).map(parseLeg).filter(Boolean);
+        if (!legs.length) unread.push({ row: i + 2, text: (desc || r.filter(x => String(x).trim()).join(' · ')).slice(0, 160),
+          why: !desc ? 'no bet description on this row' : GAME_LINE.test(desc) ? 'a game line (spread, moneyline or total), not a player pick: counted in the history, not graded leg by leg' : "couldn't read a player, side, line and stat" });
+      }
       const t = Date.parse(get(r, 'placed'));
       let b = byId.get(id);
       if (!b) {
-        b = { id: `pk-${id}`.slice(0, 64), source: 'pikkit', placedAt: ok(t) ? new Date(t).toISOString() : null,
-          app: appOf(get(r, 'book')) || (get(r, 'book') || 'Other'), bookName: get(r, 'book') || 'Other',
-          type: get(r, 'type') || null, league: get(r, 'league') || get(r, 'sport') || null, market: get(r, 'market') || null, closeOdds: amOdds(get(r, 'close')),
+        const bookName = get(r, 'book') || (app ? appLabel(app) : 'Other');
+        b = { id: `${pre}-${id}`.slice(0, 64), source, format, placedAt: ok(t) ? new Date(t).toISOString() : null,
+          app: appOf(get(r, 'book')) || app || (get(r, 'book') || 'Other'), bookName,
+          type: get(r, 'type') || null, league: get(r, 'league') || get(r, 'sport') || null, market: get(r, 'market') || get(r, 'stat') || null, closeOdds: amOdds(get(r, 'close')),
           odds: amOdds(get(r, 'odds')), stake: num(get(r, 'stake')), payout: num(get(r, 'payout')), profit: num(get(r, 'profit')),
-          status: statusOf(get(r, 'status')), clv: get(r, 'clv') || null, desc, legs: [], legCount: num(get(r, 'legs')) };
+          status: statusOf(get(r, 'status')), clv: get(r, 'clv') || null, desc, legs: [], legCount: num(get(r, 'legs')), rows: [i + 2] };
+        if (/flex/i.test(b.type || '')) b.flex = true;
         byId.set(id, b); bets.push(b);
       } else {
         // a further row of the same bet: one more leg
         if (!b.league && get(r, 'league')) b.league = get(r, 'league');
         if (!b.market && get(r, 'market')) b.market = get(r, 'market');
-        b.desc += ` | ${desc}`;
+        if (desc) b.desc += b.desc ? ` | ${desc}` : desc;
+        b.rows.push(i + 2);
       }
       b.legs.push(...legs);
     });
@@ -368,17 +494,122 @@
       if (!b.type) b.type = b.legs.length > 1 || b.legCount > 1 ? 'Parlay' : 'Straight';
       if (!b.league) b.league = [...new Set(b.legs.map(l => l.sport).filter(Boolean))].join('/') || null;
       if (!b.market && b.legs.length) b.market = [...new Set(b.legs.map(l => l.market))].length === 1 ? b.legs[0].market : 'Mixed';
+      if (!b.desc && b.legs.length) b.desc = b.legs.map(l => `${l.player} ${l.side} ${l.line} ${l.market}`).join(' | ');
     }
-    return { bets: bets.filter(b => b.placedAt || b.stake != null), columns: at, header, now };
+    const kept = bets.filter(b => b.placedAt || b.stake != null);
+    // a bet with neither a date nor a stake: said, not dropped
+    for (const b of bets) if (!kept.includes(b)) unread.push({ row: b.rows[0], text: (b.desc || b.id).slice(0, 160), why: 'no date or stake on this bet' });
+    return { bets: kept, unread: unread.sort((x, y) => x.row - y.row), columns: at, header, rows: body.length, now };
   }
-  // a recent Pikkit bet with legs read → a slip to grade
-  // (a leg with no league tag takes the bet's league when Pikkit names one)
-  function slipFromPikkit(b) {
+  function parsePikkitCsv(text, opts = {}) { return parseBetsCsv(text, { ...opts, format: 'pikkit' }); }
+
+  // A tracker's or app's bet with legs read → a slip to grade
+  // (a leg with no league tag takes the bet's league when the file names one)
+  function slipFromBet(b, importId = null) {
     const lg = String(b.league || '').toUpperCase().trim();
     const league = SPORTS.includes(lg) ? (SPORT_FIX[lg] || lg) : null;
-    return { id: b.id, app: APPS[b.app] ? b.app : 'other', stake: b.stake, payout: b.status === 'win' && b.payout ? b.payout : b.stake && b.odds ? r2(b.stake * b.odds) : null,
-      mult: b.odds ? r4(b.odds) : null, flex: false, placedAt: b.placedAt, legs: b.legs.map(l => (l.sport || !league ? l : { ...l, sport: league })), source: 'pikkit',
+    const multiple = b.odds > 1 ? b.odds : null;
+    return { id: b.id, app: APPS[b.app] ? b.app : 'other', stake: b.stake, payout: b.status === 'win' && b.payout ? b.payout : b.stake && multiple ? r2(b.stake * multiple) : null,
+      mult: multiple ? r4(multiple) : null, flex: !!b.flex, placedAt: b.placedAt, legs: b.legs.map(l => (l.sport || !league ? l : { ...l, sport: league })), source: b.source === 'import' ? 'import' : 'pikkit',
+      ...(b.source === 'import' ? { format: b.format || 'csv' } : {}), ...(importId ? { importId } : {}),
       result: ['win', 'loss', 'push', 'void'].includes(b.status) ? b.status : null, ...(b.profit != null ? { profit: b.profit } : {}), ...(b.closeOdds > 1 ? { closeOdds: b.closeOdds } : {}) };
+  }
+  const slipFromPikkit = b => slipFromBet(b);
+
+  // ── which tracker or app a file comes from ──
+  const FORMATS = {
+    pikkit: 'Pikkit', juicereel: 'Juice Reel', bettoriq: 'Bettor IQ', prizepicks: 'PrizePicks', underdog: 'Underdog', sleeper: 'Sleeper', csv: 'Bet tracker CSV', text: 'Copied text',
+  };
+  /** @type {Array<[string, RegExp]>} */
+  const NAMED = [['pikkit', /pikkit/i], ['juicereel', /juice\s*reel|juicereel/i], ['bettoriq', /bettor\s*-?\s*iq/i], ['prizepicks', /prize\s*picks/i], ['underdog', /underdog/i], ['sleeper', /sleeper/i]];
+  // text (and the file's name) → { kind: 'csv' | 'text', format, label, app }
+  // A CSV is a first line of three or more named columns. The tracker is
+  // the one the file's name says, else Pikkit's own snake_case header, else
+  // the one app every row's book column names; never a guess beyond that.
+  function detectImport(text, name = '') {
+    const s = String(text || '').replace(/^\uFEFF/, '');
+    const first = (s.split(/\r?\n/).find(l => l.trim()) || '');
+    const rows = /[,\t;]/.test(first) ? parseCsv(s) : [];
+    const at = rows.length > 1 ? columns(rows[0].map(h => String(h).trim())) : {};
+    const known = Object.keys(at).length;
+    const isCsv = known >= 3 && (at.placed != null || at.stake != null || at.desc != null || at.player != null);
+    const named = NAMED.find(([, re]) => re.test(name))?.[0] || null;
+    if (!isCsv) {
+      // copied history text: the app it names, else the words its picks use
+      const app = appOf(s.slice(0, 400)) || (/^\s*(higher|lower)\b/im.test(s) ? 'underdog' : null) || (named && APPS[named] ? named : null);
+      return { kind: 'text', format: app && ['prizepicks', 'underdog', 'sleeper'].includes(app) ? app : 'text', label: app ? `${appLabel(app)} (copied text)` : FORMATS.text, app };
+    }
+    const header = rows[0].map(h => String(h).trim().toLowerCase());
+    let format = named;
+    if (!format && (header.includes('bet_info') || (header.includes('closing_line') && header.includes('bet_id')))) format = 'pikkit';
+    let app = format && APPS[format] ? format : null;
+    if (!format && at.book != null) {
+      const apps = new Set(rows.slice(1).map(r => appOf(r[at.book])).filter(Boolean));
+      const all = rows.slice(1).every(r => appOf(r[at.book]));
+      if (apps.size === 1 && all) { app = [...apps][0]; if (['prizepicks', 'underdog', 'sleeper'].includes(app)) format = app; }
+    }
+    return { kind: 'csv', format: format || 'csv', label: FORMATS[format || 'csv'] + (format && format !== 'csv' ? ' CSV' : ''), app };
+  }
+
+  // One import, whatever it came from → { format, label, kind, rows, bets,
+  // slips, unread }. A CSV gives bets (with the tracker's own results) and
+  // the slips of those with legs; copied text gives slips. Lines and rows
+  // that read as nothing are in unread with the reason.
+  function importText(text, { now = Date.now(), name = '', id = null } = {}) {
+    const d = detectImport(text, name);
+    const importId = id || `im${now.toString(36)}`;
+    if (d.kind === 'csv') {
+      const r = parseBetsCsv(text, { now, format: d.format, app: d.app });
+      if (r.error) return { ...d, error: r.error, bets: [], slips: [], unread: [], rows: r.rows };
+      const slips = r.bets.filter(b => b.legs.length).map(b => slipFromBet(b, importId));
+      return { ...d, id: importId, rows: r.rows, bets: r.bets, slips, unread: r.unread, columns: r.columns, header: r.header };
+    }
+    const r = parseSlips(text, { now, app: d.app, source: 'import' });
+    for (const sl of r.slips) { sl.format = d.format; sl.importId = importId; }
+    const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).length;
+    const lineNo = new Map();
+    String(text || '').split(/\r?\n/).forEach((l, i) => { const t = l.trim(); if (t && !lineNo.has(t)) lineNo.set(t, i + 1); });
+    const unread = r.skipped.map(t => ({ row: lineNo.get(t) || null, text: t.slice(0, 160), why: nameLine(t) ? 'a name with no pick under it (More/Less, a line and a stat)' : "couldn't read this line as a leg or a slip's header" }));
+    return { ...d, id: importId, rows: lines, bets: [], slips: r.slips, unread, context: r.context };
+  }
+
+  // What an import came to, once its legs are graded: legs matched to a
+  // game, legs with a close, CLV (sharp consensus and Pinnacle's own), the
+  // hit rate against the break-even, the record and money (the file's own
+  // results when it has them, else the slips settled from the box scores),
+  // units, and every row or leg that didn't match, with the reason.
+  // imp: { bets?, unread? }; views: slipView() of this import's slips
+  function importSummary(imp, views, { unitUsd = null, reasons = {} } = {}) {
+    const legs = views.flatMap(v => v.legs.map(l => ({ l, v })));
+    const noHist = legs.filter(({ l }) => l.g?.status === 'nohistory');
+    const checked = legs.filter(({ l }) => l.g);
+    const t = pooled(views);
+    // the file's own results across every bet (game lines too), else ours
+    const bets = (imp.bets || []).filter(b => b.status !== 'open');
+    let won = 0, lost = 0, push = 0, staked = 0, profit = 0, settled = 0, by = 'file';
+    if (bets.length) {
+      for (const b of bets) {
+        if (b.status === 'win' || (b.status === 'cashout' && b.profit > 0)) won++; else if (b.status === 'loss' || (b.status === 'cashout' && b.profit < 0)) lost++; else push++;
+        if (b.stake > 0 && b.profit != null) { staked += b.stake; profit += b.profit; settled++; }
+      }
+    } else {
+      by = 'slips';
+      for (const v of views) {
+        if (v.result === 'open' || !v.result) continue;
+        if (v.result === 'win' || (v.result === 'paid' && v.multiple > 1)) won++; else if (v.result === 'loss' || (v.result === 'paid' && v.multiple < 1)) lost++; else push++;
+        if (['win', 'loss', 'paid'].includes(v.result) && v.stake > 0 && v.returned != null) { staked += v.stake; profit += v.returned - v.stake; settled++; }
+      }
+    }
+    const unmatched = [...(imp.unread || []).map(u => ({ ...u, stage: 'read' })),
+      ...noHist.map(({ l }) => ({ row: null, text: `${l.player} ${l.side} ${l.line} ${l.market}${l.sport ? ` (${l.sport})` : ''}`, why: reasons[l.g.reason] || `no line history (${l.g.reason || 'unknown'})`, stage: 'match' }))];
+    return {
+      rows: imp.rows ?? null, bets: (imp.bets || []).length || views.length, slips: views.length, legs: legs.length,
+      checked: checked.length, matched: checked.length - noHist.length, noHistory: noHist.length, waiting: legs.length - checked.length,
+      withClose: t.priced || 0, beatShare: t.beatShare ?? null, closeEv: t.closeEv ?? null, pinN: t.pinN || 0, pinEv: t.pinEv ?? null, pinBeatShare: t.pinBeatShare ?? null,
+      graded: t.graded || 0, hitRate: t.hitRate ?? null, be: t.be ?? null, beN: t.beN || 0, beZ: t.beZ ?? null, overBe: t.overBe ?? null,
+      record: `${won}-${lost}${push ? `-${push}` : ''}`, won, lost, push, recordBy: by, settled, staked: r2(staked), profit: r2(profit), roi: staked ? r4(profit / staked) : null,
+      units: unitUsd > 0 && settled ? r2(profit / unitUsd) : null, unmatched,
+    };
   }
 
   // Pikkit's own numbers by app, league, market, bet type or month
@@ -414,7 +645,8 @@
       if (seen.has(id) || finalOk(grades[id])) continue;
       seen.add(id);
       // the bet's time is its own (Pikkit, a tray in the app, a typed date), else the paste time
-      const exact = s.source === 'pikkit' || s.source === 'board' || !!s.timed;
+      // (an imported file's bet carries its own time; copied text only when it showed one)
+      const exact = s.source === 'pikkit' || s.source === 'board' || !!s.timed || (s.source === 'import' && s.timed !== false);
       out.push({ id, app: s.app, sport: l.sport || null, player: l.player, market: l.market, side: l.side, line: l.line, betAt: s.placedAt, ...(exact ? { betAtExact: true } : {}), ...(l.opp ? { opp: l.opp } : {}) });
     }
     return out;
@@ -451,7 +683,7 @@
     const st = settleSlip(slip, legs, table);
     // what our own grades say, beside a result Pikkit (or the user) gave
     let ours = null, agree = null;
-    if (st.by === 'pikkit' || st.by === 'user') {
+    if (st.by === 'pikkit' || st.by === 'import' || st.by === 'user') {
       ours = settleSlip({ ...slip, result: null }, legs, table);
       const a = sideOf(st.result, st.multiple), b = ours.result === 'open' ? null : sideOf(ours.result, ours.multiple);
       agree = a && b ? a === b : null;
@@ -479,9 +711,10 @@
     const back = m => (stake != null && m != null ? r2(stake * m) : null);
     const user = slip.result;
     if (user === 'win' || user === 'loss' || user === 'push' || user === 'void') {
-      const by = slip.source === 'pikkit' ? 'pikkit' : 'user';
-      // Pikkit's own profit is what the app paid
-      if (by === 'pikkit' && stake != null && slip.profit != null) { const m = (stake + slip.profit) / stake; return { result: user, hits: null, live: n, multiple: r4(m), returned: r2(stake + slip.profit), by }; }
+      // the user's own mark (W / L / VOID on the slip) wins over the file's
+      const by = slip.resultBy === 'user' ? 'user' : slip.source === 'pikkit' ? 'pikkit' : slip.source === 'import' ? 'import' : 'user';
+      // the tracker's own profit (Pikkit's, an imported file's) is what the app paid
+      if (by !== 'user' && stake != null && slip.profit != null) { const m = (stake + slip.profit) / stake; return { result: user, hits: null, live: n, multiple: r4(m), returned: r2(stake + slip.profit), by }; }
       const m = user === 'win' ? (slip.payout > 0 && stake ? slip.payout / stake : table?.[n] ?? null) : user === 'loss' ? 0 : 1;
       return { result: user, hits: null, live: n, multiple: m == null ? null : r4(m), returned: back(m), by };
     }
@@ -593,5 +826,6 @@
   }
 
   return { APPS, appOf, appLabel, LEG_BE, legDecimal, POWER, FLEX, payTable, breakEven, hasPin, legSource, parseLeg, parseWhen, parseHeader, parseSlips, parseCsv, columns, parsePikkitCsv, slipFromPikkit,
+    parseBetsCsv, slipFromBet, detectImport, importText, importSummary, FORMATS, parseLegNoPlayer,
     pikkitBreakdown, legKey, gradeRequest, slipView, settleSlip, repriced, pairLink, legTotals, slipTotals, makeSlip, summary, newId };
 }));

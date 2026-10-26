@@ -51,7 +51,7 @@ async function main() {
         const context = await newContext(browser, h, vp);
         const rep = makeReport();
         rep.viewport = vp; rep.flows = {};
-        await flows.run(context, { ...opts, viewportName: vp }, rep);
+        await flows.run(context, { ...opts, viewportName: vp, coldContext: () => newContext(browser, h, vp) }, rep);
         await context.close();
         reports.push(rep);
       })());

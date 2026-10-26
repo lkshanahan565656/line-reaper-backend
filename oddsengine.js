@@ -20,7 +20,7 @@
 // record; devig(…, 'power' | 'multiplicative') here is that same function.
 
 const evMath = require('./ev');
-const { kalshiFee } = require('./exchanges');
+const fees = require('./fees');
 
 const isNum = x => typeof x === 'number' && Number.isFinite(x);
 const r4 = x => (isNum(x) ? Math.round(x * 1e4) / 1e4 : null);
@@ -107,8 +107,7 @@ function afterCommission(decimal, rate = 0) {
 function contractFee(price, { rate = 0.07, contracts = 1, roundCents = true } = {}) {
   const p = Number(price);
   if (!(p > 0 && p < 1)) return null;
-  if (roundCents) return kalshiFee(p, contracts, rate) / contracts;
-  return rate * p * (1 - p);
+  return fees.orderFee('kalshi', p, contracts, { rate, round: roundCents }) / contracts;
 }
 function contractDecimal(price, opts = {}) {
   const fee = contractFee(price, opts);

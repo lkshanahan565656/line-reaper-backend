@@ -28,9 +28,11 @@ What it checks, and fails on:
   has no answer for fails as a fixture miss.
 - **Form flows** (`flows.js`): log a bet by hand, edit and settle it, export and
   import the CSV, log a bet from the ODDS SCREEN, log a slip from PROPS, paste
-  slips, import a Pikkit CSV, download the public record (CSV and JSON) from RESULTS, save and load a shopper view, star a venue and
+  slips, import a Pikkit CSV and an Underdog history file and pasted Sleeper text, download the public record (CSV and JSON) from RESULTS, save and load a shopper view, star a venue and
   keep it after a reload, turn push alerts on (no push service in tests), move
-  and hide a tab in CUSTOMIZE, and work out a price in TOOLS.
+  and hide a tab in CUSTOMIZE, work out a price in TOOLS, export a screen
+  (the CSV holds exactly the rows shown, filters applied) and open its print
+  view, and open a label's glossary definition from its ? and by long press.
 
 `allow.json` lists the few exceptions, each with its reason. The report is
 written to `e2e/out/report.json`, with a screenshot for each failed flow.

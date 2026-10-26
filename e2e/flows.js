@@ -1,14 +1,17 @@
 // The forms, step by step, with what each step must leave behind: log a bet
 // by hand and from the ODDS SCREEN, edit and settle it, export and import the
-// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
+// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV and an app's
+// history (a file and copied text) with its import summary, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
-// hide a tab in CUSTOMIZE. The crawl clicks everything; these check results.
+// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
+// view by link and open it cold on a fresh device, export and print a screen,
+// and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { watch, settle, openTab, enterApp, newAppPage, checkText, issue } = require('./crawl');
+const { watch, settle, openTab, enterApp, newAppPage, checkText, checkOverflow, issue } = require('./crawl');
 
 const ls = (page, k) => page.evaluate(key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }, k);
 const text = (page, sel) => page.locator(sel).first().innerText({ timeout: 4000 }).catch(() => '');
@@ -28,6 +31,38 @@ async function openPanel(page, w, opts, id) {
   if (await page.locator(`#${id}`).evaluate(d => d.open)) return;
   await page.locator(`#${id} > summary`).click();
   await settle(page, w, opts, 60);
+}
+
+// open a share link in a fresh browser (no storage, no welcome yet) and check what it restored
+async function openCold(opts, link, check) {
+  const local = new URL(opts.base).origin;
+  const ctx = await opts.coldContext();
+  const p2 = await newAppPage(ctx, opts);
+  const r2 = { issues: [], requests: 0 };
+  const w2 = watch(p2, r2, opts);
+  try {
+    await p2.goto(link.replace(/^https?:\/\/[^/]+/, local), { waitUntil: 'domcontentloaded' });
+    await settle(p2, w2, opts, 400);
+    const st = await p2.evaluate(() => ({
+      welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
+      page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
+      // eslint-disable-next-line no-undef
+      shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
+      chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
+      osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
+      // eslint-disable-next-line no-undef
+      pb: { ...pbState, data: null, record: null, shopRecord: null, card: null, nbm: null, cbm: null, cfm: null }, es: { ...esmState, data: null, open: null }, emu: { game: emuState.game, league: emuState.league },
+      pbInputs: ['pbSearch', 'pbSort', 'pbShow', 'pbMarket'].map(id => document.getElementById(id)?.value),
+      socShown: document.getElementById('socPane')?.style.display === '',
+      esChips: [...document.querySelectorAll('#esModeMatches.active, #esModeProps.active, #esModeMatchups.active')].map(b => b.textContent),
+    }));
+    expect(!st.welcome && !st.tour, `the welcome screen or tour covered the shared screen (${link})`);
+    expect(st.hash === '', `the link stayed in the address bar: ${st.hash}`);
+    expect(st.overflow <= 0, `the shared screen is ${st.overflow} px too wide`);
+    await checkOverflow(p2, r2, 'odds', `share link ${link}`, opts);
+    check(st);
+    if (r2.issues.length) throw new Error(`opening ${link}: ${r2.issues[0].kind} ${JSON.stringify(r2.issues[0]).slice(0, 200)}`);
+  } finally { await ctx.close(); }
 }
 
 const FLOWS = {
@@ -383,6 +418,51 @@ const FLOWS = {
     expect(await page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' }).count() === 0, 'the button should go once every bet is in');
   },
 
+  async 'import an Underdog history file and pasted Sleeper text'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    const d = n => new Date(opts.now - n * 3600e3).toISOString();
+    // a test file in the per-leg layout (entry id, player, stat, line, Higher/Lower); one leg row has no line
+    const csv = `Entry ID,Created At,Entry Type,Entry Fee,Payout,Status,Sport,Player,Stat,Line,Higher/Lower
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,Josh Allen,Passing Yards,245.5,Higher
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,James Cook,Rushing Yards,62.5,Lower
+e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
+    const file = path.join(os.tmpdir(), `lr-e2e-underdog-${process.pid}-${opts.viewportName}.csv`);
+    fs.writeFileSync(file, csv);
+    await page.locator('#page-myslips input[type=file]').setInputFiles(file);
+    await settle(page, w, opts, 300);
+    fs.rmSync(file, { force: true });
+    const imps = await ls(page, 'lr_slip_imports');
+    const ud = imps?.find(x => x.format === 'underdog');
+    expect(ud && ud.rows === 3 && ud.unread.length === 1, `the Underdog import was kept as ${JSON.stringify(ud)?.slice(0, 160)}`);
+    const slips = await ls(page, 'lr_slips');
+    expect(slips.some(s => s.id === 'ud-e2eU1' && s.legs.length === 2 && s.importId === ud.id), 'the Underdog entry with two legs should be a slip');
+    const card = page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first();
+    const shown = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Bets read/i.test(shown) && /Legs matched/i.test(shown) && /Record/i.test(shown) && /1-1/.test(shown), `the Underdog import card reads "${shown.slice(0, 200)}"`);
+    // the leg with no line is listed by its row
+    await card.locator('summary').first().click();
+    await settle(page, w, opts, 60);
+    const list = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Row 4/.test(list) && /no line on this row/.test(list), `the unmatched row is not listed: "${list.slice(-200)}"`);
+    // Sleeper history pasted as copied text
+    await page.locator('#page-myslips .mb-actions button', { hasText: 'PASTE SLIPS' }).click();
+    await page.fill('#msText', 'Sleeper Picks\n$10 · 2 picks · Won $30\nConnor McDavid\nOver 1.5 Points\nAuston Matthews\nUnder 3.5 Shots');
+    await page.getByRole('button', { name: 'ADD SLIPS' }).click();
+    await settle(page, w, opts, 250);
+    const after = await ls(page, 'lr_slips');
+    const sl = after.find(s => s.app === 'sleeper' && s.legs[0]?.player === 'Connor McDavid');
+    expect(sl && sl.legs.length === 2 && sl.result === 'win' && sl.source === 'import', `the pasted Sleeper slip came in as ${JSON.stringify(sl)?.slice(0, 160)}`);
+    expect(await page.locator('#msImports .ms-imp', { hasText: 'Sleeper (copied text)' }).count() === 1, 'no import card for the pasted Sleeper text');
+    // remove takes two taps and takes the import's slips with it
+    const drop = card.locator('button', { hasText: 'REMOVE' });
+    await drop.click();
+    await settle(page, w, opts, 60);
+    await page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first().locator('button', { hasText: 'TAP AGAIN TO REMOVE' }).click();
+    await settle(page, w, opts, 120);
+    const gone = await ls(page, 'lr_slips');
+    expect(!gone.some(s => s.id === 'ud-e2eU1'), 'removing the import should remove its slips');
+  },
+
   async 'save a shopper view, load it, clear it'(page, w, opts) {
     await openTab(page, 'odds', w, opts);
     const best = page.locator('#oddsModes button', { hasText: 'BEST PRICES' });
@@ -409,6 +489,104 @@ const FLOWS = {
     await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
     await settle(page, w, opts, 150);
     expect(!(await ls(page, 'lr_shopper_views'))?.length, 'CLEAR VIEWS left views saved');
+  },
+
+  async 'share a saved view and open the link cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 250);
+    await openPanel(page, w, opts, 'shpFilters');
+    await page.locator('#shpModes button', { hasText: 'All venues' }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpModes button', { hasText: /^Spread$/ }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpBar select').filter({ has: page.locator('option[value="hold"]') }).selectOption('ev');
+    await settle(page, w, opts, 250);
+    await page.fill('#shpPresetName', 'Share E2E');
+    await page.getByRole('button', { name: 'SAVE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    await page.getByRole('button', { name: 'SHARE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    const toast = page.locator('.toast').last();
+    expect(/^Link copied: view "Share E2E"/.test(await toast.innerText()), `SHARE VIEW toast: ${await toast.innerText()}`);
+    const vw = page.viewportSize().width, box = await toast.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= vw, `the toast runs off a ${vw} px screen: ${JSON.stringify(box)}`);
+    const viewLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=odds&m=opps&st=all&mk=sp&n=Share\+E2E$/.test(viewLink) && viewLink.length < 200, `view link: ${viewLink}`);
+    // the bar's LINK button: the same screen, without the view's name
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const screenLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(screenLink === viewLink.replace('&n=Share+E2E', ''), `LINK: ${screenLink}`);
+    await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
+    await settle(page, w, opts, 100);
+
+    // a fresh device: no welcome screen or tour on top, the exact view, nothing of the sender's
+    const local = new URL(opts.base).origin;
+    const cold = (link, check) => openCold(opts, link, check);
+    await cold(viewLink, st => {
+      expect(st.page === 'page-odds', `opened on ${st.page}`);
+      expect(st.shp.mode === 'opps' && st.shp.state === '' && st.shp.markets === 'spread' && st.shp.sort === 'ev', `shopper: ${JSON.stringify(st.shp).slice(0, 200)}`);
+      expect(st.chips.includes('BEST PRICES ABOVE FAIR') && st.chips.includes('All venues') && st.chips.includes('Spread'), `chips: ${st.chips}`);
+      expect(st.shp.stake === '100' && st.shp.fmt === 'american' && !st.shp.favOnly, 'the link changed the stake, odds format or favorites');
+      expect(/Opened a shared view: Share E2E/.test(st.toast), `toast: ${st.toast}`);
+    });
+    // a GAME LINES link and another tab, written by hand as a person would paste them
+    await cold(`${local}/app#lr&t=odds&lg=nba&mk=sp&so=ev`, st => {
+      expect(st.page === 'page-odds' && st.shp.mode === 'lines', `opened ${st.page} ${st.shp.mode}`);
+      expect(st.os.league === 'nba' && st.os.market === 'spread' && st.os.sort === 'ev' && st.osSort === 'ev', `game lines: ${JSON.stringify(st.os)}`);
+      expect(st.chips.includes('GAME LINES'), `chips: ${st.chips}`);
+    });
+    await cold(`${local}/app#lr&t=results`, st => {
+      expect(st.page === 'page-results', `opened on ${st.page}`);
+      expect(/Opened a shared screen/.test(st.toast), `toast: ${st.toast}`);
+    });
+  },
+
+  async 'share PROPS and ESPORTS views and open them cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    // the LINK button on PROPS writes the view, app, sport and search
+    await openTab(page, 'props', w, opts);
+    await page.evaluate(() => pbSet('q', 'a')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const propsLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    const pv = await page.evaluate(() => pbState.view); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=props/.test(propsLink) && /[&]q=a(&|$)/.test(propsLink), `PROPS link: ${propsLink}`);
+    expect(pv === 'lines' ? !/pv=/.test(propsLink) : propsLink.includes(`pv=${pv}`), `PROPS link misses the ${pv} view: ${propsLink}`);
+    await page.evaluate(() => pbSet('q', '')); // eslint-disable-line no-undef
+    await settle(page, w, opts, 200);
+    const local = new URL(opts.base).origin;
+    // Lines view on Underdog with a prop picked
+    await openCold(opts, `${local}/app#lr&t=props&mk=Receptions&q=a`, st => {
+      expect(st.page === 'page-props', `opened on ${st.page}`);
+      expect(st.pb.view === 'lines' && st.pb.lineBook === 'underdog' && st.pb.market === 'Receptions' && st.pb.q === 'a', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[0] === 'a' && st.pbInputs[3] === 'Receptions', `PROPS boxes: ${st.pbInputs}`);
+    });
+    // the every-app view with a sport, sort and show picked
+    await openCold(opts, `${local}/app#lr&t=props&pv=cards&sp=TENNIS&so=gap&sh=multi&q=a`, st => {
+      expect(st.pb.view === 'cards' && st.pb.sport === 'TENNIS' && st.pb.sort === 'gap' && st.pb.show === 'multi', `props: ${JSON.stringify(st.pb).slice(0, 200)}`);
+      expect(st.pbInputs[1] === 'gap' && st.pbInputs[2] === 'multi', `PROPS selects: ${st.pbInputs}`);
+    });
+    // ESPORTS: LINK on MATCHUPS, then matchups for one game and SOCCER cold
+    await openTab(page, 'esports', w, opts);
+    await page.locator('#esModeMatchups').click();
+    await settle(page, w, opts, 250);
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const esLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=esports&em=matchups/.test(esLink), `ESPORTS link: ${esLink}`);
+    await page.locator('#esModeMatches').click();
+    await settle(page, w, opts, 150);
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=CS2`, st => {
+      expect(st.page === 'page-esports' && st.es.mode === 'matchups' && st.emu.game === 'CS2', `esports: ${JSON.stringify({ es: st.es, emu: st.emu })}`);
+      expect(st.esChips.join() === 'MATCHUPS', `ESPORTS chips: ${st.esChips}`);
+    });
+    await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=SOCCER`, st => {
+      expect(st.emu.game === 'SOCCER' && st.socShown, `soccer: ${JSON.stringify(st.emu)} shown ${st.socShown}`);
+    });
   },
 
   async 'star a venue and keep it after a reload'(page, w, opts) {
@@ -474,6 +652,282 @@ const FLOWS = {
     await settle(page, w, opts, 120);
     await page.keyboard.press('Escape');
     expect((await order())[0] === first, 'RESET did not bring the order back');
+  },
+
+  async 'keyboard shortcuts and compact rows'(page, w, opts) {
+    const active = () => page.locator('.tab.active').first().evaluate(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1] || '');
+    const bar = await page.locator('.tab-row > .tab:not(.tab-end)').evaluateAll(bs => bs.map(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1]).filter(Boolean));
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('Shift+Slash');
+    await page.locator('#kbdModal.open').waitFor({ timeout: 4000 });
+    expect(/Previous or next tab/.test(await text(page, '#kbdList')), 'the ? list is empty');
+    await page.keyboard.press('2');
+    await settle(page, w, opts, 60);
+    expect(await active() !== bar[1] || bar.length < 2, 'a number key switched tabs under the ? list');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+    expect(!(await page.locator('#kbdModal.open').count()), 'Escape did not close the ? list');
+    if (bar.length >= 2) {
+      await page.keyboard.press('2');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], `2 did not open ${bar[1]}`);
+      await page.keyboard.press(']');
+      await settle(page, w, opts, 120);
+      expect(await active() !== bar[1], '] did not move to the next tab');
+      await page.keyboard.press('[');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], '[ did not move back');
+    }
+    await openTab(page, 'odds', w, opts);
+    const box = page.locator('#osSearch');
+    if (await box.isVisible()) {
+      await page.keyboard.press('/');
+      expect(await box.evaluate(el => el === document.activeElement), '/ did not focus the search box');
+      await page.keyboard.type('1c');
+      await settle(page, w, opts, 80);
+      expect(await active() === 'odds', 'typing in the search box switched tabs');
+      expect(!(await page.locator('#layModal.open').count()), 'typing c in the search box opened CUSTOMIZE');
+      await box.fill('');
+      await box.evaluate(el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.blur(); });
+      await settle(page, w, opts, 80);
+    }
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(await page.evaluate(() => document.body.classList.contains('compact')), 'Compact rows did not turn on');
+    expect((await ls(page, 'lr_layout'))?.compact === true, 'Compact rows was not saved');
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(!(await page.evaluate(() => document.body.classList.contains('compact'))), 'Compact rows did not turn off');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+  },
+
+  async 'AFTER FEES: every price after the venue fee, with the FEES sources'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `after-fees-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    await openTab(page, 'odds', w, opts);
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    expect((await text(page, '#layAfterFees')) === 'OFF', 'After fees should start OFF');
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 250);
+    expect((await text(page, '#layAfterFees')) === 'ON', 'After fees did not turn ON');
+    expect((await page.evaluate(() => localStorage.getItem('lr_after_fees'))) === '1', 'After fees was not saved');
+    await page.keyboard.press('Escape');
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    // GAME LINES: venue cells read as the after-fee chance, an exchange cell carries its fee
+    await page.locator('#osContent .af-v').first().waitFor({ timeout: 6000 });
+    const os = await page.evaluate(() => ({ n: document.querySelectorAll('#osContent .af-v').length, subs: [...document.querySelectorAll('#osContent .af-sub')].map(e => e.textContent) }));
+    expect(os.n > 0 && os.subs.every(t => /^(fee \d+(\.\d)?¢|no fee|fee unknown)$/.test(t)), `game lines after fees: ${JSON.stringify(os).slice(0, 300)}`);
+    expect(await wide() <= 0, `ODDS SCREEN after fees is ${await wide()} px too wide`);
+    await shot('lines');
+    // FEES footnote: every schedule, its status and source
+    const foot = page.locator('#afFoot details');
+    await foot.waitFor({ timeout: 4000 });
+    await foot.locator('summary').click();
+    await settle(page, w, opts, 80);
+    const ft = await text(page, '#afFoot');
+    for (const want of ['Kalshi', 'VERIFIED', 'UNVERIFIED', 'Polymarket US', 'PrizePicks', 'oblin and demon', 'kalshi.com/docs/kalshi-fee-schedule.pdf', 'Sleeper'])
+      expect(ft.includes(want), `FEES footnote misses "${want}"`);
+    expect(await wide() <= 0, `FEES footnote is ${await wide()} px too wide`);
+    await page.locator('#afFoot details').evaluate(el => el.scrollIntoView());
+    await shot('fees');
+    await foot.locator('summary').click();
+    // BEST PRICES (Exchange Shopper): the after-fee chance on screen is the cost the shopper ranks on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 300);
+    const shp = await page.evaluate(() => {
+      const d = window.shpUi?.data, out = { cells: 0, bad: [] };
+      for (const m of d?.markets || []) for (const sd of m.sides) for (const c of sd.prices) {
+        if (!(c.effective > 1)) continue;
+        // eslint-disable-next-line no-undef
+        const a = LRFees.afterFee({ venue: c.provider, decimal: c.effective });
+        if (!a || a.implied == null) continue;
+        out.cells++;
+        if (Math.abs(a.implied - c.implied) > 2e-4) out.bad.push(`${c.provider} ${a.implied} vs ${c.implied}`);
+      }
+      out.shown = document.querySelectorAll('#shpContent .af-v').length;
+      return out;
+    });
+    expect(!shp.bad.length, `shopper after-fee chance differs from the ranked cost: ${shp.bad.slice(0, 3).join('; ')}`);
+    expect(shp.cells === 0 || shp.shown > 0, 'BEST PRICES shows no after-fee prices');
+    expect(await wide() <= 0, `BEST PRICES after fees is ${await wide()} px too wide`);
+    await shot('shopper');
+    // PROPS: each app's line carries its own break-even
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    const be = await page.locator('#page-props .af-be').count();
+    if (await page.locator('#page-props .pb-bk, #page-props .ln-row').count()) expect(be > 0, 'PROPS lines show no break-even with After fees on');
+    expect(await wide() <= 0, `PROPS after fees is ${await wide()} px too wide`);
+    await shot('props');
+    // off again: raw prices back
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layAfterFees').click();
+    await settle(page, w, opts, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 200);
+    expect(!(await page.locator('#osContent .af-v').count()), 'After fees off still shows after-fee prices');
+    expect(!(await page.locator('#afFoot details').count()), 'After fees off still shows the FEES footnote');
+    // leave the odds screen on the view the flows before this one left it on
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click().catch(() => {});
+    await settle(page, w, opts, 200);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+
+  async 'EXPORT and PRINT a screen, and the glossary ? and long press'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `export-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    const wait = async ms => { if (opts.clock) await page.clock.runFor(ms).catch(() => {}); else await page.waitForTimeout(ms); };
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    const parse = csv => {
+      const rows = [];
+      let row = [], f = '', q = false;
+      for (let i = 0; i < csv.length; i++) {
+        const c = csv[i];
+        if (q) { if (c === '"' && csv[i + 1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c; continue; }
+        if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n') { row.push(f.replace(/\r$/, '')); rows.push(row); row = []; f = ''; } else f += c;
+      }
+      if (f || row.length) { row.push(f); rows.push(row); }
+      const [head, ...body] = rows;
+      return { head, rows: body.map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? '']))) };
+    };
+    const exportNow = async (pageId, name) => {
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 6000 }), page.locator(`#page-${pageId} > .xp-bar button`, { hasText: 'EXPORT' }).click()]);
+      expect(/^line-reaper-[a-z0-9-]+-\d{4}-\d{2}-\d{2}-\d{4}\.csv$/.test(dl.suggestedFilename()), `the export is named "${dl.suggestedFilename()}"`);
+      const file = path.join(os.tmpdir(), `lr-e2e-xp-${process.pid}-${opts.viewportName}-${name}.csv`);
+      await dl.saveAs(file);
+      const csv = fs.readFileSync(file, 'utf8');
+      fs.rmSync(file, { force: true });
+      await settle(page, w, opts, 60);
+      return { name: dl.suggestedFilename(), ...parse(csv) };
+    };
+    const tagged = sel => page.evaluate(s => [...document.querySelectorAll(`${s} [data-xp]`)].filter(e => e.getClientRects().length).length, sel);
+    // GAME LINES: one row a venue price, exactly the cells on screen
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#osContent [data-xp]').first().waitFor({ timeout: 6000 });
+    let n = await tagged('#osContent');
+    let x = await exportNow('odds', 'lines');
+    for (const c of ['venue', 'price', 'after_fee_breakeven', 'fair', 'fair_source', 'close', 'fill_size_usd', 'read_at', 'filters', 'exported_at'])
+      expect(x.head.includes(c), `the export has no ${c} column: ${x.head.join(',')}`);
+    expect(x.rows.length === n, `GAME LINES shows ${n} prices, the file has ${x.rows.length}`);
+    expect(x.rows.every(r => r.venue && r.price && r.screen === 'ODDS SCREEN' && r.view === 'GAME LINES'), `a row misses its venue or price: ${JSON.stringify(x.rows.find(r => !r.venue || !r.price))}`);
+    expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), 'no row carries a break-even after fees');
+    expect(x.rows.some(r => r.read_at), 'no row carries when it was read');
+    expect(x.rows.every(r => r.prices_shown === 'as listed'), 'AFTER FEES is off, so the prices are as listed');
+    // a filter narrows the file the same way it narrows the screen
+    await page.selectOption('#osMarket', 'ml');
+    await settle(page, w, opts, 200);
+    n = await tagged('#osContent');
+    x = await exportNow('odds', 'lines-ml');
+    expect(x.rows.length === n && n > 0, `moneyline only: ${n} on screen, ${x.rows.length} in the file`);
+    expect(new Set(x.rows.map(r => r.market)).size === 1, `moneyline only, but the file holds ${[...new Set(x.rows.map(r => r.market))].join(', ')}`);
+    expect(x.rows.every(r => /Moneyline/.test(r.filters)), `the filter is not written with the rows: "${x.rows[0]?.filters}"`);
+    await page.selectOption('#osMarket', '');
+    await settle(page, w, opts, 200);
+    // BEST PRICES (Exchange Shopper): the ranked rows, venue and fill size where a book was read
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 400);
+    n = await tagged('#shpContent');
+    if (n) {
+      x = await exportNow('odds', 'opps');
+      expect(x.rows.length === n, `BEST PRICES shows ${n} rows, the file has ${x.rows.length}`);
+      expect(x.rows.every(r => r.venue && r.decimal_odds), 'a ranked row misses its venue or odds');
+    }
+    // PROPS: each app's line on the board
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    n = await tagged('#page-props');
+    if (n) {
+      x = await exportNow('props', 'props');
+      expect(x.rows.length === n, `PROPS shows ${n} lines, the file has ${x.rows.length}`);
+      expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), "no prop carries its app's break-even");
+    }
+    // RESULTS: a screen with plain tables exports its columns
+    await openTab(page, 'results', w, opts);
+    await settle(page, w, opts, 300);
+    const tables = await page.evaluate(() => [...document.querySelectorAll('#page-results table')].filter(t => t.getClientRects().length).length);
+    if (tables) {
+      x = await exportNow('results', 'results');
+      expect(x.rows.length > 0 && x.head.includes('screen') && x.head.includes('loaded_at'), `RESULTS export: ${x.head.join(',')}`);
+    }
+    // PRINT: a light view with no nav and no controls, the screen and filters at the top
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#page-odds > .xp-bar button', { hasText: 'PRINT' }).click();
+    await settle(page, w, opts, 150);
+    const pv = await page.evaluate(() => ({
+      head: document.getElementById('xpHead')?.innerText || '', nav: getComputedStyle(document.querySelector('.nav')).display, bg: getComputedStyle(document.body).backgroundColor,
+      chips: [...document.querySelectorAll('#page-odds .sport-chip, #page-odds select')].filter(e => e.getClientRects().length).length,
+      rows: [...document.querySelectorAll('#osContent [data-xp]')].filter(e => e.getClientRects().length).length,
+      cell: getComputedStyle(document.querySelector('#osContent td') || document.body).color,
+    }));
+    expect(/LINE REAPER · ODDS SCREEN · GAME LINES/.test(pv.head) && /Printed/.test(pv.head), `the print view header reads "${pv.head.slice(0, 160)}"`);
+    expect(pv.nav === 'none' && pv.chips === 0, `the print view still shows the nav (${pv.nav}) or ${pv.chips} controls`);
+    expect(pv.bg === 'rgb(255, 255, 255)' && pv.cell === 'rgb(17, 17, 17)', `the print view is not light: body ${pv.bg}, text ${pv.cell}`);
+    expect(pv.rows > 0, 'the print view shows no prices');
+    expect(await wide() <= 0, `the print view is ${await wide()} px too wide`);
+    await shot('print-view');
+    await page.emulateMedia({ media: 'print' });
+    const pr = await page.evaluate(() => ({ btns: [...document.querySelectorAll('#xpHead button')].filter(e => e.getClientRects().length).length, bar: [...document.querySelectorAll('.xp-bar')].filter(e => e.getClientRects().length).length }));
+    expect(pr.btns === 0 && pr.bar === 0, `printed, the page still shows ${pr.btns} print buttons and ${pr.bar} export bars`);
+    await page.emulateMedia({ media: null });
+    await page.locator('#xpHead button', { hasText: 'PRINT / SAVE AS PDF' }).click();
+    await settle(page, w, opts, 120);
+    expect(/Save as PDF/.test(await text(page, '#xpHeadSay')), 'PRINT / SAVE AS PDF did not say what it opens');
+    await page.locator('#xpHead button', { hasText: 'CLOSE PRINT VIEW' }).click();
+    await settle(page, w, opts, 120);
+    expect(!(await page.locator('#xpHead').count()) && (await page.locator('.nav').isVisible()), 'CLOSE PRINT VIEW did not bring the app back');
+    // GLOSSARY: the ? beside a label opens its definition, with a link to /learn
+    const q = page.locator('#osContent .gl-q').first();
+    await q.waitFor({ timeout: 6000 });
+    await q.scrollIntoViewIfNeeded();
+    await q.click();
+    await settle(page, w, opts, 80);
+    const pop = await page.evaluate(() => { const p = document.getElementById('glPop'); const r = p?.getBoundingClientRect(); return p && { shown: getComputedStyle(p).display !== 'none', text: p.innerText, href: p.querySelector('a')?.getAttribute('href'), left: r.left, right: r.right }; });
+    expect(pop?.shown && pop.text.length > 40 && /^\/learn#g-[a-z0-9-]+$/.test(pop.href || ''), `the ? did not open a definition: ${JSON.stringify(pop)}`);
+    expect(pop.left >= 0 && pop.right <= (await page.evaluate(() => innerWidth)), 'the definition sticks out of the screen');
+    await shot('glossary-q');
+    await page.locator('#glPop .gl-x').click();
+    expect(!(await page.locator('#glPop').isVisible()), 'the definition did not close');
+    // a long press on a chip opens its definition and does not switch the view
+    const chip = page.locator('#oddsModes button', { hasText: 'MAKER' }).first();
+    await chip.scrollIntoViewIfNeeded();
+    const box = await chip.boundingBox();
+    const before = await page.evaluate(() => window.shpUi?.opts?.mode);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await wait(700);
+    await page.mouse.up();
+    await settle(page, w, opts, 120);
+    const lp = await page.evaluate(() => ({ shown: getComputedStyle(document.getElementById('glPop')).display !== 'none', text: document.getElementById('glPop').innerText, mode: window.shpUi?.opts?.mode }));
+    expect(lp.shown && /Maker/i.test(lp.text), `a long press on MAKER did not open its definition: ${JSON.stringify(lp).slice(0, 200)}`);
+    expect(lp.mode === before, `the long press also switched the view to ${lp.mode}`);
+    await page.keyboard.press('Escape');
+    // the GLOSSARY on /learn: every term at its anchor, on a phone too
+    try {
+      const res = await page.goto(`${opts.base}/learn#g-clv`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/learn answered ${res && res.status()}`);
+      const g = await page.evaluate(() => ({ n: document.querySelectorAll('#glossary ~ dl .gl-i, dl.gloss .gl-i').length, clv: document.getElementById('g-clv')?.innerText || '', wide: document.documentElement.scrollWidth - innerWidth }));
+      expect(g.n >= 40 && /closing line value/i.test(g.clv), `the glossary on /learn: ${JSON.stringify(g).slice(0, 200)}`);
+      expect(g.wide <= 0, `the glossary is ${g.wide} px too wide`);
+      await shot('learn-glossary');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
   },
 
   async 'TOOLS calculator works out a price'(page, w, opts) {
@@ -612,6 +1066,7 @@ async function run(context, opts, rep) {
   await enterApp(page, w, opts, rep);
   for (const [name, fn] of Object.entries(FLOWS)) {
     if (opts.live && /log|paste|import|save|star|push|move/.test(name)) continue; // the live smoke only reads
+    if (process.env.E2E_FLOW_ONLY && !new RegExp(process.env.E2E_FLOW_ONLY, 'i').test(name)) continue; // one flow while working on it
     w.tab = `flow: ${name}`; w.last = w.tab;
     // let the last flow's toast time out, as it would for a viewer
     if (opts.clock) await page.clock.runFor(8000).catch(() => {});

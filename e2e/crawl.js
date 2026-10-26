@@ -144,7 +144,16 @@ async function clickOne(page, c, w, opts) {
       await page.evaluate(() => window.__e2e.off());
       return { skipped: 'file input (filled by the form flows)' };
     } else {
-      await loc.click({ timeout: 2500 });
+      try { await loc.click({ timeout: 2500 }); }
+      catch (e) {
+        // a board that draws again after the scroll (PROPS, ESPORTS) can move a
+        // chip under the header for a moment: scroll it back and try once more;
+        // a control that is still covered then is reported
+        if (!/intercepts pointer events/.test(String(e.message || e))) throw e;
+        await settle(page, w, opts, 120);
+        await loc.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
+        await loc.click({ timeout: 2500 });
+      }
     }
   } catch (e) {
     await page.evaluate(() => window.__e2e.off()).catch(() => {});

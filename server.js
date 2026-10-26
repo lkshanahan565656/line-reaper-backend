@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 // health, event-loop stalls, slow requests and the boot timeline (ops.js)
 const ops = require('./ops').createOps();
+const fees = require('./fees');
 const { runSteps, runStepsAsync, createSlicer } = require('./ops');
 ops.start();
 app.use(ops.middleware);
@@ -813,6 +814,14 @@ const altTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.
 const esBookTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evEsports', createEvStoreFromEnv(process.env, { table: 'ev_es_bets', fileVar: 'EV_ES_TRACK_FILE', file: 'ev-es-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
 // FanDuel and BetRivers still on the number Pinnacle just left (stalelines.js): a record of their own
 const staleTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evStale', createEvStoreFromEnv(process.env, { table: 'ev_stale_bets', fileVar: 'EV_STALE_TRACK_FILE', file: 'ev-stale-bets.json' })), minEv: process.env.TRACK_EV_MIN != null ? parseFloat(process.env.TRACK_EV_MIN) : 2 });
+// Kalshi moved, Polymarket US still at the old price (leadlag.js): a lead with
+// its own record, every flag logged, graded on Pinnacle's close and the ESPN
+// final, judged at 50 graded. Never an alert, never in Best Plays. LEAD_LAG=off stops it.
+const leadLag = require('./leadlag');
+const leadLagOn = () => !/^(off|0|false|no)$/i.test(String(process.env.LEAD_LAG || '').trim());
+const leadLagEngine = leadLag.createLeadLag();
+const leadLagTracker = createEvTracker({ freshCloseOnly: true, store: resultsBackup.wrap('evLeadLag', createEvStoreFromEnv(process.env, { table: 'ev_leadlag_bets', fileVar: 'EV_LEADLAG_TRACK_FILE', file: 'ev-leadlag-bets.json' })), minEv: -Infinity });
+let leadLagPending = [];
 // Sports pick'em props flagged off the books' consensus and Kalshi, graded on
 // ESPN box scores; tennis, UFC, NASCAR and soccer on ESPN's tennis and UFC
 // scoreboards and Kalshi's settled markets (extragrade.js, EXTRA_RESULTS=off stops them)
@@ -3433,6 +3442,8 @@ function* evScreenSteps() {
   evCache = { at: Date.now(), rows, alt: alt.rows, altSummary: alt.summary, feeds: feeds.map(f => ({ sport: f.sport, source: f.label, games: f.games.length, updated: f.updated })) };
   // Pinnacle's own price at each number rides along: the exchanges' rows close on it
   evTracker.recordBoard(rows, fairs, { costs, pinFairs }).catch(e => console.warn('EV tracker:', e.message));
+  // the lead-lag flags since the last screen, and every open one's closing prices
+  leadLagTracker.recordBoard(leadLagPending.splice(0), fairs, { costs, pinFairs }).catch(e => console.warn('Lead-lag tracker:', e.message));
   // the first screen after a restart only primes the diff
   if (prev) {
     // DK Pick6 is a lead: on the board and in the record, never an alert
@@ -4746,6 +4757,7 @@ const learnCache = new Map();
 app.get(['/learn', '/learn/:slug'], (req, res) => {
   const slug = String(req.params.slug || '').toLowerCase().slice(0, 60);
   const canon = slug ? learn.canonicalOf(slug) : '';
+  if (slug === 'glossary') return res.redirect(301, '/learn#glossary');
   if (canon == null) return res.status(404).type('html').send(learn.render('', { origin: siteOrigin(req) }).replace('<h1>', '<p class="note">That guide does not exist. Here are all of them.</p><h1>'));
   if (slug && canon !== slug) return res.redirect(301, `/learn/${canon}`);
   const o = siteOrigin(req), k = `${o}|${canon}`;
@@ -4808,6 +4820,17 @@ app.get('/app', (req, res) => {
 app.get('/calc.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'calc.js'));
 });
+// Every venue's fee schedule (fees.js, window.LRFees): the AFTER FEES view and
+// the FEES footnote read the same file the shopper and the records do.
+app.get('/fees.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'fees.js'));
+});
+// Every label and badge in plain words (glossary.js, window.LRGlossary): the
+// ? beside a label in the app and the GLOSSARY section on /learn read it
+app.get('/glossary.js', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'glossary.js'));
+});
+app.get('/api/fees', (req, res) => { res.set('Cache-Control', 'public, max-age=300').json({ checked: fees.CHECKED, lot: fees.LOT, schedules: fees.footnote() }); });
 // MY SLIPS parsing and math (slips.js, window.LRSlips).
 app.get('/slips.js', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300').type('application/javascript').sendFile(path.join(__dirname, 'slips.js'));
@@ -4845,10 +4868,10 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', '/status', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4859,7 +4882,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.187.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.196.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5005,6 +5028,8 @@ app.get('/api/ev/record', async (req, res) => {
   out.esports = await esBookTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
   // stale lines: the books' rows here, the apps' legs from the props record
   out.stale = await staleTracker.summary({ sport: q.sport, book: q.book, source: q.source, sinceDays: parseFloat(q.days) || undefined });
+  // Kalshi moved first, Polymarket US still at the old price: a lead, judged at 50 graded
+  out.leadLag = await leadLagTracker.summary({ sport: q.sport, book: q.book, sinceDays: parseFloat(q.days) || undefined });
   // the props record has no sport cut: with one asked for, the apps' lines stay off
   const kinds = q.sport ? {} : (await sportTracker.summary({ sinceDays: parseFloat(q.days) || undefined })).byKind || {};
   out.staleApps = q.sport ? null : { stale: kinds.stale || null, single: kinds['stale-single'] || null };
@@ -5180,7 +5205,7 @@ app.get('/api/ev/record/bets', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 100, 500);
   // ?book=fanduel&source=alt&sport=nhl narrow the list; ?before=<flaggedAt> pages back
   const q = k => (typeof req.query[k] === 'string' && req.query[k]) || undefined;
-  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : evTracker)
+  const bets = (await (req.query.alt === '1' ? altTracker : req.query.es === '1' ? esBookTracker : req.query.stale === '1' ? staleTracker : req.query.leadlag === '1' ? leadLagTracker : evTracker)
     .list({ status, limit: limit * 2, book: q('book'), source: q('source'), sport: q('sport'), before: q('before') })).filter(evRowOk(licenceOf(req))).slice(0, limit);
   res.json({ bets });
 });
@@ -6605,20 +6630,23 @@ async function gradeEvResults() {
   if (evResultsRunning) return;
   evResultsRunning = true;
   try {
-    const due = await evTracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
-    const done = [];
     let graded = 0, pending = 0, notFound = 0;
-    for (const b of due) {
-      const [away, home] = String(b.event || '').split(' @ ');
-      let sc = null;
-      try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
-      catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
-      if (sc?.pending) { pending++; continue; }
-      if (!sc) notFound++;
-      if (await evTracker.setResult(b, sc, { save: false })) graded++;
-      done.push(b);
+    // the main lines' record, then the lead-lag record's (same games, same grader)
+    for (const tracker of [evTracker, leadLagTracker]) {
+      const due = await tracker.ungraded({ limit: 80, sports: new Set(Object.keys(EV_RESULT_LEAGUE)) });
+      const done = [];
+      for (const b of due) {
+        const [away, home] = String(b.event || '').split(' @ ');
+        let sc = null;
+        try { sc = await bigGrader.gradeGame({ league: EV_RESULT_LEAGUE[b.sport], home, away, start: b.start }); }
+        catch (e) { evResultsState.errors = [`${b.sport}: ${e.response?.status || e.message}`, ...evResultsState.errors].slice(0, 5); continue; }
+        if (sc?.pending) { pending++; continue; }
+        if (!sc) notFound++;
+        if (await tracker.setResult(b, sc, { save: false })) graded++;
+        done.push(b);
+      }
+      if (done.length) await tracker.saveMany(done);
     }
-    if (done.length) await evTracker.saveMany(done);
     Object.assign(evResultsState, { runs: evResultsState.runs + 1, graded: evResultsState.graded + graded, lastGraded: graded, pending, notFound, lastRun: new Date().toISOString() });
   } catch (e) { evResultsState.errors = [e.message, ...evResultsState.errors].slice(0, 5); }
   finally { evResultsRunning = false; }
@@ -6942,8 +6970,11 @@ function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } 
 }
 function observeOddsHistory() {
   if (!freeBooksState.gamesAt || Date.now() - Date.parse(freeBooksState.gamesAt) >= FREE_BOOKS_MAX_AGE_MS) return;
-  try { oddsHistory.observe(oddsScreenFor({ kalshiOk: true })); oddsScreenState.observedAt = new Date().toISOString(); }
-  catch (e) { oddsScreenState.errors = [e.message]; }
+  try {
+    const screen = oddsScreenFor({ kalshiOk: true });
+    oddsHistory.observe(screen); oddsScreenState.observedAt = new Date().toISOString();
+    if (leadLagOn()) leadLagPending.push(...leadLagEngine.observe(screen));
+  } catch (e) { oddsScreenState.errors = [e.message]; }
   lineBets.observe(freeBooksState.games || {}).catch(e => console.warn('Line bets: observe:', e.message));
 }
 // MY BETS' game-line bets (linebets.js): a moneyline, spread or total logged
@@ -6972,6 +7003,73 @@ app.get('/api/odds-screen/history/:id', (req, res) => {
   const series = oddsHistory.forGame(id).map(x => ({ ...x, pts: x.pts.map(([t, point, fair, px]) => [t, point, pro ? fair : null,
     lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
   res.json({ id, series, pro });
+});
+// ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ──────────────────────────────
+// Today's largest moves since we first saw each market, in the last 3 hours
+// and the last hour, at each venue, with every other venue's answer (moved
+// too, or still at the old number) (bigmoves.js). Reads only what is already
+// kept: the odds screen's game-line history and the stale-lines engine's
+// change log (props, apps included). Information, not an edge: identical for
+// everyone, no alerts, no sizing.
+const bigMoves = require('./bigmoves');
+const movesCache = new Map();
+// an exchange price's book size, from the shopper's depth reads (never a guess)
+function movesSizer() {
+  const idx = new Map();
+  const st = shopQuotes();
+  for (const q of [...st.free.quotes, ...st.kalshi.quotes]) {
+    if (!bigMoves.EXCHANGES.has(q.providerId) || q.marketType === 'player_prop') continue;
+    idx.set(`${String(q.eventId).replace(/^pin-/, '')}|${q.marketType}|${q.line ?? ''}|${q.side}|${q.providerId}`, q);
+  }
+  return (g, m, s, venue) => {
+    const side = s.name === g.home ? 'home' : s.name === g.away ? 'away' : s.name === 'Draw' ? 'draw' : String(s.name).toLowerCase();
+    const type = { ml: 'moneyline', spread: 'spread', total: 'total' }[m.key];
+    const line = m.key === 'ml' ? '' : m.key === 'spread' ? (side === 'home' ? m.point : -m.point) : m.point;
+    const q = idx.get(`${String(g.id).replace(/^pin-/, '')}|${type}|${line}|${side}|${venue}`);
+    if (!q) return null;
+    const book = shopDepth.forQuote(q);
+    const z = book ? depthBook.sizeOf(book) : null;
+    if (!z) return { unread: true };
+    const tiers = Object.entries(z.tiers || {}).filter(([, t]) => t?.full).map(([k]) => Number(k));
+    return { topUsd: z.topUsd, fills: tiers.length ? Math.max(...tiers) : 0, ageSec: z.ageSec, empty: !!z.empty };
+  };
+}
+function movesFor({ window, kalshiOk }) {
+  const key = `${window}|${kalshiOk ? 1 : 0}`;
+  const hit = movesCache.get(key);
+  if (hit && Date.now() - hit.at < 20e3) return hit.body;
+  const now = Date.now();
+  const screen = oddsScreenFor({ kalshiOk });
+  let sizer = null;
+  try { sizer = movesSizer(); } catch (e) { console.warn('Biggest moves: sizes:', e.message); }
+  const series = kalshiOk ? oddsHistory.dump() : oddsHistory.dump().map(x => ({ ...x, pts: x.pts.map(([t, p, f, px]) => [t, p, f, Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+  const game = bigMoves.gameMoves(series, screen, { window, now, size: sizer });
+  const subjects = staleState.enabled ? staleState.engine.sources(now, { kind: 'prop' }) : [];
+  const prop = bigMoves.propMoves(subjects, { window, now, leagueOf: x => STALE_SPORT[x] || String(x || '').toLowerCase() });
+  let rows = [...game.rows, ...prop.rows];
+  if (!kalshiOk) rows = rows.filter(r => r.venue !== 'kalshi').map(r => ({ ...r, followers: r.followers.filter(f => f.venue !== 'kalshi') }));
+  const body = { window, rows, updated: new Date(now).toISOString(), linesAt: screen.updated, stale: screen.stale,
+    history: { gameSince: game.earliest, propSince: prop.earliest, gameMarkets: game.considered, propMarkets: prop.considered, propsOn: staleState.enabled, propKeepHours: staleState.engine.opts.keepMs / 3600e3 } };
+  movesCache.set(key, { at: now, body });
+  return body;
+}
+app.get('/api/moves', (req, res) => {
+  const lic = licenceOf(req);
+  const q = k => String(req.query[k] || '').toLowerCase();
+  const window = Object.hasOwn(bigMoves.WINDOWS, q('window')) ? q('window') : 'open';
+  const type = q('type') === 'line' ? 'line' : 'price';
+  const venue = bigMoves.MOVERS.includes(q('venue')) ? q('venue') : null;
+  const league = /^[a-z0-9]{1,20}$/.test(q('league')) ? q('league') : null;
+  const kind = ['game', 'prop'].includes(q('kind')) ? q('kind') : null;
+  const sort = ['move', 'start', 'old'].includes(q('sort')) ? q('sort') : 'move';
+  let base;
+  try { base = movesFor({ window, kalshiOk: !!lic.kalshi }); }
+  catch (e) { console.warn('Biggest moves:', e.message); return res.status(500).json({ error: 'Could not rank the moves right now.' }); }
+  const all = base.rows.filter(r => !kind || r.kind === kind);
+  const rows = bigMoves.rank(all, { venue, league, type, sort });
+  res.json(regionSafe({ ...base, rows, type, venue, league, kind, sort, total: rows.length, facets: bigMoves.facets(all, type),
+    counts: { price: all.filter(r => r.type === 'price').length, line: all.filter(r => r.type === 'line').length },
+    note: 'A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close ("app stale", "lead-lag"); the only proven play on Results is BetRivers main lines.' }));
 });
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // Every venue's price for the same bet on one row (shopper.js), built from
@@ -8514,7 +8612,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.187.0',
+  version: '3.196.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8545,6 +8643,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
     paired: Object.fromEntries(Object.entries(freeBooksState.games || {}).map(([k, v]) => [k, v.filter(g => g.bookmakers.some(b => b.key === 'polymarketus')).length]).filter(([, n]) => n)) },
   pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
   evResults: evResultsState,
+  leadLag: { on: leadLagOn(), ...leadLagEngine.stats() },
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null, propsBoardBuild: { ...propsBoardStats, builtAt: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null }, evScreenBuild: { ...evScreenStats },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -8645,6 +8744,55 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// ── STATUS PAGE (status.js): every venue's last good read, staleness and a
+// 7-day uptime history, sampled every 5 minutes and kept in the results backup.
+const statusPage = require('./status');
+const sumCounts = key => Object.values(freeBooksState.counts || {}).reduce((n, c) => n + (Number(c?.[key]) || 0), 0);
+const okIf = (n, at) => (n > 0 ? at : null);
+function statusProbe() {
+  const ex = exchangeState.rows || [];
+  const kal = ex.filter(r => r.exchange === 'kalshi').length, pmGlobal = ex.filter(r => r.exchange === 'polymarket').length;
+  const pinOn = freeBooksState.enabled && licences.isOn('pinnacle');
+  const pin = sumCounts('pinnacle'), fd = sumCounts('fanduel'), br = sumCounts('betrivers');
+  const p6 = pick6.status(), p6At = Math.max(0, ...Object.values(p6.bySport || {}).map(v => Date.parse(v.at) || 0));
+  const pp = ppLinesNow().length, ud = cache.underdog.data?.length || 0, sl = cache.sleeper.rows || 0;
+  const bk = resultsBackup.status();
+  const pinErr = (freeBooksState.errors || []).find(e => /^pinnacle/.test(e)) || null;
+  return [
+    { key: 'pinnacle', name: 'Pinnacle game lines', group: 'sharp', enabled: pinOn, okAt: freeBooksState.gamesAt, count: pin, unit: 'games', error: pinErr, staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'pinnacleProps', name: 'Pinnacle player props', group: 'sharp', enabled: pinPropsState.enabled, okAt: okIf(pinPropsState.props, pinPropsState.updated), count: pinPropsState.props, unit: 'props', error: pinPropsState.errors?.[0], staleMs: 10 * 60e3 },
+    { key: 'kalshi', name: 'Kalshi markets', group: 'exchange', enabled: true, okAt: okIf(kal, exchangeState.updated), count: kal, unit: 'markets', error: (exchangeState.errors || []).find(e => /kalshi/i.test(e)), staleMs: 5 * 60e3 },
+    { key: 'kalshiProps', name: 'Kalshi player props', group: 'exchange', enabled: licences.isOn('kalshi'), okAt: kpropsState.games?.length || !(kpropsState.errors || []).length ? kpropsState.updated : null, count: kpropsState.games?.length || 0, unit: 'games', error: kpropsState.errors?.[0], staleMs: 15 * 60e3 },
+    { key: 'polymarketUs', name: 'Polymarket US', group: 'exchange', enabled: pmusBooksState.enabled, okAt: pmusBooksState.at || null, count: pmusBooksState.games, unit: 'games', error: pmusBooksState.errors?.[0], staleMs: 6 * 60e3 },
+    { key: 'gemini', name: 'Gemini Predictions', group: 'exchange', enabled: geminiState.enabled, okAt: geminiState.at || null, count: geminiState.events, unit: 'events', error: geminiState.errors?.[0], staleMs: GEMINI_MAX_AGE_MS },
+    { key: 'matchbook', name: 'Matchbook', group: 'exchange', enabled: xbooksState.enabled && xbooksState.matchbook && licences.isOn('matchbook'), okAt: okIf(xbooksState.counts?.matchbook, xbooksState.updated), count: xbooksState.counts?.matchbook || 0, unit: 'markets', note: 'Reference price; not open to Texas', error: (xbooksState.errors || []).find(e => /matchbook/i.test(e)), staleMs: XBOOKS_MAX_AGE_MS },
+    { key: 'polymarketGlobal', name: 'Polymarket global', group: 'exchange', enabled: true, okAt: okIf(pmGlobal, exchangeState.updated), count: pmGlobal, unit: 'markets', note: 'Reference price only; US users trade Polymarket US', error: (exchangeState.errors || []).find(e => /polymarket/i.test(e)), staleMs: 5 * 60e3 },
+    { key: 'fanduel', name: 'FanDuel', group: 'book', enabled: pinOn, okAt: okIf(fd, freeBooksState.updated), count: fd, unit: 'games', staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'betrivers', name: 'BetRivers', group: 'book', enabled: pinOn, okAt: okIf(br, freeBooksState.updated), count: br, unit: 'games', staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'actionNetwork', name: 'Action Network (copied book prices)', group: 'book', enabled: xbooksState.enabled && xbooksState.action && licences.isOn('actionnetwork'), okAt: okIf(xbooksState.counts?.action, xbooksState.updated), count: xbooksState.counts?.action || 0, unit: 'games', note: 'Second-hand prices, never a play alone', error: (xbooksState.errors || []).find(e => /action/i.test(e)), staleMs: XBOOKS_MAX_AGE_MS },
+    { key: 'prizepicks', name: 'PrizePicks', group: 'app', enabled: true, okAt: okIf(pp, cache.prizepicks.updated), count: pp, unit: 'lines', error: dfsError.prizepicks, note: Date.now() < ppFail.until ? `Paused until ${new Date(ppFail.until).toISOString().slice(11, 16)} UTC (asked to retry later)` : 'One league per read; a full pass takes about 20 min', staleMs: 45 * 60e3 },
+    { key: 'underdog', name: 'Underdog', group: 'app', enabled: true, okAt: okIf(ud, cache.underdog.updated), count: ud, unit: 'lines', error: dfsError.underdog, staleMs: 10 * 60e3 },
+    { key: 'sleeper', name: 'Sleeper', group: 'app', enabled: true, okAt: okIf(sl, cache.sleeper.updated), count: sl, unit: 'lines read', error: dfsError.sleeper, staleMs: 10 * 60e3 },
+    { key: 'pick6', name: 'DK Pick6', group: 'app', enabled: !!p6.enabled, okAt: okIf(p6.lines, p6At || null), count: p6.lines, unit: 'lines', error: p6.lastError, staleMs: 30 * 60e3 },
+    { key: 'lolStats', name: 'League of Legends stats', group: 'data', enabled: true, okAt: lolStats.state === 'ready' ? lolStats.updated : null, count: Object.keys(lolStats.players).length, unit: 'players', error: lolStats.lastError, staleMs: 36 * 3600e3 },
+    { key: 'vlr', name: 'Valorant stats (VLR)', group: 'data', enabled: true, okAt: okIf(Object.keys(vlrTable.players).length, vlrTable.updated), count: Object.keys(vlrTable.players).length, unit: 'players', error: vlrTable.lastError, staleMs: 36 * 3600e3 },
+    { key: 'grader', name: 'Pick grader (results and closes)', group: 'recorder', enabled: true, okAt: trackerHealth.lastRun, error: trackerHealth.error, staleMs: 15 * 60e3 },
+    { key: 'oddsHistory', name: 'Odds screen line history', group: 'recorder', enabled: pinOn, okAt: oddsScreenState.observedAt, count: oddsHistory.size(), unit: 'markets', staleMs: 5 * 60e3 },
+    { key: 'propHistory', name: 'Prop line history', group: 'recorder', enabled: true, okAt: propHistoryState.observedAt, count: propHistory.size(), unit: 'markets', error: propHistoryState.error, staleMs: 15 * 60e3 },
+    { key: 'backup', name: 'Results backup (saved every 20 min)', group: 'recorder', enabled: bk.state !== 'off', okAt: bk.lastExportAt || bk.snapshotAt, error: bk.state === 'ready' ? null : bk.note || `backup ${bk.state}`, staleMs: 45 * 60e3 },
+  ];
+}
+const statusBoard = statusPage.createStatusBoard({ probe: statusProbe, version: () => require('./package.json').version });
+let statusBooted = false;
+const statusStore = resultsBackup.wrap('statusHistory', {
+  init: async () => {}, all: async () => (statusBooted ? statusBoard.dump() : []),
+  put: async d => { statusBoard.load([d]); }, putMany: async ds => { statusBoard.load(ds); },
+}, { appendOnly: false });
+statusStore.init().catch(e => console.warn('Status history: restore failed:', e.message)).finally(() => { statusBooted = true; });
+schedule('*/5 * * * *', () => { if (statusBooted) statusBoard.sample(); });
+const statusView = () => statusBoard.view({ liveCheck: liveCheck.state, uptimeS: Math.round(process.uptime()) });
+app.get('/api/uptime', (req, res) => res.set('Cache-Control', 'no-store').json(statusView()));
+app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html').send(statusPage.renderPage(statusView(), { origin: siteOrigin(req) })));
 // NBA model: finished box scores, tonight's schedule and the injury list every 30 minutes (first read 2 minutes after boot)
 if (nbaModel) {
   schedule('11,41 * * * *', () => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)));
@@ -8850,7 +8998,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, liveCheck, publishDigest, digestStore, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
