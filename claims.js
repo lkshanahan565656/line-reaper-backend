@@ -33,6 +33,7 @@ const LABELS = [
   { tool: 'NBA, CFB and CBB props models', where: 'PROPS', tag: 'model, not an edge', why: 'Our own projections. None has cleared our bar against the apps\' lines in held-out tests.' },
   { tool: 'NFL model', where: 'ODDS SCREEN > NFL MODEL', tag: 'model, not an edge', why: 'Kalshi\'s price an hour before kickoff beat it in the held-out test.' },
   { tool: 'Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer', where: 'ESPORTS > MATCHUPS', tag: 'model, not an edge', why: 'The exchanges\' own prices beat our ratings in walk-forward tests.' },
+  { tool: 'Esports map kill Unders', where: 'ESPORTS > MAP UNDERS', tag: 'research', why: 'Unders where Pinnacle\'s map number sits under the apps\' lines summed, priced on our kill model. Under 50 graded; nothing alerts.' },
   { tool: 'Kalshi maker bids', where: 'ODDS SCREEN > MAKER', tag: 'research', why: 'A resting bid under the fair. Nothing places an order.' },
   { tool: 'F1 and golf outrights', where: 'ODDS SCREEN > OUTRIGHTS', tag: 'research', why: 'Pinnacle takes small limits there, so its fair is weaker.' },
   { tool: 'Injury news', where: 'PROPS > INJURY NEWS', tag: 'research', why: 'Legs left up after news. Not ahead of the close so far.' },
@@ -89,6 +90,8 @@ function publicClaims({ board, txBoard, alertBooks = new Set(), now = Date.now()
 // Units show as a profit only on a proven row whose units clear chance.
 function labelOf(r) {
   if (isClaim(r)) return { label: 'proven', why: null };
+  // map kill Unders: research with its own bar (mapunders.js); its close is our model's, never a sharp's
+  if (r.kind === 'props-es-map-under') return { label: r.mark === 'not graded yet' && !(r.wins + r.losses) ? 'not graded yet' : 'research', why: `Research, not an edge: ${(r.wins || 0) + (r.losses || 0)} of 50 graded. Nothing sharp prices a player's map kills, so it is judged on results by match (ESPORTS > MAP UNDERS), never proven here.` };
   if (r.mark === 'no sharp close') return { label: 'no sharp close', why: 'Closes on our own curve or soft books, so the CLV is the flag\'s own edge again. Shown, never judged.' };
   if (r.relayed) return { label: r.mark === 'not graded yet' ? 'not graded yet' : 'copied book', why: 'Read through Action Network\'s copy, never at the book itself, so it cannot be proven.' };
   if (!CLAIM_KINDS.has(r.kind)) {

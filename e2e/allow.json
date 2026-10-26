@@ -59,6 +59,10 @@
     {
       "key": "^/api/moves(\\?|$)",
       "why": "new in v3.189.0 (ODDS SCREEN > BIGGEST MOVES): the recording predates it, so the offline server answers from its own empty history (\"NO DATA YET\"); bigmoves tests check the ranking and the venues' answers on labelled test series"
+    },
+    {
+      "key": "^/api/esports/map-unders(\\?|$)",
+      "why": "new in v3.200.0 (ESPORTS > MAP UNDERS, mapunders.js): the recording predates it, so the offline server answers from its own empty record (\"Nothing recorded yet\"); mapunders and mapunders-server tests check the rows and the record"
     }
   ],
   "mustHaveData": [
