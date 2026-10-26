@@ -30,11 +30,12 @@ if RUN == '1':
         soccer[lg] = cats if isinstance(mu, list) else mu
     json.dump(soccer, open('out/pinnacle-soccer-specials.json', 'w'), indent=1)
 lastCheck = 0
-while time.time() < END:
-    now = time.time(); legs = []
+def tick(now):
+    global lastCheck
+    legs = []
     for st in ('open', 'locked'):
         r = get(f'/api/props/record/picks?status={st}&limit=1000')
-        legs += [p for p in r.get('picks', []) if p.get('kind') in ('stale', 'stale-single', 'p6-stale', 'p6-stale-single')]
+        legs += [p for p in (r.get('picks') or [] if isinstance(r, dict) else []) if isinstance(p, dict) if p.get('kind') in ('stale', 'stale-single', 'p6-stale', 'p6-stale-single')]
     keys = {}
     for p in legs:
         s = P(p['start'])
@@ -50,6 +51,10 @@ while time.time() < END:
         lastCheck = now
         json.dump(get('/api/props/stale-exact', 180), open(f'out/check/{at}.json', 'w'))
         st = get('/api/status', 120)
-        json.dump({'version': st.get('version'), 'stale': st.get('stale'), 'pick6': (st.get('pick6') or {}).get('sports')}, open(f'out/check/status-{at}.json', 'w'))
+        json.dump(st if isinstance(st, dict) else {'raw': str(st)[:500]}, open(f'out/check/status-{at}.json', 'w'))
     print(at, len(legs), len(keys), flush=True)
+while time.time() < END:
+    now = time.time()
+    try: tick(now)
+    except Exception as e: print('tick failed', repr(e), flush=True)
     time.sleep(max(5, 120 - (time.time() - now)))

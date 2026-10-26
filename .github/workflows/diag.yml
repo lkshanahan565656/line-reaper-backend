@@ -10,11 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          N=${{ inputs.n || '1' }}
+          set +e
+          N=${{ inputs.n || '4' }}
           ( python3 rec.py 330 $N ) &
           R=$!
-          push() { rm -rf /tmp/o && mkdir /tmp/o && cp -r out/* /tmp/o/ && cd /tmp/o && git init -q && git checkout -q -b diag-sxrec-out-$N && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-sxrec-out-$N; cd -; }
+          push() { rm -rf /tmp/o && mkdir /tmp/o && cp -r out/* /tmp/o/ && cd /tmp/o && git init -q && git checkout -q -b diag-sxrec-out-$N && git add -A && git -c user.name=d -c user.email=d@d commit -qm out && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-sxrec-out-$N; cd $GITHUB_WORKSPACE; }
           while kill -0 $R 2>/dev/null; do sleep 600; push; done
           push
-          if [ "$N" -lt 22 ]; then gh workflow run diag.yml --ref diag-sxrec -f n=$((N+1)) -R ${{ github.repository }}; fi
+          if [ "$N" -lt 24 ]; then gh workflow run diag.yml --ref diag-sxrec -f n=$((N+1)) -R ${{ github.repository }}; fi
         env: { GH_TOKEN: "${{ github.token }}" }
