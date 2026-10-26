@@ -24,7 +24,7 @@ async function get(p) {
 const OK = /^(NFL|NCAAF|NBA|NHL)-/;
 const evs = new Map();
 const add = e => { if (e && e.id != null && !evs.has(String(e.id))) evs.set(String(e.id), e); for (const x of e?.events || []) add(x); };
-for (const sport of ['american_football', 'basketball', 'hockey']) {
+for (const sport of (process.env.SPORTS || 'american_football,basketball,hockey').split(',')) {
   for (let off = 0; off < 20000; off += 500) {
     const r = await get(`/v1/prediction-markets/events?status=settled&sport=${sport}&sports_market_type=moneyline&sports_market_type=spread&sports_market_type=total&sports_market_scope=full_contest&limit=500&offset=${off}`);
     const d = r?.data || [];

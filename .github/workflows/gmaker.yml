@@ -13,7 +13,7 @@ jobs:
         with: { node-version: 20 }
       - run: |
           mkdir -p out
-          node pull.mjs 2>&1 | tee out/log.txt
+          SPORTS=american_football node pull.mjs 2>&1 | tee out/log.txt
       - if: always()
         run: |
           cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "gmaker $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-gmaker-out
