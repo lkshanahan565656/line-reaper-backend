@@ -303,6 +303,25 @@ ${lic}</ul>
 <p class="note">Every example below is the live answer at the time this page was built, cut to its first rows.</p>
 ${eps}
 
+<h2 id="feed">Discord feed</h2>
+<p>Run a Discord server? Paste a webhook and your channel gets the same public posts as everyone else, each with its share card: the weekly record digest (Mondays 13:00 UTC), record changes on RESULTS (a kind newly proven, no longer proven, losing to the close, or reaching 50 graded; checked hourly), and today's biggest line moves (daily 21:00 UTC).</p>
+<ol class="steps">
+<li>In Discord: <b>Server Settings &gt; Integrations &gt; Webhooks &gt; New Webhook</b>. Pick the channel, then <b>Copy Webhook URL</b>. You need the Manage Webhooks permission.</li>
+<li>Make a key above (it is saved in this browser), paste the URL below and tap <b>CONNECT</b>. A welcome post lands in the channel straight away.</li>
+<li>To stop: tap <b>DISCONNECT</b>, revoke the key, or delete the webhook in Discord.</li>
+</ol>
+<ul class="rules">
+<li>Every channel gets the same posts. Nothing is sized, picked or set up per person, and nothing places a bet.</li>
+<li>A post says proven only of what RESULTS marks proven, and shows a profit only where RESULTS does.</li>
+<li>One webhook per key. The URL is stored encrypted and never shown again; a webhook Discord says is gone, or 5 failed posts in a row, stops the feed.</li>
+</ul>
+<div class="keybox">
+<form id="fd" class="row2" autocomplete="off"><div style="flex:1 1 260px;min-width:0"><label for="fdUrl">Discord webhook URL</label><input id="fdUrl" name="url" type="url" inputmode="url" maxlength="300" placeholder="https://discord.com/api/webhooks/…"></div><button class="btn" type="submit">CONNECT</button></form>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="fdCheck">CHECK FEED</button><button class="btn warn" type="button" id="fdOff">DISCONNECT</button></div>
+<div id="fdOut" class="msg">Needs a key from this page, saved in this browser.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
+
 <h2 id="widgets">Widgets</h2>
 <p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-game</code> and <code>data-side</code>.</p>
 ${widget('best-price', 'Best price above the fair', 'The top price above Pinnacle\'s no-vig fair, after fees, with its EV and what the book fills. Pick a league with data-league.', ' data-league="nfl" data-n="3"', '?league=nfl&n=3', 330)}
@@ -353,6 +372,38 @@ ${widget('record', 'Proven record card', 'What RESULTS proves, nothing more: gra
       set(null); mine(); out.className = 'msg'; out.textContent = 'Revoked: that key no longer works. Make a new one any time.';
     }).catch(function () { info.textContent = 'Could not reach the server. Try again.'; });
   });
+  // the Discord feed: connect, check, disconnect with the key saved here
+  var fdOut = document.getElementById('fdOut');
+  function fdShow(j) {
+    var d = j && j.discord;
+    if (!d) return;
+    if (d.connected) fdOut.textContent = 'Connected: webhook ' + d.webhook + (d.name ? ' ("' + d.name + '")' : '') + ', since ' + String(d.addedAt).slice(0, 10) + '. Last post ' + (d.lastOkAt ? String(d.lastOkAt).slice(0, 16).replace('T', ' ') + ' UTC' : 'not yet') + '.';
+    else if (d.stoppedAt) { fdOut.className = 'msg err'; fdOut.textContent = 'Stopped ' + String(d.stoppedAt).slice(0, 10) + ': ' + (d.stoppedWhy || '') + (d.lastError ? ' (' + d.lastError + ')' : ''); }
+    else fdOut.textContent = 'No Discord feed on this key.';
+  }
+  function fdCall(method, path, body) {
+    var k = get();
+    if (!k) { fdOut.className = 'msg err'; fdOut.textContent = 'Make a key first (top of the page): the feed is tied to it.'; document.getElementById('kname').focus(); return; }
+    fdOut.className = 'msg'; fdOut.textContent = method === 'PUT' ? 'Checking the webhook with Discord…' : 'Asking…';
+    var h = { 'X-API-Key': k };
+    if (body) h['Content-Type'] = 'application/json';
+    fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { fdOut.className = 'msg err'; fdOut.textContent = j.error.message; return; }
+        fdShow(j);
+        if (j.note) fdOut.textContent = j.note + ' ' + fdOut.textContent;
+      })
+      .catch(function () { fdOut.className = 'msg err'; fdOut.textContent = 'Could not reach the server. Try again.'; });
+  }
+  document.getElementById('fd').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = document.getElementById('fdUrl').value.trim();
+    if (!/^https:\\/\\/(ptb\\.|canary\\.)?discord(app)?\\.com\\/api\\/(v\\d+\\/)?webhooks\\/\\d+\\/[\\w-]+\\/?$/.test(u)) { fdOut.className = 'msg err'; fdOut.textContent = 'That is not a Discord webhook URL. It starts https://discord.com/api/webhooks/ (step 1 above).'; return; }
+    fdCall('PUT', '/api/v1/feed/discord', { url: u });
+  });
+  document.getElementById('fdCheck').addEventListener('click', function () { fdCall('GET', '/api/v1/feed'); });
+  document.getElementById('fdOff').addEventListener('click', function () { fdCall('DELETE', '/api/v1/feed/discord'); });
   document.getElementById('mineForget').addEventListener('click', function () { set(null); mine(); out.className = 'msg'; out.textContent = 'Forgotten in this browser. The key still works wherever you use it.'; });
   document.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('[data-copy]');

@@ -67,14 +67,41 @@ function createKeyStore({ store, now = () => Date.now(), random = n => crypto.ra
     await init();
     const d = check(key);
     if (!d) return null;
-    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked' };
+    const out = { ...d, revokedAt: new Date(now()).toISOString(), status: 'revoked', feed: null };
     byHash.set(d.hash, out);
     await store.put(out);
     return publicKey(out);
   }
   const listFor = userId => (userId ? [...byHash.values()].filter(d => d.userId === userId).map(publicKey) : []);
-  const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length });
-  return { init, create, check, revoke, listFor, stats };
+  const stats = () => ({ keys: [...byHash.values()].filter(d => !d.revokedAt).length, revoked: [...byHash.values()].filter(d => d.revokedAt).length,
+    feeds: [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).length });
+  // ── the Discord feed a key's owner connected (outfeed.js): one webhook per
+  // key, kept sealed (the caller seals it), dropped with the key on revoke ──
+  async function setFeed(key, feed) {
+    await init();
+    const d = check(key);
+    if (!d) return null;
+    const out = { ...d, feed: feed || null };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return out;
+  }
+  // every live key's feed: [{ keyId, feed }]
+  const feeds = () => [...byHash.values()].filter(d => !d.revokedAt && d.feed && !d.feed.deadAt).map(d => ({ keyId: d.id, feed: d.feed }));
+  // after a send: ok resets the failure count; dead (or 5 fails in a row) retires the feed
+  async function markFeed(keyId, r) {
+    const d = [...byHash.values()].find(x => x.id === keyId);
+    if (!d || !d.feed) return null;
+    const t = new Date(now()).toISOString();
+    const fails = r.ok ? 0 : (d.feed.fails || 0) + 1;
+    const feed = { ...d.feed, fails, lastOkAt: r.ok ? t : d.feed.lastOkAt || null, lastFailAt: r.ok ? d.feed.lastFailAt || null : t,
+      lastError: r.ok ? null : String(r.why || '').slice(0, 160), deadAt: !r.ok && (r.dead || fails >= 5) ? t : null };
+    const out = { ...d, feed };
+    byHash.set(d.hash, out);
+    await store.put(out);
+    return feed;
+  }
+  return { init, create, check, revoke, listFor, stats, setFeed, feeds, markFeed };
 }
 const publicKey = d => ({ id: d.id, name: d.name, createdAt: d.createdAt, revokedAt: d.revokedAt || null, signedIn: !!d.userId });
 
