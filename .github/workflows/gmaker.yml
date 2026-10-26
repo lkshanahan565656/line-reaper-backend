@@ -6,14 +6,14 @@ concurrency: { group: diag-gmaker, cancel-in-progress: true }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: |
           mkdir -p out
-          node probe.mjs 2>&1 | tee out/log.txt
+          node pull.mjs 2>&1 | tee out/log.txt
       - if: always()
         run: |
           cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "gmaker $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-gmaker-out
