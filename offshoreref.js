@@ -59,6 +59,7 @@ const DEFAULTS = {
   marksMin: [30, 60],
   target: 50,
   lot: 100,
+  pmusConcurrency: 6,
 };
 const VENUE_NAME = { kalshi: 'Kalshi', pmus: 'Polymarket US' };
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
@@ -250,15 +251,22 @@ function createOffshoreRef({ http, post = null, pairs = [], store, now = () => D
     }
     return out;
   }
+  // every Polymarket US book, six at a time (47 books a minute is under 1 request a second)
   async function readPmus() {
     const out = new Map();
-    for (const slug of [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))]) {
-      try {
-        const res = await http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 8000 });
-        const b = pmus.parseBook(res?.data);
-        if (b) out.set(slug, b);
-      } catch (e) { if (out.size === 0 && e?.response?.status !== 404) throw e; }
-    }
+    const slugs = [...new Set(pairs.map(p => p.u?.slug).filter(Boolean))];
+    let i = 0, fails = 0, lastErr = null;
+    await Promise.all(Array.from({ length: Math.min(o.pmusConcurrency, slugs.length) }, async () => {
+      while (i < slugs.length) {
+        const slug = slugs[i++];
+        try {
+          const res = await http.get(`${GATEWAY}/v1/markets/${encodeURIComponent(slug)}/book`, { timeout: 8000 });
+          const b = pmus.parseBook(res?.data);
+          if (b) out.set(slug, b);
+        } catch (e) { fails++; lastErr = e; }
+      }
+    }));
+    if (!out.size && fails && lastErr) throw lastErr;
     return out;
   }
   // size at or under the flagged price on the venue's book

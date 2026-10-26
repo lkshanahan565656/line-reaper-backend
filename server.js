@@ -4401,7 +4401,9 @@ const offshoreref = require('./offshoreref');
 const OFFSHORE_PAIRS = require('./seeds/offshore-pairs.json');
 const offshoreRefOn = () => !/^(off|0|false|no)$/i.test(String(process.env.OFFSHORE_REF || '').trim());
 const offshoreRef = offshoreref.createOffshoreRef({
-  http: upstream, post: (url, body, cfg) => axios.post(url, body, cfg), pairs: OFFSHORE_PAIRS.pairs,
+  // straight to the venues, not through the shared polite queue: its backlog on the
+  // Polymarket US host held a tick to 137 s live (10-26). About 50 calls a minute.
+  http: { get: (url, cfg) => axios.get(url, cfg) }, post: (url, body, cfg) => axios.post(url, body, cfg), pairs: OFFSHORE_PAIRS.pairs,
   store: resultsBackup.wrap('offshoreRef', createPickFileStore(process.env.OFFSHORE_REF_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'offshore-ref.json'))),
 });
 offshoreRef.ready.catch(e => console.error('Offshore reference: store failed to initialise:', e.message));
@@ -5143,7 +5145,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.204.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.204.1', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8961,7 +8963,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.204.0',
+  version: '3.204.1',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
