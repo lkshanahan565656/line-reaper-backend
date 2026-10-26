@@ -133,6 +133,9 @@ function createPush({ store, webpush = require('web-push'), env = process.env, l
   async function device(endpoint) {
     await ready;
     const d = subs.get(subId(endpoint));
+    // the push service said this subscription is gone (it expired or the
+    // browser dropped it): the device has to make a new one, not re-send it
+    if (d && d.status === 'dead' && /^gone\b/.test(d.reason || '')) return { active: false, expired: true, reason: d.reason, kinds: cleanKinds(d.kinds) };
     if (!d || d.status !== 'active') return { active: false, kinds: [] };
     return { active: onKey(d), staleKey: !onKey(d), kinds: cleanKinds(d.kinds), at: d.at, lastOkAt: d.lastOkAt || null, lastFailAt: d.lastFailAt || null };
   }

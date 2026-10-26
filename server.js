@@ -31,7 +31,7 @@ app.get('/api/health', (req, res) => {
 const liveCheck = require('./livecheck').createLiveCheck(axios, {
   url: process.env.LIVE_CHECK_URL || `https://raw.githubusercontent.com/${process.env.RAILWAY_GIT_REPO_OWNER && process.env.RAILWAY_GIT_REPO_NAME ? `${process.env.RAILWAY_GIT_REPO_OWNER}/${process.env.RAILWAY_GIT_REPO_NAME}` : 'lkshanahan565656/line-reaper-backend'}/diag-e2e-smoke-out/smoke.json`,
 });
-app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state }));
+app.get('/api/ops', (req, res) => res.set('Cache-Control', 'no-store').json({ ...ops.state(), stores: require('./jsonstore').storeStats(), liveCheck: liveCheck.state, venueTaps: venueTaps.state() }));
 // "go read the smoke result": the server reads it from GitHub itself, nothing is taken from the caller
 app.post('/api/ops/smoke', async (req, res) => res.set('Cache-Control', 'no-store').json(await liveCheck.refresh()));
 const profiler = require('./ops').createProfiler();
@@ -4745,7 +4745,8 @@ function loadApp() {
   try {
     appHtml = fs.readFileSync(APP_FILE, 'utf8')
       .replace(/const BACKEND_URL = '[^']*';/, 'const BACKEND_URL = location.origin;')
-      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`);
+      .replace("'__TERMS_VERSION__'", `'${legal.TERMS_VERSION}'`)
+      .replace('/*@@LRVENUE@@*/', () => fs.readFileSync(path.join(__dirname, 'venuelinks.js'), 'utf8').replace(/<\/script/gi, '<\\/script'));
   } catch { appHtml = null; }
   return appHtml;
 }
@@ -4883,7 +4884,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.195.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.196.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6943,6 +6944,24 @@ const oddsHistoryStore = resultsBackup.wrap('oddsHistory', {
   put: async d => { oddsHistory.load([d]); }, putMany: async ds => { oddsHistory.load(ds); },
 }, { appendOnly: false });
 oddsHistoryStore.init().catch(e => console.warn('Odds history: restore failed:', e.message)).finally(() => { oddsHistoryBooted = true; });
+// Venue link taps (venuelinks.js): a count per venue, link kind and day, for
+// /api/ops. Product telemetry only: no user, IP or stake is kept. Capped at
+// 300 a minute across everyone so a script can't inflate it much.
+const venueTaps = require('./venuelinks').createTapCounter();
+let venueTapsBooted = false;
+const venueTapsStore = resultsBackup.wrap('venueTaps', {
+  init: async () => {}, all: async () => (venueTapsBooted ? venueTaps.dump() : []),
+  put: async d => { venueTaps.load([d]); }, putMany: async ds => { venueTaps.load(ds); },
+}, { appendOnly: false });
+venueTapsStore.init().catch(e => console.warn('Venue taps: restore failed:', e.message)).finally(() => { venueTapsBooted = true; });
+const tapWindow = { at: 0, n: 0 };
+app.post('/api/ops/tap', (req, res) => {
+  const t = Date.now();
+  if (t - tapWindow.at > 60e3) { tapWindow.at = t; tapWindow.n = 0; }
+  if (++tapWindow.n > 300) return res.status(429).end();
+  const ok = venueTaps.tap(req.body?.venue, req.body?.exact === true);
+  res.status(ok ? 204 : 400).end();
+});
 const oddsScreenState = { at: 0, observedAt: null, errors: [] };
 function oddsScreenFor({ league = null, state = null, q = '', kalshiOk = true } = {}) {
   const fresh = Date.now() - Date.parse(freeBooksState.gamesAt || 0) < FREE_BOOKS_MAX_AGE_MS;
@@ -8595,7 +8614,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.195.1',
+  version: '3.196.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

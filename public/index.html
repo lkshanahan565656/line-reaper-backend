@@ -1438,6 +1438,12 @@ body.no-help .clv-info { display:none; }
 .os-tbl td.best a { color:#06110d; }
 .os-tbl td.top { color:#34d399; box-shadow:inset 0 0 0 1px rgba(52,211,153,.55); border-radius:4px; }
 .os-tbl td a { color:inherit; text-decoration:none; }
+/* tap-to-venue links (vLink): a chip on its own, or a price that opens the venue */
+a.vlink:not(.vwrap) { display:inline-block; font-size:10px; letter-spacing:.04em; color:#34d399; border:1px solid #1f3b30; border-radius:3px; padding:1px 5px; text-decoration:none; white-space:nowrap; line-height:1.5; }
+a.vlink.vboard:not(.vwrap) { color:#94a3b8; border-color:#334155; }
+a.vlink:not(.vwrap):hover { border-color:#34d399; }
+a.vwrap { color:inherit; text-decoration:none; }
+a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .os-tbl td .ev { display:block; font-size:9px; opacity:.85; }
 .os-tbl td.diff { color:#475569; font-size:11px; }
 .os-tbl tr.mk td { background:rgba(15,23,42,.6); font:600 9px 'JetBrains Mono',monospace; letter-spacing:.1em; color:#64748b; text-align:left; text-transform:uppercase; padding:5px 8px; }
@@ -2156,7 +2162,54 @@ body::before { display:none !important; }
   <div>Line Reaper is an information and analytics tool, not a sportsbook, exchange or adviser. It does not take bets or hold funds, and nothing here is financial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div>
 </footer>
 
+<script>/*@@LRVENUE@@*/</script>
 <script>
+// ─── TAP TO VENUE ────────────────────────────────────────────────────────────
+// Every priced row links to the venue that offers it (venuelinks.js, inlined
+// here by the server as window.LRVenue). Plain navigation: no stake, no slip,
+// nothing copied, no bet placed, the same link for everyone. An exact link
+// opens the market; a BOARD link opens the venue's board (the app has no
+// public page for that player or market). Each tap is counted per venue for
+// /api/ops, with nothing about who tapped.
+function vLink(venue, ctx, inner, cls = '') {
+  const L = window.LRVenue ? window.LRVenue.link(venue, ctx || {}) : null;
+  if (!L) return inner || '';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return `<a class="vlink${inner ? ' vwrap' : ''}${L.exact ? '' : ' vboard'}${cls ? ' ' + cls : ''}" data-venue="${L.venue}" data-exact="${L.exact ? 1 : 0}" href="${esc(L.href)}" target="_blank" rel="noopener" title="${esc(L.title)}">${inner || esc(L.label)}</a>`;
+}
+// What a failed load says on screen: what is happening and what to do, never
+// a raw error. A 502/503/504, an HTML page where JSON should be, or a dropped
+// connection is almost always Railway swapping in a new deploy (about 8
+// minutes); every view that shows this reloads on its own timer.
+function lrErr(e) {
+  const m = String((e && e.message) || e || '');
+  const st = +((e && e.status) || (/\bHTTP (\d{3})\b/.exec(m) || [])[1] || (/^\d{3}$/.test(m.trim()) ? m.trim() : 0));
+  const again = 'Try again in a minute: switch tabs and back, or reload the page.';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return `You're offline. ${again}`;
+  if (/failed to fetch|networkerror|load failed|network request failed|aborted/i.test(m)) return `Couldn't reach the server. It may be restarting for an update (about 8 minutes), or the connection dropped. ${again}`;
+  const generic0 = /^(HTTP )?\d{3}$/.test(m.trim());
+  if (st === 502 || st === 504 || (st === 503 && generic0) || /unexpected token|not valid json|json\.parse|unexpected end of json/i.test(m)) return `The server is restarting for an update (about 8 minutes). ${again}`;
+  // a 4xx with the server's own words keeps them: they say what to do
+  const generic = generic0;
+  if (st === 429) return 'Too many requests for a moment. Wait a minute, then switch tabs and back.';
+  if (st === 401 && generic) return 'Your sign-in ended. Sign in again to load this.';
+  if (st === 403 && generic) return 'This view is not open on this account.';
+  if (st >= 500) return /^HTTP \d{3}$/.test(m) ? `The server could not build this view (HTTP ${st}). ${again} If it keeps failing, the feed behind it is down.` : `${m.replace(/\.$/, '')}. ${again}`;
+  if ((st === 404 && generic) || m === 'old backend') return 'This view needs a newer server version. It appears after the next deploy.';
+  if (st >= 400 && generic) return `The server turned this request down (HTTP ${st}). ${again}`;
+  return m || `Something went wrong loading this view. ${again}`;
+}
+// a row's venue link sits inside rows that open on a tap: the link wins
+document.addEventListener('click', e => {
+  const a = e.target && e.target.closest ? e.target.closest('a.vlink') : null;
+  if (!a) return;
+  e.stopPropagation();
+  try {
+    const body = JSON.stringify({ venue: a.dataset.venue, exact: a.dataset.exact === '1' });
+    const url = (typeof BACKEND_URL !== 'undefined' && BACKEND_URL ? BACKEND_URL : location.origin) + '/api/ops/tap';
+    if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'application/json' })))) fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+  } catch {}
+}, true);
 // ─── SHARE LINKS ─────────────────────────────────────────────────────────────
 // A link to a screen: the tab and, on ODDS SCREEN, the view and its filters,
 // packed after the # of the app's URL (/app#lr&t=odds&m=opps&...). Nothing is
@@ -2509,8 +2562,10 @@ async function loadOdds() {
     const r = await fetch(`${BACKEND_URL}/api/odds-screen?${qs}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     osUi.data = await r.json();
+    osUi.refreshErr = null;
   } catch (e) {
-    if (!osUi.data) document.getElementById('osContent').innerHTML = `<div class="error-box">Could not load the odds screen (${escAttr(e.message)}). <button class="key-btn" onclick="loadOdds()">RETRY</button></div>`;
+    osUi.refreshErr = lrErr(e);
+    if (!osUi.data) document.getElementById('osContent').innerHTML = `<div class="error-box">Could not load the odds screen. ${escAttr(lrErr(e))} <button class="key-btn" onclick="loadOdds()">RETRY</button></div>`;
   }
   if (osUi.data) renderOdds();
   if (document.getElementById('page-odds')?.classList.contains('active')) osUi.timer = setTimeout(() => { if (!document.hidden) loadOdds(); else osUi.timer = setTimeout(loadOdds, 60e3); }, 60e3);
@@ -2530,7 +2585,7 @@ function renderOdds() {
   const upd = d.updated ? new Date(d.updated).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
   document.getElementById('osSum').innerHTML = `<span><b>${games.length}</b> games</span><span><b>${(d.venues || []).filter(v => !v.ref).length}</b> venues</span>` +
     (d.pro ? `<span><b>${c.plusEv ?? 0}</b> sides priced above the fair</span>` : `<span>Fair and EV: <a href="#" onclick="acctUpgrade();return false" style="color:#34d399">Pro</a></span>`) +
-    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
+    `<span>Prices read ${upd}${d.stale ? ' <b style="color:#f87171">(stale)</b>' : ''}</span>` + (osUi.refreshErr ? `<span style="color:#fbbf24" title="${escAttr(osUi.refreshErr)}">Could not refresh: these prices are from ${upd} and may have moved. It tries again every minute.</span>` : '') + (d.stateInfo ? `<span style="color:#34d399">${escAttr(d.stateInfo.name)}: ${escAttr(d.stateInfo.note)}</span>` : '');
   const box = document.getElementById('osContent');
   if (!games.length) {
     box.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">${d.stale ? 'The price feeds have not answered in the last few minutes.' : osUi.state ? 'No game in the next two days has a venue legal in this state priced yet.' : 'No game in the next two days is priced yet.'}</div></div>`;
@@ -2546,15 +2601,16 @@ function osGame(g, cols, pro) {
   const rows = g.markets.map(m => {
     const hold = m.bestHold == null ? '' : m.bestHold < 0 ? `<span style="color:#34d399">arb ${osPct(-m.bestHold)}</span>` : `hold at the best prices ${(m.bestHold * 100).toFixed(1)}%`;
     const mk = `<tr class="mk"><td class="side">${g.markets.length > 1 ? escAttr(m.label) : ''}</td><td colspan="${cols.length + (pro ? 1 : 0)}">${hold}</td></tr>`;
-    return mk + m.sides.map((s, si) => `<tr><td class="side"><button class="os-log" title="Log this bet in MY BETS: it follows Pinnacle's price at this number to the close and grades from the final" onclick="osLog('${escAttr(g.id)}','${m.key}',${si})">LOG</button>${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
+    return mk + m.sides.map((s, si) => `<tr${s.venues.some(x => !x.ref) ? ' data-vrow="1"' : ''}><td class="side"><button class="os-log" title="Log this bet in MY BETS: it follows Pinnacle's price at this number to the close and grades from the final" onclick="osLog('${escAttr(g.id)}','${m.key}',${si})">LOG</button>${escAttr(s.label)}</td>${pro ? `<td class="fair">${osAm(s.fairAmerican)}<span class="ev">${s.fair != null ? (s.fair * 100).toFixed(1) + '%' : ''}</span></td>` : ''}` +
       cols.map(v => {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
         const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
           fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
-        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}</td>`;
+        const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
+        if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
-        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.url && !x.ref ? `<a href="${escAttr(x.url)}" target="_blank" rel="noopener">${inner}</a>` : inner}</td>`;
+        return `<td class="${x.best ? (x.ev > 0 ? 'best' : 'top') : x.ref ? 'ref' : ''}"${xp} ${x.best ? `title="Best price you can bet${x.ev > 0 ? ', above the fair' : ', still under the fair'}"` : ''}>${x.ref ? inner : vLink(x.venue, vctx, inner)}</td>`;
       }).join('') + '</tr>').join('');
   }).join('');
   const open = !!osUi.open[g.id];
@@ -3376,7 +3432,7 @@ async function loadData() {
       renderShop(allGames, document.getElementById('shopSearch')?.value || '');
     }
   } catch(e) {
-    document.getElementById('linesContent').innerHTML = `<div class="error-box">${e.message}<br><br><button class="key-btn" onclick="loadData()">RETRY</button></div>`;
+    document.getElementById('linesContent').innerHTML = `<div class="error-box">${lrErr(e)}<br><br><button class="key-btn" onclick="loadData()">RETRY</button></div>`;
     console.error('Load error:', e);
   }
 
@@ -4762,6 +4818,8 @@ const featuresReady = readFeatures().then(f => {
   if (f.oddsApi !== false) { apiKey = 'backend'; return; }
   layNoOddsApi = true;
   apiKey = '';
+  // the line shop and best-line views read the same paid feed: say so instead of "load lines first"
+  for (const id of ['shopContent', 'bestLineContent']) { const el = document.getElementById(id); if (el && /Load lines first/.test(el.textContent)) el.innerHTML = ODDS_API_OFF_HTML; }
   if (!Object.keys(layTabs).length) return;
   layApply();
   const cur = LAY_ODDS_API.find(n => layTabs[n]?.classList.contains('active') && layIsHidden(n));
@@ -4861,7 +4919,7 @@ async function pushSub() {
 const pushJson = async (path, body) => {
   const r = await fetch(`${BACKEND_URL}${path}`, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `Server answered ${r.status}`);
+  if (!r.ok) { const e = new Error(j.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
   return j;
 };
 const bytesToB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -4882,12 +4940,20 @@ async function pushSync() {
       sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) });
     }
     let st = await pushJson('/api/push/device', { endpoint: sub.endpoint });
-    if (!st.active) { await pushJson('/api/push/subscribe', { subscription: sub.toJSON(), kinds: pushSavedKinds() }); st = await pushJson('/api/push/device', { endpoint: sub.endpoint }); }
+    // expired at the push service: drop it and make a new one with the same choices
+    if (st.expired) {
+      const kinds = st.kinds?.length ? st.kinds : pushSavedKinds();
+      await sub.unsubscribe().catch(() => {});
+      sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(k.key) });
+      await pushJson('/api/push/subscribe', { subscription: sub.toJSON(), kinds });
+      st = { ...(await pushJson('/api/push/device', { endpoint: sub.endpoint })), renewed: true };
+    } else if (!st.active) { await pushJson('/api/push/subscribe', { subscription: sub.toJSON(), kinds: pushSavedKinds() }); st = await pushJson('/api/push/device', { endpoint: sub.endpoint }); }
     if (st.kinds) pushSaveKinds(st.kinds);
     pushState = st;
     return st;
-  } catch { return null; }
+  } catch (e) { pushSyncErr = lrErr(e); return null; }
 }
+let pushSyncErr = null;
 async function pushRefresh() {
   const btn = document.getElementById('pushBtn'), note = document.getElementById('pwaNote'), row = document.getElementById('pwaInstallRow'), more = document.getElementById('pushMore');
   if (!btn) return;
@@ -4905,7 +4971,10 @@ async function pushRefresh() {
   if (!sub) return;
   more.style.display = '';
   if (!pushKindList) { try { pushKindList = (await pushJson('/api/push/kinds')).kinds; } catch { pushKindList = []; } }
+  pushSyncErr = null;
   const st = pushState || await pushSync();
+  if (st?.renewed) { note.textContent = "This device's alert subscription had expired at the push service, so it was renewed with the same alerts. Tap SEND TEST to check it."; st.renewed = false; }
+  else if (!st && pushSyncErr) note.textContent = `Couldn't check this device's alerts with the server. ${pushSyncErr}`;
   const on = new Set(st?.kinds || pushSavedKinds() || pushKindList.map(k => k.key));
   document.getElementById('pushKinds').innerHTML = pushKindList.map(k => `<div class="lay-row"><span class="lay-name" style="font-weight:500">${escAttr(k.label)}</span><button class="lay-b${on.has(k.key) ? ' on' : ''}" onclick="pushKind('${k.key}')">${on.has(k.key) ? 'ON' : 'OFF'}</button></div>`).join('') ||
     '<div class="lay-row"><span class="lay-name" style="font-weight:500">Could not load the alert kinds. Close and reopen this panel.</span></div>';
@@ -4918,7 +4987,7 @@ async function pushKind(key) {
   try {
     const r = await pushJson('/api/push/kinds', { endpoint: sub.endpoint, kinds: [...cur] });
     pushSaveKinds(r.kinds); pushState = { ...(pushState || {}), active: true, kinds: r.kinds };
-  } catch (e) { note.textContent = e.message; }
+  } catch (e) { note.textContent = lrErr(e); }
   pushRefresh();
 }
 async function pushTest() {
@@ -4936,7 +5005,7 @@ async function pushTest() {
       try { shown = (await pushJson(`/api/push/test/${encodeURIComponent(r.nonce)}`)).shown; } catch {}
     }
     note.textContent = shown ? 'Delivered: this device showed the test alert.' : 'Sent and accepted by the push service, but this device has not confirmed it yet. If nothing showed up, check that notifications for Line Reaper are allowed in your phone settings.';
-  } catch (e) { note.textContent = e.message || 'The test did not send.'; }
+  } catch (e) { note.textContent = e && e.message ? lrErr(e) : 'The test did not send.'; }
   setTimeout(() => { btn.disabled = false; }, 3000);
 }
 async function pushToggle() {
@@ -4960,7 +5029,7 @@ async function pushToggle() {
       pushSaveKinds(j.kinds); pushState = { active: true, kinds: j.kinds };
       note.textContent = 'Push alerts are on for this device. Tap SEND TEST to check it.';
     }
-  } catch (e) { note.textContent = e.message || 'Could not change push alerts.'; }
+  } catch (e) { note.textContent = e && e.message ? lrErr(e) : 'Could not change push alerts.'; }
   await pushRefresh();
 }
 // every app open re-checks the device, so a server that lost it signs it up again
@@ -5457,7 +5526,7 @@ async function loadPropsBoard() {
     renderPropsBoard();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">Couldn't load the board (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO PROPS</div><div class="empty-sub">Couldn't load the board. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 // The sports props record (/api/props/record): every flagged leg, checked at
@@ -5597,7 +5666,7 @@ function pbCell(row, key, name) {
   const xp = xpA({ event: row.matchTitle || [row.team, row.opponent].filter(Boolean).join(' vs '), league: row.sport, start: row.startTime, market: row.market, selection: `${row.player} ${c.ev ? pbSideWord(key, c.ev.side) : c.fair != null ? pbSideWord(key, 'Over') : ''}`.trim(), line: c.line,
     venue: key, venueName: name, multiplier: mOn != null ? +mOn : null, shown: key === 'prizepicks' ? 'standard' : price, fair: c.fair != null ? (c.ev?.side === 'Under' ? 1 - c.fair / 100 : c.fair / 100) : null, fairSrc: c.fair != null ? "books' consensus" : null,
     ev: c.ev ? c.ev.ev / 100 : null, readAt: pbState.data?.updated, tag: best ? 'best' : '' });
-  return `<div class="pb-bk${best ? ' best' : ''}"${xp}>${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${c.line}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
+  return `<div class="pb-bk${best ? ' best' : ''}"${xp}>${best ? '<span class="pb-besttag">BEST</span>' : ''}${label}<div class="pb-line">${vLink(key, { league: row.sport, player: row.player, what: `${row.player} ${row.market} ${c.line}` }, c.line)}</div><div class="pb-dim">${price}${be}</div>${fair}${ev}</div>`;
 }
 // ── LINES: one app's lines in a table, best EV first ──
 // Each row: the app's line, our fair line (the sharp books' consensus median,
@@ -5671,11 +5740,11 @@ function lnRow(r, book) {
     venue: book, venueName: PB_BOOKS.find(x => x[0] === book)?.[1] || book, multiplier: mult != null ? +mult : null, shown: multTxt, fair: prob != null ? prob / 100 : null,
     fairSrc: prob == null ? null : r.esports ? 'our esports model' : ev?.bookFair ? 'sportsbooks only, not sharp' : 'sharp consensus', ev: ev ? ev.ev / 100 : null, readAt: pbState.data?.updated,
     tag: [go ? 'clears the bettable bar' : '', ev?.h2h ? 'H2H model' : '', moved ? 'stale' : '', fairLine != null ? `fair line ${lnFix(fairLine)}` : ''].filter(Boolean).join(', ') });
-  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}"${xp}>
+  return `<div class="ln-row${used ? ' used' : ''}${go ? ' go' : ''}"${xp}${c.line != null ? ' data-vrow="1"' : ''}>
     <div class="ln-who"><div class="ln-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b><span class="ln-apps">${apps}</span>${pbAncChip(r)}</div>
       <div class="ln-meta"><span class="ln-mprop">${escAttr(r.market)} · </span>${meta}</div></div>
     <div class="ln-prop">${escAttr(r.market)}</div>
-    <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}"><span class="ln-badge" style="--bk:${color}">${c.line ?? '—'}${dot}</span></div>
+    <div class="c" data-l="${PB_BOOKS.find(x => x[0] === book)?.[2] || 'Line'}">${c.line != null ? vLink(book, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${c.line}` }, `<span class="ln-badge" style="--bk:${color}">${c.line}${dot}</span>`) : `<span class="ln-badge" style="--bk:${color}">—${dot}</span>`}</div>
     <div class="c" data-l="Model">${locked ? '<span class="ln-badge none">Pro</span>' : lnFix(fairLine) != null ? `<span class="ln-badge model" title="Fair line from ${escAttr(src)}">${lnFix(fairLine)}</span>${h2 ? `<span class="ln-pin h2h" title="${escAttr(pbH2hTitle())}">H2H</span>${r.model.pin ? `<span class="ln-pin" title="Pinnacle-based fair: ${r.model.pin.proj}">PIN ${lnFix(r.model.pin.proj)}</span>` : ''}` : r.model?.share ? `<span class="ln-pin" title="${r.model.share.rounds ? 'Pinnacle-backed: Pinnacle\'s rounds × his kills a round' : 'Pinnacle-backed: Pinnacle\'s team kills × his share of them'}">PIN</span>` : ''}${booksChip}` : '<span class="ln-badge none" title="No sharp book has this prop; priced on ${escAttr(src)}">—</span>'}</div>
     <div class="c" data-l="Lean">${ev ? `<span class="ln-lean ${ev.side === 'Over' ? 'over' : 'under'}" title="${pbSideWord(book, ev.side)} on ${PB_BOOKS.find(x => x[0] === book)?.[1]}">${ev.side === 'Over' ? 'OVER' : 'UNDER'}</span>` : '<span class="ln-num">—</span>'}</div>
     <div class="c" data-l="Prob"><span class="ln-num ${evCls === 'bad' ? '' : evCls}">${prob != null ? (+prob).toFixed(1) + '%' : '—'}</span></div>
@@ -5723,8 +5792,8 @@ function renderPromos() {
     const mult = p.mult != null ? `${(+p.mult).toFixed(2)}x` : '<span class="dim" title="PrizePicks does not publish this payout">?</span>';
     const req = p.req == null ? '<span class="dim">—</span>' : p.canPay === false ? '<span class="neg" title="At this multiplier the leg would have to hit more than 100% of the time">can\'t pay</span>' : pct(p.req);
     const word = pbSideWord(p.app, p.side).toUpperCase();
-    return `<div class="pm-row">
-      <div class="pm-type"><b>${escAttr(p.appLabel)}</b> ${escAttr(p.typeLabel)}${p.note ? ` · ${escAttr(p.note)}` : ''}</div>
+    return `<div class="pm-row" data-vrow="1">
+      <div class="pm-type"><b>${escAttr(p.appLabel)}</b> ${escAttr(p.typeLabel)}${p.note ? ` · ${escAttr(p.note)}` : ''} ${vLink(p.app, { league: p.sport, player: p.player, what: `${p.player} ${p.market} ${p.line}` })}</div>
       <div class="pm-who"><b>${escAttr(p.player)}</b> <span>${escAttr(p.sport)} · ${escAttr(p.market)} · ${pbFmtStart(p.startTime)}</span><br>${word} ${escAttr(p.line)}${p.baseLine != null ? ` <span title="The app cut this line from ${escAttr(p.baseLine)}">(was ${escAttr(p.baseLine)})</span>` : ''}</div>
       <div class="pm-c-mult">${mult}</div>
       <div class="pm-c-req" title="Hit rate this leg needs at its own payout">${req}</div>
@@ -5908,7 +5977,7 @@ async function loadShop(seq) {
     renderPropsBoard();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SHOP</div><div class="empty-sub">Couldn't load the shop (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SHOP</div><div class="empty-sub">Couldn't load the shop. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 async function loadShopRecord() {
@@ -5938,7 +6007,7 @@ async function loadScorecard(seq) {
     renderPropsBoard();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SCORECARD</div><div class="empty-sub">Couldn't load the app scorecard (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO SCORECARD</div><div class="empty-sub">Couldn't load the app scorecard. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 function ascSet(k, v) { pbState[k] = v; if (k === 'cardSport') { pbState.card = null; loadPropsBoard(); } else renderPropsBoard(); }
@@ -5984,11 +6053,11 @@ function renderShop() {
       const tied = s.tied.length > 1 ? ` <span class="dim">(also ${s.tied.filter(a => a !== s.app).map(code).join(', ')})</span>` : '';
       const fair = s.fair != null ? `<span class="dim" title="${s.fairSource === 'sharp' ? 'Pinnacle or Kalshi at this number' : 'FanDuel or BetRivers only, not sharp'}">fair ${s.fair}%${s.fairSource === 'books' ? ' (books)' : ''}</span>` : d.pro ? '<span class="dim">no sharp price</span>' : '<span class="dim">fair: Pro</span>';
       const ev = s.ev != null ? `<span class="aps-ev ${s.ev > 0 ? 'pos' : 'neg'}" title="At ${escAttr(name(s.app))}'s own break-even ${(s.be * 100).toFixed(1)}%. Grey: research, not a play">EV ${pbEvTxt(s.ev)}</span>` : '';
-      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b>${multTxt(s.app, c, s.side)}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
+      return `<div class="aps-side"><button class="aps-add${pkHas(r.key, s.app) && pk.legs.find(l => l.rk === r.key)?.side === s.side ? ' on' : ''}" title="Add to a ${escAttr(name(s.app))} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${s.app}','${s.side}')">+ LOG</button><span class="sd ${s.side === 'Over' ? 'over' : 'under'}">${pbSideWord(s.app, s.side).toUpperCase()}</span><span class="num">${s.line}</span> on <b>${escAttr(name(s.app))}</b>${multTxt(s.app, c, s.side)} ${vLink(s.app, { league: r.sport, player: r.player, what: `${r.player} ${r.market} ${s.line}` })}${tied} <span class="aps-gap" title="The softest number beats the nearest other app (${escAttr(name(s.nearest.app))} ${s.nearest.line}) by this much">gap ${s.gap}</span> <span class="dim">break-even ${(s.be * 100).toFixed(1)}%</span> ${fair} ${ev}</div>`;
     }).join('');
     const mids = (r.middles || []).map(m => m.locked ? `<div class="aps-mid dim">${m.count} middle${m.count > 1 ? 's' : ''} worth more than zero: Pro</div>`
       : `<div class="aps-mid"><span class="aps-gap" style="color:#94a3b8">MIDDLE</span> <button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.over.app}','Over')">+</button> ${pbSideWord(m.over.app, 'Over')} ${m.over.line} ${code(m.over.app)} &nbsp;<button class="aps-add" onclick="pkAddShop('${escAttr(r.key)}','${m.under.app}','Under')">+</button> ${pbSideWord(m.under.app, 'Under')} ${m.under.line} ${code(m.under.app)} <span class="dim">· window ${m.width} · both win ${(m.pMiddle * 100).toFixed(0)}% · ${m.expUnits > 0 ? '+' : ''}${m.expUnits}u a pair expected, on ${m.source === 'apps' ? "the apps' own numbers (no sharp price)" : 'the sharp price'} · two slips, one per app</span></div>`).join('');
-    return `<div class="aps-row"><div class="aps-pl"><b>${escAttr(r.player)}</b><div>${escAttr(r.sport)} · ${pbMatchup(r, true)} · ${pbFmtStart(r.startTime)}</div></div><div><div style="color:#cbd5e1">${escAttr(r.market)}</div><div class="aps-apps" style="margin-top:4px">${apps}</div></div><div>${sides}${mids}</div><div class="aps-gap" style="text-align:right;font-size:14px">${r.gap}</div></div>`;
+    return `<div class="aps-row"${r.sides.length ? ' data-vrow="1"' : ''}><div class="aps-pl"><b>${escAttr(r.player)}</b><div>${escAttr(r.sport)} · ${pbMatchup(r, true)} · ${pbFmtStart(r.startTime)}</div></div><div><div style="color:#cbd5e1">${escAttr(r.market)}</div><div class="aps-apps" style="margin-top:4px">${apps}</div></div><div>${sides}${mids}</div><div class="aps-gap" style="text-align:right;font-size:14px">${r.gap}</div></div>`;
   }).join('');
   const more = d.total > rows.length ? `<button class="sport-chip" style="margin:12px auto;display:block" onclick="pbState.limit+=150;loadPropsBoard()">SHOW MORE (${d.total - rows.length} left)</button>` : '';
   el.innerHTML = `<div class="aps-note"><b>Research, not a play.</b> The softest number per side across PrizePicks, Underdog, Sleeper and DK Pick6, where two apps sit a full line or more apart. ${d.total.toLocaleString()} props${d.middles ? `, ${d.middles} with a middle worth more than zero` : ''}. On the recorded boards the softest number did not reach any app's break-even, so nothing here is alerted; the SHOP RECORD above follows every leg live. <b>+ LOG</b> adds the leg to a slip on that app (tray below), saved to MY SLIPS.</div>
@@ -6022,7 +6091,7 @@ async function loadNbaModel(seq) {
     renderNbaModel();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the ${cfg.name} model (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the ${cfg.name} model. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 function nbmRecTxt(k, be) {
@@ -6087,13 +6156,13 @@ function renderNbaModel() {
       if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
       const lean = a.pSide >= (d.pickMin || 0.58);
       const pay = a.ev != null ? `<div class="pb-dim" title="value per unit at this app's payout for the model's side (break-even ${a.breakEven != null ? (a.breakEven * 100).toFixed(1) + '%' : '—'})">${a.ev >= 0 ? '+' : ''}${(a.ev * 100).toFixed(1)}% at ${a.decimal}x</div>` : '';
-      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="nbm-p${lean ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${vLink(k, { league: r.sport || cfg.sport, player: r.player, what: `${r.player} ${r.market || r.mkey || ''} ${a.line}` }, a.line)}</div><div class="nbm-p${lean ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
     }).join('');
     const pin = r.pinnacle ? `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${r.pinnacle.line}</div><div class="pb-dim">Pinnacle ${pc(r.pinnacle.pOver)} over</div>${r.pinnacle.model != null ? `<div class="pb-dim">model ${pc(r.pinnacle.model)}</div>` : ''}</div>`
       : `<div class="pb-bk none"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">—</div><div class="pb-dim">no prop</div></div>`;
     const ctx = [`${r.minutes} min (±${r.minutesSd})`, r.b2b ? 'back-to-back' : '', r.teammatesOut ? `${r.teammatesOut} teammate${r.teammatesOut > 1 ? 's' : ''} out` : '', r.total != null ? `total ${r.total}` : '', r.spread != null ? `spread ${r.home ? r.spread : -r.spread > 0 ? '+' + -r.spread : -r.spread}` : ''].filter(Boolean).join(' · ');
     const meta = `${escAttr(r.team)} ${r.home ? 'vs' : '@'} ${escAttr(r.opp)} · ${pbFmtStart(r.start)}`;
-    return `<div class="pb-card">
+    return `<div class="pb-card"${cells.includes('class="vlink') ? ' data-vrow="1"' : ''}>
       <div class="pb-who"><div class="pb-name"><span class="pb-sport">${cfg.sport}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${meta}</div><div class="pb-meta">proj ${r.mean} (median ${r.median}) · ${ctx}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div>
       <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="nbm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div>${r.bestPay ? `<div class="pb-dim">best payout ${PB_BOOKS.find(x => x[0] === r.bestPay.book)?.[2] || escAttr(r.bestPay.book)} ${pbSideWord(r.bestPay.book, r.bestPay.side)} ${r.bestPay.line}: ${r.bestPay.ev >= 0 ? '+' : ''}${(r.bestPay.ev * 100).toFixed(1)}%</div>` : ''}<div class="pb-dim">model, not an edge</div></div></div>`;
@@ -6123,7 +6192,7 @@ async function loadCfbModel(seq) {
     renderCfbModel();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the CFB model (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MODEL</div><div class="empty-sub">Couldn't load the CFB model. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 function cfmRecTxt(k, be) {
@@ -6163,13 +6232,13 @@ function renderCfbModel() {
       const label = `<div class="pb-bkname" style="--bk:${PB_COLOR[k]}"><i></i>${ab}</div>`;
       if (!a) return `<div class="pb-bk none">${label}<div class="pb-line">—</div><div class="pb-dim">no line</div></div>`;
       const pay = a.ev != null ? `<div class="pb-dim" title="value per unit at this app's payout for the model's side (break-even ${a.breakEven != null ? (a.breakEven * 100).toFixed(1) + '%' : '—'})">${a.ev >= 0 ? '+' : ''}${(a.ev * 100).toFixed(1)}% at ${a.decimal}x</div>` : '';
-      return `<div class="pb-bk">${label}<div class="pb-line">${a.line}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${vLink(k, { league: 'CFB', player: r.player, what: `${r.player} ${r.market || r.mkey || ''} ${a.line}` }, a.line)}</div><div class="cfm-p${a.pSide >= (d.pickMin || 0.58) ? ' lean' : ''}">${pbSideWord(k, a.side)} ${pc(a.pSide)}</div><div class="pb-dim">${pc(a.pOver)} over</div>${pay}${farCellTxt(a)}</div>`;
     }).join('');
     const bk = r.book ? { ...r.book } : null;
     const sp = r.spread == null ? '' : `spread ${r.spread > 0 ? '+' : ''}${r.spread}`;
     const ctx = [`${r.games} games on file`, r.total != null ? `total ${r.total}` : '', sp].filter(Boolean).join(' · ');
     const meta = `${escAttr(r.team)} ${r.home ? 'vs' : '@'} ${escAttr(r.opp)} · ${pbFmtStart(r.start)}`;
-    return `<div class="pb-card">
+    return `<div class="pb-card"${cells.includes('class="vlink') ? ' data-vrow="1"' : ''}>
       <div class="pb-who"><div class="pb-name"><span class="pb-sport">CFB</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${meta}</div><div class="pb-meta">proj ${r.mean} (median ${r.median ?? '—'}) · ${ctx}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 2},minmax(0,1fr))">${cells}${sideCell('PIN', '#94a3b8', r.pinnacle, 'Pinnacle')}${sideCell(bk ? (bk.book === 'betrivers' ? 'BR' : 'FD') : 'FD', '#1e90ff', bk, bk ? (bk.book === 'betrivers' ? 'BetRivers' : 'FanDuel') : '')}</div>
       <div class="pb-play"><div class="pb-what">model ${PB_BOOKS.find(x => x[0] === r.bestBook)?.[2] || r.bestBook} <span class="pb-side ${r.bestSide === 'Over' ? 'over' : 'under'}">${pbSideWord(r.bestBook, r.bestSide)}</span></div><div class="cfm-p${r.bestP >= (d.pickMin || 0.58) ? ' lean' : ''}">${pc(r.bestP)}</div>${r.bestPay ? `<div class="pb-dim">best payout ${PB_BOOKS.find(x => x[0] === r.bestPay.book)?.[2] || escAttr(r.bestPay.book)} ${pbSideWord(r.bestPay.book, r.bestPay.side)} ${r.bestPay.line}: ${r.bestPay.ev >= 0 ? '+' : ''}${(r.bestPay.ev * 100).toFixed(1)}%</div>` : ''}<div class="pb-dim">model, not an edge</div></div></div>`;
@@ -6198,7 +6267,7 @@ async function loadMlb(seq) {
     renderMlb();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MLB</div><div class="empty-sub">Couldn't load MLB vs Pinnacle (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO MLB</div><div class="empty-sub">Couldn't load MLB vs Pinnacle. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 function mlbRecTxt(k, be) {
@@ -6239,12 +6308,12 @@ function renderMlb() {
       const tag = l.rel === 'gap' ? `<span class="mlb-gap">GAP ${l.gap}</span>` : '<span class="mlb-even">SAME</span>';
       const side = l.side ? `${pbSideWord(k, l.side)}` : '';
       const btn = l.side ? `<button class="mlb-add${on ? ' on' : ''}" title="Add to a ${escAttr(PB_BOOKS.find(b => b[0] === k)?.[1])} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${k}','${l.side}')">+ LOG</button>` : '';
-      return `<div class="pb-bk">${label}<div class="pb-line">${l.line}</div><div class="pb-dim">${tag} ${side}</div>${l.fair != null ? `<div class="pb-dim">Pinnacle ${pc(l.fair)}${l.exact ? '' : ' (curve)'} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${vLink(k, { league: 'MLB', player: r.player, what: `${r.player} ${r.market || r.mkey || ''} ${l.line}` }, l.line)}</div><div class="pb-dim">${tag} ${side}</div>${l.fair != null ? `<div class="pb-dim">Pinnacle ${pc(l.fair)}${l.exact ? '' : ' (curve)'} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
     }).join('');
     const p = r.pinnacle || {};
     const pin = `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${p.line}</div>${p.pOver != null ? `<div class="pb-dim">${pc(p.pOver)} over</div>${p.over != null && p.under != null ? `<div class="pb-dim">o${am(p.over)} u${am(p.under)}</div>` : ''}` : '<div class="pb-dim">Pinnacle</div>'}</div>`;
     const oth = (r.others || []).map(o => `${o.book === 'betrivers' ? 'BetRivers' : o.book === 'fanduel' ? 'FanDuel' : escAttr(o.book)} ${o.line}${o.pOver != null ? ` (${pc(o.pOver)} over)` : ''}`).join(' · ');
-    return `<div class="pb-card">
+    return `<div class="pb-card"${cells.includes('class="vlink') ? ' data-vrow="1"' : ''}>
       <div class="pb-who"><div class="pb-name"><span class="pb-sport">MLB</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}</div><div class="pb-meta">${pbMatchup(r)} · ${pbFmtStart(r.startTime)}</div>${oth ? `<div class="pb-meta">${oth}</div>` : ''}</div>
       <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div></div>`;
   }).join('');
@@ -6266,7 +6335,7 @@ async function loadInjury(seq) {
     renderInjury();
   } catch (e) {
     const el = document.getElementById('pbContent');
-    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO INJURY NEWS</div><div class="empty-sub">Couldn't load the injury news view (${escAttr(e.message)}). Try again in a minute.</div></div>`;
+    if (el && seq === pbState.seq) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:22px">NO INJURY NEWS</div><div class="empty-sub">Couldn't load the injury news view. ${escAttr(lrErr(e))}</div></div>`;
   }
 }
 function renderInjury() {
@@ -6301,11 +6370,11 @@ function renderInjury() {
       if (!l) return `<div class="pb-bk none">${label}<div class="pb-line">${r.books?.[k]?.line ?? '—'}</div><div class="pb-dim">${r.books?.[k] ? 'moved or no change' : 'no line'}</div></div>`;
       const on = pk.app === k && pk.legs.some(x => x.rk === r.key && x.side === l.side);
       const btn = `<button class="mlb-add${on ? ' on' : ''}" title="Add to a ${escAttr(PB_BOOKS.find(b => b[0] === k)?.[1])} slip you log in MY SLIPS" onclick="pkAddShop('${escAttr(r.key)}','${k}','${l.side}')">+ LOG</button>`;
-      return `<div class="pb-bk">${label}<div class="pb-line">${l.line}</div><div class="pb-dim"><span class="mlb-gap">${pbSideWord(k, l.side)}</span> ${l.dPts} pts</div>${l.fair != null ? `<div class="pb-dim">Pinnacle ${pc(l.fair)}${l.exact ? '' : ' (curve)'} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
+      return `<div class="pb-bk">${label}<div class="pb-line">${vLink(k, { league: 'NBA', player: r.player, what: `${r.player} ${r.market || r.mkey || ''} ${l.line}` }, l.line)}</div><div class="pb-dim"><span class="mlb-gap">${pbSideWord(k, l.side)}</span> ${l.dPts} pts</div>${l.fair != null ? `<div class="pb-dim">Pinnacle ${pc(l.fair)}${l.exact ? '' : ' (curve)'} vs ${pc(l.be)}</div>` : `<div class="pb-dim">break-even ${pc(l.be)}</div>`}${btn}</div>`;
     }).join('');
     const any = Object.values(r.legs || {})[0] || {};
     const pin = `<div class="pb-bk"><div class="pb-bkname" style="--bk:#94a3b8"><i></i>PIN</div><div class="pb-line">${any.pinPre?.line ?? '—'} → ${any.pinNow?.line ?? '—'}</div>${any.pinNow?.pOver != null ? `<div class="pb-dim">${pc(any.pinPre?.pOver)} → ${pc(any.pinNow.pOver)} over</div>` : '<div class="pb-dim">before → now</div>'}</div>`;
-    return `<div class="pb-card">
+    return `<div class="pb-card"${cells.includes('class="vlink') ? ' data-vrow="1"' : ''}>
       <div class="pb-who"><div class="pb-name"><span class="pb-sport">NBA</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market || r.mkey)}</div><div class="pb-meta">${escAttr(r.out)} out · ${r.mins} min since the news · ${pbFmtStart(r.startTime)}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${PB_BOOKS.length + 1},minmax(0,1fr))">${cells}${pin}</div></div>`;
   }).join('');
@@ -6342,7 +6411,7 @@ function renderPropsBoard() {
     const cbx = r.combo && !r.combo.locked ? r.combo : null;
     const cbs = cbx ? `<span class="pb-gap dim" title="${escAttr(`At ${cbx.line}, ${cbx.sources.map(x => `${x.book === 'pinnacle-parts' ? "Pinnacle's parts added up" : x.book} ${x.p}% over`).join(', ')}: each one, on its own price, puts ${pbSideWord(cbx.book, cbx.side)} past the app's break-even. Its own record, judged at 50 graded; not a proven play.`)}">COMBO ${PBN[cbx.book] || cbx.book} ${pbSideWord(cbx.book, cbx.side)} ${cbx.line}</span>` : '';
     const meta = [pbMatchup(r), r.startTime ? pbFmtStart(r.startTime) : ''].filter(Boolean).join(' · ');
-    return `<div class="pb-card${plus ? ' plus' : ''}">
+    return `<div class="pb-card${plus ? ' plus' : ''}"${booksOn.some(([k]) => r.books[k]) ? ' data-vrow="1"' : ''}>
       <div class="pb-who"><div class="pb-name"><span class="pb-sport${PB_ES.has(r.sport) ? ' es' : ''}">${escAttr(r.sport)}</span><b>${escAttr(r.player)}</b></div><div class="pb-mk">${escAttr(r.market)}${pbAncChip(r)}${gap}${s3}${cbs}</div><div class="pb-meta">${meta}${proj}</div></div>
       <div class="pb-books" style="grid-template-columns:repeat(${booksOn.length},minmax(0,1fr))">${booksOn.map(([k, , ab]) => pbCell(r, k, ab)).join('')}</div>
       <div class="pb-play">${bestTxt}</div></div>`;
@@ -6452,7 +6521,7 @@ let sharpSigTimer = null;
 // so SHARP FEED shows the exchanges' sharp money instead: steam (Polymarket
 // jumped, Kalshi or Polymarket US still sells the old price) and today's
 // line movers, the same rows as ARBS.
-let sharpNoBooks = false;
+let sharpNoBooks = false, sharpDown = null;
 async function sharpExchangeHTML(card) {
   let vd = null;
   try { const r = await fetch(`${BACKEND_URL}/api/exchange-value`); if (r.ok) vd = await r.json(); } catch {}
@@ -6479,8 +6548,16 @@ async function loadSharpSignals() {
   try {
     const r = await fetch(`${BACKEND_URL}/api/sharp?limit=60`);
     if (r.status === 404) { el.innerHTML = ''; return; }   // backend older than v3.16
+    if (!r.ok) { const e = new Error(`HTTP ${r.status}`); e.status = r.status; throw e; }
     d = await r.json();
-  } catch { el.innerHTML = ''; return; }
+    sharpDown = null;
+  } catch (e) {
+    sharpDown = lrErr(e);
+    el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(sharpDown));
+    renderSharpFeed();
+    if (document.getElementById('page-sharp')?.classList.contains('active')) sharpSigTimer = setTimeout(loadSharpSignals, 60e3);
+    return;
+  }
   const ago = ts => { const s = Math.round((Date.now() - ts) / 1000); return s < 90 ? s + 's' : Math.round(s / 60) + 'm'; };
   const card = (title, color, body) => `<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:10px;margin-bottom:10px;overflow:hidden">
     <div style="padding:8px 14px;font-size:10px;letter-spacing:1.5px;color:${color};font-weight:800;border-bottom:1px solid var(--border)">${title}</div>${body}</div>`;
@@ -6513,6 +6590,7 @@ function renderSharpFeed() {
     americanfootball_nfl:'NFL', mma_mixed_martial_arts:'MMA'
   };
 
+  if (!sharpMoves.length && sharpDown) { el.innerHTML = ''; return; }
   if (!sharpMoves.length && sharpNoBooks) {
     el.innerHTML = `<div class="empty-wrap"><div class="empty-sub">Sportsbook line moves show up here once an odds feed is connected. The exchange moves are above.</div></div>`;
     return;
@@ -6805,7 +6883,7 @@ async function scanArbs() {
     arbState.results = { buckets: buildArbBuckets(games), scannedAt: Date.now(), gameCount: games.length };
     mergeScanIntoLines(games);
   } catch (e) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">SCAN FAILED</div><div class="empty-sub">${e.message}</div></div>`;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">SCAN FAILED</div><div class="empty-sub">${lrErr(e)}</div></div>`;
     arbState.scanning = false;
     if (btn) { btn.disabled = false; btn.textContent = 'DEEP SCAN'; }
     return;
@@ -6980,10 +7058,13 @@ async function loadEsMatches() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     esmState.data = await r.json();
     esmState.at = Date.now();
+    esmState.refreshErr = null;
     renderEsMatches();
   } catch (e) {
+    esmState.refreshErr = lrErr(e);
+    if (esmState.data) renderEsMatches();
     const el = document.getElementById('esmContent');
-    if (el && !esmState.data) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">Couldn't load matches</div><div class="empty-sub">${escEs(e.message)}</div></div>`;
+    if (el && !esmState.data) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">Couldn't load matches</div><div class="empty-sub">${escEs(lrErr(e))}</div></div>`;
   } finally { esmState.loading = false; }
 }
 setInterval(() => { if (document.getElementById('page-esports')?.classList.contains('active') && esmState.mode === 'matches') loadEsMatches(); }, 120e3);
@@ -7019,7 +7100,9 @@ function esmPx(q, venue, link) {
   const cls = q.edge ? 'good' : venue === 'book' ? 'ref' : '';
   const label = venue === 'kalshi' ? 'Kalshi' : venue === 'polymarket' ? 'Poly' : 'Book';
   const txt = `<small>${label}</small>${esmCents(q.cost ?? q.ask)}`;
-  return link ? `<a class="esm-px ${cls}" href="${escEs(link)}" target="_blank" rel="noopener" title="${esmVenue(venue)}: ask ${esmCents(q.ask)}${q.fee ? ' + fee' : ''}${q.ev != null ? `, ${(q.ev * 100).toFixed(1)}% vs fair` : ''}">${txt}</a>` : `<span class="esm-px ${cls}">${txt}</span>`;
+  // only US venues link (the global Polymarket book is a reference)
+  const a = venue === 'kalshi' ? vLink('kalshi', { url: link, id: q.marketId || q.ticker }, txt, `esm-px ${cls}`) : '';
+  return a || `<span class="esm-px ${cls}" title="${esmVenue(venue)}: ask ${esmCents(q.ask)}${q.fee ? ' + fee' : ''}${q.ev != null ? `, ${(q.ev * 100).toFixed(1)}% vs fair` : ''}">${txt}</span>`;
 }
 // Team-vs-team: the last meetings and each side's recent series form
 const esmForm = f => (f ? `<span class="esm-form">${f.last.map(r => `<i class="${r.toLowerCase()}">${r}</i>`).join('')}</span>` : '');
@@ -7055,7 +7138,7 @@ function esmMatchCard(m) {
   const form = i => (m.h2h && m.h2h.form ? esmForm(m.h2h.form[i]) : '');
   const fav = main ? Math.max(...main.outcomes.map(o => o.fair ?? -1)) : -1;
   const rows = main ? main.outcomes.map((oc, i) => `
-      <div class="esm-row">${esmAvatar(oc.name)}
+      <div class="esm-row"${oc.quotes.kalshi?.ask != null ? ' data-vrow="1"' : ''}>${esmAvatar(oc.name)}
         <div class="esm-name"><b>${escEs(oc.name)}</b>${form(i)}</div>
         <div class="esm-fair ${oc.fair != null && oc.fair === fav ? 'fav' : ''}">${oc.fair != null ? `<b>${esmPct(oc.fair)}</b><small>FAIR</small>` : ''}</div>
         <div class="esm-prices">${esmPx(oc.quotes.kalshi, 'kalshi', m.links.kalshi)}${esmPx(oc.quotes.polymarket, 'polymarket', m.links.polymarket)}${oc.quotes.book ? `<span class="esm-px ref"><small>Book</small>${esmPct(oc.quotes.book.prob)}</span>` : ''}${oc.quotes.pinnacle ? `<span class="esm-px ref"><small>Pinnacle</small>${esmPct(oc.quotes.pinnacle.prob)}</span>` : ''}</div>
@@ -7082,7 +7165,7 @@ function esmEdgeCard(m, e) {
   return `<div class="esm-card edge"><div class="esm-top"><span class="esm-game">${escEs(m.label)}</span><span>${escEs(m.teams.join(' vs '))}${m.bestOf ? ` · Bo${m.bestOf}` : ''}</span><span class="esm-time">${esmWhen(m.start)}</span></div>
     <div class="esm-tkt"><div><div class="what">${escEs(esmMarketText(mk || { kind: e.kind }, e.outcome))}</div>
       <div class="esm-prices"><span class="esm-px good"><small>${esmVenue(e.venue)}</small>${afActive() ? afP(e.cost) + '<small>after fee</small>' : esmCents(e.cost)}</span><span class="esm-px fair"><small>Fair</small>${esmCents(e.fair)}</span></div></div>
-    <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${link ? `<a class="esm-btn" href="${escEs(link)}" target="_blank" rel="noopener">Open ${esmVenue(e.venue)}</a>` : ''}</div></div></div>`;
+    <div class="ev">+${(e.ev * 100).toFixed(1)}%<small>EV VS FAIR</small>${e.venue === 'kalshi' ? vLink('kalshi', { url: link }, `Open ${esmVenue(e.venue)}`, 'esm-btn') : ''}</div></div></div>`;
 }
 function renderEsMatches() {
   const d = esmState.data;
@@ -7103,7 +7186,7 @@ function renderEsMatches() {
   if (esmState.edgesOnly) list = list.filter(m => m.edges.length || m.locked);
   const c = d.counts || {};
   sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Matches</span></div><div class="pb-stat"><b>${c.both ?? 0}</b><span>On both exchanges</span></div>
-    <div class="pb-stat ${edges.length ? 'good' : ''}"><b>${edges.length}</b><span>Edge${edges.length === 1 ? '' : 's'} now</span></div><div class="pb-stat"><b>${esmAgo(d.updated)}</b><span>Updated</span></div></div>${d.region === 'us' ? '<div class="esm-note">US mode: Kalshi edges only, Polymarket shown as a reference.</div>' : ''}`;
+    <div class="pb-stat ${edges.length ? 'good' : ''}"><b>${edges.length}</b><span>Edge${edges.length === 1 ? '' : 's'} now</span></div><div class="pb-stat"><b>${esmAgo(d.updated)}</b><span>Updated</span></div></div>${esmState.refreshErr ? `<div class="esm-note" style="color:#fbbf24">Could not refresh: these prices are from ${esmAgo(d.updated)} and may have moved. ${escEs(esmState.refreshErr)}</div>` : ''}${d.region === 'us' ? '<div class="esm-note">US mode: Kalshi edges only, Polymarket shown as a reference.</div>' : ''}`;
   if (!all.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No matches yet</div><div class="empty-sub">The board fills a minute or two after a restart.</div></div>`; return; }
   let html = '';
   if (edges.length) html += `<div class="esm-h good">Best prices right now</div>` + edges.slice(0, 8).map(({ m, e }) => esmEdgeCard(m, e)).join('');
@@ -7132,10 +7215,13 @@ async function loadEsMatchups() {
     if (game !== emuState.game) return;   // switched while it loaded
     emuState.data = d;
     emuState.at = Date.now();
+    emuState.refreshErr = null;
     renderEsMatchups();
   } catch (e) {
+    emuState.refreshErr = lrErr(e);
+    if (emuState.data) renderEsMatchups();
     const el = document.getElementById('emuContent');
-    if (el && !emuState.data) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">Couldn't load matchups</div><div class="empty-sub">${escEs(e.message)}</div></div>`;
+    if (el && !emuState.data) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">Couldn't load matchups</div><div class="empty-sub">${escEs(lrErr(e))}</div></div>`;
   } finally { emuState.loading = false; }
 }
 setInterval(() => { if (document.getElementById('page-esports')?.classList.contains('active') && esmState.mode === 'matchups') loadEsMatchups(); }, 180e3);
@@ -7193,6 +7279,7 @@ function emuCard(mu) {
   if (c) sub.push(`<span>Model vs ${escEs(c.vs || 'Kalshi')}: <b class="emu-diff" style="color:${Math.abs(c.diff) >= 0.05 ? '#fbbf24' : '#cbd5e1'}">${emuPts(c.diff)} pts</b> on ${escEs(mu.teams[0].name)} <span style="color:#64748b">(model view)</span></span>`);
   if (k?.sides) sub.push(`<span>Kalshi to buy: ${k.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
   if (u?.sides) sub.push(`<span>PM US to buy: ${u.sides.map((sd, i) => sd?.cost ? `${escEs(mu.teams[i].code || mu.teams[i].name)} ${afActive() ? afP(sd.cost) : esmCents(sd.cost)}` : null).filter(Boolean).join(' · ') || '—'} <span style="color:#64748b">${afActive() ? 'to win, after fee' : 'with fee'}</span></span>`);
+  if (k || u) sub.push(`<span class="emu-links">${k ? vLink('kalshi', { url: k.url, id: k.marketId || k.ticker, what: mu.teams.map(t => t.name).join(' vs ') }) : ''} ${u ? vLink('polymarketus', { url: u.url, id: u.slug, what: mu.teams.map(t => t.name).join(' vs ') }) : ''}</span>`);
   if (c?.best && k?.sides && u?.sides) sub.push(`<span>Cheapest: ${c.best.map((b, i) => b ? `${escEs(mu.teams[i].code || mu.teams[i].name)} on ${escEs(b.venue)}` : null).filter(Boolean).join(' · ')}</span>`);
   if (!k && !u && md.priced) sub.push('<span style="color:#64748b">Neither Kalshi nor Polymarket US has a book on this series yet</span>');
   if (mu.h2h?.series) sub.push(`<span>H2H 2y: ${mu.h2h.series} series, maps ${mu.h2h.maps[0]}-${mu.h2h.maps[1]}</span>`);
@@ -7201,8 +7288,8 @@ function emuCard(mu) {
     ${mu.h2h?.last?.length ? `<div class="emu-chips">${mu.h2h.last.map(h => `<span class="emu-chip"><small>${new Date(h.t).toLocaleDateString([], { month: 'short', year: '2-digit' })}</small>${escEs(h.score)}</span>`).join('')}</div>` : ''}
     <div class="emu-cols">${mu.teams.map((t, i) => `<div><h4>${escEs(t.name)}: recent series</h4><div class="emu-hist">${emuHist(tv[i])}</div></div>`).join('')}</div>
     ${mu.markets?.polymarketRef != null ? `<div class="esm-sub">Polymarket's global book (reference only, not a US venue): ${escEs(mu.teams[0].name)} ${esmPct(mu.markets.polymarketRef)}</div>` : ''}
-    ${k?.url || u?.url ? `<div class="esm-sub">${k?.url ? `<a class="esm-more" style="margin-left:0;text-decoration:none" href="${escEs(k.url)}" target="_blank" rel="noopener">Open on Kalshi</a>` : ''}${u?.url ? `<a class="esm-more" style="margin-left:${k?.url ? '8px' : '0'};text-decoration:none" href="${escEs(u.url)}" target="_blank" rel="noopener">Open on Polymarket US</a>` : ''}</div>` : ''}` : '';
-  return `<div class="esm-card">
+` : '';
+  return `<div class="esm-card"${k || u ? ' data-vrow="1"' : ''}>
     <div class="esm-top"><span class="esm-game">${escEs(gl)}</span><span class="emu-conf ${conf}">${confLabel}</span><span>${escEs(mu.league || '')}${mu.block ? ` · ${escEs(mu.block)}` : ''}${mu.bestOf ? ` · Bo${mu.bestOf}` : mu.bestOfAssumed ? ` · Bo${mu.bestOfAssumed}?` : ''}</span><span class="esm-time">${esmWhen(mu.start)}</span></div>
     <div class="esm-rows">${rows}</div>${meter}
     <div class="esm-sub">${sub.join('')}<button class="esm-more" onclick="toggleEmuOpen('${escEs(mu.id)}')">${open ? 'Hide' : 'Why'}</button></div>
@@ -7225,7 +7312,7 @@ function renderEsMatchups() {
     `<button class="sport-chip" onclick="loadEsMatchups()" style="margin-left:auto">Refresh</button>`].join('');
   const list = all.filter(m => emuState.league === 'ALL' || (m.league || 'Other') === emuState.league);
   const st = d.status || {};
-  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.kalshi).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.pmus).length}</b><span>With PM US</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${st.error ? `<div class="esm-note">${d.game === 'LOL' ? `Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.` : `New results: ${escEs(st.error)}. Ratings use everything up to ${st.lastResult ? new Date(st.lastResult).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'the seed'}.`}</div>` : ''}`;
+  sEl.innerHTML = `<div class="pb-sum"><div class="pb-stat"><b>${list.length}</b><span>Series ahead</span></div><div class="pb-stat"><b>${list.filter(m => m.model?.priced).length}</b><span>Model priced</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.kalshi).length}</b><span>With Kalshi</span></div><div class="pb-stat"><b>${list.filter(m => m.markets?.pmus).length}</b><span>With PM US</span></div><div class="pb-stat"><b>${(st.series || 0).toLocaleString()}</b><span>Series rated</span></div></div>${emuState.refreshErr ? `<div class="esm-note" style="color:#fbbf24">Could not refresh: this is the last good read and may be out of date. ${escEs(emuState.refreshErr)}</div>` : ''}${st.error ? `<div class="esm-note">${d.game === 'LOL' ? `Schedule read failed (${escEs(st.error)}); showing ratings from the last good read.` : `New results: ${escEs(st.error)}. Ratings use everything up to ${st.lastResult ? new Date(st.lastResult).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'the seed'}.`}</div>` : ''}`;
   if (!list.length) { const gl = EMU_GAMES[d.game] || 'LoL'; el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">No upcoming ${escEs(gl)} series</div><div class="empty-sub">${!st.ready ? 'The schedule loads a minute after a restart.' : d.game === 'LOL' ? 'lolesports lists nothing in the next week.' : 'Neither Kalshi nor Polymarket US lists one in the next week.'}</div></div>`; return; }
   let html = '', day = null;
   for (const m of list) {
@@ -7253,7 +7340,7 @@ async function loadEmuRatings() {
       <div class="esm-bar" style="margin-top:8px"><label class="es-field" style="flex:0 1 220px"><span>Teams from</span><select onchange="emuState.ratingScope=this.value;loadEmuRatings()">${scopes.map(x => `<option value="${escEs(x)}" ${x === scope ? 'selected' : ''}>${x === 'major' ? (game === 'CS2' ? 'S and A tier' : 'Major leagues') : x === 'all' ? (game === 'LOL' ? 'Every league' : 'Every team') : escEs(x)}</option>`).join('')}</select></label></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>League</th><th>Avg</th><th>Prior</th><th>Learned</th><th>Teams</th></tr>${(d.leagues || []).slice(0, 30).map(l => `<tr><td>${escEs(l.league)}</td><td>${l.avg}</td><td>${l.prior ?? '—'}</td><td>${l.learned >= 0 ? '+' : ''}${l.learned}</td><td>${l.teams}</td></tr>`).join('')}</table></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>#</th><th>Team</th><th>League</th><th>Rating</th><th>RD</th><th>Maps</th></tr>${teams.slice(0, 60).map((t, i) => `<tr><td>${i + 1}</td><td>${escEs(t.name)}</td><td>${escEs(t.home || '—')}</td><td>${t.rating}</td><td>${t.rd}</td><td>${t.maps}</td></tr>`).join('')}</table></div>`;
-  } catch (e) { el.innerHTML = `<div class="esm-sub">Couldn't load ratings: ${escEs(e.message)}</div>`; }
+  } catch (e) { el.innerHTML = `<div class="esm-sub">Couldn't load ratings: ${escEs(lrErr(e))}</div>`; }
 }
 
 // ─── MATCHUPS > SOCCER: our soccer match model beside Kalshi, PM US, Pinnacle ──
@@ -7276,7 +7363,7 @@ async function loadSoccer() {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
     socState.data = d; socState.at = Date.now();
-  } catch (e) { socState.error = e.message; }
+  } catch (e) { socState.error = lrErr(e); }
   finally { socState.loading = false; }
   if (socState.view === 'record') await loadSocRecord();
   if (socState.view === 'ratings') await loadSocRatings();
@@ -7284,18 +7371,17 @@ async function loadSoccer() {
 }
 async function loadSocRecord() {
   try { const r = await fetch(`${BACKEND_URL}/api/soccer/model/record`); const d = await r.json(); if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`); socState.record = d; }
-  catch (e) { socState.record = { error: e.message }; }
+  catch (e) { socState.record = { error: lrErr(e) }; }
 }
 async function loadSocRatings() {
   try { const r = await fetch(`${BACKEND_URL}/api/soccer/model/ratings?league=${encodeURIComponent(socState.ratingLeague)}`); const d = await r.json(); if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`); socState.ratings = d; }
-  catch (e) { socState.ratings = { error: e.message }; }
+  catch (e) { socState.ratings = { error: lrErr(e) }; }
 }
 async function setSocView(v) { socState.view = v; renderSoccer(); if (v === 'record') await loadSocRecord(); if (v === 'ratings') await loadSocRatings(); renderSoccer(); }
 function setSocLeague(l) { socState.league = l; renderSoccer(); }
 async function setSocRatingLeague(l) { socState.ratingLeague = l; await loadSocRatings(); renderSoccer(); }
 function toggleSocOpen(id) { socState.open.has(id) ? socState.open.delete(id) : socState.open.add(id); renderSoccer(); }
-// never a link to polymarket.com: US users go to polymarket.us only
-const socUrl = u => { try { const h = new URL(u).hostname; return /(^|\.)kalshi\.com$|(^|\.)polymarket\.us$/.test(h) ? u : null; } catch { return null; } };
+// never a link to polymarket.com: vLink only links polymarket.us for US users
 const socPct = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
 function socVerdict(d) {
   const b = d.backtest;
@@ -7310,8 +7396,8 @@ function socCard(g) {
   const md = g.model, open = socState.open.has(g.id);
   const rows = g.rows.map(r => {
     const name = r.pick === 'home' ? g.home : r.pick === 'away' ? g.away : 'Draw';
-    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt"><b>${afActive() ? afP(v.cost) : esmCents(v.cost)}</b><small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
-    return `<div class="soc-row"><div class="esm-name"><b>${escEs(name)}</b></div>
+    const cell = (v, e, fl, lab) => v ? `<div class="emu-num mkt">${vLink(lab === 'KALSHI' ? 'kalshi' : 'polymarketus', { url: v.url, id: v.marketId, what: `${g.home} vs ${g.away}` }, `<b>${afActive() ? afP(v.cost) : esmCents(v.cost)}</b>`)}<small>${lab}${e != null ? ` ${emuPts(e)}` : ''}${fl ? ' <span class="soc-flag">●</span>' : ''}</small></div>` : `<div class="emu-num mkt"><b>—</b><small>${lab}</small></div>`;
+    return `<div class="soc-row"${r.kalshi || r.pmus ? ' data-vrow="1"' : ''}><div class="esm-name"><b>${escEs(name)}</b></div>
       <div class="emu-num model"><b>${socPct(r.model)}</b><small>MODEL</small></div>
       <div class="emu-num mkt"><b>${socPct(r.pin)}</b><small>PINNACLE</small></div>
       ${cell(r.kalshi, r.edge?.kalshi, r.flag?.kalshi, 'KALSHI')}${cell(r.pmus, r.edge?.pmus, r.flag?.pmus, 'PM US')}</div>`;
@@ -7320,11 +7406,7 @@ function socCard(g) {
   if (md) sub.push(`<span>Model goals ${md.lh.toFixed(2)} - ${md.la.toFixed(2)} · Over 2.5 ${socPct(md.over25)} · both score ${socPct(md.btts)}</span>`);
   else sub.push(`<span style="color:#64748b">No model price: ${!g.rated?.home ? escEs(g.home) : escEs(g.away)} is not in our ratings</span>`);
   if (g.rows.some(r => r.flag?.kalshi || r.flag?.pmus)) sub.push('<span style="color:#fbbf24">● model 3+ pts over the cost with fee (model view, not a bet)</span>');
-  const links = [];
-  const ku = g.rows.map(r => r.kalshi?.url).map(socUrl).find(Boolean), uu = g.rows.map(r => r.pmus?.url).map(socUrl).find(Boolean);
-  if (ku) links.push(`<a class="esm-more" style="margin-left:0;text-decoration:none" href="${escEs(ku)}" target="_blank" rel="noopener">Open on Kalshi</a>`);
-  if (uu) links.push(`<a class="esm-more" style="margin-left:8px;text-decoration:none" href="${escEs(uu)}" target="_blank" rel="noopener">Open on Polymarket US</a>`);
-  const detail = open && md ? `<ul class="emu-why"><li>Expected goals come from each club's attack and defence ratings in ${escEs(g.league)} (${md.homeGames} and ${md.awayGames} matches rated) with this league's home edge.</li><li>Kalshi and PM US show what one contract costs now with the taker fee; the small number is our chance minus that cost, in points.</li><li>Pinnacle is its no-vig price, the sharpest number we read.</li></ul>${links.length ? `<div class="esm-sub">${links.join('')}</div>` : ''}` : '';
+  const detail = open && md ? `<ul class="emu-why"><li>Expected goals come from each club's attack and defence ratings in ${escEs(g.league)} (${md.homeGames} and ${md.awayGames} matches rated) with this league's home edge.</li><li>Kalshi and PM US show what one contract costs now with the taker fee; the small number is our chance minus that cost, in points.</li><li>Pinnacle is its no-vig price, the sharpest number we read.</li></ul>` : '';
   return `<div class="esm-card"><div class="esm-top"><span class="esm-game">SOCCER</span><span class="emu-conf ${md ? 'ok' : 'insufficient'}">${md ? 'MODEL' : 'NO MODEL PRICE'}</span><span>${escEs(g.league)}</span><span class="esm-time">${esmWhen(g.start)}</span></div>
     <div class="esm-rows">${rows}</div><div class="esm-sub">${sub.join('')}<button class="esm-more" onclick="toggleSocOpen('${escEs(g.id)}')">${open ? 'Hide' : 'Why'}</button></div>${detail}</div>`;
 }
@@ -7590,22 +7672,8 @@ async function loadEsports() {
     if (noNet && !oddsAlive) noteNetFail('backend');
     const retryBtn = `<button class="sport-chip" onclick="loadEsports()" style="margin-top:12px;background:rgba(139,92,246,.12);border-color:#8b5cf6;color:#c4b5fd;font-weight:800">RETRY</button>`;
     el.innerHTML = `<div class="empty-wrap">
-      <div class="empty-big" style="font-size:20px">${noNet ? (oddsAlive ? 'BACKEND IS DOWN' : "CAN'T REACH BACKEND") : 'LOAD ERROR'}</div>
-      <div class="empty-sub" style="margin-top:10px">
-        ${noNet && oddsAlive ? `Your internet is fine — the odds feeds are responding, but the Railway backend specifically isn't.<br>
-          <span style="display:inline-block;text-align:left;margin-top:8px;color:#94a3b8">
-            1. Open <span style="font-family:monospace;color:#e2e8f0">${BACKEND_URL.replace('https://','')}/api/status</span> in a new tab<br>
-            2. <strong style="color:#e2e8f0">It loads?</strong> → CORS got stripped from server.js — it needs <span style="font-family:monospace;color:#a78bfa">app.use(cors())</span>, then redeploy<br>
-            3. <strong style="color:#e2e8f0">It doesn't load?</strong> → the Railway service is stopped or crashed — open your Railway dashboard, check deploy logs, hit redeploy. If the URL changed, update <span style="font-family:monospace;color:#a78bfa">BACKEND_URL</span> at the top of this file's script
-          </span><br><br>
-          <span style="color:#34d399;font-size:11px">Esports runs entirely off your own backend — it never touches the paid Odds API, so this costs nothing to retry.</span>`
-        : noNet ? `No response from the Railway backend. Two usual causes:<br>
-          <span style="display:inline-block;text-align:left;margin-top:8px;color:#94a3b8">
-            • This page has no internet — the Claude app preview blocks all network, so open the file in Chrome or on Netlify<br>
-            • The backend is down — open <span style="font-family:monospace;color:#e2e8f0">${BACKEND_URL.replace('https://','')}/api/status</span> in a browser tab to check
-          </span>`
-        : `${e.message}<br><br><span style="color:#475569;font-size:11px">Backend responded but errored — check Railway logs for the esports module</span>`}
-      </div>
+      <div class="empty-big" style="font-size:20px">${noNet ? "CAN'T REACH THE SERVER" : 'COULD NOT LOAD'}</div>
+      <div class="empty-sub" style="margin-top:10px">${escEs(noNet && oddsAlive ? 'Your connection is fine (other feeds answer), so the server is most likely restarting for an update, which takes about 8 minutes. Tap RETRY in a minute.' : lrErr(e))}</div>
       ${retryBtn}
     </div>`;
   }
@@ -7857,7 +7925,7 @@ document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('s
 // ── +EV SCREENER ────────────────────────────────────────────────────────────
 // Rows come from /api/ev, already scored on the backend. This page filters and
 // renders, and refreshes every minute while it is open.
-const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, esStale: [], esStaleLag: null, esStaleLagOpen: false, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [] };
+const evState = { rows: [], alt: [], esports: [], stale: [], staleLag: null, esStale: [], esStaleLag: null, esStaleLagOpen: false, staleLagOpen: false, altModel: false, esSingle: false, staleSingle: true, counts: {}, sport: 'all', kind: 'all', minEv: 1, sharpOnly: false, agreeOnly: false, search: '', books: new Set(), pro: true, updated: null, count: 0, feeds: [], error: null };
 let evActive = false, evTimer = null, evSource = null, evLive = false;
 try { const saved = JSON.parse(localStorage.getItem('lr_ev') || '{}'); Object.assign(evState, { sport: saved.sport || 'all', kind: saved.kind || 'all', minEv: saved.minEv ?? 1, sharpOnly: !!saved.sharpOnly, agreeOnly: !!saved.agreeOnly, books: new Set(saved.books || []) }); } catch {}
 const EV_BOOK_NAMES = { pick6:'DK Pick6', draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM', caesars:'Caesars', williamhill_us:'Caesars', bet365:'Bet365', pinnacle:'Pinnacle', novig:'Novig', circa:'Circa', betrivers:'BetRivers', espnbet:'ESPN Bet', hard_rock_bet:'Hard Rock', hardrockbet:'Hard Rock', fanatics:'Fanatics', mybookieag:'MyBookie', betus:'BetUS', betanysports:'BetAnySports', bovada:'Bovada', betonlineag:'BetOnline', lowvig:'LowVig', pointsbetus:'PointsBet', prizepicks:'PrizePicks', underdog:'Underdog', sleeper:'Sleeper', ballybet:'Bally Bet', betparx:'BetPARX', fliff:'Fliff', prophetx:'ProphetX', sporttrade:'Sporttrade', thescore:'theScore', hardrock:'Hard Rock', matchbook:'Matchbook', kalshi:'Kalshi', kalshi_mid:'Kalshi', kalshi_props:'Kalshi', polymarket:'Polymarket', polymarketus:'Polymarket US', gemini:'Gemini' };
@@ -7880,12 +7948,16 @@ async function loadEv() {
   try {
     const r = await fetch(`${BACKEND_URL}/api/ev?limit=1000${stateQ()}`);
     if (r.status === 404) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">BACKEND TOO OLD</div><div class="empty-sub">The +EV screener needs backend v3.15 or later.</div></div>`; return; }
+    if (!r.ok) { const err = new Error(String(r.status)); err.status = r.status; throw err; }
     const d = await r.json();
+    evState.error = null;
     Object.assign(evState, { rows: d.rows || [], alt: d.alt || [], esports: d.esports || [], stale: d.stale || [], staleLag: d.staleLag || null, esStale: d.esStale || [], esStaleLag: d.esStaleLag || null, counts: d.counts || {}, pro: d.pro !== false, updated: d.updated, count: d.count || 0, feeds: d.feeds || [] });
     lrStateNotes(d.state, 'ev');
     renderEv();
   } catch (e) {
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(e.message)}</div></div>`;
+    evState.error = lrErr(e);
+    if (!evState.rows.length) el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(evState.error)}</div></div>`;
+    else renderEv();
   }
   if (evActive && evState.pro) evConnect();
   // the stream drives refreshes; polling is the fallback when it's down
@@ -8004,14 +8076,19 @@ function renderEv() {
       <span style="color:#f1f5f9;font-weight:700">${rows.length} BETS</span>
       <span>${evState.feeds.length} FEEDS</span>
       ${age != null ? `<span>SCORED ${age < 90 ? age + 's' : Math.round(age / 60) + 'm'} AGO</span>` : ''}
-      <span style="margin-left:auto;color:${evLive ? '#10b981' : '#94a3b8'}">${evLive ? '● LIVE' : 'REFRESHES EVERY 30s'}</span></div>`;
+      <span style="margin-left:auto;color:${evLive && !evState.error ? '#10b981' : '#94a3b8'}">${evLive && !evState.error ? '● LIVE' : 'REFRESHES EVERY 30s'}</span></div>`;
+  if (evState.error && !evState.rows.length) {
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">COULD NOT LOAD</div><div class="empty-sub">${escAttr(evState.error)}</div></div>`;
+    return;
+  }
+  const errNote = evState.error ? `<div style="padding:8px 12px;margin-bottom:10px;border:1px solid #f59e0b55;border-radius:8px;color:#fcd34d;font-size:12px">Could not refresh: ${escAttr(evState.error)} These bets are from the last good read and may have moved.</div>` : '';
   if (!rows.length) {
-    el.innerHTML = banner + strip + `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO +EV BETS AT THIS FILTER</div><div class="empty-sub">${evState.rows.length ? 'Try a lower minimum EV, another sport, or clear MY BOOKS.' : evState.feeds.length ? 'Nothing beats the sharp line right now. Edges show up as books move.' : 'No odds feeds loaded yet. The backend fills them in as it pulls odds.'}</div></div>`;
+    el.innerHTML = errNote + banner + strip + `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO +EV BETS AT THIS FILTER</div><div class="empty-sub">${evState.rows.length ? 'Try a lower minimum EV, another sport, or clear MY BOOKS.' : evState.feeds.length ? 'Nothing beats the sharp line right now. Edges show up as books move.' : 'No odds feeds loaded yet. The backend fills them in as it pulls odds.'}</div></div>`;
     return;
   }
   const evColor = v => v >= 5 ? '#10b981' : v >= 2 ? '#34d399' : '#a7f3d0';
   const when = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString([], { weekday: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
-  el.innerHTML = banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
+  el.innerHTML = errNote + banner + strip + `<div style="display:flex;flex-direction:column;gap:8px">` + rows.slice(0, 300).map(r => {
     const what = r.player ? `${escAttr(r.player)} · ${escAttr(EV_MARKET[r.market] || r.market)} ${r.locked ? '' : escAttr(r.side) + ' ' + r.point}` : `${escAttr(EV_MARKET[r.market] || r.market)}${r.locked ? '' : ' · ' + escAttr(r.side)}`;
     const price = r.locked ? '' : r.dfs ? (r.multiplier && r.multiplier !== 1 ? r.multiplier + 'x' : 'pick') : r.book === 'gemini' && r.decimal ? `${gemCents(r.decimal)}¢<div style="font-size:9px;color:#64748b;font-weight:400">${fmtAm(r.price)} with fee</div>` : fmtAm(r.price);
     return `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px">
@@ -8492,7 +8569,7 @@ async function tailGet(path) {
   const r = await fetch(`${BACKEND_URL}${path}`);
   if (r.status === 404 && !/\/trader\//.test(path)) { const e = new Error('old backend'); e.old = true; throw e; }
   // an error body is not data: a 500 must not show as an empty 0-0 record
-  if (!r.ok) { const d = await r.json().catch(() => null); throw new Error(d?.error || `HTTP ${r.status}`); }
+  if (!r.ok) { const d = await r.json().catch(() => null); const e = new Error(d?.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
   return r.json();
 }
 
@@ -8530,7 +8607,7 @@ async function loadTail() {
     tailState.error = null;
     if (tailState.view === v) renderTail();
   } catch (e) {
-    el.innerHTML = e.old ? tailEmpty('BACKEND TOO OLD', 'Sharp Tail needs backend v3.20 or later.') : tailEmpty('COULD NOT LOAD', escAttr(e.message));
+    el.innerHTML = e.old ? tailEmpty('BACKEND TOO OLD', 'Sharp Tail needs backend v3.20 or later.') : tailEmpty('COULD NOT LOAD', escAttr(lrErr(e)));
   }
   if (tailActive && tailState.pro) evConnect();
   // the stream drives the signals feed; everything else refreshes on a timer
@@ -8901,7 +8978,7 @@ async function loadXscreen() {
   const el = document.getElementById('xscreenContent');
   if (!xscreenUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { xscreenUi.data = await tailGet('/api/xscreen'); xscreenUi.error = null; }
-  catch (e) { xscreenUi.error = e.old ? 'The price screen needs a newer backend.' : e.message; }
+  catch (e) { xscreenUi.error = e.old ? 'The price screen needs a newer backend.' : lrErr(e); }
   renderXscreen();
   if (document.getElementById('page-arb')?.classList.contains('active') && arbModeNow === 'prices') xarbUi.timer = setTimeout(loadXscreen, 60000);
 }
@@ -8956,7 +9033,7 @@ async function loadBig() {
   renderBigControls();
   if (!bigUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { bigUi.data = await tailGet(`/api/big-money?minUsd=${bigUi.minUsd}${bigUi.kind ? `&kind=${bigUi.kind}` : ''}${bigUi.mm ? '&mm=1' : ''}`); bigUi.error = null; }
-  catch (e) { bigUi.error = e.old ? 'Big money needs a newer backend.' : e.message; }
+  catch (e) { bigUi.error = e.old ? 'Big money needs a newer backend.' : lrErr(e); }
   renderBig();
   if (document.getElementById('page-big')?.classList.contains('active')) bigUi.timer = setTimeout(loadBig, 60000);
 }
@@ -9038,7 +9115,7 @@ async function loadGas() {
   const el = document.getElementById('gasContent');
   if (!gasUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { gasUi.data = await tailGet('/api/gas-locks'); gasUi.error = null; }
-  catch (e) { gasUi.error = e.old ? 'Gas locks need a newer backend.' : e.message; }
+  catch (e) { gasUi.error = e.old ? 'Gas locks need a newer backend.' : lrErr(e); }
   renderGas();
   if (document.getElementById('page-gas')?.classList.contains('active')) gasUi.timer = setTimeout(loadGas, 120000);
 }
@@ -9057,7 +9134,7 @@ function renderGas() {
   const tiles = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">
       ${tile('LIVE RECORD', r.graded ? `${r.wins}-${r.losses}` : 'No bets graded yet', r.graded ? `${pct(r.roi)} a bet · ${r.units >= 0 ? '+' : ''}${r.units}u` : `${r.open || 0} open, graded the morning after`, r.graded ? r.roi > 0 : null)}
       ${tile('CLOSE OUR WAY', r.clvN ? pct(r.avgClv) : '—', r.clvN ? `average CLV over ${r.clvN}` : 'our side\'s last mid before trading stops', r.clvN ? r.avgClv > 0 : null)}
-      ${tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${(oos.bets || 0).toLocaleString()} bets, ${oos.losses} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}`, true)}
+      ${oos.bets ? tile(oos.method === 'walk-forward' ? 'BACKTEST (WALK-FORWARD)' : 'BACKTEST (HELD OUT)', pct(oos.roi), `${oos.bets.toLocaleString()} bets, ${oos.losses ?? 0} losses, ${escAttr(oos.from || '')} to ${escAttr(bt.to || '')}`, true) : tile('BACKTEST', '—', 'No backtest on file on this server', null)}
     </div>`;
   const rule = d.rule || {};
   const note = `<div class="xa-sub" style="margin:0 0 10px">The rule: ${escAttr((rule.states || []).join(', '))}; the side asked ${c(rule.minPrice || 0.9)} to ${c(rule.maxPrice || 0.98)}, ${rule.fromHours || 12} to ${rule.toHours || 19} hours before Kalshi settles (plays show up from about 3pm to 10pm Eastern), with $${rule.minDepthUsd || 100}+ resting at the price and the book no wider than ${c(rule.maxSpread || 0.05)} (a 95¢ ask over a 30¢ bid isn't a real favourite; those lost about 13% a bet in the backtest).${bt.allNights ? ` Backtest on every market ${escAttr(bt.from || '')} to ${escAttr(bt.to || '')}: picking the states each week from the weeks before went ${pct(oos.roi)} a bet, about one loss in 50, and only about two standard errors over zero, so the live record decides. Losses bunch: on ${escAttr(bt.worstNight?.day || '')} ${bt.worstNight?.losses} bets lost together (${pct(bt.worstNight?.roi)} on the night). The other states went ${pct(bt.otherStates?.roi)} and Kalshi's national gas market ${pct(bt.national?.roi)}, so neither is listed. Book depth isn't in the history; tonight's depth is shown live.` : ''} Price includes Kalshi's fee on a 100-contract order.</div>`;
@@ -9102,13 +9179,13 @@ async function loadDigest() {
     if (!resultsUi.week) { el.innerHTML = tailEmpty('NOTHING RECORDED YET', 'The digest starts with the first graded flag.'); return; }
     await digestShow(resultsUi.week);
   } catch (e) {
-    el.innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(e.old ? 'The weekly digest needs backend v3.186 or later.' : e.message || ''));
+    el.innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(e.old ? 'The weekly digest needs backend v3.186 or later.' : lrErr(e)));
   }
 }
 function digestWeek(week) {
   resultsUi.week = week;
   document.querySelectorAll('#digestWeeks [data-week]').forEach(b => b.classList.toggle('active', b.dataset.week === week));
-  digestShow(week).catch(e => { document.getElementById('digestContent').innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(e.message || '')); });
+  digestShow(week).catch(e => { document.getElementById('digestContent').innerHTML = tailEmpty('COULD NOT LOAD THE DIGEST', escAttr(lrErr(e))); });
 }
 async function digestShow(week) {
   const r = await tailGet(`/api/digest/${encodeURIComponent(week)}`);
@@ -9180,9 +9257,9 @@ async function loadResults() {
   el.innerHTML = '';
   const [r, d] = await Promise.allSettled([tailGet(`/api/record${q}`), tailGet(`/api/results${q}`)]);
   if (r.status === 'fulfilled') renderRecord(r.value);
-  else rec.innerHTML = tailEmpty('COULD NOT LOAD THE RECORD', escAttr(r.reason?.old ? 'The public record needs backend v3.185 or later.' : r.reason?.message || ''));
+  else rec.innerHTML = tailEmpty('COULD NOT LOAD THE RECORD', escAttr(r.reason?.old ? 'The public record needs backend v3.185 or later.' : lrErr(r.reason)));
   if (d.status === 'fulfilled') renderResults(d.value);
-  else el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(d.reason?.old ? 'Results need backend v3.47 or later.' : d.reason?.message || ''));
+  else el.innerHTML = tailEmpty('COULD NOT LOAD', escAttr(d.reason?.old ? 'Results need backend v3.47 or later.' : lrErr(d.reason)));
 }
 // The public record (/api/record, claims.publicRecord): every kind and venue
 // on the close scoreboard with the label the sales page would give it. A
@@ -9203,9 +9280,9 @@ function renderRecord(d) {
     // positive units on a kind that is not proven are not a profit claim
     return r.units > 0 && !r.profitShown ? `<span style="color:var(--text2)" title="Not a profit claim: this kind is not proven, or its units do not clear chance">${u}*</span>` : `<span style="color:${col(r.units)}">${u}</span>`;
   };
-  const body = rows.map(r => { const [lab, c] = REC_LABEL[r.label] || [String(r.label || '').toUpperCase(), '#94a3b8']; return `<tr>
+  const body = rows.map(r => { const [lab, c] = REC_LABEL[r.label] || [String(r.label || '').toUpperCase(), '#94a3b8']; const vl = vLink(r.book, { what: r.kindLabel }); return `<tr${vl ? ' data-vrow="1"' : ''}>
       <td><span class="rec-lab" style="color:${c}">${escAttr(lab)}</span></td>
-      <td><b>${escAttr(r.kindLabel)}</b> · ${escAttr(r.bookName)}${r.texas ? ' <span class="rec-lab" style="color:#60a5fa" title="A Texas resident can bet here">TX</span>' : ''}${r.why ? `<div class="why">${escAttr(r.why)}</div>` : ''}</td>
+      <td><b>${escAttr(r.kindLabel)}</b> · ${escAttr(r.bookName)} ${vl}${r.texas ? ' <span class="rec-lab" style="color:#60a5fa" title="A Texas resident can bet here">TX</span>' : ''}${r.why ? `<div class="why">${escAttr(r.why)}</div>` : ''}</td>
       <td style="text-align:right">${r.graded}/${r.target}<div class="rec-bar50"><i style="width:${Math.min(100, Math.round(100 * r.graded / (r.target || 50)))}%"></i></div></td>
       <td style="text-align:right;color:${col(r.clv)}">${pc(r.clv)}${r.clvT != null ? `<div style="font-size:10px;color:var(--text2)">t ${r.clvT > 0 ? '+' : ''}${Number(r.clvT).toFixed(1)}</div>` : ''}</td>
       <td style="text-align:right">${r.beatPct != null ? `${Math.round(r.beatPct)}%` : '—'}</td>
@@ -9284,7 +9361,7 @@ async function loadBest() {
   const el = document.getElementById('bestContent');
   if (!bestUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { bestUi.data = await tailGet(`/api/best?limit=500${stateQ()}`); bestUi.error = null; lrStateNotes(bestUi.data.state, 'best'); }
-  catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : e.message; }
+  catch (e) { bestUi.error = e.old ? 'Best plays need a newer backend.' : lrErr(e); }
   renderBest();
   if (document.getElementById('page-best').classList.contains('active')) bestUi.timer = setTimeout(loadBest, 60000);
 }
@@ -9354,7 +9431,7 @@ async function loadXarbs() {
     xarbUi.value = v;
     xarbUi.error = null;
     tailState.withheld.arbs = { list: Array.isArray(d.withheld) ? d.withheld : [], note: d.note || null };
-  } catch (e) { xarbUi.error = e.old ? 'Exchange arbs need backend v3.20 or later.' : e.message; }
+  } catch (e) { xarbUi.error = e.old ? 'Exchange arbs need backend v3.20 or later.' : lrErr(e); }
   renderXarbs();
   if (xarbShowing()) xarbUi.timer = setTimeout(loadXarbs, 30000);
 }
@@ -9553,7 +9630,7 @@ function renderXarbs() {
   const steam = valueAll.filter(e => e.steam), value = valueAll.filter(e => !e.steam);
   const movers = (vd?.movers || []).filter(m => xarbUi.category === 'all' || (m.category || 'sports') === xarbUi.category);
   const sr = vd?.record?.bySource?.steam;
-  const steamRec = sr?.n ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${sr.n} graded at the start, average closing-line value ${sr.avgClv > 0 ? '+' : ''}${sr.avgClv}%, ${Math.round(sr.beatClosePct * 100)}% beat the close.</div>` : '';
+  const steamRec = sr?.n ? `<div class="xa-sub" style="margin:0 0 8px">Tracked so far: ${sr.n} graded at the start, average closing-line value ${sr.avgClv > 0 ? '+' : ''}${sr.avgClv}%, ${Math.round(sr.beatClosePct)}% beat the close.</div>` : '';
   const chip = k => `<button class="sport-chip ${xarbUi.category === k ? 'active' : ''}" style="font-size:10px;padding:3px 10px" onclick="xarbSet('category','${escAttr(k)}')">${escAttr(k.toUpperCase())}</button>`;
   const controls = `<div class="xa-controls">
     <label class="xa-stake">YOUR STAKE $<input type="number" min="1" step="1" inputmode="decimal" value="${arbState.stake}" oninput="xarbRestake(this.value)"></label>
@@ -9929,7 +10006,7 @@ async function renderTrackRecord(el) {
       ${o.picks === 0 ? `<div class="empty-wrap"><div class="empty-big" style="font-size:20px">NO TRACKED PICKS YET</div><div class="empty-sub">Picks are logged automatically as the board finds +EV lines. Results show up a few hours after each match.</div></div>` : ''}
       ${(locked.picks || []).length ? `<div style="font-size:11px;color:#64748b">${locked.picks.length} picks are live or waiting for results.</div>` : ''}`;
   } catch (e) {
-    el.innerHTML = `<div class="error-box">Could not load the track record: ${escEs(e.message)}<br>Make sure the backend is on v3.10.0 or later.</div>`;
+    el.innerHTML = `<div class="error-box">Could not load the track record: ${escEs(lrErr(e))}<br>Make sure the backend is on v3.10.0 or later.</div>`;
   }
 }
 
@@ -10764,7 +10841,7 @@ async function nflmLoad() {
     if (nflmUi.view === 'record') nflmUi.record = await tailGet('/api/nfl/model/record');
     else nflmUi.data = await tailGet('/api/nfl/model');
     nflmUi.error = null;
-  } catch (e) { nflmUi.error = e.old ? 'The NFL model needs a newer backend.' : e.message; }
+  } catch (e) { nflmUi.error = e.old ? 'The NFL model needs a newer backend.' : lrErr(e); }
   nflmRender();
   if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'nflmodel') nflmUi.timer = setTimeout(() => { if (!document.hidden) nflmLoad(); else nflmUi.timer = setTimeout(nflmLoad, 60e3); }, 90e3);
 }
@@ -10779,7 +10856,7 @@ function nflmRender() {
   nflmModes();
   const el = document.getElementById('nflmContent');
   if (!el) return;
-  if (nflmUi.error) { el.innerHTML = `<div class="error-box">Could not load the NFL model (${escEs(nflmUi.error)}). <button class="key-btn" onclick="nflmLoad()">RETRY</button></div>`; return; }
+  if (nflmUi.error) { el.innerHTML = `<div class="error-box">Could not load the NFL model. ${escEs(nflmUi.error)} <button class="key-btn" onclick="nflmLoad()">RETRY</button></div>`; return; }
   if (nflmUi.view === 'record') return nflmRecord(el);
   const d = nflmUi.data;
   if (!d) return;
@@ -10796,7 +10873,7 @@ function nflmRender() {
     const k = new Date(g.kickoff);
     const fav = g.model.margin >= 0 ? g.home : g.away;
     const rows = g.rows.map(r => `<tr class="${r.flag ? 'nflm-gap' : ''}"${xpA({ event: `${g.away} at ${g.home}`, league: 'NFL', start: g.kickoff, market: r.kind, selection: r.label, venue: 'kalshi', venueName: 'Kalshi', cost: r.kalshi?.cost, fair: r.pin,
-      tag: `MODEL, NOT AN EDGE: model ${nflPct(r.model)}, model − cost ${nflPts(r.edge)} pts, Pinnacle − cost ${nflPts(r.pinEdge)} pts` })}><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)}${r.kalshi.url ? ` <a href="${escEs(r.kalshi.url)}" target="_blank" rel="noopener" class="nflm-link">Kalshi</a>` : ''}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
+      tag: `MODEL, NOT AN EDGE: model ${nflPct(r.model)}, model − cost ${nflPts(r.edge)} pts, Pinnacle − cost ${nflPts(r.pinEdge)} pts` })}${r.kalshi ? ' data-vrow="1"' : ''}><td>${escEs(r.label)}</td><td>${nflPct(r.model)}</td><td>${r.kalshi ? `${nflPct(r.kalshi.cost)} ${vLink('kalshi', { url: r.kalshi.url, id: r.kalshi.marketId, what: r.label })}` : '<span class="shp-dim">—</span>'}</td><td>${nflPct(r.pin)}</td><td class="${r.edge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.edge)}</td><td class="${r.pinEdge > 0 ? 'nflm-pos' : 'nflm-neg'}">${nflPts(r.pinEdge)}</td></tr>`).join('');
     return `<div class="nflm-game"><div class="nflm-gh"><b>${escEs(g.away)} at ${escEs(g.home)}</b> <span class="shp-dim">${k.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span></div>
       <div class="shp-dim nflm-sub">Model: ${escEs(fav)} by ${Math.abs(g.model.margin).toFixed(1)}, total ${g.model.total}, ${escEs(g.home)} ${nflPct(g.model.pHome)} to win${g.nflverse?.spread != null ? ` · consensus line ${escEs(g.home)} ${g.nflverse.spread > 0 ? '-' : '+'}${Math.abs(g.nflverse.spread)}, total ${g.nflverse.total}` : ''}</div>
       <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Contract</th><th>Model</th><th>Kalshi cost</th><th>Pinnacle fair</th><th>Model − cost</th><th>Pinnacle − cost</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -10828,7 +10905,7 @@ async function kmkLoad() {
   kmkModes();
   if (!kmkUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { kmkUi.data = await tailGet(`/api/kalshi-maker${kmkUi.sport ? `?sport=${kmkUi.sport}` : ''}`); kmkUi.error = null; }
-  catch (e) { kmkUi.error = e.old ? 'The maker view needs a newer backend.' : e.message; }
+  catch (e) { kmkUi.error = e.old ? 'The maker view needs a newer backend.' : lrErr(e); }
   kmkRender();
   if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'maker') kmkUi.timer = setTimeout(() => { if (!document.hidden) kmkLoad(); else kmkUi.timer = setTimeout(kmkLoad, 60e3); }, 60e3);
 }
@@ -10862,7 +10939,7 @@ function kmkRender() {
     const kname = { 'kalshi-maker': 'kalshi-maker', 'kalshi-maker-nhl': 'kalshi-maker-nhl, NHL spreads and totals (no maker fee)' };
     const btCards = b2 ? (b2.kinds ? Object.entries(b2.kinds).map(([k, x]) => kmkRecordCard(`Backtest at 2%, ${kname[k] || k} (judged)`, x)).join('') : kmkRecordCard('Backtest at 2% (judged)', b2.all)) + kmkRecordCard('Backtest, a sell at exactly the bid counted (not judged)', b2.atBid, 'at or through the bid') + (b2.requote ? kmkRecordCard('Backtest, bid re-priced every read (not judged)', b2.requote) : '')
       + Object.entries(bt.byEdge).filter(([e]) => e !== String(d.edge)).map(([e, x]) => kmkRecordCard(`Backtest at ${Math.round(e * 100)}% (not judged, both kinds)`, x.all)).join('') : '';
-    const rows = (d.recent || []).map(r => `<tr><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div></td><td>${afContract('kalshi', { price: r.bid, fee: r.fee ?? null, maker: true }, kmkC(r.bid))}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
+    const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td><td>${afContract('kalshi', { price: r.bid, fee: r.fee ?? null, maker: true }, kmkC(r.bid))}</td><td>${kmkC1(r.fairAtPost)}</td><td>${r.closeFair == null ? '—' : kmkC1(r.closeFair)}</td><td>${escEs(r.status === 'graded' ? (r.filled ? r.outcome : `at bid, ${r.outcome}`) : r.status === 'filled' ? (r.filled ? 'filled' : 'at bid') : r.status)}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${d.kinds ? Object.entries(d.kinds).map(([k, x]) => kmkRecordCard(`Live record, ${kname[k] || k}`, x)).join('') : kmkRecordCard('Live record (kind kalshi-maker)', d.record)}${kmkRecordCard('Live, kalshi-maker, a sell at exactly the bid counted (not judged)', d.atBid, 'at or through the bid')}</div>
       ${bt ? `<div class="nflm-bt">${escEs(bt.summary || '')}</div><div class="nflm-cards">${btCards}</div>` : ''}
@@ -10874,7 +10951,7 @@ function kmkRender() {
   if (!rows.length) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">NO GAMES</div><div class="empty-sub">No Kalshi game side Pinnacle prices starts in the next 24 hours${d.boardAt ? '' : ' (the first pass runs a minute after a restart)'}.</div></div>`; return; }
   const body = rows.map(r => `<tr class="${r.bid != null ? 'nflm-gap' : ''}"${xpA({ event: r.event, league: kmkLg[r.sport] || r.sport, start: r.start, market: kmkMkt[r.market] || r.market, selection: r.side, venue: 'kalshi', venueName: 'Kalshi',
     price: r.bid ?? r.ask, maker: r.bid != null, fair: r.fair, ev: r.bid != null ? r.edge : r.takerEv, readAt: d.boardAt,
-    tag: r.bid != null ? `RESEARCH, NOT A BET: rest a bid at ${kmkC(r.bid)} (ask ${kmkC(r.ask)}, best bid ${kmkC(r.bestBid)}, maker fee in)` : `RESEARCH, NOT A BET: no room under the ask; take now at ${kmkC(r.ask)} (taker fee in)` })}><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div></td>
+    tag: r.bid != null ? `RESEARCH, NOT A BET: rest a bid at ${kmkC(r.bid)} (ask ${kmkC(r.ask)}, best bid ${kmkC(r.bestBid)}, maker fee in)` : `RESEARCH, NOT A BET: no room under the ask; take now at ${kmkC(r.ask)} (taker fee in)` })} data-vrow="1"><td>${escEs(kmkLg[r.sport] || r.sport)}</td><td>${escEs(r.side)}<div class="shp-dim">${escEs(r.event)} · ${escEs(kmkMkt[r.market] || r.market)} · ${escEs(shpWhen(r.start))}</div><div>${vLink('kalshi', { url: r.url, id: r.marketId, what: `${r.event}, ${r.side}` })}</div></td>
     <td>${kmkC1(r.fair)}</td><td>${afContract('kalshi', { price: r.ask }, kmkC(r.ask))}</td><td>${kmkC(r.bestBid)}</td><td>${r.bid == null ? '<span class="shp-dim">no room</span>' : `<b>${afContract('kalshi', { price: r.bid, fee: r.fee, maker: true }, kmkC(r.bid))}</b>`}</td><td>${r.bid == null ? '—' : kmkC1(r.fee)}</td><td>${r.bid == null ? '—' : `<span class="nflm-pos">${nflPts(r.edge)}%</span>`}</td><td>${nflPts(r.takerEv)}%</td></tr>`).join('');
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.filter(r => r.bid != null).length} of ${rows.length} sides have a bid 2%+ under fair below Kalshi's ask. "Take now" is buying at the ask with the taker fee. Read ${escEs(d.boardAt ? shpWhen(d.boardAt).replace('starting', 'just now') : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>League</th><th>Side</th><th>Pinnacle fair</th><th>Kalshi ask</th><th>Best bid</th><th>Rest a bid at</th><th>Maker fee</th><th>Edge if filled</th><th>Take now</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -10896,7 +10973,7 @@ async function ortLoad() {
   if (ortUi.minSize) q.set('minSize', ortUi.minSize);
   if (ortUi.minEv !== '') q.set('minEv', ortUi.minEv);
   try { ortUi.data = await tailGet(`/api/outrights?${q}`); ortUi.error = null; }
-  catch (e) { ortUi.error = e.old ? 'The outrights view needs a newer backend.' : e.message; }
+  catch (e) { ortUi.error = e.old ? 'The outrights view needs a newer backend.' : lrErr(e); }
   ortRender();
   if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'outrights') ortUi.timer = setTimeout(() => { if (!document.hidden) ortLoad(); else ortUi.timer = setTimeout(ortLoad, 60e3); }, 60e3);
 }
@@ -10929,7 +11006,7 @@ function ortRender() {
   const d = ortUi.data;
   if (!d) return;
   if (ortUi.view === 'record') {
-    const rows = (d.recent || []).map(r => `<tr><td>${escEs(r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(ortVenue(r.venue))}</div></td>
+    const rows = (d.recent || []).map(r => `<tr data-vrow="1"><td>${escEs(r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(ortVenue(r.venue))}</div><div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: r.runner })}</div></td>
       <td>${ortPct(r.cost)}</td><td>${ortPct(r.fairAtFlag)}</td><td>${r.closeFair == null ? '—' : ortPct(r.closeFair)}</td><td>${escEs(r.outcome || (r.closeMissing ? 'no close' : r.status))}</td><td>${r.clv == null ? '—' : nflPts(r.clv) + '%'}</td></tr>`).join('');
     el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${escEs(d.note || '')}</div>
       <div class="nflm-cards">${(d.bySport || []).map(x => ortCard(`${x.key === 'f1' ? 'F1' : 'Golf'} (kind ${x.kind})`, x)).join('')}</div>
@@ -10949,8 +11026,8 @@ function ortRender() {
     const fillTop = [1000, 200, 50].find(n => t[n]?.full);
     const xp = xpA({ event: r.event, league: r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase(), start: r.cutoff, market: ortType(r.type), selection: `${r.runner} ${r.buy === 'yes' ? 'YES' : 'NO'}`, venue: r.venue, venueName: ortVenue(r.venue),
       price: r.price, cost: r.cost, fair: r.fair, fairSrc: 'Pinnacle no-vig (lower of power and Shin)', ev, fill: fillTop || null, readAt: d.boardAt || d.pinAt, tag: `RESEARCH, NOT A BET${hot ? ", clears the record's bar" : ''}${r.sized ? '' : ', size unread'}` });
-    return `<tr class="${hot ? 'nflm-gap' : ''}"${xp}><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
-      <td>${escEs(ortVenue(r.venue))}</td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
+    return `<tr class="${hot ? 'nflm-gap' : ''}"${xp} data-vrow="1"><td>${escEs(r.season ? r.sport.toUpperCase() + ' season' : r.sport.toUpperCase())}</td><td>${escEs(r.runner)} <b>${r.buy === 'yes' ? 'YES' : 'NO'}</b><div class="shp-dim">${escEs(ortType(r.type))} · ${escEs(r.event)} · ${escEs(shpWhen(r.cutoff))}</div></td>
+      <td>${escEs(ortVenue(r.venue))}<div>${vLink(r.venue, { url: r.url, id: r.marketId || r.exchangeEvent, what: `${r.runner}, ${ortType(r.type)}` })}</div></td><td>${ortPct(r.fair)}<div class="shp-dim">power ${ortPct(r.fairPower)} · Shin ${ortPct(r.fairShin)}</div></td><td>${afActive() ? afContract(r.venue, { price: r.price, cost: r.cost }) : `${ortPct(r.price)}<div class="shp-dim">${ortPct(r.cost)} with fee</div>`}</td>
       <td><span class="${ev > 0 ? 'nflm-pos' : ''}">${nflPts(ev)}%</span></td><td>${fill(50)}</td><td>${fill(200)}</td><td>${fill(1000)}</td>
       <td class="shp-dim">${r.margin == null ? 'two-way' : `${(r.margin * 100).toFixed(0)}% margin`}${r.missing ? ` · ${(r.missing * 100).toFixed(0)}% held back` : ''}${r.pinLimit ? ` · limit $${r.pinLimit}` : ''}${r.sized ? '' : ' · size unread'}</td></tr>`;
   }).join('');
@@ -11163,7 +11240,7 @@ async function shpLoad() {
   shpControls();
   if (!shpUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
-  catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
+  catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : lrErr(e); }
   shpRender();
   if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights' && shpUi.opts.mode !== 'moves') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
@@ -11242,12 +11319,13 @@ function shpOpps(d) {
     const open = shpUi.open.has(x.key);
     const m = open ? (x.view || d.markets.find(mm => mm.key === x.market)) : null;
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
+    const vp = shpPriceOf(d, x);
     const xp = xpA({ event: x.event, league: String(x.league || '').toUpperCase(), start: x.start, market: x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType, selection: x.selection,
       venue: x.provider, venueName: x.providerName, decimal: x.effective, fair: x.fair, fairSrc: SHP_FAIR[x.fairSource] || x.fairSource, ev: x.ev, fill: shpFillUsd(x.size, x.sizedAt), readAt: shpReadAt(x.ageSec ?? x.view?.ageSec), tag: `${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}${x.oneWay ? ', alt line' : ''}` });
-    return `<tr class="shp-row"${xp} onclick="shpOpen('${escAttr(x.key)}')">
+    return `<tr class="shp-row"${xp} data-vrow="1" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>
-      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span>${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
+      <td class="shp-num"><b>${afPx(x.provider, x.effective, shpOdds(x.effective))}</b> <span class="shp-dim">${escAttr(x.providerName)}</span> ${vLink(x.provider, shpVctx(vp.m, vp.s, vp.p))}${x.sizedAt ? `<div class="shp-dim" style="font-size:10px">at $${x.sizedAt} · listed ${shpOdds(x.listed)}</div>` : ''}${x.second ? `<div class="shp-dim">next ${afActive() ? afP(1 / x.second.effective) + ' after fee' : shpOdds(x.second.effective)} ${escAttr(x.second.name)}</div>` : ''}${shpSizeLine(x.size, x.sizedAt)}</td>
       <td class="shp-num shp-hide-sm">${x.fair ? shpOdds(1 / x.fair) : '—'}<div class="shp-dim">${escAttr(SHP_FAIR[x.fairSource] || '')}</div></td>
       <td class="shp-num ${x.ev > 0 ? 'shp-good' : ''}">${shpPct(x.ev)}<div class="shp-dim">${shpUsd(x.evAmount)} on $${d.stake}</div></td>
       <td class="shp-num shp-hide-sm">${x.edgePts == null ? '—' : `${x.edgePts.toFixed(1)} pts`}</td>
@@ -11271,11 +11349,19 @@ function shpMarketTable(m) {
       const tip = `${p.name}: ${shpOdds(p.effective)}${p.fee === 'included' ? ' (fee in)' : p.feeUnknown ? ' (commission not in the price)' : ''}, read ${p.ageSec == null ? '?' : Math.round(p.ageSec / 60)} min ago (${p.freshness})${p.oneWay ? ', one-way alt rung' : ''}`;
       const xp = xpA({ event: m.event, league: String(m.league || '').toUpperCase(), start: m.start, market: shpMkt(m), selection: s.name, line: m.line, venue: p.provider, venueName: p.name, decimal: p.effective,
         fair: s.fair, fairSrc: SHP_FAIR[m.fair?.source] || m.fair?.source, ev: p.ref ? null : p.ev, fill: shpFillUsd(p.size, p.sizedAt), readAt: shpReadAt(p.ageSec), tag: [p.ref ? 'reference' : p.best ? 'best' : '', p.secondHand ? 'copy' : '', p.freshness === 'stale' ? 'stale' : '', p.oneWay ? 'one-way' : '', p.feeUnknown ? 'commission not in the price' : ''].filter(Boolean).join(', ') });
-      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${afPx(p.provider, p.effective, shpOdds(p.effective))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
+      return `<td class="shp-cell shp-num${p.best ? ' best' : ''}${p.ref ? ' ref' : ''}"${xp} title="${escAttr(tip)}">${p.ref ? afPx(p.provider, p.effective, shpOdds(p.effective)) : vLink(p.provider, shpVctx(m, s, p), afPx(p.provider, p.effective, shpOdds(p.effective)))}${p.ev != null && !p.ref ? `<div class="${p.ev > 0 ? 'shp-good' : 'shp-dim'}" style="font-size:10px">${shpPct(p.ev)}</div>` : ''}${p.freshness === 'stale' ? '<div class="shp-bad" style="font-size:9px">STALE</div>' : ''}${shpSizeCell(p)}</td>`;
     }).join('');
-    return `<tr><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
+    return `<tr${s.prices.some(p => !p.ref) ? ' data-vrow="1"' : ''}><td style="white-space:nowrap">${escAttr(s.name)}${s.fair ? `<div class="shp-dim">fair ${shpOdds(1 / s.fair)}</div>` : ''}</td>${cells}</tr>`;
   }).join('');
   return `<div class="shp-scroll"><table class="shp-tbl"><thead><tr><th></th>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+// what a venue link needs from a shopper price: its URL, or the market id it was read under
+const shpVctx = (m, s, p) => ({ url: p.url, id: p.sourceIds?.id || p.sourceIds?.marketId, league: m.league, player: m.player || null, what: `${s.name}${m.event ? ` (${m.event})` : ''}` });
+// an opportunity's price as the market lists it
+function shpPriceOf(d, x) {
+  const m = x.view || d.markets.find(mm => mm.key === x.market);
+  for (const sd of m?.sides || []) { const p = sd.prices.find(q => q.provider === x.provider && !q.ref && (sd.name === x.selection || sd.best?.provider === x.provider)); if (p) return { m, s: sd, p }; }
+  return { m: m || x, s: { name: x.selection }, p: { provider: x.provider } };
 }
 function shpMarkets(d) {
   if (!d.markets.length) return tailEmpty('NO MARKETS', 'Nothing matches these filters.');
@@ -11370,7 +11456,7 @@ function shpArbs(d) {
   if (!d.arbs.length) return tailEmpty('NO ARBS RIGHT NOW', "No market's best prices add up to under 100% at venues read direct. Copies from Action Network never count as an arb leg.");
   return d.arbs.map(m => `<div class="shp-card"><h4>${escAttr(m.event)} <span class="shp-dim" style="font-weight:400">${escAttr(shpMkt(m))} · ${shpWhen(m.start)}</span></h4>
     <div class="shp-good" style="margin:0 0 4px">Locks ${shpPct(m.arb.profit)} · $${m.arb.total} returns $${m.arb.payout.toFixed(2)} whichever side wins</div>
-    ${m.arb.legs.map(l => `<div class="shp-num" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(m.sides.find(s => s.side === l.side)?.name || l.side)} at ${escAttr(l.name)} ${afPx(m.sides.find(s => s.side === l.side)?.best?.provider, m.sides.find(s => s.side === l.side)?.best?.effective, shpOdds(m.sides.find(s => s.side === l.side)?.best?.effective))}</div>`).join('')}
+    ${m.arb.legs.map(l => { const sd = m.sides.find(s => s.side === l.side), p = sd?.prices?.find(q => q.provider === l.provider) || { provider: l.provider }; return `<div class="shp-num" data-vrow="1" style="font-size:12px">Bet $${m.arb.stakes[l.side].toFixed(2)} on ${escAttr(sd?.name || l.side)} at ${escAttr(l.name)} ${afPx(sd?.best?.provider, sd?.best?.effective, shpOdds(sd?.best?.effective))} ${vLink(l.provider, shpVctx(m, sd || { name: l.side }, p))}</div>`; }).join('')}
     ${shpArbSize(m.arb)}
     <div class="shp-dim" style="margin-top:4px">Prices move: place the harder leg first and check both before the second.</div></div>`).join('');
 }
