@@ -1577,6 +1577,17 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 .xp-btn:hover { color:var(--text); border-color:var(--green); }
 .xp-btn.primary { color:#06110d; background:var(--green); border-color:var(--green); }
 .xp-ph { display:none; }
+/* SHARE CARD: pick a row, the league or the record, see the card, copy the link or save the image */
+.sc-wrap { position:fixed; inset:0; z-index:650; background:rgba(4,6,10,.78); display:flex; align-items:flex-start; justify-content:center; padding:16px 8px; overflow-y:auto; }
+.sc-box { width:min(560px, 100%); min-width:0; background:#0d1117; border:1px solid var(--border2); border-top:3px solid var(--green); border-radius:10px; padding:12px 14px; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+.sc-h { display:flex; justify-content:space-between; align-items:center; gap:8px; font:700 11px 'JetBrains Mono',monospace; letter-spacing:1.5px; color:var(--text); margin:0 0 6px; }
+.sc-s { font-size:12px; color:var(--text2); margin:0 0 10px; overflow-wrap:anywhere; }
+.sc-list { display:flex; flex-direction:column; gap:6px; }
+.sc-opt { display:block; width:100%; min-width:0; text-align:left; background:var(--card); color:var(--text); border:1px solid var(--border2); border-radius:8px; padding:8px 10px; cursor:pointer; font:500 12px 'Inter',sans-serif; overflow-wrap:anywhere; }
+.sc-opt:hover, .sc-opt.on { border-color:var(--green); }
+.sc-opt b { display:block; font:700 9px 'JetBrains Mono',monospace; letter-spacing:1px; color:var(--text2); margin-bottom:2px; }
+.sc-img { display:block; width:100%; height:auto; aspect-ratio:1200 / 630; border:1px solid var(--border); border-radius:8px; margin:10px 0 8px; background:#080b10; }
+.sc-btns { display:flex; flex-wrap:wrap; gap:6px; }
 /* GLOSSARY: the ? beside a label and its definition */
 .gl-q { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; margin-left:3px; border-radius:50%; border:1px solid currentColor; font:700 9px/1 'Inter',sans-serif; opacity:.55; cursor:help; vertical-align:middle; flex:none; letter-spacing:0; text-transform:none; }
 .gl-q:hover, .gl-q:focus-visible { opacity:1; color:var(--green); outline:none; }
@@ -1592,7 +1603,7 @@ a.vwrap::after { content:'↗'; font-size:9px; opacity:.55; margin-left:2px; }
 body { background:#fff !important; color:#111 !important; min-height:0 !important; }
 body::before { display:none !important; }
 .page *, .xp-ph, .xp-ph * { color:#111 !important; background:transparent !important; box-shadow:none !important; text-shadow:none !important; animation:none !important; border-color:#bbb !important; }
-.nav, #netBanner, .xp-bar, .welcome, .tour, .toast, .acct-modal, .lay-modal, .more-menu, #esSlipBar, #pkTray, .gl-pop, .gl-q, footer.lr-foot, .lr-foot { display:none !important; }
+.nav, #netBanner, .xp-bar, .sc-wrap, .welcome, .tour, .toast, .acct-modal, .lay-modal, .more-menu, #esSlipBar, #pkTray, .gl-pop, .gl-q, footer.lr-foot, .lr-foot { display:none !important; }
 .page:not(.active) { display:none !important; }
 .page { padding:0 4px !important; }
 .page button, .page select, .page input, .page textarea, .page label:has(select), .page label:has(input), .page .sport-row, .page .pb-chips, .page .os-ctrl, .page .shp-bar, .page .shp-health, .page .os-chart, .page .mv-chart, .page canvas, .page svg { display:none !important; }
@@ -2606,7 +2617,7 @@ function osGame(g, cols, pro) {
         const x = s.venues.find(y => y.venue === v.key);
         if (!x) return '<td>·</td>';
         const xp = xpA({ event: `${g.away} @ ${g.home}`, league: g.leagueLabel, start: g.start, market: m.label, selection: s.label, line: x.point, venue: x.venue, venueName: x.name, american: x.american, decimal: x.decimal,
-          fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
+          fair: pro && !x.lineDiffers ? s.fair : null, ev: x.lineDiffers || x.ref ? null : x.ev, readAt: osUi.readAt, card: x.ref ? null : { k: 'move', game: g.id, market: m.key, side: s.label, i: si }, tag: x.ref ? 'reference' : x.lineDiffers ? 'other number' : x.best ? (x.ev > 0 ? 'best, above fair' : 'best') : x.secondHand ? 'copy' : '' });
         const vctx = { url: x.url, league: g.league, what: `${g.away} @ ${g.home}, ${s.label}` };
         if (x.lineDiffers) return `<td class="diff"${xp} title="${escAttr(x.name)} hangs ${x.point} here">${vLink(x.venue, vctx, `(${x.point > 0 && m.key === 'spread' ? '+' : ''}${x.point}) ${afAm(x.venue, x.american, osAm(x.american))}`)}</td>`;
         const inner = `${afAm(x.venue, x.american, osAm(x.american))}${x.ev != null && !x.ref ? `<span class="ev">${osPct(x.ev)}</span>` : ''}`;
@@ -2999,7 +3010,7 @@ function xpPrintClose(quiet) {
       if (!pg || pg.querySelector(':scope > .xp-bar')) continue;
       const bar = document.createElement('div');
       bar.className = 'xp-bar';
-      bar.innerHTML = '<button class="xp-btn" onclick="xpCsv()" title="Download the rows on this screen, as filtered now, as a CSV file">EXPORT</button><button class="xp-btn" onclick="xpPrint()" title="A clean light view of this screen to print or save as a PDF">PRINT</button>';
+      bar.innerHTML = '<button class="xp-btn" onclick="scOpen()" title="An image of a row, a chart, the league or the record, with a link that previews it">SHARE CARD</button><button class="xp-btn" onclick="xpCsv()" title="Download the rows on this screen, as filtered now, as a CSV file">EXPORT</button><button class="xp-btn" onclick="xpPrint()" title="A clean light view of this screen to print or save as a PDF">PRINT</button>';
       pg.insertBefore(bar, pg.firstChild);
     }
   };
@@ -3008,6 +3019,104 @@ function xpPrintClose(quiet) {
   const st = window.showTab;
   if (typeof st === 'function') window.showTab = function (...a) { if (document.body.classList.contains('xp-pv')) xpPrintClose(true); return st.apply(this, a); };
 })();
+
+// ─── SHARE CARD (every data screen) ──────────────────────────────────────────
+// A picture of a row, a chart, a league or the record to paste anywhere. The
+// server draws it from its own data (sharecards.js), never from the numbers on
+// this screen, so a card shows the same thing to everyone and wears the app's
+// label: PROVEN only where RESULTS proves it, LEAD for a price above the fair,
+// "information, not an edge" for a line move. Nothing from the account (stake,
+// slips, stars) goes in. The link is a share page whose preview is the card and
+// whose button opens this same view.
+const scUi = { opts: [], pick: -1 };
+const SC_LEAGUE = { NFL: 'nfl', NBA: 'nba', NHL: 'nhl', NCAAF: 'cfb', CFB: 'cfb', NCAAB: 'cbb', CBB: 'cbb', MLB: 'mlb', TENNIS: 'tennis', LOL: 'lol', CS2: 'cs2', CS: 'cs2', VAL: 'valorant', VALORANT: 'valorant', DOTA: 'dota2', 'DOTA 2': 'dota2',
+  EPL: 'soccer', LALIGA: 'soccer', BUNDESLIGA: 'soccer', SERIEA: 'soccer', LIGUE1: 'soccer', MLS: 'soccer', LIGAMX: 'soccer', UCL: 'soccer', UEL: 'soccer', SOCCER: 'soccer' };
+const SC_LEAGUE_NAME = { nfl: 'NFL', nba: 'NBA', nhl: 'NHL', cfb: 'College football', cbb: 'College basketball', mlb: 'MLB', tennis: 'Tennis', soccer: 'Soccer', lol: 'League of Legends', cs2: 'Counter-Strike 2', valorant: 'Valorant', dota2: 'Dota 2' };
+const scBase = () => (/^https?:$/.test(location.protocol) ? location.origin : BACKEND_URL);
+const scAm = a => (a == null ? '' : a > 0 ? `+${a}` : `${a}`);
+// what this screen can be a card of: up to six rows the screen tags with a
+// card (a shopper price, a game's line), its leagues, and the record
+function scOptions() {
+  const page = document.querySelector('.page.active');
+  const out = [], seen = new Set(), lgs = [];
+  for (const el of page ? page.querySelectorAll('[data-xp]') : []) {
+    if (!xpVis(el)) continue;
+    let r;
+    try { r = JSON.parse(el.dataset.xp); } catch { continue; }
+    const lg = SC_LEAGUE[String(r.league || '').toUpperCase()];
+    if (lg && !lgs.includes(lg)) lgs.push(lg);
+    const c = r.card;
+    if (!c || out.length >= 6) continue;
+    const q = c.k === 'price' ? { id: c.id } : { game: c.game, market: c.market, side: c.side, i: c.i };
+    const key = `${c.k}|${JSON.stringify(q)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c.k === 'price'
+      ? { k: 'price', q, kind: 'BEST PRICE', what: `${r.selection || ''} · ${r.venueName || r.venue || ''}${r.event ? ` · ${r.event}` : ''}`, to: true }
+      : { k: 'move', q, kind: 'LINE MOVE CHART', what: `${r.selection || ''} · ${r.market || ''}${r.event ? ` · ${r.event}` : ''}`, to: true });
+  }
+  for (const lg of lgs.slice(0, 2)) out.push({ k: 'league', q: { league: lg }, kind: 'LEAGUE', what: `${SC_LEAGUE_NAME[lg]}: games, venues and the best prices above the fair` });
+  out.push({ k: 'record', q: {}, kind: 'RESULTS', what: 'The public record: what RESULTS proves, nothing more' });
+  if (page?.id === 'page-results') out.push({ k: 'digest', q: {}, kind: 'WEEKLY DIGEST', what: "Last week's record digest" });
+  return out;
+}
+const scQs = o => new URLSearchParams(Object.entries(o.q).filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)])).toString();
+const scImg = (o, extra = '') => `${scBase()}/card/${o.k}.png?${[scQs(o), extra].filter(Boolean).join('&')}`;
+function scLink(o) {
+  const qs = scQs(o);
+  let to = '';
+  // a row's link opens this same screen and filters, as LINK does
+  if (o.to) { try { to = `to=${encodeURIComponent('#' + LRShare.encode(lrShareState()))}`; } catch {} }
+  return `${scBase()}/share/${o.k}${[qs, to].filter(Boolean).length ? '?' + [qs, to].filter(Boolean).join('&') : ''}`;
+}
+function scClose() { document.getElementById('scSheet')?.remove(); }
+function scOpen() {
+  scClose();
+  scUi.opts = scOptions();
+  scUi.pick = -1;
+  const w = document.createElement('div');
+  w.className = 'sc-wrap'; w.id = 'scSheet';
+  w.addEventListener('click', e => { if (e.target === w) scClose(); });
+  w.innerHTML = `<div class="sc-box" role="dialog" aria-label="Share card">
+    <div class="sc-h"><span>SHARE CARD</span><button class="xp-btn" onclick="scClose()">CLOSE</button></div>
+    <div class="sc-s">Pick what to share. The card is drawn on our server from the live data, with the label the app gives it and the time it was read; the link's preview shows the card. No stake, slips or account details go in.</div>
+    <div class="sc-list">${scUi.opts.map((o, i) => `<button class="sc-opt" data-sc="${i}" onclick="scPick(${i})"><b>${escAttr(o.kind)}</b>${escAttr(o.what)}</button>`).join('')}</div>
+    <div id="scPrev"></div></div>`;
+  document.body.appendChild(w);
+}
+function scPick(i) {
+  const o = scUi.opts[i];
+  if (!o) return;
+  scUi.pick = i;
+  document.querySelectorAll('#scSheet .sc-opt').forEach(b => b.classList.toggle('on', Number(b.dataset.sc) === i));
+  const share = typeof navigator.share === 'function' ? '<button class="xp-btn" onclick="scShare()">SHARE…</button>' : '';
+  const prev = document.getElementById('scPrev');
+  if (!prev) return;
+  prev.innerHTML = `<img class="sc-img" alt="${escAttr(o.kind)} card" src="${escAttr(scImg(o))}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'sc-s',textContent:'The card could not be drawn just now. Try again in a minute.'}))">
+    <div class="sc-btns"><button class="xp-btn primary" onclick="scCopy()">COPY LINK</button><a class="xp-btn" style="text-decoration:none" href="${escAttr(scImg(o, 'download=1'))}" download onclick="showToast('Saving the card image')">SAVE IMAGE</a>${share}</div>`;
+  prev.scrollIntoView?.({ block: 'nearest' });
+}
+function scCopy() {
+  const o = scUi.opts[scUi.pick];
+  if (o) lrCopyLink(scLink(o), `a share card (${o.kind.toLowerCase()})`);
+}
+async function scShare() {
+  const o = scUi.opts[scUi.pick];
+  if (!o) return;
+  const url = scLink(o);
+  try {
+    let files;
+    try {
+      const b = await (await fetch(scImg(o))).blob();
+      const f = new File([b], `line-reaper-${o.k}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [f] })) files = [f];
+    } catch {}
+    await navigator.share(files ? { title: 'Line Reaper', url, files } : { title: 'Line Reaper', url });
+  } catch (e) {
+    if (e?.name !== 'AbortError') { lrCopyLink(url, `a share card (${o.kind.toLowerCase()})`); }
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('scSheet')) scClose(); });
 
 // ─── GLOSSARY: ? BESIDE A LABEL, OR A LONG PRESS ON IT ───────────────────────
 // glossary.js (window.LRGlossary, the same list as the GLOSSARY on /learn)
@@ -11132,7 +11241,7 @@ function mvRender() {
     const names = l => l.map(f => f.name).join(', ') || 'none';
     const xp = xpA({ event: r.event, league: r.leagueLabel, start: r.start, market: r.marketLabel, selection: r.side, venue: r.venue, venueName: r.venueName,
       line: r.type === 'line' ? r.to : null, american: r.kind === 'game' && r.type !== 'line' ? r.to : r.kind === 'game' ? r.now : null, shown: r.kind === 'prop' && r.type !== 'line' ? mvChance(r.to) : null,
-      fill: r.size && !r.size.unread ? (r.size.fills || 0) : null, tag: `INFORMATION, NOT AN EDGE: moved ${size} (${r.type === 'line' ? `${mvPt(r.from, r.market)} to ${mvPt(r.to, r.market)}` : r.kind === 'game' ? `${mvAm(r.from)} to ${mvAm(r.to)}` : `${mvChance(r.from)} to ${mvChance(r.to)}`}) since ${r.since || '?'}; moved too: ${names(moved)}; still at old number: ${names(old)}` });
+      fill: r.size && !r.size.unread ? (r.size.fills || 0) : null, card: r.kind === 'game' && r.gameId ? { k: 'move', game: r.gameId, market: r.market, side: r.side } : null, tag: `INFORMATION, NOT AN EDGE: moved ${size} (${r.type === 'line' ? `${mvPt(r.from, r.market)} to ${mvPt(r.to, r.market)}` : r.kind === 'game' ? `${mvAm(r.from)} to ${mvAm(r.to)}` : `${mvChance(r.from)} to ${mvChance(r.to)}`}) since ${r.since || '?'}; moved too: ${names(moved)}; still at old number: ${names(old)}` });
     return `<tr${xp}><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${afUi.on && r.type !== 'line' && r.kind === 'game' ? fromTo : escEs(fromTo)}</div></td><td>${venue}${r.kind === 'prop' ? afLeg(r.venue) : ''}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
       <td>${list(moved)}</td><td>${list(old)}</td><td>${list(rest)}</td><td class="shp-dim">${escEs(since(r.since) || '—')}</td><td>${chart}</td></tr>` +
       (mvUi.open[r.id] && r.kind === 'game' ? `<tr><td colspan="8"><div class="os-chart mv-chart" id="osc-mv${i}"><div class="os-note">Loading the line history...</div></div></td></tr>` : '');
@@ -11321,7 +11430,7 @@ function shpOpps(d) {
     const why = x.rank.reasons.map(r => `${r.why} (×${r.factor})`).join('\n') || 'Every factor at full weight';
     const vp = shpPriceOf(d, x);
     const xp = xpA({ event: x.event, league: String(x.league || '').toUpperCase(), start: x.start, market: x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType, selection: x.selection,
-      venue: x.provider, venueName: x.providerName, decimal: x.effective, fair: x.fair, fairSrc: SHP_FAIR[x.fairSource] || x.fairSource, ev: x.ev, fill: shpFillUsd(x.size, x.sizedAt), readAt: shpReadAt(x.ageSec ?? x.view?.ageSec), tag: `${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}${x.oneWay ? ', alt line' : ''}` });
+      venue: x.provider, venueName: x.providerName, decimal: x.effective, fair: x.fair, fairSrc: SHP_FAIR[x.fairSource] || x.fairSource, ev: x.ev, fill: shpFillUsd(x.size, x.sizedAt), readAt: shpReadAt(x.ageSec ?? x.view?.ageSec), card: { k: 'price', id: x.key }, tag: `${x.rank.label === 'proven' ? 'PROVEN' : 'LEAD'}${x.oneWay ? ', alt line' : ''}` });
     return `<tr class="shp-row"${xp} data-vrow="1" onclick="shpOpen('${escAttr(x.key)}')">
       <td><div>${escAttr(x.event)}</div><div class="shp-dim">${escAttr(String(x.league || '').toUpperCase())} · ${shpWhen(x.start)}</div></td>
       <td><div>${escAttr(x.selection)}</div><div class="shp-dim">${escAttr(x.marketType === 'player_prop' ? String(x.marketName || 'prop').replace(/_/g, ' ') : SHP_MARKET[x.marketType] || x.marketType)}${x.oneWay ? ' · alt line' : ''}</div></td>

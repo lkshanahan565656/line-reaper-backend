@@ -32,7 +32,9 @@ What it checks, and fails on:
   keep it after a reload, turn push alerts on (no push service in tests), move
   and hide a tab in CUSTOMIZE, work out a price in TOOLS, export a screen
   (the CSV holds exactly the rows shown, filters applied) and open its print
-  view, and open a label's glossary definition from its ? and by long press.
+  view, open a label's glossary definition from its ? and by long press, and
+  make a SHARE CARD (the card image loads at 1200x630, the copied link is a
+  page whose og:image is the card, SAVE IMAGE downloads a PNG).
 
 `allow.json` lists the few exceptions, each with its reason. The report is
 written to `e2e/out/report.json`, with a screenshot for each failed flow.
