@@ -1,0 +1,46 @@
+# Props lane forward recorder: Kalshi player-prop books vs Pinnacle props.
+# Chains itself (about 5.5 h a run) until STOP_AT; outputs diag-kxrec-out-N.
+name: diag-kxrec
+on:
+  push:
+    branches: [diag-kxrec]
+  workflow_dispatch:
+    inputs:
+      run:
+        default: '1'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: kxrec
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      RUN_N: ${{ inputs.run || '1' }}
+      STOP_AT: '2026-10-27T06:30:00Z'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: main, path: app }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd app && npm ci --omit=dev --ignore-scripts
+      - run: timeout 19500 node rec.js || true
+        env: { RUN_MIN: '320' }
+      - name: push out
+        if: ${{ !cancelled() }}
+        run: |
+          cd out && git init -q && git checkout -q -b diag-kxrec-out-$RUN_N && gzip -f rec.jsonl books.jsonl; git add -A
+          git -c user.name=diag -c user.email=diag@x commit -qm "out $RUN_N"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kxrec-out-$RUN_N
+      - name: next run
+        if: ${{ !cancelled() }}
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          [ $(date +%s) -ge $(date -d "$STOP_AT" +%s) ] && { echo chain ends; exit 0; }
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/kxrec.yml/dispatches \
+            -d "{\"ref\":\"diag-kxrec\",\"inputs\":{\"run\":\"$((RUN_N+1))\"}}"
