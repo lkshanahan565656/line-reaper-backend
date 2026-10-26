@@ -6,12 +6,12 @@
 //   PS_RUNS=5 node scripts/pagespeed.js  median of 5 runs each
 //   PS_JSON=out.json                     also write the numbers to a file
 //   node scripts/pagespeed.js https://site  the live site instead (real fonts, real API)
-// Google Fonts never leave this machine: their stylesheet is answered empty
-// after two round trips, which is what a new connection to them costs.
+// Offline, nothing leaves this machine: Google Fonts fail at once, so the
+// offline numbers leave out what fonts cost a real phone (the live run has them).
 'use strict';
+/* global document */
 const fs = require('fs');
 const { chromium } = require('playwright');
-const harness = require('../e2e/harness');
 
 const NET = { offline: false, latency: 150, downloadThroughput: 1.6e6 / 8, uploadThroughput: 750e3 / 8 };
 const CPU = 4;
@@ -36,8 +36,6 @@ async function visit(context, base) {
   const m = await page.evaluate(() => {
     const nav = performance.getEntriesByType('navigation')[0];
     const fcp = performance.getEntriesByName('first-contentful-paint')[0];
-    let blocking = 0;
-    for (const t of performance.getEntriesByType('longtask') || []) blocking += Math.max(0, t.duration - 50);
     return { fcp: fcp ? Math.round(fcp.startTime) : null, dcl: Math.round(nav.domContentLoadedEventEnd), load: Math.round(nav.loadEventEnd) };
   });
   await page.close();
@@ -57,18 +55,16 @@ const median = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floo
 
 async function main() {
   const live = process.argv[2] ? String(process.argv[2]).replace(/\/+$/, '') : '';
-  const h = live ? { base: live, close: async () => {} } : await harness.start();
-  const browser = await chromium.launch();
+  const h = live ? { base: live, close: async () => {} } : await require('../e2e/harness').start();
+  // the server compresses the page a moment after boot: measure the steady state
+  for (let i = 0; i < 40 && !live; i++) { if ((await (await fetch(h.base + '/app')).text()).includes('/assets/app.')) break; await new Promise(r => setTimeout(r, 250)); }
+  // offline, outside hosts (Google Fonts) are refused at once. Not with
+  // page.route: routing turns the browser cache off, and the warm visit needs it.
+  const browser = await chromium.launch(live ? {} : { args: ['--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] });
   const runs = { cold: [], warm: [] };
   try {
     for (let i = 0; i < RUNS; i++) {
       const context = await browser.newContext({ ...PHONE, serviceWorkers: 'block', timezoneId: 'America/Chicago', locale: 'en-US' });
-      await context.route('**/*', async route => {
-        const u = route.request().url();
-        if (live || u.startsWith(h.base)) return route.continue();
-        if (/fonts\.(googleapis|gstatic)\.com/.test(u)) { await new Promise(r => setTimeout(r, 2 * NET.latency)); return route.fulfill({ status: 200, contentType: 'text/css', body: '' }); }
-        return route.abort('blockedbyclient');
-      });
       runs.cold.push(await visit(context, h.base));
       runs.warm.push(await visit(context, h.base));
       await context.close();
