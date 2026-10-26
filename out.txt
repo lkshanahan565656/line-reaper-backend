@@ -1,0 +1,79 @@
+waiting, live 3.196.1
+waiting, live 3.196.1
+DEVELOPERS 200 54274 examples: 10 h1 true
+MAKE KEY 201 k_712f2da47b91 live check key ok
+NO KEY 401
+
+=== /api/v1/best-prices?limit=5 200 etag=W/"nwtOVLdao1FtFmwcvJNy9KQPUrA" rem=59 cors=* bytes=4410
+{
+ "stale": false,
+ "locked": false,
+ "count": 5,
+ "rows": [
+  "nfl Dallas Cowboys +3.5 BetRivers -360 fair -415 ev 2.99% fill {\"status\":\"not published\",\"note\":\"Sportsbooks do not publish limits.\"} lead",
+  "nba Atlanta Hawks +6.5 BetRivers -122 fair -128 ev 2.05% fill {\"status\":\"not published\",\"note\":\"Sportsbooks do not publish limits.\"} lead",
+  "nba Under 230.5 BetRivers -114 fair -119 ev 1.91% fill {\"status\":\"not published\",\"note\":\"Sportsbooks do not publish limits.\"} lead",
+  "nfl Saquon Barkley Under 68.5 FanDuel -113 fair -118 ev 2.16% fill {\"status\":\"not published\",\"note\":\"Sportsbooks do not publish limits.\"} lead",
+  "nba Under 229.5 BetRivers -105 fair -109 ev 1.7% fill {\"status\":\"not published\",\"note\":\"Sportsbooks do not publish limits.\"} lead"
+ ]
+}
+
+=== /api/v1/best-prices?league=nfl&limit=3 200 etag=W/"oGCZ6x0vbnH_9LmEBwOfd3wOYy8" rem=58 cors=* bytes=2090
+Dallas Cowboys +3.5 BetRivers -360 ev 2.99 lead
+Saquon Barkley Under 68.5 FanDuel -113 ev 2.16 lead
+
+=== /api/v1/moves?limit=3 200 etag=W/"hM1BEZ7fcrKOp83vW9SRCAsRYQI" rem=57 cors=* bytes=2003
+{
+ "total": 42,
+ "rows": [
+  "Jessica Hinojosa Gomez @ Alexandra Osborne Jessica Hinojosa Gomez Pinnacle -108->-189 13.5",
+  "Demi Tran @ Dasha Plekhanova Demi Tran Pinnacle 220->178 4.7",
+  "HK Avangard Omsk @ HC Dynamo Moscow HC Dynamo Moscow Pinnacle 109->-109 4.3"
+ ]
+}
+
+=== /api/v1/moves/pin-1639227216 200 etag=W/"VPDCD81eq3tAM815OwzCJQAcEzA" rem=56 cors=* bytes=7813
+Jessica Hinojosa Gomez @ Alexandra Osborne series 2 pts 35,31
+
+=== /api/v1/leagues 200 etag=W/"HapxIFnDxd_9VwJ0CZRWegN6Yt4" rem=55 cors=* bytes=1041
+tennis:80 nba:9 khl:6 seriea:3 nhl:3 ahl:2 ncaaf:2 laliga:1 brasileirao:1 kbo:1 nfl:1 wnba:1 mlb:1
+
+=== /api/v1/leagues/tennis 200 etag=W/"bz5GJNvbGsD-XrG0AeApLR6cvxc" rem=54 cors=* bytes=111969
+80 games; first Enola Chiesa @ Sapfo Sakellaridi markets 1
+
+=== /api/v1/record 200 etag=W/"xfzywODrzPzaw8gFlQQtyJghDHg" rem=53 cors=* bytes=32145
+proven 1; BetRivers Main lines vs the sharp fair 373 clv 2.8 profitShown false; rows 63
+
+=== /api/v1/record/flags?limit=2 200 etag=W/"OoUn3BJr-3Rcd0wvh77VqWXQ8wI" rem=52 cors=* bytes=1658
+total 24876
+
+=== /api/v1/digest 200 etag=W/"qmX7jhCnnLk4BrAkO9qJ3Xw8lV0" rem=51 cors=* bytes=552
+current 2026-10-26 weeks 3
+
+=== /api/v1/digest/2026-10-26 200 etag=W/"iP3cyHHKpRvZS49UfHaI1m8CTro" rem=50 cors=* bytes=2587
+frozen false
+
+=== /api/v1/status 200 etag=W/"m2D-nmbHABlKfGZP-PznXs7v_DE" rem=49 cors=* bytes=9369
+version 3.197.0 feeds 18/21
+
+=== /api/v1/key 200 etag=W/"c5-F514M5nfmnZXIXlHzHDXeO7mEH4" rem=48 cors=* bytes=197
+{"key":{"id":"k_712f2da47b91","name":"live check","createdAt":"2026-10-26T13:28:40.530Z","revokedAt":null,"signedIn":false},"usage":{"minute":12,"today":12},"limits":{"perMinute":60,"perDay":5000}}
+
+ETAG REPEAT 304
+
+WIDGET /embed/best-price?league=nfl&n=3 200 xfo=null bytes 4964
+ Best price | Line Reaper Best price above fair · NFL read 13:27 UTC Dallas Cowboys +3.5 LEAD Dallas Cowboys @ Philadelphia Eagles · Spread · 10/27 00:15 UTC BetRivers -360 FAIR -415 EV +3.0% SIZE limit not published NEXT FanDuel -400 Saquon Barkley Under 68.5 LEAD Dallas Cowboys @ Philadelphia Eagles · rush_yds · 10/27 00:15 UTC FanDuel -113 FAIR -118 EV +2.2% SIZE limit not published NEXT BetMGM -115 EV is after the venue's fee, against Pinnacle's no-vig fair. LEAD means research: prices above the fair have not beaten the close at that venue yet. Check the price at the venue before you bet. Not a bet slip; nothing here places a bet. LINE REAPER ↗ 
+
+WIDGET /embed/best-price 200 xfo=null bytes 4443
+ Best price | Line Reaper Best price above fair read 13:27 UTC Dallas Cowboys +3.5 LEAD Dallas Cowboys @ Philadelphia Eagles · Spread · 10/27 00:15 UTC BetRivers -360 FAIR -415 EV +3.0% SIZE limit not published NEXT FanDuel -400 EV is after the venue's fee, against Pinnacle's no-vig fair. LEAD means research: prices above the fair have not beaten the close at that venue yet. Check the price at the venue before you bet. Not a bet slip; nothing here places a bet. LINE REAPER ↗ 
+
+WIDGET /embed/line-move 200 xfo=null bytes 6893
+ Line move | Line Reaper Line move read 13:22 UTC Jessica Hinojosa Gomez @ Alexandra Osborne Tennis · Moneyline · Alexandra Osborne · starts 10/26 17:00 UTC Pinnacle +157 Polymarket US +166 Kalshi — FAIR 36.5% Each venue's implied chance for this side as read, a step at each change; dashed is Pinnacle's no-vig fair. A move is information, not a proven edge. History is kept until 6 hours after the start. LINE REAPER ↗ 
+
+WIDGET /embed/record 200 xfo=null bytes 4479
+ Record | Line Reaper Line Reaper record read 13:28 UTC BetRivers Main lines vs the sharp fair PROVEN NOT IN TEXAS Graded 373 CLV vs close +2.8% Beat close 80% Won-lost 599-564 Profit — Profit not shown: results have not cleared chance yet. Proven here means it beats Pinnacle's closing price, not that it has made money. 62 other kinds on the record are not proven (4 building, 2 losing to the close). The rule: 50 graded at one venue we read ourselves and a CLV t of 2 or more against Pinnacle's close, never pooled. Every flag is downloadable on RESULTS. FULL RECORD ↗ 
+
+WIDGET /embed.js 200 xfo=null bytes 1783
+/* Line Reaper widgets: https://line-reaper-backend-production.up.railway.app/developers#widgets */ (function () { var base = "https://line-reaper-backend-production.up.railway.app"; var KINDS = { 'best-price': 220, 'line-move': 330, 'record': 230 }; var ATTRS = ['league', 'market', 'venue', 'n', 'game', 'side']; function mount(el) { if (el.getAttribute('data-lr-mounted')) return; var kind = el.getAttribute('data-line-reaper'); if (!Object.prototype.hasOwnProperty.call(KINDS, kind)) return; el.setAttribute('data-lr-mounted', '1'); var q = []; for (var i = 0; i 40 && h < 4000) f.style.height = h + 'px'; }); function all() { var els = document.querySelectorAll('[data-line-reaper]'); for (var i
+
+REVOKE 200 after: 401
