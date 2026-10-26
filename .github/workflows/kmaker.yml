@@ -17,6 +17,8 @@ jobs:
             git fetch -q --depth 1 origin diag-leadlag-out-$N && git show FETCH_HEAD:changes.jsonl.gz > in/c$N.jsonl.gz; N=$((N+1)); done
           ls -la in
           node pull.mjs 2>&1 | tee out/log.txt
+          curl -s -m 60 'https://line-reaper-backend-production.up.railway.app/api/kalshi-maker?limit=500' -o out/live.json || true
+          curl -s -m 30 'https://line-reaper-backend-production.up.railway.app/api/status' -o out/status.json || true
       - if: always()
         run: |
           cd out && git init -q && git checkout -q -b o && git add -A && git -c user.name=d -c user.email=d@d commit -qm "kmaker $(date -u +%FT%TZ)" && git push -qf https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} HEAD:refs/heads/diag-kmaker-out
