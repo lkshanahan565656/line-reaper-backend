@@ -1512,6 +1512,20 @@ body.no-help .clv-info { display:none; }
 .help-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
 .help-btn:hover { color:var(--text); border-color:var(--text2); }
 @media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
+/* Compact rows (CUSTOMIZE > Compact rows): desktop only, so phones keep their tap sizes */
+@media (min-width:1100px) {
+  body.compact .page { padding:10px 14px; }
+  body.compact .tab { padding:6px 11px; }
+  body.compact table { font-size:11.5px; }
+  body.compact table td { padding-top:2px !important; padding-bottom:2px !important; line-height:1.3; }
+  body.compact table th { padding-top:3px !important; padding-bottom:3px !important; }
+  body.compact .os-tbl td, body.compact .shp-tbl td, body.compact .shop-table td, body.compact .bl-table td { font-size:11px; }
+  body.compact .sport-chip { padding-top:3px; padding-bottom:3px; }
+  body.compact .mb-row, body.compact .ms-leg { padding-top:4px; padding-bottom:4px; }
+}
+/* keyboard shortcuts overlay (? on a keyboard, or CUSTOMIZE > Keyboard shortcuts) */
+.kbd-list { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12px; color:var(--text2); margin:0 0 14px; }
+.kbd-list kbd { font:600 11px 'JetBrains Mono',monospace; color:var(--text); background:#161c28; border:1px solid var(--border2); border-radius:4px; padding:1px 6px; white-space:nowrap; justify-self:start; }
 </style>
 </head>
 <body>
@@ -2044,7 +2058,7 @@ body.no-help .clv-info { display:none; }
 </div>
 
 <footer class="lr-foot">
-  <nav aria-label="Legal"><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
+  <nav aria-label="Legal"><a href="/status" target="_blank" rel="noopener">Status</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/refunds" target="_blank" rel="noopener">Refunds</a><a href="/disclaimer" target="_blank" rel="noopener">Disclaimer</a><a href="/responsible-gambling" target="_blank" rel="noopener">Responsible gambling</a><a href="/data-sources" target="_blank" rel="noopener">Data sources</a><button id="footDelete" style="display:none" onclick="acctOpen('delete')">Delete account</button></nav>
   <div>Line Reaper is an information and analytics tool, not a sportsbook, exchange or adviser. It does not take bets or hold funds, and nothing here is financial or betting advice. Alerts are the same for every subscriber. Past results do not guarantee future results. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div>
 </footer>
 
@@ -4113,10 +4127,74 @@ function layClose() { document.getElementById('layModal').classList.remove('open
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   const open = id => document.getElementById(id)?.classList.contains('open');
-  if (open('mybModal')) mybFormClose();
+  if (open('kbdModal')) kbdClose();
+  else if (open('mybModal')) mybFormClose();
   else if (open('acctModal')) acctClose();
   else if (open('layModal')) layClose();
   else if (open('moreMenu')) document.getElementById('moreMenu').classList.remove('open');
+});
+// ── KEYBOARD SHORTCUTS (desktop) ────────────────────────────────────────────
+// 1-9 the tabs on the bar, [ and ] the previous and next tab, / the search box
+// on this tab, F the Favorites filter, C CUSTOMIZE, ? this list. None of them
+// fire while typing in a box, with Ctrl, Alt or Cmd held, or under a pop-up.
+const KBD = [
+  ['1 – 9', 'Open the tab in that spot on the bar'],
+  ['[  ]', 'Previous or next tab (MORE tabs included)'],
+  ['/', 'Jump to the search box on this tab'],
+  ['F', 'Turn the ★ Favorites filter on or off (ODDS SCREEN, where you starred leagues or venues)'],
+  ['C', 'Open CUSTOMIZE'],
+  ['?', 'Show this list'],
+  ['Esc', 'Close the open pop-up, menu or this list'],
+];
+function kbdOpen() {
+  document.getElementById('kbdList').innerHTML = KBD.map(([k, what]) => `<kbd>${escAttr(k)}</kbd><span>${escAttr(what)}</span>`).join('');
+  document.getElementById('kbdModal').classList.add('open');
+}
+function kbdClose() { document.getElementById('kbdModal').classList.remove('open'); }
+const kbdTyping = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+const kbdPopupOpen = () => !!document.querySelector('.lay-modal.open, .acct-modal.open, .tour.open, .welcome.open');
+// the tabs a viewer can reach, in order: the bar first, then MORE
+function kbdTabs() {
+  const shown = layNames().filter(n => !layIsHidden(n) && layTabs[n]);
+  return { bar: shown.filter(n => !layIsMore(n)), all: [...shown.filter(n => !layIsMore(n)), ...shown.filter(n => layIsMore(n))] };
+}
+const kbdGo = n => showTab(n, layTabs[n]);
+const kbdVisible = el => !!el && el.offsetParent !== null && !el.disabled;
+function kbdSearch() {
+  const pg = document.querySelector('.page.active');
+  const box = pg && [...pg.querySelectorAll('input[type="search"], input[placeholder]')].find(i => kbdVisible(i) && (i.type === 'search' || /search|team|player/i.test(i.placeholder)));
+  if (box) { box.focus(); box.select?.(); return; }
+  showToast('This tab has no search box.');
+}
+function kbdFav() {
+  const pg = document.querySelector('.page.active');
+  const btn = pg && [...pg.querySelectorAll('button')].find(b => kbdVisible(b) && /^★\s*Favorites/.test(b.textContent.trim()));
+  if (btn) { btn.click(); return; }
+  showToast('No Favorites filter here. Star a league or venue on ODDS SCREEN > BEST PRICES ABOVE FAIR first.');
+}
+document.addEventListener('keydown', e => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  if (kbdTyping(e.target) || kbdTyping(document.activeElement)) return;
+  if (e.key === 'Escape') return;
+  if (kbdPopupOpen()) return;
+  const k = e.key;
+  if (k === '?') { e.preventDefault(); kbdOpen(); return; }
+  if (/^[1-9]$/.test(k)) {
+    const n = kbdTabs().bar[+k - 1];
+    if (n) { e.preventDefault(); kbdGo(n); }
+    return;
+  }
+  if (k === '[' || k === ']') {
+    const { all } = kbdTabs();
+    if (!all.length) return;
+    const cur = all.findIndex(n => layTabs[n].classList.contains('active'));
+    const next = all[((cur < 0 ? 0 : cur) + (k === ']' ? 1 : -1) + all.length) % all.length];
+    e.preventDefault(); kbdGo(next);
+    return;
+  }
+  if (k === '/') { e.preventDefault(); kbdSearch(); return; }
+  if (k === 'f' || k === 'F') { e.preventDefault(); kbdFav(); return; }
+  if (k === 'c' || k === 'C') { e.preventDefault(); layOpen(); }
 });
 function layRenderList() {
   const names = layNames();
@@ -4130,6 +4208,7 @@ function layRenderList() {
       <button class="lay-b${off ? '' : ' on'}" onclick="layHide('${n}')">${off ? 'HIDDEN' : 'SHOWN'}</button></div>`;
   }).join('');
   const h = document.getElementById('layHelp'); h.textContent = layout.help ? 'SHOWN' : 'HIDDEN'; h.classList.toggle('on', layout.help);
+  const c = document.getElementById('layCompact'); c.textContent = layout.compact ? 'ON' : 'OFF'; c.classList.toggle('on', !!layout.compact);
 }
 function layMove(n, d) {
   const names = layNames(), i = names.indexOf(n), j = i + d;
@@ -4145,8 +4224,9 @@ function layHide(n) {
     if (next) showTab(next, layTabs[next]);
   }
 }
+function layToggleCompact() { layout.compact = !layout.compact; laySave(); document.body.classList.toggle('compact', layout.compact); layRenderList(); }
 function layToggleHelp() { layout.help = !layout.help; laySave(); document.body.classList.toggle('no-help', !layout.help); layRenderList(); }
-function layReset() { layout = { order: [], more: {}, hidden: {}, help: true, folds: {} }; lsSet(LAY_KEY, null); document.body.classList.remove('no-help'); layApply(); layFoldInit(true); layRenderList(); }
+function layReset() { layout = { order: [], more: {}, hidden: {}, help: true, folds: {} }; lsSet(LAY_KEY, null); document.body.classList.remove('no-help', 'compact'); layApply(); layFoldInit(true); layRenderList(); }
 
 // help panels: folded to one line, tap to open, remembered per tab
 function layFoldInit(reset) {
@@ -4185,6 +4265,7 @@ function layFoldLabel(info) {
     });
     layLoad();
     document.body.classList.toggle('no-help', !layout.help);
+    document.body.classList.toggle('compact', !!layout.compact);
     layApply();
     layFoldInit();
     const base = showTab;
@@ -10301,6 +10382,8 @@ function shpArbSize(a) {
     <div id="layList"></div>
     <div class="lay-row"><span class="lay-name">Show help panels</span><button class="lay-b" id="layHelp" onclick="layToggleHelp()"></button></div>
     <div class="lay-row"><span class="lay-name">App tour</span><button class="lay-b" id="layTour" onclick="layClose();tourStart()">SHOW</button></div>
+    <div class="lay-row"><span class="lay-name">Compact rows<span style="display:block;font-size:10px;font-weight:500;color:var(--muted2)">Tighter rows and smaller text on screens 1100 px and wider</span></span><button class="lay-b" id="layCompact" onclick="layToggleCompact()"></button></div>
+    <div class="lay-row"><span class="lay-name">Keyboard shortcuts</span><button class="lay-b" id="layKbd" onclick="layClose();kbdOpen()">SHOW</button></div>
     <h3 style="margin-top:18px">Phone app</h3>
     <p id="pwaNote">Install Line Reaper on your home screen and get a push whenever the tracker sends an alert. Everyone gets the same alert.</p>
     <div class="lay-row" id="pwaInstallRow" style="display:none"><span class="lay-name">Install on this device</span><button class="lay-b" id="pwaInstall" onclick="pwaInstall()">INSTALL</button></div>
@@ -10312,6 +10395,14 @@ function shpArbSize(a) {
       <p id="pushTestNote" style="margin:4px 0 0"></p>
     </div>
     <div class="lay-foot"><button onclick="layReset()">RESET</button><button class="primary" onclick="layClose()">DONE</button></div>
+  </div>
+</div>
+<div class="lay-modal" id="kbdModal" onclick="if(event.target===this)kbdClose()">
+  <div class="lay-box" role="dialog" aria-label="Keyboard shortcuts">
+    <h3>Keyboard shortcuts</h3>
+    <p>For a keyboard on desktop. They do nothing while you are typing in a box.</p>
+    <div class="kbd-list" id="kbdList"></div>
+    <div class="lay-foot"><button class="primary" onclick="kbdClose()">DONE</button></div>
   </div>
 </div>
 <div class="acct-modal" id="acctModal" onclick="if(event.target===this)acctClose()">
