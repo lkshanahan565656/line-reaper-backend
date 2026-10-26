@@ -4756,7 +4756,15 @@ app.get(['/learn', '/learn/:slug'], (req, res) => {
 // Installable app: manifest, service worker (root scope) and icons, then the push routes.
 const PUB = path.join(__dirname, 'public');
 app.get('/manifest.webmanifest', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/manifest+json').sendFile(path.join(PUB, 'manifest.webmanifest')));
-app.get('/sw.js', (req, res) => res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }).type('application/javascript').sendFile(path.join(PUB, 'sw.js')));
+// the worker carries the version, so each deploy is a new worker the browser
+// installs on its next load (and it drops the old version's saved copies)
+let swJs = null;
+app.get('/sw.js', (req, res) => {
+  if (swJs == null) {
+    try { swJs = fs.readFileSync(path.join(PUB, 'sw.js'), 'utf8').replace(/__LR_VERSION__/g, require('./package.json').version); } catch { return res.status(404).end(); }
+  }
+  res.set({ 'Cache-Control': 'no-cache, no-store', 'Service-Worker-Allowed': '/' }).type('application/javascript').send(swJs);
+});
 app.get('/icons/:name', (req, res) => {
   if (!/^[a-z0-9-]+\.png$/.test(req.params.name)) return res.sendStatus(404);
   res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(PUB, 'icons', req.params.name), e => { if (e && !res.headersSent) res.sendStatus(404); });

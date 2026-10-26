@@ -12,6 +12,8 @@ const { chromium } = require('playwright');
 const harness = require('./harness');
 const { crawl, makeReport, TABS } = require('./crawl');
 const flows = require('./flows');
+const a11y = require('./a11y');
+const offline = require('./offline');
 const verdict = require('./verdict');
 
 const VIEWPORTS = {
@@ -32,6 +34,9 @@ async function main() {
   };
   const reports = [];
   const jobs = [];
+  // axe and the offline check run after the crawl and the flows, so their
+  // CPU does not slow the timed flows down
+  const later = [];
   for (const vp of vps) {
     // split the tabs over a few browser windows so the crawl runs in parallel
     for (let s = 0; s < shards; s++) {
@@ -46,6 +51,31 @@ async function main() {
         reports.push(rep);
       })());
     }
+    // accessibility (axe) on every tab, in two windows; E2E_A11Y=0 skips it
+    if (process.env.E2E_A11Y !== '0') {
+      for (let s = 0; s < 2; s++) {
+        const mine = tabs.filter((_, i) => i % 2 === s);
+        later.push(async () => {
+          const context = await newContext(browser, h, vp);
+          const rep = makeReport();
+          rep.viewport = vp; rep.part = `a11y ${s + 1}`;
+          await a11y.run(context, { ...opts, viewportName: vp, a11yLoad: s === 0 }, rep, mine);
+          await context.close();
+          reports.push(rep);
+        });
+      }
+    }
+    // offline: the only window with the service worker on
+    if (!process.env.E2E_TABS && process.env.E2E_OFFLINE !== '0') {
+      later.push(async () => {
+        const context = await newContext(browser, h, vp, { serviceWorkers: 'allow' });
+        const rep = makeReport();
+        rep.viewport = vp; rep.part = 'offline';
+        await offline.run(context, { ...opts, viewportName: vp }, rep);
+        await context.close();
+        reports.push(rep);
+      });
+    }
     if (!process.env.E2E_TABS || process.env.E2E_FLOWS) {
       jobs.push((async () => {
         const context = await newContext(browser, h, vp);
@@ -58,6 +88,7 @@ async function main() {
     }
   }
   await Promise.all(jobs);
+  await Promise.all(later.map(f => f()));
   await browser.close();
   const out = verdict.combine(reports, { misses: h.misses(), recordedAt: h.recordedAt, snapshot: h.snapshot, ms: Date.now() - t0 });
   await h.close();
@@ -67,8 +98,8 @@ async function main() {
   process.exit(out.failures.length ? 1 : 0);
 }
 
-async function newContext(browser, h, vp) {
-  const context = await browser.newContext({ ...VIEWPORTS[vp], serviceWorkers: 'block', acceptDownloads: true, timezoneId: 'America/Chicago', locale: 'en-US' });
+async function newContext(browser, h, vp, extra = {}) {
+  const context = await browser.newContext({ ...VIEWPORTS[vp], serviceWorkers: 'block', acceptDownloads: true, timezoneId: 'America/Chicago', locale: 'en-US', ...extra });
   // nothing leaves this machine: fonts get an empty stylesheet, every other outside request is refused
   await context.route('**/*', route => {
     const u = route.request().url();

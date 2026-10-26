@@ -34,6 +34,20 @@ What it checks, and fails on:
   (the CSV holds exactly the rows shown, filters applied) and open its print
   view, and open a label's glossary definition from its ? and by long press.
 
+- **Accessibility** (`a11y.js`): axe-core (WCAG 2.1 A and AA rules) on the app
+  as it loads, every tab and the CUSTOMIZE panel, at both sizes. Any
+  "serious" or "critical" finding fails (contrast, missing labels and names,
+  bad ARIA). `E2E_A11Y=0` skips it while working on something else.
+- **Offline** (`offline.js`): the one window with the service worker on. It
+  loads ESPORTS online, cuts the network, reloads, and fails unless the app
+  opens, the saved rows show with a "read N min ago, may be stale" stamp on
+  every row, the banner says the data is not live, the live pill does not say
+  live, and nothing overflows at 375 px; then TRY AGAIN back online must show
+  live rows with no stamps. `E2E_OFFLINE=0` skips it.
+
+Axe and the offline check run after the crawl and the flows, so they do not
+slow the timed flows down.
+
 `allow.json` lists the few exceptions, each with its reason. The report is
 written to `e2e/out/report.json`, with a screenshot for each failed flow.
 
@@ -60,3 +74,8 @@ branch. Its workflow waits for the site to show that version, runs
 (`POST /api/ops/smoke`; the server fetches the file from GitHub itself, so the
 caller cannot post a result). The command waits for the result, prints it, and
 exits 0 on a pass. The last result is in `/api/ops` under `liveCheck`.
+
+With a version given, the live check also opens the app with the service
+worker on and fails unless the worker carries that version and `/api/status`
+answers live (not a saved copy): an installed phone gets the new deploy on its
+next open.

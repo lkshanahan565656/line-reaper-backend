@@ -34,10 +34,10 @@ function provenKinds(snapshot) {
 function combine(reports, { misses = [], recordedAt, snapshot, ms }) {
   const issues = [], dead = [], empties = [], proven = [];
   const tabs = {};
-  let clicks = 0, requests = 0;
+  let clicks = 0, requests = 0, a11yScans = 0, offlineRuns = 0;
   const flows = {};
   for (const r of reports) {
-    clicks += r.clicks; requests += r.requests;
+    clicks += r.clicks; requests += r.requests; a11yScans += r.a11yScans || 0; if (r.part === 'offline') offlineRuns++;
     for (const i of r.issues) issues.push({ ...i, viewport: r.viewport });
     for (const d of r.dead) dead.push(d);
     for (const e of r.empties) empties.push(e);
@@ -80,13 +80,15 @@ function combine(reports, { misses = [], recordedAt, snapshot, ms }) {
     const want = ALLOW.mustHaveData.find(x => x.tab === e.tab && re(x.empty).test(e.text));
     if (want) failures.push({ what: 'empty-with-data', ...e, why: want.why });
   }
-  return { ok: !failures.length, failures, ms, recordedAt, clicks, requests, tabs, flows, dead, empties, proven, issues, misses, provenKinds: kinds };
+  return { ok: !failures.length, failures, ms, recordedAt, clicks, requests, a11yScans, offlineRuns, tabs, flows, dead, empties, proven, issues, misses, provenKinds: kinds };
 }
 
 function summary(o) {
   const lines = [];
   lines.push(`e2e: ${o.ok ? 'PASS' : 'FAIL'} in ${(o.ms / 1000).toFixed(1)} s, ${o.clicks} clicks, ${o.requests} requests, snapshot ${o.recordedAt || 'none'}`);
   for (const [k, v] of Object.entries(o.tabs)) lines.push(`  ${k.padEnd(9)} ${Object.entries(v).map(([vp, t]) => `${vp} ${t.clicks} clicks/${t.families} kinds/${t.links} links${t.dead ? `/${t.dead} dead` : ''}`).join('  ')}`);
+  if (o.a11yScans) lines.push(`  accessibility: ${o.a11yScans} axe scans (WCAG 2.1 A and AA), ${o.failures.filter(f => f.what === 'a11y').length} serious or critical`);
+  if (o.offlineRuns) lines.push(`  offline: ${o.offlineRuns} runs, ${o.failures.filter(f => f.what === 'offline').length} problems`);
   for (const [k, v] of Object.entries(o.flows)) lines.push(`  flow ${k}: ${v.ok ? 'ok' : 'FAILED ' + (v.error || '')}`);
   if (o.failures.length) {
     lines.push(`${o.failures.length} failures:`);

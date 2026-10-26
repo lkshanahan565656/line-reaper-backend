@@ -28,6 +28,24 @@ async function waitForVersion(base, want, maxMin = 25) {
   throw new Error(`the site never reached v${want} (last seen v${seen})`);
 }
 
+async function workerCheck(browser, base, want) {
+  const context = await browser.newContext({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
+  await context.route('**/*', route => (route.request().method() !== 'GET' && !READ_ONLY_POSTS.includes(new URL(route.request().url()).pathname) ? route.abort('blockedbyclient') : route.continue()));
+  try {
+    const page = await context.newPage();
+    await page.goto(`${base}/app`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: 30000 });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    return await page.evaluate(async v => {
+      const sw = await (await fetch('/sw.js', { cache: 'no-store' })).text();
+      const st = await fetch(`/api/status?t=${Date.now()}`);
+      const version = (await st.json()).version;
+      const cached = st.headers.get('x-lr-cached') === '1';
+      return { ok: sw.includes(`const VERSION = '${v}'`) && version === v && !cached && !!navigator.serviceWorker.controller, workerVersion: (sw.match(/const VERSION = '([^']*)'/) || [])[1], version, cached };
+    }, want);
+  } finally { await context.close(); }
+}
+
 async function main() {
   const base = (process.argv[2] || '').replace(/\/$/, '');
   const want = process.argv[3] || '';
@@ -56,7 +74,11 @@ async function main() {
       reports.push(rep);
       await context.close();
     })));
+    // the installed app: a browser with the service worker on must get this
+    // version's worker, and live answers (not saved copies) once it is online
+    if (want) result.worker = await workerCheck(browser, base, want).catch(e => ({ ok: false, error: String(e.message || e).slice(0, 200) }));
     await browser.close();
+    if (result.worker && !result.worker.ok) result.failures.push({ what: 'worker', summary: `worker: ${JSON.stringify(result.worker).slice(0, 220)}` });
     const seen = new Set();
     for (const r of reports) {
       for (const i of r.issues) {
