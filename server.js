@@ -4857,10 +4857,94 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nAllow: /leagues\n${leagues.ORDER.map(k => `Allow: ${leagues.LEAGUES[k].path}\n`).join('')}Disallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+// ── LEAGUE PAGES (leagues.js) ──
+// /nfl ... /esports/dota2 and /leagues: public, server-rendered from the live
+// board and the strict public record, the same for everyone (the webhook's
+// licences and the paywall's free view, never the visitor's cookies).
+const leagues = require('./leagues');
+const leagueMemo = require('./ops').createMemo({ ttlMs: 60e3, max: 20 });
+const leagueRecordMemo = require('./ops').createMemo({ ttlMs: 5 * 60e3, max: 2 });
+// proven kinds only (claims.publicRecord, the RESULTS test), each with its
+// graded flags counted by sport from the same public flag file
+function leagueRecord() {
+  return leagueRecordMemo('record', async () => {
+    const lic = webhookLicence();
+    const rec = claims.publicRecord({ board: await closeBoardFor(lic, 0, null) });
+    const proven = rec.rows.filter(r => r.label === 'proven');
+    const bySport = new Map();
+    if (proven.length) {
+      const want = new Set(proven.map(r => `${r.kind}|${r.book}`));
+      for (const f of closeBoard.flags(await closeBoardLists(lic, null))) {
+        if (!f.graded || !want.has(`${f.kind}|${f.book}`)) continue;
+        const k = `${f.kind}|${f.book}|${String(f.sport || '').toLowerCase()}`;
+        bySport.set(k, (bySport.get(k) || 0) + 1);
+      }
+    }
+    return { ruleText: rec.rule.text, labels: rec.labels, proven, bySport };
+  });
+}
+function leagueBoard(cfg) {
+  const pro = !PAYWALL;
+  const lic = webhookLicence();
+  if (cfg.esports) {
+    const games = new Set([cfg.es.game]);
+    const kalshiOk = !!lic.kalshi;
+    const matches = (esportsBoard.state.matches || []).filter(m => games.has(m.game) && Date.parse(m.start) < Date.now() + 72 * 3600e3)
+      .sort((a, b) => Date.parse(a.start) - Date.parse(b.start)).slice(0, 25).map(m => {
+        const main = (m.markets || []).find(mk => mk.kind === 'match');
+        const sides = (main ? main.outcomes : m.teams.map(name => ({ name, quotes: {} }))).slice(0, 2).map(oc => {
+          const k = kalshiOk ? oc.quotes?.kalshi : null;
+          return { name: oc.name, cost: k?.cost ?? null, ref: k?.ref ?? null, ev: k?.ev ?? null };
+        });
+        return { teams: m.teams, tournament: m.tournament, bestOf: m.bestOf, live: !!m.live, start: m.start, sides };
+      });
+    const sides = matches.flatMap(m => m.sides);
+    return { readAt: esportsBoard.state.updated || null, pro, matches,
+      kalshi: matches.filter(m => m.sides.some(s => s.cost != null)).length, sharp: matches.filter(m => m.sides.some(s => s.ref != null)).length,
+      above: sides.filter(s => s.ev != null && s.ev > 0).length };
+  }
+  const st = shopQuotes();
+  const quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+  const view = shopper.build(quotes, { league: cfg.keys, state: 'TX', sort: 'ev', stake: 100, limit: 12, method: 'power', proven: evBookProven, depth: shopDepth.forQuote });
+  if (!view.counts.markets) return { readAt: st.builtAt || null, stale: !freeBooksState.gamesAt, markets: 0 };
+  const games = new Set(view.markets.map(m => m.eventId)).size;
+  const tx = venues.legalIn('TX');
+  const names = new Map();
+  for (const m of view.markets) for (const s of m.sides) for (const c of s.prices || []) if (tx(c.provider) && !c.secondHand) names.set(c.provider, c.name || c.provider);
+  const txOpps = view.opportunities.filter(o => o.access === 'direct' && tx(o.provider));
+  const opps = txOpps.slice(0, 12).map(o => ({
+    event: o.event, start: o.start, marketName: o.player ? `${o.marketName} · ${o.player}` : o.marketName, selection: o.selection, provider: o.provider, providerName: o.providerName,
+    american: o.american, fairAmerican: o.fairAmerican, fair: o.fair, ev: o.ev, size: o.size || null, exchange: depthBook.EXCHANGES.has(o.provider), label: o.rank?.label || 'lead' }));
+  return { readAt: st.builtAt || null, pro, games, markets: view.counts.markets, priced: view.counts.priced, above: txOpps.length,
+    locked: txOpps.length, venues: [...names.values()], opps: pro ? opps : [], anyExchange: opps.some(o => o.exchange) };
+}
+async function leagueData(slug) {
+  const cfg = leagues.bySlug(slug);
+  let record = null;
+  try {
+    const r = await leagueRecord();
+    record = { ruleText: r.ruleText, labels: r.labels, proven: r.proven.map(p => ({ ...p,
+      inLeague: cfg ? cfg.keys.reduce((n, k) => n + (r.bySport.get(`${p.kind}|${p.book}|${k.toLowerCase()}`) || 0), 0) : null })) };
+  } catch (e) { console.warn('League pages: record:', e.message); }
+  let board = null;
+  if (cfg) { try { board = leagueBoard(cfg); } catch (e) { console.warn(`League pages: ${slug} board:`, e.message); } }
+  return { now: Date.now(), board, record };
+}
+app.get(['/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path)], async (req, res) => {
+  try {
+    const slug = req.path === '/leagues' ? '' : leagues.byPath(req.path.replace(/\/+$/, '').toLowerCase());
+    const origin = siteOrigin(req);
+    const html = await leagueMemo(`${slug}|${origin}`, async () => {
+      const data = await leagueData(slug);
+      return slug ? leagues.render(slug, data, { origin }) : leagues.index(data, { origin });
+    });
+    res.set('Cache-Control', 'public, max-age=60').type('html').send(html);
+  } catch (e) { res.status(500).type('text/plain').send('This page could not be built just now. Try again in a minute.'); console.warn('League pages:', e.message); }
+});
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', '/status', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', '/status', '/leagues', ...leagues.ORDER.map(k => leagues.LEAGUES[k].path), ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4871,7 +4955,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.191.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.192.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8575,7 +8659,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.191.0',
+  version: '3.192.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
