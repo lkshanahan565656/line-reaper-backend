@@ -71,6 +71,13 @@ async function openTab(page, name, w, opts) {
   w.tab = name;
   // the tour (opened by HELP, or its NEXT switching tabs) covers the bar: close it as a viewer would
   if (await page.locator('#tour.open').count().catch(() => 0)) { await page.keyboard.press('Escape'); await settle(page, w, opts, 60); }
+  // a PRINT view left open by the last tab's clicks hides the tab bar: close it as a viewer would
+  if (await page.evaluate(() => document.body.classList.contains('xp-pv')).catch(() => false)) {
+    const close = page.locator('button', { hasText: 'CLOSE PRINT VIEW' }).first();
+    if (await close.isVisible().catch(() => false)) await close.click({ timeout: 3000 }).catch(() => {});
+    else await page.evaluate(() => window.xpPrintClose?.(true)).catch(() => {});
+    await settle(page, w, opts, 60);
+  }
   const how = await page.evaluate(n => {
     const want = `showTab('${n}',this)`;
     const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === want);
