@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.188.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.189.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -6954,6 +6954,73 @@ app.get('/api/odds-screen/history/:id', (req, res) => {
     lic.kalshi ? px : Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
   res.json({ id, series, pro });
 });
+// ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ──────────────────────────────
+// Today's largest moves since we first saw each market, in the last 3 hours
+// and the last hour, at each venue, with every other venue's answer (moved
+// too, or still at the old number) (bigmoves.js). Reads only what is already
+// kept: the odds screen's game-line history and the stale-lines engine's
+// change log (props, apps included). Information, not an edge: identical for
+// everyone, no alerts, no sizing.
+const bigMoves = require('./bigmoves');
+const movesCache = new Map();
+// an exchange price's book size, from the shopper's depth reads (never a guess)
+function movesSizer() {
+  const idx = new Map();
+  const st = shopQuotes();
+  for (const q of [...st.free.quotes, ...st.kalshi.quotes]) {
+    if (!bigMoves.EXCHANGES.has(q.providerId) || q.marketType === 'player_prop') continue;
+    idx.set(`${String(q.eventId).replace(/^pin-/, '')}|${q.marketType}|${q.line ?? ''}|${q.side}|${q.providerId}`, q);
+  }
+  return (g, m, s, venue) => {
+    const side = s.name === g.home ? 'home' : s.name === g.away ? 'away' : s.name === 'Draw' ? 'draw' : String(s.name).toLowerCase();
+    const type = { ml: 'moneyline', spread: 'spread', total: 'total' }[m.key];
+    const line = m.key === 'ml' ? '' : m.key === 'spread' ? (side === 'home' ? m.point : -m.point) : m.point;
+    const q = idx.get(`${String(g.id).replace(/^pin-/, '')}|${type}|${line}|${side}|${venue}`);
+    if (!q) return null;
+    const book = shopDepth.forQuote(q);
+    const z = book ? depthBook.sizeOf(book) : null;
+    if (!z) return { unread: true };
+    const tiers = Object.entries(z.tiers || {}).filter(([, t]) => t?.full).map(([k]) => Number(k));
+    return { topUsd: z.topUsd, fills: tiers.length ? Math.max(...tiers) : 0, ageSec: z.ageSec, empty: !!z.empty };
+  };
+}
+function movesFor({ window, kalshiOk }) {
+  const key = `${window}|${kalshiOk ? 1 : 0}`;
+  const hit = movesCache.get(key);
+  if (hit && Date.now() - hit.at < 20e3) return hit.body;
+  const now = Date.now();
+  const screen = oddsScreenFor({ kalshiOk });
+  let sizer = null;
+  try { sizer = movesSizer(); } catch (e) { console.warn('Biggest moves: sizes:', e.message); }
+  const series = kalshiOk ? oddsHistory.dump() : oddsHistory.dump().map(x => ({ ...x, pts: x.pts.map(([t, p, f, px]) => [t, p, f, Object.fromEntries(Object.entries(px).filter(([k]) => k !== 'kalshi'))]) }));
+  const game = bigMoves.gameMoves(series, screen, { window, now, size: sizer });
+  const subjects = staleState.enabled ? staleState.engine.sources(now, { kind: 'prop' }) : [];
+  const prop = bigMoves.propMoves(subjects, { window, now, leagueOf: x => STALE_SPORT[x] || String(x || '').toLowerCase() });
+  let rows = [...game.rows, ...prop.rows];
+  if (!kalshiOk) rows = rows.filter(r => r.venue !== 'kalshi').map(r => ({ ...r, followers: r.followers.filter(f => f.venue !== 'kalshi') }));
+  const body = { window, rows, updated: new Date(now).toISOString(), linesAt: screen.updated, stale: screen.stale,
+    history: { gameSince: game.earliest, propSince: prop.earliest, gameMarkets: game.considered, propMarkets: prop.considered, propsOn: staleState.enabled, propKeepHours: staleState.engine.opts.keepMs / 3600e3 } };
+  movesCache.set(key, { at: now, body });
+  return body;
+}
+app.get('/api/moves', (req, res) => {
+  const lic = licenceOf(req);
+  const q = k => String(req.query[k] || '').toLowerCase();
+  const window = Object.hasOwn(bigMoves.WINDOWS, q('window')) ? q('window') : 'open';
+  const type = q('type') === 'line' ? 'line' : 'price';
+  const venue = bigMoves.MOVERS.includes(q('venue')) ? q('venue') : null;
+  const league = /^[a-z0-9]{1,20}$/.test(q('league')) ? q('league') : null;
+  const kind = ['game', 'prop'].includes(q('kind')) ? q('kind') : null;
+  const sort = ['move', 'start', 'old'].includes(q('sort')) ? q('sort') : 'move';
+  let base;
+  try { base = movesFor({ window, kalshiOk: !!lic.kalshi }); }
+  catch (e) { console.warn('Biggest moves:', e.message); return res.status(500).json({ error: 'Could not rank the moves right now.' }); }
+  const all = base.rows.filter(r => !kind || r.kind === kind);
+  const rows = bigMoves.rank(all, { venue, league, type, sort });
+  res.json(regionSafe({ ...base, rows, type, venue, league, kind, sort, total: rows.length, facets: bigMoves.facets(all, type),
+    counts: { price: all.filter(r => r.type === 'price').length, line: all.filter(r => r.type === 'line').length },
+    note: 'A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close ("app stale", "lead-lag"); the only proven play on Results is BetRivers main lines.' }));
+});
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // Every venue's price for the same bet on one row (shopper.js), built from
 // what the reads above left in memory: no extra requests. Quotes are rebuilt
@@ -8495,7 +8562,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.188.1',
+  version: '3.189.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
