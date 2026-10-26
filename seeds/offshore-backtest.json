@@ -1,0 +1,741 @@
+{
+ "window": {
+  "from": "2026-10-05T19:45:00.000Z",
+  "to": "2026-10-26T17:53:00.000Z"
+ },
+ "pairs": 100,
+ "verdict": "FAIL",
+ "why": "No signal beat the US venue's own mid an hour later after the taker fee with t at or above 2; the offshore gap does not close.",
+ "rows": [
+  {
+   "sig": "gap",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "all",
+   "flagged": 51,
+   "graded": 50,
+   "target": 50,
+   "own30": {
+    "n": 51,
+    "events": 11,
+    "mean": -0.0141,
+    "t": -5.23
+   },
+   "own60": {
+    "n": 50,
+    "events": 11,
+    "mean": -0.0108,
+    "t": -2.88
+   },
+   "exit60": {
+    "n": 50,
+    "events": 11,
+    "mean": -0.0189,
+    "t": -4.32
+   },
+   "offshore60": {
+    "n": 51,
+    "events": 11,
+    "mean": 0.0268,
+    "t": 6.04
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0142,
+   "medianDepth": null,
+   "label": "research, not an edge, 50 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "fed",
+   "flagged": 30,
+   "graded": 29,
+   "target": 50,
+   "own30": {
+    "n": 30,
+    "events": 3,
+    "mean": -0.0172,
+    "t": -7.02
+   },
+   "own60": {
+    "n": 29,
+    "events": 3,
+    "mean": -0.0138,
+    "t": -4.82
+   },
+   "exit60": {
+    "n": 29,
+    "events": 3,
+    "mean": -0.0231,
+    "t": -5.44
+   },
+   "offshore60": {
+    "n": 30,
+    "events": 3,
+    "mean": 0.0276,
+    "t": 8.44
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0149,
+   "medianDepth": null,
+   "label": "research, not an edge, 29 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "race",
+   "flagged": 21,
+   "graded": 21,
+   "target": 50,
+   "own30": {
+    "n": 21,
+    "events": 8,
+    "mean": -0.0095,
+    "t": -2.9
+   },
+   "own60": {
+    "n": 21,
+    "events": 8,
+    "mean": -0.0066,
+    "t": -0.98
+   },
+   "exit60": {
+    "n": 21,
+    "events": 8,
+    "mean": -0.0131,
+    "t": -2.02
+   },
+   "offshore60": {
+    "n": 21,
+    "events": 8,
+    "mean": 0.0257,
+    "t": 2.5
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0131,
+   "medianDepth": null,
+   "label": "research, not an edge, 21 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "all",
+   "flagged": 324,
+   "graded": 324,
+   "target": 50,
+   "own30": {
+    "n": 324,
+    "events": 16,
+    "mean": -0.0172,
+    "t": -8.14
+   },
+   "own60": {
+    "n": 324,
+    "events": 16,
+    "mean": -0.0165,
+    "t": -9.06
+   },
+   "exit60": {
+    "n": 324,
+    "events": 16,
+    "mean": -0.0207,
+    "t": -12.27
+   },
+   "offshore60": {
+    "n": 324,
+    "events": 16,
+    "mean": 0.0335,
+    "t": 16.52
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0128,
+   "medianDepth": null,
+   "label": "research, not an edge, 50 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "control",
+   "flagged": 58,
+   "graded": 58,
+   "target": 50,
+   "own30": {
+    "n": 58,
+    "events": 3,
+    "mean": -0.017,
+    "t": -122.3
+   },
+   "own60": {
+    "n": 58,
+    "events": 3,
+    "mean": -0.0168,
+    "t": -28.94
+   },
+   "exit60": {
+    "n": 58,
+    "events": 3,
+    "mean": -0.0173,
+    "t": -29.8
+   },
+   "offshore60": {
+    "n": 58,
+    "events": 3,
+    "mean": 0.0357,
+    "t": 22.39
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0167,
+   "medianDepth": null,
+   "label": "research, not an edge, 50 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "fed",
+   "flagged": 24,
+   "graded": 24,
+   "target": 50,
+   "own30": {
+    "n": 24,
+    "events": 2,
+    "mean": -0.0323,
+    "t": -1.19
+   },
+   "own60": {
+    "n": 24,
+    "events": 2,
+    "mean": -0.0291,
+    "t": -1.24
+   },
+   "exit60": {
+    "n": 24,
+    "events": 2,
+    "mean": -0.0346,
+    "t": -1.43
+   },
+   "offshore60": {
+    "n": 24,
+    "events": 2,
+    "mean": 0.0096,
+    "t": 0.28
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0137,
+   "medianDepth": null,
+   "label": "research, not an edge, 24 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "gap",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "race",
+   "flagged": 242,
+   "graded": 242,
+   "target": 50,
+   "own30": {
+    "n": 242,
+    "events": 11,
+    "mean": -0.0158,
+    "t": -9.21
+   },
+   "own60": {
+    "n": 242,
+    "events": 11,
+    "mean": -0.0151,
+    "t": -10.74
+   },
+   "exit60": {
+    "n": 242,
+    "events": 11,
+    "mean": -0.0201,
+    "t": -14.3
+   },
+   "offshore60": {
+    "n": 242,
+    "events": 11,
+    "mean": 0.0353,
+    "t": 51.04
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0117,
+   "medianDepth": null,
+   "label": "research, not an edge, 50 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "all",
+   "flagged": 54,
+   "graded": 54,
+   "target": 50,
+   "own30": {
+    "n": 54,
+    "events": 22,
+    "mean": -0.0063,
+    "t": -2.4
+   },
+   "own60": {
+    "n": 54,
+    "events": 22,
+    "mean": -0.0052,
+    "t": -1.65
+   },
+   "exit60": {
+    "n": 54,
+    "events": 22,
+    "mean": -0.0122,
+    "t": -4.03
+   },
+   "offshore60": {
+    "n": 54,
+    "events": 22,
+    "mean": 0.0169,
+    "t": 4.32
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0139,
+   "medianDepth": null,
+   "label": "research, not an edge, 50 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "fed",
+   "flagged": 11,
+   "graded": 11,
+   "target": 50,
+   "own30": {
+    "n": 11,
+    "events": 3,
+    "mean": 0.0058,
+    "t": 0.57
+   },
+   "own60": {
+    "n": 11,
+    "events": 3,
+    "mean": 0.0076,
+    "t": 0.94
+   },
+   "exit60": {
+    "n": 11,
+    "events": 3,
+    "mean": -0.0038,
+    "t": -0.35
+   },
+   "offshore60": {
+    "n": 11,
+    "events": 3,
+    "mean": 0.0185,
+    "t": 5.72
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0147,
+   "medianDepth": null,
+   "label": "research, not an edge, 11 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "kalshi",
+   "venueName": "Kalshi",
+   "fam": "race",
+   "flagged": 43,
+   "graded": 43,
+   "target": 50,
+   "own30": {
+    "n": 43,
+    "events": 19,
+    "mean": -0.0093,
+    "t": -4.79
+   },
+   "own60": {
+    "n": 43,
+    "events": 19,
+    "mean": -0.0084,
+    "t": -2.8
+   },
+   "exit60": {
+    "n": 43,
+    "events": 19,
+    "mean": -0.0143,
+    "t": -4.8
+   },
+   "offshore60": {
+    "n": 43,
+    "events": 19,
+    "mean": 0.0165,
+    "t": 3.39
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0136,
+   "medianDepth": null,
+   "label": "research, not an edge, 43 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "all",
+   "flagged": 28,
+   "graded": 28,
+   "target": 50,
+   "own30": {
+    "n": 28,
+    "events": 10,
+    "mean": -0.0034,
+    "t": -0.51
+   },
+   "own60": {
+    "n": 28,
+    "events": 10,
+    "mean": 0.0018,
+    "t": 0.28
+   },
+   "exit60": {
+    "n": 28,
+    "events": 10,
+    "mean": -0.0034,
+    "t": -0.53
+   },
+   "offshore60": {
+    "n": 28,
+    "events": 10,
+    "mean": 0.0191,
+    "t": 6.78
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.013,
+   "medianDepth": null,
+   "label": "research, not an edge, 28 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "fed",
+   "flagged": 12,
+   "graded": 12,
+   "target": 50,
+   "own30": {
+    "n": 12,
+    "events": 2,
+    "mean": 0.0125,
+    "t": 3.14
+   },
+   "own60": {
+    "n": 12,
+    "events": 2,
+    "mean": 0.0162,
+    "t": 3.38
+   },
+   "exit60": {
+    "n": 12,
+    "events": 2,
+    "mean": 0.0108,
+    "t": 2.39
+   },
+   "offshore60": {
+    "n": 12,
+    "events": 2,
+    "mean": 0.0204,
+    "t": 247.84
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0125,
+   "medianDepth": null,
+   "label": "research, not an edge, 12 of 50",
+   "profitShown": false
+  },
+  {
+   "sig": "move",
+   "venue": "pmus",
+   "venueName": "Polymarket US",
+   "fam": "race",
+   "flagged": 16,
+   "graded": 16,
+   "target": 50,
+   "own30": {
+    "n": 16,
+    "events": 8,
+    "mean": -0.0153,
+    "t": -8.14
+   },
+   "own60": {
+    "n": 16,
+    "events": 8,
+    "mean": -0.009,
+    "t": -3.87
+   },
+   "exit60": {
+    "n": 16,
+    "events": 8,
+    "mean": -0.014,
+    "t": -6.02
+   },
+   "offshore60": {
+    "n": 16,
+    "events": 8,
+    "mean": 0.0182,
+    "t": 3.77
+   },
+   "settled": 0,
+   "won": 0,
+   "vsResult": {
+    "n": 0,
+    "events": 0,
+    "mean": null,
+    "t": null
+   },
+   "meanFee": 0.0134,
+   "medianDepth": null,
+   "label": "research, not an edge, 16 of 50",
+   "profitShown": false
+  }
+ ],
+ "follow": [
+  {
+   "dir": "us-first",
+   "venue": "pmus",
+   "fam": "fed",
+   "moves": 79,
+   "already": 24,
+   "within5": 29,
+   "within15": 32,
+   "within30": 34,
+   "within60": 37
+  },
+  {
+   "dir": "us-first",
+   "venue": "pmus",
+   "fam": "ALL",
+   "moves": 179,
+   "already": 11,
+   "within5": 14,
+   "within15": 16,
+   "within30": 19,
+   "within60": 21
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "kalshi",
+   "fam": "fed",
+   "moves": 78,
+   "already": 60,
+   "within5": 72,
+   "within15": 74,
+   "within30": 78,
+   "within60": 85
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "kalshi",
+   "fam": "ALL",
+   "moves": 254,
+   "already": 44,
+   "within5": 52,
+   "within15": 56,
+   "within30": 60,
+   "within60": 63
+  },
+  {
+   "dir": "us-first",
+   "venue": "kalshi",
+   "fam": "fed",
+   "moves": 91,
+   "already": 45,
+   "within5": 54,
+   "within15": 56,
+   "within30": 58,
+   "within60": 58
+  },
+  {
+   "dir": "us-first",
+   "venue": "kalshi",
+   "fam": "ALL",
+   "moves": 203,
+   "already": 52,
+   "within5": 62,
+   "within15": 64,
+   "within30": 67,
+   "within60": 68
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "pmus",
+   "fam": "fed",
+   "moves": 55,
+   "already": 44,
+   "within5": 51,
+   "within15": 64,
+   "within30": 65,
+   "within60": 71
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "pmus",
+   "fam": "ALL",
+   "moves": 85,
+   "already": 28,
+   "within5": 33,
+   "within15": 41,
+   "within30": 44,
+   "within60": 51
+  },
+  {
+   "dir": "us-first",
+   "venue": "pmus",
+   "fam": "control",
+   "moves": 5,
+   "already": 0,
+   "within5": 0,
+   "within15": 0,
+   "within30": 0,
+   "within60": 0
+  },
+  {
+   "dir": "us-first",
+   "venue": "kalshi",
+   "fam": "race",
+   "moves": 112,
+   "already": 57,
+   "within5": 68,
+   "within15": 70,
+   "within30": 73,
+   "within60": 76
+  },
+  {
+   "dir": "us-first",
+   "venue": "pmus",
+   "fam": "race",
+   "moves": 95,
+   "already": 1,
+   "within5": 2,
+   "within15": 4,
+   "within30": 7,
+   "within60": 8
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "kalshi",
+   "fam": "race",
+   "moves": 176,
+   "already": 36,
+   "within5": 44,
+   "within15": 48,
+   "within30": 52,
+   "within60": 53
+  },
+  {
+   "dir": "offshore-first",
+   "venue": "pmus",
+   "fam": "race",
+   "moves": 30,
+   "already": 0,
+   "within5": 0,
+   "within15": 0,
+   "within30": 3,
+   "within60": 13
+  }
+ ]
+}
