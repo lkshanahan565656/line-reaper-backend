@@ -930,6 +930,52 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     }
   },
 
+  async 'SHARE CARD: pick a row, see the card, copy a link that unfurls, save the image'(page, w, opts) {
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `sharecard-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const imgReady = () => page.waitForFunction(() => { const i = document.querySelector('#scPrev img'); return !i || (i.complete && i.naturalWidth > 0); }, null, { timeout: 15000 }).catch(() => {});
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#page-odds > .xp-bar button', { hasText: 'SHARE CARD' }).click();
+    await settle(page, w, opts, 150);
+    const kinds = await page.locator('#scSheet .sc-opt b').allInnerTexts();
+    expect(kinds.includes('RESULTS'), `the record is always offered: ${kinds}`);
+    expect(await wide() <= 0, 'the SHARE CARD sheet is wider than the screen');
+    // a row's card when the screen has one, else the record
+    const pick = kinds.indexOf('BEST PRICE') >= 0 ? kinds.indexOf('BEST PRICE') : kinds.indexOf('RESULTS');
+    await page.locator('#scSheet .sc-opt').nth(pick).click();
+    await imgReady();
+    const img = await page.evaluate(() => { const i = document.querySelector('#scPrev img'); return i ? { w: i.naturalWidth, h: i.naturalHeight, src: i.getAttribute('src') } : null; });
+    expect(img && img.w === 1200 && img.h === 630, `the card image did not load as 1200x630: ${JSON.stringify(img)}`);
+    expect(!/stake|slip/i.test(img.src), `the card URL carries account data: ${img.src}`);
+    await shot(kinds[pick] === 'BEST PRICE' ? 'price' : 'record');
+    await page.locator('#scSheet button', { hasText: 'COPY LINK' }).click();
+    await settle(page, w, opts, 100);
+    const link = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(kinds[pick] === 'BEST PRICE' ? /\/share\/price\?id=[^&]+&to=%23lr%26t%3Dodds/.test(link) : /\/share\/record$/.test(link), `share link: ${link}`);
+    // the link is a page whose preview is the card, and a button back to this view
+    const html = await (await page.request.get(link)).text();
+    const og = (html.match(/<meta property="og:image" content="([^"]+)"/) || [])[1];
+    expect(og && /\/card\/(price|record)\.png\?/.test(og), `the share page has no card og:image: ${og}`);
+    expect(/<meta name="twitter:card" content="summary_large_image">/.test(html), 'the share page has no Twitter card');
+    expect(!/undefined|NaN|guaranteed|risk[- ]free/i.test(html), 'the share page shows broken text or a claim');
+    const ogImg = await page.request.get(og.replace(/&amp;/g, '&').replace(/^https?:\/\/[^/]+/, new URL(opts.base).origin));
+    expect(/image\/png/.test(ogImg.headers()['content-type'] || ''), `the preview image is ${ogImg.headers()['content-type']}`);
+    // SAVE IMAGE downloads the record card as a PNG
+    const rec = kinds.indexOf('RESULTS');
+    await page.locator('#scSheet .sc-opt').nth(rec).click();
+    await imgReady();
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.locator('#scSheet a', { hasText: 'SAVE IMAGE' }).click()]);
+    expect(/^line-reaper-record-[\d-]+\.png$/.test(dl.suggestedFilename()), `the saved image is named "${dl.suggestedFilename()}"`);
+    await dl.cancel().catch(() => {});
+    await shot('record');
+    await page.locator('#scSheet button', { hasText: 'CLOSE' }).click();
+    await settle(page, w, opts, 100);
+    expect(!(await page.locator('#scSheet').count()), 'CLOSE left the sheet open');
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');

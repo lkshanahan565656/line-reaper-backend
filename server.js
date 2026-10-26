@@ -4812,6 +4812,29 @@ app.get('/api/push/selftest', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 app.get('/api/push/log', (req, res) => res.json({ deliveries: push.log(Math.min(200, parseInt(req.query.n) || 50)) }));
+// Link previews: the app, the league pages, /leagues and each digest week carry
+// Open Graph and Twitter tags pointing at their share card (sharecards.js), so
+// a pasted link unfurls with the card on X, Discord and iMessage. The page's
+// own title and description stay; only the image tags are swapped.
+function cardMetaFor(p, req) {
+  const o = siteOrigin(req);
+  if (!/^https?:\/\//.test(o)) return null;
+  const lg = shareCards.leagueOfPath(p);
+  if (lg) return { image: shareImageUrl(o, 'league', `league=${lg}`), title: `${shareCards.LEAGUE_PAGES[lg].name} odds | Line Reaper`, description: "Every venue beside Pinnacle's fair.", alt: `${shareCards.LEAGUE_PAGES[lg].name} board on Line Reaper` };
+  const wk = p.match(/^\/digest\/(\d{4}-\d{2}-\d{2})\/?$/);
+  if (wk && digest.validWeek(wk[1])) return { image: shareImageUrl(o, 'digest', `week=${wk[1]}`), title: 'Line Reaper weekly record', description: 'One week of the public record.', alt: 'The weekly record card' };
+  if (p === '/app' || p === '/leagues') return { image: shareImageUrl(o, 'record', ''), title: 'Line Reaper: odds screen and public record', url: `${o}${p}`,
+    description: "Every venue beside Pinnacle's fair, exchanges, pick'em apps and esports, and a public record graded against the close. Only what the record proves is called proven.", alt: 'The Line Reaper public record card' };
+  return null;
+}
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const meta = cardMetaFor(req.path, req);
+  if (!meta) return next();
+  const send = res.send.bind(res);
+  res.send = body => send(typeof body === 'string' && /^\s*<!doctype html/i.test(body) ? shareCards.injectMeta(body, meta) : body);
+  next();
+});
 app.get('/app', (req, res) => {
   const html = loadApp();
   if (!html) return res.status(404).send('App not bundled with this deploy');
@@ -4884,7 +4907,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.197.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.198.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8615,7 +8638,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.197.0',
+  version: '3.198.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8805,6 +8828,7 @@ app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html
 // Widgets need no key (per-address limit) and say no more than the API does.
 const publicApi = require('./publicapi');
 const embeds = require('./embeds');
+const shareCards = require('./sharecards');
 const apiKeys = publicApi.createKeyStore({ store: resultsBackup.wrap('apiKeys', createEvStoreFromEnv(process.env, { table: 'api_keys', fileVar: 'API_KEYS_FILE', file: 'api-keys.json' })) });
 apiKeys.init().catch(e => console.warn('API keys: store failed to initialise:', e.message));
 const apiLimiter = publicApi.createLimiter();
@@ -9025,6 +9049,155 @@ app.get('/embed/record', widgetGate, async (req, res) => {
   catch (e) { widgetError(res, e); }
 });
 app.get('/embed.js', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/javascript').send(embeds.embedScript(siteOrigin(req))));
+
+// ── SHARE CARDS: a PNG of a price row, a line chart, a league or the record ──
+// sharecards.js draws each one from the same bodies as the API and widgets
+// (so a card never says more than RESULTS), and resvg turns it into a PNG.
+// /card/<kind>.png (or .svg) is the image; /share/<kind> is the page a pasted
+// link opens, with Open Graph and Twitter tags pointing at the image. Same
+// card for everyone: nothing from an account, no stake, no slips.
+const SHARE_KINDS = new Set(['price', 'move', 'league', 'record', 'digest']);
+const cardStr = (v, re, max = 120) => { const s = String(v ?? '').slice(0, max); return re.test(s) ? s : null; };
+// the card's data and its words, from the query; never from numbers the browser sends
+async function shareCardFor(kind, q, origin) {
+  const venueName = v => bigMoves.NAMES[v] || venues.NAMES[v] || v;
+  if (kind === 'price') {
+    const id = cardStr(q.id, /^[^\u0000-\u001f<>]{1,300}$/, 300);
+    const at = new Date().toISOString();
+    let d;
+    if (!v1FullTier()) d = { locked: true, at };
+    else if (v1Stale()) d = { stale: true, at };
+    else {
+      const st = shopQuotes(), lic = webhookLicence();
+      const rows = v1MemoSync(`card|${lic.kalshi ? 1 : 0}${lic.polymarket ? 1 : 0}|${st.builtAt}`, () => {
+        let quotes = lic.kalshi ? [...st.free.quotes, ...st.kalshi.quotes] : st.free.quotes;
+        if (!lic.polymarket) quotes = quotes.filter(x => !String(x.providerId).startsWith('polymarket'));
+        // every side's best price, above the fair or not, so a row shared from a
+        // screen set to show both is found
+        const view = shopper.build(quotes, { sort: 'ev', stake: 100, method: 'power', limit: 1000, minEv: -1, proven: evBookProven, depth: shopDepth.forQuote });
+        return publicApi.bestPrices(view, { limit: 1000 });
+      });
+      const row = id ? rows.find(r => r.id === id) || null : rows.find(r => r.evPct > 0) || null;
+      d = { row, at: st.builtAt || at, gone: !!id && !row };
+    }
+    const r = d.row;
+    return { svg: shareCards.priceCard(r, { ...d, origin }), at: d.at,
+      title: r ? `${r.selection} ${r.price.american > 0 ? '+' : ''}${r.price.american ?? ''} at ${r.venueName}` : d.gone ? 'A price that has moved' : 'Best price above the fair',
+      description: r ? `${r.event}. Pinnacle's fair ${r.fair.american > 0 ? '+' : ''}${r.fair.american ?? '—'}, EV ${r.evPct > 0 ? '+' : ''}${r.evPct ?? '—'}% after the fee. ${r.label === 'proven' ? `${r.venueName} main lines are proven on RESULTS; this row is one price, not a result.` : 'LEAD: research, not a proven edge.'}` : 'Open the app for every price beside the fair.',
+      open: '?start=odds' };
+  }
+  if (kind === 'move') {
+    const game = cardStr(q.game, /^[\w:.|@ -]{1,80}$/, 80);
+    const market = cardStr(q.market, /^(ml|spread|total)$/);
+    const side = cardStr(q.side, /^[^\u0000-\u001f<>]{1,80}$/, 80);
+    const sideIndex = Math.min(2, Math.max(0, parseInt(q.i, 10) || 0));
+    let hist = null;
+    if (game) { try { hist = v1.moveHistory(game, {}); } catch (e) { if (!(e instanceof V1Error)) throw e; } }
+    const g = hist?.game || (hist ? { event: game, leagueLabel: '', start: hist.series[0]?.start } : null);
+    const pick = hist ? shareCards.pickSeries(hist.series, { market, side, sideIndex }) : null;
+    const last = pick?.s?.points[pick.s.points.length - 1];
+    return { svg: shareCards.moveCard({ game: g, series: hist?.series || [], market, side, sideIndex, withFair: v1FullTier(), origin, venueName }), at: last?.t || null,
+      title: g ? `${g.event}: line move` : 'Line move', description: pick?.s ? `${g.leagueLabel ? g.leagueLabel + ' · ' : ''}${pick.s.side}: each venue's price over time against Pinnacle's fair. Information, not an edge.` : 'No saved prices for this game.',
+      open: '?start=odds' };
+  }
+  if (kind === 'league') {
+    const slug = cardStr(q.league, /^[a-z0-9]{2,12}$/);
+    const cfg = slug && Object.prototype.hasOwnProperty.call(shareCards.LEAGUE_PAGES, slug) ? shareCards.LEAGUE_PAGES[slug] : null;
+    if (!cfg) throw new V1Error(404, 'not_found', 'No such league page.');
+    const lic = webhookLicence();
+    let games = 0, markets = 0, withFair = 0, stale = false, at = null;
+    const vs = new Set();
+    for (const key of cfg.keys) {
+      const s = oddsScreenFor({ league: key, kalshiOk: !!lic.kalshi });
+      stale = s.stale; at = s.updated;
+      for (const gm of s.games) {
+        games++;
+        for (const m of gm.markets) { markets++; if (m.sides.some(x => x.fair != null)) withFair++; for (const sd of m.sides) for (const v of sd.venues) if (!v.ref) vs.add(v.venue); }
+      }
+    }
+    const bp = cfg.keys.map(k => v1.bestPrices({ league: k, limit: 200 }));
+    const rows = bp.flatMap(b => b.rows).sort((a, b) => (b.evPct ?? -1e9) - (a.evPct ?? -1e9));
+    const d = { name: cfg.name, games, markets, withFair, venues: vs.size, aboveFair: rows.length, rows, at: at || new Date().toISOString(), stale: games ? stale : false, locked: bp.some(b => b.locked), esports: !!cfg.esports };
+    return { svg: shareCards.leagueCard(d, { origin }), at: d.at, title: `${cfg.name} odds: every venue beside Pinnacle's fair`,
+      description: games ? `${games} game${games === 1 ? '' : 's'} in the next 48 hours, ${vs.size} venues, ${d.locked ? 'fair prices for subscribers' : `${rows.length} price${rows.length === 1 ? '' : 's'} above the fair (research, not a record)`}.` : `No ${cfg.name} games on the board right now.`,
+      open: cfg.path };
+  }
+  if (kind === 'record') {
+    const card = publicApi.recordCard(await v1.record({}));
+    const p = card.proven;
+    return { svg: shareCards.recordCardSvg(card, { origin }), at: card.at, title: 'Line Reaper: the public record',
+      description: p.length ? `Proven on the strict rule: ${p.map(r => `${r.venueName} ${r.kindLabel || r.kind} (${r.graded} graded, CLV ${r.clvPct > 0 ? '+' : ''}${r.clvPct?.toFixed(1)}% vs the close${r.profitShown ? '' : ', profit not shown'})`).join('; ')}. ${card.notProven} other kinds are not proven.`
+        : `Nothing is proven yet on the strict rule. ${card.notProven} kinds on the record are building or losing to the close.`,
+      open: '?start=results' };
+  }
+  // digest
+  const week = cardStr(q.week, /^\d{4}-\d{2}-\d{2}$/) || digest.dueWeek(Date.now());
+  const out = digest.validWeek(week) ? await digestFor(week) : null;
+  if (!out) throw new V1Error(404, 'not_found', 'That week has no digest.');
+  return { svg: shareCards.digestCard(out.digest, { origin, frozen: out.frozen }), at: out.digest.builtAt, title: `Line Reaper record: week of ${out.digest.name}`,
+    description: digest.pushText(out.digest).split('\n').slice(0, 2).join(' '), open: `/digest/${week}`, page: `/digest/${week}` };
+}
+// the card's own query string: only the keys its kind reads, in a fixed order
+const SHARE_KEYS = { price: ['id'], move: ['game', 'market', 'side', 'i'], league: ['league'], record: [], digest: ['week'] };
+function shareQuery(kind, q) {
+  const p = new URLSearchParams();
+  for (const k of SHARE_KEYS[kind] || []) if (q[k] != null && q[k] !== '') p.set(k, String(q[k]).slice(0, 300));
+  return p.toString();
+}
+// PNGs drawn in the last minute are served again (a pasted link is fetched by
+// every app that previews it at once)
+const shareImgMemo = new Map();
+const shareStats = { drawn: 0, served: 0, errors: 0, lastError: null, png: null };
+async function shareImage(kind, q, origin, ext) {
+  const key = `${kind}|${shareQuery(kind, q)}|${origin}|${ext}|${v1FullTier() ? 1 : 0}`;
+  const hit = shareImgMemo.get(key);
+  if (hit && Date.now() - hit.at < 60e3) return hit.v;
+  const c = await shareCardFor(kind, q, origin);
+  let body = null, type = 'image/svg+xml';
+  if (ext === 'png') { body = await shareCards.renderPng(c.svg); if (body) type = 'image/png'; }
+  if (!body) body = Buffer.from(c.svg);
+  shareStats.drawn++;
+  const v = { body, type };
+  if (shareImgMemo.size > 80) shareImgMemo.clear();
+  shareImgMemo.set(key, { at: Date.now(), v });
+  return v;
+}
+app.get('/card/:kind.:ext', widgetGate, async (req, res) => {
+  const { kind, ext } = req.params;
+  if (!SHARE_KINDS.has(kind) || !/^(png|svg)$/.test(ext)) return res.status(404).type('text/plain').send('No such card. Cards: price, move, league, record, digest (.png or .svg).');
+  try {
+    const img = await shareImage(kind, req.query, siteOrigin(req), ext);
+    shareStats.served++;
+    res.set({ 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });
+    if (req.query.download === '1') res.set('Content-Disposition', `attachment; filename="line-reaper-${kind}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.${img.type === 'image/png' ? 'png' : 'svg'}"`);
+    res.type(img.type).send(img.body);
+  } catch (e) {
+    if (!(e instanceof V1Error)) { shareStats.errors++; shareStats.lastError = e.message; console.warn('Share card:', e.message); }
+    res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('text/plain').send(e instanceof V1Error ? e.message : 'This card could not be drawn. Try again in a minute.');
+  }
+});
+// the image URL a preview reads: absolute, and new every 10 minutes so an app
+// that keeps a preview for days shows a recent read when it fetches again
+const shareImageUrl = (origin, kind, qs) => `${origin}/card/${kind}.png?${qs ? `${qs}&` : ''}v=${Math.floor(Date.now() / 600e3).toString(36)}`;
+async function sendSharePage(req, res, kind, q) {
+  try {
+    const origin = siteOrigin(req), qs = shareQuery(kind, q);
+    const c = await shareCardFor(kind, q, origin);
+    const open = /^(#lr&|\?start=)/.test(String(q.to || '')) ? shareCards.safeOpen(q.to) : c.open.startsWith('/') ? c.open : shareCards.safeOpen(c.open);
+    res.set({ 'Cache-Control': 'public, max-age=60' }).type('html').send(shareCards.sharePage({ title: c.title, description: c.description, image: shareImageUrl(origin, kind, qs),
+      url: `${origin}${req.path}${qs ? `?${qs}` : ''}`, open, openLabel: kind === 'league' ? 'OPEN THE LEAGUE PAGE' : kind === 'digest' ? 'OPEN THE WEEK' : 'OPEN IN LINE REAPER',
+      note: c.at ? `Read ${String(c.at).slice(0, 16).replace('T', ' ')} UTC.` : '' }));
+  } catch (e) {
+    res.status(e instanceof V1Error ? e.status : 500).set('Cache-Control', 'no-store').type('html')
+      .send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Line Reaper</title><body style="background:#080b10;color:#e2e8f0;font:16px system-ui;padding:24px">${learn.esc(e instanceof V1Error ? e.message : 'This card could not be drawn just now.')} <a style="color:#34d399" href="/app">Open the app</a>.</body>`);
+  }
+}
+app.get('/share/:kind', widgetGate, (req, res) => {
+  if (!SHARE_KINDS.has(req.params.kind)) return res.status(404).type('text/plain').send('No such share page.');
+  return sendSharePage(req, res, req.params.kind, req.query);
+});
+// /results: the record's share page (the app's RESULTS tab is one tap away)
+app.get('/results', widgetGate, (req, res) => sendSharePage(req, res, 'record', { to: '?start=results' }));
 
 // ── /developers: the docs, with each endpoint's live answer cut to its first rows ──
 const trimArrays = (x, n = 3, depth = 0) => {
