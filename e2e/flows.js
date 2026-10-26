@@ -3,7 +3,7 @@
 // CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
-// hide a tab in CUSTOMIZE. The crawl clicks everything; these check results.
+// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows. The crawl clicks everything; these check results.
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -358,6 +358,56 @@ const FLOWS = {
     await settle(page, w, opts, 120);
     await page.keyboard.press('Escape');
     expect((await order())[0] === first, 'RESET did not bring the order back');
+  },
+
+  async 'keyboard shortcuts and compact rows'(page, w, opts) {
+    const active = () => page.locator('.tab.active').first().evaluate(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1] || '');
+    const bar = await page.locator('.tab-row > .tab:not(.tab-end)').evaluateAll(bs => bs.map(b => (/showTab\('([^']+)'/.exec(b.getAttribute('onclick') || '') || [])[1]).filter(Boolean));
+    await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
+    await page.keyboard.press('Shift+Slash');
+    await page.locator('#kbdModal.open').waitFor({ timeout: 4000 });
+    expect(/Previous or next tab/.test(await text(page, '#kbdList')), 'the ? list is empty');
+    await page.keyboard.press('2');
+    await settle(page, w, opts, 60);
+    expect(await active() !== bar[1] || bar.length < 2, 'a number key switched tabs under the ? list');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
+    expect(!(await page.locator('#kbdModal.open').count()), 'Escape did not close the ? list');
+    if (bar.length >= 2) {
+      await page.keyboard.press('2');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], `2 did not open ${bar[1]}`);
+      await page.keyboard.press(']');
+      await settle(page, w, opts, 120);
+      expect(await active() !== bar[1], '] did not move to the next tab');
+      await page.keyboard.press('[');
+      await settle(page, w, opts, 120);
+      expect(await active() === bar[1], '[ did not move back');
+    }
+    await openTab(page, 'odds', w, opts);
+    const box = page.locator('#osSearch');
+    if (await box.isVisible()) {
+      await page.keyboard.press('/');
+      expect(await box.evaluate(el => el === document.activeElement), '/ did not focus the search box');
+      await page.keyboard.type('1c');
+      await settle(page, w, opts, 80);
+      expect(await active() === 'odds', 'typing in the search box switched tabs');
+      expect(!(await page.locator('#layModal.open').count()), 'typing c in the search box opened CUSTOMIZE');
+      await box.fill('');
+      await box.evaluate(el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.blur(); });
+      await settle(page, w, opts, 80);
+    }
+    await page.keyboard.press('c');
+    await page.locator('#layModal.open').waitFor({ timeout: 4000 });
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(await page.evaluate(() => document.body.classList.contains('compact')), 'Compact rows did not turn on');
+    expect((await ls(page, 'lr_layout'))?.compact === true, 'Compact rows was not saved');
+    await page.locator('#layCompact').click();
+    await settle(page, w, opts, 80);
+    expect(!(await page.evaluate(() => document.body.classList.contains('compact'))), 'Compact rows did not turn off');
+    await page.keyboard.press('Escape');
+    await settle(page, w, opts, 60);
   },
 
   async 'TOOLS calculator works out a price'(page, w, opts) {

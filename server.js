@@ -4844,10 +4844,10 @@ const siteOrigin = req => String(process.env.PUBLIC_URL || `https://${req.get('h
 // the share card, and what search engines may crawl: the sales page and the
 // legal pages, not the API
 app.get('/og.png', (req, res) => res.set('Cache-Control', 'public, max-age=86400').sendFile(path.join(__dirname, 'public', 'og.png')));
-app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /$\nAllow: /app\nAllow: /learn\nAllow: /digest\nAllow: /status\nDisallow: /api/\nSitemap: ${siteOrigin(req)}/sitemap.xml\n`));
 app.get('/sitemap.xml', (req, res) => {
   const o = siteOrigin(req);
-  const urls = ['/', '/app', '/learn', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
+  const urls = ['/', '/app', '/learn', '/status', ...learn.ORDER.map(k => `/learn/${k}`), ...legal.ORDER.map(k => `/${k}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${o}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 });
 // Browsers opening the bare URL get the sales page; API clients (and the app's
@@ -4858,7 +4858,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.186.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.187.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -8495,7 +8495,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.186.0',
+  version: '3.187.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8626,6 +8626,55 @@ schedule('*/5 * * * *', async () => {
   } catch (e) { trackerHealth.error = e.message; }
   finally { trackerRunning = false; }
 });
+// ── STATUS PAGE (status.js): every venue's last good read, staleness and a
+// 7-day uptime history, sampled every 5 minutes and kept in the results backup.
+const statusPage = require('./status');
+const sumCounts = key => Object.values(freeBooksState.counts || {}).reduce((n, c) => n + (Number(c?.[key]) || 0), 0);
+const okIf = (n, at) => (n > 0 ? at : null);
+function statusProbe() {
+  const ex = exchangeState.rows || [];
+  const kal = ex.filter(r => r.exchange === 'kalshi').length, pmGlobal = ex.filter(r => r.exchange === 'polymarket').length;
+  const pinOn = freeBooksState.enabled && licences.isOn('pinnacle');
+  const pin = sumCounts('pinnacle'), fd = sumCounts('fanduel'), br = sumCounts('betrivers');
+  const p6 = pick6.status(), p6At = Math.max(0, ...Object.values(p6.bySport || {}).map(v => Date.parse(v.at) || 0));
+  const pp = ppLinesNow().length, ud = cache.underdog.data?.length || 0, sl = cache.sleeper.data?.length || 0;
+  const bk = resultsBackup.status();
+  const pinErr = (freeBooksState.errors || []).find(e => /^pinnacle/.test(e)) || null;
+  return [
+    { key: 'pinnacle', name: 'Pinnacle game lines', group: 'sharp', enabled: pinOn, okAt: freeBooksState.gamesAt, count: pin, unit: 'games', error: pinErr, staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'pinnacleProps', name: 'Pinnacle player props', group: 'sharp', enabled: pinPropsState.enabled, okAt: okIf(pinPropsState.props, pinPropsState.updated), count: pinPropsState.props, unit: 'props', error: pinPropsState.errors?.[0], staleMs: 10 * 60e3 },
+    { key: 'kalshi', name: 'Kalshi markets', group: 'exchange', enabled: true, okAt: okIf(kal, exchangeState.updated), count: kal, unit: 'markets', error: (exchangeState.errors || []).find(e => /kalshi/i.test(e)), staleMs: 5 * 60e3 },
+    { key: 'kalshiProps', name: 'Kalshi player props', group: 'exchange', enabled: licences.isOn('kalshi'), okAt: okIf(kpropsState.games?.length, kpropsState.updated), count: kpropsState.games?.length || 0, unit: 'games', error: kpropsState.errors?.[0], staleMs: 15 * 60e3 },
+    { key: 'polymarketUs', name: 'Polymarket US', group: 'exchange', enabled: pmusBooksState.enabled, okAt: pmusBooksState.at || null, count: pmusBooksState.games, unit: 'games', error: pmusBooksState.errors?.[0], staleMs: 6 * 60e3 },
+    { key: 'gemini', name: 'Gemini Predictions', group: 'exchange', enabled: geminiState.enabled, okAt: geminiState.at || null, count: geminiState.events, unit: 'events', error: geminiState.errors?.[0], staleMs: GEMINI_MAX_AGE_MS },
+    { key: 'matchbook', name: 'Matchbook', group: 'exchange', enabled: xbooksState.enabled && xbooksState.matchbook && licences.isOn('matchbook'), okAt: okIf(xbooksState.counts?.matchbook, xbooksState.updated), count: xbooksState.counts?.matchbook || 0, unit: 'markets', note: 'Reference price; not open to Texas', error: (xbooksState.errors || []).find(e => /matchbook/i.test(e)), staleMs: XBOOKS_MAX_AGE_MS },
+    { key: 'polymarketGlobal', name: 'Polymarket global', group: 'exchange', enabled: true, okAt: okIf(pmGlobal, exchangeState.updated), count: pmGlobal, unit: 'markets', note: 'Reference price only; US users trade Polymarket US', error: (exchangeState.errors || []).find(e => /polymarket/i.test(e)), staleMs: 5 * 60e3 },
+    { key: 'fanduel', name: 'FanDuel', group: 'book', enabled: pinOn, okAt: okIf(fd, freeBooksState.updated), count: fd, unit: 'games', staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'betrivers', name: 'BetRivers', group: 'book', enabled: pinOn, okAt: okIf(br, freeBooksState.updated), count: br, unit: 'games', staleMs: FREE_BOOKS_MAX_AGE_MS },
+    { key: 'actionNetwork', name: 'Action Network (copied book prices)', group: 'book', enabled: xbooksState.enabled && xbooksState.action && licences.isOn('actionnetwork'), okAt: okIf(xbooksState.counts?.action, xbooksState.updated), count: xbooksState.counts?.action || 0, unit: 'games', note: 'Second-hand prices, never a play alone', error: (xbooksState.errors || []).find(e => /action/i.test(e)), staleMs: XBOOKS_MAX_AGE_MS },
+    { key: 'prizepicks', name: 'PrizePicks', group: 'app', enabled: true, okAt: okIf(pp, cache.prizepicks.updated), count: pp, unit: 'lines', error: dfsError.prizepicks, note: Date.now() < ppFail.until ? `Paused until ${new Date(ppFail.until).toISOString().slice(11, 16)} UTC (asked to retry later)` : 'One league per read; a full pass takes about 20 min', staleMs: 45 * 60e3 },
+    { key: 'underdog', name: 'Underdog', group: 'app', enabled: true, okAt: okIf(ud, cache.underdog.updated), count: ud, unit: 'lines', error: dfsError.underdog, staleMs: 10 * 60e3 },
+    { key: 'sleeper', name: 'Sleeper', group: 'app', enabled: true, okAt: okIf(sl, cache.sleeper.updated), count: sl, unit: 'lines', error: dfsError.sleeper, staleMs: 10 * 60e3 },
+    { key: 'pick6', name: 'DK Pick6', group: 'app', enabled: !!p6.enabled, okAt: okIf(p6.lines, p6At || null), count: p6.lines, unit: 'lines', error: p6.lastError, staleMs: 30 * 60e3 },
+    { key: 'lolStats', name: 'League of Legends stats', group: 'data', enabled: true, okAt: lolStats.state === 'ready' ? lolStats.updated : null, count: Object.keys(lolStats.players).length, unit: 'players', error: lolStats.lastError, staleMs: 36 * 3600e3 },
+    { key: 'vlr', name: 'Valorant stats (VLR)', group: 'data', enabled: true, okAt: okIf(Object.keys(vlrTable.players).length, vlrTable.updated), count: Object.keys(vlrTable.players).length, unit: 'players', error: vlrTable.lastError, staleMs: 36 * 3600e3 },
+    { key: 'grader', name: 'Pick grader (results and closes)', group: 'recorder', enabled: true, okAt: trackerHealth.lastRun, error: trackerHealth.error, staleMs: 15 * 60e3 },
+    { key: 'oddsHistory', name: 'Odds screen line history', group: 'recorder', enabled: pinOn, okAt: oddsScreenState.observedAt, count: oddsHistory.size(), unit: 'markets', staleMs: 5 * 60e3 },
+    { key: 'propHistory', name: 'Prop line history', group: 'recorder', enabled: true, okAt: propHistoryState.observedAt, count: propHistory.size(), unit: 'markets', error: propHistoryState.error, staleMs: 15 * 60e3 },
+    { key: 'backup', name: 'Results backup (saved every 20 min)', group: 'recorder', enabled: bk.state !== 'off', okAt: bk.lastExportAt, error: bk.state === 'ready' ? null : bk.note || `backup ${bk.state}`, staleMs: 45 * 60e3 },
+  ];
+}
+const statusBoard = statusPage.createStatusBoard({ probe: statusProbe, version: () => require('./package.json').version });
+let statusBooted = false;
+const statusStore = resultsBackup.wrap('statusHistory', {
+  init: async () => {}, all: async () => (statusBooted ? statusBoard.dump() : []),
+  put: async d => { statusBoard.load([d]); }, putMany: async ds => { statusBoard.load(ds); },
+}, { appendOnly: false });
+statusStore.init().catch(e => console.warn('Status history: restore failed:', e.message)).finally(() => { statusBooted = true; });
+schedule('*/5 * * * *', () => { if (statusBooted) statusBoard.sample(); });
+const statusView = () => statusBoard.view({ liveCheck: liveCheck.state, uptimeS: Math.round(process.uptime()) });
+app.get('/api/uptime', (req, res) => res.set('Cache-Control', 'no-store').json(statusView()));
+app.get('/status', (req, res) => res.set('Cache-Control', 'no-store').type('html').send(statusPage.renderPage(statusView(), { origin: siteOrigin(req) })));
 // NBA model: finished box scores, tonight's schedule and the injury list every 30 minutes (first read 2 minutes after boot)
 if (nbaModel) {
   schedule('11,41 * * * *', () => nbaModel.refresh().catch(e => console.warn('NBA model refresh:', e.message)));
@@ -8831,7 +8880,7 @@ if (require.main === module || process.env.LR_DESKTOP) {
 }
 
 module.exports = {
-  app, liveCheck, publishDigest, digestStore, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
+  app, liveCheck, statusBoard, statusProbe, publishDigest, digestStore, nbaModel, cfbModel, cbbModel, matchupEngine, matchupEngines, slipTracker, cache, ppState, checkSameDayRows, sameDayCheck, pinGapTracker, shareTracker, roundsTracker, h2hTracker, esStaleTracker, esSlipTracker, esSlipLog, ppLinesNow, ppRetryAfterMs, scrapePrizePicks, ppFailState: () => ppFail, oddsBudget, pollSportsbooks, bookPoll, esportsCache, feedState, refreshMatchFeeds, lolStats, tracker, ratingsState, oddsBook, alerter, auth, billing, exchangeState, runEvScreen, evScreen, evTracker, sharpTracker, ingestSharp,
   parseUnderdogPayload, parseUnderdogPromos, normalizeName, normalizeMarket, isEsports,
   calcBookEV, calcEsportsEV, lineSkew, predictEsportsSide, generateEsportsPicks, legsFromBoard,
   getVarianceMultiplier, parseMapCount, parseMapSpan, lineIsPlausible, inSeasonSports, anchorToMarket, MODEL_WEIGHT,
