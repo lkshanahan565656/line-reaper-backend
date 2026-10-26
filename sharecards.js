@@ -82,13 +82,13 @@ const LOGO = (x, y, s = 40) => `<g transform="translate(${x},${y}) scale(${s / 3
 // label chip on the right, the read time and the site at the bottom
 function frame({ kind, label = null, body, readAt = null, origin = '', foot = 'Information, not a bet slip. Check the price at the venue before you bet. 21+.' }) {
   const lab = label ? chip(W - 48, 40, label.text, label.tone, { size: 18, right: true }) : null;
-  const kindMax = W - 48 - 230 - (lab ? lab.w + 24 : 0);
+  const kindMax = W - 48 - 256 - (lab ? lab.w + 24 : 0);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <rect width="${W}" height="${H}" fill="${C.bg}"/>
 <rect x="0" y="0" width="${W}" height="6" fill="${C.green}"/>
 ${LOGO(48, 36, 40)}
 ${txt(100, 66, 'LINE', { size: 26, weight: 700, fill: C.text })}${txt(100 + 5 * 26 * CHAR, 66, 'REAPER', { size: 26, weight: 700, fill: C.green2 })}
-${txt(48 + 230, 66, kind.toUpperCase(), { size: 18, weight: 700, fill: C.muted, max: kindMax, spacing: 2 })}
+${txt(48 + 256, 66, kind.toUpperCase(), { size: 18, weight: 700, fill: C.muted, max: kindMax, spacing: 2 })}
 ${lab ? lab.svg : ''}
 <line x1="48" x2="${W - 48}" y1="104" y2="104" stroke="${C.border}" stroke-width="2"/>
 ${body}
