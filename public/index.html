@@ -370,7 +370,7 @@ body::before {
 .shop-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; animation: fadeUp 0.2s ease both; }
 
 /* TOAST */
-.toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--card2); border: 1px solid var(--green); border-radius: 12px; padding: 12px 16px; font-size: 12px; color: var(--green); box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease; max-width: 300px; font-weight: 500; }
+.toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: var(--card2); border: 1px solid var(--green); border-radius: 12px; padding: 12px 16px; font-size: 12px; color: var(--green); box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: toastIn 0.3s ease; max-width: min(300px, calc(100vw - 40px)); box-sizing: border-box; overflow-wrap: anywhere; font-weight: 500; }
 .toast.danger { border-color: var(--red); color: var(--red); }
 @keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 
@@ -1509,7 +1509,7 @@ body.no-help .clv-info { display:none; }
 .tour-btns button { background:#161c28; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 11px 'Inter',sans-serif; letter-spacing:.8px; padding:7px 11px; cursor:pointer; }
 .tour-btns button.primary { background:var(--green); border-color:var(--green); color:#06110d; }
 .tour-btns button:disabled { opacity:.35; cursor:default; }
-.help-btn { background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
+.help-btn { white-space:nowrap; background:transparent; border:1px solid var(--border2); color:var(--text2); border-radius:6px; font:600 9px 'JetBrains Mono',monospace; letter-spacing:1px; padding:3px 7px; cursor:pointer; }
 .help-btn:hover { color:var(--text); border-color:var(--text2); }
 @media (max-width:640px) { .tour-card { left:16px !important; right:16px; bottom:16px; top:auto !important; width:auto; } }
 /* Compact rows (CUSTOMIZE > Compact rows): desktop only, so phones keep their tap sizes */
@@ -1577,7 +1577,7 @@ body.no-help .clv-info { display:none; }
   <div class="nav-header">
     <div class="logo"><svg class="lr-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span class="logo-word">LINE<b>REAPER</b></span></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div style="display:flex;gap:6px;align-items:center"><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center"><button class="help-btn" id="linkBtn" onclick="lrShareScreen()" title="Copy a link to this screen (L)">LINK</button><button class="help-btn" id="helpBtn" onclick="tourStart()" title="Take the app tour">? HELP</button><div class="live-pill"><span class="live-dot" id="wsDot" style="background:#ff4444"></span><span id="wsLabel">CONNECTING...</span></div></div>
       <div class="nav-tag" style="font-size:8px;letter-spacing:3px;color:#64748b;font-family:'JetBrains Mono',monospace">SHARP MONEY INTELLIGENCE</div>
       <div id="backendStatus" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:2px">PP/UD LOADING...</div>
       <div id="apiQuota" style="font-size:9px;letter-spacing:1px;color:var(--muted2);font-family:'JetBrains Mono',monospace"></div>
@@ -2063,6 +2063,153 @@ body.no-help .clv-info { display:none; }
 </footer>
 
 <script>
+// ─── SHARE LINKS ─────────────────────────────────────────────────────────────
+// A link to a screen: the tab and, on ODDS SCREEN, the view and its filters,
+// packed after the # of the app's URL (/app#lr&t=odds&m=opps&...). Nothing is
+// stored on the server and the part after # never reaches it. A link never
+// carries anything about the person who made it: no bets, slips, alerts,
+// stake, odds format, compact setting or favorites (a ★ Favorites filter goes
+// as the leagues and venues it stands for, so the receiver's own stars stay).
+// Pure: the tests run this block on its own (LR_SHARE_BEGIN to LR_SHARE_END).
+// LR_SHARE_BEGIN
+const LRShare = (() => {
+  // venues left out go as one bit each in this order (a new venue is added at
+  // the END, or old links change meaning); a venue not listed goes by its id
+  const VENUES = ['pinnacle', 'matchbook', 'fanduel', 'betrivers', 'kalshi', 'gemini', 'polymarketus', 'draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'];
+  const MODES = ['lines', 'opps', 'markets', 'arb', 'maker', 'outrights', 'nflmodel'];
+  const SHOP_MODES = ['opps', 'markets', 'arb'];
+  // the shopper and game-lines filters a link restores, with the value a new device starts on
+  const SHOP_DEF = { state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', minSize: '', method: 'power', excluded: [] };
+  const OS_DEF = { state: '', league: '', market: '', sort: 'start', q: '' };
+  // value <-> short code; anything not listed is refused on the way in
+  const CODES = {
+    state: { TX: 'tx', '': 'all' },
+    markets: { '': '', moneyline: 'ml', spread: 'sp', total: 'to', player_prop: 'pp' },
+    sort: { ev: 'ev', start: 'st', hold: 'ho', gap: 'gp', venues: 've' },
+    hours: { 6: '6', 24: '24', 48: '48', 168: '168' },
+    maxAge: { '': '', 180: '180', 600: '600' },
+    minSize: { '': '', 50: '50', 200: '200', 1000: '1000' },
+    method: { power: 'pw', multiplicative: 'mu', additive: 'ad', shin: 'sh' },
+    osState: { '': '', TX: 'tx' },
+    osMarket: { '': '', ml: 'ml', spread: 'sp', total: 'to' },
+    osSort: { start: 'st', ev: 'ev', venues: 've', hold: 'ho' },
+  };
+  const KEY = { state: 'st', markets: 'mk', sort: 'so', league: 'lg', q: 'q', minEv: 'ev', minEdge: 'ed', maxAge: 'ag', hours: 'h', minSize: 'sz', method: 'dv', excluded: 'ex' };
+  const MAX_Q = 40;
+  const code = (k, v) => CODES[k][String(v ?? '')];
+  const uncode = (k, c) => { const hit = Object.entries(CODES[k]).find(([, x]) => x === c); return hit ? hit[0] : undefined; };
+  const cleanLeague = v => (/^[a-z0-9_-]{1,20}(,[a-z0-9_-]{1,20}){0,19}$/.test(String(v ?? '')) ? String(v) : '');
+  const cleanQ = v => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, MAX_Q);
+  const cleanName = v => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 30);
+  const cleanNum = v => { const s = String(v ?? '').trim(); if (!s) return ''; const n = Number(s); return Number.isFinite(n) && Math.abs(n) <= 1000 ? String(n) : null; };
+  const venuesOut = ids => {
+    const set = new Set(ids);
+    const bits = VENUES.reduce((n, v, i) => (set.has(v) ? n + 2 ** i : n), 0);
+    return [bits.toString(36), ...[...set].filter(v => !VENUES.includes(v)).sort()].join('.');
+  };
+  const venuesIn = s => {
+    const [head, ...rest] = String(s || '').split('.');
+    const bits = /^[0-9a-z]{1,4}$/.test(head) ? parseInt(head, 36) : 0;
+    const known = VENUES.filter((v, i) => Math.floor(bits / 2 ** i) % 2 === 1);
+    return [...new Set([...known, ...rest.filter(v => /^[a-z0-9_]{3,24}$/.test(v))])].slice(0, 40);
+  };
+
+  // the ★ Favorites filter as the plain filters it stands for; providers is
+  // every venue the board lists (the known venues when it has not loaded)
+  function resolveFavorites(o, providers) {
+    const out = Object.fromEntries(Object.keys(SHOP_DEF).map(k => [k, o[k] ?? SHOP_DEF[k]]));
+    out.excluded = [...(o.excluded || [])];
+    if (o.favOnly) {
+      const fl = o.favLeagues || [], fv = o.favVenues || [];
+      if (!o.league && fl.length) out.league = fl.join(',');
+      if (fv.length) {
+        const all = providers && providers.length ? providers : VENUES;
+        out.excluded = [...new Set([...out.excluded, ...all.filter(v => !fv.includes(v))])];
+      }
+    }
+    return out;
+  }
+
+  // { tab, mode, os, shop } -> the text after #. Values a new device starts on are left out.
+  function encode(s) {
+    const p = [['t', s.tab]];
+    if (s.tab === 'odds') {
+      const m = MODES.includes(s.mode) ? s.mode : 'lines';
+      if (m !== 'lines') p.push(['m', m]);
+      if (m === 'lines') {
+        const o = { ...OS_DEF, ...(s.os || {}) };
+        if (o.state && code('osState', o.state)) p.push(['st', code('osState', o.state)]);
+        if (cleanLeague(o.league)) p.push(['lg', o.league]);
+        if (o.market && code('osMarket', o.market)) p.push(['mk', code('osMarket', o.market)]);
+        if (o.sort !== 'start' && code('osSort', o.sort)) p.push(['so', code('osSort', o.sort)]);
+        if (cleanQ(o.q)) p.push(['q', cleanQ(o.q)]);
+      } else if (SHOP_MODES.includes(m)) {
+        const o = { ...SHOP_DEF, ...(s.shop || {}) };
+        for (const k of Object.keys(SHOP_DEF)) {
+          const v = o[k];
+          if (k === 'excluded') { if ((v || []).length) p.push([KEY[k], venuesOut(v)]); continue; }
+          if (String(v ?? '') === String(SHOP_DEF[k])) continue;
+          if (k === 'league') { if (cleanLeague(v)) p.push([KEY[k], v]); continue; }
+          if (k === 'q') { if (cleanQ(v)) p.push([KEY[k], cleanQ(v)]); continue; }
+          if (k === 'minEv' || k === 'minEdge') { const n = cleanNum(v); if (n) p.push([KEY[k], n]); continue; }
+          const c = code(k, v);
+          if (c !== undefined) p.push([KEY[k], c]);
+        }
+      }
+    }
+    if (cleanName(s.name)) p.push(['n', cleanName(s.name)]);
+    return 'lr&' + p.map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2C/g, ',').replace(/%20/g, '+')}`).join('&');
+  }
+
+  // the text after # -> { tab, mode, os, shop } with every filter filled in,
+  // or null when it is not a share link. tabs: the tab names this app has.
+  function decode(hash, tabs) {
+    const h = String(hash || '').replace(/^#/, '');
+    if (h !== 'lr' && !h.startsWith('lr&')) return null;
+    let p;
+    try { p = new URLSearchParams(h.slice(2)); } catch { return null; }
+    const tab = p.get('t') || '';
+    if (!/^[a-z]{2,20}$/.test(tab) || (tabs && !tabs.includes(tab))) return null;
+    const name = cleanName(p.get('n'));
+    if (tab !== 'odds') return name ? { tab, name } : { tab };
+    const mode = MODES.includes(p.get('m')) ? p.get('m') : 'lines';
+    const s = { tab, mode };
+    if (name) s.name = name;
+    if (mode === 'lines') {
+      s.os = { ...OS_DEF };
+      if (p.has('st')) s.os.state = uncode('osState', p.get('st')) ?? '';
+      if (p.has('lg')) s.os.league = cleanLeague(p.get('lg'));
+      if (p.has('mk')) s.os.market = uncode('osMarket', p.get('mk')) ?? '';
+      if (p.has('so')) s.os.sort = uncode('osSort', p.get('so')) ?? 'start';
+      if (p.has('q')) s.os.q = cleanQ(p.get('q')).toLowerCase();
+    } else if (SHOP_MODES.includes(mode)) {
+      s.shop = { ...SHOP_DEF, excluded: [] };
+      for (const k of Object.keys(SHOP_DEF)) {
+        if (!p.has(KEY[k])) continue;
+        const v = p.get(KEY[k]);
+        if (k === 'excluded') s.shop.excluded = venuesIn(v);
+        else if (k === 'league') s.shop.league = cleanLeague(v);
+        else if (k === 'q') s.shop.q = cleanQ(v);
+        else if (k === 'minEv' || k === 'minEdge') s.shop[k] = cleanNum(v) ?? '';
+        else { const x = uncode(k, v); if (x !== undefined) s.shop[k] = x; }
+      }
+    }
+    return s;
+  }
+  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, VENUES, MAX_Q };
+})();
+// LR_SHARE_END
+// a share link opened: read it once, then take it off the address bar so a
+// reload or a bookmark keeps the viewer's own choices from here on
+const LR_SHARED = (() => {
+  const tabs = [...document.querySelectorAll('.tab')].map(b => ((b.getAttribute('onclick') || '').match(/^showTab\('([a-z]+)'/) || [])[1]).filter(Boolean);
+  const s = LRShare.decode(location.hash, tabs);
+  if (!s) return null;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+  try { sessionStorage.setItem('lr_welcomed', '1'); } catch {}
+  try { localStorage.setItem('lr_tab', s.tab); } catch {}
+  return s;
+})();
 // ─── BOOK MAP ────────────────────────────────────────────────────────────────
 const BOOK_MAP = {
   draftkings:'DraftKings', fanduel:'FanDuel', betmgm:'BetMGM',
@@ -2189,6 +2336,11 @@ try { Object.assign(osUi, JSON.parse(localStorage.getItem('lr_os') || '{}'), { d
 // chart colours follow the venue (fixed, never by rank); venues past these stay in the table
 const OS_COLORS = { kalshi: '#3987e5', polymarketus: '#d95926', gemini: '#199e70', fanduel: '#c98500', betrivers: '#d55181', draftkings: '#008300', matchbook: '#9085e9', betmgm: '#e66767' };
 const osSave = () => { try { localStorage.setItem('lr_os', JSON.stringify({ league: osUi.league, state: osUi.state, market: osUi.market, sort: osUi.sort, hidden: osUi.hidden })); } catch {} };
+if (LR_SHARED?.os) {
+  Object.assign(osUi, LR_SHARED.os);
+  osSave();
+  const box = document.getElementById('osSearch'); if (box) box.value = osUi.q;
+}
 const osAm = a => (a == null ? '—' : a > 0 ? '+' + a : String(a));
 const osPct = x => (x == null ? '' : (x > 0 ? '+' : '') + (x * 100).toFixed(1) + '%');
 const osWhen = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); };
@@ -3508,11 +3660,49 @@ function updateStats(g,s,a,sh) {
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
-function showToast(msg, type='') {
+function showToast(msg, type='', ms = 3500) {
   const t = document.createElement('div');
   t.className = `toast ${type}`; t.textContent = msg;
+  t.setAttribute('role', 'status');
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  setTimeout(() => t.remove(), ms);
+}
+
+// ─── COPY A LINK (share links, LRShare at the top of this script) ───────────
+// the screen as it is now: the tab, and on ODDS SCREEN its view and filters
+function lrShareState() {
+  const tab = (document.querySelector('.page.active')?.id || 'page-odds').replace(/^page-/, '');
+  if (tab !== 'odds' || !window.shpUi) return { tab };
+  return {
+    tab, mode: shpUi.opts.mode || 'lines',
+    os: { state: osUi.state, league: osUi.league, market: osUi.market, sort: osUi.sort, q: osUi.q },
+    shop: LRShare.resolveFavorites(shpUi.opts, (shpUi.data?.providers || []).map(x => x.id)),
+  };
+}
+function lrShareUrl(state) {
+  const base = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : `${BACKEND_URL}/app`;
+  return `${base}#${LRShare.encode(state)}`;
+}
+let lrShareLast = '';
+async function lrCopyLink(url, what) {
+  lrShareLast = url;
+  let ok = false;
+  try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); ok = true; } } catch {}
+  if (!ok) {
+    // older browsers and pages without clipboard access
+    try {
+      const t = document.createElement('textarea');
+      t.value = url; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(t); t.select(); ok = document.execCommand('copy'); t.remove();
+    } catch {}
+  }
+  if (ok) showToast(`Link copied: ${what}`);
+  else showToast(`Copy this link: ${url}`, 'danger', 12000);
+}
+function lrShareScreen() {
+  const st = lrShareState();
+  const tabName = (layTabs?.[st.tab]?.textContent || st.tab).trim();
+  lrCopyLink(lrShareUrl(st), st.tab === 'odds' ? 'this ODDS SCREEN view and its filters' : `the ${tabName} tab`);
 }
 
 // ─── BEEP ─────────────────────────────────────────────────────────────────────
@@ -4135,7 +4325,8 @@ document.addEventListener('keydown', e => {
 });
 // ── KEYBOARD SHORTCUTS (desktop) ────────────────────────────────────────────
 // 1-9 the tabs on the bar, [ and ] the previous and next tab, / the search box
-// on this tab, F the Favorites filter, C CUSTOMIZE, ? this list. None of them
+// on this tab, F the Favorites filter, C CUSTOMIZE, L copy a link to this
+// screen, ? this list. None of them
 // fire while typing in a box, with Ctrl, Alt or Cmd held, or under a pop-up.
 const KBD = [
   ['1 – 9', 'Open the tab in that spot on the bar'],
@@ -4143,6 +4334,7 @@ const KBD = [
   ['/', 'Jump to the search box on this tab'],
   ['F', 'Turn the ★ Favorites filter on or off (ODDS SCREEN, where you starred leagues or venues)'],
   ['C', 'Open CUSTOMIZE'],
+  ['L', 'Copy a link to this screen (ODDS SCREEN keeps its view and filters)'],
   ['?', 'Show this list'],
   ['Esc', 'Close the open pop-up, menu or this list'],
 ];
@@ -4194,7 +4386,8 @@ document.addEventListener('keydown', e => {
   }
   if (k === '/') { e.preventDefault(); kbdSearch(); return; }
   if (k === 'f' || k === 'F') { e.preventDefault(); kbdFav(); return; }
-  if (k === 'c' || k === 'C') { e.preventDefault(); layOpen(); }
+  if (k === 'c' || k === 'C') { e.preventDefault(); layOpen(); return; }
+  if (k === 'l' || k === 'L') { e.preventDefault(); lrShareScreen(); }
 });
 function layRenderList() {
   const names = layNames();
@@ -4279,6 +4472,8 @@ function layFoldLabel(info) {
 // out, so it is the sign-in screen. Account buttons appear only when the server
 // can make accounts; "Enter the app" always works so nobody is blocked.
 function welcomeInit() {
+  // a share link lands on its screen: no welcome screen or tour on top of it
+  if (LR_SHARED) { showToast(LR_SHARED.name ? `Opened a shared view: ${LR_SHARED.name}` : 'Opened a shared screen'); return; }
   // links from the sales page: /app?start=signup|login|app skip this screen,
   // and signup/login open the account form when accounts are on
   const start = new URLSearchParams(location.search).get('start');
@@ -9863,8 +10058,8 @@ checkBackend();
 startSharpPolling();    // REST polling — always works regardless of WS
 // open on the last tab used; the first time, the odds screen
 (() => {
-  let name = 'odds';
-  try { name = localStorage.getItem('lr_tab') || 'odds'; } catch {}
+  let name = LR_SHARED?.tab || 'odds';
+  try { name = LR_SHARED?.tab || localStorage.getItem('lr_tab') || 'odds'; } catch {}
   const btn = [...document.querySelectorAll('.tab')].find(b => b.getAttribute('onclick') === `showTab('${name}',this)`);
   if (btn) showTab(name, btn); else showTab('best', document.querySelector('.tab'));
 })();
@@ -10087,7 +10282,13 @@ try { if (window.innerWidth < 640) document.getElementById('shpFilters')?.remove
 // a saved shopper view comes back when the odds screen is already open
 setTimeout(() => { if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines') oddsModeShow(); }, 0);
 const shpSave = () => { try { localStorage.setItem('lr_shopper', JSON.stringify(shpUi.opts)); } catch {} };
-function shpSet(k, v, reload = true) { shpUi.opts[k] = v; shpSave(); if (k === 'mode') return oddsModeShow(); if (reload) shpLoad(); else shpRender(); }
+// a share link's view and filters; the viewer's own stars, stake and odds format stay
+if (LR_SHARED?.tab === 'odds') {
+  shpUi.opts.mode = LR_SHARED.mode;
+  if (LR_SHARED.shop) Object.assign(shpUi.opts, LR_SHARED.shop, { favOnly: false });
+  shpSave();
+}
+function shpSet(k, v, reload = true) { shpUi.opts[k] = v; if (k !== 'fmt') shpUi.viewPick = null; shpSave(); if (k === 'mode') return oddsModeShow(); if (reload) shpLoad(); else shpRender(); }
 // the odds screen's views: GAME LINES is oddsscreen.js; the rest are the shopper
 function oddsModeShow() {
   const mode = window.shpUi ? shpUi.opts.mode : 'lines';
@@ -10110,7 +10311,7 @@ function oddsModeShow() {
   else { clearTimeout(osUi.timer); stop(); shpLoad(); }
 }
 let shpTyping = null;
-function shpType(k, v) { shpUi.opts[k] = v; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
+function shpType(k, v) { shpUi.opts[k] = v; shpUi.viewPick = null; shpSave(); clearTimeout(shpTyping); shpTyping = setTimeout(shpLoad, 450); }
 function shpToggleVenue(id, on) {
   const ex = new Set(shpUi.opts.excluded || []);
   if (on) ex.delete(id); else ex.add(id);
@@ -10184,8 +10385,8 @@ function shpControls() {
   if (o.league && !leagues.some(([k]) => k === o.league)) leagues.push([o.league, 0]);
   document.getElementById('shpBar').innerHTML = [
     `<input type="search" placeholder="Team or player" value="${escAttr(o.q)}" oninput="shpType('q',this.value)" style="flex:1 1 140px">`,
-    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, `${(o.favLeagues || []).includes(k) ? '★ ' : ''}${k.toUpperCase()} (${n})`])], ''),
-    o.league ? `<button class="shp-star${(o.favLeagues || []).includes(o.league) ? ' on' : ''}" onclick="shpFav('favLeagues','${escAttr(o.league)}')" title="${(o.favLeagues || []).includes(o.league) ? 'Remove from' : 'Add to'} favorite leagues">★ ${escAttr(o.league.toUpperCase())}</button>` : '',
+    sel('league', [['', 'All leagues'], ...leagues.map(([k, n]) => [k, k.includes(',') ? k.toUpperCase().split(',').join(' + ') : `${(o.favLeagues || []).includes(k) ? '★ ' : ''}${k.toUpperCase()} (${n})`])], ''),
+    o.league && !o.league.includes(',') ? `<button class="shp-star${(o.favLeagues || []).includes(o.league) ? ' on' : ''}" onclick="shpFav('favLeagues','${escAttr(o.league)}')" title="${(o.favLeagues || []).includes(o.league) ? 'Remove from' : 'Add to'} favorite leagues">★ ${escAttr(o.league.toUpperCase())}</button>` : '',
     sel('sort', [['ev', 'Best EV'], ['start', 'Starting soon'], ['hold', 'Lowest hold'], ['gap', 'Biggest price gap'], ['venues', 'Most venues']], 'SORT'),
     sel('hours', [['6', '6h'], ['24', '24h'], ['48', '48h'], ['168', '7 days']], 'STARTS IN'),
     inp('minEv', 'MIN EV %', '0'), inp('minEdge', 'MIN EDGE PTS', '—'),
@@ -10277,23 +10478,35 @@ const shpPresetsSave = v => { try { localStorage.setItem(SHP_PRESET_KEY, JSON.st
 // what a saved view keeps: the filters, not the odds format or favorites
 const SHP_VIEW_KEYS = ['mode', 'state', 'markets', 'sort', 'league', 'q', 'minEv', 'minEdge', 'maxAge', 'hours', 'stake', 'minSize', 'method', 'excluded', 'favOnly'];
 function shpPresetBar() {
-  const list = shpPresets();
-  return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}">${escAttr(p.name)}</option>`).join('')}</select></label>` +
+  const list = shpPresets(), pick = list[shpUi.viewPick] ? shpUi.viewPick : null;
+  return `<label>SAVED VIEW<select onchange="shpPresetLoad(this.value)"><option value="">${list.length ? 'Pick a view' : 'None saved yet'}</option>${list.map((p, i) => `<option value="${i}"${i === pick ? ' selected' : ''}>${escAttr(p.name)}</option>`).join('')}</select></label>` +
+    (pick != null ? `<button class="shp-btn" onclick="shpPresetShare(${pick})" title="Copy a link that opens this view on any phone or computer">SHARE VIEW</button>` : '') +
     `<label>NAME<input id="shpPresetName" type="text" maxlength="30" placeholder="e.g. Texas props"></label><button class="shp-btn" onclick="shpPresetAdd()">SAVE VIEW</button>` +
-    (list.length ? `<button class="shp-btn" onclick="shpPresetsSave([]);shpRender()" title="Delete every saved view on this device">CLEAR VIEWS</button>` : '');
+    (list.length ? `<button class="shp-btn" onclick="shpPresetsSave([]);shpUi.viewPick=null;shpRender()" title="Delete every saved view on this device">CLEAR VIEWS</button>` : '');
 }
 function shpPresetAdd() {
   const name = (document.getElementById('shpPresetName')?.value || '').trim() || `View ${shpPresets().length + 1}`;
   const view = Object.fromEntries(SHP_VIEW_KEYS.map(k => [k, shpUi.opts[k]]));
   shpPresetsSave([{ name, opts: view }, ...shpPresets().filter(p => p.name !== name)]);
+  shpUi.viewPick = 0;
   shpRender();
 }
 function shpPresetLoad(i) {
   const p = shpPresets()[+i];
   if (!p) return;
   Object.assign(shpUi.opts, Object.fromEntries(SHP_VIEW_KEYS.filter(k => k in p.opts).map(k => [k, p.opts[k]])));
+  shpUi.viewPick = +i;
   shpSave();
   oddsModeShow();
+}
+// a saved view as a link: its filters, with a ★ Favorites filter written out
+// as the leagues and venues this device has starred
+function shpPresetShare(i) {
+  const p = shpPresets()[+i];
+  if (!p) return;
+  const o = { ...p.opts, favLeagues: shpUi.opts.favLeagues, favVenues: shpUi.opts.favVenues };
+  const shop = LRShare.resolveFavorites(o, (shpUi.data?.providers || []).map(x => x.id));
+  lrCopyLink(lrShareUrl({ tab: 'odds', mode: o.mode, shop, name: p.name }), `view "${p.name}"`);
 }
 // opportunities sort in the browser: tap a header, tap again to flip
 const SHP_SORT = {
