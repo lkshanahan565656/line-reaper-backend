@@ -1,6 +1,7 @@
 // The forms, step by step, with what each step must leave behind: log a bet
 // by hand and from the ODDS SCREEN, edit and settle it, export and import the
-// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
+// CSV, log a slip from PROPS, paste slips, import a Pikkit CSV and an app's
+// history (a file and copied text) with its import summary, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
 // hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
@@ -299,6 +300,51 @@ const FLOWS = {
     const old = after.find(s => s.id === 'pk-e2e3');
     expect(old && old.result === 'loss' && old.legs[0].sport === 'MLB', 'the 20-day-old Pikkit bet should be added with its result and league');
     expect(await page.locator('#msPikkit button', { hasText: 'FROM BOX SCORES' }).count() === 0, 'the button should go once every bet is in');
+  },
+
+  async 'import an Underdog history file and pasted Sleeper text'(page, w, opts) {
+    await openTab(page, 'myslips', w, opts);
+    const d = n => new Date(opts.now - n * 3600e3).toISOString();
+    // a test file in the per-leg layout (entry id, player, stat, line, Higher/Lower); one leg row has no line
+    const csv = `Entry ID,Created At,Entry Type,Entry Fee,Payout,Status,Sport,Player,Stat,Line,Higher/Lower
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,Josh Allen,Passing Yards,245.5,Higher
+e2eU1,${d(5)},Standard,10,0,Lost,NFL,James Cook,Rushing Yards,62.5,Lower
+e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
+    const file = path.join(os.tmpdir(), `lr-e2e-underdog-${process.pid}-${opts.viewportName}.csv`);
+    fs.writeFileSync(file, csv);
+    await page.locator('#page-myslips input[type=file]').setInputFiles(file);
+    await settle(page, w, opts, 300);
+    fs.rmSync(file, { force: true });
+    const imps = await ls(page, 'lr_slip_imports');
+    const ud = imps?.find(x => x.format === 'underdog');
+    expect(ud && ud.rows === 3 && ud.unread.length === 1, `the Underdog import was kept as ${JSON.stringify(ud)?.slice(0, 160)}`);
+    const slips = await ls(page, 'lr_slips');
+    expect(slips.some(s => s.id === 'ud-e2eU1' && s.legs.length === 2 && s.importId === ud.id), 'the Underdog entry with two legs should be a slip');
+    const card = page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first();
+    const shown = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Bets read/i.test(shown) && /Legs matched/i.test(shown) && /Record/i.test(shown) && /1-1/.test(shown), `the Underdog import card reads "${shown.slice(0, 200)}"`);
+    // the leg with no line is listed by its row
+    await card.locator('summary').first().click();
+    await settle(page, w, opts, 60);
+    const list = await card.innerText({ timeout: 4000 }).catch(() => '');
+    expect(/Row 4/.test(list) && /no line on this row/.test(list), `the unmatched row is not listed: "${list.slice(-200)}"`);
+    // Sleeper history pasted as copied text
+    await page.locator('#page-myslips .mb-actions button', { hasText: 'PASTE SLIPS' }).click();
+    await page.fill('#msText', 'Sleeper Picks\n$10 · 2 picks · Won $30\nConnor McDavid\nOver 1.5 Points\nAuston Matthews\nUnder 3.5 Shots');
+    await page.getByRole('button', { name: 'ADD SLIPS' }).click();
+    await settle(page, w, opts, 250);
+    const after = await ls(page, 'lr_slips');
+    const sl = after.find(s => s.app === 'sleeper' && s.legs[0]?.player === 'Connor McDavid');
+    expect(sl && sl.legs.length === 2 && sl.result === 'win' && sl.source === 'import', `the pasted Sleeper slip came in as ${JSON.stringify(sl)?.slice(0, 160)}`);
+    expect(await page.locator('#msImports .ms-imp', { hasText: 'Sleeper (copied text)' }).count() === 1, 'no import card for the pasted Sleeper text');
+    // remove takes two taps and takes the import's slips with it
+    const drop = card.locator('button', { hasText: 'REMOVE' });
+    await drop.click();
+    await settle(page, w, opts, 60);
+    await page.locator('#msImports .ms-imp', { hasText: 'Underdog CSV' }).first().locator('button', { hasText: 'TAP AGAIN TO REMOVE' }).click();
+    await settle(page, w, opts, 120);
+    const gone = await ls(page, 'lr_slips');
+    expect(!gone.some(s => s.id === 'ud-e2eU1'), 'removing the import should remove its slips');
   },
 
   async 'save a shopper view, load it, clear it'(page, w, opts) {
