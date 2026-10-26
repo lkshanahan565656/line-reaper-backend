@@ -32,7 +32,7 @@ module.exports = [
     languageOptions: { globals: { ...globals.browser, ...globals.node, showTab: 'readonly', shpUi: 'readonly' } },
   },
   {
-    files: ['calc.js', 'bets.js', 'slips.js', 'fees.js'],   // also served to the page
+    files: ['calc.js', 'bets.js', 'slips.js', 'fees.js', 'glossary.js'],   // also served to the page
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
 ];

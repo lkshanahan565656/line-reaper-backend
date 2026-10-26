@@ -3,8 +3,9 @@
 // CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
-// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, and share a
-// view by link and open it cold on a fresh device. The crawl clicks everything; these check results.
+// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, share a
+// view by link and open it cold on a fresh device, export and print a screen,
+// and open a label's glossary definition. The crawl clicks everything; these check results.
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -621,6 +622,152 @@ const FLOWS = {
     await page.evaluate(() => window.scrollTo(0, 0));
   },
 
+  async 'EXPORT and PRINT a screen, and the glossary ? and long press'(page, w, opts) {
+    const wide = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const shot = name => page.screenshot({ path: path.join(__dirname, 'out', `export-${name}-${opts.viewportName}.png`), fullPage: false }).catch(() => {});
+    const wait = async ms => { if (opts.clock) await page.clock.runFor(ms).catch(() => {}); else await page.waitForTimeout(ms); };
+    fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true });
+    const parse = csv => {
+      const rows = [];
+      let row = [], f = '', q = false;
+      for (let i = 0; i < csv.length; i++) {
+        const c = csv[i];
+        if (q) { if (c === '"' && csv[i + 1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c; continue; }
+        if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; } else if (c === '\n') { row.push(f.replace(/\r$/, '')); rows.push(row); row = []; f = ''; } else f += c;
+      }
+      if (f || row.length) { row.push(f); rows.push(row); }
+      const [head, ...body] = rows;
+      return { head, rows: body.map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? '']))) };
+    };
+    const exportNow = async (pageId, name) => {
+      const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 6000 }), page.locator(`#page-${pageId} > .xp-bar button`, { hasText: 'EXPORT' }).click()]);
+      expect(/^line-reaper-[a-z0-9-]+-\d{4}-\d{2}-\d{2}-\d{4}\.csv$/.test(dl.suggestedFilename()), `the export is named "${dl.suggestedFilename()}"`);
+      const file = path.join(os.tmpdir(), `lr-e2e-xp-${process.pid}-${opts.viewportName}-${name}.csv`);
+      await dl.saveAs(file);
+      const csv = fs.readFileSync(file, 'utf8');
+      fs.rmSync(file, { force: true });
+      await settle(page, w, opts, 60);
+      return { name: dl.suggestedFilename(), ...parse(csv) };
+    };
+    const tagged = sel => page.evaluate(s => [...document.querySelectorAll(`${s} [data-xp]`)].filter(e => e.getClientRects().length).length, sel);
+    // GAME LINES: one row a venue price, exactly the cells on screen
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#osContent [data-xp]').first().waitFor({ timeout: 6000 });
+    let n = await tagged('#osContent');
+    let x = await exportNow('odds', 'lines');
+    for (const c of ['venue', 'price', 'after_fee_breakeven', 'fair', 'fair_source', 'close', 'fill_size_usd', 'read_at', 'filters', 'exported_at'])
+      expect(x.head.includes(c), `the export has no ${c} column: ${x.head.join(',')}`);
+    expect(x.rows.length === n, `GAME LINES shows ${n} prices, the file has ${x.rows.length}`);
+    expect(x.rows.every(r => r.venue && r.price && r.screen === 'ODDS SCREEN' && r.view === 'GAME LINES'), `a row misses its venue or price: ${JSON.stringify(x.rows.find(r => !r.venue || !r.price))}`);
+    expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), 'no row carries a break-even after fees');
+    expect(x.rows.some(r => r.read_at), 'no row carries when it was read');
+    expect(x.rows.every(r => r.prices_shown === 'as listed'), 'AFTER FEES is off, so the prices are as listed');
+    // a filter narrows the file the same way it narrows the screen
+    await page.selectOption('#osMarket', 'ml');
+    await settle(page, w, opts, 200);
+    n = await tagged('#osContent');
+    x = await exportNow('odds', 'lines-ml');
+    expect(x.rows.length === n && n > 0, `moneyline only: ${n} on screen, ${x.rows.length} in the file`);
+    expect(new Set(x.rows.map(r => r.market)).size === 1, `moneyline only, but the file holds ${[...new Set(x.rows.map(r => r.market))].join(', ')}`);
+    expect(x.rows.every(r => /Moneyline/.test(r.filters)), `the filter is not written with the rows: "${x.rows[0]?.filters}"`);
+    await page.selectOption('#osMarket', '');
+    await settle(page, w, opts, 200);
+    // BEST PRICES (Exchange Shopper): the ranked rows, venue and fill size where a book was read
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 400);
+    n = await tagged('#shpContent');
+    if (n) {
+      x = await exportNow('odds', 'opps');
+      expect(x.rows.length === n, `BEST PRICES shows ${n} rows, the file has ${x.rows.length}`);
+      expect(x.rows.every(r => r.venue && r.decimal_odds), 'a ranked row misses its venue or odds');
+    }
+    // PROPS: each app's line on the board
+    await openTab(page, 'props', w, opts);
+    await settle(page, w, opts, 400);
+    n = await tagged('#page-props');
+    if (n) {
+      x = await exportNow('props', 'props');
+      expect(x.rows.length === n, `PROPS shows ${n} lines, the file has ${x.rows.length}`);
+      expect(x.rows.some(r => /%$/.test(r.after_fee_breakeven)), "no prop carries its app's break-even");
+    }
+    // RESULTS: a screen with plain tables exports its columns
+    await openTab(page, 'results', w, opts);
+    await settle(page, w, opts, 300);
+    const tables = await page.evaluate(() => [...document.querySelectorAll('#page-results table')].filter(t => t.getClientRects().length).length);
+    if (tables) {
+      x = await exportNow('results', 'results');
+      expect(x.rows.length > 0 && x.head.includes('screen') && x.head.includes('loaded_at'), `RESULTS export: ${x.head.join(',')}`);
+    }
+    // PRINT: a light view with no nav and no controls, the screen and filters at the top
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'GAME LINES' }).first().click();
+    await settle(page, w, opts, 300);
+    await page.locator('#page-odds > .xp-bar button', { hasText: 'PRINT' }).click();
+    await settle(page, w, opts, 150);
+    const pv = await page.evaluate(() => ({
+      head: document.getElementById('xpHead')?.innerText || '', nav: getComputedStyle(document.querySelector('.nav')).display, bg: getComputedStyle(document.body).backgroundColor,
+      chips: [...document.querySelectorAll('#page-odds .sport-chip, #page-odds select')].filter(e => e.getClientRects().length).length,
+      rows: [...document.querySelectorAll('#osContent [data-xp]')].filter(e => e.getClientRects().length).length,
+      cell: getComputedStyle(document.querySelector('#osContent td') || document.body).color,
+    }));
+    expect(/LINE REAPER · ODDS SCREEN · GAME LINES/.test(pv.head) && /Printed/.test(pv.head), `the print view header reads "${pv.head.slice(0, 160)}"`);
+    expect(pv.nav === 'none' && pv.chips === 0, `the print view still shows the nav (${pv.nav}) or ${pv.chips} controls`);
+    expect(pv.bg === 'rgb(255, 255, 255)' && pv.cell === 'rgb(17, 17, 17)', `the print view is not light: body ${pv.bg}, text ${pv.cell}`);
+    expect(pv.rows > 0, 'the print view shows no prices');
+    expect(await wide() <= 0, `the print view is ${await wide()} px too wide`);
+    await shot('print-view');
+    await page.emulateMedia({ media: 'print' });
+    const pr = await page.evaluate(() => ({ btns: [...document.querySelectorAll('#xpHead button')].filter(e => e.getClientRects().length).length, bar: [...document.querySelectorAll('.xp-bar')].filter(e => e.getClientRects().length).length }));
+    expect(pr.btns === 0 && pr.bar === 0, `printed, the page still shows ${pr.btns} print buttons and ${pr.bar} export bars`);
+    await page.emulateMedia({ media: null });
+    await page.locator('#xpHead button', { hasText: 'PRINT / SAVE AS PDF' }).click();
+    await settle(page, w, opts, 120);
+    expect(/Save as PDF/.test(await text(page, '#xpHeadSay')), 'PRINT / SAVE AS PDF did not say what it opens');
+    await page.locator('#xpHead button', { hasText: 'CLOSE PRINT VIEW' }).click();
+    await settle(page, w, opts, 120);
+    expect(!(await page.locator('#xpHead').count()) && (await page.locator('.nav').isVisible()), 'CLOSE PRINT VIEW did not bring the app back');
+    // GLOSSARY: the ? beside a label opens its definition, with a link to /learn
+    const q = page.locator('#osContent .gl-q').first();
+    await q.waitFor({ timeout: 6000 });
+    await q.scrollIntoViewIfNeeded();
+    await q.click();
+    await settle(page, w, opts, 80);
+    const pop = await page.evaluate(() => { const p = document.getElementById('glPop'); const r = p?.getBoundingClientRect(); return p && { shown: getComputedStyle(p).display !== 'none', text: p.innerText, href: p.querySelector('a')?.getAttribute('href'), left: r.left, right: r.right }; });
+    expect(pop?.shown && pop.text.length > 40 && /^\/learn#g-[a-z0-9-]+$/.test(pop.href || ''), `the ? did not open a definition: ${JSON.stringify(pop)}`);
+    expect(pop.left >= 0 && pop.right <= (await page.evaluate(() => innerWidth)), 'the definition sticks out of the screen');
+    await shot('glossary-q');
+    await page.locator('#glPop .gl-x').click();
+    expect(!(await page.locator('#glPop').isVisible()), 'the definition did not close');
+    // a long press on a chip opens its definition and does not switch the view
+    const chip = page.locator('#oddsModes button', { hasText: 'MAKER' }).first();
+    await chip.scrollIntoViewIfNeeded();
+    const box = await chip.boundingBox();
+    const before = await page.evaluate(() => window.shpUi?.opts?.mode);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await wait(700);
+    await page.mouse.up();
+    await settle(page, w, opts, 120);
+    const lp = await page.evaluate(() => ({ shown: getComputedStyle(document.getElementById('glPop')).display !== 'none', text: document.getElementById('glPop').innerText, mode: window.shpUi?.opts?.mode }));
+    expect(lp.shown && /Maker/i.test(lp.text), `a long press on MAKER did not open its definition: ${JSON.stringify(lp).slice(0, 200)}`);
+    expect(lp.mode === before, `the long press also switched the view to ${lp.mode}`);
+    await page.keyboard.press('Escape');
+    // the GLOSSARY on /learn: every term at its anchor, on a phone too
+    try {
+      const res = await page.goto(`${opts.base}/learn#g-clv`, { waitUntil: 'domcontentloaded' });
+      expect(res && res.status() === 200, `/learn answered ${res && res.status()}`);
+      const g = await page.evaluate(() => ({ n: document.querySelectorAll('#glossary ~ dl .gl-i, dl.gloss .gl-i').length, clv: document.getElementById('g-clv')?.innerText || '', wide: document.documentElement.scrollWidth - innerWidth }));
+      expect(g.n >= 40 && /closing line value/i.test(g.clv), `the glossary on /learn: ${JSON.stringify(g).slice(0, 200)}`);
+      expect(g.wide <= 0, `the glossary is ${g.wide} px too wide`);
+      await shot('learn-glossary');
+    } finally {
+      await page.goto(`${opts.base}/app`, { waitUntil: 'domcontentloaded' });
+      await settle(page, w, opts, 300);
+    }
+  },
+
   async 'TOOLS calculator works out a price'(page, w, opts) {
     await openTab(page, 'tools', w, opts);
     const inputs = page.locator('#page-tools input:visible');
@@ -757,6 +904,7 @@ async function run(context, opts, rep) {
   await enterApp(page, w, opts, rep);
   for (const [name, fn] of Object.entries(FLOWS)) {
     if (opts.live && /log|paste|import|save|star|push|move/.test(name)) continue; // the live smoke only reads
+    if (process.env.E2E_FLOW_ONLY && !new RegExp(process.env.E2E_FLOW_ONLY, 'i').test(name)) continue; // one flow while working on it
     w.tab = `flow: ${name}`; w.last = w.tab;
     // let the last flow's toast time out, as it would for a viewer
     if (opts.clock) await page.clock.runFor(8000).catch(() => {});
