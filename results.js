@@ -168,6 +168,15 @@ const kalshiMakerBet = r => {
     line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
     labels: { kind: r.kind === 'kalshi-maker-nhl' || (r.sport === 'nhl' && r.market !== 'h2h') ? 'Kalshi maker bid, NHL spread/total (no maker fee)' : 'Kalshi maker bid', sport: r.sport, market: r.market } };
 };
+// Kalshi player-prop rungs vs Pinnacle (exprops.js): a taker flag counts as placed, a maker bid only when a print went through it
+const PROP_STAT = { rec_yds: 'receiving yards', receptions: 'receptions', rush_yds: 'rushing yards', pass_yds: 'passing yards', pass_tds: 'passing TDs', pass_comp: 'completions', pass_att: 'pass attempts', pass_ints: 'interceptions', rush_att: 'rush attempts', anytime_td: 'touchdowns', pra: 'pts+reb+ast' };
+const exchangePropBet = r => {
+  const live = r.role === 'taker' || r.filled === true;
+  const graded = live && r.status === 'graded';
+  return { profit: graded ? r.profit ?? null : null, staked: graded && r.outcome !== 'push' ? 1 : 0, clv: live ? r.clv ?? null : null, game: `${r.event || r.ticker}|${day(r.start)}`,
+    line: graded && r.closeFair > 0 && r.cost > 0 && r.outcome !== 'push' ? { win: r.outcome === 'win', p: r.closeFair, d: 1 / r.cost } : null,
+    labels: { kind: `Kalshi ${r.league} ${PROP_STAT[r.mkey] || r.mkey}, ${r.role === 'maker' ? 'resting bid' : 'taken at the ask'}`, role: r.role, league: r.league } };
+};
 // exchange outrights (outrights.js): the first $50 fill at +3% over Pinnacle's fair, CLV on Pinnacle's close, per sport
 const outrightBet = r => {
   const settled = r.status === 'settled' && r.outcome != null;
@@ -241,6 +250,9 @@ const SOURCES = {
   // resting Kalshi bids under Pinnacle's fair (kmaker.js): research, judged on fills through the bid
   kalshiMaker: { label: 'Kalshi maker bids', done: r => r.status === 'graded' && r.filled === true, open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
     bet: kalshiMakerBet, cuts: [['kind'], ['sport'], ['market']] },
+  // Kalshi player-prop rungs on Pinnacle's line (exprops.js): research, one kind per role x league x stat
+  exchangeProps: { label: 'Kalshi player props', done: r => r.status === 'graded' && (r.role === 'taker' || r.filled === true), open: r => r.status === 'open' || r.status === 'closed' || r.status === 'filled',
+    bet: exchangePropBet, cuts: [['kind'], ['role'], ['league']] },
   // F1 and golf outrights on Kalshi and Polymarket US vs Pinnacle's fair (outrights.js): research, one kind a sport
   exchangeOutrights: { label: 'Exchange outrights', done: r => (r.status === 'closed' || r.status === 'settled') && r.clv != null, open: r => r.status === 'open',
     bet: outrightBet, cuts: [['kind'], ['kind', 'venue'], ['type']] },
@@ -282,6 +294,8 @@ function bookGuard(source, by, s, { bets = null, vals = null } = {}) {
     if (short.short) return cap(s, short.note, { games });
     return { ...s, games };
   }
+  // research record: a kind that clears the bar still waits for a raw re-check, pooled cuts never count
+  if (source === 'exchangeProps' && s.verdict === 'proven') return cap(s, by === 'kind' ? 'not proven: research record, a raw re-check comes first' : 'not proven: judged one league and stat at a time');
   if (source === 'kalshiMaker' && s.verdict === 'proven') {
     const games = bets ? gamesOf(bets) : 0, short = bets ? resultsShortfall(bets.map(b => b.line).filter(Boolean)) : { short: false };
     if (by !== 'kind') return cap(s, 'not proven: a cut of the maker record, judged only whole', { games });

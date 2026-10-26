@@ -5143,7 +5143,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.203.0', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.204.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -7051,6 +7051,54 @@ app.get('/api/kalshi-maker', async (req, res) => {
         byEdge: Object.fromEntries(Object.entries(bt.byEdge).map(([e, x]) => [e, { all: x.all, atBid: x.atBid, kinds: x.kinds, kindsAtBid: x.kindsAtBid, bySport: x.bySport, byMarket: x.byMarket, unfilledCloseDrift: x.unfilledCloseDrift, kalshiAfter30: x.kalshiAfter30, requote: x.requote }])) } : null });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ─── EXCHANGE PROPS (exprops.js) ─────────────────────────────────────────────
+// Kalshi player-prop rungs where Pinnacle hangs its main line exactly on the
+// rung (N+ = Over N-0.5): Pinnacle's no-vig fair against Kalshi's ask (taker)
+// and a resting bid under fair (maker), each league x stat its own research
+// kind (kxprop-<role>-<league>-<stat>), graded on Pinnacle's close and Kalshi's
+// settlement, judged at 50 (PROPS > EXCHANGE PROPS). Runs off the 5-minute
+// Kalshi ladder read and the 2-minute Pinnacle props read. No alerts, no
+// orders. EXCHANGE_PROPS=off stops it.
+const exprops = require('./exprops');
+const expropsOn = () => !/^(off|0|false|no)$/i.test(String(process.env.EXCHANGE_PROPS || '').trim());
+const expropsStore = resultsBackup.wrap('exchangeProps', createEvStoreFromEnv(process.env, { table: 'exchange_props', fileVar: 'EXCHANGE_PROPS_FILE', file: 'exchange-props.json' }));
+const expropsTracker = exprops.createExchangePropsTracker({ store: expropsStore, http: { get: (url, cfg) => axios.get(url, cfg) } });
+expropsTracker.ready().catch(e => console.error('Exchange props: store failed to initialise:', e.message));
+const expropsBacktest = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'seeds', 'exchange-props-backtest.json'), 'utf8')); } catch { return null; } })();
+let expropsRunning = false;
+async function scanExchangeProps() {
+  if (!expropsOn() || expropsRunning || !licences.isOn('kalshi') || !licences.isOn('pinnacle')) return;
+  // both reads fresh: Kalshi's ladders (5 min) and Pinnacle's props (2 min)
+  if (!kpropsState.rungs || Date.now() - Date.parse(kpropsState.updated || 0) > 12 * 60e3 || Date.now() - pinPropsAt > PIN_PROPS_MAX_AGE_MS) return;
+  expropsRunning = true;
+  try { await expropsTracker.scan({ rungs: kpropsState.rungs, pinIdx: pinPropsIndex }); }
+  catch (e) { expropsTracker.state.errors = [e.message, ...expropsTracker.state.errors].slice(0, 5); }
+  finally { expropsRunning = false; }
+}
+async function settleExchangeProps() {
+  if (!expropsOn()) return;
+  try { await expropsTracker.settle(); } catch (e) { expropsTracker.state.errors = [e.message, ...expropsTracker.state.errors].slice(0, 5); }
+}
+const EXPROPS_NOTE = 'Research, not a tip: Kalshi player-prop rungs priced on Pinnacle\'s no-vig line where Pinnacle sits exactly on the rung, fees in. Nothing here places an order. Each league and stat is its own record, taker and maker apart, graded on Pinnacle\'s close and Kalshi\'s settlement; none is proven until 50 graded with CLV t 2+.';
+const expropsSlim = b => { const { fairs, ...x } = b; return x; };
+app.get('/api/exchange-props', async (req, res) => {
+  if (!expropsOn()) return res.status(503).json({ error: 'The exchange props record is off on this server (EXCHANGE_PROPS=off).' });
+  try {
+    const lic = licenceOf(req);
+    const all = await expropsTracker.list();
+    const hours = Math.min(Math.max(parseFloat(req.query.hours) || 24, 1), 48);
+    const league = typeof req.query.league === 'string' && exprops.LEAGUES.has(req.query.league.toUpperCase()) ? req.query.league.toUpperCase() : null;
+    const t = Date.now();
+    const board = !(lic.kalshi && lic.pinnacle) ? [] : (expropsTracker.state.board || []).filter(x => (!league || x.league === league) && Date.parse(x.start) > t && Date.parse(x.start) - t <= hours * 3600e3)
+      .map(x => ({ ...x, best: Math.max(x.sides.yes.ev ?? -1, x.sides.no.ev ?? -1) }))
+      .sort((a, b) => b.best - a.best || Date.parse(a.start) - Date.parse(b.start)).slice(0, 300);
+    const done = all.filter(b => b.status === 'graded' || b.status === 'unfilled' || b.status === 'filled');
+    const recent = (hasPro(req) ? all : done).filter(b => exprops.counts(b) || b.status === 'unfilled').slice().sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt)).slice(0, Math.min(parseInt(req.query.limit) || 100, 500)).map(expropsSlim);
+    res.json({ label: 'research', note: EXPROPS_NOTE, edge: exprops.EDGE, of: exprops.MIN_N, takerRate: exprops.TAKER_RATE, makerRate: exprops.MAKER_RATE, kalshi: !!lic.kalshi, pinnacle: !!lic.pinnacle,
+      kinds: exprops.byKind(all), board, boardAt: expropsTracker.state.boardAt, state: (({ board: _b, ...s }) => s)(expropsTracker.state), recent,
+      backtest: expropsBacktest });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // ─── EXCHANGE OUTRIGHTS (outrights.js) ───────────────────────────────────────
 // F1 and golf winners, top N, podium and head-to-heads on Kalshi and
 // Polymarket US against Pinnacle's no-vig fair (power and Shin, the side's
@@ -8808,10 +8856,10 @@ app.get('/api/results', async (req, res) => {
     const days = parseFloat(req.query.days);
     const all = { limit: 1e9 };
     const board = await scoreboardMemo(`results|${days > 0 ? days : 0}`, async () => {
-      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows, outrightRows] = await Promise.all([
+      const [tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoneyRows, nflModelRows, soccerModelRows, kalshiMakerRows, outrightRows, exPropRows] = await Promise.all([
         tailTracker.list(all), freshTracker.list(all), evTracker.list(all), esportsEdgeTracker.list(all), tracker.list(all), xvalueTracker.list(all), bidTracker.list(), middleTracker.list(), gasTracker.list(), sportTracker.list(all), bigTracker.list(),
-        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => []), outrightsTracker.list().catch(() => [])]);
-      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows, exchangeOutrights: outrightRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
+        nflModelStore ? nflModelStore.all().catch(() => []) : [], soccerModelStore ? soccerModelStore.all().catch(() => []) : [], kmakerTracker.list().catch(() => []), outrightsTracker.list().catch(() => []), expropsTracker.list().catch(() => [])]);
+      return results.scoreboard({ tail, fresh, ev, esportsEdges, esportsPicks, exchangeValue, bidArbs, middles, gasLocks, sportsProps, bigMoney: bigMoneyRows, nflModel: nflModelRows, soccerModel: soccerModelRows, kalshiMaker: kalshiMakerRows, exchangeOutrights: outrightRows, exchangeProps: exPropRows }, { sinceMs: days > 0 ? Date.now() - days * 86400e3 : 0 });
     });
     res.json({ ...board, days: days > 0 ? days : null, backup: resultsBackup.status() });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -8913,7 +8961,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.203.0',
+  version: '3.204.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },
@@ -8921,6 +8969,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   pick6: pick6.status(),
   exchangeSize: { on: xsizeOn(), ...xsizeTracker.state },
   kalshiMaker: { on: kmakerOn(), ...(({ board: _b, ...st }) => st)(kmakerTracker.state) },
+  exchangeProps: { on: expropsOn(), ...(({ board: _b, ...st }) => st)(expropsTracker.state) },
   exchangeOutrights: { on: outrightsOn(), ...(({ board: _b, ...st }) => st)(outrightsTracker.state), feed: { pinAt: outrightsFeed.state.pinAt, kalshiAt: outrightsFeed.state.kalshiAt, pmusAt: outrightsFeed.state.pmusAt, reads: outrightsFeed.state.reads, errors: outrightsFeed.state.errors } },
   shopDepth: { on: shopDepthOn(), ...shopDepth.state, budget: depthBook.READ_BUDGET },
   resultsBackup: resultsBackup.status(),
@@ -9554,6 +9603,9 @@ schedule('3,13,23,33,43,53 * * * *', () => sportTracker.grade().catch(e => conso
 schedule('8,18,28,38,48,58 * * * *', () => gradeEvResults());
 schedule('4,14,24,34,44,54 * * * *', () => gradeExchangeSize());
 schedule('7,17,27,37,47,57 * * * *', () => settleKalshiMaker());
+schedule('3,13,23,33,43,53 * * * *', () => settleExchangeProps());
+// two minutes after each Kalshi ladder read (1, 6, 11 ...), on the newest Pinnacle props
+schedule('3,8,13,18,23,28,33,38,43,48,53,58 * * * *', () => scanExchangeProps());
 schedule('20 */2 * * * *', () => scanOutrights());
 // the weekly record digest: Monday 13:00 UTC, checked hourly so a deploy over 13:00 still sends
 schedule('0 * * * *', () => publishDigest().catch(e => { digestState.error = e.message; console.warn('Digest:', e.message); }));
