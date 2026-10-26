@@ -37,7 +37,8 @@ const NOT = /game|spread|total$|totals|series|champion|winner|mvp|season|draft|a
   log('sports series', ser.length);
   const slimS = ser.map(s => ({ t: s.ticker, title: s.title, ft: s.fee_type, fm: s.fee_multiplier, tags: s.tags, freq: s.frequency }));
   fs.writeFileSync('out/series.json', JSON.stringify(slimS));
-  const props = slimS.filter(s => LEAGUE.test(s.t) && (STATWORD.test(s.title || '') || /YDS|PTS|REB|AST|3PT|REC|TD|KS|HIT|HR|RBI|GOAL|SAVE|SOG|STL|BLK|PRA|TB|SHOT/.test(s.t)) && !NOT.test(s.title || ''));
+  const ONLY = process.env.SERIES ? process.env.SERIES.split(',') : null;
+  const props = ONLY ? slimS.filter(s => ONLY.includes(s.t)) : slimS.filter(s => LEAGUE.test(s.t) && (STATWORD.test(s.title || '') || /YDS|PTS|REB|AST|3PT|REC|TD|KS|HIT|HR|RBI|GOAL|SAVE|SOG|STL|BLK|PRA|TB|SHOT/.test(s.t)) && !NOT.test(s.title || ''));
   log('prop series', props.length, props.map(s => s.t).join(','));
   const markets = [];
   await pool(props, 4, async s => {
@@ -58,7 +59,9 @@ const NOT = /game|spread|total$|totals|series|champion|winner|mvp|season|draft|a
   });
   log('markets', markets.length, 'calls', calls);
   fs.writeFileSync('out/markets.json.gz', zlib.gzipSync(JSON.stringify(markets)));
-  const done = markets.filter(m => Date.parse(m.close) < Date.now() && (m.vol || 0) > 0);
+  const E0 = Date.parse(process.env.EXP_FROM || '2000-01-01'), E1 = Date.parse(process.env.EXP_TO || '2100-01-01');
+  const done = markets.filter(m => Date.parse(m.close) < Date.now() && (m.vol || 0) > 0 || (process.env.EXP_FROM && m.result));
+  for (let i = done.length - 1; i >= 0; i--) { const e = Date.parse(done[i].exp); if (!(e >= E0 && e <= E1)) done.splice(i, 1); }
   log('closed markets with volume', done.length);
   const hist = []; let k = 0;
   await pool(done, 8, async m => {

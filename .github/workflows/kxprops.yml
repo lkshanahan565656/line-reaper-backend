@@ -13,10 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: node pull.js || true
-        env: { BUDGET_MIN: '120' }
+        env: { BUDGET_MIN: '120', SERIES: 'KXNBAREB,KXNBA3PT,KXNBAPRA,KXNFLPASSYDS,KXNFLRSHYDS,KXNFLTD,KXNFLPASSATT,KXNFLPASSINT,KXNHLGOAL,KXNHLAST,KXNHLSAVE,KXMLBHR', EXP_FROM: '2026-10-24T18:00:00Z', EXP_TO: '2026-10-26T14:00:00Z', FROM: '2026-10-24T00:00:00Z' }
       - name: push out
         if: always()
         run: |
-          cd out && git init -q && git checkout -q -b diag-kxprops-out && git add -A
+          cd out && git init -q && git checkout -q -b diag-kxprops-out2 && git add -A
           git -c user.name=diag -c user.email=diag@x commit -qm out
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kxprops-out
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-kxprops-out2
