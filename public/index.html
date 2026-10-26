@@ -2112,6 +2112,17 @@ const LRShare = (() => {
     osMarket: { '': '', ml: 'ml', spread: 'sp', total: 'to' },
     osSort: { start: 'st', ev: 'ev', venues: 've', hold: 'ho' },
   };
+  // PROPS and ESPORTS: the sub-view, venue, sport or game, and their filters
+  const PROPS_DEF = { view: 'lines', book: '', sport: 'ALL', q: '', market: '', sort: 'ev', show: 'all', shopShow: 'all', anchor: '' };
+  const PROPS_VIEWS = ['lines', 'cards', 'shop', 'model', 'cbbmodel', 'cfbmodel', 'mlb', 'injury'];
+  const PROPS_BOOKS = ['underdog', 'prizepicks', 'sleeper', 'pick6'];
+  const PROPS_SPORTS = ['ALL', 'SPORTS', 'ESPORTS', 'NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
+  const PROPS_PICK = { sort: ['ev', 'gap', 'books', 'start', 'player'], show: ['all', 'multi', 'priced', 'sharp', 'gaps'], shopShow: ['all', 'middles', 'scorecard'] };
+  const ES_DEF = { mode: 'matches', game: 'ALL', hideLive: false, emuGame: 'LOL', league: 'ALL' };
+  const ES_MODES = ['matches', 'props', 'matchups'];
+  const ES_EMU = ['LOL', 'CS2', 'VAL', 'SOCCER'];
+  const cleanTag = v => (/^[A-Za-z0-9_]{1,12}$/.test(String(v ?? '')) ? String(v) : '');
+  const cleanLabel = v => String(v ?? '').replace(/[^\w .+&/()-]/g, '').trim().slice(0, 40);
   const KEY = { state: 'st', markets: 'mk', sort: 'so', league: 'lg', q: 'q', minEv: 'ev', minEdge: 'ed', maxAge: 'ag', hours: 'h', minSize: 'sz', method: 'dv', excluded: 'ex' };
   const MAX_Q = 40;
   const code = (k, v) => CODES[k][String(v ?? '')];
@@ -2175,6 +2186,30 @@ const LRShare = (() => {
         }
       }
     }
+    if (s.tab === 'props' && s.props) {
+      const o = { ...PROPS_DEF, ...s.props };
+      if (o.view !== 'lines' && PROPS_VIEWS.includes(o.view)) p.push(['pv', o.view]);
+      // GAME LINES' app: the Lines view always shows one (Underdog on a new device)
+      const bk = o.view === 'lines' ? (o.book && o.book !== 'underdog' ? o.book : '') : o.book;
+      if (bk && PROPS_BOOKS.includes(bk)) p.push(['bk', bk]);
+      if (o.sport !== 'ALL' && PROPS_SPORTS.includes(o.sport)) p.push(['sp', o.sport]);
+      if (cleanQ(o.q)) p.push(['q', cleanQ(o.q)]);
+      if (o.view === 'lines' && cleanLabel(o.market)) p.push(['mk', cleanLabel(o.market)]);
+      for (const [k, c] of [['sort', 'so'], ['show', 'sh'], ['shopShow', 'ss']]) if (o[k] !== PROPS_DEF[k] && PROPS_PICK[k].includes(o[k])) p.push([c, o[k]]);
+      if (o.anchor === 'none') p.push(['an', '1']);
+    }
+    if (s.tab === 'esports' && s.es) {
+      const o = { ...ES_DEF, ...s.es };
+      if (o.mode !== 'matches' && ES_MODES.includes(o.mode)) p.push(['em', o.mode]);
+      if (o.mode === 'matches') {
+        if (o.game !== 'ALL' && cleanTag(o.game)) p.push(['g', o.game]);
+        if (o.hideLive) p.push(['hl', '1']);
+      }
+      if (o.mode === 'matchups') {
+        if (o.emuGame !== 'LOL' && ES_EMU.includes(o.emuGame)) p.push(['eg', o.emuGame]);
+        if (o.emuGame !== 'SOCCER' && o.league !== 'ALL' && cleanLabel(o.league)) p.push(['lg', cleanLabel(o.league)]);
+      }
+    }
     if (cleanName(s.name)) p.push(['n', cleanName(s.name)]);
     return 'lr&' + p.map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2C/g, ',').replace(/%20/g, '+')}`).join('&');
   }
@@ -2189,6 +2224,28 @@ const LRShare = (() => {
     const tab = p.get('t') || '';
     if (!/^[a-z]{2,20}$/.test(tab) || (tabs && !tabs.includes(tab))) return null;
     const name = cleanName(p.get('n'));
+    if (tab === 'props') {
+      const o = { ...PROPS_DEF };
+      if (PROPS_VIEWS.includes(p.get('pv'))) o.view = p.get('pv');
+      if (PROPS_BOOKS.includes(p.get('bk'))) o.book = p.get('bk');
+      if (o.view === 'lines' && !o.book) o.book = 'underdog';
+      if (PROPS_SPORTS.includes(p.get('sp'))) o.sport = p.get('sp');
+      if (p.has('q')) o.q = cleanQ(p.get('q'));
+      if (o.view === 'lines' && p.has('mk')) o.market = cleanLabel(p.get('mk'));
+      for (const [k, c] of [['sort', 'so'], ['show', 'sh'], ['shopShow', 'ss']]) if (PROPS_PICK[k].includes(p.get(c))) o[k] = p.get(c);
+      if (p.get('an') === '1') o.anchor = 'none';
+      return name ? { tab, props: o, name } : { tab, props: o };
+    }
+    if (tab === 'esports') {
+      const o = { ...ES_DEF };
+      if (ES_MODES.includes(p.get('em'))) o.mode = p.get('em');
+      if (o.mode === 'matches') { if (cleanTag(p.get('g'))) o.game = p.get('g'); o.hideLive = p.get('hl') === '1'; }
+      if (o.mode === 'matchups') {
+        if (ES_EMU.includes(p.get('eg'))) o.emuGame = p.get('eg');
+        if (o.emuGame !== 'SOCCER' && cleanLabel(p.get('lg'))) o.league = cleanLabel(p.get('lg'));
+      }
+      return name ? { tab, es: o, name } : { tab, es: o };
+    }
     if (tab !== 'odds') return name ? { tab, name } : { tab };
     const mode = MODES.includes(p.get('m')) ? p.get('m') : 'lines';
     const s = { tab, mode };
@@ -2214,7 +2271,7 @@ const LRShare = (() => {
     }
     return s;
   }
-  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, VENUES, MAX_Q };
+  return { encode, decode, resolveFavorites, SHOP_DEF, OS_DEF, PROPS_DEF, ES_DEF, VENUES, MAX_Q };
 })();
 // LR_SHARE_END
 // a share link opened: read it once, then take it off the address bar so a
@@ -3690,6 +3747,11 @@ function showToast(msg, type='', ms = 3500) {
 // the screen as it is now: the tab, and on ODDS SCREEN its view and filters
 function lrShareState() {
   const tab = (document.querySelector('.page.active')?.id || 'page-odds').replace(/^page-/, '');
+  if (tab === 'props') {
+    const b = pbState;
+    return { tab, props: { view: b.view, book: b.view === 'lines' ? b.lineBook : b.book, sport: b.sport, q: b.q, market: b.market, sort: b.sort, show: b.show, shopShow: b.shopShow, anchor: b.anchor } };
+  }
+  if (tab === 'esports') return { tab, es: { mode: esmState.mode, game: esmState.game, hideLive: esmState.hideLive, emuGame: emuState.game, league: emuState.league } };
   if (tab !== 'odds' || !window.shpUi) return { tab };
   return {
     tab, mode: shpUi.opts.mode || 'lines',
@@ -3720,7 +3782,7 @@ async function lrCopyLink(url, what) {
 function lrShareScreen() {
   const st = lrShareState();
   const tabName = (layTabs?.[st.tab]?.textContent || st.tab).trim();
-  lrCopyLink(lrShareUrl(st), st.tab === 'odds' ? 'this ODDS SCREEN view and its filters' : `the ${tabName} tab`);
+  lrCopyLink(lrShareUrl(st), st.tab === 'odds' || st.props || st.es ? `this ${tabName} view and its filters` : `the ${tabName} tab`);
 }
 
 // ─── BEEP ─────────────────────────────────────────────────────────────────────
@@ -4775,6 +4837,14 @@ function pbSet(k, v) {
   if (k === 'book' && pbState.view === 'lines') { pbState.lineBook = v || 'underdog'; try { localStorage.setItem('lr_pb_lbook', pbState.lineBook); } catch {} pbState.market = ''; }
   else if (k === 'view') { try { localStorage.setItem('lr_pb_view', v); } catch {} pbState.market = ''; }
   pbState[k] = v; pbState.limit = 150; loadPropsBoard();
+}
+// a share link's PROPS view, app, sport and filters
+if (LR_SHARED?.props) {
+  const o = LR_SHARED.props;
+  Object.assign(pbState, { view: o.view, sport: o.sport, q: o.q, market: o.market, sort: o.sort, show: o.show, shopShow: o.shopShow, anchor: o.anchor });
+  if (o.view === 'lines') pbState.lineBook = o.book || 'underdog'; else pbState.book = o.book;
+  try { localStorage.setItem('lr_pb_view', pbState.view); localStorage.setItem('lr_pb_lbook', pbState.lineBook); } catch {}
+  for (const [id, v] of [['pbSearch', o.q], ['pbSort', o.sort], ['pbShow', o.show], ['apsShow', o.shopShow]]) { const el = document.getElementById(id); if (el) el.value = v; }
 }
 function pbSearchInput(v) { clearTimeout(pbTimer); pbTimer = setTimeout(() => pbSet('q', v), 250); }
 async function loadPropsBoard() {
@@ -6295,6 +6365,14 @@ const EMU_INTRO = {
   VAL: "Every VALORANT match Kalshi or Polymarket US lists, rated by <b>our own model</b>: team ratings from 8,000+ finished series since mid-2024 (vlr.gg results), how often favourites sweep, and a small head-to-head term, next to both venues' prices. Fewer results than CS2, so wider ranges.",
 };
 const emuState = { game: EMU_GAMES[lsGet('lr_emu_game')] ? lsGet('lr_emu_game') : 'LOL', data: null, at: 0, loading: false, league: lsGet('lr_emu_league') || 'ALL', open: new Set(), ratings: null };
+// a share link's ESPORTS view, game and league (SOCCER opens once the page is up)
+if (LR_SHARED?.es) {
+  const o = LR_SHARED.es;
+  Object.assign(esmState, { mode: o.mode, game: o.game, hideLive: o.hideLive });
+  lsSet('lr_es_mode', o.mode); lsSet('lr_esm_game', o.game); lsSet('lr_esm_live', o.hideLive ? '1' : '0');
+  if (o.emuGame !== 'SOCCER') { emuState.game = o.emuGame; emuState.league = o.league; lsSet('lr_emu_game', o.emuGame); lsSet('lr_emu_league', o.league); }
+  else setTimeout(() => setEmuGame('SOCCER'), 0);
+}
 function setEsMode(mode, fromTab) {
   esmState.mode = mode === 'props' ? 'props' : mode === 'matchups' ? 'matchups' : 'matches';
   lsSet('lr_es_mode', esmState.mode);

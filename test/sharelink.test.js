@@ -78,3 +78,22 @@ test('the app reads the link once, drops it from the address bar and skips the w
   for (const fn of ['lrShareScreen', 'lrCopyLink', 'shpPresetShare']) assert.ok(html.includes(`function ${fn}(`), fn);
   assert.ok(html.includes('id="linkBtn"') && html.includes('SHARE VIEW'));
 });
+
+test('PROPS links keep the view, app, sport and filters', () => {
+  const props = { view: 'cards', book: 'prizepicks', sport: 'NFL', q: 'Kelce', market: '', sort: 'gap', show: 'multi', shopShow: 'all', anchor: 'none' };
+  assert.deepEqual(round({ tab: 'props', props }), { tab: 'props', props });
+  // the Lines view always has an app: Underdog on a new device, left out of the link
+  assert.equal(S.encode({ tab: 'props', props: { ...S.PROPS_DEF, view: 'lines', book: 'underdog' } }), 'lr&t=props');
+  assert.deepEqual(round({ tab: 'props', props: { view: 'lines', book: 'sleeper', market: 'Pass Yards' } }).props, { ...plain(S.PROPS_DEF), book: 'sleeper', market: 'Pass Yards' });
+  assert.deepEqual(round({ tab: 'props', props: { view: 'shop', shopShow: 'scorecard' } }).props, { ...plain(S.PROPS_DEF), view: 'shop', shopShow: 'scorecard' });
+  // bad values fall back
+  assert.deepEqual(plain(S.decode('#lr&t=props&pv=evil&bk=fanduel&sp=<x>&so=drop&sh=x&ss=y&mk=%3Cscript%3E', TABS).props), { ...plain(S.PROPS_DEF), book: 'underdog', market: 'script' });
+});
+
+test('ESPORTS links keep the mode, game and league', () => {
+  assert.deepEqual(round({ tab: 'esports', es: { mode: 'matches', game: 'CS2', hideLive: true } }).es, { ...plain(S.ES_DEF), game: 'CS2', hideLive: true });
+  assert.deepEqual(round({ tab: 'esports', es: { mode: 'matchups', emuGame: 'VAL', league: 'VCT Americas' } }).es, { ...plain(S.ES_DEF), mode: 'matchups', emuGame: 'VAL', league: 'VCT Americas' });
+  assert.deepEqual(round({ tab: 'esports', es: { mode: 'matchups', emuGame: 'SOCCER', league: 'X' } }).es, { ...plain(S.ES_DEF), mode: 'matchups', emuGame: 'SOCCER' });
+  assert.equal(S.encode({ tab: 'esports', es: S.ES_DEF }), 'lr&t=esports');
+  assert.deepEqual(plain(S.decode('#lr&t=esports&em=x&g=../..&eg=DOTA', TABS).es), plain(S.ES_DEF));
+});
