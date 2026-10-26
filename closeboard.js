@@ -86,10 +86,13 @@ const KINDS = {
   // combos (pts+rebs, pts+asts, rebs+asts, steals+blocks) off FanDuel, BetRivers and Pinnacle's parts
   'props-combo': "Pick'em combos vs the books + Pinnacle's parts",
   'props-p6-combo': "Pick6 combos vs the books + Pinnacle's parts",
+  // esports Map 1 / Map 2 kill Unders where Pinnacle's map number sits under
+  // the app's lines summed, priced on our kill model (mapunders.js): research
+  'props-es-map-under': 'Esports map kill Unders (our model on Pinnacle\'s map number)',
   'bigmoney': 'Big money',
 };
 
-const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus']);
+const NO_SHARP_CLOSE = new Set(['alt-model', 'ev-consensus', 'props-es-map-under']);
 // An alt line's close is Kalshi's midpoint (a spread up to 6c wide) or a
 // sportsbook's own number at that rung; Pinnacle's two-way price is never at
 // the rung, only its curve. Scored and marked, but never proven, and never a
@@ -155,6 +158,18 @@ function propsPlay(b) {
 function propsExactPlay(b) {
   const p = propsPlay(b);
   return { ...p, kind: 'props-stale-exact', clv: b.closePinEv, exec: b.execOk === true ? b.closePinEv : null, p: b.closePinFair ?? null };
+}
+// a map kill Under (mapunders.js): nothing sharp prices a player's map kills,
+// so its close is our own model's fair at the leg's line (shown, never judged)
+function mapUnderPlay(b) {
+  const state = b.status === 'open' ? null : b.status === 'void' ? null : 'ok';
+  const graded = b.status === 'graded' && (b.outcome === 'win' || b.outcome === 'loss');
+  const fair = b.closeFair ?? b.signalFair ?? null;
+  const clv = fair != null && b.be > 0 ? r2((fair / b.be - 1) * 100) : null;
+  const profit = b.status === 'graded' && b.outcome ? (b.outcome === 'win' ? 1 / b.be - 1 : b.outcome === 'loss' ? -1 : 0) : null;
+  return { kind: 'props-es-map-under', book: propsVenue(b), cluster: `${b.sport}|${b.player}|${b.market}|${day(b.startTime)}|${b.gameId ?? b.matchTitle ?? ''}`,
+    state, clv, exec: null, win: graded ? b.outcome === 'win' : null, p: fair, d: b.signalDecimal ?? null,
+    bet: { clv: clv != null ? clv / 100 : null, exec: null, sized: null, profit, staked: profit != null ? 1 : 0 } };
 }
 function bigPlay(b) {
   const state = b.status === 'open' || b.status === 'void' ? null : sporttrack.closeState(b);
@@ -223,6 +238,7 @@ function playsOf(lists = {}, { since = 0 } = {}) {
     ...(lists.props || []).filter(keep).filter(b => KINDS[`props-${b.kind}`] && b.status !== 'void').map(withRef(propsPlay)),
     ...(lists.props || []).filter(keep).filter(b => STALE_PROPS.has(b.kind) && b.pinExact === true && b.status !== 'void').map(withRef(propsExactPlay)),
     ...(lists.bigMoney || []).filter(keep).filter(b => b.status !== 'void').map(withRef(bigPlay)),
+    ...(lists.esMapUnders || []).filter(keep).filter(b => b.status !== 'void').map(withRef(mapUnderPlay)),
   ];
 }
 function scoreboard(lists = {}, opts = {}) {
@@ -261,6 +277,7 @@ const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) /
 const american = d => (!(d > 1) ? null : d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
 function closeOn(p) {
   if (p.kind === 'props-stale-exact' || (PIN_OWN.has(p.book) && p.kind === 'ev')) return "Pinnacle's own close";
+  if (p.kind === 'props-es-map-under') return 'our kill model at the close (nothing sharp prices player map kills)';
   if (NO_SHARP_CLOSE.has(p.kind)) return 'no sharp close (our curve or soft books)';
   if (BOOK_CLOSE.has(p.kind)) return "the books' close (FanDuel, BetRivers)";
   if (CAPPED_KINDS.has(p.kind)) return "our curve at the venue's number where Pinnacle moved";

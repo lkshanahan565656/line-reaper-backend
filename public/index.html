@@ -2075,6 +2075,14 @@ body::before { display:none !important; }
     <button class="sport-chip" id="esModeMatches" onclick="setEsMode('matches')">MATCHES</button>
     <button class="sport-chip" id="esModeProps" onclick="setEsMode('props')">PLAYER PROPS</button>
     <button class="sport-chip" id="esModeMatchups" onclick="setEsMode('matchups')">MATCHUPS</button>
+    <button class="sport-chip" id="esModeMapUnders" onclick="setEsMode('mapunders')">MAP UNDERS</button>
+  </div>
+
+  <div id="esMapUndersPane" style="display:none">
+    <div class="esm-intro"><b>Research, not an edge.</b> Map 1 and Map 2 kill <b>Unders</b> on PrizePicks, Underdog and Sleeper where Pinnacle's number for the map (its team kills in LoL and Dota 2, its rounds in CS2 and Valorant) sits under what the app's own player lines add up to. A leg is a play only where <b>our kill model</b>, anchored on Pinnacle's map number, puts the Under past that app's break-even. Every leg is recorded and graded on the map's stats. Pre-registered 10-26; nothing alerts until a game and app reach 50 graded legs over 10+ matches and hold up by match.</div>
+    <div id="muRecord"><div class="empty-wrap"><div class="empty-big" style="font-size:18px">Loading the map unders record…</div></div></div>
+    <div id="muToday"></div>
+    <div class="esm-foot">Pinnacle posts no esports player props, so no sharp prices a player's map kills: the record is judged on results against each app's break-even (PrizePicks 3-pick Power 55%, Underdog and Sleeper at the Under's own payout), counted by match because one match's legs move together. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>
   </div>
 
   <div id="esMatchupsPane" style="display:none">
@@ -2260,7 +2268,7 @@ const LRShare = (() => {
   const PROPS_SPORTS = ['ALL', 'SPORTS', 'ESPORTS', 'NFL', 'CFB', 'NBA', 'WNBA', 'MLB', 'NHL', 'SOCCER', 'TENNIS', 'MMA', 'GOLF', 'CS', 'LOL', 'VAL', 'DOTA', 'R6'];
   const PROPS_PICK = { sort: ['ev', 'gap', 'books', 'start', 'player'], show: ['all', 'multi', 'priced', 'sharp', 'gaps'], shopShow: ['all', 'middles', 'scorecard'] };
   const ES_DEF = { mode: 'matches', game: 'ALL', hideLive: false, emuGame: 'LOL', league: 'ALL' };
-  const ES_MODES = ['matches', 'props', 'matchups'];
+  const ES_MODES = ['matches', 'props', 'matchups', 'mapunders'];
   const ES_EMU = ['LOL', 'CS2', 'VAL', 'SOCCER'];
   const cleanTag = v => (/^[A-Za-z0-9_]{1,12}$/.test(String(v ?? '')) ? String(v) : '');
   const cleanLabel = v => String(v ?? '').replace(/[^\w .+&/()-]/g, '').trim().slice(0, 40);
@@ -7229,17 +7237,21 @@ if (LR_SHARED?.es) {
   else setTimeout(() => setEmuGame('SOCCER'), 0);
 }
 function setEsMode(mode, fromTab) {
-  esmState.mode = mode === 'props' ? 'props' : mode === 'matchups' ? 'matchups' : 'matches';
+  esmState.mode = mode === 'props' ? 'props' : mode === 'matchups' ? 'matchups' : mode === 'mapunders' ? 'mapunders' : 'matches';
   lsSet('lr_es_mode', esmState.mode);
   document.getElementById('esModeMatches')?.classList.toggle('active', esmState.mode === 'matches');
   document.getElementById('esModeProps')?.classList.toggle('active', esmState.mode === 'props');
   document.getElementById('esModeMatchups')?.classList.toggle('active', esmState.mode === 'matchups');
+  document.getElementById('esModeMapUnders')?.classList.toggle('active', esmState.mode === 'mapunders');
+  const mu = document.getElementById('esMapUndersPane');
+  if (mu) mu.style.display = esmState.mode === 'mapunders' ? '' : 'none';
   const m = document.getElementById('esMatchesPane'), p = document.getElementById('esPropsPane'), u = document.getElementById('esMatchupsPane');
   if (m) m.style.display = esmState.mode === 'matches' ? '' : 'none';
   if (p) p.style.display = esmState.mode === 'props' ? '' : 'none';
   if (u) u.style.display = esmState.mode === 'matchups' ? '' : 'none';
   if (esmState.mode === 'props') loadEsports();
   else if (esmState.mode === 'matchups') { if (!emuState.data || Date.now() - emuState.at > 60e3) loadEsMatchups(); else renderEsMatchups(); }
+  else if (esmState.mode === 'mapunders') { if (!muState.data || Date.now() - muState.at > 60e3) loadMapUnders(); else renderMapUnders(); }
   else if (!esmState.data || Date.now() - esmState.at > 60e3 || !fromTab) loadEsMatches();
   else renderEsMatches();
 }
@@ -7534,6 +7546,61 @@ async function loadEmuRatings() {
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>League</th><th>Avg</th><th>Prior</th><th>Learned</th><th>Teams</th></tr>${(d.leagues || []).slice(0, 30).map(l => `<tr><td>${escEs(l.league)}</td><td>${l.avg}</td><td>${l.prior ?? '—'}</td><td>${l.learned >= 0 ? '+' : ''}${l.learned}</td><td>${l.teams}</td></tr>`).join('')}</table></div>
       <div class="esm-table-wrap"><table class="esm-table"><tr><th>#</th><th>Team</th><th>League</th><th>Rating</th><th>RD</th><th>Maps</th></tr>${teams.slice(0, 60).map((t, i) => `<tr><td>${i + 1}</td><td>${escEs(t.name)}</td><td>${escEs(t.home || '—')}</td><td>${t.rating}</td><td>${t.rd}</td><td>${t.maps}</td></tr>`).join('')}</table></div>`;
   } catch (e) { el.innerHTML = `<div class="esm-sub">Couldn't load ratings: ${escEs(lrErr(e))}</div>`; }
+}
+
+// ─── ESPORTS > MAP UNDERS: Pinnacle's map number under the apps' lines summed ──
+// /api/esports/map-unders (mapunders.js): the pre-registered record by game and
+// app, and today's app match-maps. Research: nothing here is a bet yet.
+const muState = { data: null, at: 0, loading: false, err: null };
+async function loadMapUnders() {
+  if (muState.loading) return;
+  muState.loading = true;
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/esports/map-unders`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    muState.data = await r.json();
+    muState.at = Date.now();
+    muState.err = null;
+  } catch (e) { muState.err = lrErr(e); }
+  finally { muState.loading = false; renderMapUnders(); }
+}
+setInterval(() => { if (document.getElementById('page-esports')?.classList.contains('active') && esmState.mode === 'mapunders') loadMapUnders(); }, 180e3);
+const muPct = x => (x == null ? '—' : `${(x * 100).toFixed(1)}%`);
+function muRecordHTML(rec, title, sub) {
+  const cells = rec?.cells || [];
+  const head = `<div class="es-hdr"><h3>${title}</h3><span class="sub">${sub}</span></div>`;
+  if (!cells.length) return head + `<div class="es-as-note" style="margin-bottom:12px">Nothing recorded yet. Rows open from 6 hours before a match once Pinnacle has a number for the map and the app lists 4+ players of both teams.</div>`;
+  const rows = cells.map(c => `<tr><td class="side">${escEs(c.gameLabel)} · ${escEs(c.appName)}</td><td>${c.graded} of ${rec.target}</td><td>${c.wins}-${c.losses}${c.pushes ? `-${c.pushes}` : ''}</td>`
+    + `<td>${muPct(c.hit)} vs ${muPct(c.be)}</td><td>${c.matches}</td><td>${c.zMatch ?? '—'}</td><td style="color:${c.units >= 0 ? '#34d399' : '#f87171'}">${c.units > 0 ? '+' : ''}${c.units}u</td>`
+    + `<td>${c.open}</td><td class="ref">${escEs(c.label)}${c.why ? `, ${escEs(c.why)}` : ''}</td></tr>`).join('');
+  return head + `<div class="os-scroll"><table class="os-tbl"><tr><th class="side">GAME · APP</th><th>GRADED</th><th>W-L</th><th>HIT VS BREAK-EVEN</th><th>MATCHES</th><th>Z BY MATCH</th><th>UNITS AT BREAK-EVEN</th><th>PENDING</th><th>LABEL</th></tr>${rows}</table></div>`;
+}
+function muGroupHTML(g) {
+  const legs = (g.legs || []).map(l => `<tr><td class="side">${escEs(l.player)} <span style="color:#64748b">${escEs(l.team || '')}</span></td><td>U ${l.line}</td><td>${muPct(l.be)}</td><td>${muPct(l.fair)}</td>`
+    + `<td style="color:${l.edge > 0 ? '#34d399' : '#94a3b8'}">${l.edge == null ? 'no model' : `${l.edge > 0 ? '+' : ''}${(l.edge * 100).toFixed(1)} pts`}</td><td>${l.play ? '<b style="color:#34d399">RECORDED</b>' : '—'}</td></tr>`).join('');
+  const a = g.anchor || {};
+  return `<div class="esm-card${g.under ? ' edge' : ''}"><div class="esm-top"><span class="esm-game">${escEs(g.gameLabel)}</span><span class="emu-conf ${g.under ? 'ok' : 'insufficient'}">${g.under ? 'PINNACLE UNDER THE APP' : 'PINNACLE NOT UNDER'}</span><span>${escEs(g.appName)} · Map ${g.map}</span><span class="esm-time">${esmWhen(g.start)}</span></div>`
+    + `<div class="esm-intro" style="margin:8px 0 6px">${escEs(g.match)}${g.league ? ` <span style="color:#64748b">${escEs(g.league)}</span>` : ''}: the app's lines add up to <b>${g.appSum}</b> kills (${g.teams.map(t => t.n).join(' + ')} players, scaled to five a team); Pinnacle's ${escEs(a.src || 'number')} says <b>${a.kills}</b>${a.rounds ? ` (${a.rounds} rounds)` : ''}, ${g.gapPct > 0 ? '+' : ''}${g.gapPct}%.</div>`
+    + `<div class="os-scroll"><table class="os-tbl"><tr><th class="side">PLAYER</th><th>LINE</th><th>BREAK-EVEN</th><th>OUR FAIR</th><th>EDGE</th><th>RECORD</th></tr>${legs}</table></div></div>`;
+}
+function renderMapUnders() {
+  const recEl = document.getElementById('muRecord'), todayEl = document.getElementById('muToday');
+  if (!recEl || !todayEl) return;
+  const d = muState.data;
+  if (!d) {
+    recEl.innerHTML = muState.err ? `<div class="empty-wrap"><div class="empty-big" style="font-size:16px">Couldn't load map unders</div><div class="empty-sub">${escEs(muState.err)}</div></div>`
+      : `<div class="empty-wrap"><div class="empty-big" style="font-size:18px">Loading the map unders record…</div></div>`;
+    todayEl.innerHTML = '';
+    return;
+  }
+  recEl.innerHTML = muRecordHTML(d.record?.model, 'THE PLAY: OUR MODEL PAST BREAK-EVEN', 'Flagged Unders our kill model prices past the app\'s break-even by a point. The kind that is judged.')
+    + muRecordHTML(d.record?.rule, 'EVERY FLAGGED UNDER', 'Every Under in a match-map where Pinnacle sits under the app\'s lines, model or not. Reported, never judged.');
+  const groups = (d.now?.groups || []);
+  const flagged = groups.filter(g => g.under);
+  const off = d.on === false ? '<div class="es-as-note">Map unders are switched off on this server.</div>' : '';
+  const when = d.now?.at ? `read ${esmWhen(d.now.at)}` : 'not read yet';
+  todayEl.innerHTML = `<div class="es-hdr"><h3>UPCOMING MATCH-MAPS</h3><span class="sub">${groups.length} app match-map${groups.length === 1 ? '' : 's'} with 4+ players a team and a Pinnacle number, ${flagged.length} with Pinnacle under the app (${when}).</span></div>${off}`
+    + (groups.length ? groups.slice(0, 40).map(muGroupHTML).join('') : `<div class="es-as-note">No upcoming match has Pinnacle's map number and 4+ app lines a team right now. Pinnacle often posts map numbers only a few hours before the start.</div>`);
 }
 
 // ─── MATCHUPS > SOCCER: our soccer match model beside Kalshi, PM US, Pinnacle ──
