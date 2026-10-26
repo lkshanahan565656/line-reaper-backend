@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Developers: public API and widgets | Line Reaper</title>
+<meta name="description" content="Line Reaper's read-only JSON API and embeddable widgets: best prices above the fair, line moves, the public record, league boards and feed status.">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/developers">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+main { max-width:900px; }
+.top-in { max-width:900px; }
+pre { background:#05070b; border:1px solid var(--border); border-radius:8px; padding:10px 12px; overflow:auto; max-width:100%; max-height:340px; font:12px/1.5 var(--mono); color:#cbd5e1; margin:0 0 12px; white-space:pre; }
+code { font:13px var(--mono); color:#cbd5e1; overflow-wrap:anywhere; }
+.ep { border:1px solid var(--border); border-radius:10px; background:var(--card); padding:12px 14px; margin:0 0 16px; min-width:0; }
+.ep h3 { margin:0 0 4px; font-size:16px; }
+.ep .path { font:600 13px var(--mono); color:var(--green2); overflow-wrap:anywhere; margin:0 0 6px; }
+.ep table td:first-child { font-family:var(--mono); font-size:12px; white-space:nowrap; }
+.ep table td { overflow-wrap:anywhere; }
+.btn { font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); background:transparent; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; cursor:pointer; }
+.btn:hover { border-color:var(--green2); }
+.btn.warn { color:#fca5a5; border-color:rgba(252,165,165,.4); }
+.keybox { border:1px solid var(--border); border-radius:10px; background:var(--card); padding:14px 16px; margin:0 0 18px; }
+.keybox input { width:100%; max-width:320px; background:#05070b; color:var(--text); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; font:14px var(--mono); }
+.keybox label { display:block; font:600 10px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:0 0 4px; }
+.keyout { font:600 13px var(--mono); color:var(--text); background:#05070b; border:1px dashed var(--green); border-radius:6px; padding:8px 10px; overflow-wrap:anywhere; margin:8px 0; }
+.msg { font-size:13px; color:var(--text2); margin:8px 0 0; }
+.msg.err { color:#fca5a5; }
+.row2 { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; }
+.wg { border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin:0 0 18px; min-width:0; }
+.wg iframe { display:block; width:100%; border:0; background:#080b10; margin:0 0 10px; }
+.rules li { color:var(--text2); }
+.h3s { font:600 11px var(--mono); letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin:10px 0 4px; overflow-wrap:anywhere; }
+.h3s code { text-transform:none; letter-spacing:0; font-size:11px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>
+<main>
+<p class="kicker">Developers</p>
+<h1>Public API and widgets</h1>
+<p class="lead">The same numbers the app shows, as JSON and as widgets for your own page: best prices above the fair, line moves, the public record, league boards and feed status. Read-only, and the same for everyone.</p>
+<ul class="rules">
+<li>Nothing here places a bet, and nothing is sized or set up per person: every caller gets the same data.</li>
+<li>Every row carries the label the app gives it. PROVEN appears only where RESULTS proves it (50 graded at one venue, CLV t of 2 against Pinnacle's close); everything else is a LEAD or research.</li>
+<li>Prices are what each feed showed at its last read. Check the price at the venue before you bet.</li>
+</ul>
+
+<h2 id="key">Get a key</h2>
+<div class="keybox">
+<form id="mk" class="row2" autocomplete="off"><div style="flex:1 1 220px;min-width:0"><label for="kname">Name it (for you; kept with the key)</label><input id="kname" name="name" maxlength="40" placeholder="my site"></div><button class="btn" type="submit">MAKE A KEY</button></form>
+<div id="mkOut" class="msg">One key is enough for a site. It is shown once: copy it somewhere safe. We keep only a hash of it.</div>
+<div id="mine" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+<div class="h3s">The key saved in this browser</div>
+<div id="mineInfo" class="msg"></div>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="mineUse">CHECK USAGE</button><button class="btn warn" type="button" id="mineRevoke">REVOKE THIS KEY</button><button class="btn" type="button" id="mineForget">FORGET IT HERE</button></div>
+</div>
+</div>
+
+<h2 id="auth">Using it</h2>
+<p>Send the key in an <code>X-API-Key</code> header (or as <code>?key=</code> where a header is awkward). Any site may call it from a browser: CORS is open to every origin.</p>
+<pre>curl -H "X-API-Key: lr_…" https://line-reaper-backend-production.up.railway.app/api/v1/best-prices?league=nfl</pre>
+<ul>
+<li><b>Limits:</b> 60 calls a minute and 5,000 a day (UTC) per key. Every answer says where you are in <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code> (seconds) and <code>X-RateLimit-Daily-Remaining</code>. Over the limit is a 429 with <code>Retry-After</code>. Counts restart when the server redeploys.</li>
+<li><b>Caching:</b> each answer has an <code>ETag</code>. Send it back in <code>If-None-Match</code> and an unchanged answer is a 304 with no body. Most data changes about once a minute.</li>
+<li><b>Errors</b> are JSON: <code>{"error":{"code":"…","message":"…"}}</code> with 400 (bad parameter), 401 (no key or an unknown one), 404 and 429.</li>
+<li><b>New keys:</b> at most 5 an hour from one address.</li>
+<li><b>Versioning:</b> fields may be added to v1; none are renamed or removed. A change that would break a caller becomes v2.</li>
+<li><b>Widgets</b> need no key and allow 120 loads a minute per visitor address.</li>
+</ul>
+
+<h2 id="endpoints">Endpoints</h2>
+<p class="note">Every example below is the live answer at the time this page was built, cut to its first rows.</p>
+<section class="ep" id="ep--api-v1-best-prices">
+<h3>Best prices above the fair</h3>
+<div class="path">GET /api/v1/best-prices</div>
+<p style="color:var(--text2);font-size:14px">Each side&#39;s best bettable price that sits above Pinnacle&#39;s no-vig fair, after the venue&#39;s fee, with the second-best price, what an exchange book fills, and the label the app gives it (PROVEN or LEAD).</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>league</td><td>one league key, e.g. nfl, nba, nhl, ncaaf</td></tr><tr><td>market</td><td>moneyline, spread, total or player_prop (comma list)</td></tr><tr><td>venue</td><td>only this venue (e.g. kalshi, betrivers)</td></tr><tr><td>minEv</td><td>minimum EV in percent after fees, default 0</td></tr><tr><td>minSize</td><td>dollars every exchange price must fill, fee in</td></tr><tr><td>hours</td><td>games starting within this many hours (default 48)</td></tr><tr><td>state</td><td>two-letter US state code, e.g. TX: only venues a source says a resident can use</td></tr><tr><td>limit</td><td>1 to 200, default 50</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/best-prices?limit=2</code>, read 23:27 UTC</div><pre data-ex="/api/v1/best-prices">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:21.926Z&quot;,
+  &quot;builtAt&quot;: &quot;2026-10-26T23:26:52.599Z&quot;,
+  &quot;stale&quot;: false,
+  &quot;fairFrom&quot;: &quot;Pinnacle&#39;s no-vig price (power method); EV is after each venue&#39;s fee&quot;,
+  &quot;labels&quot;: {
+    &quot;proven&quot;: &quot;PROVEN: the venue&#39;s main lines are proven on RESULTS&quot;,
+    &quot;lead&quot;: &quot;LEAD: research, not a proven edge&quot;
+  },
+  &quot;locked&quot;: false,
+  &quot;count&quot;: 2,
+  &quot;rows&quot;: [
+    {
+      &quot;id&quot;: &quot;pin-1639261572|prop|points|davionmitchell|10.5|over&quot;,
+      &quot;market&quot;: &quot;pin-1639261572|prop|points|davionmitchell|10.5&quot;,
+      &quot;event&quot;: &quot;Dallas Mavericks @ Miami Heat&quot;,
+      &quot;sport&quot;: &quot;nba&quot;,
+      &quot;league&quot;: &quot;nba&quot;,
+      &quot;start&quot;: &quot;2026-10-26T23:40:00.000Z&quot;,
+      &quot;marketType&quot;: &quot;player_prop&quot;,
+      &quot;marketName&quot;: &quot;points&quot;,
+      &quot;line&quot;: 10.5,
+      &quot;player&quot;: &quot;Davion Mitchell&quot;,
+      &quot;selection&quot;: &quot;Davion Mitchell Over 10.5&quot;,
+      &quot;venue&quot;: &quot;fanduel&quot;,
+      &quot;venueName&quot;: &quot;FanDuel&quot;,
+      &quot;price&quot;: {
+        &quot;american&quot;: -115,
+        &quot;decimalAfterFees&quot;: 1.8696
+      },
+      &quot;fair&quot;: {
+        &quot;prob&quot;: 0.5627,
+        &quot;american&quot;: -129,
+        &quot;source&quot;: &quot;pinnacle&quot;
+      },
+      &quot;evPct&quot;: 5.2,
+      &quot;edgePts&quot;: 2.78,
+      &quot;secondBest&quot;: {
+        &quot;venue&quot;: &quot;betmgm&quot;,
+        &quot;venueName&quot;: &quot;BetMGM&quot;,
+        &quot;american&quot;: -120,
+        &quot;decimalAfterFees&quot;: 1.8333
+      },
+      &quot;fill&quot;: {
+        &quot;status&quot;: &quot;not published&quot;,
+        &quot;note&quot;: &quot;Sportsbooks do not publish limits.&quot;
+      },
+      &quot;access&quot;: &quot;direct&quot;,
+      &quot;altLine&quot;: false,
+      &quot;freshness&quot;: &quot;live&quot;,
+      &quot;confidence&quot;: 0.86,
+      &quot;label&quot;: &quot;lead&quot;,
+      &quot;labelText&quot;: &quot;LEAD: research, not a proven edge. A price above the fair has not beaten the close at this venue yet.&quot;
+    },
+    {
+      &quot;id&quot;: &quot;pin-1638781277|prop|rebounds|adaymara|4.5|under&quot;,
+      &quot;market&quot;: &quot;pin-1638781277|prop|rebounds|adaymara|4.5&quot;,
+      &quot;event&quot;: &quot;Phoenix Suns @ Oklahoma City Thunder&quot;,
+      &quot;sport&quot;: &quot;nba&quot;,
+      &quot;league&quot;: &quot;nba&quot;,
+      &quot;start&quot;: &quot;2026-10-27T00:10:00.000Z&quot;,
+      &quot;marketType&quot;: &quot;player_prop&quot;,
+      &quot;marketName&quot;: &quot;rebounds&quot;,
+      &quot;line&quot;: 4.5,
+      &quot;player&quot;: &quot;Aday Mara&quot;,
+      &quot;selection&quot;: &quot;Aday Mara Under 4.5&quot;,
+      &quot;venue&quot;: &quot;fanduel&quot;,
+      &quot;venueName&quot;: &quot;FanDuel&quot;,
+      &quot;price&quot;: {
+        &quot;american&quot;: 116,
+        &quot;decimalAfterFees&quot;: 2.16
+      },
+      &quot;fair&quot;: {
+        &quot;prob&quot;: 0.481,
+        &quot;american&quot;: 108,
+        &quot;source&quot;: &quot;pinnacle&quot;
+      },
+      &quot;evPct&quot;: 3.9,
+      &quot;edgePts&quot;: 1.8,
+      &quot;secondBest&quot;: {
+        &quot;venue&quot;: &quot;caesars&quot;,
+        &quot;venueName&quot;: &quot;Caesars&quot;,
+        &quot;american&quot;: 104,
+        &quot;decimalAfterFees&quot;: 2.04
+      },
+      &quot;fill&quot;: {
+        &quot;status&quot;: &quot;not published&quot;,
+        &quot;note&quot;: &quot;Sportsbooks do not publish limits.&quot;
+      },
+      &quot;access&quot;: &quot;direct&quot;,
+      &quot;altLine&quot;: false,
+      &quot;freshness&quot;: &quot;live&quot;,
+      &quot;confidence&quot;: 0.86,
+      &quot;label&quot;: &quot;lead&quot;,
+      &quot;labelText&quot;: &quot;LEAD: research, not a proven edge. A price above the fair has not beaten the close at this venue yet.&quot;
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/best-prices?limit=2">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-moves">
+<h3>Biggest line moves</h3>
+<div class="path">GET /api/v1/moves</div>
+<p style="color:var(--text2);font-size:14px">Today&#39;s largest moves at each venue since we first saw the market, and whether every other venue followed. Information, not an edge.</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>window</td><td>open (since first seen), 3h or 1h</td></tr><tr><td>type</td><td>price or line</td></tr><tr><td>league</td><td>one league key</td></tr><tr><td>kind</td><td>game or prop</td></tr><tr><td>limit</td><td>1 to 200, default 50</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/moves?limit=2</code>, read 23:27 UTC</div><pre data-ex="/api/v1/moves">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:20.620Z&quot;,
+  &quot;window&quot;: &quot;open&quot;,
+  &quot;type&quot;: &quot;price&quot;,
+  &quot;league&quot;: null,
+  &quot;kind&quot;: null,
+  &quot;linesAt&quot;: &quot;2026-10-26T23:26:52.001Z&quot;,
+  &quot;stale&quot;: false,
+  &quot;total&quot;: 300,
+  &quot;rows&quot;: [
+    {
+      &quot;id&quot;: &quot;NBA|kelelware|threes|2026-10-26|price|underdog|0.5&quot;,
+      &quot;kind&quot;: &quot;prop&quot;,
+      &quot;type&quot;: &quot;price&quot;,
+      &quot;league&quot;: &quot;nba&quot;,
+      &quot;leagueLabel&quot;: &quot;NBA&quot;,
+      &quot;gameId&quot;: null,
+      &quot;event&quot;: &quot;IND @ MIL&quot;,
+      &quot;start&quot;: &quot;2026-10-27T00:00:00Z&quot;,
+      &quot;market&quot;: &quot;threes&quot;,
+      &quot;marketLabel&quot;: &quot;3-Pointers Made&quot;,
+      &quot;side&quot;: &quot;Kel&#39;el Ware Under 0.5 3-Pointers Made&quot;,
+      &quot;venue&quot;: &quot;underdog&quot;,
+      &quot;venueName&quot;: &quot;Underdog&quot;,
+      &quot;from&quot;: 0.3606,
+      &quot;to&quot;: 0.5,
+      &quot;move&quot;: 13.9,
+      &quot;unit&quot;: &quot;percentage points of win chance&quot;,
+      &quot;since&quot;: &quot;2026-10-26T23:00:43.940Z&quot;,
+      &quot;now&quot;: 0.5,
+      &quot;followers&quot;: [
+        {
+          &quot;venue&quot;: &quot;sleeper&quot;,
+          &quot;venueName&quot;: &quot;Sleeper&quot;,
+          &quot;status&quot;: &quot;old&quot;,
+          &quot;american&quot;: null,
+          &quot;point&quot;: null
+        }
+      ]
+    },
+    {
+      &quot;id&quot;: &quot;NBA|alexcaruso|threes|2026-10-26|price|underdog|1.5&quot;,
+      &quot;kind&quot;: &quot;prop&quot;,
+      &quot;type&quot;: &quot;price&quot;,
+      &quot;league&quot;: &quot;nba&quot;,
+      &quot;leagueLabel&quot;: &quot;NBA&quot;,
+      &quot;gameId&quot;: null,
+      &quot;event&quot;: &quot;PHX @ OKC&quot;,
+      &quot;start&quot;: &quot;2026-10-27T00:00:00Z&quot;,
+      &quot;market&quot;: &quot;threes&quot;,
+      &quot;marketLabel&quot;: &quot;3-Pointers Made&quot;,
+      &quot;side&quot;: &quot;Alex Caruso Under 1.5 3-Pointers Made&quot;,
+      &quot;venue&quot;: &quot;underdog&quot;,
+      &quot;venueName&quot;: &quot;Underdog&quot;,
+      &quot;from&quot;: 0.4643,
+      &quot;to&quot;: 0.5714,
+      &quot;move&quot;: 10.7,
+      &quot;unit&quot;: &quot;percentage points of win chance&quot;,
+      &quot;since&quot;: &quot;2026-10-26T23:00:43.940Z&quot;,
+      &quot;now&quot;: 0.5714,
+      &quot;followers&quot;: [
+        {
+          &quot;venue&quot;: &quot;prizepicks&quot;,
+          &quot;venueName&quot;: &quot;PrizePicks&quot;,
+          &quot;status&quot;: &quot;old&quot;,
+          &quot;american&quot;: null,
+          &quot;point&quot;: null
+        },
+        {
+          &quot;venue&quot;: &quot;fanduel&quot;,
+          &quot;venueName&quot;: &quot;FanDuel&quot;,
+          &quot;status&quot;: &quot;moved&quot;,
+          &quot;american&quot;: null,
+          &quot;point&quot;: null
+        }
+      ]
+    }
+  ],
+  &quot;note&quot;: &quot;A move is information, not a proven edge. Venues still at the old number have graded as no edge against the close.&quot;
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/moves?limit=2">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-moves-gameId-">
+<h3>One game&#39;s line history</h3>
+<div class="path">GET /api/v1/moves/{gameId}</div>
+<p style="color:var(--text2);font-size:14px">Every side&#39;s fair and each venue&#39;s price over time, a point when anything moved (at most every 4 minutes) or every 30 minutes. Kept until 6 hours after the start.</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>market</td><td>ml, spread or total (all when left out)</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/moves/pin-1639275348?market=ml</code>, read 23:27 UTC</div><pre data-ex="/api/v1/moves/{gameId}">{
+  &quot;gameId&quot;: &quot;pin-1639275348&quot;,
+  &quot;game&quot;: {
+    &quot;event&quot;: &quot;Caroline Werner @ Elsa Jacquemot&quot;,
+    &quot;league&quot;: &quot;tennis&quot;,
+    &quot;leagueLabel&quot;: &quot;Tennis&quot;,
+    &quot;start&quot;: &quot;2026-10-28T11:00:00.000Z&quot;
+  },
+  &quot;fairShown&quot;: true,
+  &quot;series&quot;: [
+    {
+      &quot;id&quot;: &quot;pin-1639275348|ml|Elsa Jacquemot&quot;,
+      &quot;market&quot;: &quot;ml&quot;,
+      &quot;side&quot;: &quot;Elsa Jacquemot&quot;,
+      &quot;start&quot;: &quot;2026-10-28T11:00:00.000Z&quot;,
+      &quot;points&quot;: [
+        {
+          &quot;t&quot;: &quot;2026-10-26T17:06:05.592Z&quot;,
+          &quot;point&quot;: null,
+          &quot;fair&quot;: 0.6861,
+          &quot;prices&quot;: {
+            &quot;pinnacle&quot;: -240,
+            &quot;polymarketus&quot;: -250
+          }
+        },
+        {
+          &quot;t&quot;: &quot;2026-10-26T17:10:13.909Z&quot;,
+          &quot;point&quot;: null,
+          &quot;fair&quot;: 0.6861,
+          &quot;prices&quot;: {
+            &quot;pinnacle&quot;: -240,
+            &quot;polymarketus&quot;: -239
+          }
+        }
+      ]
+    },
+    {
+      &quot;id&quot;: &quot;pin-1639275348|ml|Caroline Werner&quot;,
+      &quot;market&quot;: &quot;ml&quot;,
+      &quot;side&quot;: &quot;Caroline Werner&quot;,
+      &quot;start&quot;: &quot;2026-10-28T11:00:00.000Z&quot;,
+      &quot;points&quot;: [
+        {
+          &quot;t&quot;: &quot;2026-10-26T17:06:05.592Z&quot;,
+          &quot;point&quot;: null,
+          &quot;fair&quot;: 0.3139,
+          &quot;prices&quot;: {
+            &quot;pinnacle&quot;: 192,
+            &quot;polymarketus&quot;: 208
+          }
+        },
+        {
+          &quot;t&quot;: &quot;2026-10-26T17:10:13.909Z&quot;,
+          &quot;point&quot;: null,
+          &quot;fair&quot;: 0.3139,
+          &quot;prices&quot;: {
+            &quot;pinnacle&quot;: 192,
+            &quot;polymarketus&quot;: 198
+          }
+        }
+      ]
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/moves/pin-1639275348?market=ml">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-leagues">
+<h3>Leagues on the board</h3>
+<div class="path">GET /api/v1/leagues</div>
+<p style="color:var(--text2);font-size:14px">Every league with games in the next 48 hours, and how many.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/leagues</code>, read 23:27 UTC</div><pre data-ex="/api/v1/leagues">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.087Z&quot;,
+  &quot;linesAt&quot;: &quot;2026-10-26T23:26:52.001Z&quot;,
+  &quot;stale&quot;: false,
+  &quot;leagues&quot;: [
+    {
+      &quot;key&quot;: &quot;tennis&quot;,
+      &quot;label&quot;: &quot;Tennis&quot;,
+      &quot;games&quot;: 95,
+      &quot;board&quot;: &quot;/api/v1/leagues/tennis&quot;
+    },
+    {
+      &quot;key&quot;: &quot;nhl&quot;,
+      &quot;label&quot;: &quot;NHL&quot;,
+      &quot;games&quot;: 12,
+      &quot;board&quot;: &quot;/api/v1/leagues/nhl&quot;
+    },
+    {
+      &quot;key&quot;: &quot;seriea&quot;,
+      &quot;label&quot;: &quot;Serie A&quot;,
+      &quot;games&quot;: 8,
+      &quot;board&quot;: &quot;/api/v1/leagues/seriea&quot;
+    },
+    {
+      &quot;key&quot;: &quot;khl&quot;,
+      &quot;label&quot;: &quot;KHL&quot;,
+      &quot;games&quot;: 7,
+      &quot;board&quot;: &quot;/api/v1/leagues/khl&quot;
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/leagues">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-leagues-league-">
+<h3>A league&#39;s board</h3>
+<div class="path">GET /api/v1/leagues/{league}</div>
+<p style="color:var(--text2);font-size:14px">Every game in the league in the next 48 hours: moneyline, spread and total, each venue&#39;s price, the fair and the best price.</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>q</td><td>team name search</td></tr><tr><td>state</td><td>two-letter US state code, e.g. TX: only venues a source says a resident can use</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/leagues/tennis</code>, read 23:27 UTC</div><pre data-ex="/api/v1/leagues/{league}">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.090Z&quot;,
+  &quot;league&quot;: &quot;tennis&quot;,
+  &quot;linesAt&quot;: &quot;2026-10-26T23:26:52.001Z&quot;,
+  &quot;stale&quot;: false,
+  &quot;fairShown&quot;: true,
+  &quot;venues&quot;: [
+    {
+      &quot;key&quot;: &quot;pinnacle&quot;,
+      &quot;name&quot;: &quot;Pinnacle&quot;,
+      &quot;ref&quot;: true,
+      &quot;secondHand&quot;: false,
+      &quot;tx&quot;: false
+    }
+  ],
+  &quot;count&quot;: 95,
+  &quot;games&quot;: [
+    {
+      &quot;id&quot;: &quot;pin-1639277991&quot;,
+      &quot;league&quot;: &quot;tennis&quot;,
+      &quot;leagueLabel&quot;: &quot;Tennis&quot;,
+      &quot;start&quot;: &quot;2026-10-27T00:00:00.000Z&quot;,
+      &quot;home&quot;: &quot;Andres Martin&quot;,
+      &quot;away&quot;: &quot;Kaylan Bigun&quot;,
+      &quot;venues&quot;: 2,
+      &quot;markets&quot;: [
+        {
+          &quot;market&quot;: &quot;ml&quot;,
+          &quot;label&quot;: &quot;Moneyline&quot;,
+          &quot;point&quot;: null,
+          &quot;bestHold&quot;: 0.0434,
+          &quot;sides&quot;: [
+            {
+              &quot;side&quot;: &quot;Andres Martin&quot;,
+              &quot;label&quot;: &quot;Andres Martin&quot;,
+              &quot;fair&quot;: {
+                &quot;prob&quot;: 0.5703,
+                &quot;american&quot;: -133
+              },
+              &quot;best&quot;: {
+                &quot;venue&quot;: &quot;polymarketus&quot;,
+                &quot;venueName&quot;: &quot;Polymarket US&quot;,
+                &quot;american&quot;: -142,
+                &quot;evPct&quot;: -2.8
+              },
+              &quot;prices&quot;: [
+                {
+                  &quot;venue&quot;: &quot;pinnacle&quot;,
+                  &quot;venueName&quot;: &quot;Pinnacle&quot;,
+                  &quot;american&quot;: -142,
+                  &quot;decimal&quot;: 1.7042,
+                  &quot;point&quot;: null,
+                  &quot;lineDiffers&quot;: false,
+                  &quot;reference&quot;: true,
+                  &quot;secondHand&quot;: false,
+                  &quot;url&quot;: null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  &quot;note&quot;: &quot;Fair is Pinnacle&#39;s no-vig price. Reference venues (Pinnacle, Matchbook, Polymarket global) are prices to read, not places to bet from the US; second-hand prices are copies, never a play alone.&quot;
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/leagues/tennis">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-record">
+<h3>The public record (RESULTS)</h3>
+<div class="path">GET /api/v1/record</div>
+<p style="color:var(--text2);font-size:14px">Every kind and venue on the close scoreboard with its label: proven only on the strict rule, everything else says why not.</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>days</td><td>only flags from the last N days</td></tr><tr><td>state</td><td>two-letter US state code, e.g. TX: only venues a source says a resident can use</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/record</code>, read 23:27 UTC</div><pre data-ex="/api/v1/record">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.091Z&quot;,
+  &quot;rule&quot;: {
+    &quot;graded&quot;: 50,
+    &quot;clvT&quot;: 2,
+    &quot;close&quot;: &quot;Pinnacle&#39;s no-vig close&quot;,
+    &quot;kinds&quot;: [
+      &quot;ev&quot;,
+      &quot;props-ev&quot;
+    ],
+    &quot;shortfallSd&quot;: 1.5,
+    &quot;text&quot;: &quot;A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pinnacle&#39;s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick&#39;em kinds only sharp-price legs.&quot;
+  },
+  &quot;overall&quot;: {
+    &quot;graded&quot;: 6018,
+    &quot;beatPct&quot;: 67.85,
+    &quot;clv&quot;: 1.57,
+    &quot;clvT&quot;: 17.09,
+    &quot;label&quot;: &quot;pooled, never proven&quot;
+  },
+  &quot;proven&quot;: 1,
+  &quot;rows&quot;: [
+    {
+      &quot;kind&quot;: &quot;ev&quot;,
+      &quot;kindLabel&quot;: &quot;Main lines vs the sharp fair&quot;,
+      &quot;book&quot;: &quot;draftkings&quot;,
+      &quot;bookName&quot;: &quot;DraftKings&quot;,
+      &quot;relayed&quot;: true,
+      &quot;recorded&quot;: 1381,
+      &quot;open&quot;: 121,
+      &quot;graded&quot;: 722,
+      &quot;target&quot;: 50,
+      &quot;staleClose&quot;: 237,
+      &quot;unverified&quot;: 0,
+      &quot;beatPct&quot;: 73.27,
+      &quot;clv&quot;: 1.77,
+      &quot;clvT&quot;: 9.84,
+      &quot;clv2min&quot;: 1.63,
+      &quot;clv2minN&quot;: 703,
+      &quot;wins&quot;: 58,
+      &quot;losses&quot;: 44,
+      &quot;units&quot;: 2.63,
+      &quot;expUnits&quot;: 0.8,
+      &quot;profitShown&quot;: false,
+      &quot;texas&quot;: false,
+      &quot;label&quot;: &quot;copied book&quot;,
+      &quot;why&quot;: &quot;Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;ev&quot;,
+      &quot;kindLabel&quot;: &quot;Main lines vs the sharp fair&quot;,
+      &quot;book&quot;: &quot;bet365&quot;,
+      &quot;bookName&quot;: &quot;bet365&quot;,
+      &quot;relayed&quot;: true,
+      &quot;recorded&quot;: 1091,
+      &quot;open&quot;: 100,
+      &quot;graded&quot;: 527,
+      &quot;target&quot;: 50,
+      &quot;staleClose&quot;: 233,
+      &quot;unverified&quot;: 0,
+      &quot;beatPct&quot;: 73.43,
+      &quot;clv&quot;: 2.61,
+      &quot;clvT&quot;: 11.7,
+      &quot;clv2min&quot;: 2.62,
+      &quot;clv2minN&quot;: 522,
+      &quot;wins&quot;: 51,
+      &quot;losses&quot;: 41,
+      &quot;units&quot;: 4.73,
+      &quot;expUnits&quot;: 0.23,
+      &quot;profitShown&quot;: false,
+      &quot;texas&quot;: false,
+      &quot;label&quot;: &quot;copied book&quot;,
+      &quot;why&quot;: &quot;Read through Action Network&#39;s copy, never at the book itself, so it cannot be proven.&quot;
+    }
+  ],
+  &quot;labels&quot;: [
+    {
+      &quot;tool&quot;: &quot;Exchange Shopper: best prices above fair&quot;,
+      &quot;where&quot;: &quot;ODDS SCREEN&quot;,
+      &quot;tag&quot;: &quot;research&quot;,
+      &quot;why&quot;: &quot;A price above Pinnacle&#39;s fair, with what the exchange book fills. Exchange flags have not beaten the close yet.&quot;
+    },
+    {
+      &quot;tool&quot;: &quot;NBA, CFB and CBB props models&quot;,
+      &quot;where&quot;: &quot;PROPS&quot;,
+      &quot;tag&quot;: &quot;model, not an edge&quot;,
+      &quot;why&quot;: &quot;Our own projections. None has cleared our bar against the apps&#39; lines in held-out tests.&quot;
+    }
+  ],
+  &quot;days&quot;: null,
+  &quot;flags&quot;: &quot;/api/v1/record/flags&quot;
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/record">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-record-flags">
+<h3>Every closed flag behind the record</h3>
+<div class="path">GET /api/v1/record/flags</div>
+<p style="color:var(--text2);font-size:14px">One row per closed flag: when, the price, what it filled, the close, CLV and the result.</p>
+<div class="scroll"><table><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td>days</td><td>last N days</td></tr><tr><td>kind</td><td>one kind, e.g. ev</td></tr><tr><td>book</td><td>one venue</td></tr><tr><td>limit</td><td>1 to 1000, default 200</td></tr><tr><td>offset</td><td>rows to skip</td></tr></tbody></table></div>
+<div class="h3s">Live example: <code>GET /api/v1/record/flags?limit=2</code>, read 23:27 UTC</div><pre data-ex="/api/v1/record/flags">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.259Z&quot;,
+  &quot;days&quot;: null,
+  &quot;kind&quot;: null,
+  &quot;book&quot;: null,
+  &quot;columns&quot;: [
+    &quot;flaggedAt&quot;,
+    &quot;start&quot;
+  ],
+  &quot;total&quot;: 25420,
+  &quot;offset&quot;: 0,
+  &quot;limit&quot;: 2,
+  &quot;flags&quot;: [
+    {
+      &quot;id&quot;: &quot;1639261571|total|234.5|under|betrivers|&quot;,
+      &quot;flaggedAt&quot;: &quot;2026-10-26T23:08:45.695Z&quot;,
+      &quot;start&quot;: &quot;2026-10-26T23:10:00.000Z&quot;,
+      &quot;kind&quot;: &quot;bigmoney&quot;,
+      &quot;kindLabel&quot;: &quot;Big money&quot;,
+      &quot;book&quot;: &quot;betrivers&quot;,
+      &quot;bookName&quot;: &quot;BetRivers&quot;,
+      &quot;relayed&quot;: false,
+      &quot;sport&quot;: &quot;NBA&quot;,
+      &quot;event&quot;: &quot;Under 234.5&quot;,
+      &quot;market&quot;: null,
+      &quot;pick&quot;: &quot;under&quot;,
+      &quot;priceDecimal&quot;: 1.9615,
+      &quot;priceAmerican&quot;: -104,
+      &quot;fillUsd&quot;: null,
+      &quot;fill2minUsd&quot;: null,
+      &quot;closeProb&quot;: null,
+      &quot;closeOn&quot;: &quot;the money&#39;s price at the close&quot;,
+      &quot;closeState&quot;: &quot;ok&quot;,
+      &quot;graded&quot;: true,
+      &quot;clvPct&quot;: 1.02,
+      &quot;clv2minPct&quot;: null,
+      &quot;result&quot;: null,
+      &quot;units&quot;: null
+    },
+    {
+      &quot;id&quot;: &quot;alt|washingtonwizards@charlottehornets|2026-10-26|pra|nazreid|44.5|Over|fanduel&quot;,
+      &quot;flaggedAt&quot;: &quot;2026-10-26T23:05:00.806Z&quot;,
+      &quot;start&quot;: &quot;2026-10-26T23:10:00.000Z&quot;,
+      &quot;kind&quot;: &quot;alt-model&quot;,
+      &quot;kindLabel&quot;: &quot;Alt lines (model only)&quot;,
+      &quot;book&quot;: &quot;fanduel&quot;,
+      &quot;bookName&quot;: &quot;FanDuel&quot;,
+      &quot;relayed&quot;: false,
+      &quot;sport&quot;: &quot;nba&quot;,
+      &quot;event&quot;: &quot;Washington Wizards @ Charlotte Hornets&quot;,
+      &quot;market&quot;: &quot;pra&quot;,
+      &quot;pick&quot;: &quot;Naz Reid Over&quot;,
+      &quot;priceDecimal&quot;: 15,
+      &quot;priceAmerican&quot;: 1400,
+      &quot;fillUsd&quot;: null,
+      &quot;fill2minUsd&quot;: null,
+      &quot;closeProb&quot;: 0.0684,
+      &quot;closeOn&quot;: &quot;no sharp close (our curve or soft books)&quot;,
+      &quot;closeState&quot;: &quot;ok&quot;,
+      &quot;graded&quot;: true,
+      &quot;clvPct&quot;: 2.6,
+      &quot;clv2minPct&quot;: 2.55,
+      &quot;result&quot;: null,
+      &quot;units&quot;: null
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/record/flags?limit=2">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-states">
+<h3>States and their venues</h3>
+<div class="path">GET /api/v1/states</div>
+<p style="color:var(--text2);font-size:14px">Every US state and DC with how many venues a resident can use there, and the date the table was read.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/states</code>, read 23:27 UTC</div><pre data-ex="/api/v1/states">{
+  &quot;asOf&quot;: &quot;2026-10-26&quot;,
+  &quot;check&quot;: &quot;Availability moves with court cases and app updates: check with the venue before you deposit.&quot;,
+  &quot;states&quot;: [
+    {
+      &quot;state&quot;: &quot;AL&quot;,
+      &quot;name&quot;: &quot;Alabama&quot;,
+      &quot;asOf&quot;: &quot;2026-10-26&quot;,
+      &quot;legal&quot;: 5,
+      &quot;unknown&quot;: 2
+    },
+    {
+      &quot;state&quot;: &quot;AK&quot;,
+      &quot;name&quot;: &quot;Alaska&quot;,
+      &quot;asOf&quot;: &quot;2026-10-26&quot;,
+      &quot;legal&quot;: 7,
+      &quot;unknown&quot;: 0
+    },
+    {
+      &quot;state&quot;: &quot;AZ&quot;,
+      &quot;name&quot;: &quot;Arizona&quot;,
+      &quot;asOf&quot;: &quot;2026-10-26&quot;,
+      &quot;legal&quot;: 6,
+      &quot;unknown&quot;: 2
+    }
+  ],
+  &quot;table&quot;: &quot;/api/states/table&quot;
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/states">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-states-state-">
+<h3>One state&#39;s venues</h3>
+<div class="path">GET /api/v1/states/{state}</div>
+<p style="color:var(--text2);font-size:14px">The venues legal there, the ones no source vouches for (check with the venue) and the ones not legal there, each with its source and date.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/states/TX</code>, read 23:27 UTC</div><pre data-ex="/api/v1/states/{state}">{
+  &quot;state&quot;: &quot;TX&quot;,
+  &quot;name&quot;: &quot;Texas&quot;,
+  &quot;asOf&quot;: &quot;2026-10-26&quot;,
+  &quot;note&quot;: &quot;No sportsbook is legal in Texas. Pick&#39;em apps and CFTC exchanges are.&quot;,
+  &quot;check&quot;: &quot;Availability moves with court cases and app updates: check with the venue before you deposit.&quot;,
+  &quot;noBooks&quot;: true,
+  &quot;venues&quot;: [
+    {
+      &quot;key&quot;: &quot;kalshi&quot;,
+      &quot;name&quot;: &quot;Kalshi&quot;,
+      &quot;kind&quot;: &quot;exchange&quot;,
+      &quot;product&quot;: &quot;sports event contracts&quot;,
+      &quot;status&quot;: &quot;yes&quot;,
+      &quot;note&quot;: &quot;Live, with a state lawsuit or inquiry open&quot;,
+      &quot;source&quot;: {
+        &quot;title&quot;: &quot;CBS Sports, prediction markets: status of Kalshi and Polymarket in all 50 states&quot;,
+        &quot;url&quot;: &quot;https://www.cbssports.com/prediction/news/prediction-market-legal-states/&quot;,
+        &quot;dated&quot;: &quot;2026-10-23&quot;,
+        &quot;read&quot;: &quot;2026-10-26&quot;
+      },
+      &quot;read&quot;: true,
+      &quot;why&quot;: null
+    },
+    {
+      &quot;key&quot;: &quot;polymarketus&quot;,
+      &quot;name&quot;: &quot;Polymarket US&quot;,
+      &quot;kind&quot;: &quot;exchange&quot;,
+      &quot;product&quot;: &quot;Polymarket US (CFTC), never polymarket.com&quot;,
+      &quot;status&quot;: &quot;yes&quot;,
+      &quot;note&quot;: null,
+      &quot;source&quot;: {
+        &quot;title&quot;: &quot;CBS Sports, prediction markets: status of Kalshi and Polymarket in all 50 states&quot;,
+        &quot;url&quot;: &quot;https://www.cbssports.com/prediction/news/prediction-market-legal-states/&quot;,
+        &quot;dated&quot;: &quot;2026-10-23&quot;,
+        &quot;read&quot;: &quot;2026-10-26&quot;
+      },
+      &quot;read&quot;: true,
+      &quot;why&quot;: null
+    }
+  ],
+  &quot;unknown&quot;: [],
+  &quot;notLegal&quot;: [
+    {
+      &quot;key&quot;: &quot;fanduel&quot;,
+      &quot;name&quot;: &quot;FanDuel&quot;,
+      &quot;kind&quot;: &quot;book&quot;,
+      &quot;product&quot;: &quot;FanDuel Sportsbook (online)&quot;,
+      &quot;status&quot;: &quot;no&quot;,
+      &quot;note&quot;: &quot;Not on FanDuel&#39;s list of live states&quot;,
+      &quot;source&quot;: {
+        &quot;title&quot;: &quot;Action Network, FanDuel legal states&quot;,
+        &quot;url&quot;: &quot;https://www.actionnetwork.com/online-sports-betting/reviews/fanduel/legal-states&quot;,
+        &quot;dated&quot;: &quot;2025-12&quot;,
+        &quot;read&quot;: &quot;2026-10-26&quot;
+      },
+      &quot;read&quot;: true,
+      &quot;why&quot;: null
+    },
+    {
+      &quot;key&quot;: &quot;betrivers&quot;,
+      &quot;name&quot;: &quot;BetRivers&quot;,
+      &quot;kind&quot;: &quot;book&quot;,
+      &quot;product&quot;: &quot;BetRivers Sportsbook (online)&quot;,
+      &quot;status&quot;: &quot;no&quot;,
+      &quot;note&quot;: &quot;Not on BetRivers&#39; list of live states&quot;,
+      &quot;source&quot;: {
+        &quot;title&quot;: &quot;Football Whispers, BetRivers legal states&quot;,
+        &quot;url&quot;: &quot;https://footballwhispers.com/us/blog/betrivers-legal-states/&quot;,
+        &quot;dated&quot;: &quot;2026-02-13&quot;,
+        &quot;read&quot;: &quot;2026-10-26&quot;
+      },
+      &quot;read&quot;: true,
+      &quot;why&quot;: null
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/states/TX">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-digest">
+<h3>Weekly digest: the weeks</h3>
+<div class="path">GET /api/v1/digest</div>
+<p style="color:var(--text2);font-size:14px">The weeks the digest covers, which are frozen (sent Monday 13:00 UTC) and which are still being built.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/digest</code>, read 23:27 UTC</div><pre data-ex="/api/v1/digest">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.259Z&quot;,
+  &quot;current&quot;: &quot;2026-10-26&quot;,
+  &quot;sendsAt&quot;: &quot;Monday 13:00 UTC&quot;,
+  &quot;nextSend&quot;: &quot;2026-11-02T13:00:00.000Z&quot;,
+  &quot;weeks&quot;: [
+    {
+      &quot;week&quot;: &quot;2026-10-26&quot;,
+      &quot;name&quot;: &quot;Oct 26 to Nov 1&quot;,
+      &quot;partial&quot;: true,
+      &quot;frozen&quot;: false,
+      &quot;sentAt&quot;: null,
+      &quot;graded&quot;: null,
+      &quot;share&quot;: &quot;/digest/2026-10-26&quot;
+    },
+    {
+      &quot;week&quot;: &quot;2026-10-19&quot;,
+      &quot;name&quot;: &quot;Oct 19 to 25&quot;,
+      &quot;partial&quot;: false,
+      &quot;frozen&quot;: true,
+      &quot;sentAt&quot;: &quot;2026-10-26T13:00:02.402Z&quot;,
+      &quot;graded&quot;: 6237,
+      &quot;share&quot;: &quot;/digest/2026-10-19&quot;
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/digest">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-digest-week-">
+<h3>Weekly digest: one week</h3>
+<div class="path">GET /api/v1/digest/{week}</div>
+<p style="color:var(--text2);font-size:14px">One week (the date of its Monday): what graded, the move toward the 50 bar, and what became proven or started losing to the close.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/digest/2026-10-26</code>, read 23:27 UTC</div><pre data-ex="/api/v1/digest/{week}">{
+  &quot;digest&quot;: {
+    &quot;week&quot;: &quot;2026-10-26&quot;,
+    &quot;name&quot;: &quot;Oct 26 to Nov 1&quot;,
+    &quot;from&quot;: &quot;2026-10-26T00:00:00.000Z&quot;,
+    &quot;to&quot;: &quot;2026-11-02T00:00:00.000Z&quot;,
+    &quot;partial&quot;: true,
+    &quot;builtAt&quot;: &quot;2026-10-26T23:27:22.378Z&quot;,
+    &quot;rule&quot;: {
+      &quot;graded&quot;: 50,
+      &quot;clvT&quot;: 2,
+      &quot;close&quot;: &quot;Pinnacle&#39;s no-vig close&quot;,
+      &quot;kinds&quot;: [
+        &quot;ev&quot;,
+        &quot;props-ev&quot;
+      ],
+      &quot;shortfallSd&quot;: 1.5,
+      &quot;text&quot;: &quot;A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pinnacle&#39;s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick&#39;em kinds only sharp-price legs.&quot;
+    },
+    &quot;summary&quot;: {
+      &quot;graded&quot;: 218,
+      &quot;kinds&quot;: 38,
+      &quot;quiet&quot;: 25,
+      &quot;proven&quot;: [
+        {
+          &quot;kind&quot;: &quot;ev&quot;,
+          &quot;kindLabel&quot;: &quot;Main lines vs the sharp fair&quot;,
+          &quot;book&quot;: &quot;betrivers&quot;,
+          &quot;bookName&quot;: &quot;BetRivers&quot;,
+          &quot;graded&quot;: 377,
+          &quot;clv&quot;: 2.83,
+          &quot;texas&quot;: false,
+          &quot;profitShown&quot;: false,
+          &quot;units&quot;: null
+        }
+      ],
+      &quot;newlyProven&quot;: [],
+      &quot;noLongerProven&quot;: [],
+      &quot;newlyFailed&quot;: [
+        &quot;Main lines vs the sharp fair · Polymarket US&quot;
+      ],
+      &quot;reached50&quot;: [],
+      &quot;overall&quot;: {
+        &quot;week&quot;: {
+          &quot;graded&quot;: 141,
+          &quot;clv&quot;: 1.4
+        },
+        &quot;all&quot;: {
+          &quot;graded&quot;: 6018,
+          &quot;clv&quot;: 1.57
+        },
+        &quot;label&quot;: &quot;pooled, never proven&quot;
+      }
+    },
+    &quot;rows&quot;: [
+      {
+        &quot;kind&quot;: &quot;ev&quot;,
+        &quot;kindLabel&quot;: &quot;Main lines vs the sharp fair&quot;,
+        &quot;book&quot;: &quot;polymarketus&quot;,
+        &quot;bookName&quot;: &quot;Polymarket US&quot;,
+        &quot;texas&quot;: true,
+        &quot;relayed&quot;: false,
+        &quot;week&quot;: {
+          &quot;graded&quot;: 4,
+          &quot;clv&quot;: -3.96,
+          &quot;beatPct&quot;: 25,
+          &quot;wins&quot;: 0,
+          &quot;losses&quot;: 0,
+          &quot;units&quot;: 0,
+          &quot;profitShown&quot;: false
+        },
+        &quot;bar&quot;: {
+          &quot;target&quot;: 50,
+          &quot;before&quot;: 10,
+          &quot;after&quot;: 14,
+          &quot;left&quot;: 36,
+          &quot;tBefore&quot;: 0.74,
+          &quot;tAfter&quot;: -0.15,
+          &quot;move&quot;: &quot;away&quot;
+        },
+        &quot;all&quot;: {
+          &quot;graded&quot;: 14,
+          &quot;clv&quot;: -0.24,
+          &quot;clvT&quot;: -0.15,
+          &quot;beatPct&quot;: 64.29,
+          &quot;wins&quot;: 2,
+          &quot;losses&quot;: 1,
+          &quot;units&quot;: 1.08,
+          &quot;profitShown&quot;: false,
+          &quot;label&quot;: &quot;losing to the close&quot;,
+          &quot;why&quot;: null
+        },
+        &quot;labelBefore&quot;: &quot;building&quot;,
+        &quot;change&quot;: &quot;newly losing to the close&quot;
+      },
+      {
+        &quot;kind&quot;: &quot;alt-model&quot;,
+        &quot;kindLabel&quot;: &quot;Alt lines (model only)&quot;,
+        &quot;book&quot;: &quot;fanduel&quot;,
+        &quot;bookName&quot;: &quot;FanDuel&quot;,
+        &quot;texas&quot;: false,
+        &quot;relayed&quot;: false,
+        &quot;week&quot;: {
+          &quot;graded&quot;: 44,
+          &quot;clv&quot;: -9.26,
+          &quot;beatPct&quot;: 27.27,
+          &quot;wins&quot;: 0,
+          &quot;losses&quot;: 0,
+          &quot;units&quot;: 0,
+          &quot;profitShown&quot;: false
+        },
+        &quot;bar&quot;: {
+          &quot;target&quot;: 50,
+          &quot;before&quot;: 2288,
+          &quot;after&quot;: 2332,
+          &quot;left&quot;: 0,
+          &quot;tBefore&quot;: null,
+          &quot;tAfter&quot;: null,
+          &quot;move&quot;: null
+        },
+        &quot;all&quot;: {
+          &quot;graded&quot;: 2332,
+          &quot;clv&quot;: 0.62,
+          &quot;clvT&quot;: null,
+          &quot;beatPct&quot;: 59.48,
+          &quot;wins&quot;: 0,
+          &quot;losses&quot;: 0,
+          &quot;units&quot;: 0,
+          &quot;profitShown&quot;: false,
+          &quot;label&quot;: &quot;no sharp close&quot;,
+          &quot;why&quot;: &quot;Closes on our own curve or soft books, so the CLV is the flag&#39;s own edge again. Shown, never judged.&quot;
+        },
+        &quot;labelBefore&quot;: &quot;no sharp close&quot;,
+        &quot;change&quot;: null
+      }
+    ],
+    &quot;labels&quot;: [
+      {
+        &quot;tool&quot;: &quot;Exchange Shopper: best prices above fair&quot;,
+        &quot;where&quot;: &quot;ODDS SCREEN&quot;,
+        &quot;tag&quot;: &quot;research&quot;,
+        &quot;why&quot;: &quot;A price above Pinnacle&#39;s fair, with what the exchange book fills. Exchange flags have not beaten the close yet.&quot;
+      },
+      {
+        &quot;tool&quot;: &quot;NBA, CFB and CBB props models&quot;,
+        &quot;where&quot;: &quot;PROPS&quot;,
+        &quot;tag&quot;: &quot;model, not an edge&quot;,
+        &quot;why&quot;: &quot;Our own projections. None has cleared our bar against the apps&#39; lines in held-out tests.&quot;
+      }
+    ]
+  },
+  &quot;frozen&quot;: false,
+  &quot;sentAt&quot;: null,
+  &quot;pushed&quot;: null,
+  &quot;share&quot;: &quot;/digest/2026-10-26&quot;
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/digest/2026-10-26">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-status">
+<h3>Feed status</h3>
+<div class="path">GET /api/v1/status</div>
+<p style="color:var(--text2);font-size:14px">Every venue&#39;s last good read, staleness and uptime, the same as /status.</p>
+
+<div class="h3s">Live example: <code>GET /api/v1/status</code>, read 23:27 UTC</div><pre data-ex="/api/v1/status">{
+  &quot;at&quot;: &quot;2026-10-26T23:27:22.797Z&quot;,
+  &quot;version&quot;: &quot;3.208.0&quot;,
+  &quot;uptimeS&quot;: 1601,
+  &quot;summary&quot;: {
+    &quot;on&quot;: 21,
+    &quot;up&quot;: 20,
+    &quot;stale&quot;: 0,
+    &quot;down&quot;: 1,
+    &quot;off&quot;: 0
+  },
+  &quot;site&quot;: {
+    &quot;uptime24h&quot;: {
+      &quot;pct&quot;: 0.904,
+      &quot;samples&quot;: 113,
+      &quot;slots&quot;: 125,
+      &quot;since&quot;: &quot;2026-10-26T13:00:00.000Z&quot;
+    },
+    &quot;uptime7d&quot;: {
+      &quot;pct&quot;: 0.904,
+      &quot;samples&quot;: 113,
+      &quot;slots&quot;: 125,
+      &quot;since&quot;: &quot;2026-10-26T13:00:00.000Z&quot;
+    },
+    &quot;samples&quot;: 113,
+    &quot;firstSampleAt&quot;: &quot;2026-10-26T13:00:01.249Z&quot;,
+    &quot;sampleEveryS&quot;: 300,
+    &quot;keepDays&quot;: 7
+  },
+  &quot;liveCheck&quot;: {
+    &quot;ok&quot;: true,
+    &quot;at&quot;: &quot;2026-10-26T22:59:28.310Z&quot;,
+    &quot;version&quot;: &quot;3.208.0&quot;,
+    &quot;failures&quot;: 0,
+    &quot;tabs&quot;: 17,
+    &quot;clicks&quot;: 496
+  },
+  &quot;groups&quot;: [
+    {
+      &quot;key&quot;: &quot;sharp&quot;,
+      &quot;name&quot;: &quot;Sharp lines&quot;
+    },
+    {
+      &quot;key&quot;: &quot;book&quot;,
+      &quot;name&quot;: &quot;Sportsbooks&quot;
+    }
+  ],
+  &quot;feeds&quot;: [
+    {
+      &quot;key&quot;: &quot;pinnacle&quot;,
+      &quot;name&quot;: &quot;Pinnacle game lines&quot;,
+      &quot;group&quot;: &quot;sharp&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;enabled&quot;: true,
+      &quot;okAt&quot;: &quot;2026-10-26T23:26:52.001Z&quot;,
+      &quot;ageS&quot;: 31,
+      &quot;staleAfterS&quot;: 300,
+      &quot;count&quot;: 344,
+      &quot;unit&quot;: &quot;games&quot;,
+      &quot;error&quot;: null,
+      &quot;note&quot;: null,
+      &quot;uptime24h&quot;: {
+        &quot;pct&quot;: 0.9911504424778761,
+        &quot;samples&quot;: 113
+      },
+      &quot;uptime7d&quot;: {
+        &quot;pct&quot;: 0.9911504424778761,
+        &quot;samples&quot;: 113
+      },
+      &quot;last24h&quot;: [
+        null,
+        null
+      ]
+    },
+    {
+      &quot;key&quot;: &quot;pinnacleProps&quot;,
+      &quot;name&quot;: &quot;Pinnacle player props&quot;,
+      &quot;group&quot;: &quot;sharp&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;enabled&quot;: true,
+      &quot;okAt&quot;: &quot;2026-10-26T23:26:22.176Z&quot;,
+      &quot;ageS&quot;: 61,
+      &quot;staleAfterS&quot;: 600,
+      &quot;count&quot;: 551,
+      &quot;unit&quot;: &quot;props&quot;,
+      &quot;error&quot;: null,
+      &quot;note&quot;: null,
+      &quot;uptime24h&quot;: {
+        &quot;pct&quot;: 1,
+        &quot;samples&quot;: 113
+      },
+      &quot;uptime7d&quot;: {
+        &quot;pct&quot;: 1,
+        &quot;samples&quot;: 113
+      },
+      &quot;last24h&quot;: [
+        null,
+        null
+      ]
+    }
+  ]
+}</pre>
+<button class="btn" type="button" data-try="/api/v1/status">TRY IT WITH YOUR KEY</button> <span class="msg" data-try-msg></span>
+</section><section class="ep" id="ep--api-v1-key">
+<h3>This key</h3>
+<div class="path">GET /api/v1/key</div>
+<p style="color:var(--text2);font-size:14px">Your key&#39;s name, when it was made and what it has used this minute and today.</p>
+
+<p class="note">No live example: this endpoint needs a value from another (an id or a week).</p>
+
+</section>
+
+<h2 id="feed">Discord feed</h2>
+<p>Run a Discord server? Paste a webhook and your channel gets the same public posts as everyone else, each with its share card: the weekly record digest (Mondays 13:00 UTC), record changes on RESULTS (a kind newly proven, no longer proven, losing to the close, or reaching 50 graded; checked hourly), and today's biggest line moves (daily 21:00 UTC).</p>
+<ol class="steps">
+<li>In Discord: <b>Server Settings &gt; Integrations &gt; Webhooks &gt; New Webhook</b>. Pick the channel, then <b>Copy Webhook URL</b>. You need the Manage Webhooks permission.</li>
+<li>Make a key above (it is saved in this browser), paste the URL below and tap <b>CONNECT</b>. A welcome post lands in the channel straight away.</li>
+<li>To stop: tap <b>DISCONNECT</b>, revoke the key, or delete the webhook in Discord.</li>
+</ol>
+<ul class="rules">
+<li>Every channel gets the same posts. Nothing is sized, picked or set up per person, and nothing places a bet.</li>
+<li>A post says proven only of what RESULTS marks proven, and shows a profit only where RESULTS does.</li>
+<li>One webhook per key. The URL is stored encrypted and never shown again; a webhook Discord says is gone, or 5 failed posts in a row, stops the feed.</li>
+</ul>
+<div class="keybox">
+<form id="fd" class="row2" autocomplete="off"><div style="flex:1 1 260px;min-width:0"><label for="fdUrl">Discord webhook URL</label><input id="fdUrl" name="url" type="url" inputmode="url" maxlength="300" placeholder="https://discord.com/api/webhooks/…"></div><button class="btn" type="submit">CONNECT</button></form>
+<div class="row2" style="margin-top:8px"><button class="btn" type="button" id="fdCheck">CHECK FEED</button><button class="btn warn" type="button" id="fdOff">DISCONNECT</button></div>
+<div id="fdOut" class="msg">Needs a key from this page, saved in this browser.</div>
+</div>
+<p class="note">With code: <code>PUT /api/v1/feed/discord</code> with <code>{"url":"…"}</code>, <code>GET /api/v1/feed</code> and <code>DELETE /api/v1/feed/discord</code>, each with your <code>X-API-Key</code>.</p>
+
+<h2 id="widgets">Widgets</h2>
+<p>Paste a snippet into any page. Each widget is dark, sizes to its container, refreshes every minute, wears the same label as the app and links back here. Options go on the div as <code>data-league</code>, <code>data-market</code>, <code>data-venue</code>, <code>data-n</code> (rows, 1 to 5), <code>data-game</code> and <code>data-side</code>.</p>
+<div class="wg"><h3 style="margin:0 0 6px">Best price above the fair</h3><p style="color:var(--text2);font-size:14px">The top price above Pinnacle&#39;s no-vig fair, after fees, with its EV and what the book fills. Pick a league with data-league.</p>
+<iframe src="/embed/best-price?league=nfl&n=3&_id=pv-best-price" data-lr-id="pv-best-price" title="Best price above the fair preview" style="height:330px" loading="lazy"></iframe>
+<div class="h3s">With the script (sizes itself)</div><pre>&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;best-price&quot; data-league=&quot;nfl&quot; data-n=&quot;3&quot;&gt;&lt;/div&gt;</pre><button class="btn" type="button" data-copy="&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;best-price&quot; data-league=&quot;nfl&quot; data-n=&quot;3&quot;&gt;&lt;/div&gt;">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/best-price?league=nfl&amp;n=3&quot; title=&quot;Line Reaper best price&quot; style=&quot;width:100%;height:330px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;</pre><button class="btn" type="button" data-copy="&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/best-price?league=nfl&amp;n=3&quot; title=&quot;Line Reaper best price&quot; style=&quot;width:100%;height:330px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;">COPY</button></div>
+<div class="wg"><h3 style="margin:0 0 6px">Line move chart</h3><p style="color:var(--text2);font-size:14px">One game&#39;s prices over time at each venue against the fair. Without data-game it charts today&#39;s biggest move.</p>
+<iframe src="/embed/line-move?_id=pv-line-move" data-lr-id="pv-line-move" title="Line move chart preview" style="height:360px" loading="lazy"></iframe>
+<div class="h3s">With the script (sizes itself)</div><pre>&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;line-move&quot;&gt;&lt;/div&gt;</pre><button class="btn" type="button" data-copy="&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;line-move&quot;&gt;&lt;/div&gt;">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/line-move&quot; title=&quot;Line Reaper line move&quot; style=&quot;width:100%;height:360px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;</pre><button class="btn" type="button" data-copy="&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/line-move&quot; title=&quot;Line Reaper line move&quot; style=&quot;width:100%;height:360px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;">COPY</button></div>
+<div class="wg"><h3 style="margin:0 0 6px">Proven record card</h3><p style="color:var(--text2);font-size:14px">What RESULTS proves, nothing more: graded count, CLV against the close, record, and profit only where it clears chance.</p>
+<iframe src="/embed/record?_id=pv-record" data-lr-id="pv-record" title="Proven record card preview" style="height:280px" loading="lazy"></iframe>
+<div class="h3s">With the script (sizes itself)</div><pre>&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;record&quot;&gt;&lt;/div&gt;</pre><button class="btn" type="button" data-copy="&lt;script src=&quot;https://line-reaper-backend-production.up.railway.app/embed.js&quot; async&gt;&lt;/script&gt;
+&lt;div data-line-reaper=&quot;record&quot;&gt;&lt;/div&gt;">COPY</button>
+<div class="h3s" style="margin-top:12px">As a plain iframe</div><pre>&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/record&quot; title=&quot;Line Reaper record&quot; style=&quot;width:100%;height:280px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;</pre><button class="btn" type="button" data-copy="&lt;iframe src=&quot;https://line-reaper-backend-production.up.railway.app/embed/record&quot; title=&quot;Line Reaper record&quot; style=&quot;width:100%;height:280px;border:0&quot; loading=&quot;lazy&quot;&gt;&lt;/iframe&gt;">COPY</button></div>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/learn">Learn</a><a href="/status">Status</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take bets. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+<script>
+(function () {
+  var LS = 'lr_api_key';
+  function get() { try { return localStorage.getItem(LS); } catch (e) { return null; } }
+  function set(v) { try { v ? localStorage.setItem(LS, v) : localStorage.removeItem(LS); } catch (e) {} }
+  function tok() { try { return localStorage.getItem('lr_token'); } catch (e) { return null; } }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var out = document.getElementById('mkOut');
+  function mine() {
+    var k = get(), box = document.getElementById('mine');
+    box.style.display = k ? 'block' : 'none';
+    if (k) document.getElementById('mineInfo').textContent = 'Key ' + k.slice(0, 7) + '…' + k.slice(-4) + ' is saved in this browser, so TRY IT below uses it.';
+  }
+  document.getElementById('mk').addEventListener('submit', function (e) {
+    e.preventDefault();
+    out.className = 'msg'; out.textContent = 'Making a key…';
+    var h = { 'Content-Type': 'application/json' }, t = tok();
+    if (t) h.Authorization = 'Bearer ' + t;
+    fetch('/api/v1/keys', { method: 'POST', headers: h, body: JSON.stringify({ name: document.getElementById('kname').value }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { out.className = 'msg err'; out.textContent = (x.j.error && x.j.error.message) || 'Could not make a key.'; return; }
+        set(x.j.key);
+        out.innerHTML = 'Your key (shown once):<div class="keyout" id="keyText">' + esc(x.j.key) + '</div><button class="btn" type="button" data-copy="' + esc(x.j.key) + '">COPY KEY</button>';
+        mine();
+      })
+      .catch(function () { out.className = 'msg err'; out.textContent = 'Could not reach the server. Try again.'; });
+  });
+  document.getElementById('mineUse').addEventListener('click', function () {
+    var info = document.getElementById('mineInfo');
+    fetch('/api/v1/key', { headers: { 'X-API-Key': get() || '' } }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { info.textContent = j.error.message; return; }
+      info.textContent = '"' + j.key.name + '", made ' + j.key.createdAt.slice(0, 10) + '. Used ' + j.usage.minute + ' of ' + j.limits.perMinute + ' this minute and ' + j.usage.today + ' of ' + j.limits.perDay + ' today.';
+    }).catch(function () { info.textContent = 'Could not reach the server. Try again.'; });
+  });
+  document.getElementById('mineRevoke').addEventListener('click', function () {
+    var info = document.getElementById('mineInfo');
+    fetch('/api/v1/key', { method: 'DELETE', headers: { 'X-API-Key': get() || '' } }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { info.textContent = j.error.message; return; }
+      set(null); mine(); out.className = 'msg'; out.textContent = 'Revoked: that key no longer works. Make a new one any time.';
+    }).catch(function () { info.textContent = 'Could not reach the server. Try again.'; });
+  });
+  // the Discord feed: connect, check, disconnect with the key saved here
+  var fdOut = document.getElementById('fdOut');
+  function fdShow(j) {
+    var d = j && j.discord;
+    if (!d) return;
+    if (d.connected) fdOut.textContent = 'Connected: webhook ' + d.webhook + (d.name ? ' ("' + d.name + '")' : '') + ', since ' + String(d.addedAt).slice(0, 10) + '. Last post ' + (d.lastOkAt ? String(d.lastOkAt).slice(0, 16).replace('T', ' ') + ' UTC' : 'not yet') + '.';
+    else if (d.stoppedAt) { fdOut.className = 'msg err'; fdOut.textContent = 'Stopped ' + String(d.stoppedAt).slice(0, 10) + ': ' + (d.stoppedWhy || '') + (d.lastError ? ' (' + d.lastError + ')' : ''); }
+    else fdOut.textContent = 'No Discord feed on this key.';
+  }
+  function fdCall(method, path, body) {
+    var k = get();
+    if (!k) { fdOut.className = 'msg err'; fdOut.textContent = 'Make a key first (top of the page): the feed is tied to it.'; document.getElementById('kname').focus(); return; }
+    fdOut.className = 'msg'; fdOut.textContent = method === 'PUT' ? 'Checking the webhook with Discord…' : 'Asking…';
+    var h = { 'X-API-Key': k };
+    if (body) h['Content-Type'] = 'application/json';
+    fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) { fdOut.className = 'msg err'; fdOut.textContent = j.error.message; return; }
+        fdShow(j);
+        if (j.note) fdOut.textContent = j.note + ' ' + fdOut.textContent;
+      })
+      .catch(function () { fdOut.className = 'msg err'; fdOut.textContent = 'Could not reach the server. Try again.'; });
+  }
+  document.getElementById('fd').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = document.getElementById('fdUrl').value.trim();
+    if (!/^https:\/\/(ptb\.|canary\.)?discord(app)?\.com\/api\/(v\d+\/)?webhooks\/\d+\/[\w-]+\/?$/.test(u)) { fdOut.className = 'msg err'; fdOut.textContent = 'That is not a Discord webhook URL. It starts https://discord.com/api/webhooks/ (step 1 above).'; return; }
+    fdCall('PUT', '/api/v1/feed/discord', { url: u });
+  });
+  document.getElementById('fdCheck').addEventListener('click', function () { fdCall('GET', '/api/v1/feed'); });
+  document.getElementById('fdOff').addEventListener('click', function () { fdCall('DELETE', '/api/v1/feed/discord'); });
+  document.getElementById('mineForget').addEventListener('click', function () { set(null); mine(); out.className = 'msg'; out.textContent = 'Forgotten in this browser. The key still works wherever you use it.'; });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest && e.target.closest('[data-copy]');
+    if (c) {
+      var text = c.getAttribute('data-copy');
+      var done = function () { var was = c.textContent; c.textContent = 'COPIED'; setTimeout(function () { c.textContent = was; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt('Copy this:', text); });
+      else window.prompt('Copy this:', text);
+      return;
+    }
+    var b = e.target.closest && e.target.closest('[data-try]');
+    if (!b) return;
+    var msg = b.parentNode.querySelector('[data-try-msg]'), pre = b.parentNode.querySelector('pre[data-ex]');
+    var k = get();
+    if (!k) { msg.textContent = 'Make a key first (top of the page): it is saved in this browser and used here.'; document.getElementById('kname').focus(); return; }
+    msg.textContent = 'Asking…';
+    fetch(b.getAttribute('data-try'), { headers: { 'X-API-Key': k } }).then(function (r) {
+      return r.json().then(function (j) { msg.textContent = r.status + ' · ' + (r.headers.get('X-RateLimit-Remaining') || '?') + ' calls left this minute'; pre.textContent = JSON.stringify(j, null, 2); });
+    }).catch(function () { msg.textContent = 'Could not reach the server. Try again.'; });
+  });
+  // the previews size themselves like /embed.js does
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || typeof e.data.lrEmbed !== 'string') return;
+    var f = document.querySelector('iframe[data-lr-id="' + e.data.lrEmbed.replace(/[^\w-]/g, '') + '"]');
+    var h = Number(e.data.height);
+    if (f && h > 40 && h < 4000) f.style.height = h + 'px';
+  });
+  mine();
+})();
+</script>
+</body>
+</html>

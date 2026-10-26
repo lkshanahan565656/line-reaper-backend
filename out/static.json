@@ -1,0 +1,314 @@
+{
+ "desktop /": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper: an odds screen with a public record graded against the close"
+ },
+ "desktop /leagues": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Odds by league: NFL, NBA, college, soccer, tennis and esports | Line Reaper"
+ },
+ "desktop /nfl": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NFL odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "desktop /nfl?state=CA": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NFL odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "desktop /nba": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NBA odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "desktop /esports/lol": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "League of Legends odds: Kalshi prices vs the sharp line | Line Reaper"
+ },
+ "desktop /esports/dota2": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Dota 2 odds: Kalshi prices vs the sharp line | Line Reaper"
+ },
+ "desktop /soccer": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Soccer odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "desktop /developers": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Developers: public API and widgets | Line Reaper"
+ },
+ "desktop /status": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Status | Line Reaper"
+ },
+ "desktop /learn": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "The math behind sharp betting | Line Reaper"
+ },
+ "desktop /digest": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Week of Oct 19 to 25 | Line Reaper record"
+ },
+ "desktop /results": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper: the public record | Line Reaper"
+ },
+ "desktop /r/nobody-here-xyz": {
+  "status": 404,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper"
+ },
+ "desktop /share/price": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Davion Mitchell Over 10.5 -115 at FanDuel | Line Reaper"
+ },
+ "desktop /embed/best-price": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Best price | Line Reaper"
+ },
+ "desktop /terms": {
+  "status": 200,
+  "scrollW": 1280,
+  "W": 1280,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Terms of Service | Line Reaper"
+ },
+ "phone /": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper: an odds screen with a public record graded against the close"
+ },
+ "phone /leagues": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Odds by league: NFL, NBA, college, soccer, tennis and esports | Line Reaper"
+ },
+ "phone /nfl": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NFL odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "phone /nfl?state=CA": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NFL odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "phone /nba": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "NBA odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "phone /esports/lol": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "League of Legends odds: Kalshi prices vs the sharp line | Line Reaper"
+ },
+ "phone /esports/dota2": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Dota 2 odds: Kalshi prices vs the sharp line | Line Reaper"
+ },
+ "phone /soccer": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Soccer odds comparison: best prices vs Pinnacle's fair | Line Reaper"
+ },
+ "phone /developers": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Developers: public API and widgets | Line Reaper"
+ },
+ "phone /status": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Status | Line Reaper"
+ },
+ "phone /learn": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "The math behind sharp betting | Line Reaper"
+ },
+ "phone /digest": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [
+   "TABLE. Kind · venueThis weekToward 50All time\nT",
+   "THEAD. Kind · venueThis weekToward 50All time",
+   "TR. Kind · venueThis weekToward 50All time",
+   "TH.n This week",
+   "TH.n Toward 50"
+  ],
+  "dead": [],
+  "pm": [],
+  "title": "Week of Oct 19 to 25 | Line Reaper record"
+ },
+ "phone /results": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper: the public record | Line Reaper"
+ },
+ "phone /r/nobody-here-xyz": {
+  "status": 404,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Line Reaper"
+ },
+ "phone /share/price": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Davion Mitchell Over 10.5 -115 at FanDuel | Line Reaper"
+ },
+ "phone /embed/best-price": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Best price | Line Reaper"
+ },
+ "phone /terms": {
+  "status": 200,
+  "scrollW": 375,
+  "W": 375,
+  "wide": [],
+  "dead": [],
+  "pm": [],
+  "title": "Terms of Service | Line Reaper"
+ }
+}

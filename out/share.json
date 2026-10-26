@@ -1,0 +1,216 @@
+[
+ {
+  "tab": "odds",
+  "st": "TX",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=odds&st=tx",
+  "before": {
+   "tab": "odds",
+   "st": "TX",
+   "mode": "lines",
+   "os": {
+    "state": "TX",
+    "league": "",
+    "market": "",
+    "sort": "start",
+    "q": ""
+   },
+   "shop": {
+    "state": "TX",
+    "markets": "",
+    "sort": "ev",
+    "league": "",
+    "q": "",
+    "minEv": "",
+    "minEdge": "",
+    "maxAge": "",
+    "hours": "48",
+    "minSize": "",
+    "method": "power",
+    "excluded": []
+   }
+  },
+  "after": {
+   "tab": "odds",
+   "st": "TX",
+   "mode": "lines",
+   "os": {
+    "state": "TX",
+    "league": "",
+    "market": "",
+    "sort": "start",
+    "q": ""
+   },
+   "shop": {
+    "state": "TX",
+    "markets": "",
+    "sort": "ev",
+    "league": "",
+    "q": "",
+    "minEv": "",
+    "minEdge": "",
+    "maxAge": "",
+    "hours": "48",
+    "minSize": "",
+    "method": "power",
+    "excluded": []
+   }
+  },
+  "same": true,
+  "lsStateAfter": null
+ },
+ {
+  "tab": "odds",
+  "st": "CA",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=odds&st=ca",
+  "before": {
+   "tab": "odds",
+   "st": "CA",
+   "mode": "lines",
+   "os": {
+    "state": "CA",
+    "league": "",
+    "market": "",
+    "sort": "start",
+    "q": ""
+   },
+   "shop": {
+    "state": "CA",
+    "markets": "",
+    "sort": "ev",
+    "league": "",
+    "q": "",
+    "minEv": "",
+    "minEdge": "",
+    "maxAge": "",
+    "hours": "48",
+    "minSize": "",
+    "method": "power",
+    "excluded": []
+   }
+  },
+  "after": {
+   "tab": "odds",
+   "st": "CA",
+   "mode": "lines",
+   "os": {
+    "state": "CA",
+    "league": "",
+    "market": "",
+    "sort": "start",
+    "q": ""
+   },
+   "shop": {
+    "state": "CA",
+    "markets": "",
+    "sort": "ev",
+    "league": "",
+    "q": "",
+    "minEv": "",
+    "minEdge": "",
+    "maxAge": "",
+    "hours": "48",
+    "minSize": "",
+    "method": "power",
+    "excluded": []
+   }
+  },
+  "same": true,
+  "lsStateAfter": null
+ },
+ {
+  "tab": "props",
+  "st": "TX",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=props&st=tx",
+  "before": {
+   "tab": "props",
+   "st": "TX",
+   "props": {
+    "view": "lines",
+    "book": "underdog",
+    "sport": "ALL",
+    "q": "",
+    "market": "",
+    "sort": "ev",
+    "show": "all",
+    "shopShow": "all",
+    "anchor": ""
+   }
+  },
+  "after": {
+   "tab": "props",
+   "st": "TX",
+   "props": {
+    "view": "lines",
+    "book": "underdog",
+    "sport": "ALL",
+    "q": "",
+    "market": "",
+    "sort": "ev",
+    "show": "all",
+    "shopShow": "all",
+    "anchor": ""
+   }
+  },
+  "same": true,
+  "lsStateAfter": null
+ },
+ {
+  "tab": "esports",
+  "st": "",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=esports&st=all",
+  "before": {
+   "tab": "esports",
+   "st": "",
+   "es": {
+    "mode": "matches",
+    "game": "ALL",
+    "hideLive": false,
+    "emuGame": "LOL",
+    "league": "ALL"
+   }
+  },
+  "after": {
+   "tab": "esports",
+   "st": "",
+   "es": {
+    "mode": "matches",
+    "game": "ALL",
+    "hideLive": false,
+    "emuGame": "LOL",
+    "league": "ALL"
+   }
+  },
+  "same": true,
+  "lsStateAfter": null
+ },
+ {
+  "tab": "results",
+  "st": "TX",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=results&st=tx",
+  "before": {
+   "tab": "results",
+   "st": "TX"
+  },
+  "after": {
+   "tab": "results",
+   "st": "TX"
+  },
+  "same": true,
+  "lsStateAfter": null
+ },
+ {
+  "tab": "best",
+  "st": "NY",
+  "url": "https://line-reaper-backend-production.up.railway.app/app#lr&t=best&st=ny",
+  "before": {
+   "tab": "best",
+   "st": "NY"
+  },
+  "after": {
+   "tab": "best",
+   "st": "NY"
+  },
+  "same": true,
+  "lsStateAfter": null
+ }
+]

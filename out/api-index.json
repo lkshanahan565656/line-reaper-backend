@@ -1,0 +1,72 @@
+{
+ "/api/health": {
+  "status": 200,
+  "ms": 250,
+  "size": 753
+ },
+ "/api/status": {
+  "status": 200,
+  "ms": 286,
+  "size": 35539
+ },
+ "/api/ops": {
+  "status": 200,
+  "ms": 122,
+  "size": 18371
+ },
+ "/api/states": {
+  "status": 200,
+  "ms": 114,
+  "size": 3996
+ },
+ "/api/states/TX": {
+  "status": 200,
+  "ms": 125,
+  "size": 8065
+ },
+ "/api/states/table": {
+  "status": 200,
+  "ms": 121,
+  "size": 18552
+ },
+ "/api/claims": {
+  "status": 200,
+  "ms": 256,
+  "size": 3601
+ },
+ "/api/record": {
+  "status": 200,
+  "ms": 133,
+  "size": 34725
+ },
+ "/api/results": {
+  "status": 200,
+  "ms": 329,
+  "size": 228220
+ },
+ "/api/digest": {
+  "status": 200,
+  "ms": 232,
+  "size": 552
+ },
+ "/api/v1": {
+  "status": 200,
+  "ms": 124,
+  "size": 2365
+ },
+ "/api/moves": {
+  "status": 200,
+  "ms": 493,
+  "size": 302835
+ },
+ "/api/esports/map-unders": {
+  "status": 200,
+  "ms": 120,
+  "size": 40028
+ },
+ "/api/features": {
+  "status": 200,
+  "ms": 108,
+  "size": 17
+ }
+}

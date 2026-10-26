@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Closing line value (CLV) | Line Reaper</title>
+<meta name="description" content="CLV compares the price you got with the fair price when the market closed. Beating the close over many bets is the most reliable sign that a way of betting has an edge.">
+<meta name="theme-color" content="#080b10">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/learn/closing-line-value">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>
+<main>
+<p class="kicker">Learn</p>
+<h1>Closing line value (CLV)</h1>
+<p class="lead">CLV compares the price you got with the fair price when the market closed. Beating the close over many bets is the most reliable sign that a way of betting has an edge.</p>
+
+<h2 id="why">Why the close</h2>
+<p>By the start of a game the market has taken in every bet and every piece of news, so the closing no-vig price is the best estimate of the true chance there is. A bet placed at a better price than the close was, by that estimate, a good price, whether it won or not. Results take thousands of bets to separate skill from luck; CLV shows it in tens.</p>
+<div class="ex"><div class="ex-h">Worked example</div><p>You bet +100 (decimal 2.00). At the close the side is −115 (1.87) and the other side is −105 (1.95).</p><div class="scroll"><table><thead><tr><th></th><th>Value</th></tr></thead><tbody><tr><td>Fair chance at the close (no-vig)</td><td>51.12%</td></tr><tr><td>Fair close price</td><td>-105</td></tr><tr><td>Your price</td><td>+100</td></tr><tr><td>CLV</td><td><b>+2.24%</b></td></tr></tbody></table></div><p>Measured against the raw −115 instead of the no-vig close, the same bet would show +6.95%: always take the vig out of the close first.</p></div>
+<h2 id="record">How Line Reaper uses it</h2>
+<p>Every flagged price is graded against Pinnacle’s no-vig close, and for exchanges also against the price two minutes after the flag, so a price that was gone before you could tap it does not count. MY BETS shows the CLV of each bet you log with a closing price.</p>
+<a class="go" href="/app?start=tools">Open the CLV calculator →</a><nav class="pn"><span><a href="/learn/expected-value">← Expected value (EV)</a></span><span><a href="/learn/hold-and-arbitrage">Hold and arbitrage →</a></span></nav>
+</main>
+<footer><div class="in"><nav><a href="/learn">Learn</a><a href="/learn/no-vig-fair-odds">No-vig fair odds</a><a href="/learn/expected-value">Expected value (EV)</a><a href="/learn/closing-line-value">Closing line value (CLV)</a><a href="/learn/hold-and-arbitrage">Hold and arbitrage</a><a href="/learn/middles">Middles</a><a href="/learn/kelly-criterion">Kelly staking</a><a href="/learn/exchange-fees">Exchange fees and effective odds</a><a href="/learn/pickem-math">Pick’em break-evens</a><a href="/learn/how-the-record-works">How the record works</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take bets. Examples on these pages show the math; they are not results or advice. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>

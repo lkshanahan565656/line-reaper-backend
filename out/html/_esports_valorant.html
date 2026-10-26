@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valorant odds: Kalshi prices vs the sharp line | Line Reaper</title>
+<meta name="description" content="Live Valorant match prices on Kalshi beside Pinnacle&#39;s no-vig price where one exists, with our matchup model labelled a model, not an edge. Read live, the same for everyone.">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#080b10">
+<link rel="canonical" href="https://line-reaper-backend-production.up.railway.app/esports/valorant">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310b981'/%3E%3Cpath d='M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z' fill='%2306110d'/%3E%3C/svg%3E">
+<style>
+:root { --bg:#080b10; --card:#111620; --border:#1e2738; --border2:#263044; --text:#e2e8f0; --text2:#94a3b8; --muted:#64748b; --green:#10b981; --green2:#34d399; --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+a { color:var(--green2); text-underline-offset:2px; }
+.top { border-bottom:1px solid var(--border); background:rgba(8,11,16,.92); position:sticky; top:0; z-index:5; }
+.top-in, main, footer .in { max-width:780px; margin:0 auto; padding:0 16px; }
+.top-in { display:flex; align-items:center; justify-content:space-between; height:56px; gap:12px; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:700; letter-spacing:2.5px; font-size:13px; }
+.brand b { font-weight:400; color:var(--text2); margin-left:4px; }
+.back { font:600 12px var(--mono); letter-spacing:.06em; color:var(--text2); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+.back:hover { color:var(--text); border-color:var(--text2); }
+main { padding-top:32px; padding-bottom:48px; }
+.kicker { font:600 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--green2); margin:0 0 8px; }
+h1 { font-size:32px; line-height:1.15; letter-spacing:-.5px; margin:0 0 12px; }
+.lead { color:var(--text2); font-size:17px; margin:0 0 24px; }
+h2 { font-size:19px; line-height:1.3; margin:32px 0 10px; scroll-margin-top:70px; }
+p, ul { margin:0 0 14px; }
+ul { padding-left:22px; }
+li { margin:0 0 6px; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 0 16px; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--border); }
+td { font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; }
+td:first-child { font-family:inherit; font-size:14px; }
+th { font:600 10px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.ex { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px 4px; margin:0 0 18px; }
+.ex-h { font:600 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+.go { display:inline-block; margin:8px 0 0; font:600 12px var(--mono); letter-spacing:.06em; color:var(--green2); text-decoration:none; border:1px solid rgba(52,211,153,.4); border-radius:6px; padding:8px 14px; }
+.go:hover { border-color:var(--green2); }
+ul.index { list-style:none; padding:0; border-top:1px solid var(--border); }
+ul.index li { margin:0; border-bottom:1px solid var(--border); }
+ul.index a { display:block; padding:14px 0; text-decoration:none; color:var(--text); }
+ul.index a b { display:block; font-size:16px; }
+ul.index a span { display:block; color:var(--text2); font-size:14px; }
+.gloss { margin:0; border-top:1px solid var(--border); }
+.gloss .gl-i { padding:12px 0; border-bottom:1px solid var(--border); scroll-margin-top:70px; }
+.gloss .gl-i:target { background:rgba(16,185,129,.08); }
+.gloss dt { font-weight:700; color:var(--text); }
+.gloss dd { margin:4px 0 0; color:var(--text2); font-size:14px; }
+.gloss .gl-also { font:500 10px var(--mono); letter-spacing:.06em; color:var(--muted); text-transform:uppercase; }
+nav.pn { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--border); margin-top:36px; padding-top:16px; font-size:14px; flex-wrap:wrap; }
+.note { color:var(--muted); font-size:13px; }
+footer { border-top:1px solid var(--border); padding:20px 0 28px; color:var(--muted); font-size:13px; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; }
+footer a { color:var(--text2); text-decoration:none; }
+footer a:hover { color:var(--text); text-decoration:underline; }
+@media (max-width:600px) { h1 { font-size:26px; } main { padding-top:24px; } .lead { font-size:16px; } th, td { padding:7px 6px; } }
+
+.stats { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin:0 0 20px; }
+.stat { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; min-width:0; }
+.stat b { display:block; font:700 20px var(--mono); color:var(--text); }
+.stat span { font:600 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.tag { display:inline-block; font:600 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--border2); color:var(--text2); border-radius:4px; padding:1px 6px; white-space:nowrap; }
+.tag.pv { color:var(--green2); border-color:rgba(52,211,153,.5); }
+.links { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px; }
+.links .go { margin:0; }
+.venues { color:var(--text2); font-size:14px; }
+.sub { display:block; color:var(--muted); font-size:11px; font-family:var(--mono); }
+.st-pick { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 16px; font:500 12px var(--mono); color:var(--muted); }
+.st-pick select, .st-pick button { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font:600 12px var(--mono); max-width:100%; }
+.st-pick button { cursor:pointer; letter-spacing:1px; }
+.st-pick span { flex-basis:100%; font-size:11px; }
+.lg-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; list-style:none; padding:0; margin:0 0 20px; }
+.lg-list a { display:block; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); text-decoration:none; font-weight:600; }
+.lg-list a span { display:block; font:500 11px var(--mono); color:var(--muted); }
+.lg-list a:hover { border-color:var(--text2); }
+.empty { background:var(--card); border:1px dashed var(--border2); border-radius:10px; padding:14px 16px; color:var(--text2); margin:0 0 18px; }
+@media (max-width:600px) {
+  table.bd thead { display:none; }
+  table.bd tr { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px 10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  table.bd td { border:0; padding:0; min-width:0; overflow-wrap:anywhere; }
+  table.bd td:first-child { grid-column:1 / -1; }
+  table.bd td[data-l]:not(:first-child)::before { content:attr(data-l); display:block; font:600 9px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .stats { grid-template-columns:repeat(2, minmax(0, 1fr)); } .stat b { font-size:18px; } }
+</style>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Line Reaper">
+<meta property="og:title" content="Valorant odds: Kalshi prices vs the sharp line | Line Reaper">
+<meta property="og:description" content="Live Valorant match prices on Kalshi beside Pinnacle&#39;s no-vig price where one exists, with our matchup model labelled a model, not an edge. Read live, the same for everyone.">
+<meta property="og:url" content="https://line-reaper-backend-production.up.railway.app/esports/valorant">
+<meta property="og:image" content="https://line-reaper-backend-production.up.railway.app/card/league.png?league=valorant&amp;v=1s1vw">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Valorant board on Line Reaper">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Valorant odds: Kalshi prices vs the sharp line | Line Reaper">
+<meta name="twitter:description" content="Live Valorant match prices on Kalshi beside Pinnacle&#39;s no-vig price where one exists, with our matchup model labelled a model, not an edge. Read live, the same for everyone.">
+<meta name="twitter:image" content="https://line-reaper-backend-production.up.railway.app/card/league.png?league=valorant&amp;v=1s1vw">
+</head>
+<body>
+<header class="top"><div class="top-in"><a class="brand" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10b981"/><path d="M8 24V8h3.4v13h6.6V24H8zm11-9.5h5V18h-5z" fill="#06110d"/><path d="M19 8h5v3.5h-5z" fill="#06110d" opacity=".55"/></svg><span>LINE<b>REAPER</b></span></a><a class="back" href="/app">OPEN THE APP</a></div></header>
+<main>
+<p class="kicker"><a href="/leagues" style="color:inherit;text-decoration:none">Leagues</a> · Valorant</p>
+<h1>Valorant odds</h1>
+<p class="lead">Every Valorant match Kalshi lists, with the sharp price beside it where there is one. Board read 23:26 UTC (1 min ago).</p>
+<div class="links"><a class="go" href="/app#lr&amp;t=esports&amp;g=VAL">Match board →</a><a class="go" href="/app#lr&amp;t=esports&amp;em=matchups&amp;eg=VAL">Matchup model (not an edge) →</a><a class="go" href="/app#lr&amp;t=props&amp;sp=VAL">Pick&#39;em lines →</a></div>
+<form class="st-pick" method="get" action="/esports/valorant#board"><label for="stp">Betting from</label><select id="stp" name="state"><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX" selected>Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select><button type="submit">SHOW</button><span>Venues a resident can use, from our venue table (dated 2026-10-26). Check with the venue before you deposit.</span></form>
+<h2 id="board">Match board</h2>
+<div class="stats"><div class="stat"><b>8</b><span>matches</span></div><div class="stat"><b>6</b><span>on Kalshi</span></div><div class="stat"><b>4</b><span>with a sharp price</span></div><div class="stat"><b>0</b><span>under the sharp price</span></div></div><div class="scroll"><table class="bd"><thead><tr><th>Match</th><th>Side 1</th><th>Side 2</th></tr></thead><tbody><tr><td data-l="">Unsettled Resentment vs Victory No Limits<span class="sub">VCT Threshold China Week 2 · Bo3 · in 9h 33m</span></td>
+<td data-l="Side 1">Unsettled Resentment<span class="sub">Kalshi 65.6¢ fee in · sharp 62.5¢ · EV −4.8%</span></td><td data-l="Side 2">Victory No Limits<span class="sub">Kalshi 40.7¢ fee in · sharp 37.5¢ · EV −7.8%</span></td></tr><tr><td data-l="">Wolves Esports vs World Sports Invictus Gaming<span class="sub">VCT Threshold China Week 2 · Bo3 · in 11h 33m</span></td>
+<td data-l="Side 1">Wolves Esports<span class="sub">Kalshi 70.5¢ fee in · sharp 66.5¢ · EV −5.7%</span></td><td data-l="Side 2">World Sports Invictus Gaming<span class="sub">Kalshi 35.6¢ fee in · sharp 33.5¢ · EV −5.9%</span></td></tr><tr><td data-l="">MIBR GC vs Gentle Mates GC<span class="sub">VCT Game Changers Championship Playoffs · Bo3 · in 18h 33m</span></td>
+<td data-l="Side 1">MIBR GC<span class="sub">no Kalshi price</span></td><td data-l="Side 2">Gentle Mates GC<span class="sub">no Kalshi price</span></td></tr><tr><td data-l="">Gentle Mates GC vs MIBR Female<span class="sub">Valorant · Bo3 · in 18h 33m</span></td>
+<td data-l="Side 1">Gentle Mates GC<span class="sub">Kalshi 50.7¢ fee in</span></td><td data-l="Side 2">MIBR Female<span class="sub">Kalshi 54.8¢ fee in</span></td></tr><tr><td data-l="">Shopify Rebellion Gold vs KRU Blaze<span class="sub">VCT Game Changers Championship Playoffs · Bo3 · in 21h 33m</span></td>
+<td data-l="Side 1">Shopify Rebellion Gold<span class="sub">no Kalshi price</span></td><td data-l="Side 2">KRU Blaze<span class="sub">no Kalshi price</span></td></tr><tr><td data-l="">Shopify Rebellion GC vs KRU Blaze<span class="sub">Valorant · Bo3 · in 21h 33m</span></td>
+<td data-l="Side 1">Shopify Rebellion GC<span class="sub">Kalshi 79.2¢ fee in</span></td><td data-l="Side 2">KRU Blaze<span class="sub">Kalshi 26.3¢ fee in</span></td></tr><tr><td data-l="">A Team vs Octagonal Disposition Gaming<span class="sub">VCT Threshold China Week 2 · Bo3 · 10-28 09:00 UTC</span></td>
+<td data-l="Side 1">A Team<span class="sub">Kalshi 61.7¢ fee in · sharp 57¢ · EV −7.6%</span></td><td data-l="Side 2">Octagonal Disposition Gaming<span class="sub">Kalshi 50.7¢ fee in · sharp 43¢ · EV −15.3%</span></td></tr><tr><td data-l="">Any Questions Gaming vs Rare Atom<span class="sub">VCT Threshold China Week 2 · Bo3 · 10-28 11:00 UTC</span></td>
+<td data-l="Side 1">Any Questions Gaming<span class="sub">Kalshi 69.5¢ fee in · sharp 65.5¢ · EV −5.8%</span></td><td data-l="Side 2">Rare Atom<span class="sub">Kalshi 36.6¢ fee in · sharp 34.5¢ · EV −5.7%</span></td></tr></tbody></table></div>
+<p class="note">Kalshi is a CFTC exchange a Texas resident can use; its price is the all-in cost of one contract with the taker fee in. The sharp price is Pinnacle's no-vig chance where Pinnacle prices the match; most esports matches have none, and then nothing is judged. Our matchup model is a model, not an edge: the exchanges' prices beat it in walk-forward tests.</p>
+<h2 id="record">What the record says</h2>
+<p class="note">A kind is marked proven only with 50 graded games at one venue we read ourselves, a CLV t of 2 or more against Pinnacle&#39;s close, and results not running 1.5 sd under what that close expected. Never pooled, never alt or stale lines, never copied books, and of the pick&#39;em kinds only sharp-price legs. The record is kept per kind and venue, not per league.</p><div class="scroll"><table><thead><tr><th>Kind</th><th>Graded</th><th>Texas</th><th>Profit</th></tr></thead><tbody><tr><td>BetRivers main lines vs the sharp fair <span class="tag pv">proven</span></td><td>377 graded across every league; 0 of its graded flags in the public file were Valorant matches</td><td>Not a Texas venue</td><td>Profit not shown yet</td></tr></tbody></table></div><p class="note">Nothing is proven yet at a venue a Texas resident can use.</p><h2 id="labels">Everything else on this page and in the app</h2>
+<div class="scroll"><table><thead><tr><th>Tool</th><th>Label</th><th>Why</th></tr></thead><tbody><tr><td>Esports matchups (LoL, CS2, Valorant, Dota 2) and soccer<span class="sub">ESPORTS &gt; MATCHUPS</span></td><td><span class="tag">model, not an edge</span></td><td style="font-family:inherit">The exchanges&#39; own prices beat our ratings in walk-forward tests.</td></tr><tr><td>Pick&#39;em leg flags (PrizePicks, Underdog, Sleeper, DK Pick6)<span class="sub">PROPS</span></td><td><span class="tag">not proven</span></td><td style="font-family:inherit">Flagged legs have broken about even against Pinnacle&#39;s close.</td></tr></tbody></table></div>
+<h2 id="more">More leagues</h2>
+<ul class="lg-list"><li><a href="/nfl">NFL<span>NFL</span></a></li><li><a href="/nba">NBA<span>NBA</span></a></li><li><a href="/nhl">NHL<span>NHL</span></a></li><li><a href="/cfb">CFB<span>college football</span></a></li><li><a href="/cbb">CBB<span>college basketball</span></a></li><li><a href="/mlb">MLB<span>MLB</span></a></li><li><a href="/soccer">Soccer<span>soccer</span></a></li><li><a href="/tennis">Tennis<span>tennis</span></a></li><li><a href="/esports/lol">LoL<span>esports</span></a></li><li><a href="/esports/cs2">CS2<span>esports</span></a></li><li><a href="/esports/dota2">Dota 2<span>esports</span></a></li></ul>
+</main>
+<footer><div class="in"><nav><a href="/">Line Reaper</a><a href="/leagues">Leagues</a><a href="/nfl">NFL</a><a href="/nba">NBA</a><a href="/nhl">NHL</a><a href="/cfb">CFB</a><a href="/cbb">CBB</a><a href="/mlb">MLB</a><a href="/soccer">Soccer</a><a href="/tennis">Tennis</a><a href="/esports/lol">LoL</a><a href="/esports/cs2">CS2</a><a href="/esports/valorant">Valorant</a><a href="/esports/dota2">Dota 2</a><a href="/learn">Learn</a><a href="/status">Status</a><a href="/terms">Terms</a><a href="/responsible-gambling">Responsible gambling</a></nav>
+<div>Line Reaper is an information service, not a sportsbook. It does not take or place bets. Prices are what each feed showed at its last read: check the price at the venue before you bet. Nothing on this page is a proven edge unless the record below says proven. 21+ only. Gambling problem? Call or text 1-800-GAMBLER.</div></div></footer>
+</body>
+</html>
