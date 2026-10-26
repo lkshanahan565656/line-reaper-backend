@@ -115,7 +115,7 @@ function kambiGame(lg, payload, live) {
   const pairs = (outs, keyOf) => { const m = new Map(); for (const o of outs) { const k = keyOf(o); if (!m.has(k)) m.set(k, []); m.get(k).push(o); } return [...m.values()].filter(v => v.length === 2); };
   const mainIdx = ps => { let b = -1, bd = 9; ps.forEach((x, i) => { const d = Math.abs(prob1(x[1]) - prob1(x[2])); if (d < bd) { bd = d; b = i; } }); return b; };
   const h = g0.h2h.find(o => o.name === g0.home), a = g0.h2h.find(o => o.name === g0.away);
-  let spreads = pairs(g0.spreads, o => Math.abs(o.point)).map(v => { const hh = v.find(o => o.name === g0.home), aa = v.find(o => o.name === g0.away); return hh && aa ? [hh.point, hh.price, aa.price, 1, null] : null; }).filter(Boolean);
+  let spreads = pairs(g0.spreads, o => (o.name === g0.home ? o.point : -o.point)).map(v => { const hh = v.find(o => o.name === g0.home), aa = v.find(o => o.name === g0.away); return hh && aa ? [hh.point, hh.price, aa.price, 1, null] : null; }).filter(Boolean);
   let totals = pairs(g0.totals, o => o.point).map(v => { const o = v.find(x => x.name === 'Over'), u = v.find(x => x.name === 'Under'); return o && u ? [o.point, o.price, u.price, 1, null] : null; }).filter(Boolean);
   const ms = mainIdx(spreads); if (ms >= 0) spreads[ms][3] = 0;
   const mt = mainIdx(totals); if (mt >= 0) totals[mt][3] = 0;
