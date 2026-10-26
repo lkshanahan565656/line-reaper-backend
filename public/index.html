@@ -2078,7 +2078,7 @@ body::before { display:none !important; }
   </div>
 
   <div id="esMapUndersPane" style="display:none">
-    <div class="esm-intro"><b>Research, not an edge.</b> Map 1 and Map 2 kill <b>Unders</b> on PrizePicks, Underdog and Sleeper where Pinnacle's number for the map (its team kills in LoL and Dota 2, its rounds in CS2 and Valorant) sits under what the app's own player lines add up to. A leg is a play only where <b>our kill model</b>, anchored on Pinnacle's map number, puts the Under past that app's break-even. Every leg is recorded and graded on the map's stats. Pre-registered 10-26; nothing alerts until a game and app reach 50 graded legs over 10+ matches and hold up by match.</div>
+    <div class="esm-intro"><b>Research, not an edge.</b> Map 1, Map 2 and Maps 1-2 kill <b>Unders</b> on PrizePicks, Underdog and Sleeper where Pinnacle's number for the map (its team kills in LoL and Dota 2, its rounds in CS2 and Valorant) sits under what the app's own player lines add up to. A leg is a play only where <b>our kill model</b>, anchored on Pinnacle's map number, puts the Under past that app's break-even. Every leg is recorded and graded on the map's stats. Pre-registered 10-26; nothing alerts until a game and app reach 50 graded legs over 10+ matches and hold up by match.</div>
     <div id="muRecord"><div class="empty-wrap"><div class="empty-big" style="font-size:18px">Loading the map unders record…</div></div></div>
     <div id="muToday"></div>
     <div class="esm-foot">Pinnacle posts no esports player props, so no sharp prices a player's map kills: the record is judged on results against each app's break-even (PrizePicks 3-pick Power 55%, Underdog and Sleeper at the Under's own payout), counted by match because one match's legs move together. Information only, not a sportsbook. 21+. Gambling problem? Call 1-800-GAMBLER.</div>
@@ -7496,16 +7496,16 @@ function muRecordHTML(rec, title, sub) {
   const cells = rec?.cells || [];
   const head = `<div class="es-hdr"><h3>${title}</h3><span class="sub">${sub}</span></div>`;
   if (!cells.length) return head + `<div class="es-as-note" style="margin-bottom:12px">Nothing recorded yet. Rows open from 6 hours before a match once Pinnacle has a number for the map and the app lists 4+ players of both teams.</div>`;
-  const rows = cells.map(c => `<tr><td class="side">${escEs(c.gameLabel)} · ${escEs(c.appName)}</td><td>${c.graded} of ${rec.target}</td><td>${c.wins}-${c.losses}${c.pushes ? `-${c.pushes}` : ''}</td>`
+  const rows = cells.map(c => `<tr><td class="side">${escEs(c.gameLabel)} · ${escEs(c.appName)} · ${escEs(c.spanLabel || '')}</td><td>${c.graded} of ${rec.target}</td><td>${c.wins}-${c.losses}${c.pushes ? `-${c.pushes}` : ''}</td>`
     + `<td>${muPct(c.hit)} vs ${muPct(c.be)}</td><td>${c.matches}</td><td>${c.zMatch ?? '—'}</td><td style="color:${c.units >= 0 ? '#34d399' : '#f87171'}">${c.units > 0 ? '+' : ''}${c.units}u</td>`
     + `<td>${c.open}</td><td class="ref">${escEs(c.label)}${c.why ? `, ${escEs(c.why)}` : ''}</td></tr>`).join('');
-  return head + `<div class="os-scroll"><table class="os-tbl"><tr><th class="side">GAME · APP</th><th>GRADED</th><th>W-L</th><th>HIT VS BREAK-EVEN</th><th>MATCHES</th><th>Z BY MATCH</th><th>UNITS AT BREAK-EVEN</th><th>PENDING</th><th>LABEL</th></tr>${rows}</table></div>`;
+  return head + `<div class="os-scroll"><table class="os-tbl"><tr><th class="side">GAME · APP · MAPS</th><th>GRADED</th><th>W-L</th><th>HIT VS BREAK-EVEN</th><th>MATCHES</th><th>Z BY MATCH</th><th>UNITS AT BREAK-EVEN</th><th>PENDING</th><th>LABEL</th></tr>${rows}</table></div>`;
 }
 function muGroupHTML(g) {
   const legs = (g.legs || []).map(l => `<tr><td class="side">${escEs(l.player)} <span style="color:#64748b">${escEs(l.team || '')}</span></td><td>U ${l.line}</td><td>${muPct(l.be)}</td><td>${muPct(l.fair)}</td>`
     + `<td style="color:${l.edge > 0 ? '#34d399' : '#94a3b8'}">${l.edge == null ? 'no model' : `${l.edge > 0 ? '+' : ''}${(l.edge * 100).toFixed(1)} pts`}</td><td>${l.play ? '<b style="color:#34d399">RECORDED</b>' : '—'}</td></tr>`).join('');
   const a = g.anchor || {};
-  return `<div class="esm-card${g.under ? ' edge' : ''}"><div class="esm-top"><span class="esm-game">${escEs(g.gameLabel)}</span><span class="emu-conf ${g.under ? 'ok' : 'insufficient'}">${g.under ? 'PINNACLE UNDER THE APP' : 'PINNACLE NOT UNDER'}</span><span>${escEs(g.appName)} · Map ${g.map}</span><span class="esm-time">${esmWhen(g.start)}</span></div>`
+  return `<div class="esm-card${g.under ? ' edge' : ''}"><div class="esm-top"><span class="esm-game">${escEs(g.gameLabel)}</span><span class="emu-conf ${g.under ? 'ok' : 'insufficient'}">${g.under ? 'PINNACLE UNDER THE APP' : 'PINNACLE NOT UNDER'}</span><span>${escEs(g.appName)} · ${escEs(g.spanLabel || `Map ${g.map}`)}</span><span class="esm-time">${esmWhen(g.start)}</span></div>`
     + `<div class="esm-intro" style="margin:8px 0 6px">${escEs(g.match)}${g.league ? ` <span style="color:#64748b">${escEs(g.league)}</span>` : ''}: the app's lines add up to <b>${g.appSum}</b> kills (${g.teams.map(t => t.n).join(' + ')} players, scaled to five a team); Pinnacle's ${escEs(a.src || 'number')} says <b>${a.kills}</b>${a.rounds ? ` (${a.rounds} rounds)` : ''}, ${g.gapPct > 0 ? '+' : ''}${g.gapPct}%.</div>`
     + `<div class="os-scroll"><table class="os-tbl"><tr><th class="side">PLAYER</th><th>LINE</th><th>BREAK-EVEN</th><th>OUR FAIR</th><th>EDGE</th><th>RECORD</th></tr>${legs}</table></div></div>`;
 }

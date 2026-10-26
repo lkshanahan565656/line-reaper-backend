@@ -20,6 +20,10 @@ test('pinAnchor: LoL team totals added, else the map total; CS rounds x kills a 
   assert.deepEqual(M.pinAnchor(lol, 'LOL', 1), { kills: 26, teams: [14.5, 11.5], src: 'team totals' });
   assert.deepEqual(M.pinAnchor(lol, 'LOL', 2), { kills: 27.5, teams: null, src: 'map total' });
   assert.equal(M.pinAnchor(lol, 'LOL', 3), null);
+  // Maps 1-2: each map's anchor added, both needed
+  const lol2 = new Map([...lol, ['kills|2|tt|0', pts(13.5, 0.5)], ['kills|2|tt|1', pts(12.5, 0.5)]]);
+  assert.deepEqual(M.pinAnchor(lol2, 'LOL', '1-2'), { kills: 52, teams: [28, 24], src: 'team totals', maps: 2 });
+  assert.equal(M.pinAnchor(new Map([['kills|1|total', pts(27.5, 0.5)]]), 'LOL', '1-2'), null, 'map 2 missing');
   const cs = new Map([['rounds|1|total', pts(21.5, 0.5)]]);
   const a = M.pinAnchor(cs, 'CS', 1);
   assert.equal(a.rounds, 21.5);
@@ -50,6 +54,9 @@ test('flagGroups: both teams need 4+ players; the sum scales to five; under when
   // no anchor: no group; map 3 is never read
   assert.equal(M.flagGroups(legs, () => null).length, 0);
   assert.equal(M.flagGroups(team('PP', 0, [4, 4, 4, 4], 3).concat(team('PP', 1, [4, 4, 4, 4], 3)), anchor).length, 0);
+  // Maps 1-2 lines are their own span, never mixed with Map 1
+  const both = M.flagGroups([...team('PP', 0, [9, 8, 7, 6], '1-2'), ...team('PP', 1, [9, 8, 7, 6], '1-2'), ...legs], () => ({ kills: 50, teams: null, src: 'x' }));
+  assert.deepEqual(both.map(g => String(g.map)).sort(), ['1', '1-2']);
 });
 
 test('priceGroup: a play needs our fair a point past the app break-even; a closed Under is skipped', () => {
@@ -95,4 +102,7 @@ test('mapRecord: a lead only at 50+ graded over 10+ matches with z by match at 2
   const two = M.mapRecord([...rows, ...rows.slice(0, 5).map(r => ({ ...r, appKey: 'UD' }))]);
   assert.equal(two.cells.length, 2);
   assert.equal(two.cells.find(x => x.app === 'UD').label, 'research, not an edge');
+  // spans are cut apart
+  const spans = M.mapRecord([...rows.map(r => ({ ...r, span: '1' })), ...rows.slice(0, 5).map(r => ({ ...r, span: '1-2' }))]);
+  assert.deepEqual(spans.cells.map(x => x.spanLabel), ['Map 1', 'Maps 1-2']);
 });

@@ -3053,7 +3053,7 @@ const h2hTracker = createTracker({
 h2hTracker.ready().catch(e => console.error('H2H tracker: store failed to initialise:', e.message));
 
 // ── MAP KILL UNDERS (mapunders.js, pre-registered 10-26 16:56Z) ──
-// Map 1 and Map 2 kill Unders on PrizePicks, Underdog and Sleeper where
+// Map 1, Map 2 and Maps 1-2 kill Unders on PrizePicks, Underdog and Sleeper where
 // Pinnacle's number for the map (team kills for LoL and Dota 2, rounds × kills
 // a round for CS2 and Valorant) sits under the app's own lines summed. Two
 // records: every flagged Under ('map-under', the rule) and the ones our model
@@ -3100,13 +3100,13 @@ function runMapUnders(picks, now = Date.now()) {
     const game = trackerSportKey(p.sport);
     if (!mapunders.PIN_GAME[game] || !(Date.parse(p.startTime) > now)) continue;
     const mk = normalizeMarket(p.market);
-    const n = /^k\|([12])$/.exec(mk)?.[1];
+    const n = /^k\|(1|2|1-2)$/.exec(mk)?.[1];
     if (!n) continue;
     const s = esmatch.sideFor(pin.filter(m => m.game === mapunders.PIN_GAME[game]), p, { startOf: m => m.start || NaN });
     if (!s) continue;
     matches.set(s.m.id, s.m);
     for (const [app, line] of Object.entries(esgaps.bookLines(p))) {
-      legs.push({ app, game, matchId: s.m.id, map: +n, team: s.i, player: p.player, line, p });
+      legs.push({ app, game, matchId: s.m.id, map: n, team: s.i, player: p.player, line, p });
       st.legs++;
     }
   }
@@ -3132,13 +3132,13 @@ function runMapUnders(picks, now = Date.now()) {
       // Pinnacle's team kills, else its map total split the way the app's lines split it
       const tk = g.anchor.teams ? g.anchor.teams[leg.team] : g.anchor.kills * g.teams[leg.team].scaled / g.appSum;
       const mean = +(tk * sh.share).toFixed(2), sd = fittedTeamSd(leg.game);
-      const ctx = { game: leg.game, share: sh.share, maps: 1, ...(sd ? { o: { teamSd: sd } } : {}) };
+      const ctx = { game: leg.game, share: sh.share, maps: mapunders.spanMaps(g.map).length, ...(sd ? { o: { teamSd: sd } } : {}) };
       leg.muFair = { kind: 'share', mean, ctx };
       leg.share = sh.share; leg.teamKills = +tk.toFixed(1); leg.mean = mean;
       return sharemodel.shareProb(mean, leg.line, 'UNDER', ctx);
     }
     const r = leg.p.rounds;
-    if (!r?.ctx || r.ctx.qs?.length !== 1) return null;
+    if (!r?.ctx || r.ctx.qs?.length !== mapunders.spanMaps(g.map).length) return null;
     leg.muFair = { kind: 'rounds', ctx: r.ctx };
     leg.mean = r.mean;
     return roundmodel.sideProb(r.ctx, leg.line, 'UNDER');
@@ -3160,14 +3160,14 @@ function runMapUnders(picks, now = Date.now()) {
         ppLine: x.leg.line, udLine: app === 'UD' ? x.leg.line : null, sleeperLine: app === 'SL' ? x.leg.line : null,
         modelPred: x.leg.mean ?? null, predSource: 'map unders', marketPred: x.leg.mean ?? null, fairSource: x.fair != null ? (x.leg.muFair?.kind || null) : null,
         context: p.context || null, appKey: app, muFair: x.leg.muFair || null,
-        trackExtra: { appKey: app, game: g.game, mapN: g.map, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
+        trackExtra: { appKey: app, game: g.game, span: g.map, be: x.be, signalDecimal: +(1 / x.be).toFixed(4), appSum: g.appSum, anchor: g.anchor.kills,
           anchorSrc: g.anchor.src, gapPct: g.gapPct, under5: g.under5, modelProb: x.fair, modelEdge: x.edge, share: x.leg.share ?? null,
           teamKills: x.leg.teamKills ?? null, players: g.teams.map(t => t.n) },
       };
       rulePlays.push({ ...play, bestEv: g.under && inWindow ? +((x.edge ?? 0) * 100).toFixed(2) : null });
       modelPlays.push({ ...play, bestEv: g.under && inWindow && x.model ? +(x.edge * 100).toFixed(2) : null });
     }
-    shown.push({ app: g.app, appName: mapunders.APP_NAME[g.app], game: g.game, gameLabel: mapunders.GAME_LABEL[g.game], map: g.map,
+    shown.push({ app: g.app, appName: mapunders.APP_NAME[g.app], game: g.game, gameLabel: mapunders.GAME_LABEL[g.game], map: g.map, spanLabel: mapunders.spanLabel(g.map),
       match: `${matches.get(g.matchId)?.teams?.join(' vs ') || ''}`, league: matches.get(g.matchId)?.league || null,
       start: Number.isFinite(start) ? new Date(start).toISOString() : null, teams: g.teams, appSum: g.appSum, anchor: g.anchor, under: g.under, under5: g.under5, gapPct: g.gapPct,
       legs: priced.map(x => ({ player: x.leg.p.player, team: x.leg.p.team, line: x.leg.line, be: x.be, fair: x.fair, edge: x.edge, play: g.under && x.model })) });
@@ -5038,7 +5038,7 @@ app.get('/', (req, res) => {
     if (html) return res.set('Cache-Control', 'no-cache').type('html').send(html);
     if (loadApp()) return res.redirect('/app');
   }
-  res.json({ status: 'Line Reaper backend running', version: '3.200.1', updated: new Date().toISOString() });
+  res.json({ status: 'Line Reaper backend running', version: '3.201.0', updated: new Date().toISOString() });
 });
 
 // ── ACCOUNTS + BILLING ────────────────────────────────────────────────────────
@@ -5870,13 +5870,13 @@ app.get('/api/esports/rounds', async (req, res) => {
 app.get('/api/esports/map-unders', async (req, res) => {
   try {
     const [ruleRows, modelRows] = await Promise.all([mapUndersTracker.list({ limit: 1e6 }), mapUndersModelTracker.list({ limit: 1e6 })]);
-    const pick = r => ({ id: r.id, status: r.status, game: r.game || r.sport, app: r.appKey || r.signalBook, map: r.mapN ?? null, player: r.player, team: r.team, matchTitle: r.matchTitle,
+    const pick = r => ({ id: r.id, status: r.status, game: r.game || r.sport, app: r.appKey || r.signalBook, map: r.span ?? r.mapN ?? null, player: r.player, team: r.team, matchTitle: r.matchTitle,
       startTime: r.startTime, signalAt: r.signalAt, line: r.signalLine, closeLine: r.closeLine, be: r.be ?? null, fair: r.modelProb ?? null, closeFair: r.closeFair ?? null,
       appSum: r.appSum ?? null, anchor: r.anchor ?? null, anchorSrc: r.anchorSrc || null, result: r.result, outcome: r.outcome, profit: r.profit, note: r.note || null });
     const recent = rows => rows.filter(r => r.status !== 'open').sort((a, b) => String(b.startTime).localeCompare(String(a.startTime))).slice(0, Math.min(+req.query.limit || 200, 2000)).map(pick);
     res.set('Cache-Control', 'public, max-age=30').json({
       label: 'research, not an edge', alerts: false, on: MAP_UNDERS_ON,
-      rule: 'Unders on Map 1 and Map 2 kills where Pinnacle\'s number for the map sits under the app\'s own lines summed (4+ players a team, scaled to five). A play is a flagged Under our model prices past the app\'s break-even by a point. Pre-registered 2026-10-26 16:56Z.',
+      rule: 'Unders on Map 1, Map 2 and Maps 1-2 kills where Pinnacle\'s number for the map sits under the app\'s own lines summed (4+ players a team, scaled to five). A play is a flagged Under our model prices past the app\'s break-even by a point. Pre-registered 2026-10-26 16:56Z.',
       bar: { graded: mapunders.DEFAULTS.target, matches: mapunders.DEFAULTS.minMatches, z: 2, zBy: 'match' },
       breakEvens: { PP: sportProps.PP_GRADE.be, UD: 'its implied % / the Under multiplier', SL: '1 / the Under multiplier' },
       now: { at: mapUndersState.at, counts: mapUndersState.counts, error: mapUndersState.error, groups: mapUndersState.groups },
@@ -8792,7 +8792,7 @@ app.post('/api/tracker/run', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
-  version: '3.200.1',
+  version: '3.201.0',
   modelWeight: MODEL_WEIGHT,
   prizepicks: { count: cache.prizepicks.data?.length||0, updated: cache.prizepicks.updated, blocked: Date.now() < ppFail.until, retryAt: ppFail.until > Date.now() ? new Date(ppFail.until).toISOString() : null, inUse: ppLinesNow().length, lastError: dfsError.prizepicks },
   underdog: { count: cache.underdog.data?.length||0, updated: cache.underdog.updated, sports: cache.udSportLabels, lastError: dfsError.underdog },

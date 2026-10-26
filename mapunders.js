@@ -5,8 +5,8 @@
 // player lines added up went 37-19, but on 3 LoL matches. This records it on
 // every esports board build, every day, so the sample grows in matches.
 //
-// For each app, match and map N (1 or 2), with 4+ players of BOTH teams
-// listed at a single-map kills line for map N:
+// For each app, match and span (Map 1, Map 2, or Maps 1-2), with 4+ players of
+// BOTH teams listed at a kills line for exactly that span:
 //   app sum   each team's lines summed and scaled to five, both teams added
 //   anchor    Pinnacle's map N number: LoL and Dota 2, its two team kill
 //             means added (team totals), else its map total kills; CS2 and
@@ -21,7 +21,8 @@
 const { probit } = require('./esboard');
 
 const DEFAULTS = {
-  maps: [1, 2],
+  // the spans read: single maps 1 and 2, and Maps 1-2 (added 18:28Z, before any row)
+  spans: ['1', '2', '1-2'],
   minPlayers: 4,          // listed players a team needs on the app
   modelMargin: 0.01,      // our fair past the app's break-even
   leadMs: 6 * 3600e3,     // a row opens from 6 hours before the start
@@ -39,6 +40,7 @@ const PIN_GAME = { LOL: 'LOL', DOTA: 'DOTA', CS: 'CS2', VAL: 'VAL' };
 const APP_NAME = { PP: 'PrizePicks', UD: 'Underdog', SL: 'Sleeper' };
 const GAME_LABEL = { LOL: 'LoL', DOTA: 'Dota 2', CS: 'CS2', VAL: 'Valorant' };
 
+const spanLabel = s => (String(s).includes('-') ? `Maps ${s}` : `Map ${s}`);
 const r2 = x => Math.round(x * 100) / 100;
 const r4 = x => Math.round(x * 1e4) / 1e4;
 
@@ -53,9 +55,21 @@ function ladderMean(pts, sd, { mainOnly = false } = {}) {
   return r2(v.reduce((a, b) => a + b, 0) / v.length);
 }
 
-// Pinnacle's map N anchor in kills, off one match's ladders (a Map)
+// Pinnacle's anchor in kills for a span ('1', '2' or '1-2': each map's added,
+// every map needed), off one match's ladders (a Map)
 // → { kills, teams: [a, b] | null, src, rounds? } or null
-function pinAnchor(ladders, game, n) {
+const spanMaps = span => { const m = /^(\d)(?:-(\d))?$/.exec(String(span)); if (!m) return []; const out = []; for (let i = +m[1]; i <= +(m[2] || m[1]); i++) out.push(i); return out; };
+function pinAnchor(ladders, game, span) {
+  const maps = spanMaps(span);
+  if (!maps.length) return null;
+  const each = maps.map(n => mapAnchor(ladders, game, n));
+  if (each.some(a => !a)) return null;
+  if (each.length === 1) return each[0];
+  const sum = f => r2(each.reduce((a, x) => a + f(x), 0));
+  return { kills: sum(x => x.kills), teams: each.every(x => x.teams) ? [sum(x => x.teams[0]), sum(x => x.teams[1])] : null,
+    src: [...new Set(each.map(x => x.src))].join(' + '), ...(each[0].rounds ? { rounds: sum(x => x.rounds) } : {}), maps: maps.length };
+}
+function mapAnchor(ladders, game, n) {
   const get = k => (ladders && typeof ladders.get === 'function' ? ladders.get(k) : ladders?.[k]);
   if (game === 'LOL' || game === 'DOTA') {
     const sd = TEAM_SD[game];
@@ -80,7 +94,7 @@ function flagGroups(legs, anchorOf, o = {}) {
   const opt = { ...DEFAULTS, ...o };
   const byKey = new Map();
   for (const l of legs || []) {
-    if (!l || !APP_NAME[l.app] || !opt.maps.includes(l.map) || !(l.line > 0) || (l.team !== 0 && l.team !== 1)) continue;
+    if (!l || !APP_NAME[l.app] || !opt.spans.includes(String(l.map)) || !(l.line > 0) || (l.team !== 0 && l.team !== 1)) continue;
     const k = `${l.app}|${l.matchId}|${l.map}`;
     const g = byKey.get(k) || byKey.set(k, { app: l.app, game: l.game, matchId: l.matchId, map: l.map, seen: new Set(), legs: [] }).get(k);
     const pk = `${l.team}|${String(l.player || '').toLowerCase()}`;
@@ -124,7 +138,7 @@ function priceGroup(group, { model, be, margin = DEFAULTS.modelMargin } = {}) {
 }
 
 // ── the record ──
-// tracker rows (createTracker, trackExtra kept: appKey, be, game, mapN, …)
+// tracker rows (createTracker, trackExtra kept: appKey, be, game, span, …)
 // → per game × app: graded legs, record, hit rate vs the mean break-even,
 // units at each leg's break-even (signalDecimal = 1 / be), distinct matches,
 // z naive and z by match (each match's legs move together), and the label
@@ -166,11 +180,11 @@ function mapRecord(rows, o = {}) {
     for (const r of list) { const k = f(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
     return m;
   };
-  const cells = [...by(r => `${r.game || r.sport}|${r.appKey || r.signalBook}`)].map(([k, rs]) => {
-    const [game, app] = k.split('|');
-    return { game, gameLabel: GAME_LABEL[game] || game, app, appName: APP_NAME[app] || app, ...cell(rs, o) };
+  const cells = [...by(r => `${r.game || r.sport}|${r.appKey || r.signalBook}|${r.span ?? r.mapN ?? ''}`)].map(([k, rs]) => {
+    const [game, app, span] = k.split('|');
+    return { game, gameLabel: GAME_LABEL[game] || game, app, appName: APP_NAME[app] || app, span, spanLabel: spanLabel(span), ...cell(rs, o) };
   }).sort((a, b) => b.graded - a.graded || b.open - a.open);
   return { all: cell(list, o), cells, target: o.target || DEFAULTS.target, minMatches: o.minMatches || DEFAULTS.minMatches };
 }
 
-module.exports = { DEFAULTS, KPR, TEAM_SD, ROUNDS_SD, PIN_GAME, APP_NAME, GAME_LABEL, ladderMean, pinAnchor, flagGroups, priceGroup, mapRecord };
+module.exports = { spanMaps, spanLabel, DEFAULTS, KPR, TEAM_SD, ROUNDS_SD, PIN_GAME, APP_NAME, GAME_LABEL, ladderMean, pinAnchor, flagGroups, priceGroup, mapRecord };

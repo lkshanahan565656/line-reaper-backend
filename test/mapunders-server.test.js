@@ -48,7 +48,7 @@ test('a match 9 hours out is read and shown, but opens no row', async () => {
   assert.equal((await srv.mapUndersTracker.list({ limit: 100 })).length, 0);
   const g = srv.mapUndersState.groups[0];
   assert.equal(g.appName, 'PrizePicks');
-  assert.equal(g.map, 1);
+  assert.equal(g.map, '1');
   assert.deepEqual(g.teams.map(t => t.n), [5, 4]);
   assert.ok(g.anchor.kills < g.appSum);
 });
@@ -65,7 +65,7 @@ test('inside 6 hours: every flagged Under in the rule record, model plays in the
     assert.equal(r.signalSide, 'UNDER');
     assert.equal(r.signalBook, 'PP');
     assert.equal(r.appKey, 'PP');
-    assert.equal(r.mapN, 1);
+    assert.equal(r.span, '1');
     assert.equal(r.be, 0.5503);
     assert.equal(r.signalDecimal, +(1 / 0.5503).toFixed(4));
   }
