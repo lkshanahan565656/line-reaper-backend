@@ -4391,6 +4391,27 @@ const middleTracker = require('./middletrack').createMiddleTracker({
   http: upstream,
 });
 middleTracker.ready().catch(e => console.error('Middle tracker: store failed to initialise:', e.message));
+// Offshore reference (offshoreref.js): non-sports markets where the offshore
+// Polymarket book is the deepest price, against Kalshi and Polymarket US on the
+// identical contract (seeds/offshore-pairs.json). Backtest FAILED (10-26,
+// seeds/offshore-backtest.json); this records live once a minute for the parts
+// the backtest could not grade: the gap held to resolution and the size at the
+// shown price. Research only: no alerts, no bet rows, no profit. OFFSHORE_REF=off stops it.
+const offshoreref = require('./offshoreref');
+const OFFSHORE_PAIRS = require('./seeds/offshore-pairs.json');
+const offshoreRefOn = () => !/^(off|0|false|no)$/i.test(String(process.env.OFFSHORE_REF || '').trim());
+const offshoreRef = offshoreref.createOffshoreRef({
+  http: upstream, post: (url, body, cfg) => axios.post(url, body, cfg), pairs: OFFSHORE_PAIRS.pairs,
+  store: resultsBackup.wrap('offshoreRef', createPickFileStore(process.env.OFFSHORE_REF_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'offshore-ref.json'))),
+});
+offshoreRef.ready.catch(e => console.error('Offshore reference: store failed to initialise:', e.message));
+let offshoreRefBusy = false;
+async function tickOffshoreRef() {
+  if (!offshoreRefOn() || offshoreRefBusy) return [];
+  offshoreRefBusy = true;
+  try { return await offshoreRef.tick(); } finally { offshoreRefBusy = false; }
+}
+
 // Gas locks (gaslocks.js): Kalshi's daily state gas markets, the favourite at
 // 90-98¢ the evening before, logged and graded from the result. GAS_LOCKS=off
 // stops the scans; GAS_LOCK_ALERTS=off keeps them out of the webhook.
@@ -5676,6 +5697,22 @@ app.get('/api/xscreen', (req, res) => {
 });
 // Gas locks (gaslocks.js): tonight's plays, the record and the backtest.
 // Free: the count and the record; the plays are Pro, and need Kalshi's licence.
+// Offshore reference (offshoreref.js): the pairs, the mismatch list, the
+// backtest and the live record are free; the live gaps need Pro and the
+// Polymarket and Kalshi display licences. No offshore links, ever.
+app.get('/api/offshore-ref', async (req, res) => {
+  try {
+    const pro = hasPro(req), lic = licenceOf(req);
+    const rows = await offshoreRef.list();
+    const fams = {};
+    for (const p of OFFSHORE_PAIRS.pairs) { const k = p.fam; fams[k] ||= { pairs: 0, kalshi: 0, pmus: 0 }; fams[k].pairs++; if (p.k) fams[k].kalshi++; if (p.u) fams[k].pmus++; }
+    const base = { on: offshoreRefOn(), label: 'research, not an edge', pro, rule: offshoreref.DEFAULTS, pairs: { builtAt: OFFSHORE_PAIRS.builtAt, count: OFFSHORE_PAIRS.pairs.length, byFamily: fams, minOffshoreVolume: OFFSHORE_PAIRS.minOffshoreVolume },
+      mismatches: require('./seeds/offshore-mismatch.json').reasons, backtest: require('./seeds/offshore-backtest.json'),
+      record: offshoreref.summarize(rows), state: offshoreRef.state(), ...withheldBody(withheldOf(lic, ['polymarket', 'kalshi'])) };
+    if (!pro || !lic.polymarket) return res.json(base);
+    res.json({ ...base, gaps: offshoreRef.gaps(40).filter(g => g.venue !== 'kalshi' || lic.kalshi) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.get('/api/gas-locks', async (req, res) => {
   try {
     const pro = hasPro(req), lic = licenceOf(req);
@@ -8957,6 +8994,7 @@ app.get('/api/status', (req, res) => { const pro = hasPro(req); res.json({
   pinnacleExtraGames: { games: pinExtraGames.games.length, at: pinExtraGames.at ? new Date(pinExtraGames.at).toISOString() : null, errors: pinExtraGames.errors },
   evResults: evResultsState,
   leadLag: { on: leadLagOn(), ...leadLagEngine.stats() },
+  offshoreRef: { on: offshoreRefOn(), ...offshoreRef.state(), errors: offshoreRef.state().errors.slice(0, 3) },
   moreBooks: { sharpPromoted, enabled: xbooksState.enabled, action: xbooksState.action, matchbook: xbooksState.matchbook, counts: xbooksState.counts, errors: xbooksState.errors, updated: xbooksState.updated, ms: xbooksState.ms },
   propsBoard: propsBoardCache.counts || null, propsBoardBuild: { ...propsBoardStats, builtAt: propsBoardCache.at ? new Date(propsBoardCache.at).toISOString() : null }, evScreenBuild: { ...evScreenStats },
   esportsBoard: { updated: esportsBoard.state.updated, durationMs: esportsBoard.state.durationMs, counts: esportsBoard.state.counts, calibration: esportsBoard.state.calibration, errors: esportsBoard.state.errors.slice(0, 5) },
@@ -9033,6 +9071,8 @@ const schedule = (expr, fn) => cron.schedule(expr, ops.job(jobLabel(expr, fn), f
 
 // LoL matchups: schedule, results and the forward record, every 10 minutes.
 for (const E of Object.values(matchupEngines)) schedule('3,13,23,33,43,53 * * * *', () => E.refresh().catch(() => {}));
+// Offshore reference recorder (offshoreref.js), every minute.
+schedule('* * * * *', () => tickOffshoreRef().catch(e => console.warn('Offshore reference:', e.message)));
 // Team ratings for match context, every 6 hours.
 schedule('40 */6 * * *', () => refreshRatings(axios, ratingsState, console, ratingsOpts).catch(() => {}));
 
