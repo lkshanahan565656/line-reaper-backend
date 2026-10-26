@@ -63,6 +63,10 @@
     {
       "key": "^/api/esports/map-unders(\\?|$)",
       "why": "new in v3.200.0 (ESPORTS > MAP UNDERS, mapunders.js): the recording predates it, so the offline server answers from its own empty record (\"Nothing recorded yet\"); mapunders and mapunders-server tests check the rows and the record"
+    },
+    {
+      "key": "^/api/states(/|\\?|$)",
+      "why": "new in v3.207.0 (My state): the recording predates it, and the offline server answers from venuestates.js, which is pure data with no feed behind it, so the answer is the real one"
     }
   ],
   "mustHaveData": [

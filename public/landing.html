@@ -213,6 +213,16 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
 .tx-grid ul { list-style:none; }
 .tx-grid li { font-size:14px; padding:5px 0; border-top:1px solid var(--border); color:var(--text); }
 .tx-grid li:first-child { border-top:none; }
+.st-look { margin-top:18px; border:1px solid var(--border2); border-radius:8px; padding:14px 16px; }
+.st-look label { display:block; font-family:var(--mono); font-size:11px; letter-spacing:1.5px; color:var(--green); text-transform:uppercase; margin-bottom:8px; }
+.st-look select { background:var(--bg); color:var(--text); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; font:inherit; font-size:14px; max-width:100%; }
+.st-out { margin-top:12px; font-size:14px; color:var(--text2); }
+.st-out ul { list-style:none; margin:6px 0 10px; }
+.st-out li { padding:4px 0; border-top:1px solid var(--border); overflow-wrap:anywhere; }
+.st-out li:first-child { border-top:none; }
+.st-out .h { font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-top:10px; }
+.st-out .yes { color:var(--green2); } .st-out .unk { color:#fbbf24; } .st-out .no { color:var(--muted); }
+.st-out a { color:inherit; }
 @media (max-width:680px) { .tx-grid { grid-template-columns:1fr; } .tx-grid > div + div { border-left:none; border-top:1px solid var(--border2); } }
 </style>
 </head>
@@ -278,7 +288,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
         <ul>
           <li>Best prices above fair, with fill size and a MIN BET SIZE filter</li>
           <li>Line-move charts, arbs, saved views and favorite venues</li>
-          <li>One tap shows only the venues a Texas resident can use</li>
+          <li>Set your state once: every screen shows only the venues legal there (Texas on a new device)</li>
           <li>A price above the fair is a price, not a proven edge: the tag on each view says so</li>
         </ul>
       </div>
@@ -347,13 +357,18 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       <p class="track-note">Read live from the app's close scoreboard. CLV is the average closing line value at the flagged price; after 2 min is the same at the price two minutes later. Profit is the units won at one unit a game: it shows "not shown yet" until the results clear chance, because beating the close comes first and profit takes far more bets to show. <a class="textlink" href="/app?start=results">See every record in the app, losers included</a>.</p>
 
       <div class="tx" id="texas">
-        <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin:36px 0 12px">BETTING FROM TEXAS</div>
+        <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin:36px 0 12px">WORKS IN TEXAS</div>
         <p class="tx-lead" id="txLead">No sportsbook is legal in Texas. Pick'em apps and CFTC exchanges are.</p>
         <div class="tx-grid">
           <div><div class="tx-h">Pick'em apps</div><ul id="txPickem"><li>PrizePicks</li><li>Underdog</li><li>Sleeper</li><li>DK Pick6</li></ul></div>
           <div><div class="tx-h">Exchanges</div><ul id="txExch"><li>Kalshi</li><li>Polymarket US</li><li>Gemini</li></ul></div>
         </div>
         <p class="track-note" id="txNote">Venues we price are listed plainly; the ones we cannot read yet say why. Polymarket's international site is not for US users: the app only ever points US users to Polymarket US.</p>
+        <div class="st-look">
+          <label for="stLook">Not in Texas? Pick your state</label>
+          <select id="stLook" aria-label="Your state" onchange="stLookup(this.value)"><option value="">Choose a state</option></select>
+          <div class="st-out" id="stOut" aria-live="polite">Each venue is marked legal, not sure, or not legal there, with the source and the date we read it. The app does the same on every screen once you set CUSTOMIZE &gt; My state.</div>
+        </div>
       </div>
 
       <div class="num" style="font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px;margin:36px 0 12px">NOT PROVEN: MODELS AND RESEARCH</div>
@@ -424,7 +439,7 @@ footer { padding:48px 0 56px; font-size:13px; color:var(--muted); }
       <details><summary>Does Line Reaper place bets for me?</summary><div class="a"><p>No. We never hold your money, connect to your betting accounts or place bets. You read the alert and decide whether to place it yourself.</p></div></details>
       <details><summary>Is the advice personalised?</summary><div class="a"><p>No. Everyone gets the same alert with the same suggested size in units. You choose what a unit is worth to you, and the app can track your own stakes, but it never tailors a bet to your situation.</p></div></details>
       <details><summary>Will I win?</summary><div class="a"><p>Not every bet, and nobody can promise you a profit. Even a real edge loses often in the short run, and some of our tools are still losing while their samples grow. What we can promise is the record: every alert is graded in public, including the losers, and plays that stop working are cut.</p></div></details>
-      <details><summary>Where can I use it?</summary><div class="a"><p>Anywhere the app loads, but you must be 21 or older and follow the laws where you live. Alerts point US users only to US-regulated venues, never to Polymarket's international site. Availability varies by state: in Texas no sportsbook is legal, so a Texan can use the pick'em apps and the CFTC exchanges (Kalshi, Polymarket US, Gemini). Pick "Texas" on the odds screen to see only those. <a href="#texas">What Texans can place</a>.</p></div></details>
+      <details><summary>Where can I use it?</summary><div class="a"><p>Anywhere the app loads, but you must be 21 or older and follow the laws where you live. Alerts point US users only to US-regulated venues, never to Polymarket's international site. Availability varies by state: in Texas no sportsbook is legal, so a Texan can use the pick'em apps and the CFTC exchanges (Kalshi, Polymarket US, Gemini). Set your state in CUSTOMIZE &gt; My state (Texas on a new device) and every screen shows only the venues legal there; the list below covers every state. <a href="#texas">What Texans can place</a>.</p></div></details>
       <details><summary>What do I need to get started?</summary><div class="a"><p>An account at a venue that is legal where you live, and a bankroll you can afford to lose. In Texas that is a pick'em app (PrizePicks, Underdog, Sleeper, DK Pick6) or a CFTC exchange (Kalshi, Polymarket US, Gemini). The free plan needs no card.</p></div></details>
       <details><summary>Can I get alerts on my phone?</summary><div class="a"><p>Yes. Open the app on your phone, add it to your home screen, then CUSTOMIZE, Phone app, Push alerts. You choose which kinds of alert you get; everyone gets the same text for each.</p></div></details>
       <details><summary>Can I cancel?</summary><div class="a"><p>Yes, any time, from your account. Details are in our <a href="/refunds">refund policy</a>.</p></div></details>
@@ -527,6 +542,23 @@ fetch('/api/claims').then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP 
   document.querySelector('#labelTable tbody').innerHTML = '<tr><td colspan="2" class="muted">Every tool in the app wears its tag: model, research, or proven.</td></tr>';
   ['heroProven', 'heroTexas', 'heroGraded', 'heroBuilding'].forEach(id => { $(id).textContent = '-'; });
 });
+// Not in Texas: /api/states (venuestates.js), a source and a date on every entry.
+// "Not sure" is never shown as available.
+fetch('/api/states').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+  $('stLook').innerHTML = '<option value="">Choose a state</option>' + (d.states || []).map(x => `<option value="${esc(x.state)}">${esc(x.name)}</option>`).join('');
+}).catch(() => { $('stOut').textContent = 'The state list did not load. Open the app and set CUSTOMIZE > My state.'; });
+function stLookup(st) {
+  if (!st) return;
+  $('stOut').textContent = 'Loading...';
+  fetch('/api/states/' + encodeURIComponent(st)).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+    const src = v => v.source ? ` <span class="muted">(${v.source.url ? `<a href="${esc(v.source.url)}" target="_blank" rel="noopener">${esc(v.source.title)}</a>` : esc(v.source.title)}, ${esc(v.source.dated)})</span>` : '';
+    const li = v => `<li>${esc(v.name)}${v.note ? ` · ${esc(v.note)}` : ''}${v.status === 'yes' && v.read === false ? ` <span class="muted">(not read: ${esc(v.why)})</span>` : ''}${src(v)}</li>`;
+    const part = (cls, h, list) => list.length ? `<div class="h ${cls}">${h} (${list.length})</div><ul>${list.map(li).join('')}</ul>` : '';
+    $('stOut').innerHTML = `<p>${esc(d.note)}</p>` + part('yes', 'Legal in ' + esc(d.name), d.venues || []) + part('unk', 'Not sure: check with the venue', d.unknown || [])
+      + part('no', 'Not legal there', (d.notLegal || []).filter(v => !['pinnacle', 'matchbook', 'bovada', 'polymarket'].includes(v.key)))
+      + `<p class="muted">${esc(d.check)} Table read ${esc(d.asOf)}. Prices, alerts and the record are the same for everyone; the state only changes which venues the app shows.</p>`;
+  }).catch(() => { $('stOut').textContent = 'That state did not load. Try again in a minute.'; });
+}
 fetch('/api/odds-screen').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
   $('liveGames').textContent = (d.counts?.games || 0).toLocaleString();
 }).catch(() => { $('liveGames').textContent = '-'; });

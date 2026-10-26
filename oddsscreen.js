@@ -12,7 +12,8 @@
 // number shows it with "line differs" and no EV, because a price at another
 // number isn't the same bet.
 //
-// With a state picked (?state=TX) only venues legal there are shown and can be
+// With a state picked (?state=TX) venues not legal there are dropped, ones no
+// source vouches for are greyed (legal: 'unknown'), and only legal ones can be
 // "best". Pinnacle's fair stays as the reference column: nobody bets it there.
 //
 // History: each side's fair and venue prices every few minutes while the game
@@ -153,13 +154,17 @@ function sideLabel(key, side, point, home) {
   return `${side} ${p > 0 ? '+' : ''}${p}`;
 }
 
-// Mark each side's best bettable price (and drop venues a state can't use).
+// Mark each side's best bettable price. With a state: a venue legal there is
+// marked legal 'yes'; one no source vouches for stays, greyed, as 'unknown'
+// and can't be best; one not legal there is dropped (venues.js).
 function finish(markets, { state = null } = {}) {
-  const legal = venues.legalIn(state);
-  const show = v => v.ref || !state || legal(v.venue);
+  const st = venues.stateOf(state);
   for (const m of markets) for (const s of m.sides) {
-    s.venues = s.venues.filter(show);
-    const bettable = s.venues.filter(v => !v.ref && !v.lineDiffers && v.decimal > 1);
+    if (st) {
+      for (const v of s.venues) if (!v.ref) v.legal = venues.statusOf(st, v.venue);
+      s.venues = s.venues.filter(v => v.ref || v.legal !== 'no');
+    }
+    const bettable = s.venues.filter(v => !v.ref && !v.lineDiffers && v.decimal > 1 && (!st || v.legal === 'yes'));
     const top = bettable.sort((a, b) => b.decimal - a.decimal)[0] || null;
     for (const v of s.venues) v.best = !!top && v === top;
     s.best = top ? { venue: top.venue, name: top.name, american: top.american, ev: top.ev } : null;
@@ -170,7 +175,7 @@ function finish(markets, { state = null } = {}) {
     const best = m.sides.map(s => s.venues.find(v => v.best));
     m.bestHold = best.every(Boolean) ? r4(best.reduce((a, v) => a + 1 / v.decimal, 0) - 1) : null;
   }
-  return markets.filter(m => m.sides.some(s => s.venues.some(v => !v.ref)));
+  return markets.filter(m => m.sides.some(s => s.venues.some(v => !v.ref && (!st || v.legal === 'yes'))));
 }
 
 // The whole screen. gamesByLeague: freeBooksState.games; kalshi: Map of bets
@@ -196,7 +201,7 @@ function build(gamesByLeague = {}, { kalshi = null, now = Date.now(), horizonMs 
   }
   games.sort((a, b) => ms(a.start) - ms(b.start) || a.home.localeCompare(b.home));
   const seen = new Set(games.flatMap(g => g.markets.flatMap(m => m.sides.flatMap(s => s.venues.map(v => v.venue)))));
-  const cols = ORDER.filter(k => seen.has(k)).map(k => ({ key: k, name: NAME(k), ref: REFS.has(k), secondHand: SECOND_HAND.has(k), tx: venues.legalIn('TX')(k) }));
+  const cols = ORDER.filter(k => seen.has(k)).map(k => ({ key: k, name: NAME(k), ref: REFS.has(k), secondHand: SECOND_HAND.has(k), tx: venues.legalIn('TX')(k), ...(venues.stateOf(state) && !REFS.has(k) ? { legal: venues.statusOf(state, k) } : {}) }));
   const sides = games.flatMap(g => g.markets.flatMap(m => m.sides));
   return { games, venues: cols, leagues: Object.entries(leagues).map(([k, n]) => ({ key: k, label: LEAGUE_LABEL[k] || k.toUpperCase(), games: n })).sort((a, b) => b.games - a.games),
     counts: { games: games.length, sides: sides.length, priced: sides.filter(s => s.fair != null).length, plusEv: sides.filter(s => s.best?.ev > 0).length, lowHold: games.flatMap(g => g.markets).filter(m => m.bestHold != null && m.bestHold < 0.01).length } };

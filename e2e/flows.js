@@ -577,7 +577,7 @@ e2eU2,${d(4)},Standard,5,17.5,Won,NBA,LeBron James,Points,,Higher`;
     await page.locator('#linkBtn').click();
     await settle(page, w, opts, 100);
     const esLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
-    expect(/\/app#lr&t=esports&em=matchups/.test(esLink), `ESPORTS link: ${esLink}`);
+    expect(/\/app#lr&t=esports(&st=[a-z]+)?&em=matchups/.test(esLink), `ESPORTS link: ${esLink}`);
     await page.locator('#esModeMatches').click();
     await settle(page, w, opts, 150);
     await openCold(opts, `${local}/app#lr&t=esports&em=matchups&eg=CS2`, st => {
