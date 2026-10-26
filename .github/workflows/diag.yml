@@ -1,0 +1,21 @@
+name: diag-mapunders
+on:
+  push:
+    branches: [diag-mapunders]
+permissions:
+  contents: write
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          B=https://line-reaper-backend-production.up.railway.app
+          mkdir out && cd out
+          curl -s --max-time 60 $B/api/esports/map-unders -o mapunders.json || true
+          curl -s --max-time 60 $B/api/health -o health.json || true
+          curl -s --max-time 60 "$B/api/esports/rounds?limit=1" -o rounds.json || true
+          curl -s --max-time 60 "$B/api/esports/share?limit=1" -o share.json || true
+          date -u > at.txt
+          git init -q && git checkout -q -b diag-mapunders-out && git add . && git -c user.name=diag -c user.email=diag@x commit -qm out
+          git push -f https://x-access-token:${{ github.token }}@github.com/${{ github.repository }} diag-mapunders-out
