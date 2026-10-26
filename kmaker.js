@@ -23,6 +23,7 @@
 // Research, not a tip sheet: no alerts, no orders, no sizing. KALSHI_MAKER=off stops it.
 
 const { kalshiFee } = require('./exchanges');
+const fees = require('./fees');
 const xsize = require('./xsize');
 
 const KIND = 'kalshi-maker';
@@ -34,7 +35,7 @@ const kindOf = b => (b.sport === 'nhl' && b.market !== 'h2h' ? KIND_NHL : KIND);
 const SPORTS = new Set(['nfl', 'ncaaf', 'nba', 'nhl']);
 const EDGE = 0.02;
 const EDGES = [0.01, 0.02, 0.04];      // reported in the backtest; 2% is the one judged
-const MAKER_RATE = 0.0175;             // Kalshi: round up(0.0175 × C × P × (1−P)) on markets with maker fees
+const MAKER_RATE = fees.SCHEDULES.kalshi.maker.rate;   // 0.0175 (fees.js): round up(0.0175 × C × P × (1−P)) on markets with maker fees
 const LOT = 100;                        // fee rounding is per order: priced on a 100-contract order
 const MIN_BID = 0.03;
 const MIN_N = 50;
@@ -89,7 +90,7 @@ function fillOf(trades, { buy, bid, from, to }) {
 // one closed bid → CLV and result per $1 at the bid + fee
 function grade(b) {
   const out = {};
-  if (b.closeFair > 0) out.clv = r4(b.closeFair / b.cost - 1);
+  if (b.closeFair > 0) out.clv = fees.edge(b.closeFair, b.cost);
   if (b.result === 'yes' || b.result === 'no') {
     const won = (b.buy === 'yes') === (b.result === 'yes');
     out.outcome = won ? 'win' : 'loss';

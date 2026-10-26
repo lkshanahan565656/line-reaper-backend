@@ -21,18 +21,19 @@
 // feeCoefficient (0.0695 by default), not rounded.
 
 const TIERS = [50, 200, 1000];
+// the rates are fees.js's schedules (one place for every venue's cut)
+const fees = require('./fees');
 const VENUES = {
-  kalshi: { rate: 0.07, roundCent: true },
-  gemini: { rate: 0.07, roundCent: true },
-  polymarketus: { rate: 0.0695, roundCent: false },
+  kalshi: { rate: fees.SCHEDULES.kalshi.taker.rate, roundCent: true },
+  gemini: { rate: fees.SCHEDULES.gemini.taker.rate, roundCent: true },
+  polymarketus: { rate: fees.SCHEDULES.polymarketus.taker.rate, roundCent: false },
 };
 const GEMINI_BOOK_URL = sym => `https://api.gemini.com/v1/book/${encodeURIComponent(sym)}`;
 const r4 = x => Math.round(x * 1e4) / 1e4;
 
 // fee on n contracts at p
 function feeOf(n, p, { rate = 0.07, roundCent = true } = {}) {
-  const f = rate * n * p * (1 - p);
-  return roundCent ? Math.ceil(f * 100 - 1e-9) / 100 : f;
+  return fees.orderFee('kalshi', p, n, { rate, round: roundCent });
 }
 
 // asks [[price, contracts]] walked for `usd` in whole contracts, fee in →

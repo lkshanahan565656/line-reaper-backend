@@ -22,6 +22,7 @@ const ranker = require('./oddsrank');
 const venues = require('./venues');
 const { canonName } = require('./ev');
 const depthbook = require('./depthbook');
+const fees = require('./fees');
 
 const SHARP_WEIGHTS = { pinnacle: 1, matchbook: 0.6 };
 const MIN_CONSENSUS = 4;
@@ -106,9 +107,14 @@ function priceCell(q, { fair, stake, now, bettable }) {
   const age = q.updatedAt ? now - ms(q.updatedAt) : null;
   const eff = q.effectiveDecimal;
   const feeUnknown = q.commission?.type === 'commission' && q.commission.rate == null;
+  // an exchange quote that kept its all-in cost (Kalshi: ask + fee, fees.js)
+  // is ranked on that cost, so the EV here is fees.edge(fair, cost): the same
+  // number the exchange records grade CLV with (xsize.js, outrights.js)
+  const cost = q.originalFormat === 'probability' && q.originalPrice > 0 && q.originalPrice < 1 && Math.abs(q.originalPrice - 1 / eff) < 1e-3 ? q.originalPrice : (eff > 1 ? 1 / eff : null);
+  const ev = fair == null || cost == null ? null : fees.edge(fair, cost);
   return {
     provider: q.providerId, name: p?.name || q.providerId, type: p?.type || null, decimal: r4(q.decimal), effective: r4(eff), american: schema.fromDecimal(eff, 'american'),
-    implied: r4(1 / eff), ev: fair == null ? null : r4(engine.ev(fair, eff)), evAmount: fair == null ? null : r2(engine.evAmount(fair, eff, stake)),
+    implied: r4(cost ?? 1 / eff), ev, evAmount: ev == null ? null : r2(ev * stake),
     ref: !!p?.reference, secondHand: p?.access === 'second_hand', texas: !!p?.texas, oneWay: !!q.oneWay, bettable: bettable(q.providerId),
     fee: q.commission?.type || 'none', feeUnknown, freshness: schema.freshness(age, { access: p?.access }), ageSec: age == null ? null : Math.round(age / 1000),
     liquidity: q.liquidity, maxStake: q.maxStake, url: q.sourceIds?.url || null, sourceIds: q.sourceIds || null, line: q.line,
@@ -128,7 +134,7 @@ function sizeCell(c, q, { fair, stake, depth, minSize }) {
     c.sizeOk = true;
     c.listed = c.effective;
     c.effective = f.decimal; c.american = schema.fromDecimal(f.decimal, 'american'); c.implied = r4(1 / f.decimal);
-    c.ev = fair == null ? null : r4(engine.ev(fair, f.decimal)); c.evAmount = fair == null ? null : r2(engine.evAmount(fair, f.decimal, stake));
+    c.ev = fair == null ? null : fees.edge(fair, 1 / f.decimal); c.evAmount = c.ev == null ? null : r2(c.ev * stake);
     c.sizedAt = minSize;
   }
   return c;

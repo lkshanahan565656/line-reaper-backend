@@ -42,8 +42,9 @@ const PIN_FRESH_MS = 5 * 60e3;
 const CLOSE_MAX_AGE_MS = 20 * 60e3;
 const WINDOW_MIN = [2, 7 * 1440];
 const MIN_N = 50;
-const KALSHI_RATE = 0.07;
-const PMUS_RATE = 0.0695;
+const fees = require('./fees');
+const KALSHI_RATE = fees.SCHEDULES.kalshi.taker.rate;
+const PMUS_RATE = fees.SCHEDULES.polymarketus.taker.rate;
 
 const r4 = x => (x == null || !Number.isFinite(x) ? null : Math.round(x * 1e4) / 1e4);
 const num = v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
@@ -272,9 +273,9 @@ function matchPin(x, pins) {
   return best?.pin || null;
 }
 
-// the top-of-book cost a contract, fee in, before Kalshi's round-up to the cent
-// (the size tiers below walk the book with the round-up, per fill)
-const feeFor = (venue, p, rate) => (rate ?? (venue === 'kalshi' ? KALSHI_RATE : PMUS_RATE)) * p * (1 - p);
+// the top-of-book fee a contract (fees.js: priced on a 100-contract order, the
+// shopper's number; the size tiers below walk the book with each fill's round-up)
+const feeFor = (venue, p, rate) => fees.contractFee(venue === 'kalshi' ? 'kalshi' : 'polymarketus', p, { rate: rate ?? null }) ?? 0;
 // a side's fill at each tier from asks [[price, contracts]] → { 50: {...walk, ev}, ... }
 function tiersOf(venue, asks, fair, rate) {
   const fee = { rate: rate ?? (venue === 'kalshi' ? KALSHI_RATE : PMUS_RATE), roundCent: venue === 'kalshi' };
@@ -328,7 +329,7 @@ function boardOf({ pins = [], exch = [], books = new Map() } = {}) {
         out.push({ sideKey, venue: x.venue, sport: x.sport, type: x.type, scope: x.scope, family, season: family === 'season', event: x.title, exchangeEvent: x.id,
           runner: r.name, buy, marketId: r.marketId, pinId: f.pinId || p.id, pinMarket: p.id, pinRunner: f.name, pinAmerican: buy === 'yes' ? f.american : (f.no ?? null),
           cutoff: p.cutoff, pinLimit: p.limit, margin, missing: fairs.missing ?? 0, fair, fairPower: buy === 'yes' ? f.power : r4(1 - f.power), fairShin: buy === 'yes' ? f.shin : r4(1 - f.shin),
-          price: ask, cost, ev: r4(fair / cost - 1), tiers, sized: books.has(sideKey) ? 'book' : asks ? 'top' : null, feeRate: r.feeRate });
+          price: ask, cost, ev: fees.edge(fair, cost), tiers, sized: books.has(sideKey) ? 'book' : asks ? 'top' : null, feeRate: r.feeRate });
       }
     }
   }
@@ -351,7 +352,7 @@ function flagOf(x, t, pinReadAt) {
 // one closed flag → CLV and result per $1 at the $50 fill's all-in cost
 function grade(b) {
   const out = {};
-  if (b.closeFair > 0) out.clv = r4(b.closeFair / b.cost - 1);
+  if (b.closeFair > 0) out.clv = fees.edge(b.closeFair, b.cost);
   if (b.result === 'yes' || b.result === 'no') {
     const won = (b.buy === 'yes') === (b.result === 'yes');
     out.outcome = won ? 'win' : 'loss';
