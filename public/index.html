@@ -1464,6 +1464,18 @@ body.no-help .clv-info { display:none; }
 .shp-good { color:var(--green); font-weight:700; }
 .shp-bad { color:#f87171; }
 .shp-dim { color:var(--text2); font-size:11px; }
+.mv-t td { vertical-align:top; }
+.mv-t .mv-what { white-space:normal; min-width:170px; max-width:280px; }
+.mv-v { font-size:11px; line-height:1.5; }
+.mv-v.mv-moved { color:#34d399; }
+.mv-v.mv-old { color:#f59e0b; }
+.mv-v.mv-part, .mv-v.mv-against, .mv-v.mv-other, .mv-v.mv-new { color:var(--text2); }
+.mv-t a { color:inherit; text-decoration:underline; }
+.mv-lg { font-size:10px; letter-spacing:.06em; color:var(--text2); margin-right:4px; }
+.mv-sort { cursor:pointer; }
+/* the chart stays on screen while the table scrolls sideways on a phone */
+.mv-chart { position:sticky; left:0; max-width:calc(100vw - 40px); white-space:normal; }
+.mv-sort.on { color:var(--text); }
 .nflm-tag { display:inline-block; font-size:10px; letter-spacing:.06em; padding:1px 6px; border:1px solid #f59e0b; color:#f59e0b; border-radius:3px; margin-right:6px; }
 .nflm-bt { font-size:11px; color:var(--text2); border-left:3px solid #f59e0b; padding:6px 10px; margin:4px 0 10px; line-height:1.6; }
 .nflm-game { border:1px solid #1f1f1f; border-radius:6px; padding:8px 10px; margin-bottom:10px; }
@@ -1641,6 +1653,12 @@ body.no-help .clv-info { display:none; }
     <div class="sport-row" id="ortModes"></div>
     <div class="shp-bar" id="ortBar" style="margin-top:8px"></div>
     <div id="ortContent"></div>
+  </div>
+  <div id="mvView" style="display:none">
+    <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">INFORMATION, NOT AN EDGE</span> The markets that moved most today, at each venue, and every other venue's answer: <b>moved too</b>, or <b>still at the old number</b>. Prices are the chance each one implies (cents = points of chance; fees in on exchanges); number moves are points of line. "Since first seen" starts at the first price we saved, not the venue's opening line. A venue still at the old number is not a bet on its own: the "app stale" and "lead-lag" leads both graded as no edge against the close, and Results shows what the record backs. Nothing here places an order.</div>
+    <div class="sport-row" id="mvModes"></div>
+    <div class="shp-bar" id="mvBar" style="margin-top:8px"></div>
+    <div id="mvContent"></div>
   </div>
   <div id="kmkView" style="display:none">
     <div class="shp-dim" style="margin:0 0 10px;line-height:1.5"><span class="nflm-tag">RESEARCH, NOT A BET</span> A resting Kalshi bid on each NFL, CFB, NBA and NHL game side, 2%+ under Pinnacle's no-vig fair after Kalshi's maker fee. Taking Kalshi's ask has lost to Pinnacle's close; this tests whether waiting for a seller does better. The record counts a bid only when a Kalshi trade printed through it. Nothing here places an order.</div>
@@ -2076,7 +2094,7 @@ const LRShare = (() => {
   // venues left out go as one bit each in this order (a new venue is added at
   // the END, or old links change meaning); a venue not listed goes by its id
   const VENUES = ['pinnacle', 'matchbook', 'fanduel', 'betrivers', 'kalshi', 'gemini', 'polymarketus', 'draftkings', 'betmgm', 'caesars', 'bet365', 'fanatics', 'hardrock', 'thescore'];
-  const MODES = ['lines', 'opps', 'markets', 'arb', 'maker', 'outrights', 'nflmodel'];
+  const MODES = ['lines', 'opps', 'markets', 'arb', 'maker', 'outrights', 'nflmodel', 'moves'];
   const SHOP_MODES = ['opps', 'markets', 'arb'];
   // the shopper and game-lines filters a link restores, with the value a new device starts on
   const SHOP_DEF = { state: 'TX', markets: '', sort: 'ev', league: '', q: '', minEv: '', minEdge: '', maxAge: '', hours: '48', minSize: '', method: 'power', excluded: [] };
@@ -10272,6 +10290,132 @@ function ortRender() {
   el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} runner sides priced${flagged ? ` · ${flagged} clear the record's bar ($50 at +${Math.round(d.edge.outright * 100)}% over fair, +${Math.round(d.edge.h2h * 100)}% head-to-heads)` : ''}. Fair is the lower of the power and Shin no-vig prices for a YES. Pinnacle read ${escEs(d.pinAt ? new Date(d.pinAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')}.</div>
     <div class="nflm-scroll"><table class="nflm-t"><thead><tr><th>Sport</th><th>Bet</th><th>Venue</th><th>Pinnacle fair</th><th>Ask</th><th>EV top${ortUi.minSize ? ` / $${ortUi.minSize}` : ''}</th><th>$50</th><th>$200</th><th>$1K</th><th>Pinnacle</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
+// ─── BIGGEST MOVES (ODDS SCREEN > BIGGEST MOVES) ───────────────────────────────
+// /api/moves: today's largest moves at each venue (since first seen, last 3h,
+// last 1h), and every other venue's answer. The same for everyone: no alerts,
+// no sizing. Choices live in localStorage.
+var mvUi = { window: 'open', type: 'price', kind: '', league: '', venue: '', sort: 'move', data: null, error: null, timer: null, open: {} };
+try { Object.assign(mvUi, JSON.parse(localStorage.getItem('lr_moves') || '{}'), { data: null, error: null, timer: null, open: {} }); } catch {}
+function mvSet(k, v) {
+  mvUi[k] = v;
+  // a venue or league from another window or type may not be in the new list
+  if (k === 'type' || k === 'kind') { mvUi.venue = ''; mvUi.league = ''; }
+  try { localStorage.setItem('lr_moves', JSON.stringify({ window: mvUi.window, type: mvUi.type, kind: mvUi.kind, league: mvUi.league, venue: mvUi.venue, sort: mvUi.sort })); } catch {}
+  mvLoad();
+}
+async function mvLoad() {
+  clearTimeout(mvUi.timer);
+  const el = document.getElementById('mvContent');
+  if (!el) return;
+  mvControls();
+  if (!mvUi.data) el.innerHTML = `<div class="loading-wrap"><div class="loading-label">Loading...</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`;
+  const q = new URLSearchParams({ window: mvUi.window, type: mvUi.type, sort: mvUi.sort });
+  for (const k of ['kind', 'league', 'venue']) if (mvUi[k]) q.set(k, mvUi[k]);
+  try { mvUi.data = await tailGet(`/api/moves?${q}`); mvUi.error = null; }
+  catch (e) { mvUi.error = e.old ? 'Biggest moves needs a newer backend.' : e.message; }
+  mvRender();
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode === 'moves') mvUi.timer = setTimeout(() => { if (!document.hidden) mvLoad(); else mvUi.timer = setTimeout(mvLoad, 60e3); }, 60e3);
+}
+function mvControls() {
+  const bar = document.getElementById('mvModes');
+  if (bar) {
+    const c = (k, v, l) => `<button class="sport-chip${mvUi[k] === v ? ' active' : ''}" onclick="mvSet('${k}','${v}')">${l}</button>`;
+    bar.innerHTML = c('window', 'open', 'SINCE FIRST SEEN') + c('window', '3h', 'LAST 3H') + c('window', '1h', 'LAST 1H') + '<span style="width:10px"></span>' +
+      c('type', 'price', 'PRICE MOVES') + c('type', 'line', 'NUMBER MOVES') + '<span style="width:10px"></span>' + c('kind', '', 'ALL') + c('kind', 'game', 'GAME LINES') + c('kind', 'prop', 'PROPS');
+  }
+  const fb = document.getElementById('mvBar');
+  if (!fb) return;
+  const f = mvUi.data?.facets || { venues: [], leagues: [] };
+  // keep the current pick in the list even when this window has no rows for it
+  const opts = (list, cur, all) => [['', all], ...list.map(x => [x.key, `${x.label} (${x.n})`]), ...(cur && !list.some(x => x.key === cur) ? [[cur, cur.toUpperCase()]] : [])];
+  const sel = (k, list, label) => `<label>${label}<select onchange="mvSet('${k}', this.value)">${list.map(([v, l]) => `<option value="${escEs(v)}"${String(mvUi[k]) === v ? ' selected' : ''}>${escEs(l)}</option>`).join('')}</select></label>`;
+  fb.innerHTML = sel('league', opts(f.leagues, mvUi.league, 'Every league'), 'LEAGUE') + sel('venue', opts(f.venues, mvUi.venue, 'Every venue (biggest per market)'), 'MOVED AT') +
+    sel('sort', [['move', 'Biggest move'], ['old', 'Most venues still at old number'], ['start', 'Starting soonest']], 'SORT');
+}
+const mvAm = a => (a == null ? '—' : a > 0 ? `+${a}` : `${a}`);
+const mvPt = (x, mkt) => (x == null ? '—' : mkt === 'spread' && x > 0 ? `+${x}` : `${x}`);
+const mvChance = p => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+// a price as the row shows it: American on game lines, the chance on props
+const mvPrice = (r, v) => (r.kind === 'game' ? mvAm(v) : mvChance(v));
+const MV_STATUS = { moved: 'moved too', old: 'still at old number', part: 'moved part way', against: 'moved the other way', other: 'on another number', new: 'no price at the start' };
+function mvSize(z) {
+  if (!z) return '';
+  if (z.unread) return '<span class="shp-dim">size not read</span>';
+  if (z.empty) return '<span class="shp-dim">book empty</span>';
+  return `<span class="shp-dim">${z.fills ? `fills $${z.fills.toLocaleString()}` : 'under $50'} · $${(z.topUsd || 0).toLocaleString()} at top</span>`;
+}
+function mvVenue(f, r) {
+  const what = r.type === 'line' ? (f.point == null ? '' : ` ${mvPt(f.point, r.market)}`)
+    : f.status === 'other' ? (f.point != null ? ` at ${mvPt(f.point, r.market)}` : '') : ` ${mvPrice(r, f.now)}${f.cents != null ? ` (${f.cents > 0 ? '+' : ''}${f.cents}¢)` : ''}`;
+  const name = `${escEs(f.name)}${f.secondHand ? '<sup>c</sup>' : ''}`;
+  const label = `${f.url && !f.ref ? `<a href="${escAttr(f.url)}" target="_blank" rel="noopener">${name}</a>` : name}${escEs(what)}`;
+  const sz = mvSize(f.size);
+  return `<div class="mv-v mv-${f.status}" title="${escAttr(f.name + ': ' + (MV_STATUS[f.status] || f.status))}">${label}${sz ? ` ${sz}` : ''}</div>`;
+}
+function mvRender() {
+  mvControls();
+  const el = document.getElementById('mvContent');
+  if (!el) return;
+  if (mvUi.error) { el.innerHTML = `<div class="empty-wrap"><div class="empty-big">COULD NOT LOAD</div><div class="empty-sub">${escEs(mvUi.error)}</div></div>`; return; }
+  const d = mvUi.data;
+  if (!d) return;
+  const h = d.history || {};
+  const since = t => (t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : null);
+  const depth = `Game-line history from ${since(h.gameSince) || 'nothing saved yet'} (${h.gameMarkets || 0} sides today)` +
+    (h.propsOn ? ` · prop history from ${since(h.propSince) || 'nothing saved yet'} (${h.propMarkets || 0} props; kept ${h.propKeepHours || 3}h, starts empty after an update)` : ' · prop history is off on this server');
+  const rows = d.rows || [];
+  if (!rows.length) {
+    const thin = !h.gameMarkets && !h.propMarkets;
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-big">${thin ? 'NO DATA YET' : 'NOTHING MOVED'}</div><div class="empty-sub">${thin
+      ? 'No saved prices for today\'s markets yet. Game lines are saved every few minutes from when a game first shows up, props from when the apps and books are read, so check back soon.'
+      : `No ${d.type === 'line' ? 'number move of half a point or more' : 'price move of a cent or more'} ${d.window === 'open' ? 'since we first saw each market' : `in the last ${d.window === '3h' ? '3 hours' : 'hour'}`}${mvUi.venue || mvUi.league || mvUi.kind ? ' with these filters' : ''}.`}</div><div class="shp-dim" style="margin-top:8px">${escEs(depth)}</div></div>`;
+    return;
+  }
+  const th = (k, l) => `<th class="mv-sort${mvUi.sort === k ? ' on' : ''}" onclick="mvSet('sort','${k}')">${l}${mvUi.sort === k ? ' ▾' : ''}</th>`;
+  const body = rows.map((r, i) => {
+    const followers = r.followers || [];
+    const by = st => followers.filter(f => (Array.isArray(st) ? st.includes(f.status) : f.status === st));
+    const moved = by('moved'), old = by('old'), rest = by(['part', 'against', 'other', 'new']);
+    const fromTo = r.type === 'line' ? `${mvPt(r.from, r.market)} → ${mvPt(r.to, r.market)}` : `${mvPrice(r, r.from)} → ${mvPrice(r, r.to)}`;
+    const size = r.type === 'line' ? `${r.move} pt${r.move === 1 ? '' : 's'}` : `${r.move}¢`;
+    const name = `${escEs(r.venueName)}`;
+    const venue = r.url ? `<a href="${escAttr(r.url)}" target="_blank" rel="noopener">${name}</a>` : name;
+    const what = r.kind === 'game' ? `${escEs(r.side)}<div class="shp-dim">${escEs(r.marketLabel)} · ${escEs(r.event)} · ${escEs(shpWhen(r.start))}</div>`
+      : `${escEs(r.side)}<div class="shp-dim">${escEs(r.event || r.marketLabel)} · ${escEs(shpWhen(r.start))}</div>`;
+    const chart = r.kind === 'game' ? `<button class="os-btn${mvUi.open[r.id] ? ' on' : ''}" onclick="mvChart(${i})">${mvUi.open[r.id] ? 'HIDE' : 'CHART'}</button>` : '';
+    const list = l => (l.length ? l.map(f => mvVenue(f, r)).join('') : '<span class="shp-dim">—</span>');
+    return `<tr><td class="mv-what"><span class="mv-lg">${escEs(r.leagueLabel)}</span> ${what}</td><td><b>${size}</b><div class="shp-dim">${escEs(fromTo)}</div></td><td>${venue}${mvSize(r.size) ? `<div>${mvSize(r.size)}</div>` : ''}</td>
+      <td>${list(moved)}</td><td>${list(old)}</td><td>${list(rest)}</td><td class="shp-dim">${escEs(since(r.since) || '—')}</td><td>${chart}</td></tr>` +
+      (mvUi.open[r.id] && r.kind === 'game' ? `<tr><td colspan="8"><div class="os-chart mv-chart" id="osc-mv${i}"><div class="os-note">Loading the line history...</div></div></td></tr>` : '');
+  }).join('');
+  const unit = d.type === 'line' ? 'points of line' : 'cents of implied chance';
+  el.innerHTML = `<div class="shp-dim" style="margin-bottom:8px">${rows.length} ${d.type === 'line' ? 'number' : 'price'} move${rows.length === 1 ? '' : 's'}, ranked in ${unit}${mvUi.venue ? '' : ', each market once at the venue that moved most'}. ${d.counts ? `${d.counts.price} price and ${d.counts.line} number moves in this window.` : ''} ${escEs(depth)}.</div>
+    <div class="nflm-scroll"><table class="nflm-t mv-t"><thead><tr>${th('start', 'Market · starts')}${th('move', 'Move')}<th>Moved at</th><th>Moved too</th>${th('old', 'Still at old number')}<th>Other venues</th><th>Since</th><th>Chart</th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="shp-dim" style="margin-top:8px">${escEs(d.note || '')}</div>`;
+  rows.forEach((r, i) => { if (mvUi.open[r.id] && r.kind === 'game') mvDraw(i); });
+}
+// a game row's chart: the odds screen's own line history for that side
+// (open rows go by row id, so a reload or another filter keeps the right ones)
+function mvChart(i) {
+  const r = (mvUi.data?.rows || [])[i];
+  if (!r) return;
+  mvUi.open[r.id] = !mvUi.open[r.id];
+  mvRender();
+}
+async function mvDraw(i) {
+  const r = (mvUi.data?.rows || [])[i];
+  if (!r || r.kind !== 'game') return;
+  const id = `mv${i}`;
+  mvUi.hist = mvUi.hist || {};
+  if (!mvUi.hist[r.gameId]) {
+    try { const res = await fetch(`${BACKEND_URL}/api/odds-screen/history/${encodeURIComponent(r.gameId)}`); mvUi.hist[r.gameId] = await res.json(); } catch { mvUi.hist[r.gameId] = { series: [] }; }
+    setTimeout(() => { if (mvUi.hist) delete mvUi.hist[r.gameId]; }, 60e3);
+  }
+  osUi.hist[id] = mvUi.hist[r.gameId];
+  const sid = String(r.id).split('|').slice(0, -2).join('|');
+  if ((osUi.hist[id].series || []).some(x => x.id === sid)) osUi.side[id] = sid;
+  osDrawChart(id);
+}
 // ─── EXCHANGE SHOPPER ─────────────────────────────────────────────────────────
 // /api/shopper: every venue's price for the same bet, best first after fees,
 // with the fair, EV, hold and ranked leads. Choices live in localStorage.
@@ -10295,19 +10439,22 @@ function oddsModeShow() {
   const lines = !mode || mode === 'lines';
   const chip = (k, l) => `<button class="sport-chip${(lines ? 'lines' : mode) === k ? ' active' : ''}" onclick="shpSet('mode','${k}')">${l}</button>`;
   const bar = document.getElementById('oddsModes');
-  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('outrights', 'OUTRIGHTS') + chip('nflmodel', 'NFL MODEL');
-  const nfl = mode === 'nflmodel', mk = mode === 'maker', ort = mode === 'outrights';
+  if (bar) bar.innerHTML = chip('lines', 'GAME LINES') + chip('opps', 'BEST PRICES ABOVE FAIR') + chip('markets', 'ALL LINES & PROPS') + chip('arb', 'ARBS') + chip('maker', 'MAKER') + chip('outrights', 'OUTRIGHTS') + chip('moves', 'BIGGEST MOVES') + chip('nflmodel', 'NFL MODEL');
+  const nfl = mode === 'nflmodel', mk = mode === 'maker', ort = mode === 'outrights', mv = mode === 'moves';
   const ov = document.getElementById('osView'), sv = document.getElementById('shpView'), nv = document.getElementById('nflmView'), kv = document.getElementById('kmkView'), rv = document.getElementById('ortView');
   if (ov) ov.style.display = lines ? '' : 'none';
-  if (sv) sv.style.display = lines || nfl || mk || ort ? 'none' : '';
+  if (sv) sv.style.display = lines || nfl || mk || ort || mv ? 'none' : '';
+  const mvv = document.getElementById('mvView');
+  if (mvv) mvv.style.display = mv ? '' : 'none';
   if (nv) nv.style.display = nfl ? '' : 'none';
   if (kv) kv.style.display = mk ? '' : 'none';
   if (rv) rv.style.display = ort ? '' : 'none';
-  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); if (window.ortUi) clearTimeout(ortUi.timer); };
+  const stop = () => { if (window.shpUi) clearTimeout(shpUi.timer); if (window.nflmUi) clearTimeout(nflmUi.timer); if (window.kmkUi) clearTimeout(kmkUi.timer); if (window.ortUi) clearTimeout(ortUi.timer); if (window.mvUi) clearTimeout(mvUi.timer); };
   if (lines) { stop(); loadOdds(); }
   else if (nfl) { clearTimeout(osUi.timer); stop(); nflmLoad(); }
   else if (mk) { clearTimeout(osUi.timer); stop(); kmkLoad(); }
   else if (ort) { clearTimeout(osUi.timer); stop(); ortLoad(); }
+  else if (mv) { clearTimeout(osUi.timer); stop(); mvLoad(); }
   else { clearTimeout(osUi.timer); stop(); shpLoad(); }
 }
 let shpTyping = null;
@@ -10346,7 +10493,7 @@ async function shpLoad() {
   try { shpUi.data = await tailGet(`/api/shopper?${shpQuery()}`); shpUi.error = null; }
   catch (e) { shpUi.error = e.old ? 'The shopper needs a newer backend.' : e.message; }
   shpRender();
-  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
+  if (document.getElementById('page-odds')?.classList.contains('active') && shpUi.opts.mode !== 'lines' && shpUi.opts.mode !== 'nflmodel' && shpUi.opts.mode !== 'maker' && shpUi.opts.mode !== 'outrights' && shpUi.opts.mode !== 'moves') shpUi.timer = setTimeout(() => { if (!document.hidden) shpLoad(); else shpUi.timer = setTimeout(shpLoad, 60e3); }, 60000);
 }
 // decimal → the chosen format (the same conversions as oddsschema.js)
 function shpOdds(d) {
