@@ -3,12 +3,13 @@
 // CSV, log a slip from PROPS, paste slips, import a Pikkit CSV, save and load
 // a shopper view, star a venue (and keep it after a reload), turn on push
 // alerts without a real push service, use the TOOLS calculator, and move and
-// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows. The crawl clicks everything; these check results.
+// hide a tab in CUSTOMIZE, the keyboard shortcuts and compact rows, and share a
+// view by link and open it cold on a fresh device. The crawl clicks everything; these check results.
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { watch, settle, openTab, enterApp, newAppPage, checkText, issue } = require('./crawl');
+const { watch, settle, openTab, enterApp, newAppPage, checkText, checkOverflow, issue } = require('./crawl');
 
 const ls = (page, k) => page.evaluate(key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }, k);
 const text = (page, sel) => page.locator(sel).first().innerText({ timeout: 4000 }).catch(() => '');
@@ -293,6 +294,82 @@ const FLOWS = {
     await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
     await settle(page, w, opts, 150);
     expect(!(await ls(page, 'lr_shopper_views'))?.length, 'CLEAR VIEWS left views saved');
+  },
+
+  async 'share a saved view and open the link cold'(page, w, opts) {
+    if (!opts.coldContext) return; // the live smoke reads only
+    await openTab(page, 'odds', w, opts);
+    await page.locator('#oddsModes button', { hasText: 'BEST PRICES' }).first().click();
+    await settle(page, w, opts, 250);
+    await openPanel(page, w, opts, 'shpFilters');
+    await page.locator('#shpModes button', { hasText: 'All venues' }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpModes button', { hasText: /^Spread$/ }).click();
+    await settle(page, w, opts, 250);
+    await page.locator('#shpBar select').filter({ has: page.locator('option[value="hold"]') }).selectOption('ev');
+    await settle(page, w, opts, 250);
+    await page.fill('#shpPresetName', 'Share E2E');
+    await page.getByRole('button', { name: 'SAVE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    await page.getByRole('button', { name: 'SHARE VIEW' }).click();
+    await settle(page, w, opts, 150);
+    const toast = page.locator('.toast').last();
+    expect(/^Link copied: view "Share E2E"/.test(await toast.innerText()), `SHARE VIEW toast: ${await toast.innerText()}`);
+    const vw = page.viewportSize().width, box = await toast.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= vw, `the toast runs off a ${vw} px screen: ${JSON.stringify(box)}`);
+    const viewLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(/\/app#lr&t=odds&m=opps&st=all&mk=sp&n=Share\+E2E$/.test(viewLink) && viewLink.length < 200, `view link: ${viewLink}`);
+    // the bar's LINK button: the same screen, without the view's name
+    await page.locator('#linkBtn').click();
+    await settle(page, w, opts, 100);
+    const screenLink = await page.evaluate(() => lrShareLast); // eslint-disable-line no-undef
+    expect(screenLink === viewLink.replace('&n=Share+E2E', ''), `LINK: ${screenLink}`);
+    await page.getByRole('button', { name: 'CLEAR VIEWS' }).click();
+    await settle(page, w, opts, 100);
+
+    // a fresh device: no welcome screen or tour on top, the exact view, nothing of the sender's
+    const local = new URL(opts.base).origin;
+    const cold = async (link, check) => {
+      const ctx = await opts.coldContext();
+      const p2 = await newAppPage(ctx, opts);
+      const r2 = { issues: [], requests: 0 };
+      const w2 = watch(p2, r2, opts);
+      try {
+        await p2.goto(link.replace(/^https?:\/\/[^/]+/, local), { waitUntil: 'domcontentloaded' });
+        await settle(p2, w2, opts, 400);
+        const st = await p2.evaluate(() => ({
+          welcome: document.getElementById('welcome')?.classList.contains('open'), tour: document.getElementById('tour')?.classList.contains('open'),
+          page: document.querySelector('.page.active')?.id, hash: location.hash, toast: [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '),
+          // eslint-disable-next-line no-undef
+          shp: window.shpUi && { ...shpUi.opts }, os: { ...osUi, data: null, timer: null }, overflow: document.documentElement.scrollWidth - window.innerWidth,
+          chips: [...document.querySelectorAll('#shpModes .active, #oddsModes .active')].map(b => b.textContent),
+          osState: document.getElementById('osState')?.value, osSort: document.getElementById('osSort')?.value,
+        }));
+        expect(!st.welcome && !st.tour, `the welcome screen or tour covered the shared screen (${link})`);
+        expect(st.hash === '', `the link stayed in the address bar: ${st.hash}`);
+        expect(st.overflow <= 0, `the shared screen is ${st.overflow} px too wide`);
+        await checkOverflow(p2, r2, 'odds', `share link ${link}`, opts);
+        check(st);
+        if (r2.issues.length) throw new Error(`opening ${link}: ${r2.issues[0].kind} ${JSON.stringify(r2.issues[0]).slice(0, 200)}`);
+      } finally { await ctx.close(); }
+    };
+    await cold(viewLink, st => {
+      expect(st.page === 'page-odds', `opened on ${st.page}`);
+      expect(st.shp.mode === 'opps' && st.shp.state === '' && st.shp.markets === 'spread' && st.shp.sort === 'ev', `shopper: ${JSON.stringify(st.shp).slice(0, 200)}`);
+      expect(st.chips.includes('BEST PRICES ABOVE FAIR') && st.chips.includes('All venues') && st.chips.includes('Spread'), `chips: ${st.chips}`);
+      expect(st.shp.stake === '100' && st.shp.fmt === 'american' && !st.shp.favOnly, 'the link changed the stake, odds format or favorites');
+      expect(/Opened a shared view: Share E2E/.test(st.toast), `toast: ${st.toast}`);
+    });
+    // a GAME LINES link and another tab, written by hand as a person would paste them
+    await cold(`${local}/app#lr&t=odds&lg=nba&mk=sp&so=ev`, st => {
+      expect(st.page === 'page-odds' && st.shp.mode === 'lines', `opened ${st.page} ${st.shp.mode}`);
+      expect(st.os.league === 'nba' && st.os.market === 'spread' && st.os.sort === 'ev' && st.osSort === 'ev', `game lines: ${JSON.stringify(st.os)}`);
+      expect(st.chips.includes('GAME LINES'), `chips: ${st.chips}`);
+    });
+    await cold(`${local}/app#lr&t=results`, st => {
+      expect(st.page === 'page-results', `opened on ${st.page}`);
+      expect(/Opened a shared screen/.test(st.toast), `toast: ${st.toast}`);
+    });
   },
 
   async 'star a venue and keep it after a reload'(page, w, opts) {
