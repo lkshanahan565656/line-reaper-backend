@@ -4434,8 +4434,10 @@ const esmatchupdata = require('./esmatchupdata');
 const MATCHUPS_ON = !/^(off|0|false|no)$/i.test(String(process.env.ESPORTS_MATCHUPS || '').trim());
 // CS2 and VALORANT run on the same engine (esgames.js): the venues list the
 // matches, the ratings refresh's bo3.gg / vlr.gg reads give the results.
-// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL).
-const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json'))) : null;
+// ESPORTS_MATCHUPS_GAMES picks the games (default LOL,CS2,VAL). Its store is a
+// rolling cache that drops finished series, so the backup never counts it as a
+// record (10-25: its 9 → 0 made the backup refuse every snapshot for a day).
+const matchupStore = MATCHUPS_ON ? resultsBackup.wrap('esportsMatchups', createPickFileStore(process.env.MATCHUPS_FILE || path.join(process.env.LR_DATA_DIR || path.join(__dirname, 'data'), 'esports-matchups.json')), { appendOnly: false }) : null;
 const MATCHUP_GAMES = String(process.env.ESPORTS_MATCHUPS_GAMES || 'LOL,CS2,VAL').toUpperCase().split(/[\s,]+/).filter(g => ['LOL', 'CS2', 'VAL'].includes(g));
 const RAW_OF = { CS2: 'CS', VAL: 'VAL' };
 const matchupEngines = Object.fromEntries((MATCHUPS_ON ? MATCHUP_GAMES : []).map(game => [game, esmatchupdata.createMatchupEngine({
